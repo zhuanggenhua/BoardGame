@@ -58,7 +58,14 @@ interface DiceThroneDebugConfigProps {
 }
 
 const getCurrentDiceValues = (gameState: any): string[] => {
-    const dice = gameState?.core?.currentRollContext?.dice ?? gameState?.core?.dice ?? [];
+    const phase = gameState?.sys?.phase;
+    const currentRollContext = gameState?.core?.currentRollContext;
+    const isMainRollPhase = phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll';
+    const isReplayOnlyContext = currentRollContext?.status === 'settled'
+        && currentRollContext?.display?.replayOnly === true;
+    const dice = isMainRollPhase && isReplayOnlyContext
+        ? gameState?.core?.dice ?? []
+        : currentRollContext?.dice ?? gameState?.core?.dice ?? [];
     return dice.length > 0
         ? dice.map((die: { value: number }) => String(die.value))
         : ['1', '1', '1', '1', '1'];
@@ -309,7 +316,7 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
             return Number.isNaN(num) ? 1 : Math.max(1, Math.min(6, num));
         });
 
-        dispatch('SYS_CHEAT_SET_DICE', { diceValues: values });
+        dispatch('SYS_CHEAT_SET_DICE', { diceValues: values, phase: G?.sys?.phase });
     };
 
     return (

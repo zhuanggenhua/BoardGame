@@ -95,6 +95,20 @@ describe('useVisualStateBuffer', () => {
     expect(result.current.snapshot).toBeNull();
   });
 
+  it('freezeSync 后如果 release 早于 commitSync，也不能把旧快照写回', () => {
+    const { result } = renderHook(() => useVisualStateBuffer());
+
+    act(() => {
+      result.current.freezeSync('hp-1', 49);
+      result.current.release(['hp-1']);
+      result.current.commitSync();
+    });
+
+    expect(result.current.get('hp-1', 47)).toBe(47);
+    expect(result.current.isBuffering).toBe(false);
+    expect(result.current.snapshot).toBeNull();
+  });
+
   it('freeze 覆盖已有 key', () => {
     const { result } = renderHook(() => useVisualStateBuffer());
     act(() => { result.current.freeze('a', 1); });

@@ -34,6 +34,7 @@ import { getBonusDiceSettlementHandler } from './bonusDiceSettlement';
 import { applyEvents } from './utils';
 import { findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { rollDieValue } from './reroll';
+import type { DiceThroneTokenResponseChoiceCommandSource } from './tokenResponseChoiceContract';
 
 const normalizeBonusDiceFollowupEvents = (
     state: DiceThroneCore,
@@ -235,6 +236,18 @@ function findTokenHeroPrefix(state: DiceThroneCore, tokenId: string): string | u
     return undefined;
 }
 
+function commandTargetsCurrentPendingDamage(
+    command: DiceThroneCommand,
+    pendingDamage: PendingDamage | undefined,
+    requirePendingDamageId = false,
+): boolean {
+    const payload = command.payload as { pendingDamageId?: unknown } | undefined;
+    if (typeof payload?.pendingDamageId !== 'string') {
+        return !requirePendingDamageId;
+    }
+    return pendingDamage?.id === payload.pendingDamageId;
+}
+
 /**
  * 执行 Token / 奖励骰 / 击倒移除相关命令
  */
@@ -244,6 +257,7 @@ export function executeTokenCommand(
     random: RandomFn,
     timestamp: number,
     phase: TurnPhase = 'setup',
+    choiceSource?: DiceThroneTokenResponseChoiceCommandSource | null,
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
 
@@ -252,6 +266,10 @@ export function executeTokenCommand(
             const { tokenId, amount } = command.payload as { tokenId: string; amount: number };
             const pendingDamage = state.pendingDamage;
             const deferredDamageEvents: NonNullable<PendingDamage['deferredDamageEvents']> = [];
+            if (!commandTargetsCurrentPendingDamage(command, pendingDamage, Boolean(choiceSource))) {
+                console.warn('[DiceThrone] USE_TOKEN: pending damage mismatch');
+                break;
+            }
 
             if (tokenId === TOKEN_IDS.NYRAS_BOND && !pendingDamage) {
                 const player = state.players[command.playerId];
@@ -296,6 +314,14 @@ export function executeTokenCommand(
                     type: 'TOKEN_RESPONSE_CLOSED',
                     payload: {
                         pendingDamageId: pendingDamage.id,
+                        ...(choiceSource
+                            ? {
+                                choiceRequestId: choiceSource.requestId,
+                                choiceCandidateId: choiceSource.candidateId,
+                                ...(choiceSource.opportunityId ? { opportunityId: choiceSource.opportunityId } : {}),
+                                ...(choiceSource.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
+                            }
+                            : {}),
                         finalDamage: 0,
                         fullyEvaded: true,
                         sourceAbilityId: pendingDamage.sourceAbilityId,
@@ -336,6 +362,14 @@ export function executeTokenCommand(
                     type: 'TOKEN_RESPONSE_CLOSED',
                     payload: {
                         pendingDamageId: pendingDamage.id,
+                        ...(choiceSource
+                            ? {
+                                choiceRequestId: choiceSource.requestId,
+                                choiceCandidateId: choiceSource.candidateId,
+                                ...(choiceSource.opportunityId ? { opportunityId: choiceSource.opportunityId } : {}),
+                                ...(choiceSource.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
+                            }
+                            : {}),
                         finalDamage: heroDamage,
                         fullyEvaded: heroDamage === 0,
                         sourceAbilityId: pendingDamage.sourceAbilityId,
@@ -353,6 +387,7 @@ export function executeTokenCommand(
                             sourceAbilityId: pendingDamage.sourceAbilityId,
                             damageScope: pendingDamage.damageScope,
                             unblockable: pendingDamage.unblockable,
+                            ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
                         },
                         sourceCommandType: command.type,
                         timestamp: timestamp + 0.003,
@@ -479,7 +514,8 @@ export function executeTokenCommand(
                 amount,
                 random,
                 pendingDamage.responseType,
-                timestamp
+                timestamp,
+                choiceSource ?? undefined,
             );
             // 精准 (accuracy)：使攻击不可防御
             if (result.extra?.makeUndefendable && state.pendingAttack) {
@@ -626,7 +662,12 @@ export function executeTokenCommand(
                     currentDamage: 0,
                     isFullyEvaded: true,
                 };
-                const closeEvents = finalizeTokenResponse(updatedPendingDamage, stateAfterToken, timestamp);
+                const closeEvents = finalizeTokenResponse(
+                    updatedPendingDamage,
+                    stateAfterToken,
+                    timestamp,
+                    choiceSource ?? undefined,
+                );
                 events.push(...closeEvents);
             }
             break;
@@ -637,6 +678,10 @@ export function executeTokenCommand(
             
             if (!pendingDamage) {
                 console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: no pending damage');
+                break;
+            }
+            if (!commandTargetsCurrentPendingDamage(command, pendingDamage, Boolean(choiceSource))) {
+                console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: pending damage mismatch');
                 break;
             }
             if (command.playerId !== pendingDamage.responderId) {
@@ -671,7 +716,12 @@ export function executeTokenCommand(
             }
             
             // 关闭响应窗口，应用最终伤害
-            const closeEvents = finalizeTokenResponse(pendingDamage, state, timestamp);
+            const closeEvents = finalizeTokenResponse(
+                pendingDamage,
+                state,
+                timestamp,
+                choiceSource ?? undefined,
+            );
             events.push(...closeEvents);
             break;
         }

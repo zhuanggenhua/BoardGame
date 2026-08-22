@@ -66,6 +66,7 @@ export interface SetPhasePayload {
 
 export interface SetDicePayload {
     diceValues: number[];
+    phase?: string;
 }
 
 export interface SetTokenPayload {
@@ -135,7 +136,7 @@ export interface CheatResourceModifier<TCore> {
     /** 设置阶段（可选） */
     setPhase?: (core: TCore, phase: string) => TCore;
     /** 设置骰子值（可选） */
-    setDice?: (core: TCore, values: number[]) => TCore;
+    setDice?: (core: TCore, values: number[], options?: { phase?: string }) => TCore;
     /** 设置 Token 数量（可选） */
     setToken?: (core: TCore, playerId: PlayerId, tokenId: string, amount: number) => TCore;
     /** 设置状态效果数量（可选） */
@@ -278,7 +279,7 @@ export function createCheatSystem<TCore>(
             // 处理设置骰子命令
             if (command.type === CHEAT_COMMANDS.SET_DICE && modifier.setDice) {
                 const payload = command.payload as SetDicePayload;
-                const newCore = modifier.setDice(state.core, payload.diceValues);
+                const newCore = modifier.setDice(state.core, payload.diceValues, { phase: payload.phase });
                 return {
                     halt: true,
                     state: { ...state, core: newCore },

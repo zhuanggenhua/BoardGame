@@ -112,8 +112,9 @@ function handleBackStrikeUse({ ctx, state, random, timestamp }: CustomActionCont
         timestamp + 1,
         {
             customResolutionId: SAMURAI_BACK_STRIKE_SETTLEMENT_ID,
-            // 反击发生在防御窗口；确认后仍要继续原攻击的主伤害，不能独立收口。
-            continuation: { kind: 'attack', settlementStage: 'afterDefense', markBonusDiceResolved: false },
+            // 反击发生在伤害响应窗口里；原攻击主伤害由 TOKEN_RESPONSE_CLOSED 收口。
+            // 这里只结算反击骰本身，避免玩家先关闭响应再确认反击骰时倒回主伤害前。
+            continuation: { kind: 'complete' },
         },
     )];
 }

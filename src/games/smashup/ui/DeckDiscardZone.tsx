@@ -45,6 +45,12 @@ type Props = {
     isMyTurn: boolean;
     compactLayout?: boolean;
     onViewCard?: (card: CardInstance) => void;
+    /** 牌库顶有可按正常出牌流程打出的额外随从时为 true（仅用于视觉提示） */
+    hasPlayableFromDeck?: boolean;
+    playableDeckCards?: { uid: string; defId: string; label: string }[];
+    selectedDeckUid?: string | null;
+    onSelectDeckCard?: (uid: string | null) => void;
+    deckSelectHint?: string;
     /** 弃牌堆中有可从弃牌堆打出的卡牌时为 true（仅用于视觉提示） */
     hasPlayableFromDiscard?: boolean;
     /** 是否为 interaction 驱动的弃牌堆选择（僵尸领主等），自动打开面板 */
@@ -90,6 +96,11 @@ export const DeckDiscardZone: React.FC<Props> = ({
     isMyTurn,
     compactLayout = false,
     onViewCard,
+    hasPlayableFromDeck,
+    playableDeckCards,
+    selectedDeckUid,
+    onSelectDeckCard,
+    deckSelectHint,
     hasPlayableFromDiscard,
     autoOpenPanel,
     playableCards,
@@ -240,7 +251,8 @@ export const DeckDiscardZone: React.FC<Props> = ({
 
     const handleCloseDeck = useCallback(() => {
         setShowDeck(false);
-    }, []);
+        onSelectDeckCard?.(null);
+    }, [onSelectDeckCard]);
 
     // portal 容器 ref，用于点击外部关闭检测
     const portalRef = React.useRef<HTMLDivElement | null>(null);
@@ -270,15 +282,25 @@ export const DeckDiscardZone: React.FC<Props> = ({
     }, [showDiscard, discard, playableCards, selectedUid, selectedUids, onSelectCard, selectHint, onConfirmSelection, confirmDisabled, minSelections, maxSelections, t, handleCloseDiscard]);
 
     const deckDisplayCardsData = useMemo(() => {
-        if (!showDeck || !deckQueryEnabled || aggregatedDeckCards.length === 0) return undefined;
+        if (!showDeck) return undefined;
+        const hasPlayableDeckCards = playableDeckCards !== undefined && playableDeckCards.length > 0;
+        if (!hasPlayableDeckCards && (!deckQueryEnabled || aggregatedDeckCards.length === 0)) return undefined;
 
         return {
             title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
             panelKind: 'deck' as const,
-            cards: aggregatedDeckCards,
+            cards: hasPlayableDeckCards
+                ? playableDeckCards.map(card => ({ uid: card.uid, defId: card.defId }))
+                : aggregatedDeckCards,
             onClose: handleCloseDeck,
+            ...(hasPlayableDeckCards && {
+                selectedUid: selectedDeckUid,
+                onSelect: onSelectDeckCard,
+                selectHint: deckSelectHint || t('ui.click_base_to_deploy'),
+                playableUids: new Set(playableDeckCards.map(card => card.uid)),
+            }),
         };
-    }, [showDeck, deckQueryEnabled, aggregatedDeckCards, t, deckCount, handleCloseDeck]);
+    }, [showDeck, playableDeckCards, deckQueryEnabled, aggregatedDeckCards, t, deckCount, handleCloseDeck, selectedDeckUid, onSelectDeckCard, deckSelectHint]);
 
     // 点击面板外部关闭弃牌堆查看（interaction 驱动时不关闭，因为用户需要点击基地）
     useEffect(() => {
@@ -462,11 +484,22 @@ export const DeckDiscardZone: React.FC<Props> = ({
             <div className="flex items-end gap-3 pointer-events-auto">
                 {/* 牌库 - 左侧 */}
                 <div
-                    className={`flex flex-col items-center group ${deckQueryEnabled && aggregatedDeckCards.length > 0 ? 'cursor-pointer' : ''}`}
+                    className={`flex flex-col items-center group ${(hasPlayableFromDeck || (deckQueryEnabled && aggregatedDeckCards.length > 0)) ? 'cursor-pointer' : ''}`}
                     data-testid="su-deck-stack"
                     data-tutorial-id="su-deck-stack"
                     data-deck-toggle
                     onClick={() => {
+                        if (hasPlayableFromDeck && playableDeckCards?.length === 1 && onSelectDeckCard) {
+                            setShowDiscard(false);
+                            setShowDeck(false);
+                            onSelectDeckCard(playableDeckCards[0].uid);
+                            return;
+                        }
+                        if (hasPlayableFromDeck && playableDeckCards && playableDeckCards.length > 1) {
+                            setShowDiscard(false);
+                            setShowDeck(prev => !prev);
+                            return;
+                        }
                         if (!deckQueryEnabled || aggregatedDeckCards.length === 0) return;
                         setShowDiscard(false);
                         setShowDeck(prev => !prev);
@@ -511,8 +544,14 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                 ))}
                             </div>
                         )}
+                        {hasPlayableFromDeck && (
+                            <div className="absolute -inset-2 rounded-lg z-0 pointer-events-none">
+                                <div className="absolute inset-0 rounded-lg bg-lime-400/40 animate-ping" />
+                                <div className="absolute inset-0 rounded-lg bg-lime-400/30 animate-pulse shadow-[0_0_20px_6px_rgba(132,204,22,0.45)]" />
+                            </div>
+                        )}
                         <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
-                        <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
+                        <div className={`absolute inset-0 bg-slate-800 rounded-sm border-2 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2 ${hasPlayableFromDeck ? 'border-lime-400' : 'border-slate-500'}`}>
                             <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                 <div
@@ -525,10 +564,11 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         </div>
                     </div>
                     <div
-                        className="mt-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider flex items-center gap-1"
+                        className={`mt-2 backdrop-blur-sm px-2 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1 transition-colors ${hasPlayableFromDeck ? 'bg-lime-600/85 text-white animate-pulse' : showDeck ? 'bg-purple-700/85 text-purple-50' : 'bg-black/60 text-white group-hover:text-purple-300'}`}
                         style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
                     >
                         <Library size={10} /> {t('ui.deck', { defaultValue: '牌库' })}
+                        {hasPlayableFromDeck && <span className="text-[9px] ml-1">{t('ui.playable', { defaultValue: '可打出' })}</span>}
                     </div>
                 </div>
                 {titanRailContent}

@@ -8,67 +8,32 @@ metadata:
 
 # 游戏结束检测规范
 
-## 游戏结束检测（`sys.gameover`）（强制）
+## 目标
 
-### 架构
+游戏结束结果统一由管线写入 `sys.gameover`。Board、服务端、测试和交互裁决都读取这个字段，不再各自重新判断终局。
 
-管线（`executePipeline`）在每次命令执行成功后自动调用 `domain.isGameOver(core)` 检测游戏是否结束，结果写入 `sys.gameover`：
+## 合同
 
-```typescript
-// pipeline.ts 内部辅助函数（两个成功返回点都会调用）
-const applyGameoverCheck = (s: MatchState<TCore>): MatchState<TCore> => {
-    if (!domain.isGameOver) return s;
-    const result = domain.isGameOver(s.core);
-    if (result === s.sys.gameover) return s;
-    return { ...s, sys: { ...s.sys, gameover: result } };
-};
-```
+- 每次命令成功执行后，`executePipeline` 调用 `domain.isGameOver(core)`。
+- 检测结果写入 `state.sys.gameover`；未结束时保持 undefined。
+- `GameOverResult` 至少能表达单胜者、多胜者、平局和分数。
+- 服务端只读取管线结果；检测到新终局后更新 match metadata、持久化并触发终局回调。
 
-### GameOverResult 类型
+## 各层读取
 
-```typescript
-interface GameOverResult {
-    winner?: PlayerId;
-    winners?: PlayerId[];
-    draw?: boolean;
-    scores?: Record<PlayerId, number>;
-}
-```
+| 层 | 正确来源 | 禁止 |
+| --- | --- | --- |
+| Board | `G.sys.gameover` | `G.core.gameover`、`ctx.gameover` |
+| 服务端 | `result.state.sys.gameover` | 再次调用 `isGameOver()` |
+| 测试 | `state.sys.gameover` | `state.core.gameover` |
+| 交互裁决 | `state.sys.gameover` | 私读 core 里的终局字段 |
 
-### 各层读取方式（强制）
+## 游戏层职责
 
-| 层级 | 正确读取方式 | 禁止 |
-|------|-------------|------|
-| Board 组件 | `G.sys.gameover` | ❌ `G.core.gameover`、❌ `ctx.gameover` |
-| 服务端 | `result.state.sys.gameover` | ❌ 再次调用 `isGameOver()` |
-| 测试 | `state.sys.gameover` | ❌ `state.core.gameover` |
-| 交互裁决 | `state.sys.gameover` | ❌ `core.gameover` |
+每个游戏只在 `DomainCore.isGameOver` 中实现胜负检测，返回终局结果或 undefined。core 可以保留 `gameResult` 等中间字段供检测函数读取，但 UI、服务端和测试不得把它们当最终终局来源。
 
-### 服务端处理
+## 禁止项
 
-`GameTransportServer.executeCommandInternal` 在管线执行成功后读取 `result.state.sys.gameover`，若检测到游戏结束且 metadata 尚未标记，则：
-1. 更新 `match.metadata.gameover`
-2. 持久化 metadata
-3. 触发 `onGameOver` 回调（用于归档战绩等）
-
-### 游戏层实现
-
-每个游戏在 `DomainCore.isGameOver` 中实现检测逻辑，返回 `GameOverResult | undefined`：
-
-```typescript
-// 示例：DiceThrone — HP 归零判定
-isGameOver: (core) => {
-    const loser = Object.values(core.players).find(p => p.hp <= 0);
-    if (!loser) return undefined;
-    const winner = Object.values(core.players).find(p => p.hp > 0);
-    return { winner: winner?.id };
-},
-```
-
-### 禁止事项
-
-- ❌ 禁止在 Board 组件中读取 `G.core.gameover` 或 `ctx.gameover`（前者不存在于 core，后者已移除）
-- ❌ 禁止在服务端重复调用 `isGameOver()` 检测——管线已自动完成
-- ❌ 禁止在 core 状态中存储名为 `gameover` 的字段——游戏结束结果由管线自动写入 `sys.gameover`。core 中可以有 `gameResult` 等中间字段供 `isGameOver()` 读取，但 UI/服务端必须统一从 `sys.gameover` 获取最终结果。
-
----
+- 禁止在 core 状态中新增名为 `gameover` 的最终字段。
+- 禁止 Board 或服务端绕过 `sys.gameover` 自己判定终局。
+- 禁止用 UI 弹窗、日志或胜利文案替代 metadata 和 `sys.gameover` 验收。

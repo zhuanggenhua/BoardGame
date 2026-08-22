@@ -17,7 +17,7 @@ import {
 } from './damageRules';
 import { MAGE_WARS_EVENTS } from './events';
 import { STATUS_TOKEN_IDS, type StatusTokenId } from './ids';
-import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, MageWarsEvent } from './types';
+import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, MageWarsEvent, MageWarsWallState } from './types';
 import { getStatusTokenAmount } from './statusTokens';
 import {
     canMageWarsStatusTokenAffectArenaObject,
@@ -44,6 +44,7 @@ import {
     isMageWarsImplementedStealEnchantmentSpell,
     isMageWarsImplementedTanglevineSpell,
     isMageWarsImplementedTeleportSpell,
+    isMageWarsImplementedWallSpell,
     isMageWarsImplementedVisibleAreaEnchantmentSpell,
     isMageWarsImplementedVisibleEnchantmentSpell,
     isMageWarsHiddenResponseEnchantmentSpell,
@@ -79,8 +80,9 @@ import {
     resolveMageWarsSpellTargetZoneId,
     resolveMageWarsVisibleEnchantmentZoneId,
     resolveMageWarsAttackStatusTokenEffects,
+    resolveMageWarsWallPassageDamage,
 } from './spellRules';
-import { getArenaObject, getArenaZone, removeArenaObject } from './utils';
+import { getArenaObject, getArenaZone, removeArenaObject, resolveMageWarsWallEdgeZones } from './utils';
 
 export interface MageWarsSpellAbilityContext extends AbilityContext {
     state: MatchState<MageWarsCore>;
@@ -247,6 +249,19 @@ function createArenaObjectInstanceId(ctx: MageWarsSpellAbilityContext): string {
     ].join('-');
 }
 
+function createWallInstanceId(ctx: MageWarsSpellAbilityContext, edgeId: string): string {
+    const existingCount = Object.values(ctx.state.core.walls ?? {}).filter((wall) => (
+        wall.ownerId === ctx.ownerId
+        && wall.sourceSpellCardId === ctx.spell.spellCardId
+    )).length;
+    return [
+        'mwwall',
+        normalizeObjectIdPart(ctx.ownerId),
+        edgeId,
+        existingCount + 1,
+    ].join('-');
+}
+
 function buildArenaObject(
     ctx: MageWarsSpellAbilityContext,
     kind: MageWarsArenaObjectKind,
@@ -340,6 +355,10 @@ function executeSummonConjurationSpell(ctx: MageWarsSpellAbilityContext): Abilit
         return { events: [] };
     }
 
+    if (isMageWarsImplementedWallSpell(ctx.spell)) {
+        return executeSummonWallSpell(ctx);
+    }
+
     const targetZoneId = resolveMageWarsSpellTargetZoneId(ctx.state.core, ctx.command.payload);
     if (!targetZoneId) return { events: [] };
 
@@ -372,6 +391,34 @@ function executeSummonConjurationSpell(ctx: MageWarsSpellAbilityContext): Abilit
             sourceCommandType: ctx.command.type,
             timestamp: ctx.timestamp,
         }, ...restrainEvent],
+    };
+}
+
+function executeSummonWallSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
+    const edgeId = ctx.command.payload.targetWallEdgeId;
+    const zoneIds = resolveMageWarsWallEdgeZones(ctx.state.core, edgeId);
+    if (!edgeId || !zoneIds) return { events: [] };
+
+    const passageDamage = resolveMageWarsWallPassageDamage(ctx.spell);
+    const wall: MageWarsWallState = {
+        id: createWallInstanceId(ctx, edgeId),
+        ownerId: ctx.ownerId,
+        sourceSpellCardId: ctx.spell.spellCardId,
+        sourceObjectId: ctx.spell.objectId,
+        name: ctx.spell.name,
+        edgeId,
+        zoneIds,
+        blocksLineOfSight: true,
+        ...(passageDamage ? { passageDamage } : {}),
+    };
+
+    return {
+        events: [{
+            type: MAGE_WARS_EVENTS.WALL_SUMMONED,
+            payload: { wall },
+            sourceCommandType: ctx.command.type,
+            timestamp: ctx.timestamp,
+        }],
     };
 }
 

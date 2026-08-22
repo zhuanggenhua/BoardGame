@@ -210,7 +210,7 @@ async function bootstrap() {
     const expressApp = app.getHttpAdapter().getInstance();
     expressApp.use(express.json({ limit: '2mb' }));
     expressApp.use(express.urlencoded({ extended: true, limit: '2mb' }));
-    expressApp.use('/admin', createAdminTestLatencyMiddleware(app.get(AdminTestLatencyService)));
+    expressApp.use('/admin-api', createAdminTestLatencyMiddleware(app.get(AdminTestLatencyService)));
 
     const gameServerTarget =
         process.env.GAME_SERVER_PROXY_TARGET

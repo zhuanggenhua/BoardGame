@@ -1861,6 +1861,7 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.drawOrder).toEqual(['omen', 'item', 'event']);
         const expectedFirstUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[0]!;
+        const expectedPlacedUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[1]!;
         expect(core.roomDiscoveryOrderByFloor.upper[0]?.name).toBe(expectedFirstUpperRoom.name);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
@@ -1868,11 +1869,18 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}, 100, createBetrayalScriptedRandom(1));
 
-        expect(core.latestDiscovery?.kind).toBe('none');
-        expect(core.latestDiscovery?.title).toBe('神秘电梯');
-        expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe(expectedFirstUpperRoom.name);
-        expect(core.latestRoomDrawResolution?.selectedRoom?.name).toBe(expectedFirstUpperRoom.name);
-        expect(core.latestRoomDrawResolution?.buriedRoomTiles.every((room) => room.floor !== 'upper')).toBe(true);
+        expect(expectedFirstUpperRoom.name).toBe('神秘电梯');
+        expect(expectedFirstUpperRoom.discoverySymbol).toBe('none');
+        expect(core.latestDiscovery?.kind).toBe(expectedPlacedUpperRoom.discoverySymbol);
+        expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe(expectedPlacedUpperRoom.name);
+        expect(core.latestRoomDrawResolution?.selectedRoom?.name).toBe(expectedPlacedUpperRoom.name);
+        expect(core.latestRoomDrawResolution?.buriedRoomTiles).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                floor: 'upper',
+                name: expectedFirstUpperRoom.name,
+                reason: 'sealedRegion',
+            }),
+        ]));
         expect(core.pendingCardResolutionQueue).toEqual([]);
 
         expect(BetrayalDomain.validate(
@@ -19955,14 +19963,30 @@ describe('Betrayal first scenario runtime', () => {
         const mightBefore = core.currentExplorer.traits.might;
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north', useIdol: true });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+
+        expect(core.latestDiscovery?.kind).toBe('event');
+        expect(core.latestDiscovery?.summary).toBe('等待选择是否跳过事件');
+        expect(core.latestDiscovery?.detail).toContain('可选择跳过事件或继续抽取事件牌');
+        expect(core.pendingEventChoice).toMatchObject({
+            playerId: '0',
+            sourceKind: 'event-symbol-skip',
+            acceptLabel: '用雕像跳过事件',
+            declineLabel: '抽取事件牌',
+            eventSymbolSkip: { method: 'idol' },
+        });
+        expect(core.currentExplorer.traits.might).toBe(mightBefore);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: true });
 
         expect(core.latestDiscovery?.kind).toBe('event');
         expect(core.latestDiscovery?.summary).toBe('已用雕像跳过');
         expect(core.latestDiscovery?.detail).toContain('没有抽取或结算事件卡');
+        expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.might).toBe(mightBefore);
         expect(core.discardCounts.event).toBe(0);
-        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件：阴影扑面');
+        expect(core.eventOrder.map((event) => event.name)).toEqual(['阴影扑面']);
+        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件符号');
     });
 
     it('雕像会让事件中的力量检定结果 +1', () => {
@@ -19991,6 +20015,7 @@ describe('Betrayal first scenario runtime', () => {
         };
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['idol'];
         const mightBefore = core.currentExplorer.traits.might;
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
@@ -19999,6 +20024,20 @@ describe('Betrayal first scenario runtime', () => {
             BETRAYAL_COMMANDS.EXPLORE_ROOM,
             '0',
             { roomId: 'ground-north' },
+        );
+        expect(core.latestDiscovery?.kind).toBe('event');
+        expect(core.latestDiscovery?.summary).toBe('等待选择是否跳过事件');
+        expect(core.pendingEventChoice).toMatchObject({
+            sourceKind: 'event-symbol-skip',
+            acceptLabel: '用雕像跳过事件',
+            declineLabel: '抽取事件牌',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { accept: false },
             100,
             createBetrayalScriptedRandom(3, 3),
         );
@@ -23856,21 +23895,28 @@ describe('Betrayal first scenario runtime', () => {
             active: true,
             canIgnoreEventSymbols: true,
         });
-        expect(BetrayalDomain.validate(
-            { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {
-                roomId: targetRoomId!,
-                ignoreEventSymbolWithTraitorPower: true,
-            }),
-        )).toMatchObject({ valid: true });
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {
-            roomId: targetRoomId!,
-            ignoreEventSymbolWithTraitorPower: true,
-        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', { roomId: targetRoomId! });
 
         expect(core.rooms.find((room) => room.id === targetRoomId)?.state).toBe('discovered');
         expect(core.currentExplorer.roomId).toBe(targetRoomId);
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '事件符号',
+            summary: '等待选择是否跳过事件',
+        });
+        expect(core.latestDiscovery?.detail).toContain('可选择跳过事件或继续抽取事件牌');
+        expect(core.pendingEventChoice).toMatchObject({
+            playerId: '2',
+            sourceKind: 'event-symbol-skip',
+            acceptLabel: '跳过事件',
+            declineLabel: '抽取事件牌',
+            eventSymbolSkip: { method: 'traitorPower' },
+        });
+        expect(core.discardCounts.event).toBe(discardCountBefore);
+        expect(core.eventOrder.map((event) => event.name)).toEqual(eventOrderBefore);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '2', { accept: true });
+
         expect(core.latestDiscovery).toMatchObject({
             kind: 'event',
             title: '事件符号',
@@ -23883,7 +23929,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.recentRoll?.kind).not.toBe('hauntRoll');
-        expect(core.activityLog[0]?.text).toContain('叛徒跳过了事件符号');
+        expect(core.activityLog[0]?.text).toContain('跳过了事件符号');
     });
 
     it('叛徒作祟后探索事件符号房间时若不忽略事件，则正常抽取并结算事件牌', () => {
@@ -23907,16 +23953,31 @@ describe('Betrayal first scenario runtime', () => {
         const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
         expect(targetRoomId).toBeTruthy();
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {
-            roomId: targetRoomId!,
-        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', { roomId: targetRoomId! });
 
         expect(core.rooms.find((room) => room.id === targetRoomId)?.state).toBe('discovered');
         expect(core.currentExplorer.roomId).toBe(targetRoomId);
         expect(core.latestDiscovery).toMatchObject({
             kind: 'event',
+            title: '事件符号',
+            summary: '等待选择是否跳过事件',
+        });
+        expect(core.pendingEventChoice).toMatchObject({
+            playerId: '2',
+            sourceKind: 'event-symbol-skip',
+            acceptLabel: '跳过事件',
+            declineLabel: '抽取事件牌',
+            eventSymbolSkip: { method: 'traitorPower' },
+        });
+        expect(traitTrackPosition(core, '2', 'might')).toBe(mightPositionBefore);
+        expect(core.eventOrder.map((event) => event.name)).toEqual(['阴影扑面', '远处低语']);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '2', { accept: false });
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
             title: '阴影扑面',
-            summary: '即时生效',
+            summary: '抽取事件牌',
         });
         expect(core.latestDiscovery?.detail).toContain('力量 -1');
         expect(traitTrackPosition(core, '2', 'might')).toBe(mightPositionBefore - 1);
@@ -23926,7 +23987,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.recentRoll?.kind).not.toBe('hauntRoll');
-        expect(core.activityLog[0]?.text).toContain('事件：阴影扑面');
+        expect(core.activityLog[0]?.text).toContain('选择抽取事件牌：阴影扑面');
     });
 
     it('叛徒开局按人数获得 {1/1/2/2} 点力量和速度加成', () => {

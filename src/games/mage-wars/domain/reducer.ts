@@ -393,6 +393,18 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
         case MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED:
             return addArenaObject(core, event.payload.object);
 
+        case MAGE_WARS_EVENTS.WALL_SUMMONED:
+            return {
+                ...core,
+                walls: {
+                    ...(core.walls ?? {}),
+                    [event.payload.wall.edgeId]: event.payload.wall,
+                },
+            };
+
+        case MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED:
+            return core;
+
         case MAGE_WARS_EVENTS.ENCHANTMENT_REVEALED:
             return updateArenaObject(core, event.payload.objectId, (object) => ({
                 ...object,

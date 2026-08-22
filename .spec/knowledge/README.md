@@ -54,6 +54,7 @@ metadata:
 | [`testing-audit-dimensions.md`](standards/testing-audit-dimensions.md) | 历史归档：旧 D 维度编号对照，不再作为机械审计清单——旧 evidence 对账时查 |
 | [`testing-audit.md`](standards/testing-audit.md) | 测试审计总入口：审计路由、证据边界和旧分卷兼容——做规则或玩法审计时查 |
 | [`testing-tdd.md`](standards/testing-tdd.md) | TDD 标准：先红测、再实现、保留回归保护——新功能或修 bug 前查 |
+| [`timing-opportunity-resolution.md`](standards/timing-opportunity-resolution.md) | 时点-机会-结算标准：TimingPoint、Opportunity、Choice Request 和 Resolution Stack——接入复杂触发、响应、替代、防止或长事务规则时查 |
 | [`tutorial-design.md`](standards/tutorial-design.md) | 教程设计标准：教学目标、提示、截图和交互顺序——改新手引导时查 |
 | [`ui-animation-patterns.md`](standards/ui-animation-patterns.md) | UI 动画模式：触发、结果揭示和事件身份——改 UI 动效时查 |
 | [`ui-change-gates.md`](standards/ui-change-gates.md) | UI 改动门禁：布局、槽位、截图审计和返工条件——改可见界面时查 |

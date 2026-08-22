@@ -126,9 +126,9 @@ test.describe('反馈 UI E2E', () => {
         let myFeedbackDeleted = false;
         let myFeedbackRequestedSummaryOnly = false;
         let myFeedbackDetailRequested = false;
-        await page.route('**/admin/feedback?*', async (route) => {
+        await page.route('**/admin-api/feedback?*', async (route) => {
             const url = new URL(route.request().url());
-            if (url.pathname !== '/admin/feedback') {
+            if (url.pathname !== '/admin-api/feedback') {
                 await route.fallback();
                 return;
             }
@@ -154,7 +154,7 @@ test.describe('反馈 UI E2E', () => {
                 },
             });
         });
-        await page.route('**/admin/feedback/my_feedback_1', async (route) => {
+        await page.route('**/admin-api/feedback/my_feedback_1', async (route) => {
             if (route.request().method() === 'GET') {
                 myFeedbackDetailRequested = true;
                 await route.fulfill({

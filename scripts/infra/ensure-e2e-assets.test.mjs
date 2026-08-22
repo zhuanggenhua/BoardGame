@@ -83,6 +83,77 @@ test('本地素材包完整时可作为 E2E 素材准备真相源', () => {
     }
 });
 
+test('未使用公共 atlas-configs 的游戏不强制要求 atlas-configs 目录', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'boardgame-e2e-assets-no-atlas-'));
+    try {
+        const assetsRoot = path.join(root, 'assets');
+        const gameRoot = path.join(assetsRoot, 'i18n', 'zh-CN', 'betrayal');
+        const body = Buffer.from('betrayal local asset');
+        const sha256 = createHash('sha256').update(body).digest('hex');
+
+        mkdirSync(path.join(gameRoot, 'rooms'), { recursive: true });
+        writeFileSync(path.join(gameRoot, 'rooms', 'room-front-atlas.jpg'), body);
+        writeFileSync(path.join(gameRoot, 'assets-manifest.json'), JSON.stringify({
+            manifestVersion: 1,
+            files: {
+                'rooms/room-front-atlas': {
+                    variants: {
+                        jpg: {
+                            sha256,
+                            bytes: body.length,
+                            mime: 'image/jpeg',
+                        },
+                    },
+                },
+            },
+        }));
+
+        assert.equal(hasCompleteLocalE2EAssetPackage('betrayal', { assetsRoot }), true);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('缺失旧源图但存在有效压缩运行时图时仍可判定本地可跑', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'boardgame-e2e-assets-compressed-'));
+    try {
+        const assetsRoot = path.join(root, 'assets');
+        const gameRoot = path.join(assetsRoot, 'i18n', 'zh-CN', 'betrayal');
+        const compressedBody = Buffer.from('compressed runtime image');
+        const compressedSha256 = createHash('sha256').update(compressedBody).digest('hex');
+
+        mkdirSync(path.join(gameRoot, 'tokens', 'explorers', 'compressed'), { recursive: true });
+        writeFileSync(path.join(gameRoot, 'tokens', 'explorers', 'compressed', 'rebecca-allen.webp'), compressedBody);
+        writeFileSync(path.join(gameRoot, 'assets-manifest.json'), JSON.stringify({
+            manifestVersion: 1,
+            files: {
+                'tokens/explorers/compressed/rebecca-allen': {
+                    variants: {
+                        webp: {
+                            sha256: compressedSha256,
+                            bytes: compressedBody.length,
+                            mime: 'image/webp',
+                        },
+                    },
+                },
+                'tokens/explorers/rebecca-allen': {
+                    variants: {
+                        png: {
+                            sha256: 'missing-source-sha',
+                            bytes: 182697,
+                            mime: 'image/png',
+                        },
+                    },
+                },
+            },
+        }));
+
+        assert.equal(hasCompleteLocalE2EAssetPackage('betrayal', { assetsRoot }), true);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
 test('本地素材包缺文件时不能跳过服务器同步', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'boardgame-e2e-assets-missing-'));
     try {

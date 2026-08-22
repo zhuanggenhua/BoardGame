@@ -26,7 +26,7 @@ function collectSourceFiles(relativePath: string): string[] {
 
 describe('前端后台请求合同', () => {
     it('后台统计合同指向真实管理统计入口，而不是认证入口', () => {
-        expect(ADMIN_STATS_ENDPOINT).toBe('/admin/stats');
+        expect(ADMIN_STATS_ENDPOINT).toBe('/admin-api/stats');
         expect(ADMIN_STATS_ENDPOINT).not.toBe('/auth/admin/stats');
     });
 

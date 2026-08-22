@@ -213,6 +213,31 @@ function normalizeNumberArrayRecord(
     return normalized;
 }
 
+function normalizeSpecificExtraMinionPlays(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): PlayerState['specificExtraMinionPlays'] {
+    if (value === undefined) return undefined;
+    return asObjectArray<NonNullable<PlayerState['specificExtraMinionPlays']>[number]>(value, path, anomalies)
+        .flatMap((entry, index) => {
+            if (typeof entry.cardUid !== 'string' || typeof entry.reason !== 'string') {
+                anomalies.push({ path: `${path}[${index}]`, actual: 'invalid-entry' });
+                return [];
+            }
+            const restrictToBase = normalizeOptionalNumber(entry.restrictToBase, `${path}[${index}].restrictToBase`, anomalies);
+            const powerMax = normalizeOptionalNumber(entry.powerMax, `${path}[${index}].powerMax`, anomalies);
+            return [{
+                cardUid: entry.cardUid,
+                reason: entry.reason,
+                ...(restrictToBase !== undefined ? { restrictToBase } : {}),
+                ...(powerMax !== undefined ? { powerMax } : {}),
+                ...(entry.sameNameOnly === true ? { sameNameOnly: true } : {}),
+                ...(typeof entry.sameNameDefId === 'string' ? { sameNameDefId: entry.sameNameDefId } : {}),
+            }];
+        });
+}
+
 function normalizeMadnessDeck(
     value: unknown,
     path: string,
@@ -353,6 +378,7 @@ function normalizePlayers(
                 minionsPlayedPerBase: normalizeNumberRecord((player as PlayerState).minionsPlayedPerBase, `players.${playerId}.minionsPlayedPerBase`, anomalies),
                 baseLimitedMinionQuota: normalizeNumberRecord((player as PlayerState).baseLimitedMinionQuota, `players.${playerId}.baseLimitedMinionQuota`, anomalies),
                 baseLimitedMinionPowerCaps: normalizeNumberArrayRecord((player as PlayerState).baseLimitedMinionPowerCaps, `players.${playerId}.baseLimitedMinionPowerCaps`, anomalies),
+                specificExtraMinionPlays: normalizeSpecificExtraMinionPlays((player as PlayerState).specificExtraMinionPlays, `players.${playerId}.specificExtraMinionPlays`, anomalies),
                 extraMinionPowerMax: normalizeOptionalNumber((player as PlayerState).extraMinionPowerMax, `players.${playerId}.extraMinionPowerMax`, anomalies),
                 extraMinionPowerCaps: normalizeNumberArray((player as PlayerState).extraMinionPowerCaps, `players.${playerId}.extraMinionPowerCaps`, anomalies),
                 sameNameMinionRemaining: normalizeOptionalNumber((player as PlayerState).sameNameMinionRemaining, `players.${playerId}.sameNameMinionRemaining`, anomalies),

@@ -265,27 +265,6 @@ function queueDestroyMinionPrompt(
     });
     if (options.length === 0) return { events: [] };
 
-    if (!optional && !multi && options.length === 1) {
-        const value = options[0].value;
-        const continuation = buildKaijuDestroyContinuation(ctx);
-        return {
-            events: buildValidatedDestroyEvents(ctx.state, {
-                minionUid: value.minionUid,
-                minionDefId: value.defId,
-                fromBaseIndex: value.baseIndex,
-                destroyerId: ctx.playerId,
-                reason: sourceId,
-                now: ctx.now,
-                sourcePlayerId: continuation.sourcePlayerId,
-                sourceCardUid: continuation.sourceCardUid,
-                sourceDefId: continuation.sourceDefId,
-                sourceControllerId: continuation.sourceControllerId,
-                sourceBaseIndex: continuation.sourceBaseIndex,
-                sourceKind: 'action',
-            }),
-        };
-    }
-
     const interaction = createSimpleChoice(
         `${sourceId}_${ctx.now}`,
         ctx.playerId,
@@ -294,7 +273,7 @@ function queueDestroyMinionPrompt(
         {
             sourceId,
             targetType: 'minion',
-            autoResolveIfSingle: !optional && !multi,
+            autoResolveIfSingle: false,
             ...(multi ? { multi } : {}),
         },
     );

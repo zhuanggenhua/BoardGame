@@ -9,6 +9,11 @@ import {
     getApprenticeSpellbookCount,
 } from '../domain/data/apprenticeSpellbooks';
 import {
+    STANDARD_STARTING_MAGE_ORDER,
+    STANDARD_STARTING_SPELLBOOKS,
+    getStandardStartingSpellbookCount,
+} from '../domain/data/standardStartingSpellbooks';
+import {
     MAGE_WARS_CONFIG_PACKAGE,
     MAGE_WARS_CONFIG_SOURCE_ID,
     buildMageWarsConfigReviewTable,
@@ -55,6 +60,8 @@ describe('mage-wars config package', () => {
         const byType = (objectType: string) => objects.filter((object) => object.objectType === objectType);
 
         expect(byType('mage')).toHaveLength(4);
+        expect(byType('card')).toHaveLength(157);
+        expect(byType('card').filter((object) => object.tags?.includes('standard-starting-spell'))).toHaveLength(153);
         expect(byType('card').filter((object) => object.tags?.includes('apprentice-spell'))).toHaveLength(91);
         expect(byType('board-zone')).toHaveLength(18);
         expect(byType('board-zone').filter((object) => object.tags?.includes('apprentice-2x3'))).toHaveLength(6);
@@ -106,7 +113,7 @@ describe('mage-wars config package', () => {
             spellType: '装备',
             requiresCodeSupport: false,
             spellActionSpeed: 'quick',
-            tags: expect.arrayContaining(['apprentice-spell', '装备']),
+            tags: expect.arrayContaining(['standard-starting-spell', 'apprentice-spell', '装备']),
         });
     });
 
@@ -127,7 +134,7 @@ describe('mage-wars config package', () => {
         }
     });
 
-    test('keeps configured preset spellbooks aligned with the existing TypeScript source', () => {
+    test('keeps configured legacy apprentice spellbooks aligned with the existing TypeScript source', () => {
         const materialized = materializeMageWarsConfigPackage();
 
         for (const mageId of APPRENTICE_MAGE_ORDER) {
@@ -149,10 +156,40 @@ describe('mage-wars config package', () => {
         }
     });
 
-    test('exposes runtime-safe preset setup and spellbook queries from the config package', () => {
-        expect(getPresetMageOrderFromConfig()).toEqual(APPRENTICE_MAGE_ORDER);
+    test('keeps configured standard starting spellbooks aligned with the page-40 TypeScript source', () => {
+        const materialized = materializeMageWarsConfigPackage();
 
-        for (const mageId of APPRENTICE_MAGE_ORDER) {
+        for (const mageId of STANDARD_STARTING_MAGE_ORDER) {
+            const deck = materialized.decksById.get(`spellbook-${mageId}_standard_starting`);
+            const sourceEntries = STANDARD_STARTING_SPELLBOOKS[mageId];
+
+            expect(deck).toBeDefined();
+            expect(deck?.data?.spellbookKind).toBe('standard-starting');
+            expect(deck?.entries.reduce((total, entry) => total + entry.count, 0)).toBe(getStandardStartingSpellbookCount(mageId));
+            expect(deck?.entries).toHaveLength(sourceEntries.length);
+
+            sourceEntries.forEach((sourceEntry, index) => {
+                const entry = deck?.entries[index];
+                expect(entry).toEqual({
+                    objectId: `spell-${sourceEntry.workshopCardIds[0]}`,
+                    count: sourceEntry.quantity,
+                });
+                expect(materialized.objectsById.has(entry!.objectId)).toBe(true);
+            });
+        }
+
+        expect(materialized.decksById.get('spellbook-beastmaster_apprentice_standard_starting')?.entries)
+            .toContainEqual({ objectId: 'spell-25700', count: 2 });
+        expect(materialized.decksById.get('spellbook-warlock_apprentice_standard_starting')?.entries)
+            .toContainEqual({ objectId: 'spell-2500', count: 2 });
+        expect(materialized.decksById.get('spellbook-beastmaster_apprentice_standard_starting')?.entries)
+            .not.toContainEqual({ objectId: 'spell-3407', count: 1 });
+    });
+
+    test('exposes runtime-safe preset setup and standard starting spellbook queries from the config package', () => {
+        expect(getPresetMageOrderFromConfig()).toEqual(STANDARD_STARTING_MAGE_ORDER);
+
+        for (const mageId of STANDARD_STARTING_MAGE_ORDER) {
             const sourceSetup = APPRENTICE_MAGE_SETUP[mageId];
             expect(getPresetMageSetupFromConfig(mageId)).toEqual({
                 mageId,
@@ -164,17 +201,20 @@ describe('mage-wars config package', () => {
             });
 
             const configuredEntries = getPresetSpellbookEntriesFromConfig(mageId);
-            const sourceEntries = APPRENTICE_SPELLBOOKS[mageId];
+            const sourceEntries = STANDARD_STARTING_SPELLBOOKS[mageId];
             expect(configuredEntries).toHaveLength(sourceEntries.length);
-            expect(getPresetSpellbookCountFromConfig(mageId)).toBe(getApprenticeSpellbookCount(mageId));
-            expect(getPresetSpellbookCardIdsFromConfig(mageId)).toHaveLength(getApprenticeSpellbookCount(mageId));
+            expect(getPresetSpellbookCountFromConfig(mageId)).toBe(getStandardStartingSpellbookCount(mageId));
+            expect(getPresetSpellbookCardIdsFromConfig(mageId)).toHaveLength(getStandardStartingSpellbookCount(mageId));
 
             for (const sourceEntry of sourceEntries) {
                 expect(hasPresetSpellbookCardInConfig(mageId, sourceEntry.workshopCardIds[0])).toBe(true);
             }
         }
 
-        expect(hasPresetSpellbookCardInConfig(APPRENTICE_MAGE_ORDER[0], 999999)).toBe(false);
+        expect(hasPresetSpellbookCardInConfig(STANDARD_STARTING_MAGE_ORDER[0], 25700)).toBe(true);
+        expect(hasPresetSpellbookCardInConfig(STANDARD_STARTING_MAGE_ORDER[2], 2500)).toBe(true);
+        expect(hasPresetSpellbookCardInConfig(STANDARD_STARTING_MAGE_ORDER[0], 3407)).toBe(false);
+        expect(hasPresetSpellbookCardInConfig(STANDARD_STARTING_MAGE_ORDER[0], 999999)).toBe(false);
     });
 
     test('keeps legacy tutorial two-player diagonal deployment query separate from formal runtime setup', () => {
@@ -290,12 +330,36 @@ describe('mage-wars config package', () => {
         ]);
     });
 
-    test('maps every preset spell card to an official atlas frame asset', () => {
+    test('maps landed standard starting spell cards to official atlas frames and keeps missing atlas explicit', () => {
         const materialized = materializeMageWarsConfigPackage();
-        const spellObjects = materialized.package.objects.filter((object) => object.tags?.includes('apprentice-spell'));
+        const missingRuntimeAtlasCardIds = [2303, 2500, 3800, 3801, 3802, 3803, 25700];
+        const standardSpellObjects = materialized.package.objects
+            .filter((object) => object.tags?.includes('standard-starting-spell'));
+        const missingAtlasObjects: number[] = [];
 
-        expect(spellObjects).toHaveLength(91);
-        for (const object of spellObjects) {
+        expect(standardSpellObjects).toHaveLength(153);
+        for (const object of standardSpellObjects) {
+            const cardId = object.data?.cardId;
+            expect(typeof cardId).toBe('number');
+
+            if (object.data?.assetStatus === 'blocked-missing-runtime-atlas') {
+                missingAtlasObjects.push(cardId as number);
+                expect(object.assetRefs ?? []).not.toContain(`spell-card-${cardId}-frame`);
+                continue;
+            }
+
+            expect(object.assetRefs).toContain(`spell-card-${cardId}-frame`);
+            const frameAsset = materialized.assetsById.get(`spell-card-${cardId}-frame`);
+            expect(frameAsset?.kind).toBe('atlas-frame');
+            expect(frameAsset?.path).not.toContain('temp/mage-wars');
+        }
+
+        expect(missingAtlasObjects.sort((left, right) => left - right)).toEqual(missingRuntimeAtlasCardIds);
+
+        const legacySpellObjects = materialized.package.objects.filter((object) => object.tags?.includes('apprentice-spell'));
+
+        expect(legacySpellObjects).toHaveLength(91);
+        for (const object of legacySpellObjects) {
             const cardId = object.data?.cardId;
             expect(typeof cardId).toBe('number');
             expect(object.assetRefs).toContain(`spell-card-${cardId}-frame`);
@@ -323,13 +387,17 @@ describe('mage-wars config package', () => {
         expect(materialized.objectsById.get('spell-3017')?.assetRefs).toBeUndefined();
     });
 
-    test('exposes card-read spell action speed for every preset spell card', () => {
+    test('keeps legacy action-speed contract and validates landed standard spell speeds', () => {
         const materialized = materializeMageWarsConfigPackage();
         const speedByCardId = new Map(
             materialized.package.objects
                 .filter((object) => object.objectType === 'card' && object.tags?.includes('apprentice-spell') === true)
                 .map((object) => [object.data?.cardId, object.data?.spellActionSpeed]),
         );
+        const standardSpeedEntries = materialized.package.objects
+            .filter((object) => object.objectType === 'card' && object.tags?.includes('standard-starting-spell') === true)
+            .map((object) => [object.data?.cardId, object.data?.spellActionSpeed] as const)
+            .filter(([, speed]) => speed !== undefined);
         const standardSpellCardIds = [
             1701, 1703, 1704, 1709,
             2800, 2801, 2802, 2803, 2804, 2807, 2808, 2809, 2810, 2811, 2812,
@@ -356,6 +424,10 @@ describe('mage-wars config package', () => {
         expect(requireMageWarsSpellCardFromConfig(3409).spellActionSpeed).toBe('standard');
         expect(requireMageWarsSpellCardFromConfig(3605).spellActionSpeed).toBe('quick');
         expect(requireMageWarsSpellCardFromConfig(3700).spellActionSpeed).toBe('quick');
+        expect(standardSpeedEntries.length).toBeGreaterThan(0);
+        expect(standardSpeedEntries.every(([, speed]) => speed === 'quick' || speed === 'standard')).toBe(true);
+        expect(requireMageWarsSpellCardFromConfig(2500).spellActionSpeed).toBe('quick');
+        expect(requireMageWarsSpellCardFromConfig(25700).spellActionSpeed).toBe('quick');
     });
 
     test('exposes machine-readable semantics for implemented visible object enchantments', () => {

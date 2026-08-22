@@ -33,6 +33,12 @@ import { onAppVisible } from '../../lib/mobile/appVisibility';
 import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
 import type { GameClientContextValue } from './reactContext';
 
+const SERIALIZED_COMMAND_TYPES = new Set(['ADVANCE_PHASE']);
+
+function shouldSerializeCommand(type: string): boolean {
+    return SERIALIZED_COMMAND_TYPES.has(type);
+}
+
 export function useGameProviderRuntime(args: {
     server: string;
     matchId: string;
@@ -66,6 +72,8 @@ export function useGameProviderRuntime(args: {
     const batcherRef = useRef<CommandBatcher | null>(null);
     const batchSeqRef = useRef(0);
     const lastConfirmedStateIDRef = useRef<number | null>(null);
+    const commandDispatchBlockedUntilSyncRef = useRef(false);
+    const inFlightSerializedCommandTypeRef = useRef<string | null>(null);
     const engineConfigRef = useRef(engineConfig);
     const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
         watermark: null,
@@ -95,10 +103,27 @@ export function useGameProviderRuntime(args: {
         clientRef.current?.resync();
     }, []);
 
+    const rollbackOptimisticRenderAndResync = useCallback(() => {
+        commandDispatchBlockedUntilSyncRef.current = true;
+        inFlightSerializedCommandTypeRef.current = null;
+        resetOptimisticProviderRuntime();
+        const latestState = clientRef.current?.latestState;
+        if (latestState) {
+            const normalizedLatestState = normalizeReceivedStateForGame(
+                engineConfigRef.current,
+                latestState as MatchState<unknown>,
+            );
+            setState(refreshInteractionOptions(normalizedLatestState));
+        }
+        requestProviderResync(true);
+    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+
     const recoverFromRejectedCommand = useCallback((reason: string) => {
         if (!shouldRecoverFromRejectedCommandError(reason)) {
             return;
         }
+        commandDispatchBlockedUntilSyncRef.current = true;
+        inFlightSerializedCommandTypeRef.current = null;
         resetOptimisticProviderRuntime();
         requestProviderResync();
     }, [requestProviderResync, resetOptimisticProviderRuntime]);
@@ -147,12 +172,12 @@ export function useGameProviderRuntime(args: {
             immediateCommands: latencyConfig.batching.immediateCommands ?? [],
             onFlush: (commands) => {
                 const client = clientRef.current;
-                if (!client) return;
+                if (!client) return false;
                 if (commands.length === 1) {
-                    client.sendCommand(commands[0].type, commands[0].payload);
+                    return client.sendCommand(commands[0].type, commands[0].payload);
                 } else {
                     const batchId = `b-${++batchSeqRef.current}`;
-                    client.sendBatch(batchId, commands, undefined, (reason) => {
+                    return client.sendBatch(batchId, commands, undefined, (reason) => {
                         recoverFromRejectedCommand(reason);
                         if (baseShouldForwardOnlineBatchRejectionToError(reason, shouldSilentlyRetryOnlineAiBatchRejection)) {
                             onErrorRef.current?.(reason);
@@ -196,6 +221,9 @@ export function useGameProviderRuntime(args: {
                         return;
                     }
                 }
+
+                commandDispatchBlockedUntilSyncRef.current = false;
+                inFlightSerializedCommandTypeRef.current = null;
 
                 if (meta?.stateID !== undefined) {
                     lastConfirmedStateIDRef.current = meta.stateID;
@@ -247,6 +275,8 @@ export function useGameProviderRuntime(args: {
                     resetOptimisticProviderRuntime();
                 }
                 if (!connected) {
+                    commandDispatchBlockedUntilSyncRef.current = false;
+                    inFlightSerializedCommandTypeRef.current = null;
                     lastConfirmedStateIDRef.current = null;
                 }
             },
@@ -290,21 +320,47 @@ export function useGameProviderRuntime(args: {
     }, [requestProviderResync, resetOptimisticProviderRuntime]);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
+        if (commandDispatchBlockedUntilSyncRef.current) {
+            return;
+        }
+        if (inFlightSerializedCommandTypeRef.current === type) {
+            return;
+        }
+        const client = clientRef.current;
+        if (!client?.canSendCommand()) {
+            return;
+        }
         const engine = optimisticEngineRef.current;
+        if (engine?.hasPendingCommands()) {
+            return;
+        }
+        let shouldSend = true;
         if (engine) {
             const result = engine.processCommand(type, payload, playerId ?? '0');
+            shouldSend = result.shouldSend;
             if (result.stateToRender) {
                 const refreshed = refreshInteractionOptions(result.stateToRender);
                 setState(refreshed);
             }
         }
-        const batcher = batcherRef.current;
-        if (batcher) {
-            batcher.enqueue(type, payload);
-        } else {
-            clientRef.current?.sendCommand(type, payload);
+        if (!shouldSend) {
+            return;
         }
-    }, [playerId]);
+        const batcher = batcherRef.current;
+        let sent = false;
+        if (batcher) {
+            sent = batcher.enqueue(type, payload);
+        } else {
+            sent = client.sendCommand(type, payload);
+        }
+        if (!sent && engine) {
+            rollbackOptimisticRenderAndResync();
+            return;
+        }
+        if (sent && shouldSerializeCommand(type)) {
+            inFlightSerializedCommandTypeRef.current = type;
+        }
+    }, [playerId, rollbackOptimisticRenderAndResync]);
 
     const requestManualSetupSelection = useCallback((
         request: ManualSetupSelectionRequest,

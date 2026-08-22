@@ -330,12 +330,15 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         expect(actions).toContainEqual(expect.objectContaining({
             kind: 'skip-token-response',
-            commands: [{ type: 'SKIP_TOKEN_RESPONSE', payload: {} }],
+            commands: [{
+                type: 'SKIP_TOKEN_RESPONSE',
+                payload: { pendingDamageId: 'online-ai-before-damage-received' },
+            }],
         }));
         expect(DiceThroneDomain.validate(state, {
             type: 'SKIP_TOKEN_RESPONSE',
             playerId: '1',
-            payload: {},
+            payload: { pendingDamageId: 'online-ai-before-damage-received' },
             timestamp: 0,
         } as never)).toEqual({ valid: true });
     });

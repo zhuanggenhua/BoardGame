@@ -22,6 +22,8 @@ import { pyromancerDiceDefinition } from '../heroes/pyromancer/diceConfig';
 import { reduce } from '../domain/reducer';
 import { getBonusDiceSettlementHandler } from '../domain/bonusDiceSettlement';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
+import { diceThroneFlowHooks } from '../domain/flowHooks';
+import { PYRO_BLAST_2 } from '../heroes/pyromancer/abilities';
 
 // 模块顶层初始化
 initializeCustomActions();
@@ -904,6 +906,58 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     // pyro-blast-2-roll / pyro-blast-3-roll: 炎爆术骰子效果
     // ========================================================================
     describe('pyro-blast-2-roll (炎爆术 II)', () => {
+        it('奖励骰已结算后，防御阶段续跑不应再次投奖励骰或重复扣血', () => {
+            const state = createState({ attackerFM: 5, defenderHP: 44 });
+            const core: DiceThroneCore = {
+                ...state,
+                players: {
+                    ...state.players,
+                    '0': {
+                        ...state.players['0'],
+                        abilities: [PYRO_BLAST_2],
+                        abilityLevels: { 'pyro-blast': 2 },
+                    },
+                },
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                    settlementStage: 'postDamagePending',
+                    isDefendable: true,
+                    sourceAbilityId: 'pyro-blast',
+                    damageResolved: true,
+                    resolvedDamage: 6,
+                    defenseAbilityId: 'holy-defense',
+                    defenseResolved: true,
+                    bonusDiceResolved: true,
+                    attackDiceValues: [1, 1, 1, 6, 5],
+                    attackDiceFaceCounts: {
+                        [PYROMANCER_DICE_FACE_IDS.FIRE]: 3,
+                        [PYROMANCER_DICE_FACE_IDS.METEOR]: 1,
+                        [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 1,
+                    },
+                },
+            };
+
+            const result = diceThroneFlowHooks.onPhaseExit?.({
+                state: { core, sys: { phase: 'defensiveRoll' } },
+                from: 'defensiveRoll',
+                to: 'main2',
+                command: {
+                    type: 'ADVANCE_PHASE',
+                    playerId: '1',
+                    payload: {},
+                    timestamp: 3000,
+                },
+                random: { d: () => 1 } as any,
+            } as any);
+            const events = (Array.isArray(result) ? result : result?.events ?? []) as DiceThroneEvent[];
+
+            expect(eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED')).toHaveLength(0);
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+            expect(eventsOfType(events, 'ATTACK_RESOLVED')).toHaveLength(1);
+            expect((eventsOfType(events, 'ATTACK_RESOLVED')[0] as any).payload.totalDamage).toBe(6);
+        });
+
         it('投2骰，fire面各造成3点伤害', () => {
             const state = createState({ attackerFM: 0 });
             let callCount = 0;

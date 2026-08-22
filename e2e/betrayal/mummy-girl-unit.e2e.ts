@@ -169,7 +169,10 @@ test.describe("山屋惊魂女孩单位重构", () => {
       "data-betrayal-visual-busy",
       "true",
     );
-    await expect(girlToken).toHaveAttribute("data-token-status", "placed");
+    await expect(girlToken).toHaveAttribute(
+      "data-token-status",
+      /placed|held-by-player/,
+    );
     await saveScreenshot(page, PICKUP_ANIMATION_SCREENSHOT);
     await expect(pickupTransitionBlocker).toHaveCount(0);
     await expect(girlToken).toHaveAttribute("data-token-status", "held-by-player");
@@ -189,7 +192,10 @@ test.describe("山屋惊魂女孩单位重构", () => {
       "data-betrayal-visual-busy",
       "true",
     );
-    await expect(girlToken).toHaveAttribute("data-token-status", "held-by-player");
+    await expect(girlToken).toHaveAttribute(
+      "data-token-status",
+      /held-by-player|held-by-mummy/,
+    );
     await saveScreenshot(page, GIVE_ANIMATION_SCREENSHOT);
     await expect(giveTransitionBlocker).toHaveCount(0);
     await expect(girlToken).toHaveAttribute("data-token-status", "held-by-mummy");

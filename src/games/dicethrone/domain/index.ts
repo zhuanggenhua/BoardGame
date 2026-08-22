@@ -3,6 +3,7 @@
  */
 
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import { commitEventWithTimingOpportunities } from '../../../engine/TimingOpportunity';
 import { registerDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, CharacterId, TurnPhase, InteractionDescriptor, DtResponseWindowType, SeatControllerKind, PendingDefenderChoice } from './types';
@@ -12,6 +13,9 @@ import { validateCommand } from './commandValidation';
 import { execute } from './execute';
 import { reduce } from './reducer';
 import { playerView } from './view';
+import { discoverDiceThroneTimingOpportunities } from './timingOpportunities';
+import { commitDiceThroneDamagePreventionEvent } from './damagePreventionCommit';
+import { isDiceThroneTokenResponseCommandAllowedByContract } from './tokenResponseChoiceContract';
 import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isTeamMode } from './rules';
 import { registerDiceThroneConditions } from '../conditions';
 import { ALL_TOKEN_DEFINITIONS } from './characters';
@@ -184,6 +188,18 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         const interaction = state.sys?.interaction?.current;
         const currentResponseWindow = state.sys?.responseWindow?.current;
         const responseWindowType = currentResponseWindow?.windowType as DtResponseWindowType | undefined;
+        if (
+            interaction?.kind === 'dt:token-response'
+            && (command.type === 'USE_TOKEN' || command.type === 'SKIP_TOKEN_RESPONSE')
+        ) {
+            const allowedByChoiceContract = isDiceThroneTokenResponseCommandAllowedByContract(
+                interaction,
+                command,
+            );
+            if (allowedByChoiceContract === false) {
+                return { valid: false, error: 'choice_contract_mismatch' };
+            }
+        }
 
         // dt:card-interaction：data 直接是 PendingInteraction（状态选择类）
         // multistep-choice：骰子类交互，从 meta 构造兼容的 InteractionDescriptor
@@ -249,7 +265,35 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         random,
     ),
     reduce,
+    commitEvent: (args) => {
+        if (args.event.type !== 'DAMAGE_DEALT') return args.event;
+        const result = commitEventWithTimingOpportunities(DiceThroneDomain, args, {
+            positions: ['prevent'],
+            factKind: 'damage',
+            composeEventCommitPlan: ({ state, event }) => {
+                if (event.type !== 'DAMAGE_DEALT') return event;
+                const committedEvent = commitDiceThroneDamagePreventionEvent({
+                    state: state.core,
+                    event,
+                });
+                const appliedOpportunityIds = Array.from(new Set(
+                    (committedEvent.payload.shieldsConsumed ?? [])
+                        .map(consumption => consumption.preventionOpportunityId)
+                        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+                ));
+                return {
+                    events: [committedEvent],
+                    appliedOpportunityIds,
+                };
+            },
+        });
+        return {
+            events: result.events,
+            evidence: result.evidence,
+        };
+    },
     playerView: (state, viewingPlayerId) => playerView(normalizeLegacyDiceThroneCoreState(state), viewingPlayerId),
+    discoverTimingOpportunities: discoverDiceThroneTimingOpportunities,
 
     isGameOver: (state: DiceThroneCore): GameOverResult | undefined => {
         // 在 setup 阶段不进行胜负判定，避免血量未初始化导致误判
@@ -330,6 +374,7 @@ function normalizeLegacyDiceThroneCoreState(core: DiceThroneCore): DiceThroneCor
 // 导出类型
 export type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent } from './types';
 export * from './rules';
+export * from './damagePreventionCommit';
 
 // 导出常量
 export { STATUS_IDS, TOKEN_IDS, DICE_FACE_IDS, ARTIFICER_DICE_FACE_IDS, TIANSHI_DICE_FACE_IDS, LIEREN_DICE_FACE_IDS, DICETHRONE_COMMANDS } from './ids';

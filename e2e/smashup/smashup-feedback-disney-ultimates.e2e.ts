@@ -11,6 +11,38 @@ type InteractionOption = {
     };
 };
 
+type SmashUpFeedbackTrigger = {
+    id?: string;
+    sourceDefId?: string;
+};
+
+type SmashUpFeedbackHarnessState = {
+    sys?: {
+        interaction?: {
+            current?: {
+                playerId?: string;
+                data?: {
+                    options?: InteractionOption[];
+                };
+            };
+        };
+    };
+    core?: {
+        triggerQueue?: SmashUpFeedbackTrigger[];
+    };
+};
+
+type SmashUpFeedbackHarnessWindow = Window & {
+    __BG_TEST_HARNESS__?: {
+        state?: {
+            get?: () => SmashUpFeedbackHarnessState;
+        };
+        command?: {
+            dispatch?: (command: { type: string; playerId: string; payload: Record<string, unknown> }) => Promise<void>;
+        };
+    };
+};
+
 async function waitForCardArtwork(page: import('@playwright/test').Page): Promise<void> {
     await expect.poll(async () => page.evaluate(() => {
         const frames = Array.from(document.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"]'));
@@ -41,11 +73,11 @@ async function selectReactionBySourceDefId(
     sourceDefId: string,
 ): Promise<void> {
     const optionId = await page.evaluate((expectedSourceDefId) => {
-        const harness = (window as any).__BG_TEST_HARNESS__;
-        const state = harness.state.get();
+        const harness = (window as SmashUpFeedbackHarnessWindow).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
         const interaction = state.sys?.interaction?.current;
-        const triggerById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
-        const option = (interaction?.data?.options ?? []).find((candidate: any) => (
+        const triggerById = new Map((state.core?.triggerQueue ?? []).map(trigger => [trigger.id, trigger]));
+        const option = (interaction?.data?.options ?? []).find(candidate => (
             triggerById.get(candidate.value?.triggerId)?.sourceDefId === expectedSourceDefId
         ));
         return option?.id ?? null;
@@ -53,9 +85,9 @@ async function selectReactionBySourceDefId(
 
     expect(optionId, `未找到 ${sourceDefId} 的反应选项`).not.toBeNull();
     await page.evaluate(async (id) => {
-        const harness = (window as any).__BG_TEST_HARNESS__;
-        const interaction = harness.state.get().sys?.interaction?.current;
-        if (!interaction || !id) throw new Error('反应交互已消失');
+        const harness = (window as SmashUpFeedbackHarnessWindow).__BG_TEST_HARNESS__;
+        const interaction = harness?.state?.get?.()?.sys?.interaction?.current;
+        if (!interaction?.playerId || !id || !harness?.command?.dispatch) throw new Error('反应交互已消失');
         await harness.command.dispatch({
             type: 'SYS_INTERACTION_RESPOND',
             playerId: interaction.playerId,
@@ -66,7 +98,7 @@ async function selectReactionBySourceDefId(
 }
 
 test.describe('Smash Up 线上反馈代表态', () => {
-    test('野兽可选择弃牌，并触发玫瑰花瓣的牌库顶交互', async ({ page, game }, testInfo) => {
+    test('野兽在多张可弃手牌时必须等待玩家选择指定弃牌，并触发玫瑰花瓣的牌库顶交互', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
         await page.setViewportSize({ width: 1440, height: 900 });
         await game.openTestGame('smashup', { skipInitialization: true }, 30000);
@@ -118,11 +150,25 @@ test.describe('Smash Up 线上反馈代表态', () => {
         await game.screenshot('01-野兽天赋-手动选择弃牌', testInfo);
 
         const discardOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(discardOptions.map(option => option.value?.cardUid).sort()).toEqual(['keep-card', 'petals-cost']);
+        const beforeChoiceState = await game.getState();
+        expect(beforeChoiceState.core.players['0'].hand.map((card: { uid: string }) => card.uid).sort()).toEqual([
+            'keep-card',
+            'petals-cost',
+        ]);
+        expect(beforeChoiceState.core.players['0'].discard.map((card: { uid: string }) => card.uid)).toEqual([]);
+        expect(beforeChoiceState.core.bases[0].minions.find((minion: { uid: string }) => minion.uid === 'beast-feedback')?.powerCounters ?? 0).toBe(0);
+
         const petalsOption = discardOptions.find(option => option.value?.cardUid === 'petals-cost');
         expect(petalsOption).toBeDefined();
         await game.selectOption(petalsOption!.id!);
         await game.waitForInteraction('smashup_reaction_choose', 15000);
-        await expect(page.getByRole('heading', { name: '选择一个反应动作' })).toBeVisible({ timeout: 10000 });
+        const reactionOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(reactionOptions.some(option => typeof option.value?.triggerId === 'string')).toBe(true);
+        const afterDiscardState = await game.getState();
+        expect(afterDiscardState.core.players['0'].hand.map((card: { uid: string }) => card.uid)).toEqual(['keep-card']);
+        expect(afterDiscardState.core.players['0'].discard.map((card: { uid: string }) => card.uid)).toContain('petals-cost');
+        expect(afterDiscardState.core.bases[0].minions.find((minion: { uid: string }) => minion.uid === 'beast-feedback')?.powerCounters ?? 0).toBe(1);
         await game.screenshot('02-玫瑰花瓣-弃牌后可选反应', testInfo);
 
         await selectReactionBySourceDefId(page, 'beauty_and_the_beast_petals_of_the_rose');
@@ -139,6 +185,7 @@ test.describe('Smash Up 线上反馈代表态', () => {
         const finalState = await game.getState();
         expect(finalState.core.players['0'].discard.map((card: { uid: string }) => card.uid)).toContain('petals-cost');
         expect(finalState.core.players['0'].hand.map((card: { uid: string }) => card.uid)).toContain('keep-card');
+        expect(finalState.core.bases[0].minions.find((minion: { uid: string }) => minion.uid === 'beast-feedback')?.powerCounters ?? 0).toBe(1);
         expect(finalState.core.players['0'].deck.slice(0, 2).map((card: { uid: string }) => card.uid)).toEqual([
             'rose-top-b',
             'rose-top-a',

@@ -20,7 +20,7 @@ The script only aligns and packages evidence. It must not calculate the acceptan
 
 ---
 
-## Deterministic Viewer for Review (Critical — from Bowie Knife reconstruction)
+## Deterministic Viewer for Review
 
 **The problem:** OrbitControls' per-frame `controls.update()` overrides a scripted `setView`, rendering the object tilted and making screenshots non-deterministic. This breaks comparison integrity.
 
@@ -47,7 +47,7 @@ function loop() {
 }
 ```
 
-## Reference Framing Match (Critical — from Bowie Knife reconstruction)
+## Reference Framing Match
 
 **The problem:** If the render framing (scale/position) doesn't match the reference, Divine Eye scale/aspect hard-gates fail on a framing artifact rather than a real defect. This causes false rejects.
 

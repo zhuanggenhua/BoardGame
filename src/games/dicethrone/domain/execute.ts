@@ -61,6 +61,7 @@ import {
 } from './responseWindowGuards';
 import { buildCompareRollChoiceEvent, findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { buildCurrentRollRerollEvents, shouldRequireAbilityReselectionForCurrentRoll } from './reroll';
+import { resolveDiceThroneTokenResponseChoiceCommandSource } from './tokenResponseChoiceContract';
 
 // ============================================================================
 // 辅助函数
@@ -1119,7 +1120,13 @@ export function execute(
         // }
 
         case 'USE_TOKEN':
-        case 'SKIP_TOKEN_RESPONSE':
+        case 'SKIP_TOKEN_RESPONSE': {
+            const choiceSource = resolveDiceThroneTokenResponseChoiceCommandSource(
+                matchState.sys?.interaction?.current,
+                command,
+            );
+            return executeTokenCommand(state, command, random, timestamp, phase, choiceSource);
+        }
         case 'USE_PURIFY':
         case DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN:
         case 'REROLL_BONUS_DIE':

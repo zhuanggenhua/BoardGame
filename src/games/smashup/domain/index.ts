@@ -55,10 +55,8 @@ import {
     SU_EVENTS,
     SU_EVENT_TYPES,
     SU_COMMANDS,
-    TEAM_VP_TO_WIN_2V2,
     DRAW_PER_TURN,
     HAND_LIMIT,
-    VP_TO_WIN,
     getCurrentPlayerId,
 } from './types';
 import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getRealtimeScoringEligibleBaseIndices, getScoringEligibleBaseIndices } from './ongoingModifiers';
@@ -71,6 +69,7 @@ import {
     registerSmashUpReactionPostProcessor,
     startSmashUpReactionSession,
 } from './reactionSession';
+import { discoverSmashUpTimingOpportunities } from './timingOpportunities';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
@@ -110,6 +109,7 @@ import {
     getSmashUpRawTeamVpTotals,
     getSmashUpTeamMembers,
     getSmashUpTeamScores,
+    getSmashUpVictoryTarget,
     isSmashUpTwoVsTwoMode,
 } from './teamMode';
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
@@ -2104,6 +2104,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         enabledExpansions,
         includedFactionIds,
         deckQueryEnabled,
+        victoryTarget,
         teamMode,
         factionSelectionMode,
         factionCandidatePoolSize,
@@ -2243,6 +2244,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         enabledExpansions,
         includedFactionIds,
         deckQueryEnabled,
+        victoryTarget,
         baseDeck,
         baseDiscard: [],
         triggerQueue: undefined,
@@ -3120,10 +3122,12 @@ function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore
 // ============================================================================
 
 function evaluateSmashUpVictory(state: SmashUpCore): GameOverResult | undefined {
+    const victoryTarget = getSmashUpVictoryTarget(state);
+
     if (isSmashUpTwoVsTwoMode(state)) {
         const rawTeamTotals = getSmashUpRawTeamVpTotals(state);
         const candidateTeams = Object.entries(rawTeamTotals)
-            .filter(([, total]) => total >= TEAM_VP_TO_WIN_2V2)
+            .filter(([, total]) => total >= victoryTarget)
             .map(([teamId]) => teamId as import('./types').SmashUpTeamId);
         if (candidateTeams.length === 0) {
             return undefined;
@@ -3158,7 +3162,7 @@ function evaluateSmashUpVictory(state: SmashUpCore): GameOverResult | undefined 
         state.turnOrder.map((pid) => [pid, state.players[pid]?.vp ?? 0]),
     ) as Record<PlayerId, number>;
     const highestRawScore = Math.max(...Object.values(rawScores));
-    if (highestRawScore < VP_TO_WIN) return undefined;
+    if (highestRawScore < victoryTarget) return undefined;
     const rawLeaders = state.turnOrder.filter(pid => rawScores[pid] === highestRawScore);
     if (rawLeaders.length !== 1) return undefined;
 
@@ -4239,6 +4243,7 @@ export const SmashUpDomain: DomainCore<SmashUpCore, SmashUpCommand, SmashUpEvent
     execute,
     reduce,
     interceptEvent: domainInterceptEvent,
+    discoverTimingOpportunities: discoverSmashUpTimingOpportunities,
     postProcessSystemEvents,
     playerView,
     isGameOver,

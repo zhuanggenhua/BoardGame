@@ -1,7 +1,15 @@
 import type { MatchState } from '../types';
 import {
+    buildRefereeReplayDigestFromState,
+    buildRefereeReplayFingerprintParts,
+} from '../RefereeReplay';
+import {
     buildAiProgressMarker,
     buildInteractionRecoveryFingerprintHint,
+    buildInteractionSliderSemanticSignature,
+    buildMultistepChoiceMetaSemanticSignature,
+    buildPendingBonusDiceSettlementSemanticSignature,
+    buildPendingDamageSemanticSignature,
     buildResponseWindowRecoveryFingerprintHint,
     type OnlineAiRecoveryEngineConfig,
     type ForceEndTurnStalledAiResolution,
@@ -12,6 +20,29 @@ import {
 type CurrentInteractionState = {
     current?: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
 };
+
+export function readOnlineAiRefereeDecisionRecoveryFingerprint(
+    state: MatchState<unknown>,
+    playerId: string,
+): string | null {
+    const digest = buildRefereeReplayDigestFromState(state, {
+        playerId,
+        traceLimit: 3,
+    });
+    const parts = buildRefereeReplayFingerprintParts(digest);
+    return parts.length > 0 ? parts.join('|') : null;
+}
+
+function appendRefereeDecisionRecoveryFingerprint(
+    fingerprint: string,
+    state: MatchState<unknown>,
+    playerId: string,
+): string {
+    const refereeFingerprint = readOnlineAiRefereeDecisionRecoveryFingerprint(state, playerId);
+    return refereeFingerprint
+        ? `${fingerprint}|referee:${refereeFingerprint}`
+        : fingerprint;
+}
 
 export function readOnlineAiCurrentInteractionRecoveryFingerprintHint(
     state: MatchState<unknown>,
@@ -69,14 +100,55 @@ export function readOnlineAiCurrentResponseWindowRecoveryFingerprintHint(
 export function readOnlineAiCurrentInteractionSemanticFingerprint(
     state: MatchState<unknown>,
     playerId: string,
-    engineConfig?: OnlineAiRecoveryEngineConfig | null,
+    _engineConfig?: OnlineAiRecoveryEngineConfig | null,
 ): string | null {
     const currentInteraction = (state.sys?.interaction as CurrentInteractionState | undefined)?.current;
     if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
         return null;
     }
 
-    return buildInteractionRecoveryFingerprintHint(state, currentInteraction, playerId, { engineConfig });
+    const interactionKind = typeof currentInteraction.kind === 'string' ? currentInteraction.kind : '';
+    const interactionId = typeof currentInteraction.id === 'string' ? currentInteraction.id : '';
+    const interactionIdSignature = interactionKind === 'compare-roll-choice'
+        ? interactionId
+        : '';
+    const data = currentInteraction.data;
+    const options = Array.isArray(data?.options)
+        ? data.options.map((option) => {
+            const item = option as {
+                id?: unknown;
+                disabled?: unknown;
+                value?: unknown;
+            };
+            return [
+                typeof item.id === 'string' ? item.id : '',
+                item.disabled === true ? '1' : '0',
+                JSON.stringify(item.value ?? null),
+            ].join(':');
+        }).join(',')
+        : '';
+    const sliderSignature = buildInteractionSliderSemanticSignature(data?.slider);
+    const multistepMetaSignature = buildMultistepChoiceMetaSemanticSignature(data?.meta);
+    const pendingDamageSignature = buildPendingDamageSemanticSignature(
+        (state.core as { pendingDamage?: unknown } | undefined)?.pendingDamage,
+    );
+    const pendingBonusDiceSignature = buildPendingBonusDiceSettlementSemanticSignature(
+        (state.core as { pendingBonusDiceSettlement?: unknown } | undefined)?.pendingBonusDiceSettlement,
+    );
+    return [
+        interactionKind,
+        interactionIdSignature,
+        typeof data?.sourceId === 'string' ? data.sourceId : '',
+        typeof data?.title === 'string' ? data.title : '',
+        sliderSignature,
+        multistepMetaSignature,
+        pendingDamageSignature,
+        pendingBonusDiceSignature,
+        Array.isArray(data?.allowedDieIds) ? data.allowedDieIds.join(',') : '',
+        Array.isArray(data?.completedDieIds) ? data.completedDieIds.join(',') : '',
+        JSON.stringify(data?.confirmValue ?? null),
+        options,
+    ].join('|');
 }
 
 export function buildOnlineAiRecoverySequenceStepKey(args: {
@@ -85,13 +157,18 @@ export function buildOnlineAiRecoverySequenceStepKey(args: {
     progressMarker: string;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): string {
+    const refereeFingerprint = readOnlineAiRefereeDecisionRecoveryFingerprint(
+        args.state,
+        args.playerId,
+    );
     const interactionFingerprint = readOnlineAiCurrentInteractionSemanticFingerprint(
         args.state,
         args.playerId,
         args.engineConfig,
     );
     if (interactionFingerprint) {
-        return `${args.progressMarker}|interaction:${interactionFingerprint}`;
+        const base = `${args.progressMarker}|interaction:${interactionFingerprint}`;
+        return refereeFingerprint ? `${base}|referee:${refereeFingerprint}` : base;
     }
 
     const responseWindowFingerprint = readOnlineAiCurrentResponseWindowRecoveryFingerprintHint(
@@ -99,7 +176,12 @@ export function buildOnlineAiRecoverySequenceStepKey(args: {
         args.playerId,
     );
     if (responseWindowFingerprint) {
-        return `${args.progressMarker}|response-window:${responseWindowFingerprint}`;
+        const base = `${args.progressMarker}|response-window:${responseWindowFingerprint}`;
+        return refereeFingerprint ? `${base}|referee:${refereeFingerprint}` : base;
+    }
+
+    if (refereeFingerprint) {
+        return `${args.progressMarker}|referee:${refereeFingerprint}`;
     }
 
     return args.progressMarker;
@@ -116,11 +198,19 @@ export function resolveOnlineAiRecoveryFingerprint(args: {
     const candidateReason = candidate.reason as string;
 
     if (candidateReason === 'action-loop') {
-        return candidate.fingerprintHint ?? `action-loop:${candidate.playerId}:${phase}`;
+        return appendRefereeDecisionRecoveryFingerprint(
+            candidate.fingerprintHint ?? `action-loop:${candidate.playerId}:${phase}`,
+            state,
+            candidate.playerId,
+        );
     }
 
     if (candidate.legalActionOnly === true) {
-        return candidate.fingerprintHint ?? `legal-action-only:${candidate.playerId}:${phase}`;
+        return appendRefereeDecisionRecoveryFingerprint(
+            candidate.fingerprintHint ?? `legal-action-only:${candidate.playerId}:${phase}`,
+            state,
+            candidate.playerId,
+        );
     }
 
     if (candidateReason === 'visible-interaction' || candidateReason === 'hidden-interaction') {
@@ -129,11 +219,19 @@ export function resolveOnlineAiRecoveryFingerprint(args: {
             | HiddenSimpleChoiceInteraction
             | undefined;
         if (current) {
-            return buildInteractionRecoveryFingerprintHint(state, current, candidate.playerId, {
-                engineConfig: args.engineConfig,
-            });
+            return appendRefereeDecisionRecoveryFingerprint(
+                buildInteractionRecoveryFingerprintHint(state, current, candidate.playerId, {
+                    engineConfig: args.engineConfig,
+                }),
+                state,
+                candidate.playerId,
+            );
         }
-        return candidate.fingerprintHint ?? progressMarker;
+        return appendRefereeDecisionRecoveryFingerprint(
+            candidate.fingerprintHint ?? progressMarker,
+            state,
+            candidate.playerId,
+        );
     }
 
     if (candidateReason === 'response-window' || candidateReason === 'response-loop') {
@@ -141,13 +239,21 @@ export function resolveOnlineAiRecoveryFingerprint(args: {
             id?: unknown;
         } | undefined;
         if (current) {
-            return buildResponseWindowRecoveryFingerprintHint(
+            return appendRefereeDecisionRecoveryFingerprint(
+                buildResponseWindowRecoveryFingerprintHint(
+                    state,
+                    candidate.playerId,
+                    candidateReason === 'response-loop' ? 'response-loop' : 'response-window',
+                ),
                 state,
                 candidate.playerId,
-                candidateReason === 'response-loop' ? 'response-loop' : 'response-window',
             );
         }
-        return candidate.fingerprintHint ?? progressMarker;
+        return appendRefereeDecisionRecoveryFingerprint(
+            candidate.fingerprintHint ?? progressMarker,
+            state,
+            candidate.playerId,
+        );
     }
 
     if (candidateReason === 'pending-damage') {
@@ -161,10 +267,14 @@ export function resolveOnlineAiRecoveryFingerprint(args: {
         const responderId = typeof pendingDamage?.responderId === 'string' ? pendingDamage.responderId : candidate.playerId;
         const pendingId = typeof pendingDamage?.id === 'string' ? pendingDamage.id : '';
         const responseType = typeof pendingDamage?.responseType === 'string' ? pendingDamage.responseType : '';
-        return `pending-damage:${responderId}:${phase}:${pendingId}:${responseType}`;
+        return appendRefereeDecisionRecoveryFingerprint(
+            `pending-damage:${responderId}:${phase}:${pendingId}:${responseType}`,
+            state,
+            candidate.playerId,
+        );
     }
 
-    return progressMarker;
+    return appendRefereeDecisionRecoveryFingerprint(progressMarker, state, candidate.playerId);
 }
 
 export function buildOnlineAiRecoveryTrackerKey(args: {
@@ -179,12 +289,16 @@ export function buildOnlineAiRecoveryTrackerSnapshot(args: {
     state: MatchState<unknown>;
     candidate: ForceEndTurnStalledAiResolution;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
 }): {
     progressMarker: string;
     recoveryFingerprint: string;
     trackerKey: string;
 } {
-    const progressMarker = buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
+    const progressMarker = buildAiProgressMarker(args.state, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
     const recoveryFingerprint = resolveOnlineAiRecoveryFingerprint({
         state: args.state,
         candidate: args.candidate,

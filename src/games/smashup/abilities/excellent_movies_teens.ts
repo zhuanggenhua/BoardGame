@@ -7,11 +7,13 @@ import {
 } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerSimpleAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import {
     addPowerCounter,
     addTempPower,
     buildActionMinionTargetOptions,
     buildBaseTargetOptions,
+    buildSemanticOngoingAttachEvents,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -1433,6 +1435,7 @@ function playTopMinionOfPower(
     reason: string,
     now: number,
     exactPower?: number,
+    matchState?: Pick<MatchState<SmashUpCore>, 'sys'>,
 ): SmashUpEvent[] {
     const player = core.players[playerId];
     const card = player?.deck.find(candidate => {
@@ -1442,7 +1445,7 @@ function playTopMinionOfPower(
     });
     if (!player || !card) return [];
     return [
-        grantContextualExtraMinion({ playerId, now }, reason, baseIndex, {
+        grantContextualExtraMinion({ playerId, now, matchState }, reason, baseIndex, {
             powerMax,
             specificCardUid: card.uid,
         }),
@@ -1490,7 +1493,7 @@ function registerExtramorphs(): void {
     registerSimpleAbility('extramorphs_chestbreaker', 'talent', ctx => {
         const baseIndex = ctx.baseIndex;
         const hasExact3 = ctx.state.players[ctx.playerId]?.deck.some(card => getMinionDef(card.defId)?.power === 3) ?? false;
-        return { events: playTopMinionOfPower(ctx.state, ctx.playerId, hasExact3 ? 3 : 4, baseIndex, ctx.defId, ctx.now, hasExact3 ? 3 : 4) };
+        return { events: playTopMinionOfPower(ctx.state, ctx.playerId, hasExact3 ? 3 : 4, baseIndex, ctx.defId, ctx.now, hasExact3 ? 3 : 4, ctx.matchState) };
     });
     registerSimpleAbility('extramorphs_extradrone', 'onPlay', ctx => {
         const events: SmashUpEvent[] = [];
@@ -1629,17 +1632,34 @@ function registerExtramorphs(): void {
         if (!located || !target) return { events: [] };
         return {
             events: [
-                buildOngoingAttachedEvent({
-                    uid: located.card.uid,
+                buildActionPlayedEvent({
+                    playerId: ctx.playerId,
+                    cardUid: located.card.uid,
                     defId: located.card.defId,
                     ownerId: located.card.owner,
+                    isExtraAction: true,
+                    targetBaseIndex: target.baseIndex,
+                    targetMinionUid: target.minion.uid,
+                    fromDiscard: located.zone === 'discard',
+                    timestamp: ctx.now,
+                }) as SmashUpEvent,
+                ...buildSemanticOngoingAttachEvents(ctx.matchState, {
+                    cardUid: located.card.uid,
+                    defId: located.card.defId,
+                    ownerId: located.card.owner,
+                    sourcePlayerId: ctx.playerId,
+                    sourceKind: 'action',
+                    targetBaseIndex: target.baseIndex,
+                    targetMinionUid: target.minion.uid,
                     removeFromDiscard: located.zone === 'discard',
-                }, target.baseIndex, 'minion', ctx.now, target.minion.uid, ctx.playerId),
+                    onBlockedSourceDestination: 'discard',
+                    now: ctx.now,
+                }),
             ],
         };
     });
     registerSimpleAbility('extramorphs_egg_field', 'talent', ctx => ({
-        events: playTopMinionOfPower(ctx.state, ctx.playerId, 2, ctx.baseIndex, ctx.defId, ctx.now),
+        events: playTopMinionOfPower(ctx.state, ctx.playerId, 2, ctx.baseIndex, ctx.defId, ctx.now, undefined, ctx.matchState),
     }));
     registerSimpleAbility('extramorphs_five_by_five', 'onPlay', ctx => {
         const topCards = (ctx.state.players[ctx.playerId]?.hand ?? [])
@@ -1653,7 +1673,7 @@ function registerExtramorphs(): void {
         };
     });
     registerSimpleAbility('extramorphs_game_over_dude', 'onPlay', ctx => ({
-        events: playTopMinionOfPower(ctx.state, ctx.playerId, 4, ctx.targetBaseIndex ?? ctx.baseIndex, ctx.defId, ctx.now),
+        events: playTopMinionOfPower(ctx.state, ctx.playerId, 4, ctx.targetBaseIndex ?? ctx.baseIndex, ctx.defId, ctx.now, undefined, ctx.matchState),
     }));
     registerSimpleAbility('extramorphs_head_grabber', 'talent', ctx => {
         for (const [baseIndex, base] of ctx.state.bases.entries()) {
@@ -1675,7 +1695,7 @@ function registerExtramorphs(): void {
                         sourceBaseIndex: baseIndex,
                         sourceKind: 'nonAction',
                     }),
-                    ...playTopMinionOfPower(ctx.state, ctx.playerId, 4, baseIndex, ctx.defId, ctx.now),
+                    ...playTopMinionOfPower(ctx.state, ctx.playerId, 4, baseIndex, ctx.defId, ctx.now, undefined, ctx.matchState),
                 ],
             };
         }
@@ -2443,7 +2463,7 @@ function registerWraithrustlers(): void {
     }, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
     registerTrigger('wraithrustlers_ellen', 'onCardDestroyed', ctx => {
         if (!ctx.sourceControllerId || !ctx.triggerCardDefId || !isWraith(ctx.triggerCardDefId)) return [];
-        return [grantContextualExtraAction({ playerId: ctx.sourceControllerId, now: ctx.now }, 'wraithrustlers_ellen')];
+        return [grantContextualExtraAction({ playerId: ctx.sourceControllerId, now: ctx.now, matchState: ctx.matchState }, 'wraithrustlers_ellen')];
     }, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
     registerTrigger('wraithrustlers_funkman', 'onCardDestroyed', ctx => {
         if (!ctx.sourceControllerId || ctx.baseIndex === undefined || !ctx.triggerCardDefId || getCardDef(ctx.triggerCardDefId)?.type !== 'action') return [];

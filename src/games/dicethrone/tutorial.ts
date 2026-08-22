@@ -340,7 +340,7 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { commandType: 'CONFIRM_ROLL', playerId: '0', payload: {} },
                 // 结算攻击（halt: 因 P0 有 Token 触发响应窗口）→ P0 跳过 Token 响应
                 { commandType: 'ADVANCE_PHASE', playerId: '0', payload: {} },
-                { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '0', payload: {} },
+                { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '0', payload: { __tutorialChoiceCandidateId: 'skip' } },
                 // 结束 AI 回合 (main2 → discard → auto-chain → P0 main1)
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },

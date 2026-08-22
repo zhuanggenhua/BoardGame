@@ -175,10 +175,70 @@ function hasOptionalRejectionImplementationEvidence(sourceId: string): boolean {
         /createSkipOption/.test(window)
         || /optional:\s*true/.test(window)
         || /autoResolveIfSingle:\s*false/.test(window)
-        || /autoResolveIfSingle:\s*!context\.optional/.test(window)
         || /multi:\s*\{[^}]*min:\s*0/.test(window)
         || /\bskip\b/.test(window)
     ));
+}
+
+function collectDisallowedAutoResolveSingleChoice(): string[] {
+    const roots = [
+        resolve(__dirname, '../abilities'),
+        resolve(__dirname, '../domain'),
+    ];
+    const files = roots.flatMap((root) => readdirSync(root)
+        .filter((fileName) => fileName.endsWith('.ts'))
+        .map((fileName) => ({ root, fileName })));
+    const violations: string[] = [];
+
+    for (const { root, fileName } of files) {
+        const fullPath = resolve(root, fileName);
+        const relative = `${root.endsWith('abilities') ? 'abilities' : 'domain'}/${fileName}`;
+        const source = readFileSync(fullPath, 'utf-8');
+        source.split(/\r?\n/).forEach((line, index) => {
+            const match = line.match(/autoResolveIfSingle:\s*([^,}]+)/);
+            if (!match) return;
+            const value = match[1].trim();
+            if (value === 'false') return;
+            const isMechanicalContinue = relative === 'domain/actionCounter.ts' && value === 'true';
+            const isMechanicalNoRemaining = relative === 'abilities/huluwawa.ts'
+                && value === 'context.remainingCards.length === 0';
+            const isHelperPassThrough = relative === 'abilities/penguins.ts'
+                && value === 'config.autoResolveIfSingle';
+            const isDefaultFalseHelper = relative === 'domain/abilityHelpers.ts'
+                && value === 'autoResolve';
+            if (isMechanicalContinue || isMechanicalNoRemaining || isHelperPassThrough || isDefaultFalseHelper) return;
+            violations.push(`${relative}:${index + 1} ${line.trim()}`);
+        });
+    }
+
+    return violations;
+}
+
+function collectKnownSingleCandidateChoiceBypasses(): string[] {
+    const checks = [
+        {
+            file: 'abilities/half_the_battle.ts',
+            pattern: /targets\.length === 1/,
+            meaning: 'Half the Battle 目标选择',
+        },
+        {
+            file: 'abilities/kaiju.ts',
+            pattern: /options\.length === 1/,
+            meaning: 'Kaiju 消灭目标选择',
+        },
+        {
+            file: 'abilities/mythic_greeks.ts',
+            pattern: /targets\.length === 1\s*&&\s*!options\.optional/,
+            meaning: 'Mythic Greeks 目标选择',
+        },
+    ];
+
+    return checks.flatMap(({ file, pattern, meaning }) => {
+        const [rootName, fileName] = file.split('/');
+        const root = resolve(__dirname, `../${rootName}`);
+        const source = readFileSync(resolve(root, fileName), 'utf-8');
+        return pattern.test(source) ? [`${file} ${meaning}`] : [];
+    });
 }
 
 function isOptionalChoiceText(effectText: string): boolean {
@@ -282,6 +342,14 @@ describe('SmashUp 能力行为审计', () => {
                 'yuanhou.ts',
             ];
             expect(collectAbilityFileUsage(/\bregisterInteractionHandler\(/g)).toEqual(allowedLegacyHandlerFiles);
+        });
+
+        it('玩家选择语义不得通过 autoResolveIfSingle 自动提交唯一候选', () => {
+            expect(collectDisallowedAutoResolveSingleChoice()).toEqual([]);
+        });
+
+        it('已确认的单候选目标选择不得保留硬编码直结算旁路', () => {
+            expect(collectKnownSingleCandidateChoiceBypasses()).toEqual([]);
         });
     });
 

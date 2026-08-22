@@ -20,8 +20,11 @@ export { createLogSystem, getCommands, getEvents, getEventsByType, getRecentLogs
 export { createEventStreamSystem, getEventStreamEntries, computeEventStreamDelta } from './EventStreamSystem';
 export type { EventStreamDelta } from './EventStreamSystem';
 export { createActionLogSystem, type ActionLogSystemConfig } from './ActionLogSystem';
+export { createRefereeTraceSystem, getRefereeTraceEntries, type RefereeTraceSystemConfig } from './RefereeTraceSystem';
 export { createRematchSystem, resetRematchState, getPlayerVote, isRematchReady, getVotedPlayers, REMATCH_COMMANDS } from './RematchSystem';
 export { createResponseWindowSystem, createResponseWindow, openResponseWindow, closeResponseWindow, hasActiveResponseWindow, getResponseWindowResponderId, RESPONSE_WINDOW_COMMANDS, RESPONSE_WINDOW_EVENTS } from './ResponseWindowSystem';
+export { createSimpleChoiceFromTimingOpportunity, createTimingOpportunitySystem, type CreateSimpleChoiceFromTimingOpportunityOverrides, type TimingOpportunitySystemConfig } from './TimingOpportunitySystem';
+export { createResolutionFrameSystem, type ResolutionFrameSystemConfig } from './ResolutionFrameSystem';
 export {
     getResolutionState,
     getResolutionFrames,
@@ -61,6 +64,7 @@ import { createCompareRollChoiceSystem } from './CompareRollChoiceSystem';
 import { createEventStreamSystem } from './EventStreamSystem';
 import { createRematchSystem } from './RematchSystem';
 import { createActionLogSystem } from './ActionLogSystem';
+import { createRefereeTraceSystem, type RefereeTraceSystemConfig } from './RefereeTraceSystem';
 import { createResponseWindowSystem, type ResponseWindowSystemConfig } from './ResponseWindowSystem';
 import { createTutorialSystem } from './TutorialSystem';
 import type { EngineSystem } from './types';
@@ -69,6 +73,7 @@ import type { UndoSystemConfig } from './UndoSystem';
 
 export interface BaseSystemsConfig {
     actionLog?: ActionLogSystemConfig;
+    refereeTrace?: RefereeTraceSystemConfig;
     undo?: UndoSystemConfig;
     responseWindow?: ResponseWindowSystemConfig;
 }
@@ -77,9 +82,10 @@ export interface BaseSystemsConfig {
  * 创建基础系统集合
  */
 export function createBaseSystems<TCore>(config: BaseSystemsConfig = {}): EngineSystem<TCore>[] {
-    const { actionLog, undo, responseWindow } = config;
+    const { actionLog, refereeTrace, undo, responseWindow } = config;
     return [
         createActionLogSystem(actionLog),
+        createRefereeTraceSystem(refereeTrace),
         createUndoSystem(undo),
         createInteractionSystem(),
         createSimpleChoiceSystem(),

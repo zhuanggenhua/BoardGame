@@ -9,6 +9,7 @@ type MockClientInstance = {
     connect: ReturnType<typeof vi.fn>;
     disconnect: ReturnType<typeof vi.fn>;
     resync: ReturnType<typeof vi.fn>;
+    canSendCommand: ReturnType<typeof vi.fn>;
     sendCommand: ReturnType<typeof vi.fn>;
     sendBatch: ReturnType<typeof vi.fn>;
     emitStateUpdate: (state: unknown, players?: unknown[], meta?: unknown, randomMeta?: unknown) => void;
@@ -41,8 +42,9 @@ vi.mock('../client', () => {
         connect = vi.fn();
         disconnect = vi.fn();
         resync = vi.fn();
-        sendCommand = vi.fn();
-        sendBatch = vi.fn();
+        canSendCommand = vi.fn(() => true);
+        sendCommand = vi.fn(() => true);
+        sendBatch = vi.fn(() => true);
 
         constructor(config: any) {
             this.config = config;
@@ -140,6 +142,22 @@ function DispatchProbe(): JSX.Element {
             }}
         >
             dispatch
+        </button>
+    );
+}
+
+function DoubleAdvanceProbe(): JSX.Element {
+    const { dispatch } = useGameClient();
+
+    return (
+        <button
+            data-testid="dispatch-double-advance"
+            onClick={() => {
+                dispatch('ADVANCE_PHASE', { step: 1 });
+                dispatch('ADVANCE_PHASE', { step: 2 });
+            }}
+        >
+            double advance
         </button>
     );
 }
@@ -1009,6 +1027,479 @@ describe('GameProvider transport baseline', () => {
             interactionId: 'sea-dogs-from-base',
             optionId: 'base_0',
         });
+    });
+
+    it('blocks a second optimistic command until the previous command is confirmed', () => {
+        let hasPending = false;
+        const predictedState = {
+            core: { marker: 'predicted-ai-turn' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => hasPending),
+            reconcile: vi.fn((state: unknown) => {
+                hasPending = false;
+                return {
+                    stateToRender: state,
+                    didRollback: false,
+                    optimisticEventWatermark: null,
+                };
+            }),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(() => {
+                hasPending = false;
+            }),
+            processCommand: vi.fn(() => {
+                hasPending = true;
+                return {
+                    stateToRender: predictedState,
+                    shouldSend: true,
+                    animationMode: 'wait-confirm',
+                };
+            }),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-block-double-advance"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{ optimistic: { enabled: true } } as any}
+            >
+                <StateProbe />
+                <DoubleAdvanceProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            client.emitStateUpdate({
+                core: { marker: 'authoritative-start' },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    eventStream: { entries: [], nextId: 1 },
+                },
+            }, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        mockEngine.processCommand.mockClear();
+        client.sendCommand.mockClear();
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+
+        act(() => {
+            client.emitStateUpdate({
+                core: { marker: 'authoritative-confirmed' },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    eventStream: { entries: [], nextId: 2 },
+                },
+            }, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(screen.getByTestId('state').textContent).toContain('authoritative-confirmed');
+
+        mockEngine.processCommand.mockClear();
+        client.sendCommand.mockClear();
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+    });
+
+    it('rolls back optimistic render and resyncs when the predicted command is not sent', () => {
+        let hasPending = false;
+        const authoritativeState = {
+            core: { marker: 'authoritative-second-phase' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const predictedState = {
+            core: { marker: 'predicted-main-phase-2' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => hasPending),
+            reconcile: vi.fn((state: unknown) => {
+                hasPending = false;
+                return {
+                    stateToRender: state,
+                    didRollback: false,
+                    optimisticEventWatermark: null,
+                };
+            }),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(() => {
+                hasPending = false;
+            }),
+            processCommand: vi.fn(() => {
+                hasPending = true;
+                return {
+                    stateToRender: predictedState,
+                    shouldSend: true,
+                    animationMode: 'wait-confirm',
+                };
+            }),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-rollback-unsent-optimistic"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{
+                    optimistic: { enabled: true },
+                    batching: {
+                        enabled: true,
+                        windowMs: 50,
+                        maxBatchSize: 5,
+                        immediateCommands: ['ADVANCE_PHASE'],
+                    },
+                } as any}
+            >
+                <StateProbe />
+                <DoubleAdvanceProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        mockEngine.reset.mockClear();
+        client.resync.mockClear();
+        client.sendCommand.mockReturnValue(false);
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        expect(mockEngine.reset).toHaveBeenCalledTimes(1);
+        expect(client.resync).toHaveBeenCalledTimes(1);
+        expect(client.resync).toHaveBeenLastCalledWith({ force: true });
+        expect(screen.getByTestId('state').textContent).toContain('authoritative-second-phase');
+        expect(screen.getByTestId('state').textContent).not.toContain('predicted-main-phase-2');
+
+        client.sendCommand.mockClear();
+        client.sendCommand.mockReturnValue(true);
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+    });
+
+    it('blocks repeated serialized commands even when the first command is not optimistically predicted', () => {
+        const authoritativeState = {
+            core: { marker: 'authoritative-second-phase' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => false),
+            reconcile: vi.fn((state: unknown) => ({
+                stateToRender: state,
+                didRollback: false,
+                optimisticEventWatermark: null,
+            })),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(),
+            processCommand: vi.fn(() => ({
+                stateToRender: null,
+                shouldSend: true,
+                animationMode: 'wait-confirm',
+            })),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-block-unpredicted-double-advance"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{
+                    optimistic: { enabled: true },
+                    batching: {
+                        enabled: true,
+                        windowMs: 50,
+                        maxBatchSize: 5,
+                        immediateCommands: ['ADVANCE_PHASE'],
+                    },
+                } as any}
+            >
+                <StateProbe />
+                <DoubleAdvanceProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        client.sendCommand.mockClear();
+        mockEngine.processCommand.mockClear();
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(screen.getByTestId('state').textContent).toContain('authoritative-second-phase');
+
+        client.sendCommand.mockClear();
+        mockEngine.processCommand.mockClear();
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases serialized commands as soon as an authoritative state arrives', () => {
+        const authoritativeState = {
+            core: { marker: 'authoritative-start' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const confirmedState = {
+            core: { marker: 'authoritative-main2' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => false),
+            reconcile: vi.fn((state: unknown) => ({
+                stateToRender: state,
+                didRollback: false,
+                optimisticEventWatermark: null,
+            })),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(),
+            processCommand: vi.fn(() => ({
+                stateToRender: null,
+                shouldSend: true,
+                animationMode: 'wait-confirm',
+            })),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-release-advance-on-authoritative-state"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{
+                    optimistic: { enabled: true },
+                    batching: {
+                        enabled: true,
+                        windowMs: 50,
+                        maxBatchSize: 5,
+                        immediateCommands: ['ADVANCE_PHASE'],
+                    },
+                } as any}
+            >
+                <StateProbe />
+                <DoubleAdvanceProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        client.sendCommand.mockClear();
+        mockEngine.processCommand.mockClear();
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+
+        act(() => {
+            client.emitStateUpdate(confirmedState, [], {
+                stateID: 2,
+                randomCursor: 0,
+                lastCommandPlayerId: '0',
+            });
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(screen.getByTestId('state').textContent).toContain('authoritative-main2');
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects an optimistic command before prediction when transport is not ready', () => {
+        const authoritativeState = {
+            core: { marker: 'authoritative-second-phase' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => false),
+            reconcile: vi.fn((state: unknown) => ({
+                stateToRender: state,
+                didRollback: false,
+                optimisticEventWatermark: null,
+            })),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(),
+            processCommand: vi.fn(() => ({
+                stateToRender: {
+                    core: { marker: 'predicted-main-phase-2' },
+                    sys: {
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        eventStream: { entries: [], nextId: 1 },
+                    },
+                },
+                shouldSend: true,
+                animationMode: 'wait-confirm',
+            })),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-reject-before-optimistic"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{
+                    optimistic: { enabled: true },
+                    batching: {
+                        enabled: true,
+                        windowMs: 50,
+                        maxBatchSize: 5,
+                        immediateCommands: ['ADVANCE_PHASE'],
+                    },
+                } as any}
+            >
+                <StateProbe />
+                <DoubleAdvanceProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        client.canSendCommand.mockReturnValue(false);
+
+        act(() => {
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(mockEngine.processCommand).not.toHaveBeenCalled();
+        expect(client.sendCommand).not.toHaveBeenCalled();
+        expect(screen.getByTestId('state').textContent).toContain('authoritative-second-phase');
+        expect(screen.getByTestId('state').textContent).not.toContain('predicted-main-phase-2');
     });
 
     it('clears stale owner-only current prompt on optimistic reconcile when authoritative close arrives', () => {

@@ -338,12 +338,20 @@ export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
         bypassShields?: boolean;
         /** 等本次伤害响应窗口消耗指定 token 后再授予的 token。 */
         deferredTokenGrants?: import('./core-types').PendingDamage['deferredTokenGrants'];
+        /** 本次伤害由哪个结算 frame 提交；Token 响应迁移期间用于审计和 owner 收口。 */
+        resolutionFrameId?: string;
+        /** 伤害防止已在 EventCommit 阶段提交；reducer 只消费结果，不再重复计算护盾。 */
+        preventionCommitted?: boolean;
         /** 护盾消耗记录（reducer 回填，用于 ActionLog 展示护盾减伤信息） */
         shieldsConsumed?: Array<{
             sourceId: string;
+            shieldIndex?: number;
             value?: number;
             reductionPercent?: number;
             absorbed: number;
+            pendingDamageId?: string;
+            preventionOpportunityId?: string;
+            resolutionFrameId?: string;
         }>;
     };
 }
@@ -880,6 +888,14 @@ export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
         playerId: PlayerId;
         tokenId: string;
         amount: number;
+        /** 来源 ChoiceRequest，用于把执行事件追回同一条规则机会。 */
+        choiceRequestId?: string;
+        /** 来源 ChoiceRequest 候选，用于证明执行没有脱离候选合同。 */
+        choiceCandidateId?: string;
+        /** 来源 Opportunity，用于后续 resolution frame / 日志回放收口。 */
+        opportunityId?: string;
+        /** 来源结算 frame，用于把 Token 使用追回当前伤害响应事务。 */
+        resolutionFrameId?: string;
         /** 效果类型 */
         effectType: 'damageBoost' | 'damageReduction' | 'evasionAttempt' | 'removeDebuff' | 'botActivation';
         /** 伤害修改量（加伤/减伤） */
@@ -908,6 +924,14 @@ export interface PlayerBoardFaceChangedEvent extends GameEvent<'PLAYER_BOARD_FAC
 export interface TokenResponseClosedEvent extends GameEvent<'TOKEN_RESPONSE_CLOSED'> {
     payload: {
         pendingDamageId: string;
+        /** 来源 ChoiceRequest，用于把响应收口追回同一条规则机会。 */
+        choiceRequestId?: string;
+        /** 来源 ChoiceRequest 候选，用于证明收口来自合法 skip / token 候选。 */
+        choiceCandidateId?: string;
+        /** 来源 Opportunity，用于后续 resolution frame / 日志回放收口。 */
+        opportunityId?: string;
+        /** 本次响应收口所属的结算 frame。 */
+        resolutionFrameId?: string;
         /** 最终伤害值 */
         finalDamage: number;
         /** 是否完全闪避 */

@@ -20,7 +20,7 @@ metadata:
 - 缺口属于功能实现、语义一致性、验证范围、审计留档还是非阻塞扩展。
 - 当前结论能否支撑“已审计 / 已收口”的对外口径。
 
-本文档不承载单游戏答案、卡牌裁定、骰面公式、房间效果、教程章节安排、截图结论、历史事故清单或某个批次的对象全集。这些内容只能落到对应游戏规则合同、`docs/games/<gameId>/...`、`evidence/<gameId>/...`、用户故事或游戏专项 workflow。
+本文档不承载单游戏答案、卡牌裁定、骰面公式、场地/区域效果、教程章节安排、截图结论、历史事故清单或某个批次的对象全集。这些内容只能落到对应游戏规则合同、`docs/games/<gameId>/...`、`evidence/<gameId>/...`、用户故事或游戏专项 workflow。
 
 旧 `testing-audit-*` D 维度分卷只保留为历史链接兼容，不再作为新的项目级审计基准。新审计以本文档的“语义 -> 消费 -> 真实入口 -> 证据”链路为基准；证据文档格式看 [`audit-evidence-template.md`](audit-evidence-template.md)，规则 bug 合同裁定看 [`rule-contract-audit.md`](rule-contract-audit.md)，E2E 与截图看 [`e2e-verification.md`](e2e-verification.md)。
 

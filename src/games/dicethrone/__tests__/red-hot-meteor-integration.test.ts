@@ -910,6 +910,91 @@ describe('红热 + 陨石伤害计算', () => {
         expect(initiated.players['0'].pendingBonusDamage).toBeUndefined();
     });
 
+    it('同一笔攻击连续两次攻击修正时，应累计到当前攻击并进入最终伤害', () => {
+        const initial = createInitializedState(['0', '1'], fixedRandom).core;
+
+        const initiated = reduce(initial, {
+            type: 'ATTACK_INITIATED',
+            payload: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'meteor',
+                isDefendable: false,
+            },
+            timestamp: 1,
+        } as DiceThroneEvent);
+        const withRedHot = reduce(initiated, {
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: '0',
+                amount: 2,
+                sourceCardId: 'card-red-hot',
+            },
+            timestamp: 2,
+        } as DiceThroneEvent);
+        const withGetFiredUp = reduce(withRedHot, {
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: '0',
+                amount: 3,
+                sourceCardId: 'card-get-fired-up',
+            },
+            timestamp: 3,
+        } as DiceThroneEvent);
+
+        expect(withGetFiredUp.pendingAttack?.bonusDamage).toBe(5);
+        expect(withGetFiredUp.pendingAttack?.attackModifierBonusDamage).toBe(5);
+        expect(withGetFiredUp.players['0'].pendingBonusDamage).toBeUndefined();
+
+        const damageCalc = createDamageCalculation({
+            source: { playerId: '0', abilityId: 'meteor' },
+            target: { playerId: '1' },
+            baseDamage: 2,
+            state: withGetFiredUp as any,
+            attackDamageContext: {
+                attackerId: '0',
+                defenderId: '1',
+                bonusDamage: withGetFiredUp.pendingAttack?.bonusDamage ?? 0,
+            },
+            timestamp: 4,
+        });
+        const result = damageCalc.resolve();
+
+        expect(result.finalDamage).toBe(7);
+        expect(result.modifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({ sourceId: 'attack_modifier', value: 5 }),
+        ]));
+
+        const afterDamage = reduce(withGetFiredUp, {
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '1',
+                sourcePlayerId: '0',
+                sourceAbilityId: 'meteor',
+                amount: result.finalDamage,
+                actualDamage: result.finalDamage,
+                damageScope: 'attack',
+            },
+            timestamp: 5,
+        } as DiceThroneEvent);
+
+        expect(afterDamage.pendingAttack?.resolvedDamage).toBe(7);
+
+        const resolved = reduce(afterDamage, {
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'meteor',
+                totalDamage: result.finalDamage,
+            },
+            timestamp: 6,
+        } as DiceThroneEvent);
+
+        expect(resolved.pendingAttack).toBeNull();
+        expect(resolved.lastResolvedAttackDamage).toBe(7);
+    });
+
     it('回合切换时应清除未消费的 pendingBonusDamage', () => {
         const initial = createInitializedState(['0', '1'], fixedRandom).core;
         const withQueuedBonus = reduce(initial, {

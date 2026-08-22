@@ -8,6 +8,7 @@ import {
     expectRegisteredAbilityContract,
     getPromptOption,
     getPromptOptions,
+    getOptionalSimpleChoicePrompt,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -362,7 +363,7 @@ describe('动作英雄代表性玩法行为', () => {
 
         expect(getPromptOptions(secondPrompt).map((option: any) => option.value?.minionUid)).toEqual(['solo-b', 'solo-b']);
         expect(secondResolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['drawn-action']);
-        expect(secondResolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'solo-b')?.powerCounters).toBeUndefined();
+        expect(secondResolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'solo-b')?.powerCounters ?? 0).toBe(0);
     });
 
     it('战争兄弟天赋在多个合格基地时创建选择，并只降低被选基地临界点', () => {
@@ -1059,6 +1060,7 @@ describe('异形变体代表性牌库玩法行为', () => {
                     minionsPlayed: 1,
                     minionLimit: 1,
                     deck: [makeCard('alien-life', 'extramorphs_alien_life_form', 'minion', '0')],
+                    specificExtraMinionPlays: [{ cardUid: 'alien-life', reason: 'test_from_deck' }],
                 }),
                 '1': makePlayer('1'),
             },
@@ -1092,6 +1094,7 @@ describe('异形变体代表性牌库玩法行为', () => {
             players: {
                 '0': makePlayer('0', {
                     deck: [makeCard('drone', 'extramorphs_extradrone', 'minion', '0')],
+                    specificExtraMinionPlays: [{ cardUid: 'drone', reason: 'test_from_deck' }],
                 }),
                 '1': makePlayer('1'),
             },
@@ -1111,6 +1114,122 @@ describe('异形变体代表性牌库玩法行为', () => {
         expect(played.finalState.core.bases[0].minions).toEqual([]);
         expect(played.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['weak-enemy', 'drone']);
         expect(played.finalState.core.bases[1].minions.find(minion => minion.uid === 'drone')?.powerCounters).toBe(1);
+    });
+
+    it('没有额外机会时不能直接提交从牌库打出随从命令', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('alien-life', 'extramorphs_alien_life_form', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle')],
+        });
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'alien-life', baseIndex: 0, fromDeck: true },
+        } as any, FIXED_RANDOM);
+
+        expect(played.success).toBe(false);
+        expect(played.error).toBe('没有可从牌库打出该随从的额外机会');
+    });
+
+    it('卵场打出时检索抱头虫，并作为额外行动附着到此处弱佣兵', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('egg-field', 'extramorphs_egg_field', 'action', '0')],
+                    deck: [makeCard('head-grabber', 'extramorphs_head_grabber', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle', [
+                makeMinion('host', 'pirate_first_mate', '1', 2),
+                makeMinion('too-strong', 'extramorphs_chestbreaker', '0', 4),
+            ])],
+        });
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'egg-field', targetBaseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(played.success).toBe(true);
+        expect(played.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: expect.objectContaining({
+                cardUid: 'head-grabber',
+                defId: 'extramorphs_head_grabber',
+                isExtraAction: true,
+                targetBaseIndex: 0,
+                targetMinionUid: 'host',
+            }),
+        }));
+        expect(played.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([]);
+        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([]);
+        expect(played.finalState.core.bases[0].ongoingActions.map(action => action.uid)).toContain('egg-field');
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'host')?.attachedActions)
+            .toEqual([expect.objectContaining({ uid: 'head-grabber', defId: 'extramorphs_head_grabber' })]);
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'too-strong')?.attachedActions).toEqual([]);
+    });
+
+    it('破胸者天赋在出牌阶段暂存牌库顶指定随从机会，并可走正常出牌流程打出', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    deck: [
+                        makeCard('alien-life', 'extramorphs_alien_life_form', 'minion', '0'),
+                        makeCard('extradrone', 'extramorphs_extradrone', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle', [
+                makeMinion('chestbreaker', 'extramorphs_chestbreaker', '0', 2),
+            ])],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'chestbreaker', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(talent.success).toBe(true);
+        expect(getOptionalSimpleChoicePrompt(talent.finalState, 'smashup_immediate_extra_minion')).toBeUndefined();
+        expect(talent.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                limitType: 'minion',
+                playTiming: 'banked',
+                specificCardUid: 'extradrone',
+                powerMax: 3,
+                restrictToBase: 0,
+            }),
+        }));
+        expect(talent.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['extradrone', 'alien-life']);
+        expect(talent.finalState.core.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'extradrone', restrictToBase: 0, powerMax: 3 }),
+        ]);
+
+        const played = runCommand(talent.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'extradrone', baseIndex: 0, fromDeck: true },
+        } as any, FIXED_RANDOM);
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['alien-life']);
+        expect(played.finalState.core.players['0'].specificExtraMinionPlays).toBeUndefined();
+        expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('extradrone');
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'extradrone')?.metadata)
+            .toEqual(expect.objectContaining({ playedFrom: 'deck' }));
     });
 
     it('蛋田天赋锁定牌库 2 力随从为额外随从，并可真实从牌库打出', () => {
@@ -1139,38 +1258,50 @@ describe('异形变体代表性牌库玩法行为', () => {
         } as any, FIXED_RANDOM);
         expect(talent.success).toBe(true);
 
-        const prompt = getSimpleChoicePrompt(talent.finalState, 'smashup_immediate_extra_minion');
-        expect(getPromptOption(prompt, option =>
-            option.value?.cardUid === 'chestbreaker' && option.value?.source === 'deck',
-            '牌库里的抱胸怪额外随从选项',
-        )).toBeTruthy();
+        expect(getOptionalSimpleChoicePrompt(talent.finalState, 'smashup_immediate_extra_minion')).toBeUndefined();
+        expect(talent.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                limitType: 'minion',
+                playTiming: 'banked',
+                specificCardUid: 'chestbreaker',
+                powerMax: 2,
+                restrictToBase: 0,
+            }),
+        }));
+        expect(talent.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['chestbreaker', 'alien-life']);
+        expect(talent.finalState.core.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'chestbreaker', restrictToBase: 0, powerMax: 2 }),
+        ]);
 
-        const chooseCard = respondToPromptOption(talent.finalState, option =>
-            option.value?.cardUid === 'chestbreaker' && option.value?.source === 'deck',
-            '牌库里的抱胸怪额外随从选项',
-            '0',
-            FIXED_RANDOM,
-        );
-        expect(chooseCard.success).toBe(true);
+        const wrongDeckCard = runCommand(talent.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'alien-life', baseIndex: 0, fromDeck: true },
+        } as any, FIXED_RANDOM);
+        expect(wrongDeckCard.success).toBe(false);
+        expect(wrongDeckCard.error).toBe('该额外随从只能打出指定卡牌');
 
-        const played = respondToPromptOption(chooseCard.finalState, option =>
-            option.value?.baseIndex === 0,
-            '牌库里的抱胸怪目标基地选项',
-            '0',
-            FIXED_RANDOM,
-        );
+        const played = runCommand(talent.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'chestbreaker', baseIndex: 0, fromDeck: true },
+        } as any, FIXED_RANDOM);
 
         expect(played.success).toBe(true);
         expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['alien-life']);
+        expect(played.finalState.core.players['0'].specificExtraMinionPlays).toBeUndefined();
         expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('chestbreaker');
         expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'chestbreaker')?.metadata)
             .toEqual(expect.objectContaining({ playedFrom: 'deck' }));
     });
 
-    it('抱脸虫天赋摧毁宿主，并授予牌库 4 力随从额外打出额度', () => {
+    it('抱头虫（用户口头抱脸虫）天赋摧毁宿主，并可真实从牌库打出 4 力随从', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
                     deck: [makeCard('chestbreaker', 'extramorphs_chestbreaker', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
@@ -1182,17 +1313,36 @@ describe('异形变体代表性牌库玩法行为', () => {
             ])],
         });
 
-        const result = invokeRegisteredAbilityContract('extramorphs_head_grabber', 'talent',
-            makeAbilityContext(core, 'extramorphs_head_grabber', 'head-grabber'));
-        const after = applyEvents(core, result.events);
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'head-grabber', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(talent.success).toBe(true);
 
-        expect(after.bases[0].minions).toEqual([]);
-        expect(after.players['1'].discard.map(card => card.uid)).toEqual(['host']);
-        expect(result.events).toContainEqual(expect.objectContaining({
+        expect(talent.finalState.core.bases[0].minions).toEqual([]);
+        expect(talent.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['host']);
+        expect(getOptionalSimpleChoicePrompt(talent.finalState, 'smashup_immediate_extra_minion')).toBeUndefined();
+        expect(talent.finalState.core.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'chestbreaker', restrictToBase: 0, powerMax: 4 }),
+        ]);
+
+        const played = runCommand(talent.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'chestbreaker', baseIndex: 0, fromDeck: true },
+        } as any, FIXED_RANDOM);
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([]);
+        expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['chestbreaker']);
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'chestbreaker')?.metadata)
+            .toEqual(expect.objectContaining({ playedFrom: 'deck' }));
+        expect(talent.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.LIMIT_MODIFIED,
             payload: expect.objectContaining({
                 limitType: 'minion',
-                playTiming: 'immediate',
+                playTiming: 'banked',
                 specificCardUid: 'chestbreaker',
                 powerMax: 4,
                 restrictToBase: 0,
@@ -1257,7 +1407,7 @@ describe('异形变体代表性牌库玩法行为', () => {
         expect(after.bases[1].minions.map(minion => minion.uid)).toEqual(['target']);
     });
 
-    it('游戏结束了伙计授予牌库 4 力随从的即时额外打出额度', () => {
+    it('游戏结束了伙计在出牌阶段暂存牌库 4 力指定随从机会', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -1273,6 +1423,39 @@ describe('异形变体代表性牌库玩法行为', () => {
 
         const result = invokeRegisteredAbilityContract('extramorphs_game_over_dude', 'onPlay',
             makeAbilityContext(core, 'extramorphs_game_over_dude', 'game-over'));
+        const after = applyEvents(core, result.events);
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                limitType: 'minion',
+                playTiming: 'banked',
+                specificCardUid: 'alien-life',
+                powerMax: 4,
+                restrictToBase: 0,
+            }),
+        }));
+        expect(after.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'alien-life', restrictToBase: 0, powerMax: 4 }),
+        ]);
+    });
+
+    it('牌库顶指定随从机会在非出牌阶段仍走立即弹窗', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('alien-life', 'extramorphs_alien_life_form', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle')],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'scoreBases';
+
+        const result = invokeRegisteredAbilityContract('extramorphs_game_over_dude', 'onPlay',
+            makeAbilityContext(core, 'extramorphs_game_over_dude', 'game-over', 0, { matchState }));
+        const after = applyEvents(core, result.events);
 
         expect(result.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.LIMIT_MODIFIED,
@@ -1284,6 +1467,7 @@ describe('异形变体代表性牌库玩法行为', () => {
                 restrictToBase: 0,
             }),
         }));
+        expect(after.players['0'].specificExtraMinionPlays).toBeUndefined();
     });
 });
 
@@ -1396,11 +1580,15 @@ describe('青少年代表性力量 3 协同玩法行为', () => {
         const after = applyEvents(core, result.events);
 
         expect(after.players['0'].deck.map(card => card.uid)).toEqual(['prep-card', 'action-card']);
-        expect(after.players['0'].minionLimit).toBe(2);
+        expect(after.players['0'].minionLimit).toBe(1);
+        expect(after.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'prep-card', powerMax: 3 }),
+        ]);
         expect(result.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.LIMIT_MODIFIED,
             payload: expect.objectContaining({
                 limitType: 'minion',
+                playTiming: 'banked',
                 specificCardUid: 'prep-card',
                 powerMax: 3,
             }),
@@ -1426,7 +1614,10 @@ describe('青少年代表性力量 3 协同玩法行为', () => {
 
         expect(after.bases[0].minions).toEqual([]);
         expect(after.players['0'].hand.map(card => card.uid)).toEqual(['brain']);
-        expect(after.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
+        expect(after.players['0'].baseLimitedMinionQuota?.[0]).toBeUndefined();
+        expect(after.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'prep-card', restrictToBase: 0, powerMax: 3 }),
+        ]);
         expect(after.players['0'].deck.map(card => card.uid)).toEqual(['prep-card']);
     });
 
@@ -1471,6 +1662,9 @@ describe('青少年代表性力量 3 协同玩法行为', () => {
                 restrictToBase: 0,
             }),
         }));
+        expect(after.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({ cardUid: 'deck-power3', restrictToBase: 0, powerMax: 3 }),
+        ]);
         expect(getEffectivePower(after, after.bases[0].minions.find(minion => minion.uid === 'jock')!, 0)).toBe(5);
         expect(after.players['0'].deck.map(card => card.uid)).toContain('discard-card');
     });
@@ -1738,6 +1932,79 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
                 restrictToBase: 0,
             }),
         }));
+    });
+
+    it('艾伦看到怨灵被摧毁时，出牌阶段暂存额外行动，非出牌阶段才立即处理', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle', [
+                makeMinion('ellen', 'wraithrustlers_ellen', '0', 4),
+            ])],
+        });
+        const playCardsState = makeMatchState(core);
+        playCardsState.sys.phase = 'playCards';
+
+        const banked = fireTriggers(core, 'onCardDestroyed', {
+            state: core,
+            matchState: playCardsState,
+            playerId: '0',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            sourceCardUid: 'ellen',
+            sourceControllerId: '0',
+            triggerCardUid: 'destroyed-wraith',
+            triggerCardDefId: 'wraithrustlers_librarian_haunt',
+            triggerCardOwnerId: '0',
+            triggerCardKind: 'ongoing',
+            random: FIXED_RANDOM,
+            now: 10,
+        });
+        const afterBanked = applyEvents(core, banked.events);
+
+        expect(banked.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                limitType: 'action',
+                playTiming: 'banked',
+                reason: 'wraithrustlers_ellen',
+            }),
+        }));
+        expect(afterBanked.players['0'].actionLimit).toBe(2);
+
+        const scoringState = makeMatchState(core);
+        scoringState.sys.phase = 'scoreBases';
+        const immediate = fireTriggers(core, 'onCardDestroyed', {
+            state: core,
+            matchState: scoringState,
+            playerId: '0',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            sourceCardUid: 'ellen',
+            sourceControllerId: '0',
+            triggerCardUid: 'destroyed-wraith',
+            triggerCardDefId: 'wraithrustlers_librarian_haunt',
+            triggerCardOwnerId: '0',
+            triggerCardKind: 'ongoing',
+            random: FIXED_RANDOM,
+            now: 10,
+        });
+        const afterImmediate = applyEvents(core, immediate.events);
+
+        expect(immediate.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                limitType: 'action',
+                playTiming: 'immediate',
+                reason: 'wraithrustlers_ellen',
+            }),
+        }));
+        expect(afterImmediate.players['0'].actionLimit).toBe(1);
     });
 
     it('放克曼看到同基地行动被摧毁时，己方随从本回合 +1', () => {

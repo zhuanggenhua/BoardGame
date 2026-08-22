@@ -21,6 +21,7 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_CP } from '../domain/types';
 import { DiceThroneTutorial } from '../tutorial';
 import { TUTORIAL_COMMANDS } from '../../../engine/systems/TutorialSystem';
+import { injectTutorialInteractionId } from '../../../engine/transport/tutorialAiCommand';
 
 describe('教程端到端测试（TutorialSystem 活跃）', () => {
     const playerIds: PlayerId[] = ['0', '1'];
@@ -92,7 +93,18 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         for (let i = 0; i < aiActions.length; i++) {
             const action = aiActions[i];
             const pid = action.playerId ?? s.core.activePlayerId;
-            const result = tryExec(s, action.commandType, pid as PlayerId, action.payload as Record<string, unknown>);
+            const payload = injectTutorialInteractionId({
+                state: s,
+                commandType: action.commandType,
+                payload: action.payload as Record<string, unknown>,
+                tutorialPlayerId: pid as PlayerId,
+                isTutorialAiCommand: true,
+            }) as Record<string, unknown>;
+            if (action.commandType === 'SKIP_TOKEN_RESPONSE') {
+                expect(s.core.pendingDamage?.id, `${label}: AI action[${i}] should have live pendingDamage`).toBeTypeOf('string');
+                expect(payload).toMatchObject({ pendingDamageId: s.core.pendingDamage?.id });
+            }
+            const result = tryExec(s, action.commandType, pid as PlayerId, payload);
             if (!result.success) {
                 throw new Error(
                     `AI action[${i}] ${action.commandType} (p${pid}) in step [${label}] failed: ${result.error}\n` +

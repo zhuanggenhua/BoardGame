@@ -219,11 +219,11 @@
 
 | Format | Geometry | Animation | Materials | Web | Games | 3D Print |
 |--------|----------|-----------|-----------|-----|-------|----------|
-| OBJ | ✅ | ❌ | Limited | ✅ | ⚠️ | ✅ |
-| FBX | ✅ | ✅ | ✅ | ⚠️ | ✅ | ❌ |
-| glTF/GLB | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| STL | ✅ | ❌ | ❌ | ⚠️ | ❌ | ✅ |
-| MDL | ✅ | ✅ | ✅ | ❌ | ✅ (Source) | ❌ |
+| OBJ | Yes | No | Limited | Yes | Partial | Yes |
+| FBX | Yes | Yes | Yes | Partial | Yes | No |
+| glTF/GLB | Yes | Yes | Yes | Yes | Yes | No |
+| STL | Yes | No | No | Partial | No | Yes |
+| MDL | Yes | Yes | Yes | No | Yes (Source) | No |
 
 ---
 

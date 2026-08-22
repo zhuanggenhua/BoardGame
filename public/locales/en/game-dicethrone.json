@@ -835,6 +835,7 @@
     "noTokens": "No tokens available",
     "confirm": "Confirm",
     "skip": "Skip",
+    "skipResponse": "Skip token response",
     "preview": {
       "critBoost": "+4 damage",
       "critRequires": "Requires damage >= 5",

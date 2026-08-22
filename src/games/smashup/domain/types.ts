@@ -517,6 +517,19 @@ export interface PlayerState {
     baseLimitedSameNameRequired?: Record<number, boolean>;
     /** 基地限定额度的同名 defId（baseIndex → defId），与 baseLimitedSameNameRequired 配合 */
     baseLimitedSameNameDefId?: Record<number, string>;
+    /**
+     * 当前出牌阶段暂存的“只能打出指定这张随从”的额外随从机会。
+     *
+     * 这类机会不能并入普通 minionLimit / baseLimitedMinionQuota，否则玩家可以用它打任意随从。
+     */
+    specificExtraMinionPlays?: Array<{
+        cardUid: string;
+        reason: string;
+        restrictToBase?: number;
+        powerMax?: number;
+        sameNameOnly?: boolean;
+        sameNameDefId?: string;
+    }>;
     /** 额外出牌的力量上限（如家园给的额外出牌只能打力量≤2的随从），回合结束清零 */
     extraMinionPowerMax?: number;
     /** 带力量上限的全局额外随从额度集合（每个元素代表 1 次受限额度），回合结束清零 */
@@ -867,6 +880,8 @@ export interface SmashUpCore {
     includedFactionIds?: string[];
     /** 是否允许查看牌库剩余牌详情 */
     deckQueryEnabled?: boolean;
+    /** 本局胜利所需 VP。默认 15；20 分模式覆盖为 20；2v2 默认由团队模式使用 25。 */
+    victoryTarget?: number;
     /** 基地牌库（defId 列表） */
     baseDeck: string[];
     /** 基地弃牌堆（defId 列表）。当基地牌库用尽时，会将弃牌堆洗回牌库继续补充。 */
@@ -1765,7 +1780,7 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         sameNameOnly?: boolean;
         /** 预锁定的 defId（与 sameNameOnly 配合使用，跳过首次锁定直接限定） */
         sameNameDefId?: string;
-        /** 仅 immediate 额外随从：限定只能打出指定的手牌 uid。 */
+        /** 指定牌额外随从：限定只能打出指定的卡牌 uid；banked 时进入 specificExtraMinionPlays。 */
         specificCardUid?: string;
         /**
          * 仅 immediate 额外随从：若玩家选择“放弃这次额外随从”，是否需要消费掉 pendingMinionPlayEffects 的队列首项。

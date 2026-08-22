@@ -139,14 +139,11 @@ A procedural object is usually failing when:
 
 ---
 
-## Critical Reconstruction Patterns (from Bowie Knife reconstruction failure analysis)
+## Critical Reconstruction Patterns
 
-### Failure record: Classic Fade projection passed as structure
-
-The Classic Fade incident exposed open card meshes, constant blade stock, and seams
-below the documented overlap. Portable gates now enforce mesh boundaries, seam
-overlap, blade grind/distal taper, map-stripped blockout evidence, and ordered pass
-credit so each failure is visible at the pass that owns it.
+These rules prevent common high-fidelity reconstruction failures: open card-like meshes,
+constant-thickness blade stock, weak seam overlap, missing grind / distal taper,
+texture-only structure, and pass credit assigned to the wrong layer.
 
 **Blades need a real grind, not constant thickness.** A constant-thickness slab reads as a toy cutout even with perfect silhouette. Model a wedge cross-section tapering to a sharp cutting edge using a grind function:
 - For each point on the blade surface, compute height ratio from cutting edge (0) to spine (1)
@@ -164,12 +161,11 @@ credit so each failure is visible at the pass that owns it.
 **Colours: sample, don't guess.** Visual colour estimation is unreliable. For each material:
 - Sample RGB median values from reference regions using image analysis tools
 - Convert RGB (0-255) to hex: `0xRRGGBB` where each component is in hex
-- Example from Bowie: guard gunmetal (71,74,79) → 0x474a4f, handle gray (140,148,158) → 0x8c949e
+- Record sampled RGB and derived hex values for traceability
 - Store these sampled values in comments for traceability and verification
 
 **Parts must physically connect, not just be near each other.** Adjacent components must overlap at their shared seam:
 - Check XY overlap between adjacent components (e.g., guard ↔ handle, blade ↔ guard)
-- Example bug: guard ended at X=-0.20, handle started at X=-0.42 → gap → "floating" appearance
 - Fix: extend one or both shapes so they overlap by at least 0.02-0.05 world units at the seam
 - Verify overlap by checking that `partA.end >= partB.start` for each axis where they meet
 

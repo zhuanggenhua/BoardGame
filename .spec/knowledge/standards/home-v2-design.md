@@ -12,11 +12,11 @@ metadata:
 
 ## 真相源
 
-- 目标稿必须优先来自 `artifacts/home-v2-design/`，例如：
+- 目标稿必须优先来自 [`artifacts/home-v2-design/`](../../../artifacts/home-v2-design/)，例如：
   - `home-v2-mobile-book-catalog-target.png`
   - `home-v2-auth-modal-target.png`
   - `compare-crops/*target*`
-- `D:\gongzuo\webgame\gameasset\ui参考\*.png` 只作为用户标注问题、红框定位和外部风格参考；除非用户明确说“以这张为目标稿”，否则不得替代 `artifacts/home-v2-design/`。
+- 外部参考图只作为用户标注问题、红框定位和风格参考；除非用户明确说“以这张为目标稿”，否则不得替代 [`artifacts/home-v2-design/`](../../../artifacts/home-v2-design/)。
 - Home V2 当前只按移动横屏验收；PC 端历史通过结果不能证明移动端达标。
 
 ## 总体构图

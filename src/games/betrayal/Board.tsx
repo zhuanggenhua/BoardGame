@@ -85,7 +85,6 @@ import {
   EXPLORER_CATALOG,
   canUseDogForTrade,
   canUseHolySymbolForDiscovery,
-  canUseIdolToSkipEvent,
   canUseRecentRollRerollItemForRecentRoll,
   canUseSkeletonKeyForMove,
   createBetrayalCharacterSelectCore,
@@ -109,7 +108,6 @@ import {
   resolveBetrayalNumberTracks,
   resolveBetrayalPossessionSpecialActionStatus,
   resolveBetrayalRoomSpecialActionStatus,
-  resolveBetrayalTraitorPowerStatus,
   resolveBetrayalTradeCardStatus,
   resolveBetrayalLineOfSightRoomIds,
   resolveBloodFromStonePeekabooOptions,
@@ -118,7 +116,6 @@ import {
   resolveDogTradeTargets,
   resolveExplorableRoomSlots,
   resolveMagicCameraPhotoTargets,
-  resolveNextRoomDiscoveryDeckKind,
   resolveRoomPlacementPreview,
   resolveRoomTileAdjustmentOptions,
   resolveMagicCameraPhantomAttackTargets,
@@ -6158,6 +6155,7 @@ function StandardRecentRollOverlay({
   onDismiss,
   effectiveLocale,
   rerollSelection,
+  actionSlot = null,
   actorLabel = null,
 }: {
   roll: BetrayalRecentRollState;
@@ -6166,6 +6164,7 @@ function StandardRecentRollOverlay({
   onDismiss: () => void;
   effectiveLocale: string;
   rerollSelection?: RecentRollRerollSelection | null;
+  actionSlot?: React.ReactNode;
   actorLabel?: string | null;
 }) {
   const { t } = useTranslation("game-betrayal");
@@ -6181,6 +6180,7 @@ function StandardRecentRollOverlay({
       {t("board.roll.backToBoard")}
     </button>
   );
+  const dockedActionSlot = actionSlot ?? continueButton;
   const overlay = (
     <div
       data-testid="betrayal-roll-result-backdrop"
@@ -6246,14 +6246,14 @@ function StandardRecentRollOverlay({
           diceVisualScale={isPhoneLandscapeLayout ? 1.16 : 1}
           effectiveLocale={effectiveLocale}
           actorLabel={actorLabel}
-          actionSlot={isPhoneLandscapeLayout ? continueButton : null}
+          actionSlot={isPhoneLandscapeLayout ? dockedActionSlot : null}
         />
         {isPhoneLandscapeLayout ? null : (
           <div
             data-testid="betrayal-roll-continue-dock"
             className="pointer-events-auto mt-2 flex w-[min(700px,100%)] justify-center"
           >
-            {continueButton}
+            {dockedActionSlot}
           </div>
         )}
       </div>
@@ -8465,40 +8465,19 @@ export default function BetrayalBoard({
   const canDeclareHolySymbolExplore = canUseHolySymbolForDiscovery(core);
   const useHolySymbolForExplore =
     previewState.useHolySymbolForExplore && canDeclareHolySymbolExplore;
-  const nextDeckKind = React.useMemo(
-    () =>
-      resolveNextRoomDiscoveryDeckKind(core, {
-        useHolySymbol: useHolySymbolForExplore,
-      }),
-    [core, useHolySymbolForExplore],
-  );
   const canStartExploreSelection = Boolean(
     (core.phase === "preHaunt" || core.phase === "haunt") &&
     !core.turnEndedByDiscovery &&
     explorableRoomSlots.length > 0,
   );
-  const canDeclareIdolExplore =
-    canUseIdolToSkipEvent(core) && nextDeckKind === "event";
-  const canDeclareTraitorEventSkip =
-    resolveBetrayalTraitorPowerStatus(core).canIgnoreEventSymbols &&
-    nextDeckKind === "event";
+  const canDeclareIdolExplore = false;
+  const canDeclareTraitorEventSkip = false;
   const hasExploreDeclarationOptions = Boolean(
-    (canDeclareHolySymbolExplore ||
-      canDeclareIdolExplore ||
-      canDeclareTraitorEventSkip) &&
-      canStartExploreSelection,
+    canDeclareHolySymbolExplore && canStartExploreSelection,
   );
-  const exploreDeclarationLabel =
-    canDeclareTraitorEventSkip &&
-    !canDeclareHolySymbolExplore &&
-    !canDeclareIdolExplore
-      ? t("board.inventory.traitorPower")
-      : t("board.inventory.exploreDeclaration");
-  const useIdolForExplore =
-    previewState.useIdolForExplore && canDeclareIdolExplore;
-  const ignoreEventSymbolWithTraitorPower =
-    previewState.ignoreEventSymbolWithTraitorPower &&
-    canDeclareTraitorEventSkip;
+  const exploreDeclarationLabel = t("board.inventory.exploreDeclaration");
+  const useIdolForExplore = false;
+  const ignoreEventSymbolWithTraitorPower = false;
   const pendingRoomPlacementPreview =
     React.useMemo<BetrayalRoomPlacementPreview | null>(
       () =>
@@ -11165,7 +11144,7 @@ export default function BetrayalBoard({
     "inline-flex min-h-[42px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d] transition hover:bg-[#f0d28a] disabled:cursor-not-allowed disabled:border-[rgba(214,181,109,0.32)] disabled:bg-[rgba(214,181,109,0.18)] disabled:text-[rgba(243,224,166,0.48)]";
   const eventRollConfirmButtonClass =
     `pointer-events-auto min-w-[132px] shrink-0 ${diceConfirmButtonClass}`;
-  const latestDiscoveryRollActionSlot = selectedRollModifierCanConfirm ? (
+  const rollModifierActionSlot = selectedRollModifierCanConfirm ? (
     <div className="pointer-events-auto flex items-center gap-2">
       <button
         type="button"
@@ -11377,6 +11356,17 @@ export default function BetrayalBoard({
     latestDiscoverySearchVisibleIndex >= 0
       ? latestDiscoverySearchSequence[latestDiscoverySearchVisibleIndex] ?? null
       : null;
+  const latestDiscoveryResolutionSteps =
+    latestDiscovery?.resolutionSteps ?? [];
+  const latestDiscoverySearchStepNumber =
+    latestDiscoveryVisibleProcessCard && latestDiscoverySearchVisibleIndex >= 0
+      ? latestDiscoverySearchVisibleIndex + 1
+      : 0;
+  const latestDiscoverySearchFinalEffectText =
+    latestDiscoveryHasSearchSequence &&
+    latestDiscoverySearchVisibleIndex === latestDiscoverySearchSequence.length - 1
+      ? latestDiscoveryPendingCardResolution?.text ?? ""
+      : "";
   const canAdvanceLatestDiscoverySearch = Boolean(
     isLatestDiscoverySearchOperator &&
       !latestDiscoveryViewerHasAcknowledgedCardResolution &&
@@ -15769,6 +15759,45 @@ export default function BetrayalBoard({
                       {latestDiscoveryDisplaySummary}{" "}
                       {latestDiscovery?.detail ?? ""}
                     </span>
+                    {latestDiscoveryResolutionSteps.length > 0 ? (
+                      <ol
+                        hidden
+                        aria-hidden="true"
+                        data-testid="betrayal-discovery-resolution-steps"
+                        data-ui-role="nonvisual-resolution-ledger"
+                      >
+                        {latestDiscoveryResolutionSteps.map((step) => (
+                          <li
+                            key={step.id}
+                            data-testid="betrayal-discovery-resolution-step"
+                            data-resolution-step-kind={step.kind}
+                            data-resolution-step-deck-kind={step.deckKind ?? undefined}
+                            data-resolution-step-card-id={step.cardId ?? undefined}
+                          >
+                            {step.text}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : null}
+                    {latestDiscoveryVisibleProcessCard ? (
+                      <div
+                        data-testid="betrayal-discovery-search-step"
+                        data-room-discovery-search-index={String(latestDiscoverySearchStepNumber)}
+                        data-room-discovery-search-total={String(latestDiscoverySearchSequence.length)}
+                        data-room-discovery-search-outcome={latestDiscoveryVisibleProcessCard.outcome}
+                        className="pointer-events-none z-10 max-w-[min(520px,calc(100vw-2rem))] rounded-[10px] border border-[rgba(214,181,109,0.42)] bg-[rgba(14,12,8,0.78)] px-4 py-2 text-center text-[13px] font-bold leading-snug tracking-[0.04em] text-[#f4e3b5] shadow-[0_10px_24px_rgba(0,0,0,0.30)]"
+                      >
+                        {latestDiscoveryVisibleProcessCard.text}
+                      </div>
+                    ) : null}
+                    {latestDiscoverySearchFinalEffectText ? (
+                      <div
+                        data-testid="betrayal-discovery-final-effect"
+                        className="sr-only"
+                      >
+                        {latestDiscoverySearchFinalEffectText}
+                      </div>
+                    ) : null}
                     {shouldShowLatestDiscoveryCardFace ||
                     (shouldShowLatestDiscoveryRoll &&
                       latestDiscoveryRecentRoll) ? (
@@ -15857,7 +15886,7 @@ export default function BetrayalBoard({
                           denseResultPlacement={
                             isPhoneLandscapeLayout ? "floatingSide" : "stacked"
                           }
-                          actionSlot={latestDiscoveryRollActionSlot}
+                          actionSlot={rollModifierActionSlot}
                           floatingResultClassName={
                             isPhoneLandscapeLayout ? "top-[52px]" : ""
                           }
@@ -15868,7 +15897,7 @@ export default function BetrayalBoard({
                     {(isPhoneLandscapeLayout &&
                       shouldShowLatestDiscoveryRoll &&
                       latestDiscoveryRecentRoll) ||
-                    latestDiscoveryRollActionSlot
+                    rollModifierActionSlot
                       ? null
                       : (
                         <div
@@ -15985,6 +16014,7 @@ export default function BetrayalBoard({
                     onDismiss={handleDismissRecentRoll}
                     effectiveLocale={effectiveLocale}
                     rerollSelection={recentRollRerollSelection}
+                    actionSlot={rollModifierActionSlot}
                     actorLabel={resolveRecentRollActorLabel(core.recentRoll)}
                   />
                 )
@@ -17858,21 +17888,22 @@ export default function BetrayalBoard({
                                             <span
                                               data-testid={`betrayal-room-occupant-target-outline-${room.id}-${occupant.playerId}`}
                                               data-highlight-shape="pentagon"
+                                              data-highlight-color="green"
                                               data-selected={
                                                 isSelectedExplorerTarget ||
                                                 isHauntGuideExplorerTarget
                                                   ? "true"
                                                   : "false"
                                               }
-                                              className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_24px_rgba(255,224,138,0.58)] ${
+                                              className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_0_1px_rgba(6,24,14,0.92),0_0_24px_rgba(74,222,128,0.58)] ${
                                                 isHauntGuideExplorerTarget
                                                   ? "h-[76px] w-[72px] border-[4px] motion-safe:animate-pulse"
                                                   : "h-[62px] w-[58px] border-[3px]"
                                               } ${
                                                 isSelectedExplorerTarget ||
                                                 isHauntGuideExplorerTarget
-                                                  ? "border-[#ffe08a] bg-[rgba(255,224,138,0.16)]"
-                                                  : "border-[rgba(209,176,95,0.58)] bg-[rgba(209,176,95,0.06)]"
+                                                  ? "border-[#86efac] bg-[rgba(74,222,128,0.18)]"
+                                                  : "border-[rgba(34,197,94,0.72)] bg-[rgba(34,197,94,0.10)]"
                                               }`}
                                               style={{
                                                 clipPath:

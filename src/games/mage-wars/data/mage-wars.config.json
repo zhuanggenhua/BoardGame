@@ -1,56 +1,20 @@
 {
   "schemaVersion": 1,
   "gameId": "mage-wars",
-  "packageVersion": "2026.08.04-apprentice-config.27",
+  "packageVersion": "2026.08.21-standard-starting-spellbooks.1",
   "metadata": {
     "title": "法师战争",
-    "description": "标准竞技场首批流程配置包：四名首批法师、预设法术书、91 张预设法术、4x3 标准竞技场、骰子和 token；apprentice 仅保留为历史资源命名。",
+    "description": "标准竞技场配置包：四名首批法师、规则书第 40 页标准起始法术书、4x3 标准竞技场、骰子和 token；apprentice 仅保留为 legacy/tutorial 资源命名。",
     "locale": "zh-CN",
     "minPlayers": 2,
     "maxPlayers": 2,
     "tags": [
-      "apprentice",
       "tactical",
-      "spellcasting"
+      "spellcasting",
+      "standard-starting"
     ]
   },
   "assets": [
-    {
-      "id": "board-standard-arena",
-      "path": "mage-wars/board/standard-arena",
-      "kind": "board-image",
-      "description": "标准竞技场正式素材"
-    },
-    {
-      "id": "spell-card-back",
-      "path": "mage-wars/cards/backs/spell-card-back",
-      "kind": "card-back",
-      "description": "通用法术卡背"
-    },
-    {
-      "id": "wall-card-back",
-      "path": "mage-wars/cards/backs/wall-card-back",
-      "kind": "card-back",
-      "description": "通用墙体卡背"
-    },
-    {
-      "id": "mage-status-board",
-      "path": "mage-wars/boards/mage-status/mage-status-board",
-      "kind": "status-board",
-      "description": "法师状态板 / 规则提示板参考素材"
-    },
-    {
-      "id": "attack-die-texture",
-      "path": "mage-wars/dice/attack-die-texture",
-      "kind": "die-texture",
-      "description": "攻击骰贴图"
-    },
-    {
-      "id": "effect-die-d12-face",
-      "path": "mage-wars/dice/effect-die-d12-face",
-      "kind": "die-texture",
-      "description": "效果骰 D12 面参考"
-    },
     {
       "id": "action-marker-blue-back",
       "path": "mage-wars/tokens/action/action-marker-blue-back",
@@ -72,44 +36,16 @@
       "kind": "action-token"
     },
     {
-      "id": "ready-token-back",
-      "path": "mage-wars/tokens/action/ready-token-back",
-      "kind": "ready-token"
+      "id": "attack-die-texture",
+      "path": "mage-wars/dice/attack-die-texture",
+      "kind": "die-texture",
+      "description": "攻击骰贴图"
     },
     {
-      "id": "ready-token-front",
-      "path": "mage-wars/tokens/action/ready-token-front",
-      "kind": "ready-token"
-    },
-    {
-      "id": "channeling-token-front",
-      "path": "mage-wars/tokens/channeling/channeling-token-front",
-      "kind": "channeling-token"
-    },
-    {
-      "id": "channeling-token-back",
-      "path": "mage-wars/tokens/channeling/channeling-token-back",
-      "kind": "channeling-token"
-    },
-    {
-      "id": "damage-token-front",
-      "path": "mage-wars/tokens/damage/damage-token-front",
-      "kind": "damage-token"
-    },
-    {
-      "id": "damage-token-back",
-      "path": "mage-wars/tokens/damage/damage-token-back",
-      "kind": "damage-token"
-    },
-    {
-      "id": "quickcast-marker-front",
-      "path": "mage-wars/tokens/quickcast/quickcast-marker-front",
-      "kind": "quickcast-token"
-    },
-    {
-      "id": "quickcast-marker-back",
-      "path": "mage-wars/tokens/quickcast/quickcast-marker-back",
-      "kind": "quickcast-token"
+      "id": "board-standard-arena",
+      "path": "mage-wars/board/standard-arena",
+      "kind": "board-image",
+      "description": "标准竞技场正式素材"
     },
     {
       "id": "burn-token",
@@ -117,24 +53,14 @@
       "kind": "status-token"
     },
     {
-      "id": "daze-token",
-      "path": "mage-wars/tokens/status/daze-token",
-      "kind": "status-token"
+      "id": "channeling-token-back",
+      "path": "mage-wars/tokens/channeling/channeling-token-back",
+      "kind": "channeling-token"
     },
     {
-      "id": "guard-token",
-      "path": "mage-wars/tokens/status/guard-token",
-      "kind": "status-token"
-    },
-    {
-      "id": "rot-token",
-      "path": "mage-wars/tokens/status/rot-token",
-      "kind": "status-token"
-    },
-    {
-      "id": "weak-token",
-      "path": "mage-wars/tokens/status/weak-token",
-      "kind": "status-token"
+      "id": "channeling-token-front",
+      "path": "mage-wars/tokens/channeling/channeling-token-front",
+      "kind": "channeling-token"
     },
     {
       "id": "cripple-token",
@@ -142,14 +68,60 @@
       "kind": "status-token"
     },
     {
-      "id": "sleep-token",
-      "path": "mage-wars/tokens/status/sleep-token",
+      "id": "damage-token-back",
+      "path": "mage-wars/tokens/damage/damage-token-back",
+      "kind": "damage-token"
+    },
+    {
+      "id": "damage-token-front",
+      "path": "mage-wars/tokens/damage/damage-token-front",
+      "kind": "damage-token"
+    },
+    {
+      "id": "daze-token",
+      "path": "mage-wars/tokens/status/daze-token",
       "kind": "status-token"
     },
     {
-      "id": "stun-token",
-      "path": "mage-wars/tokens/status/stun-token",
+      "id": "effect-die-d12-face",
+      "path": "mage-wars/dice/effect-die-d12-face",
+      "kind": "die-texture",
+      "description": "效果骰 D12 面参考"
+    },
+    {
+      "id": "guard-token",
+      "path": "mage-wars/tokens/status/guard-token",
       "kind": "status-token"
+    },
+    {
+      "id": "mage-beastmaster-apprentice-card",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#beastmaster_apprentice_card",
+      "kind": "atlas-frame",
+      "description": "兽王"
+    },
+    {
+      "id": "mage-beastmaster-apprentice-portrait",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#beastmaster_apprentice_portrait",
+      "kind": "atlas-frame",
+      "description": "兽王肖像"
+    },
+    {
+      "id": "mage-priestess-apprentice-card",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#priestess_apprentice_card",
+      "kind": "atlas-frame",
+      "description": "女祭司"
+    },
+    {
+      "id": "mage-priestess-apprentice-portrait",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#priestess_apprentice_portrait",
+      "kind": "atlas-frame",
+      "description": "女祭司肖像"
+    },
+    {
+      "id": "mage-status-board",
+      "path": "mage-wars/boards/mage-status/mage-status-board",
+      "kind": "status-board",
+      "description": "法师状态板 / 规则提示板参考素材"
     },
     {
       "id": "mage-warlock-apprentice-card",
@@ -176,28 +148,34 @@
       "description": "巫师肖像"
     },
     {
-      "id": "mage-priestess-apprentice-card",
-      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#priestess_apprentice_card",
-      "kind": "atlas-frame",
-      "description": "女祭司"
+      "id": "quickcast-marker-back",
+      "path": "mage-wars/tokens/quickcast/quickcast-marker-back",
+      "kind": "quickcast-token"
     },
     {
-      "id": "mage-priestess-apprentice-portrait",
-      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#priestess_apprentice_portrait",
-      "kind": "atlas-frame",
-      "description": "女祭司肖像"
+      "id": "quickcast-marker-front",
+      "path": "mage-wars/tokens/quickcast/quickcast-marker-front",
+      "kind": "quickcast-token"
     },
     {
-      "id": "mage-beastmaster-apprentice-card",
-      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#beastmaster_apprentice_card",
-      "kind": "atlas-frame",
-      "description": "兽王"
+      "id": "ready-token-back",
+      "path": "mage-wars/tokens/action/ready-token-back",
+      "kind": "ready-token"
     },
     {
-      "id": "mage-beastmaster-apprentice-portrait",
-      "path": "atlas://public/assets/atlas-configs/mage-wars/mages-core-atlas.json#beastmaster_apprentice_portrait",
-      "kind": "atlas-frame",
-      "description": "兽王肖像"
+      "id": "ready-token-front",
+      "path": "mage-wars/tokens/action/ready-token-front",
+      "kind": "ready-token"
+    },
+    {
+      "id": "rot-token",
+      "path": "mage-wars/tokens/status/rot-token",
+      "kind": "status-token"
+    },
+    {
+      "id": "sleep-token",
+      "path": "mage-wars/tokens/status/sleep-token",
+      "kind": "status-token"
     },
     {
       "id": "spell-card-1700-frame",
@@ -242,6 +220,18 @@
       "description": "圣光之柱"
     },
     {
+      "id": "spell-card-1707-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1707",
+      "kind": "atlas-frame",
+      "description": "烈焰之环"
+    },
+    {
+      "id": "spell-card-1708-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1708",
+      "kind": "atlas-frame",
+      "description": "怒雷箭矢"
+    },
+    {
       "id": "spell-card-1709-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1709",
       "kind": "atlas-frame",
@@ -284,6 +274,12 @@
       "description": "格挡"
     },
     {
+      "id": "spell-card-1807-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1807",
+      "kind": "atlas-frame",
+      "description": "剧痛锁链"
+    },
+    {
       "id": "spell-card-1808-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1808",
       "kind": "atlas-frame",
@@ -296,10 +292,34 @@
       "description": "灵蛇反射"
     },
     {
+      "id": "spell-card-1810-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1810",
+      "kind": "atlas-frame",
+      "description": "闪电之环"
+    },
+    {
+      "id": "spell-card-1811-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1811",
+      "kind": "atlas-frame",
+      "description": "诱饵"
+    },
+    {
+      "id": "spell-card-1812-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1812",
+      "kind": "atlas-frame",
+      "description": "神力干涉"
+    },
+    {
       "id": "spell-card-1813-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1813",
       "kind": "atlas-frame",
       "description": "神力加护"
+    },
+    {
+      "id": "spell-card-1814-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1814",
+      "kind": "atlas-frame",
+      "description": "雄鹰之翼"
     },
     {
       "id": "spell-card-1815-frame",
@@ -320,10 +340,40 @@
       "description": "原力法剑"
     },
     {
+      "id": "spell-card-1819-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1819",
+      "kind": "atlas-frame",
+      "description": "原力法球"
+    },
+    {
       "id": "spell-card-1820-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1820",
       "kind": "atlas-frame",
       "description": "尸鬼腐化"
+    },
+    {
+      "id": "spell-card-1821-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1821",
+      "kind": "atlas-frame",
+      "description": "法力融合"
+    },
+    {
+      "id": "spell-card-1822-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1822",
+      "kind": "atlas-frame",
+      "description": "猎鹰之眼"
+    },
+    {
+      "id": "spell-card-1823-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1823",
+      "kind": "atlas-frame",
+      "description": "狱火陷阱"
+    },
+    {
+      "id": "spell-card-1824-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1824",
+      "kind": "atlas-frame",
+      "description": "折翼"
     },
     {
       "id": "spell-card-1825-frame",
@@ -338,10 +388,22 @@
       "description": "死亡印记"
     },
     {
+      "id": "spell-card-1900-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1900",
+      "kind": "atlas-frame",
+      "description": "猫鼬灵步"
+    },
+    {
       "id": "spell-card-1901-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1901",
       "kind": "atlas-frame",
       "description": "法力失效"
+    },
+    {
+      "id": "spell-card-1902-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1902",
+      "kind": "atlas-frame",
+      "description": "毒血攻心"
     },
     {
       "id": "spell-card-1903-frame",
@@ -354,6 +416,18 @@
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1904",
       "kind": "atlas-frame",
       "description": "攻击逆转"
+    },
+    {
+      "id": "spell-card-1905-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1905",
+      "kind": "atlas-frame",
+      "description": "魔法逆转"
+    },
+    {
+      "id": "spell-card-1907-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1907",
+      "kind": "atlas-frame",
+      "description": "传送陷阱"
     },
     {
       "id": "spell-card-1908-frame",
@@ -392,6 +466,12 @@
       "description": "巨熊力量"
     },
     {
+      "id": "spell-card-1915-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1915",
+      "kind": "atlas-frame",
+      "description": "猎豹之速"
+    },
+    {
       "id": "spell-card-1916-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#1916",
       "kind": "atlas-frame",
@@ -404,16 +484,76 @@
       "description": "犀牛兽皮"
     },
     {
-      "id": "spell-card-2224-frame",
-      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2224",
+      "id": "spell-card-2203-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2203",
       "kind": "atlas-frame",
-      "description": "缠绕藤蔓"
+      "description": "阿希拉神殿"
+    },
+    {
+      "id": "spell-card-2206-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2206",
+      "kind": "atlas-frame",
+      "description": "尖齿与利爪"
+    },
+    {
+      "id": "spell-card-2207-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2207",
+      "kind": "atlas-frame",
+      "description": "拉贾恩之怒"
+    },
+    {
+      "id": "spell-card-2208-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2208",
+      "kind": "atlas-frame",
+      "description": "毒气云雾"
+    },
+    {
+      "id": "spell-card-2209-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2209",
+      "kind": "atlas-frame",
+      "description": "五星魔阵"
+    },
+    {
+      "id": "spell-card-2212-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2212",
+      "kind": "atlas-frame",
+      "description": "战斗锻炉"
     },
     {
       "id": "spell-card-2218-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2218",
       "kind": "atlas-frame",
       "description": "巢穴"
+    },
+    {
+      "id": "spell-card-2219-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2219",
+      "kind": "atlas-frame",
+      "description": "宾莎拉之手"
+    },
+    {
+      "id": "spell-card-2221-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2221",
+      "kind": "atlas-frame",
+      "description": "法力水晶"
+    },
+    {
+      "id": "spell-card-2222-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2222",
+      "kind": "atlas-frame",
+      "description": "法力灵花"
+    },
+    {
+      "id": "spell-card-2223-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2223",
+      "kind": "atlas-frame",
+      "description": "法力虹吸"
+    },
+    {
+      "id": "spell-card-2224-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2224",
+      "kind": "atlas-frame",
+      "description": "缠绕藤蔓"
     },
     {
       "id": "spell-card-2800-frame",
@@ -444,6 +584,12 @@
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2804",
       "kind": "atlas-frame",
       "description": "狼人宠物戈伦"
+    },
+    {
+      "id": "spell-card-2806-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2806",
+      "kind": "atlas-frame",
+      "description": "头狼赤爪"
     },
     {
       "id": "spell-card-2807-frame",
@@ -500,6 +646,18 @@
       "description": "皇家箭手"
     },
     {
+      "id": "spell-card-2817-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2817",
+      "kind": "atlas-frame",
+      "description": "闪电天使瓦尔莎拉"
+    },
+    {
+      "id": "spell-card-2818-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2818",
+      "kind": "atlas-frame",
+      "description": "火焰领主阿德拉梅莱克"
+    },
+    {
       "id": "spell-card-2819-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2819",
       "kind": "atlas-frame",
@@ -510,6 +668,12 @@
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2820",
       "kind": "atlas-frame",
       "description": "雷隙猎鹰"
+    },
+    {
+      "id": "spell-card-2821-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2821",
+      "kind": "atlas-frame",
+      "description": "雪貂伙伴索斯鲁柯"
     },
     {
       "id": "spell-card-2822-frame",
@@ -542,6 +706,24 @@
       "description": "暗沼九头蛇"
     },
     {
+      "id": "spell-card-2902-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2902",
+      "kind": "atlas-frame",
+      "description": "死魂吸血鬼"
+    },
+    {
+      "id": "spell-card-2903-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2903",
+      "kind": "atlas-frame",
+      "description": "高山猩猩"
+    },
+    {
+      "id": "spell-card-2904-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2904",
+      "kind": "atlas-frame",
+      "description": "月光妖精"
+    },
+    {
       "id": "spell-card-2906-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2906",
       "kind": "atlas-frame",
@@ -564,6 +746,12 @@
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2909",
       "kind": "atlas-frame",
       "description": "西锁骑士"
+    },
+    {
+      "id": "spell-card-2910-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2910",
+      "kind": "atlas-frame",
+      "description": "玛拉寇达"
     },
     {
       "id": "spell-card-3400-frame",
@@ -638,10 +826,46 @@
       "description": "昏睡"
     },
     {
+      "id": "spell-card-3412-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3412",
+      "kind": "atlas-frame",
+      "description": "结界迁移"
+    },
+    {
+      "id": "spell-card-3413-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3413",
+      "kind": "atlas-frame",
+      "description": "放逐"
+    },
+    {
+      "id": "spell-card-3414-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3414",
+      "kind": "atlas-frame",
+      "description": "反隐驱散"
+    },
+    {
+      "id": "spell-card-3415-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3415",
+      "kind": "atlas-frame",
+      "description": "起死回生"
+    },
+    {
+      "id": "spell-card-3416-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3416",
+      "kind": "atlas-frame",
+      "description": "战斗怒火"
+    },
+    {
       "id": "spell-card-3417-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3417",
       "kind": "atlas-frame",
       "description": "荒野呼唤"
+    },
+    {
+      "id": "spell-card-3418-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3418",
+      "kind": "atlas-frame",
+      "description": "毒素净化"
     },
     {
       "id": "spell-card-3419-frame",
@@ -650,10 +874,52 @@
       "description": "驱散"
     },
     {
+      "id": "spell-card-3420-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3420",
+      "kind": "atlas-frame",
+      "description": "魔法净化"
+    },
+    {
+      "id": "spell-card-3421-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3421",
+      "kind": "atlas-frame",
+      "description": "穿刺突击"
+    },
+    {
+      "id": "spell-card-3422-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3422",
+      "kind": "atlas-frame",
+      "description": "完美一击"
+    },
+    {
+      "id": "spell-card-3423-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3423",
+      "kind": "atlas-frame",
+      "description": "圣疗神恩"
+    },
+    {
+      "id": "spell-card-3424-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3424",
+      "kind": "atlas-frame",
+      "description": "击倒"
+    },
+    {
       "id": "spell-card-3425-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3425",
       "kind": "atlas-frame",
       "description": "原力推斥"
+    },
+    {
+      "id": "spell-card-3426-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3426",
+      "kind": "atlas-frame",
+      "description": "神行无阻"
+    },
+    {
+      "id": "spell-card-3500-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3500",
+      "kind": "atlas-frame",
+      "description": "力量汲取"
     },
     {
       "id": "spell-card-3523-frame",
@@ -716,6 +982,12 @@
       "description": "阿希拉法杖"
     },
     {
+      "id": "spell-card-3707-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3707",
+      "kind": "atlas-frame",
+      "description": "重生腰带"
+    },
+    {
       "id": "spell-card-3708-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3708",
       "kind": "atlas-frame",
@@ -740,6 +1012,24 @@
       "description": "巨熊皮甲"
     },
     {
+      "id": "spell-card-3712-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3712",
+      "kind": "atlas-frame",
+      "description": "天护皇冠"
+    },
+    {
+      "id": "spell-card-3713-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3713",
+      "kind": "atlas-frame",
+      "description": "奥术戒指"
+    },
+    {
+      "id": "spell-card-3714-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3714",
+      "kind": "atlas-frame",
+      "description": "破晓指环"
+    },
+    {
       "id": "spell-card-3715-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3715",
       "kind": "atlas-frame",
@@ -752,10 +1042,62 @@
       "description": "元素魔杖"
     },
     {
+      "id": "spell-card-3719-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3719",
+      "kind": "atlas-frame",
+      "description": "塑火指环"
+    },
+    {
+      "id": "spell-card-3720-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3720",
+      "kind": "atlas-frame",
+      "description": "恐惧头盔"
+    },
+    {
       "id": "spell-card-3721-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3721",
       "kind": "atlas-frame",
       "description": "皮革长靴"
+    },
+    {
+      "id": "spell-card-3722-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3722",
+      "kind": "atlas-frame",
+      "description": "野银长弓"
+    },
+    {
+      "id": "spell-card-3725-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3725",
+      "kind": "atlas-frame",
+      "description": "法师魔杖"
+    },
+    {
+      "id": "spell-card-3726-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3726",
+      "kind": "atlas-frame",
+      "description": "摩洛王的折磨"
+    },
+    {
+      "id": "spell-card-back",
+      "path": "mage-wars/cards/backs/spell-card-back",
+      "kind": "card-back",
+      "description": "通用法术卡背"
+    },
+    {
+      "id": "stun-token",
+      "path": "mage-wars/tokens/status/stun-token",
+      "kind": "status-token"
+    },
+    {
+      "id": "wall-card-back",
+      "path": "mage-wars/cards/backs/wall-card-back",
+      "kind": "card-back",
+      "description": "通用墙体卡背"
+    },
+    {
+      "id": "weak-token",
+      "path": "mage-wars/tokens/status/weak-token",
+      "kind": "status-token"
     }
   ],
   "objects": [
@@ -876,6 +1218,222 @@
       }
     },
     {
+      "id": "formal-zone-a1",
+      "objectType": "board-zone",
+      "name": "标准竞技场 A1",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "a1",
+        "row": 1,
+        "col": 1,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-a2",
+      "objectType": "board-zone",
+      "name": "标准竞技场 A2",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "a2",
+        "row": 2,
+        "col": 1,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-a3",
+      "objectType": "board-zone",
+      "name": "标准竞技场 A3",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "a3",
+        "row": 3,
+        "col": 1,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-b1",
+      "objectType": "board-zone",
+      "name": "标准竞技场 B1",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "b1",
+        "row": 1,
+        "col": 2,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-b2",
+      "objectType": "board-zone",
+      "name": "标准竞技场 B2",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "b2",
+        "row": 2,
+        "col": 2,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-b3",
+      "objectType": "board-zone",
+      "name": "标准竞技场 B3",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "b3",
+        "row": 3,
+        "col": 2,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-c1",
+      "objectType": "board-zone",
+      "name": "标准竞技场 C1",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "c1",
+        "row": 1,
+        "col": 3,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-c2",
+      "objectType": "board-zone",
+      "name": "标准竞技场 C2",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "c2",
+        "row": 2,
+        "col": 3,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-c3",
+      "objectType": "board-zone",
+      "name": "标准竞技场 C3",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "c3",
+        "row": 3,
+        "col": 3,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-d1",
+      "objectType": "board-zone",
+      "name": "标准竞技场 D1",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "d1",
+        "row": 1,
+        "col": 4,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-d2",
+      "objectType": "board-zone",
+      "name": "标准竞技场 D2",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "d2",
+        "row": 2,
+        "col": 4,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
+      "id": "formal-zone-d3",
+      "objectType": "board-zone",
+      "name": "标准竞技场 D3",
+      "tags": [
+        "formal-4x3",
+        "arena-zone"
+      ],
+      "assetRefs": [
+        "board-standard-arena"
+      ],
+      "data": {
+        "zoneId": "d3",
+        "row": 3,
+        "col": 4,
+        "arenaMode": "formal-4x3"
+      }
+    },
+    {
       "id": "zone-a1",
       "objectType": "board-zone",
       "name": "学徒竞技场 A1",
@@ -984,222 +1542,6 @@
       }
     },
     {
-      "id": "formal-zone-a1",
-      "objectType": "board-zone",
-      "name": "标准竞技场 A1",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "a1",
-        "row": 1,
-        "col": 1,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-b1",
-      "objectType": "board-zone",
-      "name": "标准竞技场 B1",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "b1",
-        "row": 1,
-        "col": 2,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-c1",
-      "objectType": "board-zone",
-      "name": "标准竞技场 C1",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "c1",
-        "row": 1,
-        "col": 3,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-d1",
-      "objectType": "board-zone",
-      "name": "标准竞技场 D1",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "d1",
-        "row": 1,
-        "col": 4,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-a2",
-      "objectType": "board-zone",
-      "name": "标准竞技场 A2",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "a2",
-        "row": 2,
-        "col": 1,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-b2",
-      "objectType": "board-zone",
-      "name": "标准竞技场 B2",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "b2",
-        "row": 2,
-        "col": 2,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-c2",
-      "objectType": "board-zone",
-      "name": "标准竞技场 C2",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "c2",
-        "row": 2,
-        "col": 3,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-d2",
-      "objectType": "board-zone",
-      "name": "标准竞技场 D2",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "d2",
-        "row": 2,
-        "col": 4,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-a3",
-      "objectType": "board-zone",
-      "name": "标准竞技场 A3",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "a3",
-        "row": 3,
-        "col": 1,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-b3",
-      "objectType": "board-zone",
-      "name": "标准竞技场 B3",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "b3",
-        "row": 3,
-        "col": 2,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-c3",
-      "objectType": "board-zone",
-      "name": "标准竞技场 C3",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "c3",
-        "row": 3,
-        "col": 3,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
-      "id": "formal-zone-d3",
-      "objectType": "board-zone",
-      "name": "标准竞技场 D3",
-      "tags": [
-        "formal-4x3",
-        "arena-zone"
-      ],
-      "assetRefs": [
-        "board-standard-arena"
-      ],
-      "data": {
-        "zoneId": "d3",
-        "row": 3,
-        "col": 4,
-        "arenaMode": "formal-4x3"
-      }
-    },
-    {
       "id": "die-attack",
       "objectType": "die",
       "name": "攻击骰",
@@ -1274,94 +1616,6 @@
       ]
     },
     {
-      "id": "token-ready-token-back",
-      "objectType": "token",
-      "name": "ready token back",
-      "tags": [
-        "ready-token"
-      ],
-      "assetRefs": [
-        "ready-token-back"
-      ]
-    },
-    {
-      "id": "token-ready-token-front",
-      "objectType": "token",
-      "name": "ready token front",
-      "tags": [
-        "ready-token"
-      ],
-      "assetRefs": [
-        "ready-token-front"
-      ]
-    },
-    {
-      "id": "token-channeling-token-front",
-      "objectType": "token",
-      "name": "channeling token front",
-      "tags": [
-        "channeling-token"
-      ],
-      "assetRefs": [
-        "channeling-token-front"
-      ]
-    },
-    {
-      "id": "token-channeling-token-back",
-      "objectType": "token",
-      "name": "channeling token back",
-      "tags": [
-        "channeling-token"
-      ],
-      "assetRefs": [
-        "channeling-token-back"
-      ]
-    },
-    {
-      "id": "token-damage-token-front",
-      "objectType": "token",
-      "name": "damage token front",
-      "tags": [
-        "damage-token"
-      ],
-      "assetRefs": [
-        "damage-token-front"
-      ]
-    },
-    {
-      "id": "token-damage-token-back",
-      "objectType": "token",
-      "name": "damage token back",
-      "tags": [
-        "damage-token"
-      ],
-      "assetRefs": [
-        "damage-token-back"
-      ]
-    },
-    {
-      "id": "token-quickcast-marker-front",
-      "objectType": "token",
-      "name": "quickcast marker front",
-      "tags": [
-        "quickcast-token"
-      ],
-      "assetRefs": [
-        "quickcast-marker-front"
-      ]
-    },
-    {
-      "id": "token-quickcast-marker-back",
-      "objectType": "token",
-      "name": "quickcast marker back",
-      "tags": [
-        "quickcast-token"
-      ],
-      "assetRefs": [
-        "quickcast-marker-back"
-      ]
-    },
-    {
       "id": "token-burn-token",
       "objectType": "token",
       "name": "burn token",
@@ -1378,6 +1632,71 @@
         "sameNameRemovalRule": "pay-all-copies",
         "upkeepRule": "roll-one-attack-die-per-token-and-remove-token-on-blank"
       }
+    },
+    {
+      "id": "token-channeling-token-back",
+      "objectType": "token",
+      "name": "channeling token back",
+      "tags": [
+        "channeling-token"
+      ],
+      "assetRefs": [
+        "channeling-token-back"
+      ]
+    },
+    {
+      "id": "token-channeling-token-front",
+      "objectType": "token",
+      "name": "channeling token front",
+      "tags": [
+        "channeling-token"
+      ],
+      "assetRefs": [
+        "channeling-token-front"
+      ]
+    },
+    {
+      "id": "token-cripple-token",
+      "objectType": "token",
+      "name": "cripple token",
+      "tags": [
+        "status-token"
+      ],
+      "assetRefs": [
+        "cripple-token"
+      ],
+      "data": {
+        "statusTokenId": "cripple",
+        "removalCost": 4,
+        "removalCostRule": "fixed",
+        "sameNameRemovalRule": "pay-all-copies",
+        "statusType": "toxin",
+        "escapeCheckMin": 7,
+        "escapeCheckTiming": "creature-action-end",
+        "restrainedDefenseDiePenalty": -2
+      }
+    },
+    {
+      "id": "token-damage-token-back",
+      "objectType": "token",
+      "name": "damage token back",
+      "tags": [
+        "damage-token"
+      ],
+      "assetRefs": [
+        "damage-token-back"
+      ]
+    },
+    {
+      "id": "token-damage-token-front",
+      "objectType": "token",
+      "name": "damage token front",
+      "tags": [
+        "damage-token"
+      ],
+      "assetRefs": [
+        "damage-token-front"
+      ]
     },
     {
       "id": "token-daze-token",
@@ -1414,6 +1733,50 @@
       }
     },
     {
+      "id": "token-quickcast-marker-back",
+      "objectType": "token",
+      "name": "quickcast marker back",
+      "tags": [
+        "quickcast-token"
+      ],
+      "assetRefs": [
+        "quickcast-marker-back"
+      ]
+    },
+    {
+      "id": "token-quickcast-marker-front",
+      "objectType": "token",
+      "name": "quickcast marker front",
+      "tags": [
+        "quickcast-token"
+      ],
+      "assetRefs": [
+        "quickcast-marker-front"
+      ]
+    },
+    {
+      "id": "token-ready-token-back",
+      "objectType": "token",
+      "name": "ready token back",
+      "tags": [
+        "ready-token"
+      ],
+      "assetRefs": [
+        "ready-token-back"
+      ]
+    },
+    {
+      "id": "token-ready-token-front",
+      "objectType": "token",
+      "name": "ready token front",
+      "tags": [
+        "ready-token"
+      ],
+      "assetRefs": [
+        "ready-token-front"
+      ]
+    },
+    {
       "id": "token-rot-token",
       "objectType": "token",
       "name": "rot token",
@@ -1430,45 +1793,6 @@
         "sameNameRemovalRule": "pay-all-copies",
         "statusType": "toxin",
         "upkeepRule": "deal-1-direct-damage"
-      }
-    },
-    {
-      "id": "token-weak-token",
-      "objectType": "token",
-      "name": "weak token",
-      "tags": [
-        "status-token"
-      ],
-      "assetRefs": [
-        "weak-token"
-      ],
-      "data": {
-        "statusTokenId": "weak",
-        "removalCost": 2,
-        "removalCostRule": "fixed",
-        "sameNameRemovalRule": "pay-all-copies",
-        "statusType": "toxin"
-      }
-    },
-    {
-      "id": "token-cripple-token",
-      "objectType": "token",
-      "name": "cripple token",
-      "tags": [
-        "status-token"
-      ],
-      "assetRefs": [
-        "cripple-token"
-      ],
-      "data": {
-        "statusTokenId": "cripple",
-        "removalCost": 4,
-        "removalCostRule": "fixed",
-        "sameNameRemovalRule": "pay-all-copies",
-        "statusType": "toxin",
-        "escapeCheckMin": 7,
-        "escapeCheckTiming": "creature-action-end",
-        "restrainedDefenseDiePenalty": -2
       }
     },
     {
@@ -1509,6 +1833,24 @@
       }
     },
     {
+      "id": "token-weak-token",
+      "objectType": "token",
+      "name": "weak token",
+      "tags": [
+        "status-token"
+      ],
+      "assetRefs": [
+        "weak-token"
+      ],
+      "data": {
+        "statusTokenId": "weak",
+        "removalCost": 2,
+        "removalCostRule": "fixed",
+        "sameNameRemovalRule": "pay-all-copies",
+        "statusType": "toxin"
+      }
+    },
+    {
       "id": "spell-1700",
       "objectType": "card",
       "name": "火球术",
@@ -1519,7 +1861,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文",
       "assetRefs": [
@@ -1550,7 +1893,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "火球术",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1564,7 +1912,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文",
       "assetRefs": [
@@ -1595,7 +1944,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "11",
-        "manaCost": 11
+        "manaCost": 11,
+        "standardStartingRulesName": "火焰风暴",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1609,7 +1963,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文",
       "assetRefs": [
@@ -1640,7 +1995,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "烈焰爆弹",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1654,7 +2014,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "每次连锁闪电对一个目标造成伤害时，攻击方可以用连锁闪电立即攻击另一个目标。本次攻击的来源为刚被伤害的目标，新目标必须距离来源 `0-1` 格区域范围和视线内，并且在本次攻击行动中未受过连锁闪电的伤害。每次继承的攻击比前次少投掷 1 颗攻击骰子，并且效果骰子的投掷结果多减 1。",
       "assetRefs": [
@@ -1685,7 +2046,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "12",
-        "manaCost": 12
+        "manaCost": 12,
+        "standardStartingRulesName": "连锁闪电",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1699,7 +2065,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "攻击区域中除施法者以外的所有对象。",
       "assetRefs": [
@@ -1730,7 +2097,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "9",
-        "manaCost": 9
+        "manaCost": 9,
+        "standardStartingRulesName": "雷导术",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1744,7 +2116,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文",
       "assetRefs": [
@@ -1775,7 +2148,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "闪电箭矢",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1789,7 +2167,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文",
       "assetRefs": [
@@ -1820,8 +2199,89 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "圣光之柱",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1707",
+      "objectType": "card",
+      "name": "烈焰之环",
+      "tags": [
+        "standard-starting-spell",
+        "deck-17",
+        "攻击"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1707,
+        "spellType": "攻击",
+        "typeLine": "攻击",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "烈焰之环",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 17,
+        "slot": 7,
+        "atlasId": "spell-attack-core-atlas",
+        "atlasCardId": 1707,
+        "frame": {
+          "left": 0,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1707-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1708",
+      "objectType": "card",
+      "name": "怒雷箭矢",
+      "tags": [
+        "standard-starting-spell",
+        "deck-17",
+        "攻击"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1708,
+        "spellType": "攻击",
+        "typeLine": "攻击",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "怒雷箭矢",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 17,
+        "slot": 8,
+        "atlasId": "spell-attack-core-atlas",
+        "atlasCardId": 1708,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1708-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1709",
@@ -1834,7 +2294,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "攻击区域中除施法者以外的所有对象。",
       "assetRefs": [
@@ -1865,7 +2326,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "7",
-        "manaCost": 7
+        "manaCost": 7,
+        "standardStartingRulesName": "眩目闪光",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1879,7 +2345,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "在本次攻击投掷骰子步骤中，如果目标处于燃烧状态，取消本次攻击，并以移除目标上所有燃烧状态代替。",
       "assetRefs": [
@@ -1910,7 +2377,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "4",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "间歇喷泉",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1924,7 +2396,8 @@
       "tags": [
         "apprentice-spell",
         "deck-17",
-        "攻击"
+        "攻击",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文",
       "assetRefs": [
@@ -1955,7 +2428,13 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "4",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "气流",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -1968,7 +2447,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "每当本生物进行非法术远程或近战攻击时，少投掷2颗攻击骰子。",
       "assetRefs": [
@@ -1999,7 +2479,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 3",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "剧痛难当",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2012,7 +2497,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "每个维持阶段，死亡链接的控制方可以治疗其法师最多2点伤害，并将移除的伤害作为直接伤害放置到本生物上，与距离或视线无关。",
       "assetRefs": [
@@ -2043,7 +2529,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 6",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "死亡链接",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2056,7 +2547,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "每次本生物施放并结算一个法术时，受到1点直接伤害。",
       "assetRefs": [
@@ -2087,7 +2579,12 @@
         "requiresCodeSupport": true,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 3",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "法师祸咒",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2100,7 +2597,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "当本生物被攻击时，你必须在回避攻击步骤中展示格挡。格挡视为一次防御，并且本次攻击被回避。然后，摧毁格挡。如果本次攻击无法回避，摧毁格挡并且不产生效果。",
       "assetRefs": [
@@ -2143,8 +2641,53 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "格挡",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1807",
+      "objectType": "card",
+      "name": "剧痛锁链",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1807,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "剧痛锁链",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 7,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1807,
+        "frame": {
+          "left": 0,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1807-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1808",
@@ -2156,7 +2699,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物获得生命+4。",
       "assetRefs": [
@@ -2202,7 +2746,13 @@
           ]
         },
         "rawCost": "2 + 3",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "公牛耐力",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2215,7 +2765,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "法师绑定+2。本生物获得防御。",
       "assetRefs": [
@@ -2256,8 +2807,127 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 5",
-        "manaCost": 7
+        "manaCost": 7,
+        "standardStartingRulesName": "灵蛇反射",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1810",
+      "objectType": "card",
+      "name": "闪电之环",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1810,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "闪电之环",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 10,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1810,
+        "frame": {
+          "left": 0.428571,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1810-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1811",
+      "objectType": "card",
+      "name": "诱饵",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1811,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "诱饵",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 11,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1811,
+        "frame": {
+          "left": 0.571429,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1811-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1812",
+      "objectType": "card",
+      "name": "神力干涉",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1812,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "神力干涉",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 12,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1812,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1812-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1813",
@@ -2269,7 +2939,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "法师绑定+2。本生物获得庇护1特性。",
       "assetRefs": [
@@ -2314,8 +2985,51 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "神力加护",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "workshop-standard-instance-selected"
       }
+    },
+    {
+      "id": "spell-1814",
+      "objectType": "card",
+      "name": "雄鹰之翼",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1814,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "雄鹰之翼",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 14,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1814,
+        "frame": {
+          "left": 0,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1814-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1815",
@@ -2327,7 +3041,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物获得维持+2特性。",
       "assetRefs": [
@@ -2372,7 +3087,12 @@
           ]
         },
         "rawCost": "2 + 4",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "精华汲取",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2385,7 +3105,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物获得迟缓特性。",
       "assetRefs": [
@@ -2429,7 +3150,12 @@
           ]
         },
         "rawCost": "2 + 4",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "身心俱疲",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2442,7 +3168,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "法师绑定+1。本生物获得防御，该防御不会因本生物所处于的状态而失效，包括避难、束缚和眩晕。",
       "assetRefs": [
@@ -2484,8 +3211,51 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 3",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "原力法剑",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1819",
+      "objectType": "card",
+      "name": "原力法球",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1819,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "原力法球",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 19,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1819,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1819-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1820",
@@ -2497,7 +3267,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "法师绑定+2。每个维持阶段，本生物受到2点直接毒素伤害。",
       "assetRefs": [
@@ -2543,8 +3314,165 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 4",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "尸鬼腐化",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1821",
+      "objectType": "card",
+      "name": "法力融合",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1821,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "法力融合",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 21,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1821,
+        "frame": {
+          "left": 0,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1821-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1822",
+      "objectType": "card",
+      "name": "猎鹰之眼",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1822,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "猎鹰之眼",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 22,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1822,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1822-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1823",
+      "objectType": "card",
+      "name": "狱火陷阱",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1823,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "狱火陷阱",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 23,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1823,
+        "frame": {
+          "left": 0.285714,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1823-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1824",
+      "objectType": "card",
+      "name": "折翼",
+      "tags": [
+        "standard-starting-spell",
+        "deck-18",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1824,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "折翼",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 18,
+        "slot": 24,
+        "atlasId": "spell-enchantment-core-a-atlas",
+        "atlasCardId": 1824,
+        "frame": {
+          "left": 0.428571,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1824-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1825",
@@ -2556,7 +3484,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "当本生物施放快速法术时，你必须在法术反制步骤中展示厄运。该法术被取消并返回其拥有者的法术书中。施法该法术的所有法力返还到施法者的法力池中。然后，摧毁厄运。",
       "assetRefs": [
@@ -2596,7 +3525,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 1",
-        "manaCost": 3
+        "manaCost": 3,
+        "standardStartingRulesName": "厄运",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2609,7 +3543,8 @@
       "tags": [
         "apprentice-spell",
         "deck-18",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "法师绑定+2。所有生物在攻击本生物时获得攻击骰子+1。每回合中，生物仅有首次攻击本生物才能获得本奖励。",
       "assetRefs": [
@@ -2654,8 +3589,52 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "死亡印记",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1900",
+      "objectType": "card",
+      "name": "猫鼬灵步",
+      "tags": [
+        "standard-starting-spell",
+        "deck-19",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1900,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "猫鼬灵步",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 19,
+        "slot": 0,
+        "atlasId": "spell-enchantment-core-b-atlas",
+        "atlasCardId": 1900,
+        "frame": {
+          "left": 0,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1900-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1901",
@@ -2667,7 +3646,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "当本生物成为对手控制的咒语或结界类法术的目标时，你必须在法术反制步骤中展示法力失效。该法术被反制。然后，摧毁法力失效。",
       "assetRefs": [
@@ -2707,8 +3687,53 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "法力失效",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1902",
+      "objectType": "card",
+      "name": "毒血攻心",
+      "tags": [
+        "standard-starting-spell",
+        "deck-19",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1902,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "毒血攻心",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 19,
+        "slot": 2,
+        "atlasId": "spell-enchantment-core-b-atlas",
+        "atlasCardId": 1902,
+        "frame": {
+          "left": 0.285714,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1902-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1903",
@@ -2720,7 +3745,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物的快速行动近战攻击获得反击特性。它首次进行反击时，摧毁反戈一击。",
       "assetRefs": [
@@ -2764,7 +3790,13 @@
           ]
         },
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "反戈一击",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2777,7 +3809,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "当本生物被攻击时，你必须在回避攻击步骤中展示攻击逆转。攻击被回避并逆转。在接下来两个步骤中（投掷骰子以及伤害和效果），本生物成为新的攻击来源，并且原本的攻击来源成为新的目标（即使原本的攻击来源不是一个合法的目标）。然后，摧毁攻击逆转。如果攻击无法回避，摧毁攻击逆转并且不产生效果。",
       "assetRefs": [
@@ -2817,8 +3850,89 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2 + 5",
-        "manaCost": 7
+        "manaCost": 7,
+        "standardStartingRulesName": "攻击逆转",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1905",
+      "objectType": "card",
+      "name": "魔法逆转",
+      "tags": [
+        "standard-starting-spell",
+        "deck-19",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1905,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "魔法逆转",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 19,
+        "slot": 5,
+        "atlasId": "spell-enchantment-core-b-atlas",
+        "atlasCardId": 1905,
+        "frame": {
+          "left": 0.714286,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1905-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-1907",
+      "objectType": "card",
+      "name": "传送陷阱",
+      "tags": [
+        "standard-starting-spell",
+        "deck-19",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1907,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "传送陷阱",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 19,
+        "slot": 7,
+        "atlasId": "spell-enchantment-core-b-atlas",
+        "atlasCardId": 1907,
+        "frame": {
+          "left": 0,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1907-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1908",
@@ -2830,7 +3944,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物被束缚，并获得稳固特性。本法术对具有不羁特性的生物无效。",
       "assetRefs": [
@@ -2874,7 +3989,12 @@
           ]
         },
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "原力之握",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -2887,7 +4007,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物的近战攻击获得吸血特性。",
       "assetRefs": [
@@ -2931,7 +4052,12 @@
           ]
         },
         "rawCost": "2 + 4",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "鲜血贪噬",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3002,7 +4128,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "每回合本生物首次进行近战或远程攻击时，其控制方必须在宣告攻击步骤中支付2点法力，否则本次攻击被取消。心灵安抚对反击无效。",
       "assetRefs": [
@@ -3047,7 +4174,12 @@
           ]
         },
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "心灵安抚",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3060,7 +4192,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "所有位于本区域中的友方活体生物获得庇护1特性。",
       "assetRefs": [
@@ -3105,7 +4238,12 @@
           ]
         },
         "rawCost": "2 + 4",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "圣佑领地",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3118,7 +4256,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物获得近战+2特性。",
       "assetRefs": [
@@ -3164,8 +4303,52 @@
           ]
         },
         "rawCost": "2 + 3",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "巨熊力量",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-1915",
+      "objectType": "card",
+      "name": "猎豹之速",
+      "tags": [
+        "standard-starting-spell",
+        "deck-19",
+        "结界"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 1915,
+        "spellType": "结界",
+        "typeLine": "结界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "猎豹之速",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 19,
+        "slot": 15,
+        "atlasId": "spell-enchantment-core-b-atlas",
+        "atlasCardId": 1915,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-1915-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-1916",
@@ -3177,7 +4360,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物获得重生2特性。",
       "assetRefs": [
@@ -3222,7 +4406,13 @@
           ]
         },
         "rawCost": "2 + 3",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "体肤重生",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3235,7 +4425,8 @@
       "tags": [
         "apprentice-spell",
         "deck-19",
-        "结界"
+        "结界",
+        "standard-starting-spell"
       ],
       "text": "本生物获得护甲+2。",
       "assetRefs": [
@@ -3281,8 +4472,242 @@
           ]
         },
         "rawCost": "2 + 2",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "犀牛兽皮",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-2203",
+      "objectType": "card",
+      "name": "阿希拉神殿",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2203,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "阿希拉神殿",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 3,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2203,
+        "frame": {
+          "left": 0.428571,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2203-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2206",
+      "objectType": "card",
+      "name": "尖齿与利爪",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2206,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "尖齿与利爪",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 6,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2206,
+        "frame": {
+          "left": 0.857143,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2206-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2207",
+      "objectType": "card",
+      "name": "拉贾恩之怒",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2207,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "拉贾恩之怒",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 7,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2207,
+        "frame": {
+          "left": 0,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2207-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2208",
+      "objectType": "card",
+      "name": "毒气云雾",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2208,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "毒气云雾",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 8,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2208,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2208-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2209",
+      "objectType": "card",
+      "name": "五星魔阵",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2209,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "五星魔阵",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 9,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2209,
+        "frame": {
+          "left": 0.285714,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2209-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2212",
+      "objectType": "card",
+      "name": "战斗锻炉",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2212,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "战斗锻炉",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 12,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2212,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2212-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-2218",
@@ -3299,7 +4724,8 @@
       "tags": [
         "source-card",
         "deck-22",
-        "魔物"
+        "魔物",
+        "standard-starting-spell"
       ],
       "text": "再生点。限定兽王。部署阶段可召唤1个动物生物。",
       "assetRefs": [
@@ -3336,8 +4762,167 @@
             "动物"
           ],
           "channeling": 4
-        }
+        },
+        "standardStartingRulesName": "巢穴",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-2219",
+      "objectType": "card",
+      "name": "宾莎拉之手",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2219,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "宾·莎拉之手",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "alias-single-candidate",
+        "deck": 22,
+        "slot": 19,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2219,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2219-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2221",
+      "objectType": "card",
+      "name": "法力水晶",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2221,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "法力水晶",
+        "standardStartingMageIds": [
+          "warlock_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 21,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2221,
+        "frame": {
+          "left": 0,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2221-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2222",
+      "objectType": "card",
+      "name": "法力灵花",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2222,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "法力灵花",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 22,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2222,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2222-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2223",
+      "objectType": "card",
+      "name": "法力虹吸",
+      "tags": [
+        "standard-starting-spell",
+        "deck-22",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2223,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "法力虹吸",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 22,
+        "slot": 23,
+        "atlasId": "spell-conjuration-core-atlas",
+        "atlasCardId": 2223,
+        "frame": {
+          "left": 0.285714,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2223-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-2224",
@@ -3354,7 +4939,8 @@
       "tags": [
         "apprentice-spell",
         "deck-22",
-        "魔物"
+        "魔物",
+        "standard-starting-spell"
       ],
       "text": "目标被束缚并且获得稳固特性。缠绕藤蔓不能将具有飞行或不羁特性的生物作为目标。远程攻击不能将缠绕藤蔓作为目标。",
       "assetRefs": [
@@ -3385,339 +4971,113 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "缠绕藤蔓",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
-      "id": "spell-2901",
+      "id": "spell-2303",
       "objectType": "card",
-      "name": "暗沼九头蛇",
+      "name": "生命巨树默克塔利",
+      "tags": [
+        "standard-starting-spell",
+        "deck-23",
+        "魔物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2303,
+        "spellType": "魔物",
+        "typeLine": "魔物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "生命巨树默克塔利",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 23,
+        "slot": 3,
+        "assetStatus": "blocked-missing-runtime-atlas"
+      }
+    },
+    {
+      "id": "spell-2500",
+      "objectType": "card",
+      "name": "烈火之墙",
       "cost": {
-        "mana": 16,
-        "raw": "16"
-      },
-      "stats": {
-        "life": 15,
-        "armor": 1
+        "mana": 7,
+        "raw": "7"
       },
       "tags": [
-        "apprentice-spell",
-        "deck-29",
-        "生物"
+        "standard-starting-spell",
+        "deck-25",
+        "魔物",
+        "墙体"
       ],
-      "text": "无额外规则正文。",
-      "assetRefs": [
-        "spell-card-2901-frame",
-        "spell-card-back"
-      ],
+      "text": "标准起始法术书包含的墙体法术；公共墙体机制已接入边界目标、墙体状态、视线阻挡和通行伤害代表结算，正式 runtime atlas 与精确牌面审计仍待补。",
       "data": {
-        "cardId": 2901,
-        "spellType": "生物",
-        "typeLine": "生物 / 长蛇",
-        "schoolLine": "黑暗",
-        "level": 4,
-        "targetRule": "0-0` / 区域",
-        "attackOrTraitLine": "猛力噬咬：快速近战 4 骰，反击；三重噬咬：完整行动近战 3 骰，三连击；重生2；迟缓",
-        "combatProfiles": {
-          "attacks": [
-            {
-              "id": "attack-0",
-              "name": "猛力噬咬",
-              "action": "quick",
-              "rangeKind": "melee",
-              "diceCount": 4,
-              "pierce": 0,
-              "strikeCount": 1,
-              "damageTypes": []
-            },
-            {
-              "id": "attack-1",
-              "name": "三重噬咬",
-              "action": "full",
-              "rangeKind": "melee",
-              "diceCount": 3,
-              "pierce": 0,
-              "strikeCount": 3,
-              "damageTypes": []
-            }
-          ],
-          "defenses": []
-        },
-        "printCode": "MW1C09",
-        "contractStatus": "locked",
-        "atlasId": "spell-creature-core-b-atlas",
-        "atlasCardId": 2901,
-        "deck": 29,
-        "slot": 1,
-        "frame": {
-          "left": 0.142857,
-          "top": 0,
-          "width": 0.142857,
-          "height": 0.25
-        },
-        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
-        "requiresCodeSupport": false,
-        "spellActionSpeed": "standard",
-        "rawCost": "16",
-        "manaCost": 16
+        "cardId": 2500,
+        "spellType": "魔物",
+        "spellActionSpeed": "quick",
+        "typeLine": "魔物",
+        "level": 2,
+        "range": "0-1",
+        "targetRule": "墙体边界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "烈火之墙",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 25,
+        "slot": 0,
+        "assetStatus": "blocked-missing-runtime-atlas",
+        "wallMechanicStatus": "public-mechanic-implemented-needs-runtime-atlas-and-exact-card-audit"
       }
     },
     {
-      "id": "spell-2906",
+      "id": "spell-25700",
       "objectType": "card",
-      "name": "野性山猫",
+      "name": "荆棘之墙",
       "cost": {
         "mana": 5,
         "raw": "5"
       },
-      "stats": {
-        "life": 4,
-        "armor": 0
-      },
       "tags": [
-        "apprentice-spell",
-        "deck-29",
-        "生物"
+        "standard-starting-spell",
+        "deck-257",
+        "魔物",
+        "墙体"
       ],
-      "text": "无额外规则正文，正文区为风味引文。",
-      "assetRefs": [
-        "spell-card-2906-frame",
-        "spell-card-back"
-      ],
+      "text": "标准起始法术书包含的墙体法术；公共墙体机制已接入边界目标、墙体状态、视线阻挡和通行伤害代表结算，正式 runtime atlas 与精确牌面审计仍待补。",
       "data": {
-        "cardId": 2906,
-        "spellType": "生物",
-        "typeLine": "生物 / 动物、猫科",
-        "schoolLine": "自然",
-        "level": 1,
-        "targetRule": "0-0` / 区域",
-        "attackOrTraitLine": "利爪：快速近战 2 骰；防御图标 `8+ / 1x`；冲锋+2",
-        "combatProfiles": {
-          "attacks": [
-            {
-              "id": "attack-0",
-              "name": "利爪",
-              "action": "quick",
-              "rangeKind": "melee",
-              "diceCount": 2,
-              "pierce": 0,
-              "strikeCount": 1,
-              "damageTypes": []
-            }
-          ],
-          "defenses": [
-            {
-              "id": "defense-0",
-              "minRoll": 8,
-              "usesPerRound": 1
-            }
-          ]
-        },
-        "printCode": "MW1C14",
-        "contractStatus": "locked",
-        "atlasId": "spell-creature-core-b-atlas",
-        "atlasCardId": 2906,
-        "deck": 29,
-        "slot": 6,
-        "frame": {
-          "left": 0.857143,
-          "top": 0,
-          "width": 0.142857,
-          "height": 0.25
-        },
-        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
-        "requiresCodeSupport": false,
-        "spellActionSpeed": "standard",
-        "rawCost": "5",
-        "manaCost": 5
-      }
-    },
-    {
-      "id": "spell-2907",
-      "objectType": "card",
-      "name": "灰衣天使",
-      "cost": {
-        "mana": 12,
-        "raw": "12"
-      },
-      "stats": {
-        "life": 10,
-        "armor": 2
-      },
-      "tags": [
-        "apprentice-spell",
-        "deck-29",
-        "生物"
-      ],
-      "text": "无额外规则正文。",
-      "assetRefs": [
-        "spell-card-2907-frame",
-        "spell-card-back"
-      ],
-      "data": {
-        "cardId": 2907,
-        "spellType": "生物",
-        "typeLine": "生物 / 天使",
-        "schoolLine": "圣光",
-        "level": 3,
-        "targetRule": "0-0` / 区域",
-        "attackOrTraitLine": "利剑：快速近战 4 骰；救赎献祭：完整行动治疗 6 骰，治疗竞技场中任一活体生物，治疗效果等于掷骰结果，然后摧毁灰衣天使；飞行",
-        "combatProfiles": {
-          "attacks": [
-            {
-              "id": "attack-0",
-              "name": "利剑",
-              "action": "quick",
-              "rangeKind": "melee",
-              "diceCount": 4,
-              "pierce": 0,
-              "strikeCount": 1,
-              "damageTypes": []
-            }
-          ],
-          "defenses": []
-        },
-        "printCode": "MW1C19",
-        "contractStatus": "locked",
-        "atlasId": "spell-creature-core-b-atlas",
-        "atlasCardId": 2907,
-        "deck": 29,
-        "slot": 7,
-        "frame": {
-          "left": 0,
-          "top": 0.25,
-          "width": 0.142857,
-          "height": 0.25
-        },
-        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
-        "requiresCodeSupport": false,
-        "spellActionSpeed": "standard",
-        "rawCost": "12",
-        "manaCost": 12
-      }
-    },
-    {
-      "id": "spell-2908",
-      "objectType": "card",
-      "name": "乌鸦魔宠胡金",
-      "cost": {
-        "mana": 11,
-        "raw": "11"
-      },
-      "stats": {
-        "life": 5,
-        "armor": 0
-      },
-      "tags": [
-        "source-card",
-        "deck-29",
-        "生物"
-      ],
-      "text": "魔宠。限定奥术法师。仅能施放1-2级咒语法术。",
-      "assetRefs": [
-        "spell-card-2908-frame",
-        "spell-card-back"
-      ],
-      "data": {
-        "cardId": 2908,
-        "spellType": "生物",
-        "typeLine": "生物 / 动物、鸟类",
-        "schoolLine": "奥术",
-        "level": 3,
-        "targetRule": "0-0` / 区域",
-        "attackOrTraitLine": "乌鸦：快速近战1骰，穿刺+1；飞行；小型；传奇",
-        "sourceContract": "docs/games/mage-wars/rule/familiar-spellcasting-card-contract.md",
-        "contractStatus": "locked",
-        "atlasId": "spell-creature-core-b-atlas",
-        "atlasCardId": 2908,
-        "deck": 29,
-        "slot": 8,
-        "frame": {
-          "left": 0.142857,
-          "top": 0.25,
-          "width": 0.142857,
-          "height": 0.25
-        },
-        "spellcastingSource": {
-          "abilityId": "mw.source.2908.familiar",
-          "kind": "familiar",
-          "phase": "creatureAction",
-          "allowedSpellTypes": [
-            "咒语"
-          ],
-          "maxSpellLevel": 2,
-          "channeling": 3
-        }
-      }
-    },
-    {
-      "id": "spell-2909",
-      "objectType": "card",
-      "name": "西锁骑士",
-      "cost": {
-        "mana": 13,
-        "raw": "13"
-      },
-      "stats": {
-        "life": 10,
-        "armor": 3
-      },
-      "tags": [
-        "apprentice-spell",
-        "deck-29",
-        "生物"
-      ],
-      "text": "无额外规则正文，正文区为风味引文。",
-      "assetRefs": [
-        "spell-card-2909-frame",
-        "spell-card-back"
-      ],
-      "data": {
-        "cardId": 2909,
-        "spellType": "生物",
-        "typeLine": "生物 / 骑士、士兵",
-        "schoolLine": "圣光",
-        "level": 3,
-        "targetRule": "0-0` / 区域",
-        "attackOrTraitLine": "长剑：快速近战 5 骰；防御图标 `8+ / 1x`；闪电+2",
-        "combatProfiles": {
-          "attacks": [
-            {
-              "id": "attack-0",
-              "name": "长剑",
-              "action": "quick",
-              "rangeKind": "melee",
-              "diceCount": 5,
-              "pierce": 0,
-              "strikeCount": 1,
-              "damageTypes": []
-            }
-          ],
-          "defenses": [
-            {
-              "id": "defense-0",
-              "minRoll": 8,
-              "usesPerRound": 1
-            }
-          ]
-        },
-        "printCode": "MW1C22",
-        "contractStatus": "locked",
-        "atlasId": "spell-creature-core-b-atlas",
-        "atlasCardId": 2909,
-        "deck": 29,
-        "slot": 9,
-        "frame": {
-          "left": 0.285714,
-          "top": 0.25,
-          "width": 0.142857,
-          "height": 0.25
-        },
-        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
-        "requiresCodeSupport": false,
-        "spellActionSpeed": "standard",
-        "rawCost": "13",
-        "manaCost": 13
+        "cardId": 25700,
+        "spellType": "魔物",
+        "spellActionSpeed": "quick",
+        "typeLine": "魔物",
+        "level": 2,
+        "range": "0-1",
+        "targetRule": "墙体边界",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "荆棘之墙",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 257,
+        "slot": 0,
+        "assetStatus": "blocked-missing-runtime-atlas",
+        "wallMechanicStatus": "public-mechanic-implemented-needs-runtime-atlas-and-exact-card-audit"
       }
     },
     {
@@ -3735,7 +5095,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -3781,7 +5142,12 @@
           "defenses": []
         },
         "rawCost": "13",
-        "manaCost": 13
+        "manaCost": 13,
+        "standardStartingRulesName": "暗契屠魔",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3799,7 +5165,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -3854,7 +5221,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "火烙魔婴",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3872,7 +5244,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文。",
       "assetRefs": [
@@ -3928,7 +5301,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "17",
-        "manaCost": 17
+        "manaCost": 17,
+        "standardStartingRulesName": "钢爪灰熊",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -3946,7 +5324,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文。",
       "assetRefs": [
@@ -4036,7 +5415,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "13",
-        "manaCost": 13
+        "manaCost": 13,
+        "standardStartingRulesName": "烈焰狱鬼",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4054,7 +5438,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "当狼人宠物戈伦与其控制方法师位于同一格区域时，其额外获得嗜血+1特性。",
       "assetRefs": [
@@ -4116,8 +5501,51 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "15",
-        "manaCost": 15
+        "manaCost": 15,
+        "standardStartingRulesName": "狼人宠物戈伦",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-2806",
+      "objectType": "card",
+      "name": "头狼赤爪",
+      "tags": [
+        "standard-starting-spell",
+        "deck-28",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2806,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "头狼赤爪",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 28,
+        "slot": 6,
+        "atlasId": "spell-creature-core-a-atlas",
+        "atlasCardId": 2806,
+        "frame": {
+          "left": 0.857143,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2806-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-2807",
@@ -4134,7 +5562,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文。",
       "assetRefs": [
@@ -4192,7 +5621,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "汲法水蛭",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4210,7 +5644,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4263,7 +5698,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "9",
-        "manaCost": 9
+        "manaCost": 9,
+        "standardStartingRulesName": "翠绿树蜥",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4281,7 +5721,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文。",
       "assetRefs": [
@@ -4348,7 +5789,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "12",
-        "manaCost": 12
+        "manaCost": 12,
+        "standardStartingRulesName": "石目蛇蜥",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4366,7 +5812,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文。",
       "assetRefs": [
@@ -4439,7 +5886,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "16",
-        "manaCost": 16
+        "manaCost": 16,
+        "standardStartingRulesName": "戈尔贡箭手",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4457,7 +5909,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4503,7 +5956,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "阿希拉牧师",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4521,7 +5979,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4567,7 +6026,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "苦木林狐",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4585,7 +6049,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4631,7 +6096,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "15",
-        "manaCost": 15
+        "manaCost": 15,
+        "standardStartingRulesName": "布洛根·血石",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "alias-single-candidate"
       }
     },
     {
@@ -4649,7 +6119,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "所有与高地独角兽位于同一格区域的友方活体生物获得重生1特性。",
       "assetRefs": [
@@ -4695,7 +6166,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "13",
-        "manaCost": 13
+        "manaCost": 13,
+        "standardStartingRulesName": "高地独角兽",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4713,7 +6189,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4773,8 +6250,89 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "12",
-        "manaCost": 12
+        "manaCost": 12,
+        "standardStartingRulesName": "皇家箭手",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-2817",
+      "objectType": "card",
+      "name": "闪电天使瓦尔莎拉",
+      "tags": [
+        "standard-starting-spell",
+        "deck-28",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2817,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "闪电天使瓦尔莎拉",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 28,
+        "slot": 17,
+        "atlasId": "spell-creature-core-a-atlas",
+        "atlasCardId": 2817,
+        "frame": {
+          "left": 0.428571,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2817-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2818",
+      "objectType": "card",
+      "name": "火焰领主阿德拉梅莱克",
+      "tags": [
+        "standard-starting-spell",
+        "deck-28",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2818,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "火焰领主阿德拉梅莱克",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 28,
+        "slot": 18,
+        "atlasId": "spell-creature-core-a-atlas",
+        "atlasCardId": 2818,
+        "frame": {
+          "left": 0.571429,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2818-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-2819",
@@ -4791,7 +6349,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4837,7 +6396,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "9",
-        "manaCost": 9
+        "manaCost": 9,
+        "standardStartingRulesName": "丛林灰狼",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4855,7 +6419,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -4901,8 +6466,51 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "6",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "雷隙猎鹰",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-2821",
+      "objectType": "card",
+      "name": "雪貂伙伴索斯鲁柯",
+      "tags": [
+        "standard-starting-spell",
+        "deck-28",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2821,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "雪貂伙伴索斯鲁柯",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 28,
+        "slot": 21,
+        "atlasId": "spell-creature-core-a-atlas",
+        "atlasCardId": 2821,
+        "frame": {
+          "left": 0,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2821-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-2822",
@@ -4919,7 +6527,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "当本生物被激活时，你可以支付1点法力。如果你如此做，蓝色精怪获得迅捷特性直到本回合结束，并且本回合中它每次执行移动行动时以传送方式进入下一格区域。",
       "assetRefs": [
@@ -4971,7 +6580,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "7",
-        "manaCost": 7
+        "manaCost": 7,
+        "standardStartingRulesName": "蓝色精怪",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -4989,7 +6603,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -5041,7 +6656,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "15",
-        "manaCost": 15
+        "manaCost": 15,
+        "standardStartingRulesName": "深林幽影切维尔",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5059,7 +6679,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -5112,7 +6733,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "暗沼蝙蝠",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5130,7 +6756,8 @@
       "tags": [
         "apprentice-spell",
         "deck-28",
-        "生物"
+        "生物",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -5176,8 +6803,527 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "骷髅哨兵",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-2901",
+      "objectType": "card",
+      "name": "暗沼九头蛇",
+      "cost": {
+        "mana": 16,
+        "raw": "16"
+      },
+      "stats": {
+        "life": 15,
+        "armor": 1
+      },
+      "tags": [
+        "apprentice-spell",
+        "deck-29",
+        "生物",
+        "standard-starting-spell"
+      ],
+      "text": "无额外规则正文。",
+      "assetRefs": [
+        "spell-card-2901-frame",
+        "spell-card-back"
+      ],
+      "data": {
+        "cardId": 2901,
+        "spellType": "生物",
+        "typeLine": "生物 / 长蛇",
+        "schoolLine": "黑暗",
+        "level": 4,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "猛力噬咬：快速近战 4 骰，反击；三重噬咬：完整行动近战 3 骰，三连击；重生2；迟缓",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "猛力噬咬",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 4,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            },
+            {
+              "id": "attack-1",
+              "name": "三重噬咬",
+              "action": "full",
+              "rangeKind": "melee",
+              "diceCount": 3,
+              "pierce": 0,
+              "strikeCount": 3,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C09",
+        "contractStatus": "locked",
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2901,
+        "deck": 29,
+        "slot": 1,
+        "frame": {
+          "left": 0.142857,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "standard",
+        "rawCost": "16",
+        "manaCost": 16,
+        "standardStartingRulesName": "暗沼九头蛇",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
+      }
+    },
+    {
+      "id": "spell-2902",
+      "objectType": "card",
+      "name": "死魂吸血鬼",
+      "tags": [
+        "standard-starting-spell",
+        "deck-29",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2902,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "死魂吸血鬼",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 29,
+        "slot": 2,
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2902,
+        "frame": {
+          "left": 0.285714,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2902-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2903",
+      "objectType": "card",
+      "name": "高山猩猩",
+      "tags": [
+        "standard-starting-spell",
+        "deck-29",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2903,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "高山猩猩",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 29,
+        "slot": 3,
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2903,
+        "frame": {
+          "left": 0.428571,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2903-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2904",
+      "objectType": "card",
+      "name": "月光妖精",
+      "tags": [
+        "standard-starting-spell",
+        "deck-29",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2904,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "月光妖精",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 29,
+        "slot": 4,
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2904,
+        "frame": {
+          "left": 0.571429,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2904-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-2906",
+      "objectType": "card",
+      "name": "野性山猫",
+      "cost": {
+        "mana": 5,
+        "raw": "5"
+      },
+      "stats": {
+        "life": 4,
+        "armor": 0
+      },
+      "tags": [
+        "apprentice-spell",
+        "deck-29",
+        "生物",
+        "standard-starting-spell"
+      ],
+      "text": "无额外规则正文，正文区为风味引文。",
+      "assetRefs": [
+        "spell-card-2906-frame",
+        "spell-card-back"
+      ],
+      "data": {
+        "cardId": 2906,
+        "spellType": "生物",
+        "typeLine": "生物 / 动物、猫科",
+        "schoolLine": "自然",
+        "level": 1,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "利爪：快速近战 2 骰；防御图标 `8+ / 1x`；冲锋+2",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "利爪",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 2,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": [
+            {
+              "id": "defense-0",
+              "minRoll": 8,
+              "usesPerRound": 1
+            }
+          ]
+        },
+        "printCode": "MW1C14",
+        "contractStatus": "locked",
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2906,
+        "deck": 29,
+        "slot": 6,
+        "frame": {
+          "left": 0.857143,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "standard",
+        "rawCost": "5",
+        "manaCost": 5,
+        "standardStartingRulesName": "野性山猫",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
+      }
+    },
+    {
+      "id": "spell-2907",
+      "objectType": "card",
+      "name": "灰衣天使",
+      "cost": {
+        "mana": 12,
+        "raw": "12"
+      },
+      "stats": {
+        "life": 10,
+        "armor": 2
+      },
+      "tags": [
+        "apprentice-spell",
+        "deck-29",
+        "生物",
+        "standard-starting-spell"
+      ],
+      "text": "无额外规则正文。",
+      "assetRefs": [
+        "spell-card-2907-frame",
+        "spell-card-back"
+      ],
+      "data": {
+        "cardId": 2907,
+        "spellType": "生物",
+        "typeLine": "生物 / 天使",
+        "schoolLine": "圣光",
+        "level": 3,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "利剑：快速近战 4 骰；救赎献祭：完整行动治疗 6 骰，治疗竞技场中任一活体生物，治疗效果等于掷骰结果，然后摧毁灰衣天使；飞行",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "利剑",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 4,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C19",
+        "contractStatus": "locked",
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2907,
+        "deck": 29,
+        "slot": 7,
+        "frame": {
+          "left": 0,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "standard",
+        "rawCost": "12",
+        "manaCost": 12,
+        "standardStartingRulesName": "灰衣天使",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
+      }
+    },
+    {
+      "id": "spell-2908",
+      "objectType": "card",
+      "name": "乌鸦魔宠胡金",
+      "cost": {
+        "mana": 11,
+        "raw": "11"
+      },
+      "stats": {
+        "life": 5,
+        "armor": 0
+      },
+      "tags": [
+        "source-card",
+        "deck-29",
+        "生物",
+        "standard-starting-spell"
+      ],
+      "text": "魔宠。限定奥术法师。仅能施放1-2级咒语法术。",
+      "assetRefs": [
+        "spell-card-2908-frame",
+        "spell-card-back"
+      ],
+      "data": {
+        "cardId": 2908,
+        "spellType": "生物",
+        "typeLine": "生物 / 动物、鸟类",
+        "schoolLine": "奥术",
+        "level": 3,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "乌鸦：快速近战1骰，穿刺+1；飞行；小型；传奇",
+        "sourceContract": "docs/games/mage-wars/rule/familiar-spellcasting-card-contract.md",
+        "contractStatus": "locked",
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2908,
+        "deck": 29,
+        "slot": 8,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "spellcastingSource": {
+          "abilityId": "mw.source.2908.familiar",
+          "kind": "familiar",
+          "phase": "creatureAction",
+          "allowedSpellTypes": [
+            "咒语"
+          ],
+          "maxSpellLevel": 2,
+          "channeling": 3
+        },
+        "standardStartingRulesName": "乌鸦魔宠胡金",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
+      }
+    },
+    {
+      "id": "spell-2909",
+      "objectType": "card",
+      "name": "西锁骑士",
+      "cost": {
+        "mana": 13,
+        "raw": "13"
+      },
+      "stats": {
+        "life": 10,
+        "armor": 3
+      },
+      "tags": [
+        "apprentice-spell",
+        "deck-29",
+        "生物",
+        "standard-starting-spell"
+      ],
+      "text": "无额外规则正文，正文区为风味引文。",
+      "assetRefs": [
+        "spell-card-2909-frame",
+        "spell-card-back"
+      ],
+      "data": {
+        "cardId": 2909,
+        "spellType": "生物",
+        "typeLine": "生物 / 骑士、士兵",
+        "schoolLine": "圣光",
+        "level": 3,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "长剑：快速近战 5 骰；防御图标 `8+ / 1x`；闪电+2",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "长剑",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 5,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": [
+            {
+              "id": "defense-0",
+              "minRoll": 8,
+              "usesPerRound": 1
+            }
+          ]
+        },
+        "printCode": "MW1C22",
+        "contractStatus": "locked",
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2909,
+        "deck": 29,
+        "slot": 9,
+        "frame": {
+          "left": 0.285714,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "standard",
+        "rawCost": "13",
+        "manaCost": 13,
+        "standardStartingRulesName": "西锁骑士",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
+      }
+    },
+    {
+      "id": "spell-2910",
+      "objectType": "card",
+      "name": "玛拉寇达",
+      "tags": [
+        "standard-starting-spell",
+        "deck-29",
+        "生物"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 2910,
+        "spellType": "生物",
+        "typeLine": "生物",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "玛拉寇达",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 29,
+        "slot": 10,
+        "atlasId": "spell-creature-core-b-atlas",
+        "atlasCardId": 2910,
+        "frame": {
+          "left": 0.428571,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-2910-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3400",
@@ -5190,7 +7336,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "目标受到5颗攻击骰子的直接伤害。同时施法者治疗与目标生物所受伤害相等数量的伤害。",
       "assetRefs": [
@@ -5221,7 +7368,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "12",
-        "manaCost": 12
+        "manaCost": 12,
+        "standardStartingRulesName": "生命汲取",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5234,7 +7386,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "当你施放炎爆时，选择一个附属在目标法师上的装备对象。X等于该装备的施法费用+6。摧毁被选择的装备。然后，炎爆对目标法师进行上述攻击条中的火焰攻击。",
       "assetRefs": [
@@ -5265,7 +7418,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "attackOrTraitLine": "火焰 4 颗攻击骰；效果骰 `6+=燃烧`；`无法回避`、`除霜`",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "炎爆",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5279,7 +7437,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "治疗目标生物，投掷5颗攻击骰子结算治疗效果。",
       "assetRefs": [
@@ -5310,7 +7469,14 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "次级治疗",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5323,7 +7489,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "选择一个本回合被召唤的生物。将目标生物的行动标记翻转至活动面。该生物在本回合可以正常行动。每回合你仅能对同一生物施放一次本法术。X等于目标的等级。",
       "assetRefs": [
@@ -5353,7 +7520,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "兽性觉醒",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5367,7 +7539,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "本回合中目标的下一次近战攻击获得吸血和穿刺+1特性。",
       "assetRefs": [
@@ -5398,7 +7571,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "3",
-        "manaCost": 3
+        "manaCost": 3,
+        "standardStartingRulesName": "汲血之击",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5412,7 +7590,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "治疗目标区域中每个友方活体生物。为每个生物分别投掷5颗攻击骰子结算治疗效果。",
       "assetRefs": [
@@ -5443,7 +7622,13 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "9",
-        "manaCost": 9
+        "manaCost": 9,
+        "standardStartingRulesName": "群体治疗",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5545,7 +7730,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "治疗目标生物，投掷8颗攻击骰子结算治疗效果。",
       "assetRefs": [
@@ -5576,7 +7762,13 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "rawCost": "9",
-        "manaCost": 9
+        "manaCost": 9,
+        "standardStartingRulesName": "单体治疗",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5589,7 +7781,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "将一个显性结界目标移至一个新的合法目标上。结界和新目标必须都处于范围与视线内。现在由你控制该结界。X等于目标结界的施法与展示总费用，加上你将其附属到新目标的施法与展示费用的总和（如同你刚施放并展示的法术）。",
       "assetRefs": [
@@ -5619,7 +7812,12 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "standard",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "结界窃取",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5632,7 +7830,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "目标生物被传送至目标区域。从当前区域计算每传送一格，X等于3点法力。你必须至少支付3点法力，即使目标被传送至同一区域。本效果不计为生物的移动行动。",
       "assetRefs": [
@@ -5662,7 +7861,13 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "传送",
+        "standardStartingMageIds": [
+          "warlock_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -5675,7 +7880,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "目标陷入昏睡。放置一枚沉睡状态标记到目标上。对具有精神免疫特性的生物无效。X数值如下：1级=4点法力；2级=5点法力；3级=6点法力；超过3级后每高一级增加2点法力费用。",
       "assetRefs": [
@@ -5705,8 +7911,205 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "昏睡",
+        "standardStartingMageIds": [
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-3412",
+      "objectType": "card",
+      "name": "结界迁移",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3412,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "结界迁移",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 12,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3412,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3412-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3413",
+      "objectType": "card",
+      "name": "放逐",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3413,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "放逐",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "workshop-standard-instance-selected",
+        "deck": 34,
+        "slot": 13,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3413,
+        "frame": {
+          "left": 0.857143,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3413-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3414",
+      "objectType": "card",
+      "name": "反隐驱散",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3414,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "反隐驱散",
+        "standardStartingMageIds": [
+          "warlock_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 14,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3414,
+        "frame": {
+          "left": 0,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3414-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3415",
+      "objectType": "card",
+      "name": "起死回生",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3415,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "起死回生",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 15,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3415,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3415-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3416",
+      "objectType": "card",
+      "name": "战斗怒火",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3416,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "战斗怒火",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 16,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3416,
+        "frame": {
+          "left": 0.285714,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3416-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3417",
@@ -5719,7 +8122,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "竞技场中所有的友方动物生物获得近战+1特性直到本回合结束。",
       "assetRefs": [
@@ -5750,8 +8154,51 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "4",
-        "manaCost": 4
+        "manaCost": 4,
+        "standardStartingRulesName": "荒野呼唤",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-3418",
+      "objectType": "card",
+      "name": "毒素净化",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3418,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "毒素净化",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 18,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3418,
+        "frame": {
+          "left": 0.571429,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3418-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3419",
@@ -5797,6 +8244,198 @@
       }
     },
     {
+      "id": "spell-3420",
+      "objectType": "card",
+      "name": "魔法净化",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3420,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "魔法净化",
+        "standardStartingMageIds": [
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 20,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3420,
+        "frame": {
+          "left": 0.857143,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3420-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3421",
+      "objectType": "card",
+      "name": "穿刺突击",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3421,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "穿刺突击",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 21,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3421,
+        "frame": {
+          "left": 0,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3421-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3422",
+      "objectType": "card",
+      "name": "完美一击",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3422,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "完美一击",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 22,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3422,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3422-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3423",
+      "objectType": "card",
+      "name": "圣疗神恩",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3423,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "圣疗神恩",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 23,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3423,
+        "frame": {
+          "left": 0.285714,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3423-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3424",
+      "objectType": "card",
+      "name": "击倒",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3424,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "击倒",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 24,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3424,
+        "frame": {
+          "left": 0.428571,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3424-frame",
+        "spell-card-back"
+      ]
+    },
+    {
       "id": "spell-3425",
       "objectType": "card",
       "name": "原力推斥",
@@ -5807,7 +8446,8 @@
       "tags": [
         "apprentice-spell",
         "deck-34",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "目标生物按你选择的方向被推斥1格区域。本次推斥不能将其穿越具有通行伤害特性的墙体，除非你在施放本法术时额外支付3点法力。",
       "assetRefs": [
@@ -5838,8 +8478,90 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "3",
-        "manaCost": 3
+        "manaCost": 3,
+        "standardStartingRulesName": "原力推斥",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "workshop-standard-instance-selected"
       }
+    },
+    {
+      "id": "spell-3426",
+      "objectType": "card",
+      "name": "神行无阻",
+      "tags": [
+        "standard-starting-spell",
+        "deck-34",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3426,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "神行无阻",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 34,
+        "slot": 26,
+        "atlasId": "spell-incantation-core-a-atlas",
+        "atlasCardId": 3426,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3426-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3500",
+      "objectType": "card",
+      "name": "力量汲取",
+      "tags": [
+        "standard-starting-spell",
+        "deck-35",
+        "咒语"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3500,
+        "spellType": "咒语",
+        "typeLine": "咒语",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "力量汲取",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 35,
+        "slot": 0,
+        "atlasId": "spell-incantation-core-b-atlas",
+        "atlasCardId": 3500,
+        "frame": {
+          "left": 0,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3500-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3523",
@@ -5852,7 +8574,8 @@
       "tags": [
         "apprentice-spell",
         "deck-35",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "目标生物按你选择的方向推斥1格区域。本次推斥不能将其穿越具有通行伤害特性的墙体，除非你在施放本法术时额外支付3点法力。",
       "assetRefs": [
@@ -5883,7 +8606,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "3",
-        "manaCost": 3
+        "manaCost": 3,
+        "standardStartingRulesName": "原力推斥",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "workshop-standard-instance-selected"
       }
     },
     {
@@ -5896,7 +8624,8 @@
       "tags": [
         "apprentice-spell",
         "deck-36",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "当你施放瓦解时，选择一个附属在目标法师上的装备对象。摧毁被选择的装备。X等于装备的施法费用。",
       "assetRefs": [
@@ -5926,7 +8655,14 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "瓦解",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "workshop-standard-instance-selected"
       }
     },
     {
@@ -5939,7 +8675,8 @@
       "tags": [
         "apprentice-spell",
         "deck-36",
-        "咒语"
+        "咒语",
+        "standard-starting-spell"
       ],
       "text": "摧毁显性结界目标。X等于目标结界的法力总费用（施法费用加展示费用）。",
       "assetRefs": [
@@ -5969,7 +8706,15 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
-        "rawCost": "X"
+        "rawCost": "X",
+        "standardStartingRulesName": "驱散",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice",
+          "warlock_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "workshop-standard-instance-selected"
       }
     },
     {
@@ -5983,7 +8728,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "限定黑暗法师。法师获得护甲+2和反伤屏障。",
       "assetRefs": [
@@ -6025,7 +8771,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "恶魔胸甲",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6039,7 +8790,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "限定邪术师。",
       "assetRefs": [
@@ -6101,7 +8853,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "狱火长鞭",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6115,7 +8872,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "初级。法师获得护甲+1。",
       "assetRefs": [
@@ -6146,7 +8904,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2",
-        "manaCost": 2
+        "manaCost": 2,
+        "standardStartingRulesName": "皮革手套",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6160,7 +8923,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "法师获得护甲+2和火焰-2特性。",
       "assetRefs": [
@@ -6191,7 +8955,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "6",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "龙鳞锁甲",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6205,7 +8974,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "无额外规则正文，正文区为风味引文。",
       "assetRefs": [
@@ -6267,7 +9037,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "奥秘法杖",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6281,7 +9056,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "每回合中每个生物首次对本法师进行近战攻击时，在宣告攻击步骤中，其控制方必须支付2点法力作为该次攻击的额外费用。本效果对反击无效。",
       "assetRefs": [
@@ -6319,7 +9095,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "8",
-        "manaCost": 8
+        "manaCost": 8,
+        "standardStartingRulesName": "抑制斗篷",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6333,7 +9114,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "限定女祭司。",
       "assetRefs": [
@@ -6394,8 +9176,51 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "9",
-        "manaCost": 9
+        "manaCost": 9,
+        "standardStartingRulesName": "阿希拉法杖",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-3707",
+      "objectType": "card",
+      "name": "重生腰带",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3707,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "重生腰带",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 7,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3707,
+        "frame": {
+          "left": 0,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3707-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3708",
@@ -6408,7 +9233,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "法师获得护甲+2和风力-3特性。",
       "assetRefs": [
@@ -6439,7 +9265,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "6",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "风龙皮甲",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6453,7 +9284,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "法师获得护甲+1、火焰-2、霜冻-2和闪电-2特性。",
       "assetRefs": [
@@ -6484,7 +9316,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "6",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "元素斗篷",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6498,7 +9335,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "限定兽王。每回合一次，作为一个快速法术，本法师可以支付2点法力并将距离其最多1格区域之内的一个动物生物作为目标，给予它近战+2特性直到本回合结束，或治疗目标生物投掷2颗攻击骰子结算治疗效果。",
       "assetRefs": [
@@ -6559,7 +9397,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "7",
-        "manaCost": 7
+        "manaCost": 7,
+        "standardStartingRulesName": "群兽法杖",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6573,7 +9416,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "法师获得护甲+2和霜冻-2特性。",
       "assetRefs": [
@@ -6604,8 +9448,127 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "6",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "巨熊皮甲",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-3712",
+      "objectType": "card",
+      "name": "天护皇冠",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3712,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "天护皇冠",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 12,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3712,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3712-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3713",
+      "objectType": "card",
+      "name": "奥术戒指",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3713,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "奥术戒指",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 13,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3713,
+        "frame": {
+          "left": 0.857143,
+          "top": 0.25,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3713-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3714",
+      "objectType": "card",
+      "name": "破晓指环",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3714,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "破晓指环",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 14,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3714,
+        "frame": {
+          "left": 0,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3714-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3715",
@@ -6618,7 +9581,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "法师获得防御。",
       "assetRefs": [
@@ -6659,7 +9623,12 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "6",
-        "manaCost": 6
+        "manaCost": 6,
+        "standardStartingRulesName": "偏移护腕",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
     },
     {
@@ -6673,7 +9642,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "你可以从你的法术书中绑定一个非史诗攻击类法术到元素魔杖上。作为一个快速法术，你可以支付3点法力，以更换绑定的法术。",
       "assetRefs": [
@@ -6704,8 +9674,90 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "5",
-        "manaCost": 5
+        "manaCost": 5,
+        "standardStartingRulesName": "元素魔杖",
+        "standardStartingMageIds": [
+          "warlock_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       }
+    },
+    {
+      "id": "spell-3719",
+      "objectType": "card",
+      "name": "塑火指环",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3719,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "塑火指环",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 19,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3719,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3719-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3720",
+      "objectType": "card",
+      "name": "恐惧头盔",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3720,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "恐惧头盔",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 20,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3720,
+        "frame": {
+          "left": 0.857143,
+          "top": 0.5,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3720-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3721",
@@ -6718,7 +9770,8 @@
       "tags": [
         "apprentice-spell",
         "deck-37",
-        "装备"
+        "装备",
+        "standard-starting-spell"
       ],
       "text": "初级。法师获得护甲+1。",
       "assetRefs": [
@@ -6749,7 +9802,237 @@
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
         "rawCost": "2",
-        "manaCost": 2
+        "manaCost": 2,
+        "standardStartingRulesName": "皮革长靴",
+        "standardStartingMageIds": [
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
+      }
+    },
+    {
+      "id": "spell-3722",
+      "objectType": "card",
+      "name": "野银长弓",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3722,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "野银长弓",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 22,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3722,
+        "frame": {
+          "left": 0.142857,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3722-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3725",
+      "objectType": "card",
+      "name": "法师魔杖",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3725,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "法师魔杖",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice",
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 25,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3725,
+        "frame": {
+          "left": 0.571429,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3725-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3726",
+      "objectType": "card",
+      "name": "摩洛王的折磨",
+      "tags": [
+        "standard-starting-spell",
+        "deck-37",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3726,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "摩洛王的折磨",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 37,
+        "slot": 26,
+        "atlasId": "spell-equipment-core-atlas",
+        "atlasCardId": 3726,
+        "frame": {
+          "left": 0.714286,
+          "top": 0.75,
+          "width": 0.142857,
+          "height": 0.25
+        }
+      },
+      "assetRefs": [
+        "spell-card-3726-frame",
+        "spell-card-back"
+      ]
+    },
+    {
+      "id": "spell-3800",
+      "objectType": "card",
+      "name": "月光项链",
+      "tags": [
+        "standard-starting-spell",
+        "deck-38",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3800,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "月光项链",
+        "standardStartingMageIds": [
+          "priestess_apprentice",
+          "wizard_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 38,
+        "slot": 0,
+        "assetStatus": "blocked-missing-runtime-atlas"
+      }
+    },
+    {
+      "id": "spell-3801",
+      "objectType": "card",
+      "name": "阿希拉之戒",
+      "tags": [
+        "standard-starting-spell",
+        "deck-38",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3801,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "阿希拉之戒",
+        "standardStartingMageIds": [
+          "priestess_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 38,
+        "slot": 1,
+        "assetStatus": "blocked-missing-runtime-atlas"
+      }
+    },
+    {
+      "id": "spell-3802",
+      "objectType": "card",
+      "name": "群兽之戒",
+      "tags": [
+        "standard-starting-spell",
+        "deck-38",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3802,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "群兽之戒",
+        "standardStartingMageIds": [
+          "beastmaster_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 38,
+        "slot": 2,
+        "assetStatus": "blocked-missing-runtime-atlas"
+      }
+    },
+    {
+      "id": "spell-3803",
+      "objectType": "card",
+      "name": "诅咒之戒",
+      "tags": [
+        "standard-starting-spell",
+        "deck-38",
+        "装备"
+      ],
+      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "data": {
+        "cardId": 3803,
+        "spellType": "装备",
+        "typeLine": "装备",
+        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
+        "contractStatus": "blocked",
+        "requiresCodeSupport": true,
+        "standardStartingRulesName": "诅咒之戒",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate",
+        "deck": 38,
+        "slot": 3,
+        "assetStatus": "blocked-missing-runtime-atlas"
       }
     }
   ],
@@ -7128,7 +10411,8 @@
             ],
             "mappingStatus": "single-candidate"
           }
-        ]
+        ],
+        "spellbookKind": "apprentice-legacy"
       }
     },
     {
@@ -7491,7 +10775,8 @@
             ],
             "mappingStatus": "single-candidate"
           }
-        ]
+        ],
+        "spellbookKind": "apprentice-legacy"
       }
     },
     {
@@ -7853,7 +11138,8 @@
             ],
             "mappingStatus": "single-candidate"
           }
-        ]
+        ],
+        "spellbookKind": "apprentice-legacy"
       }
     },
     {
@@ -8229,16 +11515,805 @@
             ],
             "mappingStatus": "single-candidate"
           }
-        ]
+        ],
+        "spellbookKind": "apprentice-legacy"
+      }
+    },
+    {
+      "id": "spellbook-beastmaster_apprentice_standard_starting",
+      "name": "兽王标准起始法术书",
+      "entries": [
+        {
+          "objectId": "spell-3725",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3711",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3710",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3802",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3709",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3707",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2224",
+          "count": 3
+        },
+        {
+          "objectId": "spell-2218",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2222",
+          "count": 3
+        },
+        {
+          "objectId": "spell-2206",
+          "count": 1
+        },
+        {
+          "objectId": "spell-25700",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2207",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2303",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2819",
+          "count": 3
+        },
+        {
+          "objectId": "spell-2808",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2802",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2903",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2812",
+          "count": 3
+        },
+        {
+          "objectId": "spell-2820",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2824",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2806",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2821",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2906",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1901",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1903",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1806",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1808",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1914",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1915",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1809",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1900",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1826",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1916",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1917",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1814",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3421",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3402",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3408",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3417",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3424",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3412",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3606",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3405",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3403",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3605",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3422",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3425",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3416",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1710",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1711",
+          "count": 1
+        }
+      ],
+      "data": {
+        "mageId": "beastmaster_apprentice",
+        "spellbookKind": "standard-starting",
+        "rulesSource": "gameasset/法师战争/output/pdf/ai_readable_pdf_exports/101721 法师战争 Mage Wars 规则/pages/page_040.md",
+        "workshopSource": "gameasset/法师战争/Mods/Workshop/2607721556.json:ObjectStates[20]"
+      }
+    },
+    {
+      "id": "spellbook-priestess_apprentice_standard_starting",
+      "name": "女祭司标准起始法术书",
+      "entries": [
+        {
+          "objectId": "spell-3706",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3801",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3725",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3708",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3715",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3714",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3712",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3722",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3800",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2203",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2219",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2222",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2811",
+          "count": 3
+        },
+        {
+          "objectId": "spell-2813",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2814",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2816",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2907",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2817",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2909",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1901",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1903",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1806",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1808",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1822",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1812",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1813",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1913",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1916",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1917",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1912",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3402",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3408",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3418",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3411",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3420",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3415",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3606",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3405",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3423",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3605",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3422",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3523",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1706",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1709",
+          "count": 1
+        }
+      ],
+      "data": {
+        "mageId": "priestess_apprentice",
+        "spellbookKind": "standard-starting",
+        "rulesSource": "gameasset/法师战争/output/pdf/ai_readable_pdf_exports/101721 法师战争 Mage Wars 规则/pages/page_040.md",
+        "workshopSource": "gameasset/法师战争/Mods/Workshop/2607721556.json:ObjectStates[20]"
+      }
+    },
+    {
+      "id": "spellbook-warlock_apprentice_standard_starting",
+      "name": "邪术师标准起始法术书",
+      "entries": [
+        {
+          "objectId": "spell-3700",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3720",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3726",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3702",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3719",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3701",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3716",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3803",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2221",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2500",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2209",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2212",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2800",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2825",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2801",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2818",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2826",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2804",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2803",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2910",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2902",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1902",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1804",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1914",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1800",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1807",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1816",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1820",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1801",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1826",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1910",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1823",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1819",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1824",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3410",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3414",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3404",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3606",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3426",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3400",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3401",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3425",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1700",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1701",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1702",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1707",
+          "count": 1
+        }
+      ],
+      "data": {
+        "mageId": "warlock_apprentice",
+        "spellbookKind": "standard-starting",
+        "rulesSource": "gameasset/法师战争/output/pdf/ai_readable_pdf_exports/101721 法师战争 Mage Wars 规则/pages/page_040.md",
+        "workshopSource": "gameasset/法师战争/Mods/Workshop/2607721556.json:ObjectStates[20]"
+      }
+    },
+    {
+      "id": "spellbook-wizard_apprentice_standard_starting",
+      "name": "巫师标准起始法术书",
+      "entries": [
+        {
+          "objectId": "spell-3704",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3713",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3725",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3703",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3721",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3705",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3716",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3800",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2208",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2223",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2221",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2901",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2810",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2807",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2822",
+          "count": 2
+        },
+        {
+          "objectId": "spell-2809",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2908",
+          "count": 1
+        },
+        {
+          "objectId": "spell-2904",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1907",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1825",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1821",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1901",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1806",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1904",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1815",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1905",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1810",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1811",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1818",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1908",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3410",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3402",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3414",
+          "count": 2
+        },
+        {
+          "objectId": "spell-3413",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3411",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3409",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3500",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3420",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3606",
+          "count": 1
+        },
+        {
+          "objectId": "spell-3605",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1704",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1703",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1708",
+          "count": 1
+        },
+        {
+          "objectId": "spell-1711",
+          "count": 2
+        },
+        {
+          "objectId": "spell-1705",
+          "count": 3
+        }
+      ],
+      "data": {
+        "mageId": "wizard_apprentice",
+        "spellbookKind": "standard-starting",
+        "rulesSource": "gameasset/法师战争/output/pdf/ai_readable_pdf_exports/101721 法师战争 Mage Wars 规则/pages/page_040.md",
+        "workshopSource": "gameasset/法师战争/Mods/Workshop/2607721556.json:ObjectStates[20]"
       }
     }
   ],
   "setup": {
     "startingDecks": [
-      "spellbook-beastmaster_apprentice",
-      "spellbook-priestess_apprentice",
-      "spellbook-warlock_apprentice",
-      "spellbook-wizard_apprentice"
+      "spellbook-beastmaster_apprentice_standard_starting",
+      "spellbook-priestess_apprentice_standard_starting",
+      "spellbook-warlock_apprentice_standard_starting",
+      "spellbook-wizard_apprentice_standard_starting"
     ],
     "startingDeployment": [
       {
@@ -8303,12 +12378,20 @@
         "free-build",
         "four-player",
         "deluxe-arena"
+      ],
+      "spellbookScope": "standard-starting-page-40",
+      "legacyApprenticeDecks": [
+        "spellbook-beastmaster_apprentice",
+        "spellbook-priestess_apprentice",
+        "spellbook-warlock_apprentice",
+        "spellbook-wizard_apprentice"
       ]
     }
   },
   "data": {
     "configStatus": "initial-runtime-parity-package",
     "sourceContracts": [
+      "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
       "docs/games/mage-wars/rule/apprentice-spellbooks.md",
       "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
       "docs/games/mage-wars/rule/apprentice-card-atlas-contract.md",

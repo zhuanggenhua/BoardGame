@@ -8,141 +8,51 @@ metadata:
 
 # 全局系统与服务规范
 
-> 本文档是 `AGENTS.md` 的补充，包含全局 Context 系统和实时服务层的详细规范。
-> **触发条件**：使用/修改全局 Context、Toast、Modal、音频、教学、认证系统时阅读。
+## 目标
 
----
+本文只规定跨游戏公共能力的入口边界。具体业务规则、单游戏适配和任务步骤不写在这里。
 
-## 1. 通用 Context 系统 (`src/contexts/`)
+## Context 系统
 
-所有全局系统均通过 Context 提供 API，**禁止**在业务组件内直接操作底层的全局 Variable。
+所有全局能力通过 `src/contexts/` 暴露 API，业务组件不得直接操作底层全局变量。
 
-- **Toast 通知系统 (`useToast`)**：
-    - `show/success/warning/error(content, options)`。
-    - 支持 `dedupeKey` 防抖，`error` 类型默认更长驻留。
-- **弹窗栈系统 (`useModalStack`)**：
-    - 采用类似路由的栈管理：`openModal`, `closeTop`, `replaceTop`, `closeAll`。
-    - **规范**：所有业务弹窗必须通过 `openModal` 唤起，禁止自行在组件内维护独立的 `isVisible` 状态。
-    - **阻塞前台默认入栈（强制）**：凡是拥有当前业务确认权、会阻塞 `sys.interaction` / `responseWindow` / 阶段推进的前台 UI，默认必须挂到 modal stack，禁止绕开栈单独开 overlay 与其它阻塞前台抢 ownership。
-    - **新游戏默认禁止模仿 DiceThrone 的 `useSyncedModalStackEntry`（强制）**：`src/hooks/ui/useSyncedModalStackEntry.tsx` 仅用于把既有本地/引擎驱动前台适配到全局 modal stack，属于历史接入桥，不是新游戏推荐模式。新游戏若新增阻塞前台，默认直接围绕 `openModal` / `closeModal` / `replaceTop` 设计单一 truth source；只有在接入既有遗留状态体系、且无法在当轮收敛到单一 truth source 时，才允许评估这类桥接。
-    - **桥接适用范围（强制）**：如果确实不得不用 `useSyncedModalStackEntry`，必须在实现或证据文档里明确写出“原 truth source 在哪里、为什么不能直接以 modal stack 作为 truth source、桥是否单向、等价更新如何 no-op”。缺任一项都视为不合格设计，不得作为新游戏模板传播。
-    - **overlay 例外口径（强制）**：只有纯展示、无确认权、不会阻塞业务推进的 spotlight / magnify / 展示态特写，才允许留在 overlay 通道；一旦承担确认、选择、继续、关闭后推进流程等职责，就不再是“纯展示”。
-    - **入栈前台禁止二次 portal（强制）**：某个阻塞前台一旦已经作为 modal stack entry 承载，其实际可点击内容必须留在这条 entry 的 DOM 子树内；禁止 render 过程中再 portal 到 `hud-root` / 其它根节点。否则 ownership 在栈里、命中层却在栈外，会出现“看得见但点不到 / 空壳层盖住真实内容 / 栈顺序失真”。
-- **音频系统 (`useAudio` & `AudioManager`)**：
-    - 统一管理 BGM 与 SFX。
-    - **规范**：切换游戏时，必须通过 `stopBgm` 及 `playBgm` 重置音乐流。声音资源需经过 `compress_audio.js` 压缩。
-    - **生命周期要求**：应用进入后台、锁屏、熄屏或页面隐藏时，必须主动停止 BGM；恢复前台后默认不自动续播，避免后台持续播放。
-- **教学系统 (`useTutorial`)**：
-    - 基于 Manifest 的分步引导。支持 `highlightTarget` (通过 `data-tutorial-id`) 与 `aiMove` 模拟。
-- **认证系统 (`useAuth`)**：
-    - 管理 JWT 及 `localStorage` 同步。提供 `user` 状态与 `login/logout` 接口。
-- **调试系统 (`useDebug`)**：
-    - 运行时的 Player ID 模拟（0/1/Spectator）及 `testMode` 开关。
+| 系统 | 职责 | 关键边界 |
+| --- | --- | --- |
+| Toast | 展示短结果、警告和错误 | 用 dedupe 防重复；复杂原因放日志或详情 |
+| Modal Stack | 管理业务弹窗栈 | 有确认权、选择权或阻塞推进的前台必须入栈 |
+| Audio | 管理 BGM / SFX | 切换游戏时重置 BGM；后台、锁屏、页面隐藏时停止 |
+| Tutorial | Manifest 驱动分步引导 | 引导动作不成为规则真相源 |
+| Auth | 管理登录态和本地同步 | UI 只消费认证状态，不绕过服务端授权 |
+| Debug | 运行时调试开关和视角模拟 | 不能进入生产默认路径或玩家合同 |
 
----
+### Modal 边界
 
-## 2. 实时服务层 (`src/lib/` & `src/services/`)
+- 新阻塞前台默认围绕 modal stack 建单一 truth source。
+- `useSyncedModalStackEntry` 只用于遗留前台桥接；使用前必须写清原 truth source、为什么不能直接迁入 modal stack、桥是否单向、等价更新如何 no-op。
+- 纯展示、无确认权、不会阻塞业务推进的 spotlight / magnify / 特写可留在 overlay；一旦承担确认、选择、继续或关闭后推进，就必须回到 modal stack。
+- 已入栈的阻塞前台，其真实可点击内容必须留在同一 entry DOM 子树内，禁止二次 portal 到其它根节点。
 
-- **LobbySocket (`LobbySocketService`)**：
-    - 独立于游戏传输层的 WebSocket 通道，用于：
-        1. 大厅房间列表实时更新。
-        2. 房间内成员状态（在线/离线）同步。
-        3. 关键连接错误（`connect_error`）的上报。
-    - **规范**：组件销毁时必须取消订阅或在 Context 层面统一维护。
-- **SocialSocket (`SocialSocketService`)**：
-    - 登录态默认走“延迟热启动”，避免与大厅/对局首屏同时抢占建连资源。
-    - 打开通知、好友、聊天等社交入口时，应立即显式唤醒连接，不要继续等待空闲调度。
-    - **规范**：社交实时连接优先服务通知/聊天体验，不得在仅为读取静态列表的场景下无条件首屏常驻建连。
-- **引擎原语 (`src/engine/primitives/`)**：
-    - 提供条件/效果/骰子/资源/目标/区域/表达式等通用工具，由游戏层按需组合实现具体机制。
+## 实时服务
 
----
+- LobbySocket 服务大厅房间列表、房间成员状态和关键连接错误；组件销毁时必须取消订阅或交给 Context 统一维护。
+- SocialSocket 登录态默认延迟热启动；打开通知、好友或聊天入口时显式唤醒。静态列表读取不得无条件首屏常驻建连。
+- 游戏传输层边界见 [`engine-transport.md`](engine-transport.md)，不要把大厅 / 社交 socket 规则复制进游戏传输。
 
-## 3. 通用 UI 系统
+## 通用 UI
 
-- **GameHUD (`src/components/game/GameHUD.tsx`)**：
-    - 游戏的"浮动控制中心"。整合了：
-        1. 退出房间、撤销、设置。
-        2. 多人在线状态显示。
-        3. 音效控制入口。
-    - **规范**：新游戏接入必须包含 GameHUD 或其变体。
+新游戏必须接入 `GameHUD` 或等价变体，至少承载退出房间、撤销、设置、多人在线状态和音效控制入口。HUD 可以按游戏视觉适配，但不能删除公共能力入口。
 
----
+## 光标主题
 
-## 4. 光标主题系统 (`src/core/cursor/`)
+- 新增游戏光标主题时，游戏层注册主题，manifest 声明默认主题，统一 registry 负责触发注册。
+- manifest 声明的主题必须与注册主题 id 一致；多变体时，manifest 默认主题必须能被主页和游戏内默认逻辑找到。
+- 共享视觉风格放在公共 cursor style 模板；游戏层引用，不复制 SVG 规则。
+- 光标形态必须符合常识：default 是标准箭头，pointer 是手形，grabbing 是握拳，zoomIn 是放大镜加号，notAllowed 是禁止符。
+- 光标设置中，临时选择、本游戏默认变体、全局覆盖范围和高对比偏好必须分别保存；不得把本地 pending 当成已持久化设置。
 
-> **触发条件**：新增游戏光标主题、修改光标偏好逻辑、修改光标设置 UI 时阅读。
+## 禁止项
 
-### 架构概览
-
-```
-src/core/cursor/
-├── types.ts                     # CursorTheme / CursorPreference / CursorPreviewSvgs 类型
-├── themes.ts                    # 注册表 + buildCursors + svgCursor + injectOutlineFilter
-├── cursorStyles.ts              # 跨游戏共享样式模板（CursorStyleTemplate / createThemeFromStyle）
-├── CursorPreferenceContext.tsx  # 全局偏好 Context（DB 持久化，仅登录用户）
-├── cursorPreference.ts          # fetch/save API（GET/PUT /auth/user-settings/cursor）
-├── GameCursorProvider.tsx       # 游戏内光标注入（<style> 作用域 CSS）
-└── useGlobalCursor.ts           # 主页全局光标注入（<style id="global-cursor-style">）
-
-src/games/<gameId>/cursor.ts     # 游戏自注册（调用 registerCursorThemes）
-src/games/cursorRegistry.ts      # 统一 import 触发注册（在 src/main.tsx 引入）
-```
-
-### CursorPreference 字段
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `cursorTheme` | `string` | 选中的主题 ID，`'default'` 表示系统光标 |
-| `overrideScope` | `'home' \| 'all'` | 覆盖范围：仅主页 / 全部游戏 |
-| `highContrast` | `boolean` | 高对比模式：注入白色外描边光晕（`injectOutlineFilter`） |
-| `gameVariants` | `Record<string, string>` | 每个游戏记住的变体 ID（`gameId → themeId`），通过"更换"弹窗保存 |
-
-### 新增游戏光标主题（强制流程）
-
-1. 在 `src/games/<gameId>/cursor.ts` 定义 SVG + 调用 `registerCursorThemes()`
-2. 在 `src/games/cursorRegistry.ts` 加一行 `import '../<gameId>/cursor'`
-3. 在 `src/games/<gameId>/manifest.ts` 设置 `cursorTheme: '<themeId>'`（**必须与注册的主题 ID 一致**）
-
-```typescript
-// cursor.ts 最小模板（新增游戏约 10 行）
-import { buildCursors, registerCursorThemes } from '../../core/cursor/themes';
-const svgs = { default: `<svg .../>`, pointer: `<svg .../>` };
-registerCursorThemes([{
-    id: 'mygame', gameId: 'mygame', label: '我的游戏', variantLabel: '默认',
-    previewSvgs: svgs, ...buildCursors(svgs),
-}]);
-```
-
-多变体：在同一文件定义多个主题对象，一次性传入 `registerCursorThemes([theme1, theme2, ...])`。
-
-**注册顺序规范（强制）**：
-- **manifest 配置的主题必须放在注册数组的第一位**，确保主页网格显示与游戏内默认主题一致。
-- 示例：`manifest.ts` 中 `cursorTheme: 'mygame-variant2'` → `cursor.ts` 中 `registerCursorThemes([variant2, variant1, variant3])`
-- **架构保障**：`getDefaultThemePerGame(manifests)` 优先使用 manifest 配置，注册顺序作为备用方案。
-
-### 共享样式模板
-
-多游戏复用同一视觉风格时，在 `cursorStyles.ts` 定义 `CursorStyleTemplate`，游戏层用 `createThemeFromStyle()` 引用，不复制 SVG。
-
-### 光标形态规范（强制）
-
-- **default**：左上角为尖端的标准箭头，不得用对称/装饰性形状替代
-- **pointer**：食指伸出的手形
-- **grabbing**：握拳形状，**禁止**用火焰/闪电/准星等非手形替代；风格通过颜色/描边/装饰体现
-- **zoomIn**：放大镜 + 加号
-- **notAllowed**：圆形禁止符
-
-### 设置弹窗交互逻辑（`CursorSettingsModal`）
-
-- 点卡片 → 本地 `pending` 高亮，不保存（使用该游戏 `gameVariants` 记住的变体）
-- 标题栏"更换" → 打开变体子弹窗，选变体后立即保存到 `gameVariants[gameId]`（改变该游戏的默认变体），同时更新 `pending`；若该游戏已是当前生效的，同步更新 `cursorTheme`
-- "设为当前" → 保存 `cursorTheme` 到 DB（`isDirty` 时可点）
-- 高对比 / 覆盖范围 → 即时保存（独立偏好，不走 pending 流程）
-- 主网格卡片预览：优先显示 `gameVariants[gameId]` 记住的变体，回退到注册表第一个
-
-### 游戏内光标选择逻辑（`GameCursorProvider`）
-
-- `overrideScope='all'` + `cursorTheme` 非 default → 用户选的光标覆盖所有游戏
-- `overrideScope='all'` + `cursorTheme='default'` → 不注入自定义光标
-- `overrideScope='home'` → 优先使用 `gameVariants[gameId]`（用户为该游戏选的变体），回退到 manifest 声明的 `themeId`
+- 禁止业务组件绕过 Context 自己维护全局可见状态。
+- 禁止新游戏复制历史桥接层作为默认架构。
+- 禁止把调试视角、教程模拟或 UI 展示状态写成规则授权。
+- 禁止把全局系统文档写成单游戏接入 SOP。

@@ -29,7 +29,7 @@ import { AdminMobileReleaseService } from './admin-mobile-release.service';
 import { AdminTestLatencyService } from './admin-test-latency.service';
 import { AdminService } from './admin.service';
 
-@Controller('admin')
+@Controller('admin-api')
 export class AdminController {
     constructor(
         @Inject(AdminService) private readonly adminService: AdminService,

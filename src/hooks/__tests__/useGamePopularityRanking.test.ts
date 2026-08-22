@@ -54,7 +54,7 @@ describe('buildBalancedPopularityByGameId', () => {
             expect(result.current.status).toBe('success');
         });
         expect(result.current.popularityByGameId.dicethrone).toBeGreaterThan(0);
-        expect(fetchMock).toHaveBeenCalledWith('/admin/stats', expect.any(Object));
+        expect(fetchMock).toHaveBeenCalledWith('/admin-api/stats', expect.any(Object));
     });
 
     it('会区分后台统计真实为空和请求失败', async () => {

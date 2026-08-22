@@ -1172,6 +1172,147 @@ export function createDustHauntCore(
   return core;
 }
 
+function isFixtureMagicCameraCard(
+  card: BetrayalCore["currentExplorer"]["inventory"][number],
+): boolean {
+  return card.id === "camera" || card.name === "魔法相机";
+}
+
+function removeFixtureMagicCameraFromExplorer(
+  explorer: BetrayalCore["currentExplorer"],
+): BetrayalCore["currentExplorer"] {
+  return {
+    ...explorer,
+    inventory: explorer.inventory.filter((card) => !isFixtureMagicCameraCard(card)),
+  };
+}
+
+export function createMagicCameraHauntCore(
+  cameraOwnerPlayerId: string | null = "1",
+): BetrayalCore {
+  let core = createStartedFirstScenarioCore(["0", "1", "2"]);
+  const cameraEvent = BETRAYAL_DISCOVERY_POOLS.events.find(
+    (event) => event.name === "说“茄子”！",
+  );
+  if (!cameraEvent) {
+    throw new Error("山屋测试夹具缺少官方事件牌：说“茄子”！");
+  }
+  core.drawOrder = ["event"];
+  core.eventOrder = [cameraEvent];
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "kitchen") },
+  ]);
+  core.currentExplorer = removeFixtureMagicCameraFromExplorer(core.currentExplorer);
+  core.otherExplorers = core.otherExplorers.map(removeFixtureMagicCameraFromExplorer);
+  core.currentExplorer.inventory = [
+    ...core.currentExplorer.inventory,
+    { id: "omen-book", name: "书本", kind: "omen" },
+    { id: "dog", name: "狗", kind: "omen" },
+    { id: "mask", name: "面具", kind: "omen" },
+  ];
+  if (cameraOwnerPlayerId === "0") {
+    core.currentExplorer.inventory = [
+      ...core.currentExplorer.inventory,
+      { id: "camera", name: "魔法相机", kind: "item" },
+    ];
+  }
+  core.currentExplorerInventory = [...core.currentExplorer.inventory];
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.otherExplorers = core.otherExplorers.map((explorer) => (
+    explorer.playerId === cameraOwnerPlayerId
+      ? { ...explorer, inventory: [...explorer.inventory, { id: "camera", name: "魔法相机", kind: "item" }] }
+      : explorer
+  ));
+  if (!cameraOwnerPlayerId) {
+    core.possessionOrderByKind.item = [
+      { id: "camera", name: "魔法相机", kind: "item" },
+      ...core.possessionOrderByKind.item.filter((card) => card.id !== "camera"),
+    ];
+  }
+
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
+    roomId: "hallway",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
+    roomId: "ground-north",
+  });
+  if (!core.pendingEventChoice) {
+    throw new Error("山屋魔法相机作祟夹具未生成事件选择");
+  }
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+    "0",
+    { accept: true },
+    100,
+    createBetrayalScriptedRandom(3, 3, 3),
+  );
+  core = acknowledgePendingCardResolutions(core);
+  if (core.phase !== "haunt" || !core.scenarioRuntime.magicCamera) {
+    throw new Error("山屋魔法相机作祟夹具未进入剧本33运行态");
+  }
+  return core;
+}
+
+export function createHelpingHandsHauntCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  let core = createStartedFirstScenarioCore(playerIds);
+  const helpingHandsEvent = BETRAYAL_DISCOVERY_POOLS.events.find(
+    (event) => event.name === "大宅饿了",
+  );
+  if (!helpingHandsEvent) {
+    throw new Error("山屋测试夹具缺少官方事件牌：大宅饿了");
+  }
+  core.drawOrder = ["event"];
+  core.eventOrder = [helpingHandsEvent];
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "kitchen") },
+  ]);
+  core.currentExplorer.inventory = [
+    ...core.currentExplorer.inventory,
+    { id: "omen-book", name: "书本", kind: "omen" },
+    { id: "dog", name: "狗", kind: "omen" },
+    { id: "mask", name: "面具", kind: "omen" },
+  ];
+  setFixtureExplorerInventory(core, "1", [
+    { id: "ring", name: "指环", kind: "omen" },
+  ]);
+  setFixtureExplorerInventory(core, "2", [
+    { id: "holy-symbol", name: "圣符", kind: "omen" },
+  ]);
+  core.currentExplorer.traits = {
+    ...core.currentExplorer.traits,
+    might: 4,
+    speed: 4,
+  };
+  core.currentExplorerInventory = [...core.currentExplorer.inventory];
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
+    roomId: "hallway",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
+    roomId: "ground-north",
+  });
+  if (!core.pendingEventChoice) {
+    throw new Error("山屋大宅饿了作祟夹具未生成事件选择");
+  }
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+    "0",
+    { accept: true },
+    100,
+    createBetrayalScriptedRandom(3, 3, 3),
+  );
+  core = acknowledgePendingCardResolutions(core);
+  if (core.phase !== "haunt" || !core.scenarioRuntime.helpingHands) {
+    throw new Error("山屋大宅饿了作祟夹具未进入剧本12运行态");
+  }
+  return core;
+}
+
 export function createDustFeverishControlReadyCore(
   feverishPlayerId = "0",
 ): BetrayalCore {

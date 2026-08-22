@@ -50,3 +50,14 @@ export type ArenaZoneId = typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS];
 export type StatusTokenId = typeof STATUS_TOKEN_IDS[keyof typeof STATUS_TOKEN_IDS];
 export type MageWarsMageAbilityId = typeof MAGE_WARS_MAGE_ABILITY_IDS[keyof typeof MAGE_WARS_MAGE_ABILITY_IDS];
 export type MageWarsObjectAbilityId = typeof MAGE_WARS_OBJECT_ABILITY_IDS[keyof typeof MAGE_WARS_OBJECT_ABILITY_IDS];
+
+export type MageWarsWallEdgeId = string;
+
+const ARENA_ZONE_ID_ORDER = Object.values(ARENA_ZONE_IDS);
+
+export function getMageWarsWallEdgeId(left: ArenaZoneId, right: ArenaZoneId): MageWarsWallEdgeId {
+    const [first, second] = [left, right].sort((leftId, rightId) => (
+        ARENA_ZONE_ID_ORDER.indexOf(leftId) - ARENA_ZONE_ID_ORDER.indexOf(rightId)
+    ));
+    return `${first}-${second}`;
+}

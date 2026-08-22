@@ -6,235 +6,43 @@ metadata:
   status: 已交付
 ---
 
-# Choice Request 旧兼容附录：createSimpleChoice
+# Choice Request 旧兼容附录
 
-> 交互接口的总入口是 [`rule-driven-interaction-design.md`](rule-driven-interaction-design.md)。本文只记录 `simple-choice` 作为旧弹窗 surface / legacy adapter 时必须保留的兼容合同，不再作为与 Choice Request 平级的新交互框架。
+交互接口总源是 [`rule-driven-interaction-design.md`](rule-driven-interaction-design.md)。本文件只记录 `simple-choice` 作为旧弹窗 surface / legacy adapter 时的兼容边界；它不是新业务阻塞交互框架。
 
-## `createSimpleChoice` 兼容合同（强制）
+## 定位
 
-> 所有使用 `createSimpleChoice` 创建交互的代码必须遵守。
+- `createSimpleChoice` 是旧兼容工具。新游戏、AI 可控阻塞交互、线上可恢复卡点和已迁出旧弹窗的游戏，必须建立 Choice Request。
+- 旧游戏可保留历史 `simple-choice`，但新增交互默认不扩大使用面。
+- 允许继续使用的场景只包括纯确认、按钮分支、数值 / 模式选择，且没有场上对象、手牌、棋盘格、来源-目标、多步或响应窗口语义。
+- 作为 Choice Request 的薄适配层时，`simple-choice` 只负责显示，不能重新拥有候选真相、权限真相或 AI 语义。
 
-## 定位：旧兼容工具，不是新交互框架
+## 字段合同
 
-**状态标签：旧兼容 / 新游戏禁用。**
+| 字段 | 现实含义 | 规则 |
+| --- | --- | --- |
+| `sourceId` | 谁发起这次选择 | 必须稳定，便于日志、恢复和审计 |
+| `multi` | 多选数量边界 | 必须嵌套在配置对象的 `multi` 字段下 |
+| `autoResolveIfSingle` | 只有一个候选时是否代替玩家完成 | 默认不自动；玩家选择语义禁止设为 true |
+| `targetType` | 旧 UI 的目标类型提示 | 只能辅助旧 UI，不能作为 AI 或规则语义主源 |
+| `displayMode` | 选项按卡牌还是按钮渲染 | 卡牌选项显式声明卡牌渲染模式 |
+| `defId` | 卡牌 / 对象定义身份 | 卡牌预览需要，不能替代渲染模式 |
 
-`createSimpleChoice` 的定位是通用选择弹窗 / 旧交互兼容工具，不再作为新游戏业务阻塞交互的权威框架。小黑屋（Betrayal）、法师战争（Mage Wars）、七大恨（Qidahen）以及后续新游戏，必须按 [`rule-driven-interaction-design.md`](rule-driven-interaction-design.md) 先建立 `Choice Request`（选择请求），再让 UI、AI、服务端校验和自动恢复消费同一份请求。
+旧 `targetType` 词表只保留历史解释：`base` 表示区域 / 地点 / 公共目标，`minion` 表示单位 / 场上卡牌对象，`hand` 表示手牌对象，`discard_minion` 表示弃牌堆对象，`generic` 表示通用按钮或对象选择。新增专用交互不得继续扩展这个词表。
 
-允许继续使用 `createSimpleChoice` 的场景：
+## 强制规则
 
-1. 旧游戏的历史交互兼容，尤其是 SmashUp、SummonerWars 等已经大量依赖的现有调用。
-2. 纯确认、纯按钮分支、纯数值 / 模式选择，且这一步没有场上对象、手牌、棋盘格、来源-目标、多步或响应窗口语义。
-3. 作为薄适配层渲染已经存在的 Choice Request；此时 `simple-choice` 不能重新拥有候选真相、权限真相或 AI 语义。
+- 玩家要选择卡牌、区域、单位、角色、目标、支付对象、来源、目的地、顺序、数量或是否执行时，即使只有一个合法候选，也必须保留玩家选择或明确跳过 / 确认入口。
+- 只有该步骤没有玩家选择、没有可见对象、没有放弃语义，只剩固定机械结果时，才允许自动收口。
+- 选项代表卡牌时，option value 必须携带定义身份，UI 不得从字段形状猜渲染模式。
+- 跨区域清理、区域替换或对象移除后再解决的交互，必须携带稳定业务标识，不能只保存数组下标或临时位置。
+- `responseWindow` 与 `simple-choice` 并存时，普通命令是否放行由响应窗口系统裁决。
+- 一个 interaction kind 只表达一种稳定业务语义；来源-目标、多步选择、响应窗口和阶段推进必须建专用 kind / reader / modal。
+- 取消 / 跳过入口只保留一个前台承载；阻塞前台默认进入 modal stack，真实可点击内容必须与 modal stack entry 同树。
 
-禁止继续新增裸 `createSimpleChoice` 的场景：
+## 禁止项
 
-1. 新游戏里的玩家业务选择、AI 可控阻塞交互或线上可恢复卡点。
-2. 响应窗口、场上来源-目标选择、多步选择、隐藏 / 私有候选、棋盘格选择、手牌响应、阶段推进权选择。
-3. 需要 AI 生成合法动作但只能从 option label、UI 类型、数组下标或 `targetType` 猜语义的交互。
-
-旧游戏保持兼容，不要求一次性重构全部 `simple-choice`。但只要修改旧游戏中 AI 可见的阻塞交互，必须补 AI 支持状态、稳定候选和提交命令；如果这些信息无法自然塞进旧壳，应迁移到专用 interaction kind 或 Choice Request 适配层。
-
-### 函数签名
-
-```typescript
-function createSimpleChoice<T>(
-    id: string,                              // 交互 ID（通常为能力 ID）
-    playerId: PlayerId,                      // 做选择的玩家
-    title: string,                           // 弹窗标题（i18n key）
-    options: PromptOption<T>[],              // 选项列表
-    sourceIdOrConfig?: string | SimpleChoiceConfig, // 第 5 参数：sourceId 字符串 或 配置对象
-    timeout?: number,                        // 第 6 参数：超时（仅位置参数形式有效）
-    multi?: PromptMultiConfig,               // 第 7 参数：多选配置（仅位置参数形式有效）
-): InteractionDescriptor<SimpleChoiceData<T>>
-```
-
-### 两种调用约定
-
-**约定 A：位置参数形式**（第 5 参数为 `string`）
-```typescript
-createSimpleChoice(id, playerId, title, options, sourceId, undefined, { min: 0, max: N })
-//                                                ^^^^^^^^  ^^^^^^^^^  ^^^^^^^^^^^^^^^^^^
-//                                                第5:string 第6:timeout 第7:multi
-```
-
-**约定 B：配置对象形式**（第 5 参数为 `SimpleChoiceConfig`）
-```typescript
-createSimpleChoice(id, playerId, title, options, {
-    sourceId: 'ability_id',
-    multi: { min: 0, max: N },    // ← multi 必须嵌套在 config 对象内
-    autoResolveIfSingle: false,
-})
-```
-
-### SimpleChoiceConfig 结构
-
-```typescript
-interface SimpleChoiceConfig {
-    sourceId?: string;
-    timeout?: number;
-    multi?: PromptMultiConfig;        // { min?: number; max?: number }
-    targetType?: 'base' | 'minion' | 'hand' | 'discard_minion' | 'generic';
-    autoResolveIfSingle?: boolean;    // 兼容字段；玩家要选择对象/可放弃时禁止传 true
-    autoCancelOption?: boolean;       // 自动添加取消选项
-}
-```
-
-### 强制规则
-
-- `autoResolveIfSingle` 只在**显式传 `true`** 时生效；不传值时会保留交互，不会自动代替玩家点击。
-- **玩家选择语义禁止自动完成（强制）**：只要这一步的现实含义是让玩家选择卡牌、基地、随从、角色、目标、支付对象、来源、目的地、顺序、数量或是否执行，即使合法候选只有 1 个，也不得传 `autoResolveIfSingle: true`，不得在 handler 中直接取第一项代替玩家选择。必须保留交互，让玩家看到候选并点击对象或选择跳过/确认。
-- **唯一允许自动收口的场景**：只有当该步骤已经没有玩家选择、没有可见对象、没有放弃/跳过语义，只剩固定机械结果时，才允许自动收口；此时应优先不创建 `simple-choice`。如果出于兼容必须使用 `autoResolveIfSingle: true`，代码附近必须说明“为什么这不是玩家选择”。
-
-1. **"任意数量"/"any number" → 必须传 `multi: { min: 0, max: N }`**，N 为候选项总数。不传 `multi` 会导致单选模式。
-2. **"恰好 N 个" → `multi: { min: N, max: N }`**。
-3. **"最多 N 个" → `multi: { min: 0, max: N }` 或 `multi: { min: 1, max: N }`**（视是否可跳过）。
-4. **基地/随从/手牌选择必须声明 `targetType`（强制）**：
-   - `targetType: 'base'` — 选择基地（如地形改造、麦田怪圈）
-   - `targetType: 'minion'` — 选择随从（如至高霸主、收集者）
-   - `targetType: 'hand'` — 选择手牌（如幽灵弃牌）
-   - `targetType: 'discard_minion'` — 选择弃牌堆随从（如僵尸领主）
-   - `targetType: 'generic'` — 通用选择（如选择玩家、选择基地牌库中的卡）
-   - **历史债务**：现有 57 个交互依赖自动检测（兼容模式），可以保持现状，修改时顺带添加 `targetType`。
-5. **卡牌选项必须声明 `displayMode: 'card'`（强制）**。`PromptOption` 新增 `displayMode?: 'card' | 'button'` 字段，用于显式声明 UI 渲染模式。使用 `buildMinionTargetOptions()` 构建的选项已自动设置。手动构建卡牌选项时必须显式添加 `displayMode: 'card'`。UI 层对未设置 `displayMode` 的选项 fallback 到 `extractDefId` 猜测（向后兼容，但新代码禁止依赖此 fallback）。
-6. **选项代表卡牌时，`option.value` 必须包含 `defId` 字段**。UI 层从 `defId` 查找卡牌预览图。缺少 `defId` → 即使 `displayMode: 'card'` 也无法展示预览图。
-7. **配置对象形式中 `multi` 必须嵌套**：`{ sourceId, multi: { min, max } }` ✅，`{ sourceId, min, max }` ❌（`min`/`max` 作为顶层字段会被忽略）。
-8. **可能跨 `BASE_CLEARED` / `BASE_REPLACED` / 基地移除后再解决的交互，禁止只传 `baseIndex`**。如果 handler 在交互解决时还需要重新定位基地，必须同时携带稳定标识（如 `baseDefId`），并在 handler 中先按稳定标识解析活体基地，再 fallback 到仍有效的 `baseIndex`。`baseIndex` 只是当时快照位置，不是跨时序稳定标识。
-9. **`responseWindow` 与 `simple-choice` 可以并存，命令放行权必须归 `ResponseWindowSystem`**。当 `state.sys.interaction.current.kind === 'simple-choice'` 且同时存在活动 `state.sys.responseWindow.current` 时，`SimpleChoiceSystem` 不能一刀切拦截同玩家的普通非 `SYS_` 命令；此时命令是否合法必须交给 `ResponseWindowSystem` 裁决。只有在没有活动响应窗口时，`SimpleChoiceSystem` 才负责阻塞“请先完成当前选择”类普通命令。
-10. **一个 interaction kind 只能表达一种稳定业务语义（强制）**。`simple-choice` 只保留真正的分支/按钮/数值选择；像“为当前 pendingAttack 选 defender”“选择 compare-roll 胜方”“奖励骰重掷结算确认”这类有独立业务语义的步骤，必须建 dedicated kind / dedicated reader / dedicated modal，禁止继续把不同职责塞进同一个 `simple-choice` / `selectPlayer` 壳子里。
-11. **能直接消费现有交互对象时，不得再创造第二个交互对象（强制）**。如果当前 live interaction / prompt option 已经完整表达了玩家这一步要操作的业务对象（例如卡牌 `cardUid`、基地 `baseIndex`、随从 `minionUid`、已存在的 `optionId`），UI 必须优先直接让玩家点击这个现有对象，并把点击结果回送到同一个 live option / interaction；禁止再额外包一层“先选一个动作/先选一个分支/先开一个总弹窗”的二次交互壳，只是把同一批对象重新描述一遍。只有在**确实新增了一个原交互对象里不存在的新决策步骤**时，才允许创建新的 interaction kind / prompt。
-12. **组合选择不得预展开为按钮组合**。当一个效果依次需要选择单位、建筑/区域、落点或数量时，必须用引擎交互状态表达每一步；当前步骤的可见对象直接消费原交互选项，下一步在上一选择 resolve 后再创建。只有数量、确认、跳过、取消等语义分支可以保留为按钮；不得用 `targetType: 'button'` 把对象 × 对象 × 位置的笛卡尔积一次性渲染出来。
-13. **取消入口只能有一个前台承载**。如果横幅已经提供跳过/取消并能回送当前 interaction，就不要再在同一 interaction.options 中增加同义“跳过”选项；若业务必须让 AI/服务端看到可跳过值，应使用同一个引擎取消/跳过语义，不得让玩家看到两个重复按钮。
-14. **阻塞交互的前台承载默认走 modal stack（强制）**。如果某个前台直接拥有当前交互步骤的确认权，或它的关闭/确认会决定业务是否继续推进，那么它必须作为 modal stack entry 承载；只有纯展示、不会改变交互 ownership 的特写/放大层，才允许保留在 overlay 通道。
-15. **modal stack entry 的真实可点击内容必须与 entry 同树（强制）**。一旦前台已经进栈，禁止其内部再通过 `HudPortal` / `modal-root` / 其它 portal 把主体内容挪到栈外；否则会出现“栈里的 fixed 空层拦截点击、真正内容在另一棵树里单飞”的命中错误。若同一组件既要支持 overlay 展示态、也要支持入栈阻塞态，必须提供 `usePortal=false` 这类底层开关，让栈式场景原位渲染。
-
-### PromptOption.displayMode（渲染模式声明）
-
-```typescript
-interface PromptOption<T = unknown> {
-    id: string;
-    label: string;
-    value: T;
-    disabled?: boolean;
-    /** 'card' = 卡牌预览模式，'button' | undefined = 按钮模式 */
-    displayMode?: 'card' | 'button';
-}
-```
-
-- **设计原则**：渲染模式由选项创建者显式声明，而非 UI 层从 `value` 字段名猜测。`defId` 是业务数据，不是 UI 渲染声明。
-- **`buildMinionTargetOptions()`** 已自动设置 `displayMode: 'card'`。
-- **手动构建卡牌选项**时必须显式添加：`{ id, label, value: { cardUid, defId }, displayMode: 'card' }`。
-- **非卡牌选项**（跳过/完成/基地选择等）不需要设置 `displayMode`，默认为按钮。
-- **向后兼容**：UI 层 `isCardOption()` 优先读 `displayMode`，未设置时 fallback 到 `extractDefId()` + `previewRef` 检查。新代码禁止依赖此 fallback。
-
-### 反模式
-
-```typescript
-// ❌ multi 传到 timeout 位置（第 6 参数）
-createSimpleChoice(id, pid, title, opts, sourceId, { min: 0, max: 3 })
-
-// ❌ config 对象中 min/max 平铺（不在 multi 子对象内）
-createSimpleChoice(id, pid, title, opts, { sourceId: 'xxx', min: 0, max: 3 })
-
-// ❌ 描述说"任意数量"但不传 multi
-createSimpleChoice(id, pid, title, opts, sourceId)  // → 单选模式
-
-// ❌ 基地/随从选择未声明 targetType（依赖自动检测，新代码禁止）
-createSimpleChoice(id, pid, '选择一个基地', baseOptions, 'ability_id')
-
-// ❌ 选项代表卡牌但 value 缺少 defId（无法展示预览图）
-options.map(c => ({ id: c.instanceId, label: c.name, value: { instanceId: c.instanceId } }))
-
-// ❌ 卡牌选项未声明 displayMode（依赖 UI 层猜测，新代码禁止）
-options.map(c => ({ id: c.uid, label: c.name, value: { cardUid: c.uid, defId: c.defId } }))
-
-// ❌ 交互会跨基地清场/换基地，但只保存 baseIndex（基地列表收缩后会漂移）
-createSimpleChoice(id, pid, title, opts, {
-    sourceId: 'ability_id',
-    targetType: 'minion',
-})
-
-// ❌ 玩家需要选择一个可见对象时，把唯一候选自动结算掉
-createSimpleChoice(id, pid, '选择一个随从', minionOptions, {
-    sourceId: 'ability_id',
-    targetType: 'minion',
-    autoResolveIfSingle: true,
-})
-
-// ❌ 可选效果只有一个合法候选时，直接取第一项执行，玩家看不到“跳过/不做”
-const selected = candidates[0];
-return selected ? applyEffect(selected) : noOp();
-
-// ❌ simple-choice 与 responseWindow 并存时，由 SimpleChoiceSystem 直接拦截所有普通命令
-if (state.sys.interaction.current?.kind === 'simple-choice') {
-    return { valid: false, error: '请先完成当前选择' };
-}
-
-// ❌ 用 simple-choice 伪装“选受击者 / 选 compare-roll 结果 / 奖励骰确认”
-createSimpleChoice(id, pid, title, opts, {
-    sourceId: 'targeting-roll',
-});
-
-// ❌ 当前 live prompt 已经给出了 cardUid/baseIndex/optionId，
-//    UI 仍再造一个“选择一个动作”的总弹窗，让用户重复选择同一批对象
-showActionPicker(existingPrompt.options);
-
-// ✅ 当前 live prompt 已经完整表达了业务对象，UI 直接消费现有对象并回送原 optionId
-onCardClick(cardUid => respondCurrentPrompt({ optionId: liveOptionId }));
-
-// ❌ 把奖励骰确认挂到 simple-choice / 独立弹窗，和响应或骰盘重复承接
-return <BonusDieOverlay open settlement={pendingSettlement} onClose={confirmAndAdvance} />;
-
-// ✅ 位置参数形式 + multi
-createSimpleChoice(id, pid, title, opts, sourceId, undefined, { min: 0, max: opts.length })
-
-// ✅ 配置对象形式 + multi 嵌套
-createSimpleChoice(id, pid, title, opts, { sourceId: 'xxx', multi: { min: 0, max: opts.length } })
-
-// ✅ 基地选择：显式声明 targetType
-createSimpleChoice(id, pid, '选择一个基地', baseOptions, { sourceId: 'ability_id', targetType: 'base' })
-
-// ✅ 随从选择：显式声明 targetType
-createSimpleChoice(id, pid, '选择一个随从', minionOptions, { sourceId: 'ability_id', targetType: 'minion' })
-
-// ✅ 即使只有一个随从候选，也保留选择交互，必要时显式提供跳过选项
-createSimpleChoice(id, pid, '选择一个随从', [createSkipOption(), ...minionOptions], {
-    sourceId: 'ability_id',
-    targetType: 'minion',
-    autoResolveIfSingle: false,
-})
-
-// ✅ 卡牌选项：displayMode + defId
-options.map(c => ({ id: c.uid, label: c.name, value: { cardUid: c.uid, defId: c.defId }, displayMode: 'card' as const }))
-
-// ✅ 交互会跨基地清场/换基地：同时带 baseIndex + baseDefId，handler 里优先按稳定标识回找
-createSimpleChoice(id, pid, '选择一个随从', minionOptions, {
-    sourceId: 'ability_id',
-    targetType: 'minion',
-})
-// option.value: { minionUid, baseIndex, baseDefId, ... }
-
-// ✅ simple-choice 与 responseWindow 并存时，让 ResponseWindowSystem 决定是否允许出响应牌
-if (
-    state.sys.interaction.current?.kind === 'simple-choice' &&
-    state.sys.responseWindow?.current
-) {
-    return validateByResponseWindow(...);
-}
-
-// ✅ 专用业务语义使用专用 interaction kind + 专用 UI reader
-queueInteraction(state, {
-    id: `defender-choice-${attackId}`,
-    kind: 'dt:defender-choice',
-    playerId: chooserPlayerId,
-    data: { attackerId, chooserPlayerId, options },
-});
-
-// ✅ DiceThrone 奖励骰不是 simple-choice，也不进入独立奖励骰弹窗。
-// pendingBonusDiceSettlement / dt:bonus-dice 只表达领域阻塞状态；玩家可见骰面和普通确认统一由右侧 2D 骰盘承接。
-// 普通响应的继续/跳过由手牌上方共享响应提示框承接；Token 本体仍是直接使用入口。
-```
-
-> 这里的 `dt:bonus-dice` 说明只用于强调“奖励骰是独立领域交互”，不构成玩家可见弹窗入口。DiceThrone 当前由右侧 2D 骰盘承接骰面、改骰和普通确认；普通响应由手牌上方共享响应提示承接。
-> **新游戏强制口径**：阻塞前台默认直接作为 modal stack entry 设计；但只有确实需要玩家选择的交互才能进 modal stack，不能把纯骰盘确认包装成 modal。
-
----
+- 禁止用 option label、翻译文案、数组下标、UI 类型或 `targetType` 当 AI / 规则主语义。
+- 禁止用 `simple-choice` 伪装来源-目标选择、私密候选、棋盘格选择、手牌响应或阶段推进权。
+- 禁止把唯一候选直接执行，让玩家看不到候选、成本、跳过或确认。
+- 禁止在新游戏中把旧 simple-choice 的 payload 形状当作交互设计模板。

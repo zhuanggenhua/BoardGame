@@ -8,6 +8,7 @@ import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import type { ChoiceRequest, ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
 import { INTERACTION_EVENTS, queueInteraction, resolveInteraction, createCompareRollChoice, createMultistepChoice } from '../../../engine/systems/InteractionSystem';
+import { completeResolutionFrame } from '../../../engine/systems/resolutionStack';
 import type { InteractionDescriptor as EngineInteractionDescriptor, SimpleChoiceData, PromptOption, MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
 import type {
     DiceThroneCore,
@@ -15,7 +16,6 @@ import type {
     ChoiceRequestedEvent,
     ChoiceResolvedEvent,
     InteractionRequestedEvent,
-    TokenResponseRequestedEvent,
     BonusDiceRerollRequestedEvent,
     InteractionDescriptor as DtInteractionDescriptor,
     TurnPhase,
@@ -30,6 +30,10 @@ import {
 import { isRemovableStatusId } from './statusRemoval';
 import { updatePendingAttackSettlementStage } from './utils';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
+import {
+    readDiceThroneTokenResponseChoiceContract,
+    resolveDiceThroneTokenResponseInteractionPendingDamageId,
+} from './tokenResponseChoiceContract';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -378,6 +382,142 @@ function syncCurrentChoiceAnchorWithInteraction(
             currentChoiceSourceAbilityId: sourceId,
         },
     };
+}
+
+function assertTokenResponseCloseMatchesInteraction(
+    interaction: EngineInteractionDescriptor | undefined,
+    event: Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>,
+): void {
+    const { choiceRequestId, choiceCandidateId, opportunityId, resolutionFrameId } = event.payload;
+    if (
+        resolutionFrameId
+        && interaction?.resolutionFrameId !== resolutionFrameId
+    ) {
+        throw new Error(
+            `TOKEN_RESPONSE_CLOSED 所属 ResolutionFrame ${resolutionFrameId} 与当前交互 ${interaction?.resolutionFrameId ?? 'none'} 不匹配`,
+        );
+    }
+    if (!choiceRequestId) {
+        const interactionPendingDamageId = resolveDiceThroneTokenResponseInteractionPendingDamageId(interaction);
+        if (
+            interaction?.kind !== 'dt:token-response'
+            || (
+                interactionPendingDamageId
+                && interactionPendingDamageId !== event.payload.pendingDamageId
+            )
+        ) {
+            throw new Error(
+                `TOKEN_RESPONSE_CLOSED 待处理伤害 ${event.payload.pendingDamageId} 无法匹配当前 dt:token-response 交互`,
+            );
+        }
+        return;
+    }
+
+    const contract = readDiceThroneTokenResponseChoiceContract(interaction);
+    if (!contract) {
+        throw new Error(
+            `TOKEN_RESPONSE_CLOSED 来源 ChoiceRequest ${choiceRequestId} 无法匹配当前 dt:token-response 交互`,
+        );
+    }
+
+    if (contract.requestId !== choiceRequestId) {
+        throw new Error(
+            `TOKEN_RESPONSE_CLOSED 来源 ChoiceRequest ${choiceRequestId} 与当前交互 ${contract.requestId} 不匹配`,
+        );
+    }
+
+    if (
+        choiceCandidateId
+        && !contract.candidates.some((candidate) => candidate.id === choiceCandidateId)
+    ) {
+        throw new Error(
+            `TOKEN_RESPONSE_CLOSED 来源候选 ${choiceCandidateId} 不属于当前 ChoiceRequest ${choiceRequestId}`,
+        );
+    }
+
+    const currentOpportunityId = typeof contract.metadata?.opportunityId === 'string'
+        ? contract.metadata.opportunityId
+        : undefined;
+    if (opportunityId && currentOpportunityId && opportunityId !== currentOpportunityId) {
+        throw new Error(
+            `TOKEN_RESPONSE_CLOSED 来源 Opportunity ${opportunityId} 与当前交互 ${currentOpportunityId} 不匹配`,
+        );
+    }
+}
+
+function tokenResponseCloseMatchesInteraction(
+    interaction: EngineInteractionDescriptor | undefined,
+    event: Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>,
+): boolean {
+    if (!interaction || interaction.kind !== 'dt:token-response') return false;
+
+    const { choiceRequestId, choiceCandidateId, opportunityId, resolutionFrameId } = event.payload;
+    if (resolutionFrameId && interaction.resolutionFrameId !== resolutionFrameId) {
+        return false;
+    }
+    if (!choiceRequestId) {
+        const pendingDamageId = resolveDiceThroneTokenResponseInteractionPendingDamageId(interaction);
+        return pendingDamageId === event.payload.pendingDamageId;
+    }
+
+    const contract = readDiceThroneTokenResponseChoiceContract(interaction);
+    if (!contract || contract.requestId !== choiceRequestId) return false;
+    if (
+        choiceCandidateId
+        && !contract.candidates.some((candidate) => candidate.id === choiceCandidateId)
+    ) {
+        return false;
+    }
+
+    const currentOpportunityId = typeof contract.metadata?.opportunityId === 'string'
+        ? contract.metadata.opportunityId
+        : undefined;
+    return !(opportunityId && currentOpportunityId && opportunityId !== currentOpportunityId);
+}
+
+function closeTokenResponseInteraction(
+    state: MatchState<DiceThroneCore>,
+    event: Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>,
+): MatchState<DiceThroneCore> {
+    const current = state.sys.interaction.current as EngineInteractionDescriptor | undefined;
+    const { choiceRequestId } = event.payload;
+
+    if (current?.kind === 'dt:token-response') {
+        assertTokenResponseCloseMatchesInteraction(current, event);
+        const resolved = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(state));
+        const frameId = event.payload.resolutionFrameId ?? current.resolutionFrameId;
+        return frameId
+            ? completeResolutionFrame(resolved, frameId)
+            : resolved;
+    }
+
+    const queueIndex = state.sys.interaction.queue.findIndex((interaction) => (
+        tokenResponseCloseMatchesInteraction(interaction as EngineInteractionDescriptor, event)
+    ));
+    if (queueIndex === -1) {
+        throw new Error(
+            choiceRequestId
+                ? `TOKEN_RESPONSE_CLOSED 来源 ChoiceRequest ${choiceRequestId} 无法匹配当前或队列中的 dt:token-response 交互`
+                : `TOKEN_RESPONSE_CLOSED 待处理伤害 ${event.payload.pendingDamageId} 无法匹配当前或队列中的 dt:token-response 交互`,
+        );
+    }
+
+    const nextQueue = state.sys.interaction.queue.filter((_, index) => index !== queueIndex);
+    const queuedInteraction = state.sys.interaction.queue[queueIndex] as EngineInteractionDescriptor | undefined;
+    const nextState = {
+        ...state,
+        sys: {
+            ...state.sys,
+            interaction: {
+                ...state.sys.interaction,
+                queue: nextQueue,
+            },
+        },
+    };
+    const frameId = event.payload.resolutionFrameId ?? queuedInteraction?.resolutionFrameId;
+    return frameId
+        ? completeResolutionFrame(nextState, frameId)
+        : nextState;
 }
 
 function markCurrentAttackReadyAfterInteraction(
@@ -1008,42 +1148,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     }
                 }
 
-                // ---- TOKEN_RESPONSE_REQUESTED → queue/update dt:token-response ----
-                // 业务数据仅存 core.pendingDamage；sys.interaction 只做阻塞标记
-                if (dtEvent.type === 'TOKEN_RESPONSE_REQUESTED') {
-                    const payload = (dtEvent as TokenResponseRequestedEvent).payload;
-                    const current = newState.sys.interaction.current;
-                    if (current && current.kind === 'dt:token-response') {
-                        // 同一伤害响应内的阶段切换（攻击方加伤 → 防御方减伤），原地更新 playerId
-                        newState = {
-                            ...newState,
-                            sys: {
-                                ...newState.sys,
-                                interaction: {
-                                    ...newState.sys.interaction,
-                                    current: {
-                                        ...current,
-                                        id: `dt-token-response-${payload.pendingDamage.id}`,
-                                        playerId: payload.pendingDamage.responderId,
-                                        data: null,
-                                    },
-                                },
-                            },
-                        };
-                    } else {
-                        const interaction: EngineInteractionDescriptor = {
-                            id: `dt-token-response-${payload.pendingDamage.id}`,
-                            kind: 'dt:token-response',
-                            playerId: payload.pendingDamage.responderId,
-                            data: null,
-                        };
-                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
-                    }
-                }
-
                 // ---- TOKEN_RESPONSE_CLOSED → resolve ----
                 if (dtEvent.type === 'TOKEN_RESPONSE_CLOSED') {
-                    const resolvedState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
+                    const resolvedState = closeTokenResponseInteraction(newState, dtEvent);
                     newState = {
                         ...resolvedState,
                         sys: {

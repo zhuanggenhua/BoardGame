@@ -261,8 +261,9 @@ export interface MageWarsConfigStatusToken {
 
 let cachedMaterializedPackage: GameConfigMaterializedPackage | undefined;
 let cachedReviewTable: GameConfigReviewTable | undefined;
-let cachedMageOrder: readonly MageId[] | undefined;
-const cachedSpellbookEntries = new Map<MageId, readonly MageWarsConfigSpellbookEntry[]>();
+let cachedApprenticeMageOrder: readonly MageId[] | undefined;
+let cachedStandardStartingMageOrder: readonly MageId[] | undefined;
+const cachedSpellbookEntries = new Map<string, readonly MageWarsConfigSpellbookEntry[]>();
 const cachedSpellCardsByCardId = new Map<number, MageWarsConfigSpellCard>();
 const cachedStatusTokensByStatusTokenId = new Map<StatusTokenId, MageWarsConfigStatusToken>();
 const cachedMageAbilities = new Map<MageId, readonly MageWarsConfigMageAbility[]>();
@@ -991,8 +992,21 @@ function mageObjectId(mageId: MageId): string {
     return `mage-${mageId}`;
 }
 
-function spellbookDeckId(mageId: MageId): string {
-    return `spellbook-${mageId}`;
+type MageWarsSpellbookKind = 'apprentice-legacy' | 'standard-starting';
+
+function spellbookDeckId(mageId: MageId, kind: MageWarsSpellbookKind): string {
+    return kind === 'standard-starting'
+        ? `spellbook-${mageId}_standard_starting`
+        : `spellbook-${mageId}`;
+}
+
+function isMageWarsSpellObject(object: GameConfigObject): boolean {
+    return object.objectType === 'card'
+        && (
+            object.tags?.includes('standard-starting-spell') === true
+            || object.tags?.includes('apprentice-spell') === true
+            || object.tags?.includes('source-card') === true
+        );
 }
 
 function requireObject(objectId: string): GameConfigObject {
@@ -1139,8 +1153,30 @@ function buildMageAbilityFromConfig(
 }
 
 export function getApprenticeMageOrderFromConfig(): readonly MageId[] {
-    if (cachedMageOrder) {
-        return cachedMageOrder;
+    if (cachedApprenticeMageOrder) {
+        return cachedApprenticeMageOrder;
+    }
+
+    cachedApprenticeMageOrder = [
+        MAGE_IDS.BEASTMASTER_APPRENTICE,
+        MAGE_IDS.PRIESTESS_APPRENTICE,
+        MAGE_IDS.WARLOCK_APPRENTICE,
+        MAGE_IDS.WIZARD_APPRENTICE,
+    ].map((mageId) => {
+        const deckId = spellbookDeckId(mageId, 'apprentice-legacy');
+        const deck = requireDeck(deckId);
+        const deckMageId = deck.data?.mageId;
+        if (!isMageId(deckMageId)) {
+            throw new Error(`invalid Mage Wars mage id at deck "${deckId}".data.mageId`);
+        }
+        return deckMageId;
+    });
+    return cachedApprenticeMageOrder;
+}
+
+export function getStandardStartingMageOrderFromConfig(): readonly MageId[] {
+    if (cachedStandardStartingMageOrder) {
+        return cachedStandardStartingMageOrder;
     }
 
     const startingDecks = materializeMageWarsConfigPackage().package.setup?.startingDecks;
@@ -1148,19 +1184,22 @@ export function getApprenticeMageOrderFromConfig(): readonly MageId[] {
         throw new Error('Mage Wars config is missing setup.startingDecks');
     }
 
-    cachedMageOrder = startingDecks.map((deckId) => {
+    cachedStandardStartingMageOrder = startingDecks.map((deckId) => {
         const deck = requireDeck(deckId);
+        if (deck.data?.spellbookKind !== 'standard-starting') {
+            throw new Error(`Mage Wars config deck "${deckId}" is not a standard starting spellbook`);
+        }
         const mageId = deck.data?.mageId;
         if (!isMageId(mageId)) {
             throw new Error(`invalid Mage Wars mage id at deck "${deckId}".data.mageId`);
         }
         return mageId;
     });
-    return cachedMageOrder;
+    return cachedStandardStartingMageOrder;
 }
 
 export function getPresetMageOrderFromConfig(): readonly MageId[] {
-    return getApprenticeMageOrderFromConfig();
+    return getStandardStartingMageOrderFromConfig();
 }
 
 export function getApprenticeMageSetupFromConfig(mageId: MageId): MageWarsConfigMageSetup {
@@ -1332,13 +1371,17 @@ export function getFormalStartingMageIdFromConfig(seatIndex: number): MageId {
     return mageId;
 }
 
-export function getApprenticeSpellbookEntriesFromConfig(mageId: MageId): readonly MageWarsConfigSpellbookEntry[] {
-    const cached = cachedSpellbookEntries.get(mageId);
+function getSpellbookEntriesFromConfig(
+    mageId: MageId,
+    kind: MageWarsSpellbookKind,
+): readonly MageWarsConfigSpellbookEntry[] {
+    const cacheKey = `${kind}:${mageId}`;
+    const cached = cachedSpellbookEntries.get(cacheKey);
     if (cached) {
         return cached;
     }
 
-    const deck = requireDeck(spellbookDeckId(mageId));
+    const deck = requireDeck(spellbookDeckId(mageId, kind));
     const deckMageId = deck.data?.mageId;
     if (deckMageId !== mageId) {
         throw new Error(`Mage Wars config deck "${deck.id}" has mismatched mageId "${String(deckMageId)}"`);
@@ -1354,12 +1397,20 @@ export function getApprenticeSpellbookEntriesFromConfig(mageId: MageId): readonl
         };
     });
 
-    cachedSpellbookEntries.set(mageId, entries);
+    cachedSpellbookEntries.set(cacheKey, entries);
     return entries;
 }
 
+export function getApprenticeSpellbookEntriesFromConfig(mageId: MageId): readonly MageWarsConfigSpellbookEntry[] {
+    return getSpellbookEntriesFromConfig(mageId, 'apprentice-legacy');
+}
+
+export function getStandardStartingSpellbookEntriesFromConfig(mageId: MageId): readonly MageWarsConfigSpellbookEntry[] {
+    return getSpellbookEntriesFromConfig(mageId, 'standard-starting');
+}
+
 export function getPresetSpellbookEntriesFromConfig(mageId: MageId): readonly MageWarsConfigSpellbookEntry[] {
-    return getApprenticeSpellbookEntriesFromConfig(mageId);
+    return getStandardStartingSpellbookEntriesFromConfig(mageId);
 }
 
 export function getApprenticeSpellbookCardIdsFromConfig(mageId: MageId): number[] {
@@ -1368,16 +1419,26 @@ export function getApprenticeSpellbookCardIdsFromConfig(mageId: MageId): number[
     ));
 }
 
+export function getStandardStartingSpellbookCardIdsFromConfig(mageId: MageId): number[] {
+    return getStandardStartingSpellbookEntriesFromConfig(mageId).flatMap((entry) => (
+        Array.from({ length: entry.count }, () => entry.spellCardId)
+    ));
+}
+
 export function getPresetSpellbookCardIdsFromConfig(mageId: MageId): number[] {
-    return getApprenticeSpellbookCardIdsFromConfig(mageId);
+    return getStandardStartingSpellbookCardIdsFromConfig(mageId);
 }
 
 export function getApprenticeSpellbookCountFromConfig(mageId: MageId): number {
     return getApprenticeSpellbookEntriesFromConfig(mageId).reduce((total, entry) => total + entry.count, 0);
 }
 
+export function getStandardStartingSpellbookCountFromConfig(mageId: MageId): number {
+    return getStandardStartingSpellbookEntriesFromConfig(mageId).reduce((total, entry) => total + entry.count, 0);
+}
+
 export function getPresetSpellbookCountFromConfig(mageId: MageId): number {
-    return getApprenticeSpellbookCountFromConfig(mageId);
+    return getStandardStartingSpellbookCountFromConfig(mageId);
 }
 
 export function hasApprenticeSpellbookCardInConfig(mageId: MageId, spellCardId: number): boolean {
@@ -1385,8 +1446,13 @@ export function hasApprenticeSpellbookCardInConfig(mageId: MageId, spellCardId: 
         .some((entry) => entry.spellCardId === spellCardId);
 }
 
+export function hasStandardStartingSpellbookCardInConfig(mageId: MageId, spellCardId: number): boolean {
+    return getStandardStartingSpellbookEntriesFromConfig(mageId)
+        .some((entry) => entry.spellCardId === spellCardId);
+}
+
 export function hasPresetSpellbookCardInConfig(mageId: MageId, spellCardId: number): boolean {
-    return hasApprenticeSpellbookCardInConfig(mageId, spellCardId);
+    return hasStandardStartingSpellbookCardInConfig(mageId, spellCardId);
 }
 
 export function getMageWarsSpellCardFromConfig(spellCardId: number): MageWarsConfigSpellCard | undefined {
@@ -1396,8 +1462,7 @@ export function getMageWarsSpellCardFromConfig(spellCardId: number): MageWarsCon
     }
 
     const object = materializeMageWarsConfigPackage().package.objects.find((candidate) => (
-        candidate.objectType === 'card'
-        && (candidate.tags?.includes('apprentice-spell') === true || candidate.tags?.includes('source-card') === true)
+        isMageWarsSpellObject(candidate)
         && candidate.data?.cardId === spellCardId
     ));
     if (!object) return undefined;

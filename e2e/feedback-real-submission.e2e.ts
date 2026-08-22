@@ -90,7 +90,7 @@ test.describe('反馈真实提交链路 E2E', () => {
         await expect(feedbackModal).toHaveCount(0, { timeout: 10_000 });
 
         await expect.poll(async () => {
-            const response = await page.request.get('/admin/feedback?status=open&reporterType=user&limit=20&sort=newest', {
+            const response = await page.request.get('/admin-api/feedback?status=open&reporterType=user&limit=20&sort=newest', {
                 failOnStatusCode: false,
             });
             if (!response.ok()) return false;
@@ -102,7 +102,7 @@ test.describe('反馈真实提交链路 E2E', () => {
             message: '等待新提交的匿名反馈出现在真实后台反馈 API 中',
         }).toBe(true);
 
-        const apiListResponse = await page.request.get('/admin/feedback?status=open&reporterType=user&limit=20&sort=newest');
+        const apiListResponse = await page.request.get('/admin-api/feedback?status=open&reporterType=user&limit=20&sort=newest');
         const apiListPayload = await apiListResponse.json() as { items?: Array<{ _id?: string; content?: string }> };
         expect(apiListPayload?.items?.some((item) => item._id === submittedPayload._id)).toBeTruthy();
 

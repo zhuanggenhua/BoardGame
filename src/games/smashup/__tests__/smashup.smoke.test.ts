@@ -32,6 +32,7 @@ import { collectTriggers, fireTriggers, interceptEvent } from '../domain/ongoing
 import { filterProtectedDestroyEvents, filterProtectedMoveEvents, filterProtectedReturnEvents } from '../domain/reducer';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
+import { getSmashUpVictoryTarget } from '../domain/teamMode';
 import { initAllAbilities } from '../abilities';
 import { createSmashUpEventSystem } from '../domain/systems';
 import {
@@ -348,6 +349,30 @@ describe('smashup', () => {
         expect(state.deckQueryEnabled).toBe(false);
     });
 
+    it('房间开启 20 分模式后，15 VP 不结束，20 VP 才结束', () => {
+        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
+            setupSelections: {
+                expansions: ['titans', 'diy', 'victory20'],
+            },
+        });
+
+        expect(state.victoryTarget).toBe(20);
+
+        state.players['0'] = {
+            ...state.players['0'],
+            vp: 15,
+        };
+        expect(SmashUpDomain.isGameOver!(state)).toBeUndefined();
+
+        state.players['0'] = {
+            ...state.players['0'],
+            vp: 20,
+        };
+        const gameOver = SmashUpDomain.isGameOver!(state);
+        expect(gameOver?.winner).toBe('0');
+        expect(gameOver?.scores?.['0']).toBe(20);
+    });
+
     it('setup 会把统一房间配置桥接结果写入运行时状态', () => {
         const setupData = {
             setupSelections: {
@@ -379,6 +404,7 @@ describe('smashup', () => {
         expect(result.finalState.core.teamMode).toBe('2v2');
         expect(result.finalState.core.seatOrder).toEqual(['0', '1', '2', '3']);
         expect(result.finalState.core.turnOrder).toHaveLength(4);
+        expect(getSmashUpVictoryTarget(result.finalState.core)).toBe(TEAM_VP_TO_WIN_2V2);
     });
 
     it('4 人 2v2 模式下 1/3 队总 VP 达到 25 时按团队获胜', () => {

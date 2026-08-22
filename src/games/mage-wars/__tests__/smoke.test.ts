@@ -84,8 +84,8 @@ describe('mage-wars foundation', () => {
         expect(core.players['0'].life).toBe(24);
         expect(core.players['0'].baseMeleeDice).toBe(3);
         expect(core.players['1'].mana).toBe(10);
-        expect(core.players['0'].spellbookCount).toBe(33);
-        expect(core.players['1'].spellbookCount).toBe(30);
+        expect(core.players['0'].spellbookCount).toBe(67);
+        expect(core.players['1'].spellbookCount).toBe(55);
         expect(core.players['0'].discardSpellCardIds).toEqual([]);
         expect(core.foundationStatus).toEqual({
             intakeComplete: true,
@@ -114,7 +114,7 @@ describe('mage-wars foundation', () => {
         }
     });
 
-    test('preset spellbook resources are sourced from the config package for all four page-5 mage assets', () => {
+    test('preset spellbook resources are sourced from the config package for all four standard starting spellbooks', () => {
         const presetMageOrder = getPresetMageOrderFromConfig();
 
         expect(presetMageOrder).toEqual([
@@ -124,10 +124,10 @@ describe('mage-wars foundation', () => {
             MAGE_IDS.WIZARD_APPRENTICE,
         ]);
 
-        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).toBe(33);
-        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.PRIESTESS_APPRENTICE)).toBe(30);
-        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE)).toBe(30);
-        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toBe(30);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).toBe(67);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.PRIESTESS_APPRENTICE)).toBe(55);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE)).toBe(59);
+        expect(getPresetSpellbookCountFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toBe(59);
 
         for (const mageId of presetMageOrder) {
             expect(getPresetSpellbookEntriesFromConfig(mageId).every((entry) => entry.spellCardId > 0)).toBe(true);
@@ -139,7 +139,7 @@ describe('mage-wars foundation', () => {
         expect(previewGetter).toBeDefined();
 
         const registeredSpellCardIds = getMageWarsRegisteredSpellCardIds();
-        expect(registeredSpellCardIds).toHaveLength(93);
+        expect(registeredSpellCardIds).toHaveLength(150);
         expect(getMageWarsSpellCardName(1700)).toBe('火球术');
         expect(getMageWarsSpellCardPreviewRef(1700)).toEqual({
             type: 'atlas',
@@ -163,6 +163,10 @@ describe('mage-wars foundation', () => {
             atlasId: 'mage-wars:spell-creature-core-b-atlas',
             index: 8,
         });
+        expect(getMageWarsSpellCardName(25700)).toBeNull();
+        expect(getMageWarsSpellCardPreviewRef(25700)).toBeNull();
+        expect(getMageWarsSpellCardName(2500)).toBeNull();
+        expect(getMageWarsSpellCardPreviewRef(2500)).toBeNull();
 
         const spellbookCardIds = new Set<string>();
         for (const mageId of getPresetMageOrderFromConfig()) {
@@ -171,9 +175,16 @@ describe('mage-wars foundation', () => {
             }
         }
 
-        expect(spellbookCardIds).toHaveLength(88);
-        expect(registeredSpellCardIds).toEqual(expect.arrayContaining([...spellbookCardIds]));
-        for (const cardId of spellbookCardIds) {
+        const missingRuntimeAtlasCardIds = new Set(['2303', '2500', '3800', '3801', '3802', '3803', '25700']);
+        const previewableSpellbookCardIds = [...spellbookCardIds]
+            .filter((cardId) => !missingRuntimeAtlasCardIds.has(cardId));
+
+        expect(spellbookCardIds).toHaveLength(153);
+        expect(registeredSpellCardIds).toEqual(expect.arrayContaining(previewableSpellbookCardIds));
+        expect([...spellbookCardIds]
+            .filter((cardId) => getMageWarsSpellCardPreviewRef(Number(cardId)) === null)
+            .sort((left, right) => Number(left) - Number(right))).toEqual([...missingRuntimeAtlasCardIds]);
+        for (const cardId of previewableSpellbookCardIds) {
             expect(previewGetter?.(cardId)).toMatchObject({ type: 'atlas' });
         }
 

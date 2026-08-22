@@ -255,7 +255,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?limit=20')
+            .get('/admin-api/feedback?limit=20')
             .expect(200);
 
         expect(listRes.body.items).toHaveLength(1);
@@ -325,7 +325,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const ownListRes = await request(app.getHttpServer())
-            .get('/admin/feedback?mineOnly=true&limit=20')
+            .get('/admin-api/feedback?mineOnly=true&limit=20')
             .set('Authorization', `Bearer ${firstUserToken}`)
             .expect(200);
 
@@ -364,7 +364,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const deleteOwnRes = await request(app.getHttpServer())
-            .delete(`/admin/feedback/${ownFeedbackRes.body._id as string}`)
+            .delete(`/admin-api/feedback/${ownFeedbackRes.body._id as string}`)
             .set('Authorization', `Bearer ${firstUserToken}`)
             .expect(200);
 
@@ -372,7 +372,7 @@ describe('Feedback Module (e2e)', () => {
         expect(await feedbackModel.countDocuments({ _id: ownFeedbackRes.body._id })).toBe(0);
 
         const deleteOtherRes = await request(app.getHttpServer())
-            .delete(`/admin/feedback/${otherFeedbackRes.body._id as string}`)
+            .delete(`/admin-api/feedback/${otherFeedbackRes.body._id as string}`)
             .set('Authorization', `Bearer ${firstUserToken}`)
             .expect(200);
 
@@ -414,7 +414,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?summaryOnly=true&limit=20')
+            .get('/admin-api/feedback?summaryOnly=true&limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -434,7 +434,7 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.canManage).toBe(true);
 
         const detailRes = await request(app.getHttpServer())
-            .get(`/admin/feedback/${createRes.body._id as string}`)
+            .get(`/admin-api/feedback/${createRes.body._id as string}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -461,7 +461,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const closeRes = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .patch(`/admin-api/feedback/${createRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
             .send({ status: 'closed' })
             .expect(400);
@@ -495,7 +495,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const closeRes = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .patch(`/admin-api/feedback/${createRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'closed' })
             .expect(200);
@@ -518,7 +518,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const resolveRes = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .patch(`/admin-api/feedback/${createRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
             .send({ status: 'resolved' })
             .expect(400);
@@ -541,7 +541,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const resolveRes = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .patch(`/admin-api/feedback/${createRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
             .send({ status: 'resolved', resolvedMethod: '补充判定分支并增加回归测试' })
             .expect(200);
@@ -1452,7 +1452,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const closed = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${first.body._id}/status`)
+            .patch(`/admin-api/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'closed' })
             .expect(200);
@@ -1462,7 +1462,7 @@ describe('Feedback Module (e2e)', () => {
         expect(closedDoc?.aggregationActiveKey).toBeUndefined();
 
         const reopened = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${first.body._id}/status`)
+            .patch(`/admin-api/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'resolved', resolvedMethod: '重新激活聚合记录用于继续跟进' })
             .expect(200);
@@ -1530,7 +1530,7 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body._id).not.toBe(first.body._id);
 
         await request(app.getHttpServer())
-            .patch(`/admin/feedback/${first.body._id}/status`)
+            .patch(`/admin-api/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'resolved', resolvedMethod: '尝试重新打开旧聚合记录' })
             .expect(409);
@@ -1589,23 +1589,23 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body._id).not.toBe(first.body._id);
 
         await request(app.getHttpServer())
-            .patch(`/admin/feedback/${first.body._id}/status`)
+            .patch(`/admin-api/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'closed' })
             .expect(200);
         await request(app.getHttpServer())
-            .patch(`/admin/feedback/${second.body._id}/status`)
+            .patch(`/admin-api/feedback/${second.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'closed' })
             .expect(200);
 
         const [reopenA, reopenB] = await Promise.all([
             request(app.getHttpServer())
-                .patch(`/admin/feedback/${first.body._id}/status`)
+                .patch(`/admin-api/feedback/${first.body._id}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ status: 'resolved', resolvedMethod: '并发重开聚合记录 A' }),
             request(app.getHttpServer())
-                .patch(`/admin/feedback/${second.body._id}/status`)
+                .patch(`/admin-api/feedback/${second.body._id}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ status: 'resolved', resolvedMethod: '并发重开聚合记录 B' }),
         ]);
@@ -1942,7 +1942,7 @@ describe('Feedback Module (e2e)', () => {
         const feedbackId = createRes.body._id as string;
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?limit=20')
+            .get('/admin-api/feedback?limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -1950,7 +1950,7 @@ describe('Feedback Module (e2e)', () => {
         expect(listRes.body.items[0]._id).toBe(feedbackId);
 
         const updateRes = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${feedbackId}/status`)
+            .patch(`/admin-api/feedback/${feedbackId}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ status: 'resolved', resolvedMethod: '后台确认问题已修复' })
             .expect(200);
@@ -1994,7 +1994,7 @@ describe('Feedback Module (e2e)', () => {
         await feedbackModel.findByIdAndUpdate(otherFeedbackRes.body._id, { createdAt: new Date('2026-03-14T11:00:00.000Z') });
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?limit=20')
+            .get('/admin-api/feedback?limit=20')
             .set('Authorization', `Bearer ${userToken}`)
             .expect(200);
 
@@ -2006,7 +2006,7 @@ describe('Feedback Module (e2e)', () => {
         expect(otherRow?.canManage).toBe(false);
 
         const preferMineListRes = await request(app.getHttpServer())
-            .get('/admin/feedback?limit=20&preferMine=true')
+            .get('/admin-api/feedback?limit=20&preferMine=true')
             .set('Authorization', `Bearer ${userToken}`)
             .expect(200);
 
@@ -2014,13 +2014,13 @@ describe('Feedback Module (e2e)', () => {
         expect(preferMineListRes.body.items[0]._id).toBe(ownFeedbackRes.body._id);
 
         await request(app.getHttpServer())
-            .patch(`/admin/feedback/${ownFeedbackRes.body._id as string}/status`)
+            .patch(`/admin-api/feedback/${ownFeedbackRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
             .send({ status: 'resolved', resolvedMethod: '本人确认并记录解决方式' })
             .expect(200);
 
         await request(app.getHttpServer())
-            .patch(`/admin/feedback/${otherFeedbackRes.body._id as string}/status`)
+            .patch(`/admin-api/feedback/${otherFeedbackRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
             .send({ status: 'resolved', resolvedMethod: '越权尝试不应成功' })
             .expect(404);
@@ -2063,7 +2063,7 @@ describe('Feedback Module (e2e)', () => {
         const otherFeedbackId = otherFeedbackRes.body._id as string;
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?limit=20')
+            .get('/admin-api/feedback?limit=20')
             .set('Authorization', `Bearer ${developerToken}`)
             .expect(200);
 
@@ -2077,7 +2077,7 @@ describe('Feedback Module (e2e)', () => {
         expect(otherRow?.canManage).toBe(false);
 
         const updateRes = await request(app.getHttpServer())
-            .patch(`/admin/feedback/${ownFeedbackId}/status`)
+            .patch(`/admin-api/feedback/${ownFeedbackId}/status`)
             .set('Authorization', `Bearer ${developerToken}`)
             .send({ status: 'resolved', resolvedMethod: '负责游戏已完成修复' })
             .expect(200);
@@ -2085,13 +2085,13 @@ describe('Feedback Module (e2e)', () => {
         expect(updateRes.body.status).toBe('resolved');
 
         await request(app.getHttpServer())
-            .patch(`/admin/feedback/${otherFeedbackId}/status`)
+            .patch(`/admin-api/feedback/${otherFeedbackId}/status`)
             .set('Authorization', `Bearer ${developerToken}`)
             .send({ status: 'resolved', resolvedMethod: '越权尝试不应成功' })
             .expect(404);
 
         const adminListRes = await request(app.getHttpServer())
-            .get('/admin/feedback?limit=20')
+            .get('/admin-api/feedback?limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2152,7 +2152,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?severity=critical&page=2&limit=1')
+            .get('/admin-api/feedback?severity=critical&page=2&limit=1')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2193,7 +2193,7 @@ describe('Feedback Module (e2e)', () => {
         });
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?reporterType=system&source=online-ai-watchdog&limit=20')
+            .get('/admin-api/feedback?reporterType=system&source=online-ai-watchdog&limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2231,7 +2231,7 @@ describe('Feedback Module (e2e)', () => {
         });
 
         const userListRes = await request(app.getHttpServer())
-            .get('/admin/feedback?reporterType=user&limit=20')
+            .get('/admin-api/feedback?reporterType=user&limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2239,7 +2239,7 @@ describe('Feedback Module (e2e)', () => {
         expect(userListRes.body.items[0].content).toBe('正常用户反馈');
 
         const systemListRes = await request(app.getHttpServer())
-            .get('/admin/feedback?reporterType=system&source=client-window-error&limit=20')
+            .get('/admin-api/feedback?reporterType=system&source=client-window-error&limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2280,7 +2280,7 @@ describe('Feedback Module (e2e)', () => {
         await feedbackModel.findByIdAndUpdate(newerRes.body._id, { createdAt: new Date('2026-03-14T11:00:00.000Z') });
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/feedback?sort=oldest&limit=20')
+            .get('/admin-api/feedback?sort=oldest&limit=20')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2457,7 +2457,7 @@ describe('Feedback Module (e2e)', () => {
             .expect(201);
 
         const deleteOneRes = await request(app.getHttpServer())
-            .delete(`/admin/feedback/${firstRes.body._id as string}`)
+            .delete(`/admin-api/feedback/${firstRes.body._id as string}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -2465,7 +2465,7 @@ describe('Feedback Module (e2e)', () => {
         expect(await feedbackModel.countDocuments({ _id: firstRes.body._id })).toBe(0);
 
         const bulkDeleteRes = await request(app.getHttpServer())
-            .post('/admin/feedback/bulk-delete')
+            .post('/admin-api/feedback/bulk-delete')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ ids: [secondRes.body._id, thirdRes.body._id] })
             .expect(201);
@@ -2477,7 +2477,7 @@ describe('Feedback Module (e2e)', () => {
         expect(await feedbackModel.countDocuments({ _id: { $in: [secondRes.body._id, thirdRes.body._id] } })).toBe(0);
 
         const bulkFilterRes = await request(app.getHttpServer())
-            .post('/admin/feedback/bulk-delete-by-filter')
+            .post('/admin-api/feedback/bulk-delete-by-filter')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ severity: 'high' })
             .expect(201);

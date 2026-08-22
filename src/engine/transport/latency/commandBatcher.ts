@@ -21,14 +21,14 @@ export interface CommandBatcher {
      * 若命令在 immediateCommands 列表中，则先 flush 已排队命令，再单独发送当前命令。
      * 若队列达到 maxBatchSize，则自动 flush。
      */
-    enqueue(type: string, payload: unknown): void;
+    enqueue(type: string, payload: unknown): boolean;
 
     /**
      * 立即刷新队列
      *
      * 取消当前定时器，将队列中所有命令立即发送，清空队列。
      */
-    flush(): void;
+    flush(): boolean;
 
     /**
      * 销毁批处理器
@@ -56,7 +56,7 @@ export interface CommandBatcherConfig {
      * 当批次准备好发送时调用，负责将命令发送到网络。
      * 接收当前批次中的所有命令数组。
      */
-    onFlush: (commands: BatchedCommand[]) => void;
+    onFlush: (commands: BatchedCommand[]) => boolean | void;
 }
 
 // ============================================================================
@@ -89,7 +89,7 @@ export function createCommandBatcher(config: CommandBatcherConfig): CommandBatch
      *
      * 内部实现，不检查 destroyed 状态（由调用方保证）。
      */
-    function doFlush(): void {
+    function doFlush(): boolean {
         // 清理定时器
         if (state.timer !== null) {
             clearTimeout(state.timer);
@@ -98,14 +98,15 @@ export function createCommandBatcher(config: CommandBatcherConfig): CommandBatch
 
         // 队列为空时不发送
         if (state.queue.length === 0) {
-            return;
+            return true;
         }
 
         // 取出队列中的所有命令并清空
         const commands = state.queue.splice(0);
 
         // 调用 onFlush 回调发送命令
-        config.onFlush(commands);
+        const flushed = config.onFlush(commands) as unknown;
+        return flushed !== false;
     }
 
     /**
@@ -133,22 +134,22 @@ export function createCommandBatcher(config: CommandBatcherConfig): CommandBatch
     }
 
     return {
-        enqueue(type: string, payload: unknown): void {
+        enqueue(type: string, payload: unknown): boolean {
             // 已销毁则忽略
             if (destroyed) {
-                return;
+                return false;
             }
 
             // windowMs 为 0：退化为逐条发送，直接 flush 单条命令
             if (state.config.windowMs === 0) {
-                config.onFlush([{ type, payload }]);
-                return;
+                const flushed = config.onFlush([{ type, payload }]) as unknown;
+                return flushed !== false;
             }
 
             if (state.config.immediateCommands.has(type)) {
-                doFlush();
-                config.onFlush([{ type, payload }]);
-                return;
+                const queuedFlushed = doFlush();
+                const currentFlushed = config.onFlush([{ type, payload }]) as unknown;
+                return queuedFlushed && currentFlushed !== false;
             }
 
             // 将命令加入队列
@@ -156,19 +157,19 @@ export function createCommandBatcher(config: CommandBatcherConfig): CommandBatch
 
             // 队列达到 maxBatchSize：自动 flush
             if (state.queue.length >= state.config.maxBatchSize) {
-                doFlush();
-                return;
+                return doFlush();
             }
 
             // 启动/重置时间窗口定时器
             scheduleFlush();
+            return true;
         },
 
-        flush(): void {
+        flush(): boolean {
             if (destroyed) {
-                return;
+                return false;
             }
-            doFlush();
+            return doFlush();
         },
 
         destroy(): void {

@@ -18,6 +18,7 @@ vi.mock('react-i18next', () => ({
             if (key === 'rooms.seatSeparator') return ' / ';
             if (key === 'setup.expansions.titans') return '泰坦';
             if (key === 'setup.expansions.diy') return 'DIY';
+            if (key === 'setup.expansions.victory20') return '20分模式';
             if (key === 'setup.deckQuery.label') return '余牌查询';
             return key;
         },
@@ -52,6 +53,7 @@ const smashUpManifest = {
             options: [
                 { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
                 { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
+                { value: 'victory20', labelKey: 'games.smashup.setup.expansions.victory20' },
                 { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
             ],
         },
@@ -108,7 +110,7 @@ describe('RoomList 扩展摘要', () => {
                     isHost: false,
                     gameKey: 'smashup',
                     publicSetupSummary: {
-                        enabledExpansions: ['titans', 'deckQuery', 'diy'],
+                        enabledExpansions: ['titans', 'deckQuery', 'victory20', 'diy'],
                     },
                 },
             ],
@@ -118,6 +120,7 @@ describe('RoomList 扩展摘要', () => {
         expect(screen.getByTestId('room-expansion-tag-room-1-titans')).toHaveTextContent('泰坦');
         expect(screen.getByTestId('room-expansion-tag-room-1-diy')).toHaveTextContent('DIY');
         expect(screen.getByTestId('room-expansion-tag-room-1-deckQuery')).toHaveTextContent('余牌查询');
+        expect(screen.getByTestId('room-expansion-tag-room-1-victory20')).toHaveTextContent('20分模式');
     });
 
     it('山屋惊魂房间展示当前剧本或未定剧本', () => {

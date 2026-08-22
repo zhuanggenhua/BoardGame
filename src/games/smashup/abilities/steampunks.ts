@@ -623,7 +623,7 @@ const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPr
                 sourceId: 'steampunk_zeppelin_choose_base',
                 titleKey: 'ui.steampunk_zeppelin_choose_base_title',
                 targetType: 'base',
-                autoResolveIfSingle: true,
+                autoResolveIfSingle: false,
             },
         );
         interaction.data.optionsGenerator = state =>

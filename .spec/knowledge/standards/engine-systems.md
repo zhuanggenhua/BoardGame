@@ -6,532 +6,134 @@ metadata:
   status: 已交付
 ---
 
-# 引擎与框架系统完整规范
-
-> 本文档是 `AGENTS.md` 的补充详细规范。**触发条件**：开发/修改引擎系统、框架层代码、游戏 move/command 时阅读。
-> AGENTS.md 中已有的规则摘要此处不再重复，本文档只提供详细说明、API 清单和代码模板。
-> **测试与审计规范**见 `.spec/knowledge/standards/testing-audit.md`。
-
----
-
-## 引擎层概述
-
-- **Domain Core**：Command/Event + Reducer，确定性可回放。
-- **Systems**：Undo/Interaction/Log 等跨游戏能力以 hook 管线参与执行。
-- **Adapter**（`createGameEngine`）：将 Domain Core + Systems 组装成 `GameEngineConfig`，供 `GameTransportServer` 使用。自动合并系统命令到 commandTypes。
-- **Transport**：自研传输层（`GameTransportServer` + `GameTransportClient`）。
-- **统一状态**：`G.sys`（系统状态） + `G.core`（领域状态）。`G.sys.gameover` 为游戏结束的唯一检测来源。
+# 引擎与框架系统总览
 
-### 传输层架构入口（强制理解）
+本文件是引擎 / 框架层的入口和职责边界，不承载具体游戏案例、长代码模板或专项系统百科。修改传输、交互、动画、能力、伤害、日志、结束态等细节时，按本文件路由到对应标准。
 
-> 传输层架构、`GameBoardProps` 契约、在线/本地 Provider、命令执行者与本地视角玩家边界，已拆到 `.spec/knowledge/standards/engine-transport.md`。
->
-> 修改 socket、dispatch、Provider、Board props、乐观传输入口或本地教程壳层时，先读该文档；本文档只保留引擎总览和路由。
-
-## 平台内核与游戏扩展边界（强制）
-
-`src/engine/` 和 `/components/game/framework/` 必须按平台内核 / 框架看待。它们可以在做具体游戏的过程中被迭代和打磨，但迭代结果必须沉淀为平台能力，不能把某个游戏的私有语义直接写进内核或框架。
-
-- **引擎不得被游戏污染**：`src/engine/` 不得新增具体游戏名、卡牌名、阵营名、业务案例、反馈编号或某个游戏专属流程判断。具体游戏暴露出的缺口可以反哺引擎，但进入引擎前必须改写成通用状态、通用时序、通用交互、通用传输或通用计算合同。
-- **框架不得混入具体业务**：框架层只承载通用布局骨架、Provider、Hook、注册表、槽位和扩展接口；具体游戏的规则语义、按钮含义、视觉特例、素材选择和业务状态必须下沉到 `games/<gameId>/` 或游戏自己的 adapter / extension。
-- **允许游戏推动平台演进**：像 UE 在做具体游戏时继续完善引擎一样，BoardGame 的复杂游戏可以暴露平台缺口。允许在同一任务中改 engine/framework，但必须说明这是哪个平台合同的演进，而不是把游戏实现搬进共享层。
-- **游戏扩展和重复是允许的**：每个游戏可以拥有自己的 domain、adapter、UI extension、数据转换和少量重复实现。为了保持内核干净，允许游戏之间在私有层保留一定重复；不能因为两处看起来相似就急着抽进引擎。
-- **可选择不使用框架**：如果用户明确要求某个游戏完全使用自己的框架、UI 壳或运行时适配，可以绕开 `/components/game/framework/` 的默认骨架。绕开时必须把边界写清楚：哪些能力仍复用 engine/transport，哪些能力由游戏自有框架承担；不得为了绕开而反向污染通用框架。
-- **改引擎前必须证明是平台缺口**：缺口应能抽象成跨游戏合同，或已经影响一个明确的共享系统（如 pipeline、interaction、transport、AI recovery、damage primitive）。说明必须写清：缺的通用能力是什么、游戏层扩展为什么不足、非当前游戏如何受益或如何不受影响。
-- **引擎 / 框架改动必须可单独审查**：游戏重构暴露出的平台缺口要拆成独立 engine/framework diff 组，提交说明不得把它埋在某个游戏改动里。游戏提交里混入 engine/framework 改动时，必须先停下分类并上报。
-- **禁止用“未来可能复用”抽象内核**：只有当前真实入口和可验证合同成立时才抽到 engine/framework。单个游戏独有、尚未稳定、仍在重构或只是为了减少重复的逻辑，先留在游戏层。
-
-## 领域层职责边界（强制）
-
-### 规则结算事务与投影边界（强制）
-
-复杂规则结算（计分、战斗、伤害、响应轮、清场、换区、换对象）必须有一个权威事务宿主。这个宿主可以是当前游戏的 resolution frame、session 或等价状态机，但同一条结算链里只能有一个地方决定“现在结算到哪一步、被什么阻塞、正式落地后从哪里继续”。
-
-- **权威状态只从正式事件归约来**：会改变对局事实的领域事件只能由 pipeline 正式归约一次。规则驱动器不得先把未来事件临时 reduce 进 `MatchState.core`，再回滚 core 或手工拼回 sys / interaction / reaction 状态。
-- **允许只读查询投影**：UI 高亮、AI 估值、合法选项探测、动画预览、批内事件读取视图可以构造只读状态视图；它只能存在于本地调用栈，不能被保存进 `MatchState`，也不能创建真实 interaction、reaction、trigger 或 continuation。
-- **禁止影子结算**：如果一个“投影 / preview / tempCore”会决定正式续链、写入 session、消费 trigger、关闭响应轮、生成下一步真实交互，必须改成“发出事件并暂停，等正式归约后继续”的事务步骤。
-- **批内事件视图必须命名清楚**：当后处理为了按同批事件顺序收集触发而构造临时 core，命名和注释必须说明它是 batch view / prefix view，不是权威 core；后续目标、阶段推进和恢复位点必须回到正式归约后的 core 重新计算。
-- **响应轮只能有一个权威**：同一个玩家响应窗口不得同时由游戏私有 session 和通用 response window 各自维护 responder、pass、关闭条件。需要兼容旧入口时，只能保留薄 adapter，并写清消费者和删除条件。
-- **事实触发只从事实事件产生**：discard、leave-play、destroy、reveal、damage 这类事实触发，只能在对应事件已经正式改变区域/对象状态后生成；不得在“预计稍后会发生”时提前排队，再靠 stale pruning 撤销。
-- **视觉延迟不进入规则事务**：动画、揭示等待、结算停顿由客户端表现层根据事件流处理；规则 frame 不得因为纯视觉 delay 进入额外规则 step，AI recovery / Flow / domain 不得读取墙上时钟来决定规则是否继续。
+## 状态分层
 
-### execute 层职责约束（Critical）
-
-**execute 函数的唯一职责**：命令 → 基础事件。
-
-#### 允许的操作 ✅
-
-- 生成基础事件（`MINION_PLAYED` / `ACTION_PLAYED` / `CARDS_DRAWN` / `DAMAGE_DEALT` 等）
-- 读取当前状态（`state.core`）进行条件判断
-- 调用纯函数辅助（如 `getCardDef` / `findUnit` / `canPlayCard`）
-- 返回事件数组
-
-#### 禁止的操作 ❌
-
-- **禁止调用触发链函数**（如 `fireMinionPlayedTriggers` / `fireUnitPlayedTriggers` / `triggerOnPlay`）
-- **禁止调用 `reduce`** 模拟状态推演（应在 `postProcessSystemEvents` 中处理）
-- **禁止直接修改 `state.sys`**（系统状态由引擎管理）
-- **禁止创建交互**（应在能力执行器中通过 `queueInteraction` 创建）
-
-#### 正确的职责分离
-
-```typescript
-// ✅ 正确：execute 只生成基础事件
-case COMMANDS.PLAY_MINION: {
-    const playedEvt: MinionPlayedEvent = {
-        type: EVENTS.MINION_PLAYED,
-        payload: { playerId, cardUid, defId, baseIndex, power },
-        timestamp: now,
-    };
-    return { events: [playedEvt] };
-    // 触发链由 postProcessSystemEvents 统一处理
-}
-
-// ❌ 错误：execute 层调用触发链（会导致重复触发）
-case COMMANDS.PLAY_MINION: {
-    events.push(playedEvt);
-    const triggers = fireMinionPlayedTriggers(...); // ❌ 禁止
-    events.push(...triggers.events);
-    return { events };
-}
-```
-
-#### 触发链的正确位置
+- `G.core`：游戏领域状态，只保存会被规则结算、校验、胜负或 AI 决策消费的事实。
+- `G.sys`：系统状态，保存 interaction、undo、log、gameover、flow halted、response window 等跨游戏能力。
+- `G.sys.gameover` 是游戏结束结果的唯一读取入口；胜负细则见 [`engine-gameover`](engine-gameover.md)。
+- EventStream、FX、视觉缓冲和特写只承载表现时序，不改变正式规则事实。
 
-所有触发链（onPlay / onMinionPlayed / ongoing triggers）必须在 `postProcessSystemEvents` 中统一处理：
+## 时点-机会-结算入口
 
-```typescript
-// domain/index.ts
-postProcessSystemEvents(state, events, pid, random, now) {
-    // 检测 MINION_PLAYED 事件，自动追加触发链
-    for (const event of events) {
-        if (event.type === EVENTS.MINION_PLAYED) {
-            const triggers = fireMinionPlayedTriggers(...); // ✅ 正确位置
-            derivedEvents.push(...triggers.events);
-        }
-    }
-    return [...events, ...derivedEvents];
-}
-```
+复杂触发、响应、替代、防止、长事务和 AI 阻塞的主合同见 [`timing-opportunity-resolution`](timing-opportunity-resolution.md)。新游戏只有在需求涉及这些能力时，才建立 `TimingPoint / Opportunity` 矩阵；旧游戏触碰相关窗口时先判断是否迁移，避免继续新增私有 `pending* / continuationContext / reactionStack` 作为主结算权威。
 
-#### 历史教训
+## 平台 / 游戏边界
 
-**SmashUp 睡眠孢子 bug**（2025-02）：`PLAY_MINION` 命令在 `execute` 中调用了 `fireMinionPlayedTriggers`，而 `postProcessSystemEvents` 又调用一次，导致所有随从入场触发效果（包括力量修正）被执行两次。修复方法：删除 `execute` 中的重复调用。
+- `src/engine/` 和 `components/game/framework/` 是平台内核 / 框架层。它们可以在做具体游戏时演进，但进入共享层前必须抽象成通用状态、通用时序、通用交互、通用传输或通用计算合同。
+- 共享层不得写具体游戏名、卡牌名、阵营名、反馈编号、私有流程或 UI 特例。
+- 游戏层可以有自己的 domain、adapter、UI extension、数据转换和少量重复实现。单游戏独有、尚未稳定或只是减少重复的逻辑先留在游戏层。
+- 改 engine / framework 前必须说明平台缺口是什么、游戏层扩展为什么不足、其它游戏如何受益或如何不受影响。
+- engine / framework diff 应能单独审查；不要把平台演进埋在某个游戏改动里。
 
-#### 静态检查（推荐）
+## 领域事务
 
-**ESLint 规则**（已配置但需手动验证）：
+- 复杂结算必须只有一个权威事务宿主。计分、战斗、响应轮、清场、换区、换对象等链路，只能有一个地方决定当前结算位点、阻塞原因和恢复入口。
+- 会改变对局事实的领域事件只能由 pipeline 正式归约一次。不得先把未来事件 reduce 进 core，再手工回滚或拼回 sys。
+- UI 高亮、AI 估值、合法选项探测和动画预览可以构造只读投影；投影不能保存进 `MatchState`，也不能生成真实 interaction、reaction、trigger 或 continuation。
+- 同一个响应轮只能有一个权威。旧入口兼容只能做薄 adapter，并写清消费者和删除条件。
+- 事实触发只从事实事件产生。discard、leave-play、destroy、reveal、damage 等触发必须等对应事件正式改变状态后再生成。
+- 视觉延迟不进入规则事务。动画等待、展示停顿和读本节奏由客户端表现层消费事件流处理。
 
-```javascript
-// eslint.config.js
-{
-  files: ['**/games/*/domain/execute.ts', '**/games/*/domain/reducer.ts'],
-  rules: {
-    'no-restricted-imports': ['error', {
-      patterns: ['*abilityHelpers'],
-    }],
-  },
-}
-```
+## execute 边界
 
-**代码审查检查清单**：
+- `execute` 的职责是“命令 -> 基础事件”，可以读 `state.core`、调用纯函数、返回事件数组。
+- `execute` 不调用触发链、不 reduce 模拟状态、不直接改 `state.sys`、不创建 interaction。
+- 派生触发、后处理事件和响应轮续链统一在后处理阶段或专用系统中处理。
+- 同一领域事件不得在命令执行层和后处理阶段重复触发。修重复触发时删除抢权入口，不补去重兜底。
+- 审查 `execute.ts` / `reducer.ts` 时，确认命令只生成基础事件，触发链和系统状态写入没有被塞回领域执行层。
 
-在审查 `execute.ts` / `reducer.ts` 时，必须检查：
-- [ ] 没有 `import` 语句引用 `abilityHelpers`
-- [ ] 没有调用 `fireMinionPlayedTriggers` / `fireUnitPlayedTriggers` / `triggerOnPlay`
-- [ ] 命令处理只生成基础事件，不调用触发链
-- [ ] 所有触发链逻辑在 `postProcessSystemEvents` 中处理
-```
+## 引擎原语
 
----
+| 目录 / 模块 | 职责 | 细则 |
+| --- | --- | --- |
+| `engine/systems/` | Flow、Interaction、Undo、Log、EventStream、RefereeTrace、ResolutionFrame、ResponseWindow、Tutorial、Rematch、Cheat、ActionLog | 系统状态写 `G.sys`；RefereeTrace 只保存裁判审计证据，不参与规则授权；ResolutionFrame driver 只回灌 frame 已持有的 deferred events，不猜游戏动作 |
+| `engine/RefereeView.ts` | 裁判消息和可查询决策快照 | 只读投影 interaction、response window、resolution frame 和 RefereeTrace；不写 state、不授权规则 |
+| `engine/RefereeReplay.ts` | 裁判证据回放摘要 | 从 PipelineResult 或 RefereeTrace 汇总命令、事件、EventCommit 证据和决策面；不重新 reduce、不生成第二套事件源 |
+| `engine/primitives/ability.ts` | 能力定义、执行器注册表和 `AbilityDef -> Opportunity` 生命周期投影 | 见 [`engine-ability-framework`](engine-ability-framework.md) |
+| `engine/primitives/abilityConstraints.ts` | 行动、资源、状态、次数等通用约束 | 见 [`engine-ability-framework`](engine-ability-framework.md) |
+| `engine/primitives/damageCalculation.ts` | 伤害计算、修正收集、breakdown | 见 [`engine-damage-pipeline`](engine-damage-pipeline.md) |
+| `engine/primitives/spriteAtlas.ts` | 精灵图集注册、裁切、查询 | 本文件下方保留最小规则 |
+| `engine/primitives/uiHints.ts` | 可交互实体派生查询 | 不写入 core |
+| `engine/fx/` | FxBus、FxRegistry、FxLayer、FeedbackPack、Shader | 见 [`animation-effects`](animation-effects.md) |
+| `engine-transport` | socket、dispatch、Provider、Board props、乐观传输、本地视角 | 见 [`engine-transport`](engine-transport.md) |
 
-## 引擎层系统与原语清单
+## 精灵图集
 
-### `engine/systems/`
-Flow / Interaction / Undo / Log / EventStream / ResponseWindow / Tutorial / Rematch / Cheat / ActionLog
+- `globalSpriteAtlasRegistry` 的 `image` 是可直接用于运行时的 WebP URL。
+- `CardPreview.cardAtlasRegistry` 的 `image` 是 base path，由图片工具构建实际 URL。
+- 两个注册表语义不同，禁止合并。
+- 裁切算法统一调用 `computeSpriteStyle` / `computeSpriteAspectRatio`，不要在游戏层重复写百分比计算。
+- 每个游戏只保留一个“卡牌 / 对象 -> 图集配置”的解析函数；手牌、棋盘、预览、弃牌堆和构建器都调用它。
+- 新增图集类型只改解析函数，不改每个消费点。
 
-### `engine/primitives/` — 纯函数/注册器
+## 能力与交互
 
-| 模块 | 职责 | 核心 API |
-|------|------|---------|
-| `ability.ts` | 能力定义+执行器注册表 | `createAbilityRegistry()` / `createAbilityExecutorRegistry()` / `checkAbilityCost` / `filterByTags` / `checkAbilityCondition` / `abilityText(id,field)` / `abilityEffectText(id,field)` |
-| `abilityConstraints.ts` | 通用能力约束系统（行动消耗/实体状态/资源/使用次数） | `checkAbilityConstraints` / `createConstraintHandlerRegistry` / `registerConstraintHandler` |
-| `tags.ts` | 层级 Tag 系统（层数/持续时间/前缀匹配） | `createTagContainer` / `addTag` / `removeTag` / `hasTag` / `matchTags` / `tickDurations` / `getRemovable` |
-| `modifier.ts` | 数值修改器栈（flat/percent/override/compute） | `createModifierStack` / `addModifier` / `applyModifiers` / `computeModifiedValue` / `tickModifiers` |
-| `damageCalculation.ts` | 伤害计算管线（基于 modifier.ts，自动收集修正+生成 breakdown） | `createDamageCalculation` / `createBatchDamageCalculation` / `DamageCalculation.resolve()` / `DamageCalculation.toEvents()` |
-| `attribute.ts` | base + ModifierStack → current（min/max 钳制） | `createAttributeSet` / `getBase` / `setBase` / `getCurrent` / `addAttributeModifier` / `tickAttributeModifiers` |
-| `uiHints.ts` | 可交互实体查询接口 | `UIHint` / `UIHintProvider<TCore>` / `filterUIHints` / `groupUIHintsByType` / `extractPositions` |
-| `visual.ts` | 基于 atlasId 的视觉资源解析器 | `VisualResolver` |
-| `spriteAtlas.ts` | 精灵图集注册/裁切/查询（网格或精确 frame） | `SpriteAtlasRegistry` / `globalSpriteAtlasRegistry` / `computeSpriteStyle` / `computeSpriteAspectRatio` / `generateUniformAtlasConfig` / `isSpriteAtlasConfig` |
-| `actionRegistry.ts` | actionId → handler 注册表 | `ActionHandlerRegistry` |
-| `actionLogHelpers.ts` | ActionLog 通用伤害来源格式化（跨游戏复用） | `buildDamageBreakdownSegment` / `buildDamageSourceAnnotation` / `DamageSourceResolver` |
-| `condition.ts` / `effects.ts` / `dice.ts` / `resources.ts` / `target.ts` / `zones.ts` / `expression.ts` | 其他引擎原语 | — |
+- 新游戏涉及可配置技能、卡牌效果、Token 能力或等价能力注册需求时，使用 `AbilityRegistry` / `AbilityExecutorRegistry`，避免自建注册表或全局单例。能力存在触发、响应、替代、防止、持续或延迟生命周期时，用 `buildOpportunityFromAbilityDef` / `createAbilityOpportunity` 投影为 `Opportunity`；能力需要玩家或 AI 输入时，用 `createAbilityChoiceContract` 统一 request / candidate provenance，再按需求接 `ChoiceRequest`、response window、`ResolutionFrame` 或 `EventCommit`。
+- 通用约束写在 `AbilityDef.validation` / `constraints`，不要在 UI、validate 或 execute 里按 ability id 手写分支。
+- 技能按钮由 `AbilityDef.ui` 和通用组件消费，不在 UI 里硬编码 ability id。
+- 技能描述由 i18n 和 `AbilityDef.description` 指向，卡牌配置只保留 ability id。
+- 旧 `createSimpleChoice` 只作兼容；新阻塞交互按 [`rule-driven-interaction-design`](rule-driven-interaction-design.md) 和 [`engine-simple-choice`](engine-simple-choice.md) 裁决。
+- 当前是否忙碌优先消费 `sys.interaction.current`、response window 和共享 hook，不要在游戏 Board 自建另一套“等待玩家输入”状态机。
 
-### `engine/fx/` — FxSystem
+## 框架复用
 
-Cue 注册表 + 事件总线 + 渲染层 + WebGL Shader 子系统 + FeedbackPack。游戏侧通过 `fxSetup.ts` 注册渲染器并声明反馈包（音效+震动）。`useFxBus` 接受 `{ playSound, triggerShake }` 注入反馈能力，push 时自动触发 `timing='immediate'` 反馈，渲染器 `onImpact()` 触发 `timing='on-impact'` 反馈。Shader 管线（`src/engine/fx/shader/`）提供 `ShaderCanvas` + `ShaderMaterial` + `ShaderPrecompile` + GLSL 噪声库。
+- 三层模型：`core/ui` 契约层，`components/game/framework` 骨架层，`games/<gameId>` 游戏层。
+- 新增前先搜 `core/`、`components/game/framework/`、`engine/` 是否已有接口、Provider、Hook、注册表或槽位。
+- 框架层不能 import 游戏层；游戏特化通过注册、adapter、slot 或 extension 注入。
+- 系统命令由 adapter 合并，游戏层只列业务命令。
+- Move payload 必须是对象，禁止裸值；系统命令用常量。
+- 需要 `reset()` 的系统必须保证重开后回到初始值。
+- `_noSnapshot` 只用于前一操作的后续动作，表示 undo 与前一个命令原子回退。
 
-所有三个游戏（SummonerWars / DiceThrone / SmashUp）均已接入 FX 系统。SmashUp 使用 screen 空间定位（无棋盘格），通过 `event.params` 传入 DOM 位置信息。
+## Flow 与阶段
 
-#### 序列特效（`pushSequence`）
+- `FlowSystem.afterEvents` 单次 pipeline 只允许基于事件自动跨一个阶段；更长链路必须由后续命令或明确系统续链推进。
+- `sys.flowHalted` 表示阶段退出被 halt 后的恢复状态。业务数据不得增加重复的 `phaseExitHalt` 之类标记。
+- `onPhaseEnter` 需要创建 interaction 或改 sys 时，返回 `{ events, updatedState }`；不要直接变异传入的 `state.sys`。
+- 阶段推进是规则动作。UI、命令验证、AI legal-actions、自动推进和 watchdog 必须消费同一份阶段推进授权真相。
+- 存在 response window、interaction、私有 prompt、deferred / finalize 或其它阻塞时，阶段按钮默认不可见或不可用；只有权限矩阵明确允许才开放。
 
-`FxBus.pushSequence(steps)` 支持有序特效编排——每个步骤等上一个渲染器 `onComplete` 后再播放下一个。适用于多步骤技能效果（如"移除 token → 造成伤害"）。
+## UIHints
 
-```ts
-fxBus.pushSequence([
-  { cue: DT_FX.TOKEN, ctx: {}, params: { /* token 移除动画 */ }, delayAfter: 200 },
-  { cue: DT_FX.DAMAGE, ctx: {}, params: { /* 伤害飞行数字 */ } },
-]);
-```
+- UIHints 是派生查询，不进入 core。
+- 游戏层实现 `UIHintProvider<TCore>` 返回可交互实体；UI 层用共享 helper 提取位置和分组。
+- 动态赋予的持续效果、保护、限制、临时 buff / debuff 和条件触发应有可见提示。展示方式不明确时先问用户，不猜 UI。
 
-- `delayAfter`（ms）：该步骤完成后、下一步开始前的等待时间，默认 0（立即衔接）
-- 序列中某步 cue 未注册会自动跳过继续下一步
-- 安全超时触发也会推进序列，避免卡死
-- `cancelSequence(seqId)` 可取消正在进行的序列
-- 渲染器完全不感知自己是否在序列中，无需任何适配
+## 领域建模
 
----
+新增或主动审查机制前，先从规则文本建立领域模型，不要直接写实现。
 
-## 精灵图集系统（`engine/primitives/spriteAtlas.ts`）（强制）
+最低产物：
 
-### 架构
+- 术语和状态的精确定义。
+- 概念到事件 / 状态字段的映射。
+- 玩家决策点清单：强制、可选、无决策。
+- 当前引擎能力缺口和扩展计划。
 
-引擎层提供统一的精灵图集原语，类似 Unity SpriteAtlas / Phaser TextureAtlas：
+如果规则说“被影响”“可选择”“直到”“额外”等抽象词，必须先定义它包含哪些事件、状态和交互，再落代码。
 
-- **`SpriteAtlasConfig`** — 图集裁切配置：要么是网格配置（`imageW/imageH/cols/rows/colStarts/colWidths/rowStarts/rowHeights`），要么是精确 frame 配置（`imageW/imageH/frames[]`）
-- **`SpriteAtlasRegistry`** — 注册表（`register` / `getSource` / `resolve`）
-- **`globalSpriteAtlasRegistry`** — 全局单例，游戏层注册，UI 层查询
-- **纯函数** — `computeSpriteStyle(index, config)` / `computeSpriteAspectRatio(index, config)` / `generateUniformAtlasConfig` / `isSpriteAtlasConfig`
+描述到实现的完整审查流程见 [`description-to-implementation-audit`](description-to-implementation-audit.md)。
 
-### 两个注册表的区别（强制理解）
+## 编码约束
 
-| 注册表 | 位置 | `image` 字段含义 | 消费方 |
-|--------|------|-----------------|--------|
-| `globalSpriteAtlasRegistry` | 引擎层 | **运行时 webp URL**（可直接用于 `backgroundImage`） | `CardSprite` 等游戏内组件 |
-| `CardPreview.cardAtlasRegistry` | 框架层 | **base path**（不带扩展名，由 `buildLocalizedImageSet` 构建实际 URL） | `CardPreview` 组件（教学/选牌预览） |
+- reducer 只 spread 变更路径；值未变时返回原引用。禁止 `JSON.parse(JSON.stringify(core))`。
+- 嵌套三层以上的状态更新抽 helper，例如 `updatePlayer(core, pid, updater)`。
+- 命令数较多或多阶段回合时，从一开始拆 `core-types.ts`、`commands.ts`、`events.ts`，由 `types.ts` re-export。
+- core 状态判断：是否被 reducer 写入、是否被 validate / execute / isGameOver 读取并影响决策。等待玩家输入放 sys interaction；纯 UI 展示走 EventStream。
+- 两个以上 domain 文件共用的函数放 `domain/utils.ts`；引擎已有能力不得重新实现。
 
-**禁止合并这两个注册表**。它们的 `image` 字段语义不同，合并会导致后注册的覆盖前者，造成图片不显示。
+## 分流入口
 
-### 使用规范
-
-1. **裁切算法禁止在游戏层重复实现**：所有 `backgroundSize/backgroundPosition` 计算必须调用 `computeSpriteStyle`，禁止手写百分比计算。
-2. **类型守卫统一使用 `isSpriteAtlasConfig`**：禁止在游戏层重复定义 `isCardAtlasConfig` / `isNumberArray`。
-3. **卡牌→精灵图配置的解析必须收敛到单一函数**：每个游戏只允许有一个 `getCardSpriteConfig(card)` 函数（通常在 `spriteHelpers.ts`），所有消费点（手牌、棋盘、预览、弃牌堆、牌组构建器）统一调用，禁止各自写 `if (spriteAtlas === 'portal')` 分支。
-4. **新增图集类型时**：只需在 `getCardSpriteConfig` 中添加一个分支，不需要修改任何消费点。
-
-### 反模式
-
-- ❌ 在 UI 组件中直接写 `if (spriteAtlas === 'xxx') return { atlasId: 'yyy', ... }` — 每个消费点都写一遍，漏一个就出 bug
-- ❌ 在游戏层定义 `SpriteAtlasConfig` 类型或裁切算法 — 引擎层已提供
-- ❌ 把 `registerSpriteAtlas`（webp URL）和 `registerCardAtlasSource`（base path）写入同一个 Map
-- ✅ 统一在 `spriteHelpers.ts` 的 `getCardSpriteConfig(card)` 中处理所有图集类型分支
-- ✅ 裁切算法调用 `computeSpriteStyle` / `computeSpriteAspectRatio`
-
----
-
-## 新引擎系统注意事项（强制）
-
-- **数据驱动优先**：规则/配置/清单做成可枚举数据，引擎解析执行，避免分支硬编码。
-- **同一领域动作必须只有一个执行真相**：多个命令、卡牌、Token 或 UI 入口可以各自负责时机、权限、目标和费用校验，但一旦确认执行的是同一个领域动作，必须归一到同一个领域执行器/结果构造器。禁止每个入口分别生成随机结果、基础事件、状态回写或同一派生事件。
-- **入口分流不等于执行分流**：只有当生命周期、状态账本或结算事件确实不同，才保留不同的外层命令/事件；外层差异必须明确说明它保留了什么专属状态，公共动作仍要复用。新增入口前先搜索已有执行器，不能以“命令名不同”作为复制领域逻辑的理由。
-- **领域 ID 常量表**：所有稳定 ID 在 `domain/ids.ts` 用 `as const` 定义，导出派生类型（`StatusId`/`TokenId`）。例外：i18n key、类型定义中的字面量。
-- **新机制先检查引擎能力与扩展点**：实现前必须先搜索 `engine/primitives/`、`engine/systems/` 和框架扩展接口。已有通用能力必须复用；没有时先判断是平台缺口还是游戏私有能力。平台缺口可以在做游戏时反哺 engine/framework；游戏私有能力留在 `games/<gameId>/`，允许一定重复，禁止为了单个游戏把未稳定语义抽进引擎。
-- **新游戏能力系统必须使用 `ability.ts`**：禁止自行实现注册表。每游戏独立实例，通过 label 区分。
-- **当前决策者统一从 `src/engine/sessionContext.ts` 读取**：禁止在共享层继续扩散 `currentPlayer/currentPlayerId/currentPlayerIndex` 这种每游戏一套的弱约定。
-- **对象生命周期要先建模 provenance**：凡涉及跨区、附着/脱离、临时控制、借用、代持、默认终点，不得只靠 `owner/originalOwner/fromPlayerId/toPlayerId` 散字段拼协议。
-- **延迟交互要先建模 snapshot**：凡交互会跨阶段、跨清场、跨宿主变化继续结算，必须显式区分创建时 snapshot 与 resolve 时 live lookup。
-- **交互展示模式独立描述**：禁止让 UI 仅凭 `defId/baseDefId/targetType` 等 payload 形状反推按钮/卡牌/棋盘展示模式。
-
----
-
-## 游戏结束检测入口（`sys.gameover`）（强制）
-
-> `sys.gameover` 架构、读取方式、服务端处理、游戏层实现与禁止事项，已拆到 `.spec/knowledge/standards/engine-gameover.md`。
->
-> 修改胜负判定、gameover 读写、Board 结束态或服务端结束处理时，先读该文档。
-
-## 通用能力框架入口（强制）
-
-> 完整规范已拆到 `.spec/knowledge/standards/engine-ability-framework.md`。本节只保留入口，避免引擎总览继续承载能力系统百科。
-
-- 新游戏必须使用 `engine/primitives/ability.ts` 的 `AbilityRegistry` / `AbilityExecutorRegistry`，禁止自行实现注册表或全局单例。
-- 新游戏必须使用 `constraints` 字段声明通用约束；完整 API、示例、历史债务和 SummonerWars beforeAttack 交互模式见 `engine-ability-framework.md`。
-
----
-
-## `createSimpleChoice` API 使用规范入口（强制）
-
-> `createSimpleChoice` 函数签名、调用约定、`SimpleChoiceConfig`、`PromptOption.displayMode` 和反模式，已拆到 `.spec/knowledge/standards/engine-simple-choice.md`。
->
-> 修改 SimpleChoice、prompt option、选择 UI、displayMode 或交互候选时，先读该文档。
-
-## 技能系统反模式清单（强制）
-
-> AGENTS.md 已列出禁止项摘要，此处提供判断标准和正确模式的关键代码。
-
-### ❌ 技能验证硬编码
-
-禁止 `validate.ts` 中 `switch(payload.abilityId) { case 'xxx': ... }`。
-✅ 在 `AbilityDef.validation` 声明规则（`requiredPhase`/`requiresTarget`/`targetFilter`/`costCheck`/`usesPerTurn`/`customValidator`），通用 `validateAbility(def, ctx)` 自动验证。
-
-### ❌ 技能按钮硬编码
-
-禁止 UI 组件中 `if (abilities.includes('xxx')) { buttons.push(...) }`。
-✅ 在 `AbilityDef.ui` 声明元数据（`requiresButton`/`buttonPhase`/`buttonLabel`/`buttonVariant`），通用组件遍历 `abilities.filter(a => a.ui?.requiresButton)` 自动渲染。
-
-### ❌ 特殊逻辑硬编码
-
-禁止 `execute.ts` 中 `if (abilityId === 'rapid_fire') { ... }`。
-✅ 在 `abilityResolver.ts` 或 `customActionHandlers.ts` 注册 handler，execute.ts 只负责触发 `triggerAbilities(trigger, ctx)`。
-
-### ❌ 技能描述多源冗余
-
-禁止卡牌配置硬编码 `abilityText`（与 `AbilityDef.description` + i18n 三重冗余）。
-✅ 卡牌配置只保留 `abilities: ['id']`，`AbilityDef` 中 `name`/`description` 存 i18n key（用 `abilityText()` 辅助函数生成），UI 层通过 `t(def.description)` 获取文本。
-
-### 强制要求总结
-
-1. 技能验证 → `AbilityDef.validation` + 通用函数
-2. 技能按钮 → `AbilityDef.ui` + 通用组件
-3. 技能逻辑 → 注册到 `abilityResolver.ts`，不改 execute.ts
-4. 新增技能只需：① `abilities-*.ts` 添加 `AbilityDef` ② 注册执行器 ③ i18n JSON 添加文案
-5. 描述文本单一来源：i18n JSON（通过 `AbilityDef.description` 存 i18n key）
-
-
-
----
-
-## 框架解耦要求（强制）
-
-- 禁止框架层 import 游戏层；游戏特化、业务判断、视觉特例和规则语义下沉到 `games/<gameId>/`
-- 框架提供通用接口、槽位、Provider、Hook 和注册表，游戏层显式注册扩展；不得在框架里写某个游戏专属分支
-- 用户明确要求某个游戏不使用通用框架时，可以建立游戏自有框架或壳层；该选择必须局限在该游戏目录或明确 adapter 内，不得让通用框架承担该游戏的私有默认
-- 新系统在 `engine/systems/` 实现并在 `index.ts` 导出；需默认启用则加入 `createBaseSystems()`
-- 系统状态写入 `SystemState`，由 `setup()` 初始化，禁止塞进 `core`
-- 系统命令由 adapter 自动合并，游戏层只列业务命令
-- Move payload 必须包装为对象，禁止裸值；系统命令用 `UNDO_COMMANDS.*` 等常量
-- 需要 `reset()` 的系统必须保证重开后回到初始值
-- **`_noSnapshot` 跳过快照（通用机制）**：当命令是前一个操作的后续动作（如 afterMove 技能），UI 层 dispatch 时在 payload 加 `_noSnapshot: true`，UndoSystem 跳过该命令的快照创建，撤回时与前一个命令原子回退。适用于任何游戏的"操作 A 触发操作 B"场景。
-
----
-
-## 框架复用优先（强制）
-
-三层模型：`/core/ui/` 契约层 → `/components/game/framework/` 骨架层 → `/games/<gameId>/` 游戏层。
-
-**新增前强制检查**：搜索 `/core/`、`/components/game/framework/`、`/engine/` 确认无已有实现。
-
-**框架层 Hooks 清单**（`/components/game/framework/hooks/`）：
-- `useGameBoard` — 棋盘核心状态
-- `useHandArea` — 手牌区状态
-- `useResourceTray` — 资源栏状态
-- `useDragCard` — 卡牌拖拽交互
-- `useAutoSkipPhase` — 无可用操作时自动跳过（注入 `hasAvailableActions` + `hasActiveInteraction`）
-- `useVisualSequenceGate` — 视觉序列门控（`beginSequence`/`endSequence`/`scheduleInteraction`/`isVisualBusy`/`reset`）
-- `useVisualStateBuffer` — 视觉状态缓冲/双缓冲（`freeze`/`freezeBatch`/`release`/`clear`/`get`/`snapshot`/`isBuffering`）
-- `useIsInteractionBusy` — 判断当前是否有活跃引擎交互（`sys.interaction.current` 属于当前玩家），用于阻止手牌打出/格子点击等操作。**面向100个游戏的标准用法**：所有"等待玩家输入"的状态必须走 `sys.interaction`，游戏层通过此 Hook 统一判断忙碌状态，禁止自建 UI 状态机。历史债务（如 summonerwars 的 `abilityMode`）在迁移完成前需在 Board 层 `||` 合并。
-
-**系统层设计原则**：接口+通用骨架在系统层，游戏特化下沉；每游戏独立实例禁止全局单例；UGC 通过 AI 生成符合接口的代码动态注册。
-
----
-
-## 动画、EventStream 与卡牌特写入口（强制）
-
-> 动画表现与逻辑分离、EventStream 首次挂载规则、乐观引擎兼容、卡牌特写队列接入与失败口径，已拆到 `.spec/knowledge/standards/engine-visual-events.md`。
->
-> 修改 HP/damage 动画、EventStream、卡牌特写队列、`useVisualStateBuffer`、`FxLayer.onEffectImpact` 或 spotlight 行为时，先读该文档。
-
-## ActionLogSystem 使用规范入口（强制）
-
-> ActionLogSystem 基本约束、伤害来源标注、`DamageSourceResolver`、breakdown 构建工具、音效与动画分流，已拆到 `.spec/knowledge/standards/engine-action-log.md`。
->
-> 新增/修改 ActionLog、伤害来源标注、breakdown hover、feedbackResolver 或声音/动画分流时，先读该文档。
-
-## ABILITY_TRIGGERED 事件规范（强制）
-
-必须用 `createAbilityTriggeredEvent()` 创建，payload 类型 `AbilityTriggeredPayload`，`sourcePosition` 必填。禁止手写 `{ type: SW_EVENTS.ABILITY_TRIGGERED, payload: {...} }`。回归守卫：`phase-ability-integration.test.ts`。
-
----
-
-## afterEventsRound 限制（强制）
-
-`FlowSystem.afterEvents` 在 `afterEventsRound > 0` 时传空 events 给 `onAutoContinueCheck`，基于事件的自动推进链单次 `executePipeline` 最多跨一个阶段。测试中 `createInitializedState` 返回 upkeep（非 main1），仍需手动 `cmd('ADVANCE_PHASE')` 推进。详见 `docs/games/dicethrone/refactor/dicethrone-auto-advance-upkeep-income.md`。
-
----
-
-## flowHalted 状态追踪（强制）
-
-`FlowSystem` 在 `onPhaseExit` 返回 `halt: true` 时，自动在 `sys.flowHalted` 中设置 `true`；阶段成功推进后设置 `false`。
-
-- **用途**：`onAutoContinueCheck` 中，战斗阶段（如 `offensiveRoll`/`defensiveRoll`）只在 `state.sys.flowHalted === true` 时才尝试自动推进。这样可以精确区分"onPhaseExit halt 后的阻塞清除"和"卡牌效果中的阻塞清除"。
-- **禁止**：在业务数据（如 `PendingBonusDiceSettlement`）中打 `phaseExitHalt` 标记来区分来源。流程控制信息应由引擎层追踪，不应污染业务数据。
-- **所有游戏受益**：新游戏的 `onAutoContinueCheck` 可直接读取 `state.sys.flowHalted` 判断是否处于 halt 恢复状态。
-
----
-
-## onPhaseEnter 返回 PhaseEnterResult（强制）
-
-`FlowHooks.onPhaseEnter` 支持三种返回值：`GameEvent[]`（纯事件）、`PhaseEnterResult`（事件 + updatedState）、`void`。
-
-- **何时使用 `PhaseEnterResult`**：当 `onPhaseEnter` 中触发的能力（基地能力、ongoing 效果等）创建了 Interaction 或修改了 `sys` 状态时，必须通过 `{ events, updatedState }` 返回更新后的 `matchState`，由引擎层合并到最终状态。
-- **禁止变异 `state.sys`**：`onPhaseEnter` 接收的 `state` 参数是引擎层创建的新对象，直接变异 `state.sys` 虽然在当前实现中碰巧能传播，但属于未定义行为，未来引擎重构可能导致静默丢失。
-- **与 `PhaseExitResult` 的区别**：`PhaseEnterResult` 没有 `halt`（阶段已切换）和 `overrideNextPhase`（不适用），只有 `events` 和 `updatedState`。
-- **引擎层处理**：`executePhaseAdvance` 检测到 `updatedState` 后，将其 `sys` 合并到 `nextState`（保留 `phase` 和 `flowHalted`），确保 Interaction 等 sys 变更不丢失。
-
----
-
-## 阶段推进权限的 UI 消费（强制）
-
-- 阶段推进是规则动作，不是焦点动作。必须先按 `.spec/knowledge/standards/rule-driven-interaction-design.md` 推导“本阶段推进者是谁、哪些窗口会阻塞推进、关闭后进入哪里”。
-- 领域层 `rules.ts` 或等价规则 helper 定义阶段推进规则校验；FlowSystem 通过 `flowHooks.canAdvance` 调用，作为服务端兜底。
-- UI 层禁止重复实现领域校验，但也不能只叠加 `isFocusPlayer`、当前视角玩家或当前回合玩家。正确模式是复用同一个“手动阶段推进权限”查询：领域可推进 + 当前玩家是规则推导出的阶段推进者 + 无活动交互 / 响应窗口 / 延迟收口阻塞。
-- 响应窗口、simple-choice、奖励骰、伤害响应、私有 prompt 或 deferred/finalize 存在时，阶段按钮默认不可见或不可用；只有权限矩阵明确允许时才开放。
-- UI、命令验证、AI legal-actions、自动推进 / watchdog 必须消费同一份阶段推进授权真相；禁止 UI 一套条件、validate 一套条件、AI 再一套条件。
-- 任何修复“某视角下误露结束阶段 / 结算攻击 / 结束防御”后，必须补负向断言：当前决策者或响应者即使是焦点，也不能获得阶段推进权。
-
----
-
-## 重赛系统
-
-- **多人**：socket.io 房间层投票（`RematchContext` + `matchSocket.ts`），独立于游戏命令管线
-- **单人**：直接 `reset()`
-- 服务端 `server.ts` REMATCH_EVENTS → 客户端 `matchSocket.ts` + `RematchContext.tsx` → UI `RematchActions` + `useRematch()`
-
----
-
-## 领域层编码规范详解（强制）
-
-### Reducer 结构共享
-
-✅ 只 spread 变更路径，值未变时返回原引用：
-```typescript
-const target = core.players[targetId];
-if (!target) return core;
-const newHp = Math.max(0, target.hp - amount);
-if (newHp === target.hp) return core;
-return { ...core, players: { ...core.players, [targetId]: { ...target, hp: newHp } } };
-```
-❌ 禁止 `JSON.parse(JSON.stringify(core))`。嵌套 ≥3 层提取 `updatePlayer(core, pid, updater)` helper。
-
-### types.ts 默认拆分模板
-
-命令数 ≥5 或多阶段回合时从第一天用：
-```
-domain/
-  types.ts          # re-export barrel: export * from './core-types'; export * from './commands'; export * from './events';
-  core-types.ts     # 状态接口
-  commands.ts       # 命令类型
-  events.ts         # 事件类型
-```
-
-### Core 状态决策树
-
-1. 被 `reduce()` 写入？→ 否：不属于 core
-2. 被 `validate()`/`execute()`/`isGameOver()` 读取并影响决策？→ 否：不属于 core
-3. "等待玩家输入"？→ 放 `sys.interaction`
-4. 仅 UI 展示？→ 走 EventStreamSystem
-5. 确实影响规则 → 允许放入 core，**必须注释规则依赖**
-
-### 游戏内工具函数
-
-`domain/utils.ts` 从第一天建立，放 `applyEvents`/`getOpponentId`/`updatePlayer` 等。≥2 个 domain 文件使用的函数必须放此处。引擎层已有的能力禁止重新实现。
-
----
-
-## UIHints 使用规范（推荐）
-
-引擎层 `engine/primitives/uiHints.ts` 提供轻量级"可交互实体"查询接口。游戏层实现 `UIHintProvider<TCore>` 函数返回 `UIHint[]`，UI 层用 `extractPositions(hints)` 渲染视觉提示。不在 core 中存储（派生数据），用 `useMemo` 缓存。
-
-**参考**：`summonerwars/domain/uiHints.ts` → `summonerwars/ui/useCellInteraction.ts`
-
----
-
-## 动态赋予效果的 UI 提示（强制）
-
-任何动态赋予的效果（基地能力/持续行动卡/buff/debuff/光环/条件触发）必须有 UI 提示：
-1. 持续力量修正 → 显示修正后值，与基础值有视觉区分
-2. 持续保护/限制 → 图标或文字提示
-3. 基地能力效果 → 基地卡上清晰展示
-4. 临时 buff/debuff → 视觉标记，效果结束自动消失
-5. 条件触发 → 条件满足时视觉反馈
-
-**UI 展示方式不明确时必须询问用户确认**，禁止自行猜测。
-
----
-
-## 描述→实现全链路审查规范
-
-> **已迁移至 `.spec/knowledge/standards/description-to-implementation-audit.md`，该文档为唯一权威来源。**
-> 当任务是新增或主动审查游戏机制实现时，先阅读 `.spec/knowledge/standards/description-to-implementation-audit.md`，按权威描述、原子断言和交互链矩阵执行；玩家反馈的规则 bug 优先走规则 bug 修复 workflow。
-
-
----
-
-## 领域建模前置审查（强制）
-
-> 阶段 2 完成后、阶段 3 开始前执行。禁止跳过领域建模直接写实现。
-
-核心原则：**规则文本 → 领域模型 → 实现**，禁止从规则文本直接跳到实现。
-
-### 1. 领域概念建模
-
-从规则文档提取所有领域概念（术语/状态/角色/阶段），为每个概念建立：
-- **定义**：该概念的精确语义边界（如"影响"= 移动 | 消灭 | 改力量 | 附着 | 控制权变更 | 取消能力）
-- **映射**：概念→具体事件类型/状态字段的对应关系
-
-产出：术语→事件映射表，录入 `rule/` 或 `domain/types.ts` 注释。
-
-**反模式**：规则说"被影响时触发"，实现时直接绑定 `onDestroyed` + `onMoved` 两个具体事件，遗漏了"影响"概念下的其他 4 种事件。正确做法：先定义"影响"包含哪些事件，再设计一个聚合抽象（如 `onAffected`）覆盖全部。
-
-### 2. 决策点识别
-
-规则中所有需要玩家做选择的点必须在建模阶段标记，不得在实现时跳过或自动化：
-- **强制决策**："选择一个目标"/"指定"→ 必须有交互
-- **可选决策**："你可以"/"may"→ 必须有确认/跳过 UI
-- **无决策**：自动结算，无需交互
-
-对每个决策点评估当前引擎是否支持该交互模式。不支持则提前规划扩展或标注 TODO。
-
-**反模式**：规则说"你可以将它移动到这里"，实现时自动移动跳过玩家选择，因为引擎层拦截器不支持异步交互。正确做法：建模时识别出该决策点，提前评估引擎能力。
-
-### 3. 引擎能力缺口分析
-
-将建模产出（概念/决策点/交互模式）与引擎层能力逐一比对，列出缺口和扩展计划。
-
-### 门禁检查清单
-
-- [ ] 所有领域概念已定义精确语义边界和事件映射
-- [ ] 所有玩家决策点已标记（强制/可选/无）
-- [ ] 引擎能力缺口已识别并有计划
-
-
----
-
-## 伤害计算管线入口（强制）
-
-> 完整规范已拆到 `.spec/knowledge/standards/engine-damage-pipeline.md`；迁移步骤另见 `docs/damage-calculation-pipeline-migration-guide.md`。
-
-- 新游戏必须使用 `engine/primitives/damageCalculation.ts`，禁止手动构建 `DAMAGE_DEALT` 事件。
-- 需要配置 `autoCollectTokens`、`autoCollectStatus`、`autoCollectShields`、手动修正或 ActionLog breakdown 时，直接读 `engine-damage-pipeline.md`。
-
-## DiceThrone Token ActiveUse Custom Action 入口
-
-> DiceThrone 专项规则已下沉到 `docs/games/dicethrone/token-active-use-custom-action.md`。
-
-当 `TokenDef.activeUse` 的真实效果依赖 custom action，而不是 `effect.value` 本身时，必须显式声明 `activeUse.customActionId`。
-
-## SmashUp 消灭触发链与 pendingSave 入口
-
-> SmashUp 专项规则已下沉到 `docs/games/smashup/destroy-pending-save.md`。
-
-修改 `processDestroyTriggers`、`postProcessSystemEvents` 或相关 trigger 逻辑时，必须先读 SmashUp 专项文档；不要把 SmashUp 当前 runtime 的白名单合同提升成跨游戏通用规则。
-
-### SmashUp 当前 runtime 例外
-
-SmashUp 当前消灭触发 runtime 仍依赖 `PREVENT_DESTROY_SOURCE_IDS` 白名单识别交互式 replacement，避免把普通死亡效果交互误判成 pendingSave。新增或删除相关入口时，必须同步 `src/games/smashup/domain/reducer.ts`、`src/games/smashup/rule/ENGINE_GUIDE.md`、`docs/games/smashup/destroy-pending-save.md` 与对应契约测试。
-
-当前白名单合同至少包含：
-
-- `base_nine_lives_intercept`
-- `giant_ant_drone_prevent_destroy`
-- `pirate_buccaneer_move`
+- 传输、Provider、Board props、乐观命令、本地视角：[`engine-transport`](engine-transport.md)。
+- 胜负判定和结束态：[`engine-gameover`](engine-gameover.md)。
+- 能力定义、约束、执行器、被动触发：[`engine-ability-framework`](engine-ability-framework.md)。
+- 旧 simple-choice 兼容：[`engine-simple-choice`](engine-simple-choice.md)。
+- 动画、EventStream、特写、视觉缓冲和实体保留：[`engine-visual-events`](engine-visual-events.md)。
+- FX、Shader、FeedbackPack、视觉质量：[`animation-effects`](animation-effects.md)。
+- ActionLog、伤害来源和 breakdown：[`engine-action-log`](engine-action-log.md)。
+- 伤害计算管线：[`engine-damage-pipeline`](engine-damage-pipeline.md)。
+- 具体游戏 runtime 例外、custom action、pending / replacement 白名单：放 `docs/games/<gameId>/` 或对应游戏规则文档，不提升成通用规则。

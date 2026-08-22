@@ -7,14 +7,10 @@
 **用途**：卡牌、棋盘、骰子等“按格切”的大图集  
 **裁切建议**：使用 `extract-atlas-crops.py --config <atlas.json>`  
 
-### DiceThrone
-- 配置：`public/assets/atlas-configs/dicethrone/ability-cards-common.atlas.json`
-- 运行时：`src/games/dicethrone/ui/cardAtlas.ts`（可叠加角色全局偏移）
-- 说明：新角色可能存在轻微左/右偏；需要同步运行时偏移与脚本偏移
-
-### Summoner Wars
-- 配置：`src/games/summonerwars/ui/cardAtlas.ts`（手写 HERO/CARDS/PORTAL/DICE）
-- 说明：**不是均匀网格**，下半部分有黑色填充；必须手写 rowHeights
+### 常见落点
+- 配置：`public/assets/atlas-configs/<gameId>/<atlas>.atlas.json`
+- 运行时：`src/games/<gameId>/ui/<atlas-consumer>.ts`
+- 说明：如果运行时叠加全局偏移或按对象批次偏移，裁切脚本必须同步相同偏移；如果图集不是均匀网格，必须显式写 `rowHeights/colWidths`，不能靠平均切格。
 
 ---
 
@@ -32,10 +28,10 @@
 **用途**：状态图标/特效图集等“语义帧”  
 **裁切建议**：`extract-atlas-crops.py --config <status-icons-atlas.json>`（输出文件名=frame key）
 
-### DiceThrone（状态图标）
-- JSON：`public/assets/i18n/zh-CN/dicethrone/images/<hero>/status-icons-atlas.json`
-- 运行时：`src/games/dicethrone/ui/statusEffects.tsx`
-- 规则：`buildLocalizedImageSet` 需要去掉 `.png` 扩展名（见 `.spec/knowledge/standards/asset-pipeline.md`）
+### 常见落点
+- JSON：`public/assets/i18n/<locale>/<gameId>/<category>/<semantic-atlas>.json`
+- 运行时：`src/games/<gameId>/ui/<semantic-consumer>.ts(x)`
+- 规则：语义帧注册时先确认运行时 key 是否需要去掉扩展名；具体以 `.spec/knowledge/standards/asset-pipeline.md` 为准。
 
 ---
 
@@ -46,10 +42,10 @@
 - 如果有图片：`extract-atlas-crops.py --grid-rows N --grid-cols M --image ...`
 - 或先将 rows/cols 转成 SpriteAtlasConfig 后用 `--config`
 
-### SmashUp
-- 懒注册：`src/components/common/media/cardAtlasRegistry.ts`（`registerLazyCardAtlasSource`）
-- 配置来源：`public/assets/atlas-configs/smashup/pod-atlas-config.json`
-- 入口：`src/games/smashup/ui/cardAtlas.ts`
+### 常见落点
+- 懒注册：`src/components/common/media/cardAtlasRegistry.ts` 或等价共享 registry。
+- 配置来源：`public/assets/atlas-configs/<gameId>/<atlas>-config.json`
+- 游戏入口：`src/games/<gameId>/ui/<atlas-consumer>.ts`
 
 ---
 

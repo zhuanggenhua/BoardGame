@@ -6,7 +6,9 @@ import {
     readSmashUpEnabledExpansions,
     readSmashUpRuntimeSetupConfig,
     readSmashUpTeamMode,
+    readSmashUpVictoryTarget,
     SMASHUP_DECK_QUERY_SETUP_VALUE,
+    SMASHUP_VICTORY_20_SETUP_VALUE,
 } from '../roomSetup';
 
 describe('SmashUp 房间设置解析', () => {
@@ -61,7 +63,25 @@ describe('SmashUp 房间设置解析', () => {
         }, { playerCount: 4 })).toEqual({
             enabledExpansions: ['titans', 'diy'],
             deckQueryEnabled: true,
+            victoryTarget: 15,
             teamMode: '2v2',
+        });
+    });
+
+    it('20 分模式通过扩展选项启用，并不会混入运行时派系扩展集合', () => {
+        const setupData = {
+            setupSelections: {
+                expansions: ['diy', SMASHUP_VICTORY_20_SETUP_VALUE, 'titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
+            },
+        };
+
+        expect(readSmashUpEnabledExpansions(setupData)).toEqual(['titans', 'diy']);
+        expect(readSmashUpVictoryTarget(setupData)).toBe(20);
+        expect(readSmashUpRuntimeSetupConfig(setupData, { playerCount: 2 })).toEqual({
+            enabledExpansions: ['titans', 'diy'],
+            deckQueryEnabled: true,
+            victoryTarget: 20,
+            teamMode: 'ffa',
         });
     });
 
@@ -79,10 +99,10 @@ describe('SmashUp 房间设置解析', () => {
             password: '1234',
             ownerKey: 'guest:owner',
             setupSelections: {
-                expansions: ['diy', 'titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
+                expansions: ['diy', SMASHUP_VICTORY_20_SETUP_VALUE, 'titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
             },
         })).toEqual({
-            enabledExpansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, 'diy'],
+            enabledExpansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, SMASHUP_VICTORY_20_SETUP_VALUE, 'diy'],
         });
     });
 });

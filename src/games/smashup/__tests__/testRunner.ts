@@ -18,11 +18,13 @@ import {
     createFlowSystem,
     createInteractionSystem,
     createSimpleChoiceSystem,
+    createTimingOpportunitySystem,
     createEventStreamSystem,
     createActionLogSystem,
 } from '../../../engine';
 import { smashUpFlowHooks } from '../domain/index';
 import { createSmashUpEventSystem } from '../domain/systems';
+import { createSmashUpTimingOpportunitySystemConfig } from '../domain/timingOpportunities';
 import { ACTION_ALLOWLIST, formatSmashUpActionEntry } from '../actionLog';
 
 // ============================================================================
@@ -39,6 +41,7 @@ export const smashUpTestSystems: EngineSystem<SmashUpCore>[] = [
     createSimpleChoiceSystem(),
     createEventStreamSystem(),
     createSmashUpEventSystem(),
+    createTimingOpportunitySystem(SmashUpDomain, createSmashUpTimingOpportunitySystemConfig()),
 ];
 
 /**

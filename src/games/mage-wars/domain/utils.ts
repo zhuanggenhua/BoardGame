@@ -1,7 +1,7 @@
 import type { PlayerId } from '../../../engine/types';
-import type { ArenaZoneId } from './ids';
-import { ARENA_ZONE_IDS } from './ids';
-import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPlayerState } from './types';
+import type { ArenaZoneId, MageWarsWallEdgeId } from './ids';
+import { ARENA_ZONE_IDS, getMageWarsWallEdgeId } from './ids';
+import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPlayerState, MageWarsWallState } from './types';
 
 export function getOpponentId(core: MageWarsCore, playerId: PlayerId): PlayerId {
     return core.playerOrder.find((candidate) => candidate !== playerId) ?? playerId;
@@ -46,6 +46,80 @@ export function areAdjacentZones(core: MageWarsCore, leftId: ArenaZoneId, rightI
     const right = getArenaZone(core, rightId);
     if (!left || !right) return false;
     return Math.abs(left.row - right.row) + Math.abs(left.col - right.col) === 1;
+}
+
+export function resolveMageWarsWallEdgeZones(
+    core: MageWarsCore,
+    edgeId: MageWarsWallEdgeId | undefined,
+): [ArenaZoneId, ArenaZoneId] | undefined {
+    if (!edgeId) return undefined;
+    const [left, right, extra] = edgeId.split('-');
+    if (extra !== undefined || !isArenaZoneId(left) || !isArenaZoneId(right)) return undefined;
+    if (getMageWarsWallEdgeId(left, right) !== edgeId) return undefined;
+    if (!areAdjacentZones(core, left, right)) return undefined;
+    return [left, right];
+}
+
+export function getMageWarsWallForEdge(
+    core: MageWarsCore,
+    edgeId: MageWarsWallEdgeId,
+): MageWarsWallState | undefined {
+    return core.walls?.[edgeId];
+}
+
+export function getMageWarsWallBetweenZones(
+    core: MageWarsCore,
+    leftId: ArenaZoneId,
+    rightId: ArenaZoneId,
+): MageWarsWallState | undefined {
+    if (!areAdjacentZones(core, leftId, rightId)) return undefined;
+    return getMageWarsWallForEdge(core, getMageWarsWallEdgeId(leftId, rightId));
+}
+
+function getZoneAt(core: MageWarsCore, row: number, col: number): ArenaZoneId | undefined {
+    return core.arena.find((zone) => zone.row === row && zone.col === col)?.id;
+}
+
+export function doesMageWarsWallBlockLineOfSight(
+    core: MageWarsCore,
+    fromZoneId: ArenaZoneId,
+    toZoneId: ArenaZoneId,
+): boolean {
+    if (fromZoneId === toZoneId) return false;
+    const from = getArenaZone(core, fromZoneId);
+    const to = getArenaZone(core, toZoneId);
+    if (!from || !to) return false;
+
+    if (areAdjacentZones(core, fromZoneId, toZoneId)) {
+        return getMageWarsWallBetweenZones(core, fromZoneId, toZoneId)?.blocksLineOfSight === true;
+    }
+
+    if (from.row === to.row) {
+        const minCol = Math.min(from.col, to.col);
+        const maxCol = Math.max(from.col, to.col);
+        for (let col = minCol; col < maxCol; col += 1) {
+            const left = getZoneAt(core, from.row, col);
+            const right = getZoneAt(core, from.row, col + 1);
+            if (left && right && getMageWarsWallBetweenZones(core, left, right)?.blocksLineOfSight === true) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    if (from.col === to.col) {
+        const minRow = Math.min(from.row, to.row);
+        const maxRow = Math.max(from.row, to.row);
+        for (let row = minRow; row < maxRow; row += 1) {
+            const upper = getZoneAt(core, row, from.col);
+            const lower = getZoneAt(core, row + 1, from.col);
+            if (upper && lower && getMageWarsWallBetweenZones(core, upper, lower)?.blocksLineOfSight === true) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 export function isSpellPrepared(player: MageWarsPlayerState, spellCardId: number): boolean {

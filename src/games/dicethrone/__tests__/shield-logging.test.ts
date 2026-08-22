@@ -6,8 +6,12 @@
 
 import { describe, it, expect } from 'vitest';
 import { reduce } from '../domain/reducer';
-import type { DiceThroneCore, DiceThroneEvent, DamageDealtEvent } from '../domain/types';
+import type { DiceThroneCore, DamageDealtEvent } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
+import {
+    buildDiceThroneDamageShieldPreventionOpportunityId,
+    buildDiceThroneTokenResponseFrameIdFromPendingDamageId,
+} from '../domain/timingOpportunityIdentities';
 
 describe('护盾减伤日志', () => {
     it('固定值护盾消耗应记录到 DAMAGE_DEALT 事件的 shieldsConsumed 中', () => {
@@ -197,6 +201,103 @@ describe('护盾减伤日志', () => {
             value: 6,
             absorbed: 3, // 只消耗了 3 点
         });
+        expect(shieldsConsumed![0].preventionOpportunityId).toBeUndefined();
+        expect(shieldsConsumed![0].pendingDamageId).toBeUndefined();
+        expect(shieldsConsumed![0].resolutionFrameId).toBeUndefined();
+    });
+
+    it('带 ResolutionFrame 来源的护盾消耗应追溯到同一个 prevention Opportunity', () => {
+        const pendingDamageId = 'damage-test-1';
+        const resolutionFrameId = buildDiceThroneTokenResponseFrameIdFromPendingDamageId(pendingDamageId);
+        const initialState: DiceThroneCore = {
+            players: {
+                '0': {
+                    id: '0',
+                    characterId: 'paladin',
+                    resources: { [RESOURCE_IDS.HP]: 50, [RESOURCE_IDS.CP]: 0 },
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    statusEffects: {},
+                    tokens: {},
+                    tokenStackLimits: {},
+                    damageShields: [
+                        { value: 6, sourceId: 'card-next-time', preventStatus: false },
+                    ],
+                    abilities: [],
+                    abilityLevels: {},
+                    upgradeCardByAbilityId: {},
+                    passiveAbilities: null,
+                },
+                '1': {
+                    id: '1',
+                    characterId: 'shadow_thief',
+                    resources: { [RESOURCE_IDS.HP]: 50, [RESOURCE_IDS.CP]: 0 },
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    statusEffects: {},
+                    tokens: {},
+                    tokenStackLimits: {},
+                    damageShields: [],
+                    abilities: [],
+                    abilityLevels: {},
+                    upgradeCardByAbilityId: {},
+                    passiveAbilities: null,
+                },
+            },
+            selectedCharacters: { '0': 'paladin', '1': 'shadow_thief' },
+            readyPlayers: { '0': true, '1': true },
+            hostPlayerId: '0',
+            hostStarted: true,
+            dice: [],
+            rollCount: 0,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: false,
+            activePlayerId: '0',
+            startingPlayerId: '0',
+            turnNumber: 1,
+            pendingAttack: null,
+            tokenDefinitions: [],
+            lastEffectSourceByPlayerId: {},
+            activatingAbilityId: null,
+            pendingDamage: null,
+            pendingBonusDiceSettlement: null,
+            lastResolvedAttackDamage: null,
+        };
+
+        const damageEvent: DamageDealtEvent = {
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '0',
+                amount: 3,
+                actualDamage: 3,
+                sourceAbilityId: 'test-ability',
+                resolutionFrameId,
+            },
+            sourceCommandType: 'DAMAGE_DEALT',
+            timestamp: Date.now(),
+        };
+
+        reduce(initialState, damageEvent);
+
+        expect(damageEvent.payload.shieldsConsumed).toEqual([
+            expect.objectContaining({
+                sourceId: 'card-next-time',
+                shieldIndex: 0,
+                value: 6,
+                absorbed: 3,
+                pendingDamageId,
+                resolutionFrameId,
+                preventionOpportunityId: buildDiceThroneDamageShieldPreventionOpportunityId({
+                    pendingDamageId,
+                    targetPlayerId: '0',
+                    shieldIndex: 0,
+                    shieldSourceId: 'card-next-time',
+                }),
+            }),
+        ]);
     });
     
     it('ActionLog 应显示最终伤害（扣除护盾后）而非基础伤害', async () => {
@@ -285,7 +386,7 @@ describe('护盾减伤日志', () => {
         };
         
         // 调用格式化函数
-        const { diceThroneSystemsForTest, formatDiceThroneActionEntry } = await import('../game');
+        const { formatDiceThroneActionEntry } = await import('../game');
         const logEntries = formatDiceThroneActionEntry({
             command: mockCommand,
             state: mockMatchState,

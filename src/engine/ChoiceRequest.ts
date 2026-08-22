@@ -160,6 +160,7 @@ export interface ChoiceRequestDiagnosticSnapshot {
     requestId: string;
     choiceKind: ChoiceRequestKind;
     sourceId?: string;
+    metadata?: AiActionMetadata;
     aiStatus: ChoiceRequestAiSupportStatus | 'missing';
     policyId?: string;
     aiDiagnosticStatus: ChoiceRequestAiDiagnosticStatus;
@@ -588,6 +589,7 @@ export function buildChoiceRequestDiagnosticSnapshot<TValue>(
         requestId: request.requestId,
         choiceKind: request.kind,
         sourceId: request.sourceId,
+        metadata: request.metadata,
         aiStatus: request.ai?.status ?? 'missing',
         policyId: aiDiagnostic.policyId ?? request.ai?.policyId,
         aiDiagnosticStatus: aiDiagnostic.status,

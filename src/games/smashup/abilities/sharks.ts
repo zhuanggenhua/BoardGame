@@ -191,7 +191,7 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
                 effectType: 'destroy',
             }),
         ],
-        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
+        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false },
     ),
     onResolve: (args) => {
         const { context, state, playerId, value, timestamp } = args;

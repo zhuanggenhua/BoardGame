@@ -11,7 +11,16 @@ import {
 import { MAGE_WARS_COMMANDS } from './commands';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
 import type { StatusTokenId } from './ids';
-import { areAdjacentZones, getArenaObject, getArenaZone, isArenaZoneId, isSpellPrepared } from './utils';
+import {
+    areAdjacentZones,
+    doesMageWarsWallBlockLineOfSight,
+    getArenaObject,
+    getArenaZone,
+    getMageWarsWallForEdge,
+    isArenaZoneId,
+    isSpellPrepared,
+    resolveMageWarsWallEdgeZones,
+} from './utils';
 import {
     getMageWarsSpellcastingSourceKind,
     isMageWarsConfiguredSpellcastingSource,
@@ -61,6 +70,7 @@ import {
     isMageWarsImplementedVisibleAreaEnchantmentSpell,
     isMageWarsImplementedVisibleEnchantmentSpell,
     isMageWarsHiddenResponseEnchantmentSpell,
+    isMageWarsImplementedWallSpell,
     isMageWarsLegalHiddenResponseEnchantmentTarget,
     isMageWarsLegalVisibleAreaEnchantmentTarget,
     isMageWarsLegalVisibleEnchantmentTarget,
@@ -82,6 +92,8 @@ import {
     isMageWarsTeleportSpellTarget,
     isMageWarsUnmovableArenaObject,
     isMageWarsVisibleAttachedEnchantmentArenaObject,
+    isMageWarsWallEdgeTargetInRange,
+    isMageWarsWallSpell,
     isMageWarsZoneTargetSpell,
     countMageWarsStealEnchantmentNewTargets,
     parseMageWarsSpellAttackProfile,
@@ -434,8 +446,16 @@ export function validateCommand(
                     if (!casterObject.actionReady) return invalid('objectActionSpent');
                     if (hasMageWarsStunStatus(casterObject)) return invalid('objectStunned');
                 }
-            } else if (!isSpellPrepared(player, command.payload.spellCardId)) {
-                return invalid('spellNotPrepared');
+            } else {
+                if (command.payload.targetWallEdgeId) {
+                    const spell = getMageWarsSpellCardFromConfig(command.payload.spellCardId);
+                    if (spell && isMageWarsWallSpell(spell) && getMageWarsWallForEdge(state.core, command.payload.targetWallEdgeId)) {
+                        return invalid('wallEdgeOccupied');
+                    }
+                }
+                if (!isSpellPrepared(player, command.payload.spellCardId)) {
+                    return invalid('spellNotPrepared');
+                }
             }
             if (!hasSpellbookCard(player, command.payload.spellCardId)) return invalid('spellNotInPresetSpellbook');
             if (!Number.isInteger(command.payload.manaCost) || command.payload.manaCost < 0) {
@@ -539,6 +559,37 @@ export function validateCommand(
             }
             if (command.payload.newTargetZoneId && !getArenaZone(state.core, command.payload.newTargetZoneId)) {
                 return invalid('invalidTargetZone');
+            }
+            if (command.payload.targetWallEdgeId !== undefined && !isMageWarsWallSpell(costResolution.spell)) {
+                return invalid('invalidTargetMode');
+            }
+            if (isMageWarsWallSpell(costResolution.spell)) {
+                if (!isMageWarsImplementedWallSpell(costResolution.spell)) {
+                    return invalid('wallRequiresCodeSupport');
+                }
+                if (!command.payload.targetWallEdgeId) return invalid('missingWallEdgeTarget');
+                if (
+                    command.payload.targetPlayerId
+                    || command.payload.targetObjectId
+                    || command.payload.targetZoneId
+                    || command.payload.pushToZoneId
+                    || command.payload.chainLightningTargets
+                    || command.payload.newTargetPlayerId
+                    || command.payload.newTargetObjectId
+                    || command.payload.newTargetZoneId
+                    || command.payload.boundSpellCardId !== undefined
+                ) {
+                    return invalid('invalidTargetMode');
+                }
+                const wallZoneIds = resolveMageWarsWallEdgeZones(state.core, command.payload.targetWallEdgeId);
+                if (!wallZoneIds) return invalid('invalidWallEdge');
+                if (getMageWarsWallForEdge(state.core, command.payload.targetWallEdgeId)) {
+                    return invalid('wallEdgeOccupied');
+                }
+                if (!isMageWarsWallEdgeTargetInRange(state.core, rangePlayer, costResolution.spell, command.payload.targetWallEdgeId)) {
+                    return invalid('targetOutOfRange');
+                }
+                return { valid: true };
             }
             if (isMageWarsImplementedLifeDrainSpell(costResolution.spell)) {
                 if (!command.payload.targetPlayerId && !command.payload.targetObjectId) return invalid('missingTarget');
@@ -953,6 +1004,9 @@ export function validateCommand(
                 if (!isMageWarsTargetInSpellRange(state.core, rangePlayer, costResolution.spell, targetZoneId)) {
                     return invalid('targetOutOfRange');
                 }
+                if (doesMageWarsWallBlockLineOfSight(state.core, rangePlayer.mageZoneId, targetZoneId)) {
+                    return invalid('lineOfSightBlockedByWall');
+                }
                 const immunityError = validateTargetedAttackSpellDamageTypeImmunity(
                     state,
                     costResolution.spell,
@@ -1092,6 +1146,12 @@ export function validateCommand(
                 if (!isMageWarsObjectAttackTargetInRange(state.core, attacker.zoneId, defender.mageZoneId, attackProfile)) {
                     return invalid(attackProfile.rangeKind === 'melee' ? 'targetNotInSameZone' : 'targetOutOfRange');
                 }
+                if (
+                    attackProfile.rangeKind === 'ranged'
+                    && doesMageWarsWallBlockLineOfSight(state.core, attacker.zoneId, defender.mageZoneId)
+                ) {
+                    return invalid('lineOfSightBlockedByWall');
+                }
                 if (isMageWarsGuardInterceptionRequired(state.core, attacker, attackProfile)) {
                     return invalid('guardInterceptionRequired');
                 }
@@ -1109,6 +1169,12 @@ export function validateCommand(
             }
             if (!isMageWarsObjectAttackTargetInRange(state.core, attacker.zoneId, targetObject.zoneId, attackProfile)) {
                 return invalid(attackProfile.rangeKind === 'melee' ? 'targetNotInSameZone' : 'targetOutOfRange');
+            }
+            if (
+                attackProfile.rangeKind === 'ranged'
+                && doesMageWarsWallBlockLineOfSight(state.core, attacker.zoneId, targetObject.zoneId)
+            ) {
+                return invalid('lineOfSightBlockedByWall');
             }
             if (isMageWarsGuardInterceptionRequired(state.core, attacker, attackProfile, targetObject)) {
                 return invalid('guardInterceptionRequired');
@@ -1151,6 +1217,12 @@ export function validateCommand(
                 if (!isMageWarsObjectAttackTargetInRange(state.core, equipment.zoneId, defender.mageZoneId, attackProfile)) {
                     return invalid(attackProfile.rangeKind === 'melee' ? 'targetNotInSameZone' : 'targetOutOfRange');
                 }
+                if (
+                    attackProfile.rangeKind === 'ranged'
+                    && doesMageWarsWallBlockLineOfSight(state.core, equipment.zoneId, defender.mageZoneId)
+                ) {
+                    return invalid('lineOfSightBlockedByWall');
+                }
                 if (isMageWarsGuardInterceptionRequired(state.core, equipment, attackProfile)) {
                     return invalid('guardInterceptionRequired');
                 }
@@ -1169,6 +1241,12 @@ export function validateCommand(
             }
             if (!isMageWarsObjectAttackTargetInRange(state.core, equipment.zoneId, targetObject.zoneId, attackProfile)) {
                 return invalid(attackProfile.rangeKind === 'melee' ? 'targetNotInSameZone' : 'targetOutOfRange');
+            }
+            if (
+                attackProfile.rangeKind === 'ranged'
+                && doesMageWarsWallBlockLineOfSight(state.core, equipment.zoneId, targetObject.zoneId)
+            ) {
+                return invalid('lineOfSightBlockedByWall');
             }
             if (isMageWarsGuardInterceptionRequired(state.core, equipment, attackProfile, targetObject)) {
                 return invalid('guardInterceptionRequired');

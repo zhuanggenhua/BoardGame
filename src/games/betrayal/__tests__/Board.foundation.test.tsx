@@ -3722,6 +3722,7 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-inventory-medical-kit'));
         expect(screen.getByTestId('betrayal-inventory-target-player-selector')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-1')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        expect(screen.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-1')).toHaveAttribute('data-highlight-color', 'green');
         expect(screen.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-1')).toHaveAttribute('data-selected', 'false');
         fireEvent.click(screen.getByTestId('betrayal-room-occupant-entrance-hall-1'));
         expect(screen.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-1')).toHaveAttribute('data-selected', 'true');
@@ -4439,7 +4440,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-explore-target-ground-north')).toBeInTheDocument();
     });
 
-    it('叛徒作祟后探索事件符号时可在探索选项中声明跳过事件', () => {
+    it('叛徒作祟后翻出事件符号后才选择是否跳过事件', () => {
         const core = createOpenFrontierHauntBoardCore('2');
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -4469,27 +4470,24 @@ describe('Betrayal Board foundation', () => {
         );
 
         expect(screen.getByTestId('betrayal-action-explore')).toHaveTextContent('探索');
-        expect(screen.getByTestId('betrayal-explore-options')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-explore-option-traitor-event-skip')).toHaveTextContent('跳过事件');
-        expect(screen.getByTestId('betrayal-explore-option-traitor-event-skip')).toHaveAttribute(
-            'title',
-            '这次探索不抽事件卡',
-        );
-        expect(screen.getByTestId('betrayal-explore-option-traitor-event-skip-description')).toHaveTextContent('这次探索不抽事件卡');
-        expect(screen.getByTestId('betrayal-explore-option-traitor-event-skip')).toHaveClass('min-h-[44px]');
-        expect(screen.getByTestId('betrayal-explore-option-traitor-event-skip')).not.toHaveClass('bg-transparent');
+        expect(screen.queryByTestId('betrayal-explore-options')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-explore-option-traitor-event-skip')).not.toBeInTheDocument();
         expect(screen.queryByText('叛徒忽略事件')).not.toBeInTheDocument();
 
-        fireEvent.click(screen.getByTestId('betrayal-explore-option-traitor-event-skip'));
         fireEvent.click(screen.getByTestId('betrayal-action-explore'));
         expect(screen.getByTestId(`betrayal-room-explore-target-${targetRoomId}`)).toBeInTheDocument();
         fireEvent.click(screen.getByTestId(`betrayal-room-${targetRoomId}`));
         confirmPendingRoomPlacement();
 
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAccessibleName(/事件符号/);
+        expect(screen.getByTestId('betrayal-event-choice-confirm')).toHaveTextContent('跳过事件');
+        expect(screen.getByTestId('betrayal-event-choice-decline')).toHaveTextContent('抽取事件牌');
+        fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
+
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('没有抽取或结算事件卡');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('跳过事件');
         expect(screen.queryByText('叛徒忽略事件')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('叛徒跳过了事件符号');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('跳过了事件符号');
     });
 
     it('探索只在进入选择态后高亮未知房间，并在发现结束回合后退出探索入口', async () => {
@@ -4832,7 +4830,7 @@ describe('Betrayal Board foundation', () => {
         expect(armorySteps[1]).toHaveTextContent('器械库获得砍刀');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('探索到器械库');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('房间没有发现符号');
-        expect(screen.getByTestId('betrayal-inventory-hunting-knife-armory-0-1')).toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-inventory-hunting-knife-armory-0-1')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-inventory-medical-kit-0')).not.toBeInTheDocument();
 
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
@@ -4858,6 +4856,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-inventory-hunting-knife-armory-0-1')).toBeInTheDocument();
 
         expect(screen.queryByTestId('betrayal-deck-resolution-ledger')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-deck-resolution-ledger-step')).not.toBeInTheDocument();
@@ -5635,6 +5634,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute('data-reroll-target-count', '3');
 
         fireEvent.click(screen.getByTestId('betrayal-house-dice-reroll-target-0'));
+        expect(screen.getByTestId('betrayal-roll-modifier-confirm')).toHaveTextContent('确认使用兔脚');
+        fireEvent.click(screen.getByTestId('betrayal-roll-modifier-confirm'));
 
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('阻止死亡');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用兔脚重掷第 1 颗骰子');

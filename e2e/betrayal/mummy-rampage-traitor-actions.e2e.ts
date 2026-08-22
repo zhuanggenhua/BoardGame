@@ -73,6 +73,23 @@ const dismissBlockingOverlays = (core: BetrayalCore): BetrayalCore => {
     return core;
 };
 
+const markMonsterActionsDoneForExplorerTurn = (core: BetrayalCore): void => {
+    const monsterIds = core.monsters.map((monster) => monster.id);
+    core.scenarioRuntime.monsterTurn = {
+        ...core.scenarioRuntime.monsterTurn,
+        resolvedStartMonsterIds: Array.from(new Set([
+            ...(core.scenarioRuntime.monsterTurn?.resolvedStartMonsterIds ?? []),
+            ...monsterIds,
+        ])),
+        skippedMonsterIdsThisTurn: Array.from(new Set([
+            ...(core.scenarioRuntime.monsterTurn?.skippedMonsterIdsThisTurn ?? []),
+            ...monsterIds,
+        ])),
+        movementRollsByGroupId: {},
+        moveRemainingById: {},
+    };
+};
+
 const createMummyTraitorActionCore = (options: {
     inventory?: MummyTraitorActionCard[];
     girlHolder?: 'room' | 'traitor' | 'mummy';
@@ -119,6 +136,7 @@ const createMummyTraitorActionCore = (options: {
     };
     core.usedCardIdsThisTurn = [];
     core.recommendedAction = 'use';
+    markMonsterActionsDoneForExplorerTurn(core);
     syncCurrentExplorerProjection(core);
     return {
         core: dismissBlockingOverlays(core),

@@ -17,6 +17,10 @@ import {
     isSettledReplayOnlyRollContext,
     replaceCurrentRollContext,
 } from './rollContext';
+import {
+    applyDiceThroneCommittedDamageShieldConsumption,
+    commitDiceThroneDamagePrevention,
+} from './damagePreventionCommit';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
@@ -217,67 +221,28 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     // 使用 amount（原始伤害）而不是 actualDamage 来计算护盾消耗
     // 这样可以避免低血量时护盾被错误地跳过
     const damageForShields = amount ?? actualDamage;
-    let remainingDamage = damageForShields;
-    let newDamageShields = target.damageShields;
-    const shieldsConsumed: Array<{ sourceId: string; value?: number; reductionPercent?: number; absorbed: number }> = [];
 
     // 终极技能（Ultimate）伤害不可被护盾抵消（规则FAQ：Not This Time 不能防御 Ultimate）
     const isUltimateDamage = state.pendingAttack?.isUltimate ?? false;
-
-    // 消耗护盾抵消伤害（忽略 preventStatus 护盾）
-    // bypassShields: HP 重置类效果（如神圣祝福）跳过护盾消耗
-    // isUltimateDamage: 终极技能伤害跳过护盾
-    // 优先级：百分比护盾 > 固定值护盾（百分比护盾先消耗）
-    if (!bypassShields && !isUltimateDamage && target.damageShields && target.damageShields.length > 0 && remainingDamage > 0) {
-        const updatedShields: typeof target.damageShields = [];
-        
-        // 分离护盾类型
-        const percentShields = target.damageShields.filter(s => !s.preventStatus && s.reductionPercent !== undefined);
-        const fixedShields = target.damageShields.filter(s => !s.preventStatus && s.reductionPercent === undefined);
-        const statusShields = target.damageShields.filter(s => s.preventStatus);
-        
-        // 先消耗百分比护盾
-        for (const shield of percentShields) {
-            if (remainingDamage > 0) {
-                const reductionAmount = Math.ceil(remainingDamage * (shield.reductionPercent! / 100));
-                remainingDamage -= reductionAmount;
-                shieldsConsumed.push({
-                    sourceId: shield.sourceId,
-                    reductionPercent: shield.reductionPercent,
-                    absorbed: reductionAmount,
-                });
-                // 百分比护盾消耗后不保留（一次性使用）
-            }
+    const preventionCommit = event.payload.preventionCommitted === true
+        ? {
+            remainingDamage: Math.max(0, actualDamage ?? damageForShields),
+            nextDamageShields: applyDiceThroneCommittedDamageShieldConsumption({
+                state,
+                targetId,
+                shieldsConsumed: event.payload.shieldsConsumed ?? [],
+            }),
+            shieldsConsumed: event.payload.shieldsConsumed ?? [],
         }
-        
-        // 再消耗固定值护盾
-        for (const shield of fixedShields) {
-            if (remainingDamage > 0) {
-                const preventedAmount = Math.min(shield.value, remainingDamage);
-                remainingDamage -= preventedAmount;
-                
-                shieldsConsumed.push({
-                    sourceId: shield.sourceId,
-                    value: shield.value,
-                    absorbed: preventedAmount,
-                });
-                
-                // 如果护盾还有剩余值，保留护盾
-                const remainingShieldValue = shield.value - preventedAmount;
-                if (remainingShieldValue > 0) {
-                    updatedShields.push({ ...shield, value: remainingShieldValue });
-                }
-            } else {
-                // 没有剩余伤害了，后续护盾全部保留
-                updatedShields.push(shield);
-            }
-        }
-        
-        // preventStatus 护盾始终保留
-        updatedShields.push(...statusShields);
-        
-        newDamageShields = updatedShields;
-    }
+        : commitDiceThroneDamagePrevention({
+            state,
+            targetId,
+            incomingDamage: damageForShields,
+            bypassShields,
+            isUltimateDamage,
+            resolutionFrameId: event.payload.resolutionFrameId,
+        });
+    const { remainingDamage, nextDamageShields: newDamageShields, shieldsConsumed } = preventionCommit;
     
     // 回填护盾消耗信息到事件 payload
     if (shieldsConsumed.length > 0) {

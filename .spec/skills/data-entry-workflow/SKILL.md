@@ -21,7 +21,7 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 ## 先读
 
 - 通用门禁：`.spec/knowledge/standards/data-entry.md`
-- 图片文字读取、OCR、卡图/房间图规则录入或读图卡死：`.spec/skills/safe-image-reading/SKILL.md`
+- 图片文字读取、OCR、卡图/场地或区域图规则录入或读图卡死：`.spec/skills/safe-image-reading/SKILL.md`
 - 图片资源路径、manifest、服务器素材主源：`.spec/knowledge/standards/asset-pipeline.md`
 - 机制实现承接：`.spec/knowledge/standards/engine-systems.md`
 - 不确定入口：`.spec/knowledge/README.md`
@@ -30,7 +30,7 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 1. **锁定任务现场**
    - 确认 `gameId`、本轮 scope、当前 worktree / 分支、用户指定真相源。
-   - scope 是整包、整牌库、全剧本、全房间、全组件时，先建立官方对象全集；当前运行池、发现池、素材 manifest、测试覆盖对象只能作为覆盖对照。
+   - scope 是整包、整牌库、全场景、全区域、全组件时，先建立官方对象全集；当前运行池、发现池、素材 manifest、测试覆盖对象只能作为覆盖对照。
 
 2. **先建录入合同**
    - 按 `data-entry.md` 完成真相源表、对象全集、规则数量 × 素材数量对账、字段版式合同、裁图 / OCR / atlas / 索引合同。
@@ -70,43 +70,11 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 ## Workflow 路由
 
-### 通用新增派系 / 新增角色 / 新增英雄
-
-- 适用：用户说“新增派系”“新增角色”“新增英雄”“从素材做到可玩”“数据录入、上传、审计、端到端全流程”“彻底完成才停”等语义。
-- 必须先读 `.spec/skills/add-new-faction/SKILL.md`，把批次矩阵、证据轴、资源上传、审计 evidence、真实入口 E2E 作为统一交付门禁。
-- 然后再进入下方游戏专用 workflow。
-- 禁止只完成选角、静态数据、资源显示或 smoke 测试后就宣称新增完成。
-
-### Smash Up
-
-- **仅 intake / 仅录入资源**
-  - 适用：用户只要求核图、切 atlas、录静态数据、补 locale、补 faction metadata、上传资源。
-  - 读 `.spec/skills/smashup-faction-intake/SKILL.md`。
-- **intake + 派系玩法实施**
-  - 适用：用户明确要求“把新派系做进游戏”“继续实现玩法”“从图片一路做到正式可玩”。
-  - 先读 `.spec/skills/smashup-faction-intake/SKILL.md`，收口后继续读 `.spec/skills/smashup-faction-implementation/SKILL.md`。
-- **旧派系 / 新派系整批重审、重录、补证**
-  - 继续走 Smash Up 专项 workflow，并套用上面的“批量任务门禁”。
-- **禁止误路由**
-  - Smash Up 新派系任务不是“新增游戏”，默认不要改走 `.spec/skills/create-new-game/SKILL.md`。
-  - 只有新增全新 `gameId` 时才走新游戏路线。
-- 额外硬规则：涉及 Wiki 核对时，必须按仓库根 `AGENTS.md` 使用项目爬虫，不能凭记忆。
-
-### Summoner Wars / 召唤师战争
-
-- 新派系、重录派系、卡图数值核对、提示板核对：读 `.spec/skills/summonerwars-faction-intake/SKILL.md`。
-- 单卡费用、生命、战力、攻击类型或牌组符号疑似错录时，先回完整单卡 / 召唤师图，不得用旧 evidence、代码静态值或测试期望覆盖卡图。
-- 如果命中同一派系同一批次的版式误读，回到该派系全卡重录合同，不能只点改一张。
-
-### Dice Throne
-
-- 单角色 / 新英雄的图片、骰面、Token、卡牌、裁图、资源上传、规则文档录入：读 `.spec/skills/dicethrone-hero-intake/SKILL.md`。
-
-### 其他游戏
-
-- 若还没有专用 workflow：以 `.spec/knowledge/standards/data-entry.md` 为主流程，再补读该游戏自己的 `src/games/<gameId>/rule/` 文档。
-- 新游戏第一次录入时，必须先把图面字段版式合同写进本轮 evidence；若该版式会复用，后续再沉淀到对应游戏 workflow 或规则文档。
-- 不得把某个游戏的字段结构、抓取站点或索引习惯提升成项目全局默认。
+- 用户说“新增派系”“新增角色”“新增可玩单元”“从素材做到可玩”“数据录入、上传、审计、端到端全流程”“彻底完成才停”等语义时，先读 `.spec/skills/add-new-faction/SKILL.md`，再按 `gameId` 查是否已有专项 workflow。
+- 已有专项 workflow 时，本 skill 只负责通用录入纪律和批量门禁；具体素材来源、字段裁定、脚本、E2E 名称和游戏规则链都回到专项 workflow。
+- 没有专项 workflow 时，以 `.spec/knowledge/standards/data-entry.md` 为主流程，再补读该游戏自己的 `src/games/<gameId>/rule/` 文档；若本轮沉淀出可复用流程，按 spec-steward 裁定是否新建专项 workflow。
+- “新增已有游戏的可玩对象”不是“新增全新游戏”；只有新增全新 `gameId` 时才走 `.spec/skills/create-new-game/SKILL.md`。
+- 不得把某个游戏的字段结构、抓取站点、Wiki 规则、索引习惯或脚本命令提升成项目全局默认。
 
 ## 交付要求
 

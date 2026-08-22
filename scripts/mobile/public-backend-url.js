@@ -22,7 +22,7 @@ const LEGACY_ANDROID_BACKEND_URL_SOURCES = [
 const PUBLIC_SERVICE_BACKEND_URL_SOURCES = [
     ['VITE_GAME_SERVER_URL', ''],
     ['VITE_AUTH_API_URL', '/auth'],
-    ['VITE_ADMIN_API_URL', '/admin'],
+    ['VITE_ADMIN_API_URL', '/admin-api'],
     ['VITE_FEEDBACK_API_URL', '/feedback'],
     ['VITE_SPONSOR_API_URL', '/sponsors'],
     ['VITE_NOTIFICATION_API_URL', '/notifications'],

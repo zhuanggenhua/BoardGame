@@ -28,6 +28,7 @@ import {
     createFlowSystem,
     createInteractionSystem,
     createSimpleChoiceSystem,
+    createTimingOpportunitySystem,
 } from '../../engine';
 import { executePipeline, type PipelineConfig } from '../../engine/pipeline';
 import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor, type PromptMultiConfig } from '../../engine/systems/InteractionSystem';
@@ -73,6 +74,7 @@ import {
 } from './domain/ongoingModifiers';
 import { getCardDef, getMinionLikePower, getBaseDef, getFactionCards } from './data/cards';
 import { createSmashUpEventSystem } from './domain/systems';
+import { createSmashUpTimingOpportunitySystemConfig } from './domain/timingOpportunities';
 import { ACTION_ALLOWLIST, formatSmashUpActionEntry } from './actionLog';
 import {
     getCardStrategyTags,
@@ -150,6 +152,7 @@ const smashUpAiSimulationPipelineConfig: PipelineConfig<SmashUpCore, SmashUpComm
         createSimpleChoiceSystem(),
         createEventStreamSystem(),
         createSmashUpEventSystem(),
+        createTimingOpportunitySystem(SmashUpDomain, createSmashUpTimingOpportunitySystemConfig()),
     ],
 };
 const smashUpAiSimulationRandom = {

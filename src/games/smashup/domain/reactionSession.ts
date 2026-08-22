@@ -10,11 +10,13 @@ import {
 import { getCardDef, getBaseDef } from '../data/cards';
 import { validate, getManualSpecialScoringBaseIndices } from './commands';
 import { execute } from './reducer';
-import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
+import { registerAbilityRuntimePrompt } from './abilityRuntime';
 import {
-    FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE,
     buildFieldSourceActionOptions,
 } from './fieldInteractionOptions';
+import {
+    createSmashUpReactionChoiceInteraction,
+} from './reactionTimingOpportunity';
 import { executeTriggerProgramExecutor } from './triggerExecutors';
 import { partitionMandatoryReactionOrderingComponents } from './reactionOrdering';
 import {
@@ -1398,21 +1400,22 @@ function buildReactionInteraction(
     random: RandomFn,
 ) {
     const initialOptions = buildReactionOptions(state, session, now, random);
-    const interaction = createAbilityRuntimeSimpleChoice(
-        `smashup_reaction_${session.frameId}_${session.activePlayerId}_${now}`,
-        session.activePlayerId,
-        session.phase === 'mandatory'
-            ? 'ui.reaction_choose_mandatory_title'
-            : 'ui.reaction_choose_optional_title',
-        initialOptions,
-        {
-            sourceId: 'smashup_reaction_choose',
-            targetType: FIELD_SOURCE_ACTION_PROMPT_TARGET_TYPE,
-            responseValidationMode: 'live',
-            autoResolveIfSingle: false,
-            allowedCommands: [SU_COMMANDS.REACTION_PASS],
+    const interaction = createSmashUpReactionChoiceInteraction({
+        state,
+        session,
+        now,
+        options: initialOptions,
+        refresh: (latestState) => {
+            const matchState = latestState as MatchState<SmashUpCore>;
+            const latestSession = getSmashUpReactionSession(matchState);
+            if (!latestSession) return undefined;
+            const latestNow = matchState.core.turnNumber ?? now;
+            return {
+                session: latestSession,
+                options: buildReactionOptions(matchState, latestSession, latestNow),
+            };
         },
-    );
+    });
     const leadingTriggerId = initialOptions[0]?.value.kind === 'trigger'
         ? initialOptions[0].value.triggerId
         : undefined;

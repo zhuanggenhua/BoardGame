@@ -374,7 +374,7 @@ describe('SystemHealthPage', () => {
                 : input instanceof URL
                     ? input.toString()
                     : input.url;
-            if (url.includes('/admin/stats')) {
+            if (url.includes('/admin-api/stats')) {
                 return {
                     ok: true,
                     json: async () => ({
@@ -385,7 +385,7 @@ describe('SystemHealthPage', () => {
                     }),
                 } as Response;
             }
-            if (url.includes('/admin/rooms?page=1&limit=1')) {
+            if (url.includes('/admin-api/rooms?page=1&limit=1')) {
                 return {
                     ok: true,
                     json: async () => ({ total: 7 }),

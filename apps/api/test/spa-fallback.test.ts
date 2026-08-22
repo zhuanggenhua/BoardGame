@@ -31,6 +31,9 @@ describe('SPA fallback guards', () => {
         expect(shouldServeSpaFallback('/auth/login')).toBe(false);
         expect(shouldServeSpaFallback('/games/list')).toBe(false);
         expect(shouldServeSpaFallback('/feedback')).toBe(false);
+        expect(shouldServeSpaFallback('/admin-api')).toBe(false);
+        expect(shouldServeSpaFallback('/admin-api/stats')).toBe(false);
+        expect(shouldServeSpaFallback('/admin-api/users')).toBe(false);
     });
 
     it('should still allow normal SPA routes to fall back to index.html', () => {
@@ -39,7 +42,17 @@ describe('SPA fallback guards', () => {
         expect(shouldServeSpaFallback('/room/abc123')).toBe(true);
     });
 
-    it('should preserve explicit no-cache SPA entries under the admin API prefix', () => {
+    it('should serve every admin page route as no-cache SPA entries', () => {
+        expect(isNoCacheSpaEntryPath('/admin')).toBe(true);
+        expect(isNoCacheSpaEntryPath('/admin/')).toBe(true);
+        expect(isNoCacheSpaEntryPath('/admin/users')).toBe(true);
+        expect(isNoCacheSpaEntryPath('/admin/users/abc123')).toBe(true);
+        expect(isNoCacheSpaEntryPath('/admin/matches')).toBe(true);
+        expect(shouldServeSpaFallback('/admin')).toBe(true);
+        expect(shouldServeSpaFallback('/admin/')).toBe(true);
+        expect(shouldServeSpaFallback('/admin/users')).toBe(true);
+        expect(shouldServeSpaFallback('/admin/users/abc123')).toBe(true);
+        expect(shouldServeSpaFallback('/admin/matches')).toBe(true);
         expect(isNoCacheSpaEntryPath('/admin/changelogs')).toBe(true);
         expect(isNoCacheSpaEntryPath('/admin/changelogs/')).toBe(true);
         expect(isNoCacheSpaEntryPath('/admin/release-center')).toBe(true);

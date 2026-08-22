@@ -13,6 +13,7 @@ export type TransportStateProjectionMatch = {
     state: MatchState<unknown>;
     metadata: MatchMetadata;
     stateID: number;
+    randomSeed: string;
     getRandomCursor: () => number;
     connections: Map<string, Set<string>>;
     spectatorSockets: Set<string>;

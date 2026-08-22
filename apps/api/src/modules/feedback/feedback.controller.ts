@@ -47,7 +47,7 @@ export class FeedbackInternalController {
     }
 }
 
-@Controller('admin/feedback')
+@Controller('admin-api/feedback')
 export class FeedbackAdminController {
     constructor(@Inject(FeedbackService) private readonly feedbackService: FeedbackService) { }
 

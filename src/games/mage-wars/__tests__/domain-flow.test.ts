@@ -22,6 +22,7 @@ import {
     MAGE_WARS_MAGE_ABILITY_IDS,
     MAGE_WARS_OBJECT_ABILITY_IDS,
     STATUS_TOKEN_IDS,
+    getMageWarsWallEdgeId,
     type MageWarsObjectAbilityId,
 } from '../domain/ids';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase } from '../domain/types';
@@ -357,6 +358,165 @@ function castObjectSpellCommand(
 }
 
 describe('mage-wars domain flow', () => {
+    describe('wall mechanics', () => {
+        it('casts a standard starting wall onto an adjacent zone boundary and rejects invalid boundaries', () => {
+            const wallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3);
+            const nonAdjacentWallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.C3);
+            const state: MatchState<MageWarsCore> = {
+                ...setupState('creatureAction'),
+                core: withPreparedPlayerMage(
+                    setupState('creatureAction').core,
+                    '0',
+                    MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    [25700],
+                    20,
+                ),
+            };
+
+            const castWallCommand: MageWarsCommand = {
+                type: MAGE_WARS_COMMANDS.CAST_SPELL,
+                playerId: '0',
+                payload: {
+                    spellCardId: 25700,
+                    manaCost: 5,
+                    targetWallEdgeId: wallEdgeId,
+                },
+            };
+
+            expect(validateCommand(state, castWallCommand)).toBeUndefined();
+            expect(validateCommand(state, {
+                ...castWallCommand,
+                payload: {
+                    ...castWallCommand.payload,
+                    targetWallEdgeId: undefined,
+                },
+            })).toBe('missingWallEdgeTarget');
+            expect(validateCommand(state, {
+                ...castWallCommand,
+                payload: {
+                    ...castWallCommand.payload,
+                    targetWallEdgeId: nonAdjacentWallEdgeId,
+                },
+            })).toBe('invalidWallEdge');
+
+            const cast = runCommand(state, castWallCommand);
+
+            expect(cast.success).toBe(true);
+            expect(cast.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.WALL_SUMMONED);
+            expect(Object.values(cast.state.core.walls)).toEqual([
+                expect.objectContaining({
+                    ownerId: '0',
+                    sourceSpellCardId: 25700,
+                    edgeId: wallEdgeId,
+                    zoneIds: [ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3],
+                    blocksLineOfSight: true,
+                    passageDamage: expect.objectContaining({ amount: expect.any(Number) }),
+                }),
+            ]);
+            expect(validateCommand(cast.state, {
+                ...castWallCommand,
+                payload: {
+                    ...castWallCommand.payload,
+                    targetWallEdgeId: wallEdgeId,
+                },
+            })).toBe('wallEdgeOccupied');
+        });
+
+        it('blocks line of sight for ranged attacks across a wall edge', () => {
+            const wallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3);
+            const rangedAttacker = makeArenaObject('ranged-attacker', '0', ARENA_ZONE_IDS.A3, {
+                attackOrTraitLine: '长弓：快速远程 2 骰，1-2 区域',
+            });
+            const target = makeArenaObject('ranged-target', '1', ARENA_ZONE_IDS.B3);
+            const state: MatchState<MageWarsCore> = {
+                ...setupState('creatureAction'),
+                core: {
+                    ...withArenaObject(withArenaObject(setupState('creatureAction').core, rangedAttacker), target),
+                    walls: {
+                        [wallEdgeId]: {
+                            id: 'wall-test-a3-b3',
+                            ownerId: '0',
+                            sourceSpellCardId: 25700,
+                            sourceObjectId: 'spell-25700',
+                            name: '荆棘之墙',
+                            edgeId: wallEdgeId,
+                            zoneIds: [ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3],
+                            blocksLineOfSight: true,
+                            passageDamage: { amount: 3, damageTypes: ['穿越墙体'] },
+                        },
+                    },
+                },
+            };
+
+            expect(validateCommand(state, {
+                type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+                playerId: '0',
+                payload: {
+                    attackerObjectId: rangedAttacker.id,
+                    attackProfileId: 'attack-0',
+                    targetObjectId: target.id,
+                },
+            })).toBe('lineOfSightBlockedByWall');
+        });
+
+        it('applies wall passage damage when a creature crosses a wall edge', () => {
+            const wallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3);
+            const mover = makeArenaObject('wall-crossing-cat', '0', ARENA_ZONE_IDS.A3);
+            const state: MatchState<MageWarsCore> = {
+                ...setupState('creatureAction'),
+                core: {
+                    ...withArenaObject(setupState('creatureAction').core, mover),
+                    walls: {
+                        [wallEdgeId]: {
+                            id: 'wall-test-fire-a3-b3',
+                            ownerId: '1',
+                            sourceSpellCardId: 2500,
+                            sourceObjectId: 'spell-2500',
+                            name: '烈火之墙',
+                            edgeId: wallEdgeId,
+                            zoneIds: [ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3],
+                            blocksLineOfSight: true,
+                            passageDamage: { amount: 3, damageTypes: ['火焰'] },
+                        },
+                    },
+                },
+            };
+
+            const moved = runCommand(state, {
+                type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+                playerId: '0',
+                payload: {
+                    objectId: mover.id,
+                    toZoneId: ARENA_ZONE_IDS.B3,
+                },
+            });
+
+            expect(moved.success).toBe(true);
+            expect(moved.state.core.objects[mover.id].zoneId).toBe(ARENA_ZONE_IDS.B3);
+            expect(moved.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED,
+                    payload: expect.objectContaining({
+                        wallId: 'wall-test-fire-a3-b3',
+                        objectId: mover.id,
+                        fromZoneId: ARENA_ZONE_IDS.A3,
+                        toZoneId: ARENA_ZONE_IDS.B3,
+                        amount: 3,
+                    }),
+                }),
+                expect.objectContaining({
+                    type: 'DAMAGE_DEALT',
+                    payload: expect.objectContaining({
+                        targetId: mover.id,
+                        actualDamage: 3,
+                        sourceAbilityId: 'mw.wall.2500.passage',
+                    }),
+                }),
+            ]));
+            expect(moved.state.core.objects[mover.id].damage).toBe(3);
+        });
+    });
+
     it('sets up mages in config-backed formal 4x3 diagonal starting zones', () => {
         const state = setupState();
 
@@ -398,7 +558,7 @@ describe('mage-wars domain flow', () => {
         expect(validateCommand(state, {
             type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
             playerId: '1',
-            payload: { spellCardIds: [spellIds[0]] },
+            payload: { spellCardIds: [25700] },
         })).toBe('spellNotInPresetSpellbook');
     });
 
@@ -4031,7 +4191,7 @@ describe('mage-wars domain flow', () => {
         expect(attacked.state.core.objects[wildcat.id].temporaryTraits).toBeUndefined();
     });
 
-    it('lets Charge On grant swift and charge until the creature action ends', () => {
+    it('keeps legacy Charge On out of the standard Beastmaster spellbook and rejects legacy casts', () => {
         const chargeOnSpellId = 3407;
         const planningState = setupState('planning');
         const casterCore = withPlayerMage(planningState.core, '0', MAGE_IDS.BEASTMASTER_APPRENTICE);
@@ -4048,13 +4208,21 @@ describe('mage-wars domain flow', () => {
             life: 20,
             attackOrTraitLine: '噬咬：快速近战 3 骰',
         });
-        const planned = runCommand({
-            core: withArenaObject(withArenaObject(casterCore, creature), target),
+        const coreWithObjects = withArenaObject(withArenaObject(casterCore, creature), target);
+        expect(validateCommand({
+            core: coreWithObjects,
             sys: planningState.sys,
-        }, planCommand([chargeOnSpellId]));
+        }, planCommand([chargeOnSpellId]))).toBe('spellNotInPresetSpellbook');
+        const legacyPreparedCore = withPreparedPlayerMage(
+            coreWithObjects,
+            '0',
+            MAGE_IDS.BEASTMASTER_APPRENTICE,
+            [chargeOnSpellId],
+            20,
+        );
         const readyToCast: MatchState<MageWarsCore> = {
-            core: planned.state.core,
-            sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
+            core: legacyPreparedCore,
+            sys: { ...planningState.sys, phase: 'initiativeQuickcast' },
         };
 
         const cast = runCommand(readyToCast, {
@@ -4067,95 +4235,10 @@ describe('mage-wars domain flow', () => {
             },
         });
 
-        expect(cast.success).toBe(true);
-        expect(cast.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_GAINED,
-                payload: expect.objectContaining({
-                    objectId: creature.id,
-                    spellCardId: chargeOnSpellId,
-                    grants: ['swift'],
-                    chargeDiceModifier: 1,
-                }),
-            }),
-        ]));
-        expect(cast.state.core.objects[creature.id].temporaryTraits).toMatchObject({
-            swift: true,
-            chargeDiceModifier: 1,
-        });
-
-        const creatureActionState: MatchState<MageWarsCore> = {
-            core: { ...cast.state.core, phaseReadyPlayerIds: ['1'] },
-            sys: { ...cast.state.sys, phase: 'creatureAction' },
-        };
-        const moved = runCommand(creatureActionState, {
-            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
-            playerId: '0',
-            payload: { objectId: creature.id, toZoneId: ARENA_ZONE_IDS.A2 },
-        });
-
-        expect(moved.success).toBe(true);
-        expect(moved.state.core.objects[creature.id]).toMatchObject({
-            zoneId: ARENA_ZONE_IDS.A2,
-            actionReady: true,
-            temporaryTraits: {
-                swift: true,
-                freeMoveUsedThisAction: true,
-                movedThisAction: true,
-                chargeDiceModifier: 1,
-            },
-        });
-
-        const attacked = runCommand(moved.state, {
-            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
-            playerId: '0',
-            payload: {
-                attackerObjectId: creature.id,
-                attackProfileId: 'attack-0',
-                targetObjectId: target.id,
-            },
-        });
-        const attackEvent = attacked.events.find((event) => (
-            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
-        ));
-
-        expect(attacked.success).toBe(true);
-        expect(attackEvent).toMatchObject({
-            payload: {
-                attackerObjectId: creature.id,
-                targetObjectId: target.id,
-                diceResults: [3, 3, 3, 3],
-                chargeDiceModifier: 1,
-                baseDamage: 12,
-            },
-        });
-        expect(attacked.state.core.objects[creature.id]).toMatchObject({
-            actionReady: false,
-            temporaryTraits: {
-                swift: true,
-                freeMoveUsedThisAction: true,
-                chargeDiceModifier: 1,
-            },
-        });
-
-        const advanced = runCommand(attacked.state, {
-            type: FLOW_COMMANDS.ADVANCE_PHASE,
-            playerId: '0',
-            payload: {},
-        });
-
-        expect(advanced.success).toBe(true);
-        expect(advanced.state.core.objects[creature.id].temporaryTraits).toBeUndefined();
-        expect(advanced.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED,
-                payload: expect.objectContaining({
-                    objectId: creature.id,
-                    traitIds: expect.arrayContaining(['swift', 'swiftFreeMove', 'charge']),
-                    sourceAbilityId: 'mw.spell.3407',
-                }),
-            }),
-        ]));
+        expect(cast.success).toBe(false);
+        expect(cast.error).toBe('spellNotInPresetSpellbook');
+        expect(cast.state.core.players['0'].preparedSpellCardIds).toEqual([chargeOnSpellId]);
+        expect(cast.state.core.objects[creature.id].temporaryTraits).toBeUndefined();
     });
 
     it('lets Call of the Wild grant friendly animal melee dice until the round ends', () => {
@@ -8653,70 +8736,13 @@ describe('mage-wars domain flow', () => {
         expect(dissolved.state.core.players['0'].mana).toBe(state.core.players['0'].mana - 6);
     });
 
-    it('executes alternate Dissolve 3406 with the same attached-equipment destruction rule', () => {
+    it('keeps alternate Dissolve 3406 as a non-standard alias outside the current spellbook plan gate', () => {
         const dissolveSpellId = 3406;
         const planningState = setupState('planning');
+
         expect(validateCommand(planningState, planCommand([dissolveSpellId]))).toBe('spellNotInPresetSpellbook');
-
-        const coreWithEnemyInRange = withPlayerInZone(planningState.core, '1', ARENA_ZONE_IDS.A2);
-        const equipment = makeArenaObject('enemy-equipment-3703-alt', '1', ARENA_ZONE_IDS.A2, {
-            kind: 'equipment',
-            sourceSpellCardId: 3703,
-            sourceObjectId: 'spell-card-3703',
-            name: '龙鳞锁甲',
-            life: 1,
-            actionReady: false,
-            typeLine: '装备 / 胸甲',
-            anchoredToPlayerId: '1',
-        });
-        const state: MatchState<MageWarsCore> = {
-            core: {
-                ...withArenaObject(coreWithEnemyInRange, equipment),
-                players: {
-                    ...coreWithEnemyInRange.players,
-                    '0': {
-                        ...coreWithEnemyInRange.players['0'],
-                        preparedSpellCardIds: [dissolveSpellId],
-                        preparedSpellSlots: 1,
-                    },
-                },
-            },
-            sys: { ...planningState.sys, phase: 'initiativeQuickcast' },
-        };
-
-        const events = MageWarsDomain.execute(state, {
-            type: MAGE_WARS_COMMANDS.CAST_SPELL,
-            playerId: '0',
-            payload: {
-                spellCardId: dissolveSpellId,
-                manaCost: 6,
-                targetObjectId: equipment.id,
-            },
-        }, fixedRandom);
-        const nextCore = events.reduce((core, event) => MageWarsDomain.reduce(core, event), state.core);
-
-        expect(events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
-                payload: expect.objectContaining({
-                    spellCardId: dissolveSpellId,
-                    manaCost: 6,
-                    targetObjectId: equipment.id,
-                }),
-            }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: expect.objectContaining({
-                    objectId: equipment.id,
-                    ownerId: '1',
-                    sourceAbilityId: 'mw.spell.3406',
-                    spellCardId: dissolveSpellId,
-                }),
-            }),
-        ]));
-        expect(nextCore.objects[equipment.id]).toBeUndefined();
-        expect(nextCore.players['0'].discardSpellCardIds).toEqual([dissolveSpellId]);
-        expect(nextCore.players['0'].mana).toBe(state.core.players['0'].mana - 6);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toContain(3605);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).not.toContain(dissolveSpellId);
     });
 
     it('requires Dissolve to target mage-attached equipment and pay that equipment cost', () => {
@@ -8889,65 +8915,13 @@ describe('mage-wars domain flow', () => {
         expect(dispelled.state.core.players['0'].mana).toBe(state.core.players['0'].mana - 5);
     });
 
-    it('executes alternate Dispel 3419 with the same visible-enchantment destruction rule', () => {
+    it('keeps alternate Dispel 3419 as a non-standard alias outside the current spellbook plan gate', () => {
         const dispelSpellId = 3419;
         const planningState = setupState('planning');
+
         expect(validateCommand(planningState, planCommand([dispelSpellId]))).toBe('spellNotInPresetSpellbook');
-
-        const enchantedCreature = makeArenaObject('enchanted-cat-alt-1', '1', ARENA_ZONE_IDS.A2);
-        const visibleEnchantment = makeVisibleEnchantmentObject('visible-enchantment-alt-1800', '1', ARENA_ZONE_IDS.A2, {
-            anchoredToObjectId: enchantedCreature.id,
-        });
-        const coreWithEnemyInRange = withPlayerInZone(planningState.core, '1', ARENA_ZONE_IDS.A2);
-        const state: MatchState<MageWarsCore> = {
-            core: {
-                ...withArenaObject(withArenaObject(coreWithEnemyInRange, enchantedCreature), visibleEnchantment),
-                players: {
-                    ...coreWithEnemyInRange.players,
-                    '0': {
-                        ...coreWithEnemyInRange.players['0'],
-                        preparedSpellCardIds: [dispelSpellId],
-                        preparedSpellSlots: 1,
-                    },
-                },
-            },
-            sys: { ...planningState.sys, phase: 'initiativeQuickcast' },
-        };
-
-        const events = MageWarsDomain.execute(state, {
-            type: MAGE_WARS_COMMANDS.CAST_SPELL,
-            playerId: '0',
-            payload: {
-                spellCardId: dispelSpellId,
-                manaCost: 5,
-                targetObjectId: visibleEnchantment.id,
-            },
-        }, fixedRandom);
-        const nextCore = events.reduce((core, event) => MageWarsDomain.reduce(core, event), state.core);
-
-        expect(events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
-                payload: expect.objectContaining({
-                    spellCardId: dispelSpellId,
-                    manaCost: 5,
-                    targetObjectId: visibleEnchantment.id,
-                }),
-            }),
-            expect.objectContaining({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: expect.objectContaining({
-                    objectId: visibleEnchantment.id,
-                    ownerId: '1',
-                    sourceAbilityId: 'mw.spell.3419',
-                    spellCardId: dispelSpellId,
-                }),
-            }),
-        ]));
-        expect(nextCore.objects[visibleEnchantment.id]).toBeUndefined();
-        expect(nextCore.objects[enchantedCreature.id]).toBeDefined();
-        expect(nextCore.players['0'].discardSpellCardIds).toEqual([dispelSpellId]);
-        expect(nextCore.players['0'].mana).toBe(state.core.players['0'].mana - 5);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toContain(3606);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).not.toContain(dispelSpellId);
     });
 
     it('requires Dispel to target an attached visible enchantment and pay that enchantment total cost', () => {

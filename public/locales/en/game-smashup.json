@@ -6,6 +6,7 @@
     "expansions": {
       "label": "Expansion Rules",
       "titans": "Titans",
+      "victory20": "20-Point Mode",
       "diy": "DIY"
     },
     "deckQuery": {
@@ -69,6 +70,7 @@
     "team_total": "{{score}} / {{target}}",
     "finish_turn": "Finish Turn",
     "deck": "Deck",
+    "playable": "Playable",
     "discard": "Discard",
     "titan": "Titan",
     "viewing": "Viewing",
@@ -1127,6 +1129,7 @@
     "minion_global_quota": "Global Quota",
     "minion_power_cap": "Power Cap ≤{{max}}",
     "same_name_quota": "Same-name Quota +{{count}}",
+    "specific_extra_minion_quota": "Specific minion play(s) {{count}}",
     "same_name_only": "Extra plays must be same-name minions",
     "base_limited_same_name_exact": "Same-name only: {{name}}",
     "base_limited_same_name_generic": "Same-name minions only",

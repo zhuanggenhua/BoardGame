@@ -343,9 +343,14 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
                 activeFxIdRef.current = fxId;
                 return;
             }
+            // FX 可能因预算、防抖或未注册而没有入队；此时不会有 impact/complete 回调。
+            // 已冻结的 HP 必须立即释放，否则 UI 会一直显示动画前血量。
+            if (next.bufferKey) {
+                damageBuffer.release([next.bufferKey]);
+            }
         }
         activeFxIdRef.current = null;
-    }, [fxBus]);
+    }, [damageBuffer, fxBus]);
 
     /**
      * Board 层在 onEffectImpact 中优先调用：当前步骤命中后立即推进下一步。

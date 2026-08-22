@@ -2575,13 +2575,13 @@ export function buildFieldSourceToMinionTargetOptions<TExtra extends Record<stri
  * 数据驱动的候选选择 helper。
  *
  * 替代各能力中硬编码的 `if (candidates.length === 1) { ... }` 模式。
- * 根据配置决定：单候选自动执行 or 始终创建交互让玩家选择。
+ * 默认保留玩家确认；只有纯机械结算才显式开启单候选自动执行。
  * UI 层根据 targetType 决定渲染方式（高亮基地/随从 vs 弹窗）。
  *
  * @param ctx 能力执行上下文
  * @param options 已构建好的 PromptOption 数组（通过 buildBaseTargetOptions / buildMinionTargetOptions）
  * @param config 选择配置
- * @param resolve 单候选自动执行时的回调，返回 AbilityResult
+ * @param resolve 显式开启单候选自动执行时的回调，返回 AbilityResult
  */
 export function resolveOrPrompt<T>(
     ctx: AbilityContext,
@@ -2591,7 +2591,7 @@ export function resolveOrPrompt<T>(
         title: string;
         sourceId: string;
         targetType: SimpleChoiceTargetType;
-        /** 单候选自动执行（默认 true，强制效果）；false = 可选效果，始终让玩家选 */
+        /** 单候选自动执行（默认 false）；玩家选择语义必须保留确认 */
         autoResolveIfSingle?: boolean;
         /** 是否自动添加取消选项（默认 false） */
         autoCancelOption?: boolean;
@@ -2600,7 +2600,7 @@ export function resolveOrPrompt<T>(
 ): AbilityResult {
     if (options.length === 0) return { events: [] };
 
-    const autoResolve = config.autoResolveIfSingle ?? true;
+    const autoResolve = config.autoResolveIfSingle ?? false;
     if (autoResolve && options.length === 1 && !config.autoCancelOption) {
         // 单候选且不需要取消选项时自动执行
         return resolve(options[0].value);

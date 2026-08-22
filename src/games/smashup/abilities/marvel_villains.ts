@@ -666,7 +666,7 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
                     titleKey: 'ui.marvel_villains_buff_title',
                     targetType: 'minion',
                     responseValidationMode: 'live',
-                    autoResolveIfSingle: context.mode !== 'supremeIntelligenceBuff',
+                    autoResolveIfSingle: false,
                 },
             );
         }

@@ -1,5 +1,5 @@
 import type { GameOverResult, PlayerId } from '../../../engine/types';
-import type { ArenaZoneId, MageId, StatusTokenId } from './ids';
+import type { ArenaZoneId, MageId, MageWarsWallEdgeId, StatusTokenId } from './ids';
 
 export type MageWarsArenaObjectKind = 'creature' | 'conjuration' | 'equipment' | 'enchantment';
 
@@ -124,6 +124,23 @@ export interface MageWarsArenaZone {
     fieldCardIds?: number[];
 }
 
+export interface MageWarsWallPassageDamage {
+    amount: number;
+    damageTypes: string[];
+}
+
+export interface MageWarsWallState {
+    id: string;
+    ownerId: PlayerId;
+    sourceSpellCardId: number;
+    sourceObjectId: string;
+    name: string;
+    edgeId: MageWarsWallEdgeId;
+    zoneIds: [ArenaZoneId, ArenaZoneId];
+    blocksLineOfSight: boolean;
+    passageDamage?: MageWarsWallPassageDamage;
+}
+
 export interface MageWarsFoundationStatus {
     intakeComplete: boolean;
     openDesignArtifact: boolean;
@@ -142,6 +159,7 @@ export interface MageWarsCore {
     arenaMode: 'apprentice-2x3' | 'formal-4x3';
     players: Record<PlayerId, MageWarsPlayerState>;
     objects: Record<string, MageWarsArenaObjectState>;
+    walls: Record<MageWarsWallEdgeId, MageWarsWallState>;
     arena: MageWarsArenaZone[];
     foundationStatus: MageWarsFoundationStatus;
     gameResult?: GameOverResult;

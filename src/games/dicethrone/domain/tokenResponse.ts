@@ -24,6 +24,7 @@ import type {
     TokenEffectResult,
     TokenEffectProcessor,
 } from './tokenTypes';
+import type { DiceThroneTokenResponseChoiceCommandSource } from './tokenResponseChoiceContract';
 import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
@@ -31,6 +32,7 @@ import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 import { getTokenStackLimit } from './rules';
 import { isPurifiableDebuffId } from './statusRemoval';
 import { getRemainingArtificerBotActivations, isArtificerBotTokenId } from './artificerBots';
+import { estimateDiceThroneDamageAfterExistingPrevention } from './damagePreventionCommit';
 
 function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerId, tokenId: string): number | undefined {
     return isArtificerBotTokenId(tokenId)
@@ -313,31 +315,15 @@ export function estimateDamageAfterExistingShields(
     incomingDamage: number,
     options?: { bypassShields?: boolean },
 ): number {
-    if (incomingDamage <= 0) return 0;
-    if (options?.bypassShields) return incomingDamage;
-    if (state.pendingAttack?.isUltimate) return incomingDamage;
-
-    const target = state.players[targetId];
-    const shields = target?.damageShields ?? [];
-    if (shields.length === 0) return incomingDamage;
-
-    let remainingDamage = incomingDamage;
-    const percentShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent !== undefined);
-    const fixedShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent === undefined);
-
-    for (const shield of percentShields) {
-        if (remainingDamage <= 0) break;
-        const reductionPercent = shield.reductionPercent ?? 0;
-        const reductionAmount = Math.ceil(remainingDamage * (reductionPercent / 100));
-        remainingDamage = Math.max(0, remainingDamage - reductionAmount);
-    }
-
-    for (const shield of fixedShields) {
-        if (remainingDamage <= 0) break;
-        remainingDamage = Math.max(0, remainingDamage - shield.value);
-    }
-
-    return remainingDamage;
+    return estimateDiceThroneDamageAfterExistingPrevention(
+        state,
+        targetId,
+        incomingDamage,
+        {
+            bypassShields: options?.bypassShields,
+            isUltimateDamage: state.pendingAttack?.isUltimate === true,
+        },
+    );
 }
 
 export const resolveDamageResponseType = (
@@ -650,7 +636,8 @@ export function processTokenUsage(
     amount: number,
     random?: RandomFn,
     responseType?: 'beforeDamageDealt' | 'beforeDamageReceived',
-    timestamp: number = 0
+    timestamp: number = 0,
+    choiceSource?: DiceThroneTokenResponseChoiceCommandSource,
 ): { events: DiceThroneEvent[]; result: TokenEffectResult; newTokenAmount: number } {
     const events: DiceThroneEvent[] = [];
     const player = state.players[playerId];
@@ -764,6 +751,14 @@ export function processTokenUsage(
             playerId,
             tokenId: tokenDef.id,
             amount: actualAffordableAmount,
+            ...(choiceSource
+                ? {
+                    choiceRequestId: choiceSource.requestId,
+                    choiceCandidateId: choiceSource.candidateId,
+                    ...(choiceSource.opportunityId ? { opportunityId: choiceSource.opportunityId } : {}),
+                    ...(choiceSource.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
+                }
+                : {}),
             effectType: resolvedEffectType,
             damageModifier: result.damageModifier,
             evasionRoll: result.rollResult,
@@ -806,7 +801,8 @@ function getRetributionReflectionAmount(
 export function finalizeTokenResponse(
     pendingDamage: PendingDamage,
     state: DiceThroneCore,
-    timestamp: number = 0
+    timestamp: number = 0,
+    choiceSource?: DiceThroneTokenResponseChoiceCommandSource,
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
     
@@ -815,6 +811,14 @@ export function finalizeTokenResponse(
         type: 'TOKEN_RESPONSE_CLOSED',
         payload: {
             pendingDamageId: pendingDamage.id,
+            ...(choiceSource
+                ? {
+                    choiceRequestId: choiceSource.requestId,
+                    choiceCandidateId: choiceSource.candidateId,
+                    ...(choiceSource.opportunityId ? { opportunityId: choiceSource.opportunityId } : {}),
+                    ...(choiceSource.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
+                }
+                : {}),
             finalDamage: pendingDamage.currentDamage,
             fullyEvaded: pendingDamage.isFullyEvaded ?? false,
             sourceAbilityId: pendingDamage.sourceAbilityId,
@@ -840,6 +844,7 @@ export function finalizeTokenResponse(
                 sourcePlayerId: pendingDamage.sourcePlayerId,
                 damageScope: pendingDamage.damageScope,
                 ...(pendingDamage.unblockable ? { unblockable: true } : {}),
+                ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
                 modifiers: pendingDamage.modifiers,
             },
             sourceCommandType: 'ABILITY_EFFECT',
@@ -868,6 +873,7 @@ export function finalizeTokenResponse(
                 sourcePlayerId: deferredDamage.sourcePlayerId,
                 damageScope: deferredDamage.damageScope,
                 ...(deferredDamage.unblockable ? { unblockable: true } : {}),
+                ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
             },
             sourceCommandType: deferredDamage.sourceCommandType ?? 'ABILITY_EFFECT',
             timestamp,

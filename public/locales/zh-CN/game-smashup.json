@@ -27,6 +27,7 @@
     "team_total": "{{score}} / {{target}}",
     "finish_turn": "结束回合",
     "deck": "牌库",
+    "playable": "可打出",
     "discard": "弃牌",
     "viewing": "查看中",
     "discard_pile": "弃牌堆",
@@ -1064,6 +1065,7 @@
     "minion_global_quota": "通用额度",
     "minion_power_cap": "力量限制 ≤{{max}}",
     "same_name_quota": "同名额度 +{{count}}",
+    "specific_extra_minion_quota": "指定随从机会 {{count}}",
     "same_name_only": "额外出牌只能打出同名随从",
     "base_limited_same_name_exact": "仅同名：{{name}}",
     "base_limited_same_name_generic": "仅同名随从",
@@ -12425,6 +12427,7 @@
     "expansions": {
       "label": "扩展规则",
       "titans": "泰坦",
+      "victory20": "20分模式",
       "diy": "DIY"
     },
     "deckQuery": {

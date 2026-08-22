@@ -89,8 +89,8 @@ export interface MageWarsAbilityGapSummary {
     }>;
 }
 
-function isApprenticeSpellObject(object: GameConfigObject): boolean {
-    return object.tags?.includes('apprentice-spell') === true;
+function isStandardStartingSpellObject(object: GameConfigObject): boolean {
+    return object.tags?.includes('standard-starting-spell') === true;
 }
 
 function readNumber(value: unknown, context: string): number {
@@ -114,7 +114,7 @@ export function getMageWarsSpellAbilityId(cardId: number): string {
 
 export function buildMageWarsSpellAbilityDefs(): MageWarsSpellAbilityDef[] {
     return materializeMageWarsConfigPackage().package.objects
-        .filter(isApprenticeSpellObject)
+        .filter(isStandardStartingSpellObject)
         .map((object) => {
             const data = object.data ?? {};
             const cardId = readNumber(data.cardId, `${object.id}.data.cardId`);
@@ -139,13 +139,13 @@ export function buildMageWarsSpellAbilityDefs(): MageWarsSpellAbilityDef[] {
                 description: object.text,
                 trigger: 'spell-cast',
                 effects,
-                tags: [
+                tags: Array.from(new Set([
                     'mage-wars',
-                    'apprentice-spell',
+                    'standard-starting-spell',
                     `spell-type:${spellType}`,
                     `implementation:${implementationStatus}`,
                     ...(object.tags ?? []),
-                ],
+                ])),
                 meta: {
                     objectId: object.id,
                     cardId,

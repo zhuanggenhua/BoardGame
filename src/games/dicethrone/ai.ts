@@ -1,4 +1,5 @@
 import type { Command, MatchState, PlayerId } from '../../engine/types';
+import { projectChoiceRequestToAiLegalActions, type ChoiceRequest } from '../../engine/ChoiceRequest';
 import {
     buildDeterministicAiNoise,
     buildAiLegalActionsFromInteractionDecision,
@@ -76,6 +77,7 @@ import {
     getDiceThroneHeroStrategyProfile,
     type DiceThroneHeroStrategyProfile,
 } from './ai/profiles';
+import { readDiceThroneTokenResponseChoiceContract } from './domain/tokenResponseChoiceContract';
 
 type DiceThroneState = MatchState<DiceThroneCore>;
 
@@ -327,6 +329,51 @@ const appendAction = (
     const isValid = commandSpecs.every((command) => isCommandValid(state, playerId, command.type, command.payload));
     if (!isValid) return;
     actions.push(action);
+};
+
+const asRecord = (value: unknown): Record<string, unknown> | null => (
+    value && typeof value === 'object' && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : null
+);
+
+const readSingleCandidateMetadata = (metadata: Record<string, unknown> | undefined): Record<string, unknown> | null => {
+    const entries = Array.isArray(metadata?.candidateMetadata) ? metadata.candidateMetadata : [];
+    if (entries.length !== 1) return null;
+    return asRecord(entries[0]);
+};
+
+const normalizeTokenResponseChoiceRequestAction = (action: AiLegalAction): AiLegalAction => {
+    const metadata = action.metadata as Record<string, unknown> | undefined;
+    const candidateMetadata = readSingleCandidateMetadata(metadata);
+    const mergedMetadata = {
+        ...(candidateMetadata ?? {}),
+        ...(metadata ?? {}),
+    };
+    const tokenId = typeof mergedMetadata.tokenId === 'string' ? mergedMetadata.tokenId : null;
+
+    return {
+        ...action,
+        metadata: tokenId
+            ? withAiActionStrategyTags(mergedMetadata, ['survive-response'])
+            : mergedMetadata,
+    };
+};
+
+const buildTokenResponseChoiceRequestActions = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    interaction: EngineInteractionDescriptor,
+): AiLegalAction[] | null => {
+    const choiceRequest = readDiceThroneTokenResponseChoiceContract(interaction) as ChoiceRequest | null;
+    if (!choiceRequest) return null;
+    if (choiceRequest.playerId !== playerId) return [];
+
+    const actions: AiLegalAction[] = [];
+    for (const action of projectChoiceRequestToAiLegalActions(choiceRequest).actions) {
+        appendAction(actions, state, playerId, normalizeTokenResponseChoiceRequestAction(action));
+    }
+    return actions;
 };
 
 const withVisibleStepDelayPolicy = (
@@ -1791,6 +1838,10 @@ const buildInteractionActions = (
         if (!pendingDamage || pendingDamage.responderId !== playerId) {
             return [];
         }
+        const choiceRequestActions = buildTokenResponseChoiceRequestActions(state, playerId, current);
+        if (choiceRequestActions !== null) {
+            return choiceRequestActions;
+        }
         return buildResponseActions(state, playerId, phase);
     }
 
@@ -2426,7 +2477,7 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
                 label: `使用 ${token.id}`,
                 commands: [{
                     type: 'USE_TOKEN',
-                    payload: { tokenId: token.id, amount: 1 },
+                    payload: { tokenId: token.id, amount: 1, pendingDamageId: pendingDamage.id },
                 }],
                 metadata: withAiActionStrategyTags({ tokenId: token.id }, ['survive-response']),
             });
@@ -2436,7 +2487,7 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
             actionId: createAiLegalActionId('response', 'skip-token'),
             kind: 'skip-token-response',
             label: '跳过 Token 响应',
-            commands: [{ type: 'SKIP_TOKEN_RESPONSE', payload: {} }],
+            commands: [{ type: 'SKIP_TOKEN_RESPONSE', payload: { pendingDamageId: pendingDamage.id } }],
         });
     }
 

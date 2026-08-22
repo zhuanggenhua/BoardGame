@@ -1,3 +1,9 @@
+import type {
+    TimingPoint,
+    TimingOpportunityDiscoveryArgs,
+    TimingOpportunityDiscoveryResult,
+} from './TimingOpportunity';
+
 /**
  * 引擎层核心类型定义
  * 
@@ -476,6 +482,17 @@ export const DEFAULT_TUTORIAL_STATE: TutorialState = {
     step: null,
 };
 
+export interface RefereeTraceEntry {
+    id: number;
+    evidence: EventCommitEvidence;
+}
+
+export interface RefereeTraceState {
+    entries: RefereeTraceEntry[];
+    maxEntries: number;
+    nextId: number;
+}
+
 /**
  * 系统状态（G.sys）
  */
@@ -505,6 +522,8 @@ export interface SystemState {
     responseWindow: ResponseWindowState;
     /** 连续结算栈（通用长事务骨架，游戏可渐进接入） */
     resolution?: ResolutionState;
+    /** 裁判轨迹：只读审计 / 回放证据，不作为规则真相源。 */
+    refereeTrace?: RefereeTraceState;
     /** 教程系统状态 */
     tutorial: TutorialState;
     /** 当前回合数 */
@@ -550,6 +569,54 @@ export interface PostProcessSystemEventsOptions {
      */
     inputEventsAlreadyReduced?: boolean;
 }
+
+export interface EventCommitArgs<
+    TState = unknown,
+    TCommand extends Command = Command,
+    TEvent extends GameEvent = GameEvent
+> {
+    /** 当前完整状态；用于读取 sys.resolution / interaction / response window 等裁判上下文。 */
+    state: MatchState<TState>;
+    /** 准备正式归约的原始事件。 */
+    event: TEvent;
+    /** 当前命令；afterEvents 派生事件沿用触发该轮管线的命令。 */
+    command?: TCommand;
+    /** 事件正式落地前的统一裁判时点。 */
+    timing: TimingPoint<TCommand, TEvent>;
+}
+
+export interface EventCommitEvidence {
+    /** 事件正式提交前的裁判时点。 */
+    timingPointId: string;
+    gameId?: string;
+    position: string;
+    factKind: string;
+    /** 被提交/改写/取消的原始事件。 */
+    originalEventType: string;
+    originalEventTimestamp?: number;
+    /** 触发本轮提交的命令；系统派生事件可能没有独立命令。 */
+    commandType?: string;
+    /** 当前所属长事务 frame。 */
+    parentFrameId?: string;
+    /** 本次提交阶段发现的 replacement / prevention 机会。 */
+    opportunityIds: string[];
+    /** 机会自身所属的 replace / prevent 时点。 */
+    opportunityTimingPointIds: string[];
+    /** 实际参与提交计划的机会；none resolution 或未采用机会不会进入这里。 */
+    appliedOpportunityIds: string[];
+    diagnostics?: Array<{
+        severity: 'error' | 'warning';
+        code: string;
+        message: string;
+    }>;
+}
+
+export type EventCommitResult<TEvent extends GameEvent = GameEvent> =
+    | TEvent
+    | TEvent[]
+    | { events: TEvent[]; evidence?: EventCommitEvidence | EventCommitEvidence[] }
+    | null
+    | undefined;
 
 /**
  * 领域内核定义（每个游戏实现）
@@ -598,6 +665,25 @@ export interface DomainCore<
         matchState?: MatchState<TState>,
         options?: PostProcessSystemEventsOptions,
     ): TEvent[] | { events: TEvent[]; matchState?: MatchState<TState> };
+
+    /**
+     * 可选：基于一个规则时点发现当前可触发、可响应、可替代或可防止的机会。
+     *
+     * 该入口只负责发现 Opportunity；是否转成 ChoiceRequest、response window
+     * 或 ResolutionFrame，由调用方按机会合同继续处理。
+     */
+    discoverTimingOpportunities?(
+        args: TimingOpportunityDiscoveryArgs<TState, TCommand, TEvent>,
+    ): TimingOpportunityDiscoveryResult;
+
+    /**
+     * 可选：事件正式 reduce 前的提交入口。
+     *
+     * 用于替代 / 防止 / 取消 / 改写这类必须发生在事实落地前的规则。
+     * 返回 undefined 或原事件表示不改写；返回 null 表示取消该事件；
+     * 返回事件数组表示用一组已提交事件替代原事件。旧 interceptEvent 保留为兼容层。
+     */
+    commitEvent?(args: EventCommitArgs<TState, TCommand, TEvent>): EventCommitResult<TEvent>;
 
     /**
      * 可选：reduce 前的单事件拦截/替换
@@ -656,6 +742,8 @@ export interface PipelineContext<TCore = unknown> {
     command: Command;
     /** 产生的事件 */
     events: GameEvent[];
+    /** 本轮事件提交阶段产生的裁判证据。 */
+    eventCommitEvidence?: EventCommitEvidence[];
     /** 随机数生成器 */
     random: RandomFn;
     /** 玩家列表 */

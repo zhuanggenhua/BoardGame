@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,60 @@ const isSafeChildPath = (root, child) => {
     return resolvedChild.startsWith(`${resolvedRoot}${path.sep}`);
 };
 
+const gameUsesPublicAtlasConfigs = (gameId) => {
+    const gameSourceRoot = path.join(process.cwd(), 'src', 'games', gameId);
+    if (!existsSync(gameSourceRoot)) return false;
+
+    const stack = [gameSourceRoot];
+    const atlasNeedle = `atlas-configs/${gameId}`;
+    const windowsAtlasNeedle = `atlas-configs\\${gameId}`;
+    while (stack.length > 0) {
+        const current = stack.pop();
+        if (!current) continue;
+        for (const entry of readdirSync(current, { withFileTypes: true })) {
+            const entryPath = path.join(current, entry.name);
+            if (entry.isDirectory()) {
+                stack.push(entryPath);
+                continue;
+            }
+            if (!/\.(?:[cm]?[jt]sx?|json)$/.test(entry.name)) {
+                continue;
+            }
+            const content = readFileSync(entryPath, 'utf8');
+            if (content.includes(atlasNeedle) || content.includes(windowsAtlasNeedle)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+
+const hasValidManifestVariantFile = (root, relativeKey, extension, variant) => {
+    const filePath = path.join(root, `${relativeKey}.${extension}`);
+    if (!isSafeChildPath(root, filePath) || !existsSync(filePath)) return false;
+
+    const expectedBytes = Number(variant?.bytes);
+    if (Number.isFinite(expectedBytes) && statSync(filePath).size !== expectedBytes) return false;
+
+    const expectedSha256 = typeof variant?.sha256 === 'string' ? variant.sha256 : '';
+    if (expectedSha256 && hashFile(filePath) !== expectedSha256) return false;
+
+    return true;
+};
+
+const hasValidCompressedReplacement = (root, files, relativeKey) => {
+    const separator = relativeKey.lastIndexOf('/');
+    const compressedKey = separator >= 0
+        ? `${relativeKey.slice(0, separator)}/compressed/${relativeKey.slice(separator + 1)}`
+        : `compressed/${relativeKey}`;
+    const compressedVariants = files?.[compressedKey]?.variants;
+    if (!compressedVariants || typeof compressedVariants !== 'object') return false;
+
+    return Object.entries(compressedVariants).some(([extension, variant]) => (
+        extension === 'webp' && hasValidManifestVariantFile(root, compressedKey, extension, variant)
+    ));
+};
+
 export const hasCompleteLocalE2EAssetPackage = (
     gameId,
     { assetsRoot = path.join(process.cwd(), 'public', 'assets') } = {},
@@ -30,7 +84,8 @@ export const hasCompleteLocalE2EAssetPackage = (
     const gameRoot = path.join(assetsRoot, 'i18n', 'zh-CN', normalizedGameId);
     const manifestPath = path.join(gameRoot, 'assets-manifest.json');
     const atlasRoot = path.join(assetsRoot, 'atlas-configs', normalizedGameId);
-    if (!existsSync(manifestPath) || !existsSync(atlasRoot)) return false;
+    if (!existsSync(manifestPath)) return false;
+    if (gameUsesPublicAtlasConfigs(normalizedGameId) && !existsSync(atlasRoot)) return false;
 
     let manifest;
     try {
@@ -47,14 +102,12 @@ export const hasCompleteLocalE2EAssetPackage = (
         if (!variants || typeof variants !== 'object') return false;
 
         for (const [extension, variant] of Object.entries(variants)) {
-            const filePath = path.join(gameRoot, `${relativeKey}.${extension}`);
-            if (!isSafeChildPath(gameRoot, filePath) || !existsSync(filePath)) return false;
-
-            const expectedBytes = Number(variant?.bytes);
-            if (Number.isFinite(expectedBytes) && statSync(filePath).size !== expectedBytes) return false;
-
-            const expectedSha256 = typeof variant?.sha256 === 'string' ? variant.sha256 : '';
-            if (expectedSha256 && hashFile(filePath) !== expectedSha256) return false;
+            if (!hasValidManifestVariantFile(gameRoot, relativeKey, extension, variant)) {
+                if (hasValidCompressedReplacement(gameRoot, files, relativeKey)) {
+                    continue;
+                }
+                return false;
+            }
         }
     }
 

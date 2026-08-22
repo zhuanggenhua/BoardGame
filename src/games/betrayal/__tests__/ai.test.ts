@@ -25,13 +25,19 @@ import {
     applyBetrayalCommand,
     BETRAYAL_FIXED_RANDOM,
     createBetrayalScriptedRandom,
+    createDustHauntCore as createDustAiCore,
     createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToLearnAboutJackCore,
     createFirstScenarioReadyToStudyExorcismCore,
     createFirstScenarioReadyToTraitorVictoryCore,
     createFirstScenarioHauntCore,
+    createHelpingHandsHauntCore as createHelpingHandsAiCore,
     createHeroAttackTraitorReadyCore,
     createJackSpiritMovementRollReadyCore,
+    createMagicCameraHauntCore as createMagicCameraAiCore,
+    createMummyMonsterMoveReadyTutorialCore,
+    createMummyReadyToBanishCore,
+    createMummyTraitorVictoryReadyTutorialCore,
     createStartedFirstScenarioCore,
     createTradeReadyCore,
 } from '../testing/firstScenarioTestUtils';
@@ -59,19 +65,6 @@ function buildContext(state: MatchState<BetrayalCore>, playerId: string) {
 
 function buildActions(state: MatchState<BetrayalCore>, playerId: string) {
     return betrayalAiRuntime.buildLegalActions({ playerId, state });
-}
-
-function isMagicCameraTestCard(card: BetrayalCore['currentExplorer']['inventory'][number]): boolean {
-    return card.id === 'camera' || card.name === '魔法相机';
-}
-
-function removeMagicCameraFromTestExplorer(
-    explorer: BetrayalCore['currentExplorer'],
-): BetrayalCore['currentExplorer'] {
-    return {
-        ...explorer,
-        inventory: explorer.inventory.filter((card) => !isMagicCameraTestCard(card)),
-    };
 }
 
 function activateTestExplorer(core: BetrayalCore, playerId: string): void {
@@ -103,110 +96,6 @@ function setExplorerRoom(core: BetrayalCore, playerId: string, roomId: string): 
     core.otherExplorers = core.otherExplorers.map((explorer) => (
         explorer.playerId === playerId ? { ...explorer, roomId } : explorer
     ));
-}
-
-function createMagicCameraAiCore(cameraOwnerPlayerId: string | null = '1'): BetrayalCore {
-    let core = createStartedFirstScenarioCore(['0', '1', '2']);
-    core.drawOrder = ['event'];
-    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！')!];
-    core.currentExplorer = removeMagicCameraFromTestExplorer(core.currentExplorer);
-    core.otherExplorers = core.otherExplorers.map(removeMagicCameraFromTestExplorer);
-    core.currentExplorer.inventory = [
-        ...core.currentExplorer.inventory,
-        { id: 'omen-book', name: '书本', kind: 'omen' },
-        { id: 'dog', name: '狗', kind: 'omen' },
-        { id: 'mask', name: '面具', kind: 'omen' },
-    ];
-    if (cameraOwnerPlayerId === '0') {
-        core.currentExplorer.inventory = [
-            ...core.currentExplorer.inventory,
-            { id: 'camera', name: '魔法相机', kind: 'item' },
-        ];
-    }
-    core.currentExplorerInventory = [...core.currentExplorer.inventory];
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
-    core.otherExplorers = core.otherExplorers.map((explorer) => (
-        explorer.playerId === cameraOwnerPlayerId
-            ? { ...explorer, inventory: [...explorer.inventory, { id: 'camera', name: '魔法相机', kind: 'item' }] }
-            : explorer
-    ));
-    if (!cameraOwnerPlayerId) {
-        core.possessionOrderByKind.item = [
-            { id: 'camera', name: '魔法相机', kind: 'item' },
-            ...core.possessionOrderByKind.item.filter((card) => card.id !== 'camera'),
-        ];
-    }
-
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
-        core,
-        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-        '0',
-        { accept: true },
-        100,
-        createBetrayalScriptedRandom(3, 3, 3),
-    );
-}
-
-function createDustAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
-    let core = createStartedFirstScenarioCore(playerIds);
-    core.drawOrder = ['event'];
-    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
-    core.currentExplorer.inventory = [
-        ...core.currentExplorer.inventory,
-        { id: 'omen-book', name: '书本', kind: 'omen' },
-        { id: 'dog', name: '狗', kind: 'omen' },
-        { id: 'skull', name: '头骨', kind: 'omen' },
-    ];
-    core.currentExplorer.traits = {
-        ...core.currentExplorer.traits,
-        knowledge: 5,
-        sanity: 5,
-    };
-    core.currentExplorerInventory = [...core.currentExplorer.inventory];
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
-        core,
-        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-        '0',
-        { accept: true },
-        100,
-        createBetrayalScriptedRandom(3, 3, 3),
-    );
-}
-
-function createHelpingHandsAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
-    let core = createStartedFirstScenarioCore(playerIds);
-    core.drawOrder = ['event'];
-    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
-    core.currentExplorer.inventory = [
-        ...core.currentExplorer.inventory,
-        { id: 'omen-book', name: '书本', kind: 'omen' },
-        { id: 'dog', name: '狗', kind: 'omen' },
-        { id: 'mask', name: '面具', kind: 'omen' },
-    ];
-    core.currentExplorer.traits = {
-        ...core.currentExplorer.traits,
-        might: 5,
-        sanity: 5,
-    };
-    core.currentExplorerInventory = [...core.currentExplorer.inventory];
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
-        core,
-        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-        '0',
-        { accept: true },
-        100,
-        createBetrayalScriptedRandom(3, 3, 3),
-    );
 }
 
 test('Betrayal 本地 AI 的可见动作等待覆盖对象过渡动画', () => {
@@ -733,8 +622,12 @@ describe('小黑屋本地 AI', () => {
             (action.commands[0]?.payload as { monsterId?: string; targetPlayerId?: string }).monsterId === monsterId
             && (action.commands[0]?.payload as { monsterId?: string; targetPlayerId?: string }).targetPlayerId === '2'
         ))).toBe(true);
+        const preferredPhotographerAttack = photographerActions
+            .toSorted((left, right) => (
+                (right.metadata?.strategicScore ?? 0) - (left.metadata?.strategicScore ?? 0)
+            ))[0];
         expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
-            .toBe(photographerActions[0]?.actionId);
+            .toBe(preferredPhotographerAttack?.actionId);
     });
 
     test('魔法相机英雄 AI 与叛徒同房时优先砸毁相机', () => {
@@ -847,6 +740,58 @@ describe('小黑屋本地 AI', () => {
         expect(actions).toHaveLength(1);
         expect(actions[0]?.kind).toBe(BETRAYAL_AI_ACTION_KINDS.RESOLVE_SICKNESS_EXCHANGE);
         expect(actions[0]?.commands[0]?.payload).toEqual({ accept: true });
+    });
+
+    test('木乃伊英雄 AI 会优先执行驱逐木乃伊目标动作', () => {
+        const state = stateOf(createMummyReadyToBanishCore(), 'betrayal-ai-mummy-banish');
+        const actions = buildActions(state, '0');
+        const banishAction = actions.find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.BANISH_MUMMY);
+
+        expect(state.core.scenarioRuntime.hauntScenarioCardId).toBe('mummy-rampage');
+        expect(banishAction?.commands[0]?.type).toBe(BETRAYAL_COMMANDS.BANISH_MUMMY);
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.LEARN_ABOUT_JACK)).toBe(false);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '0'))?.actionId)
+            .toBe(banishAction?.actionId);
+    });
+
+    test('木乃伊叛徒 AI 会枚举交女孩和交婚礼预兆动作', () => {
+        const core = createMummyTraitorVictoryReadyTutorialCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const state = stateOf(core, 'betrayal-ai-mummy-traitor-objective');
+        const actions = buildActions(state, traitorId);
+
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.PICK_UP_MUMMY_GIRL)).toBe(true);
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.GIVE_OMEN_TO_MUMMY)).toBe(true);
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.TRAITOR_ATTACK_HERO)).toBe(false);
+    });
+
+    test('木乃伊怪物控制 AI 会生成开回合、移动骰和怪物移动候选', () => {
+        let core = createMummyMonsterMoveReadyTutorialCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
+        const mummyMonster = core.monsters.find((monster) => monster.id === mummyMonsterId)!;
+        const movementGroupId = `${mummyMonster.name}:${mummyMonster.speed}`;
+        const state = stateOf(core, 'betrayal-ai-mummy-monster-actions');
+        const actions = buildActions(state, traitorId);
+
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_MONSTER_TURN_START)).toBe(true);
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ROLL_MONSTER_MOVEMENT_GROUP)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, traitorId))?.actionId)
+            .toMatch(/^resolve-monster-turn-start:/);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START, traitorId, {
+            monsterId: mummyMonsterId,
+        });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            traitorId,
+            { groupId: movementGroupId },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3),
+        );
+        expect(buildActions(stateOf(core, 'betrayal-ai-mummy-monster-move'), traitorId)
+            .some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.MOVE_MONSTER_TO_ROOM)).toBe(true);
     });
 
     test('大宅饿了 AI 会在独立巨魔手回合移动、合击并结束，不会误走探索者回合', async () => {
@@ -1255,8 +1200,8 @@ describe('小黑屋本地 AI', () => {
         const seenActionKinds: string[] = [];
         const seatControllers = {
             '0': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
-            '1': { type: 'human' as const },
-            '2': { type: 'human' as const },
+            '1': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+            '2': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
         };
 
         for (let step = 0; step < 8 && state.core.currentPlayer === initialPlayerId; step += 1) {
@@ -1290,11 +1235,12 @@ describe('小黑屋本地 AI', () => {
             { type: 'local-ai' as const, minimumActionDelayMs: 0 },
         ]));
         let sawAiTraitor = false;
-        let sawTraitorAttack = false;
-        let sawCorpseAttack = false;
+        let sawMummyTraitorObjective = false;
+        let sawMummyMonsterAction = false;
+        let sawOldJackAction = false;
         let executedSteps = 0;
 
-        for (; executedSteps < 160 && !state.core.endgameResult; executedSteps += 1) {
+        for (; executedSteps < 260 && !state.core.endgameResult; executedSteps += 1) {
             const resolution = await resolveNextLocalAiAction({
                 engineConfig,
                 state,
@@ -1308,11 +1254,25 @@ describe('小黑屋本地 AI', () => {
             const traitorPlayerId = state.core.scenarioRuntime.traitorPlayerId;
             if (traitorPlayerId) {
                 sawAiTraitor = true;
-                sawTraitorAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.TRAITOR_ATTACK_HERO;
-                const traitorIsDead = state.core.scenarioRuntime.deadExplorerPlayerIds.includes(traitorPlayerId);
-                if (traitorIsDead) {
-                    sawCorpseAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR;
-                }
+                sawMummyTraitorObjective ||= [
+                    BETRAYAL_AI_ACTION_KINDS.PICK_UP_MUMMY_GIRL,
+                    BETRAYAL_AI_ACTION_KINDS.GIVE_GIRL_TO_MUMMY,
+                    BETRAYAL_AI_ACTION_KINDS.GIVE_OMEN_TO_MUMMY,
+                    BETRAYAL_AI_ACTION_KINDS.RESOLVE_MUMMY_ATTACK_REWARD,
+                ].includes(resolution.action.kind);
+                sawMummyMonsterAction ||= [
+                    BETRAYAL_AI_ACTION_KINDS.RESOLVE_MONSTER_TURN_START,
+                    BETRAYAL_AI_ACTION_KINDS.ROLL_MONSTER_MOVEMENT_GROUP,
+                    BETRAYAL_AI_ACTION_KINDS.MOVE_MONSTER_TO_ROOM,
+                    BETRAYAL_AI_ACTION_KINDS.MONSTER_ATTACK_HERO,
+                ].includes(resolution.action.kind);
+                sawOldJackAction ||= [
+                    BETRAYAL_AI_ACTION_KINDS.LEARN_ABOUT_JACK,
+                    BETRAYAL_AI_ACTION_KINDS.STUDY_EXORCISM,
+                    BETRAYAL_AI_ACTION_KINDS.EXORCISE_JACK,
+                    BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR,
+                    BETRAYAL_AI_ACTION_KINDS.TRAITOR_ATTACK_HERO,
+                ].includes(resolution.action.kind);
             }
 
             state = applyAiResolution(state, resolution, random);
@@ -1322,9 +1282,11 @@ describe('小黑屋本地 AI', () => {
         expect(state.core.readyPlayerIds).toHaveLength(playerIds.length);
         expect(sawAiTraitor).toBe(true);
         expect(state.core.scenarioRuntime.traitorPlayerId).toBe(state.core.scenarioRuntime.hauntRevealerPlayerId);
-        expect(sawTraitorAttack).toBe(true);
-        expect(sawCorpseAttack).toBe(false);
-        expect(executedSteps).toBeLessThan(160);
+        expect(state.core.scenarioRuntime.hauntScenarioCardId).toBe('mummy-rampage');
+        expect(sawMummyTraitorObjective).toBe(true);
+        expect(sawMummyMonsterAction).toBe(true);
+        expect(sawOldJackAction).toBe(false);
+        expect(executedSteps).toBeLessThan(260);
         expect(state.core.phase).toBe('endgame');
         expect(state.core.endgameResult?.winners.length).toBeGreaterThan(0);
     });

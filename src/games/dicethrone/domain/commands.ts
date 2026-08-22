@@ -230,12 +230,17 @@ export interface UseTokenCommand extends Command<'USE_TOKEN'> {
         tokenId: string;
         /** 消耗数量（太极可选择数量，闪避固定为 1） */
         amount: number;
+        /** 响应对象 ID；旧 UI 可省略，合同命令应携带。 */
+        pendingDamageId?: string;
     };
 }
 
 /** 跳过 Token 响应命令 */
 export interface SkipTokenResponseCommand extends Command<'SKIP_TOKEN_RESPONSE'> {
-    payload: Record<string, never>;
+    payload: {
+        /** 响应对象 ID；旧 UI 可省略，合同命令应携带。 */
+        pendingDamageId?: string;
+    };
 }
 
 /** 使用净化 Token 命令（独立于伤害流程） */

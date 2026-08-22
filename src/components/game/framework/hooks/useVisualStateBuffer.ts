@@ -105,6 +105,15 @@ export function useVisualStateBuffer(): UseVisualStateBufferReturn {
   // ref 镜像，供 get() 同步读取（避免闭包过期）
   const snapshotRef = useRef<Map<string, number> | null>(null);
 
+  const releaseFromSnapshot = useCallback((source: Map<string, number> | null, keys: string[]) => {
+    if (!source) return null;
+    const next = new Map(source);
+    for (const key of keys) {
+      next.delete(key);
+    }
+    return next.size === 0 ? null : next;
+  }, []);
+
   const freeze = useCallback((key: string, value: number) => {
     setSnapshot(prev => {
       const next = new Map(prev ?? []);
@@ -127,17 +136,20 @@ export function useVisualStateBuffer(): UseVisualStateBufferReturn {
   }, []);
 
   const release = useCallback((keys: string[]) => {
+    if (keys.length === 0) return;
+
+    // release 可能发生在 freezeSync 写 ref 之后、commitSync 的 React state 更新落地之前。
+    // 先同步更新 ref，避免后续 commitSync 又把已释放的冻结值写回界面。
+    snapshotRef.current = releaseFromSnapshot(snapshotRef.current, keys);
+
     setSnapshot(prev => {
-      if (!prev) return prev;
-      const next = new Map(prev);
-      for (const key of keys) {
-        next.delete(key);
-      }
-      const result = next.size === 0 ? null : next;
+      const result = prev
+        ? releaseFromSnapshot(prev, keys)
+        : snapshotRef.current;
       snapshotRef.current = result;
       return result;
     });
-  }, []);
+  }, [releaseFromSnapshot]);
 
   const clear = useCallback(() => {
     snapshotRef.current = null;

@@ -60,6 +60,7 @@ import {
     mustUseBaseLimitedMinionQuota,
     mustUseGlobalPowerLimitedMinionQuota,
     canUseBaseLimitedMinionQuota,
+    findSpecificExtraMinionPlay,
     isSameNameDefId,
     isCardActionLike,
     isCardMinionLike,
@@ -518,6 +519,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
     const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'minion-replacement' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
+    const [selectedDeckExtraCardUid, setSelectedDeckExtraCardUid] = useState<string | null>(null);
     const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
     const [selectedFieldPromptSourceUid, setSelectedFieldPromptSourceUid] = useState<string | null>(null);
     const pendingReactionFieldTriggerSourceUidRef = useRef<string | null>(null);
@@ -600,6 +602,58 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isMyTurn || phase !== 'playCards' || !playerID) return [];
         return getDiscardActionPlayOptions(core, playerID);
     }, [core, isMyTurn, phase, playerID]);
+
+    const deckExtraMinionOptions = useMemo(() => {
+        if (!isMyTurn || phase !== 'playCards' || !playerID || !myPlayer) return [];
+        const topCard = myPlayer.deck[0];
+        if (!topCard || !isCardMinionLike(topCard)) return [];
+        const entries = myPlayer.specificExtraMinionPlays ?? [];
+        if (!entries.some(entry => entry.cardUid === topCard.uid)) return [];
+
+        const allowedBaseIndices = core.bases
+            .map((_base, baseIndex) => baseIndex)
+            .filter(baseIndex => {
+                const power = getMinionDef(topCard.defId)?.power ?? 0;
+                if (!findSpecificExtraMinionPlay(myPlayer, {
+                    cardUid: topCard.uid,
+                    defId: topCard.defId,
+                    baseIndex,
+                    basePower: power,
+                })) {
+                    return false;
+                }
+                return validate(G, {
+                    type: SU_COMMANDS.PLAY_MINION,
+                    playerId: playerID,
+                    payload: { cardUid: topCard.uid, baseIndex, fromDeck: true },
+                }).valid;
+            });
+        if (allowedBaseIndices.length === 0) return [];
+
+        const def = getCardDef(topCard.defId);
+        return [{
+            uid: topCard.uid,
+            defId: topCard.defId,
+            label: resolveCardName(def, t) || def?.name || topCard.defId,
+            allowedBaseIndices,
+        }];
+    }, [G, core.bases, isMyTurn, myPlayer, phase, playerID, t]);
+
+    const selectedDeckExtraOption = useMemo(
+        () => deckExtraMinionOptions.find(option => option.uid === selectedDeckExtraCardUid) ?? null,
+        [deckExtraMinionOptions, selectedDeckExtraCardUid],
+    );
+
+    const deckExtraDeployableBaseIndices = useMemo(
+        () => new Set(selectedDeckExtraOption?.allowedBaseIndices ?? []),
+        [selectedDeckExtraOption],
+    );
+
+    useEffect(() => {
+        if (!selectedDeckExtraCardUid) return;
+        if (deckExtraMinionOptions.some(option => option.uid === selectedDeckExtraCardUid)) return;
+        setSelectedDeckExtraCardUid(null);
+    }, [deckExtraMinionOptions, selectedDeckExtraCardUid]);
 
     // 手牌交互语义分流：
     // - direct: 当前手牌本体能承接的 hand prompt，由手牌区直接点击/多选确认
@@ -1570,6 +1624,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         [discardCardPromptCards, discardStripCards, isDiscardCardPrompt],
     );
 
+    const handleDeckExtraCardSelect = useCallback((cardUid: string | null) => {
+        setSelectedDeckExtraCardUid(current => current === cardUid ? null : cardUid);
+        setSelectedCardUid(null);
+        setSelectedCardMode(null);
+        setDiscardStripSelectedUid(null);
+        setSelectedSetAsideTitanUid(null);
+    }, []);
+
     // 横排消失时重置
     useEffect(() => {
         if (discardStripCards.length !== 0) return;
@@ -2352,6 +2414,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             if (cancelled) return;
             setSelectedCardUid(null);
             setSelectedCardMode(null);
+            setSelectedDeckExtraCardUid(null);
             setDiscardSelection(new Set());
             setMeFirstPendingCard(null);
             setIsSubmitting(false);
@@ -2389,6 +2452,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             if (cancelled) return;
             setSelectedCardUid(null);
             setSelectedCardMode(null);
+            setSelectedDeckExtraCardUid(null);
             setPendingFusionChoiceUid(null);
             setPendingHandActionChoiceUid(null);
             setPendingHandActionSpecialMode(null);
@@ -2580,6 +2644,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         dispatch(SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER, { baseIndex, monsterUid });
     }, [dispatch, isTutorialCommandAllowed, matchState, playerID, t, toastCommandFeedback]);
     const handleDiscardStripSelectCard = useCallback((cardUid: string | null) => {
+        setSelectedDeckExtraCardUid(null);
         if (!cardUid) {
             setDiscardStripSelectedUid(null);
             return;
@@ -2597,6 +2662,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setDiscardStripSelectedUid(cardUid);
     }, [discardStripCards, dispatch, isTutorialCommandAllowed]);
     const enterActionTargetSelection = useCallback((card: CardInstance, cardMode: 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion') => {
+        setSelectedDeckExtraCardUid(null);
         if (cardMode !== 'action') {
             const { hasValidTargets, deployBlockReason } = getCardPlayTargetState(card, cardMode);
             if (!hasValidTargets) {
@@ -2630,6 +2696,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             : null;
         setSelectedCardUid(null);
         setSelectedCardMode(null);
+        setSelectedDeckExtraCardUid(null);
         setSelectedFieldPromptSourceUid(null);
         setSelectedSetAsideTitanUid(null);
         respondCurrentPrompt({ optionId });
@@ -2659,6 +2726,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (titanPromptBaseSelection?.titanUid === titanUid) {
             setSelectedCardUid(null);
             setSelectedCardMode(null);
+            setSelectedDeckExtraCardUid(null);
             setPendingFusionChoiceUid(null);
             setDiscardStripSelectedUid(null);
             setMeFirstPendingCard(null);
@@ -2680,6 +2748,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
         setSelectedCardUid(null);
         setSelectedCardMode(null);
+        setSelectedDeckExtraCardUid(null);
         setPendingFusionChoiceUid(null);
         setDiscardStripSelectedUid(null);
         setMeFirstPendingCard(null);
@@ -2832,6 +2901,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             return;
         }
+        if (selectedDeckExtraCardUid) {
+            if (!deckExtraDeployableBaseIndices.has(index)) {
+                toast(t('ui.invalid_base_target'));
+                return;
+            }
+            dispatch(SU_COMMANDS.PLAY_MINION, {
+                cardUid: selectedDeckExtraCardUid,
+                baseIndex: index,
+                fromDeck: true,
+            });
+            setSelectedDeckExtraCardUid(null);
+            return;
+        }
         if (selectedCardUid) {
             if (shouldLockNormalHandInteraction) {
                 playDeniedSound();
@@ -2890,7 +2972,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             dispatch(SU_COMMANDS.USE_BASE_ABILITY, { baseIndex: index });
         }
-    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByBaseIndex, reactionFieldTriggerSourcesAreActive, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, fieldSourceTargetOptionIdsByBaseIndex]);
+    }, [selectedCardUid, selectedCardMode, selectedDeckExtraCardUid, deckExtraDeployableBaseIndices, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, respondReactionPlayOption, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByBaseIndex, reactionFieldTriggerSourcesAreActive, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast, isReactionChoicePrompt, isCurrentPromptForPlayer, fieldSourceTargetPrompt, selectedFieldPromptSourceUid, fieldSourceTargetOptionIdsByBaseIndex]);
 
     const handleBuriedCardSelect = useCallback((cardUid: string) => {
         if (!isBuriedSelectPrompt || !currentPrompt) return;
@@ -2914,6 +2996,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [buriedPromptOptionsByUid, currentPrompt, dispatch, isBuriedSelectPrompt, isMultiBuriedSelect, multiMinionConstraints.max]);
 
     const handleCardClick = useCallback((card: CardInstance) => {
+        setSelectedDeckExtraCardUid(null);
         if (activeSelectedSetAsideTitanUid) {
             setSelectedSetAsideTitanUid(null);
         }
@@ -4190,9 +4273,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             const baseQuota = myPlayer.baseLimitedMinionQuota ?? {};
                                             const baseQuotaTotal = Object.values(baseQuota).reduce((s, v) => s + v, 0);
                                             const sameNameRemaining = myPlayer.sameNameMinionRemaining ?? 0;
+                                            const specificExtraMinionPlays = myPlayer.specificExtraMinionPlays ?? [];
+                                            const specificExtraTotal = specificExtraMinionPlays.length;
                                             const globalRemaining = Math.max(0, myPlayer.minionLimit - myPlayer.minionsPlayed);
-                                            const totalRemaining = globalRemaining + baseQuotaTotal + sameNameRemaining;
-                                            const hasExtra = baseQuotaTotal > 0 || myPlayer.extraMinionPowerMax !== undefined || sameNameRemaining > 0;
+                                            const totalRemaining = globalRemaining + baseQuotaTotal + sameNameRemaining + specificExtraTotal;
+                                            const hasExtra = baseQuotaTotal > 0 || myPlayer.extraMinionPowerMax !== undefined || sameNameRemaining > 0 || specificExtraTotal > 0;
                                             return (
                                                 <div className="relative group/minion" data-testid="su-end-turn-minion-quota">
                                                     <div className={`${endTurnQuotaBadgeClassName} ${totalRemaining > 0
@@ -4227,6 +4312,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                             })}
                                                             {myPlayer.extraMinionPowerMax !== undefined && (
                                                                 <div className="text-orange-300 border-t border-slate-700 pt-0.5">{t('ui.minion_power_cap', { max: myPlayer.extraMinionPowerMax })}</div>
+                                                            )}
+                                                            {specificExtraTotal > 0 && (
+                                                                <div className="text-lime-300 border-t border-slate-700 pt-0.5">
+                                                                    {t('ui.specific_extra_minion_quota', { defaultValue: '指定随从机会 {{count}}', count: specificExtraTotal })}
+                                                                </div>
                                                             )}
                                                             {sameNameRemaining > 0 && (
                                                                 <div className="text-cyan-300 border-t border-slate-700 pt-0.5">
@@ -4833,6 +4923,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     isMobileViewport={isMobileViewport}
                                     isDeployMode={
                                         (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx))
+                                        || (!!selectedDeckExtraCardUid && deckExtraDeployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx))
                                         || (!!activeSelectedSetAsideTitanUid && selectedTitanDeployableBaseIndices.has(idx))
                                         || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx))
@@ -4873,12 +4964,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
                                     multiSelectedBuriedCardUids={isMultiBuriedSelect ? multiSelectedBuriedCardUids : undefined}
-                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx)) || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
+                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx)) || (!!selectedDeckExtraCardUid && deckExtraDeployableBaseIndices.has(idx)) || (!!meFirstPendingCard && meFirstEligibleBaseIndices.has(idx)) || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && fieldSourceTargetOptionIdsByBaseIndex.has(idx)) || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
                                     isDimmed={
                                         (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
                                         || (isFieldSourceTargetReady && fieldSourceTargetOptionIdsByBaseIndex.size > 0 && !fieldSourceTargetOptionIdsByBaseIndex.has(idx))
                                         || (reactionFieldTriggerSourcesAreActive && reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.size > 0 && !reactionFieldTriggerSourceOptions.optionIdsByBaseIndex.has(idx))
                                         || (discardStripSelectedUid != null && !discardStripAllowedBases.has(idx))
+                                        || (!!selectedDeckExtraCardUid && !deckExtraDeployableBaseIndices.has(idx))
                                         || (!!selectedCardUid && selectedCardMode !== 'ongoing-minion' && selectedCardMode !== 'action-minion' && selectedCardMode !== 'action' && !deployableBaseIndices.has(idx))
                                         || (!!meFirstPendingCard && !meFirstEligibleBaseIndices.has(idx))
                                         || (!!activeSelectedSetAsideTitanUid && !selectedTitanDeployableBaseIndices.has(idx))
@@ -5103,6 +5195,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
                             compactLayout={isMobileViewport}
                             isMyTurn={isMyTurn}
+                            hasPlayableFromDeck={!isAlternateView && deckExtraMinionOptions.length > 0}
+                            playableDeckCards={!isAlternateView ? deckExtraMinionOptions.map(card => ({ uid: card.uid, defId: card.defId, label: card.label })) : undefined}
+                            selectedDeckUid={!isAlternateView ? selectedDeckExtraCardUid : null}
+                            onSelectDeckCard={!isAlternateView ? handleDeckExtraCardSelect : undefined}
+                            deckSelectHint={selectedDeckExtraCardUid ? t('ui.click_base_to_deploy') : undefined}
                             hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt || isDiscardCardPrompt}
                             autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}
                             playableCards={discardPanelCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}

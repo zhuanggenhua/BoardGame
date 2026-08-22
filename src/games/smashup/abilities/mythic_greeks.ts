@@ -191,7 +191,7 @@ const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, S
         {
             sourceId: context.sourceId,
             targetType: 'minion',
-            autoResolveIfSingle: !context.optional,
+            autoResolveIfSingle: false,
             ...(context.maxSelections !== undefined ? { multi: { min: 0, max: context.maxSelections } } : {}),
         },
     ),
@@ -238,12 +238,6 @@ function runGreekMinionPrompt(
     options: { optional?: boolean; maxSelections?: number } = {},
 ): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (targets.length === 1 && !options.optional && options.maxSelections === undefined) {
-        const target = targets[0];
-        return { events: [mode === 'counter'
-            ? addPowerCounter(target.uid, target.baseIndex, amount, sourceId, ctx.now)
-            : addTempPower(target.uid, target.baseIndex, amount, sourceId, ctx.now)] };
-    }
     return runtimeToAbilityResult(executeAbilityProgram(greekMinionPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

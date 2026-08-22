@@ -317,6 +317,14 @@ test.describe('山屋惊魂木乃伊横行英雄行动真实入口', () => {
         await expect.poll(() => readMummyHeroState(page)).toMatchObject({
             endgameOutcome: 'survivors',
         });
+        const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
+        await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
+        const rollPanel = exorciseRollReview.getByTestId('betrayal-recent-roll-panel');
+        await expect(rollPanel).toContainText('驱逐木乃伊');
+        await expect(rollPanel).toContainText('神志对抗');
+        await waitForPhysicalDiceSettled(rollPanel);
+        await expect(page.getByTestId('betrayal-exorcise-roll-continue')).toContainText(/进入终局|查看终局|继续/);
+        await page.getByTestId('betrayal-exorcise-roll-continue').click();
         const endgame = page.getByTestId('betrayal-endgame-screen');
         await expect(endgame).toBeVisible({ timeout: 30000 });
         await expect(endgame.getByTestId('betrayal-endgame-ending-narration')).toContainText('木乃伊犹如细砂随风飞散');

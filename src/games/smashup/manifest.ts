@@ -22,6 +22,7 @@ const entry: GameManifestEntry = {
             options: [
                 { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
                 { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
+                { value: 'victory20', labelKey: 'games.smashup.setup.expansions.victory20' },
                 { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
             ],
             default: ['titans', 'deckQuery', 'diy'],

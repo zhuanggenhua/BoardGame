@@ -89,6 +89,7 @@ export function buildCommandFailureFeedbackPayload(args: {
         }),
         actionLog: buildOnlineAiDiagnosticActionLog({
             state: args.state,
+            playerId: args.playerId,
             phase,
             progressMarker: args.progressMarker,
             commandType: args.commandType,

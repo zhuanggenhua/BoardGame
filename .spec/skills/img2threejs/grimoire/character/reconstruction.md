@@ -60,4 +60,4 @@ Reuse Track A detail machinery (`grimoire/intake/detail_inventory.md`) for acces
 
 ## Gate Notes
 
-Proportion and landmark values feed `anatomy` block validation (section 5.3/5.6 of the upgrade plan) — every measured value needs an `evidenceRef` back to the source image region, same discipline as object detail inventory.
+Proportion and landmark values feed `anatomy` block validation. Every measured value needs an `evidenceRef` back to the source image region, same discipline as object detail inventory.

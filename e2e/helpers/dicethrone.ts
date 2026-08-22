@@ -621,7 +621,10 @@ export const readyAndStartGame = async (hostPage: Page, guestPage: Page) => {
     ) => {
         const attempts = options.attempts ?? 3;
         for (let attempt = 1; attempt <= attempts; attempt += 1) {
-            const button = page.getByRole('button', { name }).first();
+            const roleButton = page.getByRole('button', { name }).first();
+            const button = await roleButton.isVisible({ timeout: 500 }).catch(() => false)
+                ? roleButton
+                : page.locator('button').filter({ hasText: name }).first();
             await expect(button).toBeVisible({ timeout: options.visibleTimeoutMs });
             if (options.enabledTimeoutMs) {
                 await expect(button).toBeEnabled({ timeout: options.enabledTimeoutMs });

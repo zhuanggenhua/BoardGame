@@ -34,8 +34,16 @@ export function isSmashUpTwoVsTwoMode(
 }
 
 export function getSmashUpVictoryTarget(
-    core: Pick<SmashUpCore, 'teamMode' | 'turnOrder'> | undefined,
+    core: Pick<SmashUpCore, 'teamMode' | 'turnOrder' | 'victoryTarget'> | undefined,
 ): number {
+    if (
+        typeof core?.victoryTarget === 'number'
+        && Number.isFinite(core.victoryTarget)
+        && core.victoryTarget > 0
+        && core.victoryTarget !== VP_TO_WIN
+    ) {
+        return core.victoryTarget;
+    }
     return core && isSmashUpTwoVsTwoMode(core) ? TEAM_VP_TO_WIN_2V2 : VP_TO_WIN;
 }
 

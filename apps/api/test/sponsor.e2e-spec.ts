@@ -115,7 +115,7 @@ describe('Sponsor Module (e2e)', () => {
         const adminToken = await seedAdmin();
 
         const createRes = await request(app.getHttpServer())
-            .post('/admin/sponsors')
+            .post('/admin-api/sponsors')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ name: '新赞助者', amount: 88, isPinned: true })
             .expect(201);
@@ -127,7 +127,7 @@ describe('Sponsor Module (e2e)', () => {
         expect(Object.prototype.hasOwnProperty.call(createRes.body, 'message')).toBe(false);
 
         const updateRes = await request(app.getHttpServer())
-            .patch(`/admin/sponsors/${sponsorId}`)
+            .patch(`/admin-api/sponsors/${sponsorId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ amount: 100, isPinned: false })
             .expect(200);
@@ -136,12 +136,12 @@ describe('Sponsor Module (e2e)', () => {
         expect(updateRes.body.isPinned).toBe(false);
 
         await request(app.getHttpServer())
-            .delete(`/admin/sponsors/${sponsorId}`)
+            .delete(`/admin-api/sponsors/${sponsorId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/sponsors')
+            .get('/admin-api/sponsors')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 

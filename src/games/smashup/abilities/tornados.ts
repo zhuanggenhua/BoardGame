@@ -214,7 +214,7 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
         {
             sourceId: context.sourceId,
             targetType: 'minion',
-            ...(context.optional ? { autoResolveIfSingle: false } : {}),
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {

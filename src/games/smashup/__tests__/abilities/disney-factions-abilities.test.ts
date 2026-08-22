@@ -270,6 +270,45 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'beast')?.powerCounters).toBe(1);
     });
 
+    it('野兽：只有一张可弃手牌时仍等待玩家确认，不自动替玩家弃牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('only-cost', 'aladdin_wish', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('beast', 'beauty_and_the_beast_beast', '0', 4),
+            ])],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'beast', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(talent.success, talent.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(talent.finalState, 'beauty_and_the_beast_discard_hand');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['only-cost']);
+        expect(talent.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['only-cost']);
+        expect(talent.finalState.core.players['0'].discard).toEqual([]);
+        expect(talent.finalState.core.bases[0].minions.find(minion => minion.uid === 'beast')?.powerCounters ?? 0).toBe(0);
+
+        const resolved = respondToPromptOption(
+            talent.finalState,
+            option => option.value?.cardUid === 'only-cost',
+            '野兽确认弃掉唯一手牌',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.finalState.core.players['0'].hand).toEqual([]);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['only-cost']);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'beast')?.powerCounters).toBe(1);
+    });
+
     it('加斯顿提升基地爆破点，并可弃两张牌后离场', () => {
         const core = makeState({
             players: {

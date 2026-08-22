@@ -1,20 +1,35 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ShieldCheck } from 'lucide-react';
+import { HeartPulse, ShieldCheck, Sparkles } from 'lucide-react';
+import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
+import { projectChoiceRequestToDirectSelectionTargets } from '../../engine/systems';
 import {
     INTERACTION_COMMANDS,
     asSimpleChoice,
     type InteractionDescriptor,
 } from '../../engine/systems/InteractionSystem';
+import { buildChoiceRequestFromOpportunity } from '../../engine/TimingOpportunity';
 import type { PlayerId } from '../../engine/types';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import type { ArenaZoneId } from './domain/ids';
+import { useEndgame } from '../../hooks/game/useEndgame';
+import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
+import {
+    MAGE_WARS_MAGE_ABILITY_IDS,
+    MAGE_WARS_OBJECT_ABILITY_IDS,
+    STATUS_TOKEN_IDS,
+    getMageWarsWallEdgeId,
+    type ArenaZoneId,
+    type MageWarsMageAbilityId,
+    type MageWarsObjectAbilityId,
+    type MageWarsWallEdgeId,
+    type StatusTokenId,
+} from './domain/ids';
 import {
     MAGE_WARS_COMMANDS,
     type MageWarsArenaObjectState,
@@ -24,9 +39,16 @@ import {
 import {
     getPresetMageSetupFromConfig,
     getPresetSpellbookCardIdsFromConfig,
+    getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
+    getMageWarsStatusTokenFromConfig,
 } from './data/configPackage';
 import { areAdjacentZones } from './domain/utils';
+import { mageWarsObjectAbilityRegistry } from './domain/abilityCatalog';
+import {
+    buildMageWarsObjectAbilityActivationOpportunity,
+    type MageWarsObjectAbilityActivationChoiceValue,
+} from './domain/objectAbilityRuntime';
 import {
     getMageWarsMagePreviewRef,
     getMageWarsSpellCardAspectRatio,
@@ -42,13 +64,20 @@ import {
 } from './ui/useGameEvents';
 import {
     canMageWarsObjectUsePostMoveQuickAction,
+    getMageWarsZoneDistance,
     getMageWarsObjectAttackProfiles,
     hasMageWarsStunStatus,
+    isMageWarsLivingArenaObject,
     isMageWarsImplementedForcePushSpell,
+    isMageWarsImplementedRouseTheBeastSpell,
     isMageWarsImplementedTeleportSpell,
+    isMageWarsImplementedWallSpell,
     isMageWarsArenaObjectRestrained,
     isMageWarsObjectAttackTargetInRange,
     isMageWarsTargetInSpellRange,
+    isMageWarsWallEdgeTargetInRange,
+    parseMageWarsRange,
+    resolveMageWarsRouseTheBeastManaCostForTarget,
     resolveMageWarsTeleportSpellManaCostForTargetZone,
     resolveMageWarsSpellRawCostTotal,
 } from './domain/spellRules';
@@ -60,6 +89,13 @@ type ZoneRect = {
     top: number;
     width: number;
     height: number;
+};
+
+type WallEdgeDescriptor = {
+    edgeId: MageWarsWallEdgeId;
+    zoneIds: [ArenaZoneId, ArenaZoneId];
+    orientation: 'vertical' | 'horizontal';
+    style: CSSProperties;
 };
 
 const TOKEN_IMAGES = {
@@ -121,14 +157,73 @@ const ZONE_RECTS: Record<ArenaZoneId, ZoneRect> = {
     d3: { left: 75, top: 66.6666, width: 25, height: 33.3333 },
 };
 
+const WALL_EDGE_THICKNESS = 2.3;
+
+function buildMageWarsWallEdgeDescriptors(core: MageWarsCore): WallEdgeDescriptor[] {
+    return core.arena.flatMap((zone) => {
+        const rect = ZONE_RECTS[zone.id];
+        const right = core.arena.find((candidate) => candidate.row === zone.row && candidate.col === zone.col + 1);
+        const down = core.arena.find((candidate) => candidate.row === zone.row + 1 && candidate.col === zone.col);
+        const descriptors: WallEdgeDescriptor[] = [];
+
+        if (right) {
+            descriptors.push({
+                edgeId: getMageWarsWallEdgeId(zone.id, right.id),
+                zoneIds: [zone.id, right.id],
+                orientation: 'vertical',
+                style: {
+                    left: pct(rect.left + rect.width - (WALL_EDGE_THICKNESS / 2)),
+                    top: pct(rect.top + 1.2),
+                    width: pct(WALL_EDGE_THICKNESS),
+                    height: pct(rect.height - 2.4),
+                },
+            });
+        }
+        if (down) {
+            descriptors.push({
+                edgeId: getMageWarsWallEdgeId(zone.id, down.id),
+                zoneIds: [zone.id, down.id],
+                orientation: 'horizontal',
+                style: {
+                    left: pct(rect.left + 1.2),
+                    top: pct(rect.top + rect.height - (WALL_EDGE_THICKNESS / 2)),
+                    width: pct(rect.width - 2.4),
+                    height: pct(WALL_EDGE_THICKNESS),
+                },
+            });
+        }
+
+        return descriptors;
+    });
+}
+
 const CAST_PHASES = new Set(['deployment', 'initiativeQuickcast', 'creatureAction', 'finalQuickcast']);
 const SIMULTANEOUS_PREPARATION_PHASES = new Set(['reset', 'channel', 'upkeep', 'planning']);
 
-type SpellbookCategoryId = 'all' | 'attack' | 'enchantment' | 'creature' | 'equipment';
+type SpellbookCategoryId = 'all' | 'attack' | 'enchantment' | 'creature' | 'incantation' | 'equipment';
 
 type FieldCardRole = 'source' | 'target';
 type ZoneEntityDensity = 'solo' | 'duel' | 'dense' | 'packed';
 type SeatOwnerSide = 'seat-left' | 'seat-right' | 'neutral';
+type PendingObjectAbilitySelection = {
+    objectId: string;
+    abilityId: MageWarsObjectAbilityId;
+};
+type PendingMageAbilitySelection = {
+    playerId: PlayerId;
+    abilityId: MageWarsMageAbilityId;
+};
+
+const RESTORE_STATUS_TOKEN_PRIORITY: StatusTokenId[] = [
+    STATUS_TOKEN_IDS.BURN,
+    STATUS_TOKEN_IDS.DAZE,
+    STATUS_TOKEN_IDS.ROT,
+    STATUS_TOKEN_IDS.WEAK,
+    STATUS_TOKEN_IDS.CRIPPLE,
+    STATUS_TOKEN_IDS.STUN,
+    STATUS_TOKEN_IDS.SLEEP,
+];
+
 function cx(...classes: Array<string | false | null | undefined>): string {
     return classes.filter(Boolean).join(' ');
 }
@@ -177,6 +272,12 @@ function isMageWarsSpellObjectTargetAllowed(
     }
     if (targetRule.includes('魔物')) return object.kind === 'conjuration';
     return spell.spellType === '攻击' && (object.kind === 'creature' || object.kind === 'conjuration');
+}
+
+function isMageWarsNoTargetSpell(
+    spell: ReturnType<typeof getMageWarsSpellCardFromConfig>,
+): boolean {
+    return Boolean(spell && spell.targetRule === '竞技场' && spell.spellType !== '生物');
 }
 
 function isMageWarsSpellFieldCardTargetAllowed(
@@ -306,6 +407,124 @@ function canMageWarsObjectStartAction(
         .some((profile) => canMageWarsObjectUsePostMoveQuickAction(object, profile));
 }
 
+function isMageWarsQuickcastPhase(phase: string): boolean {
+    return phase === 'initiativeQuickcast' || phase === 'finalQuickcast';
+}
+
+function resolvePriestessRestoreAbilityIdForPhase(
+    phase: string,
+): MageWarsMageAbilityId | undefined {
+    if (isMageWarsQuickcastPhase(phase)) return MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_QUICK;
+    if (phase === 'creatureAction') return MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_STANDARD;
+    return undefined;
+}
+
+function resolveMageWarsStatusRemovalCostForUi(
+    targetObject: MageWarsArenaObjectState,
+    statusTokenIds: readonly StatusTokenId[],
+): number | undefined {
+    let manaCost = 0;
+    for (const statusTokenId of statusTokenIds) {
+        const currentAmount = targetObject.statusTokens[statusTokenId] ?? 0;
+        if (currentAmount <= 0) return undefined;
+
+        const statusToken = getMageWarsStatusTokenFromConfig(statusTokenId);
+        if (!statusToken || statusToken.removalCostRule === 'none') return undefined;
+
+        if (statusToken.removalCostRule === 'target-creature-level') {
+            const sourceSpell = getMageWarsSpellCardFromConfig(targetObject.sourceSpellCardId);
+            if (typeof sourceSpell?.level !== 'number') return undefined;
+            manaCost += currentAmount * sourceSpell.level;
+            continue;
+        }
+
+        if (statusToken.removalCostRule !== 'fixed' || statusToken.removalCost === undefined) {
+            return undefined;
+        }
+        manaCost += currentAmount * statusToken.removalCost;
+    }
+    return manaCost;
+}
+
+function resolveFirstRemovableStatusTokenIdForUi(
+    targetObject: MageWarsArenaObjectState,
+): StatusTokenId | undefined {
+    return RESTORE_STATUS_TOKEN_PRIORITY.find((statusTokenId) => (
+        (targetObject.statusTokens[statusTokenId] ?? 0) > 0
+        && resolveMageWarsStatusRemovalCostForUi(targetObject, [statusTokenId]) !== undefined
+    ));
+}
+
+function isMageWarsPriestessRestoreTargetAllowed(
+    core: MageWarsCore,
+    sourceMage: MageWarsPlayerState,
+    abilityId: MageWarsMageAbilityId,
+    targetObject: MageWarsArenaObjectState,
+): boolean {
+    const ability = getMageWarsMageAbilityFromConfig(sourceMage.mageId, abilityId);
+    const range = ability ? parseMageWarsRange(ability.range) : undefined;
+    const distance = getMageWarsZoneDistance(core, sourceMage.mageZoneId, targetObject.zoneId);
+    const statusTokenId = resolveFirstRemovableStatusTokenIdForUi(targetObject);
+    const manaCost = statusTokenId
+        ? resolveMageWarsStatusRemovalCostForUi(targetObject, [statusTokenId])
+        : undefined;
+
+    return Boolean(
+        ability
+        && targetObject.kind === 'creature'
+        && range
+        && distance !== undefined
+        && distance >= range.min
+        && distance <= range.max
+        && statusTokenId
+        && manaCost !== undefined
+        && sourceMage.mana >= manaCost,
+    );
+}
+
+function isMageWarsAsyranClericHealingSource(
+    object: MageWarsArenaObjectState | undefined,
+    ownerId: PlayerId | undefined,
+    phase: string,
+): object is MageWarsArenaObjectState {
+    return Boolean(
+        phase === 'creatureAction'
+        && isMageWarsActionableCreatureObject(object, ownerId)
+        && object.sourceSpellCardId === 2811
+        && object.actionReady,
+    );
+}
+
+function isMageWarsHealingLightTargetAllowed(
+    core: MageWarsCore,
+    sourceObject: MageWarsArenaObjectState,
+    targetObject: MageWarsArenaObjectState,
+): boolean {
+    const distance = getMageWarsZoneDistance(core, sourceObject.zoneId, targetObject.zoneId);
+    return isMageWarsLivingArenaObject(targetObject)
+        && distance !== undefined
+        && distance <= 1;
+}
+
+function hasPriestessRestoreTarget(
+    core: MageWarsCore,
+    sourceMage: MageWarsPlayerState,
+    abilityId: MageWarsMageAbilityId,
+): boolean {
+    return Object.values(core.objects).some((object) => (
+        isMageWarsPriestessRestoreTargetAllowed(core, sourceMage, abilityId, object)
+    ));
+}
+
+function hasHealingLightTarget(
+    core: MageWarsCore,
+    sourceObject: MageWarsArenaObjectState,
+): boolean {
+    return Object.values(core.objects).some((object) => (
+        isMageWarsHealingLightTargetAllowed(core, sourceObject, object)
+    ));
+}
+
 function MageStatusBars({ player, visualDamage = player.damage }: { player: MageWarsPlayerState; visualDamage?: number }) {
     const lifeRemaining = Math.max(0, player.life - visualDamage);
     const lifePercent = Math.max(0, Math.min(100, (lifeRemaining / player.life) * 100));
@@ -353,6 +572,7 @@ function MageHud({
             <section
                 className="pointer-events-auto relative flex w-[15.5rem] flex-col items-start gap-2 text-stone-100"
                 data-testid={self ? 'mage-wars-mage-hud-self' : 'mage-wars-mage-hud-opponent'}
+                data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
             >
                 <div
                     className="relative"
@@ -456,6 +676,7 @@ function MageHud({
                 current && 'before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-amber-300/80',
             )}
             data-testid={self ? 'mage-wars-mage-hud-self' : 'mage-wars-mage-hud-opponent'}
+            data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
         >
             <div
                 className="relative"
@@ -546,6 +767,7 @@ function PreparedSpellCard({
     selected = false,
     disabled = false,
     onClick,
+    tutorialId,
 }: {
     cardId?: number;
     hidden?: boolean;
@@ -557,6 +779,7 @@ function PreparedSpellCard({
     selected?: boolean;
     disabled?: boolean;
     onClick?: () => void;
+    tutorialId?: string;
 }) {
     const previewRef = cardId == null || hidden ? null : getMageWarsSpellCardPreviewRef(cardId);
     const title = cardId == null ? label : getMageWarsSpellCardName(cardId) ?? label;
@@ -621,6 +844,7 @@ function PreparedSpellCard({
                 )}
                 style={cardSizeStyle}
                 data-testid={testId}
+                data-tutorial-id={tutorialId}
                 data-mage-wars-prepared-card={preparedScope}
                 data-source-card-id={cardId ?? undefined}
                 data-selected={selected ? 'true' : undefined}
@@ -638,6 +862,7 @@ function PreparedSpellCard({
             className={cx('relative shrink-0', cardSizeClass)}
             style={cardSizeStyle}
             data-testid={testId}
+            data-tutorial-id={tutorialId}
             data-mage-wars-prepared-card={preparedScope}
             data-source-card-id={cardId ?? undefined}
             data-selected={selected ? 'true' : undefined}
@@ -698,6 +923,9 @@ function ZoneFieldCard({
                     'pointer-events-none absolute flex items-center gap-1',
                     compact ? '-bottom-1 left-0.5 scale-[0.78] origin-bottom-left' : '-bottom-2 left-2',
                 )}>
+                    {object.guarding ? (
+                        <TokenImage src={TOKEN_IMAGES.guard} alt={t('tokens.guard')} className="h-7 w-7" />
+                    ) : null}
                     {VISIBLE_STATUS_TOKENS.map(({ id, image }) => {
                         const count = object.statusTokens[id] ?? 0;
                         return count > 0 ? (
@@ -758,6 +986,7 @@ function ZoneFieldCard({
             }}
             aria-label={title}
             data-testid="mage-wars-zone-field-card"
+            data-tutorial-id={object ? `mw-field-object-${object.sourceSpellCardId}` : `mw-field-card-${cardId}`}
             data-object-id={object?.id}
             data-source-card-id={cardId}
             data-owner-side={ownerSide}
@@ -927,6 +1156,7 @@ function OpponentPlanMirror({ player, compact = false }: { player: MageWarsPlaye
             <section
                 className="pointer-events-auto flex items-center gap-1.5 rounded-[0.35rem] bg-black/34 p-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.32)]"
                 data-testid="mage-wars-opponent-prepared-mirror"
+                data-tutorial-id="mw-opponent-prepared"
                 data-mage-wars-compact="true"
             >
                 <div className="flex items-end gap-1">
@@ -948,7 +1178,7 @@ function OpponentPlanMirror({ player, compact = false }: { player: MageWarsPlaye
     }
 
     return (
-        <section className="pointer-events-auto flex flex-col items-start gap-3" data-testid="mage-wars-opponent-prepared-mirror">
+        <section className="pointer-events-auto flex flex-col items-start gap-3" data-testid="mage-wars-opponent-prepared-mirror" data-tutorial-id="mw-opponent-prepared">
             <div className="flex items-end gap-1.5">
                 {[0, 1].map((slot) => (
                     <OptimizedImage
@@ -975,7 +1205,7 @@ function DiscardPile({ player }: { player: MageWarsPlayerState }) {
     const count = discardSpellCardIds.length;
 
     return (
-        <section className="pointer-events-auto flex h-[6.25rem] w-[8.65rem] shrink-0 items-center gap-2" data-testid="mage-wars-discard-pile">
+        <section className="pointer-events-auto flex h-[6.25rem] w-[8.65rem] shrink-0 items-center gap-2" data-testid="mage-wars-discard-pile" data-tutorial-id="mw-discard">
             <button
                 type="button"
                 className="relative h-[6.25rem] w-[5.15rem] overflow-visible rounded-[0.12rem] text-left"
@@ -1005,23 +1235,26 @@ function SpellbookShelf({
     player,
     phase,
     canAct,
+    canPlan,
     dispatch,
 }: {
     player: MageWarsPlayerState;
     phase: string;
     canAct: boolean;
+    canPlan: boolean;
     dispatch: Props['dispatch'];
 }) {
     const { t } = useTranslation('game-mage-wars');
     const [category, setCategory] = useState<SpellbookCategoryId>('all');
     const [page, setPage] = useState(0);
     const [selectedCardIds, setSelectedCardIds] = useState<number[]>([]);
-    const planning = phase === 'planning' && canAct;
+    const planning = phase === 'planning' && canAct && canPlan;
     const categories: Array<{ id: SpellbookCategoryId; label: string }> = [
         { id: 'all', label: t('spellbook.categories.all') },
         { id: 'attack', label: t('spellbook.categories.attack') },
         { id: 'enchantment', label: t('spellbook.categories.enchantment') },
         { id: 'creature', label: t('spellbook.categories.creature') },
+        { id: 'incantation', label: t('spellbook.categories.incantation') },
         { id: 'equipment', label: t('spellbook.categories.equipment') },
     ];
     const spellbookIds = useMemo(() => (
@@ -1033,6 +1266,7 @@ function SpellbookShelf({
         if (category === 'creature') return spellType === '生物' || spellType === '魔物';
         if (category === 'enchantment') return spellType === '结界';
         if (category === 'attack') return spellType === '攻击';
+        if (category === 'incantation') return spellType === '咒语';
         return spellType === '装备';
     }), [category, spellbookIds]);
     const pageCount = Math.max(1, Math.ceil(filteredIds.length / 6));
@@ -1059,6 +1293,7 @@ function SpellbookShelf({
                 planning ? 'pointer-events-auto' : 'pointer-events-none',
             )}
             data-testid="mage-wars-desktop-spellbook-shelf"
+            data-tutorial-id="mw-spellbook"
             aria-label={t('privateZones.spellbook')}
             aria-disabled={!planning}
         >
@@ -1095,6 +1330,7 @@ function SpellbookShelf({
                         disabled={selectedCardIds.length === 0}
                         onClick={planSelectedSpells}
                         data-testid="mage-wars-plan-spells"
+                        data-tutorial-id="mw-plan-spells"
                     >
                         {t('spellbook.planSelected', { count: selectedCardIds.length })}
                     </button>
@@ -1107,6 +1343,7 @@ function SpellbookShelf({
                         cardId={cardId}
                         label={getMageWarsSpellCardName(cardId) ?? t('privateZones.spell')}
                         testId="mage-wars-desktop-spellbook-card"
+                        tutorialId={`mw-spellbook-card-${cardId}`}
                         selected={selectedCardIds.includes(cardId)}
                         disabled={!planning}
                         onClick={planning ? () => togglePlannedCard(cardId) : undefined}
@@ -1144,23 +1381,26 @@ function PreparedSpellsDock({
     player,
     phase,
     canAct,
+    canCast,
     selectedCardId,
     onSelect,
 }: {
     player: MageWarsPlayerState;
     phase: string;
     canAct: boolean;
+    canCast: boolean;
     selectedCardId: number | null;
     onSelect: (cardId: number) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const preparedIds = player.preparedSpellCardIds.slice(0, 2);
-    const canSelectSpell = canAct && CAST_PHASES.has(phase);
+    const canSelectSpell = canAct && canCast && CAST_PHASES.has(phase);
 
     return (
         <section
             className="pointer-events-auto flex h-[17.75rem] w-[22.5rem] flex-col justify-start gap-[0.875rem]"
             data-testid="mage-wars-desktop-prepared-spells"
+            data-tutorial-id="mw-prepared"
         >
             <div className="text-center text-[0.66rem] font-semibold text-amber-100">
                 {t('privateZones.preparedSpellsWithCount', {
@@ -1178,6 +1418,7 @@ function PreparedSpellsDock({
                             : t('privateZones.emptySlot')}
                         role={slot === 0 && preparedIds[slot] != null ? 'source' : undefined}
                         testId="mage-wars-desktop-prepared-card"
+                        tutorialId={preparedIds[slot] == null ? undefined : `mw-prepared-card-${preparedIds[slot]}`}
                         preparedScope="self"
                         selected={preparedIds[slot] === selectedCardId}
                         disabled={!canSelectSpell || preparedIds[slot] == null}
@@ -1214,6 +1455,7 @@ function TurnStatusDock({
                 disabled={disabled}
                 onClick={() => dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {})}
                 data-testid="mage-wars-turn-end"
+                data-tutorial-id="mw-turn-end"
             >
                 {t('actions.endTurn')}
             </button>
@@ -1328,12 +1570,18 @@ function ArenaStage({
     pendingSpellTargetObjectId,
     selectedObjectId,
     selectedMageId,
+    pendingObjectAbility,
+    pendingObjectAbilityTargetIds,
+    pendingMageAbility,
     onZoneSelect,
     onObjectSelect,
+    onWallEdgeSelect,
     onActorObjectSelect,
     onPlayerSelect,
     onActorPlayerSelect,
     onGuard,
+    onObjectAbilitySelect,
+    onMageAbilitySelect,
     fxBus,
     onFxImpact,
     onFxComplete,
@@ -1352,12 +1600,18 @@ function ArenaStage({
     pendingSpellTargetObjectId?: string | null;
     selectedObjectId?: string | null;
     selectedMageId?: PlayerId | null;
+    pendingObjectAbility?: PendingObjectAbilitySelection | null;
+    pendingObjectAbilityTargetIds?: ReadonlySet<string>;
+    pendingMageAbility?: PendingMageAbilitySelection | null;
     onZoneSelect?: (zoneId: ArenaZoneId) => void;
     onObjectSelect?: (objectId: string) => void;
+    onWallEdgeSelect?: (edgeId: MageWarsWallEdgeId) => void;
     onActorObjectSelect?: (objectId: string) => void;
     onPlayerSelect?: (playerId: PlayerId) => void;
     onActorPlayerSelect?: (playerId: PlayerId) => void;
     onGuard?: () => void;
+    onObjectAbilitySelect?: (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => void;
+    onMageAbilitySelect?: (playerId: PlayerId, abilityId: MageWarsMageAbilityId) => void;
     fxBus: FxBus;
     onFxImpact?: (id: string, cue: string) => void;
     onFxComplete?: (id: string, cue: string) => void;
@@ -1373,14 +1627,38 @@ function ArenaStage({
     const selectedSpell = selectedSpellCardId == null
         ? undefined
         : getMageWarsSpellCardFromConfig(selectedSpellCardId);
+    const spellNeedsWallEdgeTarget = Boolean(selectedSpell && isMageWarsImplementedWallSpell(selectedSpell));
     const spellNeedsZoneTarget = selectedSpell?.spellType === '生物' || selectedSpell?.targetRule === '区域';
-    const spellNeedsObjectTarget = Boolean(selectedSpell) && !spellNeedsZoneTarget;
+    const spellNeedsObjectTarget = Boolean(selectedSpell)
+        && !spellNeedsWallEdgeTarget
+        && !spellNeedsZoneTarget
+        && !isMageWarsNoTargetSpell(selectedSpell);
     const spellNeedsPushDestination = Boolean(selectedSpell && isMageWarsImplementedForcePushSpell(selectedSpell));
     const spellNeedsTeleportDestination = Boolean(selectedSpell && isMageWarsImplementedTeleportSpell(selectedSpell));
     const pendingSpellTargetObject = pendingSpellTargetObjectId ? core.objects[pendingSpellTargetObjectId] : undefined;
     const pendingSpellTargetZoneId = pendingSpellTargetObject?.zoneId;
     const selectedObject = selectedObjectId ? core.objects[selectedObjectId] : undefined;
     const selectedMage = selectedMageId ? core.players[selectedMageId] : undefined;
+    const pendingMageAbilitySource = pendingMageAbility ? core.players[pendingMageAbility.playerId] : undefined;
+    const selectedObjectHealingLightAbility = selectedObject
+        && isMageWarsAsyranClericHealingSource(selectedObject, activePlayer?.id, phase)
+        && hasHealingLightTarget(core, selectedObject)
+        ? mageWarsObjectAbilityRegistry.get(MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT)
+        : undefined;
+    const selectedMageRestoreAbilityId = selectedMage ? resolvePriestessRestoreAbilityIdForPhase(phase) : undefined;
+    const selectedMageRestoreAbility = selectedMage && selectedMageRestoreAbilityId
+        ? getMageWarsMageAbilityFromConfig(selectedMage.mageId, selectedMageRestoreAbilityId)
+        : undefined;
+    const canUseSelectedMageRestoreAbility = Boolean(
+        selectedMage
+        && selectedMage.id === activePlayer?.id
+        && selectedMageRestoreAbility
+        && CAST_PHASES.has(phase)
+        && !hasMageWarsStunStatus(selectedMage)
+        && (isMageWarsQuickcastPhase(phase) ? selectedMage.quickcastReady : selectedMage.actionReady)
+        && hasPriestessRestoreTarget(core, selectedMage, selectedMageRestoreAbility.abilityId),
+    );
+    const hasPendingAbilityTarget = Boolean(pendingObjectAbility || pendingMageAbility);
     const selectedObjectAttackProfile = selectedObject
         ? getMageWarsObjectAttackProfiles(selectedObject).find((profile) => (
             selectedObject.actionReady || canMageWarsObjectUsePostMoveQuickAction(selectedObject, profile)
@@ -1402,7 +1680,8 @@ function ArenaStage({
         && isMageWarsActionableCreatureObject(selectedObject, activePlayer?.id)
         && selectedObjectAttackProfile,
     );
-    const selectedActorZoneId = selectedObject?.zoneId ?? (selectedMageCanAct ? selectedMage?.mageZoneId : undefined);
+    const selectedActorZoneId = selectedObject?.zoneId
+        ?? (selectedMageCanAct || canUseSelectedMageRestoreAbility ? selectedMage?.mageZoneId : undefined);
     const hasSelectedActor = selectedActorZoneId != null;
     const hasPendingSpellDestination = Boolean(
         selectedSpell
@@ -1410,12 +1689,14 @@ function ArenaStage({
         && (spellNeedsPushDestination || spellNeedsTeleportDestination),
     );
     const canGuardSelectedActor = Boolean(
-        hasSelectedActor
+        !hasPendingAbilityTarget
+        && hasSelectedActor
         && (selectedObject ? selectedObject.actionReady : selectedMageCanAct),
     );
-    const targeting = Boolean(selectedSpell) || hasSelectedActor;
+    const targeting = Boolean(selectedSpell) || hasSelectedActor || hasPendingAbilityTarget;
     const legalMoveZoneIds = new Set(
-        creatureActionActive
+        !hasPendingAbilityTarget
+            && creatureActionActive
             && selectedActorZoneId
             && (selectedObject ? selectedObjectCanMove : selectedMageCanAct)
             ? core.arena
@@ -1424,6 +1705,7 @@ function ArenaStage({
             : [],
     );
     const legalAttackTargetId = activeOpponent
+        && !hasPendingAbilityTarget
         && (selectedObject && selectedObjectCanAttack && selectedObjectAttackProfile
             ? isMageWarsObjectAttackTargetInRange(
                 core,
@@ -1459,6 +1741,15 @@ function ArenaStage({
                 .map((zone) => zone.id)
             : [],
     );
+    const wallEdgeDescriptors = buildMageWarsWallEdgeDescriptors(core);
+    const legalWallEdgeIds = new Set(
+        selectedSpell && activePlayer && spellNeedsWallEdgeTarget
+            ? wallEdgeDescriptors
+                .filter((edge) => !core.walls?.[edge.edgeId])
+                .filter((edge) => isMageWarsWallEdgeTargetInRange(core, activePlayer, selectedSpell, edge.edgeId))
+                .map((edge) => edge.edgeId)
+            : [],
+    );
 
     return (
         <section
@@ -1467,6 +1758,7 @@ function ArenaStage({
                 desktopFrame ? 'top-[2.75%] h-[74%]' : 'top-0 h-full lg:top-[2.75%] lg:h-[74%]',
             )}
             data-testid="mage-wars-arena-stage"
+            data-tutorial-id="mw-arena"
             ref={fxAnchors.registerSurface}
             style={{ left: '50%', transform: 'translateX(-50%)' }}
         >
@@ -1504,7 +1796,27 @@ function ArenaStage({
                 const isLegalMoveZone = legalMoveZoneIds.has(zone.id);
                 const isLegalAttackZone = targetZoneId != null && zone.id === targetZoneId;
                 const isLegalSpellTargetZone = legalSpellTargetZoneIds.has(zone.id);
-                const isLegalTargetZone = isLegalAttackZone || isLegalSpellTargetZone;
+                const isLegalObjectAbilityTargetZone = Boolean(
+                    pendingObjectAbility
+                    && pendingObjectAbilityTargetIds
+                    && fieldObjects.some((object) => pendingObjectAbilityTargetIds.has(object.id)),
+                );
+                const isLegalMageAbilityTargetZone = Boolean(
+                    pendingMageAbility
+                    && pendingMageAbilitySource
+                    && fieldObjects.some((object) => (
+                        isMageWarsPriestessRestoreTargetAllowed(
+                            core,
+                            pendingMageAbilitySource,
+                            pendingMageAbility.abilityId,
+                            object,
+                        )
+                    )),
+                );
+                const isLegalTargetZone = isLegalAttackZone
+                    || isLegalSpellTargetZone
+                    || isLegalObjectAbilityTargetZone
+                    || isLegalMageAbilityTargetZone;
                 const zoneAriaLabel = [
                     t('arena.zoneAria', { zone: t(`zones.${zone.id}`) }),
                     isSourceZone ? t('arena.source') : null,
@@ -1570,9 +1882,25 @@ function ArenaStage({
                         && spellNeedsObjectTarget
                         && isMageWarsSpellObjectTargetAllowed(selectedSpell, object),
                     );
+                    const isObjectAbilitySource = object.id === pendingObjectAbility?.objectId;
+                    const isObjectAbilityTarget = Boolean(
+                        pendingObjectAbility
+                        && pendingObjectAbilityTargetIds?.has(object.id),
+                    );
+                    const isMageAbilityTarget = Boolean(
+                        pendingMageAbility
+                        && pendingMageAbilitySource
+                        && isMageWarsPriestessRestoreTargetAllowed(
+                            core,
+                            pendingMageAbilitySource,
+                            pendingMageAbility.abilityId,
+                            object,
+                        ),
+                    );
                     const canSelectObjectActor = Boolean(
                         creatureActionActive
                         && !selectedSpell
+                        && !hasPendingAbilityTarget
                         && canMageWarsObjectStartAction(object, activePlayer?.id),
                     );
                     return (
@@ -1584,12 +1912,16 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
                                 visualDamage={getVisualObjectDamage(object)}
                                 visualHeld={visualHeld}
-                                role={object.id === pendingSpellTargetObjectId || object.id === selectedObjectId
+                                role={object.id === pendingSpellTargetObjectId
+                                    || object.id === selectedObjectId
+                                    || isObjectAbilitySource
                                     ? 'source'
-                                    : isSpellObjectTarget || isObjectAttackTarget
+                                    : isSpellObjectTarget || isObjectAttackTarget || isObjectAbilityTarget || isMageAbilityTarget
                                         ? 'target'
                                         : undefined}
-                                onClick={isSpellObjectTarget
+                                onClick={isObjectAbilityTarget || isMageAbilityTarget
+                                    ? () => onObjectSelect?.(object.id)
+                                    : isSpellObjectTarget
                                     ? () => onObjectSelect?.(object.id)
                                     : isObjectAttackTarget
                                         ? () => onObjectSelect?.(object.id)
@@ -1627,11 +1959,23 @@ function ArenaStage({
                         : occupant.id === legalAttackTargetId
                             ? 'target'
                             : undefined;
+                    const occupantRestoreAbilityId = resolvePriestessRestoreAbilityIdForPhase(phase);
+                    const occupantCanUseRestoreAbility = Boolean(
+                        canAct
+                        && !selectedSpell
+                        && !hasPendingAbilityTarget
+                        && occupant.id === activePlayer?.id
+                        && occupantRestoreAbilityId
+                        && getMageWarsMageAbilityFromConfig(occupant.mageId, occupantRestoreAbilityId)
+                        && !hasMageWarsStunStatus(occupant)
+                        && (isMageWarsQuickcastPhase(phase) ? occupant.quickcastReady : occupant.actionReady)
+                        && hasPriestessRestoreTarget(core, occupant, occupantRestoreAbilityId!),
+                    );
                     const canSelectMageActor = Boolean(
-                        creatureActionActive
+                        !hasPendingAbilityTarget
                         && !selectedSpell
                         && occupant.id === activePlayer?.id
-                        && canUseMageAction,
+                        && ((creatureActionActive && canUseMageAction) || occupantCanUseRestoreAbility),
                     );
                     return (
                         <div key={occupant.id} className="relative z-20 flex shrink-0 items-center justify-center">
@@ -1672,6 +2016,7 @@ function ArenaStage({
                     <div
                         key={zone.id}
                         data-testid={`mage-wars-arena-zone-${zone.id}`}
+                        data-tutorial-id={`mw-zone-${zone.id}`}
                         data-source-zone={isSourceZone ? 'true' : undefined}
                         data-legal-move-zone={isLegalMoveZone ? 'true' : undefined}
                         data-legal-target-zone={isLegalTargetZone ? 'true' : undefined}
@@ -1763,17 +2108,73 @@ function ArenaStage({
                     </div>
                 );
             })}
-            {canGuardSelectedActor && selectedActorZoneId && onGuard ? (() => {
-                const rect = ZONE_RECTS[selectedActorZoneId];
+            {wallEdgeDescriptors.map((edge) => {
+                const wall = core.walls?.[edge.edgeId];
+                const isLegalWallTarget = legalWallEdgeIds.has(edge.edgeId);
+                if (!wall && !isLegalWallTarget) return null;
+
+                const [fromZoneId, toZoneId] = edge.zoneIds;
+                const label = wall
+                    ? t('arena.wallAria', {
+                        wall: wall.name,
+                        from: t(`zones.${fromZoneId}`),
+                        to: t(`zones.${toZoneId}`),
+                    })
+                    : t('arena.wallEdgeAria', {
+                        from: t(`zones.${fromZoneId}`),
+                        to: t(`zones.${toZoneId}`),
+                    });
+
                 return (
-                    <div
-                        className="pointer-events-none absolute z-30"
-                        style={{
-                            left: pct(rect.left + rect.width - 8),
-                            top: pct(rect.top + 4),
+                    <button
+                        key={edge.edgeId}
+                        type="button"
+                        className={cx(
+                            'absolute z-30 rounded-full border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                            edge.orientation === 'vertical'
+                                ? 'shadow-[0_0_18px_rgba(251,146,60,0.34)]'
+                                : 'shadow-[0_0_16px_rgba(251,146,60,0.3)]',
+                            wall
+                                ? 'border-orange-200/95 bg-gradient-to-r from-red-700/80 via-orange-300/90 to-red-700/80'
+                                : 'border-amber-100/82 bg-amber-300/18 hover:bg-amber-300/30',
+                        )}
+                        style={edge.style}
+                        aria-label={label}
+                        title={label}
+                        disabled={!isLegalWallTarget}
+                        data-testid={`mage-wars-wall-edge-${edge.edgeId}`}
+                        data-wall-edge-id={edge.edgeId}
+                        data-legal-target-wall-edge={isLegalWallTarget ? 'true' : undefined}
+                        data-wall-object={wall ? 'true' : undefined}
+                        data-wall-spell-card-id={wall?.sourceSpellCardId}
+                        onClick={(event) => {
+                            if (!isLegalWallTarget) return;
+                            event.stopPropagation();
+                            onWallEdgeSelect?.(edge.edgeId);
                         }}
                     >
+                        <span
+                            className={cx(
+                                'pointer-events-none absolute inset-0 rounded-full',
+                                wall
+                                    ? 'shadow-[inset_0_0_0_1px_rgba(255,247,237,0.52),0_0_20px_rgba(248,113,22,0.72)]'
+                                    : 'shadow-[inset_0_0_0_1px_rgba(254,243,199,0.5),0_0_18px_rgba(251,191,36,0.38)]',
+                            )}
+                            data-testid={wall ? 'mage-wars-wall-object' : undefined}
+                        />
+                    </button>
+                );
+            })}
+            {selectedActorZoneId && (
+                canGuardSelectedActor
+                || (selectedObject && selectedObjectHealingLightAbility && onObjectAbilitySelect)
+                || (selectedMage && canUseSelectedMageRestoreAbility && selectedMageRestoreAbility && onMageAbilitySelect)
+            ) ? (() => {
+                const rect = ZONE_RECTS[selectedActorZoneId];
+                const actionButtons = [
+                    canGuardSelectedActor && onGuard ? (
                         <button
+                            key="guard"
                             type="button"
                             className="pointer-events-auto grid h-9 w-9 place-items-center rounded-[0.22rem] border border-emerald-100/75 bg-emerald-950/86 text-emerald-100 shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-100"
                             aria-label={t('actions.guard')}
@@ -1786,6 +2187,49 @@ function ArenaStage({
                         >
                             <ShieldCheck size={18} strokeWidth={2.25} aria-hidden="true" />
                         </button>
+                    ) : null,
+                    selectedObject && selectedObjectHealingLightAbility && onObjectAbilitySelect ? (
+                        <button
+                            key="healing-light"
+                            type="button"
+                            className="pointer-events-auto grid h-9 w-9 place-items-center rounded-[0.22rem] border border-rose-100/75 bg-rose-950/86 text-rose-100 shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:bg-rose-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-100"
+                            aria-label={selectedObjectHealingLightAbility.name}
+                            title={selectedObjectHealingLightAbility.name}
+                            data-testid="mage-wars-selected-object-ability-healing-light"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onObjectAbilitySelect(selectedObject.id, selectedObjectHealingLightAbility.id);
+                            }}
+                        >
+                            <HeartPulse size={18} strokeWidth={2.25} aria-hidden="true" />
+                        </button>
+                    ) : null,
+                    selectedMage && canUseSelectedMageRestoreAbility && selectedMageRestoreAbility && onMageAbilitySelect ? (
+                        <button
+                            key="restore"
+                            type="button"
+                            className="pointer-events-auto grid h-9 w-9 place-items-center rounded-[0.22rem] border border-cyan-100/75 bg-cyan-950/86 text-cyan-100 shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:bg-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-100"
+                            aria-label={selectedMageRestoreAbility.name}
+                            title={selectedMageRestoreAbility.name}
+                            data-testid="mage-wars-selected-mage-ability-restore"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onMageAbilitySelect(selectedMage.id, selectedMageRestoreAbility.abilityId);
+                            }}
+                        >
+                            <Sparkles size={18} strokeWidth={2.25} aria-hidden="true" />
+                        </button>
+                    ) : null,
+                ].filter(Boolean);
+                return (
+                    <div
+                        className="pointer-events-none absolute z-30 flex flex-col gap-1"
+                        style={{
+                            left: pct(rect.left + rect.width - 8),
+                            top: pct(rect.top + 4),
+                        }}
+                    >
+                        {actionButtons}
                     </div>
                 );
             })() : null}
@@ -1855,12 +2299,14 @@ function MageWarsInteractionDock({
     );
 }
 
-export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
+export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData, isMultiplayer }: Props) {
     const { t } = useTranslation('game-mage-wars');
     const [selectedSpellCardId, setSelectedSpellCardId] = useState<number | null>(null);
     const [pendingSpellTargetObjectId, setPendingSpellTargetObjectId] = useState<string | null>(null);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
     const [selectedMageId, setSelectedMageId] = useState<PlayerId | null>(null);
+    const [pendingObjectAbility, setPendingObjectAbility] = useState<PendingObjectAbilitySelection | null>(null);
+    const [pendingMageAbility, setPendingMageAbility] = useState<PendingMageAbilitySelection | null>(null);
     const viewport = useRuntimeViewport();
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
@@ -1873,18 +2319,62 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
     const viewingPlayer = core.players[viewingPlayerId] ?? activePlayer;
     const opponentId = resolveOpponentId(core, viewingPlayerId);
     const opponent = opponentId ? core.players[opponentId] ?? null : null;
+    const gameOverResult = G.sys.gameover;
+    const { overlayProps: endgameProps } = useEndgame({
+        result: gameOverResult || undefined,
+        playerID,
+        reset,
+        matchData,
+        isMultiplayer,
+    });
+    useTutorialBridge(G.sys.tutorial, dispatch);
+    const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
+    const isCommandAllowed = (commandType: string) => {
+        if (!isTutorialActive || !tutorialStep) return true;
+        if (!tutorialStep.allowedCommands || tutorialStep.allowedCommands.length === 0) return !tutorialStep.infoStep;
+        return tutorialStep.allowedCommands.includes(commandType);
+    };
     const readyPlayerIds = core.phaseReadyPlayerIds ?? [];
     const canAdvance = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
-        && (SIMULTANEOUS_PREPARATION_PHASES.has(phase) || playerID === phaseActorId);
+        && (SIMULTANEOUS_PREPARATION_PHASES.has(phase) || playerID === phaseActorId)
+        && isCommandAllowed(FLOW_COMMANDS.ADVANCE_PHASE);
     const canAct = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
         && (phase === 'planning' || playerID === phaseActorId);
+    const pendingObjectAbilityOpportunity = (() => {
+        if (!pendingObjectAbility) return null;
+        const sourceObject = core.objects[pendingObjectAbility.objectId];
+        if (!sourceObject) return null;
+        return buildMageWarsObjectAbilityActivationOpportunity({
+            state: G,
+            playerId: sourceObject.ownerId,
+            objectId: sourceObject.id,
+            abilityId: pendingObjectAbility.abilityId,
+        });
+    })();
+    const pendingObjectAbilityRequest = pendingObjectAbilityOpportunity
+        ? buildChoiceRequestFromOpportunity(pendingObjectAbilityOpportunity)
+        : null;
+    const pendingObjectAbilityTargetSurface = pendingObjectAbilityRequest
+        ? projectChoiceRequestToDirectSelectionTargets<MageWarsObjectAbilityActivationChoiceValue>(
+            pendingObjectAbilityRequest,
+            { playerId: pendingObjectAbilityRequest.playerId },
+        )
+        : null;
+    const pendingObjectAbilityTargetsByObjectId = new Map(
+        pendingObjectAbilityTargetSurface?.targets
+            .filter((target) => !target.disabled && !target.stale && typeof target.targetRef === 'string')
+            .map((target) => [String(target.targetRef), target] as const) ?? [],
+    );
+    const pendingObjectAbilityTargetIds = new Set(pendingObjectAbilityTargetsByObjectId.keys());
     const isLandscapeMobileViewport = viewport.width <= 1023 && viewport.width > viewport.height;
     const selectedSpell = selectedSpellCardId == null
         ? undefined
         : getMageWarsSpellCardFromConfig(selectedSpellCardId);
+    const spellNeedsWallEdgeTarget = Boolean(selectedSpell && isMageWarsImplementedWallSpell(selectedSpell));
     const spellNeedsZoneTarget = selectedSpell?.spellType === '生物' || selectedSpell?.targetRule === '区域';
+    const selectedSpellNeedsNoTarget = isMageWarsNoTargetSpell(selectedSpell);
     const spellNeedsPushDestination = Boolean(selectedSpell && isMageWarsImplementedForcePushSpell(selectedSpell));
     const spellNeedsTeleportDestination = Boolean(selectedSpell && isMageWarsImplementedTeleportSpell(selectedSpell));
     const resolveSelectedSpellManaCost = () => {
@@ -1895,11 +2385,12 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         targetPlayerId?: PlayerId;
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;
+        targetWallEdgeId?: MageWarsWallEdgeId;
         pushToZoneId?: ArenaZoneId;
         manaCost?: number;
     }) => {
         const manaCost = target.manaCost ?? resolveSelectedSpellManaCost();
-        if (!canAct || selectedSpellCardId == null || manaCost == null) return;
+        if (!canAct || !isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL) || selectedSpellCardId == null || manaCost == null) return;
         const { manaCost: _targetManaCost, ...targetPayload } = target;
         dispatch(MAGE_WARS_COMMANDS.CAST_SPELL, {
             spellCardId: selectedSpellCardId,
@@ -1910,8 +2401,11 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         setPendingSpellTargetObjectId(null);
         setSelectedObjectId(null);
         setSelectedMageId(null);
+        setPendingObjectAbility(null);
+        setPendingMageAbility(null);
     };
     const handleZoneSelect = (zoneId: ArenaZoneId) => {
+        if (pendingObjectAbility || pendingMageAbility) return;
         const pendingSpellTargetObject = pendingSpellTargetObjectId ? core.objects[pendingSpellTargetObjectId] : undefined;
         if (selectedSpellCardId != null && selectedSpell && pendingSpellTargetObject) {
             if (spellNeedsPushDestination) {
@@ -1938,6 +2432,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         if (selectedObject) {
             if (
                 !canAct
+                || !isCommandAllowed(MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT)
                 || !isCreatureActionPhase(phase)
                 || !selectedObject.actionReady
                 || isMageWarsArenaObjectRestrained(selectedObject)
@@ -1953,6 +2448,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         if (selectedMage) {
             if (
                 !canAct
+                || !isCommandAllowed(MAGE_WARS_COMMANDS.MOVE_MAGE)
                 || !isCreatureActionPhase(phase)
                 || selectedMage.id !== activePlayer?.id
                 || !selectedMage.actionReady
@@ -1966,9 +2462,51 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
             castSelectedSpell({ targetZoneId: zoneId });
         }
     };
+    const handleWallEdgeSelect = (edgeId: MageWarsWallEdgeId) => {
+        if (pendingObjectAbility || pendingMageAbility) return;
+        if (selectedSpellCardId == null || !selectedSpell || !spellNeedsWallEdgeTarget) return;
+        castSelectedSpell({ targetWallEdgeId: edgeId });
+    };
     const handleObjectSelect = (objectId: string) => {
-        const attacker = selectedObjectId ? core.objects[selectedObjectId] : undefined;
         const target = core.objects[objectId];
+        if (pendingObjectAbility) {
+            const targetSelection = pendingObjectAbilityTargetsByObjectId.get(objectId);
+            const command = targetSelection?.commandPreview.find((candidateCommand) => (
+                candidateCommand.type === MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY
+            ));
+            if (command && isCommandAllowed(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY)) {
+                dispatch(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, command.payload);
+                setPendingObjectAbility(null);
+                setSelectedObjectId(null);
+            }
+            return;
+        }
+        if (pendingMageAbility) {
+            const sourceMage = core.players[pendingMageAbility.playerId];
+            const statusTokenId = target ? resolveFirstRemovableStatusTokenIdForUi(target) : undefined;
+            const manaCost = target && statusTokenId
+                ? resolveMageWarsStatusRemovalCostForUi(target, [statusTokenId])
+                : undefined;
+            if (
+                sourceMage
+                && target
+                && statusTokenId
+                && manaCost !== undefined
+                && isCommandAllowed(MAGE_WARS_COMMANDS.USE_MAGE_ABILITY)
+                && isMageWarsPriestessRestoreTargetAllowed(core, sourceMage, pendingMageAbility.abilityId, target)
+            ) {
+                dispatch(MAGE_WARS_COMMANDS.USE_MAGE_ABILITY, {
+                    abilityId: pendingMageAbility.abilityId,
+                    manaCost,
+                    targetObjectId: target.id,
+                    statusTokenIds: [statusTokenId],
+                });
+                setPendingMageAbility(null);
+                setSelectedMageId(null);
+            }
+            return;
+        }
+        const attacker = selectedObjectId ? core.objects[selectedObjectId] : undefined;
         const profile = attacker
             ? getMageWarsObjectAttackProfiles(attacker).find((candidate) => (
                 attacker.actionReady || canMageWarsObjectUsePostMoveQuickAction(attacker, candidate)
@@ -1978,6 +2516,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
             attacker
             && target
             && profile
+            && isCommandAllowed(MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK)
             && attacker.ownerId === activePlayer?.id
             && target.ownerId !== activePlayer?.id
             && isMageWarsObjectAttackTargetInRange(core, attacker.zoneId, target.zoneId, profile)
@@ -1990,15 +2529,19 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
             setSelectedObjectId(null);
             return;
         }
-        if (selectedSpellCardId != null) {
+        if (selectedSpellCardId != null && !selectedSpellNeedsNoTarget) {
             if (selectedSpell && (spellNeedsPushDestination || spellNeedsTeleportDestination)) {
                 setPendingSpellTargetObjectId(objectId);
                 return;
             }
-            castSelectedSpell({ targetObjectId: objectId });
+            const manaCost = selectedSpell && target && isMageWarsImplementedRouseTheBeastSpell(selectedSpell)
+                ? resolveMageWarsRouseTheBeastManaCostForTarget(target)
+                : undefined;
+            castSelectedSpell({ targetObjectId: objectId, manaCost });
         }
     };
     const handlePlayerSelect = (targetPlayerId: PlayerId) => {
+        if (pendingObjectAbility || pendingMageAbility) return;
         const target = core.players[targetPlayerId];
         const attacker = selectedObjectId ? core.objects[selectedObjectId] : undefined;
         const selectedMage = selectedMageId ? core.players[selectedMageId] : undefined;
@@ -2010,6 +2553,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         if (target && target.id === activeOpponent?.id && attacker && profile) {
             if (
                 attacker.ownerId !== activePlayer?.id
+                || !isCommandAllowed(MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK)
                 || !isMageWarsObjectAttackTargetInRange(core, attacker.zoneId, target.mageZoneId, profile)
             ) return;
             dispatch(MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK, {
@@ -2023,6 +2567,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         if (target && target.id === activeOpponent?.id && selectedMage) {
             if (
                 !canAct
+                || !isCommandAllowed(MAGE_WARS_COMMANDS.DECLARE_ATTACK)
                 || !isCreatureActionPhase(phase)
                 || selectedMage.id !== activePlayer?.id
                 || !selectedMage.actionReady
@@ -2032,7 +2577,13 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
             setSelectedMageId(null);
             return;
         }
-        if (selectedSpellCardId != null && !spellNeedsZoneTarget && !spellNeedsPushDestination && !spellNeedsTeleportDestination) {
+        if (
+            selectedSpellCardId != null
+            && !selectedSpellNeedsNoTarget
+            && !spellNeedsZoneTarget
+            && !spellNeedsPushDestination
+            && !spellNeedsTeleportDestination
+        ) {
             castSelectedSpell({ targetPlayerId });
         }
     };
@@ -2040,32 +2591,77 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         setSelectedSpellCardId(null);
         setPendingSpellTargetObjectId(null);
         setSelectedMageId(null);
+        setPendingObjectAbility(null);
+        setPendingMageAbility(null);
         setSelectedObjectId((current) => current === objectId ? null : objectId);
     };
     const handleActorMageSelect = (mageId: PlayerId) => {
         setSelectedSpellCardId(null);
         setPendingSpellTargetObjectId(null);
         setSelectedObjectId(null);
+        setPendingObjectAbility(null);
+        setPendingMageAbility(null);
         setSelectedMageId((current) => current === mageId ? null : mageId);
     };
     const handleGuard = () => {
-        if (!canAct || !isCreatureActionPhase(phase)) return;
+        if (!canAct || !isCommandAllowed(MAGE_WARS_COMMANDS.GUARD) || !isCreatureActionPhase(phase)) return;
         const selectedObject = selectedObjectId ? core.objects[selectedObjectId] : undefined;
         const selectedMage = selectedMageId ? core.players[selectedMageId] : undefined;
         if (selectedObject?.ownerId === activePlayer?.id && selectedObject.actionReady) {
             dispatch(MAGE_WARS_COMMANDS.GUARD, { objectId: selectedObject.id });
             setSelectedObjectId(null);
+            setPendingObjectAbility(null);
+            setPendingMageAbility(null);
             return;
         }
         if (selectedMage?.id === activePlayer?.id && selectedMage.actionReady) {
             dispatch(MAGE_WARS_COMMANDS.GUARD, {});
             setSelectedMageId(null);
+            setPendingObjectAbility(null);
+            setPendingMageAbility(null);
         }
     };
+    const handleObjectAbilitySelect = (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => {
+        if (!isCommandAllowed(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY)) return;
+        setSelectedSpellCardId(null);
+        setPendingSpellTargetObjectId(null);
+        setSelectedMageId(null);
+        setSelectedObjectId(sourceObjectId);
+        setPendingMageAbility(null);
+        setPendingObjectAbility({ objectId: sourceObjectId, abilityId });
+    };
+    const handleMageAbilitySelect = (sourcePlayerId: PlayerId, abilityId: MageWarsMageAbilityId) => {
+        if (!isCommandAllowed(MAGE_WARS_COMMANDS.USE_MAGE_ABILITY)) return;
+        setSelectedSpellCardId(null);
+        setPendingSpellTargetObjectId(null);
+        setSelectedObjectId(null);
+        setSelectedMageId(sourcePlayerId);
+        setPendingObjectAbility(null);
+        setPendingMageAbility({ playerId: sourcePlayerId, abilityId });
+    };
     const handlePreparedSpellSelect = (cardId: number) => {
+        if (!isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)) return;
+        const spell = getMageWarsSpellCardFromConfig(cardId);
+        if (isMageWarsNoTargetSpell(spell)) {
+            const manaCost = spell?.manaCost ?? (spell ? resolveMageWarsSpellRawCostTotal(spell) : undefined);
+            if (!canAct || manaCost == null) return;
+            dispatch(MAGE_WARS_COMMANDS.CAST_SPELL, {
+                spellCardId: cardId,
+                manaCost,
+            });
+            setSelectedObjectId(null);
+            setSelectedMageId(null);
+            setPendingSpellTargetObjectId(null);
+            setPendingObjectAbility(null);
+            setPendingMageAbility(null);
+            setSelectedSpellCardId(null);
+            return;
+        }
         setSelectedObjectId(null);
         setSelectedMageId(null);
         setPendingSpellTargetObjectId(null);
+        setPendingObjectAbility(null);
+        setPendingMageAbility(null);
         setSelectedSpellCardId((current) => current === cardId ? null : cardId);
     };
     const renderPipelineSettings = useRenderPipelineSettings();
@@ -2092,6 +2688,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
         <div
             className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
             data-testid="mage-wars-board"
+            data-tutorial-id="mw-board"
             data-mage-wars-phase={phase}
             data-mage-wars-current-player-id={core.currentPlayerId}
             data-mage-wars-phase-actor-id={phaseActorId}
@@ -2123,12 +2720,18 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                 pendingSpellTargetObjectId={pendingSpellTargetObjectId}
                 selectedObjectId={selectedObjectId}
                 selectedMageId={selectedMageId}
+                pendingObjectAbility={pendingObjectAbility}
+                pendingObjectAbilityTargetIds={pendingObjectAbilityTargetIds}
+                pendingMageAbility={pendingMageAbility}
                 onZoneSelect={handleZoneSelect}
                 onObjectSelect={handleObjectSelect}
+                onWallEdgeSelect={handleWallEdgeSelect}
                 onActorObjectSelect={handleActorObjectSelect}
                 onPlayerSelect={handlePlayerSelect}
                 onActorPlayerSelect={handleActorMageSelect}
                 onGuard={handleGuard}
+                onObjectAbilitySelect={handleObjectAbilitySelect}
+                onMageAbilitySelect={handleMageAbilitySelect}
                 fxBus={fxBus}
                 onFxImpact={mageWarsEvents.onEffectImpact}
                 onFxComplete={mageWarsEvents.onEffectComplete}
@@ -2157,6 +2760,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                         : 'left-1/2 -translate-x-1/2 lg:left-[820px] lg:translate-x-0',
                 )}
                 data-testid="mage-wars-stage-chip"
+                data-tutorial-id="mw-stage"
             >
                 <span className="font-semibold text-amber-100">
                     {isCreatureActionPhase(phase) ? t('arena.actionStage') : t('arena.mode')}
@@ -2215,6 +2819,7 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                         player={viewingPlayer}
                         phase={phase}
                         canAct={canAct}
+                        canPlan={isCommandAllowed(MAGE_WARS_COMMANDS.PLAN_SPELLS)}
                         dispatch={dispatch}
                     />
                 </aside>
@@ -2225,11 +2830,13 @@ export default function MageWarsBoard({ G, playerID, dispatch }: Props) {
                         player={viewingPlayer}
                         phase={phase}
                         canAct={canAct}
+                        canCast={isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)}
                         selectedCardId={selectedSpellCardId}
                         onSelect={handlePreparedSpellSelect}
                     />
                 </aside>
             ) : null}
+            <EndgameOverlay {...endgameProps} />
             </div>
         </div>
     );

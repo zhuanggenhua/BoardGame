@@ -69,6 +69,10 @@ type PossessionUsedPayload = {
     cardId?: string;
 };
 
+type AttackRewardPayload = {
+    choice?: 'damage' | 'steal';
+};
+
 const POSSESSION_SOUND_BY_CARD_ID: Record<string, SoundKey> = {
     'holy-water': BETRAYAL_USE_HOLY_WATER_POSSESSION_KEY,
 };
@@ -96,6 +100,11 @@ const resolvePossessionSound = (event: AudioEvent) => {
     const cardId = payload?.cardId;
     if (!cardId) return BETRAYAL_USE_POSSESSION_KEY;
     return POSSESSION_SOUND_BY_CARD_ID[resolvePossessionBaseCardId(cardId)] ?? BETRAYAL_USE_POSSESSION_KEY;
+};
+
+const resolveAttackRewardSound = (event: AudioEvent) => {
+    const payload = event.payload as AttackRewardPayload | undefined;
+    return payload?.choice === 'steal' ? BETRAYAL_LOOT_CORPSE_KEY : BETRAYAL_ATTACK_KEY;
 };
 
 export const BETRAYAL_AUDIO_CONFIG: GameAudioConfig = {
@@ -173,15 +182,46 @@ export const BETRAYAL_AUDIO_CONFIG: GameAudioConfig = {
             case 'HAUNT_TRIGGERED':
                 return BETRAYAL_HAUNT_KEY;
             case 'HAUNT_ATTACK_RESOLVED':
+            case 'DYNAMITE_ATTACK_RESOLVED':
+            case 'MONSTER_DAMAGE_RESOLVED':
+            case 'MONSTER_ATTACK_HERO_RESOLVED':
+            case 'HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED':
                 return BETRAYAL_ATTACK_KEY;
+            case 'MONSTER_TURN_START_RESOLVED':
+            case 'BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS_PLACED':
+            case 'HELPING_HANDS_MONSTER_TURN_STARTED':
+                return BETRAYAL_HAUNT_KEY;
+            case 'MONSTER_MOVEMENT_GROUP_ROLLED':
+                return BETRAYAL_REROLL_KEY;
+            case 'MONSTER_MOVED':
+            case 'HELPING_HANDS_TROLL_HAND_MOVED':
+                return BETRAYAL_MOVE_KEY;
+            case 'BLOOD_FROM_STONE_MONSTER_TURN_ENDED':
+            case 'HELPING_HANDS_MONSTER_TURN_ENDED':
+                return BETRAYAL_END_TURN_KEY;
+            case 'HELPING_HANDS_ATTACK_REWARD_RESOLVED':
+                return resolveAttackRewardSound(event);
             case 'JACK_LEARNED':
+            case 'MUMMY_NAME_STUDIED':
                 return BETRAYAL_JACK_LEARNED_KEY;
             case 'EXORCISM_STUDIED':
+            case 'MUMMY_BANISHMENT_LEARNED':
                 return BETRAYAL_EXORCISM_STUDIED_KEY;
             case 'JACK_EXORCISED': {
                 const payload = event.payload as SuccessPayload | undefined;
                 return payload?.success ? BETRAYAL_EXORCISE_SUCCESS_KEY : BETRAYAL_EXORCISE_FAILURE_KEY;
             }
+            case 'MUMMY_BANISHED': {
+                const payload = event.payload as SuccessPayload | undefined;
+                return payload?.success ? BETRAYAL_EXORCISE_SUCCESS_KEY : BETRAYAL_EXORCISE_FAILURE_KEY;
+            }
+            case 'MUMMY_GIRL_PICKED_UP':
+                return BETRAYAL_USE_POSSESSION_KEY;
+            case 'MUMMY_GIRL_GIVEN':
+            case 'MUMMY_OMEN_GIVEN':
+                return BETRAYAL_TRADE_KEY;
+            case 'MUMMY_ATTACK_REWARD_RESOLVED':
+                return resolveAttackRewardSound(event);
             case 'SCENARIO_COMPLETED':
                 return BETRAYAL_SCENARIO_COMPLETED_KEY;
             default:

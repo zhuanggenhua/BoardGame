@@ -1,5 +1,5 @@
 import type { Command, PlayerId } from '../../../engine/types';
-import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, StatusTokenId } from './ids';
+import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, MageWarsWallEdgeId, StatusTokenId } from './ids';
 
 export const MAGE_WARS_COMMANDS = {
     PLAN_SPELLS: 'mw:plan_spells',
@@ -30,6 +30,7 @@ export interface MageWarsCastSpellCommand extends Command<typeof MAGE_WARS_COMMA
         targetPlayerId?: PlayerId;
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;
+        targetWallEdgeId?: MageWarsWallEdgeId;
         newTargetPlayerId?: PlayerId;
         newTargetObjectId?: string;
         newTargetZoneId?: ArenaZoneId;

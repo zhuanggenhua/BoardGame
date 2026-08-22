@@ -20,6 +20,10 @@ import { ensureSmashUpAtlasRegistered } from './cardAtlas';
 type EnglishMapConfig = { atlasId: string; index: number };
 
 const TTS_MAP = smashUpEnglishMap as Record<string, EnglishMapConfig>;
+const BUILT_IN_ENGLISH_TEXT_ATLASES = new Set<string>([
+    SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES,
+]);
+
 interface SmashUpRendererArgs {
     previewRef: CardPreviewRef;
     locale?: string;
@@ -185,13 +189,15 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
 
     // 检查是否使用了 TTS 英文图集（图集 ID 以 tts_atlas_ 开头）
     const usesTtsAtlas = finalAtlasId.startsWith('tts_atlas_');
+    const usesBuiltInEnglishTextAtlas = BUILT_IN_ENGLISH_TEXT_ATLASES.has(finalAtlasId);
 
     // 悬浮窗显示逻辑：只有使用了英文图集的卡牌才需要悬浮窗
     // 1. POD 派系卡牌 → 需要悬浮窗（图片是英文的）
     // 2. 基地卡且玩家选择了 POD 版派系 → 需要悬浮窗（图片是英文的）
     // 3. 使用了 TTS 英文图集 → 需要悬浮窗（图片是英文的）
-    // 4. 基础派系的基地卡 → 不需要悬浮窗（图片本身包含中文）
-    const needsOverlay = (isPodVersion || shouldUseEnglishAtlas || usesTtsAtlas) && !isEnglishVariant;
+    // 4. 标记为英文文字的内建图集 → 需要悬浮窗（图片文件在本地目录，但卡面文字是英文的）
+    // 5. 基础派系的基地卡 → 不需要悬浮窗（图片本身包含中文）
+    const needsOverlay = (isPodVersion || shouldUseEnglishAtlas || usesTtsAtlas || usesBuiltInEnglishTextAtlas) && !isEnglishVariant;
     // 用户在英文环境下可以关闭覆盖层
     const shouldShowOverlay = needsOverlay && overlayEnabled;
     const overlayVisibilityClass = forceShowOverlay

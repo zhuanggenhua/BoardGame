@@ -609,6 +609,7 @@ const disneyPromptProgram = createPromptProgram<DisneyPromptContext, SmashUpCore
                                 : context.kind === 'destroyOngoing' ? 'ongoing'
                                     : 'minion',
                 responseValidationMode: 'live',
+                autoResolveIfSingle: false,
                 ...(context.maxChoices !== undefined ? { multi: { min: context.optional ? 0 : 1, max: context.maxChoices } } : {}),
             },
         );
@@ -1401,7 +1402,7 @@ function avalanche(ctx: AbilityContext): AbilityResult {
 function beAMan(ctx: AbilityContext): AbilityResult {
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     return addCountersToTargets(
-        collectMinions(ctx.state, (_minion, index) => index === baseIndex),
+        collectMinions(ctx.state, (minion, index) => index === baseIndex && minion.controller === ctx.playerId),
         ctx,
         1,
         'mulan_be_a_man',

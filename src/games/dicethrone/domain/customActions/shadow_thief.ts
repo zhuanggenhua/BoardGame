@@ -97,11 +97,13 @@ function handleDaggerStrikePoison({ targetId, sourceAbilityId, state, timestamp 
 }
 
 /** 抢夺/暗影突袭：造成一半CP的伤害 【已迁移到新伤害计算管线】 */
-function handleDamageHalfCp({ attackerId, targetId, sourceAbilityId, state, timestamp, ctx, action }: CustomActionContext): DiceThroneEvent[] {
+function handleDamageHalfCp({ attackerId, targetId, sourceAbilityId, state, timestamp, action }: CustomActionContext): DiceThroneEvent[] {
     const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+    // bonusCp 只是旧估算上下文；正式结算时 preDefense 的 CP 增益已经写入 state。
     const params = action.params as Record<string, unknown> | undefined;
     const bonusCp = (params?.bonusCp as number) || 0;
-    const totalCp = currentCp + bonusCp;
+    void bonusCp;
+    const totalCp = currentCp;
 
     if (totalCp <= 0) return [];
 

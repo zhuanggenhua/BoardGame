@@ -1,52 +1,68 @@
 {
   "verdict": "PASS",
-  "scope": "current-user-request",
+  "scope": "current-scope-candidate-flow",
   "display": {
-    "purpose": "final-user-visible-delivery",
-    "trigger": "user-requested-open",
+    "purpose": "final-user-visible-delivery-when-requested",
+    "trigger": "user-explicit-image-request-or-final-candidate-review",
     "viewer": "pureref",
     "finalPassBeforeOpen": true
   },
   "requirements": [
     {
-      "requirement": "展示 Mage Wars 当前范围黄金链完整流程图组",
+      "requirement": "补全 Mage Wars current-scope 综合候选链核心机制覆盖矩阵，并明确 stable/pre-push 仍未达标",
       "status": "PASS",
       "evidence": [
-        "evidence/mage-wars-golden-flow-display-sequence-manifest.json",
-        "evidence/mage-wars-golden-flow-e2e-test.md",
-        "docs/games/mage-wars/runtime-gameplay-closeout-self-audit.md"
+        "evidence/mage-wars-golden-flow-coverage-matrix.md",
+        ".spec/knowledge/standards/e2e-verification.md"
       ]
     },
     {
-      "requirement": "图组按真实流程顺序覆盖召唤、部署、附件、攻击、结算和回到下一轮计划",
+      "requirement": "候选链必须覆盖当前已实现范围的计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局代表链；标准书内墙体机制仍不得算已覆盖",
       "status": "PASS",
       "evidence": [
-        "00-sequence-index.png 列出 13 张流程图顺序。",
-        "01-13 编号图分别覆盖兽王召唤、女祭司召唤、双方部署、附件结算、间歇喷泉攻击过程帧、魔物 / 攻击结算和黄金链收口。"
+        "Playwright current-scope 候选链定向验证：1 passed (2.5m)，目标用例约 2.2m",
+        "截图原图 19 张，标记图 20 张（索引 + 19 步）",
+        "evidence/mage-wars-golden-flow-display-sequence-manifest.json"
       ]
     },
     {
-      "requirement": "图组关键牌面和棋盘素材已真实渲染",
+      "requirement": "用户可见图组必须是完整有序流程，第一张必须是计划阶段",
       "status": "PASS",
       "evidence": [
-        "黄金链截图中兽王、女祭司、法术书卡牌、附件、弃牌和正式竞技场棋盘均有真实画面内容，不是空白壳层或纯色占位。"
+        "_labeled-current-scope-candidate-flow/00-sequence-index.png",
+        "_labeled-current-scope-candidate-flow/01-labeled-01-双方计划后-对手计划仍隐藏.png",
+        "_labeled-current-scope-candidate-flow/02-labeled-* 至 19-labeled-*"
+      ]
+    },
+    {
+      "requirement": "不得把 current-scope 候选链称为 stable/pre-push 主黄金链",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars-golden-flow-coverage-matrix.md:范围裁决",
+        "docs/games/mage-wars/runtime-gameplay-closeout-self-audit.md:收口口径"
       ]
     }
   ],
   "images": [
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/00-sequence-index.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/01-labeled-09A-兽王野性山猫-召唤来源和目标区域.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/02-labeled-09A-兽王野性山猫-召唤光柱过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/03-labeled-09A-兽王野性山猫-召唤完成单位落场.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/04-labeled-09B-女祭司阿希拉牧师-召唤来源和目标区域.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/05-labeled-09B-女祭司阿希拉牧师-召唤光柱过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/06-labeled-09B-女祭司阿希拉牧师-召唤完成单位落场.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/07-labeled-09-两派系生物部署后-兽王女祭司各有场上生物.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/08-labeled-10-装备和结界作为附件结算后-两派系附着关系可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/09-labeled-11A-间歇喷泉攻击法术-来源到目标投射过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/10-labeled-11A-间歇喷泉攻击法术-投射物飞行中.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/11-labeled-11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/12-labeled-11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围黄金链：标准竞技场两派系覆盖计划、部署、移动、装备结界、魔物、攻击和回到下一轮计划/_labeled-golden-flow-current/13-labeled-12-黄金链收口-回到下一轮计划阶段.png"
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/01-labeled-01-双方计划后-对手计划仍隐藏.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/02-labeled-09A-兽王野性山猫-召唤来源和目标区域.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/03-labeled-09A-兽王野性山猫-召唤光柱过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/04-labeled-09A-兽王野性山猫-召唤完成单位落场.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/05-labeled-09B-女祭司阿希拉牧师-召唤来源和目标区域.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/06-labeled-09B-女祭司阿希拉牧师-召唤光柱过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/07-labeled-09B-女祭司阿希拉牧师-召唤完成单位落场.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/08-labeled-09-两派系生物部署后-兽王女祭司各有场上生物.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/09-labeled-10-装备和结界作为附件结算后-两派系附着关系可见.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/10-labeled-11A-间歇喷泉攻击法术-来源到目标投射过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/11-labeled-11A-间歇喷泉攻击法术-投射物飞行中.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/12-labeled-11A-间歇喷泉攻击法术-命中动画过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/13-labeled-11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/14-labeled-12-候选链收口-回到下一轮计划阶段.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/15-labeled-13-守卫动作后-阿希拉牧师守卫标记可见.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/16-labeled-14-近战攻击守卫生物后-守卫标记移除.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/17-labeled-15-阿希拉牧师治疗之光结算后-治疗能力可见.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/18-labeled-16-女祭司复原术移除燃烧后-状态标记消失.png",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/19-labeled-17-近终局基础攻击后-胜负遮罩可见.png"
   ]
 }

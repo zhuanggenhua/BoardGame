@@ -8,7 +8,7 @@ import { GameChangelogService } from './game-changelog.service';
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Roles('admin', 'developer')
-@Controller('admin/game-changelogs')
+@Controller('admin-api/game-changelogs')
 export class GameChangelogAdminController {
     constructor(
         @Inject(GameChangelogService) private readonly changelogService: GameChangelogService,

@@ -14,6 +14,7 @@
 import type {
     Command,
     DomainCore,
+    EventCommitEvidence,
     GameEvent,
     MatchState,
     PipelineContext,
@@ -26,6 +27,7 @@ import type {
 import { DEFAULT_TUTORIAL_STATE } from './types';
 import { refreshInteractionOptions } from './systems/InteractionSystem';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
+import { commitEventWithTimingOpportunities, createTimingPoint } from './TimingOpportunity';
 
 function sortSystems<TCore>(systems: EngineSystem<TCore>[]): EngineSystem<TCore>[] {
     // 稳定排序：priority 越小越先执行；priority 相同按传入顺序
@@ -64,6 +66,8 @@ export interface PipelineResult<TCore> {
     state: MatchState<TCore>;
     /** 产生的事件 */
     events: GameEvent[];
+    /** 事件提交阶段产生的裁判证据；没有 replacement/prevention 机会时省略。 */
+    eventCommitEvidence?: EventCommitEvidence[];
     /** 错误信息 */
     error?: string;
 }
@@ -258,16 +262,87 @@ function murmurHash3(str: string, hashSeed: number): number {
  * - 返回 appliedEvents：拦截/替换后的实际事件列表，用于后续系统/日志消费
  */
 interface ReduceResult<TCore> {
-    core: TCore;
+    state: MatchState<TCore>;
     appliedEvents: GameEvent[];
+    eventCommitEvidence: EventCommitEvidence[];
+}
+
+interface NormalizedEventCommit<TEvent extends GameEvent> {
+    events: TEvent[];
+    evidence: EventCommitEvidence[];
+}
+
+function normalizeEventCommitEvidence(
+    evidence: EventCommitEvidence | EventCommitEvidence[] | undefined,
+): EventCommitEvidence[] {
+    if (!evidence) return [];
+    return Array.isArray(evidence) ? evidence : [evidence];
+}
+
+function normalizeEventCommitResult<TEvent extends GameEvent>(
+    event: TEvent,
+    result: ReturnType<NonNullable<DomainCore<unknown, Command, TEvent>['commitEvent']>>,
+): NormalizedEventCommit<TEvent> {
+    if (result === undefined) return { events: [event], evidence: [] };
+    if (result === null) return { events: [], evidence: [] };
+    if (Array.isArray(result)) return { events: result, evidence: [] };
+    if ('events' in result) {
+        return {
+            events: result.events,
+            evidence: normalizeEventCommitEvidence(result.evidence),
+        };
+    }
+    return { events: [result], evidence: [] };
+}
+
+function commitEventBeforeReduce<TCore, TCommand extends Command, TEvent extends GameEvent>(
+    domain: DomainCore<TCore, TCommand, TEvent>,
+    state: MatchState<TCore>,
+    event: TEvent,
+    command?: TCommand,
+): NormalizedEventCommit<TEvent> {
+    const timing = createTimingPoint<TCommand, TEvent>({
+        gameId: domain.gameId,
+        position: 'eventCommit',
+        factKind: event.type,
+        event,
+        command,
+        parentFrameId: state.sys.resolution?.activeFrameId,
+        timestamp: event.timestamp,
+    });
+    const commitArgs = {
+        state,
+        event,
+        command,
+        timing,
+    };
+
+    if (!domain.commitEvent) {
+        const result = commitEventWithTimingOpportunities(
+            domain,
+            commitArgs,
+        );
+        return {
+            events: result.events,
+            evidence: normalizeEventCommitEvidence(result.evidence),
+        };
+    }
+
+    return normalizeEventCommitResult(
+        event,
+        domain.commitEvent(commitArgs),
+    );
 }
 
 function reduceEventsToCore<TCore, TCommand extends Command, TEvent extends GameEvent>(
     domain: DomainCore<TCore, TCommand, TEvent>,
-    core: TCore,
+    state: MatchState<TCore>,
     events: GameEvent[],
+    command?: TCommand,
 ): ReduceResult<TCore> {
     const appliedEvents: GameEvent[] = [];
+    const eventCommitEvidence: EventCommitEvidence[] = [];
+    let currentState = state;
 
     for (const event of events) {
         const isPureSysEvent =
@@ -277,23 +352,43 @@ function reduceEventsToCore<TCore, TCommand extends Command, TEvent extends Game
             continue;
         }
 
-        if (domain.interceptEvent) {
-            const result = domain.interceptEvent(core, event as unknown as TEvent);
+        const committed = commitEventBeforeReduce(
+            domain,
+            currentState,
+            event as unknown as TEvent,
+            command,
+        );
+        eventCommitEvidence.push(...committed.evidence);
+
+        for (const committedEvent of committed.events) {
+            const committedIsPureSysEvent =
+                committedEvent.type.startsWith('SYS_') && committedEvent.type !== 'SYS_PHASE_CHANGED';
+            if (committedIsPureSysEvent) {
+                appliedEvents.push(committedEvent);
+                continue;
+            }
+
+            if (!domain.interceptEvent) {
+                const core = domain.reduce(currentState.core, committedEvent);
+                currentState = { ...currentState, core };
+                appliedEvents.push(committedEvent);
+                continue;
+            }
+
+            const result = domain.interceptEvent(currentState.core, committedEvent);
             if (result === null) {
                 continue;
             }
             const batch = Array.isArray(result) ? result : [result];
             for (const ev of batch) {
-                core = domain.reduce(core, ev);
+                const core = domain.reduce(currentState.core, ev);
+                currentState = { ...currentState, core };
                 appliedEvents.push(ev as unknown as GameEvent);
             }
-        } else {
-            core = domain.reduce(core, event as unknown as TEvent);
-            appliedEvents.push(event);
         }
     }
 
-    return { core, appliedEvents };
+    return { state: currentState, appliedEvents, eventCommitEvidence };
 }
 
 /**
@@ -304,6 +399,7 @@ interface AfterEventsParams<TCore, TCommand extends Command, TEvent extends Game
     systems: EngineSystem<TCore>[];
     ctx: PipelineContext<TCore>;
     allEvents: GameEvent[];
+    eventCommitEvidence: EventCommitEvidence[];
     systemEventsToReduce: GameEvent[];
     random: RandomFn;
     maxRounds: number;
@@ -319,7 +415,7 @@ interface AfterEventsParams<TCore, TCommand extends Command, TEvent extends Game
 function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends GameEvent>(
     params: AfterEventsParams<TCore, TCommand, TEvent>,
 ): MatchState<TCore> {
-    const { domain, systems, ctx, allEvents, systemEventsToReduce, random, maxRounds } = params;
+    const { domain, systems, ctx, allEvents, eventCommitEvidence, systemEventsToReduce, random, maxRounds } = params;
     let currentState = ctx.state;
 
 
@@ -402,11 +498,15 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
         // 本轮事件 reduce 进 core
         if (roundEvents.length > 0) {
-            const reduced = reduceEventsToCore(domain, currentState.core, roundEvents);
-            if (reduced.core !== currentState.core) {
-                currentState = { ...currentState, core: reduced.core };
+            const reduced = reduceEventsToCore(domain, currentState, roundEvents, ctx.command as TCommand);
+            if (reduced.state !== currentState) {
+                currentState = reduced.state;
                 ctx.state = currentState;
             }
+            if (reduced.eventCommitEvidence.length > 0) {
+                eventCommitEvidence.push(...reduced.eventCommitEvidence);
+            }
+            ctx.eventCommitEvidence = reduced.eventCommitEvidence;
             if (reduced.appliedEvents.length > 0) {
                 allEvents.push(...reduced.appliedEvents);
                 systemEventsToReduce.push(...reduced.appliedEvents);
@@ -423,6 +523,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
             // 本轮无事件需要 reduce（如 PPSE 压制了所有领域事件），
             // 必须清空 ctx.events 防止下一轮系统重复处理上一轮的事件
             ctx.events = [];
+            ctx.eventCommitEvidence = [];
         }
 
         // ⚠️ 关键修复：每轮 afterEvents 结束后检测游戏结束
@@ -518,6 +619,7 @@ export function executePipeline<
     let currentState = domain.normalizeRuntimeState ? domain.normalizeRuntimeState(state) : state;
     const allEvents: GameEvent[] = [];
     const preCommandEvents: GameEvent[] = [];
+    const eventCommitEvidence: EventCommitEvidence[] = [];
     const systemEventsToReduce: GameEvent[] = [];
 
     // 教程随机策略覆盖：当教程活跃且定义了 randomPolicy 时，用固定/序列值替代原始 random
@@ -565,6 +667,14 @@ export function executePipeline<
         return { ...s, sys: { ...s.sys, gameover: result } };
     };
 
+    const buildResult = (
+        result: Omit<PipelineResult<TCore>, 'eventCommitEvidence'>,
+    ): PipelineResult<TCore> => (
+        eventCommitEvidence.length > 0
+            ? { ...result, eventCommitEvidence: [...eventCommitEvidence] }
+            : result
+    );
+
     // 1. 执行 Systems.beforeCommand hooks
     for (const system of systems) {
         if (!system.beforeCommand) continue;
@@ -585,12 +695,12 @@ export function executePipeline<
         if (result.halt) {
             // 有错误：立即返回，不再执行后续
             if (result.error) {
-                return {
+                return buildResult({
                     success: false,
                     state: currentState,
                     events: allEvents,
                     error: result.error,
-                };
+                });
             }
 
             // 无错误：命令被系统消费。此时需要：
@@ -620,11 +730,15 @@ export function executePipeline<
                 }
             }
 
-            const reduced = reduceEventsToCore(domain, currentState.core, preCommandEventsToReduce);
-            if (reduced.core !== currentState.core) {
-                currentState = { ...currentState, core: reduced.core };
+            const reduced = reduceEventsToCore(domain, currentState, preCommandEventsToReduce, command);
+            if (reduced.state !== currentState) {
+                currentState = reduced.state;
                 ctx.state = currentState;
             }
+            if (reduced.eventCommitEvidence.length > 0) {
+                eventCommitEvidence.push(...reduced.eventCommitEvidence);
+            }
+            ctx.eventCommitEvidence = reduced.eventCommitEvidence;
             // 交互系统消费命令时，领域后处理可能先创建下一段动态交互，
             // 再由本分支归约事件改变手牌/场面；这里用归约后的 core 刷新一次可见选项。
             currentState = refreshInteractionOptions(currentState);
@@ -636,7 +750,7 @@ export function executePipeline<
 
             // 执行 afterEvents hooks（多轮迭代）
             currentState = runAfterEventsRounds({
-                domain, systems, ctx, allEvents, systemEventsToReduce, random: effectiveRandom,
+                domain, systems, ctx, allEvents, eventCommitEvidence, systemEventsToReduce, random: effectiveRandom,
                 maxRounds: MAX_AFTER_EVENTS_ROUNDS,
             });
 
@@ -646,11 +760,11 @@ export function executePipeline<
             // 持久化教程 sequence cursor
             currentState = persistRandomCursor(currentState);
 
-            return {
+            return buildResult({
                 success: true,
                 state: currentState,
                 events: allEvents,
-            };
+            });
         }
     }
 
@@ -667,12 +781,12 @@ export function executePipeline<
                     error: validation.error,
                     payload: command.payload,
                 });
-                return {
+                return buildResult({
                     success: false,
                     state: currentState,
                     events: allEvents,
                     error: validation.error,
-                };
+                });
             }
         }
     } else {
@@ -684,12 +798,12 @@ export function executePipeline<
                 error: validation.error,
                 payload: command.payload,
             });
-            return {
+            return buildResult({
                 success: false,
                 state: currentState,
                 events: allEvents,
                 error: validation.error,
-            };
+            });
         }
     }
 
@@ -698,9 +812,13 @@ export function executePipeline<
     const events = domain.execute(currentState, command, effectiveRandom);
 
     // 4. 逐个 Reduce events -> 更新 state.core（含事件拦截/替换）
-    const reduced = reduceEventsToCore(domain, currentState.core, events as unknown as GameEvent[]);
-    currentState = { ...currentState, core: reduced.core };
+    const reduced = reduceEventsToCore(domain, currentState, events as unknown as GameEvent[], command);
+    currentState = reduced.state;
     ctx.state = currentState;
+    if (reduced.eventCommitEvidence.length > 0) {
+        eventCommitEvidence.push(...reduced.eventCommitEvidence);
+    }
+    ctx.eventCommitEvidence = reduced.eventCommitEvidence;
 
     // 4.5 领域层后处理（如 onPlay 触发链），在 afterEvents 前执行
     let appliedEvents = reduced.appliedEvents;
@@ -722,10 +840,17 @@ export function executePipeline<
 
             if (processed.length > domainEvents.length) {
                 const extraEvents = processed.slice(domainEvents.length);
-                const extraReduced = reduceEventsToCore(domain, currentState.core, extraEvents);
-                if (extraReduced.core !== currentState.core) {
-                    currentState = { ...currentState, core: extraReduced.core };
+                const extraReduced = reduceEventsToCore(domain, currentState, extraEvents, command);
+                if (extraReduced.state !== currentState) {
+                    currentState = extraReduced.state;
                     ctx.state = currentState;
+                }
+                if (extraReduced.eventCommitEvidence.length > 0) {
+                    eventCommitEvidence.push(...extraReduced.eventCommitEvidence);
+                    ctx.eventCommitEvidence = [
+                        ...(ctx.eventCommitEvidence ?? []),
+                        ...extraReduced.eventCommitEvidence,
+                    ];
                 }
                 appliedEvents = [...appliedEvents, ...extraReduced.appliedEvents];
             }
@@ -742,7 +867,7 @@ export function executePipeline<
 
     // 5. 执行 Systems.afterEvents hooks -> 更新 state.sys（多轮迭代）
     currentState = runAfterEventsRounds({
-        domain, systems, ctx, allEvents, systemEventsToReduce, random: effectiveRandom,
+        domain, systems, ctx, allEvents, eventCommitEvidence, systemEventsToReduce, random: effectiveRandom,
         maxRounds: MAX_AFTER_EVENTS_ROUNDS,
     });
 
@@ -753,11 +878,11 @@ export function executePipeline<
     // 7. 持久化教程 sequence cursor
     currentState = persistRandomCursor(currentState);
 
-    return {
+    return buildResult({
         success: true,
         state: currentState,
         events: allEvents,
-    };
+    });
 }
 
 // ============================================================================

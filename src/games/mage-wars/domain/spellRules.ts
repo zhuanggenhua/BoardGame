@@ -20,9 +20,9 @@ import {
     getMageWarsSpellCardFromConfig,
     requireMageWarsStatusTokenFromConfig,
 } from '../data/configPackage';
-import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId, type StatusTokenId } from './ids';
-import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
-import { getArenaZone, resolveTargetZoneForObjectOrPlayer } from './utils';
+import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId, type MageWarsWallEdgeId, type StatusTokenId } from './ids';
+import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPhase, MageWarsPlayerState, MageWarsWallPassageDamage } from './types';
+import { getArenaZone, resolveMageWarsWallEdgeZones, resolveTargetZoneForObjectOrPlayer } from './utils';
 import { getStatusTokenAmount, hasStatusToken } from './statusTokens';
 import {
     getTemporaryChargeDiceModifier,
@@ -74,6 +74,11 @@ const MAGE_WARS_DAMAGE_TYPES: readonly MageWarsDamageType[] = [
     '霜冻',
 ];
 const IMPLEMENTED_VISIBLE_ENCHANTMENT_SPELL_CARD_IDS = new Set([1806, 1808, 1809, 1813, 1815, 1816, 1818, 1820, 1826, 1903, 1908, 1910, 1911, 1912, 1914, 1916, 1917]);
+const IMPLEMENTED_WALL_SPELL_CARD_IDS = new Set([2500, 25700]);
+const WALL_PASSAGE_DAMAGE_BY_SPELL_CARD_ID: Record<number, MageWarsWallPassageDamage> = {
+    2500: { amount: 3, damageTypes: ['火焰'] },
+    25700: { amount: 3, damageTypes: ['穿越墙体'] },
+};
 
 export interface MageWarsObjectAttackProfile {
     id: string;
@@ -300,6 +305,41 @@ export function isMageWarsCreatureSpell(spell: MageWarsConfigSpellCard): boolean
 
 export function isMageWarsConjurationSpell(spell: MageWarsConfigSpellCard): boolean {
     return spell.spellType === '魔物';
+}
+
+export function isMageWarsWallSpell(spell: MageWarsConfigSpellCard): boolean {
+    return IMPLEMENTED_WALL_SPELL_CARD_IDS.has(spell.spellCardId)
+        || spell.tags?.includes('墙体') === true
+        || spell.typeLine?.includes('墙体') === true;
+}
+
+export function isMageWarsImplementedWallSpell(spell: MageWarsConfigSpellCard): boolean {
+    return IMPLEMENTED_WALL_SPELL_CARD_IDS.has(spell.spellCardId);
+}
+
+export function resolveMageWarsWallPassageDamage(spell: MageWarsConfigSpellCard): MageWarsWallPassageDamage | undefined {
+    const damage = WALL_PASSAGE_DAMAGE_BY_SPELL_CARD_ID[spell.spellCardId];
+    return damage ? { amount: damage.amount, damageTypes: [...damage.damageTypes] } : undefined;
+}
+
+export function isMageWarsWallEdgeTargetInRange(
+    core: MageWarsCore,
+    caster: MageWarsPlayerState,
+    spell: MageWarsConfigSpellCard,
+    edgeId: MageWarsWallEdgeId,
+): boolean {
+    const zoneIds = resolveMageWarsWallEdgeZones(core, edgeId);
+    if (!zoneIds) return false;
+
+    const range = resolveMageWarsSpellRange(spell);
+    if (!range) {
+        return zoneIds.includes(caster.mageZoneId);
+    }
+
+    return zoneIds.some((zoneId) => {
+        const distance = getMageWarsZoneDistance(core, caster.mageZoneId, zoneId);
+        return distance !== undefined && distance >= range.min && distance <= range.max;
+    });
 }
 
 export function isMageWarsEquipmentSpell(spell: MageWarsConfigSpellCard): boolean {

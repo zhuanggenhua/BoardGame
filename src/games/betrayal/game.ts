@@ -873,7 +873,12 @@ export interface BetrayalPendingEventChoiceState {
     acceptLabel?: string;
     declineLabel?: string;
     effect: UseEffectProfile;
-    sourceKind?: 'event' | 'item';
+    sourceKind?: 'event' | 'item' | 'event-symbol-skip';
+    eventSymbolSkip?: {
+        roomId: string;
+        roomName: string;
+        method: 'idol' | 'traitorPower';
+    };
     itemResolution?: 'tooth-necklace-end-turn';
     itemCardId?: string;
     deferredTurnEnd?: BetrayalTurnEndedPayload;
@@ -1845,6 +1850,7 @@ type BetrayalEvent =
         };
         roomDrawResolution?: BetrayalRoomDrawResolution;
         discovery: BetrayalDiscoverySummary;
+        nextPendingEventChoice?: BetrayalPendingEventChoiceState;
         logText: string;
         mummyForcedOmenSearch?: {
             role: 'hero-book' | 'traitor-wedding-omen';
@@ -1896,6 +1902,7 @@ type BetrayalEvent =
             passiveBonus?: number;
             branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
         };
+        drawnEventCardNameToBury?: string;
         discovery: BetrayalDiscoverySummary;
         logText: string;
     }>
@@ -13972,6 +13979,46 @@ export function canUseIdolToSkipEvent(core: BetrayalCore): boolean {
         && core.turnStartInventoryCardIds.some((cardId) => resolveInventoryEffectId(cardId) === 'idol');
 }
 
+function resolveEventSymbolSkipMethod(
+    core: BetrayalCore,
+    playerId: string,
+): NonNullable<BetrayalPendingEventChoiceState['eventSymbolSkip']>['method'] | null {
+    if (canUseBetrayalTraitorPowers(core, playerId)) {
+        return 'traitorPower';
+    }
+    if (canUseIdolToSkipEvent(core)) {
+        return 'idol';
+    }
+    return null;
+}
+
+function createEventSymbolSkipChoice(
+    core: BetrayalCore,
+    playerId: string,
+    roomId: string,
+    roomName: string,
+    timestamp: number,
+): BetrayalPendingEventChoiceState | null {
+    const method = resolveEventSymbolSkipMethod(core, playerId);
+    if (!method) {
+        return null;
+    }
+    return {
+        id: `${playerId}-${roomId}-event-symbol-skip-${timestamp}`,
+        playerId,
+        sourceTitle: `${roomName}：事件符号`,
+        sourceKind: 'event-symbol-skip',
+        eventSymbolSkip: {
+            roomId,
+            roomName,
+            method,
+        },
+        acceptLabel: method === 'idol' ? '用雕像跳过事件' : '跳过事件',
+        declineLabel: '抽取事件牌',
+        effect: { mode: 'none' },
+    };
+}
+
 function resolveSkeletonKeyCardId(explorer: BetrayalExplorerSummary): string | null {
     return explorer.inventory.find((card) => resolveInventoryEffectId(card.id) === 'lockpick-tool')?.id ?? null;
 }
@@ -16479,6 +16526,53 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         hauntTriggered: false,
                     }, timestamp)];
                 }
+                const eventSymbolSkipChoice = createEventSymbolSkipChoice(
+                    core,
+                    command.playerId,
+                    nextSlot.id,
+                    roomTemplate.name,
+                    timestamp,
+                );
+                if (eventSymbolSkipChoice) {
+                    return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                        playerId: command.playerId,
+                        roomId: nextSlot.id,
+                        room: {
+                            name: roomTemplate.name,
+                            hint: roomTemplate.hint,
+                            tags: roomTemplate.tags,
+                            discoveryReward: deckKind,
+                            visualId: roomTemplate.visualId,
+                            doorways: selectedOrientation.doorways,
+                            backVisualId: nextSlot.backVisualId,
+                            orientationTurns: selectedOrientation.orientationTurns,
+                            discoveryEffect: roomTemplate.discoveryEffect,
+                            endTurnEffect: roomTemplate.endTurnEffect,
+                            enterEffect: roomTemplate.enterEffect,
+                        },
+                        deckKind,
+                        ...roomDiscoveryCards,
+                        skippedRoomWithHolySymbol: skippedRoomTemplate
+                            ? { name: skippedRoomTemplate.name }
+                            : undefined,
+                        roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                        roomTileAdjustment,
+                        discovery: {
+                            kind: deckKind,
+                            title: '事件符号',
+                            summary: '等待选择是否跳过事件',
+                            detail: `${roomTemplate.name}带有事件符号；可选择跳过事件或继续抽取事件牌`,
+                            tone: 'accent',
+                            resolutionSteps: [
+                                ...roomDiscoveryEffectResolutionSteps,
+                                ...roomDiscoveryCardResolutionSteps,
+                            ],
+                        },
+                        nextPendingEventChoice: eventSymbolSkipChoice,
+                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，发现事件符号，等待选择是否跳过事件`,
+                        hauntTriggered: false,
+                    }, timestamp)];
+                }
                 const eventRollKind = eventCard.roll?.kind ?? 'trait';
                 const eventRollResult = eventCard.roll
                     ? eventRollKind === 'dice'
@@ -16923,6 +17017,131 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     logText: accepted && trait
                         ? `${actor.displayName}使用${pending.sourceTitle}，${traitLabel}从濒死提升 1 步`
                         : `${actor.displayName}跳过${pending.sourceTitle}的回合结束属性提升`,
+                }, timestamp)];
+            }
+            if (pending.sourceKind === 'event-symbol-skip' && pending.eventSymbolSkip) {
+                const accepted = command.payload.accept !== false;
+                const sourceMethod = pending.eventSymbolSkip.method;
+                if (accepted) {
+                    const summary = sourceMethod === 'idol'
+                        ? '已用雕像跳过'
+                        : '跳过事件';
+                    const logText = sourceMethod === 'idol'
+                        ? `${actor.displayName}使用雕像跳过了事件符号`
+                        : `${actor.displayName}跳过了事件符号`;
+                    return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                        playerId: command.playerId,
+                        sourceTitle: pending.sourceTitle,
+                        accepted: true,
+                        eventEffect: { mode: 'none' },
+                        discovery: {
+                            kind: 'event',
+                            title: '事件符号',
+                            summary,
+                            detail: '没有抽取或结算事件卡',
+                            tone: 'accent',
+                        },
+                        logText,
+                    }, timestamp)];
+                }
+
+                const eventCard = resolveEvent(core);
+                const eventRollKind = eventCard.roll?.kind ?? 'trait';
+                const eventRollResult = eventCard.roll
+                    ? eventRollKind === 'dice'
+                        ? rollEventFixedDice(random, eventCard.roll.dice)
+                        : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core)
+                    : null;
+                const eventRollTotal = eventRollResult?.total ?? null;
+                const eventBranch = eventCard.roll && eventRollTotal !== null
+                    ? resolveEventBranch(eventCard.roll.branches, eventRollTotal)
+                    : null;
+                const eventEffect = eventBranch?.effect ?? eventCard.effect;
+                if (!eventEffect) {
+                    throw new Error(`event ${eventCard.name} has no resolvable effect`);
+                }
+                const materializedEventEffect = materializeEventEffect(eventEffect, random, core.currentExplorer, core);
+                const needsFollowUpChoice = eventEffectNeedsPendingEventChoice(materializedEventEffect);
+                const deathPrevention = needsFollowUpChoice
+                    ? undefined
+                    : resolveEventDamageDeathPrevention(core, materializedEventEffect, random);
+                const effectLabel = formatEffectLabel(materializedEventEffect);
+                const eventRollLabel = eventCard.roll
+                    ? eventRollKind === 'dice'
+                        ? eventCard.roll.label
+                        : `${TRAIT_LABEL[eventCard.roll.trait]}检定`
+                    : undefined;
+                const rollLabel = eventCard.roll && eventRollTotal !== null && eventBranch
+                    ? `${eventRollLabel} ${eventRollTotal}：${eventBranch.label}`
+                    : undefined;
+                const eventEffectResolutionText = rollLabel ? `${rollLabel}；${effectLabel}` : effectLabel;
+                const nextPendingEventChoice = needsFollowUpChoice
+                    ? {
+                        id: `${pending.id}-drawn-event-${timestamp}`,
+                        playerId: command.playerId,
+                        sourceTitle: eventCard.name,
+                        sourceKind: 'event' as const,
+                        acceptLabel: materializedEventEffect.mode === 'optionalEventRoll'
+                            || materializedEventEffect.mode === 'optionalEffect'
+                            || materializedEventEffect.mode === 'optionalItemEffect'
+                            || materializedEventEffect.mode === 'optionalHauntRoll'
+                            ? materializedEventEffect.acceptLabel
+                            : undefined,
+                        declineLabel: materializedEventEffect.mode === 'optionalEventRoll'
+                            || materializedEventEffect.mode === 'optionalEffect'
+                            || materializedEventEffect.mode === 'optionalItemEffect'
+                            || materializedEventEffect.mode === 'optionalHauntRoll'
+                            ? materializedEventEffect.declineLabel
+                            : undefined,
+                        effect: cloneUseEffect(materializedEventEffect),
+                    } satisfies BetrayalPendingEventChoiceState
+                    : undefined;
+                const discoveryResolutionSteps: BetrayalDiscoveryResolutionStep[] = needsFollowUpChoice
+                    ? []
+                    : [{
+                        id: `event-effect-${eventCard.name}`,
+                        kind: 'event-effect',
+                        text: `事件效果：${eventEffectResolutionText}`,
+                        deckKind: 'event',
+                    }];
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: eventCard.name,
+                    accepted: false,
+                    nextPendingEventChoice,
+                    eventEffect: nextPendingEventChoice ? undefined : materializedEventEffect,
+                    deathPrevention,
+                    eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch
+                        ? {
+                            kind: eventRollKind,
+                            trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
+                            total: eventRollTotal,
+                            label: eventBranch.label,
+                            rollLabel: eventRollLabel,
+                            dice: eventRollResult?.dice,
+                            passiveBonus: eventRollResult?.passiveBonus,
+                            branchThresholds: eventCard.roll.branches.map((branch) => ({
+                                min: branch.min,
+                                label: branch.label,
+                                effect: cloneUseEffect(branch.effect),
+                            })),
+                        }
+                        : undefined,
+                    drawnEventCardNameToBury: eventCard.name,
+                    discovery: {
+                        kind: 'event',
+                        title: eventCard.name,
+                        summary: '抽取事件牌',
+                        detail: nextPendingEventChoice
+                            ? `${eventEffectResolutionText}；等待选择事件效果`
+                            : eventEffectResolutionText,
+                        tone: materializedEventEffect.mode === 'generalDamage'
+                            || (materializedEventEffect.mode !== 'none' && 'amount' in materializedEventEffect && materializedEventEffect.amount < 0)
+                            ? 'warning'
+                            : 'accent',
+                        resolutionSteps: discoveryResolutionSteps,
+                    },
+                    logText: `${actor.displayName}选择抽取事件牌：${eventCard.name}（${eventEffectResolutionText}${nextPendingEventChoice ? '，等待选择事件效果' : ''}）`,
                 }, timestamp)];
             }
             const resolveTraitRollEventChoice = (
@@ -19550,21 +19769,24 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.latestDiscovery = cloneDiscoverySummary(event.payload.discovery);
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
             core.pendingEventChoice = null;
-            core.pendingCardResolutionQueue = createPendingCardResolutionQueue({
-                playerId: event.payload.playerId,
-                requiredPlayerIds: core.playerIds,
-                roomId: event.payload.roomId,
-                timestamp: event.timestamp,
-                deckKind: event.payload.deckKind,
-                discovery: event.payload.discovery,
-                drawnCard: event.payload.drawnCard,
-                roomDiscoveryCards: event.payload.roomDiscoveryCards,
-                buriedRoomDiscoveryCards: event.payload.buriedRoomDiscoveryCards,
-            });
+            core.pendingCardResolutionQueue = event.payload.nextPendingEventChoice
+                ? []
+                : createPendingCardResolutionQueue({
+                    playerId: event.payload.playerId,
+                    requiredPlayerIds: core.playerIds,
+                    roomId: event.payload.roomId,
+                    timestamp: event.timestamp,
+                    deckKind: event.payload.deckKind,
+                    discovery: event.payload.discovery,
+                    drawnCard: event.payload.drawnCard,
+                    roomDiscoveryCards: event.payload.roomDiscoveryCards,
+                    buriedRoomDiscoveryCards: event.payload.buriedRoomDiscoveryCards,
+                });
             if (
                 event.payload.deckKind === 'event'
                 && !event.payload.skippedEventWithTraitorPower
                 && !event.payload.skippedEventWithUponReflection
+                && !event.payload.nextPendingEventChoice
             ) {
                 buryEventCardToBottom(core, event.payload.discovery.title);
             }
@@ -19619,6 +19841,26 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 for (const drawnRoomCard of event.payload.roomDiscoveryCards) {
                     removePossessionCardFromDeck(core, 'item', drawnRoomCard.id);
                 }
+            }
+
+            if (event.payload.nextPendingEventChoice) {
+                core.pendingEventChoice = clonePendingEventChoice(event.payload.nextPendingEventChoice);
+                core.pendingCardResolutionQueue = [];
+                core.turnEndedByDiscovery = false;
+                const mummyGirlPickedUp = collectMummyGirlByExplorerIfPresent(
+                    core,
+                    event.payload.playerId,
+                    event.payload.roomId,
+                );
+                const synced = syncCurrentExplorerProjection(core);
+                const mummyGirlPickupLog = mummyGirlPickedUp
+                    ? `；${synced.currentExplorer.displayName}拾起女孩`
+                    : '';
+                return {
+                    ...synced,
+                    recommendedAction: resolveRecommendedAction(synced),
+                    activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, event.payload.discovery.tone),
+                };
             }
 
             if (event.payload.skippedEventWithTraitorPower || event.payload.skippedEventWithUponReflection) {
@@ -19878,6 +20120,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 : null;
             core.latestDiscovery = cloneDiscoverySummary(eventChoiceDiscovery);
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            if (event.payload.drawnEventCardNameToBury) {
+                buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
+            }
             const carriedRecentRoll = !event.payload.eventRoll?.dice?.length
                 && previousRecentRoll
                 && previousRecentRoll.sourceTitle === event.payload.sourceTitle

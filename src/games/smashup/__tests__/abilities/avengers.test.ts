@@ -371,6 +371,52 @@ describe('复仇者代表性玩法行为', () => {
         ]));
     });
 
+    it('J.A.R.V.I.S. 只有一张可弃手牌时仍保留弃牌选择，不自动弃掉', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('only-card', 'avengers_hawkeye', 'minion', '0')],
+                    deck: [],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar', [
+                makeMinion('jarvis', 'avengers_jarvis', '0', 4),
+            ])],
+        });
+        const result = invokeRegisteredAbilityContract('avengers_jarvis', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'jarvis',
+            defId: 'avengers_jarvis',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 60,
+        });
+        const continuation = result.events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+        const promptState = result.matchState ?? resumeAbilityRuntimeContinuationEvent(
+            makeMatchState(applyEvents(core, result.events.filter(event => !isAbilityRuntimeContinuationEvent(event as any)) as any)),
+            continuation as any,
+            FIXED_RANDOM,
+        )?.state;
+        const prompt = getSimpleChoicePrompt(promptState!, 'avengers_jarvis');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['only-card']);
+        expect(promptState!.core.players['0'].hand.map(card => card.uid)).toEqual(['only-card']);
+        expect(promptState!.core.players['0'].discard).toEqual([]);
+
+        const discarded = respondToPromptOption(
+            promptState!,
+            option => option.value?.cardUid === 'only-card',
+            'discard only card',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(discarded.finalState.core.players['0'].hand).toEqual([]);
+        expect(discarded.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['only-card']);
+    });
+
     it('浩克冲击替换基地时保留角色，并将所有基地神器和角色装备送入各自弃牌堆', () => {
         const core = makeState({
             players: {

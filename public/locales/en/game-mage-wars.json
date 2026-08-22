@@ -12,6 +12,8 @@
     "legalMove": "Move",
     "legalTarget": "Target",
     "legalTargetShort": "Target",
+    "wallEdgeAria": "Wall edge between {{from}} and {{to}}",
+    "wallAria": "{{wall}} between {{from}} and {{to}}",
     "creatures": "Creatures {{count}}",
     "conjurations": "Conjurations {{count}}"
   },
@@ -174,7 +176,30 @@
       "attack": "Attack",
       "enchantment": "Enchant",
       "creature": "Creature",
+      "incantation": "Incantation",
       "equipment": "Gear"
+    }
+  },
+  "tutorial": {
+    "steps": {
+      "intro": "Defeat the opposing mage to win. The Beastmaster builds mana, prepares spells, summons creatures, then uses position and attacks to pressure the enemy.",
+      "selfHud": "The Beastmaster has 24 life, 10 channeling, and a mana pool. Mana pays for summons and incantations; damage up to your life total means defeat.",
+      "stage": "The phase track shows where the round is. Preparation phases advance after both players confirm; action phases resolve in player order.",
+      "advanceChannel": "Click “End Turn” to finish reset. Once both players confirm, channeling gives the Beastmaster this round's mana income.",
+      "channelResult": "Channeling adds 10 mana. This round you can summon Jungle Wolf and still keep an incantation ready so it can act at once.",
+      "advanceUpkeep": "Upkeep resolves ongoing effects and status. There is no upkeep cost in this position, so click “End Turn” to continue into planning.",
+      "advancePlanning": "During planning, secretly prepare up to two spellbook cards. Click “End Turn” to open this round's spell choice.",
+      "planWolf": "In the spellbook, choose “Jungle Wolf”, switch to “Incantation”, choose “Rouse the Beast”, then click “Prepare 2”. This pair turns a summon into immediate pressure.",
+      "preparedAndHidden": "Your two prepared spells are below; the opponent also has hidden prepared spells. A spell moves to discard after it is cast and revealed.",
+      "deployWolf": "Choose “Jungle Wolf” in your prepared spells, then click the Beastmaster's zone to summon it. A newly summoned creature enters play with its action marker spent.",
+      "rouseWolf": "Choose “Rouse the Beast” in your prepared spells, then click Jungle Wolf in the arena. The incantation readies a living creature summoned this round.",
+      "passYourDeployment": "Jungle Wolf is ready to act. After your deployment ends, the opponent will reveal prepared spells of their own.",
+      "opponentDeploy": "The opponent summons Asyran Cleric. Revealed enemy creatures stay in the arena, where you can read life, armor, and damage.",
+      "opponentAttackSpell": "The opponent casts Pillar of Light at the cleric. Spell attacks show dice, damage, and any status that appears.",
+      "discardReading": "The discard pile records spells that were revealed and resolved. Seeing Pillar of Light there tells you one attack spell is gone.",
+      "skipToCreatureAction": "After both quickcast windows are passed, the round enters creature actions. The roused Jungle Wolf can still move.",
+      "moveWolf": "Click Jungle Wolf, then click an adjacent zone to move it. After moving, the wolf is closer to the center line and threatens more targets.",
+      "finish": "You have completed a basic round: channel mana, prepare spells, summon, rouse, read public information, and move a creature into a stronger position."
     }
   },
   "actionLog": {

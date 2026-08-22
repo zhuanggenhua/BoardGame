@@ -111,6 +111,35 @@ describe('山屋惊魂音频配置', () => {
         expect(resolveKey({ type: 'POSSESSION_USED', payload: { cardId: 'unknown-item' } })).toBe(BETRAYAL_USE_POSSESSION_KEY);
     });
 
+    it('木乃伊和怪物作祟事件都有反馈音', () => {
+        expect(resolveKey({ type: 'MUMMY_NAME_STUDIED' })).toBe(BETRAYAL_JACK_LEARNED_KEY);
+        expect(resolveKey({ type: 'MUMMY_BANISHMENT_LEARNED' })).toBe(BETRAYAL_EXORCISM_STUDIED_KEY);
+        expect(resolveKey({ type: 'MUMMY_BANISHED', payload: { success: true } })).toBe(BETRAYAL_EXORCISE_SUCCESS_KEY);
+        expect(resolveKey({ type: 'MUMMY_BANISHED', payload: { success: false } })).toBe(BETRAYAL_EXORCISE_FAILURE_KEY);
+        expect(resolveKey({ type: 'MUMMY_GIRL_PICKED_UP' })).toBe(BETRAYAL_USE_POSSESSION_KEY);
+        expect(resolveKey({ type: 'MUMMY_GIRL_GIVEN' })).toBe(BETRAYAL_TRADE_KEY);
+        expect(resolveKey({ type: 'MUMMY_OMEN_GIVEN' })).toBe(BETRAYAL_TRADE_KEY);
+        expect(resolveKey({ type: 'MUMMY_ATTACK_REWARD_RESOLVED', payload: { choice: 'steal' } })).toBe(BETRAYAL_LOOT_CORPSE_KEY);
+        expect(resolveKey({ type: 'MUMMY_ATTACK_REWARD_RESOLVED', payload: { choice: 'damage' } })).toBe(BETRAYAL_ATTACK_KEY);
+        expect(resolveKey({ type: 'MONSTER_TURN_START_RESOLVED' })).toBe(BETRAYAL_HAUNT_KEY);
+        expect(resolveKey({ type: 'MONSTER_MOVEMENT_GROUP_ROLLED' })).toBe(BETRAYAL_REROLL_KEY);
+        expect(resolveKey({ type: 'MONSTER_MOVED' })).toBe(BETRAYAL_MOVE_KEY);
+        expect(resolveKey({ type: 'MONSTER_ATTACK_HERO_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
+    });
+
+    it('其它作祟怪物结算事件复用通用反馈音', () => {
+        expect(resolveKey({ type: 'DYNAMITE_ATTACK_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
+        expect(resolveKey({ type: 'MONSTER_DAMAGE_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
+        expect(resolveKey({ type: 'BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS_PLACED' })).toBe(BETRAYAL_HAUNT_KEY);
+        expect(resolveKey({ type: 'BLOOD_FROM_STONE_MONSTER_TURN_ENDED' })).toBe(BETRAYAL_END_TURN_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_MONSTER_TURN_STARTED' })).toBe(BETRAYAL_HAUNT_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_TROLL_HAND_MOVED' })).toBe(BETRAYAL_MOVE_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED' })).toBe(BETRAYAL_ATTACK_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_ATTACK_REWARD_RESOLVED', payload: { choice: 'steal' } })).toBe(BETRAYAL_LOOT_CORPSE_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_ATTACK_REWARD_RESOLVED', payload: { choice: 'damage' } })).toBe(BETRAYAL_ATTACK_KEY);
+        expect(resolveKey({ type: 'HELPING_HANDS_MONSTER_TURN_ENDED' })).toBe(BETRAYAL_END_TURN_KEY);
+    });
+
     it('恶兆前与作祟阶段使用不同 BGM', () => {
         const preHaunt = createBetrayalCharacterSelectCore(['0', '1', '2']);
         const haunt = { ...preHaunt, phase: 'haunt' as const };

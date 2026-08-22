@@ -1,168 +1,39 @@
-# Game AI Adaptation Vitest Templates
+# Game AI Adaptation 测试合同
 
-> 模板不是让你生搬硬套，而是提示“这类 AI 修复至少要锁住什么事实”。新增用例时优先补到现有测试文件：
->
-> - 引擎 watchdog：`src/engine/transport/__tests__/server.test.ts`
-> - DiceThrone：`src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`
-> - Smash Up：`src/games/smashup/__tests__/promptSystem.test.ts` / `beforeScoring-window-stuck.test.ts` / `duplicateInteractionRespond.test.ts`
-> - Summoner Wars：`src/games/summonerwars/__tests__/basic-commands-coverage.test.ts` / `interaction-chain-comprehensive.test.ts`
+本文件只列 AI 修复必须锁住的测试事实。新增测试优先补到现有相关文件，不新建散落模板文件：
 
----
+- 引擎 watchdog：`src/engine/transport/__tests__/server.test.ts`。
+- 游戏基础命令：`src/games/<gameId>/__tests__/basic-commands-coverage.test.ts`。
+- 交互 / 响应窗口：对应游戏现有 prompt / response / interaction 测试。
+- 阶段链路：对应游戏现有 flow / phase / command-chain 测试。
 
-## 模板 1：区分 human 当前回合 与 “AI 当前阶段 + human responder”
+## 必测场景
 
-```ts
-it('human 当前回合时，watchdog 不得误触发 AI 兜底', async () => {
-  // Assert:
-  // 1. executeCommandInternal 不应收到 RESPONSE_PASS / ADVANCE_PHASE / FORCE_CLOSE
-  // 2. onlineAiFeedbackReporter 不应收到误报
-})
+| 场景 | 构造事实 | 必须断言 |
+| --- | --- | --- |
+| human 当前回合 | 当前玩家是 human，human 处在自己的响应或选择窗口 | watchdog 不发 `RESPONSE_PASS`、`SYS_RESPONSE_WINDOW_FORCE_CLOSE`、`ADVANCE_PHASE`；不记录 AI 误报 |
+| AI 当前阶段 + human responder | active player 是 AI，response window 当前 responder 是 human，human 有真实可响应场景 | 先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`，后续才允许 advance / end-phase；不得替 human 发 `RESPONSE_PASS` |
+| AI 自己是 responder | 当前 responder 是 AI，存在合法响应或可跳过 | AI 只发合法响应或 `RESPONSE_PASS`；response window 最终关闭或推进 |
+| 并列合法动作 | 同一规则状态下同时存在介入动作和确认 / 跳过 / done 收口动作 | AI legal actions 同时保留两类动作；去掉介入条件后只移除介入动作，不移除合法收口 |
+| 已确认阶段 | AI 已确认或应等待下一阶段 | legal actions 不再包含会重开上一阶段窗口的动作；若应推进，得到 advance / end-phase |
+| 无解交互 | options 为空、全部 disabled、`min` 不可达或目标失效 | AI 返回 cancel / pass / skip 之一，并带 `empty-options`、`all-options-disabled` 或 `min-selection-unreachable` 诊断 |
+| 重复动作循环 | 最近动作形成 repeat / alternating pattern，当前 seat 是 AI | guard / watchdog 给出正确打断原因，并推进离开当前卡死状态；不影响 human seat |
+| hidden interaction | shared state 没有 `interaction.current`，但 AI seat 的 `playerView` 有 current 或 `isBlocked` | 没有 seat view 时识别不到；有 seat view 时能诊断并产生合法收口 |
 
-it('AI 当前阶段卡在 human 响应窗口时，watchdog 应先 FORCE_CLOSE 再收口', async () => {
-  // Arrange:
-  // 1. activePlayerId 指向 AI
-  // 2. responseWindow.current.currentResponderId 指向 human
-  // 3. human 手牌/状态要能代表“真实可响应场景”
+## E2E 升级条件
 
-  // Assert:
-  // 1. 第一步应收到 SYS_RESPONSE_WINDOW_FORCE_CLOSE
-  // 2. 后续才允许 ADVANCE_PHASE / END_PHASE
-  // 3. 不允许替 human 发 RESPONSE_PASS
-})
-```
+以下风险不能只靠单测收口，必须补代表性真实入口 E2E：
 
-**推荐文件：** `src/engine/transport/__tests__/server.test.ts`
+- 页面消费路径可能和领域测试不同。
+- hidden interaction 只在特定 seat view 下出现。
+- response-window 会影响真人 / AI 权限边界。
+- 用户原始问题是卡死、重复窗口、让过后重触发或 AI 行动节奏异常。
 
-**对应 E2E：**
+E2E 前态必须显示真实玩家可理解的响应入口、选择入口或等待状态；后态必须同时证明窗口消失、阶段推进或控制权交还。只断言内部状态字段不够。
 
-- 必须注入 **对手真实可响应牌**
-- 前态必须看见 `可以响应/跳过` 或等价响应入口
-- 收口后必须同时证明：
-  - 响应窗口已消失
-  - 阶段推进或控制权交还已完成
+## 禁止
 
-## 模板 1A：同一状态的并列合法动作必须完整枚举
-
-```ts
-it('AI 在同一规则状态下应同时保留可介入动作和收口动作', () => {
-  // Arrange:
-  // 1. 构造一个真人同状态下既能修改当前中间结果，也能确认 / 跳过收口的规则状态
-  // 2. 确认修改动作和确认动作各自都能通过领域 validate
-
-  // Act:
-  // const actions = build<Game>AiLegalActions({ playerId, state })
-
-  // Assert:
-  // 1. legal actions 包含修改 / 重掷 / 选择目标等可介入动作
-  // 2. legal actions 同时包含确认 / 跳过 / done 等收口动作
-  // 3. 去掉可介入条件后，legal actions 不应凭空生成该动作，但仍保留合法收口动作
-})
-```
-
-**推荐文件：** 各游戏现有 AI legal-actions 测试文件；有真实页面消费风险时，再补代表性 E2E。
-
-**注意：** 这类测试锁的是“规则动作合同完整消费”，不是 UI 按钮数量。按钮、骰盘、手牌区、HUD 只作为消费者，不能成为 AI 预期来源。
-
----
-
-## 模板 2：AI 已确认阶段后不应再产出前一阶段动作
-
-```ts
-it('本地 AI 在已确认状态下不应继续生成会重开响应窗口的动作', () => {
-  // Arrange:
-  // 1. 构造 state，让 AI 处于“已确认、理论上应等待下一阶段”的状态
-  // 2. 调用 build<Game>AiLegalActions 或 resolveNextLocalAiAction
-
-  // Act:
-  // const actions = build<Game>AiLegalActions({ playerId: '0', state })
-
-  // Assert:
-  // 1. 不包含会 reopen response-window 的动作
-  // 2. 若此时应直接推进阶段，检查得到 advance / end-phase
-})
-```
-
-**推荐文件：**
-
-- DiceThrone：`src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`
-- Summoner Wars：`src/games/summonerwars/__tests__/basic-commands-coverage.test.ts`
-
----
-
-## 模板 3：无解交互时 AI 必须 cancel / pass / skip
-
-```ts
-it('AI 在无合法选项的交互中应走 cancel/pass/skip，而不是卡死', async () => {
-  // Arrange:
-  // 1. 构造一个 options 为空、或全部 disabled、或 min 无法满足的交互
-  // 2. 若是 hidden interaction，使用 playerView 后的 seatState 做诊断
-
-  // Act:
-  // const resolution = await resolveNextLocalAiAction(...)
-  // 或 const candidate = resolveForceSkippableHiddenAiInteraction(...)
-
-  // Assert:
-  // 1. 返回 cancel/pass/skip 命令之一
-  // 2. 自动诊断里带 empty-options / all-options-disabled / min-selection-unreachable
-})
-```
-
-**推荐文件：**
-
-- 引擎 watchdog：`src/engine/transport/__tests__/server.test.ts`
-- 游戏 AI：各游戏 `basic-commands-coverage.test.ts` / interaction 相关测试文件
-
----
-
-## 模板 4：重复动作循环应被 AI guard 或 watchdog 打断
-
-```ts
-it('AI 遇到重复交替动作循环时应被打断并推进离开当前卡死状态', async () => {
-  // Arrange:
-  // 1. 构造最近动作形成 repeat / alternating pattern
-  // 2. 当前玩家必须是 AI
-
-  // Act:
-  // const candidate = resolveForceEndTurnForStalledAi({
-  //   sharedState,
-  //   seatControllers,
-  //   seatStates,
-  // })
-
-  // Assert:
-  // 1. candidate.reason === 'action-loop'
-  // 2. resolution.commands 为 ADVANCE_PHASE / END_PHASE / RESPONSE_PASS 中的正确一种
-  // 3. 不影响 human seat
-})
-```
-
-**推荐文件：**
-
-- `src/engine/transport/__tests__/server.test.ts`
-- 若是某游戏本地 AI 评分函数导致的循环，也要在该游戏现有 AI 测试文件补一条
-
----
-
-## 模板 5：hidden interaction 必须通过 playerView 才能发现
-
-```ts
-it('hidden interaction 只能通过 seat playerView 被 watchdog 识别', () => {
-  // Arrange:
-  // 1. sharedState.sys.interaction.current = undefined
-  // 2. sharedState.sys.interaction.isBlocked = true
-  // 3. 某个 AI seat 的 playerView 中存在 current interaction
-
-  // Act:
-  // const candidate = resolveForceEndTurnForStalledAi({
-  //   sharedState,
-  //   seatControllers,
-  //   seatStates,
-  // })
-
-  // Assert:
-  // 1. 没有 seatStates 时识别不到
-  // 2. 有 seatStates 时能拿到 hidden-interaction resolution
-})
-```
-
-**推荐文件：** `src/engine/transport/__tests__/server.test.ts`
+- 用 UI 按钮数量当 AI legal actions 真相。
+- 用真人 E2E 能点替代 AI 合法动作枚举。
+- 用空 options 场景通过证明真实可响应场景安全。
+- 用 watchdog 强推通过掩盖事件源或 AI 决策层的无解交互。

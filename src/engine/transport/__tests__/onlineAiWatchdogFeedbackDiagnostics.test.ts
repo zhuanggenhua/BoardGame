@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MatchState } from '../../types';
+import type { EventCommitEvidence, MatchState } from '../../types';
 import type { ForceEndTurnStalledAiResolution } from '../onlineAiRecovery';
 import {
     buildOnlineAiDiagnosticActionLog,
@@ -36,6 +36,19 @@ const createCandidate = (
         },
     },
     ...overrides,
+});
+
+const createEvidence = (): EventCommitEvidence => ({
+    timingPointId: 'commit-damage',
+    position: 'eventCommit',
+    factKind: 'DAMAGE_DEALT',
+    originalEventType: 'DAMAGE_DEALT',
+    originalEventTimestamp: 10,
+    commandType: 'ATTACK',
+    parentFrameId: 'frame-1',
+    opportunityIds: ['opp-shield'],
+    opportunityTimingPointIds: ['prevent-damage'],
+    appliedOpportunityIds: ['opp-shield'],
 });
 
 describe('onlineAiWatchdogFeedbackDiagnostics', () => {
@@ -82,6 +95,11 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
                             { type: 'EVENT_1', timestamp: 10, payload: { nested: { value: 1 } } },
                         ],
                     },
+                    refereeTrace: {
+                        entries: [{ id: 1, evidence: createEvidence() }],
+                        maxEntries: 10,
+                        nextId: 2,
+                    },
                 },
             } as unknown as MatchState<unknown>),
             phase: 'main',
@@ -104,12 +122,19 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
             eventStreamTail?: Array<{ type?: string; payload?: { nested?: { value?: number } } }>;
             interaction?: { seat?: { id?: string; options?: Array<{ id?: string }> } };
             commandPayload?: { cardUid?: string };
+            refereeReplay?: {
+                traceEntries?: Array<{ originalEventType?: string; appliedOpportunityIds?: string[] }>;
+            };
         };
         expect(parsed.actionLogTail?.at(-1)).toEqual({ text: 'latest', type: 'LATEST' });
         expect(parsed.eventStreamTail?.[0]?.payload?.nested?.value).toBe(1);
         expect(parsed.interaction?.seat?.id).toBe('choice-1');
         expect(parsed.interaction?.seat?.options?.[0]?.id).toBe('skip');
         expect(parsed.commandPayload).toEqual({ cardUid: 'card-1' });
+        expect(parsed.refereeReplay?.traceEntries?.[0]).toMatchObject({
+            originalEventType: 'DAMAGE_DEALT',
+            appliedOpportunityIds: ['opp-shield'],
+        });
     });
 
     it('recovery state snapshot 保留卡点现场、seat 视角和 AI 摘要', () => {
@@ -126,6 +151,11 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
                     },
                     eventStream: {
                         entries: [{ type: 'LATEST_EVENT', timestamp: 20 }],
+                    },
+                    refereeTrace: {
+                        entries: [{ id: 1, evidence: createEvidence() }],
+                        maxEntries: 10,
+                        nextId: 2,
                     },
                 },
             } as unknown as MatchState<unknown>),
@@ -185,6 +215,9 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
             };
             seatControllerType?: string;
             legalActions?: { total?: number; items?: Array<{ commandTypes?: string[] }> };
+            refereeReplay?: {
+                traceEntries?: Array<{ traceEntryId?: number; originalEventType?: string }>;
+            };
         };
         expect(parsed.matchId).toBe('match-1');
         expect(parsed.blockerFingerprint).toBe('blocker-1');
@@ -198,6 +231,10 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
         expect(parsed.seatControllerType).toBe('local-ai');
         expect(parsed.legalActions?.total).toBe(1);
         expect(parsed.legalActions?.items?.[0]?.commandTypes).toEqual(['SYS_INTERACTION_RESPOND']);
+        expect(parsed.refereeReplay?.traceEntries?.[0]).toMatchObject({
+            traceEntryId: 1,
+            originalEventType: 'DAMAGE_DEALT',
+        });
     });
 
     it('unsatisfiable interaction snapshot 保留无解交互现场和 AI 摘要', () => {

@@ -17,6 +17,7 @@ import {
     createRematchSystem,
     createResponseWindowSystem,
     createTutorialSystem,
+    createTimingOpportunitySystem,
     createUndoSystem,
     CharacterSelectionSystem,
 } from '../../engine';
@@ -54,6 +55,14 @@ import { isCurrentBonusRollSettlement } from './domain/rollContext';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { DICETHRONE_CHEAT_COMMANDS, diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
+import { createDiceThroneTimingOpportunitySystemConfig } from './domain/timingOpportunities';
+import {
+    buildDiceThroneTokenResponseChoiceContractSignature,
+    projectDiceThroneTokenResponseChoiceContract,
+    readDiceThroneTokenResponseChoiceContract,
+    resolveDiceThroneTokenResponseInteractionPendingDamageId,
+    resolveDiceThroneTokenResponseSkipCommand,
+} from './domain/tokenResponseChoiceContract';
 import { isCardPlayableInResponseWindow } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { ASSETS, DICE_ATLAS } from './ui/assets';
@@ -1369,6 +1378,7 @@ const systems = [
     }),
     createTutorialSystem(),
     createDiceThroneEventSystem(),
+    createTimingOpportunitySystem(DiceThroneDomain, createDiceThroneTimingOpportunitySystemConfig()),
     createCheatSystem<DiceThroneCore>(diceThroneCheatModifier),
 ];
 
@@ -1444,16 +1454,29 @@ const adapterConfig = {
 };
 
 const resolveDiceThroneForcedInteractionRecoveryCommand = (args: {
+    playerId: string;
     interaction: {
+        id?: unknown;
         kind?: unknown;
-        data?: {
-            options?: unknown;
-        } | undefined;
+        data?: Record<string, unknown> | undefined;
     };
 }) => {
     const interactionKind = typeof args.interaction.kind === 'string' ? args.interaction.kind : '';
     if (interactionKind === 'dt:token-response') {
-        return { type: 'SKIP_TOKEN_RESPONSE', payload: {} };
+        const contract = readDiceThroneTokenResponseChoiceContract(args.interaction);
+        const projection = projectDiceThroneTokenResponseChoiceContract(contract);
+        if (!projection) {
+            const pendingDamageId = resolveDiceThroneTokenResponseInteractionPendingDamageId(args.interaction);
+            return {
+                type: 'SKIP_TOKEN_RESPONSE',
+                payload: pendingDamageId ? { pendingDamageId } : {},
+            };
+        }
+        const skipCommand = resolveDiceThroneTokenResponseSkipCommand(args.interaction);
+        if (projection.playerId !== args.playerId || !skipCommand) {
+            return false;
+        }
+        return skipCommand;
     }
     if (interactionKind === 'dt:bonus-dice') {
         // 奖励骰不是可关闭弹窗。可见 dt:bonus-dice 必须保留给右侧 2D 骰盘普通“确认”。
@@ -1480,6 +1503,32 @@ const resolveDiceThroneForcedInteractionRecoveryCommand = (args: {
         type: 'SELECT_DEFENDER_TARGET',
         payload: { defenderId: enabledPlayerIds[0] },
     };
+};
+
+const resolveDiceThroneOfflineAdjudicationCommand = (args: {
+    playerId: string;
+    interaction: {
+        kind?: unknown;
+        data?: unknown;
+    };
+}): string | null | undefined => {
+    const interactionKind = typeof args.interaction.kind === 'string' ? args.interaction.kind : '';
+    if (interactionKind === 'dt:token-response') {
+        const contract = readDiceThroneTokenResponseChoiceContract(args.interaction);
+        const projection = projectDiceThroneTokenResponseChoiceContract(contract);
+        if (!projection) {
+            return 'SKIP_TOKEN_RESPONSE';
+        }
+        const skipCommand = resolveDiceThroneTokenResponseSkipCommand(args.interaction);
+        if (projection.playerId !== args.playerId || !skipCommand) {
+            return null;
+        }
+        return skipCommand.type;
+    }
+    if (interactionKind === 'dt:bonus-dice') {
+        return null;
+    }
+    return undefined;
 };
 
 const buildDiceThronePendingDamageRecoveryFingerprintSignature = (pendingDamage: unknown): string => {
@@ -1557,7 +1606,17 @@ const buildDiceThroneInteractionRecoveryFingerprintHint = (args: {
         pendingBonusDiceSettlement?: unknown;
     } | undefined;
     if (interactionKind === 'dt:token-response') {
-        return `interaction:${args.playerId}:${args.phase}:dt:token-response:${sourceId}:${buildDiceThronePendingDamageRecoveryFingerprintSignature(core?.pendingDamage)}:${interactionId}`;
+        const choiceContractSignature = buildDiceThroneTokenResponseChoiceContractSignature(args.interaction);
+        return [
+            'interaction',
+            args.playerId,
+            args.phase,
+            'dt:token-response',
+            sourceId,
+            buildDiceThronePendingDamageRecoveryFingerprintSignature(core?.pendingDamage),
+            choiceContractSignature ?? 'legacy-no-choice-contract',
+            interactionId,
+        ].join(':');
     }
     if (interactionKind === 'dt:bonus-dice') {
         return `interaction:${args.playerId}:${args.phase}:dt:bonus-dice:${sourceId}:${buildDiceThronePendingBonusDiceSettlementRecoveryFingerprintSignature(core?.pendingBonusDiceSettlement)}:${interactionId}`;
@@ -1801,12 +1860,9 @@ export const engineConfig = {
         buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction }) =>
             buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }) ?? undefined,
         resolveForcedInteractionCommand: resolveDiceThroneForcedInteractionRecoveryCommand,
+        resolveOfflineAdjudicationCommand: resolveDiceThroneOfflineAdjudicationCommand,
         resolveSeatLegalOnlyRecovery: resolveDiceThroneSeatLegalOnlyRecovery,
         shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,
-        offlineAdjudicationCommandByInteractionKind: {
-            'dt:token-response': 'SKIP_TOKEN_RESPONSE',
-            'dt:bonus-dice': null,
-        },
         allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
     },
 };

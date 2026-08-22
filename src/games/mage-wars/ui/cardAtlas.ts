@@ -93,7 +93,8 @@ function getSpellCardRefs(): Map<string, ConfigSpellCardRef> {
 
     const refs = new Map<string, ConfigSpellCardRef>();
     for (const object of materializeMageWarsConfigPackage().package.objects) {
-        const isPreviewableSpell = object.tags?.includes('apprentice-spell')
+        const isPreviewableSpell = object.tags?.includes('standard-starting-spell')
+            || object.tags?.includes('apprentice-spell')
             || object.tags?.includes('source-card');
         if (!isPreviewableSpell) continue;
         const data = object.data ?? {};

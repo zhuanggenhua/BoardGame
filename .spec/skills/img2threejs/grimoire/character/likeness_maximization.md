@@ -2,7 +2,7 @@
 
 Use this reference when the goal is maximum resemblance to a specific person or character in a single reference image, not a generic stylized character. This is the default high-likeness path for the `character` domain; `character/reconstruction.md` covers the fallback stylized/freehand path when the input is weak or the user accepts approximation.
 
-Read section 5.8-5.10 of `docs/UPGRADE_PLAN.md` for the full spec this reference implements.
+This file is the executable reference for the high-likeness path. `docs/UPGRADE_PLAN.md` is only archived background and must not be used as a second spec.
 
 ## Why Freehand Sculpting Cannot Reach High Likeness
 
@@ -55,20 +55,4 @@ Same recipes as `character/reconstruction.md`, dialed toward realism: skin keeps
 
 State plainly, every time this pipeline runs: a single image cannot yield a guaranteed 100 percent likeness. Back/sides, occluded geometry, and true skin/hair microstructure are not observable from one photo. This pipeline maximizes likeness through parametric fit + photo projection + de-lighting + camera match, reports per-region confidence, and requests additional views whenever the subject is a real person and fidelity matters. Never claim "100 percent match" as an output — report confidence per region instead.
 
-An optional, explicitly-flagged `generativeAssist` mode (importing an external image-to-3D base mesh, e.g. TRELLIS/Tripo/Hunyuan3D/Rodin) sets the realistic ceiling higher (~80-95 percent front-face shape accuracy per current generators) but is non-procedural and never the silent default — see UPGRADE_PLAN.md section 5.9.
-
-## Sources
-
-- [Expressive Body Capture: SMPL-X / SMPLify-X (arXiv 1904.05866)](https://arxiv.org/pdf/1904.05866)
-- [SMPLify-X overview (EmergentMind)](https://www.emergentmind.com/topics/smplify-x)
-- [Playing with Texture Projection in Three.js (Codrops)](https://tympanus.net/codrops/2020/01/07/playing-with-texture-projection-in-three-js/)
-- [three-projected-material (GitHub)](https://github.com/marcofugaro/three-projected-material)
-- [three.js morph targets - face example](https://threejs.org/examples/webgl_morphtargets_face.html)
-- [TexDreamer: high-fidelity 3D human texture (arXiv 2403.12906)](https://arxiv.org/pdf/2403.12906)
-- [Delight AI - Adobe Substance 3D Sampler](https://helpx.adobe.com/substance-3d-sampler/filters/tools/delight-ai-powered.html)
-- [De-Lighting 3D Scans (Sketchfab community)](https://sketchfab.com/blogs/community/de-lighting-3d-scans-in-unity-by-pete-mcnally/)
-- [Character Turnaround Guide (spines.com)](https://spines.com/character-turnaround/)
-- [How to Create a 3D Character Model Reference (Coohom)](https://www.coohom.com/article/how-to-create-a-3d-character-model-reference)
-- [Best AI 3D Model Generators 2026 (TRELLIS vs Meshy vs Tripo vs Hitem3D)](https://trellis2.app/blog/best-ai-3d-model-generator)
-- [7 Image-to-3D AI Generators, July 2026 (Vitalify)](https://www.vitalify.asia/en/blog/generative-ai/ai-image-to-3d-generators-comparison)
-- [How To Deploy Image-To-3D Models In Three.js (Threedium)](https://threedium.io/create/3d-models/platform/threejs)
+An optional, explicitly-flagged `generativeAssist` mode may import an external image-to-3D base mesh. It is non-procedural, breaks the default code-only promise, and is never the silent default.

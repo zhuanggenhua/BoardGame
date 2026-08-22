@@ -6,9 +6,10 @@
 import type { CheatResourceModifier } from '../../../engine';
 import { HEROES_DATA } from '../heroes';
 import type { AbilityCard, DiceThroneCore, DiceThroneEvent, Die } from './types';
-import { getDieFaceByDefinition } from './rules';
+import { createCharacterDice } from './characters';
+import { getDieFaceByDefinition, getRollerId } from './rules';
 import { reduce } from './reducer';
-import { resolveCurrentRollContext } from './rollContext';
+import { isSettledReplayOnlyRollContext, resolveCurrentRollContext } from './rollContext';
 import { RESOURCE_IDS } from './resources';
 
 export const DICETHRONE_CHEAT_COMMANDS = {
@@ -37,6 +38,13 @@ const applyDiceValues = (dice: Die[], values: number[]): Die[] => (
         };
     })
 );
+
+const createCheatDiceForRoller = (core: DiceThroneCore, phase?: string): Die[] => {
+    const rollerId = getRollerId(core, phase as Parameters<typeof getRollerId>[1]);
+    const characterId = core.players[rollerId]?.characterId;
+    if (!characterId || characterId === 'unselected') return [];
+    return createCharacterDice(characterId);
+};
 
 const getCheatDieModifyTarget = (
     kind: NonNullable<DiceThroneCore['currentRollContext']>['kind'],
@@ -116,8 +124,8 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
         // 阶段现由 sys.phase 管理，core 不再存储 turnPhase
         return core;
     },
-    setDice: (core, values) => {
-        const currentRollContext = resolveCurrentRollContext(core);
+    setDice: (core, values, options) => {
+        const currentRollContext = resolveCurrentRollContext(core, options?.phase as Parameters<typeof resolveCurrentRollContext>[1]);
         if (currentRollContext?.dice.length) {
             const target = getCheatDieModifyTarget(currentRollContext.kind);
             const shouldPrimeMainRoll = target === 'activeDie';
@@ -148,9 +156,27 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
             }, primedCore);
         }
 
+        if (
+            isSettledReplayOnlyRollContext(core.currentRollContext)
+            && core.currentRollContext.dice.length > 0
+        ) {
+            return {
+                ...core,
+                currentRollContext: {
+                    ...core.currentRollContext,
+                    dice: applyDiceValues(core.currentRollContext.dice, values),
+                },
+            };
+        }
+
+        const dice = core.dice.length > 0
+            ? core.dice
+            : createCheatDiceForRoller(core, options?.phase);
+        if (dice.length === 0) return core;
+
         return {
             ...core,
-            dice: applyDiceValues(core.dice, values),
+            dice: applyDiceValues(dice, values),
             rollCount: core.rollCount || 1,
             rollConfirmed: false,
         };

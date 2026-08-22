@@ -13,6 +13,21 @@
 
 import type { ConditionNode, ConditionHandlerRegistry, ConditionContext } from './condition';
 import { evaluateCondition } from './condition';
+import type { AiActionMetadata } from '../ai/types';
+import type { PlayerId, ResolutionOrdering } from '../types';
+import type {
+  Opportunity,
+  OpportunityChoiceContract,
+  OpportunityClass,
+  OpportunityCondition,
+  OpportunityCost,
+  OpportunityResolution,
+  OpportunityTargetRequest,
+  TimingPoint,
+  TimingSourceKind,
+  TimingSourceRef,
+  TimingVisibility,
+} from '../TimingOpportunity';
 
 // ============================================================================
 // 能力定义类型
@@ -82,6 +97,345 @@ export interface AbilityVariant<TEffect = unknown, TTrigger = string> {
   /** 优先级（数值越大越优先） */
   priority?: number;
 }
+
+// ============================================================================
+// 能力生命周期到裁判机会的投影
+// ============================================================================
+
+/**
+ * 能力生命周期阶段。
+ *
+ * 这里描述能力在规则链上的位置，不描述 UI 形态，也不执行效果。
+ */
+export type AbilityLifecyclePhase =
+  | 'activation'
+  | 'trigger'
+  | 'response'
+  | 'replacement'
+  | 'prevention'
+  | 'continuous'
+  | 'delayed';
+
+/**
+ * 能力在当前规则事实中的来源和控制权。
+ */
+export interface AbilityLifecycleRef<TTrigger = string> {
+  /** 实际来源对象或能力实例 ID，例如 card uid、token id、status id 或 ability id */
+  sourceId: string;
+  /** 来源类型；不填时按 ability 处理 */
+  sourceKind?: TimingSourceKind;
+  /** 当前控制该能力机会的玩家 */
+  controllerId: PlayerId;
+  /** 来源拥有者；不填时默认等于 controllerId */
+  ownerId?: PlayerId;
+  /** 使用的能力变体 */
+  variantId?: string;
+  /** 当前生命周期阶段 */
+  phase: AbilityLifecyclePhase;
+  /** 当前触发标识；不填时使用 variant.trigger 或 def.trigger */
+  trigger?: TTrigger;
+  /** 游戏专属来源元数据 */
+  metadata?: Record<string, unknown>;
+}
+
+export interface BuildOpportunityFromAbilityDefInput<
+  TEffect = unknown,
+  TTrigger = string,
+  TValue = unknown,
+> {
+  def: AbilityDef<TEffect, TTrigger>;
+  timing: TimingPoint;
+  lifecycle: AbilityLifecycleRef<TTrigger>;
+  /** 可选变体；提供时优先使用变体 trigger / tags / priority */
+  variant?: AbilityVariant<TEffect, TTrigger>;
+  /** 覆盖默认 opportunity id */
+  opportunityId?: string;
+  /** 覆盖生命周期阶段到 opportunity class 的默认映射 */
+  class?: OpportunityClass;
+  /** 覆盖默认 sourceRef；不填时由 lifecycle + ability def 生成 */
+  sourceRef?: Partial<TimingSourceRef>;
+  /** 显式条件；不填时根据 AbilityDef.condition 评估 */
+  condition?: boolean | OpportunityCondition;
+  /** 评估 AbilityDef.condition 所需的上下文 */
+  conditionContext?: ConditionContext;
+  /** 自定义条件处理器 */
+  conditionRegistry?: ConditionHandlerRegistry;
+  /** 显式费用；不填时把 AbilityDef.cost 投影成 resource cost 合同 */
+  cost?: OpportunityCost;
+  /** 目标、模式、数量或顺序选择请求 */
+  targetRequest?: OpportunityTargetRequest;
+  /** 结算合同；不填时为 none，helper 不执行 AbilityDef.effects */
+  resolution?: OpportunityResolution;
+  /** 需要输入时的 ChoiceRequest 合同 */
+  choice?: OpportunityChoiceContract<TValue>;
+  ordering?: ResolutionOrdering;
+  visibility?: TimingVisibility;
+  aiSupport?: Opportunity<TValue>['aiSupport'];
+  metadata?: AiActionMetadata;
+}
+
+export interface CreateAbilityChoiceContractInput<
+  TEffect = unknown,
+  TTrigger = string,
+  TValue = unknown,
+> {
+  def: AbilityDef<TEffect, TTrigger>;
+  lifecycle: AbilityLifecycleRef<TTrigger>;
+  /** 可选变体；用于 choice 和 candidate provenance。 */
+  variant?: AbilityVariant<TEffect, TTrigger>;
+  /**
+   * 目标、模式、数量或顺序选择请求。
+   * 不显式提供 kind / selection 时，会从这里派生。
+   */
+  targetRequest?: OpportunityTargetRequest;
+  requestId?: string;
+  playerId?: PlayerId;
+  kind?: OpportunityChoiceContract<TValue>['kind'];
+  candidates: OpportunityChoiceContract<TValue>['candidates'];
+  selection?: OpportunityChoiceContract<TValue>['selection'];
+  skipPolicy?: OpportunityChoiceContract<TValue>['skipPolicy'];
+  recoveryAction?: OpportunityChoiceContract<TValue>['recoveryAction'];
+  resolution: OpportunityChoiceContract<TValue>['resolution'];
+  ai?: OpportunityChoiceContract<TValue>['ai'];
+  metadata?: AiActionMetadata;
+}
+
+export const ABILITY_LIFECYCLE_PHASE_TO_OPPORTUNITY_CLASS: Readonly<Record<AbilityLifecyclePhase, OpportunityClass>> = {
+  activation: 'optional',
+  trigger: 'mandatory',
+  response: 'response',
+  replacement: 'replacement',
+  prevention: 'prevention',
+  continuous: 'continuous',
+  delayed: 'delayed',
+};
+
+function buildAbilityLifecycleMetadata<TEffect, TTrigger>(
+  def: AbilityDef<TEffect, TTrigger>,
+  lifecycle: AbilityLifecycleRef<TTrigger>,
+  variant?: AbilityVariant<TEffect, TTrigger>,
+): Record<string, unknown> {
+  return {
+    abilityId: def.id,
+    abilityName: def.name,
+    abilityLifecyclePhase: lifecycle.phase,
+    abilitySourceId: lifecycle.sourceId,
+    abilitySourceKind: lifecycle.sourceKind ?? 'ability',
+    abilityControllerId: lifecycle.controllerId,
+    abilityOwnerId: lifecycle.ownerId ?? lifecycle.controllerId,
+    abilityTrigger: lifecycle.trigger ?? variant?.trigger ?? def.trigger,
+    abilityTags: [...(def.tags ?? []), ...(variant?.tags ?? [])],
+    abilityVariantId: variant?.id ?? lifecycle.variantId,
+    effectCount: variant?.effects.length ?? def.effects.length,
+    ...(typeof variant?.priority === 'number' ? { priority: variant.priority } : {}),
+    ...(lifecycle.metadata ?? {}),
+  };
+}
+
+function buildAbilityOpportunityId<TEffect, TTrigger>(
+  def: AbilityDef<TEffect, TTrigger>,
+  timing: TimingPoint,
+  lifecycle: AbilityLifecycleRef<TTrigger>,
+  variant?: AbilityVariant<TEffect, TTrigger>,
+): string {
+  const variantPart = variant?.id ?? lifecycle.variantId ?? 'base';
+  return `ability:${lifecycle.phase}:${timing.id}:${lifecycle.sourceId}:${def.id}:${variantPart}`;
+}
+
+function resolveAbilityOpportunityCondition<TEffect, TTrigger>(
+  def: AbilityDef<TEffect, TTrigger>,
+  input: BuildOpportunityFromAbilityDefInput<TEffect, TTrigger>,
+): boolean | OpportunityCondition {
+  if (typeof input.condition !== 'undefined') return input.condition;
+  if (!def.condition) return true;
+  if (!input.conditionContext) {
+    return {
+      satisfied: false,
+      reason: `Ability ${def.id} 缺少条件评估上下文`,
+    };
+  }
+  const satisfied = checkAbilityCondition(def, input.conditionContext, input.conditionRegistry);
+  return satisfied
+    ? { satisfied: true }
+    : {
+        satisfied: false,
+        reason: `Ability ${def.id} 条件不成立`,
+      };
+}
+
+function buildAbilityOpportunityCost(def: Pick<AbilityDef, 'cost'>): OpportunityCost | undefined {
+  if (!def.cost || Object.keys(def.cost).length === 0) return undefined;
+  return {
+    kind: 'resource',
+    description: 'Ability resource cost',
+    paid: false,
+    refundable: true,
+    metadata: {
+      resources: { ...def.cost },
+    },
+  };
+}
+
+const ABILITY_CHOICE_REQUEST_KINDS = new Set<OpportunityChoiceContract['kind']>([
+  'select-player',
+  'select-card',
+  'select-object',
+  'select-dice',
+  'modify-value',
+  'choose-option',
+  'confirm',
+  'optional-skip',
+  'pass',
+]);
+
+function isAbilityChoiceRequestKind(value: string | undefined): value is OpportunityChoiceContract['kind'] {
+  return Boolean(value && ABILITY_CHOICE_REQUEST_KINDS.has(value as OpportunityChoiceContract['kind']));
+}
+
+function resolveAbilityChoiceKind<TEffect, TTrigger, TValue>(
+  input: CreateAbilityChoiceContractInput<TEffect, TTrigger, TValue>,
+): OpportunityChoiceContract<TValue>['kind'] {
+  if (input.kind) return input.kind;
+  const targetKind = input.targetRequest?.kind;
+  if (isAbilityChoiceRequestKind(targetKind)) return targetKind;
+  throw new Error(`Ability ${input.def.id} 缺少可投影为 ChoiceRequest 的 choice kind`);
+}
+
+function resolveAbilityChoiceSelection<TEffect, TTrigger, TValue>(
+  input: CreateAbilityChoiceContractInput<TEffect, TTrigger, TValue>,
+): OpportunityChoiceContract<TValue>['selection'] {
+  if (input.selection) return input.selection;
+  if (input.targetRequest) {
+    return {
+      min: input.targetRequest.min,
+      max: input.targetRequest.max,
+      ordered: input.targetRequest.ordered,
+    };
+  }
+  throw new Error(`Ability ${input.def.id} 缺少 ChoiceRequest selection`);
+}
+
+function buildAbilityChoiceCandidateMetadata<TEffect, TTrigger>(
+  def: Pick<AbilityDef<TEffect, TTrigger>, 'id'>,
+  lifecycle: AbilityLifecycleRef<TTrigger>,
+  variant: AbilityVariant<TEffect, TTrigger> | undefined,
+  existingMetadata: AiActionMetadata | undefined,
+): AiActionMetadata {
+  return {
+    abilityId: def.id,
+    abilityLifecyclePhase: lifecycle.phase,
+    abilitySourceId: lifecycle.sourceId,
+    abilityControllerId: lifecycle.controllerId,
+    abilityVariantId: variant?.id ?? lifecycle.variantId,
+    ...(existingMetadata ?? {}),
+  };
+}
+
+/**
+ * 为 AbilityDef 生成 ChoiceRequest 子合同。
+ *
+ * 该 helper 只统一 request / candidate provenance 与默认 kind / selection 派生。
+ * 它不验证候选是否合法、不执行 ability effects、不支付费用、不创建 interaction。
+ */
+export function createAbilityChoiceContract<
+  TEffect = unknown,
+  TTrigger = string,
+  TValue = unknown,
+>(
+  input: CreateAbilityChoiceContractInput<TEffect, TTrigger, TValue>,
+): OpportunityChoiceContract<TValue> {
+  const lifecycleMetadata = buildAbilityLifecycleMetadata(input.def, input.lifecycle, input.variant);
+  const variantPart = input.variant?.id ?? input.lifecycle.variantId ?? 'base';
+  return {
+    requestId: input.requestId,
+    playerId: input.playerId ?? input.lifecycle.controllerId,
+    kind: resolveAbilityChoiceKind(input),
+    candidates: input.candidates.map((candidate) => ({
+      ...candidate,
+      metadata: buildAbilityChoiceCandidateMetadata(
+        input.def,
+        input.lifecycle,
+        input.variant,
+        candidate.metadata,
+      ),
+      actionKeyParts: candidate.actionKeyParts ?? [
+        'ability',
+        input.lifecycle.phase,
+        input.lifecycle.sourceId,
+        input.def.id,
+        variantPart,
+        candidate.id,
+      ],
+    })),
+    selection: resolveAbilityChoiceSelection(input),
+    skipPolicy: input.skipPolicy,
+    recoveryAction: input.recoveryAction,
+    resolution: input.resolution,
+    ai: input.ai,
+    metadata: {
+      ...lifecycleMetadata,
+      ...(input.metadata ?? {}),
+    },
+  };
+}
+
+/**
+ * 把 AbilityDef 在某个 TimingPoint 上投影为 Opportunity。
+ *
+ * 该 helper 只产出裁判合同：来源、控制者、条件、费用、目标、结算入口、AI 和元数据。
+ * 它不会执行 effects、支付费用、改写 state，也不会替游戏层猜同时机会排序。
+ */
+export function buildOpportunityFromAbilityDef<
+  TEffect = unknown,
+  TTrigger = string,
+  TValue = unknown,
+>(
+  input: BuildOpportunityFromAbilityDefInput<TEffect, TTrigger, TValue>,
+): Opportunity<TValue> {
+  const {
+    def,
+    timing,
+    lifecycle,
+    variant,
+  } = input;
+  const lifecycleMetadata = buildAbilityLifecycleMetadata(def, lifecycle, variant);
+  const sourceRef: TimingSourceRef = {
+    kind: input.sourceRef?.kind ?? lifecycle.sourceKind ?? 'ability',
+    id: input.sourceRef?.id ?? lifecycle.sourceId,
+    ownerId: input.sourceRef?.ownerId ?? lifecycle.ownerId ?? lifecycle.controllerId,
+    controllerId: input.sourceRef?.controllerId ?? lifecycle.controllerId,
+    zoneId: input.sourceRef?.zoneId,
+    metadata: {
+      ...lifecycleMetadata,
+      ...(input.sourceRef?.metadata ?? {}),
+    },
+  };
+
+  return {
+    id: input.opportunityId ?? buildAbilityOpportunityId(def, timing, lifecycle, variant),
+    timing,
+    sourceRef,
+    controllerId: lifecycle.controllerId,
+    class: input.class ?? ABILITY_LIFECYCLE_PHASE_TO_OPPORTUNITY_CLASS[lifecycle.phase],
+    condition: resolveAbilityOpportunityCondition(def, input),
+    cost: input.cost ?? buildAbilityOpportunityCost(def),
+    targetRequest: input.targetRequest,
+    resolution: input.resolution ?? { type: 'none' },
+    ordering: input.ordering,
+    visibility: input.visibility,
+    aiSupport: input.aiSupport,
+    choice: input.choice,
+    metadata: {
+      ...lifecycleMetadata,
+      ...(input.metadata ?? {}),
+    },
+  };
+}
+
+/**
+ * buildOpportunityFromAbilityDef 的语义化别名，供游戏层在机会发现器里直接使用。
+ */
+export const createAbilityOpportunity = buildOpportunityFromAbilityDef;
 
 // ============================================================================
 // 执行上下文与结果

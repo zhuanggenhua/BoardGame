@@ -210,7 +210,7 @@ const beautyDiscardPromptProgram = createPromptProgram<BeautyDiscardPromptContex
                 sourceId: 'beauty_and_the_beast_discard_hand',
                 targetType: 'hand',
                 multi: context.discardCount > 1 ? { min: context.optional ? 0 : requiredCount, max: requiredCount } : undefined,
-                autoResolveIfSingle: !context.optional && requiredCount === 1,
+                autoResolveIfSingle: false,
                 responseValidationMode: 'live',
                 autoRefresh: 'hand',
             },

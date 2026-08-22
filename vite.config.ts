@@ -78,6 +78,7 @@ const QIDAHEN_REGION_MASK_INTERNAL_FILES = {
 } as const
 const QIDAHEN_REGION_MASK_FORMAL_AUTHORITATIVE_GUIDE_FILE = 'region-authoritative-guides.json'
 const API_DISABLED_PREFIXES = [
+  '/admin-api',
   '/auth',
   '/feedback',
   '/sponsors',
@@ -552,14 +553,10 @@ const createDevApiDisabledPlugin = (enabled: boolean) => ({
       const accept = Array.isArray(req.headers.accept)
         ? req.headers.accept.join(',')
         : (req.headers.accept || '')
-      const isAdminSpaNavigation = req.method === 'GET'
-        && (pathname === '/admin' || pathname.startsWith('/admin/'))
-        && accept.includes('text/html')
-      const isApiOnlyPath = pathname === '/admin'
-        || pathname.startsWith('/admin/')
-        || API_DISABLED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+      const isSpaNavigation = req.method === 'GET' && accept.includes('text/html')
+      const isApiOnlyPath = API_DISABLED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 
-      if (!isApiOnlyPath || isAdminSpaNavigation) {
+      if (!isApiOnlyPath || isSpaNavigation) {
         next()
         return
       }
@@ -842,14 +839,9 @@ export default defineConfig(({ mode }) => {
           target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
         },
-        '/admin': {
+        '/admin-api': {
           target: `http://127.0.0.1:${apiServerPort}`,
           changeOrigin: true,
-          bypass: (req) => {
-            if (req.headers.accept?.includes('text/html')) {
-              return req.url
-            }
-          },
         },
         '/feedback': {
           target: `http://127.0.0.1:${apiServerPort}`,

@@ -12,12 +12,12 @@
 
 ## 2. Review Before Implementation
 
-- [ ] 2.1 Confirm the full rule ledger scope with the user.
-- [ ] 2.2 Confirm the P0 implementation slice and which items may remain representative-only.
-- [ ] 2.3 Split implementation into small passes after design approval.
+- [x] 2.1 Confirm the full rule ledger scope with the user for the current `betrayal` / 小黑屋 P0 slice.
+- [x] 2.2 Confirm the P0 implementation slice and which items remain representative-only.
+- [x] 2.3 Split implementation into small passes after design approval.
 - [x] 2.4 Create per-haunt sub-ledgers under `docs/games/betrayal/haunts/` before claiming any haunt complete.
-- [ ] 2.5 Confirm the room symbol refactor slice: room catalog symbols, explore draw consumption, tutorial explanation, and regression evidence.
-- [ ] 2.5.1 Re-enter S0 data contract for room tiles: extract rule-defined fields first, including floor/back area, doorway topology, printed discovery symbol, room text/effect, source evidence, and blocked/disputed fields.
+- [x] 2.5 Confirm the room symbol refactor slice: room catalog symbols, explore draw consumption, tutorial explanation, and regression evidence.
+- [x] 2.5.1 Re-enter S0 data contract for current runtime room tiles: extract rule-defined fields first, including floor/back area, doorway topology, printed discovery symbol, room text/effect, source evidence, and blocked/disputed fields.
 
 ## 3. Implementation Plan After Approval
 
@@ -25,7 +25,8 @@
 - [x] 3.2 Implement trait track data model and migration helpers.
 - [x] 3.3 Implement haunt risk status and UI affordance.
 - [x] 3.4 Implement room placement / orientation interaction.
-- [ ] 3.4.1 After S0 room contract is locked, refactor room discovery to consume room tile symbol data instead of runtime draw-order assignment.
-- [ ] 3.5 Rework tests around the interaction coverage matrix.
-- [ ] 3.6 Implement trade, special action, attack, corpse, obstacle, and monster contracts.
-- [ ] 3.7 Run agreed validation and update both ledgers with evidence.
+- [x] 3.4.1 After S0 room contract is locked, refactor current runtime room discovery to consume room tile symbol data instead of runtime draw-order assignment.
+- [x] 3.5 Rework tests around the interaction coverage matrix.
+- [x] 3.6 Implement the current P0 trade, special action, attack, corpse, obstacle, and monster representative contracts tracked by the coverage matrix.
+- [ ] 3.6.1 Expand beyond current P0 representative contracts only after per-haunt and object-level ledgers are locked.
+- [x] 3.7 Run agreed validation and update both ledgers with evidence.

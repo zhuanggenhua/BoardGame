@@ -6,336 +6,102 @@ metadata:
   status: 已交付
 ---
 
-# 动画/动效完整规范
-
-> 本文档是 `AGENTS.md` 的补充，包含动效技术选型、Canvas 粒子引擎、特效组件的完整规范。
-> **触发条件**：开发/修改任何动画、特效、粒子效果时阅读。
-> **引擎层动画架构**（表现与逻辑分离、`useVisualStateBuffer`、`useVisualSequenceGate`）见 `.spec/knowledge/standards/engine-visual-events.md`。
-
----
-
-## 动画/动效通用规范
-
-- **动画库已接入**：项目使用 **framer-motion**（`motion` / `AnimatePresence`）。
-- **通用动效组件**：`src/components/common/animations/` 下已有 `FlyingEffect`、`ShakeContainer`、`PulseGlow` 与 `variants`。
-- **冲击帧音效绑定（强制）**：有动画的事件（伤害/治疗/状态/Token）音效必须通过 `FlyingEffectData.onImpact`（或 FX 渲染器 `onImpact`）在动画到达时播放，禁止在事件生成时立即播放。此类事件的 `feedbackResolver` **必须返回 `null`**；音效 key 由动画层在 `onImpact` 回调中直接 `playSound(resolvedKey)`，或由 FX 系统通过 `FeedbackPack.sound`（`source: 'params'`）从 `event.params.soundKey` 读取并播放。
-- **优先复用原则（强制）**：新增或重写动画必须先复用/扩展上述组件、`src/components/common/animations/` 中的 Canvas/Shader/受击组件、`src/engine/fx/` 的注册调度能力，或已有游戏的成熟 `fxSetup.ts` 适配模式。禁止在游戏专属文件里先手写一套 CSS 光点、细线、圆环、timer、飘字或粒子替代现有效果库；若现有组件不够，先扩展通用组件并补预览/测试，再由游戏层参数化调用。召唤 / 降临语义必须优先复用 `BoardSummonEffectPreset` / `SummonHybridEffect` 或其通用层扩展；攻击 / 投射 / 命中语义必须优先复用 `BoardProjectilePathPreset`、`BoardProjectileAttackPreset` 或对照 Summoner Wars 等同项目成熟 `fxSetup.ts` 的飞行路径、命中回调和伤害反馈链路。**只复用底层粒子、Canvas、Shader 或单个 `ConeBlast`，再在游戏文件里重新拼出一套主效果，不得称为复用**；除非证明共享 preset 不适用，否则游戏侧 renderer 只能做事件参数到共享 preset 的适配。
-- **复用组件不等于复用参数（强制）**：复用的对象是组件职责、生命周期、帧时钟、冲击回调、性能预算、可测试锚点和渲染载体；颜色、粒子 preset、scale、origin、duration、路径 padding、字体大小、z-index、音效 key、强弱节奏等属于具体游戏 / 具体卡牌 / 具体规则语义的调参，必须由游戏侧 `fxTuning`、`fxSetup`、规则配置或素材合同显式声明。参考 Summoner Wars、Dice Throne 或 devtools 预览时，只能复用其组件组合和动作语法，不能把参考游戏参数、截图临界值或预览默认值隐式继承到新游戏。共享组件允许有安全默认值，但正式游戏 renderer 不得依赖默认调参；凡游戏层看不出参数来源、或只是把兄弟游戏参数整包复制过来，即使代码组件已复用，也判为参数污染，必须重构。
-- **成熟特效默认合同不得被新游戏改写（强制）**：其它游戏已经验证过的特效组件、preset、`fxSetup.ts` 定位方式、默认参数、节奏、层级和音效 / 震动时机，默认都是该游戏的表现合同；没有用户当轮明确授权或已批准规格时，新游戏或单游戏任务不得直接修改这些成熟默认来“顺便适配”。正确做法只有三类：①在新游戏自己的 `fxTuning` / `fxSetup` / 规则配置中传入参数；②给共享组件新增可选参数，默认值必须保持旧表现字节级或视觉等价，并补旧消费者回归；③现有 preset 语义确实不适用时新建命名明确的 preset / renderer，而不是改旧 preset。若修改会让 Summoner Wars、Dice Throne、Smash Up 等成熟游戏的截图、动效位置或节奏变化，必须先停在提案 / 审查，不得作为当前新游戏修复直接落代码。
-- **最小必要特效原则（强制）**：特效必须由规则事件的具体语义触发，不能把“能力”“施法”“结算”这类泛词直接映射成主舞台大特效。攻击 / 投射 / 伤害才需要来源、飞行、命中和飘字；召唤才需要召唤光柱；移动、推拉、传送只给位移相关反馈；装备、结界、buff、附件或同格状态变化只给宿主 / 附件槽 / 目标对象的轻量反馈，牌面和附件槽已经能表达的信息不得再用额外 UI 复读。
-- **棋盘特效尺寸与锚点匹配（强制）**：棋盘上的召唤、命中、推拉、传送、buff、装备、结界等局部反馈，默认必须以本次反馈对象的可见本体为锚点和尺寸参照，而不是以整格、整行、整屏或参考游戏截图为参照。普通单位召唤光柱、命中爆发和落点光团应贴在单位 / 法师 / 附件槽的可见中心或规则指定命中点，不能漂在格子中心、格线中心或空地上；全屏暗角、全场聚光和跨格大光幕只允许用于明确的大招、结算页或全局事件，并必须在游戏侧调参中显式声明。E2E / 图面验收不能只证明“有 canvas / 有亮点 / 目标格平均变亮”，还必须断言特效盒或可见主体相对目标单位、法师实体、卡牌或附件槽的中心距离、重叠比例和最大尺寸比例，防止“贴格子不贴对象”或“越大越容易通过”。
-- **结果反馈不得遮住来源 / 目标（强制）**：攻击骰、效果骰、伤害数值、结算徽章和类似结果反馈可以靠近本次动作路径，但不得压住正在被证明的来源对象、目标对象或合法交互对象。若反馈层需要浮在棋盘上，默认放在来源到目标路径的旁侧避让位，或放在明确的结果槽；不得默认取路径中点后让骰子 / 数字盖住单位。E2E / 图面验收不能只查目标 DOM `display`、`visibility` 或透明度，还必须检查前景结果层与目标本体的遮挡比例；目标“存在但被骰子盖住”按未通过处理。
-- **基础可玩动效优先级（强制）**：棋盘对战游戏做“基础可玩 / 必要过程帧 / 动效验收”时，召唤和攻击是第一优先级。最低先证明：召唤的来源 / 目标态、召唤光柱或粒子过程、单位落场完成；攻击的来源、来源到目标的飞行 / 路径过程、命中 / 伤害飘字 / 受击反馈。推斥、传送、buff、装备、结界等额外法术类型只能作为补充覆盖，不能替代召唤和攻击的必要验收。
-- **连续动效最终展示优先短录屏（强制）**：召唤、攻击、投射物、伤害飘字、对象移动、翻页、拖拽和其它连续动画通过本轮验收后，若用户要求看实际效果，最终用户展示优先给短录屏 / GIF；关键帧截图只用于 AI 自检、过程定位和证据索引。录屏必须来自真实运行入口，覆盖本轮要求的动作段，并在展示前已按 `ui-audit-loop` 和 `show-image-to-user` 形成 `PASS` 清单；不得用未通过录屏、诊断录屏或只录到最终态的视频让用户验收。
-- **性能友好（强制）**：
-  - **设计时先锁表现与成本**：新增或重写动画/特效前，必须先写清玩家可见语义（触发时机、反馈对象、强度/节奏、位置补间或离场承接）和实现成本来源（渲染数量、布局测量、绘制属性、图片/Shader 预热、是否跨父组件重渲染）。禁止先用全量 DOM、全局状态刷新、`transition-all`、位置布局动画或运行时重复解码把效果堆出来，再把性能返工留给后续。
-  - **性能优化不得偷改表现**：优化只能优先减少真实工作量、隔离重渲染、改用合成属性、预热资源或改渲染载体；如果需要改变动画强度、节奏、触发时机、位置补间、可见载体或反馈对象，必须标为表现变更并先取得用户确认，不能伪装成纯性能修复。
-  - **连续帧统一时钟只属于 FX 渲染层**：Canvas 2D、WebGL Shader、粒子、投射物路径和 FX renderer 自己拥有的连续逐帧特效，必须接入 `src/engine/fx/frameClock.ts` 的 `subscribeFxFrame`，由一个共享帧泵驱动；禁止每个重型 FX renderer 各自递归创建长期 `requestAnimationFrame` 循环。普通 React UI 反馈、组件本地震动、hover / glow、受击 overlay 开关、hook 自动复位和不进入 `FxBus` 的轻量反馈不接入共享 FX 帧时钟；它们应使用 CSS / Web Animations / framer-motion 生命周期、本地 `requestAnimationFrame` 或本地 timer。
-  - **事件帧合并**：FX 事件可以在同一规则 tick 内连续入队，但渲染层通知必须按帧合并，避免一次结算触发多次 React 渲染刷新；事件数据仍需即时写入队列，保证预算、并发和序列判断读取的是最新状态。
-  - **FX 内部阶段回调用共享帧**：只有 `FxBus` 序列、FX renderer 的冲击帧 / 完成回调、粒子或投射物生命周期这类已经进入 FX 表现系统的时序，才优先使用 `scheduleFxFrameCallback`，让回调落在共享 FX 帧上。普通组件的显示 / 隐藏、受击闪光复位、钝帧解除、发光结束和 hook 自动复位不得把 `scheduleFxFrameCallback` 当作 `setTimeout` 的通用替代。
-  - **禁止 `transition-all` / `transition-colors`**：会导致 `border-color` 等不可合成属性触发主线程渲染。改用具体属性：`transition-[background-color]`、`transition-[opacity,transform]`。
-  - **优先合成属性**：`transform`、`opacity`、`filter`；**谨慎使用**：`background-color`、`box-shadow`、`border-*`。
-  - **transition 与 @keyframes 互斥**：同一元素禁止同时使用，应通过 `style.transition` 动态切换。
-- **毛玻璃策略**：`backdrop-filter` 尽量保持静态；需要动效时只动遮罩层 `opacity`，避免在动画过程中改变 blur 半径。
-- **通用动效 hooks**：延迟渲染/延迟 blur 优先复用 `useDeferredRender` / `useDelayedBackdropBlur`，避免各处重复实现。受击反馈优先使用 `useImpactFeedback`（组合 hook，一次调用编排震动+钝帧+裂隙闪光三件套），避免手动管理多个原子 hook。
-- **颜色/阴影替代**：若需高亮变化，优先采用"叠层 + opacity"而非直接动画颜色/阴影。
-- **Hover 颜色复用**：按钮 hover 颜色变化优先使用通用 `HoverOverlayLabel`（叠层 + opacity）模式，减少重复实现。
-- **对象转移动效只绑定变化对象（强制）**：卡牌、棋子、token、资源从 A 区进入 B 区时，动效必须绑定到本次新增、移除或接收的具体对象；禁止把动画类直接挂在整行、整列或整片容器上，导致所有静止对象一起移动。最低证据必须包含 `start / mid / end` 关键帧截图或录屏，并能看出只有目标对象发生几何变化。
-- **揭示动效必须匹配信息状态（强制）**：只有从隐藏、未知、未公开变成公开的对象，才允许使用翻开、揭示、抽出等“信息揭示”动效。已经公开的公共牌、明牌、地图对象、已显示骰面或已公开 token，在结算页只能静态保留或做轻量强调，禁止重新播放“翻开/揭示”来制造不存在的信息变化。最低验收必须断言动效只挂在真正新揭示对象上，并提供过程帧或录屏证明公开对象没有被伪揭示。
-- **对象离开区域必须有离场承接（强制）**：如果对象从某个可见区域被抽走、拿走、击败、移除或收入另一区域，原区域不得让对象瞬间消失后只在目标区域播放进入动画。攻击结算里即使规则状态已经移除被击败目标，玩家画面也必须先用视觉保留对象承接目标本体，直到攻击骰、投射、命中和伤害飘字等本次结果反馈收口后再退场；骰子出现时目标整张消失按未通过处理。必须保留离场影子对象或等价承载层，直到离场动画结束；同时检查原区域剩余对象的补位/重排是否平滑。若做不到稳定离场，宁可不加这段动画，不得交付“先真实落位再补动画”的瞬移效果。
-- **实体离场承接必须走共享视觉生命周期入口（强制）**：新游戏或新动效链路需要保留已离场对象本体时，必须使用 `engine-visual-events.md` 定义的 `useVisualEntityBuffer` 或扩展同一共享入口；禁止在游戏专属 hook 里复制新的 `dyingEntities`、`heldObjects`、固定 timer 或第二套动画总线。旧游戏已有私有实现只作为 legacy adapter 保持稳定，未获明确授权不得顺手迁移或改变表现合同。
-- **真实列表与动画对象不得同帧重影（强制）**：状态列表已经逻辑增删时，前端真实列表不得先渲染目标对象再补动画，也不得让同一对象同时出现在真实列表和动画层。必须用共享视觉实体保留 / held object 控制显隐，并由动画完成回调释放；同一对象被多个 FX / 动画 owner 持有时，任一 owner 完成只能释放自己的持有权，最后一个 owner 释放后对象才可离场。对象、提示文案、占位影子必须共用同一生命周期，禁止用固定 timer 分别关闭。
-
----
-
-## 动效技术选型规范（强制）
+# 动画与特效规范
 
-> **核心原则**：根据动效本质选择正确的技术，而非统一用一种方案硬做所有效果。
-
-| 动效类型 | 正确技术 | 判断标准 | 典型场景 |
-|----------|----------|----------|----------|
-| **粒子系统** | Canvas 2D（自研引擎） | 粒子特效（几十到几百级别）；双层绘制（辉光+核心） | 胜利彩带、召唤光粒子、爆炸碎片、烟尘扩散 |
-| **复杂矢量动画** | Canvas 2D **推荐** | 每帧重绘复杂路径（弧形/渐变/多层叠加） | 斜切刀光、气浪冲击波、复杂轨迹特效 |
-| **多阶段组合特效** | Canvas 2D **推荐** | 需要蓄力→爆发→持续→消散等多阶段节奏；需要 additive 混合/动态渐变/脉冲呼吸 | 召唤光柱、技能释放、大招特写 |
-| **流体/逐像素特效** | WebGL Shader（`ShaderCanvas`） | 需要连续旋臂/密度渐变/噪声纹理等逐像素计算的流体效果；Canvas 2D 无法实现 | 旋涡、火焰、能量护盾、溶解 |
-| **形状动画** | framer-motion | 确定性形状变换（缩放/位移/旋转/裁切/透明度）；每次触发 1-3 个 DOM 节点 | 红闪脉冲、伤害数字飞出、简单冲击波 |
-| **UI 状态过渡** | framer-motion / CSS transition | 组件进出场、hover/press 反馈、布局动画 | 手牌展开、横幅切换、按钮反馈、阶段指示脉冲 |
-| **精确设计动效** | Lottie（未接入，需美术资源） | 设计师在 AE 中制作的复杂动画，需要逐帧精确控制 | 暂无，未来可用于技能释放特写 |
-
-### PixiJS 选型结论（历史决策）
-
-**PixiJS 已评估不适用（2026-02-08）**：本项目当前特效规模保留 Canvas 2D，不引入 PixiJS。Chrome 隔离测量的代表结果为：单个飞行特效 Canvas 约 `100 FPS / 9.98ms`，PixiJS 约 `77 FPS / 14.53ms`；5 个并发飞行特效 Canvas 约 `73 FPS / P95 18ms`，PixiJS 约 `69 FPS / P95 21ms`。`Graphics.clear()` 每帧重绘、Sprite 对象池和共享 Application 均未改变结论。
-
-这条历史决策只约束当前规模下的技术选型，不否定按需使用 WebGL Shader：若出现同屏持续存在的 `500+` 个精灵、Sprite Sheet / 骨骼帧动画，或必须使用 WebGL shader 的效果，应重新测量后再裁决。完整旧压测报告已归并到本节，不再作为独立规范入口。
-
-**当前执行方向**：暂不引入 PixiJS / Phaser / Cocos 等外部游戏引擎作为默认特效实现；优先把现有 `src/engine/fx/` 做成稳定调度层、统一帧时钟、预算层和游戏侧适配入口，并通过 `src/engine/renderPipeline/` 承载玩家可选的低 / 中 / 高图形质量预设。普通游戏业务层不得直接绑定外部渲染库；如需替换或接入外部渲染器，必须通过可替换的 Board / FX 渲染后端适配层接入，让规则状态、命令事件、`fxSetup.ts`、玩家图形质量设置和业务 UI 不依赖具体库。新游戏若明确作为 Pixi / Phaser / Cocos 渲染实验，可以选择外部库作为 Board 或 FX 后端，但必须在设计文档中声明后端边界、状态同步方式、输入命令出口、图形质量预设映射和回退 / A-B 压测方案，并明确它替代或接管哪些现有渲染职责。
-
-**判断边界（快速自检）**：
-1. 需要每帧重绘复杂矢量路径（弧形/渐变）？→ 用 Canvas 2D 手写（如 SlashEffect）
-2. 需要粒子特效（爆炸/烟尘/彩带/光粒子）？→ 用 Canvas 粒子引擎（BurstParticles）
-3. 需要多阶段组合特效（蓄力/爆发/持续/消散）？→ 用 Canvas 2D（如 SummonEffect）
-4. 需要连续流体效果（旋涡/火焰/护盾/溶解）？→ 用 WebGL Shader（`ShaderCanvas`）
-5. 需要简单形状变换（1-3 个元素）？→ 用 framer-motion
-6. 需要 UI 组件进出场/状态切换？→ 用 framer-motion 或 CSS transition
-
----
-
-## Canvas 粒子引擎使用规范
-
-- **引擎位置**：`src/components/common/animations/canvasParticleEngine.ts`
-- **双层绘制**：每个粒子有辉光层（半透明大圆）+ 核心层（高亮小圆），视觉质感和 FlyingEffect 一致
-- **预设驱动**：通过 `ParticlePreset` 配置粒子行为，`BURST_PRESETS` 提供常用预设
-- **生命周期**：粒子效果必须有明确的 `life` 配置，所有粒子消散后自动停止渲染循环
-- **现有组件**：`BurstParticles`（爆炸/召唤/烟尘）、`VictoryParticles`（胜利彩带）
-
-### 俯视角物理规范（强制）
-
-本项目游戏为**俯视角棋盘游戏**（召唤师战争/Smash Up 等），**棋盘层**特效必须遵循俯视角物理：
-  - **禁止重力下坠**：`gravity: 0`（或极小值模拟空气阻力），粒子不应往下掉
-  - **平面扩散**：`direction: 'none'`（径向）或指定方向，粒子在平面上扩散
-  - **减速停止**：`drag` 较大（0.92-0.96），模拟摩擦力快速停下
-  - **淡出+缩小**：`opacityDecay: true, sizeDecay: true`，粒子逐渐消散
-  - **例外**：火花（sparks）可保留轻微重力（0.5）模拟金属碰撞的物理感
-  - **适用范围**：棋盘格子内的特效（召唤/攻击/摧毁/碎裂/爆发粒子等）。错误示例：`gravity: 1.5` + `direction: 'top'` 是横版物理，不适用于俯视角。
-
-### UI 层特效物理规范
-
-全屏 UI 层的庆祝/装饰特效（如胜利彩带 `VictoryParticles`）**不受俯视角约束**，应使用符合直觉的物理模型（重力下落、向上喷射等），因为它们叠加在屏幕上而非棋盘内。
-- **判断标准**：特效挂载在棋盘格子/卡牌上 → 俯视角；特效挂载在全屏 overlay/结算页 → UI 层物理
-
-### Canvas 溢出规范（强制）
-
-特效 Canvas 天然超出挂载目标边界，**禁止用 `overflow: hidden` 裁切**。优先使用无溢出方案（Canvas 铺满父级，绘制基于 canvas 尺寸）；小元素挂载场景使用溢出放大方案（Canvas 比容器大 N 倍，居中偏移，容器设 `overflow: visible` + `pointer-events-none`）。详见 `docs/particle-engine.md` § Canvas 溢出规范。
-
-### Canvas transform 尺寸陷阱（强制）
-
-棋盘层 Canvas 特效获取容器尺寸时，**禁止使用 `getBoundingClientRect()`**（会返回经过父级 `transform: scale()` 缩放后的屏幕像素尺寸），**必须使用 `offsetWidth/offsetHeight`**（CSS 布局尺寸，不受 transform 影响）。已修复的组件：ConeBlast、SummonEffect、ShatterEffect、BurstParticles、SlashEffect、RiftSlash。例外：全屏 UI 层特效（如 VictoryParticles）和使用视口坐标的特效（如 FlyingEffect）不受此约束。
+本文件规定动画 / FX 的职责边界、技术选型、运行时架构和验收口径。引擎层表现与逻辑分离、数值冻结、实体保留和 EventStream 时序见 [`engine-visual-events`](engine-visual-events.md)。
 
-### 棋盘特效容器与卡牌对齐规范（强制）
+## 基本原则
 
-棋盘格子内的特效容器应优先使用与反馈对象相同的尺寸约束；单位、附件、卡牌反馈默认以对应可见对象为参照，不能直接按整格放大。确实需要大范围溢出的特效必须先确认它是全局事件、大招或结算页效果，并在游戏侧调参中显式声明最大比例；普通单位召唤光柱不得再默认使用“5 倍格子大小”。`DestroyEffect` 内部也使用 `CARD_ASPECT_RATIO` + `CARD_WIDTH_RATIO` 常量保持一致。
+- 规则状态同步结算，表现层按动画节奏展示；动画不能写正式 HP、资源、骰面、区域或其它权威状态。
+- 新增或重写动效先复用 `src/engine/fx/`、`src/components/common/animations/` 和现有 `fxSetup.ts` 适配模式；游戏侧只做参数、cue、锚点和规则语义适配。
+- 特效必须由具体规则事件触发。不要把“能力 / 施法 / 结算”这类泛词直接映射成大特效；来源、目标、结果和反馈对象必须可解释。
+- 成熟共享组件默认保持旧消费者视觉等价。当前游戏需要差异时，在当前游戏配置传参或新增命名明确的 preset / renderer。
+- 视觉信息不要复读：牌面、附件槽、token、状态图标已经表达的信息，不再用额外文字或大特效重复解释。
 
----
+## 技术选型
 
-## 引擎级 FX 系统（强制）
+| 需求 | 默认技术 | 边界 |
+| --- | --- | --- |
+| UI 进出场、hover、简单位移 / 缩放 / 透明度 | framer-motion / CSS | 少量 DOM 节点，非逐帧绘制 |
+| 粒子、爆发、烟尘、召唤光粒 | Canvas 2D 粒子 / 自研动画组件 | 几十到几百粒子，需生命周期和预算 |
+| 复杂轨迹、多阶段爆发、柔和气流 | Canvas 2D | 每帧重绘，但不需要逐像素 shader |
+| 旋涡、火焰、护盾、溶解等流体效果 | WebGL Shader | 需要逐像素计算；必须有降级策略 |
+| 精确美术逐帧动画 | Lottie 或素材驱动方案 | 只有已有素材和接入需求时使用 |
 
-棋盘特效调度已迁移至引擎级 FX 系统（`src/engine/fx/`），提供 cue-based 的注册、调度与渲染框架。
+暂不把 PixiJS / Phaser / Cocos 作为默认特效后端。若某个游戏确实要引入外部渲染器，必须先写清它替代哪些 Board / FX 职责、如何接入状态与输入命令、如何回退和压测。
 
-本节是 FX 特效系统的唯一 AI 规范入口。宿主旧规则入口不得复活；新增或审查特效时从本节、[`engine-visual-events`](engine-visual-events.md) 和命中的游戏 `fxSetup.ts` 继续下钻。
+## FX 架构
 
-### 核心概念
-- **FxCue**：点分层级标识符（如 `fx.summon`、`fx.combat.shockwave`），支持通配符（`fx.combat.*`）
-- **FxRegistry**：Cue → FxRenderer 映射，精确匹配优先于通配符
-- **FxBus**（`useFxBus` hook）：push 事件触发特效，内置并发上限、防抖、安全超时
-- **FxLayer**：通用渲染层组件，查注册表获取 renderer 并渲染，自动传递 `onImpact` 回调
-- **FxRenderer**：适配器组件，将 FxEvent 参数映射为底层动画组件 props
-- **FeedbackPack**：反馈包，将音效（`FxSoundConfig`）和震动（`FxShakeConfig`）与视觉特效统一声明
-- **FxSurface**：具名本地坐标空间，例如棋盘、牌桌、玩家托盘或 UI overlay；无地图游戏也必须注册 surface，不能把 `screen` 坐标当作默认架构。
-- **FxAnchorSnapshot**：FX 生成时冻结的来源 / 目标锚点快照，包含 surface-local box、center、anchor kind 和 entity ref；一次性 FX 播放期间只读快照，不再追业务 DOM。
+- `FxCue`：分层 cue 名，例如 `fx.summon`、`fx.combat.hit`。
+- `FxRegistry`：cue 到 renderer 的映射，精确匹配优先于通配符。
+- `FxBus`：push / sequence / cancel 的运行时队列，负责并发上限、防抖和安全超时。
+- `FxLayer`：统一渲染层，消费 registry 并触发 `onImpact` / `onComplete`。
+- `FxRenderer`：把事件参数映射到底层动画组件 props。
+- `FeedbackPack`：声明同一个 cue 的视觉、音效和震动反馈。
+- `FxSurface` / `FxAnchorSnapshot`：注册真实可见对象锚点，并在 FX 生成时冻结来源 / 目标坐标。
 
-### FX Surface / Anchor Snapshot（强制）
+新增游戏或新增主特效的默认接入工作量是：注册 surface / anchor，声明 cue、参数和 tuning；不得新建游戏私有坐标系统、动画总线或 DOM 查询框架。
 
-- **游戏 UI 注册锚点**：Board / table UI 通过 `useFxAnchorRegistry(surfaceId, surfaceKind)` 注册 surface 和可见对象锚点。锚点代表真实可见对象，例如单位、法师、基地、行动卡、附件槽、token、玩家面板或计分区。
-- **生成时冻结坐标**：召唤、攻击投射、命中、移动、推拉、传送、直接伤害、力量浮字和 VP 飞行等一次性特效，默认在 `fxBus.push` 前解析 `sourceSnapshot` / `targetSnapshot`，并同时写入 `ctx` 与 `params`。renderer / preset 只消费快照和调参。
-- **禁止 renderer 查业务 DOM**：游戏侧 `fxSetup.ts` / `fxRenderers.tsx` 不得用 `querySelector`、游戏私有 `data-testid` 或业务 DOM 结构去临时寻找对象位置。需要的位置必须由 Board 注册锚点并在事件消费层解析。
-- **缺快照 fail-close**：一次性 FX 需要对象本体位置但快照缺失时，必须显式跳过、报告诊断，或使用已声明的旧 adapter。禁止静默退回整格中心、牌桌中心、最近对象或随机 screen 坐标。
-- **tracking 显式声明**：持续光环、buff、蓄力环、附着状态等确实要跟随宿主的特效，才允许使用 `tracking` 模式，并必须声明宿主消失后的完成、转移或结束策略。投射物、命中爆发、召唤光柱和飘字不得隐式切成 live tracking。
-- **旧坐标是迁移层**：`ctx.cell`、`ctx.screenPos` 和游戏内旧 `position` 只能作为兼容 adapter；新增游戏或新增主特效不得再建立游戏私有坐标系统。
-- **百游戏接入边界**：新游戏接入 FX 的默认工作量应是“注册 surface / anchor + 配 cue 参数 / tuning”，不得要求修改共享 renderer、复制其它游戏 renderer，或新建一套坐标解析框架。
-- **旧游戏迁移边界**：旧游戏接入 FX surface / anchor snapshot 时，只能按 [`shared-refactor-guard`](shared-refactor-guard.md) 做兼容迁移；未获明确授权不得重做该游戏 UI、特效语义、参数节奏、定位坐标系或玩家流程。对已经有成熟 screen / cell / table 坐标合同的游戏，注册 surface / anchor 只能作为内部兼容入口；不得让旧的力量浮字、VP 飞行、行动卡展示、召唤光柱或攻击反馈自动改成新坐标表现。
+## 坐标与锚点
 
-### 反馈包系统（FeedbackPack）（强制）
+- Board / table UI 通过共享锚点注册入口暴露可见对象：棋盘对象、卡牌、token、玩家面板、计分区、附件槽等。
+- 一次性 FX 在 push 前捕获 `sourceSnapshot` / `targetSnapshot`；播放期间只读快照，不再查询业务 DOM。
+- renderer 不得用 `querySelector`、私有 `data-testid` 或业务 DOM 结构临时找位置。
+- 缺少必要快照时必须 fail-close：跳过、诊断或使用已声明 legacy adapter；禁止静默退回整格中心、牌桌中心、最近对象或随机屏幕坐标。
+- 持续光环、buff、蓄力等跟随宿主的效果必须显式声明 tracking 策略；投射、命中、召唤、飘字不得隐式切成 live tracking。
 
-参考 UE Gameplay Cue 设计，一个 cue 注册时可同时声明视觉 + 音效 + 震动反馈，运行时自动触发：
+## 时序与反馈
 
-```ts
-// fxSetup.ts — 注册时声明反馈包
-registry.register('fx.summon', SummonRenderer, { timeoutMs: 4000 }, {
-  shake: { intensity: 'normal', type: 'impact', timing: 'on-impact' },
-});
-```
+- 有冲击帧的动画，音效和震动必须在 `onImpact` 或等价关键帧触发；不要在事件生成时提前播放。
+- 使用 `FeedbackPack` 时，如果 `timing: 'on-impact'`，renderer 必须调用 `onImpact`；否则音效 / 震动会静默丢失。
+- 反馈是否触发若依赖运行时状态，由调用侧或拆分后的 cue 编排；不要把复杂条件塞进通用 FeedbackPack。
+- 多步骤规则效果使用 FX sequence 顺序播放，例如“移除对象 -> 造成伤害 -> 离场”；不要并行 push 后让玩家看到同时发生。
+- 条件渲染特效必须由组件自身 `onComplete` 关闭；不要用固定 timer 猜动画结束时间。
 
-- `timing: 'immediate'`：事件推入 FxBus 时立即触发
-- `timing: 'on-impact'`：渲染器调用 `props.onImpact()` 时触发（爆发/命中关键帧）
-- **渲染器必须调用 `onImpact`（强制）**：当 FeedbackPack 配置了 `timing: 'on-impact'` 的音效或震动时，对应的 FxRenderer **必须**在动画关键帧（命中/爆发瞬间）调用 `props.onImpact()`。禁止将 `onImpact` 解构为 `_onImpact` 后忽略。不调用 `onImpact` 会导致 `useFxBus.fireImpact()` 永远不触发，音效和震动静默丢失。近战/即时类特效在 `useEffect` mount 时触发；飞行/远程类特效在动画到达目标时触发（如 `onComplete` 前）。
-- 震动强度支持动态覆盖：`event.ctx.intensity` 优先于注册时的默认值
-- `useFxBus` 接受 `{ playSound, triggerShake }` 选项，由游戏层注入实际播放/震动函数
-- **禁止在 useGameEvents 中手动传 `params.onImpact` 回调**，震动由 FeedbackPack 声明式管理
-- **例外：条件反馈保持手动编排**：当反馈触发依赖运行时状态（如战斗震动仅在 hits≥3 时触发），不应使用 FeedbackPack，而是由调用侧（Board.tsx）手动调用 `triggerShake`。原因：FeedbackPack 设计初衷是“一个 cue 总是触发相同反馈”（参考 UE Gameplay Cue），条件判断属于游戏规则而非反馈关注点。
+## 视觉实体与数值
 
-### FeedbackPack 适用边界（强制）
+- 数值变化动画使用 `useVisualStateBuffer`：正式值先进入 core，UI 用缓冲显示动画前值，impact 后释放回正式值。
+- 对象已从规则状态移除但画面仍需参与命中、碎裂、飘字或离场时，使用 `useVisualEntityBuffer`；不要在游戏 hook 里复制私有 `dying / held` 状态。
+- live list 中仍存在的对象不得再渲染 held visual，避免同帧重影。
+- 同一对象被多个 FX owner 持有时，任一 owner 完成只能释放自己的持有权；最后一个 owner 释放后对象才退场。
 
-- **适用**：一个 cue 触发时总是产生相同反馈（如召唤光柱总是震动）。强度可通过 `ctx.intensity` 动态调整，但“是否触发”不应有条件。
-- **不适用**：反馈是否触发取决于运行时状态（如 hits 数量、玩家阶段、特定条件）。这类反馈应由调用侧手动编排，与同一时序链中的其他反馈（音效等）统一管理。
-- **未来扩展**：若条件反馈场景增多（≥3 个不同条件触发），可考虑 UE 拆分 Cue 模式（注册不同 cue 如 `fx.combat.shockwave.light` / `fx.combat.shockwave.heavy`，每个带不同 FeedbackPack），而非在 FeedbackPack 内嵌条件函数。
+## 表现质量
 
-### 序列特效（`pushSequence`）（强制）
+- 特效尺寸和锚点必须贴合本次反馈对象的可见本体，不默认贴整格、整行、整屏或参考游戏截图。
+- 来源和目标都应可见。结果骰、伤害数字、徽章或飘字不得压住正在证明的来源、目标或合法交互对象。
+- 召唤、攻击、投射、对象移动、翻页、拖拽等连续动效验收优先短录屏 / GIF；关键帧截图只作 AI 自检和证据索引。
+- 对象转移、抽走、击败或收入另一区域时，原区域必须有离场承接；不能让对象瞬间消失后只在目标区播放进入动画。
+- 信息揭示动效只用于从隐藏 / 未知变公开的对象；已公开对象不得重新播放翻开 / 揭示制造假信息变化。
+- 外部参考动效必须先拿动态证据，并拆成动作语法：触发源如何醒目、路径 / 能量是否存在、目标本体如何变化、是否有后续连环触发。
+- 颜色来自参考帧证据或项目语义色；不能用“更有游戏感”随意添加高饱和随机色。
 
-多步骤技能效果（如"移除 token → 造成伤害"、"施加状态 → 治疗"）必须使用 `fxBus.pushSequence()` 编排，禁止并行 push 多个效果让玩家看到同时发生。
+## 性能边界
 
-```ts
-// 示例：移除 token 动画 → 等 200ms → 伤害飞行数字
-fxBus.pushSequence([
-  { cue: DT_FX.TOKEN, ctx: {}, params: { /* token 移除 */ }, delayAfter: 200 },
-  { cue: DT_FX.DAMAGE, ctx: {}, params: { /* 伤害数字 */ } },
-]);
-```
+- 新增特效前先写清玩家可见语义和成本来源：渲染数量、布局测量、绘制属性、图片 / shader 预热、跨组件刷新。
+- 性能优化只能减少真实工作量、隔离重渲染、使用合成属性、预热资源或改渲染载体；改变强度、节奏、时机、位置或可见对象属于表现变更。
+- Canvas、WebGL、粒子和投射物路径接入共享 FX 帧时钟；普通 React UI 反馈、hover、glow、轻量 timer 不把 FX 帧时钟当通用 `setTimeout`。
+- 优先动画 `transform`、`opacity`、必要时 `filter`；避免 `transition-all`、频繁动画 `border-*`、`box-shadow` 和布局属性。
+- `transition` 与 `@keyframes` 不要同时控制同一属性；同一元素只能有一个权威动画源。
+- 毛玻璃保持静态，若要动效只动遮罩层透明度，不反复改变 blur 半径。
 
-- 每个步骤等上一个渲染器 `onComplete` 后再播放下一个
-- `delayAfter`（ms）：该步骤完成后、下一步开始前的等待时间，默认 0
-- 序列中某步 cue 未注册会自动跳过继续下一步
-- 安全超时触发也会推进序列，避免卡死
-- `cancelSequence(seqId)` 可取消正在进行的序列
-- 渲染器完全不感知自己是否在序列中，无需适配
-- 返回 `sequenceId`（string），可用于取消
+## Canvas 与 Shader
 
-### 新增特效流程
-1. 在 `src/components/common/animations/` 实现底层动画组件（如已有则复用）
-2. 在游戏侧 `fxSetup.ts` 中创建 FxRenderer 适配器，注册到 registry，声明 FeedbackPack。**若 FeedbackPack 含 `timing: 'on-impact'`，渲染器必须在动画关键帧调用 `props.onImpact()`**
-3. 在事件消费处（`useGameEvents.ts` 或 `Board.tsx`）调用 `fxBus.push(cue, ctx, params)`
-4. 在 `EffectPreview.tsx` 添加预览
+- 棋盘层粒子使用俯视角物理：平面扩散、减速、淡出；不要默认重力下坠。全屏庆祝和 UI 装饰层可使用符合屏幕直觉的重力模型。
+- 棋盘层 Canvas 特效取布局尺寸优先 `offsetWidth / offsetHeight`；`getBoundingClientRect()` 会受父级 transform 缩放影响。
+- 特效 Canvas 天然可能超出挂载目标，默认不要用 `overflow: hidden` 裁切主体表现。
+- Shader 组件负责注册、预编译、uniform 映射和 WebGL 降级；游戏侧只注册 cue 和参数。
+- 浏览器不支持 WebGL 时，shader 效果必须自动完成或降级，不能卡住规则流程。
 
-### 文件分布
-- `src/engine/fx/` — 引擎层（types / FxRegistry / useFxBus / FxLayer）
-- `src/engine/fx/shader/` — WebGL Shader 子系统（ShaderCanvas / ShaderMaterial / ShaderPrecompile / GLSL 库 / 预设 shader）
-- `src/games/<gameId>/ui/fxSetup.ts` — 游戏侧注册表 + 渲染器适配器
-- `src/components/common/animations/` — 底层动画组件（Canvas 2D + Shader 版本共存）
+## 通用组件
 
-### 游戏接入状态
-| 游戏 | FX 系统 | 说明 |
-|------|---------|------|
-| SummonerWars | ✅ 已接入 | cell 空间定位，4 个 cue（召唤/充能/气浪/受伤） |
-| DiceThrone | ✅ 已接入 | screen 空间定位，6 个 cue（伤害/DoT/治疗/状态/Token/CP） |
-| SmashUp | ✅ 已接入 | table anchor snapshot + screen 兼容，4 个 cue（力量浮字/行动卡展示/VP飞行/基地占领） |
+- 通用特效放 `src/components/common/animations/`；游戏特有语义只通过 props、tuning、cue 或素材注入。
+- 受击反馈优先使用通用 `useImpactFeedback` 或同层原子 hook；不要在单个 Board 里手写多套 `useState + setTimeout`。
+- 游戏侧 FX renderer 只做适配。若主效果算法出现在 `Board.tsx`、游戏私有 CSS 或游戏私有 timer，默认先判职责放错层。
+- 新增通用特效或 preset 后，同步 devtools 预览入口；不能只导出组件就声称进入特效库。
 
----
+## 验收
 
-## WebGL Shader 特效系统
-
-FX 系统支持 WebGL shader 管线，用于逐像素计算的流体特效。与 Canvas 2D 粒子系统共存，按需使用。
-
-### 核心组件
-- **`ShaderCanvas`**（`src/engine/fx/shader/ShaderCanvas.tsx`）：管理 WebGL context + fullscreen quad，接受 fragment shader + uniforms + duration，自动处理 DPI/RAF/生命周期。自动提供 `uTime`、`uResolution`、`uProgress` 三个内置 uniform。
-- **`ShaderMaterial`**（`ShaderMaterial.ts`）：shader 编译、program 链接、类型安全的 uniform setter（带 location 缓存）。
-- **GLSL 噪声库**（`glsl/noise.glsl.ts`）：Simplex 2D 噪声 + FBM，以 TS 字符串导出，在 shader 中拼接使用。
-
-### Shader 预设
-- `summon.frag.ts` — 召唤光柱（径向渐变 + 多阶段颜色映射 + 暗角遮罩）
-- `vortex.frag.ts` — 流体旋涡（极坐标螺旋扭曲 + 双层 FBM + 三阶段动画 + 颜色映射）
-- 后续可扩展：火焰、能量护盾、溶解等
-
-### Shader 预编译（自注册，自动，强制）
-
-Shader 包装组件（如 `SummonShaderEffect`、`VortexShaderEffect`）在模块顶层调用 `registerShader(FRAG)` 自注册到预编译队列。`useFxBus` 挂载时调用 `flushRegisteredShaders()` 一次性预编译所有已注册的 shader，通过后台 1×1 离屏 canvas 编译 + drawArrays 触发 GPU 驱动缓存。后续同源码 shader 编译几乎零开销。
-
-- **自注册模式**：包装组件在模块顶层 `registerShader(FRAG_SOURCE)`，import 即注册，无需在 `fxSetup.ts` 中手动声明
-- **Board.tsx / fxSetup.ts 无需关心 shader**：预编译由 `useFxBus` + 自注册自动完成，游戏侧零感知
-- **去重**：`ShaderPrecompile` 内部维护 `precompiledSet`，同一源码只编译一次
-- **非阻塞**：通过 `requestIdleCallback`（降级 `setTimeout`）异步执行
-
-### 新增 Shader 特效流程
-1. 在 `src/engine/fx/shader/glsl/` 中复用或新增 GLSL 工具函数
-2. 在 `src/engine/fx/shader/shaders/` 中创建 `.frag.ts`，拼接 noise 库 + 主 shader 代码
-3. 在 `src/components/common/animations/` 创建包装组件（如 `VortexShaderEffect`），内部使用 `ShaderCanvas`，**模块顶层调用 `registerShader(FRAG_SOURCE)` 自注册到预编译队列**
-4. 在游戏侧 `fxSetup.ts` 注册到 FxRegistry（无需声明 shader 依赖，自注册已处理）
-5. 颜色值从 0-255 归一化到 0-1 后传入 uniform（GLSL 标准）
-
-### 降级策略
-若浏览器不支持 WebGL，`ShaderCanvas` 自动触发 `onComplete`，效果静默跳过。调用方可搭配 Canvas 2D 版本做回退。
-
----
-
-## 特效组件 useEffect 依赖稳定性（强制）
-
-> 适用于所有特效组件：Canvas 粒子、framer-motion、DOM timer 驱动。
-
-动画循环/timer 由 useEffect 启动，**其依赖数组中的每一项都必须引用稳定**，否则父组件重渲染会导致 useEffect 重跑 → 动画重启/中断。
-- **回调 prop（`onComplete` 等）**：必须用 `useRef` 持有，禁止放入 useEffect 依赖。Canvas 组件和 DOM timer 组件（如 ImpactContainer/DamageFlash）同样适用。
-- **数组/对象 prop（`color` 等）**：`useMemo` 的依赖不能直接用数组/对象引用（浅比较会失败），必须用 `JSON.stringify` 做值比较。
-- **典型错误**：内联箭头函数/数组字面量作为 prop → 父组件重渲染 → useEffect 重跑 → 动画重启。
-
-### 条件渲染特效的生命周期管理（强制）
-
-当使用 `{isActive && <Effect />}` 条件渲染特效组件时：
-- **必须有关闭机制**：通过 `onComplete` 回调将 `isActive` 设回 `false`，否则 isActive 永远为 true，连续触发时组件不会卸载重挂载，效果只播一次。
-- **重触发模式**：`setIsActive(false)` → `requestAnimationFrame(() => setIsActive(true))`，确保 React 先卸载再重挂载。
-- **禁止用固定 timer 关闭**：不要用 `setTimeout(() => setIsActive(false), 100)` 硬编码关闭时间，必须由效果组件自身通过 `onComplete` 通知完成。
-- **典型错误**：缺少 onComplete → isActive 永远 true → 连续触发时组件不重挂载。
-
----
-
-## 组合式特效架构（强制）
-
-打击感特效必须按职责拆分为两层：
-- **ImpactContainer（包裹层）**：作用于目标本身——震动（ShakeContainer）+ 钝帧（HitStopContainer）。ShakeContainer 在外层承载 className（背景/边框），HitStopContainer 在内层。
-- **DamageFlash（覆盖层）**：纯视觉 overlay——斜切（RiftSlash）+ 红脉冲（RedPulse）+ 伤害数字（DamageNumber），作为 ImpactContainer 的子元素。
-- **正确组合**：`<ImpactContainer><Target /><DamageFlash /></ImpactContainer>`
-- **禁止**：把震动和视觉效果混在同一个组件里；把 DamageFlash 放在 ImpactContainer 外面（会导致震动目标不一致）。
-
-### 受击反馈 Hooks（强制）
-
-受击反馈的状态管理已抽象为通用 hooks，位于 `src/components/common/animations/`，和 `useShake` / `useHitStop` 同级：
-
-| Hook | 层级 | 职责 | API |
-|------|------|------|-----|
-| `useDamageFlash` | 原子 | 管理 DamageFlash 的激活/自动重置 | `{ isActive, damage, trigger(damage) }` |
-| `useImpactFeedback` | 组合 | 编排 useShake + useHitStop + useDamageFlash | `{ trigger(damage), shake, hitStop, flash }` |
-
-- **新游戏接入受击反馈**：直接使用 `useImpactFeedback()`，一次调用获得全套状态，把 `shake`/`hitStop`/`flash` 分别传给 `ShakeContainer`/`HitStopContainer`/`DamageFlash`。
-- **可选效果**：`useImpactFeedback({ shake: true, hitStop: true, flash: true })` 按需开关。
-- **禁止游戏内平行实现**：受击反馈不得在单个 `Board.tsx` 或游戏专属 CSS 中临时自创“斜切 / 红闪 / 抖动”整套平行特效；游戏层只允许通过 props 调整通用组件的颜色、时长、强度、挂载位置和业务飘字。若现有通用组件不能满足需求，先扩展 `src/components/common/animations/` 或 FX 注册，而不是复制一套新动画。
-- **禁止手动管理多套 useState + setTimeout**：受击反馈状态必须通过 `useImpactFeedback` 或其原子 hooks 管理，禁止在 Board.tsx 中手写 `useState<{ active, damage }>` + `setTimeout` 重置逻辑。
-
-```tsx
-// 典型用法（Board.tsx）
-const opponentImpact = useImpactFeedback();
-const selfImpact = useImpactFeedback();
-
-// 触发
-onImpact: () => opponentImpact.trigger(damage);
-
-// 渲染（OpponentHeader）
-<ShakeContainer isShaking={opponentImpact.shake.isShaking}>
-  <HitStopContainer isActive={opponentImpact.hitStop.isActive} {...opponentImpact.hitStop.config}>
-    <Content />
-    <DamageFlash active={opponentImpact.flash.isActive} damage={opponentImpact.flash.damage} />
-  </HitStopContainer>
-</ShakeContainer>
-```
-
-### 伤害反馈分级（强制）
-
-不同伤害来源应有不同强度的受击反馈，禁止所有伤害走同一套完整反馈：
-
-| 伤害来源 | 反馈强度 | 典型效果 | 示例 |
-|---------|---------|---------|------|
-| 战斗伤害（技能攻击/反击） | 完整 | 飞行数字 + 动态音效 + 震动 + 钝帧 + 裂隙闪光 | DiceThrone 技能攻击、SummonerWars 近战/远程 |
-| 持续伤害（DoT：灼烧/中毒/流血） | 轻量 | 飞行数字 + 轻微音效，无震动无钝帧 | DiceThrone upkeep 灼烧/中毒 |
-| 系统惩罚（不活动惩罚等） | 轻量 | 飞行数字或状态变化动画，无震动 | SummonerWars 不活动惩罚 |
-
-- **实现方式**：在 FX 注册表中为不同强度的伤害注册不同的 cue（如 `fx.damage` vs `fx.dot-damage`），通过 FeedbackPack 控制是否包含 shake。
-- **判断依据**：事件的 `sourceAbilityId` 或 `reason` 字段区分伤害来源。持续伤害的 sourceAbilityId 通常以 `upkeep-` 开头。
-- **禁止**：所有 `DAMAGE_DEALT` / `UNIT_DAMAGED` 事件无差别触发完整受击反馈（震动+钝帧+裂隙闪光）。
-
----
-
-## 特效视觉质量规则（强制）
-
-- **外部游戏参考必须先拿动态证据**：用户点名参考某个游戏、某张牌、某个技能或某类动效时，实施前必须先把必要素材落到项目 `temp/`，且主证据必须是视频/GIF/连续帧。静态截图、宣传图、单帧海报只能做外观辅证，不能宣称“已参考动效”。若拿不到动态证据，必须继续补源或明确 blocked；不得靠记忆、静态图或文字描述先实施。
-- **参考结论必须拆成动作语法**：看参考动效后，先写清 `触发源怎么醒目`、`能量/路径是否存在`、`目标本体怎么变化`、`是否有后续连环触发`。没有拆到这四项，不得把某条光效、符号或说明文字直接套进实现。
-- **颜色结论必须可追踪**：动效颜色必须来自参考动效的连续帧证据，或来自当前项目已有语义色（选中、行动、危险、增益、得分等）。如果只拿到静态截图、搜索超时或参考动效颜色不可判定，必须在汇报里说明颜色依据不足，并选择项目语义色；禁止用“看起来像科技感/游戏感”为理由添加青色、紫色或高饱和随机色。
-- **死亡/消灭默认由目标结果表达，不由线条表达**：除非参考视频明确显示“投射物命中造成死亡”，死亡/消灭应优先表现为目标本体上的斩击、爆闪、碎裂、离场或两块裂开。若用户明确要求简化为“连线代表选择目标”，该线条只表达目标选择关系；销毁仍必须由目标卡牌分裂/离场表达，不能让线条、飞行叉号或飞行骷髅承担死亡结果。
-- **销毁承接不能保留完整底图**：卡牌销毁、碎裂、分裂或离场时，必须用 held snapshot、遮罩或结果层接管原对象。分裂类效果应先在结果层画出可拼回完整对象但已有可见裂开间距的两块起始帧，再同帧隐藏真实原对象；禁止完整原对象继续作为底图留在碎片后面，禁止起始帧仍像一张完整卡，也禁止结果层第一帧空白后再突然出现碎片。
-- **禁止纯几何拼接**：特效禁止用 `stroke` 线段、V 形轮廓、横切线等几何图元拼凑，视觉效果生硬且缺乏能量感。
-- **正确做法**：优先使用粒子系统（streak/circle 喷射 + 自然衰减）或柔和径向渐变模拟气流/光晕；需要轨迹时用粒子拖尾而非画线。
-- **判断标准**：如果特效看起来像"线框图/几何示意图"而非"有能量感的自然效果"，说明方案有问题，必须换用粒子/渐变方案。
-
----
-
-## 通用特效组件规范（强制）
-
-- **通用 vs 游戏特有**：除非特效包含游戏特有语义（如特定卡牌名称文字、游戏专属资源），否则必须实现为通用组件放在 `src/components/common/animations/`，游戏层通过 props 注入差异。
-- **现有通用特效清单**：新增特效前必须用 `grep` 搜索 `src/components/common/animations/` 确认是否已有可复用组件。完整清单与使用说明见 `docs/particle-engine.md`。
-- **游戏 FX 渲染器只能做适配**：游戏侧 `ui/fxSetup.ts` / `ui/fxRenderers.tsx` 的职责是把规则 cue、来源/目标、强度、颜色语义、音效和震动参数映射到通用组件；不得在这里承担主特效算法。代码审查时如果看到新的飞行、冲击、飘字、爆发、召唤或受击效果主要由游戏专属 DOM/CSS/timer 实现，默认先判职责放错层，再考虑扩展通用组件。
-- **视觉验收不能降级到技术存在性**：通用组件或 FX cue 渲染出来后，必须在真实截图/录屏里肉眼可见其主体表现；`data-testid`、canvas 存在、事件被消费、截图落盘只证明链路触发，不证明视觉质量通过。Canvas / WebGL 类过程帧的自动门槛必须等到画布真实绘出可见内容，例如非透明 / 高亮像素、动画进度或组件暴露的阶段信号达到本轮验收要求；空画布、刚挂载的画布或弱到肉眼不可辨的像素不能作为过程帧通过证据。
-- **预览页同步**：新增通用特效组件或 preset 后，必须在 `src/pages/devtools/cards/*Cards.tsx` 增加对应预览卡片和 `meta` 条目，让 `EffectPreview` 自动收集；不得只把组件导出到 `animations/index.ts` 就宣称已进入特效库。
+- 技术存在性不是视觉通过。`data-testid`、canvas 存在、事件被消费、截图落盘只证明链路触发。
+- 验收证据必须来自真实运行入口，并能肉眼看到主体表现、来源、目标、过程、命中 / 结果和稳定态。
+- 空画布、弱到不可辨的像素、只露最终态、对象被反馈层遮住、重影、假揭示、瞬移和残留 ghost 都判不达标。
+- 若用户要求看实际效果，最终展示走项目看图 / 看视频入口，并使用已通过 AI 图面核验的录屏或截图。

@@ -3,13 +3,6 @@ import { setChineseLocale } from '../helpers/common';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { SU_COMMANDS } from '../../src/games/smashup/domain/types';
 
-type InteractionOption = {
-  value?: {
-    cardUid?: string;
-    source?: string;
-  };
-};
-
 type SmashUpE2EState = {
   core: {
     bases: Array<{
@@ -30,6 +23,11 @@ type SmashUpE2EState = {
       discard: Array<{ uid: string; defId: string }>;
       minionsPlayed?: number;
       minionLimit?: number;
+      specificExtraMinionPlays?: Array<{
+        cardUid: string;
+        restrictToBase?: number;
+        powerMax?: number;
+      }>;
     }>;
   };
   sys: {
@@ -182,13 +180,28 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       });
     }, SU_COMMANDS.USE_TALENT);
 
-    await game.waitForInteraction('smashup_immediate_extra_minion', 10000);
-    await game.screenshot('异形变体蛋田选择牌库额外随从', testInfo);
+    await expect.poll(async () => {
+      const state = await game.getState() as SmashUpE2EState;
+      return {
+        deckUids: state.core.players['0'].deck.map(card => card.uid),
+        specificExtraMinionPlays: state.core.players['0'].specificExtraMinionPlays,
+        interactionOpen: Boolean(state.sys.interaction?.current),
+      };
+    }, { timeout: 10000 }).toEqual({
+      deckUids: ['chestbreaker', 'alien-life'],
+      specificExtraMinionPlays: [
+        expect.objectContaining({ cardUid: 'chestbreaker', restrictToBase: 0, powerMax: 2 }),
+      ],
+      interactionOpen: false,
+    });
 
-    await game.selectInteractionOptionBy(
-      (option: InteractionOption) => option.value?.cardUid === 'chestbreaker' && option.value?.source === 'deck',
-      '蛋田选择牌库中的抱胸怪',
-    );
+    await expect(page.getByTestId('su-deck-stack')).toBeVisible({ timeout: 15000 });
+    await page.getByTestId('su-deck-stack').click();
+    await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-deploy-mode', 'true', { timeout: 10000 });
+    await expect(page.getByTestId('base-zone-0')).toHaveAttribute('data-selectable', 'true', { timeout: 10000 });
+    await game.screenshot('异形变体蛋田选择牌库顶抱胸怪目标基地', testInfo);
+
+    await page.getByTestId('base-zone-0').click();
     await game.waitForNoInteraction(10000);
     await game.screenshot('异形变体蛋田打出抱胸怪后', testInfo);
 
@@ -200,6 +213,7 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
         playedFrom: state.core.bases[0].minions.find(minion => minion.uid === 'chestbreaker')?.metadata?.playedFrom,
         minionsPlayed: state.core.players['0'].minionsPlayed,
         minionLimit: state.core.players['0'].minionLimit,
+        specificExtraMinionPlays: state.core.players['0'].specificExtraMinionPlays,
         interactionOpen: Boolean(state.sys.interaction?.current),
         responseWindowOpen: Boolean(state.sys.responseWindow?.current),
       };
@@ -209,6 +223,7 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       playedFrom: 'deck',
       minionsPlayed: 1,
       minionLimit: 1,
+      specificExtraMinionPlays: undefined,
       interactionOpen: false,
       responseWindowOpen: false,
     });

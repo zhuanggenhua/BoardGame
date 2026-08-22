@@ -110,6 +110,10 @@ import { ChoiceModal } from './ui/ChoiceModal';
 import { DefenderChoiceModal } from './ui/DefenderChoiceModal';
 import { canRerollBonusDiceSettlement } from './domain/bonusDiceSettlement';
 import { getCurrentDamageSummary } from './domain/damageSummary';
+import {
+    projectDiceThroneTokenResponseChoiceContract,
+    readDiceThroneTokenResponseChoiceContract,
+} from './domain/tokenResponseChoiceContract';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 
@@ -639,6 +643,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         && isTokenResponder
         && !isSpectator
     );
+    const tokenResponseChoiceProjection = React.useMemo(() => {
+        const contract = readDiceThroneTokenResponseChoiceContract(sysInteraction);
+        if (!contract || contract.playerId !== rootPid) return null;
+        return projectDiceThroneTokenResponseChoiceContract(contract);
+    }, [rootPid, sysInteraction]);
+    const dispatchTokenResponseChoiceCommand = React.useCallback((command: { type: string; payload: unknown }) => {
+        dispatch(command.type, command.payload);
+    }, [dispatch]);
     // 领域层计算当前阶段可用的 Token 列表（唯一数据源）
     const usableTokens = React.useMemo(() => {
         if (!pendingDamage) return [];
@@ -820,6 +832,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     const directTokenResponseIds = React.useMemo(() => {
         if (!isTokenResponseInteraction || !pendingDamage || !isTokenResponder) return [];
+        if (tokenResponseChoiceProjection) {
+            return Array.from(new Set(tokenResponseChoiceProjection.tokenOptions.map(option => option.tokenId)));
+        }
 
         return usableTokens
             .filter((tokenDef) => {
@@ -832,7 +847,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 return getTokenUseOptions(tokenDef, available).length > 0;
             })
             .map((tokenDef) => tokenDef.id);
-    }, [G, isTokenResponder, isTokenResponseInteraction, pendingDamage, usableTokens]);
+    }, [G, isTokenResponder, isTokenResponseInteraction, pendingDamage, tokenResponseChoiceProjection, usableTokens]);
 
     const directTokenChoiceOptions = React.useMemo(() => {
         if (!canResolveChoice || !choice.hasChoice || choice.options.length === 0) return [];
@@ -853,6 +868,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     const handleDirectTokenResponse = React.useCallback((tokenId: string) => {
         if (!isTokenResponseInteraction || !pendingDamage || !isTokenResponder) return;
+        const pendingDamageId = tokenResponseChoiceProjection?.pendingDamageId ?? pendingDamage.id;
+        const contractOption = tokenResponseChoiceProjection?.tokenOptions.find(option => option.tokenId === tokenId);
+        if (contractOption) {
+            dispatchTokenResponseChoiceCommand(contractOption.command);
+            return;
+        }
 
         const tokenDef = usableTokens.find(def => def.id === tokenId);
         if (!tokenDef) return;
@@ -866,8 +887,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         const amount = getTokenUseOptions(tokenDef, available)[0];
         if (!amount) return;
 
-        engineMoves.useToken(tokenId, amount);
-    }, [G, engineMoves, isTokenResponder, isTokenResponseInteraction, pendingDamage, usableTokens]);
+        engineMoves.useToken(tokenId, amount, pendingDamageId);
+    }, [G, dispatchTokenResponseChoiceCommand, engineMoves, isTokenResponder, isTokenResponseInteraction, pendingDamage, tokenResponseChoiceProjection, usableTokens]);
 
     const handleDirectTokenChoice = React.useCallback((tokenId: string) => {
         if (!canResolveChoice) return;
@@ -885,7 +906,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return {
                 tokenIds: directTokenResponseIds,
                 onTokenClick: handleDirectTokenResponse,
-                onSkip: engineMoves.skipTokenResponse,
+                onSkip: tokenResponseChoiceProjection && !tokenResponseChoiceProjection.skipAvailable
+                    ? undefined
+                    : () => {
+                        if (tokenResponseChoiceProjection?.skipCommand) {
+                            dispatchTokenResponseChoiceCommand(tokenResponseChoiceProjection.skipCommand);
+                            return;
+                        }
+                        engineMoves.skipTokenResponse(tokenResponseChoiceProjection?.pendingDamageId ?? pendingDamage.id);
+                    },
                 passLabel: t(pendingDamage.isFullyEvaded ? 'tokenResponse.confirm' : 'tokenResponse.skip'),
             };
         }
@@ -912,7 +941,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         directTokenChoiceSkip,
         directTokenResponseIds,
         dispatch,
-        engineMoves.skipTokenResponse,
+        dispatchTokenResponseChoiceCommand,
+        engineMoves,
         handleDirectTokenChoice,
         handleDirectTokenResponse,
         isTokenResponder,
@@ -921,6 +951,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         shouldUseDirectTokenChoice,
         sysInteraction?.id,
         t,
+        tokenResponseChoiceProjection,
     ]);
 
     const nyraDamageResponse = React.useMemo(() => {
@@ -940,6 +971,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
 
         const maxAssignableDamage = Math.min(Math.max(0, currentDamage - 1), companion.hp);
+        const pendingDamageId = tokenResponseChoiceProjection?.pendingDamageId ?? pendingDamage.id;
+        const dispatchTokenFromContractOrFallback = (tokenId: string, amount: number) => {
+            const contractOption = tokenResponseChoiceProjection?.tokenOptions.find(option => (
+                option.tokenId === tokenId && option.amount === amount
+            ));
+            if (contractOption) {
+                dispatchTokenResponseChoiceCommand(contractOption.command);
+                return;
+            }
+            engineMoves.useToken(tokenId, amount, pendingDamageId);
+        };
         return {
             currentDamage,
             maxAssignableDamage,
@@ -947,23 +989,29 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             canAllocateWithBond: (player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) > 0 && maxAssignableDamage > 0,
             onConfirmDamageAllocation: (amount: number) => {
                 if (amount <= 0) {
-                    engineMoves.skipTokenResponse();
+                    if (tokenResponseChoiceProjection?.skipCommand) {
+                        dispatchTokenResponseChoiceCommand(tokenResponseChoiceProjection.skipCommand);
+                        return;
+                    }
+                    engineMoves.skipTokenResponse(pendingDamageId);
                     return;
                 }
                 if (amount >= currentDamage) {
-                    engineMoves.useToken(TOKEN_IDS.NYRA_REDIRECT, currentDamage);
+                    dispatchTokenFromContractOrFallback(TOKEN_IDS.NYRA_REDIRECT, currentDamage);
                     return;
                 }
-                engineMoves.useToken(TOKEN_IDS.NYRAS_BOND, amount);
+                dispatchTokenFromContractOrFallback(TOKEN_IDS.NYRAS_BOND, amount);
             },
         };
     }, [
         G.pendingAttack?.isUltimate,
+        dispatchTokenResponseChoiceCommand,
         engineMoves,
         isTokenResponder,
         isTokenResponseInteraction,
         pendingDamage,
         player,
+        tokenResponseChoiceProjection,
     ]);
 
     const isDuelDirectDefenseOnly = false;
@@ -2196,7 +2244,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         }}
                         onConfirm={() => {
                             if (canConfirmTokenEvasionFromRightTray) {
-                                engineMoves.skipTokenResponse();
+                                if (tokenResponseChoiceProjection?.skipCommand) {
+                                    dispatchTokenResponseChoiceCommand(tokenResponseChoiceProjection.skipCommand);
+                                    return;
+                                }
+                                engineMoves.skipTokenResponse(tokenResponseChoiceProjection?.pendingDamageId ?? pendingDamage?.id);
                                 return;
                             }
                             if (isRightTrayBonusDiceSettlementActive) {

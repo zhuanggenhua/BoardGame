@@ -47,10 +47,11 @@ vi.mock('../../../components/common/media/CardPreview', async (importOriginal) =
     const actual = await importOriginal<typeof import('../../../components/common/media/CardPreview')>();
     return {
         ...actual,
-        CardPreview: ({ previewRef, className, style }: { previewRef?: unknown; className?: string; style?: React.CSSProperties }) => (
+        CardPreview: ({ previewRef, locale, className, style }: { previewRef?: unknown; locale?: string; className?: string; style?: React.CSSProperties }) => (
             React.createElement('div', {
                 'data-testid': 'mock-card-preview',
                 'data-preview-ref': JSON.stringify(previewRef ?? null),
+                'data-locale': locale,
                 className,
                 style,
             })
@@ -503,6 +504,31 @@ describe('SmashUp UI 交互验证', () => {
         const overlay = screen.getByTestId('su-card-text-overlay');
         expect(overlay.getAttribute('data-overlay-visibility')).toBe('hover');
         expect(overlay.className).toContain('group-hover:opacity-100');
+    });
+
+    it('Excellent Movies Teens 英文基地图集应按英文素材触发中文悬浮层', () => {
+        render(
+            React.createElement(SmashUpCardRenderer, {
+                previewRef: {
+                    type: 'renderer',
+                    rendererId: 'smashup-card-renderer',
+                    payload: { defId: 'base_brood_hive' },
+                },
+            }),
+        );
+
+        const preview = screen.getByTestId('mock-card-preview');
+        expect(JSON.parse(preview.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'atlas',
+            atlasId: 'smashup:excellent-movies-teens-bases',
+            index: 5,
+        });
+        expect(preview.getAttribute('data-locale')).toBe('zh-CN');
+
+        const overlay = screen.getByTestId('su-card-text-overlay');
+        expect(overlay.getAttribute('data-overlay-visibility')).toBe('hover');
+        expect(overlay.className).toContain('group-hover:opacity-100');
+        expect(overlay.textContent).toContain('育巢');
     });
 
     it('模仿者会把目标卡图的下半部叠到自己的卡面上', () => {

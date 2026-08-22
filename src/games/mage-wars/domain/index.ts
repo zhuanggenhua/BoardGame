@@ -66,15 +66,16 @@ function resolveStartingZoneId(seatIndex: number): ArenaZoneId {
 }
 
 function createMageWarsPlayerView(core: MageWarsCore, playerId: PlayerId): Partial<MageWarsCore> {
-    return {
-        objects: Object.fromEntries(Object.entries(core.objects).map(([objectId, object]) => {
-            if (object.ownerId === playerId || object.preparedSpellCardId === undefined) {
-                return [objectId, object];
+        return {
+            objects: Object.fromEntries(Object.entries(core.objects).map(([objectId, object]) => {
+                if (object.ownerId === playerId || object.preparedSpellCardId === undefined) {
+                    return [objectId, object];
             }
             const { preparedSpellCardId: _hiddenPreparedSpellCardId, ...visibleObject } = object;
-            return [objectId, { ...visibleObject, preparedSpellCount: object.preparedSpellCount ?? 1 }];
-        })),
-    };
+                return [objectId, { ...visibleObject, preparedSpellCount: object.preparedSpellCount ?? 1 }];
+            })),
+            walls: core.walls,
+        };
 }
 
 function createSleepDamageReplacementEvents(core: MageWarsCore, event: MageWarsEvent): MageWarsEvent[] | undefined {
@@ -141,6 +142,7 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
             arenaMode: 'formal-4x3',
             players,
             objects: {},
+            walls: {},
             arena: createFormalArena(normalizedPlayerIds),
             foundationStatus: {
                 intakeComplete: true,

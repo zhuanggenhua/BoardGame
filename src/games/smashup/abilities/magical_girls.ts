@@ -197,7 +197,7 @@ function queueMinionPrompt(
         ctx.playerId,
         title,
         optional ? [createSkipOption(), ...options] : options,
-        { sourceId, targetType: 'minion', autoResolveIfSingle: !optional, titleKey, titleParams },
+        { sourceId, targetType: 'minion', autoResolveIfSingle: false, titleKey, titleParams },
     );
     (interaction.data as {
         continuationContext?: {

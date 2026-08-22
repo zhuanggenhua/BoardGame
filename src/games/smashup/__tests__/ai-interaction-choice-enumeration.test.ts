@@ -1,8 +1,26 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { buildAiDecisionContext, registerGameAiRuntime, type AiLegalAction } from '../../../engine/ai';
 import type { MatchState } from '../../../core/types';
-import { buildSmashUpAiLegalActions } from '../ai';
+import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
+import { SU_COMMANDS } from '../domain/types';
 import type { SmashUpCore } from '../types';
-import { makeState } from './helpers';
+import {
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+} from './helpers';
+import { runCommand } from './testRunner';
+
+const FIXED_RANDOM = {
+    random: () => 0,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(items: T[]) => [...items],
+};
 
 function makeAiState(overrides?: Partial<MatchState<SmashUpCore>>): MatchState<SmashUpCore> {
     const baseState: MatchState<SmashUpCore> = {
@@ -35,7 +53,45 @@ function makeAiState(overrides?: Partial<MatchState<SmashUpCore>>): MatchState<S
     } as MatchState<SmashUpCore>;
 }
 
+function buildRegisteredAiContext(state: MatchState<SmashUpCore>) {
+    return buildAiDecisionContext({
+        gameId: 'smashup',
+        matchId: 'smashup-ai-interaction-choice-enumeration',
+        playerId: '0',
+        visibleState: state as MatchState<unknown>,
+        rulesVersion: null,
+        decisionBudgetMs: 250,
+        source: 'local',
+    });
+}
+
+function getRespondOptionId(action: AiLegalAction): string | undefined {
+    const command = action.commands[0] as { payload?: { optionId?: string } } | undefined;
+    return command?.payload?.optionId;
+}
+
+function runAiRespondAction(
+    state: MatchState<SmashUpCore>,
+    action: AiLegalAction,
+): ReturnType<typeof runCommand> {
+    const command = action.commands[0];
+    return runCommand(
+        state,
+        {
+            ...command,
+            playerId: '0',
+        } as any,
+        FIXED_RANDOM,
+    );
+}
+
 describe('Smash Up AI 交互候选枚举', () => {
+    beforeEach(() => {
+        resetAbilityInit();
+        initAllAbilities();
+        registerGameAiRuntime(smashUpAiRuntime);
+    });
+
     it('optional multi 交互应保留空选动作，避免链式 special 卡死', () => {
         const state = makeAiState({
             sys: {
@@ -332,6 +388,96 @@ describe('Smash Up AI 交互候选枚举', () => {
             interactionId: 'single-choice-interaction-id',
             optionId: 'opt-a',
         });
+    });
+
+    it('野兽弃牌交互应让 AI 枚举每张可弃手牌，并用响应命令收口', async () => {
+        const opened = runCommand(makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('beast-cost-a', 'aladdin_wish', 'action', '0'),
+                        makeCard('beast-cost-b', 'frozen_snowgie', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('beast-ai', 'beauty_and_the_beast_beast', '0', 4),
+            ])],
+        })), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'beast-ai', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(opened.success, opened.error).toBe(true);
+
+        const context = buildRegisteredAiContext(opened.finalState);
+        const optionIds = context.legalActions
+            .filter(action => action.kind === 'interaction-choice')
+            .map(getRespondOptionId)
+            .sort();
+        expect(optionIds).toEqual(['discard:beast-cost-a', 'discard:beast-cost-b']);
+
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide(context);
+        const chosenAction = context.legalActions.find(action => action.actionId === decision?.actionId);
+        expect(chosenAction?.kind).toBe('interaction-choice');
+        expect(['discard:beast-cost-a', 'discard:beast-cost-b']).toContain(getRespondOptionId(chosenAction!));
+
+        const discardCostB = context.legalActions.find(action => getRespondOptionId(action) === 'discard:beast-cost-b');
+        expect(discardCostB).toBeDefined();
+        const resolved = runAiRespondAction(opened.finalState, discardCostB!);
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.sys.interaction.current).toBeFalsy();
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['beast-cost-a']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['beast-cost-b']);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'beast-ai')?.powerCounters).toBe(1);
+    });
+
+    it('木兰二选一交互应让 AI 同时保留两个分支，并能执行其中一个分支', async () => {
+        const opened = runCommand(makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('mulan-ai-draw', 'frozen_snowgie', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_training_camp', [
+                makeMinion('mulan-ai', 'mulan_mulan', '0', 5, {
+                    powerCounters: 1,
+                    metadata: { mulan_mulan_power_counter_turn: 1 },
+                }),
+            ])],
+        })), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'mulan-ai', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(opened.success, opened.error).toBe(true);
+
+        const context = buildRegisteredAiContext(opened.finalState);
+        const optionIds = context.legalActions
+            .filter(action => action.kind === 'interaction-choice')
+            .map(getRespondOptionId)
+            .sort();
+        expect(optionIds).toEqual(['draw_card', 'extra_action']);
+
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide(context);
+        const chosenAction = context.legalActions.find(action => action.actionId === decision?.actionId);
+        expect(chosenAction?.kind).toBe('interaction-choice');
+        expect(['draw_card', 'extra_action']).toContain(getRespondOptionId(chosenAction!));
+
+        const drawBranch = context.legalActions.find(action => getRespondOptionId(action) === 'draw_card');
+        expect(drawBranch).toBeDefined();
+        const resolved = runAiRespondAction(opened.finalState, drawBranch!);
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.sys.interaction.current).toBeFalsy();
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['mulan-ai-draw']);
+        expect(resolved.finalState.core.players['0'].deck).toEqual([]);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(1);
     });
 
     it('field-source-target 交互应让 AI 直接枚举携带来源和目标的 live option', () => {

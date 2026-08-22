@@ -19,7 +19,7 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
 import { INITIAL_CP, INITIAL_HEALTH } from '../domain/types';
 import { GameTestRunner } from '../../../engine/testing';
-import type { DiceThroneCore } from '../domain/types';
+import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import type { AbilityCard } from '../types';
 import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
 import { COMMON_CARDS } from '../domain/commonCards';
@@ -77,6 +77,125 @@ describe('破隐一击伤害计算 Bug 复现', () => {
         const core = result.finalState.core;
         expect(core.players['0'].resources[RESOURCE_IDS.CP]).toBe(7);
         expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 7);
+    });
+
+    it('线上反馈复现：小顺子经过武士昂首无畏和反击后只结算一笔小顺子伤害', () => {
+        // 线上反馈 6a88133e3d0fef1e2e4e504c：
+        // Shadow Thief CP=6，pickpocket 获得 3 CP 后应按 CP=9 计算一半伤害。
+        // 攻击方有 2 层耻辱，武士昂首无畏给 1 点护盾并使用反击。
+        const queuedRandom = createQueuedRandom([
+            2, 1, 3, 4, 6, // 进攻掷骰：小顺子
+            3, 3, 5,       // 武士防御：2 katana + 1 helm
+            6,             // 反击奖励骰：3 点反伤
+        ]);
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: testSystems,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: createHeroMatchup('shadow_thief', 'samurai', (core) => {
+                core.players['0'].resources[RESOURCE_IDS.CP] = 6;
+                core.players['0'].tokens[TOKEN_IDS.SHAME] = 2;
+                core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+            }),
+            assertFn: assertState,
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: 'pickpocket + stand-tall + back-strike should not replay pickpocket damage',
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'pickpocket' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('ADVANCE_PHASE', '1'),
+                cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1 }),
+                cmd('SKIP_BONUS_DICE_REROLL', '1'),
+                cmd('SKIP_TOKEN_RESPONSE', '1'),
+            ],
+            expect: { turnPhase: 'main2' },
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        const core = result.finalState.core;
+        expect(core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
+        expect(core.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);
+
+        const pickpocketDamageEvents = (result.finalState.sys.eventStream?.entries ?? [])
+            .map((entry) => entry.event)
+            .filter((event): event is Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }> => (
+                event.type === 'DAMAGE_DEALT'
+                && event.payload.sourceAbilityId === 'pickpocket'
+                && event.payload.targetId === '1'
+            ));
+
+        expect(pickpocketDamageEvents).toHaveLength(1);
+        expect(pickpocketDamageEvents[0].payload.amount).toBe(3);
+        expect(pickpocketDamageEvents[0].payload.actualDamage).toBe(2);
+    });
+
+    it('线上 UI 顺序复现：先关闭伤害响应再确认武士反击奖励骰时不重放小顺子伤害', () => {
+        const queuedRandom = createQueuedRandom([
+            2, 1, 3, 4, 6, // 进攻掷骰：小顺子
+            3, 3, 5,       // 武士防御：2 katana + 1 helm
+            6,             // 反击奖励骰：3 点反伤
+        ]);
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: testSystems,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: createHeroMatchup('shadow_thief', 'samurai', (core) => {
+                core.players['0'].resources[RESOURCE_IDS.CP] = 6;
+                core.players['0'].tokens[TOKEN_IDS.SHAME] = 2;
+                core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+            }),
+            assertFn: assertState,
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: 'pickpocket + back-strike should not rewind attack when response closes before bonus die confirmation',
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'pickpocket' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('ADVANCE_PHASE', '1'),
+                cmd('USE_TOKEN', '1', { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1 }),
+                cmd('SKIP_TOKEN_RESPONSE', '1'),
+                cmd('SKIP_BONUS_DICE_REROLL', '1'),
+            ],
+            expect: { turnPhase: 'main2' },
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        const core = result.finalState.core;
+        expect(core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
+        expect(core.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);
+
+        const pickpocketDamageEvents = (result.finalState.sys.eventStream?.entries ?? [])
+            .map((entry) => entry.event)
+            .filter((event): event is Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }> => (
+                event.type === 'DAMAGE_DEALT'
+                && event.payload.sourceAbilityId === 'pickpocket'
+                && event.payload.targetId === '1'
+            ));
+
+        expect(pickpocketDamageEvents).toHaveLength(1);
+        expect(pickpocketDamageEvents[0].payload.amount).toBe(3);
+        expect(pickpocketDamageEvents[0].payload.actualDamage).toBe(2);
     });
 
     it('暴击 Token 不会被提供给 kidney-shot（CP=0 + gainCp(4) = 4 < 5 门控）', () => {

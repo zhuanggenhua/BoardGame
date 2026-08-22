@@ -3,8 +3,14 @@ import type { MatchState } from '../../types';
 import { injectTutorialInteractionId } from '../tutorialAiCommand';
 
 type TestCore = { activePlayerId: string };
+type TestInteraction = {
+    id: string;
+    playerId: string;
+    kind?: string;
+    data?: unknown;
+};
 
-const createState = (interaction?: { id: string; playerId: string }): MatchState<TestCore> => ({
+const createState = (interaction?: TestInteraction): MatchState<TestCore> => ({
     core: { activePlayerId: '0' },
     sys: {
         schemaVersion: 1,
@@ -71,5 +77,64 @@ describe('injectTutorialInteractionId', () => {
         });
 
         expect(payload).toEqual({ optionId: 'skip' });
+    });
+
+    it('教程 AI 可从当前 ChoiceRequest 候选补全正式命令 payload', () => {
+        const payload = injectTutorialInteractionId({
+            state: createState({
+                id: 'dt-token-response-damage-1',
+                playerId: '0',
+                kind: 'dt:token-response',
+                data: {
+                    choiceRequestContract: {
+                        requestId: 'choice-1',
+                        playerId: '0',
+                        kind: 'optional-skip',
+                        selection: { min: 0, max: 1 },
+                        resolution: { type: 'candidate-commands' },
+                        candidates: [{
+                            id: 'skip',
+                            commands: [{
+                                type: 'SKIP_TOKEN_RESPONSE',
+                                payload: { pendingDamageId: 'damage-1' },
+                            }],
+                        }],
+                    },
+                },
+            }),
+            commandType: 'SKIP_TOKEN_RESPONSE',
+            payload: {
+                __tutorialChoiceCandidateId: 'skip',
+                pendingDamageId: 'stale-script-value',
+            },
+            tutorialPlayerId: '0',
+            isTutorialAiCommand: true,
+        });
+
+        expect(payload).toEqual({ pendingDamageId: 'damage-1' });
+    });
+
+    it('教程 AI 指向不存在的 ChoiceRequest 候选时应暴露合同错误', () => {
+        expect(() => injectTutorialInteractionId({
+            state: createState({
+                id: 'dt-token-response-damage-1',
+                playerId: '0',
+                kind: 'dt:token-response',
+                data: {
+                    choiceRequestContract: {
+                        requestId: 'choice-1',
+                        playerId: '0',
+                        kind: 'optional-skip',
+                        selection: { min: 0, max: 1 },
+                        resolution: { type: 'candidate-commands' },
+                        candidates: [],
+                    },
+                },
+            }),
+            commandType: 'SKIP_TOKEN_RESPONSE',
+            payload: { __tutorialChoiceCandidateId: 'skip' },
+            tutorialPlayerId: '0',
+            isTutorialAiCommand: true,
+        })).toThrow('教程 AI 候选 skip 不属于当前可用 ChoiceRequest');
     });
 });

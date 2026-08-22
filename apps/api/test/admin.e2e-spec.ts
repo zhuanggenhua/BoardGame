@@ -321,23 +321,23 @@ describe('Admin Module (e2e)', () => {
         const matchID = await seedMatch();
 
         await request(app.getHttpServer())
-            .get('/admin/stats')
+            .get('/admin-api/stats')
             .expect(200);
 
         await request(app.getHttpServer())
-            .get('/admin/stats/trend?days=7')
+            .get('/admin-api/stats/trend?days=7')
             .expect(200);
 
         await request(app.getHttpServer())
-            .get('/admin/matches?limit=10')
+            .get('/admin-api/matches?limit=10')
             .expect(200);
 
         await request(app.getHttpServer())
-            .get(`/admin/matches/${matchID}`)
+            .get(`/admin-api/matches/${matchID}`)
             .expect(200);
 
         await request(app.getHttpServer())
-            .get('/admin/stats')
+            .get('/admin-api/stats')
             .set('Authorization', `Bearer ${userToken}`)
             .expect(200);
     });
@@ -353,7 +353,7 @@ describe('Admin Module (e2e)', () => {
         });
 
         const statsRes = await request(app.getHttpServer())
-            .get('/admin/stats')
+            .get('/admin-api/stats')
             .set('Authorization', `Bearer ${developer.token}`)
             .expect(200);
 
@@ -361,7 +361,7 @@ describe('Admin Module (e2e)', () => {
         expect(statsRes.body.todayUsers).toBe(3);
 
         const trendRes = await request(app.getHttpServer())
-            .get('/admin/stats/trend?days=7')
+            .get('/admin-api/stats/trend?days=7')
             .set('Authorization', `Bearer ${developer.token}`)
             .expect(200);
 
@@ -369,31 +369,31 @@ describe('Admin Module (e2e)', () => {
         expect(Array.isArray(trendRes.body.dailyUsers)).toBe(true);
 
         const matchesRes = await request(app.getHttpServer())
-            .get('/admin/matches?limit=10')
+            .get('/admin-api/matches?limit=10')
             .set('Authorization', `Bearer ${developer.token}`)
             .expect(200);
 
         expect(matchesRes.body.total).toBe(1);
 
         const matchDetailRes = await request(app.getHttpServer())
-            .get(`/admin/matches/${matchID}`)
+            .get(`/admin-api/matches/${matchID}`)
             .set('Authorization', `Bearer ${developer.token}`)
             .expect(200);
 
         expect(matchDetailRes.body.matchID).toBe(matchID);
 
         await request(app.getHttpServer())
-            .get('/admin/users?limit=10')
+            .get('/admin-api/users?limit=10')
             .set('Authorization', `Bearer ${developer.token}`)
             .expect(403);
 
         await request(app.getHttpServer())
-            .delete(`/admin/matches/${matchID}`)
+            .delete(`/admin-api/matches/${matchID}`)
             .set('Authorization', `Bearer ${developer.token}`)
             .expect(403);
 
         await request(app.getHttpServer())
-            .get('/admin/stats')
+            .get('/admin-api/stats')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
     });
@@ -404,7 +404,7 @@ describe('Admin Module (e2e)', () => {
         const roomID = await seedRoom();
 
         const statsRes = await request(app.getHttpServer())
-            .get('/admin/stats')
+            .get('/admin-api/stats')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -417,7 +417,7 @@ describe('Admin Module (e2e)', () => {
         expect(statsRes.body.activeUsers24h).toBe(0);
 
         const trendRes = await request(app.getHttpServer())
-            .get('/admin/stats/trend?days=7')
+            .get('/admin-api/stats/trend?days=7')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -428,7 +428,7 @@ describe('Admin Module (e2e)', () => {
         expect(trendRes.body.dailyMatches.reduce((sum: number, item: { count: number }) => sum + item.count, 0)).toBe(1);
 
         const usersRes = await request(app.getHttpServer())
-            .get('/admin/users?limit=10')
+            .get('/admin-api/users?limit=10')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -436,7 +436,7 @@ describe('Admin Module (e2e)', () => {
         expect(player?.matchCount).toBe(1);
 
         const detailRes = await request(app.getHttpServer())
-            .get(`/admin/users/${userId}`)
+            .get(`/admin-api/users/${userId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -445,14 +445,14 @@ describe('Admin Module (e2e)', () => {
         expect(detailRes.body.recentMatches.length).toBe(1);
 
         const matchesRes = await request(app.getHttpServer())
-            .get('/admin/matches?limit=10')
+            .get('/admin-api/matches?limit=10')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
         expect(matchesRes.body.total).toBe(1);
 
         const roomsRes = await request(app.getHttpServer())
-            .get('/admin/rooms?limit=10')
+            .get('/admin-api/rooms?limit=10')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -461,12 +461,12 @@ describe('Admin Module (e2e)', () => {
         expect(roomsRes.body.items[0].isLocked).toBe(true);
 
         await request(app.getHttpServer())
-            .delete(`/admin/rooms/${roomID}`)
+            .delete(`/admin-api/rooms/${roomID}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
         const matchDetailRes = await request(app.getHttpServer())
-            .get(`/admin/matches/${matchID}`)
+            .get(`/admin-api/matches/${matchID}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -524,7 +524,7 @@ describe('Admin Module (e2e)', () => {
         ]);
 
         const retentionRes = await request(app.getHttpServer())
-            .get('/admin/stats/retention')
+            .get('/admin-api/stats/retention')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -539,7 +539,7 @@ describe('Admin Module (e2e)', () => {
         });
 
         const activityRes = await request(app.getHttpServer())
-            .get('/admin/stats/activity-tiers')
+            .get('/admin-api/stats/activity-tiers')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -557,7 +557,7 @@ describe('Admin Module (e2e)', () => {
         const { adminToken, adminId, userId, userEmail } = await seedUsers();
 
         const promoteRes = await request(app.getHttpServer())
-            .patch(`/admin/users/${userId}/role`)
+            .patch(`/admin-api/users/${userId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ role: 'admin' })
             .expect(200);
@@ -569,7 +569,7 @@ describe('Admin Module (e2e)', () => {
         expect(promotedUser?.role).toBe('admin');
 
         const demoteRes = await request(app.getHttpServer())
-            .patch(`/admin/users/${userId}/role`)
+            .patch(`/admin-api/users/${userId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ role: 'user' })
             .expect(200);
@@ -584,7 +584,7 @@ describe('Admin Module (e2e)', () => {
         expect(logs.every(log => typeof log.message === 'string' && log.message.includes(`targetUserId=${userId}`))).toBe(true);
 
         await request(app.getHttpServer())
-            .patch(`/admin/users/${adminId}/role`)
+            .patch(`/admin-api/users/${adminId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ role: 'user' })
             .expect(400);
@@ -594,7 +594,7 @@ describe('Admin Module (e2e)', () => {
         const { adminToken, userId } = await seedUsers();
 
         const banRes = await request(app.getHttpServer())
-            .post(`/admin/users/${userId}/ban`)
+            .post(`/admin-api/users/${userId}/ban`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ reason: '违规行为' })
             .expect(201);
@@ -602,7 +602,7 @@ describe('Admin Module (e2e)', () => {
         expect(banRes.body.user.banned).toBe(true);
 
         const unbanRes = await request(app.getHttpServer())
-            .post(`/admin/users/${userId}/unban`)
+            .post(`/admin-api/users/${userId}/unban`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -612,7 +612,7 @@ describe('Admin Module (e2e)', () => {
     it('封禁管理员 - cannotBanAdmin', async () => {
         const { adminToken, adminId } = await seedUsers();
         await request(app.getHttpServer())
-            .post(`/admin/users/${adminId}/ban`)
+            .post(`/admin-api/users/${adminId}/ban`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ reason: '测试' })
             .expect(400);
@@ -668,7 +668,7 @@ describe('Admin Module (e2e)', () => {
         ]);
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/ugc/packages?limit=10')
+            .get('/admin-api/ugc/packages?limit=10')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -676,7 +676,7 @@ describe('Admin Module (e2e)', () => {
         expect(listRes.body.items.some((item: { packageId: string }) => item.packageId === 'ugc-pub-a')).toBe(true);
 
         const unpublishRes = await request(app.getHttpServer())
-            .post('/admin/ugc/packages/ugc-pub-a/unpublish')
+            .post('/admin-api/ugc/packages/ugc-pub-a/unpublish')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -684,7 +684,7 @@ describe('Admin Module (e2e)', () => {
         expect(unpublishRes.body.package.publishedAt).toBeNull();
 
         const deleteDraftRes = await request(app.getHttpServer())
-            .delete('/admin/ugc/packages/ugc-draft-b')
+            .delete('/admin-api/ugc/packages/ugc-draft-b')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -693,7 +693,7 @@ describe('Admin Module (e2e)', () => {
         expect(await ugcPackageModel.findOne({ packageId: 'ugc-draft-b' })).toBeNull();
 
         const deletePubRes = await request(app.getHttpServer())
-            .delete('/admin/ugc/packages/ugc-pub-a')
+            .delete('/admin-api/ugc/packages/ugc-pub-a')
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -727,14 +727,14 @@ describe('Admin Module (e2e)', () => {
         });
 
         await request(app.getHttpServer())
-            .delete(`/admin/matches/${matchA.matchID}`)
+            .delete(`/admin-api/matches/${matchA.matchID}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
         expect(await matchRecordModel.findOne({ matchID: matchA.matchID })).toBeNull();
 
         await request(app.getHttpServer())
-            .post('/admin/matches/bulk-delete')
+            .post('/admin-api/matches/bulk-delete')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ ids: [matchB.matchID, 'missing'] })
             .expect(200);
@@ -761,7 +761,7 @@ describe('Admin Module (e2e)', () => {
         });
 
         await request(app.getHttpServer())
-            .post('/admin/rooms/bulk-delete')
+            .post('/admin-api/rooms/bulk-delete')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ ids: [roomA.matchID, roomB.matchID] })
             .expect(200);
@@ -770,7 +770,7 @@ describe('Admin Module (e2e)', () => {
         expect(await roomMatchModel.findOne({ matchID: roomB.matchID })).toBeNull();
 
         await request(app.getHttpServer())
-            .post('/admin/rooms/bulk-delete-by-filter')
+            .post('/admin-api/rooms/bulk-delete-by-filter')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ gameName: 'dicethrone' })
             .expect(200);
@@ -778,7 +778,7 @@ describe('Admin Module (e2e)', () => {
         expect(await roomMatchModel.findOne({ matchID: roomC.matchID })).toBeNull();
 
         const bulkUserRes = await request(app.getHttpServer())
-            .post('/admin/users/bulk-delete')
+            .post('/admin-api/users/bulk-delete')
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ ids: [userId, adminId, 'invalid-id'] })
             .expect(200);
@@ -806,7 +806,7 @@ describe('Admin Module (e2e)', () => {
         });
 
         await request(app.getHttpServer())
-            .delete(`/admin/users/${userId}`)
+            .delete(`/admin-api/users/${userId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(200);
 
@@ -827,7 +827,7 @@ describe('Admin Module (e2e)', () => {
         ).toBe(true);
 
         await request(app.getHttpServer())
-            .delete(`/admin/users/${adminId}`)
+            .delete(`/admin-api/users/${adminId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .expect(400);
     });
@@ -922,7 +922,7 @@ describe('Admin user role update (e2e)', () => {
         const { adminToken, adminId, adminEmail, userId, userEmail } = await seedUsers();
 
         const promoteRes = await request(app.getHttpServer())
-            .patch(`/admin/users/${userId}/role`)
+            .patch(`/admin-api/users/${userId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ role: 'admin' })
             .expect(200);
@@ -932,7 +932,7 @@ describe('Admin user role update (e2e)', () => {
         expect((await userModel.findById(userId).lean())?.role).toBe('admin');
 
         const demoteRes = await request(app.getHttpServer())
-            .patch(`/admin/users/${userId}/role`)
+            .patch(`/admin-api/users/${userId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ role: 'user' })
             .expect(200);
@@ -941,7 +941,7 @@ describe('Admin user role update (e2e)', () => {
         expect(demoteRes.body.changed).toBe(true);
 
         await request(app.getHttpServer())
-            .patch(`/admin/users/${adminId}/role`)
+            .patch(`/admin-api/users/${adminId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({ role: 'user' })
             .expect(400);
@@ -962,7 +962,7 @@ describe('Admin user role update (e2e)', () => {
         const { adminToken, userId, userEmail } = await seedUsers();
 
         const updateRes = await request(app.getHttpServer())
-            .patch(`/admin/users/${userId}/role`)
+            .patch(`/admin-api/users/${userId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({
                 role: 'developer',
@@ -988,7 +988,7 @@ describe('Admin user role update (e2e)', () => {
         const { adminToken, userId, userEmail } = await seedUsers();
 
         await request(app.getHttpServer())
-            .patch(`/admin/users/${userId}/role`)
+            .patch(`/admin-api/users/${userId}/role`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send({
                 role: 'developer',
@@ -1012,11 +1012,11 @@ describe('Admin user role update (e2e)', () => {
 
         const [demotePeer, demoteActor] = await Promise.all([
             request(app.getHttpServer())
-                .patch(`/admin/users/${userId}/role`)
+                .patch(`/admin-api/users/${userId}/role`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ role: 'user' }),
             request(app.getHttpServer())
-                .patch(`/admin/users/${adminId}/role`)
+                .patch(`/admin-api/users/${adminId}/role`)
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({ role: 'user' }),
         ]);
@@ -1153,7 +1153,7 @@ describe('Game changelog access (e2e)', () => {
         ]);
 
         const listRes = await request(app.getHttpServer())
-            .get('/admin/game-changelogs')
+            .get('/admin-api/game-changelogs')
             .set('Authorization', `Bearer ${developerToken}`)
             .expect(200);
 
@@ -1162,7 +1162,7 @@ describe('Game changelog access (e2e)', () => {
         expect(listRes.body.items[0]?.gameId).toBe('smashup');
 
         await request(app.getHttpServer())
-            .post('/admin/game-changelogs')
+            .post('/admin-api/game-changelogs')
             .set('Authorization', `Bearer ${developerToken}`)
             .send({
                 gameId: 'tictactoe',
@@ -1175,7 +1175,7 @@ describe('Game changelog access (e2e)', () => {
         expect(forbiddenTarget?._id).toBeDefined();
 
         await request(app.getHttpServer())
-            .put(`/admin/game-changelogs/${forbiddenTarget!._id.toString()}`)
+            .put(`/admin-api/game-changelogs/${forbiddenTarget!._id.toString()}`)
             .set('Authorization', `Bearer ${developerToken}`)
             .send({
                 title: '越权修改',
@@ -1183,12 +1183,12 @@ describe('Game changelog access (e2e)', () => {
             .expect(403);
 
         await request(app.getHttpServer())
-            .delete(`/admin/game-changelogs/${forbiddenTarget!._id.toString()}`)
+            .delete(`/admin-api/game-changelogs/${forbiddenTarget!._id.toString()}`)
             .set('Authorization', `Bearer ${developerToken}`)
             .expect(403);
 
         const createRes = await request(app.getHttpServer())
-            .post('/admin/game-changelogs')
+            .post('/admin-api/game-changelogs')
             .set('Authorization', `Bearer ${developerToken}`)
             .send({
                 gameId: 'dicethrone',

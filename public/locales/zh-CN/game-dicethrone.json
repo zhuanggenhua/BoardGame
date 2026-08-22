@@ -918,6 +918,7 @@
     "noTokens": "没有可用标记",
     "confirm": "确认",
     "skip": "跳过",
+    "skipResponse": "跳过标记响应",
     "preview": {
       "critBoost": "+4 伤害",
       "critRequires": "需要伤害至少为 5",

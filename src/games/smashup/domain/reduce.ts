@@ -134,6 +134,7 @@ import {
     getBestMatchingBaseLimitedPowerQuota,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
+    findSpecificExtraMinionPlay,
     getBestMatchingGlobalPowerLimitedQuota,
     getRemainingBaseLimitedPowerLimitedMinionQuotas,
     getRemainingGlobalPowerLimitedMinionQuotas,
@@ -1157,6 +1158,7 @@ export function reduceTurnStartedEvent(
                 baseLimitedMinionQuota: undefined,
                 baseLimitedMinionPowerCaps: undefined,
                 baseLimitedSameNameRequired: undefined,
+                specificExtraMinionPlays: undefined,
                 extraMinionPowerCaps: undefined,
                 extraMinionPowerMax: undefined,
                 sameNameMinionRemaining: undefined,
@@ -2163,6 +2165,16 @@ export function reduceMinionPlayedEvent(
     // consumesNormalLimit=false 时不消耗正常额度（忍者 special 额外打出、弃牌堆额外出牌等）
     const shouldIncrementPlayed = consumesNormalLimit !== false;
     const quotaResolution = (() => {
+        const specificExtraMinionPlay = !playAsAction
+            ? findSpecificExtraMinionPlay(player, {
+                cardUid,
+                defId,
+                baseIndex: resolvedBaseIndex,
+                basePower: power,
+            })
+            : undefined;
+        const useSpecificExtraMinionPlay = specificExtraMinionPlay !== undefined;
+        const shouldConsumeStandardMinionQuota = shouldIncrementPlayed && !useSpecificExtraMinionPlay;
         const baseQuota = player.baseLimitedMinionQuota?.[resolvedBaseIndex] ?? 0;
         const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
         const baseDef = getBaseDef(state.bases[resolvedBaseIndex]?.defId);
@@ -2171,18 +2183,18 @@ export function reduceMinionPlayedEvent(
                 && restriction.condition?.extraPlayMinionPowerMax !== undefined,
         ) ?? false;
         const remainingBasePowerCaps = getRemainingBaseLimitedPowerLimitedMinionQuotas(player, resolvedBaseIndex);
-        const canUseBaseQuota = shouldIncrementPlayed
+        const canUseBaseQuota = shouldConsumeStandardMinionQuota
             && canUseBaseLimitedMinionQuota(state, player, resolvedBaseIndex, defId, power);
-        const canUseSameNameQuota = shouldIncrementPlayed
+        const canUseSameNameQuota = shouldConsumeStandardMinionQuota
             && canUseSameNameMinionQuota(player, defId);
-        const matchingBasePowerQuota = shouldIncrementPlayed
+        const matchingBasePowerQuota = shouldConsumeStandardMinionQuota
             ? getBestMatchingBaseLimitedPowerQuota(player, resolvedBaseIndex, power)
             : undefined;
-        const matchingGlobalPowerQuota = shouldIncrementPlayed
+        const matchingGlobalPowerQuota = shouldConsumeStandardMinionQuota
             ? getBestMatchingGlobalPowerLimitedQuota(player, power)
             : undefined;
         const requiredBaseSameNameDefId = player.baseLimitedSameNameDefId?.[resolvedBaseIndex];
-        const matchesRestrictedBaseSameNameQuota = shouldIncrementPlayed
+        const matchesRestrictedBaseSameNameQuota = shouldConsumeStandardMinionQuota
             && player.baseLimitedSameNameRequired?.[resolvedBaseIndex] === true
             && (
                 requiredBaseSameNameDefId
@@ -2204,7 +2216,7 @@ export function reduceMinionPlayedEvent(
             && !useGlobalPowerQuota
             && canUseBaseQuota;
         const remainingGlobalPowerCaps = getRemainingGlobalPowerLimitedMinionQuotas(player);
-        const unrestrictedGlobalQuotaRemaining = shouldIncrementPlayed
+        const unrestrictedGlobalQuotaRemaining = shouldConsumeStandardMinionQuota
             ? getRemainingUnrestrictedGlobalMinionQuota(player)
             : 0;
 
@@ -2215,9 +2227,14 @@ export function reduceMinionPlayedEvent(
         let newSameNameRemaining = player.sameNameMinionRemaining;
         let newSameNameDefId = player.sameNameMinionDefId;
         let newExtraMinionPowerCaps = remainingGlobalPowerCaps;
+        let newSpecificExtraMinionPlays = player.specificExtraMinionPlays;
         let finalMinionsPlayed = player.minionsPlayed;
 
-        if (useRestrictedBaseQuota || useBaseQuota) {
+        if (useSpecificExtraMinionPlay) {
+            newSpecificExtraMinionPlays = player.specificExtraMinionPlays?.filter(
+                (_entry, index) => index !== specificExtraMinionPlay.index,
+            );
+        } else if (useRestrictedBaseQuota || useBaseQuota) {
             newBaseLimitedMinionQuota = {
                 ...player.baseLimitedMinionQuota,
                 [resolvedBaseIndex]: baseQuota - 1,
@@ -2275,10 +2292,18 @@ export function reduceMinionPlayedEvent(
             baseLimitedSameNameDefId: newBaseLimitedSameNameDefId,
             sameNameMinionRemaining: newSameNameRemaining,
             sameNameMinionDefId: newSameNameDefId,
+            specificExtraMinionPlays: newSpecificExtraMinionPlays && newSpecificExtraMinionPlays.length > 0
+                ? newSpecificExtraMinionPlays
+                : undefined,
             extraMinionPowerCaps: newExtraMinionPowerCaps.length > 0 ? newExtraMinionPowerCaps : undefined,
             extraMinionPowerMax: newExtraMinionPowerCaps.length > 0
                 ? Math.min(...newExtraMinionPowerCaps)
                 : undefined,
+            usedExtraCard: useSpecificExtraMinionPlay
+                || useRestrictedBaseQuota
+                || useBaseQuota
+                || useSameNameQuota
+                || useGlobalPowerQuota,
         };
     })();
 
@@ -2302,6 +2327,7 @@ export function reduceMinionPlayedEvent(
                 baseLimitedMinionPowerCaps: quotaResolution.baseLimitedMinionPowerCaps,
                 baseLimitedSameNameRequired: quotaResolution.baseLimitedSameNameRequired,
                 baseLimitedSameNameDefId: quotaResolution.baseLimitedSameNameDefId,
+                specificExtraMinionPlays: quotaResolution.specificExtraMinionPlays,
                 extraMinionPowerCaps: quotaResolution.extraMinionPowerCaps,
                 extraMinionPowerMax: quotaResolution.extraMinionPowerMax,
                 sameNameMinionRemaining: quotaResolution.sameNameMinionRemaining,
@@ -3603,6 +3629,7 @@ export function reduceLimitModifiedEvent(
         powerMax,
         sameNameOnly,
         sameNameDefId,
+        specificCardUid,
         playTiming,
     } = event.payload;
     const player = state.players[playerId];
@@ -3610,6 +3637,45 @@ export function reduceLimitModifiedEvent(
         return state;
     }
     if (limitType === 'minion') {
+        if (specificCardUid !== undefined) {
+            const existing = player.specificExtraMinionPlays ?? [];
+            const nextSpecificExtraMinionPlays = (() => {
+                if (delta > 0) {
+                    return [
+                        ...existing,
+                        ...Array.from({ length: delta }, () => ({
+                            cardUid: specificCardUid,
+                            reason: event.payload.reason,
+                            ...(restrictToBase !== undefined ? { restrictToBase } : {}),
+                            ...(powerMax !== undefined ? { powerMax } : {}),
+                            ...(sameNameOnly ? { sameNameOnly: true } : {}),
+                            ...(sameNameDefId ? { sameNameDefId } : {}),
+                        })),
+                    ];
+                }
+                if (delta < 0) {
+                    let remainingToRemove = Math.abs(delta);
+                    return existing.filter(entry => {
+                        if (remainingToRemove <= 0 || entry.cardUid !== specificCardUid) return true;
+                        remainingToRemove -= 1;
+                        return false;
+                    });
+                }
+                return existing;
+            })();
+            return {
+                ...state,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        specificExtraMinionPlays: nextSpecificExtraMinionPlays.length > 0
+                            ? nextSpecificExtraMinionPlays
+                            : undefined,
+                    },
+                },
+            };
+        }
         if (restrictToBase !== undefined) {
             const oldQuota = player.baseLimitedMinionQuota ?? {};
             const oldPowerCaps = player.baseLimitedMinionPowerCaps ?? {};

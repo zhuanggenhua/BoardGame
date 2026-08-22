@@ -40,6 +40,7 @@ interface BetrayalAiMonster {
     id: string;
     name: string;
     roomId: string;
+    speed?: number;
 }
 
 interface BetrayalAiMagicCameraRuntime {
@@ -69,6 +70,25 @@ interface BetrayalAiHelpingHandsRuntime {
     monsterTurnControllerPlayerId: string | null;
     trollHandMoveRemainingById: Record<string, number>;
     trollHandAttackUsedIdsThisTurn: string[];
+}
+
+interface BetrayalAiMummyRuntime {
+    mummyMonsterId: string;
+    sarcophagusRoomId: string;
+    girlRoomId: string | null;
+    girlHolderPlayerId: string | null;
+    girlHeldByMummy: boolean;
+    mummyCarriedOmenIds: string[];
+    mummyCarriedCards: BetrayalAiInventoryCard[];
+    pendingAttackReward?: {
+        controllerPlayerId: string;
+        defenderPlayerId: string;
+        stealableCardIds: string[];
+    };
+    knowledgeTokenCount: number;
+    trueNameFound: boolean;
+    banishmentSpellLearned: boolean;
+    requiredOmenIds: string[];
 }
 
 interface BetrayalAiRecentRoll {
@@ -163,6 +183,7 @@ interface BetrayalAiCore {
         dust?: BetrayalAiDustRuntime;
         magicCamera?: BetrayalAiMagicCameraRuntime;
         helpingHands?: BetrayalAiHelpingHandsRuntime;
+        mummy?: BetrayalAiMummyRuntime;
     };
     endgameResult: unknown | null;
 }
@@ -215,7 +236,21 @@ const ACTION_KINDS = {
     MOVE_TROLL_HAND: 'move-troll-hand',
     TROLL_HAND_ATTACK: 'troll-hand-attack',
     END_TROLL_HAND_MONSTER_TURN: 'end-troll-hand-monster-turn',
+    STUDY_MUMMY_NAME: 'study-mummy-name',
+    LEARN_MUMMY_BANISHMENT: 'learn-mummy-banishment',
+    BANISH_MUMMY: 'banish-mummy',
+    PICK_UP_MUMMY_GIRL: 'pick-up-mummy-girl',
+    GIVE_GIRL_TO_MUMMY: 'give-girl-to-mummy',
+    GIVE_OMEN_TO_MUMMY: 'give-omen-to-mummy',
+    RESOLVE_MUMMY_ATTACK_REWARD: 'resolve-mummy-attack-reward',
+    RESOLVE_MONSTER_TURN_START: 'resolve-monster-turn-start',
+    ROLL_MONSTER_MOVEMENT_GROUP: 'roll-monster-movement-group',
+    MOVE_MONSTER_TO_ROOM: 'move-monster-to-room',
+    MONSTER_ATTACK_HERO: 'monster-attack-hero',
+    ACKNOWLEDGE_RECENT_ROLL: 'acknowledge-recent-roll',
 } as const;
+
+const MUMMY_WEDDING_OMEN_EFFECT_IDS = new Set(['holy-symbol', 'ring']);
 
 const BETRAYAL_AI_TRAITS: BetrayalTraitKey[] = ['might', 'speed', 'knowledge', 'sanity'];
 
@@ -482,6 +517,12 @@ function isDustHaunt(core: BetrayalAiCore): boolean {
         && Boolean(core.scenarioRuntime.dust);
 }
 
+function isMummyHaunt(core: BetrayalAiCore): boolean {
+    return core.phase === 'haunt'
+        && core.scenarioRuntime.hauntCardNumber === 1
+        && Boolean(core.scenarioRuntime.mummy);
+}
+
 function isHelpingHandsMonsterTurn(core: BetrayalAiCore, playerId: PlayerId): boolean {
     const helpingHands = core.scenarioRuntime.helpingHands;
     return core.phase === 'haunt'
@@ -494,6 +535,45 @@ function resolveLowestTrait(explorer: BetrayalAiExplorer): BetrayalTraitKey {
     return BETRAYAL_AI_TRAITS.reduce((lowest, trait) => (
         explorer.traits[trait] < explorer.traits[lowest] ? trait : lowest
     ), 'might');
+}
+
+function hasOmenBook(explorer: BetrayalAiExplorer | null | undefined): boolean {
+    return Boolean(explorer?.inventory.some((card) => (
+        card.kind === 'omen'
+        && (
+            resolveInventoryEffectId(card.id) === 'omen-book'
+            || card.name === '书本'
+            || card.name.toLowerCase() === 'book'
+        )
+    )));
+}
+
+function isMummyWeddingOmen(card: BetrayalAiInventoryCard | null | undefined): boolean {
+    return Boolean(card && card.kind === 'omen' && MUMMY_WEDDING_OMEN_EFFECT_IDS.has(resolveInventoryEffectId(card.id)));
+}
+
+function findMummyMonster(core: BetrayalAiCore): BetrayalAiMonster | null {
+    const mummyId = core.scenarioRuntime.mummy?.mummyMonsterId ?? 'mummy';
+    return core.monsters.find((monster) => monster.id === mummyId || monster.id === 'mummy' || monster.name === '木乃伊') ?? null;
+}
+
+function getLivingHeroes(core: BetrayalAiCore): BetrayalAiExplorer[] {
+    return getAllExplorers(core).filter((explorer) => (
+        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+}
+
+function resolveMummyMovementGroupId(monster: BetrayalAiMonster): string {
+    return `${monster.name}:${monster.speed ?? 3}`;
+}
+
+function isMummyNameStudyCandidateRoom(core: BetrayalAiCore, room: BetrayalAiRoom): boolean {
+    const mummy = core.scenarioRuntime.mummy;
+    return room.id === mummy?.sarcophagusRoomId
+        || room.name === '书房'
+        || room.name === '图书馆'
+        || room.id === 'upper-west';
 }
 
 function buildDustSicknessExchangeActions(
@@ -719,6 +799,334 @@ function buildMagicCameraHauntActions(
     }
 
     return actions;
+}
+
+function buildMummyAttackRewardActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pending = state.core.scenarioRuntime.mummy?.pendingAttackReward;
+    if (!pending || pending.controllerPlayerId !== playerId) return [];
+
+    const actions: AiLegalAction[] = [];
+    const defender = findExplorer(state.core, pending.defenderPlayerId);
+    const defenderCards = new Map(defender?.inventory.map((card) => [card.id, card]) ?? []);
+    const preferredStealCardIds = pending.stealableCardIds
+        .filter((cardId) => (
+            cardId === 'mummy-girl-token'
+            || MUMMY_WEDDING_OMEN_EFFECT_IDS.has(resolveInventoryEffectId(cardId))
+            || defenderCards.get(cardId)?.kind === 'omen'
+        ));
+    for (const cardId of Array.from(new Set([...preferredStealCardIds, ...pending.stealableCardIds]))) {
+        const card = cardId === 'mummy-girl-token'
+            ? { id: cardId, name: '女孩', kind: 'omen' as const }
+            : defenderCards.get(cardId);
+        if (!card) continue;
+        const action = createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD,
+            payload: { choice: 'steal', cardId },
+            kind: ACTION_KINDS.RESOLVE_MUMMY_ATTACK_REWARD,
+            label: `木乃伊夺取${card.name}`,
+            idParts: ['steal', cardId],
+            metadata: {
+                cardId,
+                choice: 'steal',
+                strategicScore: cardId === 'mummy-girl-token' || isMummyWeddingOmen(card) ? 1500 : 1320,
+                visibleStepDelayPolicy: 'visible',
+            },
+        });
+        if (action) actions.push(action);
+    }
+
+    const damage = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD,
+        payload: { choice: 'damage' },
+        kind: ACTION_KINDS.RESOLVE_MUMMY_ATTACK_REWARD,
+        label: '木乃伊造成伤害',
+        idParts: ['damage'],
+        metadata: {
+            choice: 'damage',
+            strategicScore: 1260,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    if (damage) actions.push(damage);
+    return actions;
+}
+
+function buildMummyHeroActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+    isDead: boolean,
+): AiLegalAction[] {
+    const core = state.core;
+    const mummy = core.scenarioRuntime.mummy;
+    const actor = findExplorer(core, playerId);
+    if (!isMummyHaunt(core) || !mummy || !actor || isDead) return [];
+
+    const actions: AiLegalAction[] = [];
+    const add = (action: AiLegalAction | null) => {
+        if (action) actions.push(action);
+    };
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.BANISH_MUMMY,
+        payload: {},
+        kind: ACTION_KINDS.BANISH_MUMMY,
+        label: '驱逐木乃伊',
+        metadata: {
+            strategicScore: 1480 + actor.traits.sanity * 10,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT,
+        payload: {},
+        kind: ACTION_KINDS.LEARN_MUMMY_BANISHMENT,
+        label: '学习驱逐法术',
+        metadata: {
+            strategicScore: 1410 + actor.traits.knowledge * 10 + (hasOmenBook(actor) ? 60 : 0),
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.STUDY_MUMMY_NAME,
+        payload: {},
+        kind: ACTION_KINDS.STUDY_MUMMY_NAME,
+        label: '寻找木乃伊真名',
+        metadata: {
+            strategicScore: 1360 + actor.traits.knowledge * 10,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL,
+        payload: {},
+        kind: ACTION_KINDS.PICK_UP_MUMMY_GIRL,
+        label: '拾起女孩',
+        metadata: {
+            strategicScore: 760,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    return actions;
+}
+
+function buildMummyTraitorActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+    isDead: boolean,
+): AiLegalAction[] {
+    const core = state.core;
+    const actor = findExplorer(core, playerId);
+    if (!isMummyHaunt(core) || !actor || isDead) return [];
+
+    const actions: AiLegalAction[] = [];
+    const add = (action: AiLegalAction | null) => {
+        if (action) actions.push(action);
+    };
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY,
+        payload: {},
+        kind: ACTION_KINDS.GIVE_GIRL_TO_MUMMY,
+        label: '把女孩交给木乃伊',
+        metadata: {
+            strategicScore: 1460,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    for (const card of actor.inventory.filter(isMummyWeddingOmen)) {
+        add(createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY,
+            payload: { cardId: card.id },
+            kind: ACTION_KINDS.GIVE_OMEN_TO_MUMMY,
+            label: `把${card.name}交给木乃伊`,
+            idParts: [card.id],
+            metadata: {
+                cardId: card.id,
+                strategicScore: 1440,
+                visibleStepDelayPolicy: 'visible',
+            },
+        }));
+    }
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL,
+        payload: {},
+        kind: ACTION_KINDS.PICK_UP_MUMMY_GIRL,
+        label: '拾起女孩',
+        metadata: {
+            strategicScore: 1380,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    return actions;
+}
+
+function scoreMummyMonsterMove(core: BetrayalAiCore, monster: BetrayalAiMonster, roomId: string): number {
+    const mummy = core.scenarioRuntime.mummy;
+    if (!mummy) return 0;
+    if (mummy.girlHeldByMummy && mummy.mummyCarriedOmenIds.some((cardId) => MUMMY_WEDDING_OMEN_EFFECT_IDS.has(resolveInventoryEffectId(cardId)))) {
+        return roomId === mummy.sarcophagusRoomId ? 1560 : 1180 - roomDistance(core, roomId, mummy.sarcophagusRoomId) * 18;
+    }
+    if (mummy.girlRoomId) {
+        return roomId === mummy.girlRoomId ? 1460 : 1120 - roomDistance(core, roomId, mummy.girlRoomId) * 18;
+    }
+    if (mummy.girlHolderPlayerId) {
+        const holder = findExplorer(core, mummy.girlHolderPlayerId);
+        if (holder) {
+            return roomId === holder.roomId ? 1440 : 1100 - roomDistance(core, roomId, holder.roomId) * 18;
+        }
+    }
+    const heroRoomDistances = getLivingHeroes(core).map((hero) => roomDistance(core, roomId, hero.roomId));
+    if (heroRoomDistances.length > 0) {
+        return 980 - Math.min(...heroRoomDistances) * 15;
+    }
+    return monster.roomId === roomId ? 0 : 400;
+}
+
+function buildMummyMonsterActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const core = state.core;
+    const mummy = core.scenarioRuntime.mummy;
+    const monster = findMummyMonster(core);
+    if (!isMummyHaunt(core) || !mummy || !monster || core.scenarioRuntime.traitorPlayerId !== playerId) {
+        return [];
+    }
+
+    const actions: AiLegalAction[] = [];
+    const add = (action: AiLegalAction | null) => {
+        if (action) actions.push(action);
+    };
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+        payload: { monsterId: monster.id },
+        kind: ACTION_KINDS.RESOLVE_MONSTER_TURN_START,
+        label: `${monster.name}开回合`,
+        idParts: [monster.id],
+        metadata: {
+            monsterId: monster.id,
+            strategicScore: 1520,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+        payload: { groupId: resolveMummyMovementGroupId(monster) },
+        kind: ACTION_KINDS.ROLL_MONSTER_MOVEMENT_GROUP,
+        label: `${monster.name}移动骰`,
+        idParts: [resolveMummyMovementGroupId(monster)],
+        metadata: {
+            groupId: resolveMummyMovementGroupId(monster),
+            strategicScore: 1510,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    for (const hero of getLivingHeroes(core).filter((candidate) => candidate.roomId === monster.roomId)) {
+        add(createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            payload: { monsterId: monster.id, targetPlayerId: hero.playerId },
+            kind: ACTION_KINDS.MONSTER_ATTACK_HERO,
+            label: `${monster.name}攻击${hero.displayName}`,
+            idParts: [monster.id, hero.playerId],
+            metadata: {
+                monsterId: monster.id,
+                targetPlayerId: hero.playerId,
+                strategicScore: 1490 + Math.max(0, 8 - hero.traits.might) * 8,
+                visibleStepDelayPolicy: 'visible',
+            },
+        }));
+    }
+
+    for (const room of core.rooms.filter((candidate) => candidate.state === 'discovered' && candidate.id !== monster.roomId)) {
+        add(createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+            payload: { monsterId: monster.id, roomId: room.id },
+            kind: ACTION_KINDS.MOVE_MONSTER_TO_ROOM,
+            label: `${monster.name}移动到${room.name}`,
+            idParts: [monster.id, room.id],
+            metadata: {
+                monsterId: monster.id,
+                roomId: room.id,
+                strategicScore: scoreMummyMonsterMove(core, monster, room.id),
+                visibleStepDelayPolicy: 'visible',
+            },
+        }));
+    }
+
+    return actions;
+}
+
+function buildMummyHauntActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+    isTraitor: boolean,
+    isDead: boolean,
+): AiLegalAction[] {
+    if (!isMummyHaunt(state.core)) return [];
+    return [
+        ...buildMummyAttackRewardActions(validate, state, playerId),
+        ...buildMummyMonsterActions(validate, state, playerId),
+        ...(isTraitor
+            ? buildMummyTraitorActions(validate, state, playerId, isDead)
+            : buildMummyHeroActions(validate, state, playerId, isDead)),
+    ];
 }
 
 function buildTradeAgreementActions(
@@ -1277,78 +1685,82 @@ function buildTurnActions(
     } else if (core.phase === 'haunt') {
         const isTraitor = core.scenarioRuntime.traitorPlayerId === playerId;
         const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId);
-        actions.push(...buildDustHauntActions(validate, state, playerId, isDead));
-        actions.push(...buildMagicCameraHauntActions(validate, state, playerId, isTraitor, isDead));
-        if (isTraitor) {
-            for (const hero of getAllExplorers(core)) {
-                if (
-                    hero.playerId === playerId
-                    || core.scenarioRuntime.deadExplorerPlayerIds.includes(hero.playerId)
-                ) {
-                    continue;
+        if (isMummyHaunt(core)) {
+            actions.push(...buildMummyHauntActions(validate, state, playerId, isTraitor, isDead));
+        } else {
+            actions.push(...buildDustHauntActions(validate, state, playerId, isDead));
+            actions.push(...buildMagicCameraHauntActions(validate, state, playerId, isTraitor, isDead));
+            if (isTraitor) {
+                for (const hero of getAllExplorers(core)) {
+                    if (
+                        hero.playerId === playerId
+                        || core.scenarioRuntime.deadExplorerPlayerIds.includes(hero.playerId)
+                    ) {
+                        continue;
+                    }
+                    add(createValidatedAction({
+                        validate,
+                        state,
+                        playerId,
+                        type: BETRAYAL_COMMANDS.HAUNT_ATTACK,
+                        payload: { target: 'hero', targetPlayerId: hero.playerId },
+                        kind: ACTION_KINDS.TRAITOR_ATTACK_HERO,
+                        label: `攻击${hero.displayName}`,
+                        idParts: [hero.playerId],
+                        metadata: {
+                            targetPlayerId: hero.playerId,
+                            visibleStepDelayPolicy: 'visible',
+                        },
+                    }));
                 }
+            } else if (!isDead) {
                 add(createValidatedAction({
                     validate,
                     state,
                     playerId,
-                    type: BETRAYAL_COMMANDS.HAUNT_ATTACK,
-                    payload: { target: 'hero', targetPlayerId: hero.playerId },
-                    kind: ACTION_KINDS.TRAITOR_ATTACK_HERO,
-                    label: `攻击${hero.displayName}`,
-                    idParts: [hero.playerId],
-                    metadata: {
-                        targetPlayerId: hero.playerId,
-                        visibleStepDelayPolicy: 'visible',
-                    },
-                }));
-            }
-        } else if (!isDead) {
-            add(createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.EXORCISE_JACK,
-                payload: {},
-                kind: ACTION_KINDS.EXORCISE_JACK,
-                label: '驱魔',
-                metadata: { visibleStepDelayPolicy: 'visible' },
-            }));
-            add(createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.LEARN_ABOUT_JACK,
-                payload: {},
-                kind: ACTION_KINDS.LEARN_ABOUT_JACK,
-                label: '调查杰克',
-                metadata: { visibleStepDelayPolicy: 'visible' },
-            }));
-            add(createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.STUDY_EXORCISM,
-                payload: {},
-                kind: ACTION_KINDS.STUDY_EXORCISM,
-                label: '研究驱魔法阵',
-                metadata: { visibleStepDelayPolicy: 'visible' },
-            }));
-            const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
-            const traitorIsDead = Boolean(
-                traitorPlayerId
-                && core.scenarioRuntime.deadExplorerPlayerIds.includes(traitorPlayerId),
-            );
-            if (!traitorIsDead) {
-                add(createValidatedAction({
-                    validate,
-                    state,
-                    playerId,
-                    type: BETRAYAL_COMMANDS.HAUNT_ATTACK,
-                    payload: { target: 'traitor' },
-                    kind: ACTION_KINDS.HERO_ATTACK_TRAITOR,
-                    label: '攻击叛徒',
+                    type: BETRAYAL_COMMANDS.EXORCISE_JACK,
+                    payload: {},
+                    kind: ACTION_KINDS.EXORCISE_JACK,
+                    label: '驱魔',
                     metadata: { visibleStepDelayPolicy: 'visible' },
                 }));
+                add(createValidatedAction({
+                    validate,
+                    state,
+                    playerId,
+                    type: BETRAYAL_COMMANDS.LEARN_ABOUT_JACK,
+                    payload: {},
+                    kind: ACTION_KINDS.LEARN_ABOUT_JACK,
+                    label: '调查杰克',
+                    metadata: { visibleStepDelayPolicy: 'visible' },
+                }));
+                add(createValidatedAction({
+                    validate,
+                    state,
+                    playerId,
+                    type: BETRAYAL_COMMANDS.STUDY_EXORCISM,
+                    payload: {},
+                    kind: ACTION_KINDS.STUDY_EXORCISM,
+                    label: '研究驱魔法阵',
+                    metadata: { visibleStepDelayPolicy: 'visible' },
+                }));
+                const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
+                const traitorIsDead = Boolean(
+                    traitorPlayerId
+                    && core.scenarioRuntime.deadExplorerPlayerIds.includes(traitorPlayerId),
+                );
+                if (!traitorIsDead) {
+                    add(createValidatedAction({
+                        validate,
+                        state,
+                        playerId,
+                        type: BETRAYAL_COMMANDS.HAUNT_ATTACK,
+                        payload: { target: 'traitor' },
+                        kind: ACTION_KINDS.HERO_ATTACK_TRAITOR,
+                        label: '攻击叛徒',
+                        metadata: { visibleStepDelayPolicy: 'visible' },
+                    }));
+                }
             }
         }
     }
@@ -1510,6 +1922,31 @@ function buildTurnEndRollAcknowledgementActions(
     return action ? [action] : [];
 }
 
+function buildRecentRollAcknowledgementActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const recentRoll = state.core.recentRoll;
+    if (!recentRoll || recentRoll.playerId !== playerId || recentRoll.kind === 'roomEndTurnTraitCheck') {
+        return [];
+    }
+    const action = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
+        payload: {},
+        kind: ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL,
+        label: `确认投骰结果：${recentRoll.latestLabel}`,
+        metadata: {
+            strategicScore: 1230,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    return action ? [action] : [];
+}
+
 function buildCardResolutionAcknowledgementActions(
     validate: BetrayalAiValidator,
     state: BetrayalState,
@@ -1623,6 +2060,8 @@ function buildBetrayalAiLegalActions(
         return rabbitFootActions;
     }
 
+    const recentRollAcknowledgementActions = buildRecentRollAcknowledgementActions(validate, state, args.playerId);
+
     const turnEndRollAcknowledgementActions = buildTurnEndRollAcknowledgementActions(validate, state, args.playerId);
     if (turnEndRollAcknowledgementActions.length > 0) {
         return turnEndRollAcknowledgementActions;
@@ -1630,10 +2069,10 @@ function buildBetrayalAiLegalActions(
 
     const helpingHandsMonsterTurnActions = buildHelpingHandsMonsterTurnActions(validate, state, args.playerId);
     if (helpingHandsMonsterTurnActions.length > 0) {
-        return helpingHandsMonsterTurnActions;
+        return [...recentRollAcknowledgementActions, ...helpingHandsMonsterTurnActions];
     }
 
-    return buildTurnActions(validate, state, args.playerId);
+    return [...recentRollAcknowledgementActions, ...buildTurnActions(validate, state, args.playerId)];
 }
 
 function roomDistance(core: BetrayalAiCore, fromRoomId: string, targetRoomId: string): number {
@@ -1697,6 +2136,57 @@ function resolveDustObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): 
         .map((explorer) => explorer.roomId);
 }
 
+function resolveMummyObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): string[] {
+    const mummy = core.scenarioRuntime.mummy;
+    const actor = findExplorer(core, playerId);
+    if (!isMummyHaunt(core) || !mummy || !actor) return [];
+
+    const mummyMonster = findMummyMonster(core);
+    const isTraitor = core.scenarioRuntime.traitorPlayerId === playerId;
+    if (isTraitor) {
+        const actorHasWeddingOmen = actor.inventory.some(isMummyWeddingOmen);
+        const mummyHasWeddingOmen = mummy.mummyCarriedOmenIds.some((cardId) => (
+            MUMMY_WEDDING_OMEN_EFFECT_IDS.has(resolveInventoryEffectId(cardId))
+        ));
+        if (mummy.girlHeldByMummy && mummyHasWeddingOmen) {
+            return [mummy.sarcophagusRoomId];
+        }
+        if ((mummy.girlHolderPlayerId === playerId || actorHasWeddingOmen) && mummyMonster) {
+            return [mummyMonster.roomId];
+        }
+        if (mummy.girlRoomId) {
+            return [mummy.girlRoomId];
+        }
+        if (mummy.girlHolderPlayerId) {
+            const holder = findExplorer(core, mummy.girlHolderPlayerId);
+            if (holder) return [holder.roomId];
+        }
+        if (mummyMonster) {
+            return [mummyMonster.roomId];
+        }
+    }
+
+    if (mummy.banishmentSpellLearned && mummy.knowledgeTokenCount >= 2 && mummyMonster) {
+        return [mummyMonster.roomId];
+    }
+    if (mummy.trueNameFound && !mummy.banishmentSpellLearned) {
+        if (hasOmenBook(actor)) return [actor.roomId];
+        const bookHolder = getLivingHeroes(core).find(hasOmenBook);
+        if (bookHolder) return [bookHolder.roomId];
+    }
+    if (!mummy.trueNameFound) {
+        const studyRoomIds = core.rooms
+            .filter((room) => room.state === 'discovered')
+            .filter((room) => isMummyNameStudyCandidateRoom(core, room))
+            .map((room) => room.id);
+        if (studyRoomIds.length > 0) return studyRoomIds;
+    }
+    if (mummy.girlRoomId) {
+        return [mummy.girlRoomId];
+    }
+    return mummyMonster ? [mummyMonster.roomId] : [];
+}
+
 function resolveObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): string[] {
     if (core.phase === 'preHaunt') {
         return core.rooms
@@ -1710,6 +2200,11 @@ function resolveObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): stri
     const dustObjectiveRoomIds = resolveDustObjectiveRoomIds(core, playerId);
     if (dustObjectiveRoomIds.length > 0) {
         return dustObjectiveRoomIds;
+    }
+
+    const mummyObjectiveRoomIds = resolveMummyObjectiveRoomIds(core, playerId);
+    if (mummyObjectiveRoomIds.length > 0) {
+        return mummyObjectiveRoomIds;
     }
 
     const isTraitor = core.scenarioRuntime.traitorPlayerId === playerId;
@@ -1838,12 +2333,36 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return Math.min(strategicScore, 1280);
         case ACTION_KINDS.REQUEST_SICKNESS_EXCHANGE:
             return Math.min(strategicScore, 1170);
+        case ACTION_KINDS.BANISH_MUMMY:
+            return Math.min(strategicScore, 1560);
+        case ACTION_KINDS.LEARN_MUMMY_BANISHMENT:
+            return Math.min(strategicScore, 1480);
+        case ACTION_KINDS.STUDY_MUMMY_NAME:
+            return Math.min(strategicScore, 1440);
+        case ACTION_KINDS.GIVE_GIRL_TO_MUMMY:
+            return Math.min(strategicScore, 1460);
+        case ACTION_KINDS.GIVE_OMEN_TO_MUMMY:
+            return Math.min(strategicScore, 1440);
+        case ACTION_KINDS.PICK_UP_MUMMY_GIRL:
+            return Math.min(strategicScore, 1380);
+        case ACTION_KINDS.RESOLVE_MUMMY_ATTACK_REWARD:
+            return Math.min(strategicScore, 1500);
+        case ACTION_KINDS.RESOLVE_MONSTER_TURN_START:
+            return Math.min(strategicScore, 1520);
+        case ACTION_KINDS.ROLL_MONSTER_MOVEMENT_GROUP:
+            return Math.min(strategicScore, 1510);
+        case ACTION_KINDS.MONSTER_ATTACK_HERO:
+            return Math.min(strategicScore, 1510);
+        case ACTION_KINDS.MOVE_MONSTER_TO_ROOM:
+            return Math.min(strategicScore, 1560);
+        case ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL:
+            return strategicScore;
         case ACTION_KINDS.STUDY_EXORCISM:
             return 1050;
         case ACTION_KINDS.LEARN_ABOUT_JACK:
             return 1000;
         case ACTION_KINDS.HERO_ATTACK_TRAITOR:
-            return 900;
+            return 1120;
         case ACTION_KINDS.USE_RABBIT_FOOT:
             return strategicScore;
         case ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL:
@@ -1920,6 +2439,17 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.CURE_THE_DUST,
                 ACTION_KINDS.REQUEST_SICKNESS_EXCHANGE,
                 ACTION_KINDS.RESOLVE_SICKNESS_EXCHANGE,
+                ACTION_KINDS.STUDY_MUMMY_NAME,
+                ACTION_KINDS.LEARN_MUMMY_BANISHMENT,
+                ACTION_KINDS.BANISH_MUMMY,
+                ACTION_KINDS.PICK_UP_MUMMY_GIRL,
+                ACTION_KINDS.GIVE_GIRL_TO_MUMMY,
+                ACTION_KINDS.GIVE_OMEN_TO_MUMMY,
+                ACTION_KINDS.RESOLVE_MUMMY_ATTACK_REWARD,
+                ACTION_KINDS.RESOLVE_MONSTER_TURN_START,
+                ACTION_KINDS.ROLL_MONSTER_MOVEMENT_GROUP,
+                ACTION_KINDS.MOVE_MONSTER_TO_ROOM,
+                ACTION_KINDS.MONSTER_ATTACK_HERO,
                 ACTION_KINDS.LEARN_ABOUT_JACK,
                 ACTION_KINDS.STUDY_EXORCISM,
                 ACTION_KINDS.EXORCISE_JACK,
@@ -1928,6 +2458,7 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.RESOLVE_TRADE_AGREEMENT,
                 ACTION_KINDS.LOOT_CORPSE,
                 ACTION_KINDS.USE_RABBIT_FOOT,
+                ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL,
                 ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL,
                 ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION,
                 ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION,

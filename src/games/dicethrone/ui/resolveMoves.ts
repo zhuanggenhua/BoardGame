@@ -31,8 +31,8 @@ export type DiceThroneMoveMap = {
     // confirmInteraction: (interactionId: string, selectedDiceIds?: number[], selectedPlayerId?: string) => void; // @deprecated - 使用 InteractionSystem
     // cancelInteraction: () => void; // @deprecated - 使用 InteractionSystem
     // Token 响应相关
-    useToken: (tokenId: string, amount: number) => void;
-    skipTokenResponse: () => void;
+    useToken: (tokenId: string, amount: number, pendingDamageId?: string) => void;
+    skipTokenResponse: (pendingDamageId?: string) => void;
     usePurify: (statusId: string) => void;
     // 击倒移除
     payToRemoveKnockdown: () => void;
@@ -82,8 +82,14 @@ export const resolveMoves = (
     // confirmInteraction: (interactionId, selectedDiceIds, selectedPlayerId) => dispatch('CONFIRM_INTERACTION', { interactionId, selectedDiceIds, selectedPlayerId }),
     // cancelInteraction: () => dispatch('CANCEL_INTERACTION', {}),
     // Token 响应
-    useToken: (tokenId, amount) => dispatch('USE_TOKEN', { tokenId, amount }),
-    skipTokenResponse: () => dispatch('SKIP_TOKEN_RESPONSE', {}),
+    useToken: (tokenId, amount, pendingDamageId) => dispatch('USE_TOKEN', {
+        tokenId,
+        amount,
+        ...(pendingDamageId ? { pendingDamageId } : {}),
+    }),
+    skipTokenResponse: (pendingDamageId) => dispatch('SKIP_TOKEN_RESPONSE', {
+        ...(pendingDamageId ? { pendingDamageId } : {}),
+    }),
     usePurify: (statusId) => dispatch('USE_PURIFY', { statusId }),
     // 击倒移除
     payToRemoveKnockdown: () => dispatch(DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN, {}),

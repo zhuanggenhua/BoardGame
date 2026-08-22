@@ -459,6 +459,37 @@ export function canUseBaseLimitedMinionQuota(
     return true;
 }
 
+export type SpecificExtraMinionPlay = NonNullable<PlayerState['specificExtraMinionPlays']>[number];
+
+export type SpecificExtraMinionPlayMatch = {
+    entry: SpecificExtraMinionPlay;
+    index: number;
+};
+
+/**
+ * 查找当前出牌是否能消费“只能打指定这张随从”的暂存额外机会。
+ */
+export function findSpecificExtraMinionPlay(
+    player: PlayerState | undefined,
+    params: {
+        cardUid: string;
+        defId: string | undefined;
+        baseIndex: number;
+        basePower?: number;
+    },
+): SpecificExtraMinionPlayMatch | undefined {
+    if (!player?.specificExtraMinionPlays?.length) return undefined;
+    return player.specificExtraMinionPlays
+        .map((entry, index) => ({ entry, index }))
+        .find(({ entry }) => {
+            if (entry.cardUid !== params.cardUid) return false;
+            if (entry.restrictToBase !== undefined && entry.restrictToBase !== params.baseIndex) return false;
+            if (entry.sameNameDefId !== undefined && !isSameNameDefId(params.defId, entry.sameNameDefId)) return false;
+            if (entry.powerMax !== undefined && params.basePower !== undefined && params.basePower > entry.powerMax) return false;
+            return true;
+        });
+}
+
 /**
  * 判断这次打出是否“只能”消耗指定基地的基地限定随从额度。
  *

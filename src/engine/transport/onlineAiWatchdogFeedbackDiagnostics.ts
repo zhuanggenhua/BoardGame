@@ -1,5 +1,10 @@
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
 import type { AiInteractionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
+import {
+    buildRefereeReplayDigestFromState,
+    isRefereeReplayDigestEmpty,
+    type RefereeReplayDigest,
+} from '../RefereeReplay';
 import { isEnabledControlChoiceOption } from '../systems/InteractionSystem';
 import type { MatchState } from '../types';
 import {
@@ -84,6 +89,17 @@ type OnlineAiRecoveryLegalActionLike = {
     kind: string;
     label: string;
     commands: Array<{ type: string }>;
+};
+
+const buildOnlineAiRefereeReplayDigest = (
+    state: MatchState<unknown>,
+    playerId?: string,
+): RefereeReplayDigest | undefined => {
+    const digest = buildRefereeReplayDigestFromState(state, {
+        playerId,
+        traceLimit: 5,
+    });
+    return isRefereeReplayDigestEmpty(digest) ? undefined : digest;
 };
 
 export type OnlineAiFeedbackDiagnosticsContext = {
@@ -263,6 +279,7 @@ export function buildOnlineAiRecoveryStateSnapshot(args: {
         sharedState: args.state,
         seatState: args.seatState,
     });
+    const refereeReplay = buildOnlineAiRefereeReplayDigest(args.state, args.candidate.playerId);
 
     return JSON.stringify({
         matchId: args.matchId,
@@ -292,6 +309,7 @@ export function buildOnlineAiRecoveryStateSnapshot(args: {
         aiDecisionPreview: args.aiSummary.decisionPreview,
         responseWindow: diagnostics.sharedResponseWindow,
         pendingDamage: diagnostics.pendingDamage,
+        ...(refereeReplay ? { refereeReplay } : {}),
     });
 }
 
@@ -311,6 +329,7 @@ export function buildOnlineAiUnsatisfiableInteractionStateSnapshot(args: {
         seatState: args.seatState,
         seatUnsatisfiableReasonOverride: args.reason,
     });
+    const refereeReplay = buildOnlineAiRefereeReplayDigest(args.state, args.playerId);
     const blockerFingerprint = buildOnlineAiWatchdogBlockerFingerprint({
         phase: args.seatState.sys?.phase ?? args.state.sys?.phase ?? null,
         reason: args.reason,
@@ -345,6 +364,7 @@ export function buildOnlineAiUnsatisfiableInteractionStateSnapshot(args: {
         legalActions: args.aiSummary.legalActions,
         aiDecisionPreview: args.aiSummary.decisionPreview,
         responseWindow: diagnostics.seatResponseWindow,
+        ...(refereeReplay ? { refereeReplay } : {}),
     });
 }
 
@@ -381,6 +401,7 @@ export function extractOnlineAiRecoveryEventTail(
 
 export function buildOnlineAiDiagnosticActionLog(args: {
     state: MatchState<unknown>;
+    playerId?: string;
     phase?: unknown;
     progressMarker?: string;
     trackerKey?: string;
@@ -400,6 +421,7 @@ export function buildOnlineAiDiagnosticActionLog(args: {
     const hasSharedInteraction = Boolean(args.sharedInteraction);
     const hasResponseWindow = Boolean(args.responseWindow);
     const hasPendingDamage = Boolean(args.pendingDamage);
+    const refereeReplay = buildOnlineAiRefereeReplayDigest(args.state, args.playerId);
     if (
         actionLogTail.length === 0
         && eventStreamTail.length === 0
@@ -409,6 +431,7 @@ export function buildOnlineAiDiagnosticActionLog(args: {
         && !hasPendingDamage
         && !args.blockerFingerprint
         && !args.commandPayload
+        && !refereeReplay
     ) {
         return undefined;
     }
@@ -455,6 +478,7 @@ export function buildOnlineAiDiagnosticActionLog(args: {
             : {}),
         ...(args.responseWindow ? { responseWindow: args.responseWindow } : {}),
         ...(args.pendingDamage ? { pendingDamage: args.pendingDamage } : {}),
+        ...(refereeReplay ? { refereeReplay } : {}),
     });
 }
 

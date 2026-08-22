@@ -1,4 +1,11 @@
 import { describe, expect, test } from 'vitest';
+import {
+    projectChoiceRequestToAiLegalActions,
+} from '../../../engine/ChoiceRequest';
+import { projectChoiceRequestToDirectSelectionTargets } from '../../../engine/systems';
+import { buildChoiceRequestFromOpportunity } from '../../../engine/TimingOpportunity';
+import { createInitialSystemState } from '../../../engine/pipeline';
+import type { MatchState, RandomFn } from '../../../engine/types';
 import { materializeMageWarsConfigPackage } from '../data/configPackage';
 import {
     buildMageWarsConfigAbilityCatalog,
@@ -8,12 +15,123 @@ import {
     mageWarsObjectAbilityRegistry,
     summarizeMageWarsAbilityGaps,
 } from '../domain/abilityCatalog';
-import { MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG, mageWarsObjectAbilityExecutorRegistry } from '../domain/objectAbilityRuntime';
+import { MageWarsDomain } from '../domain';
+import { MAGE_WARS_COMMANDS } from '../domain/commands';
+import {
+    buildMageWarsObjectAbilityActivationOpportunity,
+    buildMageWarsSelfObjectAbilityActivationOpportunity,
+    MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG,
+    mageWarsObjectAbilityExecutorRegistry,
+    type MageWarsObjectAbilityActivationChoiceValue,
+} from '../domain/objectAbilityRuntime';
 import {
     MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     mageWarsSpellAbilityExecutorRegistry,
 } from '../domain/spellAbilityExecutors';
-import { MAGE_WARS_OBJECT_ABILITY_IDS } from '../domain/ids';
+import { ARENA_ZONE_IDS, MAGE_WARS_OBJECT_ABILITY_IDS } from '../domain/ids';
+import type { MageWarsArenaObjectState, MageWarsCore } from '../domain/types';
+
+const fixedRandom: RandomFn = {
+    random: () => 0.5,
+    d: () => 3,
+    range: (min: number) => min,
+    shuffle: <T,>(array: T[]) => [...array],
+};
+
+function makeMageWarsAbilityState(overrides: {
+    object?: Partial<MageWarsArenaObjectState>;
+    mana?: number;
+    phase?: string;
+} = {}): MatchState<MageWarsCore> {
+    const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+    const object: MageWarsArenaObjectState = {
+        id: 'blue-gremlin-1',
+        kind: 'creature',
+        ownerId: '0',
+        sourceSpellCardId: 2822,
+        sourceObjectId: 'spell-card-2822',
+        name: '蓝色精怪',
+        zoneId: ARENA_ZONE_IDS.A1,
+        life: 5,
+        damage: 0,
+        armor: 0,
+        actionReady: true,
+        guarding: false,
+        statusTokens: {},
+        ...overrides.object,
+    };
+
+    return {
+        core: {
+            ...core,
+            players: {
+                ...core.players,
+                '0': {
+                    ...core.players['0'],
+                    mana: overrides.mana ?? 2,
+                },
+            },
+            objects: {
+                ...core.objects,
+                [object.id]: object,
+            },
+            arena: core.arena.map((zone) => (
+                zone.id === object.zoneId
+                    ? { ...zone, objectIds: [...zone.objectIds, object.id] }
+                    : zone
+            )),
+        },
+        sys: {
+            ...createInitialSystemState(['0', '1'], [], 'mage-wars-ability-contract-test'),
+            phase: overrides.phase ?? 'creatureAction',
+        },
+    };
+}
+
+function makeMageWarsAbilityObject(
+    id: string,
+    ownerId: string,
+    zoneId: MageWarsArenaObjectState['zoneId'],
+    overrides: Partial<MageWarsArenaObjectState> = {},
+): MageWarsArenaObjectState {
+    return {
+        id,
+        kind: 'creature',
+        ownerId,
+        sourceSpellCardId: 2823,
+        sourceObjectId: `spell-card-${id}`,
+        name: id,
+        zoneId,
+        life: 5,
+        damage: 0,
+        armor: 0,
+        actionReady: true,
+        guarding: false,
+        statusTokens: {},
+        ...overrides,
+    };
+}
+
+function withMageWarsAbilityObject(
+    state: MatchState<MageWarsCore>,
+    object: MageWarsArenaObjectState,
+): MatchState<MageWarsCore> {
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            objects: {
+                ...state.core.objects,
+                [object.id]: object,
+            },
+            arena: state.core.arena.map((zone) => (
+                zone.id === object.zoneId && !zone.objectIds.includes(object.id)
+                    ? { ...zone, objectIds: [...zone.objectIds, object.id] }
+                    : zone
+            )),
+        },
+    };
+}
 
 describe('mage-wars ability catalog', () => {
     test('registers every current arena object ability with an executor', () => {
@@ -41,12 +159,13 @@ describe('mage-wars ability catalog', () => {
         }
     });
 
-    test('registers every apprentice spell as a stable ability id', () => {
+    test('registers every standard starting spell as a stable ability id', () => {
         const materialized = materializeMageWarsConfigPackage();
-        const spellObjects = materialized.package.objects.filter((object) => object.tags?.includes('apprentice-spell'));
+        const spellObjects = materialized.package.objects
+            .filter((object) => object.tags?.includes('standard-starting-spell'));
 
-        expect(spellObjects).toHaveLength(91);
-        expect(mageWarsAbilityRegistry.size).toBe(91);
+        expect(spellObjects).toHaveLength(153);
+        expect(mageWarsAbilityRegistry.size).toBe(153);
 
         for (const object of spellObjects) {
             const cardId = object.data?.cardId;
@@ -66,7 +185,7 @@ describe('mage-wars ability catalog', () => {
         }
     });
 
-    test('keeps preset spell ability catalog and executors aligned for future mage expansion', () => {
+    test('keeps standard spell ability catalog and executors aligned', () => {
         const abilityCatalog = buildMageWarsConfigAbilityCatalog();
         const registeredAbilityIds = Array.from(mageWarsAbilityRegistry.getRegisteredIds()).sort();
 
@@ -78,573 +197,332 @@ describe('mage-wars ability catalog', () => {
             )).toBe(true);
         }
 
-        expect(mageWarsAbilityRegistry.getByTag('implementation:needs-code').map((def) => def.id)).toEqual([
+        const needsCodeIds = mageWarsAbilityRegistry.getByTag('implementation:needs-code')
+            .map((def) => def.id)
+            .sort();
+        expect(needsCodeIds).toHaveLength(65);
+        expect(needsCodeIds).toEqual(expect.arrayContaining([
             getMageWarsSpellAbilityId(1804),
-        ]);
+            getMageWarsSpellAbilityId(2500),
+            getMageWarsSpellAbilityId(25700),
+        ]));
+        expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(3407));
     });
 
-    test('tracks implemented apprentice spell effects separately from code gaps', () => {
-        const summary = summarizeMageWarsAbilityGaps();
-
-        expect(summary).toEqual({
-            total: 91,
-            implemented: 90,
-            needsCode: 1,
+    test('tracks standard starting spell effects separately from code gaps', () => {
+        expect(summarizeMageWarsAbilityGaps()).toEqual({
+            total: 153,
+            implemented: 88,
+            needsCode: 65,
             bySpellType: {
-                '攻击': { total: 10, implemented: 10, needsCode: 0 },
-                '结界': { total: 24, implemented: 23, needsCode: 1 },
-                '魔物': { total: 1, implemented: 1, needsCode: 0 },
-                '生物': { total: 24, implemented: 24, needsCode: 0 },
-                '咒语': { total: 18, implemented: 18, needsCode: 0 },
-                '装备': { total: 14, implemented: 14, needsCode: 0 },
+                '攻击': { total: 12, implemented: 10, needsCode: 2 },
+                '结界': { total: 38, implemented: 22, needsCode: 16 },
+                '魔物': { total: 15, implemented: 2, needsCode: 13 },
+                '生物': { total: 33, implemented: 25, needsCode: 8 },
+                '咒语': { total: 28, implemented: 15, needsCode: 13 },
+                '装备': { total: 27, implemented: 14, needsCode: 13 },
             },
         });
 
-        const minorHeal = getMageWarsSpellAbilityDef(3402);
-        expect(minorHeal?.effects).toEqual([]);
-        expect(minorHeal?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
+        expect(getMageWarsSpellAbilityDef(3402)?.tags).toEqual(expect.arrayContaining([
+            'standard-starting-spell',
             'spell-type:咒语',
             'implementation:implemented',
         ]));
-
-        const groupHeal = getMageWarsSpellAbilityDef(3405);
-        expect(groupHeal?.effects).toEqual([]);
-        expect(groupHeal?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const fireball = getMageWarsSpellAbilityDef(1700);
-        expect(fireball?.effects).toEqual([]);
-        expect(fireball?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const intermittentJet = getMageWarsSpellAbilityDef(1710);
-        expect(intermittentJet?.effects).toEqual([]);
-        expect(intermittentJet?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const pillarOfLight = getMageWarsSpellAbilityDef(1706);
-        expect(pillarOfLight?.effects).toEqual([]);
-        expect(pillarOfLight?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const dazzlingFlash = getMageWarsSpellAbilityDef(1709);
-        expect(dazzlingFlash?.effects).toEqual([]);
-        expect(dazzlingFlash?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const flameblast = getMageWarsSpellAbilityDef(1702);
-        expect(flameblast?.effects).toEqual([]);
-        expect(flameblast?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const lightningRing = getMageWarsSpellAbilityDef(1704);
-        expect(lightningRing?.effects).toEqual([]);
-        expect(lightningRing?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const lightningBolt = getMageWarsSpellAbilityDef(1705);
-        expect(lightningBolt?.effects).toEqual([]);
-        expect(lightningBolt?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const lifeDrain = getMageWarsSpellAbilityDef(3400);
-        expect(lifeDrain?.effects).toEqual([]);
-        expect(lifeDrain?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const explode = getMageWarsSpellAbilityDef(3401);
-        expect(explode?.effects).toEqual([]);
-        expect(explode?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const chainLightning = getMageWarsSpellAbilityDef(1703);
-        expect(chainLightning?.effects).toEqual([]);
-        expect(chainLightning?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-
-        const jetStream = getMageWarsSpellAbilityDef(1711);
-        expect(jetStream?.effects).toEqual([]);
-        expect(jetStream?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:攻击',
-            'implementation:implemented',
-        ]));
-        const teleport = getMageWarsSpellAbilityDef(3410);
-        expect(teleport?.effects).toEqual([]);
-        expect(teleport?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-        const timberWolf = getMageWarsSpellAbilityDef(2819);
-        expect(timberWolf?.effects).toEqual([]);
-        expect(timberWolf?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-        const skeletonSentry = getMageWarsSpellAbilityDef(2826);
-        expect(skeletonSentry?.effects).toEqual([]);
-        expect(skeletonSentry?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-        const royalArcher = getMageWarsSpellAbilityDef(2816);
-        expect(royalArcher?.effects).toEqual([]);
-        expect(royalArcher?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-        const emeraldTegu = getMageWarsSpellAbilityDef(2808);
-        expect(emeraldTegu?.effects).toEqual([]);
-        expect(emeraldTegu?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-
-        for (const implementedCreatureCardId of [2800, 2801, 2802, 2803, 2804, 2807, 2809, 2810, 2811, 2812, 2813, 2814, 2824, 2901, 2906, 2907, 2909]) {
-            const implementedCreature = getMageWarsSpellAbilityDef(implementedCreatureCardId);
-            expect(implementedCreature?.effects).toEqual([]);
-            expect(implementedCreature?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:生物',
-                'implementation:implemented',
-            ]));
-        }
-
-        const blueGremlin = getMageWarsSpellAbilityDef(2822);
-        expect(blueGremlin?.effects).toEqual([]);
-        expect(blueGremlin?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-
-        const thunderiftFalcon = getMageWarsSpellAbilityDef(2820);
-        expect(thunderiftFalcon?.effects).toEqual([]);
-        expect(thunderiftFalcon?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-
-        const darkfenneBat = getMageWarsSpellAbilityDef(2825);
-        expect(darkfenneBat?.effects).toEqual([]);
-        expect(darkfenneBat?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:生物',
-            'implementation:implemented',
-        ]));
-
-        const tanglevine = getMageWarsSpellAbilityDef(2224);
-        expect(tanglevine?.effects).toEqual([]);
-        expect(tanglevine?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:魔物',
-            'implementation:implemented',
-        ]));
-
-        const singleHeal = getMageWarsSpellAbilityDef(3408);
-        expect(singleHeal?.effects).toEqual([]);
-        expect(singleHeal?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        for (const forcePushCardId of [3425, 3523]) {
-            const forcePush = getMageWarsSpellAbilityDef(forcePushCardId);
-            expect(forcePush?.effects).toEqual([]);
-            expect(forcePush?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:咒语',
-                'implementation:implemented',
-            ]));
-        }
-
-        const sleep = getMageWarsSpellAbilityDef(3411);
-        expect(sleep?.effects).toEqual([]);
-        expect(sleep?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const chargeOn = getMageWarsSpellAbilityDef(3407);
-        expect(chargeOn?.effects).toEqual([]);
-        expect(chargeOn?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const bloodstrike = getMageWarsSpellAbilityDef(3404);
-        expect(bloodstrike?.effects).toEqual([]);
-        expect(bloodstrike?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const callOfTheWild = getMageWarsSpellAbilityDef(3417);
-        expect(callOfTheWild?.effects).toEqual([]);
-        expect(callOfTheWild?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        const rouseTheBeast = getMageWarsSpellAbilityDef(3403);
-        expect(rouseTheBeast?.effects).toEqual([]);
-        expect(rouseTheBeast?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        for (const dissolveCardId of [3406, 3605]) {
-            const dissolve = getMageWarsSpellAbilityDef(dissolveCardId);
-            expect(dissolve?.effects).toEqual([]);
-            expect(dissolve?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:咒语',
-                'implementation:implemented',
-            ]));
-        }
-
-        for (const dispelCardId of [3419, 3606]) {
-            const dispel = getMageWarsSpellAbilityDef(dispelCardId);
-            expect(dispel?.effects).toEqual([]);
-            expect(dispel?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:咒语',
-                'implementation:implemented',
-            ]));
-        }
-
-        const stealEnchantment = getMageWarsSpellAbilityDef(3409);
-        expect(stealEnchantment?.effects).toEqual([]);
-        expect(stealEnchantment?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:咒语',
-            'implementation:implemented',
-        ]));
-
-        for (const implementedEnchantmentCardId of [1800, 1801, 1806, 1808, 1809, 1815, 1816, 1818, 1820, 1825, 1826, 1901, 1904, 1908, 1910, 1914, 1916, 1917]) {
-            const implementedEnchantment = getMageWarsSpellAbilityDef(implementedEnchantmentCardId);
-            expect(implementedEnchantment?.effects).toEqual([]);
-            expect(implementedEnchantment?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:结界',
-                'implementation:implemented',
-            ]));
-        }
-
-        for (const passiveArmorEquipmentCardId of [3702, 3703, 3708, 3709, 3711, 3721]) {
-            const passiveArmorEquipment = getMageWarsSpellAbilityDef(passiveArmorEquipmentCardId);
-            expect(passiveArmorEquipment?.effects).toEqual([]);
-            expect(passiveArmorEquipment?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:装备',
-                'implementation:implemented',
-            ]));
-        }
-        for (const weaponEquipmentCardId of [3701, 3704, 3706]) {
-            const weaponEquipment = getMageWarsSpellAbilityDef(weaponEquipmentCardId);
-            expect(weaponEquipment?.effects).toEqual([]);
-            expect(weaponEquipment?.tags).toEqual(expect.arrayContaining([
-                'apprentice-spell',
-                'spell-type:装备',
-                'implementation:implemented',
-            ]));
-        }
-        const offsetBracers = getMageWarsSpellAbilityDef(3715);
-        expect(offsetBracers?.effects).toEqual([]);
-        expect(offsetBracers?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
+        expect(getMageWarsSpellAbilityDef(3710)?.tags).toEqual(expect.arrayContaining([
+            'standard-starting-spell',
             'spell-type:装备',
             'implementation:implemented',
         ]));
-        const suppressionCloak = getMageWarsSpellAbilityDef(3705);
-        expect(suppressionCloak?.effects).toEqual([]);
-        expect(suppressionCloak?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:装备',
-            'implementation:implemented',
-        ]));
-        const elementalStaff = getMageWarsSpellAbilityDef(3716);
-        expect(elementalStaff?.effects).toEqual([]);
-        expect(elementalStaff?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:装备',
-            'implementation:implemented',
-        ]));
-        expect(getMageWarsSpellAbilityDef(3701)?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:装备',
-            'implementation:implemented',
-        ]));
-        expect(getMageWarsSpellAbilityDef(1804)?.tags).toEqual(expect.arrayContaining([
-            'apprentice-spell',
-            'spell-type:结界',
-            'implementation:needs-code',
-        ]));
+        expect(getMageWarsSpellAbilityDef(25700)?.effects).toEqual([expect.objectContaining({
+            type: 'requires-code-support',
+            cardId: 25700,
+            spellType: '魔物',
+        })]);
+        expect(getMageWarsSpellAbilityDef(2500)?.effects).toEqual([expect.objectContaining({
+            type: 'requires-code-support',
+            cardId: 2500,
+            spellType: '魔物',
+        })]);
     });
 
-    test('exposes a GameConfig-compatible ability catalog for later validation', () => {
+    test('exposes a GameConfig-compatible ability catalog for validation', () => {
         const abilityCatalog = buildMageWarsConfigAbilityCatalog();
-        const ids = Object.keys(abilityCatalog);
 
-        expect(ids).toHaveLength(91);
+        expect(Object.keys(abilityCatalog)).toHaveLength(153);
         expect(abilityCatalog[getMageWarsSpellAbilityId(3402)]).toEqual({
             abilityId: getMageWarsSpellAbilityId(3402),
             implementationStatus: 'implemented',
             allowExtraParams: true,
         });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3405)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3405),
+        expect(abilityCatalog[getMageWarsSpellAbilityId(3710)]).toEqual({
+            abilityId: getMageWarsSpellAbilityId(3710),
             implementationStatus: 'implemented',
             allowExtraParams: true,
         });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3408)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3408),
-            implementationStatus: 'implemented',
+        expect(abilityCatalog[getMageWarsSpellAbilityId(25700)]).toEqual({
+            abilityId: getMageWarsSpellAbilityId(25700),
+            implementationStatus: 'needs-code',
             allowExtraParams: true,
         });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1710)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1710),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1706)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1706),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1709)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1709),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1702)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1702),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1704)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1704),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1705)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1705),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3400)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3400),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3401)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3401),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1703)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1703),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1711)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1711),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3410)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3410),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2816)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2816),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2808)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2808),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        for (const implementedCreatureCardId of [2800, 2801, 2802, 2803, 2804, 2807, 2809, 2810, 2811, 2812, 2813, 2814, 2824, 2901, 2906, 2907, 2909]) {
-            expect(abilityCatalog[getMageWarsSpellAbilityId(implementedCreatureCardId)]).toEqual({
-                abilityId: getMageWarsSpellAbilityId(implementedCreatureCardId),
-                implementationStatus: 'implemented',
-                allowExtraParams: true,
-            });
-        }
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2819)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2819),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2822)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2822),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2820)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2820),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2825)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2825),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2826)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2826),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(2224)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(2224),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3425)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3425),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3523)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3523),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3411)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3411),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3407)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3407),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3404)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3404),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3417)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3417),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3403)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3403),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        for (const dissolveCardId of [3406, 3605]) {
-            expect(abilityCatalog[getMageWarsSpellAbilityId(dissolveCardId)]).toEqual({
-                abilityId: getMageWarsSpellAbilityId(dissolveCardId),
-                implementationStatus: 'implemented',
-                allowExtraParams: true,
-            });
-        }
-        for (const dispelCardId of [3419, 3606]) {
-            expect(abilityCatalog[getMageWarsSpellAbilityId(dispelCardId)]).toEqual({
-                abilityId: getMageWarsSpellAbilityId(dispelCardId),
-                implementationStatus: 'implemented',
-                allowExtraParams: true,
-            });
-        }
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3409)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3409),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        for (const implementedEnchantmentCardId of [1800, 1801, 1806, 1808, 1809, 1813, 1815, 1816, 1818, 1820, 1826, 1910, 1911, 1914, 1916, 1917]) {
-            expect(abilityCatalog[getMageWarsSpellAbilityId(implementedEnchantmentCardId)]).toEqual({
-                abilityId: getMageWarsSpellAbilityId(implementedEnchantmentCardId),
-                implementationStatus: 'implemented',
-                allowExtraParams: true,
-            });
-        }
-        for (const passiveArmorEquipmentCardId of [3702, 3703, 3708, 3709, 3711, 3721]) {
-            expect(abilityCatalog[getMageWarsSpellAbilityId(passiveArmorEquipmentCardId)]).toEqual({
-                abilityId: getMageWarsSpellAbilityId(passiveArmorEquipmentCardId),
-                implementationStatus: 'implemented',
-                allowExtraParams: true,
-            });
-        }
-        for (const weaponEquipmentCardId of [3701, 3704, 3706]) {
-            expect(abilityCatalog[getMageWarsSpellAbilityId(weaponEquipmentCardId)]).toEqual({
-                abilityId: getMageWarsSpellAbilityId(weaponEquipmentCardId),
-                implementationStatus: 'implemented',
-                allowExtraParams: true,
-            });
-        }
-        expect(abilityCatalog[getMageWarsSpellAbilityId(3701)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(3701),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1813)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1813),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1911)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1911),
-            implementationStatus: 'implemented',
-            allowExtraParams: true,
-        });
-        expect(abilityCatalog[getMageWarsSpellAbilityId(1913)]).toEqual({
-            abilityId: getMageWarsSpellAbilityId(1913),
-            implementationStatus: 'implemented',
+        expect(abilityCatalog[getMageWarsSpellAbilityId(2500)]).toEqual({
+            abilityId: getMageWarsSpellAbilityId(2500),
+            implementationStatus: 'needs-code',
             allowExtraParams: true,
         });
     });
-});
 
+    test('projects a self object ability through Ability -> Opportunity -> ChoiceRequest', () => {
+        const state = makeMageWarsAbilityState();
+        const opportunity = buildMageWarsSelfObjectAbilityActivationOpportunity({
+            state,
+            playerId: '0',
+            objectId: 'blue-gremlin-1',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+            timestamp: 42,
+        });
+
+        expect(opportunity).toMatchObject({
+            id: expect.stringContaining(MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT),
+            controllerId: '0',
+            class: 'optional',
+            condition: { satisfied: true },
+            sourceRef: {
+                id: 'blue-gremlin-1',
+                controllerId: '0',
+                ownerId: '0',
+                metadata: {
+                    abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                    abilityLifecyclePhase: 'activation',
+                    abilitySourceId: 'blue-gremlin-1',
+                    mageWarsObjectAbilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                },
+            },
+            resolution: { type: 'choice-request' },
+        });
+
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        expect(request).toMatchObject({
+            gameId: 'mage-wars',
+            playerId: '0',
+            kind: 'confirm',
+            sourceId: 'blue-gremlin-1',
+            selection: { min: 1, max: 1 },
+            ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+            metadata: {
+                opportunityId: opportunity!.id,
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                abilitySourceId: 'blue-gremlin-1',
+                objectId: 'blue-gremlin-1',
+            },
+        });
+        expect(request.candidates).toHaveLength(1);
+        expect(request.candidates[0]).toMatchObject({
+            id: 'activate',
+            value: {
+                action: 'activate-object-ability',
+                objectId: 'blue-gremlin-1',
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                manaCost: 1,
+            },
+            commands: [{
+                type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+                payload: {
+                    objectId: 'blue-gremlin-1',
+                    abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                    manaCost: 1,
+                },
+            }],
+            metadata: {
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                abilitySourceId: 'blue-gremlin-1',
+                abilityControllerId: '0',
+            },
+            actionKeyParts: [
+                'ability',
+                'activation',
+                'blue-gremlin-1',
+                MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+                'base',
+                'activate',
+            ],
+        });
+    });
+
+    test('keeps invalid self object ability opportunities visible as inactive contracts', () => {
+        const state = makeMageWarsAbilityState({ mana: 0 });
+        const opportunity = buildMageWarsSelfObjectAbilityActivationOpportunity({
+            state,
+            playerId: '0',
+            objectId: 'blue-gremlin-1',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+        });
+
+        expect(opportunity).toMatchObject({
+            condition: { satisfied: false, reason: 'insufficientMana' },
+        });
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        expect(request.candidates[0]).toMatchObject({
+            id: 'activate',
+            disabled: true,
+            disabledReason: 'insufficientMana',
+        });
+    });
+
+    test('does not guess target enumeration for non-self object abilities', () => {
+        const state = makeMageWarsAbilityState({
+            object: {
+                id: 'cleric-1',
+                sourceSpellCardId: 2811,
+                sourceObjectId: 'spell-card-2811',
+                name: 'Asyran Cleric',
+            },
+        });
+
+        expect(buildMageWarsSelfObjectAbilityActivationOpportunity({
+            state,
+            playerId: '0',
+            objectId: 'cleric-1',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+        })).toBeNull();
+    });
+
+    test('projects Asyran Cleric healing light target selection through Ability -> Opportunity -> ChoiceRequest', () => {
+        let state = makeMageWarsAbilityState({
+            object: {
+                id: 'cleric-1',
+                sourceSpellCardId: 2811,
+                sourceObjectId: 'spell-card-2811',
+                name: 'Asyran Cleric',
+            },
+        });
+        state = withMageWarsAbilityObject(state, makeMageWarsAbilityObject('wounded-cat-0', '0', ARENA_ZONE_IDS.A2, {
+            name: 'Wounded Cat',
+            damage: 3,
+        }));
+        state = withMageWarsAbilityObject(state, makeMageWarsAbilityObject('skeleton-1', '1', ARENA_ZONE_IDS.A2, {
+            sourceSpellCardId: 2826,
+            name: 'Skeleton Sentry',
+            attackOrTraitLine: '短剑：快速近战 4 骰；非活体；精神免疫',
+        }));
+        state = withMageWarsAbilityObject(state, makeMageWarsAbilityObject('far-cat-1', '1', ARENA_ZONE_IDS.D3, {
+            name: 'Far Cat',
+        }));
+
+        const opportunity = buildMageWarsObjectAbilityActivationOpportunity({
+            state,
+            playerId: '0',
+            objectId: 'cleric-1',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+            timestamp: 77,
+        });
+
+        expect(opportunity).toMatchObject({
+            controllerId: '0',
+            class: 'optional',
+            condition: { satisfied: true },
+            targetRequest: {
+                kind: 'select-object',
+                min: 1,
+                max: 1,
+                metadata: { targetMode: 'living-object' },
+            },
+            resolution: { type: 'choice-request' },
+            metadata: {
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                objectId: 'cleric-1',
+                targetMode: 'living-object',
+            },
+        });
+
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        expect(request).toMatchObject({
+            playerId: '0',
+            kind: 'select-object',
+            sourceId: 'cleric-1',
+            selection: { min: 1, max: 1 },
+            ai: { status: 'shared-policy', policyId: 'choice-request:simple-target' },
+            metadata: {
+                opportunityId: opportunity!.id,
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                abilitySourceId: 'cleric-1',
+                targetMode: 'living-object',
+            },
+        });
+
+        const candidateById = new Map(request.candidates.map((candidate) => [candidate.id, candidate]));
+        expect(candidateById.get('target:wounded-cat-0')).toMatchObject({
+            value: {
+                action: 'activate-object-ability',
+                objectId: 'cleric-1',
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                manaCost: 0,
+                targetObjectId: 'wounded-cat-0',
+            },
+            commands: [{
+                type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+                payload: {
+                    objectId: 'cleric-1',
+                    abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                    manaCost: 0,
+                    targetObjectId: 'wounded-cat-0',
+                },
+            }],
+            metadata: {
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                abilitySourceId: 'cleric-1',
+                abilityControllerId: '0',
+                targetObjectId: 'wounded-cat-0',
+            },
+            actionKeyParts: [
+                'ability',
+                'activation',
+                'cleric-1',
+                MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                'target',
+                'wounded-cat-0',
+            ],
+        });
+        expect(candidateById.get('target:skeleton-1')).toMatchObject({
+            disabled: true,
+            disabledReason: 'invalidTargetObject',
+        });
+        expect(candidateById.get('target:far-cat-1')).toMatchObject({
+            disabled: true,
+            disabledReason: 'targetOutOfRange',
+        });
+
+        const directSurface = projectChoiceRequestToDirectSelectionTargets<MageWarsObjectAbilityActivationChoiceValue>(request);
+        expect(directSurface.targets
+            .filter((target) => !target.disabled)
+            .map((target) => ({
+                id: target.id,
+                targetRef: target.targetRef,
+                commandPreview: target.commandPreview,
+            }))).toEqual(expect.arrayContaining([{
+            id: 'target:wounded-cat-0',
+            targetRef: 'wounded-cat-0',
+            commandPreview: [{
+                type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+                payload: {
+                    objectId: 'cleric-1',
+                    abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                    manaCost: 0,
+                    targetObjectId: 'wounded-cat-0',
+                },
+            }],
+        }]));
+
+        const legalActions = projectChoiceRequestToAiLegalActions(request);
+        expect(legalActions.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+        expect(legalActions.actions.map((action) => action.commands[0])).toEqual(expect.arrayContaining([{
+            type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+            payload: {
+                objectId: 'cleric-1',
+                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                manaCost: 0,
+                targetObjectId: 'wounded-cat-0',
+            },
+        }]));
+    });
+});

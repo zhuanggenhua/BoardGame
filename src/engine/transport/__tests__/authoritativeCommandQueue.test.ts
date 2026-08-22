@@ -73,6 +73,7 @@ describe('authoritativeCommandQueue', () => {
             execute: async () => {
                 completed.push('batch');
                 match.stateID += 1;
+                return true;
             },
         });
         const command = enqueueAuthoritativeCommand(match, {
@@ -89,6 +90,24 @@ describe('authoritativeCommandQueue', () => {
         expect(completed).toEqual(['batch']);
         expect(match.executed).toEqual(['AFTER_BATCH']);
         expect(match.stateID).toBe(3);
+    });
+
+    it('batch 执行失败时把失败结果传回排队调用方', async () => {
+        const match = createMatch(1);
+        const completed: string[] = [];
+        const batch = enqueueAuthoritativeBatch(match, {
+            _batch: true,
+            execute: async () => {
+                completed.push('batch-failed');
+                return false;
+            },
+        });
+
+        await drainAuthoritativeCommandQueue(match, createHandlers());
+
+        await expect(batch).resolves.toBe(false);
+        expect(completed).toEqual(['batch-failed']);
+        expect(match.executed).toEqual([]);
     });
 
     it('exclusive 执行期间保持 executing，结束后 drain 队列并释放锁', async () => {

@@ -10,12 +10,14 @@ import {
     buildAiProgressMarker,
     buildInteractionRecoveryFingerprintHint,
     buildResponseWindowRecoveryFingerprintHint,
+    resolveForceAdvancePhaseAfterRecovery,
     type OnlineAiRecoveryEngineConfig,
     type HiddenInteractionDescriptor,
     type HiddenSimpleChoiceInteraction,
     resolveOnlineAiCurrentPlayerId,
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
+import { MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX } from './onlineAiRecoveryDispatch';
 import {
     buildOnlineAiRecoverySequenceStepKey,
     buildOnlineAiRecoveryTrackerSnapshot,
@@ -28,6 +30,9 @@ import type { OnlineAiWatchdogSeatController } from './onlineAiWatchdogSeatContr
 import type { OnlineAiWatchdogStepBookkeepingDecision } from './onlineAiWatchdogStepBookkeeping';
 import type { OnlineAiRecoveryTracker } from './onlineAiWatchdogTracker';
 import { resolveOnlineAiWatchdogAdvancePhaseCommandType } from './onlineAiWatchdogGameSemantics';
+
+export const MANUAL_IMMEDIATE_AI_CONTINUATION_PREFIX = 'manual-immediate-ai-continuation:';
+export const MANUAL_RESPONSE_WINDOW_FORCE_CLOSE_PREFIX = 'manual-response-window:';
 
 export function isOnlineAiInteractionRecoveryReason(
     reason: ForceEndTurnStalledAiResolution['reason'],
@@ -378,6 +383,213 @@ export type OnlineAiRecoveryReportedLegalAction = {
     metadata?: Record<string, unknown>;
 };
 
+export const canManualForceAdvanceAfterConfirmedRoll = (
+    reportedAction: Pick<OnlineAiRecoveryReportedLegalAction, 'actionKind' | 'metadata'> | null | undefined,
+): boolean => reportedAction?.actionKind === 'confirm-roll'
+    && reportedAction.metadata?.rollConfirmScope === 'main-roll';
+
+export function buildManualImmediateAiContinuationCandidate(args: {
+    allowManualImmediateAiContinuation: boolean;
+    expectedPlayerId: string;
+    previousActionKind: string | null | undefined;
+    state: MatchState<unknown>;
+    seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+    currentPlayerId: string | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
+}): ForceEndTurnStalledAiResolution | null {
+    if (!args.allowManualImmediateAiContinuation) {
+        return null;
+    }
+    if (args.previousActionKind !== 'roll-dice') {
+        return null;
+    }
+    if (!args.expectedPlayerId || args.seatControllers[args.expectedPlayerId]?.type === 'human') {
+        return null;
+    }
+    if (hasHumanResponderInCurrentWindow(args.state, args.seatControllers)) {
+        return null;
+    }
+    if (args.currentPlayerId !== args.expectedPlayerId) {
+        return null;
+    }
+
+    const marker = buildAiProgressMarker(args.state, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
+    const attemptKey = `${MANUAL_IMMEDIATE_AI_CONTINUATION_PREFIX}${args.expectedPlayerId}:${marker}`;
+    return {
+        playerId: args.expectedPlayerId,
+        reason: 'active-turn',
+        legalActionOnly: true,
+        fingerprintHint: attemptKey,
+        resolution: {
+            playerId: args.expectedPlayerId,
+            attemptKey,
+            source: 'local-ai',
+            action: {
+                actionId: attemptKey,
+                kind: 'manual-immediate-ai-continuation',
+                label: '继续手动强制结束 AI 阶段',
+                commands: [],
+            },
+        },
+    };
+}
+
+export function buildManualForceAdvanceAfterConfirmedRollCandidate(args: {
+    allowManualImmediateAiContinuation: boolean;
+    expectedPlayerId: string;
+    previousAction: OnlineAiRecoveryReportedLegalAction | null | undefined;
+    state: MatchState<unknown>;
+    seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+    currentPlayerId: string | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
+}): ForceEndTurnStalledAiResolution | null {
+    if (!args.allowManualImmediateAiContinuation) {
+        return null;
+    }
+    if (!canManualForceAdvanceAfterConfirmedRoll(args.previousAction)) {
+        return null;
+    }
+    if (!args.expectedPlayerId || args.seatControllers[args.expectedPlayerId]?.type === 'human') {
+        return null;
+    }
+    if (hasHumanResponderInCurrentWindow(args.state, args.seatControllers)) {
+        return null;
+    }
+    if (args.currentPlayerId !== args.expectedPlayerId) {
+        return null;
+    }
+
+    const followUpResolution = resolveForceAdvancePhaseAfterRecovery({
+        authoritativeState: args.state,
+        seatControllers: args.seatControllers,
+        playerId: args.expectedPlayerId,
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
+    if (!followUpResolution) {
+        return null;
+    }
+
+    const marker = buildAiProgressMarker(args.state, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
+    const attemptKey = `${MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX}${args.expectedPlayerId}:${marker}`;
+    return {
+        playerId: args.expectedPlayerId,
+        reason: 'active-turn',
+        fingerprintHint: attemptKey,
+        resolution: {
+            ...followUpResolution,
+            attemptKey,
+            action: {
+                ...followUpResolution.action,
+                actionId: attemptKey,
+                kind: 'manual-force-advance-after-confirm',
+                label: '手动强制结束 AI 阶段：确认骰面后推进阶段',
+            },
+        },
+    };
+}
+
+export function isManualOnlineAiRecoveryContinuationCandidate(
+    value: ForceEndTurnStalledAiResolution,
+): boolean {
+    return typeof value.fingerprintHint === 'string'
+        && (
+            value.fingerprintHint.startsWith(MANUAL_IMMEDIATE_AI_CONTINUATION_PREFIX)
+            || value.fingerprintHint.startsWith(MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX)
+        );
+}
+
+export function shouldPreserveManualHumanResponseWindowForceClose(args: {
+    state: MatchState<unknown>;
+    expectedCandidate: ForceEndTurnStalledAiResolution;
+    seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+    currentPlayerId: string | null;
+}): boolean {
+    const { expectedCandidate } = args;
+    if (
+        expectedCandidate.reason !== 'response-window'
+        || typeof expectedCandidate.fingerprintHint !== 'string'
+        || !expectedCandidate.fingerprintHint.startsWith(MANUAL_RESPONSE_WINDOW_FORCE_CLOSE_PREFIX)
+        || !expectedCandidate.resolution.action.commands.some((command) => command.type === 'SYS_RESPONSE_WINDOW_FORCE_CLOSE')
+    ) {
+        return false;
+    }
+
+    const currentWindow = (args.state.sys as { responseWindow?: { current?: unknown } } | undefined)
+        ?.responseWindow?.current as {
+            responderQueue?: unknown;
+            currentResponderIndex?: unknown;
+        } | undefined;
+    if (!currentWindow) {
+        return false;
+    }
+
+    const responderQueue = Array.isArray(currentWindow.responderQueue) ? currentWindow.responderQueue : [];
+    const responderIndex = typeof currentWindow.currentResponderIndex === 'number'
+        ? currentWindow.currentResponderIndex
+        : 0;
+    const responderId = typeof responderQueue[responderIndex] === 'string'
+        ? responderQueue[responderIndex]
+        : null;
+    if (!responderId || responderId === expectedCandidate.playerId || args.seatControllers[responderId]?.type !== 'human') {
+        return false;
+    }
+
+    if (args.currentPlayerId !== expectedCandidate.playerId) {
+        return false;
+    }
+
+    const currentFingerprint = buildResponseWindowRecoveryFingerprintHint(
+        args.state,
+        expectedCandidate.playerId,
+        'manual-response-window',
+    );
+    return currentFingerprint === expectedCandidate.fingerprintHint;
+}
+
+export type OnlineAiLegacyResponseWindowMirrorClearDecision =
+    | {
+        kind: 'skip';
+    }
+    | {
+        kind: 'clear';
+        sourceId: string;
+    };
+
+export function resolveOnlineAiLegacyResponseWindowMirrorClearDecision(args: {
+    state: MatchState<unknown>;
+    legacySourceIds: readonly string[];
+}): OnlineAiLegacyResponseWindowMirrorClearDecision {
+    if (args.legacySourceIds.length === 0) {
+        return { kind: 'skip' };
+    }
+
+    const responseWindow = args.state.sys?.responseWindow as {
+        current?: {
+            sourceId?: unknown;
+        } | null;
+    } | undefined;
+    const sourceId = typeof responseWindow?.current?.sourceId === 'string'
+        ? responseWindow.current.sourceId
+        : '';
+    if (!sourceId || !args.legacySourceIds.includes(sourceId)) {
+        return { kind: 'skip' };
+    }
+
+    return {
+        kind: 'clear',
+        sourceId,
+    };
+}
+
 export type OnlineAiRecoverySequenceProgress = {
     recoverySteps: number;
     allowNaturalAiContinuation: boolean;
@@ -426,11 +638,18 @@ export function buildOnlineAiRecoveryStepBeforeSnapshot(args: {
     state: MatchState<unknown>;
     playerId: string;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
 }): OnlineAiRecoveryStepBeforeSnapshot {
-    const markerBeforeStep = buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
+    const markerBeforeStep = buildAiProgressMarker(args.state, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
     return {
         markerBeforeStep,
-        currentPlayerIdBeforeStep: resolveOnlineAiCurrentPlayerId(args.state, { engineConfig: args.engineConfig }),
+        currentPlayerIdBeforeStep: resolveOnlineAiCurrentPlayerId(args.state, {
+            engineConfig: args.engineConfig,
+            gameId: args.gameId,
+        }),
         stepKeyBefore: buildOnlineAiRecoverySequenceStepKey({
             state: args.state,
             playerId: args.playerId,
@@ -453,11 +672,18 @@ export function buildOnlineAiRecoveryStepAfterSnapshot(args: {
     state: MatchState<unknown>;
     playerId: string;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
 }): OnlineAiRecoveryStepAfterSnapshot {
-    const nextMarker = buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
+    const nextMarker = buildAiProgressMarker(args.state, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
     return {
         nextMarker,
-        currentPlayerIdAfterStep: resolveOnlineAiCurrentPlayerId(args.state, { engineConfig: args.engineConfig }),
+        currentPlayerIdAfterStep: resolveOnlineAiCurrentPlayerId(args.state, {
+            engineConfig: args.engineConfig,
+            gameId: args.gameId,
+        }),
         nextStepKey: buildOnlineAiRecoverySequenceStepKey({
             state: args.state,
             playerId: args.playerId,
@@ -575,7 +801,7 @@ export type OnlineAiRecoveryResolvedFeedbackMetadata = {
     matchId: string;
     gameId: string;
     playerId: string;
-    incidentKind: 'legal-action-recovered' | 'force-end-turn-success';
+    incidentKind: 'legal-action-recovered' | 'force-end-turn-success' | 'observed-recovery';
     severity: 'medium';
     status: 'resolved';
     reason: string;
@@ -994,6 +1220,7 @@ export function resolveOnlineAiRecoveryPauseDecision(args: {
     blockedFailureReason: OnlineAiRecoveryBlockedFailureReason | null;
     forcedCommandProgress: OnlineAiRecoveryForcedCommandProgress;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
 }): OnlineAiRecoveryPauseDecision {
     const shouldPause = shouldPauseOnlineAiRecoveryAfterOverlayResync({
         currentCandidateReason: args.candidate.reason,
@@ -1013,6 +1240,7 @@ export function resolveOnlineAiRecoveryPauseDecision(args: {
             state: args.state,
             candidate: args.candidate,
             engineConfig: args.engineConfig,
+            gameId: args.gameId,
         }).trackerKey,
     };
 }
@@ -1270,6 +1498,27 @@ export function buildOnlineAiRecoveryResolvedLegalActionFeedbackMetadata(args: {
     };
 }
 
+export function buildOnlineAiRecoveryObservedFeedbackMetadata(args: {
+    matchId: string;
+    gameId: string;
+    playerId: string;
+    trackerKey: string;
+    progressMarker: string;
+    candidateReason: ForceEndTurnStalledAiResolution['reason'];
+}): OnlineAiRecoveryResolvedFeedbackMetadata {
+    return {
+        matchId: args.matchId,
+        gameId: args.gameId,
+        playerId: args.playerId,
+        incidentKind: 'observed-recovery',
+        severity: 'medium',
+        status: 'resolved',
+        reason: `${args.candidateReason}:observed-progress`,
+        trackerKey: args.trackerKey,
+        progressMarker: args.progressMarker,
+    };
+}
+
 export function resolveOnlineAiRecoverySuccessFeedbackDecision(args: {
     forcedCommandProgress: OnlineAiRecoveryForcedCommandProgress;
     sequenceProgress: OnlineAiRecoverySequenceProgress;
@@ -1280,6 +1529,7 @@ export function resolveOnlineAiRecoverySuccessFeedbackDecision(args: {
     rootPlayerId: string;
     fallbackReason: ForceEndTurnStalledAiResolution['reason'];
     fallbackPhaseLabel: 'recover-interaction' | 'follow-up-advance';
+    shouldReportObservedRecoveryWithoutForcedCommand?: boolean;
 }): OnlineAiRecoverySuccessFeedbackDecision {
     if (!args.forcedCommandProgress.usedForcedRecoveryCommand && args.sequenceProgress.lastUnreportedLegalActionRecovery) {
         return {
@@ -1295,6 +1545,20 @@ export function resolveOnlineAiRecoverySuccessFeedbackDecision(args: {
     }
 
     if (!args.forcedCommandProgress.usedForcedRecoveryCommand) {
+        if (args.shouldReportObservedRecoveryWithoutForcedCommand === true) {
+            return {
+                kind: 'report',
+                metadata: buildOnlineAiRecoveryObservedFeedbackMetadata({
+                    matchId: args.matchId,
+                    gameId: args.gameId,
+                    playerId: args.rootPlayerId,
+                    trackerKey: args.trackerKey,
+                    progressMarker: args.progressMarker,
+                    candidateReason: args.fallbackReason,
+                }),
+            };
+        }
+
         return {
             kind: 'none',
         };
@@ -1517,6 +1781,7 @@ export function resolveOnlineAiRecoveryFollowUpTransition(args: {
     state: MatchState<unknown>;
     followUpDecision: OnlineAiRecoveryFollowUpDecision;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
 }): OnlineAiRecoveryFollowUpTransitionDecision {
     if (args.followUpDecision.kind === 'natural-continuation') {
         return { kind: 'natural-continuation' };
@@ -1531,6 +1796,7 @@ export function resolveOnlineAiRecoveryFollowUpTransition(args: {
                 state: args.state,
                 candidate,
                 engineConfig: args.engineConfig,
+                gameId: args.gameId,
             }).trackerKey
             : null,
     };
@@ -1551,11 +1817,13 @@ export function resolveOnlineAiRecoveryFollowUpTransitionFromRuntime(args: {
     hasLiveSeatConnection: boolean;
     allowForceCommandAfterLegalActionExhaustedRequested: boolean;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    gameId?: string | null;
 }): OnlineAiRecoveryFollowUpTransitionDecision {
     return resolveOnlineAiRecoveryFollowUpTransition({
         state: args.state,
         followUpDecision: resolveOnlineAiRecoveryFollowUpDecisionFromRuntime(args),
         engineConfig: args.engineConfig,
+        gameId: args.gameId,
     });
 }
 

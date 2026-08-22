@@ -31,11 +31,11 @@
 - `src/games/manifest*.generated.ts(x)`：自动生成，禁止手改
 - `npm run generate:manifests`：生成命令
 
-## 参考游戏（按复杂度排序）
-- `src/games/dicethrone/`：最复杂（角色/骰子/攻防/状态效果/Token响应）
-- `src/games/summonerwars/`：中等复杂（网格棋盘/单位管理/阵营牌组/技能系统）
-- `src/games/smashup/`：中等复杂（多人支持/基地记分/派系混搭/持续效果）
-- `src/games/tictactoe/`：最小实现（仅供理解骨架）
+## 同类实现查找方式
+- 最小骨架：查 `manifest.ts`、`game.ts`、`Board.tsx` 同时存在且规则最少的游戏目录，用于理解基础接入形状。
+- 网格 / 地图 / 桌面区位：用 `rg` 查 `BoardGrid`、`MapContainer`、`grid`、`cell`、`region`、`position` 等职责名，只复用坐标、命中区、缩放和实体定位边界。
+- 多人 / 阵营 / 角色选择：用 `rg` 查 `FactionSelection`、`CharacterSelection`、`setup`、`playerConfig` 等入口，只复用选择阶段和席位绑定模式。
+- 牌堆 / 手牌 / 持续效果：用 `rg` 查 `HandArea`、`deck`、`discard`、`effect`、`modifier` 等职责名，只复用数据流和显示拆分，不复制具体规则对象。
 
 ## 框架复用层
 - `src/core/ui/`：UI 类型契约层

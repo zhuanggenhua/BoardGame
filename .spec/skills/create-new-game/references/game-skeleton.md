@@ -1,173 +1,81 @@
-# 新游戏目录骨架（基于真实游戏模式）
+# 新游戏目录骨架
 
-## 完整目录结构
+## 角色
 
-```
+本文件只定义新 `gameId` 的目录职责和拆分门槛，不提供可复制代码模板。写代码前先从当前仓库选择最接近的已交付游戏作为实现参照；结构入口速览见 [`project-structure`](project-structure.md)，manifest 生成见 [`manifest-generation`](manifest-generation.md)。
+
+## 必备目录
+
+```text
 src/games/<gameId>/
-  manifest.ts          # 清单元数据（必须）
-  game.ts              # 引擎适配器组装（必须，超 500 行时提取 flowHooks/cheatModifier）
-  Board.tsx            # UI 主板（必须，超 300 行时拆分到 ui/）
-  thumbnail.tsx        # 缩略图组件（必须）
-  tutorial.ts          # 教学配置（必须，可占位）
-  audio.config.ts      # 音频配置（必须，可占位）
+  manifest.ts
+  game.ts
+  Board.tsx
+  thumbnail.tsx
+  tutorial.ts
+  audio.config.ts
   domain/
-    index.ts           # 领域内核入口
-    types.ts           # 核心状态/命令/事件类型（超 500 行时拆分，见下方）
-    ids.ts             # 领域 ID 常量表
-    validate.ts        # 命令校验
-    execute.ts         # 命令执行 → 生成事件（超 600 行时拆分到 execute/ 目录）
-    reducer.ts         # 事件 → 状态更新（超 600 行时拆分到 reducer/ 目录）
-    utils.ts           # 游戏内共享工具（applyEvents/getOpponentId/updatePlayer 等）
-    flowHooks.ts       # FlowSystem 钩子（中大型游戏独立文件）
   rule/
-    <游戏名>规则.md     # 规则文档
-  ui/                  # 游戏 UI 子模块（Board.tsx 超过 300 行时拆分）
-  config/ 或 data/     # 静态数据配置（按游戏复杂度选择）
+  ui/
+  config/ 或 data/
   __tests__/
-    helpers.ts         # 测试辅助函数（工厂方法）
-    smoke.test.ts      # 冒烟测试
-    flow.test.ts       # FlowHooks 测试
-    validate.test.ts   # 命令校验测试
 ```
 
-### types.ts 默认拆分结构
+职责：
 
-中等以上复杂度游戏（命令数 ≥5）从第一天就用此结构：
-```
-domain/
-  types.ts            # re-export barrel
-  core-types.ts       # 状态接口（PlayerState, GameCore, 基础柚举如 DieFace/CharacterId）
-  commands.ts         # 命令类型定义 + XX_COMMANDS 常量
-  events.ts           # 事件类型定义 + XX_EVENTS 常量
-```
+- `manifest.ts`：清单元数据；`id` 必须与目录名一致，缩略图路径使用逻辑资源路径。
+- `game.ts`：组装领域内核和引擎系统；`commandTypes` 只列业务命令，系统命令由引擎适配层合并。
+- `Board.tsx`：正式玩家 UI 入口；超过约 `300` 行或出现多职责区域时拆入 `ui/`。
+- `thumbnail.tsx`：缩略图组件；优先使用项目统一 thumbnail 组件，不自写资源 URL。
+- `tutorial.ts`、`audio.config.ts`：可先占位，但最终完成前必须按教程和音频规范裁定。
+- `domain/`：规则状态、命令、事件、校验、执行、reducer、流程钩子和共享工具。
+- `rule/`：规则合同、录入核对和实现消费说明。
+- `config/` 或 `data/`：静态数据；按对象模型和资源合同选择，不把规则事实硬塞进 UI。
+- `__tests__/`：工厂、冒烟、命令校验、流程和关键领域行为测试。
 
-`types.ts` 变为：
-```ts
-export * from './core-types';
-export * from './commands';
-export * from './events';
-```
+## Domain 默认形状
 
-外部仍 import from `'./types'`，不感知拆分。仅当命令+事件总共 <10 个时允许合并在单文件。
+最小职责：
 
-### reducer.ts / execute.ts 拆分规则
+| 文件 | 职责 |
+| --- | --- |
+| `domain/index.ts` | 导出 DomainCore、命令 / 事件常量和必要类型；连接 setup / execute / reduce / validate / isGameOver |
+| `domain/types.ts` | 类型 barrel；复杂游戏拆成 `core-types.ts`、`commands.ts`、`events.ts` |
+| `domain/ids.ts` | 稳定 ID、枚举常量和对象 id 集合 |
+| `domain/validate.ts` | 命令合法性；不改状态 |
+| `domain/execute.ts` | 命令转事件或等待交互；不直接写 core |
+| `domain/reducer.ts` | 事件转状态；纯函数，只改事件命中的状态路径 |
+| `domain/utils.ts` | 领域内共享工具；不得变成跨游戏工具垃圾桶 |
+| `domain/flowHooks.ts` | 中大型游戏的 FlowSystem 阶段钩子 |
 
-当命令/事件类型超过 15 个时，按实体/命令类别拆分：
-```
-domain/
-  reducer.ts          # switch 分发 + import 子模块
-  reducer/
-    combat.ts         # 战斗相关事件处理器
-    cards.ts          # 卡牌相关事件处理器
-    resources.ts      # 资源变更事件处理器
-```
+拆分门槛：
 
-详见 `AGENTS.md`「领域层编码规范」和 `.spec/knowledge/standards/engine-systems.md`「领域层编码规范详解」。
+- 命令数或事件数达到中等复杂度时，第一天就把 `types.ts` 拆成 barrel + `core-types.ts` / `commands.ts` / `events.ts`。
+- `execute.ts` 或 `reducer.ts` 接近约 `600` 行、命令 / 事件超过约 `15` 个，按实体或命令类别拆到子目录。
+- `game.ts` 超过约 `500` 行时，提取 `flowHooks`、`cheatModifier` 或系统配置；不要让 adapter 承担规则实现。
+- UI 子模块只承担显示和玩家动作承接；规则合法性、资源消耗、随机和胜负判断不得放进 UI。
 
-## manifest.ts（参考真实游戏）
-```ts
-import type { GameManifestEntry } from '../manifest.types';
+## 引擎组装边界
 
-const entry: GameManifestEntry = {
-    id: '<gameId>',
-    type: 'game',
-    enabled: true,
-    titleKey: 'games.<gameId>.title',
-    descriptionKey: 'games.<gameId>.description',
-    category: 'strategy',
-    playersKey: 'games.<gameId>.players',
-    icon: '🎮',
-    thumbnailPath: '<gameId>/thumbnails/cover',
-    allowLocalMode: false,
-    playerOptions: [2],
-    tags: [],
-    bestPlayers: [2],
-};
+- 所有游戏通过 `createGameEngine` 接入领域内核。
+- 阶段以 `G.sys.phase` 为单一权威；阶段推进由 FlowSystem 和游戏 `flowHooks` 裁定。
+- 新游戏默认使用 `createBaseSystems`；是否接入 Flow、Cheat、CharacterSelection、ResponseWindow、Tutorial、AI 等系统，按当前规则合同和支撑能力矩阵裁定。
+- ResponseWindow、Interaction、ActionLog、Undo、EventStream 等共享系统只通过正式配置或领域事件消费；禁止为单游戏改引擎文件做特判。
 
-export const <GAME_ID>_MANIFEST: GameManifestEntry = entry;
-export default entry;
-```
+## Manifest 与资源
 
-## game.ts（参考 smashup 简洁风格）
-```ts
-import { createBaseSystems, createGameEngine, createFlowSystem, createCheatSystem } from '../../engine';
-import { <GameId>Domain, XX_COMMANDS } from './domain';
-import type { <GameId>Core } from './domain/types';
-import { flowHooks } from './domain/flowHooks';
+- `manifest.id` 与目录名一致。
+- 游戏类型为 `game` 时必须有 `game.ts` 和 `Board.tsx`。
+- `src/games/manifest*.generated.ts(x)` 是生成文件，禁止手改；新增 / 修改 manifest 后运行 `npm run generate:manifests`。
+- 图片资源走 `public/assets/i18n/<locale>/<gameId>/` 和对应 manifest；代码里不得硬编码 `compressed/` 或服务器 URL。
 
-const systems = [
-    createFlowSystem<<GameId>Core>({ hooks: flowHooks }),
-    ...createBaseSystems<<GameId>Core>(),
-    createCheatSystem<<GameId>Core>(cheatModifier),
-];
+## 最小骨架验收
 
-// commandTypes 只列业务命令，系统命令由引擎按当前项目约定处理
-export const <GameId> = createGameEngine<<GameId>Core>({
-    domain: <GameId>Domain,
-    systems,
-    minPlayers: 2,
-    maxPlayers: 2,
-    commandTypes: [
-        ...Object.values(XX_COMMANDS),
-    ],
-});
+新游戏 S1 骨架完成前至少证明：
 
-export default <GameId>;
-```
-
-## domain/index.ts（参考 summonerwars 模式）
-```ts
-import type { DomainCore } from '../../../engine/types';
-import type { <GameId>Core, PlayerId, PlayerState } from './types';
-import { executeCommand } from './execute';
-import { reduceEvent } from './reducer';
-import { validateCommand } from './validate';
-
-export type { <GameId>Core } from './types';
-export { XX_COMMANDS, XX_EVENTS } from './types';
-
-function createPlayerState(pid: PlayerId): PlayerState {
-    return { id: pid, /* ...初始字段 */ };
-}
-
-export const <GameId>Domain: DomainCore<<GameId>Core> = {
-    gameId: '<gameId>',
-    setup: (playerIds, random) => {
-        const players = Object.fromEntries(
-            playerIds.map(pid => [pid, createPlayerState(pid)])
-        );
-        return { players, turnNumber: 1, /* ...其他初始状态 */ };
-    },
-    execute: (state, command, random) => executeCommand(state, command, random),
-    reduce: (core, event) => reduceEvent(core, event),
-    validate: (state, command) => validateCommand(state, command),
-    isGameOver: (core) => {
-        // 检查胜利条件
-        return core.gameResult;
-    },
-};
-```
-
-## domain/types.ts（核心类型骨架）
-```ts
-import type { Command, GameEvent, PlayerId } from '../../../engine/types';
-
-// 阶段定义
-export type GamePhase = 'factionSelect' | 'phase1' | 'phase2' | ...;
-export const PHASE_ORDER: GamePhase[] = ['phase1', 'phase2', ...];
-
-// 命令/事件常量（禁止字符串字面量）
-export const XX_COMMANDS = { DO_SOMETHING: 'DO_SOMETHING' } as const;
-export const XX_EVENTS = { SOMETHING_DONE: 'SOMETHING_DONE' } as const;
-
-// 核心状态
-export interface PlayerState { id: PlayerId; /* ... */ }
-export interface <GameId>Core {
-    players: Record<PlayerId, PlayerState>;
-    turnNumber: number;
-    gameResult?: { winner?: string; draw?: boolean };
-    /* ... */
-}
-```
-
-> 说明：以上模式基于 dicethrone/summonerwars/smashup 三个真实游戏提炼。所有游戏都使用 FlowSystem 管理阶段。阶段以 `G.sys.phase` 为单一权威来源。
+- 目录职责齐全，且没有把规则事实写进 UI 或占位文案。
+- manifest 可生成，大厅能发现游戏。
+- Domain setup 能生成合法初始 core。
+- validate / execute / reduce / isGameOver 有最小测试。
+- Board 能从正式 route 挂载，不依赖隐藏调试命令。
+- tutorial、audio、critical image、debug 等占位项已登记到后续收尾清单，不被误报为完成。

@@ -52,8 +52,8 @@ export const AUTH_API_URL = normalizeUrl(
 
 // 管理 API 地址
 const FALLBACK_ADMIN_API_URL = isDev
-    ? '/admin'
-    : (BACKEND_URL ? `${BACKEND_URL}/admin` : '/admin');
+    ? '/admin-api'
+    : (BACKEND_URL ? `${BACKEND_URL}/admin-api` : '/admin-api');
 
 export const ADMIN_API_URL = normalizeUrl(
     (metaEnv.VITE_ADMIN_API_URL as string | undefined) || FALLBACK_ADMIN_API_URL

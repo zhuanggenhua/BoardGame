@@ -12,6 +12,7 @@ import { GameTestRunner } from '../../../engine/testing';
 import { getCurrentInteractionSummary, injectRawBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
 import { buildAiDecisionContext, registerRemoteAiProvider, resolveNextLocalAiAction, withAiActionStrategyTags } from '../../../engine/ai';
 import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
+import type { ChoiceRequest } from '../../../engine/ChoiceRequest';
 import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions, diceThroneAiRuntime } from '../ai';
 import { engineConfig } from '../game';
@@ -34,7 +35,7 @@ import {
     getMultistepChoicePrompt,
     injectSimpleChoicePrompt,
 } from './test-utils';
-import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type TransferStatusCommand } from '../domain/types';
+import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type PendingDamage, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
@@ -45,6 +46,13 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { diceThroneCheatModifier } from '../domain/cheatModifier';
 import { createBonusRollContextFromSettlement, createMainRollContext, getCurrentRollDice } from '../domain/rollContext';
 import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../heroes/zhanshujia/tokens';
+import {
+    buildDiceThroneTokenResponseChoiceCandidates,
+    buildDiceThroneTokenResponseOpportunityId,
+    DICETHRONE_TOKEN_RESPONSE_AI_POLICY_ID,
+    DICETHRONE_TOKEN_RESPONSE_SOURCE_ID,
+    type DiceThroneTokenResponseChoiceValue,
+} from '../domain/timingOpportunities';
 
 const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
 
@@ -80,6 +88,41 @@ function tryCmd(
         random,
         ['0', '1']
     );
+}
+
+function buildTokenResponseChoiceRequestContract(
+    state: MatchState<DiceThroneCore>,
+    pendingDamage: PendingDamage,
+): ChoiceRequest<DiceThroneTokenResponseChoiceValue> {
+    const requestId = buildDiceThroneTokenResponseOpportunityId(pendingDamage);
+    const metadata = {
+        opportunityId: requestId,
+        pendingDamageId: pendingDamage.id,
+        sourcePlayerId: pendingDamage.sourcePlayerId,
+        targetPlayerId: pendingDamage.targetPlayerId,
+        responderId: pendingDamage.responderId,
+        responseType: pendingDamage.responseType,
+        sourceAbilityId: pendingDamage.sourceAbilityId,
+        damageScope: pendingDamage.damageScope,
+        originalDamage: pendingDamage.originalDamage,
+        currentDamage: pendingDamage.currentDamage,
+    };
+
+    return {
+        requestId,
+        gameId: engineConfig.gameId,
+        playerId: pendingDamage.responderId,
+        kind: 'choose-option',
+        sourceId: DICETHRONE_TOKEN_RESPONSE_SOURCE_ID,
+        candidates: buildDiceThroneTokenResponseChoiceCandidates(state.core, pendingDamage),
+        selection: { min: 1, max: 1 },
+        resolution: { type: 'candidate-commands' },
+        ai: {
+            status: 'game-policy',
+            policyId: DICETHRONE_TOKEN_RESPONSE_AI_POLICY_ID,
+        },
+        metadata,
+    };
 }
 
 
@@ -3484,6 +3527,99 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('本地 AI 优先从 Token 响应 ChoiceRequest 合同生成合法动作', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 2;
+        const pendingDamage: PendingDamage = {
+            id: 'dmg-ai-choice-request-token-response',
+            sourcePlayerId: '1',
+            targetPlayerId: '0',
+            originalDamage: 5,
+            currentDamage: 5,
+            responseType: 'beforeDamageReceived',
+            responderId: '0',
+            isFullyEvaded: false,
+        };
+        state.core.pendingDamage = pendingDamage;
+        const choiceRequestContract = buildTokenResponseChoiceRequestContract(state, pendingDamage);
+        injectRawBlockingInteraction(state, {
+            id: 'dt-token-response-dmg-ai-choice-request-token-response',
+            kind: 'dt:token-response',
+            playerId: '0',
+            data: { choiceRequestContract },
+        });
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(legalActions.some((action) => (
+            action.kind === 'token-response'
+            && action.metadata?.requestId === choiceRequestContract.requestId
+            && action.metadata?.tokenId === TOKEN_IDS.TAIJI
+        ))).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('token-response');
+        expect(resolution?.action.metadata).toMatchObject({
+            requestId: choiceRequestContract.requestId,
+            tokenId: TOKEN_IDS.TAIJI,
+        });
+    });
+
+    it('Token 响应 ChoiceRequest 合同缺少某 Token 时，AI 不从 pendingDamage 私自补合法动作', () => {
+        const state = createHeroMatchup('gunslinger', 'samurai')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '1';
+        state.core.players['1'].tokens[TOKEN_IDS.HONOR] = 1;
+        const pendingDamage: PendingDamage = {
+            id: 'dmg-ai-choice-request-restricted',
+            sourcePlayerId: '1',
+            targetPlayerId: '0',
+            originalDamage: 4,
+            currentDamage: 4,
+            sourceAbilityId: 'wakizashi',
+            damageScope: 'attack',
+            responseType: 'beforeDamageDealt',
+            responderId: '1',
+            isFullyEvaded: false,
+        };
+        state.core.pendingDamage = pendingDamage;
+        const choiceRequestContract = buildTokenResponseChoiceRequestContract(state, pendingDamage);
+        injectRawBlockingInteraction(state, {
+            id: 'dt-token-response-dmg-ai-choice-request-restricted',
+            kind: 'dt:token-response',
+            playerId: '1',
+            data: {
+                choiceRequestContract: {
+                    ...choiceRequestContract,
+                    candidates: choiceRequestContract.candidates.filter(candidate => candidate.id === 'skip'),
+                },
+            },
+        });
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'token-response')).toBe(false);
+        expect(legalActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
+    });
+
     it('响应窗口被 pendingInteractionId 锁定时 AI 不应暴露 RESPONSE_PASS', () => {
         const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
         state.sys.phase = 'targetingRoll';
@@ -4910,9 +5046,18 @@ describe('AI legal actions', () => {
             state,
         });
         const tokenAction = actions.find((action) => action.kind === 'token-response');
+        const skipAction = actions.find((action) => action.kind === 'skip-token-response');
 
         expect(tokenAction?.metadata?.strategyTags).toContain('survive-response');
         expect(tokenAction?.metadata?.cardStrategyTags).toBeUndefined();
+        expect(tokenAction?.commands).toContainEqual({
+            type: 'USE_TOKEN',
+            payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId: 'dmg-strategy-tags' },
+        });
+        expect(skipAction?.commands).toContainEqual({
+            type: 'SKIP_TOKEN_RESPONSE',
+            payload: { pendingDamageId: 'dmg-strategy-tags' },
+        });
     });
 
     it('withAiActionStrategyTags 默认只写 strategyTags，显式 opt-in 才镜像 legacy 字段', () => {
@@ -5497,6 +5642,72 @@ describe('调试改骰与当前骰区一致', () => {
             symbols: ['meteor'],
         });
         expect(nextCore.dice.map((die) => die.value)).toEqual([1, 1, 1, 1, 1]);
+    });
+
+    it('主投骰阶段存在回看骰时，调试改骰必须优先写入真实当前骰池', () => {
+        const core = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom).core;
+        const replayContext = createMainRollContext(core, {
+            phase: 'offensiveRoll',
+            ownerPlayerId: '0',
+            dice: core.dice.map((die) => ({ ...die, value: 1 })),
+        });
+
+        const nextCore = diceThroneCheatModifier.setDice!({
+            ...core,
+            rollCount: 1,
+            rollConfirmed: true,
+            currentRollContext: {
+                ...replayContext,
+                status: 'settled',
+                display: { ...replayContext.display, replayOnly: true },
+            },
+        }, [6, 5, 4, 3, 2], { phase: 'offensiveRoll' });
+
+        expect(nextCore.dice.map((die) => die.value)).toEqual([6, 5, 4, 3, 2]);
+    });
+
+    it('非投骰阶段只剩回看骰时，调试改骰必须同步玩家当前看到的回看骰面', () => {
+        const core = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom).core;
+        const replayContext = createMainRollContext(core, {
+            phase: 'offensiveRoll',
+            ownerPlayerId: '0',
+            dice: core.dice.map((die) => ({ ...die, value: 1 })),
+        });
+
+        const nextCore = diceThroneCheatModifier.setDice!({
+            ...core,
+            rollCount: 1,
+            rollConfirmed: true,
+            currentRollContext: {
+                ...replayContext,
+                status: 'settled',
+                display: { ...replayContext.display, replayOnly: true },
+            },
+        }, [6, 5, 4, 3, 2], { phase: 'main2' });
+
+        expect(nextCore.currentRollContext?.dice.map((die) => die.value)).toEqual([6, 5, 4, 3, 2]);
+    });
+
+    it('已选角但骰子数组缺失时，调试改骰应创建真实角色骰并写入输入值', () => {
+        const core = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom).core;
+
+        const nextCore = diceThroneCheatModifier.setDice!({
+            ...core,
+            dice: [],
+            rollCount: 0,
+            rollConfirmed: false,
+            currentRollContext: undefined,
+        }, [6, 5, 4, 3, 2], { phase: 'offensiveRoll' });
+
+        expect(nextCore.dice.map((die) => die.value)).toEqual([6, 5, 4, 3, 2]);
+        expect(nextCore.dice.map((die) => die.definitionId)).toEqual([
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+        ]);
+        expect(nextCore.rollCount).toBe(1);
     });
 });
 

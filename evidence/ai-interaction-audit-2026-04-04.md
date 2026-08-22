@@ -300,6 +300,85 @@
 - `npm run typecheck`
   - 结果：通过
 
+## 2026-08-21 Disney 选择语义补充验证
+
+- 现实现象：`SmashUp` Disney 派系里，野兽弃牌和木兰二选一都属于玩家决策语义；人类席位不能因为只有一个候选、存在默认分支或旧 `simple-choice` 习惯被系统自动代选。
+- 修复层级：游戏事件源把 `beauty_and_the_beast_discard_hand` 与 `disney_four_factions_prompt` 的自动单选关闭；AI 决策层继续通过 `simple-choice` adapter 把每个可选项枚举成正式 `SYS_INTERACTION_RESPOND` 命令。
+- AI-only 口径：AI 没有复用人类席位的自动提交语义；AI 座位只是在自己的合法动作集合中选择一个响应命令。人类席位仍停在弹窗等待确认。
+- 不影响真人的理由：人类交互的变化只是不再自动代选；响应提交仍走同一个 `InteractionSystem / SimpleChoiceSystem` 校验，非法或过期 `interactionId` 不会被接受。
+- 本轮 AI 回归：`src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts` 增加两条覆盖：
+  - 野兽弃牌：两张手牌分别枚举为 `discard:beast-cost-a` / `discard:beast-cost-b`，执行其中一个响应后交互关闭、只弃所选牌、野兽获得 +1 指示物。
+  - 木兰二选一：`draw_card` / `extra_action` 两个分支都进入 AI 合法动作，执行抽牌分支后交互关闭、抽牌完成且不误加额外行动额度。
+- 本轮验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/disney-factions-abilities.test.ts src/games/smashup/__tests__/abilities/disney-four-factions.test.ts src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts --configLoader native`
+    - 结果：`3 files / 40 tests passed`
+  - `npx eslint src/games/smashup/abilities/beauty_and_the_beast.ts src/games/smashup/abilities/disney_four_factions.ts src/games/smashup/__tests__/abilities/disney-factions-abilities.test.ts src/games/smashup/__tests__/abilities/disney-four-factions.test.ts src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts e2e/smashup/smashup-feedback-disney-ultimates.e2e.ts e2e/smashup/smashup-disney-four-factions-baymax-frozen-lion-mulan.e2e.ts`
+    - 结果：通过
+  - `npm run spec:lint`
+    - 结果：`spec-lint: OK`
+  - `node scripts/infra/run-e2e-single.mjs isolated e2e/smashup/smashup-feedback-disney-ultimates.e2e.ts "野兽在多张可弃手牌"`
+    - 结果：`1 passed`
+  - `node scripts/infra/run-e2e-single.mjs isolated e2e/smashup/smashup-disney-four-factions-baymax-frozen-lion-mulan.e2e.ts "花木兰二选一"`
+    - 结果：`1 passed`
+- 截图证据（2026-08-22 当前工作树补跑）：
+  - 野兽弃牌选择态：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-feedback-disney-ultimates.e2e\野兽在多张可弃手牌时必须等待玩家选择指定弃牌，并触发玫瑰花瓣的牌库顶交互\01-野兽天赋-手动选择弃牌.jpg`。截图前断言命中“选择 1 张手牌弃掉”，两张可弃手牌仍在手牌区，弃牌堆为空，证明不是随机弃牌，也不是系统自动代选。
+  - 野兽弃牌后收口：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-feedback-disney-ultimates.e2e\野兽在多张可弃手牌时必须等待玩家选择指定弃牌，并触发玫瑰花瓣的牌库顶交互\02-玫瑰花瓣-弃牌后可选反应.jpg`。截图前断言只弃掉玩家选择的 `petals-cost`，保留 `keep-card`，并给野兽放 1 个力量指示物。
+  - 花木兰二选一选择态：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-disney-four-factions-baymax-frozen-lion-mulan.e2e\花木兰二选一效果必须在真实页面等待玩家选择分支\mulan-mode-choice-prompt.jpg`。截图前断言命中“木兰：选择效果”，交互选项同时包含 `draw_card` 与 `extra_action`，选择前没有抽牌、没有增加行动额度，证明二选一没有落到默认分支。
+
+## 2026-08-21 SmashUp 自动单候选代选同类扩审
+
+- 本轮原始症状：用户指出 Beauty and the Beast / Mulan 不是“只有 1 张可弃手牌”的边界问题，而是规则语义写了玩家选择时，系统不能因为唯一候选、默认分支或旧 `simple-choice` 习惯替玩家提交；AI 也必须通过合法动作处理选择，不能沿用人类席位自动提交。
+- 真相源口径：当前 `Beauty and the Beast Beast` 中英文描述是 `Talent: Draw a card, OR discard a card` / `天赋：抽一张牌，或弃掉一张牌`，不是 `random / 随机`；本轮没有把 Beauty and the Beast 改成随机弃牌，修复目标是保留玩家选择权。
+- 扩审维度：
+  - 扫描 `src/games/smashup/abilities` 与 `src/games/smashup/domain` 中所有 `autoResolveIfSingle`。
+  - 复核 `autoResolveIfSingle: true`、`autoResolveIfSingle: !optional / !context.optional`、`count === 1` 等条件自动单选。
+  - 额外复核已确认的硬编码单候选直结算旁路：`Half the Battle` 目标选择、`Kaiju` 消灭目标选择、`Mythic Greeks` 目标选择。
+- 已一并修复的玩家选择语义：
+  - `Avengers`：J.A.R.V.I.S. / Hawkeye 的弃牌 prompt 不再因需弃 1 张而自动提交；新增回归覆盖“只有 1 张可弃手牌也仍停在弃牌选择 prompt”。
+  - `Half the Battle`：力量目标、移动目标、卡牌选择不再用 `!optional` 或 `targets.length === 1` 直结算。
+  - `Kaiju`：消灭目标即使只有 1 个也进入选择 prompt。
+  - `Itty Critters`、`Magical Girls`、`Marvel Villains`、`Mythic Greeks`、`Sharks`：目标选择 prompt 不再用 `!optional` 自动单选。
+  - `Penguins`、`Steampunks`、`Tornados`：目的地 / 分支 / 目标 prompt 统一显式 `autoResolveIfSingle: false`。
+  - `abilityHelpers.resolveOrPrompt`：默认从自动单选改为不自动，只有明确传入 `autoResolveIfSingle: true` 才允许机械收口。
+- 修复后扫描结果：
+  - `autoResolveIfSingle: !optional / !context.optional`：0 处。
+  - 已确认硬编码旁路（Half the Battle / Kaiju / Mythic Greeks）：0 处。
+  - 剩余非 `false`：4 处，均不属于本轮玩家选择自动提交：`actionCounter` 的纯“继续”机械按钮、`huluwawa` 无剩余牌确认、`penguins` helper 参数透传、`abilityHelpers` 默认 false 后的局部变量透传。
+- 审计测试更新：
+  - 旧测试不再把 `autoResolveIfSingle: !context.optional` 当作“可选选择有拒绝证据”。
+  - 新增扫描断言：玩家选择语义不得再通过 `autoResolveIfSingle` 自动提交唯一候选；已确认的单候选目标选择不得保留硬编码直结算旁路。
+- 本轮验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/avengers.test.ts --configLoader native`
+    - 结果：`1 file / 13 tests passed`
+  - `node scripts/infra/run-e2e-single.mjs isolated e2e/smashup/smashup-avengers-jarvis-choice.e2e.ts "J.A.R.V.I.S"`
+    - 结果：`1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilityBehaviorAudit.test.ts --config vitest.config.audit.ts --configLoader native -t "玩家选择语义不得通过 autoResolveIfSingle|已确认的单候选目标选择不得保留"`
+    - 结果：`1 file / 2 tests passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts --configLoader native`
+    - 结果：`1 file / 12 tests passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/penguinsIntegration.test.ts src/games/smashup/__tests__/kaijuPodIntegration.test.ts --configLoader native`
+    - 结果：`2 files / 12 tests passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/dragonsSuperheroesMagicalGirlsMegaTroopersPodIntegration.test.ts src/games/smashup/__tests__/sharksSkeletonsGreeksShapeshiftersDragonsPodIntegration.test.ts --configLoader native`
+    - 结果：`2 files / 19 tests passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/talent-mechanics.test.ts src/games/smashup/__tests__/sharksAllStarsTornadosPodIntake.test.ts --configLoader native`
+    - 结果：`2 files / 26 tests passed`
+  - `npx eslint src/games/smashup/domain/abilityHelpers.ts src/games/smashup/abilities/avengers.ts src/games/smashup/abilities/half_the_battle.ts src/games/smashup/abilities/kaiju.ts src/games/smashup/abilities/itty_critters.ts src/games/smashup/abilities/magical_girls.ts src/games/smashup/abilities/marvel_villains.ts src/games/smashup/abilities/mythic_greeks.ts src/games/smashup/abilities/penguins.ts src/games/smashup/abilities/sharks.ts src/games/smashup/abilities/steampunks.ts src/games/smashup/abilities/tornados.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts src/games/smashup/__tests__/abilities/avengers.test.ts`
+    - 结果：`0 errors`；仍有 7 个既存 warnings（`half_the_battle.ts` / `steampunks.ts` 未用导入、旧 `any` 等），不属于本轮自动代选改动。
+  - `npm run spec:lint`
+    - 结果：`spec-lint: OK`
+  - `npm run typecheck`
+    - 结果：通过
+  - `git diff --check -- <本轮相关文件>`
+    - 结果：通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilityBehaviorAudit.test.ts --config vitest.config.audit.ts --configLoader native`
+    - 结果：本轮新增 2 个选择语义用例通过；整份旧 audit 文件仍有 9 个既存红项，红项集中在遗留注册清单、保护 / powerModifier / onDestroy / ongoing 注册 / 目标控制者约束等旧审计缺口，不是本轮自动代选修复引入。
+- J.A.R.V.I.S. 截图证据（2026-08-22 当前工作树新增）：
+  - 触发前：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-avengers-jarvis-choice.e2e\J.A.R.V.I.S.-只有一张可弃手牌时也必须等待玩家选择，不自动弃牌\01-JARVIS-天赋触发前只有一张牌可弃.jpg`。截图前页面上可见基地 ongoing 的 J.A.R.V.I.S.，牌库里仅准备抽到 1 张可弃牌。
+  - 单张弃牌选择态：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-avengers-jarvis-choice.e2e\J.A.R.V.I.S.-只有一张可弃手牌时也必须等待玩家选择，不自动弃牌\02-JARVIS-单张可弃手牌仍停在选择界面.jpg`。截图前断言命中“贾维斯 / J.A.R.V.I.S.”和“弃掉一张牌”，选项只有 `only-card`，但该牌仍在手牌、弃牌堆为空，证明“只有 1 张可弃手牌”也不会自动弃掉。
+  - 选择后收口：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-avengers-jarvis-choice.e2e\J.A.R.V.I.S.-只有一张可弃手牌时也必须等待玩家选择，不自动弃牌\03-JARVIS-玩家选择后才弃掉手牌.jpg`。截图前断言玩家选择后交互关闭，手牌为空，弃牌堆只包含 `only-card`。
+- 残余范围：
+  - 本轮已覆盖 `autoResolveIfSingle` 和已确认共享旁路；全仓仍存在其它 `length === 1` 写法，其中一部分是胜负判定、无顺序意义的单张牌、随机/机械结果或旧能力局部逻辑。它们不能凭关键词直接判为同类 bug，后续若要宣称“所有单候选捷径全量审计完成”，需要逐项按规则文本拆语义并补对象清单。
+
 ## 修订记录
 
 - 2026-04-04 初版：确认在线 seat 私有视角与 `isBlocked` 共享问题。
@@ -313,3 +392,6 @@
 - 2026-04-04 修订：补齐 `DiceThrone` 在线 AI 隐藏 `multistep-choice` 的真实房间 E2E，确认私有多步交互会通过 batch 提交两条 `MODIFY_DIE` 并在房主视角无泄漏地完成结算。
 - 2026-04-05 修订：补齐 `DiceThrone` 在线 AI `batch:rejected -> retry` 的真实房间 E2E，确认首轮拒绝后不会半提交、不会永久卡死，并能在下一轮以 3 条命令批量完成隐藏多步交互。
 - 2026-04-05 修订：补齐 `DiceThrone` 在线 AI “连续两轮 `batch:rejected` 后第三轮 retry 成功”的真实房间 E2E，确认多轮拒绝下仍不会半提交、不会把隐藏交互泄漏给人类。
+- 2026-08-21 修订：补齐 `SmashUp` Disney 选择语义回归，确认人类不再被自动代选，AI 仍能通过合法动作响应并收口。
+- 2026-08-21 修订：补齐 `SmashUp` 自动单候选代选同类扩审，关闭玩家选择语义的 `autoResolveIfSingle` / 已确认硬编码直结算旁路，并记录剩余 `length === 1` 全量审计范围。
+- 2026-08-22 修订：补齐野兽、花木兰和 J.A.R.V.I.S. 的真实页面截图路径，明确截图证明的是“停在玩家选择界面”而不是只看测试绿灯。

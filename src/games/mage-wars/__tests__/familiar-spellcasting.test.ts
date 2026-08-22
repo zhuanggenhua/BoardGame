@@ -99,7 +99,7 @@ function withMage(core: MageWarsCore, mageId: typeof MAGE_IDS[keyof typeof MAGE_
 }
 
 describe('mage-wars familiar and spawn-point spellcasting', () => {
-    it('keeps source-card restrictions in the config package without adding source cards to apprentice spellbooks', () => {
+    it('keeps source-card restrictions in the config package while standard spellbooks include their source cards', () => {
         expect(getMageWarsSpellCardFromConfig(2908)?.spellcastingSource).toEqual({
             abilityId: 'mw.source.2908.familiar',
             kind: 'familiar',
@@ -116,8 +116,8 @@ describe('mage-wars familiar and spawn-point spellcasting', () => {
             allowedTypeLineIncludes: ['动物'],
             channeling: 4,
         });
-        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).not.toContain(2218);
-        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).not.toContain(2908);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).toContain(2218);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toContain(2908);
     });
 
     it('plans and casts a familiar incantation from the familiar location with familiar-first payment', () => {

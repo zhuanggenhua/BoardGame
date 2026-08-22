@@ -1,16 +1,19 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { GameModeProvider } from '../../../contexts/GameModeContext';
+import { ToastProvider } from '../../../contexts/ToastContext';
+import { TutorialProvider } from '../../../contexts/TutorialContext';
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../../../engine/hooks/EventStreamRollbackContext';
 import { resetFxFrameClockForTests, type FxBus, type FxEvent } from '../../../engine/fx';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import type { RandomFn, SystemState } from '../../../engine/types';
 import MageWarsBoard from '../Board';
-import { MageWarsDomain, type MageWarsArenaObjectState, type MageWarsCore } from '../domain';
+import { MageWarsDomain, MAGE_WARS_COMMANDS, type MageWarsArenaObjectState, type MageWarsCore } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
-import { ARENA_ZONE_IDS } from '../domain/ids';
+import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
 import {
     AttackImpactRenderer,
     DamageImpactRenderer,
@@ -22,6 +25,7 @@ import { mageWarsFxRegistry } from '../ui/fxSetup';
 import { useMageWarsGameEvents } from '../ui/useGameEvents';
 
 vi.mock('react-i18next', () => ({
+    initReactI18next: { type: '3rdParty', init: vi.fn() },
     useTranslation: () => ({
         i18n: { language: 'zh-CN' },
         t: (key: string, params?: Record<string, string | number>) => (
@@ -237,6 +241,22 @@ function renderFxRenderer(
     );
 }
 
+function withBoardProviders(board: ReactElement): ReactElement {
+    return (
+        <ToastProvider>
+            <GameModeProvider mode="test">
+                <TutorialProvider>
+                    {board}
+                </TutorialProvider>
+            </GameModeProvider>
+        </ToastProvider>
+    );
+}
+
+function renderBoardWithProviders(board: ReactElement) {
+    return render(withBoardProviders(board));
+}
+
 function advanceSharedFxClockDelay(delayMs: number) {
     const totalMs = delayMs + 64;
     for (let elapsed = 0; elapsed < totalMs; elapsed += 16) {
@@ -273,7 +293,7 @@ function createRecordingFxBus(ids: string[]): FxBus {
 
 describe('MageWarsBoard FX wiring', () => {
     it('mounts the board with the event-driven FX layer attached', () => {
-        render(<MageWarsBoard {...boardProps()} />);
+        renderBoardWithProviders(<MageWarsBoard {...boardProps()} />);
 
         expect(screen.queryByTestId('mage-wars-board')).not.toBeNull();
     });
@@ -323,7 +343,7 @@ describe('MageWarsBoard FX wiring', () => {
             },
         };
 
-        const { rerender } = render(renderWithRollback(baseCore));
+        const { rerender } = render(withBoardProviders(renderWithRollback(baseCore)));
 
         rollbackValue = {
             watermark: null,
@@ -331,7 +351,7 @@ describe('MageWarsBoard FX wiring', () => {
             reconcileSeq: 1,
         };
         act(() => {
-            rerender(renderWithRollback(afterCore, sysWithSummon));
+            rerender(withBoardProviders(renderWithRollback(afterCore, sysWithSummon)));
         });
 
         await waitFor(() => {
@@ -355,24 +375,24 @@ describe('MageWarsBoard FX wiring', () => {
             )),
         };
 
-        render(<MageWarsBoard
-            {...boardProps(afterCore, '0', {
-                eventStream: {
-                    entries: [
-                        {
-                            id: 1,
-                            event: {
-                                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
-                                payload: { object: summoned },
-                                timestamp: 1,
+        renderBoardWithProviders(<MageWarsBoard
+                {...boardProps(afterCore, '0', {
+                    eventStream: {
+                        entries: [
+                            {
+                                id: 1,
+                                event: {
+                                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+                                    payload: { object: summoned },
+                                    timestamp: 1,
+                                },
                             },
-                        },
-                    ],
-                    maxEntries: 200,
-                    nextId: 2,
-                },
-            })}
-        />);
+                        ],
+                        maxEntries: 200,
+                        nextId: 2,
+                    },
+                })}
+            />);
 
         await waitFor(() => {
             expect(screen.queryByTestId('mage-wars-fx-summon')).not.toBeNull();
@@ -410,7 +430,7 @@ describe('MageWarsBoard FX wiring', () => {
             )),
         };
 
-        render(<MageWarsBoard {...boardProps(core)} />);
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(core)} />);
 
         const fieldCard = screen.getByText('野性山猫').closest('[data-testid="mage-wars-zone-field-card"]');
         expect(fieldCard).not.toBeNull();
@@ -435,7 +455,7 @@ describe('MageWarsBoard FX wiring', () => {
             )),
         };
 
-        render(<MageWarsBoard {...boardProps(core, '1')} />);
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(core, '1')} />);
 
         const leftSeatCard = screen.getByText('左席位山猫').closest('[data-testid="mage-wars-zone-field-card"]');
         const rightSeatCard = screen.getByText('右席位骑士').closest('[data-testid="mage-wars-zone-field-card"]');
@@ -514,10 +534,10 @@ describe('MageWarsBoard FX wiring', () => {
         };
 
         try {
-            const { rerender } = render(<MageWarsBoard {...boardProps(beforeCore)} />);
+            const { rerender } = renderBoardWithProviders(<MageWarsBoard {...boardProps(beforeCore)} />);
 
             act(() => {
-                rerender(<MageWarsBoard {...boardProps(afterCore, '0', sysWithAttack)} />);
+                rerender(withBoardProviders(<MageWarsBoard {...boardProps(afterCore, '0', sysWithAttack)} />));
             });
 
             const targetCard = screen.getByText('缓冲目标').closest('[data-testid="mage-wars-zone-field-card"]');
@@ -618,10 +638,10 @@ describe('MageWarsBoard FX wiring', () => {
         };
 
         try {
-            const { rerender } = render(<MageWarsBoard {...boardProps(beforeCore)} />);
+            const { rerender } = renderBoardWithProviders(<MageWarsBoard {...boardProps(beforeCore)} />);
 
             act(() => {
-                rerender(<MageWarsBoard {...boardProps(afterCore, '0', sysWithDefeatingAttack)} />);
+                rerender(withBoardProviders(<MageWarsBoard {...boardProps(afterCore, '0', sysWithDefeatingAttack)} />));
             });
 
             const heldTargetCard = screen.getByText('击败目标').closest('[data-testid="mage-wars-zone-field-card"]');
@@ -1036,5 +1056,81 @@ describe('MageWarsBoard FX wiring', () => {
             resetFxFrameClockForTests();
             vi.useRealTimers();
         }
+    });
+});
+
+describe('MageWarsBoard wall targeting', () => {
+    function createWallReadyCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const beastmaster = baseCore.players['0'];
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...beastmaster,
+                    mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [25700],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3 ? ['0'] : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
+    it('casts an implemented wall spell by selecting a legal arena edge', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps(createWallReadyCore())} dispatch={dispatch} />);
+
+        const wallPreparedCard = container.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="25700"]');
+        expect(wallPreparedCard).not.toBeNull();
+        fireEvent.click(wallPreparedCard!);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('mage-wars-wall-edge-a3-b3').getAttribute('data-legal-target-wall-edge')).toBe('true');
+        });
+
+        fireEvent.click(screen.getByTestId('mage-wars-wall-edge-a3-b3'));
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, expect.objectContaining({
+            spellCardId: 25700,
+            targetWallEdgeId: 'a3-b3',
+        }));
+    });
+
+    it('renders existing wall objects on arena edges', () => {
+        const core = createWallReadyCore();
+        const wallCore: MageWarsCore = {
+            ...core,
+            walls: {
+                'a3-b3': {
+                    id: 'mwwall-0-a3-b3-1',
+                    ownerId: '0',
+                    sourceSpellCardId: 25700,
+                    sourceObjectId: 'spell-25700',
+                    name: '荆棘之墙',
+                    edgeId: 'a3-b3',
+                    zoneIds: [ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3],
+                    blocksLineOfSight: true,
+                    passageDamage: { amount: 3, damageTypes: ['穿越墙体'] },
+                },
+            },
+        };
+
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(wallCore)} />);
+
+        const wallEdge = screen.getByTestId('mage-wars-wall-edge-a3-b3');
+        expect(wallEdge.getAttribute('data-wall-object')).toBe('true');
+        expect(wallEdge.getAttribute('data-wall-spell-card-id')).toBe('25700');
+        expect(screen.queryByTestId('mage-wars-wall-object')).not.toBeNull();
     });
 });

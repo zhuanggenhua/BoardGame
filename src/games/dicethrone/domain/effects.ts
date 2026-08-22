@@ -1462,11 +1462,23 @@ export function resolveEffectsToEvents(
         if (!effect.action) {
             continue;
         }
-        // 奖励骰收口后会恢复同一攻击链。已经接受的 rollDie 不能再次投掷，
-        // 否则恢复主伤害时会覆盖当前骰区并重复消耗随机数。
+        const isAttackBonusDiceAlreadyResolved = (
+            ctx.state.pendingAttack?.bonusDiceResolved === true
+            && ctx.isDefensiveContext !== true
+            && ctx.state.pendingAttack.attackerId === ctx.attackerId
+            && (
+                effect.action.type === 'rollDie'
+                || (
+                    effect.action.type === 'custom'
+                    && !!effect.action.customActionId
+                    && isCustomActionCategory(effect.action.customActionId, 'dice')
+                )
+            )
+        );
+        // 奖励骰收口后会恢复同一攻击链。已经接受的骰子动作不能再次投掷，
+        // 否则恢复主伤害时会覆盖当前骰区、重复消耗随机数并再次落地伤害。
         if (
-            effect.action.type === 'rollDie'
-            && ctx.state.pendingAttack?.bonusDiceResolved === true
+            isAttackBonusDiceAlreadyResolved
         ) {
             continue;
         }

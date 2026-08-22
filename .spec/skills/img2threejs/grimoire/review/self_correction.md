@@ -78,7 +78,7 @@ When the reference is a **photograph** and the render is a **procedural reconstr
 - Trust the **palette ΔE / phash / part-presence**, and IoU only **after** scale+translation alignment.
 - Treat `ssim`/`edgeOverlap` vs a photo as advisory, never a hard fail.
 
-The proper fix is a Divine-Eye **reconstruction mode** (reference==photo ⇒ drop pixel-aligned signals, align-then-IoU, palette+objectness) — this is exactly what the deferred **OSIM** objectness signal targets (feature-map similarity is invariant to lighting/background). See `docs/PLAN_1.3_FINAL.md` review log + ws-memories atom `divine-eye-photo-vs-procedural-miscalibration`.
+The proper fix is a Divine-Eye **reconstruction mode** (reference==photo ⇒ drop pixel-aligned signals, align-then-IoU, palette+objectness) — this is exactly what the **OSIM** objectness signal targets (feature-map similarity is invariant to lighting/background).
 
 **Update (2026-07-22): the reconstruction-mode rescue now exists.** `divine_eye.py` computes a stdlib
 `objectness` signal (`objectness.py`, OSIM-lite — bg/pose/scale/brightness-invariant HOG cosine) and,
@@ -88,7 +88,7 @@ Eye no longer hard-rejects a faithful reconstruction on framing alone — but st
 
 ---
 
-## 2D Gates Are Blind to 3D Realism (Critical — from Bowie Knife reconstruction)
+## 2D Gates Are Blind to 3D Realism
 
 **The problem:** 2D visual gates (Divine Eye, diagnose_render) only measure silhouette + colour + tone. They cannot see:
 - Edge sharpness (a constant-thickness slab reads as a toy cutout even with perfect silhouette)

@@ -10,7 +10,7 @@ export type QueuedAuthoritativeCommand<Options = unknown> = {
 
 export type QueuedAuthoritativeBatch = {
     _batch: true;
-    execute: () => Promise<void>;
+    execute: () => Promise<boolean>;
     resolve: (success: boolean) => void;
 };
 
@@ -90,8 +90,8 @@ export async function drainAuthoritativeCommandQueue<Match extends Authoritative
         const next = match.commandQueue.shift()!;
         try {
             if ('_batch' in next) {
-                await next.execute();
-                next.resolve(true);
+                const success = await next.execute();
+                next.resolve(success);
                 continue;
             }
 
@@ -110,7 +110,7 @@ export async function drainAuthoritativeCommandQueue<Match extends Authoritative
     }
 }
 
-function flushAuthoritativeCommandQueue<Options>(
+export function flushAuthoritativeCommandQueue<Options>(
     match: AuthoritativeCommandQueueMatch<Options>,
 ): void {
     while (match.commandQueue.length > 0) {

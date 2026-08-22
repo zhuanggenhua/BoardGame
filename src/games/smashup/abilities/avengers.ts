@@ -207,7 +207,7 @@ const discardCardsPromptProgram = createPromptProgram<DiscardPromptContext, Smas
                     : 'ui.avengers_jarvis_discard_title',
                 multi: { min: count, max: count },
                 responseValidationMode: 'live',
-                autoResolveIfSingle: count === 1,
+                autoResolveIfSingle: false,
             },
         );
     },

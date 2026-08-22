@@ -279,6 +279,16 @@ describe('影子盗贼 Custom Action 运行时行为断言', () => {
             expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(4);
         });
 
+        it('带 bonusCp 参数时不重复计入正式伤害', () => {
+            const state = createState({ attackerCP: 5 });
+            const handler = getCustomActionHandler('shadow_thief-damage-half-cp')!;
+            const events = handler(buildCtx(state, 'shadow_thief-damage-half-cp', {
+                params: { bonusCp: 3 },
+            }));
+
+            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(3);
+        });
+
         it('CP=0时不造成伤害', () => {
             const state = createState({ attackerCP: 0 });
             const handler = getCustomActionHandler('shadow_thief-damage-half-cp')!;

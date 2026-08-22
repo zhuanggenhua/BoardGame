@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { canManualForceAdvanceAfterConfirmedRoll, GameTransportServer } from '../server';
+import { GameTransportServer } from '../server';
+import { canManualForceAdvanceAfterConfirmedRoll } from '../onlineAiWatchdogSequenceHelpers';
 import type { GameEngineConfig } from '../engineConfig';
 import {
     buildAiProgressMarker,
@@ -2949,7 +2950,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(spectatorView?.sys?.interaction?.isBlocked).toBe(true);
     });
 
-    it('broadcastState 的 state:patch 也必须按 seat view 隔离 owner-only prompt，非 owner 不得收到同一私有交互补丁', async () => {
+    it('stateSynchronizer.broadcast 的 state:patch 也必须按 seat view 隔离 owner-only prompt，非 owner 不得收到同一私有交互补丁', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const initialState = createOnlineAiRecoveryState({
@@ -3028,7 +3029,7 @@ describe('GameTransportServer（离座与重连）', () => {
         };
         match.stateID += 1;
 
-        (server as unknown as { broadcastState: (match: any) => void }).broadcastState(match);
+        (server as any).stateSynchronizer.broadcast(match);
 
         const ownerPatch = ownerSocket.sent.find((event) => event.event === 'state:patch' || event.event === 'state:update');
         const otherPatch = otherSocket.sent.find((event) => event.event === 'state:patch' || event.event === 'state:update');
@@ -3085,7 +3086,7 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
-    it('broadcastState 发给 spectator 的 state:update/state:patch 也必须过滤 owner-only prompt', async () => {
+    it('stateSynchronizer.broadcast 发给 spectator 的 state:update/state:patch 也必须过滤 owner-only prompt', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const initialState = createOnlineAiRecoveryState({
@@ -3164,7 +3165,7 @@ describe('GameTransportServer（离座与重连）', () => {
         };
         match.stateID += 1;
 
-        (server as unknown as { broadcastState: (match: any) => void }).broadcastState(match);
+        (server as any).stateSynchronizer.broadcast(match);
 
         const spectatorUpdate = spectatorSocket.sent.find((event) => event.event === 'state:patch' || event.event === 'state:update');
         expect(spectatorUpdate).toBeDefined();
@@ -3195,7 +3196,7 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
-    it('owner-only 交互关闭后，broadcastState 必须把非 owner shared view 的 isBlocked 明确收口为 false', async () => {
+    it('owner-only 交互关闭后，stateSynchronizer.broadcast 必须把非 owner shared view 的 isBlocked 明确收口为 false', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         await storage.createMatch('match-broadcast-smashup-hidden-block-release', {
@@ -3270,7 +3271,7 @@ describe('GameTransportServer（离座与重连）', () => {
         };
         match.stateID += 1;
 
-        (server as unknown as { broadcastState: (match: any) => void }).broadcastState(match);
+        (server as any).stateSynchronizer.broadcast(match);
 
         const otherUpdate = otherSocket.sent.find((event) => event.event === 'state:patch' || event.event === 'state:update');
         expect(otherUpdate).toBeDefined();
@@ -7478,7 +7479,7 @@ describe('GameTransportServer（离座与重连）', () => {
             currentResponderIndex: 0,
         });
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-stale-legal-only-becomes-human-response')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-stale-legal-only-becomes-human-response')).toBe(false);
     });
 
     it('online AI watchdog 在 legal-only 合法动作已把现场切到同一 AI 的新 visible incident 时，不应把旧 tracker 落成 blocker_persisted', async () => {
@@ -7587,7 +7588,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -7618,7 +7619,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     },
                 },
             };
-            (server as any).onlineAiRecoveryTrackers.delete(activeMatch.matchID);
+            (server as any).onlineAiRecoveryLedger.clearTracker(activeMatch.matchID);
             tracker.autoSubmittedAt = null;
             return {
                 applied: true,
@@ -7657,7 +7658,7 @@ describe('GameTransportServer（离座与重连）', () => {
             playerId: '1',
         });
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-becomes-visible-incident')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-legal-only-becomes-visible-incident')).toBe(false);
     });
 
     it('online AI watchdog 在 legal-only 合法动作已把现场切到同一 AI 的新 hidden incident 时，不应把旧 tracker 落成 blocker_persisted', async () => {
@@ -7766,7 +7767,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -7797,7 +7798,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     },
                 },
             };
-            (server as any).onlineAiRecoveryTrackers.delete(activeMatch.matchID);
+            (server as any).onlineAiRecoveryLedger.clearTracker(activeMatch.matchID);
             tracker.autoSubmittedAt = null;
             return {
                 applied: true,
@@ -7836,7 +7837,7 @@ describe('GameTransportServer（离座与重连）', () => {
             playerId: '1',
         });
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-becomes-hidden-incident')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-legal-only-becomes-hidden-incident')).toBe(false);
     });
 
     it('online AI watchdog 在 legal-only 合法动作已把现场切到同一 AI 的新 response-window incident 时，不应把旧 tracker 落成 blocker_persisted', async () => {
@@ -7945,7 +7946,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -7974,7 +7975,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     },
                 },
             };
-            (server as any).onlineAiRecoveryTrackers.delete(activeMatch.matchID);
+            (server as any).onlineAiRecoveryLedger.clearTracker(activeMatch.matchID);
             tracker.autoSubmittedAt = null;
             return {
                 applied: true,
@@ -8015,7 +8016,7 @@ describe('GameTransportServer（离座与重连）', () => {
             currentResponderIndex: 0,
         });
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-becomes-response-window-incident')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-legal-only-becomes-response-window-incident')).toBe(false);
     });
 
     it('online AI 唯一服务端执行器在 legal-only 合法动作切到同一 AI 的新 active-turn 时，不依赖 seat 在线继续收口', async () => {
@@ -8124,7 +8125,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -8190,7 +8191,7 @@ describe('GameTransportServer（离座与重连）', () => {
             reason: expect.stringContaining('blocker_persisted'),
         }));
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-becomes-active-turn-online')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-legal-only-becomes-active-turn-online')).toBe(false);
     });
 
     it('online AI watchdog 在 legal-only 合法动作已把现场切到同一 AI 的新 active-turn 且 seat 离线时，应继续 watchdog 收口而不是误交给自然链路', async () => {
@@ -8305,7 +8306,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -8425,7 +8426,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
         expect(actionLog.blockerFingerprint).toContain('offensiveRoll');
         expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:offensiveRoll');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-becomes-active-turn-offline')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-legal-only-becomes-active-turn-offline')).toBe(false);
     });
 
     it('DiceThrone 线上反馈 6a4a157d：offensiveRoll 仅剩 advance-phase 时 watchdog 应继续推进到 main2 并收口', async () => {
@@ -8516,7 +8517,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch, currentCandidate) => {
             expect(currentCandidate.reason).toBe('active-turn-legal-only');
@@ -8582,7 +8583,7 @@ describe('GameTransportServer（离座与重连）', () => {
             incidentKind: 'force-end-turn-failed',
             reason: expect.stringContaining('blocker_persisted'),
         }));
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-dicethrone-offensive-advance-only')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-dicethrone-offensive-advance-only')).toBe(false);
     });
 
     it('online AI watchdog 在交互合法动作已把现场切到同一 AI 的新 seat-legal-only 时，应继续 watchdog 收口而不是落成 blocker_persisted', async () => {
@@ -8709,7 +8710,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -8814,7 +8815,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('seat-legal-only');
         expect(actionLog.blockerFingerprint).toContain('defensiveRoll');
         expect(actionLog.trackerKey).toContain('seat-legal-only:1:defensiveRoll:advance-phase:legal-advance');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-interaction-becomes-seat-legal-only')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-interaction-becomes-seat-legal-only')).toBe(false);
     });
 
     it('online AI watchdog 在 active-turn legal-only 第一步后若仍是同一 AI 回合，应继续第二次 legal-action 直到真正交回 human', async () => {
@@ -8928,7 +8929,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -9062,7 +9063,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
         expect(actionLog.blockerFingerprint).toContain('discard');
         expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:discard:discard-card');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-fantasyrealms-double-legal-action-chain')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-fantasyrealms-double-legal-action-chain')).toBe(false);
     });
 
     it('online AI watchdog 在 Fantasy Realms 深分支先后两次遭遇 stale-private-overlay 时，也应通过 emergency playerView 连续两次 legal-action 收口', async () => {
@@ -9183,7 +9184,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-fantasyrealms-double-legal-action-chain-stale-overlay');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const candidate = {
                 playerId: '1',
                 reason: 'active-turn',
@@ -9231,7 +9232,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     activeCandidate,
                     buildAiProgressMarker(match.state),
                 )}`;
-                (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+                (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
                 return tracker;
             };
 
@@ -9371,7 +9372,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
             expect(actionLog.blockerFingerprint).toContain('discard');
             expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:discard:discard-card');
-            expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-fantasyrealms-double-legal-action-chain-stale-overlay')).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-fantasyrealms-double-legal-action-chain-stale-overlay')).toBe(false);
         } finally {
             resolutionSpy.mockRestore();
         }
@@ -9495,7 +9496,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-fantasyrealms-double-legal-action-chain-missing-overlay');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const candidate = {
                 playerId: '1',
                 reason: 'active-turn',
@@ -9543,7 +9544,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     activeCandidate,
                     buildAiProgressMarker(match.state),
                 )}`;
-                (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+                (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
                 return tracker;
             };
 
@@ -9683,7 +9684,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
             expect(actionLog.blockerFingerprint).toContain('discard');
             expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:discard:discard-card');
-            expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-fantasyrealms-double-legal-action-chain-missing-overlay')).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-fantasyrealms-double-legal-action-chain-missing-overlay')).toBe(false);
         } finally {
             resolutionSpy.mockRestore();
         }
@@ -9807,7 +9808,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-fantasyrealms-double-legal-action-chain-mixed-overlay');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const candidate = {
                 playerId: '1',
                 reason: 'active-turn',
@@ -9855,7 +9856,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     activeCandidate,
                     buildAiProgressMarker(match.state),
                 )}`;
-                (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+                (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
                 return tracker;
             };
 
@@ -9995,7 +9996,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
             expect(actionLog.blockerFingerprint).toContain('discard');
             expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:discard:discard-card');
-            expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-fantasyrealms-double-legal-action-chain-mixed-overlay')).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-fantasyrealms-double-legal-action-chain-mixed-overlay')).toBe(false);
         } finally {
             resolutionSpy.mockRestore();
         }
@@ -10119,7 +10120,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-fantasyrealms-double-legal-action-chain-mixed-overlay-reverse');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const candidate = {
                 playerId: '1',
                 reason: 'active-turn',
@@ -10167,7 +10168,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     activeCandidate,
                     buildAiProgressMarker(match.state),
                 )}`;
-                (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+                (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
                 return tracker;
             };
 
@@ -10307,7 +10308,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
             expect(actionLog.blockerFingerprint).toContain('discard');
             expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:discard:discard-card');
-            expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-fantasyrealms-double-legal-action-chain-mixed-overlay-reverse')).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-fantasyrealms-double-legal-action-chain-mixed-overlay-reverse')).toBe(false);
         } finally {
             resolutionSpy.mockRestore();
         }
@@ -10489,7 +10490,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-fantasyrealms-double-legal-action-chain-across-turns');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const drawCandidate = {
                 playerId: '1',
                 reason: 'active-turn',
@@ -10537,7 +10538,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     activeCandidate,
                     buildAiProgressMarker(match.state),
                 )}`;
-                (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+                (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
                 return tracker;
             };
             const seatControllers = {
@@ -10641,7 +10642,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(match.state.core.activePlayerId).toBe('0');
             expect(match.state.sys.phase).toBe('draw');
             expect(match.state.sys.turnNumber).toBe(5);
-            expect((server as any).onlineAiRecoveryTrackers.has(match.matchID)).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker(match.matchID)).toBe(false);
 
             match.state = {
                 ...match.state,
@@ -10670,7 +10671,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 },
             };
 
-            expect((server as any).onlineAiRecoveryTrackers.has(match.matchID)).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker(match.matchID)).toBe(false);
 
             await serverInternal.runOnlineAiRecoverySequence(
                 match,
@@ -10743,7 +10744,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(actionLog.blockerFingerprint).toContain('active-turn-legal-only');
             expect(actionLog.blockerFingerprint).toContain('discard');
             expect(actionLog.trackerKey).toContain('active-turn-legal-only:1:discard:discard-card');
-            expect((server as any).onlineAiRecoveryTrackers.has(match.matchID)).toBe(false);
+            expect((server as any).onlineAiRecoveryLedger.hasTracker(match.matchID)).toBe(false);
         } finally {
             resolutionSpy.mockRestore();
         }
@@ -10873,7 +10874,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -10960,7 +10961,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('seat-legal-only');
         expect(actionLog.blockerFingerprint).toContain('defensiveRoll');
         expect(actionLog.trackerKey).toContain('seat-legal-only:seat-legal-only:1:defensiveRoll:advance-phase:legal-advance');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-interaction-seat-legal-only-no-legal-action')).toBe(true);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-interaction-seat-legal-only-no-legal-action')).toBe(true);
     });
 
     it('online AI watchdog 在交互合法动作后若切到同一 AI 的 active-turn 但被限制为 legalActionOnly 且已无合法动作时，不应把失败吞成 null', async () => {
@@ -11085,7 +11086,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -11299,7 +11300,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -11513,7 +11514,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -11725,7 +11726,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -11937,7 +11938,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -12159,7 +12160,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -12282,7 +12283,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('playCards');
         expect(actionLog.blockerFingerprint).toContain('active-turn-followup-force-fallback');
         expect(actionLog.trackerKey).toContain('active-turn:5|scoreBases|1|0');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-interaction-active-turn-legal-only-force-fallback')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-interaction-active-turn-legal-only-force-fallback')).toBe(false);
     });
 
     it('online AI watchdog 在交互合法动作后若切到同一 AI 的 active-turn legal-only 且 force fallback 的 ADVANCE_PHASE 命令失败时，应上报 legal_action_command_failed', async () => {
@@ -12416,7 +12417,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -12658,7 +12659,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -12911,7 +12912,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -13168,7 +13169,7 @@ describe('GameTransportServer（离座与重连）', () => {
             candidate,
             buildAiProgressMarker(match.state),
         )}`;
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let legalActionAttemptCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch, currentCandidate) => {
@@ -13304,7 +13305,7 @@ describe('GameTransportServer（离座与重连）', () => {
             status: 'resolved',
             reason: 'active-turn:follow-up-advance:steps=1',
         }));
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-interaction-active-turn-legal-only-force-fallback-becomes-seat-legal-only')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-interaction-active-turn-legal-only-force-fallback-becomes-seat-legal-only')).toBe(false);
     });
 
     it('online AI watchdog 在 legal-only 候选 fingerprint 漂移时，应丢弃旧 tracker 而不是按旧 incident 继续上报失败', async () => {
@@ -13393,7 +13394,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockResolvedValueOnce({
             applied: false,
@@ -13418,7 +13419,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy).toHaveBeenCalled();
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-legal-only-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-legal-only-fingerprint-drift')).toBe(false);
     });
 
     it('buildOnlineAiRecoveryFingerprint 在 visible simple-choice 的 option id/disabled 相同但 value 漂移时，也必须变化', async () => {
@@ -14462,7 +14463,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -14520,7 +14521,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-visible-interaction-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-visible-interaction-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 hidden-interaction 候选 fingerprint 漂移到新的 owner-only current 时，应丢弃旧 tracker 而不是按旧 incident 继续上报失败', async () => {
@@ -14614,7 +14615,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -14653,7 +14654,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-hidden-interaction-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-hidden-interaction-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 compare-roll visible interaction 尝试恢复后若同一 incident 仍持续，应明确上报 blocker_persisted', async () => {
@@ -14762,7 +14763,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch, currentCandidate) => {
             expect(currentCandidate.reason).toBe('visible-interaction');
@@ -14822,7 +14823,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('compare-roll-stuck-1');
         expect(actionLog.blockerFingerprint).toContain('compare-roll-choice');
         expect(actionLog.trackerKey).toContain('compare-roll-stuck-1');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-visible-interaction-blocker-persisted')).toBe(true);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-visible-interaction-blocker-persisted')).toBe(true);
     });
 
     it('online AI watchdog 在 compare-roll-choice 仅切到新的 interactionId 且 progress marker 未变时，不应硬取消新 prompt', async () => {
@@ -14915,7 +14916,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerId, commandType, payload) => {
             if (commandType === INTERACTION_COMMANDS.RESPOND) {
@@ -14963,7 +14964,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(executeSpy.mock.calls.map((call) => call[2])).not.toContain(INTERACTION_COMMANDS.CANCEL);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-compare-roll-sequence-interaction-id-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-compare-roll-sequence-interaction-id-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 dt:token-response 的 pendingDamage 语义漂移时，也必须丢弃旧 tracker', async () => {
@@ -15091,7 +15092,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -15141,7 +15142,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy).toHaveBeenCalled();
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-dt-token-response-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-dt-token-response-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 遇到可见 dt:bonus-dice 时不应生成强制确认候选', async () => {
@@ -15454,7 +15455,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             const nextChoice = createSimpleChoice(
@@ -15528,7 +15529,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-simple-choice-slider-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-simple-choice-slider-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 visible simple-choice 的 slider 配置漂移但 progress marker 未变时，应继续沿新 prompt 收口而不是上报 no_progress', async () => {
@@ -15662,7 +15663,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let recoveryCallCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch) => {
@@ -15723,7 +15724,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         expect(tryRecoverSpy).toHaveBeenCalledTimes(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-simple-choice-slider-sequence-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-simple-choice-slider-sequence-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 visible simple-choice 的 option value 漂移但 progress marker 未变时，应继续沿新 prompt 收口而不是上报 no_progress', async () => {
@@ -15849,7 +15850,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let recoveryCallCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch) => {
@@ -15910,7 +15911,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         expect(tryRecoverSpy).toHaveBeenCalledTimes(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-simple-choice-value-sequence-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-simple-choice-value-sequence-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 response-window 仅切到新的 window id 且 progress marker 未变时，应继续沿新窗口收口而不是上报 no_progress', async () => {
@@ -15993,7 +15994,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let recoveryCallCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch) => {
@@ -16075,7 +16076,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('attack-sequence');
         expect(actionLog.blockerFingerprint).toContain('response-window-old-1');
         expect(actionLog.trackerKey).toContain('response-window:response-window:1:defensiveRoll:afterRollConfirmed:attack-sequence:1:response-window-old-1');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-response-window-sequence-window-id-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-response-window-sequence-window-id-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 response-loop 仅切到新的 window id 且 progress marker 未变时，应继续沿新窗口收口而不是上报 no_progress', async () => {
@@ -16169,7 +16170,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 1,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         let recoveryCallCount = 0;
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch) => {
@@ -16251,7 +16252,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('attack-loop-sequence');
         expect(actionLog.blockerFingerprint).toContain('response-loop-old-1');
         expect(actionLog.trackerKey).toContain('response-loop:response-loop:1:defensiveRoll:afterAttackResolved:attack-loop-sequence:1:response-loop-old-1');
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-response-loop-sequence-window-id-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-response-loop-sequence-window-id-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 multistep-choice 的 sourceId 相同但 allowed/completed 骰集合漂移时，也必须丢弃旧 tracker', async () => {
@@ -16359,7 +16360,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -16417,7 +16418,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy).toHaveBeenCalled();
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-multistep-choice-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-multistep-choice-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 multistep-choice 的 allowed/completed 相同但 selectCount 漂移时，也必须丢弃旧 tracker', async () => {
@@ -16525,7 +16526,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -16583,7 +16584,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy).toHaveBeenCalled();
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-multistep-choice-select-count-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-multistep-choice-select-count-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 multistep-choice 的 allowed/completed 相同但 dieModifyConfig 漂移时，也必须丢弃旧 tracker', async () => {
@@ -16695,7 +16696,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -16757,7 +16758,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy).toHaveBeenCalled();
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-multistep-choice-die-config-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-multistep-choice-die-config-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 dt:defender-choice 候选 fingerprint 漂移到新的 sourceId 时，应丢弃旧 tracker 而不是按旧 incident 继续上报失败', async () => {
@@ -16854,7 +16855,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -16920,7 +16921,7 @@ describe('GameTransportServer（离座与重连）', () => {
         tryRecoverSpy.mockRestore();
         resolveCandidateSpy.mockRestore();
 
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-dt-defender-choice-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-dt-defender-choice-fingerprint-drift')).toBe(false);
     });
 
     it('buildOnlineAiRecoveryFingerprint 在 response-window 的 source/responder 相同但 window id 漂移时，也必须变化', async () => {
@@ -17085,7 +17086,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -17134,7 +17135,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-response-window-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-response-window-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 response-loop 候选 fingerprint 漂移到新的窗口 current 时，应丢弃旧 tracker 而不是按旧 incident 继续上报失败', async () => {
@@ -17219,7 +17220,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
             activeMatch.state = {
@@ -17268,7 +17269,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(resolveCandidateSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect(tracker.autoSubmittedAt).toBeNull();
-        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-response-loop-fingerprint-drift')).toBe(false);
+        expect((server as any).onlineAiRecoveryLedger.hasTracker('match-watchdog-response-loop-fingerprint-drift')).toBe(false);
     });
 
     it('online AI watchdog 的 hidden-interaction resolved 判定应忽略 stale lastBroadcastedViews baseline，直接跟随 fresh applyPlayerView snapshot', async () => {
@@ -17303,7 +17304,9 @@ describe('GameTransportServer（离座与重连）', () => {
                 candidate: any,
                 seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
             ) => Promise<boolean>;
-            applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+            stateSynchronizer: {
+                applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+            };
         };
 
         const match = await serverInternal.loadMatch('match-watchdog-hidden-interaction-fresh-seat-view-over-cache');
@@ -17336,7 +17339,7 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         let hiddenStillPresent = true;
-        vi.spyOn(serverInternal, 'applyPlayerView').mockImplementation((activeMatch, playerID) => {
+        vi.spyOn(serverInternal.stateSynchronizer, 'applyPlayerView').mockImplementation((activeMatch, playerID) => {
             if (playerID !== '1') {
                 return activeMatch.state as MatchState<unknown>;
             }
@@ -17662,8 +17665,10 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const match = await serverInternal.loadMatch('match-watchdog-hidden-interaction-resolve-fingerprint-drift');
-        const originalApplyPlayerView = (server as any).applyPlayerView.bind(server);
-        vi.spyOn(server as any, 'applyPlayerView').mockImplementation((activeMatch: any, playerID: string) => {
+        const originalApplyPlayerView = (server as any).stateSynchronizer.applyPlayerView.bind(
+            (server as any).stateSynchronizer,
+        );
+        vi.spyOn((server as any).stateSynchronizer, 'applyPlayerView').mockImplementation((activeMatch: any, playerID: string) => {
             if (playerID !== '1') {
                 return originalApplyPlayerView(activeMatch, playerID);
             }
@@ -18360,7 +18365,9 @@ describe('GameTransportServer（离座与重连）', () => {
                     commandType: string,
                     payload: unknown,
                 ) => Promise<boolean>;
-                applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+                stateSynchronizer: {
+                    applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+                };
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-hidden-interaction-private-overlay-stale-emergency-view');
@@ -18382,7 +18389,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 },
             });
             let hiddenStillPresent = true;
-            vi.spyOn(serverInternal, 'applyPlayerView').mockImplementation((activeMatch, playerID) => {
+            vi.spyOn(serverInternal.stateSynchronizer, 'applyPlayerView').mockImplementation((activeMatch, playerID) => {
                 if (playerID !== '1') {
                     return activeMatch.state as MatchState<unknown>;
                 }
@@ -18411,7 +18418,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 } as MatchState<unknown>;
             });
 
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -18714,7 +18721,6 @@ describe('GameTransportServer（离座与重连）', () => {
         const serverInternal = server as unknown as {
             loadMatch: (matchID: string) => Promise<any>;
             runOnlineAiRecoveryTick: () => Promise<void>;
-            broadcastState: (match: any) => void;
             executeCommandInternal: (
                     match: any,
                     playerID: string,
@@ -18724,7 +18730,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-smashup-extra-action-private-overlay-stale');
-            const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -18859,7 +18865,6 @@ describe('GameTransportServer（离座与重连）', () => {
             const serverInternal = server as unknown as {
                 loadMatch: (matchID: string) => Promise<any>;
                 runOnlineAiRecoveryTick: () => Promise<void>;
-                broadcastState: (match: any) => void;
                 executeCommandInternal: (
                     match: any,
                     playerID: string,
@@ -18869,7 +18874,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-smashup-extra-action-missing-private-overlay');
-            const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19015,7 +19020,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-active-turn-private-overlay-stale-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19151,7 +19156,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-active-turn-missing-private-overlay-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19303,7 +19308,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-smashup-private-overlay-stale-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19453,7 +19458,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-smashup-missing-private-overlay-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19590,7 +19595,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-faction-select-private-overlay-stale-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19712,7 +19717,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-faction-select-missing-private-overlay-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -19858,7 +19863,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-response-window-private-overlay-stale-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -20188,7 +20193,6 @@ describe('GameTransportServer（离座与重连）', () => {
                     payload: unknown,
                     options?: unknown,
                 ) => Promise<boolean>;
-                broadcastState: (match: any) => void;
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-visible-simple-choice-value-drift-progress');
@@ -20247,7 +20251,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 };
                 return true;
             });
-            const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
 
             const result = await serverInternal.tryRecoverOnlineAiWithLegalAction(
                 match,
@@ -20801,7 +20805,7 @@ describe('GameTransportServer（离座与重连）', () => {
             };
 
             const match = await serverInternal.loadMatch('match-watchdog-response-window-missing-private-overlay-emergency-view');
-            const broadcastSpy = vi.spyOn(serverInternal as any, 'broadcastState');
+            const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
             const executed: Array<{ commandType: string; payload: unknown }> = [];
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
                 executed.push({ commandType, payload });
@@ -20930,18 +20934,20 @@ describe('GameTransportServer（离座与重连）', () => {
             const serverInternal = server as unknown as {
                 loadMatch: (matchID: string) => Promise<any>;
                 runOnlineAiRecoveryTick: () => Promise<void>;
-                broadcastState: (match: any) => void;
                 executeCommandInternal: (
                     match: any,
                     playerID: string,
                     commandType: string,
                     payload: unknown,
                 ) => Promise<boolean>;
-            onlineAiOverlayResyncCooldown: Map<string, number>;
+            onlineAiRecoveryLedger: {
+                getOverlayResyncCooldownKeys: () => string[];
+                getOverlayResyncCooldownExpiresAt: (cooldownKey: string) => number | undefined;
+            };
         };
 
         await serverInternal.loadMatch('match-watchdog-overlay-resync-cooldown');
-        const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+        const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
         vi.spyOn(serverInternal, 'executeCommandInternal').mockResolvedValue(true);
 
             await serverInternal.runOnlineAiRecoveryTick();
@@ -20950,7 +20956,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
             // 首次 blocked 触发一次 resync，冷却期内不应重复广播。
             expect(broadcastSpy).toHaveBeenCalledTimes(1);
-            expect(Array.from(serverInternal.onlineAiOverlayResyncCooldown.keys())).toEqual([
+            expect(serverInternal.onlineAiRecoveryLedger.getOverlayResyncCooldownKeys()).toEqual([
                 expect.stringContaining('match-watchdog-overlay-resync-cooldown:1:1:private-required:stale-private-overlay:'),
             ]);
         } finally {
@@ -21012,12 +21018,14 @@ describe('GameTransportServer（离座与重连）', () => {
                 blockedKey: string;
                 progressMarker: string;
             }) => void;
-            broadcastState: (match: any) => void;
-            onlineAiOverlayResyncCooldown: Map<string, number>;
+            onlineAiRecoveryLedger: {
+                getOverlayResyncCooldownKeys: () => string[];
+                getOverlayResyncCooldownExpiresAt: (cooldownKey: string) => number | undefined;
+            };
         };
 
         const match = await serverInternal.loadMatch('match-watchdog-overlay-resync-progress-drift');
-        const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+        const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
         const blockedKey = '1:private-required:stale-private-overlay';
         const firstMarker = buildAiProgressMarker(match.state);
 
@@ -21057,7 +21065,7 @@ describe('GameTransportServer（离座与重连）', () => {
         });
 
         expect(broadcastSpy).toHaveBeenCalledTimes(2);
-        expect(Array.from(serverInternal.onlineAiOverlayResyncCooldown.keys())).toEqual([
+        expect(serverInternal.onlineAiRecoveryLedger.getOverlayResyncCooldownKeys()).toEqual([
             expect.stringContaining(`match-watchdog-overlay-resync-progress-drift:1:${blockedKey}:${firstMarker}`),
             expect.stringContaining(`match-watchdog-overlay-resync-progress-drift:1:${blockedKey}:${driftedMarker}`),
         ]);
@@ -21117,12 +21125,14 @@ describe('GameTransportServer（离座与重连）', () => {
                 blockedKey: string;
                 progressMarker: string;
             }) => void;
-            broadcastState: (match: any) => void;
-            onlineAiOverlayResyncCooldown: Map<string, number>;
+            onlineAiRecoveryLedger: {
+                getOverlayResyncCooldownKeys: () => string[];
+                getOverlayResyncCooldownExpiresAt: (cooldownKey: string) => number | undefined;
+            };
         };
 
         const match = await serverInternal.loadMatch('match-watchdog-overlay-resync-expired-cooldown');
-        const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+        const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
         const dateNowSpy = vi.spyOn(Date, 'now');
         const blockedKey = '1:private-required:stale-private-overlay';
         const progressMarker = buildAiProgressMarker(match.state);
@@ -21160,8 +21170,8 @@ describe('GameTransportServer（离座与重连）', () => {
         }
 
         expect(broadcastSpy).toHaveBeenCalledTimes(2);
-        expect(Array.from(serverInternal.onlineAiOverlayResyncCooldown.keys())).toEqual([cooldownKey]);
-        expect(serverInternal.onlineAiOverlayResyncCooldown.get(cooldownKey)).toBe(4_100);
+        expect(serverInternal.onlineAiRecoveryLedger.getOverlayResyncCooldownKeys()).toEqual([cooldownKey]);
+        expect(serverInternal.onlineAiRecoveryLedger.getOverlayResyncCooldownExpiresAt(cooldownKey)).toBe(4_100);
     });
 
     it('online AI watchdog 在 progressMarker 相同但 blockedKey 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉', async () => {
@@ -21218,12 +21228,14 @@ describe('GameTransportServer（离座与重连）', () => {
                 blockedKey: string;
                 progressMarker: string;
             }) => void;
-            broadcastState: (match: any) => void;
-            onlineAiOverlayResyncCooldown: Map<string, number>;
+            onlineAiRecoveryLedger: {
+                getOverlayResyncCooldownKeys: () => string[];
+                getOverlayResyncCooldownExpiresAt: (cooldownKey: string) => number | undefined;
+            };
         };
 
         const match = await serverInternal.loadMatch('match-watchdog-overlay-resync-blocked-key-drift');
-        const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+        const broadcastSpy = vi.spyOn((serverInternal as any).stateSynchronizer, 'broadcast');
         const progressMarker = buildAiProgressMarker(match.state);
 
         serverInternal.maybeTriggerOnlineAiOverlayResync({
@@ -21242,7 +21254,7 @@ describe('GameTransportServer（离座与重连）', () => {
         });
 
         expect(broadcastSpy).toHaveBeenCalledTimes(2);
-        expect(Array.from(serverInternal.onlineAiOverlayResyncCooldown.keys())).toEqual([
+        expect(serverInternal.onlineAiRecoveryLedger.getOverlayResyncCooldownKeys()).toEqual([
             expect.stringContaining(`match-watchdog-overlay-resync-blocked-key-drift:1:1:private-required:stale-private-overlay:${progressMarker}`),
             expect.stringContaining(`match-watchdog-overlay-resync-blocked-key-drift:1:1:private-required:missing-private-overlay:${progressMarker}`),
         ]);
@@ -21438,7 +21450,6 @@ describe('GameTransportServer（离座与重连）', () => {
             const serverInternal = server as unknown as {
                 loadMatch: (matchID: string) => Promise<any>;
                 runOnlineAiRecoveryTick: () => Promise<void>;
-                broadcastState: (match: any) => void;
                 executeCommandInternal: (
                     match: any,
                     playerID: string,
@@ -26578,7 +26589,7 @@ describe('GameTransportServer（离座与重连）', () => {
             lastReportedFailureReason: null,
             failureCount: 0,
         };
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
 
         const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockResolvedValueOnce({
             applied: false,
@@ -26756,7 +26767,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 lastReportedFailureReason: null,
                 failureCount: 0,
             };
-            (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+            (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, tracker);
             const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
 
             await serverInternal.runOnlineAiRecoverySequence(
@@ -27100,8 +27111,10 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         let hiddenPromptActive = false;
-        const originalApplyPlayerView = (server as any).applyPlayerView.bind(server);
-        vi.spyOn(server as any, 'applyPlayerView').mockImplementation((activeMatch: any, playerID: string) => {
+        const originalApplyPlayerView = (server as any).stateSynchronizer.applyPlayerView.bind(
+            (server as any).stateSynchronizer,
+        );
+        vi.spyOn((server as any).stateSynchronizer, 'applyPlayerView').mockImplementation((activeMatch: any, playerID: string) => {
             if (playerID !== '1' || !hiddenPromptActive) {
                 return originalApplyPlayerView(activeMatch, playerID);
             }
@@ -28001,8 +28014,8 @@ describe('GameTransportServer（离座与重连）', () => {
             stateSnapshot: '{"matchId":"match-watchdog-dedupe"}',
         };
 
-        await serverInternal.reportOnlineAiRecoveryFeedback(payload);
-        await serverInternal.reportOnlineAiRecoveryFeedback({
+        await serverInternal.transportFeedbackReporter.reportOnlineAiRecoveryFeedback(payload);
+        await serverInternal.transportFeedbackReporter.reportOnlineAiRecoveryFeedback({
             ...payload,
             progressMarker: 'marker-before-2',
         });
@@ -28452,154 +28465,6 @@ describe('GameTransportServer（离座与重连）', () => {
         } finally {
             resolutionSpy.mockRestore();
         }
-    });
-
-    it('online AI watchdog 默认上报链路应把成功恢复类事件写入反馈库', async () => {
-        const io = new MockIO();
-        const storage = new InMemoryStorage();
-
-        const server = new GameTransportServer({
-            io: io as unknown as any,
-            storage,
-            games: [createEngineConfig()],
-            onlineAiRecoveryTickMs: 0,
-            onlineAiRecoveryFeedbackCooldownMs: 60_000,
-        });
-
-        const serverInternal = server as unknown as {
-            reportOnlineAiRecoveryFeedback: (payload: {
-                matchId: string;
-                gameId: string;
-                playerId: string;
-                incidentKind:
-                    | 'force-end-turn-success'
-                    | 'force-end-turn-failed'
-                    | 'unsatisfiable-interaction-auto-skipped'
-                    | 'legal-action-recovered';
-                severity: 'medium' | 'high';
-                reason: string;
-                trackerKey: string;
-                progressMarker: string;
-                stateSnapshot: string;
-                actionLog?: string;
-                status?: 'open' | 'resolved';
-            }) => Promise<void>;
-            postInternalSystemFeedback: (body: Record<string, unknown>) => Promise<void>;
-        };
-
-        const postSpy = vi.spyOn(serverInternal, 'postInternalSystemFeedback').mockResolvedValue();
-
-        const successEvents = [
-            {
-                incidentKind: 'legal-action-recovered' as const,
-                reason: 'active-turn:legal-action:roll-dice:roll:dice',
-                trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||1',
-                progressMarker: 'marker-before-1',
-            },
-            {
-                incidentKind: 'force-end-turn-success' as const,
-                reason: 'active-turn:follow-up-advance:steps=1',
-                trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||2',
-                progressMarker: 'marker-before-2',
-            },
-        ];
-
-        for (const event of successEvents) {
-            await serverInternal.reportOnlineAiRecoveryFeedback({
-                matchId: 'match-watchdog-report-success',
-                gameId: 'dicethrone',
-                playerId: '1',
-                incidentKind: event.incidentKind,
-                severity: 'medium',
-                status: 'resolved',
-                reason: event.reason,
-                trackerKey: event.trackerKey,
-                progressMarker: event.progressMarker,
-                stateSnapshot: '{"matchId":"match-watchdog-report-success"}',
-            });
-        }
-
-        expect(postSpy).toHaveBeenCalledTimes(2);
-        for (const event of successEvents) {
-            expect(postSpy).toHaveBeenCalledWith(expect.objectContaining({
-                content: `[system][online-ai-watchdog] ${event.incidentKind} ${event.reason}`,
-                source: 'online-ai-watchdog',
-                autoReportKind: event.incidentKind,
-                status: 'resolved',
-                resolvedMethod: event.incidentKind === 'legal-action-recovered'
-                    ? '系统已自动找到可执行操作并继续推进该 AI 座位，对局没有停在该步骤。'
-                    : '系统已自动推进停滞的 AI 座位，让对局继续进行。',
-                incidentKey: event.trackerKey,
-                gameName: 'dicethrone',
-                clientContext: expect.objectContaining({
-                    route: 'server-watchdog',
-                    mode: 'online',
-                    matchId: 'match-watchdog-report-success',
-                    playerId: '1',
-                    gameId: 'dicethrone',
-                }),
-            }));
-        }
-    });
-
-    it('online AI watchdog 默认系统反馈应附带版本定位字段', async () => {
-        vi.stubEnv('APP_VERSION', '0.6.1-server');
-        vi.stubEnv('APP_COMMIT_SHA', 'feedbead1234');
-        vi.stubEnv('APP_BUILD_TIME', '2026-06-19T11:00:00.000Z');
-        vi.stubEnv('APP_RELEASE_CHANNEL', 'production');
-
-        const io = new MockIO();
-        const storage = new InMemoryStorage();
-        const server = new GameTransportServer({
-            io: io as unknown as any,
-            storage,
-            games: [createEngineConfig()],
-            onlineAiRecoveryTickMs: 0,
-        });
-
-        const serverInternal = server as unknown as {
-            defaultOnlineAiFeedbackReporter: (payload: {
-                matchId: string;
-                gameId: string;
-                playerId: string;
-                incidentKind: 'force-end-turn-failed';
-                severity: 'high';
-                reason: string;
-                trackerKey: string;
-                progressMarker: string;
-                stateSnapshot: string;
-                actionLog?: string;
-            }) => Promise<void>;
-            postInternalSystemFeedback: (body: Record<string, unknown>) => Promise<void>;
-        };
-
-        const postSpy = vi.spyOn(serverInternal, 'postInternalSystemFeedback').mockResolvedValue();
-
-        try {
-            await serverInternal.defaultOnlineAiFeedbackReporter({
-                matchId: 'match-watchdog-build-meta',
-                gameId: 'dicethrone',
-                playerId: '1',
-                incidentKind: 'force-end-turn-failed',
-                severity: 'high',
-                reason: 'active-turn:follow-up-advance:command_failed:ADVANCE_PHASE:not_active_player',
-                trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||1',
-                progressMarker: '0|defensiveRoll|42|0|||||||1',
-                stateSnapshot: '{"matchId":"match-watchdog-build-meta"}',
-                actionLog: '{"kind":"online-ai-feedback-diagnostic"}',
-            });
-        } finally {
-            vi.unstubAllEnvs();
-        }
-
-        expect(postSpy).toHaveBeenCalledWith(expect.objectContaining({
-            clientContext: expect.objectContaining({
-                appVersion: '0.6.1-server',
-                appCommitSha: 'feedbead1234',
-                appBuildTime: '2026-06-19T11:00:00.000Z',
-                appReleaseChannel: 'production',
-            }),
-        }));
     });
 
     it('online AI watchdog 自动反馈应携带交互选项与可选性诊断信息', async () => {
@@ -29121,7 +28986,7 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const match = await serverInternal.loadMatch('match-watchdog-response-loop-existing-tracker');
-        (server as any).onlineAiRecoveryTrackers.set(match.matchID, {
+        (server as any).onlineAiRecoveryLedger.setTracker(match.matchID, {
             key: '1:response-loop:response-loop:1:main2:afterCardPlayed:card-1:1:response-loop-existing-1',
             firstSeenAt: Date.now(),
             autoSubmittedAt: null,
@@ -30095,13 +29960,15 @@ describe('GameTransportServer（离座与重连）', () => {
                 commandType: string,
                 payload: unknown,
             ) => Promise<boolean>;
-            applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+            stateSynchronizer: {
+                applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+            };
         };
 
         await serverInternal.loadMatch('match-watchdog-hidden-interaction-lock');
 
         let hiddenResolved = false;
-        vi.spyOn(serverInternal, 'applyPlayerView').mockImplementation((match, playerID) => {
+        vi.spyOn(serverInternal.stateSynchronizer, 'applyPlayerView').mockImplementation((match, playerID) => {
             if (playerID !== '1') {
                 return match.state as MatchState<unknown>;
             }

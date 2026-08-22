@@ -41,6 +41,7 @@ import {
     getActionLikeResponseWindowTiming,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
+    findSpecificExtraMinionPlay,
     getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
     getResponseWindowPlayableBaseIndicesForMatchState,
@@ -619,6 +620,33 @@ export function validate(
                 const deckMinionDef = getMinionDef(deckCard.defId);
                 const deckFusionDef = getFusionDef(deckCard.defId);
                 const deckBasePower = (deckMinionDef?.power ?? deckFusionDef?.minionPower) ?? 0;
+                const specificExtraMinionPlay = findSpecificExtraMinionPlay(player, {
+                    cardUid: deckCard.uid,
+                    defId: deckCard.defId,
+                    baseIndex,
+                    basePower: deckBasePower,
+                });
+                const immediateExtraMinion = getImmediateExtraContext(options, command.playerId, 'minion');
+                const immediateExtraMinionValidation = validateImmediateExtraMinionUse(immediateExtraMinion, {
+                    cardUid: deckCard.uid,
+                    defId: deckCard.defId,
+                    baseIndex,
+                    basePower: deckBasePower,
+                });
+                if (immediateExtraMinionValidation && !immediateExtraMinionValidation.valid) {
+                    return immediateExtraMinionValidation;
+                }
+                const hasImmediateExtraMinionQuota = immediateExtraMinionValidation?.valid === true;
+                if (specificExtraMinionPlay) {
+                    if (player.deck[0]?.uid !== deckCard.uid) {
+                        return { valid: false, error: '该额外随从只能从牌库顶打出指定卡牌' };
+                    }
+                } else if (!hasImmediateExtraMinionQuota) {
+                    if ((player.specificExtraMinionPlays?.length ?? 0) > 0) {
+                        return { valid: false, error: '该额外随从只能打出指定卡牌' };
+                    }
+                    return { valid: false, error: '没有可从牌库打出该随从的额外机会' };
+                }
                 const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
                     && isExtraMinionPlayAttempt(
                         core,
@@ -671,6 +699,14 @@ export function validate(
                 const storedMinionDef = getMinionDef(storedCard.defId);
                 const storedFusionDef = getFusionDef(storedCard.defId);
                 const storedBasePower = (storedMinionDef?.power ?? storedFusionDef?.minionPower) ?? 0;
+                if ((player.specificExtraMinionPlays?.length ?? 0) > 0 && !findSpecificExtraMinionPlay(player, {
+                    cardUid: storedCard.uid,
+                    defId: storedCard.defId,
+                    baseIndex,
+                    basePower: storedBasePower,
+                })) {
+                    return { valid: false, error: '该额外随从只能打出指定卡牌' };
+                }
                 const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
                     && isExtraMinionPlayAttempt(
                         core,
@@ -739,6 +775,12 @@ export function validate(
             const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
             const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
             const globalQuotaRemaining = player.minionLimit - player.minionsPlayed;
+            const specificExtraMinionPlay = findSpecificExtraMinionPlay(player, {
+                cardUid: card.uid,
+                defId: card.defId,
+                baseIndex,
+                basePower,
+            });
             const immediateExtraMinion = getImmediateExtraContext(options, command.playerId, 'minion');
             const immediateExtraMinionValidation = validateImmediateExtraMinionUse(immediateExtraMinion, {
                 cardUid: card.uid,
@@ -750,7 +792,8 @@ export function validate(
                 return immediateExtraMinionValidation;
             }
             const hasImmediateExtraMinionQuota = immediateExtraMinionValidation?.valid === true;
-            if (!playAsAction && globalQuotaRemaining <= 0 && sameNameRemaining <= 0 && baseQuota <= 0 && !hasImmediateExtraMinionQuota) {
+            const hasSpecificExtraMinionQuota = specificExtraMinionPlay !== undefined;
+            if (!playAsAction && globalQuotaRemaining <= 0 && sameNameRemaining <= 0 && baseQuota <= 0 && !hasImmediateExtraMinionQuota && !hasSpecificExtraMinionQuota) {
                 return { valid: false, error: '本回合随从额度已用完' };
             }
             const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
@@ -780,7 +823,7 @@ export function validate(
             if (blockedByEliza) {
                 return { valid: false, error: '受伊莱莎限制：你本回合不能再打出额外牌' };
             }
-            const usesBaseLimitedMinionQuota = mustUseBaseLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)
+            const usesBaseLimitedMinionQuota = !hasSpecificExtraMinionQuota && mustUseBaseLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)
                 || (
                     hasImmediateExtraMinionQuota
                     && immediateExtraMinion?.restrictToBase === baseIndex
@@ -789,7 +832,7 @@ export function validate(
                     && baseQuota <= 0
                 );
             // 同名额度检查：全局额度用完后，如果只剩同名额度，必须匹配已锁定的 defId
-            if (!playAsAction && !hasImmediateExtraMinionQuota && globalQuotaRemaining <= 0 && sameNameRemaining > 0 && baseQuota <= 0) {
+            if (!playAsAction && !hasImmediateExtraMinionQuota && !hasSpecificExtraMinionQuota && globalQuotaRemaining <= 0 && sameNameRemaining > 0 && baseQuota <= 0) {
                 // 已锁定 defId 时，只能打出同名随从
                 if (
                     player.sameNameMinionDefId !== null
@@ -800,7 +843,7 @@ export function validate(
                 }
             }
             // 基地限定同名额度检查：全局额度和全局同名额度都用完后，使用基地限定额度时检查同名约束
-            if (!playAsAction && !hasImmediateExtraMinionQuota && usesBaseLimitedMinionQuota) {
+            if (!playAsAction && !hasImmediateExtraMinionQuota && !hasSpecificExtraMinionQuota && usesBaseLimitedMinionQuota) {
                 if (player.baseLimitedSameNameRequired?.[baseIndex]) {
                     // 必须与触发能力时的随从同名
                     const requiredDefId = player.baseLimitedSameNameDefId?.[baseIndex];
@@ -826,7 +869,7 @@ export function validate(
                 }
             }
             // 全局力量限制检查：额外出牌机会可能有力量上限（如家园：力量≤2）
-            if (!playAsAction && !hasImmediateExtraMinionQuota && mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)) {
+            if (!playAsAction && !hasImmediateExtraMinionQuota && !hasSpecificExtraMinionQuota && mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)) {
                 const maxAllowedPower = getMaxRemainingGlobalPowerLimitedQuota(player);
                 if (maxAllowedPower !== undefined && basePower > maxAllowedPower) {
                     return { valid: false, error: `额外出牌只能打出力量≤${maxAllowedPower}的随从` };

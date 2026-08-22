@@ -5,55 +5,24 @@ description: '游戏设计入口。用于玩法、机制、平衡、关卡、UI/
 
 # Game Design
 
-Use this as the single entry point for game-design work.
-
-This skill keeps one trigger surface, then reads only the relevant topic files from `references/topics/` as needed.
-
-## Why One Skill
-
-- Keep triggering simple: the user says "game design", and this skill handles it.
-- Keep context controlled: load only the topic files needed for the current request.
-- Keep output concrete: synthesize a recommendation instead of bouncing across many sub-skills.
+本 skill 是游戏设计工作的单一入口。它只提供设计判断方法，不承载具体游戏案例库、课程讲义或项目管理长文。
 
 ## Workflow
 
-1. Classify the request: planning, core loop, mechanics and balance, level design, narrative, UI and UX, player psychology, testing, or team process.
-2. Read only the matching files from `references/topics/`.
-3. Give a direct recommendation first.
-4. Translate principles into specific mechanics, tradeoffs, risks, and validation steps.
+1. 锁定用户要解决的是：立项、核心循环、机制 / 平衡、关卡 / 引导、UI / UX、玩家心理、测试，还是团队决策。
+2. 读取 [`references/topic-cards.md`](references/topic-cards.md) 中对应主题卡；不要加载旧讲义或案例副本。
+3. 先给直接建议，再说明取舍、风险和最小验证动作。
+4. 如果问题已经进入 BoardGame 代码、UI、测试或资源实现，回到对应项目 skill，不用本 skill 代替工程 workflow。
 
 ## Topic Routing
 
-- Planning and framing:
-  `references/topics/game-development-planning/`
-  `references/topics/game-design-methodology/`
-  `references/topics/game-design-principles-reference/`
-- Mechanics and balance:
-  `references/topics/dynamic-difficulty-adjustment/`
-  `references/topics/flow-state-design-framework/`
-  `references/topics/reinforcement-feedback-systems/`
-  `references/topics/character-optimization-design/`
-  `references/topics/doubling-halving-balance/`
-- Levels, puzzles, and guidance:
-  `references/topics/game-competency-puzzle-design/`
-  `references/topics/visual-player-guidance/`
-  `references/topics/environmental-storytelling-technique/`
-  `references/topics/experience-pacing-structure/`
-- UI, controls, and failure handling:
-  `references/topics/user-centered-design/`
-  `references/topics/hicks-law-decision-optimization/`
-  `references/topics/fitts-law-ui-aiming/`
-  `references/topics/player-error-handling/`
-- Player psychology and testing:
-  `references/topics/player-psychology-decisions/`
-  `references/topics/fundamental-attribution-error-testing/`
-  `references/topics/game-prototyping-testing/`
-- Team and thematic coherence:
-  `references/topics/game-team-management/`
-  `references/topics/synergy-thematic-design/`
-  `references/topics/golden-ratio-design/`
-
-Use `references/skill-map.md` if you want the full topic map in one place.
+- 立项和框架：pillars、problem statement、80/20、范围 / 资源三角。
+- 核心循环和迭代：verbs、反馈、可重复乐趣、prototype loop。
+- 机制和平衡：flow、动态难度、奖惩反馈、min/max、倍增 / 减半。
+- 关卡、谜题和引导：能力类型、affordance、环境叙事、节奏结构。
+- UI、控制和错误：UCD、Hick、Fitts、错误分类和恢复。
+- 玩家心理和测试：认知偏差、归因偏差、playtest 方法。
+- 团队和主题：决策权、共同愿景、主题与机制协同、比例 / 张力。
 
 ## Default Output
 

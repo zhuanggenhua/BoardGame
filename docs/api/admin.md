@@ -1,6 +1,6 @@
 # 后台管理 API
 
-> 默认需要 `admin` 权限；其中统计概览（`/admin/stats`、`/admin/stats/trend`）与对局记录只读接口（`GET /admin/matches`、`GET /admin/matches/:id`）对游客开放，更新日志管理接口允许 `admin` 与 `developer` 访问。`developer` 仅可访问被放行的只读能力，并仅可操作自己被分配到的游戏更新日志。
+> 默认需要 `admin` 权限；其中统计概览（`/admin-api/stats`、`/admin-api/stats/trend`）与对局记录只读接口（`GET /admin-api/matches`、`GET /admin-api/matches/:id`）对游客开放，更新日志管理接口允许 `admin` 与 `developer` 访问。`developer` 仅可访问被放行的只读能力，并仅可操作自己被分配到的游戏更新日志。
 
 ## 概述
 
@@ -14,7 +14,7 @@
 
 ## 统计数据
 
-### GET /admin/stats
+### GET /admin-api/stats
 
 获取平台统计数据。
 
@@ -24,7 +24,7 @@
 
 **请求示例**:
 ```http
-GET /admin/stats
+GET /admin-api/stats
 Authorization: Bearer <token>
 ```
 
@@ -59,7 +59,7 @@ Authorization: Bearer <token>
 
 ---
 
-### GET /admin/stats/trend
+### GET /admin-api/stats/trend
 
 获取最近 7/30 天每日新增用户、每日对局数与游戏分布。
 
@@ -74,7 +74,7 @@ Authorization: Bearer <token>
 
 **请求示例**:
 ```http
-GET /admin/stats/trend?days=30
+GET /admin-api/stats/trend?days=30
 Authorization: Bearer <token>
 ```
 
@@ -112,7 +112,7 @@ Authorization: Bearer <token>
 
 ## 用户管理
 
-### GET /admin/users
+### GET /admin-api/users
 
 获取用户列表。
 
@@ -127,7 +127,7 @@ Authorization: Bearer <token>
 
 **请求示例**:
 ```http
-GET /admin/users?page=1&limit=20&search=test
+GET /admin-api/users?page=1&limit=20&search=test
 Authorization: Bearer <admin_token>
 ```
 
@@ -157,7 +157,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### GET /admin/users/:id
+### GET /admin-api/users/:id
 
 获取用户详情（含对局历史）。
 
@@ -168,7 +168,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-GET /admin/users/507f1f77bcf86cd799439011
+GET /admin-api/users/507f1f77bcf86cd799439011
 Authorization: Bearer <admin_token>
 ```
 
@@ -209,7 +209,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### PATCH /admin/users/:id/role
+### PATCH /admin-api/users/:id/role
 
 更新用户角色（`user` / `developer` / `admin`）。操作会写入审计日志，仅 `admin` 可调用。
 
@@ -233,7 +233,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-PATCH /admin/users/507f1f77bcf86cd799439011/role
+PATCH /admin-api/users/507f1f77bcf86cd799439011/role
 Authorization: Bearer <admin_token>
 Content-Type: application/json
 
@@ -269,7 +269,7 @@ Content-Type: application/json
 
 > 以下接口允许 `admin` 与 `developer` 访问。`developer` 只能读取/写入其 `developerGameIds` 内的游戏。
 
-### GET /admin/game-changelogs
+### GET /admin-api/game-changelogs
 
 获取后台可管理的更新日志列表。
 
@@ -280,7 +280,7 @@ Content-Type: application/json
 
 **请求示例**:
 ```http
-GET /admin/game-changelogs?gameId=smashup
+GET /admin-api/game-changelogs?gameId=smashup
 Authorization: Bearer <token>
 ```
 
@@ -315,7 +315,7 @@ Authorization: Bearer <token>
 
 ---
 
-### POST /admin/game-changelogs
+### POST /admin-api/game-changelogs
 
 创建更新日志。
 
@@ -337,7 +337,7 @@ Authorization: Bearer <token>
 
 ---
 
-### PUT /admin/game-changelogs/:id
+### PUT /admin-api/game-changelogs/:id
 
 更新、发布或撤回发布指定更新日志。
 
@@ -354,7 +354,7 @@ Authorization: Bearer <token>
 
 ---
 
-### DELETE /admin/game-changelogs/:id
+### DELETE /admin-api/game-changelogs/:id
 
 删除指定更新日志。
 
@@ -376,7 +376,7 @@ Authorization: Bearer <token>
 
 ---
 
-### POST /admin/users/:id/ban
+### POST /admin-api/users/:id/ban
 
 封禁用户。
 
@@ -398,7 +398,7 @@ Authorization: Bearer <token>
 
 **请求示例**:
 ```http
-POST /admin/users/507f1f77bcf86cd799439011/ban
+POST /admin-api/users/507f1f77bcf86cd799439011/ban
 Authorization: Bearer <admin_token>
 Content-Type: application/json
 
@@ -427,7 +427,7 @@ Content-Type: application/json
 
 ---
 
-### POST /admin/users/:id/unban
+### POST /admin-api/users/:id/unban
 
 解封用户。
 
@@ -438,7 +438,7 @@ Content-Type: application/json
 
 **请求示例**:
 ```http
-POST /admin/users/507f1f77bcf86cd799439011/unban
+POST /admin-api/users/507f1f77bcf86cd799439011/unban
 Authorization: Bearer <admin_token>
 ```
 
@@ -458,7 +458,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### DELETE /admin/users/:id
+### DELETE /admin-api/users/:id
 
 硬删除用户并清理关联数据（好友关系、私信、评论），对局记录会匿名化玩家名。
 
@@ -469,7 +469,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-DELETE /admin/users/507f1f77bcf86cd799439011
+DELETE /admin-api/users/507f1f77bcf86cd799439011
 Authorization: Bearer <admin_token>
 ```
 
@@ -492,7 +492,7 @@ Authorization: Bearer <admin_token>
 
 ## 房间管理
 
-### GET /admin/rooms
+### GET /admin-api/rooms
 
 获取房间列表。
 
@@ -505,7 +505,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-GET /admin/rooms?gameName=tictactoe&limit=10
+GET /admin-api/rooms?gameName=tictactoe&limit=10
 Authorization: Bearer <admin_token>
 ```
 
@@ -537,7 +537,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### DELETE /admin/rooms/:id
+### DELETE /admin-api/rooms/:id
 
 销毁房间。
 
@@ -548,7 +548,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-DELETE /admin/rooms/room-1
+DELETE /admin-api/rooms/room-1
 Authorization: Bearer <admin_token>
 ```
 
@@ -567,7 +567,7 @@ Authorization: Bearer <admin_token>
 
 ## 对局记录
 
-### GET /admin/matches
+### GET /admin-api/matches
 
 获取对局记录列表。
 
@@ -584,7 +584,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-GET /admin/matches?gameName=tictactoe&limit=10
+GET /admin-api/matches?gameName=tictactoe&limit=10
 Authorization: Bearer <token>
 ```
 
@@ -613,7 +613,7 @@ Authorization: Bearer <token>
 
 ---
 
-### GET /admin/matches/:id
+### GET /admin-api/matches/:id
 
 获取对局详情。
 
@@ -626,7 +626,7 @@ Authorization: Bearer <token>
 
 **请求示例**:
 ```http
-GET /admin/matches/abc123
+GET /admin-api/matches/abc123
 Authorization: Bearer <token>
 ```
 
@@ -664,7 +664,7 @@ Authorization: Bearer <token>
 **错误响应**:
 - `404` - 对局不存在
 
-### DELETE /admin/matches/:id
+### DELETE /admin-api/matches/:id
 
 删除对局记录，仅 `admin` 可用。
 
@@ -703,13 +703,13 @@ GET /notifications
 
 ---
 
-### GET /admin/notifications
+### GET /admin-api/notifications
 
 获取所有通知（含草稿和已过期），按创建时间倒序。需要管理员权限。
 
 **请求示例**:
 ```http
-GET /admin/notifications
+GET /admin-api/notifications
 Authorization: Bearer <admin_token>
 ```
 
@@ -732,7 +732,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### POST /admin/notifications
+### POST /admin-api/notifications
 
 创建通知。需要管理员权限。
 
@@ -770,7 +770,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### PUT /admin/notifications/:id
+### PUT /admin-api/notifications/:id
 
 更新通知。需要管理员权限。
 
@@ -799,7 +799,7 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### DELETE /admin/notifications/:id
+### DELETE /admin-api/notifications/:id
 
 删除通知。需要管理员权限。
 
@@ -810,7 +810,7 @@ Authorization: Bearer <admin_token>
 
 **请求示例**:
 ```http
-DELETE /admin/notifications/507f1f77bcf86cd799439099
+DELETE /admin-api/notifications/507f1f77bcf86cd799439099
 Authorization: Bearer <admin_token>
 ```
 
@@ -828,11 +828,11 @@ Authorization: Bearer <admin_token>
 
 ## 反馈管理
 
-> `GET /admin/feedback` 允许匿名只读；登录后会按当前用户补充可管理范围。普通用户可配合 `mineOnly=true` 查看自己的反馈，后台角色可按权限范围查看。
-> `GET /admin/feedback/:id` 同样允许匿名只读，用于公开查看单条反馈完整内容；响应里的 `canManage` 只表示当前登录用户是否可修改或删除该反馈，不限制读取。
-> `PATCH /admin/feedback/:id/status`、`DELETE /admin/feedback/:id` 按当前用户可管理范围执行：普通用户仅限自己的反馈，developer 仅限自己或负责游戏反馈，admin 不受游戏范围限制。批量删除接口仅用于后台管理批量操作。
+> `GET /admin-api/feedback` 允许匿名只读；登录后会按当前用户补充可管理范围。普通用户可配合 `mineOnly=true` 查看自己的反馈，后台角色可按权限范围查看。
+> `GET /admin-api/feedback/:id` 同样允许匿名只读，用于公开查看单条反馈完整内容；响应里的 `canManage` 只表示当前登录用户是否可修改或删除该反馈，不限制读取。
+> `PATCH /admin-api/feedback/:id/status`、`DELETE /admin-api/feedback/:id` 按当前用户可管理范围执行：普通用户仅限自己的反馈，developer 仅限自己或负责游戏反馈，admin 不受游戏范围限制。批量删除接口仅用于后台管理批量操作。
 
-### GET /admin/feedback
+### GET /admin-api/feedback
 
 获取反馈列表。
 
@@ -909,7 +909,7 @@ Authorization: Bearer <admin_token>
 }
 ```
 
-### GET /admin/feedback/:id
+### GET /admin-api/feedback/:id
 
 获取单条反馈完整详情。该接口是公开只读接口，允许匿名用户按反馈 ID 查看完整正文、内嵌截图、操作日志和状态快照；登录用户会额外得到当前账号是否可管理该反馈的 `canManage` 标记。用于列表已用 `summaryOnly=true` 时，点击或选中单条反馈后再加载完整内容。
 
@@ -929,7 +929,7 @@ Authorization: Bearer <admin_token>
 }
 ```
 
-### PATCH /admin/feedback/:id/status
+### PATCH /admin-api/feedback/:id/status
 
 更新反馈状态，按当前用户可管理范围执行。
 
@@ -940,14 +940,14 @@ Authorization: Bearer <admin_token>
 }
 ```
 
-### DELETE /admin/feedback/:id
+### DELETE /admin-api/feedback/:id
 
 删除单条反馈，按当前用户可管理范围执行。普通用户只能删除自己提交的反馈。
 
-### POST /admin/feedback/bulk-delete
+### POST /admin-api/feedback/bulk-delete
 
 按 ID 批量删除反馈，按当前用户可管理范围执行。
 
-### POST /admin/feedback/bulk-delete-by-filter
+### POST /admin-api/feedback/bulk-delete-by-filter
 
 按筛选条件批量删除反馈，按当前用户可管理范围执行。

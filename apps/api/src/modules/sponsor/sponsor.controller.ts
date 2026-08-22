@@ -17,7 +17,7 @@ export class SponsorController {
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Roles('admin')
-@Controller('admin/sponsors')
+@Controller('admin-api/sponsors')
 export class SponsorAdminController {
     constructor(@Inject(SponsorService) private readonly sponsorService: SponsorService) {}
 

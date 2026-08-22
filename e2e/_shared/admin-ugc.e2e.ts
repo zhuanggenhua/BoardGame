@@ -91,7 +91,7 @@ test.describe('后台管理 E2E', () => {
             },
         ];
 
-        await page.route('**/admin/ugc/packages**', async (route) => {
+        await page.route('**/admin-api/ugc/packages**', async (route) => {
             const request = route.request();
             if (request.resourceType() === 'document') {
                 return route.continue();
@@ -144,7 +144,7 @@ test.describe('后台管理 E2E', () => {
 
         page.once('dialog', (dialog) => dialog.accept());
         await Promise.all([
-            page.waitForResponse((response) => response.url().includes('/admin/ugc/packages/ugc-pub-a/unpublish') && response.status() === 200),
+            page.waitForResponse((response) => response.url().includes('/admin-api/ugc/packages/ugc-pub-a/unpublish') && response.status() === 200),
             publishedRow.getByRole('button', { name: '下架' }).click(),
         ]);
 
@@ -152,7 +152,7 @@ test.describe('后台管理 E2E', () => {
 
         page.once('dialog', (dialog) => dialog.accept());
         await Promise.all([
-            page.waitForResponse((response) => response.url().includes('/admin/ugc/packages/ugc-draft-b') && response.request().method() === 'DELETE'),
+            page.waitForResponse((response) => response.url().includes('/admin-api/ugc/packages/ugc-draft-b') && response.request().method() === 'DELETE'),
             draftRow.getByRole('button', { name: '删除' }).click(),
         ]);
 
@@ -190,7 +190,7 @@ test.describe('后台管理 E2E', () => {
             developerGameIds: [] as string[],
         };
 
-        await page.route('**/admin/users**', async (route) => {
+        await page.route('**/admin-api/users**', async (route) => {
             const request = route.request();
             if (request.resourceType() === 'document') {
                 return route.continue();
@@ -248,7 +248,7 @@ test.describe('后台管理 E2E', () => {
         await page.locator('label', { hasText: '王权骰铸' }).getByRole('checkbox').check();
 
         await Promise.all([
-            page.waitForResponse((response) => response.url().includes(`/admin/users/${user.id}/role`) && response.status() === 200),
+            page.waitForResponse((response) => response.url().includes(`/admin-api/users/${user.id}/role`) && response.status() === 200),
             page.getByRole('button', { name: '保存角色' }).click(),
         ]);
 
@@ -277,7 +277,7 @@ test.describe('后台管理 E2E', () => {
             developerGameIds: [] as string[],
         };
 
-        await page.route('**/admin/users**', async (route) => {
+        await page.route('**/admin-api/users**', async (route) => {
             const request = route.request();
             if (request.resourceType() === 'document') {
                 return route.continue();
@@ -319,7 +319,7 @@ test.describe('后台管理 E2E', () => {
             developerGameIds: ['smashup'],
         });
 
-        await page.route('**/admin/game-changelogs**', async (route) => {
+        await page.route('**/admin-api/game-changelogs**', async (route) => {
             const request = route.request();
             if (request.resourceType() === 'document') {
                 return route.continue();
@@ -363,7 +363,7 @@ test.describe('后台管理 E2E', () => {
             developerGameIds: ['smashup', 'dicethrone'],
         };
 
-        await page.route('**/admin/users/**', async (route) => {
+        await page.route('**/admin-api/users/**', async (route) => {
             const request = route.request();
             if (request.resourceType() === 'document') {
                 return route.continue();
@@ -430,7 +430,7 @@ test.describe('后台管理 E2E', () => {
                 },
             });
         });
-        await page.route('**/admin/rooms?*', async (route) => {
+        await page.route('**/admin-api/rooms?*', async (route) => {
             const request = route.request();
             if (request.resourceType() === 'document') {
                 return route.continue();

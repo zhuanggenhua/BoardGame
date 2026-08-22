@@ -212,6 +212,51 @@ describe('useAnimationEffects rollback consumer', () => {
         });
     });
 
+    it('FX 没有成功入队时应立即释放 HP 冻结，避免血量 UI 卡在旧值', async () => {
+        const fxBus = {
+            push: vi.fn(() => null),
+        } as unknown as FxBus;
+
+        const damageEntry: EventStreamEntry = {
+            id: 1,
+            event: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '1',
+                    amount: 3,
+                    actualDamage: 2,
+                    sourceAbilityId: 'pickpocket',
+                },
+                timestamp: 1000,
+            },
+        };
+
+        const view = render(
+            <HookProbe
+                entries={[]}
+                fxBus={fxBus}
+                opponentHp={49}
+            />,
+        );
+
+        view.rerender(
+            <HookProbe
+                entries={[damageEntry]}
+                fxBus={fxBus}
+                opponentHp={47}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('visual-opponent-hp').textContent).toBe('47');
+        });
+        expect(fxBus.push).toHaveBeenCalledWith(
+            'fx.damage',
+            {},
+            expect.objectContaining({ damage: 2 }),
+        );
+    });
+
     it('optimistic rollback 后应清空旧动画队列，并且恢复旧事件时不重播，只消费新的后续事件', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,

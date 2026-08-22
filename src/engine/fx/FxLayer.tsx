@@ -11,7 +11,7 @@
  * 额外功能（如召唤暗角遮罩）由游戏侧在 FxLayer 外部自行处理。
  */
 
-import React, { useCallback, useRef, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { FxBus } from './useFxBus';
 import type { FxBackendRuntime, FxCellPositionResolver, FxRenderBackend } from './backend';
@@ -51,6 +51,73 @@ function useFxLayerEffects(bus: FxBus) {
     bus.getSnapshot?.() ?? bus.activeEffects
   ), [bus]);
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+function useFxLayerLifecycle({
+  bus,
+  onEffectComplete,
+  onEffectImpact,
+}: Pick<FxLayerProps, 'bus' | 'onEffectComplete' | 'onEffectImpact'>) {
+  const activeEffects = useFxLayerEffects(bus);
+  const onCompleteRef = useRef(onEffectComplete);
+  const onImpactRef = useRef(onEffectImpact);
+  onCompleteRef.current = onEffectComplete;
+  onImpactRef.current = onEffectImpact;
+
+  const previousActiveEffectsRef = useRef(new Map<string, string>());
+  const completedEffectIdsRef = useRef(new Set<string>());
+  const impactedEffectIdsRef = useRef(new Set<string>());
+
+  const fireImpact = useCallback((id: string, cue: string) => {
+    if (completedEffectIdsRef.current.has(id)) return;
+    if (impactedEffectIdsRef.current.has(id)) return;
+
+    impactedEffectIdsRef.current.add(id);
+    bus.fireImpact(id);
+    onImpactRef.current?.(id, cue);
+  }, [bus]);
+
+  const completeEffect = useCallback((id: string, cue: string) => {
+    if (completedEffectIdsRef.current.has(id)) return;
+
+    if (!impactedEffectIdsRef.current.has(id)) {
+      fireImpact(id, cue);
+    }
+    completedEffectIdsRef.current.add(id);
+    impactedEffectIdsRef.current.delete(id);
+    onCompleteRef.current?.(id, cue);
+    bus.removeEffect(id);
+  }, [bus, fireImpact]);
+
+  useEffect(() => {
+    const previousActiveEffects = previousActiveEffectsRef.current;
+    const nextActiveEffects = new Map(activeEffects.map((effect) => [effect.id, effect.cue]));
+
+    for (const [id, cue] of previousActiveEffects) {
+      if (nextActiveEffects.has(id)) continue;
+
+      const completedByRenderer = completedEffectIdsRef.current.delete(id);
+      if (completedByRenderer) {
+        impactedEffectIdsRef.current.delete(id);
+        continue;
+      }
+
+      const impactedByRenderer = impactedEffectIdsRef.current.delete(id);
+      if (!impactedByRenderer) {
+        fireImpact(id, cue);
+        impactedEffectIdsRef.current.delete(id);
+      }
+      onCompleteRef.current?.(id, cue);
+    }
+
+    previousActiveEffectsRef.current = nextActiveEffects;
+  }, [activeEffects, fireImpact]);
+
+  return {
+    activeEffects,
+    completeEffect,
+    fireImpact,
+  };
 }
 
 export const FxLayer: React.FC<FxLayerProps> = ({
@@ -96,24 +163,12 @@ const ReactFxLayer: React.FC<Omit<FxLayerProps, 'backend'>> = ({
   className = '',
   'data-testid': testId,
 }) => {
-  const activeEffects = useFxLayerEffects(bus);
-  const { removeEffect, registry, fireImpact } = bus;
-
-  // 稳定化外部回调引用
-  const onCompleteRef = useRef(onEffectComplete);
-  onCompleteRef.current = onEffectComplete;
-  const onImpactRef = useRef(onEffectImpact);
-  onImpactRef.current = onEffectImpact;
-
-  const handleComplete = useCallback((id: string, cue: string) => {
-    onCompleteRef.current?.(id, cue);
-    removeEffect(id);
-  }, [removeEffect]);
-
-  const handleImpact = useCallback((id: string, cue: string) => {
-    fireImpact(id);
-    onImpactRef.current?.(id, cue);
-  }, [fireImpact]);
+  const { activeEffects, completeEffect, fireImpact } = useFxLayerLifecycle({
+    bus,
+    onEffectComplete,
+    onEffectImpact,
+  });
+  const { registry } = bus;
 
   return (
     <div
@@ -137,8 +192,8 @@ const ReactFxLayer: React.FC<Omit<FxLayerProps, 'backend'>> = ({
               key={event.id}
               event={event}
               getCellPosition={getCellPosition}
-              onComplete={() => handleComplete(event.id, event.cue)}
-              onImpact={() => handleImpact(event.id, event.cue)}
+              onComplete={() => completeEffect(event.id, event.cue)}
+              onImpact={() => fireImpact(event.id, event.cue)}
             />
           );
         })}
@@ -158,26 +213,17 @@ const FxBackendLayer: React.FC<Required<Pick<FxLayerProps, 'bus' | 'getCellPosit
 }) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const instanceRef = useRef<ReturnType<FxRenderBackend['mount']> | null>(null);
-  const onCompleteRef = useRef(onEffectComplete);
-  const onImpactRef = useRef(onEffectImpact);
-  onCompleteRef.current = onEffectComplete;
-  onImpactRef.current = onEffectImpact;
-
-  const completeEffect = useCallback((id: string, cue: string) => {
-    onCompleteRef.current?.(id, cue);
-    bus.removeEffect(id);
-  }, [bus]);
-
-  const fireBackendImpact = useCallback((id: string, cue: string) => {
-    bus.fireImpact(id);
-    onImpactRef.current?.(id, cue);
-  }, [bus]);
+  const { completeEffect, fireImpact } = useFxLayerLifecycle({
+    bus,
+    onEffectComplete,
+    onEffectImpact,
+  });
 
   const runtime: FxBackendRuntime = {
     bus,
     getCellPosition,
     completeEffect,
-    fireImpact: fireBackendImpact,
+    fireImpact,
   };
   const runtimeRef = useRef(runtime);
   runtimeRef.current = runtime;

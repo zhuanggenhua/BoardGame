@@ -81,6 +81,21 @@ const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
 const SELECTABLE_CHARACTER_ID_SET = new Set<string>(DICETHRONE_CHARACTER_CATALOG.map(character => character.id));
 
+const validateCommandPendingDamageId = (
+    pendingDamage: DiceThroneCore['pendingDamage'],
+    payload: { pendingDamageId?: unknown },
+): ValidationResult | null => {
+    if (typeof payload.pendingDamageId !== 'string') {
+        return null;
+    }
+    if (!pendingDamage) {
+        return fail('no_pending_damage');
+    }
+    return pendingDamage.id === payload.pendingDamageId
+        ? null
+        : fail('pending_damage_mismatch');
+};
+
 const getCurrentResponseWindowResponderId = (
     currentWindow: ResponseWindowState['current'] | undefined,
 ): PlayerId | undefined => {
@@ -1346,6 +1361,8 @@ const validateUseToken = (
     phase: TurnPhase,
 ): ValidationResult => {
     const pendingDamage = state.pendingDamage;
+    const pendingDamageMismatch = validateCommandPendingDamageId(pendingDamage, cmd.payload);
+    if (pendingDamageMismatch) return pendingDamageMismatch;
 
     if (cmd.payload.tokenId === TOKEN_IDS.NYRA_REDIRECT) {
         const player = state.players[playerId];
@@ -1456,12 +1473,14 @@ const validateUseToken = (
  */
 const validateSkipTokenResponse = (
     state: DiceThroneCore,
-    _cmd: SkipTokenResponseCommand,
+    cmd: SkipTokenResponseCommand,
     playerId: PlayerId
 ): ValidationResult => {
     if (!state.pendingDamage) {
         return fail('no_pending_damage');
     }
+    const pendingDamageMismatch = validateCommandPendingDamageId(state.pendingDamage, cmd.payload);
+    if (pendingDamageMismatch) return pendingDamageMismatch;
     if (!isMoveAllowed(playerId, state.pendingDamage.responderId)) {
         return fail('player_mismatch');
     }

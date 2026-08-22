@@ -9,7 +9,7 @@ import { CreateNotificationDto, UpdateNotificationDto, UpdateNotificationReadSta
 /** 管理端：通知 CRUD */
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Roles('admin')
-@Controller('admin/notifications')
+@Controller('admin-api/notifications')
 export class NotificationAdminController {
     constructor(@Inject(NotificationService) private readonly notificationService: NotificationService) {}
 

@@ -8,17 +8,6 @@ export type OnlineAiRecoveryTracker = AiAutoRecoveryAttemptTracker & {
     failureCount: number;
 };
 
-export function pruneExpiredOnlineAiCooldownEntries(
-    cooldownEntries: Map<string, number>,
-    now: number,
-): void {
-    for (const [key, expiresAt] of cooldownEntries.entries()) {
-        if (expiresAt <= now) {
-            cooldownEntries.delete(key);
-        }
-    }
-}
-
 export function resolveOnlineAiRecoveryTracker(args: {
     currentTracker: OnlineAiRecoveryTracker | undefined;
     trackerKey: string;

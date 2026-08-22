@@ -1,8 +1,6 @@
-# Token Cost Analysis
+# Token Cost Notes
 
-The numbers below are engineering estimates, not a measured benchmark. They are order-of-magnitude figures anchored to one reference build (a rounded-bevel loot chest: gradient enamel, gold corner brackets, an emissive emblem, resolved in about six render-review cycles). Actual cost varies with the model tier, image resolution, object complexity, and — above all — how many review cycles a subject needs. Treat them as a cost model, not a guarantee.
-
-A measured benchmark, based on empirical data across real reconstructions, is planned for v1.5. See [ROADMAP.md](../ROADMAP.md) for details.
+本文件是成本估算，不是质量 gate。实际成本主要由参考图复杂度、spec 深度、代码修改量和 render-review 轮次数决定；不得用这里的数字承诺工期或验收结果。
 
 ## Where the tokens go per full object reconstruction
 
@@ -29,9 +27,9 @@ A measured benchmark, based on empirical data across real reconstructions, is pl
 
 Characters cost more (more review cycles plus landmark and projection checks): roughly ~150k-350k for a full stylized or likeness-maximized reconstruction with the v1.2 character generator.
 
-## What this buys you
+## 使用口径
 
-- Deterministic scripts contribute close to zero model tokens, so validation, gating, detail counting, sheet packaging, and pipeline state never eat context.
-- Model tokens are spent only on vision (reading one sheet per pass), authoring the spec, and writing code.
-- The gates are the savings mechanism: strict-quality blocks codegen on an underspecified spec, and the detail-inventory gate blocks it on missing detail — each avoided bad render saves roughly one full cycle (~10k-20k tokens).
-- The single biggest lever on cost is the review-cycle count. A well-formed spec up front is worth more tokens than any micro-optimization downstream.
+- 脚本 gate、detail counting、sheet packaging 和状态记录应尽量由 deterministic 脚本完成。
+- 模型上下文主要花在读图、写 spec、改 factory 和图面对比判断。
+- 节省成本的核心不是少读规范，而是先写好 spec，减少无效 render-review 轮次。
+- 成本估算不能替代 `strict-quality`、截图对比、浏览器渲染和最终 review 结论。

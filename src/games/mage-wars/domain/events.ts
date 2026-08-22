@@ -1,6 +1,6 @@
 import type { GameEvent, PlayerId } from '../../../engine/types';
-import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, StatusTokenId } from './ids';
-import type { MageWarsArenaObjectState, MageWarsSpellCasterRef } from './core-types';
+import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, MageWarsWallEdgeId, StatusTokenId } from './ids';
+import type { MageWarsArenaObjectState, MageWarsSpellCasterRef, MageWarsWallState } from './core-types';
 import type { MageWarsResponseContext } from './responseResolution';
 import type { MageWarsTemporaryTraitGrantId, MageWarsTemporaryTraitId } from './temporaryTraits';
 
@@ -17,6 +17,8 @@ export const MAGE_WARS_EVENTS = {
     SPELL_CAST_STARTED: 'MW_SPELL_CAST_STARTED',
     SPELL_CAST_RESOLVED: 'MW_SPELL_CAST_RESOLVED',
     SPELL_DISCARDED: 'MW_SPELL_DISCARDED',
+    WALL_SUMMONED: 'MW_WALL_SUMMONED',
+    WALL_PASSAGE_DAMAGE_TRIGGERED: 'MW_WALL_PASSAGE_DAMAGE_TRIGGERED',
     MAGE_ABILITY_RESOLVED: 'MW_MAGE_ABILITY_RESOLVED',
     ARENA_OBJECT_ABILITY_RESOLVED: 'MW_ARENA_OBJECT_ABILITY_RESOLVED',
     ARENA_OBJECT_TEMPORARY_TRAITS_GAINED: 'MW_ARENA_OBJECT_TEMPORARY_TRAITS_GAINED',
@@ -147,6 +149,7 @@ export interface MageWarsSpellCastResolvedEvent extends GameEvent<typeof MAGE_WA
         targetPlayerId?: PlayerId;
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;
+        targetWallEdgeId?: MageWarsWallEdgeId;
     };
 }
 
@@ -228,6 +231,27 @@ export interface MageWarsArenaObjectTemporaryTraitsClearedEvent extends GameEven
 export interface MageWarsArenaObjectSummonedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED> {
     payload: {
         object: MageWarsArenaObjectState;
+    };
+}
+
+export interface MageWarsWallSummonedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.WALL_SUMMONED> {
+    payload: {
+        wall: MageWarsWallState;
+    };
+}
+
+export interface MageWarsWallPassageDamageTriggeredEvent extends GameEvent<typeof MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED> {
+    payload: {
+        wallId: string;
+        edgeId: MageWarsWallEdgeId;
+        sourceSpellCardId: number;
+        sourceAbilityId: string;
+        fromZoneId: ArenaZoneId;
+        toZoneId: ArenaZoneId;
+        amount: number;
+        damageTypes: string[];
+        objectId?: string;
+        playerId?: PlayerId;
     };
 }
 
@@ -656,6 +680,8 @@ export type MageWarsEvent =
     | MageWarsArenaObjectTemporaryTraitsGainedEvent
     | MageWarsArenaObjectTemporaryTraitsClearedEvent
     | MageWarsArenaObjectSummonedEvent
+    | MageWarsWallSummonedEvent
+    | MageWarsWallPassageDamageTriggeredEvent
     | MageWarsArenaObjectRousedEvent
     | MageWarsArenaObjectRestrainedEvent
     | MageWarsSpellAttackRolledEvent

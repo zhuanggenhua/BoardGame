@@ -10,6 +10,7 @@ import {
     createEventStreamSystem,
     createInteractionSystem,
     createSimpleChoiceSystem,
+    createTimingOpportunitySystem,
     createMultistepChoiceSystem,
     createRematchSystem,
     createTutorialSystem,
@@ -20,6 +21,7 @@ import { SmashUpDomain, SU_COMMANDS, type SmashUpCommand, type SmashUpCore, type
 import { smashUpFlowHooks } from './domain/index';
 import { initAllAbilities } from './abilities';
 import { createSmashUpEventSystem } from './domain/systems';
+import { createSmashUpTimingOpportunitySystemConfig } from './domain/timingOpportunities';
 import { SMASHUP_CHEAT_COMMANDS, smashUpCheatModifier } from './cheatModifier';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatSmashUpActionEntry } from './actionLog';
 import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
@@ -58,6 +60,7 @@ const systems: EngineSystem<SmashUpCore>[] = [
     createTutorialSystem(),
     createEventStreamSystem(),
     createSmashUpEventSystem(),
+    createTimingOpportunitySystem(SmashUpDomain, createSmashUpTimingOpportunitySystemConfig()),
     createCheatSystem<SmashUpCore>(smashUpCheatModifier),
 ];
 

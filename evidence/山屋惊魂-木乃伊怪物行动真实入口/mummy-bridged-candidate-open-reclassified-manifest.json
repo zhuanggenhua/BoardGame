@@ -1,0 +1,31 @@
+{
+  "verdict": "RECLASSIFIED",
+  "scope": "current-user-request",
+  "classification": "bridged-candidate-chain-not-golden-e2e",
+  "reason": [
+    "原展示图组来自同一 Playwright 用例内多次状态注入桥接。",
+    "它证明多个已打绿合同在真实页面控件上可运行，但不是自然连续黄金端到端。",
+    "截图组只能随链路等级降级为桥接式综合候选链图组。"
+  ],
+  "priorIncorrectClassification": {
+    "verdict": "PASS",
+    "discardedLabel": "曾误标为黄金链，已废弃",
+    "correctedTo": "桥接式综合候选链"
+  },
+  "evidence": {
+    "standard": ".spec/knowledge/standards/e2e-verification.md",
+    "test": "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts",
+    "evidenceDoc": "evidence/山屋惊魂-木乃伊怪物行动真实入口/e2e-test.md"
+  },
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/01-labeled-39-桥接式综合候选链-叛徒身份与剧本书.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/02-labeled-40-桥接式综合候选链-叛徒跳过事件.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/03-labeled-41-桥接式综合候选链-强制婚礼预兆.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/04-labeled-42-桥接式综合候选链-木乃伊3点移动骰.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/05-labeled-43-桥接式综合候选链-木乃伊普通连续移动.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/06-labeled-44-桥接式综合候选链-木乃伊攻击奖励.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/07-labeled-45-桥接式综合候选链-叛徒交出女孩.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-bridged-candidate-chain/08-labeled-46-桥接式综合候选链-叛徒终局.png"
+  ]
+}

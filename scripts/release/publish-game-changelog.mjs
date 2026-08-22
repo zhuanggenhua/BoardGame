@@ -20,7 +20,7 @@ const helpText = `
   3. 根据改动路径识别受影响游戏
   4. 默认跳过 manifest 标记为实施中的游戏
   5. 根据提交信息生成 Steam 风格更新日志
-  6. 通过 /auth/login 获取 JWT，再调用 /admin/game-changelogs 创建日志
+  6. 通过 /auth/login 获取 JWT，再调用 /admin-api/game-changelogs 创建日志
 
 常用示例:
   npm run release:game-changelog -- --dry-run
@@ -690,7 +690,7 @@ const login = async ({ apiBaseUrl, account, password }) => {
 };
 
 const findDuplicateChangelog = async ({ apiBaseUrl, token, draft }) => {
-    const url = `${apiBaseUrl}/admin/game-changelogs?gameId=${encodeURIComponent(draft.gameId)}`;
+    const url = `${apiBaseUrl}/admin-api/game-changelogs?gameId=${encodeURIComponent(draft.gameId)}`;
     const body = await requestJson(url, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
@@ -703,7 +703,7 @@ const findDuplicateChangelog = async ({ apiBaseUrl, token, draft }) => {
     ));
 };
 
-const createChangelog = async ({ apiBaseUrl, token, draft }) => requestJson(`${apiBaseUrl}/admin/game-changelogs`, {
+const createChangelog = async ({ apiBaseUrl, token, draft }) => requestJson(`${apiBaseUrl}/admin-api/game-changelogs`, {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',

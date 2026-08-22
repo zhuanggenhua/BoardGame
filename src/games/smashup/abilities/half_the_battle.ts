@@ -844,7 +844,7 @@ const powerPromptProgram = createPromptProgram<PowerPromptContext, SmashUpCore, 
         {
             sourceId: context.sourceId,
             targetType: 'minion',
-            autoResolveIfSingle: !context.optional && context.maxSelections === undefined,
+            autoResolveIfSingle: false,
             ...(context.maxSelections !== undefined ? { multi: { min: 0, max: context.maxSelections } } : {}),
         },
     ),
@@ -878,9 +878,6 @@ function runPowerPrompt(
     options: { optional?: boolean; maxSelections?: number; uniqueBase?: boolean } = {},
 ): AbilityResult {
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (!options.optional && options.maxSelections === undefined && targets.length === 1) {
-        return { events: [applyPowerEvent(ctx.state, targets[0], amount, mode, sourceId, ctx.now)] };
-    }
     return runtimeToAbilityResult(executeAbilityProgram(powerPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -959,7 +956,7 @@ const movePromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, Sm
         {
             sourceId: context.sourceId,
             targetType: 'minion',
-            autoResolveIfSingle: !context.optional,
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -1388,7 +1385,7 @@ const cardPromptProgram = createPromptProgram<CardPromptContext, SmashUpCore, Sm
         {
             sourceId: context.sourceId,
             targetType: 'generic',
-            autoResolveIfSingle: !context.optional,
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {

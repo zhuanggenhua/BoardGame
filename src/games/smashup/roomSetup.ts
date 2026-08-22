@@ -1,7 +1,11 @@
 export const SMASHUP_DECK_QUERY_SETUP_VALUE = 'deckQuery' as const;
+export const SMASHUP_VICTORY_20_SETUP_VALUE = 'victory20' as const;
+export const DEFAULT_SMASHUP_VICTORY_TARGET = 15;
+export const SMASHUP_VICTORY_20_TARGET = 20;
 export const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'] as const;
 const SMASHUP_PUBLIC_EXPANSION_ORDER = ['titans', 'diy'] as const;
-const SMASHUP_PUBLIC_ROOM_TAG_ORDER = ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, 'diy'] as const;
+const DEFAULT_SMASHUP_PUBLIC_ROOM_TAGS = ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, 'diy'] as const;
+const SMASHUP_PUBLIC_ROOM_TAG_ORDER = ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, SMASHUP_VICTORY_20_SETUP_VALUE, 'diy'] as const;
 const DEFAULT_SMASHUP_TEAM_MODE = 'ffa' as const;
 
 export interface SmashUpPublicRoomSummary {
@@ -11,6 +15,7 @@ export interface SmashUpPublicRoomSummary {
 export interface SmashUpRuntimeSetupConfig {
     enabledExpansions: string[];
     deckQueryEnabled: boolean;
+    victoryTarget: number;
     teamMode: 'ffa' | '2v2';
 }
 
@@ -82,6 +87,37 @@ export function readSmashUpDeckQueryEnabled(setupData?: Record<string, unknown>)
     return true;
 }
 
+export function readSmashUpVictoryTarget(setupData?: Record<string, unknown>): number {
+    if (
+        setupData?.victoryTarget === SMASHUP_VICTORY_20_TARGET
+        || setupData?.victoryTarget === String(SMASHUP_VICTORY_20_TARGET)
+        || setupData?.victoryTarget === SMASHUP_VICTORY_20_SETUP_VALUE
+    ) {
+        return SMASHUP_VICTORY_20_TARGET;
+    }
+
+    const selectedVictoryTarget = readSetupSelectionValue(setupData, 'victoryTarget');
+    if (
+        selectedVictoryTarget === SMASHUP_VICTORY_20_TARGET
+        || selectedVictoryTarget === String(SMASHUP_VICTORY_20_TARGET)
+        || selectedVictoryTarget === SMASHUP_VICTORY_20_SETUP_VALUE
+    ) {
+        return SMASHUP_VICTORY_20_TARGET;
+    }
+
+    const topLevelExpansions = setupData?.expansions;
+    if (Array.isArray(topLevelExpansions) && topLevelExpansions.includes(SMASHUP_VICTORY_20_SETUP_VALUE)) {
+        return SMASHUP_VICTORY_20_TARGET;
+    }
+
+    const selectedExpansions = readSetupSelectionValue(setupData, 'expansions');
+    if (Array.isArray(selectedExpansions) && selectedExpansions.includes(SMASHUP_VICTORY_20_SETUP_VALUE)) {
+        return SMASHUP_VICTORY_20_TARGET;
+    }
+
+    return DEFAULT_SMASHUP_VICTORY_TARGET;
+}
+
 export function readSmashUpTeamMode(
     setupData?: Record<string, unknown>,
     playerCount = 0,
@@ -109,6 +145,7 @@ export function readSmashUpRuntimeSetupConfig(
     return {
         enabledExpansions: readSmashUpEnabledExpansions(setupData),
         deckQueryEnabled: readSmashUpDeckQueryEnabled(setupData),
+        victoryTarget: readSmashUpVictoryTarget(setupData),
         teamMode: readSmashUpTeamMode(setupData, options?.playerCount ?? 0),
     };
 }
@@ -127,7 +164,7 @@ function readSmashUpPublicRoomTags(setupData?: Record<string, unknown>): string[
         return selectedExpansions;
     }
 
-    return [...SMASHUP_PUBLIC_ROOM_TAG_ORDER];
+    return [...DEFAULT_SMASHUP_PUBLIC_ROOM_TAGS];
 }
 
 export function buildSmashUpPublicRoomSummary(

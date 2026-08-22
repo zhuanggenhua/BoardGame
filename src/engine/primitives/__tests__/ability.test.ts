@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   AbilityRegistry,
   AbilityExecutorRegistry,
@@ -7,12 +7,20 @@ import {
   checkAbilityCost,
   filterByTags,
   checkAbilityCondition,
+  buildOpportunityFromAbilityDef,
+  createAbilityChoiceContract,
+  createAbilityOpportunity,
   createConditionHandlerRegistry,
   registerConditionHandler,
   type AbilityDef,
   type AbilityContext,
   type AbilityResult,
 } from '../index';
+import {
+  buildChoiceRequestFromOpportunity,
+  createTimingPoint,
+  validateOpportunity,
+} from '../../TimingOpportunity';
 
 // ============================================================================
 // 测试用类型
@@ -304,5 +312,306 @@ describe('engine/primitives/ability — checkAbilityCondition', () => {
       condition: { type: 'custom' as const, handler: 'hasBuff', params: { active: true } },
     };
     expect(checkAbilityCondition(def, {}, registry)).toBe(true);
+  });
+});
+
+// ============================================================================
+// AbilityDef -> Opportunity 生命周期投影
+// ============================================================================
+describe('engine/primitives/ability — buildOpportunityFromAbilityDef', () => {
+  const timing = createTimingPoint({
+    gameId: 'test-game',
+    position: 'after',
+    factKind: 'attack',
+    timestamp: 10,
+    parentFrameId: 'combat-frame',
+  });
+
+  it('把能力生命周期阶段投影为对应 Opportunity class', () => {
+    const def: TestDef = {
+      id: 'shield-form',
+      name: '护盾形态',
+      trigger: 'onDefend',
+      effects: [{ type: 'buff', value: 1 }],
+    };
+
+    const cases = [
+      ['trigger', 'mandatory'],
+      ['response', 'response'],
+      ['replacement', 'replacement'],
+      ['prevention', 'prevention'],
+      ['continuous', 'continuous'],
+      ['delayed', 'delayed'],
+      ['activation', 'optional'],
+    ] as const;
+
+    for (const [phase, expectedClass] of cases) {
+      const opportunity = buildOpportunityFromAbilityDef({
+        def,
+        timing,
+        lifecycle: {
+          sourceId: `source-${phase}`,
+          controllerId: 'p1',
+          phase,
+        },
+      });
+
+      expect(opportunity.class).toBe(expectedClass);
+      expect(opportunity.resolution).toEqual({ type: 'none' });
+      expect(opportunity.sourceRef.metadata).toMatchObject({
+        abilityId: 'shield-form',
+        abilityLifecyclePhase: phase,
+        abilityTrigger: 'onDefend',
+        effectCount: 1,
+      });
+    }
+  });
+
+  it('保留来源、控制者、费用、目标、ChoiceRequest 和 AI 合同', () => {
+    const def: TestDef = {
+      id: 'precise-strike',
+      name: '精准打击',
+      trigger: 'onAttack',
+      condition: { type: 'compare', op: 'gte', left: 'mana', right: 2 },
+      effects: [{ type: 'damage', value: 3 }],
+      tags: ['offensive'],
+      cost: { mana: 2 },
+    };
+
+    const opportunity = buildOpportunityFromAbilityDef({
+      def,
+      timing,
+      lifecycle: {
+        sourceId: 'card-7',
+        sourceKind: 'card',
+        controllerId: 'p1',
+        ownerId: 'p1',
+        phase: 'activation',
+      },
+      conditionContext: { mana: 2 },
+      targetRequest: {
+        kind: 'select-object',
+        min: 1,
+        max: 1,
+        description: '选择攻击目标',
+      },
+      resolution: { type: 'choice-request' },
+      choice: {
+        kind: 'select-object',
+        candidates: [{
+          id: 'target-p2',
+          label: '目标玩家',
+          commands: [{
+            type: 'USE_ABILITY',
+            payload: { abilityId: 'precise-strike', targetId: 'p2' },
+          }],
+        }],
+        selection: { min: 1, max: 1 },
+        resolution: { type: 'candidate-commands' },
+        ai: { status: 'shared-policy' },
+      },
+      metadata: { priority: 8 },
+    });
+
+    expect(opportunity).toMatchObject({
+      sourceRef: {
+        kind: 'card',
+        id: 'card-7',
+        ownerId: 'p1',
+        controllerId: 'p1',
+      },
+      controllerId: 'p1',
+      class: 'optional',
+      condition: { satisfied: true },
+      cost: {
+        kind: 'resource',
+        paid: false,
+        refundable: true,
+        metadata: { resources: { mana: 2 } },
+      },
+      targetRequest: { kind: 'select-object', min: 1, max: 1 },
+      aiSupport: undefined,
+      metadata: {
+        abilityId: 'precise-strike',
+        abilityLifecyclePhase: 'activation',
+        abilityTags: ['offensive'],
+        priority: 8,
+      },
+    });
+    expect(validateOpportunity(opportunity).filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+    expect(buildChoiceRequestFromOpportunity(opportunity)).toMatchObject({
+      requestId: opportunity.id,
+      playerId: 'p1',
+      ownerFrameId: 'combat-frame',
+      sourceId: 'card-7',
+      metadata: {
+        opportunityId: opportunity.id,
+        timingPointId: timing.id,
+        opportunityClass: 'optional',
+        abilityId: 'precise-strike',
+      },
+    });
+  });
+
+  it('用共享 helper 生成能力 ChoiceRequest 合同和候选 provenance', () => {
+    const def: TestDef = {
+      id: 'precise-strike',
+      name: '精准打击',
+      trigger: 'onAttack',
+      effects: [{ type: 'damage', value: 3 }],
+      tags: ['offensive'],
+    };
+    const lifecycle = {
+      sourceId: 'card-7',
+      sourceKind: 'card' as const,
+      controllerId: 'p1',
+      ownerId: 'p1',
+      phase: 'activation' as const,
+    };
+    const targetRequest = {
+      kind: 'select-object' as const,
+      min: 1,
+      max: 1,
+      description: '选择攻击目标',
+    };
+
+    const opportunity = buildOpportunityFromAbilityDef({
+      def,
+      timing,
+      lifecycle,
+      targetRequest,
+      resolution: { type: 'choice-request' },
+      choice: createAbilityChoiceContract({
+        def,
+        lifecycle,
+        targetRequest,
+        candidates: [{
+          id: 'target-p2',
+          label: '目标玩家',
+          commands: [{
+            type: 'USE_ABILITY',
+            payload: { abilityId: 'precise-strike', targetId: 'p2' },
+          }],
+        }],
+        resolution: { type: 'candidate-commands' },
+        ai: { status: 'shared-policy' },
+      }),
+    });
+
+    const request = buildChoiceRequestFromOpportunity(opportunity);
+    expect(request).toMatchObject({
+      requestId: opportunity.id,
+      playerId: 'p1',
+      kind: 'select-object',
+      selection: { min: 1, max: 1 },
+      metadata: {
+        opportunityId: opportunity.id,
+        abilityId: 'precise-strike',
+        abilityLifecyclePhase: 'activation',
+        abilitySourceId: 'card-7',
+      },
+    });
+    expect(request.candidates[0]).toMatchObject({
+      id: 'target-p2',
+      metadata: {
+        abilityId: 'precise-strike',
+        abilityLifecyclePhase: 'activation',
+        abilitySourceId: 'card-7',
+        abilityControllerId: 'p1',
+      },
+      actionKeyParts: ['ability', 'activation', 'card-7', 'precise-strike', 'base', 'target-p2'],
+    });
+  });
+
+  it('共享 helper 不猜未知目标类型，避免生成不可验证 ChoiceRequest', () => {
+    const def: TestDef = {
+      id: 'scripted-mode',
+      name: '脚本模式',
+      trigger: 'onAttack',
+      effects: [{ type: 'damage', value: 1 }],
+    };
+
+    expect(() => createAbilityChoiceContract({
+      def,
+      lifecycle: {
+        sourceId: 'card-9',
+        controllerId: 'p1',
+        phase: 'activation',
+      },
+      targetRequest: {
+        kind: 'game-specific-mode',
+        min: 1,
+        max: 1,
+      },
+      candidates: [{ id: 'mode-a' }],
+      resolution: { type: 'candidate-commands' },
+    })).toThrow('Ability scripted-mode 缺少可投影为 ChoiceRequest 的 choice kind');
+  });
+
+  it('条件不成立时产出 inactive opportunity，由统一诊断暴露', () => {
+    const def: TestDef = {
+      id: 'last-stand',
+      name: '背水一战',
+      trigger: 'onDefend',
+      condition: { type: 'compare', op: 'lte', left: 'hp', right: 3 },
+      effects: [{ type: 'buff', value: 4 }],
+    };
+
+    const opportunity = createAbilityOpportunity({
+      def,
+      timing,
+      lifecycle: {
+        sourceId: 'hero-1',
+        controllerId: 'p1',
+        phase: 'trigger',
+      },
+      conditionContext: { hp: 8 },
+    });
+
+    expect(opportunity.condition).toEqual({
+      satisfied: false,
+      reason: 'Ability last-stand 条件不成立',
+    });
+    expect(validateOpportunity(opportunity)).toContainEqual(expect.objectContaining({
+      severity: 'warning',
+      code: 'inactive-opportunity',
+    }));
+  });
+
+  it('只产出合同，不执行效果、不写运行时状态', () => {
+    const effect = vi.fn();
+    const def: AbilityDef<(() => void), TestTrigger> = {
+      id: 'scripted-effect',
+      name: '脚本效果',
+      trigger: 'onAttack',
+      effects: [effect],
+    };
+
+    const opportunity = buildOpportunityFromAbilityDef({
+      def,
+      timing,
+      lifecycle: {
+        sourceId: 'card-8',
+        controllerId: 'p1',
+        phase: 'trigger',
+      },
+      resolution: {
+        type: 'events',
+        events: [{
+          type: 'ABILITY_QUEUED',
+          payload: { abilityId: 'scripted-effect' },
+          timestamp: 11,
+        }],
+      },
+    });
+
+    expect(effect).not.toHaveBeenCalled();
+    expect(opportunity.resolution).toMatchObject({
+      type: 'events',
+      events: [expect.objectContaining({
+        type: 'ABILITY_QUEUED',
+        payload: { abilityId: 'scripted-effect' },
+      })],
+    });
   });
 });

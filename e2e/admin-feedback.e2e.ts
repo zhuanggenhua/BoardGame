@@ -162,10 +162,10 @@ test.describe('后台反馈管理 E2E', () => {
             createdAt: '2026-03-14T10:00:00.000Z',
         };
 
-        await page.route('**/admin/feedback?*', async (route) => {
+        await page.route('**/admin-api/feedback?*', async (route) => {
             if (route.request().method() !== 'GET') return route.fallback();
             const url = new URL(route.request().url());
-            if (url.pathname !== '/admin/feedback') return route.fallback();
+            if (url.pathname !== '/admin-api/feedback') return route.fallback();
 
             return route.fulfill({
                 status: 200,
@@ -282,10 +282,10 @@ test.describe('后台反馈管理 E2E', () => {
             },
         };
 
-        await page.route('**/admin/feedback?*', async (route) => {
+        await page.route('**/admin-api/feedback?*', async (route) => {
             if (route.request().method() !== 'GET') return route.fallback();
             const url = new URL(route.request().url());
-            if (url.pathname !== '/admin/feedback') return route.fallback();
+            if (url.pathname !== '/admin-api/feedback') return route.fallback();
 
             listRequests.push(url.search);
             return route.fulfill({
@@ -299,7 +299,7 @@ test.describe('后台反馈管理 E2E', () => {
             });
         });
 
-        await page.route('**/admin/feedback/feedback_lazy_001', async (route) => {
+        await page.route('**/admin-api/feedback/feedback_lazy_001', async (route) => {
             if (route.request().method() !== 'GET') return route.fallback();
             detailRequests.push(route.request().url());
             return route.fulfill({
@@ -337,7 +337,7 @@ test.describe('后台反馈管理 E2E', () => {
 
         const requests: string[] = [];
 
-        await page.route('**/admin/feedback?*', async (route) => {
+        await page.route('**/admin-api/feedback?*', async (route) => {
             if (route.request().method() !== 'GET') return route.fallback();
 
             const url = new URL(route.request().url());
@@ -433,7 +433,7 @@ test.describe('后台反馈管理 E2E', () => {
             },
         ];
 
-        await page.route('**/admin/feedback?*', async (route) => {
+        await page.route('**/admin-api/feedback?*', async (route) => {
             if (route.request().method() !== 'GET') return route.fallback();
 
             const url = new URL(route.request().url());
@@ -531,7 +531,7 @@ test.describe('后台反馈管理 E2E', () => {
             banned: false,
         });
 
-        await page.route('**/admin/feedback?*', async (route) => {
+        await page.route('**/admin-api/feedback?*', async (route) => {
             if (route.request().method() !== 'GET') return route.fallback();
             return route.fulfill({
                 status: 200,

@@ -550,6 +550,8 @@ describe('迪士尼四派系代表性玩法行为', () => {
         } as any, FIXED_RANDOM);
         expect(beAMan.success, beAMan.error).toBe(true);
         const counterPrompt = getSimpleChoicePrompt(beAMan.finalState, 'disney_four_factions_prompt');
+        expect(counterPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(counterPrompt).map(option => option.value?.minionUid)).toEqual(['mulan', 'ally']);
         const selectedOptionIds = getPromptOptions(counterPrompt)
             .filter(option => ['mulan', 'ally'].includes(option.value?.minionUid))
             .map(option => option.id);
@@ -565,6 +567,9 @@ describe('迪士尼四派系代表性玩法行为', () => {
             payload: { minionUid: 'mulan', baseIndex: 0 },
         } as any, FIXED_RANDOM);
         expect(mulanTalent.success, mulanTalent.error).toBe(true);
+        const modePrompt = getSimpleChoicePrompt(mulanTalent.finalState, 'disney_four_factions_prompt');
+        expect(modePrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(modePrompt).map(option => option.value?.mode)).toEqual(['extra_action', 'draw_card']);
         const extraAction = respondToPromptOption(
             mulanTalent.finalState,
             option => option.value?.mode === 'extra_action',
@@ -577,5 +582,107 @@ describe('迪士尼四派系代表性玩法行为', () => {
             type: 'su:limit_modified',
             payload: expect.objectContaining({ playerId: '0', limitType: 'action', delta: 1 }),
         }));
+    });
+
+    it('花木兰：二选一效果保留玩家选择，并可结算抽牌分支和额外角色分支', () => {
+        const mulanCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('mulan-draw', 'frozen_snowgie', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_training_camp', [
+                makeMinion('mulan', 'mulan_mulan', '0', 5, {
+                    powerCounters: 1,
+                    metadata: { mulan_mulan_power_counter_turn: 1 },
+                }),
+            ])],
+        });
+
+        const mulanTalent = runCommand(makeMatchState(mulanCore), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'mulan', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(mulanTalent.success, mulanTalent.error).toBe(true);
+        const mulanPrompt = getSimpleChoicePrompt(mulanTalent.finalState, 'disney_four_factions_prompt');
+        expect(mulanPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(mulanPrompt).map(option => option.value?.mode)).toEqual(['extra_action', 'draw_card']);
+
+        const drawn = respondToPromptOption(
+            mulanTalent.finalState,
+            option => option.value?.mode === 'draw_card',
+            '木兰选择抽牌',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(drawn.success, drawn.error).toBe(true);
+        expect(drawn.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['mulan-draw']);
+        expect(drawn.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+        const recruitsCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('recruit-draw-a', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('recruit-draw-b', 'lion_king_zazu', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const recruits = invokeRegisteredAbilityContract('mulan_call_up_new_recruits', 'onPlay', {
+            state: recruitsCore,
+            matchState: makeMatchState(recruitsCore),
+            playerId: '0',
+            cardUid: 'call-up',
+            defId: 'mulan_call_up_new_recruits',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 41,
+        });
+        const recruitsPrompt = getSimpleChoicePrompt(recruits.matchState!, 'disney_four_factions_prompt');
+        expect(recruitsPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(recruitsPrompt).map(option => option.value?.mode)).toEqual(['extra_minion_power_4', 'draw_two']);
+
+        const drewTwo = respondToPromptOption(
+            recruits.matchState!,
+            option => option.value?.mode === 'draw_two',
+            '招收新兵选择抽两张',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(drewTwo.success, drewTwo.error).toBe(true);
+        expect(drewTwo.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['recruit-draw-a', 'recruit-draw-b']);
+        expect(drewTwo.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+        const extraRecruits = invokeRegisteredAbilityContract('mulan_call_up_new_recruits', 'onPlay', {
+            state: recruitsCore,
+            matchState: makeMatchState(recruitsCore),
+            playerId: '0',
+            cardUid: 'call-up',
+            defId: 'mulan_call_up_new_recruits',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 42,
+        });
+        const extraMinion = respondToPromptOption(
+            extraRecruits.matchState!,
+            option => option.value?.mode === 'extra_minion_power_4',
+            '招收新兵选择额外角色',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(extraMinion.success, extraMinion.error).toBe(true);
+        expect(extraMinion.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                limitType: 'minion',
+                powerMax: 4,
+            }),
+        }));
+        expect(extraMinion.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
     });
 });

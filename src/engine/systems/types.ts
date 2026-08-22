@@ -145,8 +145,11 @@ export const SYSTEM_IDS = {
     LOG: 'log',
     EVENT_STREAM: 'eventStream',
     ACTION_LOG: 'actionLog',
+    REFEREE_TRACE: 'refereeTrace',
+    RESOLUTION_FRAME: 'resolutionFrame',
     REMATCH: 'rematch',
     RESPONSE_WINDOW: 'responseWindow',
+    TIMING_OPPORTUNITY: 'timingOpportunity',
     TUTORIAL: 'tutorial',
     CHEAT: 'cheat',
 } as const;

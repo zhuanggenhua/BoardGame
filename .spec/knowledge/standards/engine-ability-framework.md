@@ -8,247 +8,79 @@ metadata:
 
 # 引擎通用能力框架
 
-## 通用能力框架（强制）
+## 目标
 
-### 核心组件（`engine/primitives/ability.ts`）
+能力框架负责把“角色、单位、卡牌、状态或规则来源能做什么”建成可验证、可执行、可展示的合同。新游戏涉及可配置技能、卡牌效果、Token 能力、状态能力或等价规则来源时，默认使用 `engine/primitives/ability.ts` 和 `engine/primitives/abilityConstraints.ts`；旧游戏可兼容历史 manager、registry 或 ad-hoc 状态桥，但触碰能力验证、执行、表现或 AI 消费时必须判断是否迁移。
 
-- **`AbilityDef<TEffect, TTrigger>`** — 泛型能力定义（id/name/trigger/effects/condition/constraints/tags/cost/cooldown/variants/meta）
-- **`AbilityRegistry<TDef>`** — 定义注册表（`register/get/getAll/getByTag/getByTrigger/getRegisteredIds`）
-- **`AbilityExecutorRegistry<TCtx, TEvent>`** — 执行器注册表，支持 `id+tag` 复合键（`register/resolve/has/getRegisteredIds`）
-- **工具函数**：`checkAbilityCost` / `filterByTags` / `checkAbilityCondition`（委托 `primitives/condition`）
-- **i18n 辅助**：`abilityText('frost_axe','name')` → `'abilities.frost_axe.name'`；`abilityEffectText('slash','damage')` → `'abilities.slash.effects.damage'`
+## 核心职责
 
-### 强制要求
+| 部件 | 职责 | 不允许 |
+| --- | --- | --- |
+| `AbilityDef` | 描述能力身份、触发、效果、条件、约束、费用、冷却和标签 | 塞入 UI 状态或运行时临时 pending |
+| `AbilityRegistry` | 管理能力定义和可测试的注册集合 | 每个游戏自造全局单例或平行注册表 |
+| `AbilityExecutorRegistry` | 解析声明式无法覆盖的命令式执行器 | 绕过验证直接写状态 |
+| `buildOpportunityFromAbilityDef` / `createAbilityOpportunity` | 把能力在某个规则时点投影为 `Opportunity` 合同 | 执行效果、支付费用、写 state 或替游戏猜同时结算顺序 |
+| `createAbilityChoiceContract` | 把能力输入面投影为 `ChoiceRequest` 子合同，并统一 request / candidate provenance | 自行发现合法候选、执行候选命令或替 UI 创建交互 |
+| `abilityConstraints` | 统一检查行动消耗、资源、实体状态、使用次数和自定义约束 | 在 `customValidator` 里重复检查通用约束 |
+| `primitives/condition` | 承担通用条件表达和求值 | 在游戏层复制条件 DSL |
 
-1. 禁止自行实现注册表或全局单例
-2. `getRegisteredIds()` 用于 `entity-chain-integrity.test.ts` 契约测试
-3. 条件评估复用 `primitives/condition`（`AbilityDef.condition` 使用 `ConditionNode`）
-4. **新游戏必须使用 `constraints` 字段声明约束**（见下方「通用能力约束系统」节）
-5. **能力事件必须保留表现合同所需 provenance**：任何会产生玩家可见表现的能力、法术、攻击、移动、治疗、附着、召唤或摧毁，执行结果事件必须携带足够还原这次效果的来源、目标、结果和时序身份，例如 source player/object/card/ability、target player/object/zone/edge/card、effect instance id 或 EventStream id、结果数值 / token / 状态变化。禁止只发“结果已发生”或只发目标格，让表现层无法知道谁触发、打到哪里、命中后释放什么结果。
+`getRegisteredIds()` 是实体链完整性测试的合同入口；不能因为当前 UI 用不到就省略注册。
 
-### 两种执行模式（可混合）
+## 执行模式
 
-- **声明式**：`AbilityDef` 数据 → `AbilityRegistry` → `executeEffects()` 执行效果列表（效果结构统一时）
-- **命令式**：`AbilityExecutor` 函数 → `AbilityExecutorRegistry` → `resolve(id, tag?)` 调用（逻辑差异大时）
+- **声明式**：能力定义数据进入 registry，由通用效果执行器处理；适合效果结构稳定的能力。
+- **命令式**：能力 id / tag 解析到 executor；适合流程差异大、需要复杂领域事务的能力。
+- 两种模式可以混用，但同一个能力的最终执行路径必须唯一，不能让声明式和命令式同时抢写同一状态。
 
-### 能力表现边界
+## 生命周期投影
 
-- 能力系统只负责规则验证、费用、目标合法性、事件和状态结果；不得为了播放动画而延迟 reducer / execute 层的真实结算。
-- 表现层必须通过 EventStream / FX 读取能力事件，并按 [`ui-animation-patterns`](ui-animation-patterns.md) 的来源、轨迹、冲击和结果阶段播放。需要“动画命中时才让玩家看见结果”时，使用 [`engine-visual-events`](engine-visual-events.md) 的视觉状态缓冲和冲击帧释放，而不是把规则状态拆成第二套 UI 状态。
-- 如果某个能力事件无法明确说出“谁触发、触发到哪里、目标发生了什么变化”，该能力事件合同不完整；应先补事件 provenance，再实现或验收动效。
+有触发、响应、替代、防止、持续、延迟或主动使用窗口的能力，必须先明确能力生命周期阶段，再由 `buildOpportunityFromAbilityDef` 或其别名 `createAbilityOpportunity` 投影成 `Opportunity`：
 
-### 现有游戏迁移状态
+- `AbilityLifecyclePhase` 表达能力在规则链上的位置：`activation`、`trigger`、`response`、`replacement`、`prevention`、`continuous`、`delayed`。
+- `AbilityLifecycleRef` 表达来源对象、控制者、拥有者、变体和当前触发标识；来源可以是卡牌、单位、Token、状态、规则或能力实例。
+- 投影结果必须保留能力 ID、来源、控制者、条件、费用、目标请求、结算入口、可见性和 AI 支持；需要玩家或 AI 输入时继续接 `ChoiceRequest` 或 response window。
+- 需要玩家或 AI 输入的能力优先用 `createAbilityChoiceContract` 生成 `choice` 子合同；该 helper 会把 ability id、来源对象、控制者、生命周期阶段和变体写入 request / candidate 元数据，并给候选补稳定 `actionKeyParts`，避免 UI、AI、恢复和测试各自重组能力来源。
+- `AbilityDef.condition` 由通用条件系统评估；缺少评估上下文或条件不成立时，投影为 inactive opportunity，并交给 `TimingOpportunity` 统一诊断，不在 UI 或 AI 层猜合法性。
+- `AbilityDef.cost` 只投影成费用合同，不自动支付；费用扣除、回滚和失败语义仍归游戏正式执行 / 提交流程。
+- 投影 helper 不执行 `effects`、不改写 `G.core / G.sys`、不打开交互、不执行候选命令，也不替游戏合成多个同时机会的顺序；这些必须由 `TimingOpportunitySystem`、`EventCommit` 或游戏专属 driver 承载。
 
-**能力系统**：SummonerWars 已完成迁移（引擎层 Registry + ExecutorRegistry）。DiceThrone `CombatAbilityManager`、SmashUp `abilityRegistry.ts` 是历史实现（内部合理但未用引擎层），**新游戏禁止模仿**。
+## 约束合同
 
-**状态/buff 原语（TagContainer / ModifierStack）**：
-- **SummonerWars 历史债务**：`BoardUnit` 上 `tempAbilities`/`boosts`/`extraAttacks`/`healingMode`/`wasAttackedThisTurn`/`originalOwner` 为 ad-hoc 字段，未用 TagContainer，回合清理靠手动解构。**新游戏禁止模仿**，必须用 `createTagContainer()` + `tickDurations`。
-- DiceThrone 已用引擎层 TagContainer；SmashUp 无 buff 系统。
+接入能力框架的游戏必须用 `constraints` 字段声明通用约束。约束至少覆盖以下类别：
 
-**对象生命周期 / 延迟交互历史债务**：
-- **SummonerWars 历史债务**：`owner/originalOwner/attachedCards/attachedUnits` 仍是对象身份、临时控制和宿主关系的 ad-hoc 混合表达。**新游戏禁止模仿**，必须先抽稳定 `object ref + provenance`。
-- **DiceThrone 历史债务**：`currentChoiceSourceAbilityId + pending state + payload-shaped choice` 仍有较强隐藏耦合。**新游戏禁止模仿**，必须优先设计显式 `deferred snapshot + interaction descriptor`。
-- **Cardia 历史债务**：`interaction: any`、`context` 透传、resolve 时再按 `sourceId` 回查 handler。**新游戏禁止模仿**，必须让交互 envelope 自足。
+- 行动消耗：移动、攻击、主要行动或游戏定义的等价资源；
+- 实体状态：是否已移动、已攻击、被禁用、横置、耗尽等；
+- 资源要求：能量、魔力、生命、充能、手牌或其它可支付资源；
+- 使用次数：每回合、每战斗、每阶段或每对象限制；
+- 自定义约束：只保留真正游戏专属、无法抽象到通用约束的条件。
 
-## 被动触发能力（beforeAttack）交互模式（SummonerWars）
+自定义约束处理器只能检查自己的专属条件。行动次数、资源、实体状态这类通用条件必须回到通用约束系统，不能散落在每个能力 validator 里。
 
-> 攻击前自动触发的被动能力（如圣光箭 `holy_arrow`、治疗 `healing`、生命汲取 `life_drain`），使用 `abilityMode` 状态驱动 UI，**不使用弹窗式 `CardSelectorOverlay`**。
+## 事件和表现
 
-### 交互流程
+任何会产生玩家可见表现的能力、法术、攻击、移动、治疗、附着、召唤或摧毁，执行结果事件必须携带足够 provenance：来源玩家 / 对象 / 卡牌 / 能力、目标对象 / 区域 / 边、效果实例身份、结果数值、Token / 状态变化和时序身份。
 
-1. 玩家点击攻击目标 → `useCellInteraction` 检测攻击者是否有 `passiveTrigger: 'beforeAttack'` 能力
-2. 有被动能力 → 设置 `abilityMode = { step: 'selectCards', context: 'beforeAttack', pendingAttackTarget, ... }`
-3. **StatusBanners** 渲染 amber 横幅，显示能力提示文本 + "确认弃牌"按钮 + "跳过"按钮
-4. **HandArea** 收到 `abilitySelectingCards=true`，手牌区直接高亮可选，点击手牌切换选中状态（`data-selected="true/false"`）
-5. 点击"确认弃牌"（`onConfirmBeforeAttackCards`）→ 发送 `DECLARE_ATTACK` 命令（带 `beforeAttack` payload）
-6. 点击"跳过"（`onCancelBeforeAttack`）→ 发送 `DECLARE_ATTACK` 命令（不带 `beforeAttack`）
+能力系统只负责规则验证、费用、目标合法性、事件和状态结果。动画和视觉延迟通过 EventStream / FX、[`ui-animation-patterns.md`](ui-animation-patterns.md) 和 [`engine-visual-events.md`](engine-visual-events.md) 处理；不得为了等动画而延迟或拆分真实 reducer 结算。
 
-### UI 选择器（E2E 测试强制）
+如果某个能力事件无法回答“谁触发、打到哪里、目标发生了什么变化”，事件合同不完整，应先补 provenance，再实现或验收表现。
 
-| 元素 | 正确选择器 | ❌ 错误选择器 |
-|------|-----------|-------------|
-| 确认弃牌按钮 | `button:has-text("Confirm Discard")` 或 `button:has-text("确认弃牌")` | ❌ `[data-testid="sw-card-selector-overlay"] button` |
-| 跳过按钮 | `button:has-text("Skip")` 或 `button:has-text("跳过")` | ❌ overlay 内的跳过按钮 |
-| 手牌选择 | `[data-testid="sw-hand-area"] [data-card-type="unit"]` 直接点击 | ❌ `[data-testid="sw-card-selector-overlay"] [data-card-type]` |
-| 选中状态验证 | `[data-selected="true"]` | — |
+## 被动触发交互
 
-### 关键文件
+攻击、移动、结算前后等被动触发能力，必须由规则层输出触发上下文，再由 UI 呈现合法对象、确认和跳过入口。交互入口应贴近真实对象或当前阶段提示；E2E 选择器必须跟随真实 UI，而不是旧弹窗或测试 helper。
 
-- `useCellInteraction.ts` — `handleCellClick` 中检测被动能力并设置 `abilityMode`
-- `StatusBanners.tsx` — 渲染 `abilityMode.step === 'selectCards'` 时的横幅和按钮
-- `HandArea.tsx` — `abilitySelectingCards` prop 控制手牌选择模式（绕过魔力检查）
-- `abilities-paladin.ts` — `holy_arrow`/`healing` 的 `passiveTrigger: 'beforeAttack'` 定义
+## 迁移边界
 
-### 教训
+- 新游戏不得模仿历史 ad-hoc 字段、私有 manager 或散落状态桥。
+- 旧游戏迁移时，adapter 只能把旧字段投影到 `AbilityDef`、constraints 或 executor，不能保留第二套能力真相源。
+- 旧游戏触碰被动触发、响应、替代、防止或长事务能力时，先把旧能力定义或 handler 投影到 `AbilityDef -> Opportunity` 合同，再决定是否接入 `TimingOpportunitySystem` 或 `EventCommit`。
+- Mage Wars 已提供第一条真实消费试点：自我发动的对象能力可通过 `buildMageWarsSelfObjectAbilityActivationOpportunity` 投影为 `AbilityDef -> Opportunity -> ChoiceRequest` 合同；该入口只覆盖固定费用、自身确认型能力，不枚举治疗、绑定法术或多模式目标，复杂目标仍待逐类迁移。
+- 状态 / buff 使用稳定原语表达，例如 tag、modifier、duration 和对象 ref；不得新增散落临时字段集合。
+- 对象生命周期和延迟交互必须显式建模，不能靠 payload 形状、当前 pending 字段或 resolve 时回查 handler 推断语义。
 
-此模式从"青色波纹按钮手动触发"重构为"攻击时自动弹出确认横幅"。重构后 E2E 测试未同步更新选择器（仍查找 `sw-card-selector-overlay`），导致测试从未真正执行过弃牌选择流程。**重构 UI 交互模式后，必须同步更新所有 E2E 测试的选择器**。
+## 禁止项
 
-## 通用能力约束系统（强制）
-
-> **新游戏必须使用**。现有游戏（SummonerWars）标记为过时但保持兼容。
-
-### 设计原则
-
-- **数据驱动**：约束声明在 `AbilityDef.constraints` 中，验证逻辑在引擎层统一处理
-- **可组合**：多个约束可同时生效（行动消耗 + 实体状态 + 资源 + 使用次数）
-- **可扩展**：游戏层可注册自定义约束检查器
-- **类型安全**：通过泛型保持上下文类型
-
-### 核心 API（`engine/primitives/abilityConstraints.ts`）
-
-```typescript
-// 主检查函数
-checkAbilityConstraints(
-  constraints: AbilityConstraints | undefined,
-  ctx: ConstraintContext,
-  registry?: ConstraintHandlerRegistry,
-): ConstraintCheckResult
-
-// 自定义约束注册
-createConstraintHandlerRegistry(): ConstraintHandlerRegistry
-registerConstraintHandler(registry, name, handler): void
-```
-
-### 约束类型
-
-| 约束类型 | 用途 | 配置示例 |
-|---------|------|---------|
-| `actionCost` | 消耗行动次数（移动/攻击） | `{ type: 'move', count: 1 }` |
-| `entityState` | 实体状态检查（未移动/未攻击） | `{ notMoved: true, notAttacked: true }` |
-| `resource` | 资源数量要求（充能/魔力/生命值） | `{ charge: { min: 1 }, magic: { exact: 3 } }` |
-| `usageLimit` | 使用次数限制 | `{ perTurn: 1, perBattle: 3 }` |
-| `custom` | 自定义约束处理器 | `[{ handler: 'adjacentAlly', params: {} }]` |
-
-### 使用示例
-
-#### 1. 在 AbilityDef 中声明约束
-
-```typescript
-const prepareAbility: AbilityDef = {
-  id: 'prepare',
-  name: abilityText('prepare', 'name'),
-  description: abilityText('prepare', 'description'),
-  constraints: {
-    actionCost: { type: 'move', count: 1 },  // 消耗一次移动
-    entityState: { notMoved: true },          // 要求未移动
-    resource: { charge: { min: 0 } },         // 可选：需要充能槽
-  },
-  effects: [{ type: 'grantCharge', value: 1 }],
-};
-```
-
-#### 2. 在验证层调用
-
-```typescript
-import { checkAbilityConstraints, type ConstraintContext } from '../../../engine/primitives/abilityConstraints';
-
-function validateAbilityActivation(core, playerId, payload) {
-  const ability = abilityRegistry.get(payload.abilityId);
-  if (!ability) return { valid: false, error: '未知技能' };
-
-  // 构建约束检查上下文
-  const ctx: ConstraintContext = {
-    actionCounts: { move: core.players[playerId].moveCount, attack: core.players[playerId].attackCount },
-    actionLimits: { move: 3, attack: 3 },
-    entityState: { hasMoved: sourceUnit.hasMoved, hasAttacked: sourceUnit.hasAttacked },
-    resources: { charge: sourceUnit.boosts ?? 0, magic: core.players[playerId].magic },
-  };
-
-  // 检查约束
-  const result = checkAbilityConstraints(ability.constraints, ctx);
-  if (!result.valid) return { valid: false, error: result.error };
-
-  // ... 其他验证逻辑
-  return { valid: true };
-}
-```
-
-#### 3. 自定义约束处理器（可选）
-
-```typescript
-import { createConstraintHandlerRegistry, registerConstraintHandler } from '../../../engine/primitives/abilityConstraints';
-
-const constraintRegistry = createConstraintHandlerRegistry();
-
-// 注册自定义约束：要求相邻有友方单位
-registerConstraintHandler(constraintRegistry, 'adjacentAlly', (params, ctx) => {
-  const adjacentAllies = getAdjacentAllies(ctx.sourcePosition, ctx.core);
-  if (adjacentAllies.length === 0) {
-    return { valid: false, error: '附近没有友方单位', failedConstraint: 'custom.adjacentAlly' };
-  }
-  return { valid: true };
-});
-
-// 在 AbilityDef 中使用
-const ability: AbilityDef = {
-  id: 'rally',
-  constraints: {
-    custom: [{ handler: 'adjacentAlly' }],
-  },
-  // ...
-};
-
-// 验证时传入注册表
-checkAbilityConstraints(ability.constraints, ctx, constraintRegistry);
-```
-
-### 迁移指南（现有游戏）
-
-**旧代码（SummonerWars 当前模式）**：
-```typescript
-// abilities-barbaric.ts
-export const prepareAbility: AbilityDef = {
-  id: 'prepare',
-  costsMoveAction: true,  // ad-hoc 字段
-  validation: {
-    customValidator: (ctx) => {
-      if (ctx.sourceUnit.hasMoved) return { valid: false, error: '该单位本回合已移动' };
-      if (ctx.core.players[ctx.playerId].moveCount >= 3) return { valid: false, error: '移动次数已用完' };
-      return { valid: true };
-    },
-  },
-};
-
-// abilityValidation.ts
-if (ability.costsMoveAction && player.moveCount >= MAX_MOVES_PER_TURN) {
-  return { valid: false, error: '本回合移动次数已用完' };
-}
-```
-
-**新代码（推荐模式）**：
-```typescript
-// abilities-barbaric.ts
-export const prepareAbility: AbilityDef = {
-  id: 'prepare',
-  constraints: {
-    actionCost: { type: 'move', count: 1 },
-    entityState: { notMoved: true },
-  },
-};
-
-// abilityValidation.ts
-const ctx: ConstraintContext = {
-  actionCounts: { move: player.moveCount, attack: player.attackCount },
-  actionLimits: { move: MAX_MOVES_PER_TURN, attack: MAX_ATTACKS_PER_TURN },
-  entityState: { hasMoved: sourceUnit.hasMoved, hasAttacked: sourceUnit.hasAttacked },
-};
-const result = checkAbilityConstraints(ability.constraints, ctx);
-if (!result.valid) return { valid: false, error: result.error };
-```
-
-### 优势
-
-1. **数据驱动**：约束声明在数据中，无需手写验证逻辑
-2. **可组合**：多种约束类型可同时生效，自动合并检查
-3. **可扩展**：通过 `custom` 约束支持游戏特定规则
-4. **类型安全**：`ConstraintContext` 通过泛型保持类型
-5. **可测试**：约束检查逻辑独立，易于单元测试
-6. **可复用**：所有游戏共享同一套约束系统，避免重复实现
-
-### 禁止事项
-
-- ❌ 禁止在游戏层重新实现约束检查逻辑（如 `costsMoveAction` + 手写验证）
-- ❌ 禁止在 `customValidator` 中检查通用约束（行动次数/资源/状态）
-- ❌ 禁止用可选参数掩盖约束依赖（如 `state?: TCore`）— 应拆分为两个函数
-- ✅ 新游戏必须使用 `constraints` 字段
-- ✅ 现有游戏可保持当前模式（已标记为过时），但新增技能推荐迁移
+- 禁止游戏层重新实现通用注册表、约束检查或条件 DSL。
+- 禁止用可选参数掩盖约束依赖；需要不同输入时拆分函数或声明不同合同。
+- 禁止能力执行器绕过 validator、费用支付、目标合法性或 reducer。
+- 禁止 UI 文案、按钮顺序或当前选中态成为能力合法性的真相源。
+- 禁止把“旧弹窗测试仍通过”当作真实交互已覆盖。

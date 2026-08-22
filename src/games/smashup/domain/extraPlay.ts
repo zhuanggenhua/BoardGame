@@ -454,7 +454,6 @@ function executeImmediateExtraMinionPlay(
                         powerMax: extra.powerMax,
                         sameNameOnly: extra.sameNameOnly,
                         sameNameDefId: extra.sameNameDefId,
-                        specificCardUid: extra.specificCardUid,
                     },
                 )] : []),
             ...events,

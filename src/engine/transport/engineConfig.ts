@@ -22,6 +22,13 @@ export type GameEventTelemetryFormatter<TEvent extends GameEvent = GameEvent> = 
     event: TEvent,
 ) => GameEventTelemetryRecord | null | undefined;
 
+export type OfflineAdjudicationInteraction = {
+    id?: unknown;
+    playerId?: unknown;
+    kind?: unknown;
+    data?: unknown;
+};
+
 /**
  * 游戏引擎配置合同。
  *
@@ -157,6 +164,12 @@ export interface GameEngineConfig<
             fingerprintHint: string;
             attemptSuffix?: string;
         } | null | undefined;
+        resolveOfflineAdjudicationCommand?: (args: {
+            state: MatchState<unknown>;
+            playerId: string;
+            interaction: OfflineAdjudicationInteraction;
+            fallbackCommandType: string | null;
+        }) => string | false | null | undefined;
         shouldSuppressActiveTurnCandidate?: (args: {
             state: MatchState<unknown>;
             phase: string;

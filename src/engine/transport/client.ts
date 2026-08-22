@@ -117,6 +117,14 @@ export class GameTransportClient {
         return this._connectionState === 'connected';
     }
 
+    /** 是否可以立即发送玩家命令。用于乐观预测前的入口检查。 */
+    canSendCommand(): boolean {
+        return Boolean(this.socket)
+            && !this._destroyed
+            && !this._syncInFlight
+            && this._connectionState === 'connected';
+    }
+
     /** 最新游戏状态 */
     get latestState(): unknown {
         return this._latestState;
@@ -495,15 +503,15 @@ export class GameTransportClient {
         onConfirmed?: (state: unknown) => void,
         onRejected?: (reason: string) => void,
         dispatchContext?: Pick<BatchDispatchMeta, 'onlineAiAttemptKey'>,
-    ): void {
-        if (!this.socket || this._destroyed) return;
+    ): boolean {
+        if (!this.socket || this._destroyed) return false;
         if (this._syncInFlight) {
             console.warn('[GameTransportClient] 全量同步进行中，批量命令被延后丢弃', {
                 batchId,
                 commandCount: commands.length,
                 matchID: this.config.matchID,
             });
-            return;
+            return false;
         }
         // 检查连接状态：只有在完成 sync 握手后才能发送命令
         if (this._connectionState !== 'connected') {
@@ -514,7 +522,7 @@ export class GameTransportClient {
                 matchID: this.config.matchID,
             });
             onRejected?.('not_connected');
-            return;
+            return false;
         }
 
         // 注册一次性监听器
@@ -563,6 +571,7 @@ export class GameTransportClient {
             this.config.credentials,
             batchMeta,
         );
+        return true;
     }
 
     /** 断开连接并清理资源 */

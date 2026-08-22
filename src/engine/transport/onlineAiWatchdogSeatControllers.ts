@@ -71,6 +71,14 @@ function shouldTrustOnlineAiSeatControllersForWatchdog(setupData: unknown): bool
     );
 }
 
+export function extractTrustedSetupSeatControllers(
+    setupData: unknown,
+): Record<string, SetupSeatController> | undefined {
+    return shouldTrustOnlineAiSeatControllersForWatchdog(setupData)
+        ? extractSetupSeatControllers(setupData)
+        : undefined;
+}
+
 export function resolveRawOnlineAiWatchdogSeatControllers(args: {
     state?: MatchState<unknown>;
     setupData: unknown;
@@ -93,7 +101,7 @@ export function resolveRawOnlineAiWatchdogSeatControllers(args: {
     };
 }
 
-function normalizeOnlineAiWatchdogSeatControllerType(
+export function normalizeOnlineAiWatchdogSeatControllerType(
     gameId: string,
     controller: SetupSeatController,
     gameManifests: GameManifestIndex,

@@ -66,8 +66,8 @@ import {
     resolveMageWarsSpellCost,
     resolveMageWarsWeakAttackDiceModifier,
 } from './spellRules';
-import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS } from './ids';
-import { getArenaObject } from './utils';
+import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type ArenaZoneId } from './ids';
+import { getArenaObject, getMageWarsWallBetweenZones } from './utils';
 import { resolveMageWarsSpellCasterRef } from './spellCasting';
 import { getStatusTokenAmount } from './statusTokens';
 import { hasTemporaryTeleportMovement } from './temporaryTraits';
@@ -120,6 +120,50 @@ function attackerProfileOrOverride(
 function resolveMageAbilityActionTrack(phase: MageWarsPhase): 'quickcast' | 'action' {
     if (phase === 'initiativeQuickcast' || phase === 'finalQuickcast') return 'quickcast';
     return 'action';
+}
+
+function createMageWarsWallPassageDamageEvents(
+    state: MatchState<MageWarsCore>,
+    sourceCommandType: string,
+    timestamp: number,
+    target: { targetId: string; objectId?: string; playerId?: PlayerId },
+    fromZoneId: ArenaZoneId,
+    toZoneId: ArenaZoneId,
+): MageWarsEvent[] {
+    const wall = getMageWarsWallBetweenZones(state.core, fromZoneId, toZoneId);
+    if (!wall?.passageDamage || wall.passageDamage.amount <= 0) return [];
+
+    const sourceAbilityId = `mw.wall.${wall.sourceSpellCardId}.passage`;
+    const triggerEvent: MageWarsEvent = {
+        type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED,
+        payload: {
+            wallId: wall.id,
+            edgeId: wall.edgeId,
+            sourceSpellCardId: wall.sourceSpellCardId,
+            sourceAbilityId,
+            fromZoneId,
+            toZoneId,
+            amount: wall.passageDamage.amount,
+            damageTypes: [...wall.passageDamage.damageTypes],
+            ...(target.objectId ? { objectId: target.objectId } : {}),
+            ...(target.playerId ? { playerId: target.playerId } : {}),
+        },
+        sourceCommandType,
+        timestamp,
+    };
+    const damageEvents = createDamageCalculation({
+        state,
+        source: { playerId: wall.ownerId, abilityId: sourceAbilityId },
+        target: { playerId: target.targetId },
+        baseDamage: wall.passageDamage.amount,
+        autoCollectTokens: false,
+        autoCollectStatus: false,
+        autoCollectBonusDamage: false,
+        damageScope: 'direct',
+        timestamp,
+    }).toEvents() as MageWarsEvent[];
+
+    return [triggerEvent, ...damageEvents];
 }
 
 interface MageWarsObjectAttackTarget {
@@ -1554,6 +1598,7 @@ export function executeCommand(
                     targetPlayerId: command.payload.targetPlayerId,
                     targetObjectId: command.payload.targetObjectId,
                     targetZoneId: command.payload.targetZoneId,
+                    targetWallEdgeId: command.payload.targetWallEdgeId,
                 },
                 sourceCommandType: command.type,
                 timestamp,
@@ -1627,8 +1672,8 @@ export function executeCommand(
             });
         }
 
-        case MAGE_WARS_COMMANDS.MOVE_MAGE:
-            return [{
+        case MAGE_WARS_COMMANDS.MOVE_MAGE: {
+            const moveEvent: MageWarsEvent = {
                 type: MAGE_WARS_EVENTS.MAGE_MOVED,
                 payload: {
                     playerId: command.playerId,
@@ -1637,7 +1682,19 @@ export function executeCommand(
                 },
                 sourceCommandType: command.type,
                 timestamp,
-            }];
+            };
+            return [
+                moveEvent,
+                ...createMageWarsWallPassageDamageEvents(
+                    state,
+                    command.type,
+                    timestamp,
+                    { targetId: player.id, playerId: player.id },
+                    player.mageZoneId,
+                    command.payload.toZoneId,
+                ),
+            ];
+        }
 
         case MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL:
             return [{
@@ -1659,7 +1716,7 @@ export function executeCommand(
                 state.core,
                 object,
             );
-            return [{
+            const moveEvent: MageWarsEvent = {
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED,
                 payload: {
                     ownerId: command.playerId,
@@ -1686,7 +1743,20 @@ export function executeCommand(
                 },
                 sourceCommandType: command.type,
                 timestamp,
-            }];
+            };
+            return [
+                moveEvent,
+                ...(usesTeleportMovement
+                    ? []
+                    : createMageWarsWallPassageDamageEvents(
+                        state,
+                        command.type,
+                        timestamp,
+                        { targetId: object.id, objectId: object.id },
+                        object.zoneId,
+                        command.payload.toZoneId,
+                    )),
+            ];
         }
 
         case MAGE_WARS_COMMANDS.GUARD:

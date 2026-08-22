@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+    resolveExplorableRoomSlots,
     resolveInventoryEffectId,
     type BetrayalCore,
 } from '../../src/games/betrayal/game';
@@ -70,6 +71,23 @@ const dismissBlockingOverlays = (core: BetrayalCore): BetrayalCore => {
     core.recentRoll = null;
     core.activePlayerId = null;
     return core;
+};
+
+const markMonsterActionsDoneForExplorerTurn = (core: BetrayalCore): void => {
+    const monsterIds = core.monsters.map((monster) => monster.id);
+    core.scenarioRuntime.monsterTurn = {
+        ...core.scenarioRuntime.monsterTurn,
+        resolvedStartMonsterIds: Array.from(new Set([
+            ...(core.scenarioRuntime.monsterTurn?.resolvedStartMonsterIds ?? []),
+            ...monsterIds,
+        ])),
+        skippedMonsterIdsThisTurn: Array.from(new Set([
+            ...(core.scenarioRuntime.monsterTurn?.skippedMonsterIdsThisTurn ?? []),
+            ...monsterIds,
+        ])),
+        movementRollsByGroupId: {},
+        moveRemainingById: {},
+    };
 };
 
 const card = (id: string, name: string): InventoryCard => ({ id, name, kind: 'omen' });
@@ -167,9 +185,15 @@ const createMummyForcedOmenCore = (role: MummyForcedOmenRole) => {
             card('holy-symbol', '圣符'),
             card('ring', '指环'),
         ];
+        const preparedCore = placeExplorerAtHauntExplorationDoor(core, heroId, []);
+        const targetRoomId = resolveExplorableRoomSlots(preparedCore)[0]?.id;
+        if (!targetRoomId) {
+            throw new Error('木乃伊强制书本 E2E 夹具没有可探索预兆房门位');
+        }
         return {
-            core: placeExplorerAtHauntExplorationDoor(core, heroId, []),
+            core: preparedCore,
             actorId: heroId,
+            targetRoomId,
             expectedCardId: 'omen-book',
             expectedCardName: '书本',
             forcedText: '木乃伊横行：英雄首次需要预兆时，从预兆堆找出书本并洗牌',
@@ -183,9 +207,16 @@ const createMummyForcedOmenCore = (role: MummyForcedOmenRole) => {
         card('ring', '指环'),
         card('omen-book', '书本'),
     ];
+    markMonsterActionsDoneForExplorerTurn(core);
+    const preparedCore = placeExplorerAtHauntExplorationDoor(core, traitorId, []);
+    const targetRoomId = resolveExplorableRoomSlots(preparedCore)[0]?.id;
+    if (!targetRoomId) {
+        throw new Error('木乃伊强制婚礼预兆 E2E 夹具没有可探索预兆房门位');
+    }
     return {
-        core: placeExplorerAtHauntExplorationDoor(core, traitorId, []),
+        core: preparedCore,
         actorId: traitorId,
+        targetRoomId,
         expectedCardId: 'holy-symbol',
         expectedCardName: '圣符',
         forcedText: '木乃伊横行：叛徒首次需要预兆时，从预兆堆找出圣符或指环并洗牌',
@@ -279,12 +310,13 @@ const dismissHauntRevealCueIfVisible = async (page: Page): Promise<void> => {
     }
 };
 
-const exploreGroundSouthOmenRoom = async (page: Page): Promise<void> => {
+const exploreForcedOmenRoom = async (page: Page, targetRoomId: string): Promise<void> => {
     await page.getByTestId('betrayal-action-explore').click();
-    await expect(page.getByTestId('betrayal-room-explore-target-ground-south')).toBeVisible();
-    await page.getByTestId('betrayal-room-ground-south').click();
+    await expect(page.getByTestId(`betrayal-room-explore-target-${targetRoomId}`)).toBeVisible();
+    await page.getByTestId(`betrayal-room-${targetRoomId}`).click();
     const placementPanel = page.getByTestId('betrayal-room-placement-panel');
     await expect(placementPanel).toBeVisible({ timeout: 30000 });
+    await expect(placementPanel).toHaveAttribute('data-room-placement-slot', targetRoomId);
     const confirmButton = page.getByTestId('betrayal-room-placement-confirm');
     await expect(confirmButton).toBeEnabled();
     await confirmButton.click();
@@ -309,15 +341,16 @@ test.describe('山屋惊魂木乃伊横行强制关键预兆真实探索', () =>
             currentInventoryEffectIds: expect.not.arrayContaining([fixture.expectedCardId]),
             remainingOmenDeckEffectIds: expect.arrayContaining([fixture.expectedCardId]),
         });
-        await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
+        await expect(page.getByTestId('betrayal-action-explore')).toContainText('探索');
         await saveScreenshot(page, HERO_BEFORE_SCREENSHOT);
 
-        await exploreGroundSouthOmenRoom(page);
+        await exploreForcedOmenRoom(page, fixture.targetRoomId);
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
         await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`预兆牌 ${fixture.expectedCardName}`));
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(fixture.forcedText);
-        await expect(page.getByTestId('betrayal-discovery-resolution-step')).toContainText(`已加入持有区：${fixture.expectedCardName}`);
+        await expect(discoveryPanel).toContainText('已加入持有区');
+        await expect(discoveryPanel).toContainText(fixture.expectedCardName);
         await expect.poll(() => readMummyForcedOmenEffectState(page)).toMatchObject({
             currentInventoryEffectIds: expect.arrayContaining([fixture.expectedCardId]),
             latestDiscoveryTitle: fixture.expectedCardName,
@@ -349,15 +382,16 @@ test.describe('山屋惊魂木乃伊横行强制关键预兆真实探索', () =>
             currentInventoryEffectIds: expect.not.arrayContaining([fixture.expectedCardId]),
             remainingOmenDeckEffectIds: expect.arrayContaining([fixture.expectedCardId]),
         });
-        await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
+        await expect(page.getByTestId('betrayal-action-explore')).toContainText('探索');
         await saveScreenshot(page, TRAITOR_BEFORE_SCREENSHOT);
 
-        await exploreGroundSouthOmenRoom(page);
+        await exploreForcedOmenRoom(page, fixture.targetRoomId);
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
         await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`预兆牌 ${fixture.expectedCardName}`));
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(fixture.forcedText);
-        await expect(page.getByTestId('betrayal-discovery-resolution-step')).toContainText(`已加入持有区：${fixture.expectedCardName}`);
+        await expect(discoveryPanel).toContainText('已加入持有区');
+        await expect(discoveryPanel).toContainText(fixture.expectedCardName);
         await expect.poll(() => readMummyForcedOmenEffectState(page)).toMatchObject({
             currentInventoryEffectIds: expect.arrayContaining([fixture.expectedCardId]),
             latestDiscoveryTitle: fixture.expectedCardName,

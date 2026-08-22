@@ -505,7 +505,7 @@ function wishForWings(ctx: AbilityContext): AbilityResult {
             sourceId: 'penguins_a_wish_for_wings_that_work',
             targetType: 'button',
             titleKey: 'ui.penguins_a_wish_for_wings_that_work_title',
-            autoResolveIfSingle: true,
+            autoResolveIfSingle: false,
             continuationContext: { baseIndex, sourceCardUid: ctx.cardUid },
         },
     );
@@ -768,7 +768,7 @@ export function registerPenguinInteractionHandlers(): void {
                 sourceId: 'penguins_surfing_penguin_choose_base',
                 targetType: 'base',
                 titleKey: 'ui.penguins_surfing_penguin_choose_base_title',
-                autoResolveIfSingle: true,
+                autoResolveIfSingle: false,
             },
         );
         const nextWithContext = next as typeof next & PromptContinuation<SurfingPenguinBaseContinuation>;
@@ -889,7 +889,7 @@ export function registerPenguinInteractionHandlers(): void {
                 targetType: 'generic',
                 titleKey: 'ui.penguins_regurgitating_penguin_order_title',
                 multi: { min: remaining.length, max: remaining.length, ordered: true },
-                autoResolveIfSingle: true,
+                autoResolveIfSingle: false,
             },
         );
         const nextWithContext = next as typeof next & PromptContinuation<RegurgitatingPenguinOrderContinuation>;

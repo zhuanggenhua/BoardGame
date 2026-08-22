@@ -519,7 +519,7 @@ const optionalMinionPromptProgram = createPromptProgram<OptionalMinionContext, S
                 effectType: context.effect === 'destroy' ? 'destroy' : 'buff',
             }),
         ],
-        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
+        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
         const choice = value as MinionChoice;
