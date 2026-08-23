@@ -2812,9 +2812,11 @@ function hasStatusTokenRemovedEvent(
 function hasDamageDealtEvent(
     snapshot: JsonRecord,
     targetId: string,
+    sourceAbilityId?: string,
 ): boolean {
     return hasEvent(snapshot, 'DAMAGE_DEALT', (payload) => (
         payload.targetId === targetId
+        && (sourceAbilityId === undefined || payload.sourceAbilityId === sourceAbilityId)
         && typeof payload.actualDamage === 'number'
         && payload.actualDamage > 0
     ));
@@ -4118,6 +4120,83 @@ test.describe('Mage Wars formal online runtime', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '10E-装备和结界最终附着结果-两派系附着关系可见');
 
             await advanceToNextPlanningPhase(match, diagnostics);
+            await planNamedSpells(match.hostPage, ['荆棘之墙']);
+            await planNamedSpells(match.guestPage, ['皇家箭手']);
+            const wallRoundOrder = await resolveCurrentActorOrder(match, '墙体主链整合', diagnostics);
+            const wallSpellCardId = 25700;
+            const wallEdgeId = 'a2-a3';
+            for (const actorId of wallRoundOrder) {
+                if (actorId === '0') {
+                    const preparedWall = match.hostPage.locator(`${SELF_PREPARED_CARD_SELECTOR}[data-source-card-id="${wallSpellCardId}"]`).first();
+                    await advanceUntilEnabled(match.hostPage, preparedWall);
+                    await selectPreparedSpell(match.hostPage, preparedWall, '荆棘之墙');
+                    const targetWallEdge = match.hostPage.getByTestId(`mage-wars-wall-edge-${wallEdgeId}`);
+                    await expect(targetWallEdge).toHaveAttribute('data-legal-target-wall-edge', 'true', { timeout: 3_000 });
+                    await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体边界选择截图前');
+                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10F-荆棘之墙施放前-A2-A3边界可选');
+                    await targetWallEdge.click({ timeout: 3_000, noWaitAfter: true });
+
+                    await expect.poll(async () => {
+                        const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                        return hasWallSnapshot(snapshot, wallEdgeId, wallSpellCardId)
+                            && hasWallSummonedEvent(snapshot, wallEdgeId, wallSpellCardId)
+                            && hasEvent(snapshot, 'MW_SPELL_CAST_RESOLVED', (payload) => (
+                                payload.spellCardId === wallSpellCardId
+                                && payload.targetWallEdgeId === wallEdgeId
+                            ));
+                    }, {
+                        message: '主候选链中荆棘之墙应通过正式页面写入 A2-A3 墙体状态和施放事件',
+                        timeout: 5_000,
+                    }).toBe(true);
+                    await expect(targetWallEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 3_000 });
+                    await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体施放完成截图前');
+                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A2-A3边界墙体可见');
+
+                    const hostBobcatForWallPassage = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
+                    const bobcatDamageBeforeWallPassage = await readServerCoreSnapshot(match.hostPage, match, '0').then((snapshot) => {
+                        const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                        const bobcat = isRecord(objects[hostBobcatObjectId]) ? objects[hostBobcatObjectId] : {};
+                        return typeof bobcat.damage === 'number' ? bobcat.damage : 0;
+                    });
+                    await clickFieldObject(match.hostPage, hostBobcatForWallPassage, '野性山猫穿越主链墙体前选择来源');
+                    await expect(match.hostPage.getByTestId('mage-wars-arena-zone-a3')).toHaveAttribute('data-legal-move-zone', 'true', {
+                        timeout: 3_000,
+                    });
+                    await clickLegalMoveZone(match.hostPage, ARENA_ZONE_IDS.A3, '野性山猫穿越 A2-A3 荆棘之墙');
+                    await expectServerObjectZone(
+                        match.hostPage,
+                        match,
+                        '0',
+                        hostBobcatObjectId,
+                        ARENA_ZONE_IDS.A3,
+                        '主候选链中野性山猫穿越墙体后应进入 A3',
+                    );
+                    await expectServerObjectDamageGreaterThan(
+                        match.hostPage,
+                        match,
+                        '0',
+                        hostBobcatObjectId,
+                        bobcatDamageBeforeWallPassage,
+                        '主候选链中野性山猫穿越墙体后应受到通行伤害',
+                    );
+                    await expect.poll(async () => {
+                        const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                        return hasWallPassageDamageTriggeredEvent(snapshot, wallEdgeId, hostBobcatObjectId)
+                            && hasDamageDealtEvent(snapshot, hostBobcatObjectId, `mw.wall.${wallSpellCardId}.passage`);
+                    }, {
+                        message: '主候选链穿越 A2-A3 墙体应产生墙体通行伤害事件和对应来源伤害事件',
+                        timeout: 5_000,
+                    }).toBe(true);
+                    await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链穿墙伤害截图前');
+                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10H-野性山猫穿越荆棘之墙后-通行伤害可见');
+                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                    continue;
+                }
+
+                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+            }
+
+            await advanceToNextPlanningPhase(match, diagnostics);
             await planNamedSpells(match.hostPage, ['缠绕藤蔓', '间歇喷泉']);
             await planNamedSpells(match.guestPage, ['圣光之柱']);
             const thirdRoundOrder = await resolveCurrentActorOrder(match, '魔物和攻击代表链', diagnostics);
@@ -4157,12 +4236,12 @@ test.describe('Mage Wars formal online runtime', () => {
                         throw new Error('间歇喷泉点击前未启动攻击 FX 捕捉');
                     }
                     const geyserAttackFxAudit = await geyserAttackFxAuditPromise;
-                    expect(geyserAttackFxAudit.targetRow).toBe('1');
+                    expect(geyserAttackFxAudit.targetRow).toBe('2');
                     expect(geyserAttackFxAudit.targetCol).toBe('0');
                     await expect.poll(async () => {
                         const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
                         return hasSpellAttackRolledEvent(snapshot, 1710, hostBobcatObjectId)
-                            && hasDamageDealtEvent(snapshot, hostBobcatObjectId);
+                            && hasDamageDealtEvent(snapshot, hostBobcatObjectId, 'mw.spell.1710');
                     }, {
                         message: '兽王攻击法术间歇喷泉应通过正式页面产生攻击掷骰和真实伤害事件',
                         timeout: 5_000,

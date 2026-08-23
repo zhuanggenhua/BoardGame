@@ -91,4 +91,43 @@ describe('playerView buried mask', () => {
         expect(view.players['1'].deck.map((card: any) => card.uid)).not.toContain('p1-deck-top');
         expect(view.players['1'].storedCards[0].storedUnderDefId).toBeUndefined();
     });
+
+    it('玩家视角应公开对手返时者停滞牌和停滞指示物数量', () => {
+        const privateStored = {
+            ...makeCard('p1-private-stored', 'time_travelers_time_loop', 'action', '1'),
+            storedByPlayerId: '1',
+            storedUnderUid: 'time-box-a',
+            storedUnderDefId: 'time_travelers_time_box',
+            reason: 'time_travelers_time_box',
+        };
+        const publicStasis = {
+            ...makeCard('p1-stasis-card', 'backtimers_zany_prof', 'minion', '1'),
+            storedByPlayerId: '1',
+            counters: 2,
+            reason: 'backtimers_stasis',
+        };
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    storedCards: [privateStored, publicStasis] as any,
+                }),
+            },
+        });
+
+        const view = SmashUpDomain.playerView(core, '0') as any;
+
+        expect(view.players['1'].storedCards).toHaveLength(2);
+        expect(view.players['1'].storedCards[0]).toEqual(expect.objectContaining({
+            uid: 'hidden_1_stored_0',
+            defId: 'hidden_private_card',
+            reason: 'hidden_private_card',
+        }));
+        expect(view.players['1'].storedCards[1]).toEqual(expect.objectContaining({
+            uid: 'p1-stasis-card',
+            defId: 'backtimers_zany_prof',
+            counters: 2,
+            reason: 'backtimers_stasis',
+        }));
+    });
 });

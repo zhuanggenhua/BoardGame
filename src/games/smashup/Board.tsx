@@ -16,7 +16,7 @@ import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { isUiHintOnlyError } from '../../engine/transport/errorI18n';
 import type { GameEvent, MatchState } from '../../engine/types';
-import type { SmashUpCore, CardInstance, ActionCardDef, FusionCardDef, CardOrTitanChoiceValue } from './domain/types';
+import type { SmashUpCore, CardInstance, ActionCardDef, FusionCardDef, CardOrTitanChoiceValue, StoredCardInstance } from './domain/types';
 import { SU_COMMANDS, SU_EVENTS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { asSimpleChoice, INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
@@ -172,8 +172,21 @@ const EMPTY_EVENT_ENTRIES: MatchState<SmashUpCore>['sys']['eventStream']['entrie
 const SMASHUP_MOBILE_BOARD_SHELL_DESIGN_WIDTH = 1160;
 const SMASHUP_FACTION_SELECTION_SHELL_DESIGN_WIDTH = 1500;
 const TURN_NOTICE_DURATION_MS = 1200;
+const BACKTIMERS_STASIS_REASON = 'backtimers_stasis';
 
 type DragGuidePoint = { x: number; y: number };
+
+type BacktimersStasisDisplayCard = {
+    playerId: string;
+    playerName: string;
+    card: StoredCardInstance;
+};
+
+function isVisibleBacktimersStasisCard(card: StoredCardInstance): boolean {
+    return card.reason === BACKTIMERS_STASIS_REASON
+        && !card.storedUnderUid
+        && card.defId !== 'hidden_private_card';
+}
 
 function cubicBezierPoint(t: number, p0: DragGuidePoint, p1: DragGuidePoint, p2: DragGuidePoint, p3: DragGuidePoint): DragGuidePoint {
     const oneMinusT = 1 - t;
@@ -2758,6 +2771,100 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // VIEWING STATE
     const [viewingCard, setViewingCard] = useState<CardMagnifyTarget | null>(null);
 
+    const backtimersStasisCards = useMemo<BacktimersStasisDisplayCard[]>(() => {
+        const orderedPlayerIds = playerDisplayOrder.length > 0
+            ? playerDisplayOrder
+            : Object.keys(core.players);
+        return orderedPlayerIds.flatMap((pid) => {
+            const player = core.players[pid];
+            if (!player) return [];
+            return (player.storedCards ?? [])
+                .filter(isVisibleBacktimersStasisCard)
+                .map(card => ({
+                    playerId: pid,
+                    playerName: playerNames[pid] ?? `P${Number(pid) + 1}`,
+                    card,
+                }));
+        });
+    }, [core.players, playerDisplayOrder, playerNames]);
+
+    const backtimersStasisZone = backtimersStasisCards.length > 0 ? (
+        <div
+            data-testid="su-backtimers-stasis-zone"
+            data-stasis-card-count={backtimersStasisCards.length}
+            className={`absolute z-40 pointer-events-auto ${isMobileViewport ? 'left-2 right-2 top-[5.5rem]' : 'left-[2vw] top-[7.25rem] max-w-[min(34vw,36rem)]'}`}
+        >
+            <div className="rounded-lg border-2 border-amber-900/55 bg-[#f4e4bd]/95 p-3 text-slate-900 shadow-[0_12px_28px_rgba(31,20,10,0.35)] backdrop-blur-sm">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-black uppercase tracking-[0.04em] text-amber-950">
+                        {t('ui.backtimers_stasis_zone_title')}
+                    </div>
+                    <div className="rounded-full border border-amber-900/30 bg-white/65 px-2 py-0.5 text-[11px] font-black text-amber-950">
+                        {t('ui.card_count_short', { count: backtimersStasisCards.length })}
+                    </div>
+                </div>
+                <div className="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1">
+                    {backtimersStasisCards.map(({ playerId: ownerPlayerId, playerName, card }) => {
+                        const def = getCardDef(card.defId);
+                        const cardName = resolveCardName(def, t) || card.defId;
+                        const counters = Math.max(0, card.counters ?? 0);
+                        const statusLabel = counters > 0
+                            ? t('ui.backtimers_stasis_counters', { count: counters })
+                            : t('ui.backtimers_stasis_ready');
+                        const previewRef = getSmashUpRendererPreviewRef(card.defId, {
+                            cardUid: card.uid,
+                            disableHoverOverlay: true,
+                        });
+                        const magnifyType: CardMagnifyTarget['type'] = def?.type === 'minion' ? 'minion' : 'action';
+                        return (
+                            <button
+                                key={`${ownerPlayerId}-${card.uid}`}
+                                type="button"
+                                data-testid={`su-backtimers-stasis-card-${card.uid}`}
+                                data-stasis-card-uid={card.uid}
+                                data-stasis-owner-id={ownerPlayerId}
+                                data-stasis-counters={counters}
+                                data-stasis-ready={counters <= 0 ? 'true' : 'false'}
+                                className="group/stasis relative w-[4.75rem] shrink-0 rounded-md border border-amber-950/30 bg-white/75 p-1 text-left shadow-[0_5px_12px_rgba(67,43,20,0.24)] transition-transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(67,43,20,0.28)]"
+                                title={`${playerName} · ${cardName} · ${statusLabel}`}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    setViewingCard({ defId: card.defId, type: magnifyType });
+                                }}
+                            >
+                                <div className="relative aspect-[0.714] overflow-hidden rounded-sm bg-slate-900">
+                                    {previewRef ? (
+                                        <CardPreview
+                                            previewRef={previewRef}
+                                            className="h-full w-full"
+                                            title={cardName}
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] font-black text-white">
+                                            {cardName}
+                                        </div>
+                                    )}
+                                    <div className={`absolute right-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-black shadow ${counters > 0 ? 'bg-violet-700 text-white' : 'bg-emerald-500 text-emerald-950'}`}>
+                                        {counters > 0 ? counters : t('ui.backtimers_stasis_ready_short')}
+                                    </div>
+                                </div>
+                                <div className="mt-1 truncate text-[10px] font-black text-slate-900">
+                                    {cardName}
+                                </div>
+                                <div className="truncate text-[9px] font-bold text-amber-900/80">
+                                    {playerName}
+                                </div>
+                                <div className={`mt-1 rounded px-1 py-0.5 text-center text-[9px] font-black ${counters > 0 ? 'bg-violet-100 text-violet-900' : 'bg-emerald-100 text-emerald-900'}`}>
+                                    {statusLabel}
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    ) : null;
+
     useEffect(() => {
         if (currentPrompt && !shouldRenderPromptInOverlay) {
             setViewingCard(null);
@@ -3985,6 +4092,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 {!isMobileViewport && (
                     <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
                 )}
+
+                {backtimersStasisZone}
 
                 {/* --- TOP HUD: "Sticky Notes" Style --- */}
                 <div className="relative z-20 flex justify-between items-start pt-6 px-[2vw] pointer-events-none">

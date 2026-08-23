@@ -3149,7 +3149,11 @@ function maskPlayerPrivateZones(player: PlayerState, playerId: PlayerId): Player
         ...player,
         hand: player.hand.map((_, index) => maskPrivateCard(player.id, 'hand', index)),
         deck: player.deck.map((_, index) => maskPrivateCard(player.id, 'deck', index)),
-        storedCards: player.storedCards?.map((_, index) => maskStoredCard(player.id, index)),
+        storedCards: player.storedCards?.map((card, index) => (
+            isBacktimersStasisCard(card)
+                ? card
+                : maskStoredCard(player.id, index)
+        )),
     };
 }
 

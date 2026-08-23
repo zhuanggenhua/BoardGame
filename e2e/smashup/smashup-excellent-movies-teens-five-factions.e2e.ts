@@ -21,8 +21,19 @@ type SmashUpE2EState = {
       deck: Array<{ uid: string; defId: string }>;
       hand: Array<{ uid: string; defId: string }>;
       discard: Array<{ uid: string; defId: string }>;
+      storedCards?: Array<{
+        uid: string;
+        defId: string;
+        type: 'minion' | 'action';
+        owner: string;
+        storedByPlayerId: string;
+        counters?: number;
+        reason: string;
+      }>;
       minionsPlayed?: number;
       minionLimit?: number;
+      actionsPlayed?: number;
+      actionLimit?: number;
       specificExtraMinionPlays?: Array<{
         cardUid: string;
         restrictToBase?: number;
@@ -226,6 +237,134 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       specificExtraMinionPlays: undefined,
       interactionOpen: false,
       responseWindowOpen: false,
+    });
+  });
+
+  test('返时者停滞区显示指示物并在回合开始归零后提示额外打出', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await clearEvidenceScreenshotsForTest(testInfo);
+
+    await game.openTestGame('smashup', {
+      p0: 'backtimers,teens',
+      p1: 'action_heroes,extramorphs',
+      skipFactionSelect: true,
+      skipInitialization: true,
+      seed: 20260823,
+    }, 45000);
+
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '1',
+      phase: 'playCards',
+      extra: {
+        core: {
+          turnOrder: ['0', '1'],
+          currentPlayerIndex: 1,
+          turnNumber: 3,
+          nextUid: 5000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['backtimers', 'teens'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+              storedCards: [{
+                uid: 'stasis-zany-prof',
+                defId: 'backtimers_zany_prof',
+                type: 'minion',
+                owner: '0',
+                storedByPlayerId: '0',
+                counters: 1,
+                reason: 'backtimers_stasis',
+              }],
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['action_heroes', 'extramorphs'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 1,
+              actionLimit: 1,
+            },
+          },
+          bases: [
+            {
+              defId: 'base_alternate_present',
+              minions: [],
+              ongoingActions: [],
+            },
+          ],
+        },
+      },
+    });
+
+    await game.waitForPhase('playCards');
+    const stasisZone = page.getByTestId('su-backtimers-stasis-zone');
+    const stasisCard = page.locator('[data-stasis-card-uid="stasis-zany-prof"]');
+    await expect(stasisZone).toBeVisible({ timeout: 15000 });
+    await expect(stasisZone).toContainText('停滞区');
+    await expect(stasisCard).toBeVisible({ timeout: 15000 });
+    await expect(stasisCard).toHaveAttribute('data-stasis-counters', '1');
+    await expect(stasisCard).toContainText('停滞 × 1');
+    await game.screenshot('返时者停滞区显示1个指示物', testInfo);
+
+    await page.evaluate(async () => {
+      const harness = (window as any).__BG_TEST_HARNESS__;
+      await harness.command.dispatch({
+        type: 'ADVANCE_PHASE',
+        playerId: '1',
+        payload: {},
+      });
+    });
+
+    await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
+    await expect(stasisCard).toBeVisible({ timeout: 15000 });
+    await expect(stasisCard).toHaveAttribute('data-stasis-counters', '0');
+    await expect(stasisCard).toContainText('可打出');
+    await expect(page.getByTestId('prompt-card-grid')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-option-id="stored-card-0"]')).toBeVisible({ timeout: 15000 });
+    await game.screenshot('返时者回合开始归零后额外打出提示', testInfo);
+
+    const firstOptions = await game.getInteractionOptions();
+    const storedOption = firstOptions.find((option: any) => option.value?.cardUid === 'stasis-zany-prof' && option.value?.source === 'stored');
+    expect(storedOption, '返时者归零停滞牌应作为 stored 来源的额外随从选项出现').toBeTruthy();
+    await game.selectOption(storedOption.id);
+
+    await game.waitForInteraction('smashup_immediate_extra_minion_base', 15000);
+    const baseOptions = await game.getInteractionOptions();
+    const baseOption = baseOptions.find((option: any) => option.value?.baseIndex === 0);
+    expect(baseOption, '返时者停滞牌应能选择基地打出').toBeTruthy();
+    await game.selectOption(baseOption.id);
+    await game.waitForNoInteraction(15000);
+
+    await expect(page.locator('[data-minion-uid="stasis-zany-prof"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-stasis-card-uid="stasis-zany-prof"]')).toHaveCount(0, { timeout: 15000 });
+    await game.screenshot('返时者额外打出后停滞区清空', testInfo);
+
+    await expect.poll(async () => {
+      const state = await game.getState() as SmashUpE2EState;
+      return {
+        stasisCards: state.core.players['0'].storedCards ?? [],
+        minionUids: state.core.bases[0].minions.map(minion => minion.uid),
+        minionsPlayed: state.core.players['0'].minionsPlayed,
+        interactionOpen: Boolean(state.sys.interaction?.current),
+      };
+    }, { timeout: 10000 }).toEqual({
+      stasisCards: [],
+      minionUids: ['stasis-zany-prof'],
+      minionsPlayed: 1,
+      interactionOpen: false,
     });
   });
 });
