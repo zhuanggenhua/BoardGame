@@ -1192,18 +1192,12 @@ function streetRat(ctx: AbilityContext): AbilityResult {
             baseIndex: ctx.baseIndex,
         }));
     }
-    for (const [otherPlayerId, player] of Object.entries(ctx.state.players)) {
-        if (otherPlayerId === ctx.playerId) continue;
-        const action = player.discard.find(card => isActionCard(card.defId));
-        if (!action) continue;
-        return {
-            events: [
-                transferCardToSelf(action, otherPlayerId, ctx.playerId, 'aladdin_street_rat', ctx.now),
-                grantContextualExtraAction(ctx, 'aladdin_street_rat', { restrictToCardUid: action.uid }),
-            ],
-        };
-    }
-    return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    const hasOtherDiscardAction = Object.entries(ctx.state.players).some(([otherPlayerId, player]) =>
+        otherPlayerId !== ctx.playerId && player.discard.some(card => isActionCard(card.defId)),
+    );
+    return {
+        events: hasOtherDiscardAction ? [] : [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)],
+    };
 }
 
 function theLamp(ctx: AbilityContext): AbilityResult {

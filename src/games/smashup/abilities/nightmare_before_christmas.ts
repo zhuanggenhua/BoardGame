@@ -447,7 +447,6 @@ function oogieBoogie(ctx: AbilityContext): AbilityResult {
 
 function winterSurprise(ctx: AbilityContext): AbilityResult {
     const options = buildCharacterModifierCardOptions(ctx.state.players[ctx.playerId]?.discard ?? [], 'discard');
-    const card = ctx.state.players[ctx.playerId]?.discard.find(candidate => isCharacterModifier(candidate.defId));
     if (ctx.matchState && options.length > 0) {
         return queueNightmarePrompt(
             ctx,
@@ -461,8 +460,6 @@ function winterSurprise(ctx: AbilityContext): AbilityResult {
     }
     return {
         events: [
-            ...(card ? [recoverCardsFromDiscard(ctx.playerId, [card.uid], WINTER_SURPRISE, ctx.now)] : []),
-            ...(card ? [grantContextualExtraAction(ctx, WINTER_SURPRISE, { restrictToCardUid: card.uid })] : []),
             ...buildValidatedCardToDeckBottomEvents(ctx.state, {
                 cardUid: ctx.cardUid,
                 defId: ctx.defId,
@@ -594,33 +591,7 @@ function spiralHillAfterScoring(ctx: BaseAbilityContext): AbilityResult {
             { responseValidationMode: 'live', genericIntent: 'card-pool' },
         );
     }
-    const playerIds = Array.from(new Set(base.minions.map(minion => minion.controller)));
-    const events: SmashUpEvent[] = [];
-    for (const playerId of playerIds) {
-        const discardCard = ctx.state.players[playerId]?.discard.find(card => isCharacterModifier(card.defId));
-        if (discardCard) {
-            events.push(recoverCardsFromDiscard(playerId, [discardCard.uid], BASE_SPIRAL_HILL, ctx.now));
-            continue;
-        }
-        const attached = base.minions
-            .flatMap(minion => minion.attachedActions)
-            .find(action => isCharacterModifier(action.defId) && getActionOwnerId(action) === playerId);
-        if (!attached) continue;
-        events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
-            cardUid: attached.uid,
-            defId: attached.defId,
-            ownerId: playerId,
-            reason: BASE_SPIRAL_HILL,
-            now: ctx.now,
-            expectedLocation: 'minion',
-            destination: 'hand',
-            sourcePlayerId: playerId,
-            sourceDefId: BASE_SPIRAL_HILL,
-            sourceControllerId: playerId,
-            sourceBaseIndex: ctx.baseIndex,
-        }));
-    }
-    return { events };
+    return { events: [] };
 }
 
 function zombieDuckToyVp(state: SmashUpCore, baseIndex: number, playerId: PlayerId, currentVp: number): number {

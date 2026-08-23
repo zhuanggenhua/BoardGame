@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
-import { hasActiveBaseAbility, hasBaseAbility, triggerActiveBaseAbility } from '../../domain/baseAbilities';
+import { hasActiveBaseAbility, hasBaseAbility, triggerActiveBaseAbility, triggerBaseAbility } from '../../domain/baseAbilities';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
@@ -526,6 +526,18 @@ describe('迪士尼四派系代表性玩法行为', () => {
             type: SU_EVENTS.LIMIT_MODIFIED,
             payload: expect.objectContaining({ limitType: 'action', restrictToCardUid: 'chosen-action' }),
         }));
+
+        const noInteraction = invokeRegisteredAbilityContract('aladdin_street_rat', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'street-rat',
+            defId: 'aladdin_street_rat',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 36,
+        });
+        expect(noInteraction.events).toEqual([]);
     });
 
     it('“我们的贵客”只在本回合已从手牌弃牌后抽牌', () => {
@@ -948,6 +960,16 @@ describe('迪士尼四派系代表性玩法行为', () => {
         const afterSpiral = spiralResolved.finalState.core;
         expect(afterSpiral.players['0'].hand.map(card => card.uid)).toEqual(['discard-mod']);
         expect(afterSpiral.players['0'].discard).toEqual([]);
+
+        const spiralNoInteraction = triggerBaseAbility('base_spiral_hill', 'afterScoring', {
+            state: spiralCore,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_spiral_hill',
+            random: FIXED_RANDOM,
+            now: 42,
+        } as any);
+        expect(spiralNoInteraction.events).toEqual([]);
     });
 
     it('“冬季惊喜”从弃牌堆取回角色修正牌后给出额外行动并回牌库底', () => {
@@ -996,6 +1018,20 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(after.players['0'].hand.map(card => card.uid).sort()).toEqual(['discard-mod']);
         expect(after.players['0'].deck.map(card => card.uid)).toEqual(['deck-a', 'winter-surprise']);
         expect(after.players['0'].discard).toEqual([]);
+
+        const noInteraction = invokeRegisteredAbilityContract('nightmare_before_christmas_winter_surprise', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'winter-surprise',
+            defId: 'nightmare_before_christmas_winter_surprise',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 46,
+        });
+        expect(noInteraction.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(false);
+        expect(noInteraction.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+        expect(noInteraction.events).toContainEqual(expect.objectContaining({ type: SU_EVENTS.CARD_TO_DECK_BOTTOM }));
     });
 
     it('“不断的惊喜”按玩家选择把至多两张角色牌从弃牌堆洗入牌库', () => {
