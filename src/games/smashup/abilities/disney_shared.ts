@@ -253,37 +253,6 @@ export function cardToDeckTop(
     };
 }
 
-export function recoverFirstDiscardCard(
-    ctx: AbilityContext,
-    predicate: (card: CardInstance) => boolean,
-    reason: string,
-): SmashUpEvent[] {
-    const card = ctx.state.players[ctx.playerId]?.discard.find(predicate);
-    return card
-        ? [recoverCardsFromDiscard(ctx.playerId, [card.uid], reason, ctx.now)]
-        : [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)];
-}
-
-export function shuffleFirstDiscardCardsIntoDeck(
-    ctx: AbilityContext,
-    predicate: (card: CardInstance) => boolean,
-    maxCount: number,
-    _reason: string,
-): SmashUpEvent[] {
-    const player = ctx.state.players[ctx.playerId];
-    if (!player || maxCount <= 0) return [];
-    const selected = player.discard.filter(predicate).slice(0, maxCount);
-    if (selected.length === 0) {
-        return [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)];
-    }
-    const deckUids = ctx.random.shuffle([...player.deck, ...selected]).map(card => card.uid);
-    return [{
-        type: SU_EVENTS.DECK_REORDERED,
-        payload: { playerId: ctx.playerId, deckUids },
-        timestamp: ctx.now,
-    } as DeckReorderedEvent];
-}
-
 export function revealTopAndDrawMatches(params: {
     state: SmashUpCore;
     random: RandomFn;

@@ -31,7 +31,7 @@
 - 回归：`src/games/dicethrone/__tests__/onlineAiRecovery-current-player.test.ts` 新增主阶段奖励骰主人识别，以及“真人奖励骰未收口时 watchdog 不替 AI 裸推进阶段”。
 - 验证：
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/onlineAiRecovery-current-player.test.ts --configLoader native`：1 file passed / 4 passed。
-  - 历史同批定向回归已通过：`ai-main-phase-turn-gating.test.ts` 的展示型奖励骰 / 主阶段临时骰相关 5 条通过；`basic-commands-coverage.test.ts` 的 bonus dice 相关 6 条通过。
+  - 同类定向回归：`ai-main-phase-turn-gating.test.ts` 的展示型奖励骰 / 主阶段临时骰相关 5 条通过；`basic-commands-coverage.test.ts` 的 bonus dice 相关 6 条通过。
 
 ## Smash Up：葫芦小金刚复制六娃失败
 
@@ -111,7 +111,7 @@
 - 回归：`src/games/smashup/__tests__/abilities/superheroes.test.ts` 增加“爆发在秘密基地同基地保护下点击移动仍会真实移到对手打出随从的基地”。
 - 验证：
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/superheroes.test.ts --configLoader native -t "爆发|superheroes_the_burst"`：1 file passed / 4 passed / 25 skipped。
-  - 历史同批保护扩审已通过：`huluwawa.test.ts` 全量 25 passed；熊骑兵 / 杀手植物移动保护定向 37 passed / 72 skipped。
+  - 同类保护扩审：`huluwawa.test.ts` 全量 25 passed；熊骑兵 / 杀手植物移动保护定向 37 passed / 72 skipped。
 
 ## 额外代表测试
 
