@@ -750,11 +750,16 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
     const phase = typeof authoritativeState.sys?.phase === 'string'
         ? authoritativeState.sys.phase
         : '';
-    if (isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase({
+    const isLegalActionOnlyRecoveryPhase = isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase({
         state: authoritativeState,
         phase,
         engineConfig: args.engineConfig,
-    })) {
+    }) || isOnlineAiWatchdogPublicPregameLegalActionPhase({
+        state: authoritativeState,
+        phase,
+        engineConfig: args.engineConfig,
+    });
+    if (isLegalActionOnlyRecoveryPhase) {
         const probeCandidate: ForceEndTurnStalledAiResolution = {
             playerId,
             reason: 'active-turn',

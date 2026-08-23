@@ -2016,6 +2016,45 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
         expect(result).toBeNull();
     });
 
+    it('公开预开局合法动作阶段不得在重复恢复时补发裸阶段推进命令', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                hostStarted: false,
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'factionSelect',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState,
+            seatControllers,
+            playerId: '1',
+            engineConfig: {
+                gameId: 'test-public-pregame-game',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect'],
+                },
+            },
+        });
+
+        expect(result).toBeNull();
+    });
+
     it('自定义游戏交互收口后应按 engineConfig 使用 TEST_END_PHASE 推进阶段', () => {
         const authoritativeState: MatchState<unknown> = {
             core: {

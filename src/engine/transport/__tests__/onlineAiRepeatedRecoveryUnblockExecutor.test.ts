@@ -201,4 +201,49 @@ describe('onlineAiRepeatedRecoveryUnblockExecutor', () => {
             seatControllers: { '1': { type: 'local-ai' } },
         })).toBeNull();
     });
+
+    it('公开预开局 legal-action-only 候选重复失败时不得强推 ADVANCE_PHASE', async () => {
+        const match = createMatch({
+            core: {
+                activePlayerId: '1',
+                hostStarted: false,
+            },
+            sys: {
+                phase: 'factionSelect',
+                turnNumber: 0,
+                eventStream: { nextId: 5, entries: [] },
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: { current: undefined },
+            },
+        } as unknown as MatchState<unknown>);
+        match.engineConfig = {
+            gameId: 'test-public-pregame-game',
+            onlineAiRecovery: {
+                publicPregameLegalActionPhases: ['factionSelect'],
+            },
+        };
+        const hooks = createHooks(match);
+
+        const result = await tryForceUnblockRepeatedOnlineAiRecovery({
+            match,
+            candidate: createCandidate('active-turn-legal-only'),
+            progressMarker: 'before-marker',
+            repeatedAttemptKey: 'match-repeat-unblock:public-pregame',
+            repeatedAttempt: { count: 3, lastAttemptAt: 1, reported: false },
+            repeatedAttemptLimit: 3,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            hooks,
+        });
+
+        expect(result).toEqual({ handled: false, suppressionReason: 'no_safe_force_unblock' });
+        expect(hooks.executeCommand).not.toHaveBeenCalled();
+        expect(hooks.reportForceUnblocked).not.toHaveBeenCalled();
+    });
 });
