@@ -14,7 +14,7 @@ import { createScoringBaseRef, createScoringSession, setScoringSession } from '.
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { getOptionalSimpleChoicePrompt, getPromptOptions, withCurrentPrompt } from './helpers';
+import { getOptionalSimpleChoicePrompt, getPromptOptions, respondToPromptOptions, withCurrentPrompt } from './helpers';
 
 const PLAYER_IDS: PlayerId[] = ['0', '1'];
 
@@ -222,14 +222,27 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(chooseHalloweenTown.success).toBe(true);
         eventLog.push(...chooseHalloweenTown.events);
 
-        expect(chooseHalloweenTown.events.map(event => event.type)).toEqual(expect.arrayContaining([
+        const halloweenPrompt = getCurrentChoice(runner.getState());
+        expect(halloweenPrompt?.sourceId).toBe('base_halloween_town_modifiers');
+        expect(getPromptOptions(halloweenPrompt!).map(option => option.value?.cardUid)).toEqual(['garland']);
+
+        const resolveHalloweenTown = respondToPromptOptions(
+            runner.getState(),
+            ['modifier-garland'],
+            '0',
+        );
+        expect(resolveHalloweenTown.success).toBe(true);
+        eventLog.push(...resolveHalloweenTown.events as SmashUpEvent[]);
+
+        expect(resolveHalloweenTown.events.map(event => event.type)).toEqual(expect.arrayContaining([
             SU_EVENTS.ONGOING_DETACHED,
             SU_EVENTS.DECK_REORDERED,
         ]));
-        const deckReordered = chooseHalloweenTown.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
+        const deckReordered = resolveHalloweenTown.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
         expect(deckReordered?.payload?.playerId).toBe('0');
         expect([...deckReordered.payload.deckUids].sort()).toEqual(['deck-a', 'garland']);
 
+        runner.setState(resolveHalloweenTown.finalState);
         drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
     });
 

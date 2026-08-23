@@ -2371,6 +2371,96 @@ describe('青少年代表性力量 3 协同玩法行为', () => {
         expect(after.players['0'].deck.map(card => card.uid)).toEqual(['jock-card', 'action-card']);
     });
 
+    it('叛逆者与运动员同基地时授予本基地非叛逆者的 3 力额外随从额度', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    hand: [
+                        makeCard('prep-card', 'teens_prep', 'minion', '0'),
+                        makeCard('second-rebel', 'teens_rebel', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_jungle', [
+                    makeMinion('jock', 'teens_jock', '0', 3),
+                    makeMinion('source-rebel', 'teens_rebel', '0', 3),
+                ]),
+                makeBase('base_tar_pits'),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('teens_rebel', 'onPlay',
+            makeAbilityContext(core, 'teens_rebel', 'source-rebel', 0));
+        const afterGrant = applyEvents(core, result.events);
+
+        expect(afterGrant.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
+        expect(afterGrant.players['0'].baseLimitedMinionQuotaRestrictions?.[0]).toEqual([
+            { powerMax: 3, excludedDefIds: ['teens_rebel'] },
+        ]);
+        expect(afterGrant.players['0'].specificExtraMinionPlays).toBeUndefined();
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                limitType: 'minion',
+                playTiming: 'banked',
+                restrictToBase: 0,
+                powerMax: 3,
+                excludedMinionDefIds: ['teens_rebel'],
+            }),
+        }));
+
+        const wrongBase = runCommand(makeMatchState(afterGrant), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'prep-card', baseIndex: 1 },
+        } as any, FIXED_RANDOM);
+        expect(wrongBase.success).toBe(false);
+
+        const anotherRebel = runCommand(makeMatchState(afterGrant), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'second-rebel', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(anotherRebel.success).toBe(false);
+
+        const mixedRestrictedQuotaState = makeMatchState({
+            ...afterGrant,
+            players: {
+                ...afterGrant.players,
+                '0': {
+                    ...afterGrant.players['0'],
+                    hand: [
+                        ...afterGrant.players['0'].hand,
+                        makeCard('high-power-card', 'action_heroes_commandbro', 'minion', '0'),
+                    ],
+                    baseLimitedMinionQuota: { 0: 2 },
+                    baseLimitedMinionPowerCaps: { 0: [2] },
+                },
+            },
+        });
+        const highPowerWithOnlyRestrictedSlots = runCommand(mixedRestrictedQuotaState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'high-power-card', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(highPowerWithOnlyRestrictedSlots.success).toBe(false);
+
+        const playedPrep = runCommand(makeMatchState(afterGrant), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'prep-card', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(playedPrep.success, playedPrep.error).toBe(true);
+        expect(playedPrep.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['second-rebel']);
+        expect(playedPrep.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('prep-card');
+        expect(playedPrep.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(0);
+        expect(playedPrep.finalState.core.players['0'].baseLimitedMinionQuotaRestrictions?.[0]).toBeUndefined();
+    });
+
     it('保姆保护同基地所有己方随从免受其他玩家影响、消灭和移动', () => {
         const core = makeState({
             bases: [makeBase('base_the_jungle', [

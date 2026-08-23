@@ -133,6 +133,8 @@ import {
 } from './pregameDraft';
 import {
     getBestMatchingBaseLimitedPowerQuota,
+    getBestMatchingBaseLimitedMinionQuotaRestriction,
+    getRemainingBaseLimitedMinionQuotaRestrictions,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
     findSpecificExtraMinionPlay,
@@ -1174,6 +1176,7 @@ export function reduceTurnStartedEvent(
                 usedDiscardPlayAbilities: undefined,
                 baseLimitedMinionQuota: undefined,
                 baseLimitedMinionPowerCaps: undefined,
+                baseLimitedMinionQuotaRestrictions: undefined,
                 baseLimitedSameNameRequired: undefined,
                 specificExtraMinionPlays: undefined,
                 extraMinionPowerCaps: undefined,
@@ -2200,10 +2203,14 @@ export function reduceMinionPlayedEvent(
                 && restriction.condition?.extraPlayMinionPowerMax !== undefined,
         ) ?? false;
         const remainingBasePowerCaps = getRemainingBaseLimitedPowerLimitedMinionQuotas(player, resolvedBaseIndex);
+        const remainingBaseRestrictions = getRemainingBaseLimitedMinionQuotaRestrictions(player, resolvedBaseIndex);
         const canUseBaseQuota = shouldConsumeStandardMinionQuota
             && canUseBaseLimitedMinionQuota(state, player, resolvedBaseIndex, defId, power);
         const canUseSameNameQuota = shouldConsumeStandardMinionQuota
             && canUseSameNameMinionQuota(player, defId);
+        const matchingBaseRestriction = shouldConsumeStandardMinionQuota
+            ? getBestMatchingBaseLimitedMinionQuotaRestriction(player, resolvedBaseIndex, defId, power)
+            : undefined;
         const matchingBasePowerQuota = shouldConsumeStandardMinionQuota
             ? getBestMatchingBaseLimitedPowerQuota(player, resolvedBaseIndex, power)
             : undefined;
@@ -2222,6 +2229,7 @@ export function reduceMinionPlayedEvent(
             && (
                 matchesRestrictedBaseSameNameQuota
                 || baseHasPowerRestrictedQuota
+                || matchingBaseRestriction !== undefined
                 || matchingBasePowerQuota !== undefined
             );
         const useSameNameQuota = !useRestrictedBaseQuota && canUseSameNameQuota;
@@ -2239,6 +2247,7 @@ export function reduceMinionPlayedEvent(
 
         let newBaseLimitedMinionQuota = player.baseLimitedMinionQuota;
         let newBaseLimitedMinionPowerCaps = player.baseLimitedMinionPowerCaps;
+        let newBaseLimitedMinionQuotaRestrictions = player.baseLimitedMinionQuotaRestrictions;
         let newBaseLimitedSameNameRequired = player.baseLimitedSameNameRequired;
         let newBaseLimitedSameNameDefId = player.baseLimitedSameNameDefId;
         let newSameNameRemaining = player.sameNameMinionRemaining;
@@ -2271,6 +2280,19 @@ export function reduceMinionPlayedEvent(
                     delete nextMap[resolvedBaseIndex];
                 }
                 newBaseLimitedMinionPowerCaps = Object.keys(nextMap).length > 0 ? nextMap : undefined;
+            }
+            if (matchingBaseRestriction !== undefined && remainingBaseRestrictions.length > 0) {
+                const nextRestrictions = [
+                    ...remainingBaseRestrictions.slice(0, matchingBaseRestriction.index),
+                    ...remainingBaseRestrictions.slice(matchingBaseRestriction.index + 1),
+                ];
+                const nextMap = { ...(player.baseLimitedMinionQuotaRestrictions ?? {}) };
+                if (nextRestrictions.length > 0) {
+                    nextMap[resolvedBaseIndex] = nextRestrictions;
+                } else {
+                    delete nextMap[resolvedBaseIndex];
+                }
+                newBaseLimitedMinionQuotaRestrictions = Object.keys(nextMap).length > 0 ? nextMap : undefined;
             }
             if (useRestrictedBaseQuota && matchesRestrictedBaseSameNameQuota) {
                 const nextRequiredMap = { ...(player.baseLimitedSameNameRequired ?? {}) };
@@ -2305,6 +2327,7 @@ export function reduceMinionPlayedEvent(
             minionsPlayed: finalMinionsPlayed,
             baseLimitedMinionQuota: newBaseLimitedMinionQuota,
             baseLimitedMinionPowerCaps: newBaseLimitedMinionPowerCaps,
+            baseLimitedMinionQuotaRestrictions: newBaseLimitedMinionQuotaRestrictions,
             baseLimitedSameNameRequired: newBaseLimitedSameNameRequired,
             baseLimitedSameNameDefId: newBaseLimitedSameNameDefId,
             sameNameMinionRemaining: newSameNameRemaining,
@@ -2342,6 +2365,7 @@ export function reduceMinionPlayedEvent(
                 usedDiscardPlayAbilities: newUsedAbilities,
                 baseLimitedMinionQuota: quotaResolution.baseLimitedMinionQuota,
                 baseLimitedMinionPowerCaps: quotaResolution.baseLimitedMinionPowerCaps,
+                baseLimitedMinionQuotaRestrictions: quotaResolution.baseLimitedMinionQuotaRestrictions,
                 baseLimitedSameNameRequired: quotaResolution.baseLimitedSameNameRequired,
                 baseLimitedSameNameDefId: quotaResolution.baseLimitedSameNameDefId,
                 specificExtraMinionPlays: quotaResolution.specificExtraMinionPlays,
@@ -3647,6 +3671,7 @@ export function reduceLimitModifiedEvent(
         sameNameOnly,
         sameNameDefId,
         specificCardUid,
+        excludedMinionDefIds,
         playTiming,
     } = event.payload;
     const player = state.players[playerId];
@@ -3696,6 +3721,8 @@ export function reduceLimitModifiedEvent(
         if (restrictToBase !== undefined) {
             const oldQuota = player.baseLimitedMinionQuota ?? {};
             const oldPowerCaps = player.baseLimitedMinionPowerCaps ?? {};
+            const oldRestrictions = player.baseLimitedMinionQuotaRestrictions ?? {};
+            const hasQuotaRestriction = (excludedMinionDefIds?.length ?? 0) > 0;
             const updatedPlayer: typeof player = {
                 ...player,
                 baseLimitedMinionQuota: {
@@ -3715,7 +3742,39 @@ export function reduceLimitModifiedEvent(
                     };
                 }
             }
-            if (powerMax !== undefined) {
+            if (hasQuotaRestriction) {
+                const restriction = {
+                    ...(powerMax !== undefined ? { powerMax } : {}),
+                    excludedDefIds: [...(excludedMinionDefIds ?? [])],
+                };
+                const nextRestrictions = [...(oldRestrictions[restrictToBase] ?? [])];
+                if (delta > 0) {
+                    nextRestrictions.push(...Array.from({ length: delta }, () => ({
+                        ...(restriction.powerMax !== undefined ? { powerMax: restriction.powerMax } : {}),
+                        excludedDefIds: [...restriction.excludedDefIds],
+                    })));
+                } else if (delta < 0) {
+                    let remainingToRemove = Math.abs(delta);
+                    while (remainingToRemove > 0) {
+                        const removeIndex = nextRestrictions.findIndex(entry =>
+                            entry.powerMax === restriction.powerMax
+                            && entry.excludedDefIds?.length === restriction.excludedDefIds.length
+                            && restriction.excludedDefIds.every(defId => entry.excludedDefIds?.includes(defId)),
+                        );
+                        if (removeIndex < 0) break;
+                        nextRestrictions.splice(removeIndex, 1);
+                        remainingToRemove -= 1;
+                    }
+                }
+                const nextMap = { ...oldRestrictions };
+                if (nextRestrictions.length > 0) {
+                    nextMap[restrictToBase] = nextRestrictions;
+                } else {
+                    delete nextMap[restrictToBase];
+                }
+                updatedPlayer.baseLimitedMinionQuotaRestrictions = Object.keys(nextMap).length > 0 ? nextMap : undefined;
+            }
+            if (powerMax !== undefined && !hasQuotaRestriction) {
                 const nextPowerCaps = [...(oldPowerCaps[restrictToBase] ?? [])];
                 if (delta > 0) {
                     nextPowerCaps.push(...Array.from({ length: delta }, () => powerMax));

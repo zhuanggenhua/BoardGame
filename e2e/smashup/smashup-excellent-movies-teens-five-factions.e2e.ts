@@ -363,7 +363,7 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
     }, { timeout: 10000 }).toEqual({
       stasisCards: [],
       minionUids: ['stasis-zany-prof'],
-      minionsPlayed: 1,
+      minionsPlayed: 0,
       interactionOpen: false,
     });
   });

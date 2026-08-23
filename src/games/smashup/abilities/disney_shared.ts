@@ -125,7 +125,7 @@ export function drawSpecificDeckCard(
                 type: SU_EVENTS.DECK_REORDERED,
                 payload: {
                     playerId: ctx.playerId,
-                    deckUids: ctx.random.shuffle(remaining).map(candidate => candidate.uid),
+                    deckUids: [card.uid, ...ctx.random.shuffle(remaining).map(candidate => candidate.uid)],
                 },
                 timestamp: ctx.now,
             } as DeckReorderedEvent]

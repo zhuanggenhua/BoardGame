@@ -484,7 +484,7 @@ function buildDrawSpecificDeckCardEvents(
         ...(remaining.length > 0
             ? [{
                 type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: random.shuffle(remaining).map(candidate => candidate.uid) },
+                payload: { playerId, deckUids: [card.uid, ...random.shuffle(remaining).map(candidate => candidate.uid)] },
                 timestamp,
             } as SmashUpEvent]
             : []),

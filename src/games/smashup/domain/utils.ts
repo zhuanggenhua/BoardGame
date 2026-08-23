@@ -411,6 +411,54 @@ export function canUseSameNameMinionQuota(
         || isSameNameDefId(cardDefId, player.sameNameMinionDefId);
 }
 
+export type BaseLimitedMinionQuotaRestriction = {
+    powerMax?: number;
+    excludedDefIds?: string[];
+};
+
+export type BaseLimitedMinionQuotaRestrictionMatch = {
+    restriction: BaseLimitedMinionQuotaRestriction;
+    index: number;
+};
+
+function matchesBaseLimitedMinionQuotaRestriction(
+    restriction: BaseLimitedMinionQuotaRestriction,
+    cardDefId: string | undefined,
+    basePower?: number,
+): boolean {
+    if (restriction.excludedDefIds?.some(excludedDefId => isSameNameDefId(cardDefId, excludedDefId))) {
+        return false;
+    }
+    if (restriction.powerMax !== undefined) {
+        if (basePower === undefined || basePower > restriction.powerMax) return false;
+    }
+    return true;
+}
+
+export function getRemainingBaseLimitedMinionQuotaRestrictions(
+    player: PlayerState | undefined,
+    baseIndex: number,
+): BaseLimitedMinionQuotaRestriction[] {
+    if (!player) return [];
+    const explicit = player.baseLimitedMinionQuotaRestrictions?.[baseIndex];
+    return (explicit ?? []).map(restriction => ({
+        ...(restriction.powerMax !== undefined ? { powerMax: restriction.powerMax } : {}),
+        ...(restriction.excludedDefIds?.length ? { excludedDefIds: [...restriction.excludedDefIds] } : {}),
+    }));
+}
+
+export function getBestMatchingBaseLimitedMinionQuotaRestriction(
+    player: PlayerState | undefined,
+    baseIndex: number,
+    cardDefId: string | undefined,
+    basePower?: number,
+): BaseLimitedMinionQuotaRestrictionMatch | undefined {
+    return getRemainingBaseLimitedMinionQuotaRestrictions(player, baseIndex)
+        .map((restriction, index) => ({ restriction, index }))
+        .filter(({ restriction }) => matchesBaseLimitedMinionQuotaRestriction(restriction, cardDefId, basePower))
+        .sort((a, b) => (a.restriction.powerMax ?? Number.POSITIVE_INFINITY) - (b.restriction.powerMax ?? Number.POSITIVE_INFINITY))[0];
+}
+
 /**
  * 判断当前卡能否消耗指定基地的基地限定额外随从额度。
  *
@@ -448,13 +496,13 @@ export function canUseBaseLimitedMinionQuota(
     if (basePowerLimit !== undefined && basePower !== undefined && basePower > basePowerLimit) {
         return false;
     }
-    const restrictedCaps = getRemainingBaseLimitedPowerLimitedMinionQuotas(player, baseIndex);
-    if (restrictedCaps.length > 0) {
-        const unrestrictedQuotaRemaining = Math.max(0, quota - restrictedCaps.length);
-        if (unrestrictedQuotaRemaining <= 0) {
-            if (basePower === undefined) return false;
-            return restrictedCaps.some(powerCap => basePower <= powerCap);
-        }
+    const explicitRestrictions = getRemainingBaseLimitedMinionQuotaRestrictions(player, baseIndex);
+    const powerCapRestrictions = (player.baseLimitedMinionPowerCaps?.[baseIndex] ?? []).map(powerMax => ({ powerMax }));
+    const restrictedQuotas = [...explicitRestrictions, ...powerCapRestrictions];
+    if (restrictedQuotas.length > 0) {
+        const unrestrictedQuotaRemaining = Math.max(0, quota - restrictedQuotas.length);
+        return unrestrictedQuotaRemaining > 0
+            || restrictedQuotas.some(restriction => matchesBaseLimitedMinionQuotaRestriction(restriction, cardDefId, basePower));
     }
     return true;
 }

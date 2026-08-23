@@ -144,7 +144,10 @@ describe('迪士尼四派系代表性玩法行为', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
-                    deck: [makeCard('deck-lamp', 'aladdin_the_lamp', 'action', '0')],
+                    deck: [
+                        makeCard('deck-lamp', 'aladdin_the_lamp', 'action', '0'),
+                        makeCard('deck-filler', 'aladdin_wish', 'action', '0'),
+                    ],
                     discard: [makeCard('discard-lamp', 'aladdin_the_lamp', 'action', '0')],
                 }),
                 '1': makePlayer('1'),
@@ -180,8 +183,20 @@ describe('迪士尼四派系代表性玩法行为', () => {
 
         expect(resolved.success, resolved.error).toBe(true);
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('discard-lamp');
-        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-lamp']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-lamp', 'deck-filler']);
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('discard-lamp');
+
+        const resolvedDeckLamp = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'deck-lamp',
+            '阿拉丁选择牌库神灯',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolvedDeckLamp.success, resolvedDeckLamp.error).toBe(true);
+        expect(resolvedDeckLamp.finalState.core.players['0'].hand.map(card => card.uid)).toContain('deck-lamp');
+        expect(resolvedDeckLamp.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('deck-lamp');
     });
 
     it('贾方让其他玩家各自选择弃掉的行动，出牌者再选择要额外打出的行动', () => {

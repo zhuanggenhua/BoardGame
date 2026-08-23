@@ -3739,7 +3739,14 @@ function registerTeens(): void {
     });
     registerSimpleAbility('teens_rebel', 'onPlay', ctx => {
         if (!hasTeensMinionAtBase(ctx.state, ctx.baseIndex, 'teens_jock', ctx.playerId)) return { events: [] };
-        return { events: playExtraPrintedPower3FromDeck(ctx, ctx.baseIndex, ctx.defId) };
+        return {
+            events: [
+                grantContextualExtraMinion(ctx, ctx.defId, ctx.baseIndex, {
+                    powerMax: 3,
+                    excludedMinionDefIds: [ctx.defId],
+                }),
+            ],
+        };
     });
     registerSimpleAbility('teens_slacker', 'onPlay', ctx => {
         if (!hasTeensMinionAtBase(ctx.state, ctx.baseIndex, 'teens_rebel', ctx.playerId)) return { events: [] };
