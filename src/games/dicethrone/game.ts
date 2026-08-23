@@ -1307,7 +1307,36 @@ const systems = [
                 id?: unknown;
                 playerId?: unknown;
                 kind?: unknown;
+                data?: unknown;
             } | undefined;
+            const isOwnedInteractionCommand = (): boolean => {
+                if (currentInteraction?.playerId !== command.playerId) {
+                    return false;
+                }
+                if (currentInteraction.kind === 'multistep-choice') {
+                    return command.type === 'MODIFY_DIE'
+                        || command.type === 'REROLL_DIE'
+                        || command.type === 'RESOLVE_INTERACTION';
+                }
+                if (currentInteraction.kind !== 'dt:card-interaction') {
+                    return false;
+                }
+                const interactionData = currentInteraction.data as { type?: unknown } | undefined;
+                switch (interactionData?.type) {
+                    case 'selectStatus':
+                    case 'selectTargetStatus':
+                        return command.type === 'REMOVE_STATUS'
+                            || command.type === 'TRANSFER_STATUS'
+                            || command.type === 'RESOLVE_INTERACTION';
+                    case 'selectPlayer':
+                        return command.type === 'RESOLVE_INTERACTION'
+                            || command.type === 'REMOVE_STATUS';
+                    case 'selectHandCard':
+                        return command.type === 'RESOLVE_INTERACTION';
+                    default:
+                        return command.type === 'RESOLVE_INTERACTION';
+                }
+            };
             const activeBonusSettlement = matchState.core.pendingBonusDiceSettlement;
             if (
                 currentInteraction?.playerId === command.playerId
@@ -1322,6 +1351,12 @@ const systems = [
             ) {
                 // 临时奖励骰有独立交互归属：即使响应窗口当前轮到别人，
                 // 骰主也必须能确认/重掷自己的临时骰，确认后再回到正式骰区。
+                return true;
+            }
+
+            if (isOwnedInteractionCommand()) {
+                // 卡牌效果已经创建了玩家自己的私有交互时，玩家必须能完成该交互；
+                // 否则 afterCardPlayed 等响应窗口会把触发牌玩家的后续选择挡住。
                 return true;
             }
 

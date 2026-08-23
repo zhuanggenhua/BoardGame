@@ -2882,6 +2882,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         matchData,
         isMultiplayer,
     });
+    const readyPlayerIds = core.phaseReadyPlayerIds ?? [];
     const tutorialRuntimeSyncKey = [
         phase,
         core.currentPlayerId,
@@ -2901,7 +2902,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         if (!tutorialStep.allowedCommands || tutorialStep.allowedCommands.length === 0) return !tutorialStep.infoStep;
         return tutorialStep.allowedCommands.includes(commandType);
     };
-    const readyPlayerIds = core.phaseReadyPlayerIds ?? [];
     const canAdvance = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
         && (SIMULTANEOUS_PREPARATION_PHASES.has(phase) || playerID === phaseActorId)

@@ -909,6 +909,61 @@ describe('AI 私有状态选择的唯一执行入口', () => {
         expect(responded.finalState.core.afterCardResponseWindowSequence).toBe(opened.finalState.core.cardPlayedSequence);
     });
 
+    it('afterCardPlayed 等待对方响应时，触发牌玩家仍能完成自己的转移状态交互', () => {
+        const runner = createRunner(fixedRandom, true);
+        const opened = runner.run({
+            name: '转移状态触发响应窗口后触发者继续选择状态',
+            setup: (playerIds, random) => {
+                const state = createHeroMatchup(
+                    'shadow_thief',
+                    'zhanshujia',
+                    (core) => {
+                        core.activePlayerId = '1';
+                        core.turnPhase = 'main1';
+                        core.players['0'].hand = [getCardById('card-boss-generous')];
+                        core.players['0'].deck = [];
+                        core.players['0'].tokens[TOKEN_IDS.SNEAK_ATTACK] = 1;
+                        core.players['0'].resources[RESOURCE_IDS.CP] = 1;
+                        core.players['1'].hand = [getCardById('card-transfer-status')];
+                        core.players['1'].deck = [];
+                        core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+                    },
+                )(playerIds, random);
+                state.sys.phase = 'main1';
+                return state;
+            },
+            commands: [cmd('PLAY_CARD', '1', { cardId: 'card-transfer-status' })],
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterCardPlayed',
+            sourceId: 'card-transfer-status',
+            responderQueue: ['0'],
+        });
+        expect(opened.finalState.sys.interaction?.current).toMatchObject({
+            kind: 'dt:card-interaction',
+            playerId: '1',
+        });
+
+        runner.setState(opened.finalState);
+        const transferred = runner.dispatch('TRANSFER_STATUS', {
+            playerId: '1',
+            fromPlayerId: '0',
+            toPlayerId: '1',
+            statusId: TOKEN_IDS.SNEAK_ATTACK,
+        });
+
+        expect(transferred.success).toBe(true);
+        expect(transferred.finalState.core.players['0'].tokens[TOKEN_IDS.SNEAK_ATTACK]).toBe(0);
+        expect(transferred.finalState.core.players['1'].tokens[TOKEN_IDS.SNEAK_ATTACK]).toBe(1);
+        expect(transferred.finalState.sys.interaction?.current).toBeUndefined();
+        expect(transferred.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterCardPlayed',
+            responderQueue: ['0'],
+        });
+    });
+
     it('AI 作为 afterCardPlayed 当前响应者时，不应被触发牌玩家的私有状态选择遮蔽为跳过响应', async () => {
         const runner = createRunner(fixedRandom, true);
         const opened = runner.run({
