@@ -19,7 +19,6 @@ import type {
     MinionDestroyedEvent,
     MinionMovedEvent,
     SmashUpCore,
-    TempPowerAddedEvent,
     TurnStartedEvent,
 } from '../../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -328,7 +327,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(options.every(option => option.displayMode === 'button')).toBe(true);
     });
 
-    it('无 matchState 时回退自动执行', () => {
+    it('无 matchState 时不会自动选择触发', () => {
         const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const state = makeState({
             bases: [makeBase({ minions: [chosen] })],
@@ -349,14 +348,11 @@ describe('cthulhu_chosen beforeScoring', () => {
             now: 0,
         });
 
-        expect(result.events.some(event => event.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
-        const powerEvents = result.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
-        expect(powerEvents).toHaveLength(1);
-        expect(powerEvents[0].payload.minionUid).toBe('ch1');
-        expect(powerEvents[0].payload.amount).toBe(2);
+        expect(result.events.some(event => event.type === SU_EVENTS.MADNESS_DRAWN)).toBe(false);
+        expect(result.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
     });
 
-    it('POD 版无 matchState 时也会回退自动执行', () => {
+    it('POD 版无 matchState 时也不会自动选择触发', () => {
         const chosen = makeMinion('ch1-pod', 'cthulhu_chosen_pod', '0', 3, { powerModifier: 0 });
         const state = makeState({
             bases: [makeBase({ minions: [chosen] })],
@@ -377,13 +373,11 @@ describe('cthulhu_chosen beforeScoring', () => {
             now: 0,
         });
 
-        expect(result.events.some(event => event.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
-        const powerEvents = result.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
-        expect(powerEvents).toHaveLength(1);
-        expect(powerEvents[0].payload.minionUid).toBe('ch1-pod');
+        expect(result.events.some(event => event.type === SU_EVENTS.MADNESS_DRAWN)).toBe(false);
+        expect(result.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
     });
 
-    it('无疯狂牌库时回退自动执行仍获得 2 力量', () => {
+    it('无疯狂牌库且无 matchState 时不会自动获得 2 力量', () => {
         const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const state = makeState({
             bases: [makeBase({ minions: [chosen] })],
@@ -401,9 +395,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         });
 
         expect(result.events.some(event => event.type === SU_EVENTS.MADNESS_DRAWN)).toBe(false);
-        const powerEvents = result.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
-        expect(powerEvents).toHaveLength(1);
-        expect(powerEvents[0].payload.amount).toBe(2);
+        expect(result.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
     });
 
     it('多个天选之人时创建链式确认 prompt', () => {
@@ -474,7 +466,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(yesValue.controller).toBe('1');
     });
 
-    it('不在计分基地上的天选之人也能在回退模式触发', () => {
+    it('不在计分基地上的天选之人也会创建确认 prompt', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('m1', 'test_minion', '1', 5, { powerModifier: 0 })] }),
@@ -490,17 +482,18 @@ describe('cthulhu_chosen beforeScoring', () => {
 
         const result = fireTriggers(state, 'beforeScoring', {
             state,
-            matchState: undefined as any,
+            matchState: makeMS(state),
             playerId: '0',
             baseIndex: 0,
             random: dummyRandom,
             now: 0,
         });
 
-        const powerEvents = result.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
-        expect(powerEvents).toHaveLength(1);
-        expect(powerEvents[0].payload.minionUid).toBe('ch1');
-        expect(powerEvents[0].payload.baseIndex).toBe(1);
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'cthulhu_chosen_confirm');
+        const yesValue = getPromptOptions(prompt)[0].value as any;
+        expect(yesValue.minionUid).toBe('ch1');
+        expect(yesValue.baseIndex).toBe(1);
     });
 
     it('cthulhu_chosen 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {

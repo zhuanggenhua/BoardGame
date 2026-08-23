@@ -1,7 +1,6 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
 import {
-    addPowerCounter,
     buildAbilityFeedback,
     buildStandardDrawEvents,
     buildValidatedMoveEvents,
@@ -14,7 +13,6 @@ import type {
     ActionCardDef,
     CardInstance,
     CardToDeckTopEvent,
-    CardsDiscardedEvent,
     CardsDrawnEvent,
     DeckReorderedEvent,
     MinionOnBase,
@@ -106,31 +104,6 @@ export function ownMinionsAtBase(core: SmashUpCore, playerId: PlayerId, baseInde
 
 export function firstOtherBaseIndex(core: SmashUpCore, baseIndex: number): number | undefined {
     return core.bases.findIndex((_base, index) => index !== baseIndex);
-}
-
-export function discardCards(playerId: PlayerId, cardUids: string[], now: number): CardsDiscardedEvent {
-    return {
-        type: SU_EVENTS.CARDS_DISCARDED,
-        payload: { playerId, cardUids },
-        timestamp: now,
-    };
-}
-
-export function discardFirstHandCard(
-    ctx: AbilityContext,
-    predicate: (card: CardInstance) => boolean = () => true,
-): CardsDiscardedEvent | undefined {
-    const card = ctx.state.players[ctx.playerId]?.hand.find(candidate =>
-        candidate.uid !== ctx.cardUid && predicate(candidate));
-    return card ? discardCards(ctx.playerId, [card.uid], ctx.now) : undefined;
-}
-
-export function discardFirstHandAction(ctx: AbilityContext): CardsDiscardedEvent | undefined {
-    return discardFirstHandCard(ctx, card => isActionCard(card.defId));
-}
-
-export function discardFirstHandAny(ctx: AbilityContext): CardsDiscardedEvent | undefined {
-    return discardFirstHandCard(ctx);
 }
 
 export function wasHandDiscard(ctx: { discardedFromZone?: 'hand' | 'deck' }): boolean {
@@ -332,11 +305,6 @@ export function revealTopAndDrawMatches(params: {
     return { events, picked, missed };
 }
 
-export function addCounterToFirstOwnMinion(core: SmashUpCore, playerId: PlayerId, baseIndex: number, reason: string, now: number): SmashUpEvent[] {
-    const target = ownMinionsAtBase(core, playerId, baseIndex)[0];
-    return target ? [addPowerCounter(target.uid, baseIndex, 1, reason, now, { sourcePlayerId: playerId, sourceDefId: reason, sourceControllerId: playerId, sourceBaseIndex: baseIndex })] : [];
-}
-
 export function moveMinionToBase(
     state: MatchState<SmashUpCore> | SmashUpCore,
     minion: MinionOnBase,
@@ -363,16 +331,6 @@ export function moveMinionToBase(
 
 export function isMinionFaction(minion: MinionOnBase, factionId: string): boolean {
     return getMinionDef(minion.defId)?.faction === factionId;
-}
-
-export function firstOwnMinionAtBase(core: SmashUpCore, playerId: PlayerId, baseIndex: number): LocatedMinion | undefined {
-    const minion = core.bases[baseIndex]?.minions.find(candidate => candidate.controller === playerId);
-    return minion ? { minion, baseIndex } : undefined;
-}
-
-export function firstOtherMinionAtBase(core: SmashUpCore, playerId: PlayerId, baseIndex: number): LocatedMinion | undefined {
-    const minion = core.bases[baseIndex]?.minions.find(candidate => candidate.controller !== playerId);
-    return minion ? { minion, baseIndex } : undefined;
 }
 
 export function collectBaseModifiers(core: SmashUpCore, baseIndex: number): Array<{ action: SmashUpCore['bases'][number]['ongoingActions'][number]; baseIndex: number }> {

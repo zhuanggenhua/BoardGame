@@ -25,6 +25,63 @@ import type { GameEvent } from '../../../engine/types';
 import { getCardModifiers, calculateCurrentInfluence } from './utils';
 import { recalculateEncounterState } from './execute';
 
+type CardiaSimpleChoiceOption = {
+    id: string;
+    label: string;
+    value: unknown;
+    disabled?: boolean;
+};
+
+function buildCardiaSimpleChoiceAi(
+    cardiaInteraction: CardiaInteraction,
+    options: CardiaSimpleChoiceOption[],
+    multi?: { min?: number; max?: number },
+) {
+    const minSelections = multi?.min ?? 1;
+    const maxSelections = multi?.max ?? minSelections;
+
+    return {
+        status: 'semantic' as const,
+        reason: 'Cardia legacy simple-choice exposes stable option ids and values for AI responses.',
+        decisions: [{
+            kind: 'choose-option' as const,
+            interactionId: cardiaInteraction.interactionId,
+            actorPlayerId: cardiaInteraction.playerId,
+            sourceId: cardiaInteraction.abilityId,
+            candidates: options.map((option) => ({
+                id: option.id,
+                label: option.label,
+                disabled: option.disabled,
+                value: option.value,
+            })),
+            selection: {
+                min: minSelections,
+                max: maxSelections,
+            },
+        }],
+    };
+}
+
+function normalizeCardiaResolvedValue(
+    value: unknown,
+    interactionData: Record<string, unknown> | undefined,
+): unknown {
+    const cardiaInteraction = (interactionData as { cardiaInteraction?: CardiaInteraction } | undefined)?.cardiaInteraction;
+    if (cardiaInteraction?.type !== 'card_selection' || !Array.isArray(value)) {
+        return value;
+    }
+
+    const cardUids = value
+        .map((item) => (
+            item && typeof item === 'object'
+                ? (item as { cardUid?: unknown }).cardUid
+                : undefined
+        ))
+        .filter((cardUid): cardUid is string => typeof cardUid === 'string');
+
+    return { cardUids };
+}
+
 /**
  * 将 Cardia 交互包装为引擎层 simple-choice
  * 
@@ -37,7 +94,7 @@ function wrapCardiaInteraction(
     cardId?: string  // 添加 cardId 参数
 ): any {
     let interactionType: string;
-    let options: any[] = [];
+    let options: CardiaSimpleChoiceOption[] = [];
     let cards: any[] = [];
     
     if (cardiaInteraction.type === 'card_selection') {
@@ -201,6 +258,13 @@ function wrapCardiaInteraction(
         interactionType = 'unknown';
     }
     
+    const multi = cardiaInteraction.type === 'card_selection' && cardiaInteraction.maxSelect > 1
+        ? {
+            min: cardiaInteraction.minSelect,
+            max: cardiaInteraction.maxSelect,
+        }
+        : undefined;
+
     const interaction = createSimpleChoice(
         cardiaInteraction.interactionId,
         cardiaInteraction.playerId,
@@ -213,6 +277,8 @@ function wrapCardiaInteraction(
             displayMode: 'button' as const,
             // ✅ 修复：禁止单候选自动执行，确保玩家始终看到交互界面
             autoResolveIfSingle: false,
+            multi,
+            ai: buildCardiaSimpleChoiceAi(cardiaInteraction, options, multi),
         }
     );
     
@@ -442,10 +508,14 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                                     },
                                 };
                                 console.error('[CardiaEventSystem] About to call handler function');
+                                const normalizedValue = normalizeCardiaResolvedValue(
+                                    payload.value,
+                                    payload.interactionData,
+                                );
                                 result = handler(
                                     newState,
                                     payload.playerId,
-                                    payload.value,
+                                    normalizedValue,
                                     payload.interactionData,
                                     random,
                                     eventTimestamp

@@ -328,7 +328,7 @@ function createUpkeepBurnRollAvailableEvents(
     return events;
 }
 
-function createCreatureActionStatusRemovalEvents(
+function createCreatureActionStatusRemovalAvailableEvents(
     core: MageWarsCore,
     statusTokenId: StatusTokenId,
     sourceAbilityId: string,
@@ -340,7 +340,7 @@ function createCreatureActionStatusRemovalEvents(
     const playerStatusAmount = player ? getStatusTokenAmount(player, statusTokenId) : 0;
     if (player && playerStatusAmount > 0) {
         events.push({
-            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
             payload: {
                 targetPlayerId: player.id,
                 statusTokenId,
@@ -357,7 +357,7 @@ function createCreatureActionStatusRemovalEvents(
         const objectStatusAmount = object ? getStatusTokenAmount(object, statusTokenId) : 0;
         if (!object || objectStatusAmount <= 0) continue;
         events.push({
-            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
             payload: {
                 targetObjectId: object.id,
                 statusTokenId,
@@ -371,7 +371,7 @@ function createCreatureActionStatusRemovalEvents(
     return events;
 }
 
-function createCreatureActionCrippleEscapeEvents(
+function createCreatureActionCrippleEscapeAvailableEvents(
     core: MageWarsCore,
     sourceCommandType: string,
     timestamp: number,
@@ -388,7 +388,7 @@ function createCreatureActionCrippleEscapeEvents(
         if (effectDieResult < 7) continue;
 
         events.push({
-            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
             payload: {
                 targetObjectId: object.id,
                 statusTokenId: STATUS_TOKEN_IDS.CRIPPLE,
@@ -404,7 +404,7 @@ function createCreatureActionCrippleEscapeEvents(
     return events;
 }
 
-function createArenaObjectTemporaryTraitsClearedEvents(
+function createArenaObjectTemporaryTraitsClearAvailableEvents(
     core: MageWarsCore,
     sourceCommandType: string,
     timestamp: number,
@@ -425,7 +425,7 @@ function createArenaObjectTemporaryTraitsClearedEvents(
             const hasPrintedSwiftFreeMove = hasTemporarySwiftFreeMoveUsed(object)
                 && !hasTemporarySwiftOrTeleport;
             return [{
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED,
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEAR_AVAILABLE,
                 payload: {
                     ownerId: object.ownerId,
                     objectId: object.id,
@@ -494,22 +494,22 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
             const ready = resolveReadyPlayerIds(state.core, command.playerId);
             const timestamp = command.timestamp ?? 0;
             const actionEndEvents = [
-                ...createCreatureActionStatusRemovalEvents(
+                ...createCreatureActionStatusRemovalAvailableEvents(
                     state.core,
                     STATUS_TOKEN_IDS.DAZE,
                     'mw.status.daze.end-creature-action',
                     command.type,
                     timestamp,
                 ),
-                ...createCreatureActionStatusRemovalEvents(
+                ...createCreatureActionStatusRemovalAvailableEvents(
                     state.core,
                     STATUS_TOKEN_IDS.STUN,
                     'mw.status.stun.end-creature-action',
                     command.type,
                     timestamp,
                 ),
-                ...createCreatureActionCrippleEscapeEvents(state.core, command.type, timestamp, random),
-                ...createArenaObjectTemporaryTraitsClearedEvents(state.core, command.type, timestamp),
+                ...createCreatureActionCrippleEscapeAvailableEvents(state.core, command.type, timestamp, random),
+                ...createArenaObjectTemporaryTraitsClearAvailableEvents(state.core, command.type, timestamp),
             ];
             if (!allPlayersReady(state.core, ready)) {
                 return {

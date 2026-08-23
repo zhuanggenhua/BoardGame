@@ -347,29 +347,7 @@ function actionHeroesFinalStand(ctx: AbilityContext): AbilityResult {
     if (!base || !isOnlyOwnMinionHere(ctx.state, baseIndex, ctx.playerId)) return { events: [] };
     const controllerIds = getActionHeroesFinalStandControllers(ctx.state, baseIndex, ctx.playerId);
     if (controllerIds.length === 0) return { events: [] };
-    if (!ctx.matchState) {
-        const events = controllerIds.flatMap(controllerId => {
-            const target = getActionHeroesFinalStandCandidates(ctx.state, baseIndex, ctx.playerId, controllerId)[0];
-            const live = target ? ctx.state.bases[baseIndex]?.minions.find(minion => minion.uid === target.minionUid) : undefined;
-            if (!target || !live) return [];
-            return buildValidatedDestroyEvents(ctx.state, {
-                minionUid: live.uid,
-                minionDefId: live.defId,
-                fromBaseIndex: baseIndex,
-                destroyerId: ctx.playerId,
-                reason: ctx.defId,
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: baseIndex,
-                sourceKind: 'action',
-                targetSnapshot: { ownerId: live.owner, controllerId },
-            });
-        });
-        return { events };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         matchState: queueActionHeroesFinalStandChoice(ctx.matchState, ctx.playerId, baseIndex, controllerIds, ctx.now),

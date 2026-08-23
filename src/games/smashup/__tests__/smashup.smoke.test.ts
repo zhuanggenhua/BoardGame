@@ -2058,7 +2058,7 @@ describe('smashup', () => {
         );
     });
 
-    it('翻开埋葬的远古诅咒在仅有一个跨基地合法目标时会自动附着，并进入远古诅咒确认交互', () => {
+    it('翻开埋葬的远古诅咒在仅有一个跨基地合法目标时也等待玩家确认，并继续进入远古诅咒确认交互', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -2098,28 +2098,24 @@ describe('smashup', () => {
             reason: 'test_uncover_cross_base_target',
         });
 
-        const continuation = uncovered.events.find(event => isAbilityRuntimeContinuationEvent(event));
-        expect(continuation).toBeDefined();
-        const preContinuationEvents = uncovered.events.filter(event => !isAbilityRuntimeContinuationEvent(event)) as SmashUpEvent[];
-        const afterActionState = {
-            ...uncovered.state,
-            core: applyEvents(uncovered.state.core, preContinuationEvents),
-        };
-        const resumed = resumeAbilityRuntimeContinuationEvent(
-            afterActionState,
-            continuation!,
+        const targetPrompt = getSimpleChoicePrompt(uncovered.state, 'bury_uncover_ongoing_target');
+        expect(targetPrompt.autoResolveIfSingle).toBe(false);
+        const targetOption = getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'target-minion', 'Ancient Curse target minion option');
+
+        const resolved = runCommand(
+            uncovered.state,
+            respondCommand(targetOption.id, '1'),
             FIXED_RANDOM,
         );
-        expect(resumed).toBeDefined();
 
-        const prompt = getSimpleChoicePrompt(resumed!.state, 'ancient_egyptians_ancient_curse_confirm');
+        const prompt = getSimpleChoicePrompt(resolved.finalState, 'ancient_egyptians_ancient_curse_confirm');
         const applyOption = getPromptOption(prompt, entry => entry.id === 'apply', 'Ancient Curse apply option');
         expect(applyOption?.value).toMatchObject({
             targetMinionUid: 'target-minion',
             baseIndex: 0,
             baseDefId: 'base_ninja_dojo',
         });
-        const finalEvents = [...preContinuationEvents, ...(resumed!.events as SmashUpEvent[])];
+        const finalEvents = resolved.events as SmashUpEvent[];
         expect(finalEvents.map(event => event.type)).toContain(SU_EVENTS.ONGOING_ATTACHED);
         expect(finalEvents).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.ONGOING_ATTACHED,
@@ -2132,7 +2128,7 @@ describe('smashup', () => {
             }),
         }));
 
-        const finalCore = applyEvents(uncovered.state.core, finalEvents);
+        const finalCore = resolved.finalState.core;
 
         expect(finalCore.bases[1].buriedCards?.some(card => card.uid === 'buried-curse') ?? false).toBe(false);
         expect(finalCore.bases[0].minions.find(minion => minion.uid === 'target-minion')?.attachedActions).toContainEqual(

@@ -71,6 +71,10 @@
     "fx": "Spell FX",
     "fxRequired": "Event driven"
   },
+  "ui": {
+    "showAllLifeTotals": "Show all life totals",
+    "hideAllLifeTotals": "Hide all life totals"
+  },
   "zonesPanel": {
     "title": "Private And Attached Zones",
     "spellbook": "Spellbook",

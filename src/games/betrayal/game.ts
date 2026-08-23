@@ -6110,7 +6110,7 @@ function monsterCanBeStunned(monster: BetrayalMonsterSummary): boolean {
     if (definition) {
         return definition.canBeStunned;
     }
-    return !monster.id.startsWith('troll-hand-') && monster.id !== 'jack-spirit' && monster.id !== 'mummy';
+    return !monster.id.startsWith('troll-hand-') && monster.id !== 'jack-spirit';
 }
 
 function monsterCanBeAttacked(monster: BetrayalMonsterSummary): boolean {

@@ -1258,9 +1258,7 @@ function ultimatesFirstToArrive(ctx: AbilityContext): AbilityResult {
         .filter(({ base }) => !base.minions.some(minion => minion.controller === ctx.playerId))
         .map(({ baseIndex }) => baseIndex);
     if (legalBaseIndexes.length === 0) return { events: [] };
-    if (!ctx.matchState) {
-        return extraMinion(ctx, 'ultimates_first_to_arrive', legalBaseIndexes[0]);
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(ultimatesFirstToArrivePromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

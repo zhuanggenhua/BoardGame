@@ -866,6 +866,107 @@ describe('Cardia AI - 动作生成', () => {
             });
         });
 
+        it('simple-choice 多选交互应生成 optionIds 响应，而不是空动作', () => {
+            const state: MatchState<CardiaCore> = {
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: 'Player 1',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                        '1': {
+                            id: '1',
+                            name: 'Player 2',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                    currentPlayerId: '0',
+                    turnNumber: 1,
+                    phase: 'ability',
+                    encounterHistory: [],
+                    ongoingAbilities: [],
+                    modifierTokens: [],
+                    delayedEffects: [],
+                    revealFirstNextEncounter: null,
+                    forcedPlayOrderNextEncounter: null,
+                    mechanicalSpiritActive: null,
+                    deckVariant: 'deck1',
+                    targetSignets: 5,
+                },
+                sys: {
+                    flow: { phase: 'ability' },
+                    interaction: {
+                        current: {
+                            id: 'cardia-multi-card-choice',
+                            playerId: '0',
+                            kind: 'simple-choice',
+                            data: {
+                                multi: { min: 2, max: 2 },
+                                options: [
+                                    {
+                                        id: 'card-a',
+                                        label: '卡牌 A',
+                                        value: { cardUid: 'card-a-uid' },
+                                    },
+                                    {
+                                        id: 'card-b',
+                                        label: '卡牌 B',
+                                        value: { cardUid: 'card-b-uid' },
+                                    },
+                                    {
+                                        id: 'card-c',
+                                        label: '卡牌 C',
+                                        value: { cardUid: 'card-c-uid' },
+                                    },
+                                ],
+                            },
+                        },
+                        queue: [],
+                    },
+                    actionLog: { entries: [] },
+                    undo: { snapshots: [], aiSeatIds: [] },
+                    rematch: { requests: {} },
+                    responseWindow: null,
+                    tutorial: null,
+                    eventStream: { entries: [] },
+                    gameover: null,
+                },
+            } as MatchState<CardiaCore>;
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions).toHaveLength(1);
+            expect(actions[0]).toMatchObject({
+                kind: 'interaction-choice',
+                commands: [{
+                    type: INTERACTION_COMMANDS.RESPOND,
+                    payload: {
+                        interactionId: 'cardia-multi-card-choice',
+                        optionIds: ['card-a', 'card-b'],
+                    },
+                }],
+            });
+        });
+
         it('未知交互属于 AI 时应生成紧急取消动作，而不是继续走阶段动作', () => {
             const state = {
                 core: {

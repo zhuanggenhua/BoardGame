@@ -149,7 +149,7 @@ async function main() {
     const localIds = feedbackIdsForGroup(group, options.updateDuplicates);
     const { board, boardPath } = await syncBoardFromSummaryFile(resolvedSummaryPath, options.boardPath);
     const writerEvidence = primary.writer === 'http'
-        ? `online-feedback-status:http:${baseUrl}/admin/feedback/${options.feedbackId}/status`
+        ? `online-feedback-status:http:${baseUrl}/admin-api/feedback/${options.feedbackId}/status`
         : `online-feedback-status:mongo-ssh:feedbacks/${options.feedbackId}`;
     const mirrorEvidence = options.evidence.length > 0
         ? options.evidence

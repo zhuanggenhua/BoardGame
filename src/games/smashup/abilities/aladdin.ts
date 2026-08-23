@@ -40,7 +40,6 @@ import { SU_EVENTS } from '../domain/types';
 import {
     cardLabel,
     collectMinions,
-    discardFirstHandAction,
     isActionCard,
     moveMinionToBase,
     ownMinionsAtBase,
@@ -171,11 +170,6 @@ function transferCardToSelf(card: CardInstance, fromPlayerId: PlayerId, toPlayer
     };
 }
 
-function discardActionCost(ctx: AbilityContext): SmashUpEvent[] | undefined {
-    const discard = discardFirstHandAction(ctx);
-    return discard ? [discard] : undefined;
-}
-
 function hasActionCost(ctx: AbilityContext): boolean {
     return (ctx.state.players[ctx.playerId]?.hand ?? [])
         .some(card => card.uid !== ctx.cardUid && isActionCard(card.defId));
@@ -277,7 +271,7 @@ const discardActionCostPromptProgram = createPromptProgram<AladdinDiscardActionC
 
 function runDiscardActionCostPrompt(ctx: AbilityContext, effect: AladdinDiscardActionEffect): AbilityResult {
     if (!hasActionCost(ctx)) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
-    if (!ctx.matchState) return { events: discardActionCost(ctx) ?? [] };
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(discardActionCostPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

@@ -740,11 +740,7 @@ export function registerBaseAbilities(): void {
         // 可选效果：让玩家选择是否放指示物
         const minion = base.minions.find(m => m.uid === ctx.minionUid);
         if (!minion) return { events: [] };
-        if (!ctx.matchState) {
-            // 无交互上下文时保持兼容：默认执行放置
-            return {
-                events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_castle_blood', ctx.now)] };
-        }
+        if (!ctx.matchState) return { events: [] };
         const options: PromptOption<{ skip?: boolean; apply?: boolean; minionUid?: string; minionDefId?: string; baseIndex?: number }>[] = [
             {
                 id: 'apply',

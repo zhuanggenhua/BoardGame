@@ -2474,8 +2474,18 @@ describe('MageWarsBoard object ability choices', () => {
             `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT}"]`,
         );
         expect(abilityButton).not.toBeNull();
-        expect(abilityButton?.getAttribute('data-ability-visual')).toBe('source-card');
+        const abilityDock = screen.getByTestId('mage-wars-selected-ability-action-dock');
+        expect(abilityDock.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
+        expect(abilityDock.className).toContain('bottom-[15.75rem]');
+        expect(abilityDock.className).not.toContain('top-[4.85rem]');
+        expect(abilityDock).toContainElement(abilityButton);
+        expect(abilityButton?.getAttribute('data-ability-visual')).toBe('text-action');
+        expect(abilityButton?.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
+        expect(abilityButton?.textContent).toContain('治疗之光');
+        expect(abilityButton?.querySelector('img')).toBeNull();
         expect(abilityButton?.querySelector('svg')).toBeNull();
+        expect(abilityButton?.className).toContain('rounded-[0.25rem]');
+        expect(abilityButton?.className).not.toContain('rounded-[0.22rem]');
         fireEvent.click(abilityButton!);
         expect(dispatch).not.toHaveBeenCalled();
 
@@ -2638,8 +2648,18 @@ describe('MageWarsBoard mage ability status choices', () => {
         fireEvent.click(priestessMage!);
 
         const restoreButton = screen.getByTestId('mage-wars-selected-mage-ability-restore');
-        expect(restoreButton.getAttribute('data-ability-visual')).toBe('mage-portrait');
+        const restoreDock = screen.getByTestId('mage-wars-selected-ability-action-dock');
+        expect(restoreDock.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
+        expect(restoreDock.className).toContain('bottom-[15.75rem]');
+        expect(restoreDock.className).not.toContain('top-[4.85rem]');
+        expect(restoreDock).toContainElement(restoreButton);
+        expect(restoreButton.getAttribute('data-ability-visual')).toBe('text-action');
+        expect(restoreButton.getAttribute('data-ability-action-placement')).toBe('middle-lower-action-dock');
+        expect(restoreButton.textContent).toContain('复原术');
+        expect(restoreButton.querySelector('img')).toBeNull();
         expect(restoreButton.querySelector('svg')).toBeNull();
+        expect(restoreButton.className).toContain('rounded-[0.25rem]');
+        expect(restoreButton.className).not.toContain('rounded-[0.22rem]');
         fireEvent.click(restoreButton);
 
         const targetCard = screen.getByText('Afflicted Angel')
@@ -2751,12 +2771,32 @@ describe('MageWarsBoard token placement', () => {
         for (const tokenRail of tokenRails) {
             expect(tokenRail.querySelector('img[alt="tokens.guard"]')).not.toBeNull();
             expect(tokenRail?.className).toContain('top-full');
+            expect(tokenRail?.className).toContain('left-1/2');
+            expect(tokenRail?.className).toContain('-translate-x-1/2');
             expect(tokenRail?.className).not.toContain('bottom');
         }
+
+        const guardedCat = screen.getByText('Guarded Cat')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(guardedCat).not.toBeNull();
+        fireEvent.click(guardedCat!);
+
+        const guardAction = screen.getByTestId('mage-wars-selected-unit-guard');
+        expect(guardAction.getAttribute('data-mage-wars-guard-action-placement')).toBe('bottom-center');
+        expect(guardAction.className).toContain('top-full');
+        expect(guardAction.className).toContain('left-1/2');
+        expect(guardAction.className).toContain('bg-transparent');
+        expect(guardAction.className).not.toContain('rounded-[0.22rem]');
+        expect(guardAction.className).not.toContain('bg-emerald-950');
+        expect(guardAction.querySelector('img[alt="tokens.guard"]')).not.toBeNull();
     });
 
     it('renders wounded state as a Summoner Wars style life readout instead of generic badges or damage token images', () => {
         const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps(createWoundedTokenPlacementCore())} />);
+
+        const lifeToggle = screen.getByTestId('mage-wars-life-toggle');
+        expect(lifeToggle.getAttribute('aria-pressed')).toBe('false');
+        expect(lifeToggle.getAttribute('data-life-visible')).toBe('false');
 
         const creatureCard = screen.getByText('Wounded Overlay Cat')
             .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
@@ -2769,6 +2809,9 @@ describe('MageWarsBoard token placement', () => {
         const creatureLifeReadout = creatureCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-life-readout"]');
         expect(creatureLifeReadout).not.toBeNull();
         expect(creatureLifeReadout?.getAttribute('data-life-remaining')).toBe('2');
+        expect(creatureLifeReadout?.getAttribute('data-life-visible')).toBe('false');
+        expect(creatureLifeReadout?.className).toContain('opacity-0');
+        expect(creatureLifeReadout?.className).toContain('group-hover:opacity-100');
         expect(creatureLifeReadout?.querySelector('[data-testid="mage-wars-field-card-life-readout-text"]')?.textContent).toBe('2/4');
 
         const mageEntity = container.querySelector<HTMLElement>(
@@ -2782,7 +2825,15 @@ describe('MageWarsBoard token placement', () => {
         const mageLifeReadout = mageEntity?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-entity-life-readout"]');
         expect(mageLifeReadout).not.toBeNull();
         expect(mageLifeReadout?.getAttribute('data-life-remaining')).toBe('18');
+        expect(mageLifeReadout?.getAttribute('data-life-visible')).toBe('false');
         expect(mageLifeReadout?.querySelector('[data-testid="mage-wars-mage-entity-life-readout-text"]')?.textContent).toBe('18/24');
+
+        fireEvent.click(lifeToggle);
+        expect(lifeToggle.getAttribute('aria-pressed')).toBe('true');
+        expect(lifeToggle.getAttribute('data-life-visible')).toBe('true');
+        expect(creatureLifeReadout?.getAttribute('data-life-visible')).toBe('true');
+        expect(creatureLifeReadout?.className).toContain('opacity-100');
+        expect(mageLifeReadout?.getAttribute('data-life-visible')).toBe('true');
 
         expect(screen.queryByAltText('tokens.damage')).toBeNull();
     });

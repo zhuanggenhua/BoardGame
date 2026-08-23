@@ -69,7 +69,7 @@ YGOPro 的可吸收点是裁判式架构，不吸收其 GPL 脚本、原生 UI�
 | [`RefereeReplay.ts`](../../../src/engine/RefereeReplay.ts) | 从结果或 trace 汇总回放摘要和恢复指纹片段 | 不重新 reduce，不执行响应，不生成第二套事件源 |
 | `createResolutionFrameSystem` | 可选长事务 driver，回灌 active frame 的 `deferredEvents` | 不进 `createBaseSystems`；`deferredActions` 没有通用宿主时不静默消费 |
 | `createTimingOpportunitySystem` | 可选系统，把 active opportunity 投影成交互、response window、child frame 或后续事件 | 不进 `createBaseSystems`；命中需求才显式加入 |
-| `createSimpleChoiceFromTimingOpportunity` | `Opportunity -> ChoiceRequest -> simple-choice` 兼容投影 | 保留 legacy id 时也通过 helper 覆盖 request id，避免手写第二套投影 |
+| `createSimpleChoiceFromTimingOpportunity` | `Opportunity -> ChoiceRequest -> simple-choice` 交互宿主薄投影 | 只投影交互承载格式，不发现机会、不生成候选、不保留旧规则 fallback；无兼容迁移仍必须删除旧规则 owner |
 
 `commands` resolution 当前没有通用执行宿主；系统必须明确报错，要求改成 `ChoiceRequest` 或由游戏层正式 owner 处理。
 
@@ -132,16 +132,19 @@ YGOPro 的可吸收点是裁判式架构，不吸收其 GPL 脚本、原生 UI�
 - 同一机会只有一个规则真相源；UI、AI、validator 不各写一套条件。
 - response window 只是承载层，不是机会发现器。
 - 长事务有 frame owner；不能只靠 `continuationContext`、`pending*` 或按钮状态续链。
+- 无线上存档、无旧客户端、同仓同轮可切完，或用户明确要求激进重构 / 不考虑兼容时，验收必须证明旧 owner 已退出：同一机制不能同时保留旧直接结算入口和新的 `TimingOpportunity / ChoiceRequest / ResolutionFrame` owner。
+- 对旧 owner 的退出证明要用负向断言或等价证据覆盖：原始执行器、旧系统、UI 旧 fallback、AI 旧合法动作和测试夹具不能再直接生成同一正式结果；正式结果只能从新 owner 结算出来。
 - 首个试点至少覆盖一种高风险链路：计分、响应、替代、防止或延迟 follow-up；第二个验证场景选择不同机制家族，避免单一游戏外推。
 
 ## 旧游戏兼容和迁移
 
 - 未触碰的旧 `simple-choice`、`pending*`、`continuationContext`、私有 session 可继续兼容。
 - 触碰触发、响应、替代、防止、长事务、AI 阻塞或线上恢复卡点时，先判断是否接入本文模型。
-- 未上线、无旧客户端、无线上存档兼容负担的游戏，命中本文需求时优先直接把机会发现和开窗 owner 切到 `TimingOpportunitySystem` / `ChoiceRequest`。
+- 未上线、无旧客户端、无线上存档兼容负担的游戏，命中本文需求时必须直接把机会发现、开窗、阻塞选择和后续结算 owner 切到 `TimingOpportunitySystem` / `ChoiceRequest` / `ResolutionFrame`，并在同轮删除或停用旧 owner；不得为了“保险”保留兼容桥。
+- 用户当轮明确要求激进重构、不考虑兼容、直接完成时，按无兼容迁移处理；只有能指出真实外部消费者、混部版本、旧客户端仍在线或持久化迁移风险时，才允许临时 adapter。
 - 旧游戏专用系统若暂留，只能处理响应后的领域结算，不能继续独立发现同一机会或创建同一窗口。
-- adapter 只能把旧入口映射到新的 opportunity / frame，不能继续成为第二套规则权威。
-- 迁移文档必须写清旧入口、新 owner、已切走消费者、兼容 fallback、剩余删除条件和验证证据。
+- 允许临时 adapter 时，它只能把旧入口映射到新的 opportunity / frame，不能继续成为第二套规则权威；同时必须写清真实依据、剩余消费者、删除条件和删除验证。
+- 迁移文档必须写清旧入口、新 owner、已切走消费者、是否存在临时 adapter、旧 owner 退出证据、剩余删除条件和验证证据；没有兼容负担的迁移不写“兼容 fallback”作为默认任务。
 
 ## 禁止项
 
@@ -151,6 +154,7 @@ YGOPro 的可吸收点是裁判式架构，不吸收其 GPL 脚本、原生 UI�
 - 禁止 ResponseWindow 自己代表“所有可响应事实”；它只能承载已发现机会。
 - 禁止 `ResolutionFrame` 只做门控标记，而长事务恢复点继续由游戏私有 session 持有。
 - 禁止为兼容旧入口新增第二套影子状态、去重表或静默兜底；内部不变量破坏时应暴露错误来源。
+- 禁止把“新 owner 可用”当成“重构完成”；旧 owner、旧 fallback 或旧测试入口仍能独立结算同一机制时，重构未完成。
 
 ## 关联标准
 

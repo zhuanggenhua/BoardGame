@@ -272,7 +272,7 @@ export function createTimingOpportunitySystem<
         name: '时点机会系统',
         priority: 30,
 
-        afterEvents: ({ state, events, command }): HookResult<TCore> | void => {
+        afterEvents: ({ state, events, command, random }): HookResult<TCore> | void => {
             if (!domain.discoverTimingOpportunities || events.length === 0) return;
 
             let nextState = state;
@@ -298,6 +298,7 @@ export function createTimingOpportunitySystem<
                         timing,
                         events: events as TEvent[],
                         command: command as TCommand,
+                        random,
                     },
                     { activeOnly: true, sorted: true },
                 );

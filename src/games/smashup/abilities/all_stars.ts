@@ -590,12 +590,11 @@ function beginTheSummoning(ctx: AbilityContext): AbilityResult {
         );
         return { events: [extraAction], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const minion = minions[0];
+    if (!ctx.matchState) {
+        return { events: [extraAction] };
+    }
     return {
-        events: [
-            ...(minion ? [cardToDeckTop(minion, minion.owner, 'all_stars_begin_the_summoning', ctx.now, ctx.playerId)] : []),
-            extraAction,
-        ],
+        events: [extraAction],
     };
 }
 

@@ -42,6 +42,7 @@ import type {
 import { getArenaObject } from './utils';
 import { hasObjectAbilityUseInRound } from './objectAbilityUsage';
 import { hasTemporarySwift, hasTemporaryTeleportMovement } from './temporaryTraits';
+import { createMageWarsArenaObjectSourceConsumeAvailableEvent } from './sourceConsumeEvents';
 
 type MageWarsObjectAbilityValidator = (ctx: MageWarsObjectAbilityValidationContext) => ValidationResult;
 
@@ -664,17 +665,6 @@ export function buildMageWarsObjectAbilityActivationOpportunity(
     });
 }
 
-/**
- * 兼容旧试点名：只返回 self 目标能力的合同，不替目标型能力乱开入口。
- */
-export function buildMageWarsSelfObjectAbilityActivationOpportunity(
-    args: BuildMageWarsObjectAbilityActivationOpportunityArgs,
-): Opportunity<MageWarsObjectAbilityActivationChoiceValue> | null {
-    const ability = mageWarsObjectAbilityRegistry.get(args.abilityId);
-    if (ability?.meta.targetMode !== 'self') return null;
-    return buildMageWarsObjectAbilityActivationOpportunity(args);
-}
-
 function executeBeastStaff(ctx: MageWarsObjectAbilityContext): AbilityResult<MageWarsEvent> {
     const source = resolveMageWarsAttachedBeastStaff(ctx.state.core, ctx.ownerId);
     const targetObject = ctx.command.payload.targetObjectId
@@ -870,6 +860,13 @@ function executeGreyAngelRedemptionSacrifice(ctx: MageWarsObjectAbilityContext):
     const diceResults = rollD3(ctx.random, 6);
     const healing = diceResults.reduce((total, result) => total + result, 0);
     const actualHealing = Math.min(targetObject.damage, healing);
+    const sourceConsumeAvailable = createMageWarsArenaObjectSourceConsumeAvailableEvent(
+        ctx.state.core,
+        object.id,
+        ctx.command.type,
+        ctx.timestamp,
+        ctx.ability.id,
+    );
 
     return {
         events: [
@@ -903,17 +900,7 @@ function executeGreyAngelRedemptionSacrifice(ctx: MageWarsObjectAbilityContext):
                 sourceCommandType: ctx.command.type,
                 timestamp: ctx.timestamp,
             },
-            {
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: {
-                    objectId: object.id,
-                    ownerId: ctx.ownerId,
-                    sourceAbilityId: ctx.ability.id,
-                    spellCardId: ctx.ability.meta.sourceSpellCardId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            },
+            ...(sourceConsumeAvailable ? [sourceConsumeAvailable] : []),
         ],
     };
 }

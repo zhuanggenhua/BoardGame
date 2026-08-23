@@ -263,6 +263,12 @@ export function buildSmashUpCompletedDraftPlayers(
     return turnOrder.filter((playerId) => (playerSelections[playerId] ?? []).length >= factionsPerPlayer);
 }
 
+export function buildSmashUpTakenFactionsFromPlayerSelections(
+    playerSelections: Record<PlayerId, string[]>,
+): string[] {
+    return Object.values(playerSelections).flatMap((items) => items.filter((item): item is string => typeof item === 'string'));
+}
+
 export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: PlayerId, factionId: string): { valid: true } | { valid: false; error: string } {
     const selection = core.factionSelection;
     if (!selection) return { valid: false, error: '派系选择状态未初始化' };
@@ -300,7 +306,9 @@ export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: Playe
     }
 
     const factionIdentity = normalizeFactionSelectionId(factionId);
-    const takenFactionIdentities = buildFactionSelectionIdentitySet(selection.takenFactions);
+    const takenFactionIdentities = buildFactionSelectionIdentitySet(
+        buildSmashUpTakenFactionsFromPlayerSelections(selection.playerSelections),
+    );
     if (takenFactionIdentities.has(factionIdentity)) {
         return { valid: false, error: '该派系已被选择' };
     }

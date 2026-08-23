@@ -167,3 +167,35 @@ test('线上 HTTP 返回 401 时切到 SSH/Mongo 回写', async () => {
     assert.equal(result.reason, 'http-auth-failed-401-production-mongo');
     assert.equal(result.status, 'in_progress');
 });
+
+test('有 token 时 HTTP 写入口使用当前 admin-api 路由', async () => {
+    const fetchCalls = [];
+    const result = await updateFeedbackStatusViaBestAvailableWriter({
+        baseUrl: 'https://api.easyboardgame.top',
+        token: 'token',
+        id: FEEDBACK_ID,
+        status: 'resolved',
+        resolvedMethod: '已修复真实阻塞链路，后续版本会继续推进。',
+    }, {
+        async fetch(url, options) {
+            fetchCalls.push({ url, options });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        _id: FEEDBACK_ID,
+                        status: 'resolved',
+                    };
+                },
+            };
+        },
+    });
+
+    assert.equal(result.writer, 'http');
+    assert.equal(result.status, 'resolved');
+    assert.equal(fetchCalls.length, 1);
+    assert.equal(
+        fetchCalls[0].url,
+        `https://api.easyboardgame.top/admin-api/feedback/${FEEDBACK_ID}/status`,
+    );
+});

@@ -18,6 +18,7 @@ import type {
     GameEvent,
     MatchState,
     PlayerId,
+    RandomFn,
     ResolutionFrame,
     ResolutionOrdering,
     ResponseWindowState,
@@ -195,6 +196,7 @@ export interface TimingOpportunityDiscoveryArgs<
     timing: TimingPoint<TCommand, TEvent>;
     events?: TEvent[];
     command?: TCommand;
+    random?: RandomFn;
 }
 
 export interface TimingOpportunityDiscoveryResult<TValue = unknown> {
@@ -723,6 +725,7 @@ export function commitEventWithTimingOpportunities<
                 timing,
                 events: [args.event],
                 command: args.command,
+                random: args.random,
             },
             { activeOnly: true, sorted: true },
         );

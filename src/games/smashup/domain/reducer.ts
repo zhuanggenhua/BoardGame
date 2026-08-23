@@ -507,15 +507,16 @@ function executeCommand(
             const selection = core.factionSelection!;
             const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
             const draftTurnOrder = getSmashUpDraftTurnOrder(core);
-            const newTakenCount = selection.takenFactions.length + 1;
-            const totalRequired = draftTurnOrder.length * factionsPerPlayer;
             const tempSelections = { ...selection.playerSelections };
             tempSelections[command.playerId] = [
                 ...(tempSelections[command.playerId] || []),
                 factionId,
             ];
+            const allPlayersSelected = draftTurnOrder.every(
+                (playerId) => (tempSelections[playerId] ?? []).length >= factionsPerPlayer,
+            );
 
-            if (newTakenCount >= totalRequired && selection.mode !== 'individualPools') {
+            if (allPlayersSelected && selection.mode !== 'individualPools') {
                 const setupEvent = buildAllFactionsSelectedSetupEvent(
                     core,
                     tempSelections,

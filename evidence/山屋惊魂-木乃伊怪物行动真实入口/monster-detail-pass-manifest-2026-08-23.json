@@ -1,0 +1,44 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "木乃伊详情弹窗只显示一个头像，不再在下方重复显示棋盘 token",
+      "status": "PASS",
+      "evidence": [
+        "主黄金链点击地图木乃伊后显示 66 截图；画面中只有标题区一个木乃伊头像；E2E 同步断言 betrayal-monster-detail-token-mummy 不存在"
+      ]
+    },
+    {
+      "requirement": "木乃伊详情不再是封闭大黑板，改成开放式轻量信息层",
+      "status": "PASS",
+      "evidence": [
+        "66 截图显示为单个半透明信息层，牌桌背景仍可透出；没有左侧大竖框和整块黑色面板；E2E 同步断言 data-layout-variant=open-single-portrait"
+      ]
+    },
+    {
+      "requirement": "详情弹窗仍显示木乃伊属性、攻击规则和驱逐胜利方式",
+      "status": "PASS",
+      "evidence": [
+        "66 截图显示力量 8、速度 3、神志 5、默认力量攻击、速度攻击无效、2 点以上损伤触发偷取、可偷物品 / 预兆 / 女孩，以及英雄按真名、驱逐法术、书本同房后用神志攻击让木乃伊战败并驱逐；E2E 同步断言这些文本"
+      ]
+    },
+    {
+      "requirement": "不把当前临时木乃伊图面冒充正式素材",
+      "status": "PASS",
+      "evidence": [
+        "当前正式素材状态已在 docs/games/betrayal/haunts/01-mummy-rampage.md 保持 visual-token-blocked；本图只证明详情入口和规则信息可读"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\66-主黄金链-点击木乃伊详情属性与驱逐方式.jpg"
+  ]
+}
+

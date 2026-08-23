@@ -301,6 +301,272 @@ function collectKnownSingleCandidateChoiceBypasses(): string[] {
     });
 }
 
+type SourceSnapshot = {
+    relative: string;
+    source: string;
+    lines: string[];
+};
+
+function collectTsFiles(root: string): string[] {
+    return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+        const fullPath = resolve(root, entry.name);
+        if (entry.isDirectory()) return collectTsFiles(fullPath);
+        return entry.name.endsWith('.ts') ? [fullPath] : [];
+    });
+}
+
+function collectSmashupImplementationSources(): SourceSnapshot[] {
+    const roots = [
+        { root: resolve(__dirname, '../abilities'), label: 'abilities' },
+        { root: resolve(__dirname, '../domain'), label: 'domain' },
+    ];
+    return roots.flatMap(({ root, label }) => collectTsFiles(root).map((fullPath) => {
+        const normalized = fullPath.replace(/\\/g, '/');
+        const relative = `${label}/${normalized.slice(root.replace(/\\/g, '/').length + 1)}`;
+        const source = readFileSync(fullPath, 'utf-8');
+        return { relative, source, lines: source.split(/\r?\n/) };
+    })).sort((a, b) => a.relative.localeCompare(b.relative));
+}
+
+function collectForbiddenAutomaticChoiceHelpers(): string[] {
+    const forbiddenCall = /\b(?:discardFirstHand(?:Action|Any|Card)?|discardCards|addCounterToFirstOwnMinion|firstOwnMinionAtBase|firstOtherMinionAtBase)\s*\(/;
+    const violations: string[] = [];
+
+    for (const file of collectSmashupImplementationSources()) {
+        file.lines.forEach((line, index) => {
+            if (forbiddenCall.test(line)) {
+                violations.push(`${file.relative}:${index + 1} ${line.trim()}`);
+            }
+        });
+    }
+
+    return violations;
+}
+
+const allowedNoInteractionFallbackEvents = new Set([
+    'abilities/avengers.ts if (!ctx.matchState) return { events: [inspectEvent] };',
+    'abilities/diy_clowns.ts if (!ctx.matchState) return { events: [extra] };',
+    'abilities/diy_killers.ts if (!ctx.matchState) return { events: [extra] };',
+    'abilities/magical_girls.ts if (!ctx.matchState) return { events: [extra] };',
+]);
+
+function collectNonEmptyNoInteractionFallbackEvents(): string[] {
+    const pattern = /if\s*\([^)]*!\s*(?:ctx\.)?matchState[^)]*\)\s*return\s*\{\s*events:\s*\[(?!\s*\])/;
+    const violations: string[] = [];
+
+    for (const file of collectSmashupImplementationSources()) {
+        file.lines.forEach((line, index) => {
+            if (!pattern.test(line)) return;
+            const key = `${file.relative} ${line.trim()}`;
+            if (allowedNoInteractionFallbackEvents.has(key)) return;
+            violations.push(`${file.relative}:${index + 1} ${line.trim()}`);
+        });
+    }
+
+    return violations;
+}
+
+function collectAiAutomaticChoiceGuardViolations(): string[] {
+    const violations: string[] = [];
+    const localRunnerSource = readFileSync(resolve(__dirname, '../../../engine/ai/localRunner.ts'), 'utf-8');
+    const runnerLoopIndex = localRunnerSource.indexOf('for (const [playerId, seatController] of Object.entries(args.seatControllers))');
+    const humanSkipIndex = localRunnerSource.indexOf("if (seatController.type === 'human') continue;", runnerLoopIndex);
+    const contextBuildIndex = localRunnerSource.indexOf('const context = buildAiDecisionContext({', runnerLoopIndex);
+    const responseFallbackIndex = localRunnerSource.indexOf('const fallbackAction = resolveResponsePassFallback(context);', runnerLoopIndex);
+    const localFirstFallbackIndex = localRunnerSource.indexOf('proposedAction: context.legalActions[0] ?? null,', runnerLoopIndex);
+
+    if (runnerLoopIndex < 0) {
+        violations.push('engine/ai/localRunner.ts 未找到 AI seat 遍历入口');
+    }
+    if (humanSkipIndex < 0) {
+        violations.push('engine/ai/localRunner.ts 缺少 human seat 跳过保护');
+    }
+    if (contextBuildIndex >= 0 && humanSkipIndex > contextBuildIndex) {
+        violations.push('engine/ai/localRunner.ts human seat 跳过保护晚于 AI 决策上下文构建');
+    }
+    if (responseFallbackIndex >= 0 && humanSkipIndex > responseFallbackIndex) {
+        violations.push('engine/ai/localRunner.ts human seat 跳过保护晚于响应 fallback');
+    }
+    if (localFirstFallbackIndex >= 0 && humanSkipIndex > localFirstFallbackIndex) {
+        violations.push('engine/ai/localRunner.ts human seat 跳过保护晚于第一合法动作 fallback');
+    }
+
+    const smashupAiSource = readFileSync(resolve(__dirname, '../ai.ts'), 'utf-8');
+    const simplePayloadStart = smashupAiSource.indexOf('const buildSimpleChoicePayload =');
+    const simplePayloadEnd = smashupAiSource.indexOf('const isSmashUpReactionChoiceLiveValidation', simplePayloadStart);
+    let optionIndex = 0;
+    while ((optionIndex = smashupAiSource.indexOf('optionIds[0]', optionIndex)) >= 0) {
+        const lineNumber = smashupAiSource.slice(0, optionIndex).split(/\r?\n/).length;
+        const line = smashupAiSource.split(/\r?\n/)[lineNumber - 1]?.trim() ?? '';
+        if (optionIndex < simplePayloadStart || optionIndex > simplePayloadEnd || line !== 'return { interactionId, optionId: optionIds[0] };') {
+            violations.push(`ai.ts:${lineNumber} ${line}`);
+        }
+        optionIndex += 'optionIds[0]'.length;
+    }
+
+    const recoverySource = readFileSync(resolve(__dirname, '../../../engine/transport/onlineAiRecovery.ts'), 'utf-8');
+    const triggerAutoSelectIndex = recoverySource.indexOf('payload: { interactionId: current.id, optionId: enabledTriggerOptions[0].id }');
+    const triggerAutoSelectGuardIndex = recoverySource.lastIndexOf('shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice', triggerAutoSelectIndex);
+    const visibleCurrentHumanGuardIndex = recoverySource.indexOf("if (args.seatControllers[interactionPlayerId]?.type === 'human') {");
+    const visibleCurrentRecoveryIndex = recoverySource.indexOf('const visibleInteractionRecovery = buildForceEndTurnFromInteractionState(');
+    const hiddenLoopIndex = recoverySource.indexOf('for (const [playerId, controller] of Object.entries(args.seatControllers))');
+    const hiddenHumanSkipIndex = recoverySource.indexOf("if (controller.type === 'human') {", hiddenLoopIndex);
+    const hiddenForceSkipIndex = recoverySource.indexOf('const forceSkipPayload = buildForceSkipPayloadFromSeatState(seatState, playerId, {', hiddenLoopIndex);
+
+    if (triggerAutoSelectIndex < 0) {
+        violations.push('engine/transport/onlineAiRecovery.ts 未找到 trigger-only watchdog 自动选择点');
+    }
+    if (triggerAutoSelectIndex >= 0 && triggerAutoSelectGuardIndex < 0) {
+        violations.push('engine/transport/onlineAiRecovery.ts trigger-only 自动选择缺少游戏配置守卫');
+    }
+    if (visibleCurrentRecoveryIndex >= 0 && (visibleCurrentHumanGuardIndex < 0 || visibleCurrentHumanGuardIndex > visibleCurrentRecoveryIndex)) {
+        violations.push('engine/transport/onlineAiRecovery.ts 可见交互恢复缺少 human seat 提前返回保护');
+    }
+    if (hiddenForceSkipIndex >= 0 && (hiddenHumanSkipIndex < 0 || hiddenHumanSkipIndex > hiddenForceSkipIndex)) {
+        violations.push('engine/transport/onlineAiRecovery.ts 隐藏交互 force-skip 缺少 human seat 跳过保护');
+    }
+
+    return violations;
+}
+
+function collectUiAutoInteractionSubmitEffects(): string[] {
+    const files = [
+        { relative: 'Board.tsx', fullPath: resolve(__dirname, '../Board.tsx') },
+        { relative: 'ui/PromptOverlay.tsx', fullPath: resolve(__dirname, '../ui/PromptOverlay.tsx') },
+    ];
+    const violations: string[] = [];
+    const submitPattern = /\b(?:respondCurrentPrompt|lockedPromptRespond|dispatch)\s*\(|SYS_INTERACTION_RESPOND|INTERACTION_COMMANDS\.RESPOND/;
+
+    for (const file of files) {
+        const source = readFileSync(file.fullPath, 'utf-8');
+        const effectPattern = /useEffect\s*\(\s*\(\)\s*=>\s*\{/g;
+        let match: RegExpExecArray | null;
+        while ((match = effectPattern.exec(source)) !== null) {
+            const start = match.index;
+            const end = source.indexOf('\n    }, [', start);
+            const body = source.slice(start, end >= 0 ? end : Math.min(source.length, start + 4000));
+            if (!submitPattern.test(body)) continue;
+            const lineNumber = source.slice(0, start).split(/\r?\n/).length;
+            violations.push(`${file.relative}:${lineNumber} useEffect 中包含交互提交调用`);
+        }
+
+        const timerPattern = /\b(?:setTimeout|window\.setTimeout)\s*\(\s*\(\)\s*=>\s*\{/g;
+        while ((match = timerPattern.exec(source)) !== null) {
+            const start = match.index;
+            const end = source.indexOf('\n', start + 500);
+            const body = source.slice(start, end >= 0 ? end : Math.min(source.length, start + 1000));
+            if (!submitPattern.test(body)) continue;
+            const lineNumber = source.slice(0, start).split(/\r?\n/).length;
+            violations.push(`${file.relative}:${lineNumber} setTimeout 中包含交互提交调用`);
+        }
+    }
+
+    return violations;
+}
+
+const reviewedFirstCandidateSites = new Set([
+    'abilities/aladdin.ts const currentPlayerId = context.pendingPlayerIds[0];',
+    'abilities/aladdin.ts const currentPlayerId = pendingPlayerIds[0];',
+    'abilities/aladdin.ts if (!selected?.cardUid || !selected.defId || playerId !== context.pendingPlayerIds[0]) return { events: [] };',
+    'abilities/anansi_tales.ts events.push(addPowerCounter(valid[0].minionUid!, valid[0].baseIndex!, context.counterCount, effectSourceId, timestamp));',
+    'abilities/beauty_and_the_beast.ts ? [top[1].uid, top[0].uid, ...rest.map(card => card.uid)]',
+    'abilities/cease_and_desist.ts const selected = candidates[Math.floor((ctx.random?.random?.() ?? 0) * candidates.length)] ?? candidates[0];',
+    'abilities/cease_and_desist.ts const toBaseIndex = destinations[ctx.random.range(0, destinations.length - 1)] ?? destinations[0];',
+    'abilities/dinosaurs.ts ? `${baseName} (降低 ${minionCandidates[0].power} 爆破点)`',
+    'abilities/dinosaurs.ts const currentBase = context.remainingBases[0];',
+    'abilities/diy_clowns.ts const picked = ctx.random.shuffle([...candidates])[0];',
+    'abilities/diy_killers.ts const cardUid = drawn?.payload.cardUids[0];',
+    'abilities/elder_things.ts const targetIds = revealTargetIds.length === 1 ? revealTargetIds[0] : revealTargetIds;',
+    'abilities/excellent_movies_teens.ts return minions.length === 1 ? minions[0] : undefined;',
+    'abilities/fairies.ts : branchIds[0];',
+    'abilities/goblins.ts playerId: playerIds[0],',
+    'abilities/grimms_fairy_tales.ts const firstFaction = getCardDef(minions[0].minion.defId)?.faction;',
+    'abilities/grimms_fairy_tales.ts const fromBaseIndex = selected[0].baseIndex;',
+    'abilities/grimms_fairy_tales.ts entry.baseIndex === minions[0].baseIndex',
+    'abilities/grimms_fairy_tales.ts if (!selected.every(entry => entry.baseIndex === selected[0].baseIndex)) return { state, events: [] };',
+    'abilities/half_the_battle.ts const candidates = collectMinionSwapCandidates(ctx.state, ctx.playerId, context.sources[0], context.mode, context.zones);',
+    'abilities/half_the_battle.ts if (topCards.length === 1) return { events: [...events, cardsDrawn(ctx.playerId, [topCards[0].uid], ctx.now), ...extra] };',
+    'abilities/half_the_battle.ts source: context.sources[0],',
+    'abilities/international_incident.ts ? candidates.filter(candidate => candidate.baseIndex !== destinationBases[0])',
+    'abilities/international_incident.ts addEffect(validPicks[0], context.amount * context.multiMax);',
+    'abilities/international_incident.ts const firstPick = validPicks[0];',
+    'abilities/itty_critters.ts ? collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId)[0]',
+    'abilities/itty_critters.ts const selected = random.shuffle([...discardMinions])[0];',
+    'abilities/killer_plants.ts simulatedDecks.set(m.controller, deck.filter((card) => card.uid !== eligible[0].cardUid));',
+    'abilities/killer_plants.ts simulatedDecks.set(targetSprout.controller, deck.filter((card) => card.uid !== eligible[0].cardUid));',
+    'abilities/kitty_cats.ts const fromBaseIndex = selectedMinions[0]?.baseIndex;',
+    'abilities/marvel.ts payload: { playerId: ctx.playerId, count: 1, cardUids: [revealed[0].uid] },',
+    'abilities/mega_troopers.ts const orderedTop = remaining.length === 1 ? [...ordered, remaining[0]] : ordered;',
+    'abilities/munchkin_clerics.ts const selected = random.shuffle([...actions])[0];',
+    'abilities/munchkin_clerics.ts const selected = random.shuffle([...discard])[0];',
+    'abilities/munchkin_elves.ts const targetCard = random.shuffle([...target.hand])[0];',
+    'abilities/mythic_greeks.ts const allCards = remaining.length === 1 ? [...ordered, remaining[0]] : ordered;',
+    'abilities/mythic_horses.ts const first = ordered[0];',
+    'abilities/penguins.ts const selected = (ctx.random.shuffle(minions)[0] ?? minions[0]) as CardInstance;',
+    'abilities/pirates.ts context: createPiratePromptContext(state, context.remaining[0].controller, timestamp, {',
+    'abilities/pirates.ts current: context.remaining[0],',
+    'abilities/robots.ts baseDefId: state.core.bases[0].defId,',
+    'abilities/round_table_knights.ts : candidateBaseIndices[0];',
+    'abilities/round_table_knights.ts const action = actions.length === 1 ? actions[0] : undefined;',
+    'abilities/round_table_knights.ts const deckCard = deckCards[0];',
+    'abilities/round_table_knights.ts const discardCard = discardCards[0];',
+    'abilities/russian_fairy_tales.ts if (Array.isArray(eligible) && eligible.length > 0) return eligible[0];',
+    'abilities/sharks.ts const located = collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId)[0];',
+    'abilities/tornados.ts const located = collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid)[0];',
+    'abilities/tricksters.ts valid[0].baseIndex,',
+    'abilities/tricksters.ts valid[0].minionUid,',
+    'abilities/vikings.ts card: sourceDeckCards[0],',
+    'abilities/vikings.ts const card = random.shuffle([...target.hand])[0];',
+    'abilities/what_were_we_thinking.ts events: [addTempPower(ownMinions[0].uid, ctx.baseIndex, 5, \'base_ancient_temple\', ctx.now, {',
+    'abilities/wizards.ts buildWizardPortalReturnToDeckTopEvent(state.core, context.playerId, remaining[0].uid, remaining[0].defId, timestamp),',
+    'abilities/wizards.ts const allCards = remaining.length === 1 ? [...ordered, remaining[0]] : ordered;',
+    'abilities/wizards.ts remaining[0].defId,',
+    'abilities/wizards.ts remaining[0].uid,',
+    'abilities/world_champs.ts const only = validPicks[0];',
+    'abilities/wreck_it_ralph.ts ? getMinionDef(ctx.state.bases[ctx.baseIndex].minions[0].defId)?.faction',
+    'abilities/wreck_it_ralph.ts const sourceFaction = ctx.state.bases[ctx.baseIndex]?.minions[0]',
+    'abilities/yuanhou.ts buildMinionPromptOption(candidates[0].minion, { minionUid: candidates[0].minion.uid }),',
+    'abilities/yuanhou.ts const matching = matchingCards[0];',
+    'abilities/zhongguo.ts context: createPromptContext(state, remaining[0]!, timestamp, {',
+    'abilities/zhongguo.ts playerId: remaining[0]!,',
+    'abilities/zombies.ts : remainingBaseIndices[0];',
+    'domain/abilityHelpers.ts return resolve(options[0].value);',
+    'domain/abilityHelpers.ts const card = sourceCards[0];',
+    'domain/baseAbilities.ts const first = tieBreakPlayers[0];',
+    'domain/baseAbilities.ts const minion = ownMinions[0];',
+    'domain/baseAbilities.ts const next = remaining[0];',
+    'domain/index.ts || core.scoringEligibleBaseIndices[0] !== baseIndex',
+    'domain/ongoingEffects.ts return isEligible ? locatedSources.find(isEligible) : locatedSources[0];',
+    'domain/reactionSession.ts ? initialOptions[0].value.triggerId',
+    'domain/reactionSession.ts const first = pending[0];',
+    'domain/reactionSession.ts const leadingTriggerId = initialOptions[0]?.value.kind === \'trigger\'',
+    'domain/reactionSession.ts const resolved = resolveSmashUpReactionChoice(currentState, random, now, nonPassOptions[0].value, options);',
+    'domain/reduce.ts const candidate = removedMinions[0];',
+    'domain/reduce.ts const foundTreasure = buildMunchkinTreasureCard(defId, allocation.treasureUids[0], playerId);',
+    'domain/reduce.ts const recoveredTreasure = buildMunchkinTreasureCard(defId, allocation.treasureUids[0], playerId);',
+    'domain/utils.ts return candidates[0];',
+]);
+
+function collectFirstCandidateSelectionSites(): string[] {
+    const pattern = new RegExp([
+        String.raw`\b\w*(?:Candidates|Targets|Options|Actions|Minions|Cards|Bases|Sources|Picks|Choices|Indexes|Indices|Ids|Uids|Players|Entries|Revealed|Remaining|Pending|Ordered|Valid|Eligible|Winners|Finalists)\s*\[\s*0\s*\]`,
+        String.raw`\b(?:candidates|targets|options|actions|minions|cards|bases|sources|picks|choices|valid|eligible|pending|remaining|ordered|revealed|destinations|located|selected|source|target|first|top|winner|finalist)\s*\[\s*0\s*\]`,
+        String.raw`\b(?:collectMinionTargets|ownMinionsAtBase|getPlayerMinionsAtBase|random\.shuffle|ctx\.random\.shuffle)\([^\n;]+\)\s*\[\s*0\s*\]`,
+    ].join('|'));
+    const sites: string[] = [];
+
+    for (const file of collectSmashupImplementationSources()) {
+        file.lines.forEach((line) => {
+            if (line.trim().startsWith('//')) return;
+            if (pattern.test(line)) {
+                sites.push(`${file.relative} ${line.trim()}`);
+            }
+        });
+    }
+
+    return Array.from(new Set(sites)).sort();
+}
+
 function isOptionalChoiceText(effectText: string): boolean {
     return /(你可以|可以选择|至多|任意数量)/.test(effectText)
         && /(移动|消灭|选择|加入|洗回|放置|抽|弃|返回)/.test(effectText);
@@ -410,6 +676,26 @@ describe('SmashUp 能力行为审计', () => {
 
         it('已确认的单候选目标选择不得保留硬编码直结算旁路', () => {
             expect(collectKnownSingleCandidateChoiceBypasses()).toEqual([]);
+        });
+
+        it('不得新增弃第一张手牌这类玩家选择代办 helper', () => {
+            expect(collectForbiddenAutomaticChoiceHelpers()).toEqual([]);
+        });
+
+        it('无交互态返回非空事件必须是已复核的机械结算', () => {
+            expect(collectNonEmptyNoInteractionFallbackEvents()).toEqual([]);
+        });
+
+        it('AI 与自动恢复层不得把第一项选择应用到 human 座位', () => {
+            expect(collectAiAutomaticChoiceGuardViolations()).toEqual([]);
+        });
+
+        it('Smash Up UI 副作用不得自动提交当前选择', () => {
+            expect(collectUiAutoInteractionSubmitEffects()).toEqual([]);
+        });
+
+        it('取第一个候选的代码点必须留在已复核清单内', () => {
+            expect(collectFirstCandidateSelectionSites()).toEqual(Array.from(reviewedFirstCandidateSites).sort());
         });
     });
 

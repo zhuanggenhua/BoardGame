@@ -4,20 +4,22 @@ import {
     type AiDecisionDescriptor,
 } from '../../../engine/ai/decisionSemantics';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
-import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
+import { FLOW_COMMANDS, type PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
 import { MageWarsDomain, MAGE_WARS_COMMANDS } from '../domain';
 import {
+    getMageWarsSpellCardFromConfig,
     getFormalArenaZonesFromConfig,
     getFormalStartingZoneIdFromConfig,
     getPresetSpellbookCardIdsFromConfig,
     getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
-import { resolveMageWarsObjectAttackEvents } from '../domain/execute';
+import { resolveMageWarsBasicAttackEvents, resolveMageWarsObjectAttackEvents } from '../domain/execute';
 import { mageWarsFlowHooks } from '../domain/flowHooks';
 import { reduceEvent } from '../domain/reducer';
+import { executeMageWarsSpellAbility } from '../domain/spellAbilityExecutors';
 import {
     ARENA_ZONE_IDS,
     MAGE_IDS,
@@ -27,7 +29,7 @@ import {
     getMageWarsWallEdgeId,
     type MageWarsObjectAbilityId,
 } from '../domain/ids';
-import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase } from '../domain/types';
+import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsEvent, MageWarsPhase } from '../domain/types';
 import { getMageWarsPlayerDefenseProfiles } from '../domain/spellRules';
 import { engineConfig } from '../game';
 
@@ -307,6 +309,11 @@ function validateCommand(
     return MageWarsDomain.validate(state, command).error;
 }
 
+function readMageWarsPhaseExitEvents(result: MageWarsEvent[] | PhaseExitResult | void): MageWarsEvent[] {
+    if (!result) return [];
+    return (Array.isArray(result) ? result : result.events ?? []) as MageWarsEvent[];
+}
+
 function planCommand(spellCardIds: number[], playerId = '0'): MageWarsCommand {
     return {
         type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
@@ -515,18 +522,36 @@ describe('mage-wars domain flow', () => {
                 },
             };
 
-            const moved = runCommand(state, {
+            const moveCommand: MageWarsCommand = {
                 type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
                 playerId: '0',
                 payload: {
                     objectId: mover.id,
                     toZoneId: ARENA_ZONE_IDS.B3,
                 },
-            });
+            };
+
+            const rawMoveEvents = MageWarsDomain.execute(state, moveCommand, fixedRandom);
+            const rawMoveEventTypes = rawMoveEvents.map((event) => event.type);
+            expect(rawMoveEventTypes).toContain(MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE);
+            expect(rawMoveEventTypes).not.toContain(MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED);
+            expect(rawMoveEventTypes).not.toContain('DAMAGE_DEALT');
+
+            const moved = runCommand(state, moveCommand);
 
             expect(moved.success).toBe(true);
             expect(moved.state.core.objects[mover.id].zoneId).toBe(ARENA_ZONE_IDS.B3);
             expect(moved.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE,
+                    payload: expect.objectContaining({
+                        wallId: 'wall-test-fire-a3-b3',
+                        objectId: mover.id,
+                        fromZoneId: ARENA_ZONE_IDS.A3,
+                        toZoneId: ARENA_ZONE_IDS.B3,
+                        amount: 3,
+                    }),
+                }),
                 expect.objectContaining({
                     type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED,
                     payload: expect.objectContaining({
@@ -546,6 +571,16 @@ describe('mage-wars domain flow', () => {
                     }),
                 }),
             ]));
+            const availableIndex = moved.events.findIndex((event) => (
+                event.type === MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE
+            ));
+            const triggeredIndex = moved.events.findIndex((event) => (
+                event.type === MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED
+            ));
+            const damageIndex = moved.events.findIndex((event) => event.type === 'DAMAGE_DEALT');
+            expect(availableIndex).toBeGreaterThanOrEqual(0);
+            expect(triggeredIndex).toBeGreaterThan(availableIndex);
+            expect(damageIndex).toBeGreaterThan(triggeredIndex);
             expect(moved.state.core.objects[mover.id].damage).toBe(3);
         });
     });
@@ -1035,10 +1070,11 @@ describe('mage-wars domain flow', () => {
             },
         });
 
-        const restored = runCommand({
+        const restoreState: MatchState<MageWarsCore> = {
             core: withArenaObject(withCurrentPlayer(baseState.core, '1'), burningCleric),
             sys: baseState.sys,
-        }, {
+        };
+        const restoreCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.USE_MAGE_ABILITY,
             playerId: '1',
             payload: {
@@ -1047,7 +1083,13 @@ describe('mage-wars domain flow', () => {
                 statusTokenIds: [STATUS_TOKEN_IDS.BURN],
                 manaCost: 4,
             },
-        });
+        };
+        const rawRestoreEvents = MageWarsDomain.execute(restoreState, restoreCommand, fixedRandom);
+        const rawRestoreEventTypes = rawRestoreEvents.map((event) => event.type);
+        expect(rawRestoreEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
+        expect(rawRestoreEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
+
+        const restored = runCommand(restoreState, restoreCommand);
 
         expect(restored.success).toBe(true);
         expect(restored.events).toEqual(expect.arrayContaining([
@@ -1062,6 +1104,15 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetObjectId: burningCleric.id,
+                    statusTokenId: STATUS_TOKEN_IDS.BURN,
+                    amount: 2,
+                    sourceAbilityId: MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_QUICK,
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
                 payload: expect.objectContaining({
                     targetObjectId: burningCleric.id,
@@ -1071,6 +1122,16 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const removalAvailableIndex = restored.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE
+            && event.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
+        ));
+        const removedIndex = restored.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED
+            && event.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
+        ));
+        expect(removalAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(removedIndex).toBeGreaterThan(removalAvailableIndex);
         expect(restored.state.core.objects[burningCleric.id].statusTokens).toEqual({
             [STATUS_TOKEN_IDS.DAZE]: 1,
         });
@@ -1100,10 +1161,11 @@ describe('mage-wars domain flow', () => {
             },
         });
 
-        const restored = runCommand({
+        const restoreState: MatchState<MageWarsCore> = {
             core: withArenaObject(withCurrentPlayer(baseState.core, '1'), afflictedAngel),
             sys: baseState.sys,
-        }, {
+        };
+        const restoreCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.USE_MAGE_ABILITY,
             playerId: '1',
             payload: {
@@ -1112,7 +1174,15 @@ describe('mage-wars domain flow', () => {
                 statusTokenIds: [STATUS_TOKEN_IDS.BURN, STATUS_TOKEN_IDS.STUN, STATUS_TOKEN_IDS.SLEEP],
                 manaCost: 9,
             },
-        });
+        };
+        const rawRestoreEvents = MageWarsDomain.execute(restoreState, restoreCommand, fixedRandom);
+        const rawRestoreEventTypes = rawRestoreEvents.map((event) => event.type);
+        expect(rawRestoreEventTypes.filter((type) => (
+            type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE
+        ))).toHaveLength(3);
+        expect(rawRestoreEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
+
+        const restored = runCommand(restoreState, restoreCommand);
 
         expect(restored.success).toBe(true);
         expect(restored.events).toEqual(expect.arrayContaining([
@@ -1124,6 +1194,15 @@ describe('mage-wars domain flow', () => {
                     manaCost: 9,
                     targetObjectId: afflictedAngel.id,
                     statusTokenIds: [STATUS_TOKEN_IDS.BURN, STATUS_TOKEN_IDS.STUN, STATUS_TOKEN_IDS.SLEEP],
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetObjectId: afflictedAngel.id,
+                    statusTokenId: STATUS_TOKEN_IDS.BURN,
+                    amount: 1,
+                    sourceAbilityId: MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_STANDARD,
                 }),
             }),
             expect.objectContaining({
@@ -1190,10 +1269,11 @@ describe('mage-wars domain flow', () => {
             attackOrTraitLine: '利剑：快速近战 4 骰；飞行',
         });
 
-        const drained = runCommand({
+        const drainState: MatchState<MageWarsCore> = {
             core: withArenaObject(planned.state.core, armoredLivingTarget),
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
-        }, {
+        };
+        const drainCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -1201,10 +1281,39 @@ describe('mage-wars domain flow', () => {
                 manaCost: 12,
                 targetObjectId: armoredLivingTarget.id,
             },
+        };
+        const lifeDrainSpell = getMageWarsSpellCardFromConfig(lifeDrainSpellId);
+        const rawDrainEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state: drainState,
+            command: drainCommand,
+            random: fixedRandom,
+            spell: lifeDrainSpell!,
+            manaCost: 12,
         });
+        const rawDrainEventTypes = rawDrainEvents.map((event) => event.type);
+        const drained = runCommand(drainState, drainCommand);
 
         const damageEvent = drained.events.find((event) => event.type === 'DAMAGE_DEALT');
         expect(planned.success).toBe(true);
+        expect(rawDrainEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE);
+        expect(rawDrainEventTypes).not.toContain(MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED);
+        expect(rawDrainEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
+        expect(rawDrainEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    spellCardId: lifeDrainSpellId,
+                    sourceAbilityId: 'mw.spell.3400',
+                    healingTargetPlayerId: '0',
+                    damagedTargetObjectId: armoredLivingTarget.id,
+                    diceResults: [3, 3, 3, 3, 3],
+                    healing: 15,
+                }),
+            }),
+        ]));
         expect(drained.success).toBe(true);
         expect(drained.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -1228,6 +1337,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    spellCardId: lifeDrainSpellId,
+                    sourceAbilityId: 'mw.spell.3400',
+                    healingTargetPlayerId: '0',
+                    damagedTargetObjectId: armoredLivingTarget.id,
+                    healing: 15,
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
                 payload: expect.objectContaining({
                     playerId: '0',
@@ -1240,6 +1360,15 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const healingAvailableIndex = drained.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE
+        ));
+        const healingRolledIndex = drained.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED
+        ));
+        expect(healingAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(healingRolledIndex).toBeGreaterThanOrEqual(0);
+        expect(healingAvailableIndex).toBeLessThan(healingRolledIndex);
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-object-armor');
         expect(drained.state.core.objects[armoredLivingTarget.id].damage).toBe(15);
         expect(drained.state.core.players['0']).toMatchObject({
@@ -1253,6 +1382,130 @@ describe('mage-wars domain flow', () => {
             MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_ROLLED,
             MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
         ]));
+    });
+
+    it('routes lethal Life Drain defeat through direct-damage timing opportunities', () => {
+        const lifeDrainSpellId = 3400;
+        const planningState = setupState('planning');
+        const warlockCore = withPlayerMage(planningState.core, '0', MAGE_IDS.WARLOCK_APPRENTICE);
+        const planned = runCommand({
+            core: {
+                ...warlockCore,
+                players: {
+                    ...warlockCore.players,
+                    '0': {
+                        ...warlockCore.players['0'],
+                        mana: 20,
+                        damage: 5,
+                    },
+                },
+            },
+            sys: planningState.sys,
+        }, planCommand([lifeDrainSpellId]));
+        const livingTarget = makeArenaObject('life-drain-target-1', '1', PLAYER_ZERO_START_ZONE, {
+            sourceSpellCardId: 2907,
+            sourceObjectId: 'spell-card-2907',
+            name: '灰衣天使',
+            life: 10,
+            armor: 4,
+            attackOrTraitLine: '利剑：快速近战 4 骰；飞行',
+        });
+        const drainState: MatchState<MageWarsCore> = {
+            core: withArenaObject(planned.state.core, livingTarget),
+            sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
+        };
+        const drainCommand: MageWarsCommand = {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId: lifeDrainSpellId,
+                manaCost: 12,
+                targetObjectId: livingTarget.id,
+            },
+        };
+        const lifeDrainSpell = getMageWarsSpellCardFromConfig(lifeDrainSpellId);
+        const rawDrainEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state: drainState,
+            command: drainCommand,
+            random: fixedRandom,
+            spell: lifeDrainSpell!,
+            manaCost: 12,
+        });
+        const rawDrainEventTypes = rawDrainEvents.map((event) => event.type);
+        const drained = runCommand(drainState, drainCommand);
+
+        expect(planned.success).toBe(true);
+        expect(rawDrainEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE);
+        expect(rawDrainEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE);
+        expect(rawDrainEventTypes).not.toContain(MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED);
+        expect(rawDrainEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
+        expect(drained.success).toBe(true);
+        expect(drained.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    sourceAbilityId: 'mw.spell.3400',
+                    spellCardId: lifeDrainSpellId,
+                    healingTargetPlayerId: '0',
+                    damagedTargetObjectId: livingTarget.id,
+                    healing: 15,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    sourceAbilityId: 'mw.spell.3400',
+                    targetPlayerId: '0',
+                    healing: 15,
+                    actualHealing: 5,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    sourceAbilityId: 'mw.spell.3400',
+                    spellCardId: lifeDrainSpellId,
+                    targetObjectId: livingTarget.id,
+                    targetObjectOwnerId: '1',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: livingTarget.id,
+                    ownerId: '1',
+                    sourceAbilityId: 'mw.spell.3400',
+                    spellCardId: lifeDrainSpellId,
+                }),
+            }),
+        ]));
+        const healingAvailableIndex = drained.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE
+        ));
+        const healingRolledIndex = drained.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED
+        ));
+        const defeatAvailableIndex = drained.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE
+        ));
+        const defeatedIndex = drained.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === livingTarget.id
+        ));
+        expect(healingAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(healingRolledIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(healingAvailableIndex).toBeLessThan(healingRolledIndex);
+        expect(defeatAvailableIndex).toBeLessThan(defeatedIndex);
+        expect(drained.state.core.players['0'].damage).toBe(0);
+        expect(drained.state.core.objects[livingTarget.id]).toBeUndefined();
+        expect(drained.state.core.arena.find((zone) => zone.id === PLAYER_ZERO_START_ZONE)?.objectIds).not.toContain(livingTarget.id);
     });
 
     it('rejects Life Drain on non-living arena objects', () => {
@@ -1324,15 +1577,18 @@ describe('mage-wars domain flow', () => {
     it('places status tokens from attack spell effect dice', () => {
         const spellCardId = 1710;
         const planned = runCommand(setupState('planning'), planCommand([spellCardId]));
+        const spell = getMageWarsSpellCardFromConfig(spellCardId);
         const statusRandom: RandomFn = {
             ...fixedRandom,
             d: (sides: number) => (sides === 12 ? 5 : 3),
         };
+        expect(spell).toBeDefined();
 
-        const result = runCommand({
+        const attackState: MatchState<MageWarsCore> = {
             core: withPlayerInZone(planned.state.core, '1', ARENA_ZONE_IDS.A2),
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
-        }, {
+        };
+        const attackCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -1340,9 +1596,22 @@ describe('mage-wars domain flow', () => {
                 manaCost: 4,
                 targetPlayerId: '1',
             },
-        }, statusRandom);
+        };
+        const rawSpellEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state: attackState,
+            command: attackCommand,
+            random: statusRandom,
+            spell: spell!,
+            manaCost: 4,
+        });
+        const rawSpellEventTypes = rawSpellEvents.map((event) => event.type);
+        const result = runCommand(attackState, attackCommand, statusRandom);
 
         expect(result.success).toBe(true);
+        expect(rawSpellEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE);
+        expect(rawSpellEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED);
         expect(result.events.find((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED)).toMatchObject({
             payload: {
                 spellCardId,
@@ -1350,6 +1619,15 @@ describe('mage-wars domain flow', () => {
             },
         });
         expect(result.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetPlayerId: '1',
+                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
+                    amount: 1,
+                    sourceAbilityId: 'mw.spell.1710',
+                }),
+            }),
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
                 payload: expect.objectContaining({
@@ -1360,6 +1638,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const statusAvailableIndex = result.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE
+            && event.payload.targetPlayerId === '1'
+        ));
+        const statusPlacedIndex = result.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED
+            && event.payload.targetPlayerId === '1'
+        ));
+        expect(statusAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(statusPlacedIndex).toBeGreaterThanOrEqual(0);
+        expect(statusAvailableIndex).toBeLessThan(statusPlacedIndex);
         expect(result.state.core.players['1'].statusTokens[STATUS_TOKEN_IDS.DAZE]).toBe(1);
         expect(actionLogKinds(result.state)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED);
     });
@@ -1809,10 +2098,11 @@ describe('mage-wars domain flow', () => {
             },
         };
 
-        const result = runCommand({
+        const spellState: MatchState<MageWarsCore> = {
             core: burningCore,
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
-        }, {
+        };
+        const castCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -1820,13 +2110,29 @@ describe('mage-wars domain flow', () => {
                 manaCost: 4,
                 targetPlayerId: '1',
             },
-        });
+        };
+        const rawEvents = MageWarsDomain.execute(spellState, castCommand, fixedRandom);
+        const rawEventTypes = rawEvents.map((event) => event.type);
+        expect(rawEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
+        expect(rawEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
+
+        const result = runCommand(spellState, castCommand);
 
         expect(result.success).toBe(true);
+        expect(result.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
         expect(result.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
         expect(result.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED);
         expect(result.events.map((event) => event.type)).not.toContain('DAMAGE_DEALT');
         expect(result.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetPlayerId: '1',
+                    statusTokenId: STATUS_TOKEN_IDS.BURN,
+                    amount: 2,
+                    sourceAbilityId: 'mw.spell.1710',
+                }),
+            }),
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
                 payload: expect.objectContaining({
@@ -1834,10 +2140,19 @@ describe('mage-wars domain flow', () => {
                     statusTokenId: STATUS_TOKEN_IDS.BURN,
                     amount: 2,
                     sourceAbilityId: 'mw.spell.1710',
-                    spellCardId,
                 }),
             }),
         ]));
+        const removalAvailableIndex = result.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE
+            && event.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
+        ));
+        const removedIndex = result.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED
+            && event.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
+        ));
+        expect(removalAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(removedIndex).toBeGreaterThan(removalAvailableIndex);
         expect(result.state.core.players['1'].damage).toBe(5);
         expect(result.state.core.players['1'].statusTokens[STATUS_TOKEN_IDS.BURN]).toBeUndefined();
         expect(actionLogKinds(result.state)).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
@@ -1846,6 +2161,7 @@ describe('mage-wars domain flow', () => {
     it('summons creature spells as arena objects that can be damaged by attack spells', () => {
         const creatureSpellId = 2906;
         const attackSpellId = 1710;
+        const attackSpell = getMageWarsSpellCardFromConfig(attackSpellId);
         const planned = runCommand(setupState('planning'), planCommand([creatureSpellId, attackSpellId]));
 
         const summoned = runCommand({
@@ -1868,6 +2184,7 @@ describe('mage-wars domain flow', () => {
         ]));
 
         const objectId = Object.keys(summoned.state.core.objects)[0];
+        expect(attackSpell).toBeDefined();
         expect(objectId).toBe('mwobj-0-2906-1');
         expect(summoned.state.core.objects[objectId]).toMatchObject({
             kind: 'creature',
@@ -1886,10 +2203,11 @@ describe('mage-wars domain flow', () => {
             quickcastReady: true,
         });
 
-        const attackedObject = runCommand({
+        const attackedObjectState: MatchState<MageWarsCore> = {
             core: summoned.state.core,
             sys: { ...summoned.state.sys, phase: 'finalQuickcast' },
-        }, {
+        };
+        const attackCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -1897,9 +2215,22 @@ describe('mage-wars domain flow', () => {
                 manaCost: 4,
                 targetObjectId: objectId,
             },
+        };
+        const rawAttackSpellEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state: attackedObjectState,
+            command: attackCommand,
+            random: fixedRandom,
+            spell: attackSpell!,
+            manaCost: 4,
         });
+        const rawAttackSpellEventTypes = rawAttackSpellEvents.map((event) => event.type);
+        const attackedObject = runCommand(attackedObjectState, attackCommand);
 
         expect(attackedObject.success).toBe(true);
+        expect(rawAttackSpellEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_ATTACK_DEFEAT_AVAILABLE);
+        expect(rawAttackSpellEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(attackedObject.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
@@ -1919,6 +2250,15 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_DEFEAT_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    targetObjectId: objectId,
+                    sourceAbilityId: 'mw.spell.1710',
+                    spellCardId: attackSpellId,
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
                 payload: expect.objectContaining({
                     objectId,
@@ -1926,6 +2266,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const defeatAvailableIndex = attackedObject.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_DEFEAT_AVAILABLE
+            && event.payload.targetObjectId === objectId
+        ));
+        const defeatedIndex = attackedObject.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === objectId
+        ));
+        expect(defeatAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatAvailableIndex).toBeLessThan(defeatedIndex);
         expect(attackedObject.state.core.objects[objectId]).toBeUndefined();
         expect(attackedObject.state.core.arena.find((zone) => zone.id === PLAYER_ZERO_START_ZONE)?.objectIds).not.toContain(objectId);
         expect(actionLogKinds(attackedObject.state)).toEqual(expect.arrayContaining([
@@ -3065,6 +3416,13 @@ describe('mage-wars domain flow', () => {
         expect(advanced.state.core.objects[gremlinId].temporaryTraits).toBeUndefined();
         expect(advanced.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEAR_AVAILABLE,
+                payload: expect.objectContaining({
+                    objectId: gremlinId,
+                    traitIds: expect.arrayContaining(['swift', 'teleportMovement']),
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED,
                 payload: expect.objectContaining({
                     objectId: gremlinId,
@@ -3072,6 +3430,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const clearAvailableIndex = advanced.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEAR_AVAILABLE
+            && event.payload.objectId === gremlinId
+        ));
+        const traitsClearedIndex = advanced.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED
+            && event.payload.objectId === gremlinId
+        ));
+        expect(clearAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(traitsClearedIndex).toBeGreaterThanOrEqual(0);
+        expect(clearAvailableIndex).toBeLessThan(traitsClearedIndex);
         expect(actionLogKinds(advanced.state)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED);
     });
 
@@ -3228,7 +3597,7 @@ describe('mage-wars domain flow', () => {
             sys: baseState.sys,
         };
 
-        const healed = runCommand(state, {
+        const sacrificeCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
             playerId: '0',
             payload: {
@@ -3237,7 +3606,13 @@ describe('mage-wars domain flow', () => {
                 manaCost: 0,
                 targetObjectId: distantWoundedCreature.id,
             },
-        }, healingRandom);
+        };
+        const rawSacrificeEvents = MageWarsDomain.execute(state, sacrificeCommand, healingRandom);
+        const rawSacrificeEventTypes = rawSacrificeEvents.map((event) => event.type);
+        expect(rawSacrificeEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE);
+        expect(rawSacrificeEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
+
+        const healed = runCommand(state, sacrificeCommand, healingRandom);
 
         expect(healed.success).toBe(true);
         expect(healed.events).toEqual(expect.arrayContaining([
@@ -3266,6 +3641,13 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: greyAngel.id,
+                    sourceAbilityId: MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE,
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
                 payload: expect.objectContaining({
                     objectId: greyAngel.id,
@@ -3275,6 +3657,15 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const sourceConsumeAvailableIndex = healed.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
+        ));
+        const defeatedIndex = healed.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === greyAngel.id
+        ));
+        expect(sourceConsumeAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatedIndex).toBeGreaterThan(sourceConsumeAvailableIndex);
         expect(healed.state.core.players['0'].mana).toBe(baseState.core.players['0'].mana);
         expect(healed.state.core.objects[greyAngel.id]).toBeUndefined();
         expect(healed.state.core.arena.find((zone) => zone.id === PLAYER_ZERO_START_ZONE)?.objectIds).not.toContain(greyAngel.id);
@@ -4504,6 +4895,22 @@ describe('mage-wars domain flow', () => {
             vampiricNextMelee: true,
             nextMeleePierceModifier: 1,
         });
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state: {
+                core: cast.state.core,
+                sys: { ...cast.state.sys, phase: 'creatureAction' },
+            },
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: armoredTarget.id,
+        });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
+
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_TEMPORARY_TRAITS_CLEAR_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED);
 
         const attacked = runCommand({
             core: cast.state.core,
@@ -5370,6 +5777,20 @@ describe('mage-wars domain flow', () => {
                 },
             },
         };
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state: { core, sys: base.sys },
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-1',
+            targetObjectId: target.id,
+        });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
+
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_VAMPIRIC_HEALING_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED);
+
         const attacked = runCommand({ core, sys: base.sys }, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             playerId: '0',
@@ -5641,6 +6062,19 @@ describe('mage-wars domain flow', () => {
             core: withArenaObject(withArenaObject(baseState.core, attacker), enemyGuard),
             sys: baseState.sys,
         };
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: enemyGuard.id,
+        });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
+
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.GUARD_REMOVED);
 
         const attacked = runCommand(state, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
@@ -5975,6 +6409,13 @@ describe('mage-wars domain flow', () => {
         expect(counterstruck.success).toBe(true);
         expect(counterstruck.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: enchantment.id,
+                    sourceAbilityId: 'mw.enchantment.counterstrike.consume',
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
                 payload: expect.objectContaining({
                     objectId: enchantment.id,
@@ -5983,6 +6424,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const consumeAvailableIndex = counterstruck.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
+            && event.payload.sourceObjectId === enchantment.id
+        ));
+        const sourceDefeatedIndex = counterstruck.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === enchantment.id
+        ));
+        expect(consumeAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
         expect(counterstruck.state.core.objects[enchantment.id]).toBeUndefined();
     });
 
@@ -6047,6 +6499,13 @@ describe('mage-wars domain flow', () => {
         expect(defended.success).toBe(true);
         expect(defended.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: enchantment.id,
+                    sourceAbilityId: 'mw.enchantment.counterstrike.consume',
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
                 payload: expect.objectContaining({
                     objectId: enchantment.id,
@@ -6054,6 +6513,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const consumeAvailableIndex = defended.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
+            && event.payload.sourceObjectId === enchantment.id
+        ));
+        const sourceDefeatedIndex = defended.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === enchantment.id
+        ));
+        expect(consumeAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
         expect(defended.state.core.objects[enchantment.id]).toBeUndefined();
     });
 
@@ -6962,6 +7432,19 @@ describe('mage-wars domain flow', () => {
             }, manaLeech), target),
             sys: baseState.sys,
         };
+        const rawQuickAttackEvents = resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: manaLeech.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: target.id,
+        });
+        const rawQuickAttackEventTypes = rawQuickAttackEvents.map((event) => event.type);
+
+        expect(rawQuickAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_MANA_DRAIN_AVAILABLE);
+        expect(rawQuickAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.MANA_DRAINED);
 
         const quickAttack = runCommand(state, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
@@ -7121,6 +7604,19 @@ describe('mage-wars domain flow', () => {
             core: withArenaObject(withPlayerInZone(baseState.core, '1', PLAYER_ZERO_START_ZONE), imp),
             sys: baseState.sys,
         };
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: statusRandom,
+            attackerObjectId: imp.id,
+            attackProfileId: 'attack-0',
+            targetPlayerId: '1',
+        });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
+
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED);
 
         const attacked = runCommand(state, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
@@ -7840,6 +8336,7 @@ describe('mage-wars domain flow', () => {
 
     it('casts Jet Stream with flying bonus damage, push movement, and daze on 11+', () => {
         const attackSpellId = 1711;
+        const spell = getMageWarsSpellCardFromConfig(attackSpellId);
         const pushRandom: RandomFn = {
             ...fixedRandom,
             d: (sides: number) => (sides === 12 ? 11 : 3),
@@ -7853,11 +8350,13 @@ describe('mage-wars domain flow', () => {
             armor: 0,
             attackOrTraitLine: '利剑：快速近战 4 骰；飞行',
         });
+        expect(spell).toBeDefined();
 
-        const pushed = runCommand({
+        const pushState: MatchState<MageWarsCore> = {
             core: withArenaObject(planned.state.core, flyingAngel),
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
-        }, {
+        };
+        const pushCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -7866,9 +8365,22 @@ describe('mage-wars domain flow', () => {
                 targetObjectId: flyingAngel.id,
                 pushToZoneId: ARENA_ZONE_IDS.A3,
             },
-        }, pushRandom);
+        };
+        const rawPushEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state: pushState,
+            command: pushCommand,
+            random: pushRandom,
+            spell: spell!,
+            manaCost: 4,
+        });
+        const rawPushEventTypes = rawPushEvents.map((event) => event.type);
+        const pushed = runCommand(pushState, pushCommand, pushRandom);
 
         expect(pushed.success).toBe(true);
+        expect(rawPushEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_ATTACK_PUSH_AVAILABLE);
+        expect(rawPushEventTypes).not.toContain(MAGE_WARS_EVENTS.SPELL_PUSH_RESOLVED);
         expect(pushed.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
@@ -7900,6 +8412,18 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_PUSH_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    spellCardId: attackSpellId,
+                    sourceAbilityId: 'mw.spell.1711',
+                    targetObjectId: flyingAngel.id,
+                    fromZoneId: ARENA_ZONE_IDS.A2,
+                    toZoneId: ARENA_ZONE_IDS.A3,
+                    effectDieResult: 11,
+                }),
+            }),
+            expect.objectContaining({
                 type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
                 payload: expect.objectContaining({
                     targetObjectId: flyingAngel.id,
@@ -7921,6 +8445,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const pushAvailableIndex = pushed.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_PUSH_AVAILABLE
+            && event.payload.targetObjectId === flyingAngel.id
+        ));
+        const pushResolvedIndex = pushed.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_PUSH_RESOLVED
+            && event.payload.targetObjectId === flyingAngel.id
+        ));
+        expect(pushAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(pushResolvedIndex).toBeGreaterThanOrEqual(0);
+        expect(pushAvailableIndex).toBeLessThan(pushResolvedIndex);
         expect(pushed.state.core.objects[flyingAngel.id]).toMatchObject({
             damage: 8,
             zoneId: ARENA_ZONE_IDS.A3,
@@ -8545,7 +9080,7 @@ describe('mage-wars domain flow', () => {
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
         };
 
-        const exploded = runCommand(state, {
+        const explodeCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -8553,9 +9088,23 @@ describe('mage-wars domain flow', () => {
                 manaCost: 12,
                 targetObjectId: equipment.id,
             },
-        }, statusRandom);
+        };
+        const explodeSpell = getMageWarsSpellCardFromConfig(explodeSpellId);
+        const rawExplodeEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state,
+            command: explodeCommand,
+            random: statusRandom,
+            spell: explodeSpell!,
+            manaCost: 12,
+        });
+        const rawExplodeEventTypes = rawExplodeEvents.map((event) => event.type);
+        const exploded = runCommand(state, explodeCommand, statusRandom);
         const damageEvent = exploded.events.find((event) => event.type === 'DAMAGE_DEALT');
 
+        expect(rawExplodeEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE);
+        expect(rawExplodeEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(exploded.success).toBe(true);
         expect(exploded.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -8564,6 +9113,17 @@ describe('mage-wars domain flow', () => {
                     spellCardId: explodeSpellId,
                     manaCost: 12,
                     targetObjectId: equipment.id,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    sourceAbilityId: 'mw.spell.3401',
+                    spellCardId: explodeSpellId,
+                    targetObjectId: equipment.id,
+                    targetObjectOwnerId: '1',
+                    destructionKind: 'explode',
                 }),
             }),
             expect.objectContaining({
@@ -8606,6 +9166,22 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const destructionAvailableIndex = exploded.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE
+            && event.payload.targetObjectId === equipment.id
+        ));
+        const destroyedIndex = exploded.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === equipment.id
+        ));
+        const attackRolledIndex = exploded.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED
+        ));
+        expect(destructionAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(destroyedIndex).toBeGreaterThanOrEqual(0);
+        expect(attackRolledIndex).toBeGreaterThanOrEqual(0);
+        expect(destructionAvailableIndex).toBeLessThan(destroyedIndex);
+        expect(destroyedIndex).toBeLessThan(attackRolledIndex);
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-mage-equipment-armor');
         expect(exploded.state.core.objects[equipment.id]).toBeUndefined();
         expect(exploded.state.core.players['1'].damage).toBe(12);
@@ -8764,7 +9340,7 @@ describe('mage-wars domain flow', () => {
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
         };
 
-        const dissolved = runCommand(state, {
+        const dissolveCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -8772,8 +9348,22 @@ describe('mage-wars domain flow', () => {
                 manaCost: 6,
                 targetObjectId: equipment.id,
             },
+        };
+        const dissolveSpell = getMageWarsSpellCardFromConfig(dissolveSpellId);
+        const rawDissolveEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state,
+            command: dissolveCommand,
+            random: fixedRandom,
+            spell: dissolveSpell!,
+            manaCost: 6,
         });
+        const rawDissolveEventTypes = rawDissolveEvents.map((event) => event.type);
+        const dissolved = runCommand(state, dissolveCommand);
 
+        expect(rawDissolveEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE);
+        expect(rawDissolveEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(dissolved.success).toBe(true);
         expect(dissolved.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -8782,6 +9372,17 @@ describe('mage-wars domain flow', () => {
                     spellCardId: dissolveSpellId,
                     manaCost: 6,
                     targetObjectId: equipment.id,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    sourceAbilityId: 'mw.spell.3605',
+                    spellCardId: dissolveSpellId,
+                    targetObjectId: equipment.id,
+                    targetObjectOwnerId: '1',
+                    destructionKind: 'dissolve',
                 }),
             }),
             expect.objectContaining({
@@ -8794,6 +9395,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const destructionAvailableIndex = dissolved.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE
+            && event.payload.targetObjectId === equipment.id
+        ));
+        const destroyedIndex = dissolved.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === equipment.id
+        ));
+        expect(destructionAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(destroyedIndex).toBeGreaterThanOrEqual(0);
+        expect(destructionAvailableIndex).toBeLessThan(destroyedIndex);
         expect(dissolved.state.core.objects[equipment.id]).toBeUndefined();
         expect(dissolved.state.core.players['0'].discardSpellCardIds).toEqual([dissolveSpellId]);
         expect(dissolved.state.core.players['0'].mana).toBe(state.core.players['0'].mana - 6);
@@ -8942,7 +9554,7 @@ describe('mage-wars domain flow', () => {
             sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
         };
 
-        const dispelled = runCommand(state, {
+        const dispelCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -8950,8 +9562,22 @@ describe('mage-wars domain flow', () => {
                 manaCost: 5,
                 targetObjectId: visibleEnchantment.id,
             },
+        };
+        const dispelSpell = getMageWarsSpellCardFromConfig(dispelSpellId);
+        const rawDispelEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state,
+            command: dispelCommand,
+            random: fixedRandom,
+            spell: dispelSpell!,
+            manaCost: 5,
         });
+        const rawDispelEventTypes = rawDispelEvents.map((event) => event.type);
+        const dispelled = runCommand(state, dispelCommand);
 
+        expect(rawDispelEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE);
+        expect(rawDispelEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(dispelled.success).toBe(true);
         expect(dispelled.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -8960,6 +9586,17 @@ describe('mage-wars domain flow', () => {
                     spellCardId: dispelSpellId,
                     manaCost: 5,
                     targetObjectId: visibleEnchantment.id,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourcePlayerId: '0',
+                    sourceAbilityId: 'mw.spell.3606',
+                    spellCardId: dispelSpellId,
+                    targetObjectId: visibleEnchantment.id,
+                    targetObjectOwnerId: '1',
+                    destructionKind: 'dispel',
                 }),
             }),
             expect.objectContaining({
@@ -8972,6 +9609,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const destructionAvailableIndex = dispelled.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE
+            && event.payload.targetObjectId === visibleEnchantment.id
+        ));
+        const destroyedIndex = dispelled.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === visibleEnchantment.id
+        ));
+        expect(destructionAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(destroyedIndex).toBeGreaterThanOrEqual(0);
+        expect(destructionAvailableIndex).toBeLessThan(destroyedIndex);
         expect(dispelled.state.core.objects[visibleEnchantment.id]).toBeUndefined();
         expect(dispelled.state.core.objects[enchantedCreature.id]).toBeDefined();
         expect(dispelled.state.core.players['0'].discardSpellCardIds).toEqual([dispelSpellId]);
@@ -10036,8 +10684,36 @@ describe('mage-wars domain flow', () => {
 
         expect(upkeep.success).toBe(true);
         expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.UPKEEP_COST_AVAILABLE);
+        expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE);
         expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(upkeep.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.MANA_SPENT);
+        expect(upkeep.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: enchantment!.id,
+                    sourceAbilityId: `mw.spell.${essenceDrainSpellId}.upkeep`,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: enchantment!.id,
+                    sourceAbilityId: `mw.spell.${essenceDrainSpellId}.upkeep`,
+                }),
+            }),
+        ]));
+        const consumeAvailableIndex = upkeep.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
+            && event.payload.sourceObjectId === enchantment!.id
+        ));
+        const sourceDefeatedIndex = upkeep.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === enchantment!.id
+        ));
+        expect(consumeAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
         expect(upkeep.state.core.players['1'].mana).toBe(1);
         expect(upkeep.state.core.objects[enchantment!.id]).toBeUndefined();
     });
@@ -10532,10 +11208,26 @@ describe('mage-wars domain flow', () => {
                 targetObjectId: target.id,
             },
         });
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state: {
+                core: withArenaObject(cast.state.core, attacker),
+                sys: { ...cast.state.sys, phase: 'creatureAction' },
+            },
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: target.id,
+        });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
 
         expect(cast.success).toBe(true);
         expect(attacked.success).toBe(true);
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(attacked.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.DEFENSE_AVAILABLE);
+        expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE);
         expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
         expect(attacked.state.core.objects[attachedBlock!.id]).toBeUndefined();
@@ -11933,6 +12625,7 @@ describe('mage-wars domain flow', () => {
 
     it('casts Chain Lightning through a legal object chain with shrinking dice and effect die penalties', () => {
         const attackSpellId = 1703;
+        const spell = getMageWarsSpellCardFromConfig(attackSpellId);
         const chainRandom: RandomFn = {
             ...fixedRandom,
             d: (sides: number) => (sides === 12 ? 8 : 2),
@@ -11960,8 +12653,9 @@ describe('mage-wars domain flow', () => {
                 },
             },
         };
+        expect(spell).toBeDefined();
 
-        const chained = runCommand({
+        const chainState: MatchState<MageWarsCore> = {
             core: withArenaObject(
                 withArenaObject(
                     withArenaObject(
@@ -11973,7 +12667,8 @@ describe('mage-wars domain flow', () => {
                 aegis,
             ),
             sys: { ...planned.state.sys, phase: 'creatureAction' },
-        }, {
+        };
+        const chainCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
@@ -11985,15 +12680,40 @@ describe('mage-wars domain flow', () => {
                     { targetObjectId: thirdTarget.id },
                 ],
             },
-        }, chainRandom);
+        };
+        const rawChainEvents = executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 0,
+            state: chainState,
+            command: chainCommand,
+            random: chainRandom,
+            spell: spell!,
+            manaCost: 12,
+        });
+        const rawChainStatusAvailableEvents = rawChainEvents.filter((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE
+        ));
+        const chained = runCommand(chainState, chainCommand, chainRandom);
 
         const attackRolls = chained.events.filter((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED);
         const damageEvents = chained.events.filter((event) => event.type === 'DAMAGE_DEALT');
+        const statusAvailableEvents = chained.events.filter((event) => (
+            event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE
+            && event.payload.sourceAbilityId === 'mw.spell.1703'
+        ));
+        const statusPlacedEvents = chained.events.filter((event) => (
+            event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED
+            && event.payload.sourceAbilityId === 'mw.spell.1703'
+        ));
 
         expect(planned.success).toBe(true);
+        expect(rawChainStatusAvailableEvents).toHaveLength(3);
+        expect(rawChainEvents.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED);
         expect(chained.success).toBe(true);
         expect(attackRolls).toHaveLength(3);
         expect(damageEvents).toHaveLength(3);
+        expect(statusAvailableEvents).toHaveLength(3);
+        expect(statusPlacedEvents).toHaveLength(3);
         expect(attackRolls).toEqual([
             expect.objectContaining({
                 payload: expect.objectContaining({
@@ -12065,6 +12785,19 @@ describe('mage-wars domain flow', () => {
             damage: 6,
             statusTokens: { [STATUS_TOKEN_IDS.DAZE]: 1 },
         });
+        for (const targetId of [firstTarget.id, secondTarget.id, thirdTarget.id]) {
+            const availableIndex = chained.events.findIndex((event) => (
+                event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE
+                && event.payload.targetObjectId === targetId
+            ));
+            const placedIndex = chained.events.findIndex((event) => (
+                event.type === MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED
+                && event.payload.targetObjectId === targetId
+            ));
+            expect(availableIndex).toBeGreaterThanOrEqual(0);
+            expect(placedIndex).toBeGreaterThanOrEqual(0);
+            expect(availableIndex).toBeLessThan(placedIndex);
+        }
     });
 
     it('requires Chain Lightning chain targets to be unique legal object targets within range of the previous target', () => {
@@ -12470,6 +13203,16 @@ describe('mage-wars domain flow', () => {
             core: withArenaObject(withArenaObject(baseState.core, attacker), defender),
             sys: baseState.sys,
         };
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetObjectId: defender.id,
+        });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
 
         const defeated = runCommand(state, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
@@ -12482,7 +13225,17 @@ describe('mage-wars domain flow', () => {
         });
 
         expect(defeated.success).toBe(true);
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(defeated.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE,
+                payload: expect.objectContaining({
+                    attackerObjectId: attacker.id,
+                    targetObjectId: defender.id,
+                    sourceAbilityId: 'mw.object.2906.attack-0',
+                }),
+            }),
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
                 payload: expect.objectContaining({
@@ -12492,6 +13245,17 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
         ]));
+        const defeatAvailableIndex = defeated.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE
+            && event.payload.targetObjectId === defender.id
+        ));
+        const defeatedIndex = defeated.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === defender.id
+        ));
+        expect(defeatAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatAvailableIndex).toBeLessThan(defeatedIndex);
         expect(defeated.state.core.objects[defender.id]).toBeUndefined();
         expect(defeated.state.core.arena.find((zone) => zone.id === PLAYER_ZERO_START_ZONE)?.objectIds).not.toContain(defender.id);
 
@@ -13121,13 +13885,42 @@ describe('mage-wars domain flow', () => {
             }, activeCat), enemyCat),
             sys: baseState.sys,
         };
-
-        const advanced = runCommand(state, {
+        const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
             type: FLOW_COMMANDS.ADVANCE_PHASE,
             playerId: '0',
             payload: {},
-        });
+        };
+        const rawExitEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
+            state,
+            from: 'creatureAction',
+            to: 'finalQuickcast',
+            command: advanceCommand,
+            random: fixedRandom,
+        }));
+        const rawExitEventTypes = rawExitEvents.map((event) => event.type);
 
+        const advanced = runCommand(state, advanceCommand);
+
+        expect(rawExitEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
+        expect(rawExitEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
+        expect(rawExitEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetPlayerId: '0',
+                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
+                    amount: 1,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetObjectId: activeCat.id,
+                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
+                    amount: 2,
+                }),
+            }),
+        ]));
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('finalQuickcast');
         expect(advanced.state.core.players['0'].statusTokens).toEqual({
@@ -13198,13 +13991,44 @@ describe('mage-wars domain flow', () => {
             }, activeCat), enemyCat),
             sys: baseState.sys,
         };
-
-        const advanced = runCommand(state, {
+        const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
             type: FLOW_COMMANDS.ADVANCE_PHASE,
             playerId: '0',
             payload: {},
-        });
+        };
+        const rawExitEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
+            state,
+            from: 'creatureAction',
+            to: 'finalQuickcast',
+            command: advanceCommand,
+            random: fixedRandom,
+        }));
+        const rawExitEventTypes = rawExitEvents.map((event) => event.type);
 
+        const advanced = runCommand(state, advanceCommand);
+
+        expect(rawExitEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
+        expect(rawExitEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
+        expect(rawExitEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetPlayerId: '0',
+                    statusTokenId: STATUS_TOKEN_IDS.STUN,
+                    amount: 1,
+                    sourceAbilityId: 'mw.status.stun.end-creature-action',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetObjectId: activeCat.id,
+                    statusTokenId: STATUS_TOKEN_IDS.STUN,
+                    amount: 2,
+                    sourceAbilityId: 'mw.status.stun.end-creature-action',
+                }),
+            }),
+        ]));
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('finalQuickcast');
         expect(advanced.state.core.players['0'].statusTokens).toEqual({
@@ -13263,13 +14087,36 @@ describe('mage-wars domain flow', () => {
             core: withArenaObject(withArenaObject(baseState.core, activeCat), enemyCat),
             sys: baseState.sys,
         };
-
-        const advanced = runCommand(state, {
+        const advanceCommand: Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> = {
             type: FLOW_COMMANDS.ADVANCE_PHASE,
             playerId: '0',
             payload: {},
-        }, escapeRandom);
+        };
+        const rawExitEvents = readMageWarsPhaseExitEvents(mageWarsFlowHooks.onPhaseExit?.({
+            state,
+            from: 'creatureAction',
+            to: 'finalQuickcast',
+            command: advanceCommand,
+            random: escapeRandom,
+        }));
+        const rawExitEventTypes = rawExitEvents.map((event) => event.type);
 
+        const advanced = runCommand(state, advanceCommand, escapeRandom);
+
+        expect(rawExitEventTypes).toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE);
+        expect(rawExitEventTypes).not.toContain(MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED);
+        expect(rawExitEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
+                payload: expect.objectContaining({
+                    targetObjectId: activeCat.id,
+                    statusTokenId: STATUS_TOKEN_IDS.CRIPPLE,
+                    amount: 1,
+                    sourceAbilityId: 'mw.status.cripple.escape-check',
+                    effectDieResult: 7,
+                }),
+            }),
+        ]));
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('finalQuickcast');
         expect(advanced.state.core.objects[activeCat.id].statusTokens).toEqual({
@@ -13512,18 +14359,40 @@ describe('mage-wars domain flow', () => {
             payload: { targetPlayerId: '1' },
         })).toBe('targetNotInSameZone');
 
-        const attack = runCommand(state, {
+        const attackCommand: MageWarsCommand = {
             type: MAGE_WARS_COMMANDS.DECLARE_ATTACK,
             playerId: '0',
             payload: { targetPlayerId: '1' },
+        };
+        const rawAttackEvents = resolveMageWarsBasicAttackEvents({
+            state,
+            sourceCommandType: attackCommand.type,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerId: '0',
+            defenderId: '1',
         });
+        const rawAttackEventTypes = rawAttackEvents.map((event) => event.type);
+        const attack = runCommand(state, attackCommand);
 
+        expect(rawAttackEventTypes).toContain(MAGE_WARS_EVENTS.MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE);
+        expect(rawAttackEventTypes).not.toContain(MAGE_WARS_EVENTS.MAGE_DEFEATED);
         expect(attack.success).toBe(true);
         expect(attack.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.ATTACK_DECLARED,
             'DAMAGE_DEALT',
+            MAGE_WARS_EVENTS.MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE,
             MAGE_WARS_EVENTS.MAGE_DEFEATED,
         ]));
+        const defeatAvailableIndex = attack.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE
+        ));
+        const defeatedIndex = attack.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.MAGE_DEFEATED
+        ));
+        expect(defeatAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(defeatAvailableIndex).toBeLessThan(defeatedIndex);
         expect(attack.state.core.players['0'].actionReady).toBe(false);
         expect(attack.state.core.players['1'].damage).toBe(defenderLife);
         expect(attack.state.core.gameResult).toEqual({ winner: '0' });
@@ -13534,6 +14403,58 @@ describe('mage-wars domain flow', () => {
             'DAMAGE_DEALT',
             MAGE_WARS_EVENTS.MAGE_DEFEATED,
         ]));
+    });
+
+    it('surfaces attack mana costs as a timing opportunity before the old attack owner pays or cancels', () => {
+        const baseState = setupState('creatureAction');
+        const attacker = makeArenaObject('attack-cost-available-attacker-0', '0', PLAYER_ONE_START_ZONE);
+        const mentalCalm = makeMentalCalmEnchantmentObject(
+            'attack-cost-available-mental-calm-1912',
+            '1',
+            PLAYER_ONE_START_ZONE,
+            attacker.id,
+        );
+        const cloak = makeSuppressionCloakEquipmentObject(
+            'attack-cost-available-cloak-3705',
+            '1',
+            PLAYER_ONE_START_ZONE,
+        );
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state: {
+                core: [attacker, mentalCalm, cloak].reduce(withArenaObject, {
+                    ...baseState.core,
+                    players: {
+                        ...baseState.core.players,
+                        '0': { ...baseState.core.players['0'], mana: 10 },
+                    },
+                }),
+                sys: baseState.sys,
+            },
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetPlayerId: '1',
+        });
+        const rawTypes = rawAttackEvents.map((event) => event.type);
+
+        expect(rawAttackEvents).toEqual([expect.objectContaining({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_MANA_COST_AVAILABLE,
+            payload: expect.objectContaining({
+                attackerObjectId: attacker.id,
+                targetPlayerId: '1',
+                mentalCalmSources: [{ objectId: mentalCalm.id, value: 2 }],
+                meleeAttackManaTaxSources: [{ objectId: cloak.id, sourceSpellCardId: 3705, value: 2 }],
+                requiredMana: 4,
+            }),
+        })]);
+        expect(rawTypes).not.toContain(MAGE_WARS_EVENTS.MANA_SPENT);
+        expect(rawTypes).not.toContain(MAGE_WARS_EVENTS.MENTAL_CALM_TRIGGERED);
+        expect(rawTypes).not.toContain(MAGE_WARS_EVENTS.MELEE_ATTACK_MANA_TAX_TRIGGERED);
+        expect(rawTypes).not.toContain(MAGE_WARS_EVENTS.ATTACK_MISSED);
+        expect(rawTypes).not.toContain(MAGE_WARS_EVENTS.DEFENSE_AVAILABLE);
+        expect(rawTypes).not.toContain('DAMAGE_DEALT');
     });
 
     it('charges Mental Calm before the defense window and records the source for the round', () => {

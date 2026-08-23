@@ -154,7 +154,7 @@ describe('Tricksters POD titan', () => {
         expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('enemy-played-minion');
     });
 
-    it('adds a counter at each other player turn end only when that player has no minion there', () => {
+    it('queues a counter choice at each other player turn end only when that player has no minion there', () => {
         const core = makeState({
             bases: [
                 makeBase({
@@ -181,6 +181,7 @@ describe('Tricksters POD titan', () => {
         });
         const opponentTurnEnd = fireTriggers(core, 'onTurnEnd', {
             state: core,
+            matchState: makeMatchState(core),
             playerId: '1',
             random: defaultTestRandom,
             now: 104,
@@ -213,7 +214,15 @@ describe('Tricksters POD titan', () => {
         });
 
         expect(ownerTurnEnd.events).toEqual([]);
-        expect(opponentTurnEnd.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_POWER_COUNTER_ADDED]);
+        expect(opponentTurnEnd.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(opponentTurnEnd.matchState!, 'titan_tricksters_big_funny_giant_pod_counter');
+        const resolved = respondToPrompt(
+            opponentTurnEnd.matchState!,
+            getPromptOption(prompt, option => option.value?.add === true, 'Big Funny Giant POD counter option').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.events.map(event => event.type)).toContain(SU_EVENTS.TITAN_POWER_COUNTER_ADDED);
         expect(opponentPresent.events).toEqual([]);
     });
 });

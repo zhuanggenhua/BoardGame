@@ -67,11 +67,12 @@ export const BETRAYAL_MONSTER_DEFINITIONS: Record<BetrayalMonsterDefinitionId, B
         defaultAttackTrait: 'might',
         canAttack: true,
         canBeAttacked: true,
-        canBeStunned: false,
+        canBeStunned: true,
         ruleNotes: [
             '木乃伊速度 3、力量 8、神志 5；只用力量攻击。',
             '速度攻击对木乃伊无效，包括手枪和炸药。',
             '木乃伊移动掷骰结果为 0 或 1 时，可瞬移到任意房间；物件不会改变木乃伊属性。',
+            '木乃伊受伤时按通用怪物规则击晕；英雄胜利仍必须按剧本驱逐步骤结算。',
         ],
     },
     'crimson-jack-spirit': {

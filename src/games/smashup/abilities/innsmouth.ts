@@ -670,18 +670,8 @@ const innsmouthSpreadingTheWordProgram = createEffectProgram<AbilityContext, Sma
     }
     if (matchingDefIds.size === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
 
-    // 只有一个匹配名称时自动选择，多个时让玩家选
     const defIdArray = Array.from(matchingDefIds);
-    if (defIdArray.length === 1) {
-        const chosenDefId = defIdArray[0];
-        const matchCount = player.hand.filter(c => c.type === 'minion' && c.defId === chosenDefId).length;
-        const grantCount = Math.min(2, matchCount);
-        const events: SmashUpEvent[] = [];
-        for (let i = 0; i < grantCount; i++) {
-            events.push(grantContextualExtraMinion(ctx, 'innsmouth_spreading_the_word', undefined, { sameNameOnly: true, sameNameDefId: chosenDefId }));
-        }
-        return { events };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: {

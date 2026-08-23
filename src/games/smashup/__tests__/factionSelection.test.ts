@@ -246,6 +246,97 @@ describe('派系选择系统', () => {
             expect(result.finalState.core.turnOrder[result.finalState.core.currentPlayerIndex]).toBe('1');
         });
 
+        it('已选派系计数存在脏残留时，未选满所有玩家也不能开始比赛', () => {
+            const runner = createRunner();
+            const initial = runner.run({
+                name: '初始选种族状态',
+                commands: [],
+            }).finalState;
+
+            const dirtyTakenFactionState: MatchState<SmashUpCore> = {
+                ...initial,
+                sys: {
+                    ...initial.sys,
+                    phase: 'factionSelect',
+                },
+                core: {
+                    ...initial.core,
+                    currentPlayerIndex: 0,
+                    factionSelection: {
+                        ...initial.core.factionSelection!,
+                        takenFactions: [
+                            SMASHUP_FACTION_IDS.PIRATES,
+                            SMASHUP_FACTION_IDS.NINJAS,
+                            SMASHUP_FACTION_IDS.DINOSAURS,
+                        ],
+                        playerSelections: {
+                            '0': [],
+                            '1': [],
+                        },
+                        completedPlayers: [],
+                    },
+                },
+            };
+
+            const result = runner.run({
+                name: '脏残留不能触发开局',
+                setup: () => dirtyTakenFactionState,
+                commands: [
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                ],
+            });
+
+            expect(result.steps[0]?.success).toBe(true);
+            expect(result.finalState.sys.phase).toBe('factionSelect');
+            expect(result.finalState.core.factionSelection).toBeDefined();
+            expect(result.finalState.core.factionSelection?.playerSelections['0']).toEqual([SMASHUP_FACTION_IDS.ALIENS]);
+            expect(result.finalState.core.factionSelection?.playerSelections['1']).toEqual([]);
+            expect(result.finalState.core.factionSelection?.takenFactions).toEqual([SMASHUP_FACTION_IDS.ALIENS]);
+            expect(result.finalState.core.players['0'].hand).toHaveLength(0);
+            expect(result.finalState.core.players['1'].hand).toHaveLength(0);
+        });
+
+        it('已占用派系存在脏残留但玩家未实际选择时，不应阻止重新选择该派系', () => {
+            const runner = createRunner();
+            const initial = runner.run({
+                name: '初始选种族状态',
+                commands: [],
+            }).finalState;
+
+            const staleTakenFactionState: MatchState<SmashUpCore> = {
+                ...initial,
+                sys: {
+                    ...initial.sys,
+                    phase: 'factionSelect',
+                },
+                core: {
+                    ...initial.core,
+                    currentPlayerIndex: 0,
+                    factionSelection: {
+                        ...initial.core.factionSelection!,
+                        takenFactions: [SMASHUP_FACTION_IDS.ALIENS],
+                        playerSelections: {
+                            '0': [],
+                            '1': [],
+                        },
+                        completedPlayers: [],
+                    },
+                },
+            };
+
+            const result = runner.run({
+                name: '脏占用不阻止重选',
+                setup: () => staleTakenFactionState,
+                commands: [
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                ],
+            });
+
+            expect(result.steps[0]?.success).toBe(true);
+            expect(result.finalState.core.factionSelection?.playerSelections['0']).toEqual([SMASHUP_FACTION_IDS.ALIENS]);
+            expect(result.finalState.core.factionSelection?.takenFactions).toEqual([SMASHUP_FACTION_IDS.ALIENS]);
+        });
+
         it('不能取消其他玩家已选的派系', () => {
             const runner = createRunner();
             const result = runner.run({

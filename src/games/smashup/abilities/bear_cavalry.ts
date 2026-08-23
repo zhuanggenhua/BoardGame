@@ -1051,40 +1051,7 @@ function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | 
         const ownerHasMinion = destBase.minions.some(m => m.controller === ongoingControllerId);
         if (!ownerHasMinion) continue;
 
-        // 无 matchState：自动选择“destroy”分支
-        if (!ctx.matchState) {
-            events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
-                cardUid: ongoing.uid,
-                defId: 'bear_cavalry_high_ground_pod',
-                ownerId: ongoing.ownerId,
-                reason: 'bear_cavalry_high_ground_pod',
-                now: ctx.now,
-                expectedLocation: 'base',
-            }));
-
-            events.push(...buildValidatedDestroyEvents(ctx.state, {
-                minionUid: movedMinion.uid,
-                minionDefId: movedMinion.defId,
-                fromBaseIndex: destBaseIndex,
-                destroyerId: ongoingControllerId,
-                sourcePlayerId: ongoingControllerId,
-                sourceCardUid: ongoing.uid,
-                sourceDefId: ongoing.defId,
-                sourceControllerId: ongoingControllerId,
-                sourceBaseIndex: destBaseIndex,
-                sourceKind: 'nonAction',
-                reason: 'bear_cavalry_high_ground_pod',
-                now: ctx.now,
-                targetSnapshot: {
-                    ownerId: movedMinion.owner,
-                    controllerId: movedMinion.controller,
-                    attachedActions: movedMinion.attachedActions,
-                    metadata: movedMinion.metadata,
-                    playedThisTurn: movedMinion.playedThisTurn,
-                },
-            }));
-            return events;
-        }
+        if (!ctx.matchState) return events;
 
         // 有 matchState：创建交互，选择“消灭或摸牌打战术”
         // 去重检查：检查交互队列中是否已存在相同的交互

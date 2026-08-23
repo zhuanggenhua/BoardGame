@@ -1922,6 +1922,7 @@ function shipsCaptain(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
     const minions = player.deck.filter(card => card.type === 'minion');
+    if (!ctx.matchState) return { events: [] };
     if (minions.length > 0 && ctx.matchState) {
         return runtimeToAbilityResult(executeAbilityProgram(shipsCaptainPrompt, {
             matchState: ctx.matchState,
@@ -1930,30 +1931,7 @@ function shipsCaptain(ctx: AbilityContext): AbilityResult {
             baseIndex: ctx.baseIndex,
         }));
     }
-    const minion = minions[0];
-    if (!minion) return { events: [inspectDeck(ctx.playerId, ctx.playerId, player.deck.length, 'star_roamers_ships_captain', ctx.now)] };
-    const events: SmashUpEvent[] = [
-        inspectDeck(ctx.playerId, ctx.playerId, player.deck.length, 'star_roamers_ships_captain', ctx.now),
-        revealDeckTop(ctx.playerId, 'all', [{ uid: minion.uid, defId: minion.defId }], 1, 'star_roamers_ships_captain', ctx.now, ctx.playerId),
-        {
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId: ctx.playerId, count: 1, cardUids: [minion.uid] },
-            timestamp: ctx.now,
-        } as CardsDrawnEvent,
-        {
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId: ctx.playerId,
-                deckUids: ctx.random.shuffle(player.deck.filter(card => card.uid !== minion.uid)).map(card => card.uid),
-            },
-            timestamp: ctx.now,
-        } as DeckReorderedEvent,
-    ];
-    const power = getMinionDef(minion.defId)?.power ?? 99;
-    if (power <= 3) {
-        events.push(grantContextualExtraMinion(ctx, 'star_roamers_ships_captain', ctx.baseIndex, { powerMax: 3 }));
-    }
-    return { events };
+    return { events: [inspectDeck(ctx.playerId, ctx.playerId, player.deck.length, 'star_roamers_ships_captain', ctx.now)] };
 }
 
 function scienceOfficerEvents(

@@ -1083,8 +1083,6 @@ function superSpiesTheSpyWhoDitchedMe(ctx: AbilityContext): AbilityResult {
                 );
                 interaction.data.allowedCardUids = minionCards.map(card => card.uid);
                 matchState = queueInteraction(matchState, interaction);
-            } else {
-                events.push(discardFromHand(playerId, [minionCards[0].uid], ctx.now));
             }
         } else {
             events.push(revealHandForPlayer(playerId, ctx.playerId, player.hand, 'super_spies_the_spy_who_ditched_me', ctx.now));

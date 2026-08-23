@@ -15,14 +15,14 @@
 
 ## 接口
 
-- 列表：`GET /admin/feedback?status=<status>&page=<n>&limit=<n>`
-- 改状态：`PATCH /admin/feedback/:id/status`
+- 列表：`GET /admin-api/feedback?status=<status>&page=<n>&limit=<n>`
+- 改状态：`PATCH /admin-api/feedback/:id/status`
 
 ### 认证要求
 
-- `GET /admin/feedback`
+- `GET /admin-api/feedback`
   - 当前线上允许无凭证读取列表，但这只证明“能看见线上真实反馈”，**不等于**有正式回写权限。
-- `PATCH /admin/feedback/:id/status`
+- `PATCH /admin-api/feedback/:id/status`
   - 必须携带 `Authorization: Bearer <token>`。
   - 当前项目脚本统一使用 `BOARDGAME_FEEDBACK_TOKEN` 或 `--token` 传入。
   - 如果线上返回 `401 缺少登录凭证`，说明问题是“没有正式写凭证”，不是接口不存在。

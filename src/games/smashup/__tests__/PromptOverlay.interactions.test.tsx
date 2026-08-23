@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import type { InteractionDescriptor, SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import { PromptOverlay } from '../ui/PromptOverlay';
-import { respondCommand } from './helpers';
+import { respondCommand, respondOptionsCommand } from './helpers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -86,6 +86,42 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         fireEvent.click(discardButton);
 
         const response = respondCommand('discard');
+        expect(dispatch).toHaveBeenCalledWith(response.type, {
+            ...response.payload,
+            interactionId: interaction.id,
+        });
+        expect(dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('multi prompts submit skip as a control action instead of mixing it with selected options', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'multi-control-skip',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择至多两个目标，或跳过',
+                sourceId: 'multi_control_skip_regression',
+                targetType: 'generic',
+                multi: { min: 0, max: 2 },
+                options: [
+                    { id: 'target-a', label: '目标 A', value: { cardUid: 'target-a' } },
+                    { id: 'target-b', label: '目标 B', value: { cardUid: 'target-b' } },
+                    { id: 'target-c', label: '目标 C', value: { cardUid: 'target-c' } },
+                    { id: 'target-d', label: '目标 D', value: { cardUid: 'target-d' } },
+                    { id: 'skip', label: '跳过', value: { action: 'skip' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        fireEvent.click(screen.getByRole('button', { name: '目标 A' }));
+        expect(dispatch).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: '跳过' }));
+
+        const response = respondOptionsCommand(['skip']);
         expect(dispatch).toHaveBeenCalledWith(response.type, {
             ...response.payload,
             interactionId: interaction.id,

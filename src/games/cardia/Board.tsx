@@ -503,9 +503,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             interactionId: currentInteraction.id,
         });
         
-        // 多选模式：使用 optionIds + mergedValue 传递所有选中的卡牌 UID
+        // 多选模式：只提交 optionIds，由 SimpleChoiceSystem 解析成选中项集合。
         if (maxSelect > 1) {
-            logger.debug('[CardiaBoard] Multi-select mode: dispatching with optionIds and mergedValue');
+            logger.debug('[CardiaBoard] Multi-select mode: dispatching with optionIds');
             
             // 找到所有选中卡牌对应的 optionId
             const selectedCards = data.cards?.filter((c: any) => selectedCardUids.includes(c.uid)) || [];
@@ -523,10 +523,8 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 return;
             }
             
-            // 使用 optionIds（用于验证）+ mergedValue（用于传递给 handler）
             respondCurrentInteraction({
                 optionIds,
-                mergedValue: { cardUids: selectedCardUids },
             });
         } else {
             // 单选模式：找到对应的选项

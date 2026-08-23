@@ -1211,17 +1211,7 @@ function megaTroopersMegabotBeforeScoring(ctx: TriggerContext): TriggerResult | 
         }));
     if (megabots.length === 0) return [];
 
-    if (!ctx.matchState) {
-        return megabots.map(megabot => moveTitan(
-            megabot.titanUid,
-            megabot.titanDefId,
-            megabot.fromBaseIndex,
-            scoringBaseIndex,
-            'mega_troopers_megabot_before_scoring',
-            ctx.now,
-            scoringBase.defId,
-        ));
-    }
+    if (!ctx.matchState) return [];
 
     const [first, ...remaining] = megabots;
     const interaction = buildScoringTitanMoveInteraction({
@@ -2161,17 +2151,7 @@ function tornadosCategory5BeforeScoring(ctx: TriggerContext): TriggerResult | Sm
         }));
     if (category5Titans.length === 0) return [];
 
-    if (!ctx.matchState) {
-        return category5Titans.map(candidate => moveTitan(
-            candidate.titanUid,
-            candidate.titanDefId,
-            candidate.fromBaseIndex,
-            scoringBaseIndex,
-            'tornados_category_5_before_scoring',
-            ctx.now,
-            scoringBase.defId,
-        ));
-    }
+    if (!ctx.matchState) return [];
 
     const [first, ...remaining] = category5Titans;
     const interaction = buildScoringTitanMoveInteraction({
@@ -3101,9 +3081,7 @@ function trickstersBigFunnyGiantPodOnTurnEnd(ctx: TriggerContext): TriggerResult
         return [];
     }
 
-    if (!ctx.matchState) {
-        return eligibleTitans.map(titan => addTitanPowerCounter(titan.uid, 1, 'tricksters_big_funny_giant_pod_turn_end', ctx.now));
-    }
+    if (!ctx.matchState) return [];
 
     let nextMatchState = ctx.matchState;
     for (const titan of eligibleTitans) {

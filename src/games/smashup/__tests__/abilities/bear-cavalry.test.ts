@@ -588,30 +588,43 @@ describe('bear_cavalry_high_ground 触发', () => {
         expect(destroyEvent.payload.ownerId).toBe('1');
     });
 
-    it('POD 版高地也会消灭移入的对手随从', () => {
+    it('POD 版高地在玩家选择消灭分支后才消灭移入的对手随从', () => {
         const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
         const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
         const state = makeState({
             bases: [
                 makeBase({
-                    minions: [myMinion],
+                    minions: [myMinion, moved],
                     ongoingActions: [{ uid: 'hg-pod-1', defId: 'bear_cavalry_high_ground_pod', ownerId: '0' }],
                 }),
-                makeBase({ minions: [moved] }),
+                makeBase({ minions: [] }),
             ],
         });
 
-        const { events } = fireTriggers(state, 'onMinionMoved', {
+        const result = fireTriggers(state, 'onMinionMoved', {
             state,
+            matchState: makeMatchState(state),
             playerId: '0',
             baseIndex: 0,
+            moveFromBaseIndex: 1,
+            moveToBaseIndex: 0,
             triggerMinionUid: 'moved',
             triggerMinionDefId: 'test_minion',
             random: dummyRandom,
             now: 0,
         });
 
-        expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const promptedState = result.matchState ?? makeMatchState(state);
+        const prompt = getSimpleChoicePrompt(promptedState, 'bear_cavalry_high_ground_pod_trigger');
+        const resolved = respondToPrompt(
+            promptedState,
+            getPromptOption(prompt, option => option?.value?.action === 'destroy', 'high ground pod destroy option').id,
+            '0',
+            dummyRandom,
+        );
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
     });
 
     it('随从离开制高点所在基地时，不应由原基地制高点误触发', () => {

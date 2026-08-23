@@ -16,7 +16,7 @@ import {
     resolveMageWarsMageEquipmentTraitText,
 } from './damageRules';
 import { MAGE_WARS_EVENTS } from './events';
-import { STATUS_TOKEN_IDS, type StatusTokenId } from './ids';
+import { STATUS_TOKEN_IDS, type ArenaZoneId, type StatusTokenId } from './ids';
 import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, MageWarsEvent, MageWarsWallState } from './types';
 import { getStatusTokenAmount } from './statusTokens';
 import {
@@ -163,6 +163,144 @@ function canStatusTokenAffectResolvedAttackTarget(
     if (!target.targetObjectId) return true;
     const object = getArenaObject(core, target.targetObjectId);
     return object ? canMageWarsStatusTokenAffectArenaObject(statusTokenId, object) : false;
+}
+
+function createSpellAttackStatusEffectAvailableEvent(
+    ctx: MageWarsSpellAbilityContext,
+    target: MageWarsResolvedAttackTarget,
+    sourceAbilityId: string,
+    statusTokenId: StatusTokenId,
+    amount: number,
+    effectDieResult: number,
+): MageWarsEvent {
+    return {
+        type: MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE,
+        payload: {
+            sourcePlayerId: ctx.ownerId,
+            targetPlayerId: target.targetPlayerId,
+            targetObjectId: target.targetObjectId,
+            statusTokenId,
+            amount,
+            sourceAbilityId,
+            spellCardId: ctx.spell.spellCardId,
+            effectDieResult,
+        },
+        sourceCommandType: ctx.command.type,
+        timestamp: ctx.timestamp,
+    };
+}
+
+function createSpellAttackPushAvailableEvent(
+    ctx: MageWarsSpellAbilityContext,
+    target: MageWarsResolvedAttackTarget,
+    sourceAbilityId: string,
+    toZoneId: ArenaZoneId,
+    effectDieResult: number,
+): MageWarsEvent {
+    return {
+        type: MAGE_WARS_EVENTS.SPELL_ATTACK_PUSH_AVAILABLE,
+        payload: {
+            sourcePlayerId: ctx.ownerId,
+            spellCardId: ctx.spell.spellCardId,
+            sourceAbilityId,
+            targetPlayerId: target.targetPlayerId,
+            targetObjectId: target.targetObjectId,
+            fromZoneId: target.zoneId,
+            toZoneId,
+            effectDieResult,
+        },
+        sourceCommandType: ctx.command.type,
+        timestamp: ctx.timestamp,
+    };
+}
+
+function createSpellAttackDefeatAvailableEvent(
+    ctx: MageWarsSpellAbilityContext,
+    target: MageWarsResolvedAttackTarget,
+    sourceAbilityId: string,
+): MageWarsEvent | undefined {
+    if (!target.targetPlayerId && !target.targetObjectId) return undefined;
+    return {
+        type: MAGE_WARS_EVENTS.SPELL_ATTACK_DEFEAT_AVAILABLE,
+        payload: {
+            sourcePlayerId: ctx.ownerId,
+            sourceAbilityId,
+            spellCardId: ctx.spell.spellCardId,
+            targetPlayerId: target.targetPlayerId,
+            targetObjectId: target.targetObjectId,
+            targetObjectOwnerId: target.targetObjectId ? target.ownerId : undefined,
+        },
+        sourceCommandType: ctx.command.type,
+        timestamp: ctx.timestamp,
+    };
+}
+
+function createSpellDirectDamageHealingAvailableEvent(
+    ctx: MageWarsSpellAbilityContext,
+    target: MageWarsResolvedDirectDamageTarget,
+    sourceAbilityId: string,
+    diceResults: number[],
+    healing: number,
+): MageWarsEvent {
+    return {
+        type: MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE,
+        payload: {
+            sourcePlayerId: ctx.ownerId,
+            sourceAbilityId,
+            spellCardId: ctx.spell.spellCardId,
+            healingTargetPlayerId: ctx.ownerId,
+            damagedTargetPlayerId: target.targetPlayerId,
+            damagedTargetObjectId: target.targetObjectId,
+            diceResults,
+            healing,
+        },
+        sourceCommandType: ctx.command.type,
+        timestamp: ctx.timestamp,
+    };
+}
+
+function createSpellDirectDamageDefeatAvailableEvent(
+    ctx: MageWarsSpellAbilityContext,
+    target: MageWarsResolvedDirectDamageTarget,
+    sourceAbilityId: string,
+): MageWarsEvent | undefined {
+    if (!target.targetPlayerId && !target.targetObjectId) return undefined;
+    return {
+        type: MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE,
+        payload: {
+            sourcePlayerId: ctx.ownerId,
+            sourceAbilityId,
+            spellCardId: ctx.spell.spellCardId,
+            targetPlayerId: target.targetPlayerId,
+            targetObjectId: target.targetObjectId,
+            targetObjectOwnerId: target.targetObjectId ? target.ownerId : undefined,
+        },
+        sourceCommandType: ctx.command.type,
+        timestamp: ctx.timestamp,
+    };
+}
+
+function createSpellObjectDestructionAvailableEvent(
+    ctx: MageWarsSpellAbilityContext,
+    targetObject: MageWarsArenaObjectState,
+    destructionKind: 'dissolve' | 'dispel' | 'explode',
+): MageWarsEvent {
+    return {
+        type: MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE,
+        payload: {
+            sourcePlayerId: ctx.ownerId,
+            sourceAbilityId: ctx.sourceId,
+            spellCardId: ctx.spell.spellCardId,
+            targetObjectId: targetObject.id,
+            targetObjectOwnerId: targetObject.ownerId,
+            destructionKind,
+            explodeTargetPlayerId: destructionKind === 'explode'
+                ? targetObject.anchoredToPlayerId
+                : undefined,
+        },
+        sourceCommandType: ctx.command.type,
+        timestamp: ctx.timestamp,
+    };
 }
 
 function normalizeObjectIdPart(value: string): string {
@@ -744,48 +882,18 @@ function executeLifeDrainSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<
         if (event.type !== 'DAMAGE_DEALT') return total;
         return total + (event.payload.actualDamage ?? event.payload.amount);
     }, 0);
-    const casterDamage = ctx.state.core.players[ctx.ownerId]?.damage ?? 0;
-    const actualHealing = Math.min(casterDamage, damageAmount);
 
-    events.push({
-        type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
-        payload: {
-            playerId: ctx.ownerId,
-            spellCardId: ctx.spell.spellCardId,
-            sourceAbilityId,
-            targetPlayerId: ctx.ownerId,
-            diceResults,
-            healing: damageAmount,
-            actualHealing,
-        },
-        sourceCommandType: ctx.command.type,
-        timestamp: ctx.timestamp,
-    });
+    events.push(createSpellDirectDamageHealingAvailableEvent(
+        ctx,
+        target,
+        sourceAbilityId,
+        diceResults,
+        damageAmount,
+    ));
 
     if (target.damage + damageAmount >= target.life) {
-        if (target.targetPlayerId) {
-            events.push({
-                type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
-                payload: {
-                    defeatedPlayerId: target.targetPlayerId,
-                    winnerId: ctx.ownerId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            });
-        } else if (target.targetObjectId) {
-            events.push({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: {
-                    objectId: target.targetObjectId,
-                    ownerId: target.ownerId,
-                    sourceAbilityId,
-                    spellCardId: ctx.spell.spellCardId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            });
-        }
+        const defeatAvailable = createSpellDirectDamageDefeatAvailableEvent(ctx, target, sourceAbilityId);
+        if (defeatAvailable) events.push(defeatAvailable);
     }
 
     return { events };
@@ -971,17 +1079,7 @@ function executeDissolveSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<M
     if (!targetObject || !isMageWarsEquipmentArenaObject(targetObject)) return { events: [] };
 
     return {
-        events: [{
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-            payload: {
-                objectId: targetObject.id,
-                ownerId: targetObject.ownerId,
-                sourceAbilityId: ctx.sourceId,
-                spellCardId: ctx.spell.spellCardId,
-            },
-            sourceCommandType: ctx.command.type,
-            timestamp: ctx.timestamp,
-        }],
+        events: [createSpellObjectDestructionAvailableEvent(ctx, targetObject, 'dissolve')],
     };
 }
 
@@ -993,17 +1091,7 @@ function executeDispelSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
     if (!targetObject || !isMageWarsVisibleEnchantmentArenaObject(targetObject)) return { events: [] };
 
     return {
-        events: [{
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-            payload: {
-                objectId: targetObject.id,
-                ownerId: targetObject.ownerId,
-                sourceAbilityId: ctx.sourceId,
-                spellCardId: ctx.spell.spellCardId,
-            },
-            sourceCommandType: ctx.command.type,
-            timestamp: ctx.timestamp,
-        }],
+        events: [createSpellObjectDestructionAvailableEvent(ctx, targetObject, 'dispel')],
     };
 }
 
@@ -1048,38 +1136,8 @@ function executeExplodeSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Ma
         return { events: [] };
     }
 
-    const coreAfterEquipmentDestroyed = removeArenaObject(ctx.state.core, targetObject.id);
-    const explodeAttackCtx: MageWarsSpellAbilityContext = {
-        ...ctx,
-        state: {
-            ...ctx.state,
-            core: coreAfterEquipmentDestroyed,
-        },
-        command: {
-            ...ctx.command,
-            payload: {
-                ...ctx.command.payload,
-                targetObjectId: undefined,
-                targetPlayerId: targetObject.anchoredToPlayerId,
-            },
-        },
-    };
-
     return {
-        events: [
-            {
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: {
-                    objectId: targetObject.id,
-                    ownerId: targetObject.ownerId,
-                    sourceAbilityId: ctx.sourceId,
-                    spellCardId: ctx.spell.spellCardId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            },
-            ...executeAttackSpell(explodeAttackCtx).events,
-        ],
+        events: [createSpellObjectDestructionAvailableEvent(ctx, targetObject, 'explode')],
     };
 }
 
@@ -1185,18 +1243,14 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
         for (const statusEffect of resolveMageWarsAttackStatusTokenEffects(ctx.spell, effectDieResult).filter((effect) => (
             canStatusTokenAffectResolvedAttackTarget(effect.statusTokenId, target, ctx.state.core)
         ))) {
-            events.push({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
-                payload: {
-                    targetObjectId: target.targetObjectId,
-                    statusTokenId: statusEffect.statusTokenId,
-                    amount: statusEffect.amount,
-                    sourceAbilityId,
-                    spellCardId: ctx.spell.spellCardId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            });
+            events.push(createSpellAttackStatusEffectAvailableEvent(
+                ctx,
+                target,
+                sourceAbilityId,
+                statusEffect.statusTokenId,
+                statusEffect.amount,
+                effectDieResult,
+            ));
         }
 
         const damageAmount = damageEvents.reduce((total, event) => {
@@ -1204,17 +1258,8 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
             return total + (event.payload.actualDamage ?? event.payload.amount);
         }, 0);
         if (target.damage + damageAmount >= target.life && target.targetObjectId) {
-            events.push({
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                payload: {
-                    objectId: target.targetObjectId,
-                    ownerId: target.ownerId,
-                    sourceAbilityId,
-                    spellCardId: ctx.spell.spellCardId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            });
+            const defeatAvailable = createSpellAttackDefeatAvailableEvent(ctx, target, sourceAbilityId);
+            if (defeatAvailable) events.push(defeatAvailable);
         }
         if (damageAmount <= 0) break;
 
@@ -1236,14 +1281,13 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
         const burnAmount = getStatusTokenAmount(target, STATUS_TOKEN_IDS.BURN);
         if (isMageWarsIntermittentJetSpell(ctx.spell) && burnAmount > 0) {
             events.push({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
                 payload: {
                     targetPlayerId: target.targetPlayerId,
                     targetObjectId: target.targetObjectId,
                     statusTokenId: STATUS_TOKEN_IDS.BURN,
                     amount: burnAmount,
                     sourceAbilityId,
-                    spellCardId: ctx.spell.spellCardId,
                 },
                 sourceCommandType: ctx.command.type,
                 timestamp: ctx.timestamp,
@@ -1319,19 +1363,14 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
         for (const statusEffect of resolveMageWarsAttackStatusTokenEffects(ctx.spell, effectDieResult).filter((effect) => (
             canStatusTokenAffectResolvedAttackTarget(effect.statusTokenId, target, ctx.state.core)
         ))) {
-            events.push({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
-                payload: {
-                    targetPlayerId: target.targetPlayerId,
-                    targetObjectId: target.targetObjectId,
-                    statusTokenId: statusEffect.statusTokenId,
-                    amount: statusEffect.amount,
-                    sourceAbilityId,
-                    spellCardId: ctx.spell.spellCardId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            });
+            events.push(createSpellAttackStatusEffectAvailableEvent(
+                ctx,
+                target,
+                sourceAbilityId,
+                statusEffect.statusTokenId,
+                statusEffect.amount,
+                effectDieResult,
+            ));
         }
 
         const pushTargetObject = target.targetObjectId ? getArenaObject(ctx.state.core, target.targetObjectId) : undefined;
@@ -1340,20 +1379,13 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
             && ctx.command.payload.pushToZoneId
             && (!pushTargetObject || !isMageWarsUnmovableArenaObject(pushTargetObject))
         ) {
-            events.push({
-                type: MAGE_WARS_EVENTS.SPELL_PUSH_RESOLVED,
-                payload: {
-                    playerId: ctx.ownerId,
-                    spellCardId: ctx.spell.spellCardId,
-                    sourceAbilityId,
-                    targetPlayerId: target.targetPlayerId,
-                    targetObjectId: target.targetObjectId,
-                    fromZoneId: target.zoneId,
-                    toZoneId: ctx.command.payload.pushToZoneId,
-                },
-                sourceCommandType: ctx.command.type,
-                timestamp: ctx.timestamp,
-            });
+            events.push(createSpellAttackPushAvailableEvent(
+                ctx,
+                target,
+                sourceAbilityId,
+                ctx.command.payload.pushToZoneId,
+                effectDieResult,
+            ));
         }
 
         const damageAmount = damageEvents.reduce((total, event) => {
@@ -1361,29 +1393,8 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
             return total + (event.payload.actualDamage ?? event.payload.amount);
         }, 0);
         if (target.damage + damageAmount >= target.life) {
-            if (target.targetPlayerId) {
-                events.push({
-                    type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
-                    payload: {
-                        defeatedPlayerId: target.targetPlayerId,
-                        winnerId: ctx.ownerId,
-                    },
-                    sourceCommandType: ctx.command.type,
-                    timestamp: ctx.timestamp,
-                });
-            } else if (target.targetObjectId) {
-                events.push({
-                    type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                    payload: {
-                        objectId: target.targetObjectId,
-                        ownerId: ctx.state.core.objects[target.targetObjectId]?.ownerId ?? ctx.ownerId,
-                        sourceAbilityId,
-                        spellCardId: ctx.spell.spellCardId,
-                    },
-                    sourceCommandType: ctx.command.type,
-                    timestamp: ctx.timestamp,
-                });
-            }
+            const defeatAvailable = createSpellAttackDefeatAvailableEvent(ctx, target, sourceAbilityId);
+            if (defeatAvailable) events.push(defeatAvailable);
         }
     }
 
@@ -1425,6 +1436,48 @@ export function resolveMageWarsSpellAttackAfterDefense(
         manaCost: spell.manaCost ?? 0,
         skipDefense: true,
     });
+}
+
+export interface MageWarsExplodeAttackAfterDestructionParams {
+    state: MatchState<MageWarsCore>;
+    sourceCommandType: string;
+    timestamp: number;
+    random: RandomFn;
+    attackerId: string;
+    defenderId: string;
+    spellCardId: number;
+    destroyedObjectId: string;
+}
+
+export function resolveMageWarsExplodeAttackAfterDestruction(
+    params: MageWarsExplodeAttackAfterDestructionParams,
+): MageWarsEvent[] {
+    const spell = getMageWarsSpellCardFromConfig(params.spellCardId);
+    if (!spell) return [];
+    const sourceId = getMageWarsSpellAbilityId(params.spellCardId);
+    const command: MageWarsCastSpellCommand = {
+        type: MAGE_WARS_COMMANDS.CAST_SPELL,
+        playerId: params.attackerId,
+        timestamp: params.timestamp,
+        payload: {
+            spellCardId: params.spellCardId,
+            manaCost: spell.manaCost ?? 0,
+            targetPlayerId: params.defenderId,
+        },
+    };
+    return executeAttackSpell({
+        ownerId: params.attackerId,
+        timestamp: params.timestamp,
+        state: {
+            ...params.state,
+            core: removeArenaObject(params.state.core, params.destroyedObjectId),
+        },
+        command,
+        sourceId,
+        random: params.random,
+        spell,
+        manaCost: spell.manaCost ?? 0,
+    }).events;
 }
 
 const MAGE_WARS_SPELL_CAST_FAMILY_EXECUTORS: Readonly<Record<

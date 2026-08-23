@@ -300,6 +300,7 @@ function commitEventBeforeReduce<TCore, TCommand extends Command, TEvent extends
     state: MatchState<TCore>,
     event: TEvent,
     command?: TCommand,
+    random?: RandomFn,
 ): NormalizedEventCommit<TEvent> {
     const timing = createTimingPoint<TCommand, TEvent>({
         gameId: domain.gameId,
@@ -315,6 +316,7 @@ function commitEventBeforeReduce<TCore, TCommand extends Command, TEvent extends
         event,
         command,
         timing,
+        random,
     };
 
     if (!domain.commitEvent) {
@@ -339,6 +341,7 @@ function reduceEventsToCore<TCore, TCommand extends Command, TEvent extends Game
     state: MatchState<TCore>,
     events: GameEvent[],
     command?: TCommand,
+    random?: RandomFn,
 ): ReduceResult<TCore> {
     const appliedEvents: GameEvent[] = [];
     const eventCommitEvidence: EventCommitEvidence[] = [];
@@ -357,6 +360,7 @@ function reduceEventsToCore<TCore, TCommand extends Command, TEvent extends Game
             currentState,
             event as unknown as TEvent,
             command,
+            random,
         );
         eventCommitEvidence.push(...committed.evidence);
 
@@ -498,7 +502,7 @@ function runAfterEventsRounds<TCore, TCommand extends Command, TEvent extends Ga
 
         // 本轮事件 reduce 进 core
         if (roundEvents.length > 0) {
-            const reduced = reduceEventsToCore(domain, currentState, roundEvents, ctx.command as TCommand);
+            const reduced = reduceEventsToCore(domain, currentState, roundEvents, ctx.command as TCommand, params.random);
             if (reduced.state !== currentState) {
                 currentState = reduced.state;
                 ctx.state = currentState;
@@ -730,7 +734,7 @@ export function executePipeline<
                 }
             }
 
-            const reduced = reduceEventsToCore(domain, currentState, preCommandEventsToReduce, command);
+            const reduced = reduceEventsToCore(domain, currentState, preCommandEventsToReduce, command, effectiveRandom);
             if (reduced.state !== currentState) {
                 currentState = reduced.state;
                 ctx.state = currentState;
@@ -812,7 +816,7 @@ export function executePipeline<
     const events = domain.execute(currentState, command, effectiveRandom);
 
     // 4. 逐个 Reduce events -> 更新 state.core（含事件拦截/替换）
-    const reduced = reduceEventsToCore(domain, currentState, events as unknown as GameEvent[], command);
+    const reduced = reduceEventsToCore(domain, currentState, events as unknown as GameEvent[], command, effectiveRandom);
     currentState = reduced.state;
     ctx.state = currentState;
     if (reduced.eventCommitEvidence.length > 0) {
@@ -840,7 +844,7 @@ export function executePipeline<
 
             if (processed.length > domainEvents.length) {
                 const extraEvents = processed.slice(domainEvents.length);
-                const extraReduced = reduceEventsToCore(domain, currentState, extraEvents, command);
+                const extraReduced = reduceEventsToCore(domain, currentState, extraEvents, command, effectiveRandom);
                 if (extraReduced.state !== currentState) {
                     currentState = extraReduced.state;
                     ctx.state = currentState;

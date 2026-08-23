@@ -583,6 +583,8 @@ export interface EventCommitArgs<
     command?: TCommand;
     /** 事件正式落地前的统一裁判时点。 */
     timing: TimingPoint<TCommand, TEvent>;
+    /** 当前管线随机数；事件提交阶段若继续结算随机效果，必须复用同一随机源。 */
+    random?: RandomFn;
 }
 
 export interface EventCommitEvidence {

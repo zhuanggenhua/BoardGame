@@ -75,6 +75,10 @@ import { getArenaObject, getMageWarsWallBetweenZones } from './utils';
 import { resolveMageWarsSpellCasterRef } from './spellCasting';
 import { getStatusTokenAmount } from './statusTokens';
 import { hasTemporaryTeleportMovement } from './temporaryTraits';
+import {
+    createMageWarsArenaObjectSourceConsumeAvailableEvent,
+    createMageWarsCounterstrikeSourceConsumeAvailableEvent,
+} from './sourceConsumeEvents';
 
 const BLOODSTRIKE_SPELL_CARD_ID = 3404;
 const BLOODSTRIKE_SPELL_SOURCE_ID = 'mw.spell.3404';
@@ -126,11 +130,11 @@ function resolveMageAbilityActionTrack(phase: MageWarsPhase): 'quickcast' | 'act
     return 'action';
 }
 
-function createMageWarsWallPassageDamageEvents(
+function createMageWarsWallPassageDamageAvailableEvents(
     state: MatchState<MageWarsCore>,
     sourceCommandType: string,
     timestamp: number,
-    target: { targetId: string; objectId?: string; playerId?: PlayerId },
+    target: { objectId?: string; playerId?: PlayerId },
     fromZoneId: ArenaZoneId,
     toZoneId: ArenaZoneId,
 ): MageWarsEvent[] {
@@ -138,8 +142,8 @@ function createMageWarsWallPassageDamageEvents(
     if (!wall?.passageDamage || wall.passageDamage.amount <= 0) return [];
 
     const sourceAbilityId = `mw.wall.${wall.sourceSpellCardId}.passage`;
-    const triggerEvent: MageWarsEvent = {
-        type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_TRIGGERED,
+    return [{
+        type: MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE,
         payload: {
             wallId: wall.id,
             edgeId: wall.edgeId,
@@ -154,20 +158,7 @@ function createMageWarsWallPassageDamageEvents(
         },
         sourceCommandType,
         timestamp,
-    };
-    const damageEvents = createDamageCalculation({
-        state,
-        source: { playerId: wall.ownerId, abilityId: sourceAbilityId },
-        target: { playerId: target.targetId },
-        baseDamage: wall.passageDamage.amount,
-        autoCollectTokens: false,
-        autoCollectStatus: false,
-        autoCollectBonusDamage: false,
-        damageScope: 'direct',
-        timestamp,
-    }).toEvents() as MageWarsEvent[];
-
-    return [triggerEvent, ...damageEvents];
+    }];
 }
 
 interface MageWarsObjectAttackTarget {
@@ -241,13 +232,57 @@ function createMageWarsDamageBarrierEvents(
     }];
 }
 
-function createBloodstrikeTemporaryTraitsClearedEvent(
+function createMageWarsArenaObjectAttackManaCostAvailableEvent(
+    sourceCommandType: string,
+    timestamp: number,
+    attacker: MageWarsArenaObjectState,
+    attackProfile: MageWarsObjectAttackProfile,
+    target: MageWarsObjectAttackTarget,
+    actionCost: 'normal' | 'none' | undefined,
+    allowDefenseOpportunity: boolean,
+    allowCounterstrikeOpportunity: boolean,
+    removeGuardAfterMelee: boolean,
+    counterstrikeSourceObjectId: string | undefined,
+    mentalCalmSources: Array<{ objectId: string; value: number }>,
+    meleeAttackManaTaxSources: Array<{ objectId: string; sourceSpellCardId: number; value: number }>,
+): MageWarsEvent {
+    const requiredMana = [
+        ...mentalCalmSources,
+        ...meleeAttackManaTaxSources,
+    ].reduce((total, source) => total + source.value, 0);
+
+    return {
+        type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_MANA_COST_AVAILABLE,
+        payload: {
+            ownerId: attacker.ownerId,
+            attackerObjectId: attacker.id,
+            attackProfileId: attackProfile.id,
+            ...(attackProfile.attackName ? { attackName: attackProfile.attackName } : {}),
+            targetPlayerId: target.targetPlayerId,
+            targetObjectId: target.targetObjectId,
+            targetZoneId: target.zoneId,
+            strikeCount: attackProfile.strikeCount,
+            ...(actionCost ? { actionCost } : {}),
+            allowDefenseOpportunity,
+            allowCounterstrikeOpportunity,
+            removeGuardAfterMelee,
+            ...(counterstrikeSourceObjectId ? { counterstrikeSourceObjectId } : {}),
+            mentalCalmSources: mentalCalmSources.map((source) => ({ ...source })),
+            meleeAttackManaTaxSources: meleeAttackManaTaxSources.map((source) => ({ ...source })),
+            requiredMana,
+        },
+        sourceCommandType,
+        timestamp,
+    };
+}
+
+function createArenaObjectAttackTemporaryTraitsClearAvailableEvent(
     sourceCommandType: string,
     attacker: MageWarsArenaObjectState,
     timestamp: number,
 ): MageWarsEvent {
     return {
-        type: MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEARED,
+        type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_TEMPORARY_TRAITS_CLEAR_AVAILABLE,
         payload: {
             ownerId: attacker.ownerId,
             objectId: attacker.id,
@@ -303,7 +338,7 @@ function resolveObjectAttackTarget(
     return undefined;
 }
 
-function resolveObjectAttackDefeatEvent(
+function createArenaObjectAttackDefeatAvailableEvent(
     sourceCommandType: string,
     attacker: MageWarsArenaObjectState,
     sourceAbilityId: string,
@@ -315,10 +350,13 @@ function resolveObjectAttackDefeatEvent(
 
     if (target.targetPlayerId) {
         return {
-            type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE,
             payload: {
-                defeatedPlayerId: target.targetPlayerId,
-                winnerId: attacker.ownerId,
+                sourcePlayerId: attacker.ownerId,
+                attackerObjectId: attacker.id,
+                sourceAbilityId,
+                spellCardId: attacker.sourceSpellCardId,
+                targetPlayerId: target.targetPlayerId,
             },
             sourceCommandType,
             timestamp,
@@ -327,12 +365,14 @@ function resolveObjectAttackDefeatEvent(
 
     if (target.targetObjectId) {
         return {
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE,
             payload: {
-                objectId: target.targetObjectId,
-                ownerId: target.ownerId,
+                sourcePlayerId: attacker.ownerId,
+                attackerObjectId: attacker.id,
                 sourceAbilityId,
                 spellCardId: attacker.sourceSpellCardId,
+                targetObjectId: target.targetObjectId,
+                targetObjectOwnerId: target.ownerId,
             },
             sourceCommandType,
             timestamp,
@@ -342,7 +382,7 @@ function resolveObjectAttackDefeatEvent(
     return undefined;
 }
 
-function createGuardRemovedAfterMeleeAttackEvent(
+function createArenaObjectAttackGuardRemovalAvailableEvent(
     core: MageWarsCore,
     sourceCommandType: string,
     target: MageWarsObjectAttackTarget,
@@ -355,7 +395,7 @@ function createGuardRemovedAfterMeleeAttackEvent(
     if (!targetObject?.guarding) return undefined;
 
     return {
-        type: MAGE_WARS_EVENTS.GUARD_REMOVED,
+        type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE,
         payload: {
             ownerId: targetObject.ownerId,
             targetObjectId: targetObject.id,
@@ -405,44 +445,6 @@ function createCounterstrikeAvailableEvent(
         sourceCommandType,
         timestamp,
     };
-}
-
-export function createMageWarsArenaObjectSourceConsumedEvent(
-    core: MageWarsCore,
-    sourceObjectId: string,
-    sourceCommandType: string,
-    timestamp: number,
-    sourceAbilityId: string,
-): MageWarsEvent | undefined {
-    const sourceObject = getArenaObject(core, sourceObjectId);
-    if (!sourceObject) return undefined;
-
-    return {
-        type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-        payload: {
-            objectId: sourceObject.id,
-            ownerId: sourceObject.ownerId,
-            sourceAbilityId,
-            spellCardId: sourceObject.sourceSpellCardId,
-        },
-        sourceCommandType,
-        timestamp,
-    };
-}
-
-export function createMageWarsCounterstrikeSourceConsumedEvent(
-    core: MageWarsCore,
-    sourceObjectId: string,
-    sourceCommandType: string,
-    timestamp: number,
-): MageWarsEvent | undefined {
-    return createMageWarsArenaObjectSourceConsumedEvent(
-        core,
-        sourceObjectId,
-        sourceCommandType,
-        timestamp,
-        'mw.enchantment.counterstrike.consume',
-    );
 }
 
 function createDefenseAvailableEvent(
@@ -557,6 +559,8 @@ export interface MageWarsObjectAttackResolutionParams {
     isCounterstrike?: boolean;
     /** 防御交互或响应 frame 恢复时，攻击前置费用已经在首次声明时处理。 */
     skipPreDefenseEffects?: boolean;
+    /** 攻击前费用 Opportunity 结算后继续攻击时，只跳过费用，不跳过隐藏响应和防御窗口。 */
+    skipPreAttackManaCosts?: boolean;
     /** 反转攻击继续结算时，保留原攻击已声明的 profile。 */
     attackProfileOverride?: MageWarsObjectAttackProfile;
     /** 攻击逆转允许原攻击来源成为目标，即使它不是原攻击 profile 的合法目标。 */
@@ -582,6 +586,7 @@ export function resolveMageWarsObjectAttackEvents(
         counterstrikeSourceObjectId,
         isCounterstrike = false,
         skipPreDefenseEffects = false,
+        skipPreAttackManaCosts = false,
         attackProfileOverride,
         ignoreTargetLegality = false,
     } = params;
@@ -633,7 +638,7 @@ export function resolveMageWarsObjectAttackEvents(
     const events: MageWarsEvent[] = [];
     if (targetObject && isMageWarsObjectAttackUnavoidable(attackProfile) && !hiddenAttackReversalCardId) {
         events.push(...resolveMageWarsObjectDefenseSourceObjectIds(state.core, targetObject)
-            .map((sourceObjectId) => createMageWarsArenaObjectSourceConsumedEvent(
+            .map((sourceObjectId) => createMageWarsArenaObjectSourceConsumeAvailableEvent(
                 state.core,
                 sourceObjectId,
                 sourceCommandType,
@@ -646,11 +651,11 @@ export function resolveMageWarsObjectAttackEvents(
     let hasRolledMeleeAttackDice = false;
     let vampiricHealingDamage = 0;
     const actionCostPayload = actionCost ? { actionCost } : {};
-    const mentalCalmSources = skipPreDefenseEffects || isCounterstrike
+    const skipPreAttackCosts = skipPreDefenseEffects || skipPreAttackManaCosts;
+    const mentalCalmSources = skipPreAttackCosts || isCounterstrike
         ? []
         : resolveMageWarsObjectMentalCalmSources(state.core, attacker);
-    const mentalCalmRequiredMana = mentalCalmSources.reduce((total, source) => total + source.value, 0);
-    const meleeAttackManaTaxSources = skipPreDefenseEffects || targetPlayerId === undefined
+    const meleeAttackManaTaxSources = skipPreAttackCosts || targetPlayerId === undefined
         ? []
         : resolveMageWarsObjectMeleeAttackManaTaxSources(
             state.core,
@@ -659,112 +664,22 @@ export function resolveMageWarsObjectAttackEvents(
             attackProfile,
             isCounterstrike,
         );
-    const meleeAttackManaTaxRequiredMana = meleeAttackManaTaxSources.reduce(
-        (total, source) => total + source.value,
-        0,
-    );
-    const requiredAdditionalMana = mentalCalmRequiredMana + meleeAttackManaTaxRequiredMana;
-    const controller = state.core.players[attacker.ownerId];
-    const canPayAdditionalMana = requiredAdditionalMana === 0
-        || (controller !== undefined && controller.mana >= requiredAdditionalMana);
-    const mentalCalmEvents: MageWarsEvent[] = [
-        ...(controller && canPayAdditionalMana && mentalCalmRequiredMana > 0
-            ? [{
-                type: MAGE_WARS_EVENTS.MANA_SPENT,
-                payload: {
-                    playerId: controller.id,
-                    amount: mentalCalmRequiredMana,
-                    sourceAbilityId: 'mw.enchantment.1912',
-                    spellCardId: 1912,
-                    targetObjectId: attacker.id,
-                },
-                sourceCommandType,
-                timestamp,
-            } satisfies MageWarsEvent]
-            : []),
-        ...(mentalCalmSources.length > 0
-            ? [{
-                type: MAGE_WARS_EVENTS.MENTAL_CALM_TRIGGERED,
-                payload: {
-                    attackerObjectId: attacker.id,
-                    sourceObjectIds: mentalCalmSources.map((source) => source.objectId),
-                    roundNumber: state.core.turnNumber,
-                    requiredMana: mentalCalmRequiredMana,
-                },
-                sourceCommandType,
-                timestamp,
-            } satisfies MageWarsEvent]
-            : []),
-    ];
-    const meleeAttackManaTaxEvents: MageWarsEvent[] = [
-        ...(controller && canPayAdditionalMana
-            ? meleeAttackManaTaxSources.map((source) => ({
-                type: MAGE_WARS_EVENTS.MANA_SPENT,
-                payload: {
-                    playerId: controller.id,
-                    amount: source.value,
-                    sourceAbilityId: `mw.equipment.${source.sourceSpellCardId}.melee-attack-mana-tax`,
-                    spellCardId: source.sourceSpellCardId,
-                    targetObjectId: attacker.id,
-                },
-                sourceCommandType,
-                timestamp,
-            } satisfies MageWarsEvent))
-            : []),
-        ...(meleeAttackManaTaxSources.length > 0 && targetPlayerId
-            ? [{
-                type: MAGE_WARS_EVENTS.MELEE_ATTACK_MANA_TAX_TRIGGERED,
-                payload: {
-                    attackerObjectId: attacker.id,
-                    targetPlayerId,
-                    sourceObjectIds: meleeAttackManaTaxSources.map((source) => source.objectId),
-                    roundNumber: state.core.turnNumber,
-                    requiredMana: meleeAttackManaTaxRequiredMana,
-                },
-                sourceCommandType,
-                timestamp,
-            } satisfies MageWarsEvent]
-            : []),
-    ];
-
-    if ((mentalCalmSources.length > 0 || meleeAttackManaTaxSources.length > 0) && !canPayAdditionalMana) {
-        return [
-            ...mentalCalmEvents,
-            ...meleeAttackManaTaxEvents,
-            {
-                type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
-                payload: {
-                    ownerId: attacker.ownerId,
-                    attackerObjectId: attacker.id,
-                    attackProfileId: attackProfile.id,
-                    attackName: attackProfile.attackName,
-                    targetPlayerId: target.targetPlayerId,
-                    targetObjectId: target.targetObjectId,
-                    targetZoneId: target.zoneId,
-                    diceResults: [],
-                    strikeIndex: 0,
-                    strikeCount: attackProfile.strikeCount,
-                    baseDamage: 0,
-                    ...actionCostPayload,
-                },
-                sourceCommandType,
-                timestamp,
-            },
-            {
-                type: MAGE_WARS_EVENTS.ATTACK_MISSED,
-                payload: {
-                    attackerObjectId: attacker.id,
-                    targetPlayerId: target.targetPlayerId,
-                    targetObjectId: target.targetObjectId,
-                    sourceAbilityId: 'mw.attack.additional-mana-cost',
-                },
-                sourceCommandType,
-                timestamp,
-            },
-        ];
+    if (mentalCalmSources.length > 0 || meleeAttackManaTaxSources.length > 0) {
+        return [createMageWarsArenaObjectAttackManaCostAvailableEvent(
+            sourceCommandType,
+            timestamp,
+            attacker,
+            attackProfile,
+            target,
+            actionCost,
+            allowDefenseOpportunity,
+            allowCounterstrikeOpportunity,
+            removeGuardAfterMelee,
+            counterstrikeSourceObjectId,
+            mentalCalmSources,
+            meleeAttackManaTaxSources,
+        )];
     }
-
-    events.push(...mentalCalmEvents, ...meleeAttackManaTaxEvents);
 
     if (hiddenAttackReversal && hiddenAttackReversalCardId) {
         const responseId = [
@@ -874,7 +789,7 @@ export function resolveMageWarsObjectAttackEvents(
                 )
                 : undefined;
             const guardRemovedEvent = removeGuardAfterMelee
-                ? createGuardRemovedAfterMeleeAttackEvent(
+                ? createArenaObjectAttackGuardRemovalAvailableEvent(
                     state.core,
                     sourceCommandType,
                     target,
@@ -883,9 +798,8 @@ export function resolveMageWarsObjectAttackEvents(
                 )
                 : undefined;
             return [
-                ...mentalCalmEvents,
                 ...missEvents,
-                ...(shouldClearBloodstrike ? [createBloodstrikeTemporaryTraitsClearedEvent(
+                ...(shouldClearBloodstrike ? [createArenaObjectAttackTemporaryTraitsClearAvailableEvent(
                     sourceCommandType,
                     attacker,
                     timestamp,
@@ -893,7 +807,7 @@ export function resolveMageWarsObjectAttackEvents(
                 ...(counterstrikeEvent ? [counterstrikeEvent] : []),
                 ...(guardRemovedEvent ? [guardRemovedEvent] : []),
                 ...(counterstrikeSourceObjectId
-                    ? [createMageWarsCounterstrikeSourceConsumedEvent(
+                    ? [createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                         state.core,
                         counterstrikeSourceObjectId,
                         sourceCommandType,
@@ -952,7 +866,7 @@ export function resolveMageWarsObjectAttackEvents(
             )
             : undefined;
         const guardRemovedEvent = removeGuardAfterMelee
-            ? createGuardRemovedAfterMeleeAttackEvent(
+            ? createArenaObjectAttackGuardRemovalAvailableEvent(
                 state.core,
                 sourceCommandType,
                 target,
@@ -961,9 +875,8 @@ export function resolveMageWarsObjectAttackEvents(
             )
             : undefined;
         return [
-            ...mentalCalmEvents,
             ...immunityEvents,
-            ...(shouldClearBloodstrike ? [createBloodstrikeTemporaryTraitsClearedEvent(
+            ...(shouldClearBloodstrike ? [createArenaObjectAttackTemporaryTraitsClearAvailableEvent(
                 sourceCommandType,
                 attacker,
                 timestamp,
@@ -971,7 +884,7 @@ export function resolveMageWarsObjectAttackEvents(
             ...(counterstrikeEvent ? [counterstrikeEvent] : []),
             ...(guardRemovedEvent ? [guardRemovedEvent] : []),
             ...(counterstrikeSourceObjectId
-                ? [createMageWarsCounterstrikeSourceConsumedEvent(
+                ? [createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                     state.core,
                     counterstrikeSourceObjectId,
                     sourceCommandType,
@@ -995,7 +908,7 @@ export function resolveMageWarsObjectAttackEvents(
             timestamp,
         )
         : undefined;
-    if (defenseAvailableEvent) return [...mentalCalmEvents, defenseAvailableEvent];
+    if (defenseAvailableEvent) return [defenseAvailableEvent];
 
     for (let strikeIndex = 0; strikeIndex < attackProfile.strikeCount; strikeIndex += 1) {
         const damageTypeAdjustment = resolveMageWarsDamageTypeAdjustment(attackProfile.damageTypes, target);
@@ -1088,13 +1001,12 @@ export function resolveMageWarsObjectAttackEvents(
             ? resolveMageWarsObjectAttackManaDrain(attacker, attackProfile.id)
             : 0;
         const targetController = state.core.players[target.ownerId];
-        const actualManaDrain = targetController ? Math.min(targetController.mana, manaDrain) : 0;
-        if (actualManaDrain > 0) {
+        if (targetController && manaDrain > 0) {
             events.push({
-                type: MAGE_WARS_EVENTS.MANA_DRAINED,
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_MANA_DRAIN_AVAILABLE,
                 payload: {
                     playerId: targetController.id,
-                    amount: actualManaDrain,
+                    sourcePlayerId: attacker.ownerId,
                     requestedAmount: manaDrain,
                     sourceAbilityId,
                     spellCardId: attacker.sourceSpellCardId,
@@ -1120,14 +1032,16 @@ export function resolveMageWarsObjectAttackEvents(
             ));
         for (const statusEffect of statusEffects) {
             events.push({
-                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE,
                 payload: {
+                    sourcePlayerId: attacker.ownerId,
                     targetPlayerId: target.targetPlayerId,
                     targetObjectId: target.targetObjectId,
                     statusTokenId: statusEffect.statusTokenId,
                     amount: statusEffect.amount,
                     sourceAbilityId,
                     spellCardId: attacker.sourceSpellCardId,
+                    effectDieResult,
                 },
                 sourceCommandType,
                 timestamp,
@@ -1138,7 +1052,7 @@ export function resolveMageWarsObjectAttackEvents(
         if (hasVampiric) {
             vampiricHealingDamage += damageAmount;
         }
-        const defeatEvent = resolveObjectAttackDefeatEvent(
+        const defeatEvent = createArenaObjectAttackDefeatAvailableEvent(
             sourceCommandType,
             attacker,
             sourceAbilityId,
@@ -1170,10 +1084,6 @@ export function resolveMageWarsObjectAttackEvents(
     }
 
     if (hasVampiric && vampiricHealingDamage > 0) {
-        const attackerController = state.core.players[attacker.ownerId];
-        const actualHealing = attackerController
-            ? Math.min(attackerController.damage, vampiricHealingDamage)
-            : 0;
         const vampiricSpellCardId = hasBloodstrikeVampiric
             ? BLOODSTRIKE_SPELL_CARD_ID
             : VAMPIRIC_ENCHANTMENT_SPELL_CARD_ID;
@@ -1181,22 +1091,22 @@ export function resolveMageWarsObjectAttackEvents(
             ? BLOODSTRIKE_SPELL_SOURCE_ID
             : VAMPIRIC_ENCHANTMENT_SOURCE_ID;
         events.push({
-            type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_VAMPIRIC_HEALING_AVAILABLE,
             payload: {
                 playerId: attacker.ownerId,
+                attackerObjectId: attacker.id,
                 spellCardId: vampiricSpellCardId,
                 sourceAbilityId: vampiricSourceAbilityId,
-                targetPlayerId: attacker.ownerId,
-                diceResults: [],
+                damagedTargetPlayerId: target.targetPlayerId,
+                damagedTargetObjectId: target.targetObjectId,
                 healing: vampiricHealingDamage,
-                actualHealing,
             },
             sourceCommandType,
             timestamp,
         });
     }
     if (shouldClearBloodstrike) {
-        events.push(createBloodstrikeTemporaryTraitsClearedEvent(
+        events.push(createArenaObjectAttackTemporaryTraitsClearAvailableEvent(
             sourceCommandType,
             attacker,
             timestamp,
@@ -1215,7 +1125,7 @@ export function resolveMageWarsObjectAttackEvents(
         )
         : undefined;
     const guardRemovedEvent = removeGuardAfterMelee
-        ? createGuardRemovedAfterMeleeAttackEvent(
+        ? createArenaObjectAttackGuardRemovalAvailableEvent(
             state.core,
             sourceCommandType,
             target,
@@ -1228,7 +1138,7 @@ export function resolveMageWarsObjectAttackEvents(
         ...(counterstrikeEvent ? [counterstrikeEvent] : []),
         ...(guardRemovedEvent ? [guardRemovedEvent] : []),
         ...(counterstrikeSourceObjectId
-            ? [createMageWarsCounterstrikeSourceConsumedEvent(
+            ? [createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                 state.core,
                 counterstrikeSourceObjectId,
                 sourceCommandType,
@@ -1428,10 +1338,11 @@ export function resolveMageWarsBasicAttackEvents(
     }
     if (defender.damage + damageAmount >= defender.life) {
         events.push({
-            type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
+            type: MAGE_WARS_EVENTS.MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE,
             payload: {
-                defeatedPlayerId: defender.id,
-                winnerId: attacker.id,
+                sourcePlayerId: attacker.id,
+                sourceAbilityId: 'mage-basic-melee',
+                targetPlayerId: defender.id,
             },
             sourceCommandType,
             timestamp,
@@ -1610,7 +1521,7 @@ export function executeCommand(
                     const amount = getStatusTokenAmount(targetObject, statusTokenId);
                     if (amount <= 0) return undefined;
                     return {
-                        type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+                        type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE,
                         payload: {
                             targetPlayerId: command.payload.targetPlayerId,
                             targetObjectId: command.payload.targetObjectId,
@@ -1650,11 +1561,11 @@ export function executeCommand(
             };
             return [
                 moveEvent,
-                ...createMageWarsWallPassageDamageEvents(
+                ...createMageWarsWallPassageDamageAvailableEvents(
                     state,
                     command.type,
                     timestamp,
-                    { targetId: player.id, playerId: player.id },
+                    { playerId: player.id },
                     player.mageZoneId,
                     command.payload.toZoneId,
                 ),
@@ -1713,11 +1624,11 @@ export function executeCommand(
                 moveEvent,
                 ...(usesTeleportMovement
                     ? []
-                    : createMageWarsWallPassageDamageEvents(
+                    : createMageWarsWallPassageDamageAvailableEvents(
                         state,
                         command.type,
                         timestamp,
-                        { targetId: object.id, objectId: object.id },
+                        { objectId: object.id },
                         object.zoneId,
                         command.payload.toZoneId,
                     )),

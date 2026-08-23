@@ -122,6 +122,7 @@ import { normalizeScoringEligibleBaseIndices } from './ongoingModifiers';
 import { isCardSuppressed } from './ongoingEffects';
 import {
     buildSmashUpCompletedDraftPlayers,
+    buildSmashUpTakenFactionsFromPlayerSelections,
     getSmashUpBanTurnOrder,
     getSmashUpDraftTurnOrder,
     getSmashUpFactionsPerPlayer,
@@ -4058,11 +4059,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const selection = state.factionSelection;
             if (!selection) return state;
 
-            const newTaken = [...selection.takenFactions, factionId];
             const newPlayerSelections = {
                 ...selection.playerSelections,
                 [playerId]: [...(selection.playerSelections[playerId] || []), factionId],
             };
+            const newTaken = buildSmashUpTakenFactionsFromPlayerSelections(newPlayerSelections);
             const draftTurnOrder = getSmashUpDraftTurnOrder(state);
             const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
             const enterAfterFirstRoundBan = shouldSmashUpEnterAfterFirstRoundBan(selection, newPlayerSelections, draftTurnOrder);
@@ -4107,11 +4108,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const selection = state.factionSelection;
             if (!selection) return state;
 
-            const newTaken = selection.takenFactions.filter((takenFactionId) => takenFactionId !== factionId);
             const newPlayerSelections = {
                 ...selection.playerSelections,
                 [playerId]: (selection.playerSelections[playerId] || []).filter((selectedFactionId) => selectedFactionId !== factionId),
             };
+            const newTaken = buildSmashUpTakenFactionsFromPlayerSelections(newPlayerSelections);
             const draftTurnOrder = getSmashUpDraftTurnOrder(state);
             const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
             const nextPlayerIndex = getSmashUpNextDraftPlayerIndex(

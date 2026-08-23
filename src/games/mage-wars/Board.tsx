@@ -125,6 +125,19 @@ const VISIBLE_STATUS_TOKENS = [
 
 type VisibleStatusTokenId = (typeof VISIBLE_STATUS_TOKENS)[number]['id'];
 
+const MAGE_WARS_LIFE_BADGE_CONTAINER_STYLE = {
+    containerType: 'inline-size',
+} as CSSProperties;
+
+const MAGE_WARS_LIFE_BADGE_STYLE: CSSProperties = {
+    fontSize: 'clamp(15px, 30cqw, 32px)',
+    lineHeight: 0.95,
+    paddingInline: '0.18em',
+    paddingBlock: '0.04em',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.65)',
+    textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+};
+
 const getVisibleStatusTokenLabel = (
     t: ReturnType<typeof useTranslation>['t'],
     statusTokenId: VisibleStatusTokenId,
@@ -359,7 +372,7 @@ function EntityStatusTokenRail({
         <div className={cx(
             'pointer-events-none absolute z-30 flex items-center gap-1',
             compact
-                ? 'left-0.5 top-full mt-0.5 scale-[0.72] origin-top-left'
+                ? 'left-1/2 top-full mt-0.5 -translate-x-1/2 scale-[0.72] origin-top'
                 : 'left-1/2 top-full mt-1 -translate-x-1/2',
         )}
             data-testid="mage-wars-entity-status-token-rail"
@@ -380,16 +393,53 @@ function EntityStatusTokenRail({
     );
 }
 
+function MageWarsGuardTokenAction({
+    onGuard,
+    compact = false,
+}: {
+    onGuard: () => void;
+    compact?: boolean;
+}) {
+    const { t } = useTranslation('game-mage-wars');
+
+    return (
+        <button
+            type="button"
+            className={cx(
+                'pointer-events-auto absolute left-1/2 top-full z-40 -translate-x-1/2 rounded-full bg-transparent p-0 transition-[filter,transform] hover:scale-105 hover:drop-shadow-[0_0_12px_rgba(110,231,183,0.78)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-100',
+                compact ? 'mt-0.5 h-7 w-7' : 'mt-1 h-9 w-9',
+            )}
+            aria-label={t('actions.guard')}
+            title={t('actions.guard')}
+            data-testid="mage-wars-selected-unit-guard"
+            data-mage-wars-guard-action-placement="bottom-center"
+            style={{
+                left: '50%',
+                top: '100%',
+                transform: 'translateX(-50%)',
+            }}
+            onClick={(event) => {
+                event.stopPropagation();
+                onGuard();
+            }}
+        >
+            <TokenImage src={TOKEN_IMAGES.guard} alt={t('tokens.guard')} className={compact ? 'h-7 w-7' : 'h-8 w-8'} />
+        </button>
+    );
+}
+
 function MageWarsLifeDamageReadout({
     damage,
     life,
     testId,
+    showLifeTotals,
 }: {
     damage: number;
     life: number;
     testId: string;
+    showLifeTotals: boolean;
 }) {
-    if (damage <= 0 || life <= 0) return null;
+    if (life <= 0) return null;
 
     const remaining = Math.max(0, life - damage);
     const damageRatio = Math.min(1, Math.max(0, damage / life));
@@ -397,26 +447,87 @@ function MageWarsLifeDamageReadout({
     return (
         <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+            className={cx(
+                'pointer-events-none absolute inset-0 z-20 flex items-center justify-center transition-opacity',
+                showLifeTotals ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+            )}
             data-testid={testId}
             data-damage={damage}
             data-life={life}
             data-life-remaining={remaining}
+            data-life-visible={showLifeTotals ? 'true' : 'false'}
             data-damage-ratio={damageRatio.toFixed(3)}
-            style={{ containerType: 'inline-size' } as CSSProperties}
+            style={MAGE_WARS_LIFE_BADGE_CONTAINER_STYLE}
         >
             <span
-                className="rounded-[0.16rem] border border-red-200/50 bg-black/72 px-[0.22em] py-[0.08em] font-black leading-none text-red-100 shadow-[0_2px_8px_rgba(0,0,0,0.65)]"
+                className={cx(
+                    'rounded font-bold',
+                    damage > 0 ? 'bg-red-900/80 text-red-200' : 'bg-black/60 text-white',
+                )}
                 data-testid={`${testId}-text`}
-                style={{
-                    fontSize: 'clamp(0.58rem, 23cqw, 1.05rem)',
-                    lineHeight: 0.95,
-                    textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-                }}
+                style={MAGE_WARS_LIFE_BADGE_STYLE}
             >
                 {remaining}/{life}
             </span>
         </div>
+    );
+}
+
+function MageWarsLifeVisibilityIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+        >
+            <path
+                d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+        </svg>
+    );
+}
+
+function MageWarsLifeToggle({
+    pressed,
+    onToggle,
+    className,
+}: {
+    pressed: boolean;
+    onToggle: () => void;
+    className?: string;
+}) {
+    const { t } = useTranslation('game-mage-wars');
+    const label = t(pressed ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals');
+
+    return (
+        <button
+            type="button"
+            className={cx(
+                'pointer-events-auto absolute z-30 flex h-10 w-10 items-center justify-center rounded-lg border text-white shadow-lg transition-[background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-amber-200/80',
+                pressed
+                    ? 'border-amber-300/70 bg-amber-500/80 shadow-[0_0_14px_rgba(245,158,11,0.45)]'
+                    : 'border-white/20 bg-black/70 hover:border-amber-300/60 hover:bg-slate-800/90',
+                className,
+            )}
+            aria-label={label}
+            aria-pressed={pressed}
+            title={label}
+            data-testid="mage-wars-life-toggle"
+            data-life-visible={pressed ? 'true' : 'false'}
+            onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggle();
+            }}
+        >
+            <MageWarsLifeVisibilityIcon />
+        </button>
     );
 }
 
@@ -986,6 +1097,7 @@ function ZoneFieldCard({
     visualDamage = object?.damage,
     visualLife,
     visualHeld = false,
+    showLifeTotals = false,
     fxAnchorRef,
 }: {
     cardId: number;
@@ -997,6 +1109,7 @@ function ZoneFieldCard({
     visualDamage?: number;
     visualLife?: number;
     visualHeld?: boolean;
+    showLifeTotals?: boolean;
     fxAnchorRef?: (element: HTMLButtonElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -1036,6 +1149,7 @@ function ZoneFieldCard({
                 damage={damage}
                 life={life}
                 testId="mage-wars-field-card-life-readout"
+                showLifeTotals={showLifeTotals}
             />
             {object ? (
                 <EntityStatusTokenRail
@@ -1065,7 +1179,7 @@ function ZoneFieldCard({
         <button
             type="button"
             className={cx(
-                'relative z-20 block shrink-0 rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
+                'group relative z-20 block shrink-0 rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
                 cardHeightClass,
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
                 role === 'target' && 'shadow-[0_0_32px_rgba(16,185,129,0.46)]',
@@ -1565,6 +1679,7 @@ function ZoneOccupant({
     density = 'solo',
     onClick,
     visualDamage = player.damage,
+    showLifeTotals = false,
     fxAnchorRef,
 }: {
     player: MageWarsPlayerState;
@@ -1573,6 +1688,7 @@ function ZoneOccupant({
     density?: ZoneEntityDensity;
     onClick?: () => void;
     visualDamage?: number;
+    showLifeTotals?: boolean;
     fxAnchorRef?: (element: HTMLDivElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -1590,7 +1706,7 @@ function ZoneOccupant({
     return (
         <div
             className={cx(
-                'relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
+                'group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)]',
                 role === 'source' && '-translate-y-2 shadow-[0_0_30px_rgba(34,211,238,0.58)]',
                 role === 'target' && 'shadow-[0_0_30px_rgba(16,185,129,0.48)]',
                 'pointer-events-auto',
@@ -1650,6 +1766,7 @@ function ZoneOccupant({
                 damage={visualDamage}
                 life={player.life}
                 testId="mage-wars-mage-entity-life-readout"
+                showLifeTotals={showLifeTotals}
             />
             <EntityStatusTokenRail
                 guarding={player.guarding}
@@ -1669,9 +1786,7 @@ function ArenaStage({
     pendingSpellCastSelection,
     selectedObjectId,
     selectedMageId,
-    selectedObjectAvailableAbilityIds,
     objectAbilitySourceIds,
-    selectedMageAvailableAbilityIds,
     selectedSpellCastTargetIds,
     selectedSpellCastTargetZoneIds,
     selectedSpellCastTargetWallEdgeIds,
@@ -1695,14 +1810,13 @@ function ArenaStage({
     onPlayerSelect,
     onActorPlayerSelect,
     onGuard,
-    onObjectAbilitySelect,
-    onMageAbilitySelect,
     fxBus,
     onFxImpact,
     onFxComplete,
     fxAnchors,
     getVisualObjectDamage,
     getVisualPlayerDamage,
+    showLifeTotals = false,
     visualHeldObjects = [],
     desktopFrame = false,
 }: {
@@ -1715,9 +1829,7 @@ function ArenaStage({
     pendingSpellCastSelection?: PendingSpellCastSelection | null;
     selectedObjectId?: string | null;
     selectedMageId?: PlayerId | null;
-    selectedObjectAvailableAbilityIds?: ReadonlySet<MageWarsObjectAbilityId>;
     objectAbilitySourceIds?: ReadonlySet<string>;
-    selectedMageAvailableAbilityIds?: ReadonlySet<MageWarsMageAbilityId>;
     selectedSpellCastTargetIds?: ReadonlySet<string>;
     selectedSpellCastTargetZoneIds?: ReadonlySet<ArenaZoneId>;
     selectedSpellCastTargetWallEdgeIds?: ReadonlySet<MageWarsWallEdgeId>;
@@ -1741,14 +1853,13 @@ function ArenaStage({
     onPlayerSelect?: (playerId: PlayerId) => void;
     onActorPlayerSelect?: (playerId: PlayerId) => void;
     onGuard?: () => void;
-    onObjectAbilitySelect?: (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => void;
-    onMageAbilitySelect?: (playerId: PlayerId, abilityId: MageWarsMageAbilityId) => void;
     fxBus: FxBus;
     onFxImpact?: (id: string, cue: string) => void;
     onFxComplete?: (id: string, cue: string) => void;
     fxAnchors: FxAnchorRegistry;
     getVisualObjectDamage: (object: MageWarsArenaObjectState) => number;
     getVisualPlayerDamage: (player: MageWarsPlayerState) => number;
+    showLifeTotals?: boolean;
     visualHeldObjects?: MageWarsArenaObjectState[];
     desktopFrame?: boolean;
 }) {
@@ -1799,22 +1910,12 @@ function ArenaStage({
     const pendingSpellTargetZoneId = pendingSpellTargetObject?.zoneId ?? pendingSpellTargetPlayer?.mageZoneId;
     const selectedObject = selectedObjectId ? core.objects[selectedObjectId] : undefined;
     const selectedMage = selectedMageId ? core.players[selectedMageId] : undefined;
-    const selectedObjectAvailableAbilities = selectedObject
-        ? MAGE_WARS_OBJECT_ABILITY_ID_LIST.flatMap((abilityId) => {
-            if (!selectedObjectAvailableAbilityIds?.has(abilityId)) return [];
-            const ability = mageWarsObjectAbilityRegistry.get(abilityId);
-            return ability ? [ability] : [];
-        })
-        : [];
     const selectedMageRestoreAbilityId = selectedMage ? resolveMageWarsPriestessRestoreAbilityIdForPhase(phase) : undefined;
-    const selectedMageRestoreAbility = selectedMage && selectedMageRestoreAbilityId
-        && selectedMageAvailableAbilityIds?.has(selectedMageRestoreAbilityId)
-        ? getMageWarsMageAbilityFromConfig(selectedMage.mageId, selectedMageRestoreAbilityId)
-        : undefined;
     const canUseSelectedMageRestoreAbility = Boolean(
         selectedMage
         && selectedMage.id === activePlayer?.id
-        && selectedMageRestoreAbility,
+        && selectedMageRestoreAbilityId
+        && mageRestoreAvailablePlayerIds?.has(selectedMage.id),
     );
     const hasPendingAbilityTarget = Boolean(pendingObjectAbility || pendingMageAbility);
     const selectedObjectAttackProfile = selectedObject
@@ -2089,39 +2190,48 @@ function ArenaStage({
                     );
                     return (
                         <div key={object.id} className="relative z-20 flex shrink-0 items-center justify-center">
-                            <ZoneFieldCard
-                                cardId={object.sourceSpellCardId}
-                                object={object}
-                                density={density}
-                                ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
-                                visualDamage={getVisualObjectDamage(object)}
-                                visualLife={resolveMageWarsObjectEffectiveLife(core, object)}
-                                visualHeld={visualHeld}
-                                role={object.id === pendingSpellTargetObjectId
-                                    || selectedSpellCastChainPathObjectIds?.has(object.id)
-                                    || object.id === selectedObjectId
-                                    || isObjectAbilitySource
-                                    ? 'source'
-                                    : isSpellObjectTarget || isObjectAttackTarget || isObjectAbilityTarget || isMageAbilityTarget
-                                        ? 'target'
-                                        : undefined}
-                                onClick={isObjectAbilityTarget || isMageAbilityTarget
-                                    ? () => onObjectSelect?.(object.id)
-                                    : isSpellObjectTarget
-                                    ? () => onObjectSelect?.(object.id)
-                                    : selectedSpellCastCurrentChainSubmitObjectId === object.id
-                                        ? () => onObjectSelect?.(object.id)
-                                    : isObjectAttackTarget
-                                        ? () => onObjectSelect?.(object.id)
-                                        : canSelectObjectActor
-                                            ? () => onActorObjectSelect?.(object.id)
+                            <div className="relative shrink-0">
+                                <ZoneFieldCard
+                                    cardId={object.sourceSpellCardId}
+                                    object={object}
+                                    density={density}
+                                    ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
+                                    visualDamage={getVisualObjectDamage(object)}
+                                    visualLife={resolveMageWarsObjectEffectiveLife(core, object)}
+                                    visualHeld={visualHeld}
+                                    showLifeTotals={showLifeTotals}
+                                    role={object.id === pendingSpellTargetObjectId
+                                        || selectedSpellCastChainPathObjectIds?.has(object.id)
+                                        || object.id === selectedObjectId
+                                        || isObjectAbilitySource
+                                        ? 'source'
+                                        : isSpellObjectTarget || isObjectAttackTarget || isObjectAbilityTarget || isMageAbilityTarget
+                                            ? 'target'
                                             : undefined}
-                                fxAnchorRef={fxAnchors.registerAnchor({
-                                    anchorId: object.id,
-                                    anchorKind: 'entity',
-                                    entityRef: object.id,
-                                })}
-                            />
+                                    onClick={isObjectAbilityTarget || isMageAbilityTarget
+                                        ? () => onObjectSelect?.(object.id)
+                                        : isSpellObjectTarget
+                                        ? () => onObjectSelect?.(object.id)
+                                        : selectedSpellCastCurrentChainSubmitObjectId === object.id
+                                            ? () => onObjectSelect?.(object.id)
+                                        : isObjectAttackTarget
+                                            ? () => onObjectSelect?.(object.id)
+                                            : canSelectObjectActor
+                                                ? () => onActorObjectSelect?.(object.id)
+                                                : undefined}
+                                    fxAnchorRef={fxAnchors.registerAnchor({
+                                        anchorId: object.id,
+                                        anchorKind: 'entity',
+                                        entityRef: object.id,
+                                    })}
+                                />
+                                {object.id === selectedObjectId && canGuardSelectedActor && onGuard ? (
+                                    <MageWarsGuardTokenAction
+                                        onGuard={onGuard}
+                                        compact={density === 'dense' || density === 'packed'}
+                                    />
+                                ) : null}
+                            </div>
                             <ArenaAttachmentStrip
                                 objects={objectAttachments}
                                 density={density}
@@ -2165,23 +2275,32 @@ function ArenaStage({
                     );
                     return (
                         <div key={occupant.id} className="relative z-20 flex shrink-0 items-center justify-center">
-                            <ZoneOccupant
-                                player={occupant}
-                                role={role}
-                                crowded={hasFieldCards || mageAttachments.length > 0}
-                                density={density}
-                                visualDamage={getVisualPlayerDamage(occupant)}
-                                fxAnchorRef={fxAnchors.registerAnchor({
-                                    anchorId: occupant.id,
-                                    anchorKind: 'player',
-                                    entityRef: occupant.id,
-                                })}
-                                onClick={occupant.id === legalAttackTargetId || spellNeedsObjectTarget
-                                    ? () => onPlayerSelect?.(occupant.id)
-                                    : canSelectMageActor
-                                        ? () => onActorPlayerSelect?.(occupant.id)
-                                        : undefined}
-                            />
+                            <div className="relative shrink-0">
+                                <ZoneOccupant
+                                    player={occupant}
+                                    role={role}
+                                    crowded={hasFieldCards || mageAttachments.length > 0}
+                                    density={density}
+                                    visualDamage={getVisualPlayerDamage(occupant)}
+                                    showLifeTotals={showLifeTotals}
+                                    fxAnchorRef={fxAnchors.registerAnchor({
+                                        anchorId: occupant.id,
+                                        anchorKind: 'player',
+                                        entityRef: occupant.id,
+                                    })}
+                                    onClick={occupant.id === legalAttackTargetId || spellNeedsObjectTarget
+                                        ? () => onPlayerSelect?.(occupant.id)
+                                        : canSelectMageActor
+                                            ? () => onActorPlayerSelect?.(occupant.id)
+                                            : undefined}
+                                />
+                                {occupant.id === selectedMageId && canGuardSelectedActor && onGuard ? (
+                                    <MageWarsGuardTokenAction
+                                        onGuard={onGuard}
+                                        compact={density === 'dense' || density === 'packed'}
+                                    />
+                                ) : null}
+                            </div>
                             <ArenaAttachmentStrip
                                 objects={mageAttachments}
                                 density={density}
@@ -2349,100 +2468,6 @@ function ArenaStage({
                     </button>
                 );
             })}
-            {selectedActorZoneId && (
-                canGuardSelectedActor
-                || (selectedObject && selectedObjectAvailableAbilities.length > 0 && onObjectAbilitySelect)
-                || (selectedMage && canUseSelectedMageRestoreAbility && selectedMageRestoreAbility && onMageAbilitySelect)
-            ) ? (() => {
-                const rect = ZONE_RECTS[selectedActorZoneId];
-                const actionButtons = [
-                    canGuardSelectedActor && onGuard ? (
-                        <button
-                            key="guard"
-                            type="button"
-                            className="pointer-events-auto grid h-9 w-9 place-items-center rounded-[0.22rem] border border-emerald-100/75 bg-emerald-950/86 text-emerald-100 shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-100"
-                            aria-label={t('actions.guard')}
-                            title={t('actions.guard')}
-                            data-testid="mage-wars-selected-unit-guard"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onGuard();
-                            }}
-                        >
-                            <TokenImage src={TOKEN_IMAGES.guard} alt={t('tokens.guard')} className="h-7 w-7" />
-                        </button>
-                    ) : null,
-                    ...(selectedObject && onObjectAbilitySelect
-                        ? selectedObjectAvailableAbilities.map((ability) => {
-                            const abilityPreviewRef = getMageWarsSpellCardPreviewRef(ability.meta.sourceSpellCardId);
-                            return (
-                                <button
-                                    key={ability.id}
-                                    type="button"
-                                    className={cx(
-                                        'pointer-events-auto grid h-9 w-9 place-items-center overflow-hidden rounded-[0.22rem] border border-amber-100/75 bg-stone-950/90 text-amber-100 shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:bg-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
-                                    )}
-                                    aria-label={ability.name}
-                                    title={ability.name}
-                                    data-testid={getMageWarsObjectAbilityButtonTestId(ability.id)}
-                                    data-ability-id={ability.id}
-                                    data-ability-visual={abilityPreviewRef ? 'source-card' : 'text-fallback'}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        onObjectAbilitySelect(selectedObject.id, ability.id);
-                                    }}
-                                >
-                                    {abilityPreviewRef ? (
-                                        <CardPreview
-                                            previewRef={abilityPreviewRef}
-                                            className="h-8 w-auto rounded-[0.14rem]"
-                                            title={ability.name}
-                                            alt={ability.name}
-                                        />
-                                    ) : (
-                                        <span className="text-[0.64rem] font-black leading-none">
-                                            {ability.name.slice(0, 1)}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })
-                        : []),
-                    selectedMage && canUseSelectedMageRestoreAbility && selectedMageRestoreAbility && onMageAbilitySelect ? (
-                        <button
-                            key="restore"
-                            type="button"
-                            className="pointer-events-auto grid h-9 w-9 place-items-center overflow-hidden rounded-[0.22rem] border border-cyan-100/75 bg-stone-950/90 text-cyan-100 shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:bg-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-100"
-                            aria-label={selectedMageRestoreAbility.name}
-                            title={selectedMageRestoreAbility.name}
-                            data-testid="mage-wars-selected-mage-ability-restore"
-                            data-ability-visual="mage-portrait"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onMageAbilitySelect(selectedMage.id, selectedMageRestoreAbility.abilityId);
-                            }}
-                        >
-                            <CardPreview
-                                previewRef={getMageWarsMagePreviewRef(selectedMage.mageId, 'portrait')}
-                                className="h-8 w-auto rounded-[0.14rem]"
-                                title={selectedMageRestoreAbility.name}
-                                alt={selectedMageRestoreAbility.name}
-                            />
-                        </button>
-                    ) : null,
-                ].filter(Boolean);
-                return (
-                    <div
-                        className="pointer-events-none absolute z-30 flex flex-col gap-1"
-                        style={{
-                            left: pct(rect.left + rect.width - 8),
-                            top: pct(rect.top + 4),
-                        }}
-                    >
-                        {actionButtons}
-                    </div>
-                );
-            })() : null}
             <FxLayer
                 bus={fxBus}
                 getCellPosition={(row, col) => ({
@@ -2542,6 +2567,77 @@ function MageSpellCastChoiceDock({
                             </button>
                         );
                     })}
+                </div>
+            </section>
+        </aside>
+    );
+}
+
+function MageWarsSelectedAbilityActionDock({
+    sourceName,
+    objectId,
+    objectAbilities,
+    magePlayerId,
+    mageAbility,
+    onObjectAbilitySelect,
+    onMageAbilitySelect,
+}: {
+    sourceName?: string;
+    objectId?: string;
+    objectAbilities: readonly { id: MageWarsObjectAbilityId; name: string }[];
+    magePlayerId?: PlayerId;
+    mageAbility?: { abilityId: MageWarsMageAbilityId; name: string };
+    onObjectAbilitySelect: (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => void;
+    onMageAbilitySelect: (playerId: PlayerId, abilityId: MageWarsMageAbilityId) => void;
+}) {
+    if (objectAbilities.length === 0 && !mageAbility) return null;
+
+    return (
+        <aside
+            className="pointer-events-none absolute inset-x-0 bottom-[15.75rem] z-50 flex justify-center px-4"
+            data-testid="mage-wars-selected-ability-action-dock"
+            data-ability-action-placement="middle-lower-action-dock"
+        >
+            <section className="pointer-events-auto flex max-w-[38rem] items-center gap-3 rounded-[0.35rem] border border-amber-100/18 bg-stone-950/90 px-4 py-2.5 shadow-[0_16px_38px_rgba(0,0,0,0.52)]">
+                {sourceName ? (
+                    <div
+                        className="max-w-[11rem] truncate text-xs font-bold text-stone-300"
+                        data-testid="mage-wars-selected-ability-source-label"
+                    >
+                        {sourceName}
+                    </div>
+                ) : null}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    {objectId ? objectAbilities.map((ability) => (
+                        <button
+                            key={ability.id}
+                            type="button"
+                            className="min-h-9 rounded-[0.25rem] border border-amber-100/28 bg-amber-200 px-3 py-1.5 text-xs font-black text-stone-950 shadow-[0_8px_18px_rgba(0,0,0,0.36)] transition hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                            aria-label={ability.name}
+                            title={ability.name}
+                            data-testid={getMageWarsObjectAbilityButtonTestId(ability.id)}
+                            data-ability-id={ability.id}
+                            data-ability-visual="text-action"
+                            data-ability-action-placement="middle-lower-action-dock"
+                            onClick={() => onObjectAbilitySelect(objectId, ability.id)}
+                        >
+                            {ability.name}
+                        </button>
+                    )) : null}
+                    {magePlayerId && mageAbility ? (
+                        <button
+                            type="button"
+                            className="min-h-9 rounded-[0.25rem] border border-cyan-100/32 bg-cyan-200 px-3 py-1.5 text-xs font-black text-stone-950 shadow-[0_8px_18px_rgba(0,0,0,0.36)] transition hover:bg-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-100"
+                            aria-label={mageAbility.name}
+                            title={mageAbility.name}
+                            data-testid="mage-wars-selected-mage-ability-restore"
+                            data-ability-visual="text-action"
+                            data-ability-action-placement="middle-lower-action-dock"
+                            onClick={() => onMageAbilitySelect(magePlayerId, mageAbility.abilityId)}
+                        >
+                            {mageAbility.name}
+                        </button>
+                    ) : null}
                 </div>
             </section>
         </aside>
@@ -2765,6 +2861,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [pendingObjectAbilityTargetObjectId, setPendingObjectAbilityTargetObjectId] = useState<string | null>(null);
     const [pendingMageAbility, setPendingMageAbility] = useState<PendingMageAbilitySelection | null>(null);
     const [pendingMageAbilityStatusTargetObjectId, setPendingMageAbilityStatusTargetObjectId] = useState<string | null>(null);
+    const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
     const viewport = useRuntimeViewport();
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
@@ -2785,7 +2882,19 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         matchData,
         isMultiplayer,
     });
-    useTutorialBridge(G.sys.tutorial, dispatch);
+    const tutorialRuntimeSyncKey = [
+        phase,
+        core.currentPlayerId,
+        phaseActorId,
+        core.turnNumber,
+        readyPlayerIds.join(','),
+        G.sys.eventStream?.nextId ?? 0,
+        G.sys.decisionEpoch ?? 0,
+        G.sys.interaction?.current?.id ?? '',
+        G.sys.responseWindow?.current?.id ?? '',
+        G.sys.responseWindow?.current?.currentResponderIndex ?? '',
+    ].join('|');
+    useTutorialBridge(G.sys.tutorial, dispatch, tutorialRuntimeSyncKey);
     const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
     const isCommandAllowed = (commandType: string) => {
         if (!isTutorialActive || !tutorialStep) return true;
@@ -3003,6 +3112,27 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         selectedMage && phasePriestessRestoreAbilityId && mageRestoreAvailablePlayerIds.has(selectedMage.id)
             ? [phasePriestessRestoreAbilityId]
             : [],
+    );
+    const selectedObjectAvailableAbilities = selectedObject
+        ? MAGE_WARS_OBJECT_ABILITY_ID_LIST.flatMap((abilityId) => {
+            if (!selectedObjectAvailableAbilityIds.has(abilityId)) return [];
+            const ability = mageWarsObjectAbilityRegistry.get(abilityId);
+            return ability ? [ability] : [];
+        })
+        : [];
+    const selectedMageRestoreAbility = selectedMage && phasePriestessRestoreAbilityId
+        && selectedMageAvailableAbilityIds.has(phasePriestessRestoreAbilityId)
+        ? getMageWarsMageAbilityFromConfig(selectedMage.mageId, phasePriestessRestoreAbilityId)
+        : undefined;
+    const selectedAbilitySourceName = selectedObject?.name
+        ?? (selectedMage ? getMageDisplayLabel(selectedMage) : undefined);
+    const shouldShowSelectedAbilityActionDock = Boolean(
+        !selectedSpell
+        && !pendingSpellCastSelection
+        && !pendingObjectAbility
+        && !pendingMageAbility
+        && !G.sys.interaction?.current
+        && (selectedObjectAvailableAbilities.length > 0 || selectedMageRestoreAbility),
     );
     const spellNeedsWallEdgeTarget = selectedSpellCastTargetWallEdgeIds !== undefined;
     const spellNeedsZoneTarget = selectedSpellCastTargetZoneIds !== undefined;
@@ -3591,9 +3721,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 pendingSpellCastSelection={pendingSpellCastSelection}
                 selectedObjectId={selectedObjectId}
                 selectedMageId={selectedMageId}
-                selectedObjectAvailableAbilityIds={selectedObjectAvailableAbilityIds}
                 objectAbilitySourceIds={objectAbilitySourceIds}
-                selectedMageAvailableAbilityIds={selectedMageAvailableAbilityIds}
                 selectedSpellCastTargetIds={selectedSpellCastTargetIds}
                 selectedSpellCastTargetZoneIds={selectedSpellCastTargetZoneIds}
                 selectedSpellCastTargetWallEdgeIds={selectedSpellCastTargetWallEdgeIds}
@@ -3617,14 +3745,13 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onPlayerSelect={handlePlayerSelect}
                 onActorPlayerSelect={handleActorMageSelect}
                 onGuard={handleGuard}
-                onObjectAbilitySelect={handleObjectAbilitySelect}
-                onMageAbilitySelect={handleMageAbilitySelect}
                 fxBus={fxBus}
                 onFxImpact={mageWarsEvents.onEffectImpact}
                 onFxComplete={mageWarsEvents.onEffectComplete}
                 fxAnchors={fxAnchors}
                 getVisualObjectDamage={getVisualObjectDamage}
                 getVisualPlayerDamage={getVisualPlayerDamage}
+                showLifeTotals={showBoardLifeTotals}
                 visualHeldObjects={mageWarsEvents.heldObjects}
                 desktopFrame={isLandscapeMobileViewport}
             />
@@ -3653,12 +3780,30 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     {isCreatureActionPhase(phase) ? t('arena.actionStage') : t('arena.mode')}
                 </span>
             </div>
+            <MageWarsLifeToggle
+                pressed={showBoardLifeTotals}
+                onToggle={() => setShowBoardLifeTotals((value) => !value)}
+                className={isLandscapeMobileViewport
+                    ? 'left-[1112px] top-4'
+                    : 'left-[calc(50%+9.35rem)] top-4 lg:left-[1112px]'}
+            />
 
             <MageWarsInteractionDock
                 interaction={G.sys.interaction?.current}
                 playerId={playerID ?? viewingPlayerId}
                 dispatch={dispatch}
             />
+            {shouldShowSelectedAbilityActionDock ? (
+                <MageWarsSelectedAbilityActionDock
+                    sourceName={selectedAbilitySourceName}
+                    objectId={selectedObject?.id}
+                    objectAbilities={selectedObjectAvailableAbilities}
+                    magePlayerId={selectedMage?.id}
+                    mageAbility={selectedMageRestoreAbility}
+                    onObjectAbilitySelect={handleObjectAbilitySelect}
+                    onMageAbilitySelect={handleMageAbilitySelect}
+                />
+            ) : null}
             <MageSpellCastChoiceDock
                 spellName={selectedSpell?.name}
                 targetPlayer={pendingSpellTargetPlayer}

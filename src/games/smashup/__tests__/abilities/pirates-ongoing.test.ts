@@ -100,7 +100,7 @@ function attachBeforeScoringWindow(core: ReturnType<typeof makeState>, sourceBas
 }
 
 describe('pirate_king beforeScoring', () => {
-    it('计分前将不在计分基地的海盗王移过去', () => {
+    it('计分前为不在计分基地的海盗王创建移动选择，玩家选择后才移过去', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 })] }),
@@ -108,15 +108,26 @@ describe('pirate_king beforeScoring', () => {
             ],
         });
 
-        const { events } = fireTriggers(state, 'beforeScoring', {
+        const result = fireTriggers(state, 'beforeScoring', {
             state,
+            matchState: makeMatchState(state),
             playerId: '0',
             baseIndex: 0,
             random: dummyRandom,
             now: 0,
         });
 
-        expect(events).toContainEqual(
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        expect(getSimpleChoicePrompt(result.matchState!, 'pirate_king_move')).toBeDefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.move === true,
+            'pirate king move',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.MINION_MOVED,
                 payload: expect.objectContaining({ minionUid: 'king', fromBaseIndex: 1, toBaseIndex: 0 }),
@@ -124,7 +135,7 @@ describe('pirate_king beforeScoring', () => {
         );
     });
 
-    it('POD 版计分前也会移动到计分基地', () => {
+    it('POD 版计分前也会创建移动选择，玩家选择后才移过去', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 })] }),
@@ -132,15 +143,26 @@ describe('pirate_king beforeScoring', () => {
             ],
         });
 
-        const { events } = fireTriggers(state, 'beforeScoring', {
+        const result = fireTriggers(state, 'beforeScoring', {
             state,
+            matchState: makeMatchState(state),
             playerId: '0',
             baseIndex: 0,
             random: dummyRandom,
             now: 0,
         });
 
-        expect(events).toContainEqual(
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        expect(getSimpleChoicePrompt(result.matchState!, 'pirate_king_move')).toBeDefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.move === true,
+            'pirate king pod move',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.MINION_MOVED,
                 payload: expect.objectContaining({

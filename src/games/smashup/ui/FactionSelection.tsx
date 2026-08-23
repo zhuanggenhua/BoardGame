@@ -35,6 +35,7 @@ import { UI_Z_INDEX } from '../../../core';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay } from './CardMagnifyOverlay';
 import { ImplementationStatusRibbon } from '../../../components/game/framework/ImplementationStatusRibbon';
+import { buildSmashUpTakenFactionsFromPlayerSelections } from '../domain/pregameDraft';
 
 interface Props {
     core: SmashUpCore;
@@ -169,7 +170,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         [playerID, selectionState],
     );
     const takenFactionIdentities = useMemo(
-        () => buildFactionSelectionIdentitySet(selectionState?.takenFactions ?? []),
+        () => buildFactionSelectionIdentitySet(
+            buildSmashUpTakenFactionsFromPlayerSelections(selectionState?.playerSelections ?? {}),
+        ),
         [selectionState],
     );
     const mySelectionIdentities = useMemo(

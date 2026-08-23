@@ -727,9 +727,7 @@ const ancientEgyptiansAncientCurseProgram = createEffectProgram<AbilityContext, 
     if (!target) return { events: [] };
     const counters = target.powerCounters ?? 0;
     if (counters <= 0) return { events: [] };
-    if (!ctx.matchState) {
-        return { events: [removePowerCounter(target.uid, ctx.baseIndex, 1, 'ancient_egyptians_ancient_curse', ctx.now)] };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {

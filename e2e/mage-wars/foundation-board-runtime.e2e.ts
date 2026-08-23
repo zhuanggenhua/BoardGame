@@ -402,9 +402,44 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(guardActionButton).toBeVisible();
         await expect(guardActionButton.locator('svg')).toHaveCount(0);
         await expect(guardActionButton.getByAltText(/守卫|guard/i)).toBeVisible();
+        await expect(guardActionButton).toHaveAttribute('data-mage-wars-guard-action-placement', 'bottom-center');
+        const selectedAbilityButton = page.locator('[data-testid^="mage-wars-selected-object-ability-"]').first();
+        await expect(selectedAbilityButton).toBeVisible();
+        await expect(selectedAbilityButton).toHaveAttribute('data-ability-visual', 'text-action');
+        await expect(selectedAbilityButton.locator('img')).toHaveCount(0);
+        await expect(selectedAbilityButton.locator('svg')).toHaveCount(0);
+        await expect(selectedAbilityButton).toContainText(/救赎献祭|治疗之光|迅捷传送|群兽法杖/);
+        const guardPlacementAudit = await page.evaluate(() => {
+            const source = document.querySelector<HTMLElement>('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-red-angel"]');
+            const guard = document.querySelector<HTMLElement>('[data-testid="mage-wars-selected-unit-guard"]');
+            if (!source || !guard) return null;
+            const sourceRect = source.getBoundingClientRect();
+            const guardRect = guard.getBoundingClientRect();
+            return {
+                centerDelta: Math.abs((guardRect.left + guardRect.width / 2) - (sourceRect.left + sourceRect.width / 2)),
+                topFromSourceBottom: guardRect.top - sourceRect.bottom,
+                nestedInsideFieldCard: Boolean(guard.closest('[data-testid="mage-wars-zone-field-card"]')),
+                className: guard.className,
+            };
+        });
+        expect(guardPlacementAudit).not.toBeNull();
+        expect(guardPlacementAudit!.centerDelta).toBeLessThanOrEqual(8);
+        expect(guardPlacementAudit!.topFromSourceBottom).toBeGreaterThanOrEqual(-1);
+        expect(guardPlacementAudit!.topFromSourceBottom).toBeLessThanOrEqual(8);
+        expect(guardPlacementAudit!.nestedInsideFieldCard).toBe(false);
+        expect(guardPlacementAudit!.className).toContain('bg-transparent');
+        expect(guardPlacementAudit!.className).not.toContain('rounded-[0.22rem]');
+        expect(guardPlacementAudit!.className).not.toContain('bg-emerald-950');
         await expect(page.getByTestId('mage-wars-field-card-target-badge')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-field-card-source-badge')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-mage-hud-target-badge')).toHaveCount(0);
+        const lifeToggle = page.getByTestId('mage-wars-life-toggle');
+        await expect(lifeToggle).toBeVisible();
+        await expect(lifeToggle).toHaveAttribute('aria-pressed', 'false');
+        await expect(page.locator('[data-testid="mage-wars-field-card-life-readout"]').first()).toHaveAttribute('data-life-visible', 'false');
+        await lifeToggle.click();
+        await expect(lifeToggle).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('[data-testid="mage-wars-field-card-life-readout"]').first()).toHaveAttribute('data-life-visible', 'true');
         await expect(board).toContainText('己方已计划');
         await expect(board).toContainText('弃牌 3');
         const imageAudit = await auditMageWarsImages(page, [
@@ -422,6 +457,7 @@ test.describe('Mage Wars foundation runtime board', () => {
             const arenaStage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
             const boardRoot = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
             const stageChip = document.querySelector<HTMLElement>('[data-testid="mage-wars-stage-chip"]');
+            const lifeToggle = document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]');
             const arenaImage = document.querySelector<HTMLImageElement>('img[alt="法师战争标准竞技场"]');
             const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
             const opponentHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]');
@@ -513,6 +549,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                     hasDamageValueBadge: Boolean(occupant.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay-value"]')),
                     lifeReadoutText: lifeReadout?.textContent ?? null,
                     lifeRemaining: lifeReadout?.dataset.lifeRemaining ?? null,
+                    lifeVisible: lifeReadout?.dataset.lifeVisible ?? null,
                 };
             });
             const arenaZoneDetails = arenaZones.map((zone) => ({
@@ -547,12 +584,20 @@ test.describe('Mage Wars foundation runtime board', () => {
                     hasDamageValueBadge: Boolean(card.querySelector('[data-testid="mage-wars-field-card-damage-overlay-value"]')),
                     lifeReadoutText: lifeReadout?.textContent ?? null,
                     lifeRemaining: lifeReadout?.dataset.lifeRemaining ?? null,
+                    lifeVisible: lifeReadout?.dataset.lifeVisible ?? null,
                 };
             });
             return {
                 viewportWidth: window.innerWidth,
                 arenaStage: toRect(arenaStage),
                 stageChip: toRect(stageChip),
+                lifeToggle: lifeToggle
+                    ? {
+                        rect: toRect(lifeToggle),
+                        pressed: lifeToggle.getAttribute('aria-pressed'),
+                        lifeVisible: lifeToggle.dataset.lifeVisible ?? null,
+                    }
+                    : null,
                 arenaImage: toRect(arenaImage),
                 arenaZones: arenaZoneDetails,
                 selfHud: toRect(selfHud),
@@ -596,6 +641,9 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.spellbookCard).not.toBeNull();
         expect(desktopLayoutAudit.arenaStage).not.toBeNull();
         expect(desktopLayoutAudit.stageChip).not.toBeNull();
+        expect(desktopLayoutAudit.lifeToggle).not.toBeNull();
+        expect(desktopLayoutAudit.lifeToggle!.pressed).toBe('true');
+        expect(desktopLayoutAudit.lifeToggle!.lifeVisible).toBe('true');
         expect(desktopLayoutAudit.selfHud).not.toBeNull();
         expect(desktopLayoutAudit.opponentHud).not.toBeNull();
         expect(desktopLayoutAudit.mageHudHintCards).toHaveLength(2);
@@ -641,9 +689,11 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageOverlay)).toBe(true);
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageValueBadge === false)).toBe(true);
+        expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.lifeVisible === 'true')).toBe(true);
         expect(desktopLayoutAudit.zoneMageEntities.map((occupant) => occupant.lifeReadoutText).sort()).toEqual(['17/24', '19/24']);
         expect(desktopLayoutAudit.fieldCards.some((card) => card.visualDamage > 0 && card.hasDamageOverlay)).toBe(true);
         expect(desktopLayoutAudit.fieldCards.every((card) => card.hasDamageValueBadge === false)).toBe(true);
+        expect(desktopLayoutAudit.fieldCards.every((card) => card.lifeVisible === 'true')).toBe(true);
         expect(desktopLayoutAudit.fieldCards.some((card) => card.visualDamage > 0 && card.lifeReadoutText === '4/6')).toBe(true);
         expect(desktopLayoutAudit.damageTokenImageCount).toBe(0);
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('来源');
@@ -745,6 +795,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(focusGuardActionButton).toBeVisible();
         await expect(focusGuardActionButton.locator('svg')).toHaveCount(0);
         await expect(focusGuardActionButton.getByAltText(/守卫|guard/i)).toBeVisible();
+        await expect(focusGuardActionButton).toHaveAttribute('data-mage-wars-guard-action-placement', 'bottom-center');
         await expect(page.getByTestId('mage-wars-desktop-settlement-overlay')).toHaveCount(0);
         const combatFocusAudit = await page.evaluate(() => {
             const zone = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-zone-a2"]')?.getBoundingClientRect();

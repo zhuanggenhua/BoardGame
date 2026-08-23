@@ -703,6 +703,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         else handleSelect(optionId);
     };
 
+    const handleControlOption = (optionId: string, disabled?: boolean) => {
+        if (!isMyPrompt || disabled || isSubmitLocked) return;
+        if (isMulti) {
+            lockedPromptRespond({ optionIds: [optionId] });
+            return;
+        }
+        handleSelect(optionId);
+    };
+
     if (displayCards) {
         const { selectedUid: selUid, onSelect: onSel } = displayCards;
         const playableUids = onSel ? displayCards.playableUids : undefined;
@@ -1167,7 +1176,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 variant="secondary"
                                                 size="sm"
                                                 disabled={skipOption.disabled}
-                                                onClick={() => handleAction(skipOption.id, skipOption.disabled)}
+                                                onClick={() => handleControlOption(skipOption.id, skipOption.disabled)}
                                                 className="opacity-70 hover:opacity-100"
                                             >
                                                 {skipOption.label}
@@ -1252,7 +1261,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         data-option-id={skipOption.id}
                                         variant="secondary"
                                         size="sm"
-                                        onClick={() => handleAction(skipOption.id, skipOption.disabled)}
+                                        onClick={() => handleControlOption(skipOption.id, skipOption.disabled)}
                                         disabled={skipOption.disabled}
                                         className="opacity-70 hover:opacity-100"
                                     >
@@ -1659,13 +1668,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     <GameButton
                                         variant="secondary"
                                         size="sm"
-                                        onClick={() => {
-                                            if (isMulti) {
-                                                lockedPromptRespond({ optionIds: [skipOption.id] });
-                                            } else {
-                                                handleAction(skipOption.id, skipOption.disabled);
-                                            }
-                                        }}
+                                        onClick={() => handleControlOption(skipOption.id, skipOption.disabled)}
                                         disabled={skipOption.disabled}
                                         className="opacity-85 hover:opacity-100"
                                     >
@@ -1740,7 +1743,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 variant="secondary"
                                 size="md"
                                 fullWidth
-                                onClick={() => handleAction(skipOption.id, skipOption.disabled)}
+                                onClick={() => handleControlOption(skipOption.id, skipOption.disabled)}
                                 disabled={skipOption.disabled}
                                 className="mt-2 opacity-70 hover:opacity-100 border-dashed"
                             >

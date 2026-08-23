@@ -85,7 +85,7 @@ function buildStatusPayload({ status, closedReason, resolvedMethod }) {
 }
 
 async function updateViaHttp({ baseUrl, token, id, status, closedReason, resolvedMethod, fetchImpl }) {
-    const response = await fetchImpl(`${baseUrl}/admin/feedback/${id}/status`, {
+    const response = await fetchImpl(`${baseUrl}/admin-api/feedback/${id}/status`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',

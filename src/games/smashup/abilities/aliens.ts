@@ -793,17 +793,7 @@ function alienScoutAfterScoringPerInstance(ctx: TriggerContext): SmashUpEvent[] 
         return [];
     }
 
-    if (!ctx.matchState) {
-        return buildValidatedReturnEvents(ctx.state, {
-            minionUid: scout.uid,
-            minionDefId: scout.defId,
-            fromBaseIndex: ctx.baseIndex,
-            toPlayerId: scout.owner,
-            reason: 'alien_scout',
-            sourcePlayerId: scout.controller,
-            now: ctx.now,
-        });
-    }
+    if (!ctx.matchState) return [];
 
     const result = executeAbilityProgram(alienScoutReturnPromptProgram, {
         matchState: ctx.matchState,

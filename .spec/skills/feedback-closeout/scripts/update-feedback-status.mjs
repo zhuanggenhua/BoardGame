@@ -106,7 +106,7 @@ async function main() {
         resolvedMethod: options.resolvedMethod,
     });
     const writerEvidence = remoteUpdate.writer === 'http'
-        ? `online-feedback-status:http:${baseUrl}/admin/feedback/${options.id}/status`
+        ? `online-feedback-status:http:${baseUrl}/admin-api/feedback/${options.id}/status`
         : `online-feedback-status:mongo-ssh:feedbacks/${options.id}`;
     let localBoardPath = '';
     if (options.summaryPath) {

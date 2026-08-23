@@ -3798,7 +3798,9 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '服务端没有记录圣光之柱对阿希拉牧师的攻击掷骰和伤害状态',
                 timeout: 5_000,
             }).toBe(true);
-            await expect(targetCleric.locator('img[alt*="伤害"]')).toBeVisible({ timeout: 5_000 });
+            await expect(targetCleric.locator('[data-testid="mage-wars-field-card-damage-overlay"]')).toBeVisible({ timeout: 5_000 });
+            await expect(targetCleric.locator('[data-testid="mage-wars-field-card-damage-overlay-value"]')).toHaveCount(0);
+            await expect(targetCleric.locator('[data-testid="mage-wars-field-card-life-readout"]')).toHaveAttribute('data-life-visible', 'false');
             await expectMobileLandscapeHudSlots(match.guestPage, '攻击后访客视角');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态');
 
@@ -4282,6 +4284,24 @@ test.describe('Mage Wars formal online runtime', () => {
             await clickFieldObject(match.guestPage, guestClericForHealing, '阿希拉牧师治疗之光前选择来源');
             const healingLightButton = match.guestPage.getByTestId('mage-wars-selected-object-ability-healing-light');
             await expect(healingLightButton).toBeVisible({ timeout: 3_000 });
+            const healingAbilityDock = match.guestPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(healingAbilityDock).toBeVisible({ timeout: 3_000 });
+            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(healingAbilityDock).toHaveClass(/bottom-\[15\.75rem\]/);
+            await expect(healingAbilityDock).not.toHaveClass(/top-\[4\.85rem\]/);
+            const healingDockBox = await healingAbilityDock.boundingBox();
+            const healingViewport = match.guestPage.viewportSize();
+            if (!healingDockBox || !healingViewport) {
+                throw new Error('无法读取治疗之光能力按钮的视口位置');
+            }
+            expect(healingDockBox.y).toBeGreaterThan(healingViewport.height * 0.55);
+            expect(healingDockBox.y + healingDockBox.height).toBeLessThan(healingViewport.height * 0.86);
+            await expect(healingLightButton).toHaveAttribute('data-ability-visual', 'text-action');
+            await expect(healingLightButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(healingLightButton.locator('img')).toHaveCount(0);
+            await expect(healingLightButton.locator('svg')).toHaveCount(0);
+            await expect(healingLightButton).toContainText('治疗之光');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '15A-阿希拉牧师治疗之光入口-中下动作按钮可见');
             await healingLightButton.click({ timeout: 3_000, noWaitAfter: true });
             await expect(hostBobcatForHealing.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
             const healingFxAuditPromise = captureMageWarsFxProcessScreenshots(
@@ -4354,6 +4374,23 @@ test.describe('Mage Wars formal online runtime', () => {
             await clickMageEntity(match.guestPage, '1', '女祭司复原术前选择法师本体');
             const restoreButton = match.guestPage.getByTestId('mage-wars-selected-mage-ability-restore');
             await expect(restoreButton).toBeVisible({ timeout: 3_000 });
+            const restoreAbilityDock = match.guestPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(restoreAbilityDock).toBeVisible({ timeout: 3_000 });
+            await expect(restoreAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(restoreAbilityDock).toHaveClass(/bottom-\[15\.75rem\]/);
+            await expect(restoreAbilityDock).not.toHaveClass(/top-\[4\.85rem\]/);
+            const restoreDockBox = await restoreAbilityDock.boundingBox();
+            const restoreViewport = match.guestPage.viewportSize();
+            if (!restoreDockBox || !restoreViewport) {
+                throw new Error('无法读取复原术能力按钮的视口位置');
+            }
+            expect(restoreDockBox.y).toBeGreaterThan(restoreViewport.height * 0.55);
+            expect(restoreDockBox.y + restoreDockBox.height).toBeLessThan(restoreViewport.height * 0.86);
+            await expect(restoreButton).toHaveAttribute('data-ability-visual', 'text-action');
+            await expect(restoreButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(restoreButton.locator('img')).toHaveCount(0);
+            await expect(restoreButton.locator('svg')).toHaveCount(0);
+            await expect(restoreButton).toContainText('复原术');
             await restoreButton.click({ timeout: 3_000, noWaitAfter: true });
             const burningClericTarget = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${guestClericObjectId}"]`).first();
             await expect(burningClericTarget.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });

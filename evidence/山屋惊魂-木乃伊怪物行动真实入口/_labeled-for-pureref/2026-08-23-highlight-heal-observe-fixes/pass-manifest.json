@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "急救包和木乃伊流程的目标高亮必须有贴合对象本体的清楚主边界；山屋当前为绿色 SVG 描边，但项目规范允许辅助泛光、ring、阴影或填充，只禁止离体、压住本体或形成第二目标框。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 主黄金链通过；急救包目标、木乃伊攻击者、同房英雄目标均断言 data-highlight-anchor=token-surface，并通过 bbox 贴合检查；急救包目标另按山屋当前绿色语法做像素占优检查。",
+        "src/games/betrayal/Board.tsx 使用目标 token 背后的 SVG 主边界；普通木乃伊候选不再渲染可见文字胶囊。"
+      ]
+    },
+    {
+      "requirement": "急救包治疗反馈只在目标旁显示短飘字，不显示底部结果条、属性明细行或伪结果面板。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 主黄金链通过；治疗后断言 betrayal-visible-feedback 不存在，目标旁 data-feedback-style=floating-text、data-feedback-anchor=target-token，文本为“治疗 +4”，且不包含“力量 / 速度 / 知识 / 神志”。",
+        "Board 单测“急救包会在真实页面选择同板块队友并治疗目标”通过同一断言。"
+      ]
+    },
+    {
+      "requirement": "观察队友持有物必须复用原持有区切换视角，不能在观察面板或详情卡里另建单独物品 UI。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 主黄金链通过；切换观察目标英雄后断言 betrayal-observed-inventory-zone 为 0，betrayal-inventory-section 的 data-observed-player=true 且 data-player-id 为目标英雄，圣符出现在原 betrayal-inventory-holy-symbol 中并为只读。",
+        "Board 单测“探索者玩家面板恢复人物板，地图 token 保持正式资源状态”通过同一观察视角合同。"
+      ]
+    },
+    {
+      "requirement": "项目规范必须沉淀这次暴露的重复 UI 与反馈动效口径。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-change-gates.md 新增“视角切换复用原槽位”和“反馈动效不扩写成面板”。",
+        ".spec/knowledge/standards/ui-ux.md 新增视角切换复用原槽位与飘字只承载短结果。",
+        ".spec/knowledge/standards/e2e-verification.md 新增观察他人持有物必须证明原槽位切换且旧副本不存在。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-fixes/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-fixes/01-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-fixes/02-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-fixes/03-labeled-65-主黄金链过程-32-木乃伊攻击-选择木乃伊攻击者.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-fixes/04-labeled-65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-fixes/05-labeled-65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.png"
+  ]
+}

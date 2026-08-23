@@ -34,10 +34,16 @@ describe('Smash Up 无交互态不替玩家自动选择目标', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
+                    hand: [makeCard('spreading-match', 'ignobles_sneaky_squire', 'minion', '0')],
                     deck: [makeCard('sprout-target', 'ignobles_sneaky_squire', 'minion', '0')],
-                    discard: [makeCard('vulture-target', 'astroknights_hidden_base', 'action', '0')],
+                    discard: [
+                        makeCard('vulture-target', 'astroknights_hidden_base', 'action', '0'),
+                        makeCard('summoning-target', 'all_stars_fan', 'minion', '0'),
+                    ],
                 }),
-                '1': makePlayer('1'),
+                '1': makePlayer('1', {
+                    hand: [makeCard('spy-discard-target', 'sharks_mako', 'minion', '1')],
+                }),
             },
             bases: [
                 makeBase({
@@ -148,6 +154,55 @@ describe('Smash Up 无交互态不替玩家自动选择目标', () => {
             random: FIXED_RANDOM,
             now: 17,
         }).events).toEqual([]);
+
+        const spreading = invokeRegisteredAbilityContract('innsmouth_spreading_the_word', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'spreading',
+            defId: 'innsmouth_spreading_the_word',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 18,
+        });
+        expect(spreading.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+        const beginTheSummoning = invokeRegisteredAbilityContract('all_stars_begin_the_summoning', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'begin',
+            defId: 'all_stars_begin_the_summoning',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 19,
+        });
+        expect(beginTheSummoning.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP)).toBe(false);
+
+        const shipsCaptain = invokeRegisteredAbilityContract('star_roamers_ships_captain', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'ships-captain',
+            defId: 'star_roamers_ships_captain',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 19.5,
+        });
+        expect(shipsCaptain.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        expect(shipsCaptain.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
+
+        const spyWhoDitchedMe = invokeRegisteredAbilityContract('super_spies_the_spy_who_ditched_me', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'spy',
+            defId: 'super_spies_the_spy_who_ditched_me',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 20,
+        });
+        expect(spyWhoDitchedMe.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
     });
 
     it('不会在其它选择型卡牌里用默认候选替代玩家确认', () => {
@@ -744,5 +799,342 @@ describe('Smash Up 无交互态不替玩家自动选择目标', () => {
         });
 
         expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+
+    it('计分前特殊和额外随从额度不会在无交互态自动选择对象或基地', () => {
+        const finalStandCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('hero', 'action_heroes_commandbro', '0', 5),
+                    makeMinion('weak-a', 'pirate_first_mate', '1', 2),
+                    makeMinion('weak-b', 'pirate_first_mate', '1', 2),
+                ]),
+            ],
+        });
+
+        const finalStand = invokeRegisteredAbilityContract('action_heroes_final_stand', 'special', {
+            state: finalStandCore,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'final-stand',
+            defId: 'action_heroes_final_stand',
+            baseIndex: 0,
+            targetBaseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 61,
+        });
+        expect(finalStand.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+
+        const firstToArriveCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [makeMinion('enemy-a', 'shield_agent', '1', 2)]),
+                makeBase('base_beta', [makeMinion('enemy-b', 'shield_agent', '1', 2)]),
+            ],
+        });
+
+        const firstToArrive = invokeRegisteredAbilityContract('ultimates_first_to_arrive', 'onPlay', {
+            state: firstToArriveCore,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'first-to-arrive',
+            defId: 'ultimates_first_to_arrive',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 62,
+        });
+        expect(firstToArrive.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+        const ancientCurseCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('counter-target', 'pirate_first_mate', '1', 2, { powerCounters: 1 }),
+                ]),
+            ],
+        });
+
+        const ancientCurse = invokeRegisteredAbilityContract('ancient_egyptians_ancient_curse', 'onPlay', {
+            state: ancientCurseCore,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'ancient-curse',
+            defId: 'ancient_egyptians_ancient_curse',
+            baseIndex: 0,
+            targetMinionUid: 'counter-target',
+            random: FIXED_RANDOM,
+            now: 63,
+        });
+        expect(ancientCurse.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_REMOVED)).toBe(false);
+    });
+
+    it('可选触发和分支选择不会在无交互态自动选“是”或第一分支', () => {
+        const scoutCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('scout', 'alien_scout', '1', 3),
+                ]),
+            ],
+        });
+
+        const scout = fireTriggers(scoutCore, 'afterScoring', {
+            state: scoutCore,
+            matchState: undefined,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 5, vp: 3 }],
+            random: FIXED_RANDOM,
+            now: 64,
+        });
+        expect(scout.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
+
+        const cthulhuCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('chosen', 'cthulhu_chosen', '0', 2),
+                ]),
+            ],
+            madnessDeck: [MADNESS_CARD_DEF_ID],
+        });
+
+        const chosen = fireTriggers(cthulhuCore, 'beforeScoring', {
+            state: cthulhuCore,
+            matchState: undefined,
+            playerId: '0',
+            baseIndex: 0,
+            sourceCardUid: 'chosen',
+            random: FIXED_RANDOM,
+            now: 65,
+        });
+        expect(chosen.events.some(event => event.type === SU_EVENTS.MADNESS_DRAWN)).toBe(false);
+        expect(chosen.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
+
+        const bigFunnyGiantCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('owner-minion', 'trickster_gnome', '0', 2),
+                ]),
+            ],
+            titans: [{
+                uid: 'big-funny-giant-pod',
+                defId: 'tricksters_big_funny_giant_pod',
+                faction: SMASHUP_FACTION_IDS.TRICKSTERS_POD,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            }],
+        });
+
+        const bigFunnyGiant = fireTriggers(bigFunnyGiantCore, 'onTurnEnd', {
+            state: bigFunnyGiantCore,
+            matchState: undefined,
+            playerId: '1',
+            random: FIXED_RANDOM,
+            now: 66,
+        });
+        expect(bigFunnyGiant.events.some(event => event.type === SU_EVENTS.TITAN_POWER_COUNTER_ADDED)).toBe(false);
+
+        const highGroundCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('bear-owner', 'bear_cavalry_cub_scout', '0', 2),
+                    makeMinion('moved-enemy', 'pirate_first_mate', '1', 2),
+                ]),
+            ],
+        });
+        highGroundCore.bases[0].ongoingActions = [{
+            uid: 'high-ground-pod',
+            defId: 'bear_cavalry_high_ground_pod',
+            ownerId: '0',
+            metadata: { sourceControllerId: '0' },
+        }];
+
+        const highGround = fireTriggers(highGroundCore, 'onMinionMoved', {
+            state: highGroundCore,
+            matchState: undefined,
+            playerId: '1',
+            baseIndex: 0,
+            moveToBaseIndex: 0,
+            triggerMinionUid: 'moved-enemy',
+            triggerMinionDefId: 'pirate_first_mate',
+            random: FIXED_RANDOM,
+            now: 67,
+        });
+        expect(highGround.events.some(event => event.type === SU_EVENTS.ONGOING_DETACHED)).toBe(false);
+        expect(highGround.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+
+        const aladdinCostCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('first-action-cost', 'aladdin_wish', 'action', '0'),
+                        makeCard('second-action-cost', 'aladdin_cave_of_wonders', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('jasmine', 'aladdin_jasmine', '0', 4),
+                ]),
+            ],
+        });
+
+        const aladdinCost = invokeRegisteredAbilityContract('aladdin_jasmine', 'talent', {
+            state: aladdinCostCore,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'jasmine',
+            defId: 'aladdin_jasmine',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 67.25,
+        });
+        expect(aladdinCost.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(aladdinCost.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+        const yokaiCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [
+                    makeMinion('yokai', 'big_hero_6_yokai', '0', 4, { powerCounters: 1 }),
+                    makeMinion('source-counter', 'big_hero_6_microbot_swarm', '0', 2, { powerCounters: 1 }),
+                ]),
+                makeBase('base_beta', [
+                    makeMinion('first-receiver', 'frozen_snowgie', '0', 2),
+                    makeMinion('second-receiver', 'frozen_olaf', '0', 3),
+                ]),
+            ],
+        });
+
+        const yokai = invokeRegisteredAbilityContract('big_hero_6_yokai', 'special', {
+            state: yokaiCore,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'yokai',
+            defId: 'big_hero_6_yokai',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 67.5,
+        });
+        expect(yokai.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_REMOVED)).toBe(false);
+        expect(yokai.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+
+        const pirateKingCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [makeMinion('scoring-minion', 'pirate_first_mate', '1', 2)]),
+                makeBase('base_beta', [makeMinion('pirate-king', 'pirate_king', '0', 5)]),
+            ],
+        });
+
+        const pirateKing = fireTriggers(pirateKingCore, 'beforeScoring', {
+            state: pirateKingCore,
+            matchState: undefined,
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [{ playerId: '1', power: 5, vp: 1 }],
+            random: FIXED_RANDOM,
+            now: 68,
+        });
+        expect(pirateKing.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+
+        const megabotCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [makeMinion('megabot-scoring', 'pirate_first_mate', '1', 2)]),
+                makeBase('base_beta'),
+            ],
+            titans: [{
+                uid: 'megabot',
+                defId: 'mega_troopers_megabot',
+                faction: SMASHUP_FACTION_IDS.MEGA_TROOPERS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+            }],
+        });
+
+        const megabot = fireTriggers(megabotCore, 'beforeScoring', {
+            state: megabotCore,
+            matchState: undefined,
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [{ playerId: '1', power: 5, vp: 1 }],
+            random: FIXED_RANDOM,
+            now: 69,
+        });
+        expect(megabot.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(false);
+
+        const category5Core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_alpha', [makeMinion('category5-scoring', 'pirate_first_mate', '1', 2)]),
+                makeBase('base_beta'),
+            ],
+            titans: [{
+                uid: 'category5',
+                defId: 'tornados_category_5',
+                faction: SMASHUP_FACTION_IDS.TORNADOS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+            }],
+        });
+
+        const category5 = fireTriggers(category5Core, 'beforeScoring', {
+            state: category5Core,
+            matchState: undefined,
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [{ playerId: '1', power: 5, vp: 1 }],
+            random: FIXED_RANDOM,
+            now: 70,
+        });
+        expect(category5.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(false);
     });
 });

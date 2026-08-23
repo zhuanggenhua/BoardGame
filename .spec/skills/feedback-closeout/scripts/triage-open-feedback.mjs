@@ -93,7 +93,7 @@ async function fetchList(baseUrl, token, status, limit) {
     let total = 0;
 
     while (true) {
-        const url = `${baseUrl}/admin/feedback?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`;
+        const url = `${baseUrl}/admin-api/feedback?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`;
         const response = await fetch(url, {
             headers: buildHeaders(token),
         });

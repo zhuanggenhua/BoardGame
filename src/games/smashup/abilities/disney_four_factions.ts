@@ -1324,35 +1324,16 @@ function yokaiAfterScoring(ctx: AbilityContext): AbilityResult {
     const receivers = collectOwnMinions(ctx.state, ctx.playerId)
         .filter(target => !sourceUids.has(target.minionUid));
     if (receivers.length === 0) return { events: [] };
-    if (ctx.matchState) {
-        return promptMinion(ctx, {
-            sourceId: 'big_hero_6_yokai',
-            title: '妖怪：选择接收 +1 力量标记的角色',
-            kind: 'yokaiReceiver',
-            minions: receivers,
-            optional: true,
-            targetBaseIndex: ctx.baseIndex,
-            reason: 'big_hero_6_yokai',
-        });
-    }
-    const receiver = receivers[0];
-    const events: SmashUpEvent[] = [];
-    for (const minion of base.minions) {
-        if (minion.controller !== ctx.playerId || (minion.powerCounters ?? 0) <= 0 || minion.uid === receiver.minionUid) continue;
-        events.push(removePowerCounter(minion.uid, ctx.baseIndex, 1, 'big_hero_6_yokai', ctx.now, {
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-        }));
-        events.push(addPowerCounter(receiver.minionUid, receiver.baseIndex, 1, 'big_hero_6_yokai', ctx.now, {
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-        }));
-    }
-    return { events };
+    if (!ctx.matchState) return { events: [] };
+    return promptMinion(ctx, {
+        sourceId: 'big_hero_6_yokai',
+        title: '妖怪：选择接收 +1 力量标记的角色',
+        kind: 'yokaiReceiver',
+        minions: receivers,
+        optional: true,
+        targetBaseIndex: ctx.baseIndex,
+        reason: 'big_hero_6_yokai',
+    });
 }
 
 function snowgie(ctx: AbilityContext): AbilityResult {

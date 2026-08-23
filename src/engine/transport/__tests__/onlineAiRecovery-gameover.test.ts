@@ -736,6 +736,57 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         });
     });
 
+    it('trigger-only simple-choice 属于 human 时，watchdog 不得自动选择首个 trigger', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'scoreBases',
+                interaction: {
+                    current: {
+                        id: 'reaction-order-choice-human',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个反应动作',
+                            multi: { min: 1, max: 1 },
+                            options: [
+                                {
+                                    id: 'trigger:afterScoring:base_a:0:0',
+                                    label: '先结算触发 A',
+                                    value: { kind: 'trigger', triggerId: 'afterScoring:base_a:0:0' },
+                                },
+                            ],
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+                },
+            },
+        });
+
+        expect(result).toBeNull();
+    });
+
     it('可见 simple-choice 在同 interactionId 下若 option value 漂移，watchdog 的 attemptKey 也必须跟着变化', () => {
         const baseState: MatchState<unknown> = {
             core: {

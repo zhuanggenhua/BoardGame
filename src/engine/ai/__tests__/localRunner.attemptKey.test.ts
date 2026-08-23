@@ -58,6 +58,50 @@ const buildDecisionOwnerState = (decisionOwnerId: string): MatchState<unknown> =
 }) as MatchState<unknown>;
 
 describe('resolveNextAiAction attemptKey', () => {
+    it('不会为 human 座位执行 AI 选择或 fallback 代选', async () => {
+        const gameId = '__test_local_ai_ignores_human_seats__';
+        const visitedPlayers: string[] = [];
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                visitedPlayers.push(playerId);
+                return [{
+                    actionId: 'human-choice-would-be-invalid',
+                    kind: 'simple-choice',
+                    label: 'Should not run',
+                    commands: [{
+                        type: 'INTERACTION_RESPOND',
+                        payload: { interactionId: 'human-choice-1', optionId: 'first-option' },
+                    }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'human-choice-would-be-invalid' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const result = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildState(1),
+            matchId: 'match-human-seat-skip',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+            },
+        });
+
+        expect(result).toBeNull();
+        expect(visitedPlayers).toEqual([]);
+    });
+
     it('决策面 epoch 变化时应生成新的 attemptKey，避免把新 AI 决策误压成重复尝试', async () => {
         const gameId = '__test_local_ai_attempt_key_decision_epoch__';
         registerGameAiRuntime({

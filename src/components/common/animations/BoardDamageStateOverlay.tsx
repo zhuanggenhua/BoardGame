@@ -18,16 +18,12 @@ export function BoardDamageStateOverlay({
   if (damage <= 0 || life <= 0) return null;
 
   const damageRatio = Math.min(1, Math.max(0, damage / life));
-  const overlayHeightPct = Math.max(18, Math.round(damageRatio * 100));
-  const lowerAlpha = Math.min(0.66, 0.2 + damageRatio * 0.36);
-  const upperAlpha = Math.min(0.22, 0.04 + damageRatio * 0.12);
+  const overlayHeightPct = Math.min(damageRatio * 100, 100);
 
   const style: CSSProperties = {
     height: `${overlayHeightPct}%`,
-    background: [
-      `linear-gradient(to top, rgba(220,38,38,${lowerAlpha}) 0%, rgba(185,28,28,${upperAlpha}) 72%, rgba(185,28,28,0) 100%)`,
-      'radial-gradient(circle at 50% 100%, rgba(254,202,202,0.22) 0%, rgba(254,202,202,0) 58%)',
-    ].join(', '),
+    background: `linear-gradient(to top, rgba(220,38,38,${0.25 + damageRatio * 0.45}) 0%, rgba(185,28,28,${0.05 + damageRatio * 0.15}) 100%)`,
+    transition: 'height 0.3s ease-out',
   };
 
   return (
@@ -40,7 +36,7 @@ export function BoardDamageStateOverlay({
       data-damage-ratio={damageRatio.toFixed(3)}
     >
       <div
-        className="absolute inset-x-0 bottom-0 rounded-[inherit] transition-[height,opacity] duration-300"
+        className="absolute inset-x-0 bottom-0 rounded-[inherit]"
         style={style}
       />
       {showValueBadge ? (

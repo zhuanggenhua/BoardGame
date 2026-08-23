@@ -20,10 +20,26 @@ export const MAGE_WARS_EVENTS = {
     UPKEEP_BURN_ROLL_AVAILABLE: 'MW_UPKEEP_BURN_ROLL_AVAILABLE',
     UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE: 'MW_UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE',
     MANA_DRAINED: 'MW_MANA_DRAINED',
+    ARENA_OBJECT_ATTACK_MANA_DRAIN_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_MANA_DRAIN_AVAILABLE',
+    ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE',
+    SPELL_ATTACK_STATUS_EFFECT_AVAILABLE: 'MW_SPELL_ATTACK_STATUS_EFFECT_AVAILABLE',
+    SPELL_ATTACK_PUSH_AVAILABLE: 'MW_SPELL_ATTACK_PUSH_AVAILABLE',
+    ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE',
+    SPELL_ATTACK_DEFEAT_AVAILABLE: 'MW_SPELL_ATTACK_DEFEAT_AVAILABLE',
+    MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE: 'MW_MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE',
+    SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE: 'MW_SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE',
+    SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE: 'MW_SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE',
+    SPELL_OBJECT_DESTRUCTION_AVAILABLE: 'MW_SPELL_OBJECT_DESTRUCTION_AVAILABLE',
+    ARENA_OBJECT_ATTACK_VAMPIRIC_HEALING_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_VAMPIRIC_HEALING_AVAILABLE',
+    ARENA_OBJECT_ATTACK_TEMPORARY_TRAITS_CLEAR_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_TEMPORARY_TRAITS_CLEAR_AVAILABLE',
+    ARENA_OBJECT_TEMPORARY_TRAITS_CLEAR_AVAILABLE: 'MW_ARENA_OBJECT_TEMPORARY_TRAITS_CLEAR_AVAILABLE',
+    ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE: 'MW_ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE',
+    STATUS_TOKEN_REMOVAL_AVAILABLE: 'MW_STATUS_TOKEN_REMOVAL_AVAILABLE',
     SPELL_CAST_STARTED: 'MW_SPELL_CAST_STARTED',
     SPELL_CAST_RESOLVED: 'MW_SPELL_CAST_RESOLVED',
     SPELL_DISCARDED: 'MW_SPELL_DISCARDED',
     WALL_SUMMONED: 'MW_WALL_SUMMONED',
+    WALL_PASSAGE_DAMAGE_AVAILABLE: 'MW_WALL_PASSAGE_DAMAGE_AVAILABLE',
     WALL_PASSAGE_DAMAGE_TRIGGERED: 'MW_WALL_PASSAGE_DAMAGE_TRIGGERED',
     MAGE_ABILITY_RESOLVED: 'MW_MAGE_ABILITY_RESOLVED',
     ARENA_OBJECT_ABILITY_RESOLVED: 'MW_ARENA_OBJECT_ABILITY_RESOLVED',
@@ -46,9 +62,11 @@ export const MAGE_WARS_EVENTS = {
     ARENA_OBJECT_MOVED: 'MW_ARENA_OBJECT_MOVED',
     GUARD_GAINED: 'MW_GUARD_GAINED',
     GUARD_REMOVED: 'MW_GUARD_REMOVED',
+    ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE',
     COUNTERSTRIKE_AVAILABLE: 'MW_COUNTERSTRIKE_AVAILABLE',
     DEFENSE_AVAILABLE: 'MW_DEFENSE_AVAILABLE',
     ATTACK_DECLARED: 'MW_ATTACK_DECLARED',
+    ARENA_OBJECT_ATTACK_MANA_COST_AVAILABLE: 'MW_ARENA_OBJECT_ATTACK_MANA_COST_AVAILABLE',
     MENTAL_CALM_TRIGGERED: 'MW_MENTAL_CALM_TRIGGERED',
     MELEE_ATTACK_MANA_TAX_TRIGGERED: 'MW_MELEE_ATTACK_MANA_TAX_TRIGGERED',
     ARENA_OBJECT_ATTACK_DECLARED: 'MW_ARENA_OBJECT_ATTACK_DECLARED',
@@ -194,6 +212,136 @@ export interface MageWarsManaDrainedEvent extends GameEvent<typeof MAGE_WARS_EVE
     };
 }
 
+export interface MageWarsArenaObjectAttackManaDrainAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_MANA_DRAIN_AVAILABLE> {
+    payload: {
+        playerId: PlayerId;
+        sourcePlayerId: PlayerId;
+        requestedAmount: number;
+        sourceAbilityId: string;
+        spellCardId: number;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+    };
+}
+
+export interface MageWarsArenaObjectAttackStatusEffectAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        statusTokenId: StatusTokenId;
+        amount: number;
+        sourceAbilityId: string;
+        spellCardId: number;
+        effectDieResult: number;
+    };
+}
+
+export interface MageWarsSpellAttackStatusEffectAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_ATTACK_STATUS_EFFECT_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        statusTokenId: StatusTokenId;
+        amount: number;
+        sourceAbilityId: string;
+        spellCardId: number;
+        effectDieResult: number;
+    };
+}
+
+export interface MageWarsSpellAttackPushAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_ATTACK_PUSH_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        fromZoneId: ArenaZoneId;
+        toZoneId: ArenaZoneId;
+        sourceAbilityId: string;
+        spellCardId: number;
+        effectDieResult: number;
+    };
+}
+
+export interface MageWarsArenaObjectAttackDefeatAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DEFEAT_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        attackerObjectId: string;
+        sourceAbilityId: string;
+        spellCardId: number;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        targetObjectOwnerId?: PlayerId;
+    };
+}
+
+export interface MageWarsSpellAttackDefeatAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_ATTACK_DEFEAT_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        sourceAbilityId: string;
+        spellCardId: number;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        targetObjectOwnerId?: PlayerId;
+    };
+}
+
+export interface MageWarsBasicAttackDefeatAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.MAGE_BASIC_ATTACK_DEFEAT_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        sourceAbilityId: string;
+        targetPlayerId: PlayerId;
+    };
+}
+
+export interface MageWarsSpellDirectDamageHealingAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_HEALING_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        sourceAbilityId: string;
+        spellCardId: number;
+        healingTargetPlayerId: PlayerId;
+        damagedTargetPlayerId?: PlayerId;
+        damagedTargetObjectId?: string;
+        diceResults: number[];
+        healing: number;
+    };
+}
+
+export interface MageWarsSpellDirectDamageDefeatAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_DIRECT_DAMAGE_DEFEAT_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        sourceAbilityId: string;
+        spellCardId: number;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        targetObjectOwnerId?: PlayerId;
+    };
+}
+
+export interface MageWarsSpellObjectDestructionAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE> {
+    payload: {
+        sourcePlayerId: PlayerId;
+        sourceAbilityId: string;
+        spellCardId: number;
+        targetObjectId: string;
+        targetObjectOwnerId: PlayerId;
+        destructionKind: 'dissolve' | 'dispel' | 'explode';
+        explodeTargetPlayerId?: PlayerId;
+    };
+}
+
+export interface MageWarsArenaObjectAttackVampiricHealingAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_VAMPIRIC_HEALING_AVAILABLE> {
+    payload: {
+        playerId: PlayerId;
+        attackerObjectId: string;
+        spellCardId: number;
+        sourceAbilityId: string;
+        damagedTargetPlayerId?: PlayerId;
+        damagedTargetObjectId?: string;
+        healing: number;
+    };
+}
+
 export interface MageWarsSpellCastResolvedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED> {
     payload: {
         playerId: PlayerId;
@@ -285,6 +433,24 @@ export interface MageWarsArenaObjectTemporaryTraitsClearedEvent extends GameEven
     };
 }
 
+export interface MageWarsArenaObjectTemporaryTraitsClearAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_CLEAR_AVAILABLE> {
+    payload: {
+        ownerId: PlayerId;
+        objectId: string;
+        traitIds: MageWarsTemporaryTraitId[];
+        sourceAbilityId: string;
+    };
+}
+
+export interface MageWarsArenaObjectAttackTemporaryTraitsClearAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_TEMPORARY_TRAITS_CLEAR_AVAILABLE> {
+    payload: {
+        ownerId: PlayerId;
+        objectId: string;
+        traitIds: MageWarsTemporaryTraitId[];
+        sourceAbilityId: string;
+    };
+}
+
 export interface MageWarsArenaObjectSummonedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED> {
     payload: {
         object: MageWarsArenaObjectState;
@@ -294,6 +460,21 @@ export interface MageWarsArenaObjectSummonedEvent extends GameEvent<typeof MAGE_
 export interface MageWarsWallSummonedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.WALL_SUMMONED> {
     payload: {
         wall: MageWarsWallState;
+    };
+}
+
+export interface MageWarsWallPassageDamageAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.WALL_PASSAGE_DAMAGE_AVAILABLE> {
+    payload: {
+        wallId: string;
+        edgeId: MageWarsWallEdgeId;
+        sourceSpellCardId: number;
+        sourceAbilityId: string;
+        fromZoneId: ArenaZoneId;
+        toZoneId: ArenaZoneId;
+        amount: number;
+        damageTypes: string[];
+        objectId?: string;
+        playerId?: PlayerId;
     };
 }
 
@@ -410,6 +591,13 @@ export interface MageWarsSpellTeleportResolvedEvent extends GameEvent<typeof MAG
     };
 }
 
+export interface MageWarsArenaObjectSourceConsumeAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE> {
+    payload: {
+        sourceObjectId: string;
+        sourceAbilityId: string;
+    };
+}
+
 export interface MageWarsEnchantmentStolenEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ENCHANTMENT_STOLEN> {
     payload: {
         objectId: string;
@@ -457,6 +645,18 @@ export interface MageWarsStatusTokenRemovedEvent extends GameEvent<typeof MAGE_W
         effectDieResult?: number;
     };
 }
+
+export interface MageWarsStatusTokenRemovalAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVAL_AVAILABLE> {
+    payload: {
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        statusTokenId: StatusTokenId;
+        amount: number;
+        sourceAbilityId: string;
+        effectDieResult?: number;
+    };
+}
+
 export interface MageWarsMageMovedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.MAGE_MOVED> {
     payload: {
         playerId: PlayerId;
@@ -485,6 +685,14 @@ export interface MageWarsGuardGainedEvent extends GameEvent<typeof MAGE_WARS_EVE
 }
 
 export interface MageWarsGuardRemovedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.GUARD_REMOVED> {
+    payload: {
+        ownerId: PlayerId;
+        targetObjectId: string;
+        sourceAbilityId: string;
+    };
+}
+
+export interface MageWarsArenaObjectAttackGuardRemovalAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE> {
     payload: {
         ownerId: PlayerId;
         targetObjectId: string;
@@ -530,6 +738,34 @@ export interface MageWarsAttackDeclaredEvent extends GameEvent<typeof MAGE_WARS_
         diceResults: number[];
         effectDieResult?: number;
         baseDamage: number;
+    };
+}
+
+export interface MageWarsArenaObjectAttackManaCostAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_MANA_COST_AVAILABLE> {
+    payload: {
+        ownerId: PlayerId;
+        attackerObjectId: string;
+        attackProfileId: string;
+        attackName?: string;
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        targetZoneId?: ArenaZoneId;
+        strikeCount: number;
+        actionCost?: 'normal' | 'none';
+        allowDefenseOpportunity: boolean;
+        allowCounterstrikeOpportunity: boolean;
+        removeGuardAfterMelee: boolean;
+        counterstrikeSourceObjectId?: string;
+        mentalCalmSources: Array<{
+            objectId: string;
+            value: number;
+        }>;
+        meleeAttackManaTaxSources: Array<{
+            objectId: string;
+            sourceSpellCardId: number;
+            value: number;
+        }>;
+        requiredMana: number;
     };
 }
 
@@ -742,6 +978,18 @@ export type MageWarsEvent =
     | MageWarsUpkeepBurnRollAvailableEvent
     | MageWarsUpkeepEnchantmentDirectDamageAvailableEvent
     | MageWarsManaDrainedEvent
+    | MageWarsArenaObjectAttackManaDrainAvailableEvent
+    | MageWarsArenaObjectAttackStatusEffectAvailableEvent
+    | MageWarsSpellAttackStatusEffectAvailableEvent
+    | MageWarsSpellAttackPushAvailableEvent
+    | MageWarsArenaObjectAttackDefeatAvailableEvent
+    | MageWarsSpellAttackDefeatAvailableEvent
+    | MageWarsBasicAttackDefeatAvailableEvent
+    | MageWarsSpellDirectDamageHealingAvailableEvent
+    | MageWarsSpellDirectDamageDefeatAvailableEvent
+    | MageWarsSpellObjectDestructionAvailableEvent
+    | MageWarsArenaObjectAttackVampiricHealingAvailableEvent
+    | MageWarsArenaObjectSourceConsumeAvailableEvent
     | MageWarsSpellCastStartedEvent
     | MageWarsSpellCastResolvedEvent
     | MageWarsSpellDiscardedEvent
@@ -749,8 +997,12 @@ export type MageWarsEvent =
     | MageWarsArenaObjectAbilityResolvedEvent
     | MageWarsArenaObjectTemporaryTraitsGainedEvent
     | MageWarsArenaObjectTemporaryTraitsClearedEvent
+    | MageWarsArenaObjectTemporaryTraitsClearAvailableEvent
+    | MageWarsArenaObjectAttackTemporaryTraitsClearAvailableEvent
+    | MageWarsStatusTokenRemovalAvailableEvent
     | MageWarsArenaObjectSummonedEvent
     | MageWarsWallSummonedEvent
+    | MageWarsWallPassageDamageAvailableEvent
     | MageWarsWallPassageDamageTriggeredEvent
     | MageWarsArenaObjectRousedEvent
     | MageWarsArenaObjectRestrainedEvent
@@ -768,9 +1020,11 @@ export type MageWarsEvent =
     | MageWarsArenaObjectMovedEvent
     | MageWarsGuardGainedEvent
     | MageWarsGuardRemovedEvent
+    | MageWarsArenaObjectAttackGuardRemovalAvailableEvent
     | MageWarsCounterstrikeAvailableEvent
     | MageWarsDefenseAvailableEvent
     | MageWarsAttackDeclaredEvent
+    | MageWarsArenaObjectAttackManaCostAvailableEvent
     | MageWarsMentalCalmTriggeredEvent
     | MageWarsMeleeAttackManaTaxTriggeredEvent
     | MageWarsDamageBarrierAvailableEvent

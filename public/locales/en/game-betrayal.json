@@ -533,11 +533,11 @@
         "heroManualLabel": "Hero Manual",
         "heroManual": "Heroes complete two knowledge steps in order. First, make a 6+ Knowledge roll in the sarcophagus room, Study, or Library to find the mummy's true name and gain the first knowledge token.\n\nAfter the true name is found, the hero holding the Book may make a 6+ Knowledge roll to learn the banishment spell and gain the second knowledge token. Then the Book must reach the mummy's room before any hero in that room can attempt the final banishment.",
         "circleManualLabel": "Banishment Steps",
-        "circleManual": "The final banishment is a Sanity contest against the mummy. It is available only after the heroes have 2 knowledge tokens, the spell is learned, and a living hero with the Book is in the mummy's room.\n\nIf the hero's Sanity total is strictly higher than the mummy's Sanity total, the heroes win.",
+        "circleManual": "The final banishment is a Sanity attack against the mummy. It is available only after the heroes have 2 knowledge tokens, the spell is learned, and a living hero with the Book is in the mummy's room.\n\nIf the Mummy is defeated, the heroes win.",
         "traitorManualLabel": "Traitor Manual",
         "traitorManual": "The traitor helps the mummy take the Girl, then bring the Girl and either the Holy Symbol or Ring back to the sarcophagus room.\n\nExplorers can pick up the Girl, give the Girl to the Mummy in the same room, and give the Holy Symbol or Ring to the Mummy in the same room. The traitor wins when the Mummy returns to the sarcophagus with the Girl and either required omen. The traitor also wins if every hero dies.",
         "spiritManualLabel": "Mummy",
-        "spiritManual": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. It is not stunned by normal attacks, and heroes may not make Speed attacks against it.\n\nWhen rolling for the mummy's movement, a result of 0 or 1 lets it move instantly to any room in the house. The mummy can carry items and can steal instead of dealing damage.",
+        "spiritManual": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. It attacks only with Might, and heroes may not make Speed attacks against it.\n\nWhen rolling for the mummy's movement, a result of 0 or 1 lets it move instantly to any room in the house. The mummy can carry items; when an attack would deal 2 or more damage, it can steal instead of making the defender reduce traits.",
         "exorcismManualLabel": "Final Exorcism",
         "exorcismManual": "Heroes must complete these steps in order: find the true name, learn the banishment spell, then banish the mummy.\n\nEach hero can attempt only one haunt special action per turn. The Book must be in the final room, but the hero who starts the banishment does not have to personally hold it.",
         "endingManualLabel": "Win Conditions",
@@ -1007,6 +1007,23 @@
       "noExploreSlots": "No unrevealed room slot is available right now"
     },
     "monster": {
+      "detailsTitle": "Monster Details",
+      "detailsAria": "{{monster}} details",
+      "openDetails": "View {{monster}} details",
+      "closeDetails": "Close monster details",
+      "portraitAlt": "{{monster}} portrait",
+      "location": "Room: {{room}}",
+      "attack": "Attack",
+      "defaultAttack": "Default attack: {{trait}}",
+      "damage": "Damage {{value}}",
+      "rules": "Key Rules",
+      "mummyRules": {
+        "traits": "Mummy traits: Might 8, Speed 3, Sanity 5; it attacks with Might by default.",
+        "attack": "Hero victory uses the banishment steps, not killing the Mummy with normal attacks; Speed attacks against it are ineffective, including Revolver and Dynamite.",
+        "movement": "When its movement roll is 0 or 1, the Mummy may teleport to any discovered room; normal movement still spends remaining movement one room at a time.",
+        "steal": "The Mummy can carry Items and Omens; when an attack would deal 2 or more damage, it may steal one Item, Omen, or the Girl instead of making the defender reduce traits.",
+        "victory": "Hero victory follows the hero book steps: find the true name, learn the banishment spell, bring the Book and Mummy into the same room, then attack with Sanity. If the Mummy is defeated, it is banished."
+      },
       "status": {
         "stunned": "Stunned"
       }
@@ -1076,7 +1093,7 @@
         "helpEntry": "Open the haunt book and read your goal and victory condition.",
         "hauntActions": "Heroes must speak the Mummy's true name. In order, make a 6+ Knowledge check in the Sarcophagus Room, Study, or Library to find it; then a hero carrying the Book makes a 6+ Knowledge check to learn the banishment spell. With 2 tokens and the Book in the Mummy's room, any hero in that room can attack with Sanity. Each hero may try only one step per turn.",
         "exorciseJack": "Choose Banish Mummy to attack the Mummy with Sanity.",
-        "banishMummy": "Attack the Mummy with Sanity; heroes win when the hero Sanity total is strictly higher than the Mummy's.",
+        "banishMummy": "Attack the Mummy with Sanity; heroes win when the Mummy is defeated.",
         "endgameReview": "The Mummy crumbles into sand and blows away. The heroes win."
       }
     },

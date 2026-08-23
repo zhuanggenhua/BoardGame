@@ -161,6 +161,24 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByText('ui.taken_by_other')).toBeInTheDocument();
     });
 
+    it('只有已占用列表残留但玩家真实未选时，不应把 robots 组锁成别人已占用', () => {
+        const core = buildCore();
+        core.factionSelection!.takenFactions = ['robots_pod'];
+        core.factionSelection!.playerSelections = {
+            '0': [],
+            '1': [],
+        };
+
+        renderSelection(vi.fn(), core);
+
+        expect(screen.queryByText('AI 已占领')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('faction-option-robots'));
+
+        expect(screen.getByTestId('faction-confirm-button')).toBeInTheDocument();
+        expect(screen.queryByText('ui.taken_by_other')).not.toBeInTheDocument();
+    });
+
     it('玩家状态条应固定在底部覆盖层，避免挤压候选卡面', () => {
         renderSelection();
 

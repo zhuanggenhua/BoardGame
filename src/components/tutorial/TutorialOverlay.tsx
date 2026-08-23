@@ -736,13 +736,14 @@ export const TutorialOverlay: React.FC = () => {
   const maskOpacity = currentStep.showMask && visibleTargetRect ? 0.6 : 0;
   const highlightStyle = visibleTargetRect
     ? ({
-        top: visibleTargetRect.top - 4,
-        left: visibleTargetRect.left - 4,
-        width: visibleTargetRect.width + 8,
-        height: visibleTargetRect.height + 8,
-        borderRadius: "12px",
+        top: visibleTargetRect.top,
+        left: visibleTargetRect.left,
+        width: visibleTargetRect.width,
+        height: visibleTargetRect.height,
+        boxSizing: "border-box",
+        borderRadius: "8px",
         boxShadow:
-          "0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.3)",
+          "inset 0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.55), 0 0 12px rgba(59, 130, 246, 0.35)",
       } satisfies React.CSSProperties)
     : undefined;
   const showHighlightFrame = currentStep.highlightFrame !== "none";

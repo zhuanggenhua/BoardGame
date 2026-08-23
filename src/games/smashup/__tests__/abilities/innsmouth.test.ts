@@ -602,6 +602,51 @@ describe('印斯茅斯 ongoing 能力', () => {
 });
 
 describe('印斯茅斯疯狂卡行动', () => {
+    describe('innsmouth_spreading_the_word（散播谣言）', () => {
+        test('只有一个匹配随从名时仍应等待玩家确认', () => {
+            const state = makeInnsmouthActionState({
+                players: {
+                    '0': makeInnsmouthActionPlayer('0', {
+                        hand: [
+                            makeInnsmouthActionCard('a1', 'innsmouth_spreading_the_word', 'action', '0'),
+                            makeInnsmouthActionCard('h1', 'innsmouth_the_locals', 'minion', '0'),
+                            makeInnsmouthActionCard('h2', 'innsmouth_the_locals', 'minion', '0'),
+                        ],
+                    }),
+                    '1': makeInnsmouthActionPlayer('1'),
+                },
+                bases: [
+                    makeBase({
+                        minions: [makeInnsmouthActionMinion('m1', 'innsmouth_the_locals', '0', 2)],
+                    }),
+                ],
+            });
+
+            const played = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any, defaultTestRandom);
+            expect(played.success, played.error).toBe(true);
+            expect(played.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+            const prompt = getSimpleChoicePrompt(played.finalState, 'innsmouth_spreading_the_word');
+            expect(getPromptSourceId(prompt)).toBe('innsmouth_spreading_the_word');
+            expect(getPromptOptions(prompt)).toHaveLength(1);
+
+            const resolved = respondToPromptOption(
+                played.finalState,
+                option => option.value?.defId === 'innsmouth_the_locals',
+                'innsmouth spreading the word locals option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const limits = resolved.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
+            expect(limits).toHaveLength(2);
+            expect(limits.every(event => (event as any).payload.sameNameDefId === 'innsmouth_the_locals')).toBe(true);
+        });
+    });
 
     describe('innsmouth_recruitment（招募）', () => {
         test('选择抽 3 张疯狂卡时获得 3 个额外随从', () => {

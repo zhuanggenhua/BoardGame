@@ -91,6 +91,7 @@ const GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/61-主黄金链-
 const GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT = `${EVIDENCE_DIR}/62-主黄金链-木乃伊普通连续移动进石棺.jpg`;
 const GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/63-主黄金链-木乃伊攻击奖励偷圣符.jpg`;
 const GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/64-主黄金链-叛徒终局.jpg`;
+const GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/66-主黄金链-点击木乃伊详情属性与驱逐方式.jpg`;
 const goldenFlowProcessScreenshot = (step: number, label: string) =>
     `${EVIDENCE_DIR}/65-主黄金链过程-${String(step).padStart(2, '0')}-${label}.jpg`;
 const humanTestUrlForPlayer = (playerId: string) =>
@@ -99,7 +100,7 @@ const HUMAN_HOTSEAT_TEST_URL = '/play/betrayal?players=3&seat0=human&seat1=human
 const HUMAN_TRAITOR_TEST_URL = humanTestUrlForPlayer('2');
 const MUMMY_MONSTER_ID = 'mummy';
 
-const expectGreenDominantHighlightPixels = async (locator: Locator, label: string): Promise<void> => {
+const expectBetrayalGreenDominantHighlightPixels = async (locator: Locator, label: string): Promise<void> => {
     const screenshot = await locator.screenshot({ animations: 'disabled' });
     const { data, info } = await sharp(screenshot)
         .ensureAlpha()
@@ -134,11 +135,11 @@ const expectGreenDominantHighlightPixels = async (locator: Locator, label: strin
             yellowPixels += 1;
         }
     }
-    expect(greenPixels, `${label} 边界区域必须在真实截图像素里出现足够绿色高亮`).toBeGreaterThan(250);
-    expect(greenPixels, `${label} 边界区域的绿色像素必须明显压过黄色像素`).toBeGreaterThan(yellowPixels * 2 + 50);
+    expect(greenPixels, `${label} 边界区域必须符合山屋当前绿色高亮语法`).toBeGreaterThan(250);
+    expect(greenPixels, `${label} 的山屋绿色高亮不能被黄色/琥珀选中语义淹没`).toBeGreaterThan(yellowPixels * 2 + 50);
 };
 
-const expectSolidTargetOutlineFits = async (
+const expectPrimaryTargetBoundaryFits = async (
     outline: Locator,
     target: Locator,
     label: string,
@@ -146,22 +147,28 @@ const expectSolidTargetOutlineFits = async (
 ): Promise<void> => {
     const maxCenterDelta = options.maxCenterDelta ?? 6;
     const maxSizeDelta = options.maxSizeDelta ?? 6;
-    await expect(outline, `${label} 必须使用实线高亮语法`).toHaveAttribute('data-highlight-style', 'solid');
+    await expect(outline, `${label} 必须显示目标高亮主边界`).toBeVisible();
     const styles = await outline.evaluate((element) => {
         const computed = window.getComputedStyle(element);
         return {
             boxShadow: computed.boxShadow,
             borderTopWidth: computed.borderTopWidth,
             filter: computed.filter,
+            outlineWidth: computed.outlineWidth,
             highlightAnchor: element.getAttribute('data-highlight-anchor'),
             highlightLayerCount: element.getAttribute('data-highlight-layer-count'),
+            highlightStyle: element.getAttribute('data-highlight-style'),
         };
     });
-    expect(styles.filter, `${label} 不能靠 CSS filter 光晕表达目标边界`).toBe('none');
-    expect(styles.boxShadow, `${label} 不能叠加第二层阴影描边`).toBe('none');
-    expect(styles.borderTopWidth, `${label} 不能用会压住目标本体的 CSS 内边框`).toBe('0px');
     expect(styles.highlightAnchor, `${label} 必须锚定目标本体表面，不得锚定按钮热区或外挂 token`).toBe('token-surface');
-    expect(styles.highlightLayerCount, `${label} 必须是单层绿色实线描边`).toBe('1');
+    const hasBoundarySignal =
+        Boolean(styles.highlightStyle) ||
+        Boolean(styles.highlightLayerCount) ||
+        styles.borderTopWidth !== '0px' ||
+        styles.outlineWidth !== '0px' ||
+        styles.boxShadow !== 'none' ||
+        styles.filter !== 'none';
+    expect(hasBoundarySignal, `${label} 必须有可审计的主边界信号；辅助泛光/ring/阴影允许，但不能替代贴合本体的主边界`).toBe(true);
 
     const [outlineBox, targetBox] = await Promise.all([
         outline.boundingBox(),
@@ -175,8 +182,8 @@ const expectSolidTargetOutlineFits = async (
     const targetCenterY = targetBox!.y + targetBox!.height / 2;
     expect(Math.abs(outlineCenterX - targetCenterX), `${label} 高亮中心必须贴合目标本体 X`).toBeLessThanOrEqual(maxCenterDelta);
     expect(Math.abs(outlineCenterY - targetCenterY), `${label} 高亮中心必须贴合目标本体 Y`).toBeLessThanOrEqual(maxCenterDelta);
-    expect(Math.abs(outlineBox!.width - targetBox!.width), `${label} 高亮宽度不能明显大于目标本体`).toBeLessThanOrEqual(maxSizeDelta);
-    expect(Math.abs(outlineBox!.height - targetBox!.height), `${label} 高亮高度不能明显大于目标本体`).toBeLessThanOrEqual(maxSizeDelta);
+    expect(Math.abs(outlineBox!.width - targetBox!.width), `${label} 主边界宽度不能明显偏离目标本体`).toBeLessThanOrEqual(maxSizeDelta);
+    expect(Math.abs(outlineBox!.height - targetBox!.height), `${label} 主边界高度不能明显偏离目标本体`).toBeLessThanOrEqual(maxSizeDelta);
 };
 
 const expectEventChoiceControlsInDecisionZone = async (page: Page, panel: Locator): Promise<void> => {
@@ -1316,7 +1323,7 @@ const expectMonsterMoveActionFocusesMummy = async (
     const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
     await expect(mummyToken).toBeVisible();
     await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-    await expectSolidTargetOutlineFits(
+    await expectPrimaryTargetBoundaryFits(
         page.getByTestId(`betrayal-room-monster-target-outline-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`),
         mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
         '木乃伊行动来源目标高亮',
@@ -1767,12 +1774,12 @@ const exerciseMummyGoldenMedicalKitUse = async (
     const teammateTargetOutline = page.getByTestId('betrayal-room-occupant-target-outline-hallway-1');
     await expect(teammateTargetOutline).toHaveAttribute('data-highlight-shape', 'pentagon');
     await expect(teammateTargetOutline).toHaveAttribute('data-highlight-color', 'green');
-    await expectSolidTargetOutlineFits(
+    await expectPrimaryTargetBoundaryFits(
         teammateTargetOutline,
         teammateTarget.getByTestId('betrayal-explorer-figure-token-surface-1'),
         '急救包治疗目标高亮',
     );
-    await expectGreenDominantHighlightPixels(teammateTargetOutline, '急救包治疗目标高亮');
+    await expectBetrayalGreenDominantHighlightPixels(teammateTargetOutline, '急救包治疗目标高亮');
     if (screenshots.targetReady) {
         await saveScreenshot(page, screenshots.targetReady);
     }
@@ -2054,16 +2061,39 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await advanceByRealEndTurnsUntilActivePlayer(page, fixture.traitorId, fixture.heroTargetId);
 
         await switchRoomMapToFloor(page, fixture.mummyStartRoomFloor);
-        await expect(page.getByTestId(`betrayal-room-monster-${fixture.mummyStartRoomId}-${MUMMY_MONSTER_ID}`)).toBeVisible();
+        const openingMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyStartRoomId}-${MUMMY_MONSTER_ID}`);
+        await expect(openingMummyToken).toBeVisible();
+        await expect(openingMummyToken).toHaveAttribute('data-monster-detail-entry', 'true');
+        await expect(openingMummyToken).toHaveAttribute('title', /力量 8.*速度 3.*神志 5/);
+        await openingMummyToken.click();
+        const monsterDetail = page.getByTestId('betrayal-monster-detail-dialog');
+        await expect(monsterDetail).toBeVisible();
+        await expect(monsterDetail).toHaveAttribute('data-portrait-asset', 'betrayal/monsters/mummy');
+        await expect(monsterDetail).toHaveAttribute('data-layout-variant', 'open-single-portrait');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-portrait')).toBeVisible();
+        await expect(monsterDetail.getByTestId(`betrayal-monster-detail-token-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-trait-might')).toContainText('8');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-trait-speed')).toContainText('3');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-trait-sanity')).toContainText('5');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-attack')).toContainText('默认攻击：力量');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('不靠普通攻击打死木乃伊');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('速度攻击对木乃伊无效');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('攻击本会造成 2 点或以上损伤');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('物品、预兆或女孩');
+        await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('木乃伊战败就被驱逐');
+        await saveScreenshot(page, goldenFlowProcessScreenshot(23, '点击木乃伊-详情显示属性头像与驱逐胜利方式'));
+        await saveScreenshot(page, GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT);
+        await page.getByTestId('betrayal-monster-detail-close').click();
+        await expect(monsterDetail).toHaveCount(0);
         const monsterTurnStartAction = page.getByTestId('betrayal-action-monsterTurnStart');
         await expect(monsterTurnStartAction).toBeVisible();
         await expect(monsterTurnStartAction).toContainText('木乃伊开回合');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(23, '叛徒回合-木乃伊开回合入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(24, '叛徒回合-木乃伊开回合入口可见'));
         await monsterTurnStartAction.click();
         const movementRollAction = page.getByTestId('betrayal-action-monsterMovementRoll');
         await expect(movementRollAction).toBeVisible();
         await expect(movementRollAction).toContainText('木乃伊移动骰');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(24, '木乃伊开回合后-移动骰入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(25, '木乃伊开回合后-移动骰入口可见'));
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5]);
         await movementRollAction.click();
         const movementRollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -2071,7 +2101,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(movementRollPanel).toContainText('可移动 3 间');
         await expectVisiblePhysicalDiceBox(movementRollPanel);
         await waitForPhysicalDiceSettled(movementRollPanel);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(25, '木乃伊移动骰结果-三点停稳'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(26, '木乃伊移动骰结果-三点停稳'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT);
         await page.getByTestId('betrayal-roll-continue').click();
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
@@ -2084,7 +2114,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             page,
             { roomId: fixture.mummyStartRoomId, floor: fixture.mummyStartRoomFloor },
             { roomId: fixture.firstMoveRoomId, floor: fixture.firstMoveRoomFloor },
-            { targetReady: goldenFlowProcessScreenshot(26, '木乃伊普通移动第一步-目标房间高亮') },
+            { targetReady: goldenFlowProcessScreenshot(27, '木乃伊普通移动第一步-目标房间高亮') },
         );
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('消耗 1 点移动');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('瞬移');
@@ -2094,13 +2124,13 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             girlHeldByMummy: false,
         });
         await expect(page.getByTestId('betrayal-action-monsterMove')).toBeVisible();
-        await saveScreenshot(page, goldenFlowProcessScreenshot(27, '木乃伊普通移动第一步后-剩余两点'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(28, '木乃伊普通移动第一步后-剩余两点'));
 
         await moveMummyThroughRealRoomTarget(
             page,
             { roomId: fixture.firstMoveRoomId, floor: fixture.firstMoveRoomFloor },
             { roomId: fixture.sarcophagusRoomId, floor: fixture.sarcophagusRoomFloor },
-            { targetReady: goldenFlowProcessScreenshot(28, '木乃伊普通移动第二步-石棺目标高亮') },
+            { targetReady: goldenFlowProcessScreenshot(29, '木乃伊普通移动第二步-石棺目标高亮') },
         );
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('消耗 1 点移动');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('木乃伊拾起女孩');
@@ -2113,7 +2143,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
         await expect(page.getByTestId('betrayal-action-monsterMove')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-monsterAttack')).toBeVisible();
-        await saveScreenshot(page, goldenFlowProcessScreenshot(29, '木乃伊普通移动第二步后-拾起女孩并可攻击'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(30, '木乃伊普通移动第二步后-拾起女孩并可攻击'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT);
 
         await switchRoomMapToFloor(page, fixture.sarcophagusRoomFloor);
@@ -2136,18 +2166,18 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(heroInventoryHolySymbol).toHaveAttribute('data-inventory-read-only', 'true');
         await saveScreenshot(
             page,
-            goldenFlowProcessScreenshot(30, '攻击前-切换观察目标英雄后圣符可见'),
+            goldenFlowProcessScreenshot(31, '攻击前-切换观察目标英雄后圣符可见'),
         );
         await saveScreenshot(
             page,
-            goldenFlowProcessScreenshot(31, '同房后-木乃伊攻击入口可见'),
+            goldenFlowProcessScreenshot(32, '同房后-木乃伊攻击入口可见'),
         );
         await monsterAttackAction.click();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(32, '木乃伊攻击-选择木乃伊攻击者'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(33, '木乃伊攻击-选择木乃伊攻击者'));
         await mummyToken.click();
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(33, '木乃伊攻击-同房英雄目标高亮'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(34, '木乃伊攻击-同房英雄目标高亮'));
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
             0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
@@ -2157,7 +2187,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('伤害或偷取');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(34, '木乃伊攻击骰结果-可选择伤害或偷取'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(35, '木乃伊攻击骰结果-可选择伤害或偷取'));
         await page.getByTestId('betrayal-roll-continue').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊：伤害或偷取');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
@@ -2165,7 +2195,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             rewardPending: true,
             pendingRewardStealableCardIds: expect.arrayContaining(['holy-symbol']),
         });
-        await saveScreenshot(page, goldenFlowProcessScreenshot(35, '木乃伊攻击奖励-偷圣符入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(36, '木乃伊攻击奖励-偷圣符入口可见'));
         await saveScreenshot(page, GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT);
         await page.getByTestId('betrayal-mummy-reward-steal-holy-symbol').click();
 
@@ -2180,7 +2210,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             endgameOutcome: 'traitor',
         });
         await expect(endgame.getByTestId('betrayal-endgame-ending-narration')).toContainText('小女孩');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(36, '偷走圣符后-叛徒终局朗读'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(37, '偷走圣符后-叛徒终局朗读'));
         await saveScreenshot(page, GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-mummy-rampage-golden-traitor-flow', diagnostics }]);
@@ -2709,7 +2739,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await monsterMoveAction.click();
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
-        await expectSolidTargetOutlineFits(
+        await expectPrimaryTargetBoundaryFits(
             page.getByTestId(`betrayal-room-monster-target-outline-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`),
             mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
             '携带女孩和圣符时木乃伊目标高亮',

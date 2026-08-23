@@ -5180,6 +5180,50 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('木乃伊受普通正数伤害时按通用怪物规则击晕但不触发英雄胜利', () => {
+        let core = createFirstScenarioHauntCore();
+
+        expect(resolveBetrayalMonsterDamageOutcome(core, 'mummy', {
+            damageAmount: 1,
+            damageTrait: 'might',
+        })).toMatchObject({
+            monsterId: 'mummy',
+            name: '木乃伊',
+            kind: 'stunned',
+            previousStatus: 'active',
+            nextStatus: 'stunned',
+            canBeStunned: true,
+            stunned: true,
+            killed: false,
+            removedFromHouse: false,
+            logLabel: '击晕木乃伊',
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '0', {
+                monsterId: 'mummy',
+                damageAmount: 1,
+                damageTrait: 'might',
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '0', {
+            monsterId: 'mummy',
+            damageAmount: 1,
+            damageTrait: 'might',
+        });
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(resolveBetrayalMonsterStatuses(core).find((status) => status.monsterId === 'mummy')).toMatchObject({
+            status: 'stunned',
+            stunned: true,
+            canBeStunned: true,
+            slowsHeroMovement: false,
+        });
+        expect(core.activityLog.some((entry) => entry.text.includes('击晕木乃伊'))).toBe(true);
+    });
+
     it('木乃伊横行英雄线可找真名、学驱逐法术并同房驱逐木乃伊', () => {
         let core = createFirstScenarioHauntCore();
         const heroId = '0';

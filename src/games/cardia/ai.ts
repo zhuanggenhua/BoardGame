@@ -24,6 +24,7 @@ import {
 import type { CardiaCore, CardInstance } from './domain/types';
 import { CARDIA_COMMANDS } from './domain/commands';
 import { abilityRegistry } from './domain/abilityRegistry';
+import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 
 /**
  * Cardia 策略标签
@@ -387,8 +388,7 @@ function buildSimpleChoicePayload(
     if (multi) {
         return { 
             ...(interactionId ? { interactionId } : {}),
-            optionIds, 
-            ...(mergedValue && typeof mergedValue === 'object' ? mergedValue : {}) 
+            optionIds,
         };
     }
     return { 
@@ -450,10 +450,28 @@ function buildSimpleChoiceActions(
         }));
     }
     
-    // TODO: 实现多选模式
-    // const minCount = data.multi.min ?? 1;
-    // const maxCount = data.multi.max ?? minCount;
-    // ...
+    const minCount = data.multi.min ?? 1;
+    const maxCount = data.multi.max ?? minCount;
+    const selectionCount = Math.min(Math.max(minCount, 1), maxCount, availableOptions.length);
+    if (selectionCount < minCount) {
+        return actions;
+    }
+    const selectedOptions = availableOptions.slice(0, selectionCount);
+    const optionIds = selectedOptions.map((option) => option.id);
+
+    actions.push({
+        actionId: createAiLegalActionId('interaction', String(interactionObj.id ?? ''), optionIds.join('+')),
+        kind: 'interaction-choice',
+        label: selectedOptions.map((option, index) => option.label ?? `选择 ${index + 1}`).join(' + '),
+        commands: [{
+            type: INTERACTION_COMMANDS.RESPOND,
+            payload: buildSimpleChoicePayload(interactionObj.id, optionIds, data.multi),
+        }],
+        metadata: {
+            interactionId: interactionObj.id,
+            optionIds,
+        },
+    });
     
     return actions;
 }

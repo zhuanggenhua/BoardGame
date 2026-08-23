@@ -389,22 +389,7 @@ function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerR
         ? [kings[preferredKingIndex], ...kings.slice(0, preferredKingIndex), ...kings.slice(preferredKingIndex + 1)]
         : kings;
 
-    // 无 matchState 时回退自动移动
-    if (!ctx.matchState) {
-        return orderedKings.flatMap((k) => buildValidatedMoveEvents(ctx.state, {
-            minionUid: k.uid,
-            minionDefId: k.defId,
-            fromBaseIndex: k.fromBaseIndex,
-            toBaseIndex: scoringBaseIndex,
-            reason: k.defId === 'pirate_king_pod' ? 'pirate_king_pod' : 'pirate_king',
-            now: ctx.now,
-            sourcePlayerId: k.controller,
-            sourceDefId: k.defId,
-            sourceControllerId: k.controller,
-            sourceBaseIndex: k.fromBaseIndex,
-            sourceKind: 'nonAction',
-        }));
-    }
+    if (!ctx.matchState) return [];
 
     // 链式处理每个海盗王：创建确认交互（发送给各 king 的 controller）
     const result = executeAbilityProgram(

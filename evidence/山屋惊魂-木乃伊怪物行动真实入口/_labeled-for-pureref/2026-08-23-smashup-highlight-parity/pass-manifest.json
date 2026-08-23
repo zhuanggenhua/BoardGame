@@ -1,0 +1,62 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "先对照大杀四方已验收高亮语法",
+      "status": "PASS",
+      "evidence": [
+        "01 展示大杀四方随从高亮只收在卡面本体，外挂徽记不进同一描边",
+        "已读取 evidence/smashup-outline-highlight-e2e-test.md 与 BaseZone.tsx 高亮实现"
+      ]
+    },
+    {
+      "requirement": "山屋急救包可选目标使用贴合 token 本体的清楚主边界；绿色是山屋当前实现，不是跨游戏硬规则",
+      "status": "PASS",
+      "evidence": [
+        "02 展示急救包目标 token 本体当前绿色描边",
+        "E2E 几何断言 data-highlight-anchor=token-surface 且中心/尺寸贴合"
+      ]
+    },
+    {
+      "requirement": "治疗结果只用目标旁短飘字，不扩写成面板",
+      "status": "PASS",
+      "evidence": [
+        "03 展示使用后只出现治疗短飘字，急救包已移除",
+        "Board.foundation 急救包治疗目标用例通过"
+      ]
+    },
+    {
+      "requirement": "观察队友持有物复用原持有区，不另起物品 UI",
+      "status": "PASS",
+      "evidence": [
+        "04 展示底部原持有区切到目标英雄并显示圣符",
+        "主黄金链断言旧观察副本不存在"
+      ]
+    },
+    {
+      "requirement": "木乃伊攻击来源和英雄目标都使用同一套贴边高亮",
+      "status": "PASS",
+      "evidence": [
+        "05 展示木乃伊 token 贴边高亮",
+        "06 展示同房英雄 token 贴边高亮",
+        "主黄金链几何与绿色像素断言通过"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\01-labeled-smashup-outline-minion-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\02-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\03-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\04-labeled-65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\05-labeled-65-主黄金链过程-32-木乃伊攻击-选择木乃伊攻击者.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-smashup-highlight-parity\\06-labeled-65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.png"
+  ]
+}

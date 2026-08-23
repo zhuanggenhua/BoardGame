@@ -22,7 +22,6 @@ import { MageWarsDomain } from '../domain';
 import { MAGE_WARS_COMMANDS } from '../domain/commands';
 import {
     buildMageWarsObjectAbilityActivationOpportunity,
-    buildMageWarsSelfObjectAbilityActivationOpportunity,
     MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG,
     mageWarsObjectAbilityExecutorRegistry,
     type MageWarsObjectAbilityActivationChoiceValue,
@@ -371,7 +370,7 @@ describe('mage-wars ability catalog', () => {
 
     test('projects a self object ability through Ability -> Opportunity -> ChoiceRequest', () => {
         const state = makeMageWarsAbilityState();
-        const opportunity = buildMageWarsSelfObjectAbilityActivationOpportunity({
+        const opportunity = buildMageWarsObjectAbilityActivationOpportunity({
             state,
             playerId: '0',
             objectId: 'blue-gremlin-1',
@@ -448,7 +447,7 @@ describe('mage-wars ability catalog', () => {
 
     test('keeps invalid self object ability opportunities visible as inactive contracts', () => {
         const state = makeMageWarsAbilityState({ mana: 0 });
-        const opportunity = buildMageWarsSelfObjectAbilityActivationOpportunity({
+        const opportunity = buildMageWarsObjectAbilityActivationOpportunity({
             state,
             playerId: '0',
             objectId: 'blue-gremlin-1',
@@ -466,7 +465,7 @@ describe('mage-wars ability catalog', () => {
         });
     });
 
-    test('does not guess target enumeration for non-self object abilities', () => {
+    test('does not downgrade target object abilities to self confirmations', () => {
         const state = makeMageWarsAbilityState({
             object: {
                 id: 'cleric-1',
@@ -476,12 +475,22 @@ describe('mage-wars ability catalog', () => {
             },
         });
 
-        expect(buildMageWarsSelfObjectAbilityActivationOpportunity({
+        const opportunity = buildMageWarsObjectAbilityActivationOpportunity({
             state,
             playerId: '0',
             objectId: 'cleric-1',
             abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
-        })).toBeNull();
+        });
+
+        expect(opportunity).toMatchObject({
+            targetRequest: {
+                kind: 'select-object',
+                metadata: { targetMode: 'living-object' },
+            },
+            resolution: { type: 'choice-request' },
+        });
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        expect(request.kind).toBe('select-object');
     });
 
     test('projects Asyran Cleric healing light target selection through Ability -> Opportunity -> ChoiceRequest', () => {

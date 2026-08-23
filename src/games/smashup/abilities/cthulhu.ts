@@ -878,13 +878,7 @@ function cthulhuChosenBeforeScoringPerInstance(ctx: TriggerContext): TriggerResu
     const chosen = locatedChosen.minion;
     const chosenBaseIndex = locatedChosen.baseIndex;
 
-    if (!ctx.matchState) {
-        const events: SmashUpEvent[] = [];
-        const madnessEvt = drawMadnessCards(chosen.controller, 1, ctx.state, 'cthulhu_chosen', ctx.now);
-        if (madnessEvt) events.push(madnessEvt);
-        events.push(addTempPower(chosen.uid, chosenBaseIndex, 2, 'cthulhu_chosen', ctx.now));
-        return { events };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     return runtimeResultToTriggerResult(executeAbilityProgram(
         cthulhuChosenConfirmPromptProgram,

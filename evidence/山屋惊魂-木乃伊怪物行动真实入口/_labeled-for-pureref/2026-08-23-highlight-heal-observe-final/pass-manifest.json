@@ -1,0 +1,78 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "急救包选中后合法治疗目标必须有清楚、贴合本体的高亮反馈。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-09-急救包治疗目标高亮-点击前.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/01-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png"
+      ]
+    },
+    {
+      "requirement": "急救包使用后只显示绑定目标 token 的短治疗飘字，不显示冗长治疗详情面板。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-11-急救包使用后-治疗反馈与移除.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/02-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png"
+      ]
+    },
+    {
+      "requirement": "跳过事件必须在翻出事件符号后再决策，且按钮承接在当前阅读区。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/03-labeled-65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.png"
+      ]
+    },
+    {
+      "requirement": "跳过事件后不能保留事件牌背、黑卡、结果面板或被跳过对象占位。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/04-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png"
+      ]
+    },
+    {
+      "requirement": "观察目标英雄持有物必须复用原持有区切换视角，不另造持有物详情副本。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/05-labeled-65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.png"
+      ]
+    },
+    {
+      "requirement": "木乃伊攻击目标高亮必须贴合英雄 token 本体，来源和目标清楚。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/06-labeled-65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.png"
+      ]
+    },
+    {
+      "requirement": "偷圣符入口必须来自攻击奖励结算后的现实动作区，并能看出可偷圣符。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-35-木乃伊攻击奖励-偷圣符入口可见.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/07-labeled-65-主黄金链过程-35-木乃伊攻击奖励-偷圣符入口可见.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/01-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/02-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/03-labeled-65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/04-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/05-labeled-65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/06-labeled-65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-23-highlight-heal-observe-final/07-labeled-65-主黄金链过程-35-木乃伊攻击奖励-偷圣符入口可见.png"
+  ]
+}

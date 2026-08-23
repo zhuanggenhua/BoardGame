@@ -15,6 +15,9 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import { Cardia } from '../game';
 import { createFactionSelectionInteraction } from '../domain/interactionHandlers';
 import { createCardiaEventSystem } from '../domain/systems';
+import { createSimpleChoiceSystem } from '../../../engine/systems/SimpleChoiceSystem';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
 describe('Cardia - 交互系统', () => {
     let matchState: MatchState<CardiaCore>;
@@ -90,6 +93,89 @@ describe('Cardia - 交互系统', () => {
                     value: { faction: 'academy' },
                 }),
             ]));
+        });
+
+        it('卡牌多选交互应声明 simple-choice multi，并把 optionIds 解析成旧 handler 需要的 cardUids', () => {
+            const cardiaSystem = createCardiaEventSystem();
+            const simpleChoiceSystem = createSimpleChoiceSystem<CardiaCore>();
+            const selectableCards = matchState.core.players['0'].hand.slice(0, 2);
+            const cardiaInteraction = {
+                type: 'card_selection' as const,
+                interactionId: 'multi-card-selection-request',
+                abilityId: 'test_multi_card_selection',
+                playerId: '0',
+                title: '选择两张牌',
+                description: '选择两张牌',
+                availableCards: selectableCards.map((card) => card.uid),
+                minSelect: 2,
+                maxSelect: 2,
+            };
+            let handlerValue: unknown;
+
+            registerInteractionHandler('test_multi_card_selection', (state, _playerId, value) => {
+                handlerValue = value;
+                return { state, events: [] };
+            });
+
+            const queued = cardiaSystem.afterEvents?.({
+                state: matchState,
+                command: { type: 'TEST_COMMAND', playerId: '0', payload: {} },
+                events: [{
+                    type: CARDIA_EVENTS.ABILITY_INTERACTION_REQUESTED.type,
+                    timestamp: 1,
+                    payload: {
+                        abilityId: 'test_multi_card_selection',
+                        cardId: 'source-card',
+                        playerId: '0',
+                        interaction: cardiaInteraction,
+                    },
+                }],
+                random,
+                playerIds: ['0', '1'],
+            });
+            const queuedState = queued?.state ?? matchState;
+            const current = queuedState.sys.interaction.current as any;
+
+            expect(current).toMatchObject({
+                id: 'multi-card-selection-request',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    multi: { min: 2, max: 2 },
+                    minSelect: 2,
+                    maxSelect: 2,
+                },
+            });
+
+            const optionIds = current.data.options.slice(0, 2).map((option: any) => option.id);
+            const responded = simpleChoiceSystem.beforeCommand?.({
+                state: queuedState,
+                command: {
+                    type: INTERACTION_COMMANDS.RESPOND,
+                    playerId: '0',
+                    payload: {
+                        interactionId: 'multi-card-selection-request',
+                        optionIds,
+                    },
+                },
+                random,
+                playerIds: ['0', '1'],
+            });
+
+            expect(responded?.halt).toBe(false);
+            expect(responded?.events).toHaveLength(1);
+
+            cardiaSystem.afterEvents?.({
+                state: responded?.state ?? queuedState,
+                command: { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: {} },
+                events: responded?.events ?? [],
+                random,
+                playerIds: ['0', '1'],
+            });
+
+            expect(handlerValue).toEqual({
+                cardUids: selectableCards.map((card) => card.uid),
+            });
         });
     });
     

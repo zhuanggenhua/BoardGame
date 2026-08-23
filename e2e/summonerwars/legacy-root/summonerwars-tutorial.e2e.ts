@@ -30,7 +30,7 @@ const saveEvidenceScreenshot = async (page: Page, fileName: string) => {
 
 const readTutorialHighlightMetrics = async (page: Page, _targetId: string) => page.evaluate((resolvedTargetId) => {
   const target = document.querySelector(`[data-tutorial-id="${resolvedTargetId}"]`) as HTMLElement | null;
-  const highlight = document.querySelector('[data-tutorial-step] > div.absolute.pointer-events-none') as HTMLElement | null;
+  const highlight = document.querySelector('[data-testid="tutorial-highlight-ring"]') as HTMLElement | null;
   const root = document.documentElement;
   const body = document.body;
   const shell = document.querySelector('.mobile-board-shell') as HTMLElement | null;
@@ -58,10 +58,10 @@ const readTutorialHighlightMetrics = async (page: Page, _targetId: string) => pa
     innerHeight: window.innerHeight,
     rootScrollWidth: root.scrollWidth,
     bodyScrollWidth: body.scrollWidth,
-    deltaLeft: Math.abs(targetRect.left - (highlightRect.left + 4)),
-    deltaTop: Math.abs(targetRect.top - (highlightRect.top + 4)),
-    deltaWidth: Math.abs(targetRect.width - (highlightRect.width - 8)),
-    deltaHeight: Math.abs(targetRect.height - (highlightRect.height - 8)),
+    deltaLeft: Math.abs(targetRect.left - highlightRect.left),
+    deltaTop: Math.abs(targetRect.top - highlightRect.top),
+    deltaWidth: Math.abs(targetRect.width - highlightRect.width),
+    deltaHeight: Math.abs(targetRect.height - highlightRect.height),
   };
 }, _targetId);
 
@@ -577,10 +577,10 @@ test.describe('Summoner Wars Tutorial E2E', () => {
       expect(metrics.shellRect?.right ?? 99999).toBeLessThanOrEqual(metrics.innerWidth + 1);
       expect(metrics.targetRect).not.toBeNull();
       expect(metrics.highlightRect).not.toBeNull();
-      expect(metrics.deltaLeft ?? 99999).toBeLessThanOrEqual(4);
-      expect(metrics.deltaTop ?? 99999).toBeLessThanOrEqual(4);
-      expect(metrics.deltaWidth ?? 99999).toBeLessThanOrEqual(4);
-      expect(metrics.deltaHeight ?? 99999).toBeLessThanOrEqual(4);
+      expect(metrics.deltaLeft ?? 99999).toBeLessThanOrEqual(2);
+      expect(metrics.deltaTop ?? 99999).toBeLessThanOrEqual(2);
+      expect(metrics.deltaWidth ?? 99999).toBeLessThanOrEqual(2);
+      expect(metrics.deltaHeight ?? 99999).toBeLessThanOrEqual(2);
 
       if (stepId !== 'phase-intro') {
         await clickNext(page);

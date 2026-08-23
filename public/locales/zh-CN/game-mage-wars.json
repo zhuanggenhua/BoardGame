@@ -71,6 +71,10 @@
     "fx": "法术特效",
     "fxRequired": "事件驱动"
   },
+  "ui": {
+    "showAllLifeTotals": "显示全部生命读数",
+    "hideAllLifeTotals": "隐藏全部生命读数"
+  },
   "zonesPanel": {
     "title": "私有与附着区",
     "spellbook": "法术书",

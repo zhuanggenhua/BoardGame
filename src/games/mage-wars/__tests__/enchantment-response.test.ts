@@ -241,8 +241,36 @@ describe('mage-wars enchantment response windows', () => {
         expect(resolved.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.ENCHANTMENT_REVEALED,
             MAGE_WARS_EVENTS.SPELL_COUNTERED,
+            MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
             MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
         ]));
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: response.id,
+                    sourceAbilityId: 'mw.spell.1901.response',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: response.id,
+                    sourceAbilityId: 'mw.spell.1901.response',
+                }),
+            }),
+        ]));
+        const consumeAvailableIndex = resolved.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
+            && event.payload.sourceObjectId === response.id
+        ));
+        const sourceDefeatedIndex = resolved.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === response.id
+        ));
+        expect(consumeAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
         expect(resolved.state.core.objects[response.id]).toBeUndefined();
         expect(resolved.state.core.players['0']).toMatchObject({
             mana: 15,
@@ -535,7 +563,32 @@ describe('mage-wars enchantment response windows', () => {
                 type: MAGE_WARS_EVENTS.ATTACK_REVERSED,
                 payload: expect.objectContaining({ reversed: true }),
             }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: response.id,
+                    sourceAbilityId: 'mw.spell.1904.response',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: response.id,
+                    sourceAbilityId: 'mw.spell.1904.response',
+                }),
+            }),
         ]));
+        const consumeAvailableIndex = resolved.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE
+            && event.payload.sourceObjectId === response.id
+        ));
+        const sourceDefeatedIndex = resolved.events.findIndex((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED
+            && event.payload.objectId === response.id
+        ));
+        expect(consumeAvailableIndex).toBeGreaterThanOrEqual(0);
+        expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
+        expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
         expect(resolved.state.core.objects[response.id]).toBeUndefined();
         expect(resolved.state.core.objects[attacker.id]?.damage).toBe(6);
         expect(resolved.state.core.objects[defender.id]?.damage).toBe(0);

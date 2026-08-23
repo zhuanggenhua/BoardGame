@@ -11,13 +11,15 @@ import {
     type MageWarsEvent,
 } from './events';
 import {
-    createMageWarsArenaObjectSourceConsumedEvent,
-    createMageWarsCounterstrikeSourceConsumedEvent,
     resolveMageWarsBasicAttackEvents,
     resolveMageWarsMageDefenseEvents,
     resolveMageWarsArenaObjectDefenseEvents,
     resolveMageWarsObjectAttackEvents,
 } from './execute';
+import {
+    createMageWarsArenaObjectSourceConsumeAvailableEvent,
+    createMageWarsCounterstrikeSourceConsumeAvailableEvent,
+} from './sourceConsumeEvents';
 import { resolveMageWarsSpellAttackAfterDefense } from './spellAbilityExecutors';
 import {
     getMageWarsPlayerDefenseProfile,
@@ -291,6 +293,13 @@ function resolveMageWarsEnchantmentResponse(
         sourceCommandType: context.sourceCommandType,
         timestamp,
     }];
+    const responseSourceConsumed = createMageWarsArenaObjectSourceConsumeAvailableEvent(
+        state.core,
+        responseObject.id,
+        context.sourceCommandType,
+        timestamp,
+        `mw.spell.${context.responseCardId}.response`,
+    );
 
     if (context.kind === 'spell-counter') {
         events.push({
@@ -316,17 +325,7 @@ function resolveMageWarsEnchantmentResponse(
             },
             sourceCommandType: context.sourceCommandType,
             timestamp,
-        }] : []), {
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-            payload: {
-                objectId: responseObject.id,
-                ownerId: responseObject.ownerId,
-                sourceAbilityId: `mw.spell.${context.responseCardId}.response`,
-                spellCardId: context.responseCardId,
-            },
-            sourceCommandType: context.sourceCommandType,
-            timestamp,
-        }, {
+        }] : []), ...(responseSourceConsumed ? [responseSourceConsumed] : []), {
             type: MAGE_WARS_EVENTS.SPELL_DISCARDED,
             payload: {
                 playerId: responseObject.ownerId,
@@ -349,17 +348,7 @@ function resolveMageWarsEnchantmentResponse(
         ? getMageWarsObjectAttackProfile(originalAttacker, context.attackProfileId)
         : undefined;
     if (!originalAttacker || !originalDefender || !originalAttackProfile) {
-        events.push({
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-            payload: {
-                objectId: responseObject.id,
-                ownerId: responseObject.ownerId,
-                sourceAbilityId: `mw.spell.${context.responseCardId}.response`,
-                spellCardId: context.responseCardId,
-            },
-            sourceCommandType: context.sourceCommandType,
-            timestamp,
-        }, {
+        events.push(...(responseSourceConsumed ? [responseSourceConsumed] : []), {
             type: MAGE_WARS_EVENTS.SPELL_DISCARDED,
             payload: {
                 playerId: responseObject.ownerId,
@@ -387,17 +376,7 @@ function resolveMageWarsEnchantmentResponse(
         },
         sourceCommandType: context.sourceCommandType,
         timestamp,
-    }, {
-        type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-        payload: {
-            objectId: responseObject.id,
-            ownerId: responseObject.ownerId,
-            sourceAbilityId: `mw.spell.${context.responseCardId}.response`,
-            spellCardId: context.responseCardId,
-        },
-        sourceCommandType: context.sourceCommandType,
-        timestamp,
-    }, {
+    }, ...(responseSourceConsumed ? [responseSourceConsumed] : []), {
         type: MAGE_WARS_EVENTS.SPELL_DISCARDED,
         payload: {
             playerId: responseObject.ownerId,
@@ -517,17 +496,14 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                                 timestamp: event.timestamp,
                             });
                         } else {
-                            events.push({
-                                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                                payload: {
-                                    objectId: source.id,
-                                    ownerId: source.ownerId,
-                                    sourceAbilityId: `mw.spell.${source.sourceSpellCardId}.upkeep`,
-                                    spellCardId: source.sourceSpellCardId,
-                                },
-                                sourceCommandType: ctx.command.type,
-                                timestamp: event.timestamp,
-                            });
+                            const consumedSource = createMageWarsArenaObjectSourceConsumeAvailableEvent(
+                                nextState.core,
+                                source.id,
+                                ctx.command.type,
+                                event.timestamp,
+                                `mw.spell.${source.sourceSpellCardId}.upkeep`,
+                            );
+                            if (consumedSource) events.push(consumedSource);
                         }
                         continue;
                     }
@@ -648,7 +624,7 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             timestamp: event.timestamp,
                         });
                         const consumedSource = defenseProfile.consumesSource && defenseProfile.sourceObjectId
-                            ? createMageWarsArenaObjectSourceConsumedEvent(
+                            ? createMageWarsArenaObjectSourceConsumeAvailableEvent(
                                 nextState.core,
                                 defenseProfile.sourceObjectId,
                                 ctx.command.type,
@@ -699,7 +675,7 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             timestamp: event.timestamp,
                         });
                         const consumedSource = event.payload.value.counterstrikeSourceObjectId
-                            ? createMageWarsCounterstrikeSourceConsumedEvent(
+                            ? createMageWarsCounterstrikeSourceConsumeAvailableEvent(
                                 nextState.core,
                                 event.payload.value.counterstrikeSourceObjectId,
                                 ctx.command.type,

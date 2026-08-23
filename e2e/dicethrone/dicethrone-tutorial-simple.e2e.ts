@@ -73,7 +73,7 @@ const readHighlightMetrics = async (page: Parameters<typeof test>[0]['page'], ta
     const candidates = Array.from(
         document.querySelectorAll<HTMLElement>(`[data-tutorial-id="${resolvedTargetId}"]`),
     );
-    const highlight = document.querySelector('[data-tutorial-step] > div.absolute.pointer-events-none') as HTMLElement | null;
+    const highlight = document.querySelector('[data-testid="tutorial-highlight-ring"]') as HTMLElement | null;
     if (candidates.length === 0 || !highlight) {
         return null;
     }
@@ -121,10 +121,10 @@ const readHighlightMetrics = async (page: Parameters<typeof test>[0]['page'], ta
     return {
         targetRect,
         highlightRect,
-        deltaLeft: Math.abs(targetRect.left - (highlightRect.left + 4)),
-        deltaTop: Math.abs(targetRect.top - (highlightRect.top + 4)),
-        deltaWidth: Math.abs(targetRect.width - (highlightRect.width - 8)),
-        deltaHeight: Math.abs(targetRect.height - (highlightRect.height - 8)),
+        deltaLeft: Math.abs(targetRect.left - highlightRect.left),
+        deltaTop: Math.abs(targetRect.top - highlightRect.top),
+        deltaWidth: Math.abs(targetRect.width - highlightRect.width),
+        deltaHeight: Math.abs(targetRect.height - highlightRect.height),
     };
 }, targetId);
 
@@ -234,10 +234,10 @@ const assertHighlightAligned = async (
     const metrics = await readHighlightMetrics(page, options.targetId);
     console.log('tutorial-highlight-real-flow', options.stepId, options.targetId, JSON.stringify(metrics));
     expect(metrics).not.toBeNull();
-    expect(metrics?.deltaLeft ?? 99999).toBeLessThanOrEqual(4);
-    expect(metrics?.deltaTop ?? 99999).toBeLessThanOrEqual(4);
-    expect(metrics?.deltaWidth ?? 99999).toBeLessThanOrEqual(4);
-    expect(metrics?.deltaHeight ?? 99999).toBeLessThanOrEqual(4);
+    expect(metrics?.deltaLeft ?? 99999).toBeLessThanOrEqual(2);
+    expect(metrics?.deltaTop ?? 99999).toBeLessThanOrEqual(2);
+    expect(metrics?.deltaWidth ?? 99999).toBeLessThanOrEqual(2);
+    expect(metrics?.deltaHeight ?? 99999).toBeLessThanOrEqual(2);
 
     await page.screenshot({
         path: options.testInfo.outputPath(`${options.screenshotKey}.png`),
