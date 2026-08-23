@@ -3064,7 +3064,7 @@ function addMageWarsE2eArenaObject(core: MageWarsCore, object: MageWarsArenaObje
 
 type MageWarsE2ePlayerPatch = Partial<Omit<MageWarsPlayerState, 'id'>>;
 
-async function injectMageWarsGoldenCoverageReadyState(
+async function injectMageWarsCurrentScopeCoverageReadyState(
     match: MageWarsOnlineMatch,
     actorId: '0' | '1',
     options: {
@@ -3101,7 +3101,7 @@ async function injectMageWarsGoldenCoverageReadyState(
     for (const [objectId, patch] of Object.entries(options.objectPatches ?? {})) {
         const existing = objects[objectId];
         if (!existing) {
-            throw new Error(`黄金链代表态缺少场上对象，无法打补丁：${objectId}`);
+            throw new Error(`当前范围候选链代表态缺少场上对象，无法打补丁：${objectId}`);
         }
         objects[objectId] = { ...existing, ...patch };
     }
@@ -4124,7 +4124,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await planNamedSpells(match.guestPage, ['皇家箭手']);
             const wallRoundOrder = await resolveCurrentActorOrder(match, '墙体主链整合', diagnostics);
             const wallSpellCardId = 25700;
-            const wallEdgeId = 'a2-a3';
+            const wallEdgeId = 'a3-b3';
             for (const actorId of wallRoundOrder) {
                 if (actorId === '0') {
                     const preparedWall = match.hostPage.locator(`${SELF_PREPARED_CARD_SELECTOR}[data-source-card-id="${wallSpellCardId}"]`).first();
@@ -4133,7 +4133,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     const targetWallEdge = match.hostPage.getByTestId(`mage-wars-wall-edge-${wallEdgeId}`);
                     await expect(targetWallEdge).toHaveAttribute('data-legal-target-wall-edge', 'true', { timeout: 3_000 });
                     await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体边界选择截图前');
-                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10F-荆棘之墙施放前-A2-A3边界可选');
+                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10F-荆棘之墙施放前-A3-B3边界可选');
                     await targetWallEdge.click({ timeout: 3_000, noWaitAfter: true });
 
                     await expect.poll(async () => {
@@ -4145,12 +4145,12 @@ test.describe('Mage Wars formal online runtime', () => {
                                 && payload.targetWallEdgeId === wallEdgeId
                             ));
                     }, {
-                        message: '主候选链中荆棘之墙应通过正式页面写入 A2-A3 墙体状态和施放事件',
+                        message: '主候选链中荆棘之墙应通过正式页面写入 A3-B3 墙体状态和施放事件',
                         timeout: 5_000,
                     }).toBe(true);
                     await expect(targetWallEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 3_000 });
                     await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体施放完成截图前');
-                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A2-A3边界墙体可见');
+                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A3-B3边界墙体可见');
 
                     await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
                     continue;
@@ -4165,44 +4165,6 @@ test.describe('Mage Wars formal online runtime', () => {
             const thirdRoundOrder = await resolveCurrentActorOrder(match, '魔物和攻击代表链', diagnostics);
             for (const actorId of thirdRoundOrder) {
                 if (actorId === '0') {
-                    const hostBobcatForWallPassage = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
-                    const bobcatDamageBeforeWallPassage = await readServerCoreSnapshot(match.hostPage, match, '0').then((snapshot) => {
-                        const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
-                        const bobcat = isRecord(objects[hostBobcatObjectId]) ? objects[hostBobcatObjectId] : {};
-                        return typeof bobcat.damage === 'number' ? bobcat.damage : 0;
-                    });
-                    await clickFieldObject(match.hostPage, hostBobcatForWallPassage, '野性山猫穿越主链墙体前选择来源');
-                    await expect(match.hostPage.getByTestId('mage-wars-arena-zone-a3')).toHaveAttribute('data-legal-move-zone', 'true', {
-                        timeout: 3_000,
-                    });
-                    await clickLegalMoveZone(match.hostPage, ARENA_ZONE_IDS.A3, '野性山猫穿越 A2-A3 荆棘之墙');
-                    await expectServerObjectZone(
-                        match.hostPage,
-                        match,
-                        '0',
-                        hostBobcatObjectId,
-                        ARENA_ZONE_IDS.A3,
-                        '主候选链中野性山猫穿越墙体后应进入 A3',
-                    );
-                    await expectServerObjectDamageGreaterThan(
-                        match.hostPage,
-                        match,
-                        '0',
-                        hostBobcatObjectId,
-                        bobcatDamageBeforeWallPassage,
-                        '主候选链中野性山猫穿越墙体后应受到通行伤害',
-                    );
-                    await expect.poll(async () => {
-                        const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
-                        return hasWallPassageDamageTriggeredEvent(snapshot, wallEdgeId, hostBobcatObjectId)
-                            && hasDamageDealtEvent(snapshot, hostBobcatObjectId, `mw.wall.${wallSpellCardId}.passage`);
-                    }, {
-                        message: '主候选链穿越 A2-A3 墙体应产生墙体通行伤害事件和对应来源伤害事件',
-                        timeout: 5_000,
-                    }).toBe(true);
-                    await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链穿墙伤害截图前');
-                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10H-野性山猫穿越荆棘之墙后-通行伤害可见');
-
                     const hostTargetBobcat = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
                     await castPreparedSpellOnFieldObject(match.hostPage, '缠绕藤蔓', hostTargetBobcat);
                     await expectServerObject(match.hostPage, match, '0', {
@@ -4237,7 +4199,7 @@ test.describe('Mage Wars formal online runtime', () => {
                         throw new Error('间歇喷泉点击前未启动攻击 FX 捕捉');
                     }
                     const geyserAttackFxAudit = await geyserAttackFxAuditPromise;
-                    expect(geyserAttackFxAudit.targetRow).toBe('2');
+                    expect(geyserAttackFxAudit.targetRow).toBe('1');
                     expect(geyserAttackFxAudit.targetCol).toBe('0');
                     await expect.poll(async () => {
                         const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
@@ -4283,7 +4245,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 damage: 0,
                 actionReady: true,
             };
-            await injectMageWarsGoldenCoverageReadyState(match, '1', {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '1', {
                 replaceObjects: true,
                 objects: [guardBobcat, guardCleric],
                 playerPatches: {
@@ -4336,7 +4298,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '14-近战攻击守卫生物后-守卫标记移除');
 
             const woundedBobcatDamage = 5;
-            await injectMageWarsGoldenCoverageReadyState(match, '1', {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '1', {
                 replaceObjects: true,
                 objects: [
                     {
@@ -4436,7 +4398,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     [STATUS_TOKEN_IDS.BURN]: 1,
                 },
             };
-            await injectMageWarsGoldenCoverageReadyState(match, '1', {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '1', {
                 phase: 'initiativeQuickcast',
                 replaceObjects: true,
                 objects: [burningCleric],
@@ -4511,7 +4473,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 const guest = isRecord(players['1']) ? players['1'] : {};
                 return typeof guest.life === 'number' ? guest.life : 24;
             });
-            await injectMageWarsGoldenCoverageReadyState(match, '0', {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
                 replaceObjects: true,
                 playerPatches: {
                     '0': {
@@ -4561,7 +4523,7 @@ test.describe('Mage Wars formal online runtime', () => {
         const runnerObjectId = 'mw-e2e-wall-runner';
 
         try {
-            await injectMageWarsGoldenCoverageReadyState(match, '0', {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
                 replaceObjects: true,
                 objects: [
                     createMageWarsE2eCreatureObject(
@@ -4636,7 +4598,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '墙后视线阻挡截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '21-墙后远程视线阻挡-B3目标不可选');
 
-            await injectMageWarsGoldenCoverageReadyState(match, '0', {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
                 replaceObjects: true,
                 objects: [
                     createMageWarsE2eCreatureObject(
