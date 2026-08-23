@@ -11,7 +11,7 @@ import {
 } from './lib/status-board.mjs';
 import {
     normalizeBaseUrl,
-    updateFeedbackStatusViaBestAvailableWriter,
+    updateFeedbackStatusesViaBestAvailableWriter,
 } from './lib/feedback-status-writer.mjs';
 
 const VALID_STATUSES = new Set(['resolved', 'closed']);
@@ -119,32 +119,27 @@ async function main() {
         closedReason: options.closedReason,
         resolvedMethod: options.resolvedMethod,
     };
-    const primary = await updateFeedbackStatusViaBestAvailableWriter({
-        baseUrl,
-        token: options.token,
-        id: options.feedbackId,
-        status: options.status,
-        ...details,
-    });
-    const duplicateResults = [];
-
-    if (options.updateDuplicates) {
-        const duplicateIds = Array.isArray(group.duplicateIds) ? group.duplicateIds : [];
-        for (const duplicateId of duplicateIds) {
-            const updated = await updateFeedbackStatusViaBestAvailableWriter({
+    const remoteIds = feedbackIdsForGroup(group, options.updateDuplicates);
+    const remoteUpdate = await updateFeedbackStatusesViaBestAvailableWriter(
+        remoteIds.map((id) => ({
                 baseUrl,
                 token: options.token,
-                id: duplicateId,
+                id,
                 status: options.status,
                 ...details,
-            });
-            duplicateResults.push({
-                feedbackId: duplicateId,
-                status: updated.status,
-                writer: updated.writer,
-            });
-        }
+        })),
+    );
+    const primary = remoteUpdate.results.find((entry) => entry.id === options.feedbackId);
+    if (!primary) {
+        throw new Error(`远端回写结果缺少代表项: ${options.feedbackId}`);
     }
+    const duplicateResults = remoteUpdate.results
+        .filter((entry) => entry.id !== options.feedbackId)
+        .map((updated) => ({
+            feedbackId: updated.id,
+            status: updated.status,
+            writer: updated.writer,
+        }));
 
     const localIds = feedbackIdsForGroup(group, options.updateDuplicates);
     const { board, boardPath } = await syncBoardFromSummaryFile(resolvedSummaryPath, options.boardPath);

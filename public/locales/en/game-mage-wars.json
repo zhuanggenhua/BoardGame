@@ -212,7 +212,7 @@
       "channelResult": "Channeling adds 10 mana. This round you can summon Jungle Wolf and still keep an incantation ready so it can act at once.",
       "advanceUpkeep": "Upkeep resolves ongoing effects and status. There is no upkeep cost in this position, so click “End Turn” to continue into planning.",
       "advancePlanning": "During planning, secretly prepare up to two spellbook cards. Click “End Turn” to open this round's spell choice.",
-      "planWolf": "In the spellbook, choose “Jungle Wolf”, switch to “Incantation”, choose “Rouse the Beast”, then click “Prepare 2”. This pair turns a summon into immediate pressure.",
+      "planWolf": "Choose the Creature category, go to the next page, and select “Jungle Wolf”; then switch to Incantation, go to the next page, select “Rouse the Beast”, and click “Prepare 2”. This pair turns a summon into immediate pressure.",
       "preparedAndHidden": "Your two prepared spells are below; the opponent also has hidden prepared spells. A spell moves to discard after it is cast and revealed.",
       "deployWolf": "Choose “Jungle Wolf” in your prepared spells, then click the Beastmaster's zone to summon it. A newly summoned creature enters play with its action marker spent.",
       "rouseWolf": "Choose “Rouse the Beast” in your prepared spells, then click Jungle Wolf in the arena. The incantation readies a living creature summoned this round.",

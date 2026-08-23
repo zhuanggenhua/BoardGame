@@ -28,6 +28,7 @@ import {
     grantContextualExtraMinion,
     grantExtraAction,
     grantExtraMinion,
+    grantImmediateExtraPlayForStoredCard,
     inspectDeck,
     modifyBreakpoint,
     recoverCardsFromDiscard,
@@ -1377,22 +1378,7 @@ function drawSpecificDeckCard(playerId: PlayerId, card: CardInstance, deck: Card
 }
 
 function playStoredCardAsExtra(playerId: PlayerId, storedCard: CardInstance, reason: string, now: number, baseIndex?: number): SmashUpEvent[] {
-    const def = getCardDef(storedCard.defId);
-    if (def?.type === 'minion') {
-        return [
-            grantExtraMinion(playerId, reason, now, baseIndex, {
-                specificCardUid: storedCard.uid,
-                playTiming: 'immediate',
-            }),
-        ];
-    }
-    return [
-        grantExtraAction(playerId, reason, now, {
-            restrictToCardUid: storedCard.uid,
-            restrictToCardDefId: storedCard.defId,
-            playTiming: 'immediate',
-        }),
-    ];
+    return [grantImmediateExtraPlayForStoredCard(playerId, storedCard, reason, now, baseIndex)];
 }
 
 function hasBacktimersLastStasisCounterRemovedThisTurn(core: SmashUpCore, playerId: PlayerId): boolean {
@@ -1699,6 +1685,9 @@ function registerBacktimersInteractionHandlers(): void {
             if (!card || (card.counters ?? 0) <= alreadyUsed) continue;
             usedByCardUid.set(choice.cardUid, alreadyUsed + 1);
             events.push(stasisCounterChanged(playerId, card.uid, -1, 'backtimers_will_have_to_do', timestamp));
+            if ((card.counters ?? 0) - alreadyUsed === 1) {
+                events.push(...playStoredCardAsExtra(playerId, card, 'backtimers_will_have_to_do', timestamp));
+            }
         }
         return { state, events };
     });
@@ -1798,6 +1787,9 @@ function registerBacktimersInteractionHandlers(): void {
         const stasisCard = getBacktimersStasisCards(state.core, playerId).find(card => card.uid === selected.cardUid);
         if (!stasisCard) return { state, events: [] };
         if (selected.mode === 'remove' && (stasisCard.counters ?? 0) <= 0) return { state, events: [] };
+        const releaseEvents = selected.mode === 'remove' && (stasisCard.counters ?? 0) === 1
+            ? playStoredCardAsExtra(playerId, stasisCard, 'backtimers_zany_prof', timestamp)
+            : [];
         return {
             state,
             events: [stasisCounterChanged(
@@ -1806,7 +1798,7 @@ function registerBacktimersInteractionHandlers(): void {
                 selected.mode === 'add' ? 1 : -1,
                 'backtimers_zany_prof',
                 timestamp,
-            )],
+            ), ...releaseEvents],
         };
     });
 

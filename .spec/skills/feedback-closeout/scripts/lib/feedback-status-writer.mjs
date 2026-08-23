@@ -142,9 +142,11 @@ function buildMongoUpdate({ id, status, closedReason, resolvedMethod }) {
     };
 }
 
-function buildMongoScript(updateSpec) {
+function buildMongoScript(updateSpecs) {
+    const inputs = Array.isArray(updateSpecs) ? updateSpecs : [updateSpecs];
     return `
-const input = ${JSON.stringify(updateSpec)};
+const inputs = ${JSON.stringify(inputs)};
+function applyFeedbackStatusUpdate(input) {
 input.set.updatedAt = new Date(input.set.updatedAt);
 const filter = { _id: ObjectId(input.id) };
 const current = db.feedbacks.findOne(filter, {
@@ -154,13 +156,13 @@ const current = db.feedbacks.findOne(filter, {
   aggregationKey: 1
 });
 if (!current) {
-  print(JSON.stringify({
+  return {
+    id: input.id,
     acknowledged: true,
     matchedCount: 0,
     modifiedCount: 0,
     feedback: null
-  }));
-  quit(0);
+  };
 }
 if (
   input.set.status !== 'closed'
@@ -190,7 +192,8 @@ const doc = db.feedbacks.findOne(filter, {
   aggregationActiveKey: 1,
   updatedAt: 1
 });
-print(JSON.stringify({
+return {
+  id: input.id,
   acknowledged: result.acknowledged,
   matchedCount: result.matchedCount,
   modifiedCount: result.modifiedCount,
@@ -202,6 +205,15 @@ print(JSON.stringify({
     aggregationActiveKey: doc.aggregationActiveKey ?? null,
     updatedAt: doc.updatedAt
   } : null
+};
+}
+
+const results = inputs.map(applyFeedbackStatusUpdate);
+print(JSON.stringify({
+  acknowledged: results.every((item) => item.acknowledged),
+  matchedCount: results.reduce((sum, item) => sum + item.matchedCount, 0),
+  modifiedCount: results.reduce((sum, item) => sum + item.modifiedCount, 0),
+  results
 }));
 `;
 }
@@ -228,18 +240,15 @@ function parseMongoResult(stdout) {
     throw new Error(`生产 Mongo 回写没有返回 JSON 结果: ${String(stdout || '').trim()}`);
 }
 
-function updateViaMongoSsh({
-    id,
-    status,
-    closedReason,
-    resolvedMethod,
+function updateManyViaMongoSsh({
+    requests,
     reason,
     spawnSyncImpl,
     mongoSshTarget,
     mongoCommand,
 }) {
-    const updateSpec = buildMongoUpdate({ id, status, closedReason, resolvedMethod });
-    const script = buildMongoScript(updateSpec);
+    const updateSpecs = requests.map((request) => buildMongoUpdate(request));
+    const script = buildMongoScript(updateSpecs);
     const sshTarget = mongoSshTarget || process.env.BOARDGAME_FEEDBACK_MONGO_SSH_TARGET || DEFAULT_MONGO_SSH_TARGET;
     const remoteCommand = mongoCommand || process.env.BOARDGAME_FEEDBACK_MONGO_COMMAND || DEFAULT_MONGO_COMMAND;
     const result = spawnSyncImpl('ssh', [sshTarget, remoteCommand], {
@@ -262,32 +271,140 @@ function updateViaMongoSsh({
     }
 
     const payload = parseMongoResult(result.stdout);
-    if (!payload || payload.matchedCount !== 1) {
-        throw new Error(`生产 Mongo 未命中反馈记录: ${id}`);
+    const results = Array.isArray(payload?.results) ? payload.results : [payload];
+    if (results.length !== requests.length) {
+        throw new Error(`生产 Mongo 回写结果数量不匹配: expected=${requests.length}, actual=${results.length}`);
     }
 
+    return results.map((item, index) => {
+        const request = requests[index];
+        if (!item || item.matchedCount !== 1) {
+            throw new Error(`生产 Mongo 未命中反馈记录: ${request.id}`);
+        }
+
+        return {
+            writer: 'mongo-ssh',
+            reason,
+            id: request.id,
+            status: item.feedback?.status || request.status,
+            matchedCount: item.matchedCount,
+            modifiedCount: item.modifiedCount,
+            feedback: item.feedback,
+        };
+    });
+}
+
+function updateViaMongoSsh(options) {
+    const results = updateManyViaMongoSsh({
+        ...options,
+        requests: [options],
+    });
+    return results[0];
+}
+
+function normalizeStatusRequest(options = {}) {
     return {
-        writer: 'mongo-ssh',
-        reason,
-        id,
-        status: payload.feedback?.status || status,
-        matchedCount: payload.matchedCount,
-        modifiedCount: payload.modifiedCount,
-        feedback: payload.feedback,
+        baseUrl: normalizeBaseUrl(options.baseUrl || DEFAULT_FEEDBACK_BASE_URL),
+        token: options.token || '',
+        id: options.id || '',
+        status: options.status || '',
+        closedReason: options.closedReason || '',
+        resolvedMethod: options.resolvedMethod || '',
+        mongoSshTarget: options.mongoSshTarget,
+        mongoCommand: options.mongoCommand,
     };
 }
 
+function assertRequestsCanBatch(requests) {
+    const [first] = requests;
+    for (const request of requests) {
+        if (request.baseUrl !== first.baseUrl || request.token !== first.token) {
+            throw new Error('批量反馈回写要求 baseUrl 和 token 一致');
+        }
+        if ((request.mongoSshTarget || '') !== (first.mongoSshTarget || '')) {
+            throw new Error('批量反馈回写要求 mongoSshTarget 一致');
+        }
+        if ((request.mongoCommand || '') !== (first.mongoCommand || '')) {
+            throw new Error('批量反馈回写要求 mongoCommand 一致');
+        }
+    }
+}
+
+export async function updateFeedbackStatusesViaBestAvailableWriter(optionsList, deps = {}) {
+    const requests = (Array.isArray(optionsList) ? optionsList : [])
+        .map((options) => normalizeStatusRequest(options));
+    for (const request of requests) {
+        validateStatusRequest(request);
+    }
+    if (requests.length === 0) {
+        return {
+            writer: 'none',
+            reason: 'empty-request-list',
+            results: [],
+        };
+    }
+    assertRequestsCanBatch(requests);
+
+    const spawnSyncImpl = deps.spawnSync || defaultSpawnSync;
+    const selected = selectFeedbackStatusWriter(requests[0]);
+    if (selected.writer === 'mongo-ssh') {
+        const results = updateManyViaMongoSsh({
+            requests,
+            reason: selected.reason,
+            spawnSyncImpl,
+            mongoSshTarget: requests[0].mongoSshTarget,
+            mongoCommand: requests[0].mongoCommand,
+        });
+        return {
+            writer: 'mongo-ssh',
+            reason: selected.reason,
+            results,
+        };
+    }
+
+    const fetchImpl = deps.fetch || globalThis.fetch;
+    if (typeof fetchImpl !== 'function') {
+        throw new Error('当前 Node 环境缺少 fetch，无法执行 HTTP 反馈状态回写');
+    }
+
+    try {
+        const results = [];
+        for (const request of requests) {
+            results.push(await updateViaHttp({
+                ...request,
+                fetchImpl,
+            }));
+        }
+        return {
+            writer: 'http',
+            reason: selected.reason,
+            results,
+        };
+    } catch (error) {
+        if (
+            error instanceof FeedbackStatusHttpError
+            && shouldFallbackToMongoAfterHttpFailure({ baseUrl: requests[0].baseUrl, status: error.status })
+        ) {
+            const reason = `http-auth-failed-${error.status}-production-mongo`;
+            const results = updateManyViaMongoSsh({
+                requests,
+                reason,
+                spawnSyncImpl,
+                mongoSshTarget: requests[0].mongoSshTarget,
+                mongoCommand: requests[0].mongoCommand,
+            });
+            return {
+                writer: 'mongo-ssh',
+                reason,
+                results,
+            };
+        }
+        throw error;
+    }
+}
+
 export async function updateFeedbackStatusViaBestAvailableWriter(options, deps = {}) {
-    const request = {
-        baseUrl: normalizeBaseUrl(options?.baseUrl || DEFAULT_FEEDBACK_BASE_URL),
-        token: options?.token || '',
-        id: options?.id || '',
-        status: options?.status || '',
-        closedReason: options?.closedReason || '',
-        resolvedMethod: options?.resolvedMethod || '',
-        mongoSshTarget: options?.mongoSshTarget,
-        mongoCommand: options?.mongoCommand,
-    };
+    const request = normalizeStatusRequest(options);
     validateStatusRequest(request);
 
     const spawnSyncImpl = deps.spawnSync || defaultSpawnSync;

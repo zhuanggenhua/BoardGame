@@ -125,7 +125,10 @@ describe('mage-wars tutorial', () => {
 
         const planWolf = MageWarsTutorial.steps.find((step) => step.id === 'plan-wolf');
         expect(planWolf?.allowedTargets).toEqual(expect.arrayContaining([
+            'mw-spellbook-category-creature',
+            'mw-spellbook-next-page',
             `mw-spellbook-card-${JUNGLE_WOLF_CARD_ID}`,
+            'mw-spellbook-category-incantation',
             `mw-spellbook-card-${ROUSE_THE_BEAST_CARD_ID}`,
             'mw-plan-spells',
         ]));
@@ -302,6 +305,8 @@ describe('mage-wars tutorial', () => {
             'mw-arena',
             'mw-zone-',
             'mw-field-object-',
+            'mw-spellbook-category-',
+            'mw-spellbook-next-page',
             'mw-spellbook-card-',
             'mw-prepared-card-',
         ]) {

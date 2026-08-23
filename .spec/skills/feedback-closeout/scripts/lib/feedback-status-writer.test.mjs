@@ -4,10 +4,12 @@ import test from 'node:test';
 import {
     selectFeedbackStatusWriter,
     shouldFallbackToMongoAfterHttpFailure,
+    updateFeedbackStatusesViaBestAvailableWriter,
     updateFeedbackStatusViaBestAvailableWriter,
 } from './feedback-status-writer.mjs';
 
 const FEEDBACK_ID = '64f0c0ffee00000000000001';
+const FEEDBACK_ID_2 = '64f0c0ffee00000000000002';
 
 test('线上无 token 时选择生产 Mongo 写入口', () => {
     const selected = selectFeedbackStatusWriter({
@@ -88,6 +90,71 @@ test('线上无 token 时直接通过 SSH/Mongo 回写状态', async () => {
     assert.equal(spawnCalls.length, 1);
     assert.equal(spawnCalls[0].command, 'ssh');
     assert.match(spawnCalls[0].input, /db\.feedbacks\.updateOne/);
+});
+
+test('线上无 token 时批量状态回写只启动一次 SSH/Mongo', async () => {
+    const spawnCalls = [];
+    const result = await updateFeedbackStatusesViaBestAvailableWriter([
+        {
+            baseUrl: 'https://api.easyboardgame.top',
+            token: '',
+            id: FEEDBACK_ID,
+            status: 'in_progress',
+        },
+        {
+            baseUrl: 'https://api.easyboardgame.top',
+            token: '',
+            id: FEEDBACK_ID_2,
+            status: 'in_progress',
+        },
+    ], {
+        spawnSync(command, args, options) {
+            spawnCalls.push({ command, args, input: options.input });
+            return {
+                status: 0,
+                stdout: `${JSON.stringify({
+                    acknowledged: true,
+                    matchedCount: 2,
+                    modifiedCount: 2,
+                    results: [
+                        {
+                            id: FEEDBACK_ID,
+                            acknowledged: true,
+                            matchedCount: 1,
+                            modifiedCount: 1,
+                            feedback: {
+                                _id: FEEDBACK_ID,
+                                status: 'in_progress',
+                                resolvedMethod: null,
+                                closedReason: null,
+                            },
+                        },
+                        {
+                            id: FEEDBACK_ID_2,
+                            acknowledged: true,
+                            matchedCount: 1,
+                            modifiedCount: 1,
+                            feedback: {
+                                _id: FEEDBACK_ID_2,
+                                status: 'in_progress',
+                                resolvedMethod: null,
+                                closedReason: null,
+                            },
+                        },
+                    ],
+                })}\n`,
+                stderr: '',
+            };
+        },
+    });
+
+    assert.equal(result.writer, 'mongo-ssh');
+    assert.equal(result.results.length, 2);
+    assert.equal(result.results[0].status, 'in_progress');
+    assert.equal(result.results[1].status, 'in_progress');
+    assert.equal(spawnCalls.length, 1);
+    assert.match(spawnCalls[0].input, /const inputs = /);
+    assert.match(spawnCalls[0].input, new RegExp(FEEDBACK_ID_2));
 });
 
 test('生产 Mongo 输出带 mongosh 提示符时仍能解析最终回写 JSON', async () => {

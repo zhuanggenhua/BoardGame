@@ -914,6 +914,63 @@ describe('返时者代表性停滞玩法行为', () => {
         expect(getPromptOptions(prompt).some((option: any) => option.value?.mode === 'add')).toBe(true);
         expect(stored?.counters).toBe(0);
         expect(stored?.lastStasisCounterRemovedTurn).toBe(7);
+        const extraPrompt = getSimpleChoicePrompt(resolved.finalState, 'smashup_immediate_extra_action');
+        expect(getPromptOptions(extraPrompt)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({
+                    cardUid: 'stasis-card',
+                    source: 'stored',
+                }),
+            }),
+        ]));
+    });
+
+    it('返时者回合开始会从自己的停滞牌移除指示物，归零后提示额外打出', () => {
+        const storedCard = {
+            ...makeCard('stasis-minion', 'backtimers_sidelined_girlfriend', 'minion', '0'),
+            storedByPlayerId: '0',
+            counters: 1,
+            reason: 'backtimers_stasis',
+        };
+        const core = makeState({
+            currentPlayerIndex: 1,
+            turnNumber: 3,
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    storedCards: [storedCard] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle')],
+        });
+
+        const startTurn = runCommand(makeMatchState(core), {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: undefined,
+        } as any, FIXED_RANDOM);
+
+        expect(startTurn.success, startTurn.error).toBe(true);
+        expect(startTurn.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.STORED_CARD_COUNTER_CHANGED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                cardUid: 'stasis-minion',
+                delta: -1,
+            }),
+        }));
+        expect(startTurn.finalState.core.players['0'].storedCards?.find(card => card.uid === 'stasis-minion')?.counters).toBe(0);
+        const extraPrompt = getSimpleChoicePrompt(startTurn.finalState, 'smashup_immediate_extra_minion');
+        expect(getPromptOptions(extraPrompt)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({
+                    cardUid: 'stasis-minion',
+                    source: 'stored',
+                }),
+            }),
+        ]));
     });
 
     it('亚历克斯仅在本回合移除过最后一个停滞指示物后，天赋可给己方随从 +1 指示物', () => {
@@ -1207,6 +1264,50 @@ describe('返时者代表性停滞玩法行为', () => {
         });
 
         expect(result.events).toEqual([]);
+    });
+
+    it('将就一下移除最后一个停滞指示物后开放该牌额外打出窗口', () => {
+        const stasisCard = {
+            ...makeCard('stasis-card', 'backtimers_future_almanac', 'action', '0'),
+            storedByPlayerId: '0',
+            counters: 1,
+            reason: 'backtimers_stasis',
+        };
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { storedCards: [stasisCard] as any }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('backtimers_will_have_to_do', 'onPlay', {
+            ...makeAbilityContext(core, 'backtimers_will_have_to_do', 'will-do'),
+        });
+        const modeResolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.mode === 'stasis',
+            'remove stasis mode',
+            '0',
+            FIXED_RANDOM,
+        );
+        const stasisResolved = respondToPromptOption(
+            modeResolved.finalState,
+            option => option.value?.cardUid === 'stasis-card',
+            'stasis card to release',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(stasisResolved.finalState.core.players['0'].storedCards?.find(card => card.uid === 'stasis-card')?.counters).toBe(0);
+        const extraPrompt = getSimpleChoicePrompt(stasisResolved.finalState, 'smashup_immediate_extra_action');
+        expect(getPromptOptions(extraPrompt)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({
+                    cardUid: 'stasis-card',
+                    source: 'stored',
+                }),
+            }),
+        ]));
     });
 
     it('扰乱时空连续体把最多两张其他手牌置入停滞，并按数量放置指示物', () => {

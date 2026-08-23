@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
     normalizeBaseUrl,
-    updateFeedbackStatusViaBestAvailableWriter,
+    updateFeedbackStatusesViaBestAvailableWriter,
 } from './lib/feedback-status-writer.mjs';
 
 const EMBEDDED_IMG_RE = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
@@ -433,13 +433,17 @@ async function main() {
     const parallelCandidates = pickParallelCandidates(groups, options.slots);
     const claimedCandidates = [];
     if (options.markInProgress) {
-        for (const candidate of parallelCandidates) {
-            const updated = await updateFeedbackStatusViaBestAvailableWriter({
+        const claimResult = await updateFeedbackStatusesViaBestAvailableWriter(
+            parallelCandidates.map((candidate) => ({
                 baseUrl,
                 token: options.token,
                 id: candidate.feedbackId,
                 status: 'in_progress',
-            });
+            })),
+        );
+        const updatedById = new Map(claimResult.results.map((updated) => [updated.id, updated]));
+        for (const candidate of parallelCandidates) {
+            const updated = updatedById.get(candidate.feedbackId);
             candidate.status = updated.status;
             candidate.statusWriter = updated.writer;
             claimedCandidates.push({

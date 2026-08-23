@@ -178,9 +178,12 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialTarget(page, 'mw-turn-end');
 
         await waitForTutorialStep(page, 'plan-wolf');
+        await clickTutorialTarget(page, 'mw-spellbook-category-creature');
+        await clickTutorialTarget(page, 'mw-spellbook-next-page');
         await expect(page.locator('[data-tutorial-id="mw-spellbook-card-2819"]')).toBeVisible({ timeout: 15_000 });
         await clickTutorialTarget(page, 'mw-spellbook-card-2819');
-        await page.getByRole('button', { name: /^(咒语|Incantation)$/i }).click();
+        await clickTutorialTarget(page, 'mw-spellbook-category-incantation');
+        await clickTutorialTarget(page, 'mw-spellbook-next-page');
         await clickTutorialTarget(page, 'mw-spellbook-card-3403');
         await screenshot(page, PLAN_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-plan-spells');

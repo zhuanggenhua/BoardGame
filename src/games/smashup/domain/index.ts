@@ -100,6 +100,7 @@ import {
     countMadnessCardsForPlayer,
     grantExtraAction,
     grantExtraMinion,
+    grantImmediateExtraPlayForStoredCard,
     madnessVpPenalty,
     fireMinionPlayedTriggers,
     getTitanByUid,
@@ -1917,6 +1918,40 @@ function applyStartTurnFactEvent(core: SmashUpCore, event: SmashUpEvent): SmashU
     }
 }
 
+const BACKTIMERS_STASIS_REASON = 'backtimers_stasis';
+
+function isBacktimersStasisCard(card: StoredCardInstance): boolean {
+    return card.reason === BACKTIMERS_STASIS_REASON;
+}
+
+function buildBacktimersStartTurnStasisEvents(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    now: number,
+): SmashUpEvent[] {
+    const stasisCards = (core.players[playerId]?.storedCards ?? []).filter(isBacktimersStasisCard);
+    return stasisCards.flatMap(card => {
+        const counters = card.counters ?? 0;
+        if (counters <= 0) return [];
+        const counterEvent = {
+            type: SU_EVENTS.STORED_CARD_COUNTER_CHANGED,
+            payload: {
+                playerId,
+                cardUid: card.uid,
+                delta: -1,
+                reason: 'backtimers_start_turn_stasis',
+            },
+            timestamp: now,
+        } as SmashUpEvent;
+        return counters === 1
+            ? [
+                counterEvent,
+                grantImmediateExtraPlayForStoredCard(playerId, card, 'backtimers_start_turn_stasis', now),
+            ]
+            : [counterEvent];
+    });
+}
+
 function keepSysUpdatesOnly(
     baseState: MatchState<SmashUpCore>,
     updatedState: MatchState<SmashUpCore>,
@@ -2766,6 +2801,26 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             const startTurnCore = reduceTurnStartedEvent(core, turnStarted);
             currentMatchState = { ...currentMatchState, core: startTurnCore };
 
+            const startTurnStasisEvents = buildBacktimersStartTurnStasisEvents(
+                currentMatchState.core,
+                nextPlayerId,
+                now,
+            );
+            const startTurnStasisImmediateEvents = startTurnStasisEvents.filter((event): event is LimitModifiedEvent =>
+                event.type === SU_EVENTS.LIMIT_MODIFIED,
+            );
+            if (startTurnStasisEvents.length > 0) {
+                events.push(...startTurnStasisEvents);
+                currentMatchState = {
+                    ...currentMatchState,
+                    core: startTurnStasisEvents.reduce(
+                        (nextCore, event) => reduce(nextCore, event),
+                        currentMatchState.core,
+                    ),
+                };
+                hasSysUpdate = true;
+            }
+
             const startTurnTriggeredEvents: SmashUpEvent[] = [];
             const startTurnFrameId = `turn-start:${nextPlayerId}:${nextTurnNumber}:${now}`;
 
@@ -2820,6 +2875,14 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     currentMatchState = rq.state;
                     events.push(...rq.events);
                 }
+            }
+
+            if (startTurnStasisImmediateEvents.length > 0) {
+                currentMatchState = queueImmediateExtraPlayInteractions(
+                    currentMatchState,
+                    startTurnStasisImmediateEvents,
+                );
+                hasSysUpdate = true;
             }
 
             const coreForUncover = currentMatchState.core;

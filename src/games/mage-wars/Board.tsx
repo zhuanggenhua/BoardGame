@@ -1519,6 +1519,8 @@ function SpellbookShelf({
                                 : 'bg-black/26 text-stone-200 hover:bg-black/38',
                         )}
                         aria-pressed={category === id}
+                        data-testid={`mage-wars-spellbook-category-${id}`}
+                        data-tutorial-id={`mw-spellbook-category-${id}`}
                         onClick={() => {
                             setCategory(id);
                             setPage(0);
@@ -1565,6 +1567,8 @@ function SpellbookShelf({
                     className="grid h-10 w-10 place-items-center rounded-[0.3rem] bg-black/32 text-lg font-bold text-amber-100"
                     aria-label={t('spellbook.previousPage')}
                     disabled={currentPage === 0}
+                    data-testid="mage-wars-spellbook-previous-page"
+                    data-tutorial-id="mw-spellbook-previous-page"
                     onClick={() => setPage((value) => Math.max(0, value - 1))}
                 >
                     ‹
@@ -1577,6 +1581,8 @@ function SpellbookShelf({
                     className="grid h-10 w-10 place-items-center rounded-[0.3rem] bg-black/32 text-lg font-bold text-amber-100"
                     aria-label={t('spellbook.nextPage')}
                     disabled={currentPage >= pageCount - 1}
+                    data-testid="mage-wars-spellbook-next-page"
+                    data-tutorial-id="mw-spellbook-next-page"
                     onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}
                 >
                     ›

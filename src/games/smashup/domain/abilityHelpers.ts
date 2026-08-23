@@ -1902,6 +1902,28 @@ export function grantExtraAction(
     };
 }
 
+/** 为一张已满足条件的暂存牌创建“立即作为额外牌打出”的受限机会。 */
+export function grantImmediateExtraPlayForStoredCard(
+    playerId: PlayerId,
+    storedCard: Pick<CardInstance, 'uid' | 'defId'>,
+    reason: string,
+    now: number,
+    restrictToBase?: number,
+): LimitModifiedEvent {
+    const def = getCardDef(storedCard.defId);
+    if (def?.type === 'minion') {
+        return grantExtraMinion(playerId, reason, now, restrictToBase, {
+            specificCardUid: storedCard.uid,
+            playTiming: 'immediate',
+        });
+    }
+    return grantExtraAction(playerId, reason, now, {
+        restrictToCardUid: storedCard.uid,
+        restrictToCardDefId: storedCard.defId,
+        playTiming: 'immediate',
+    });
+}
+
 export function buildStandardDrawEvents(
     state: SmashUpCore | MatchState<SmashUpCore>,
     playerId: PlayerId,

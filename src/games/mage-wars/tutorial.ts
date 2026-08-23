@@ -90,7 +90,11 @@ export const MageWarsTutorial: TutorialManifest = {
             requireAction: true,
             allowedCommands: [MAGE_WARS_COMMANDS.PLAN_SPELLS],
             allowedTargets: [
+                'mw-spellbook-category-creature',
+                'mw-spellbook-next-page',
                 `mw-spellbook-card-${JUNGLE_WOLF_CARD_ID}`,
+                'mw-spellbook-category-incantation',
+                'mw-spellbook-next-page',
                 `mw-spellbook-card-${ROUSE_THE_BEAST_CARD_ID}`,
                 'mw-plan-spells',
             ],
