@@ -1847,6 +1847,7 @@ export function grantExtraMinion(
         sameNameDefId?: string;
         specificCardUid?: string;
         powerMax?: number;
+        excludedMinionDefIds?: string[];
         playTiming?: 'banked' | 'immediate';
         consumePendingMinionPlayEffectOnSkip?: boolean;
     },
@@ -1858,6 +1859,7 @@ export function grantExtraMinion(
             ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
             ...(restrictToBase !== undefined ? { restrictToBase } : {}),
             ...(options?.powerMax !== undefined ? { powerMax: options.powerMax } : {}),
+            ...(options?.excludedMinionDefIds?.length ? { excludedMinionDefIds: options.excludedMinionDefIds } : {}),
             ...(options?.sameNameOnly ? { sameNameOnly: true } : {}),
             ...(options?.sameNameDefId ? { sameNameDefId: options.sameNameDefId } : {}),
             ...(options?.specificCardUid ? { specificCardUid: options.specificCardUid } : {}),
@@ -1984,7 +1986,7 @@ export function grantContextualExtraMinion(
     ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
     reason: string,
     restrictToBase?: number,
-    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; specificCardUid?: string },
+    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; specificCardUid?: string; excludedMinionDefIds?: string[] },
 ): LimitModifiedEvent {
     return grantExtraMinion(
         ctx.playerId,

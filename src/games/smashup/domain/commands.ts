@@ -78,6 +78,7 @@ export interface SmashUpImmediateExtraValidationContext {
     sameNameOnly?: boolean;
     sameNameDefId?: string;
     specificCardUid?: string;
+    excludedMinionDefIds?: string[];
 }
 
 export interface SmashUpValidateOptions {
@@ -136,6 +137,9 @@ function validateImmediateExtraMinionUse(
     }
     if (extra.specificCardUid !== undefined && params.cardUid !== extra.specificCardUid) {
         return { valid: false, error: '该额外随从只能打出指定卡牌' };
+    }
+    if (extra.excludedMinionDefIds?.some(excludedDefId => isSameNameDefId(params.defId, excludedDefId))) {
+        return { valid: false, error: '这次额外随从不能打出该牌名' };
     }
     if (extra.sameNameDefId !== undefined && !isSameNameDefId(params.defId, extra.sameNameDefId)) {
         return { valid: false, error: '额外出牌只能打出同名随从' };

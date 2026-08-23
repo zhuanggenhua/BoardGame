@@ -71,6 +71,7 @@ function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
         payload.sameNameDefId ?? '__any_name__',
         payload.sameNameOnly ? 'same_name' : 'not_same_name',
         payload.powerMax ?? '__any_power__',
+        payload.excludedMinionDefIds?.join(',') ?? '__no_excluded_minions__',
         payload.specialActionWindow ?? '__any_window__',
         event.timestamp ?? 0,
     ].join('|');
@@ -82,6 +83,9 @@ function matchesImmediateExtraMinionConstraint(
     extra: ImmediateExtraMinionPayload,
 ): boolean {
     if (extra.sameNameOnly && extra.sameNameDefId && !isSameNameDefId(defId, extra.sameNameDefId)) {
+        return false;
+    }
+    if (extra.excludedMinionDefIds?.some(excludedDefId => isSameNameDefId(defId, excludedDefId))) {
         return false;
     }
     if (extra.powerMax !== undefined && power > extra.powerMax) {
@@ -108,6 +112,7 @@ function buildImmediateExtraValidateOptions(
                 ...(extra.restrictToBaseModifier ? { restrictToBaseModifier: true } : {}),
                 ...(extra.specialActionWindow ? { specialActionWindow: extra.specialActionWindow } : {}),
                 ...(extra.powerMax !== undefined ? { powerMax: extra.powerMax } : {}),
+                ...(extra.excludedMinionDefIds?.length ? { excludedMinionDefIds: extra.excludedMinionDefIds } : {}),
                 ...(extra.sameNameOnly ? { sameNameOnly: true } : {}),
                 ...(extra.sameNameDefId ? { sameNameDefId: extra.sameNameDefId } : {}),
                 ...(extra.specificCardUid ? { specificCardUid: extra.specificCardUid } : {}),
@@ -452,6 +457,7 @@ function executeImmediateExtraMinionPlay(
                     extra.restrictToBase,
                     {
                         powerMax: extra.powerMax,
+                        excludedMinionDefIds: extra.excludedMinionDefIds,
                         sameNameOnly: extra.sameNameOnly,
                         sameNameDefId: extra.sameNameDefId,
                     },
