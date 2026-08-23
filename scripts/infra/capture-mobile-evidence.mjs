@@ -3,10 +3,12 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
 
 const repoRoot = process.cwd();
 const PHONE_LANDSCAPE_VIEWPORT = { width: 936, height: 432 };
 const TABLET_LANDSCAPE_VIEWPORT = { width: 1024, height: 768 };
+const DEFAULT_VITE_PORT = String(E2E_SINGLE_WORKER_PORTS.frontend);
 
 const scenarioMap = {
     'betrayal-tutorial-phone-landscape': {
@@ -114,7 +116,7 @@ const scenarioMap = {
 };
 
 function printUsage() {
-    console.log('用法: npm run capture:mobile:evidence -- --scenario <场景名> [--browserPath <浏览器路径>] [--vitePort 6173] [--timeoutSeconds 90]');
+    console.log(`用法: npm run capture:mobile:evidence -- --scenario <场景名> [--browserPath <浏览器路径>] [--vitePort ${DEFAULT_VITE_PORT}] [--timeoutSeconds 90]`);
     console.log('支持场景:');
     for (const scenario of Object.keys(scenarioMap)) {
         console.log(`- ${scenario}`);
@@ -125,7 +127,7 @@ function parseArgs(argv) {
     const options = {
         scenario: '',
         browserPath: '',
-        vitePort: '6173',
+        vitePort: DEFAULT_VITE_PORT,
         timeoutSeconds: '90',
     };
 

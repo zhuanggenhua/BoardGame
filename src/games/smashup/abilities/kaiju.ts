@@ -203,10 +203,6 @@ function kaijuPickUpABus(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    if (choices.length === 1) {
-        return { events: [recoverCardsFromDiscard(ctx.playerId, [choices[0].cardUid], 'kaiju_pick_up_a_bus', ctx.now)] };
-    }
-
     const interaction = createSimpleChoice(
         `kaiju_pick_up_a_bus_${ctx.now}`,
         ctx.playerId,
@@ -217,7 +213,12 @@ function kaijuPickUpABus(ctx: AbilityContext): AbilityResult {
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.cardUid },
         })),
-        { sourceId: 'kaiju_pick_up_a_bus', targetType: 'generic', titleKey: 'ui.kaiju_pick_up_a_bus_title' },
+        {
+            sourceId: 'kaiju_pick_up_a_bus',
+            targetType: 'generic',
+            titleKey: 'ui.kaiju_pick_up_a_bus_title',
+            autoResolveIfSingle: false,
+        },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -382,9 +383,7 @@ function theySayHesGotToGo(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    if (titans.length === 1) {
-        return queueTitanDestinationPrompt(ctx, titans[0].titan, titans[0].baseIndex, 'kaiju_they_say_hes_got_to_go_choose_base');
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `kaiju_they_say_hes_got_to_go_choose_titan_${ctx.now}`,
@@ -399,6 +398,7 @@ function theySayHesGotToGo(ctx: AbilityContext): AbilityResult {
             sourceId: 'kaiju_they_say_hes_got_to_go_choose_titan',
             targetType: 'generic',
             titleKey: 'ui.kaiju_they_say_hes_got_to_go_choose_titan_title',
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -415,28 +415,14 @@ function queueTitanDestinationPrompt(
         .filter(candidate => candidate.baseIndex !== fromBaseIndex);
     if (destinations.length === 0) return { events: [] };
 
-    if (destinations.length === 1) {
-        return {
-            events: [
-                moveTitan(
-                    titan.uid,
-                    titan.defId,
-                    fromBaseIndex,
-                    destinations[0].baseIndex,
-                    'kaiju_they_say_hes_got_to_go',
-                    ctx.now,
-                    ctx.state.bases[destinations[0].baseIndex]?.defId,
-                ),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `${sourceId}_${ctx.now}`,
         ctx.playerId,
         '他们说它该走了：选择目标基地',
         buildBaseTargetOptions(destinations, ctx.state),
-        { sourceId, targetType: 'base', titleKey: 'ui.kaiju_choose_destination_base_title' },
+        { sourceId, targetType: 'base', titleKey: 'ui.kaiju_choose_destination_base_title', autoResolveIfSingle: false },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,

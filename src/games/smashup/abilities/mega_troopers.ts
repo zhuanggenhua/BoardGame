@@ -188,18 +188,14 @@ function queueMegabotBasePrompt(
         };
     }
 
-    if (eligibleBases.length === 1) {
-        return {
-            events: buildMegabotToBaseEvents(ctx.state, ctx.playerId, eligibleBases[0].baseIndex, sourceId, ctx.now),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `${sourceId}_${ctx.now}`,
         ctx.playerId,
         `${cardLabel(ctx.defId)}：选择 Megabot 要进入的基地`,
         buildBaseTargetOptions(eligibleBases, ctx.state),
-        { sourceId, targetType: 'base' },
+        { sourceId, targetType: 'base', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -224,17 +220,7 @@ function formMegabotPod(ctx: AbilityContext): AbilityResult {
         if (bases.length === 0 || !canControllerPlayTitan(ctx.state, ctx.playerId, titan.uid)) {
             return noTargets(ctx);
         }
-        if (bases.length === 1) {
-            return {
-                events: buildMegabotToBaseEvents(
-                    ctx.state,
-                    ctx.playerId,
-                    bases[0].baseIndex,
-                    'mega_troopers_form_megabot_pod',
-                    ctx.now,
-                ),
-            };
-        }
+        if (!ctx.matchState) return { events: [] };
         const interaction = createSimpleChoice(
             `mega_troopers_form_megabot_pod_${ctx.now}`,
             ctx.playerId,
@@ -244,6 +230,7 @@ function formMegabotPod(ctx: AbilityContext): AbilityResult {
                 sourceId: 'mega_troopers_form_megabot_pod',
                 targetType: 'base',
                 titleKey: 'ui.mega_troopers_form_megabot_pod_title',
+                autoResolveIfSingle: false,
             },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -296,17 +283,7 @@ function redTrooperTalentPod(ctx: AbilityContext): AbilityResult {
     if (titan.location.zone === 'setaside' && !canControllerPlayTitan(ctx.state, ctx.playerId, titan.uid, { allowConcurrentOwnTitan: true })) {
         return noTargets(ctx);
     }
-    if (eligibleBases.length === 1) {
-        return {
-            events: buildMegabotToBaseEvents(
-                ctx.state,
-                ctx.playerId,
-                eligibleBases[0].baseIndex,
-                'mega_troopers_red_trooper_pod',
-                ctx.now,
-            ),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `mega_troopers_red_trooper_pod_${ctx.now}`,
         ctx.playerId,
@@ -316,6 +293,7 @@ function redTrooperTalentPod(ctx: AbilityContext): AbilityResult {
             sourceId: 'mega_troopers_red_trooper_pod',
             targetType: 'base',
             titleKey: 'ui.mega_troopers_red_trooper_pod_title',
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -353,12 +331,7 @@ function lightningCrystal(ctx: AbilityContext): AbilityResult {
     const choices = collectActionAttachments(ctx.state);
     if (choices.length === 0) return noTargets(ctx);
 
-    if (choices.length === 1) {
-        const only = choices[0];
-        return {
-            events: [detachOngoing(only, 'mega_troopers_lightning_crystal', ctx.now)],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `mega_troopers_lightning_crystal_${ctx.now}`,
@@ -370,7 +343,7 @@ function lightningCrystal(ctx: AbilityContext): AbilityResult {
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.cardUid },
         })),
-        { sourceId: 'mega_troopers_lightning_crystal', targetType: 'ongoing', titleKey: 'ui.mega_troopers_lightning_crystal_title' },
+        { sourceId: 'mega_troopers_lightning_crystal', targetType: 'ongoing', titleKey: 'ui.mega_troopers_lightning_crystal_title', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -388,18 +361,7 @@ function lightningCrystalPod(ctx: AbilityContext): AbilityResult {
             })),
     ];
     if (choices.length === 0) return noTargets(ctx);
-    if (choices.length === 1) {
-        const only = choices[0];
-        if (only.kind === 'action') {
-            return { events: [detachOngoing(only, 'mega_troopers_lightning_crystal_pod', ctx.now)] };
-        }
-        const titan = (ctx.state.titans ?? []).find(candidate => candidate.uid === only.titanUid);
-        return {
-            events: titan
-                ? [removeTitanFromPlay(titan, 'mega_troopers_lightning_crystal_pod', ctx.now)]
-                : [],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `mega_troopers_lightning_crystal_pod_${ctx.now}`,
@@ -417,6 +379,7 @@ function lightningCrystalPod(ctx: AbilityContext): AbilityResult {
             sourceId: 'mega_troopers_lightning_crystal_pod',
             targetType: 'generic',
             titleKey: 'ui.mega_troopers_lightning_crystal_pod_title',
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1089,25 +1052,8 @@ function yellowTrooperSpecial(ctx: AbilityContext): AbilityResult {
         return { events: [specialUsedEvent(ctx.playerId, ctx.defId, ctx.baseIndex, ctx.now)] };
     }
 
-    if (targets.length === 1) {
-        return {
-            events: [
-                specialUsedEvent(ctx.playerId, ctx.defId, ctx.baseIndex, ctx.now),
-                ...buildValidatedMoveEvents(ctx.state, {
-                    minionUid: targets[0].uid,
-                    minionDefId: targets[0].defId,
-                    fromBaseIndex: targets[0].baseIndex,
-                    toBaseIndex: ctx.baseIndex,
-                    reason: 'mega_troopers_yellow_trooper',
-                    now: ctx.now,
-                    sourcePlayerId: ctx.playerId,
-                    sourceCardUid: ctx.cardUid,
-                    sourceDefId: ctx.defId,
-                    sourceControllerId: ctx.playerId,
-                    sourceBaseIndex: ctx.baseIndex,
-                }),
-            ],
-        };
+    if (!ctx.matchState) {
+        return { events: [specialUsedEvent(ctx.playerId, ctx.defId, ctx.baseIndex, ctx.now)] };
     }
 
     const interaction = createSimpleChoice(
@@ -1120,7 +1066,7 @@ function yellowTrooperSpecial(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             effectType: 'move',
         })],
-        { sourceId: 'mega_troopers_yellow_trooper', targetType: 'minion', titleKey: 'ui.mega_troopers_yellow_trooper_title' },
+        { sourceId: 'mega_troopers_yellow_trooper', targetType: 'minion', titleKey: 'ui.mega_troopers_yellow_trooper_title', autoResolveIfSingle: false },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         scoringBaseIndex: ctx.baseIndex,
@@ -1274,23 +1220,7 @@ function blitzingSwordAttack(ctx: AbilityContext): AbilityResult {
     const targets = collectMinions(ctx.state, (minion, baseIndex) =>
         baseIndex === ctx.baseIndex && getMinionPower(ctx.state, minion, baseIndex) <= 4);
     if (targets.length === 0) return { events };
-    if (targets.length === 1) {
-        events.push(...buildValidatedDestroyEvents(ctx.state, {
-            minionUid: targets[0].uid,
-            minionDefId: targets[0].defId,
-            fromBaseIndex: ctx.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'mega_troopers_blitzing_sword_attack',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            sourceKind: 'action',
-        }));
-        return { events };
-    }
+    if (!ctx.matchState) return { events };
 
     const interaction = createSimpleChoice(
         `mega_troopers_blitzing_sword_attack_${ctx.now}`,
@@ -1302,7 +1232,7 @@ function blitzingSwordAttack(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             effectType: 'destroy',
         }),
-        { sourceId: 'mega_troopers_blitzing_sword_attack', targetType: 'minion', titleKey: 'ui.mega_troopers_blitzing_sword_attack_title' },
+        { sourceId: 'mega_troopers_blitzing_sword_attack', targetType: 'minion', titleKey: 'ui.mega_troopers_blitzing_sword_attack_title', autoResolveIfSingle: false },
     );
     (interaction.data as {
         continuationContext?: {
@@ -1329,23 +1259,7 @@ function blitzingSwordAttackPod(ctx: AbilityContext): AbilityResult {
             && getMinionPower(ctx.state, minion, baseIndex) <= 4,
     );
     if (targets.length === 0) return { events };
-    if (targets.length === 1) {
-        events.push(...buildValidatedDestroyEvents(ctx.state, {
-            minionUid: targets[0].uid,
-            minionDefId: targets[0].defId,
-            fromBaseIndex: ctx.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'mega_troopers_blitzing_sword_attack_pod',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            sourceKind: 'action',
-        }));
-        return { events };
-    }
+    if (!ctx.matchState) return { events };
     const interaction = createSimpleChoice(
         `mega_troopers_blitzing_sword_attack_pod_${ctx.now}`,
         ctx.playerId,
@@ -1360,6 +1274,7 @@ function blitzingSwordAttackPod(ctx: AbilityContext): AbilityResult {
             sourceId: 'mega_troopers_blitzing_sword_attack_pod',
             targetType: 'minion',
             titleKey: 'ui.mega_troopers_blitzing_sword_attack_pod_title',
+            autoResolveIfSingle: false,
         },
     );
     (interaction.data as {
@@ -1522,9 +1437,7 @@ function juiceBarBeforeScoring(ctx: BaseAbilityContext): AbilityResult {
         label: `${cardLabel(minion.defId)}（力量 ${getMinionPower(ctx.state, minion, ctx.baseIndex)}）`,
     })) ?? [];
     if (targets.length === 0) return { events: [] };
-    if (targets.length === 1) {
-        return { events: [addTempPower(targets[0].uid, ctx.baseIndex, amount, 'base_juice_bar', ctx.now)] };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `base_juice_bar_${ctx.now}`,
@@ -1536,7 +1449,7 @@ function juiceBarBeforeScoring(ctx: BaseAbilityContext): AbilityResult {
             sourceDefId: 'base_juice_bar',
             effectType: 'affect',
         }),
-        { sourceId: 'base_juice_bar', targetType: 'minion' },
+        { sourceId: 'base_juice_bar', targetType: 'minion', autoResolveIfSingle: false },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = { amount };
     return { events: [], matchState: ctx.matchState ? queueInteraction(ctx.matchState, interaction) : undefined };

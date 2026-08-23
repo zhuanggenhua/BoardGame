@@ -2047,10 +2047,10 @@ describe('reaction queue: preserves event player context', () => {
         expect(archmageTriggers(archmageQueued)).toHaveLength(1);
     });
 
-    it('collectTriggers onMinionPlayed 应按 Gorgodzolla 所在基地过滤异基地空 trigger', () => {
+    it('collectTriggers onMinionPlayed 应按 Gorgodzolla 所在基地过滤自己的打出事件', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
-            currentPlayerIndex: 1,
+            currentPlayerIndex: 0,
             players: {
                 '0': makePlayer('0', {
                     factions: [SMASHUP_FACTION_IDS.KAIJU, SMASHUP_FACTION_IDS.WIZARDS],
@@ -2063,14 +2063,14 @@ describe('reaction queue: preserves event player context', () => {
                 makeBase({
                     defId: 'base_city_of_gold',
                     minions: [
-                        makeMinion('gorg-same-base', 'ghosts_spectre', '1', 2),
+                        makeMinion('gorg-same-base', 'ghosts_spectre', '0', 2),
                     ],
                     ongoingActions: [],
                 }),
                 makeBase({
                     defId: 'base_portal_room',
                     minions: [
-                        makeMinion('gorg-other-base', 'robot_microbot', '1', 1),
+                        makeMinion('gorg-other-base', 'robot_microbot', '0', 1),
                     ],
                     ongoingActions: [],
                 }),
@@ -2092,7 +2092,7 @@ describe('reaction queue: preserves event player context', () => {
         const sameBaseQueued = collectTriggers(core, 'onMinionPlayed', {
             state: core,
             matchState: makeMatchState(core),
-            playerId: '1',
+            playerId: '0',
             baseIndex: 0,
             triggerMinionUid: 'gorg-same-base',
             triggerMinionDefId: 'ghosts_spectre',
@@ -2105,7 +2105,7 @@ describe('reaction queue: preserves event player context', () => {
         const otherBaseQueued = collectTriggers(core, 'onMinionPlayed', {
             state: core,
             matchState: makeMatchState(core),
-            playerId: '1',
+            playerId: '0',
             baseIndex: 1,
             triggerMinionUid: 'gorg-other-base',
             triggerMinionDefId: 'robot_microbot',
@@ -3170,7 +3170,7 @@ describe('reaction queue: preserves event player context', () => {
         expect(reactionPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
     });
 
-    it('sourceController queued onActionPlayed trigger 仍应把 Gorgodzolla 的抽牌提示交给泰坦控制者', () => {
+    it('sourceController queued onActionPlayed trigger 不应让对手打战术触发 Gorgodzolla 抽牌提示', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
@@ -3227,13 +3227,12 @@ describe('reaction queue: preserves event player context', () => {
             5,
         );
 
-        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
-        expect(prompt?.playerId).toBe('0');
-        expect(prompt?.data?.sourceId).toBe('titan_kaiju_gorgodzolla_draw');
-        expect(prompt?.data?.options?.map((option: any) => option.id)).toEqual(['draw', 'skip']);
+        const resolvedState = resolved?.state ?? makeMatchState(core);
+        expect(getInteractionsFromMS(resolvedState)).toHaveLength(0);
+        expect(resolvedState.core.titans?.find(titan => titan.uid === 'gorg-1')?.powerCounters).toBe(0);
     });
 
-    it('sourceController queued onMinionPlayed trigger 仍应让 Gorgodzolla 在对手打随从时为自己加 1 标记', () => {
+    it('sourceController collectTriggers 不应让对手打随从触发 Gorgodzolla 加标记', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
@@ -3279,19 +3278,7 @@ describe('reaction queue: preserves event player context', () => {
             now: 6,
         }) as any;
 
-        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('kaiju_gorgodzolla');
-        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
-
-        const resolved = maybeResolveReactionQueue(
-            makeMatchState({
-                ...core,
-                triggerQueue: queued.payload.triggers,
-            }),
-            defaultTestRandom,
-            6,
-        );
-
-        expect(resolved?.state.core.titans?.find(titan => titan.uid === 'gorg-1')?.powerCounters).toBe(1);
+        expect(queued).toBeUndefined();
     });
 
     it('sourceController queued onActionPlayed trigger 仍应保留 Woodland Helpers 的事件玩家语义，不误回收对手行动', () => {

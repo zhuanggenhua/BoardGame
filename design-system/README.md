@@ -1,67 +1,38 @@
-# 设计系统 (Design System)
+# 设计系统
 
-## 架构
+本目录是游戏 UI 的设计参考，不替代 `.spec/knowledge/standards/ui-ux.md` 和具体游戏设计合同。
 
-```
-design-system/
-├── README.md                    # 本文件
-├── game-ui/
-│   └── MASTER.md               # 游戏 UI 交互规范（通用原则）
-├── styles/                      # 可复用的视觉风格
-│   ├── arcade-3d.md            # 街机立体风
-│   ├── tactical-clean.md       # 战术简洁风
-│   └── classic-parchment.md    # 经典羊皮纸风
-└── games/                       # 游戏专属配置
-    ├── dicethrone.md           # 王权骰铸 → arcade-3d + 专属覆盖
-    └── summonerwars.md         # 召唤师战争 → tactical-clean + 专属覆盖
-```
+## 职责
 
-## 使用方式
+| 目录 | 职责 |
+| --- | --- |
+| [`game-ui/MASTER.md`](game-ui/MASTER.md) | 通用交互原则：反馈、状态、动效、可读性 |
+| [`styles/`](styles/) | 可复用视觉风格 token 和组件语法 |
+| [`games/`](games/) | 单游戏视觉合同、素材约束和专属覆盖 |
 
-### 1. 所有游戏必须遵守
+## 使用顺序
 
-`game-ui/MASTER.md` - 交互原则（反馈、状态、动画时长等）
+1. 先读 [`game-ui/MASTER.md`](game-ui/MASTER.md) 获取交互底线。
+2. 选择一个基础风格：[`arcade-3d`](styles/arcade-3d.md)、[`tactical-clean`](styles/tactical-clean.md) 或 [`classic-parchment`](styles/classic-parchment.md)。
+3. 再读 `games/<gameId>.md`；单游戏合同可以覆盖基础风格，但必须说明覆盖原因。
+4. 若游戏没有专属合同，先建 `games/<gameId>.md`，不要把单游戏规则写回基础风格。
 
-### 2. 选择视觉风格
+## 风格选择
 
-| 风格 | 文件 | 适用场景 |
-|------|------|----------|
-| 街机立体 | `styles/arcade-3d.md` | 休闲、派对、骰子类 |
-| 战术简洁 | `styles/tactical-clean.md` | 策略、卡牌对战、棋类 |
-| 经典羊皮纸 | `styles/classic-parchment.md` | 复古、桌游模拟 |
-
-### 3. 游戏专属配置
-
-每个游戏在 `games/` 目录有专属配置，定义：
-- 引用哪个基础风格
-- 玩家颜色
-- 专属组件样式
-- 覆盖规则
-
-| 游戏 | 配置文件 | 基础风格 |
-|------|----------|----------|
-| 王权骰铸 | `games/dicethrone.md` | arcade-3d |
-| 召唤师战争 | `games/summonerwars.md` | tactical-clean |
-
-新增游戏时，在 `games/` 目录创建对应配置文件。
-
-## 风格选择指南
-
-| 游戏类型 | 推荐风格 | 理由 |
-|----------|----------|------|
-| 骰子/派对 | arcade-3d | 活泼有趣，物理感强 |
-| 策略/TCG | tactical-clean | 信息清晰，不抢戏 |
-| 经典桌游 | classic-parchment | 复古温暖，实体感 |
-| 儿童向 | arcade-3d | 大胆颜色，明确反馈 |
-| 军事模拟 | tactical-clean | 专业冷静 |
+| 风格 | 适用 | 不适用 |
+| --- | --- | --- |
+| `arcade-3d` | 派对、骰子、轻策略、强按钮反馈 | 高密度战棋、严肃信息面 |
+| `tactical-clean` | 策略、卡牌对战、棋类、规则密集界面 | 需要强实体桌游质感的页面 |
+| `classic-parchment` | 复古、规则书、实体卡牌、温暖桌面 | 高科技 HUD、竞技数据面 |
 
 ## 新增风格
 
-如需新风格，在 `styles/` 目录创建新文件，包含：
+新增 `styles/<style>.md` 时只写五类内容：
 
-1. 风格定位与适用场景
-2. 颜色系统
-3. 组件样式（按钮、面板、卡牌等）
-4. 动画配置
-5. 禁用状态
-6. 设计原则（推荐/避免）
+- 风格定位和适用 / 不适用场景。
+- 颜色 token。
+- 组件语法：按钮、面板、卡牌、状态、棋盘。
+- 动效范围。
+- 禁止项。
+
+不要在基础风格里写具体游戏截图、素材合同、卡牌规则或一次性设计过程。

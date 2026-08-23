@@ -17,8 +17,8 @@ on:
         required: false
         type: string
       expected_base_version:
-        description: '本次发布的目标基础版本（必填，例如 0.5.33）；必须与 package.json.version 完全一致'
-        required: true
+        description: '可选 package.json 断言（例如 0.5.33）；提供时必须与发布 ref 的 package.json.version 完全一致'
+        required: false
         type: string
       version:
         description: '显式 OTA bundle 内部游标（可选；留空自动按 OTA Version Base + UTC 时间生成）'
@@ -26,6 +26,10 @@ on:
         type: string
       display_version:
         description: '用户可见更新号（可选，例如 600、601；留空自动递增，最低 600）'
+        required: false
+        type: string
+      product_version:
+        description: '商业产品版本（可选；留空使用发布 ref 的 package.json.version 作为兼容展示值）'
         required: false
         type: string
       ota_version_base:
@@ -97,10 +101,11 @@ jobs:
             expected_base_version="${{ inputs.expected_base_version }}"
             explicit_version="${{ inputs.version }}"
             display_version="${{ inputs.display_version }}"
+            product_version="${{ inputs.product_version }}"
             ota_version_base="${{ inputs.ota_version_base }}"
             source_mode="manual"
           else
-            echo "::error::自动 OTA 已禁用隐式版本；请使用 workflow_dispatch 并显式提供 expected_base_version。"
+            echo "::error::自动 OTA 已禁用；请使用 workflow_dispatch 显式发布。"
             exit 1
           fi
 
@@ -124,6 +129,7 @@ jobs:
             echo "expected_base_version=${expected_base_version}"
             echo "explicit_version=${explicit_version}"
             echo "display_version=${display_version}"
+            echo "product_version=${product_version}"
             echo "ota_version_base=${ota_version_base}"
             echo "dry_run=${dry_run}"
             echo "skip_latest=${skip_latest}"
@@ -208,17 +214,17 @@ jobs:
           built_at="$(date -u +%Y-%m-%dT%H-%M-%S-%3NZ)"
           manifest_url="${ANDROID_CONTROL_ASSETS_BASE_URL}/app-updates/android/${{ steps.params.outputs.channel }}/latest.json"
           fallback_manifest_url="${ANDROID_DOWNLOAD_ASSETS_BASE_URL}/app-updates/android/${{ steps.params.outputs.channel }}/latest.json"
+          product_version="${{ steps.params.outputs.product_version }}"
           ota_version_base="${{ steps.params.outputs.ota_version_base }}"
           explicit_version="${{ steps.params.outputs.explicit_version }}"
 
-          if [[ -z "${{ steps.params.outputs.expected_base_version }}" ]]; then
-            echo "::error::禁止隐式版本发布：expected_base_version 不能为空。"
+          if [[ -n "${{ steps.params.outputs.expected_base_version }}" && "${package_version}" != "${{ steps.params.outputs.expected_base_version }}" ]]; then
+            echo "::error::Android OTA 基线版本不匹配：expected_base_version=${{ steps.params.outputs.expected_base_version }}，package.json.version=${package_version}"
             exit 1
           fi
 
-          if [[ "${package_version}" != "${{ steps.params.outputs.expected_base_version }}" ]]; then
-            echo "::error::Android OTA 基线版本不匹配：expected_base_version=${{ steps.params.outputs.expected_base_version }}，package.json.version=${package_version}"
-            exit 1
+          if [[ -z "${product_version}" ]]; then
+            product_version="${package_version}"
           fi
 
           ota_version_base="$(node --input-type=module -e "import { resolveAndroidOtaVersionBase } from './scripts/mobile/ota-publish-config.mjs'; console.log(resolveAndroidOtaVersionBase({ packageVersion: process.argv[1], requestedVersionBase: process.argv[2] }))" "${package_version}" "${ota_version_base}")"
@@ -244,6 +250,7 @@ jobs:
             echo "short_sha=${short_sha}"
             echo "current_ref=${current_ref}"
             echo "package_version=${package_version}"
+            echo "product_version=${product_version}"
             echo "manifest_url=${manifest_url}"
             echo "fallback_manifest_url=${fallback_manifest_url}"
             echo "ota_version_base=${ota_version_base}"
@@ -302,9 +309,13 @@ jobs:
             --channel "${{ steps.params.outputs.channel }}"
             --version "${{ steps.bundle.outputs.bundle_version }}"
             --ota-version-base "${{ steps.bundle.outputs.ota_version_base }}"
-            --expected-base-version "${{ steps.params.outputs.expected_base_version }}"
+            --product-version "${{ steps.bundle.outputs.product_version }}"
             --notes "${{ steps.bundle.outputs.notes }}"
           )
+
+          if [[ -n "${{ steps.params.outputs.expected_base_version }}" ]]; then
+            args+=(--expected-base-version "${{ steps.params.outputs.expected_base_version }}")
+          fi
 
           if [[ "${{ steps.params.outputs.dry_run }}" == "true" ]]; then
             args+=(--dry-run)
@@ -342,7 +353,8 @@ jobs:
             echo "| Channel | ${{ steps.params.outputs.channel }} |"
             echo "| 结果 | ${{ steps.prereq.outputs.ready == 'true' && '已执行' || '已跳过' }} |"
             echo "| Git Ref | ${{ steps.bundle.outputs.current_ref || steps.params.outputs.target_ref }} |"
-            echo "| Expected Base Version | ${{ steps.params.outputs.expected_base_version || '未提供' }} |"
+            echo "| Package Version Assertion | ${{ steps.params.outputs.expected_base_version || '未提供' }} |"
+            echo "| Product Version | ${{ steps.bundle.outputs.product_version || '未生成' }} |"
             echo "| OTA Version Base | ${{ steps.bundle.outputs.ota_version_base || '未生成' }} |"
             echo "| Bundle Version | ${{ steps.bundle.outputs.bundle_version || '未生成' }} |"
             echo "| Display Version | ${{ steps.params.outputs.display_version || '自动递增' }} |"

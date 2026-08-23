@@ -10,6 +10,7 @@ export * from './scoring';
 export * from './lookahead';
 export * from './strategy';
 export * from './semantics';
+export * from './actionOutcome';
 export * from './decisionSemantics';
 export * from './diagnostics';
 export * from './seatControllers';

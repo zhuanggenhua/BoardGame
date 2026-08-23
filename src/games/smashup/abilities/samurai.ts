@@ -85,6 +85,51 @@ function attachOptionsGenerator<T>(
     };
 }
 
+function buildHonorAncestorsRecycleOptions(core: SmashUpCore, playerId: PlayerId) {
+    return (core.players[playerId]?.discard ?? [])
+        .filter(card => card.type === 'minion')
+        .map(card => ({
+            id: card.uid,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+            displayMode: 'card' as const,
+        }));
+}
+
+function buildHonorAncestorsRecycleEvents(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    selectedCards: CardInstance[],
+    random: RandomFn,
+    now: number,
+): SmashUpEvent[] {
+    if (selectedCards.length === 0) return [];
+    const player = state.players[playerId];
+    if (!player) return [];
+
+    const cardsByOwner = new Map<PlayerId, CardInstance[]>();
+    for (const card of selectedCards) {
+        const ownerId = state.players[card.owner] ? card.owner : playerId;
+        cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+    }
+
+    const events: SmashUpEvent[] = [];
+    for (const [ownerId, cards] of cardsByOwner) {
+        const owner = state.players[ownerId] ?? player;
+        const shuffledDeck = random.shuffle([...owner.deck, ...cards]);
+        events.push({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: {
+                playerId: ownerId,
+                deckUids: shuffledDeck.map(card => card.uid),
+                ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            },
+            timestamp: now,
+        } as SmashUpEvent);
+    }
+    return events;
+}
+
 export function registerSamuraiAbilities(): void {
     registerAbilityProgram('samurai_ronin', 'onPlay', { program: samuraiRoninOnPlayProgram });
     registerAbilityProgram('samurai_ronin_pod', 'onPlay', { program: samuraiRoninPodOnPlayProgram });
@@ -545,6 +590,7 @@ const samuraiCombatBasePromptProgram = createPromptProgram<SamuraiCombatRootCont
                 titleKey: 'ui.samurai_honorable_combat_base_title',
                 targetType: 'base',
                 responseValidationMode: 'live',
+                autoResolveIfSingle: false,
             },
         ),
         (state) => buildBaseTargetOptions(collectHonorableCombatBases(state.core, context.playerId), state.core),
@@ -571,17 +617,7 @@ const samuraiHonorableCombatOnPlayProgram = createEffectProgram<AbilityContext, 
     if (baseOptions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (baseOptions.length === 1) {
-        return {
-            events: [],
-            context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-                sourceId: 'samurai_honorable_combat',
-                outcome: 'vp_to_winner',
-                baseIndex: baseOptions[0].baseIndex,
-            }),
-            nextProgram: samuraiCombatFriendlyPromptProgram,
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -604,7 +640,12 @@ const samuraiCodeOfBushidoPromptProgram = createPromptProgram<SamuraiCodeOfBushi
                 collectOwnMinions(context.matchState.core, context.playerId),
                 { state: context.matchState.core, sourcePlayerId: context.playerId },
             ) as any[],
-            { sourceId: 'samurai_code_of_bushido', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'samurai_code_of_bushido',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                autoResolveIfSingle: false,
+            },
         ),
         (state) => buildMinionTargetOptions(
             collectOwnMinions(state.core, context.playerId),
@@ -630,16 +671,7 @@ const samuraiCodeOfBushidoOnPlayProgram = createEffectProgram<AbilityContext, Sm
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (ownMinions.length === 1) {
-        const target = ownMinions[0];
-        return {
-            events: [
-                addPowerCounter(target.uid, target.baseIndex, 1, 'samurai_code_of_bushido', ctx.now),
-                addPowerCounter(target.uid, target.baseIndex, 1, 'samurai_code_of_bushido', ctx.now),
-                addPowerCounter(target.uid, target.baseIndex, 1, 'samurai_code_of_bushido', ctx.now),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { remaining: 3 }),
@@ -664,6 +696,7 @@ const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAn
                 titleKey: 'ui.samurai_honor_the_ancestors_title',
                 targetType: 'minion',
                 responseValidationMode: 'live',
+                autoResolveIfSingle: false,
             },
         ),
         (state) => buildMinionTargetOptions(
@@ -674,8 +707,49 @@ const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAn
     onResolve: ({ context, state, value, random, timestamp }) => {
         const selected = value as MinionChoice | undefined;
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const events = [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'samurai_honor_the_ancestors', timestamp)];
+        if (context.maxShuffle <= 0 || buildHonorAncestorsRecycleOptions(state.core, context.playerId).length === 0) {
+            return { events };
+        }
         return {
-            events: buildHonorAncestorsEvents(state.core, context.playerId, selected.minionUid, selected.baseIndex, context.maxShuffle, random, timestamp),
+            events,
+            context: createSamuraiPromptContext(state, context.playerId, timestamp, { maxShuffle: context.maxShuffle }),
+            nextProgram: samuraiHonorTheAncestorsRecyclePromptProgram,
+        };
+    },
+});
+
+const samuraiHonorTheAncestorsRecyclePromptProgram = createPromptProgram<SamuraiHonorAncestorsContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_honor_the_ancestors_recycle_prompt',
+    interactionSourceIds: ['samurai_honor_the_ancestors_recycle'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_honor_the_ancestors_recycle_${context.now}`,
+            context.playerId,
+            '致敬先祖：选择至多若干弃牌堆随从洗回牌库',
+            buildHonorAncestorsRecycleOptions(context.matchState.core, context.playerId),
+            {
+                sourceId: 'samurai_honor_the_ancestors_recycle',
+                titleKey: 'ui.samurai_honor_the_ancestors_recycle_title',
+                targetType: 'generic',
+                genericIntent: 'card-pool',
+                multi: { min: 0, max: context.maxShuffle },
+                responseValidationMode: 'live',
+                autoResolveIfSingle: false,
+            },
+        ),
+        (state) => buildHonorAncestorsRecycleOptions(state.core, context.playerId),
+    ),
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as Array<{ cardUid?: string }>;
+        const selectedUids = new Set(choices.map(choice => choice.cardUid).filter((uid): uid is string => typeof uid === 'string'));
+        if (selectedUids.size === 0 || context.maxShuffle <= 0) return { events: [] };
+
+        const selectedCards = (state.core.players[context.playerId]?.discard ?? [])
+            .filter(card => card.type === 'minion' && selectedUids.has(card.uid))
+            .slice(0, context.maxShuffle);
+        return {
+            events: buildHonorAncestorsRecycleEvents(state.core, context.playerId, selectedCards, random, timestamp),
         };
     },
 });
@@ -686,12 +760,7 @@ const samuraiHonorTheAncestorsOnPlayProgram = createEffectProgram<AbilityContext
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     const maxShuffle = Math.max(Object.keys(ctx.state.players).length - 1, 0);
-    if (ownMinions.length === 1) {
-        const target = ownMinions[0];
-        return {
-            events: buildHonorAncestorsEvents(ctx.state, ctx.playerId, target.uid, target.baseIndex, maxShuffle, ctx.random, ctx.now),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { maxShuffle }),
@@ -867,44 +936,6 @@ function samuraiBaseShogunsPalaceOnMinionPlayed(ctx: BaseAbilityContext): Abilit
         }) satisfies SamuraiCombatPromptContext,
     );
     return { events: result.events, matchState: result.matchState };
-}
-
-function buildHonorAncestorsEvents(
-    state: SmashUpCore,
-    playerId: PlayerId,
-    minionUid: string,
-    baseIndex: number,
-    maxShuffle: number,
-    random: RandomFn,
-    now: number,
-): SmashUpEvent[] {
-    const events: SmashUpEvent[] = [addPowerCounter(minionUid, baseIndex, 1, 'samurai_honor_the_ancestors', now)];
-    if (maxShuffle <= 0) return events;
-
-    const player = state.players[playerId];
-    const discardMinions = player?.discard.filter(card => card.type === 'minion') ?? [];
-    if (discardMinions.length === 0) return events;
-
-    const selectedCards = discardMinions.slice(0, maxShuffle);
-    const cardsByOwner = new Map<PlayerId, CardInstance[]>();
-    for (const card of selectedCards) {
-        const ownerId = state.players[card.owner] ? card.owner : playerId;
-        cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
-    }
-    for (const [ownerId, cards] of cardsByOwner) {
-        const owner = state.players[ownerId] ?? player;
-        const shuffledDeck = random.shuffle([...owner.deck, ...cards]);
-        events.push({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId: ownerId,
-                deckUids: shuffledDeck.map(card => card.uid),
-                ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
-            },
-            timestamp: now,
-        } as SmashUpEvent);
-    }
-    return events;
 }
 
 function collectOwnMinions(

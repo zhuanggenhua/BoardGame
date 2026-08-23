@@ -247,6 +247,41 @@ describe('Paladins DIY faction playable behavior', () => {
         expectNoPrompt(resolved.finalState);
     });
 
+    it('Seraphim 只有一个可摧毁弱随从时也保留玩家确认', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-1', 'paladins_novice_knight', 'minion', '0'),
+                        makeCard('draw-2', 'paladins_devout_pastor', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [makeSeraphim('0')],
+            bases: [makeBase('test_base', [
+                makeMinion('roland', 'paladins_roland', '0', 5, { powerCounters: 4 }),
+                makeMinion('enemy-low', 'alien_invader', '1', 3),
+            ])],
+        });
+
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'roland', baseIndex: 0 },
+        } as any);
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'paladins_seraphim');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const selected = getPromptOption(prompt, option => option.value?.minionUid === 'enemy-low', 'seraphim single destroy target');
+        const resolved = respondToPrompt(result.finalState, selected.id, '0');
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-low');
+        expectNoPrompt(resolved.finalState);
+    });
+
     it('Seraphim removes itself at the end of its controller turn', () => {
         const core = makeState({
             players: { '0': makePlayer('0'), '1': makePlayer('1') },
@@ -345,8 +380,13 @@ describe('Paladins DIY faction playable behavior', () => {
             playerId: '0',
             payload: { cardUid: 'expel' },
         } as any);
-        expect(expel.finalState.core.bases[0].ongoingActions).toHaveLength(0);
-        expect(expel.finalState.core.players['1'].discard.map(card => card.uid)).toContain('ongoing');
+        const expelPrompt = getSimpleChoicePrompt(expel.finalState, 'paladins_expel');
+        expect(expelPrompt.autoResolveIfSingle).toBe(false);
+        const expelOption = getPromptOption(expelPrompt, option => option.value?.cardUid === 'ongoing', 'expel ongoing target');
+        const expelResolved = respondToPrompt(expel.finalState, expelOption.id, '0');
+
+        expect(expelResolved.finalState.core.bases[0].ongoingActions).toHaveLength(0);
+        expect(expelResolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('ongoing');
 
         const oracleCore = makeState({
             bases: [makeBase('test_base', [

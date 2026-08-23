@@ -57,6 +57,12 @@ type GreekBasePromptContext = PromptContext & {
     bases: Array<{ baseIndex: number; label: string }>;
 };
 
+type SpartanPromptContext = PromptContext & {
+    sourceUid: string;
+    sourceBaseIndex: number;
+    sourceDefId: string;
+};
+
 type HadesContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; label: string }> };
 type PoseidonContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; ownerId: string; label: string }> };
 type DionysusTopContext = PromptContext & { cardUid: string; defId: string; ownerId: string };
@@ -228,6 +234,48 @@ const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, S
     },
 });
 
+const spartanCounterPromptProgram = createPromptProgram<SpartanPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_spartan',
+    interactionSourceIds: ['mythic_greeks_spartan', 'mythic_greeks_spartan_pod'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceDefId}_${context.now}`,
+        context.playerId,
+        '斯巴达人：是否在此随从上放置 +1 力量指示物？',
+        [
+            createSkipOption('跳过（不放置）', 'ui.mythic_greeks_spartan_skip_option'),
+            {
+                id: 'apply',
+                label: '放置 +1 指示物',
+                labelKey: 'ui.mythic_greeks_spartan_apply_option',
+                value: { apply: true },
+                displayMode: 'button' as const,
+            },
+        ],
+        {
+            titleKey: 'ui.mythic_greeks_spartan_title',
+            sourceId: context.sourceDefId,
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as { apply?: boolean; skip?: boolean } | undefined;
+        if (!selected?.apply || selected.skip) return { events: [] };
+        const source = state.core.bases[context.sourceBaseIndex]?.minions.find(minion =>
+            minion.uid === context.sourceUid && minion.defId === context.sourceDefId);
+        if (!source) return { events: [] };
+        if (Number(source.metadata?.mythicGreeksSpartanTriggeredTurn ?? -1) === state.core.turnNumber) {
+            return { events: [] };
+        }
+        return {
+            events: [
+                addPowerCounter(source.uid, context.sourceBaseIndex, 1, context.sourceDefId, timestamp),
+                metadataTurnUsed(source.uid, context.sourceBaseIndex, 'mythicGreeksSpartanTriggeredTurn', state.core.turnNumber, timestamp),
+            ],
+        };
+    },
+});
+
 function runGreekMinionPrompt(
     ctx: AbilityContext,
     sourceId: string,
@@ -311,7 +359,6 @@ function favorOfHades(ctx: AbilityContext): AbilityResult {
         .filter(card => card.type === 'action')
         .map(card => ({ cardUid: card.uid, defId: card.defId, label: getCardDef(card.defId)?.name ?? card.defId }));
     if (cards.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
-    if (cards.length === 1) return { events: [recoverCardsFromDiscard(ctx.playerId, [cards[0].cardUid], 'mythic_greeks_favor_of_hades', ctx.now)] };
     return runtimeToAbilityResult(executeAbilityProgram(hadesPromptProgram, { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, cards }));
 }
 
@@ -332,24 +379,6 @@ function favorOfDionysus(ctx: AbilityContext): AbilityResult {
         : ownMinionTargets(ctx.state, ctx.playerId);
     const ownerId = findCardOwnerAcrossPlayerZones(ctx.state, ctx.cardUid, ctx.defId, ctx.playerId);
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (targets.length === 1) {
-        const target = targets[0];
-        const topPrompt = executeAbilityProgram(dionysusTopPromptProgram, {
-            matchState: ctx.matchState,
-            playerId: ctx.playerId,
-            now: ctx.now,
-            cardUid: ctx.cardUid,
-            defId: ctx.defId,
-            ownerId,
-        });
-        return {
-            events: [
-                addTempPower(target.uid, target.baseIndex, 1, 'mythic_greeks_favor_of_dionysus', ctx.now),
-                grantContextualExtraAction(ctx, 'mythic_greeks_favor_of_dionysus'),
-            ],
-            ...(topPrompt.matchState ? { matchState: topPrompt.matchState } : {}),
-        };
-    }
     return runtimeToAbilityResult(executeAbilityProgram(dionysusMinionPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -696,13 +725,23 @@ function odysseusActionTrigger(ctx: TriggerContext) {
     }), abilityCtx.matchState);
 }
 
-function spartanActionTrigger(ctx: TriggerContext): SmashUpEvent[] {
+function spartanActionTrigger(ctx: TriggerContext) {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return [];
     const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
     if (!source) return [];
     if (Number(source.metadata?.mythicGreeksSpartanTriggeredTurn ?? -1) === ctx.state.turnNumber) return [];
+    if (ctx.matchState) {
+        return runtimeToTriggerResult(executeAbilityProgram(spartanCounterPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceUid: source.uid,
+            sourceBaseIndex: ctx.sourceBaseIndex,
+            sourceDefId: source.defId,
+        }), ctx.matchState);
+    }
     return [
-        addPowerCounter(source.uid, ctx.sourceBaseIndex, 1, 'mythic_greeks_spartan', ctx.now),
+        addPowerCounter(source.uid, ctx.sourceBaseIndex, 1, source.defId, ctx.now),
         metadataTurnUsed(source.uid, ctx.sourceBaseIndex, 'mythicGreeksSpartanTriggeredTurn', ctx.state.turnNumber, ctx.now),
     ];
 }

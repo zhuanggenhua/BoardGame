@@ -14,6 +14,7 @@ import {
     getPromptOption,
     getSimpleChoicePrompt,
     makeBase,
+    makeCard,
     makeMatchState,
     makeMinion,
     makePlayer,
@@ -31,6 +32,48 @@ beforeAll(() => {
 });
 
 describe('World Champs queued source-controller runtime context', () => {
+    it('world_champs_fast_as_lightning 只有一个合法随从时仍等待玩家选择', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('fast-1', 'world_champs_fast_as_lightning', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('only-target', 'world_champs_mummy', '0', 4),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'fast-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'world_champs_fast_as_lightning');
+        expect(prompt.options.map(option => option.value?.minionUid)).toEqual(['only-target']);
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'only-target', '快如闪电唯一目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'only-target', amount: 2 }),
+        }));
+    });
+
     it('borrowed world_champs_high_speed_chase 应按控制者而不是真实 owner 转移行动并移动随从且+3', () => {
         const core = makeState({
             players: {

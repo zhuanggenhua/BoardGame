@@ -19,6 +19,7 @@ import {
     getPromptSourceId,
     getPromptOptions,
     getSimpleChoicePrompt,
+    invokeRegisteredAbilityContract,
     makeBase,
     makeCard,
     makeMatchState,
@@ -76,6 +77,19 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         const skipped = respondToPrompt(state, skip.id, prompt.playerId);
         expect(skipped.success).toBe(true);
         return skipped.finalState;
+    };
+
+    const chooseSimplePromptOption = (
+        state: any,
+        sourceId: string,
+        predicate: (option: any) => boolean,
+    ) => {
+        const prompt = getSimpleChoicePrompt(state, sourceId);
+        const option = findInteractionOption(prompt, predicate);
+        expect(option).toBeTruthy();
+        const responded = respondToPrompt(state, option.id, prompt.playerId);
+        expect(responded.success).toBe(true);
+        return responded;
     };
 
     const finalizePostScoringIfNeeded = (state: any, playerId: string) => {
@@ -474,9 +488,14 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(result.success).toBe(true);
-        const host = result.finalState.core.bases[0].minions.find(minion => minion.uid === 'host');
+        const selected = chooseSimplePromptOption(
+            result.finalState,
+            'shapeshifters_cellular_bonding_choose',
+            candidate => candidate.value?.actionUid === 'splice-a',
+        );
+        const host = selected.finalState.core.bases[0].minions.find(minion => minion.uid === 'host');
         expect(host?.metadata?.cellularBondingCopiedActionDefId).toBe('shapeshifters_splice_as_nice');
-        expect(host ? getEffectivePower(result.finalState.core, host, 0) : undefined).toBe(4);
+        expect(host ? getEffectivePower(selected.finalState.core, host, 0) : undefined).toBe(4);
     });
 
     it('变形者：细胞结合在多张附着行动中按玩家选择复制目标', () => {
@@ -1613,10 +1632,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(result.success).toBe(true);
-        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['sacrifice']);
-        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toContain('cell-a');
-        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).toContain('monkey-back-a');
-        expect(result.finalState.core.players['1'].discard.map(card => card.uid)).toContain('host');
+        const resolved = chooseSimplePromptOption(
+            result.finalState,
+            'cyborg_apes_monkey_on_your_back_choose',
+            candidate => candidate.value?.minionUid === 'host',
+        );
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['sacrifice']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toContain('cell-a');
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('monkey-back-a');
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('host');
     });
 
     it('变形者：细胞结合复制其他已注册附着行动天赋后也会走通用天赋代理', () => {
@@ -2343,7 +2367,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(final.players['0'].deck.map(card => card.uid)).toEqual(['other-card']);
     });
 
-    it('变形者基地：无面之城真实入口只剩一个同名候选时应自动加入手牌且不弹搜寻 prompt', () => {
+    it('变形者基地：无面之城真实入口只剩一个同名候选时仍需确认搜寻目标', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -2376,10 +2400,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             now: 1000,
         });
 
-        expect(result.matchState?.sys.interaction.current).toBeUndefined();
-        expect(result.events.some(event => event.type === SU_EVENTS.REVEAL_DECK_TOP)).toBe(true);
+        expect(result.matchState?.sys.interaction.current?.data?.sourceId).toBe('base_faceless_city_choose');
+        const selected = chooseSimplePromptOption(
+            result.matchState!,
+            'base_faceless_city_choose',
+            candidate => candidate.value?.cardUid === 'same-copy',
+        );
+        expect(selected.events.some(event => event.type === SU_EVENTS.REVEAL_DECK_TOP)).toBe(true);
 
-        const final = applyEvents(core, result.events);
+        const final = selected.finalState.core;
         expect(final.players['0'].hand.map(card => card.uid)).toEqual(['same-copy']);
         expect(final.players['0'].deck.map(card => card.uid)).toEqual(['other-card']);
     });
@@ -3216,10 +3245,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(result.success).toBe(true);
-        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host']);
-        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toContain('monkey-back-a');
-        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('monkey-back-a');
-        expect(result.finalState.core.players['1'].discard.map(card => card.uid)).toContain('target');
+        const resolved = chooseSimplePromptOption(
+            result.finalState,
+            'cyborg_apes_monkey_on_your_back_choose',
+            candidate => candidate.value?.minionUid === 'target',
+        );
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toContain('monkey-back-a');
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('monkey-back-a');
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('target');
     });
 
     it('电子猿：borrowed 猴子在你的背上应按控制者找到宿主并在结算后回到真实拥有者牌库底', () => {
@@ -3253,7 +3287,12 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(result.success).toBe(true);
-        const bottom = result.events.find(event =>
+        const resolved = chooseSimplePromptOption(
+            result.finalState,
+            'cyborg_apes_monkey_on_your_back_choose',
+            candidate => candidate.value?.minionUid === 'target',
+        );
+        const bottom = resolved.events.find(event =>
             event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
             && (event as any).payload?.cardUid === 'monkey-back-borrowed'
             && (event as any).payload?.reason === 'cyborg_apes_monkey_on_your_back'
@@ -3262,10 +3301,10 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             ownerId: '1',
             sourcePlayerId: '0',
         });
-        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host']);
-        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('monkey-back-borrowed');
-        expect(result.finalState.core.players['1'].deck.map(card => card.uid)).toContain('monkey-back-borrowed');
-        expect(result.finalState.core.players['1'].discard.map(card => card.uid)).toContain('target');
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('monkey-back-borrowed');
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toContain('monkey-back-borrowed');
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('target');
     });
 
     it('电子猿：猴子在你的背上多目标时由玩家选择且拒绝伪造高力量目标', () => {
@@ -5600,7 +5639,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['minion-a']);
     });
 
-    it('超级间谍：抛弃我的间谍真实入口遇到唯一随从时应自动弃掉且不弹弃牌 prompt', () => {
+    it('超级间谍：抛弃我的间谍真实入口遇到唯一随从时仍要求对应玩家确认弃牌', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -5628,14 +5667,27 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
-        expect(played.finalState.core.players['1'].hand.map(card => card.uid)).toEqual([]);
-        expect(played.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['single-minion']);
+        const prompt = played.finalState.sys.interaction.current;
+        expect(prompt?.playerId).toBe('1');
+        expect(prompt?.data?.sourceId).toBe('super_spies_the_spy_who_ditched_me_discard');
+        expect(getPromptOptions(prompt!)).toHaveLength(1);
+        expect(played.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['single-minion']);
+        expect(played.finalState.core.players['1'].discard.map(card => card.uid)).toEqual([]);
         expect(played.events.some(event =>
             event.type === SU_EVENTS.REVEAL_HAND
             && (event as any).payload?.targetPlayerId === '2'
             && (event as any).payload?.cards?.[0]?.uid === 'action-only',
         )).toBe(true);
+
+        const resolved = runCommand(played.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '1',
+            payload: { optionId: getPromptOptions(prompt!)[0].id },
+        } as any);
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['1'].hand.map(card => card.uid)).toEqual([]);
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['single-minion']);
     });
 
     it('超级间谍：抛弃我的间谍弃随从 handler 拒绝非本次候选的晚加入随从', () => {
@@ -5979,6 +6031,37 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         ]);
     });
 
+    it('超级间谍：间谍只查看到一张牌时仍由玩家确认放顶或放底', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('spy-a', 'super_spies_spy', 'minion', '0')],
+                    deck: [makeCard('deck-a', 'sharks_mako', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_isis_swingin_pad', [])],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'spy-a', baseIndex: 0 },
+        } as any);
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'super_spies_spy_reorder');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.bottomUids?.includes('deck-a'))).toBe(true);
+    });
+
     it('超级间谍：间谍重排 handler 拒绝把未查看牌伪造成已查看牌', () => {
         const core = {
             players: {
@@ -6026,7 +6109,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(handled?.events).toEqual([]);
     });
 
-    it('超级间谍：间谍只有一张牌时应自动查看且不弹重排 prompt', () => {
+    it('超级间谍：间谍只有一张牌时仍需确认放回牌库顶或底', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -6051,7 +6134,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
+        const prompt = getSimpleChoicePrompt(played.finalState, 'super_spies_spy_reorder');
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.bottomUids?.includes('deck-a'))).toBe(true);
         expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a']);
     });
 
@@ -6332,6 +6417,37 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         ]);
     });
 
+    it('超级间谍：只为我的眼睛只查看到一张牌时仍由玩家确认放顶或放底', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('eyes-a', 'super_spies_for_my_eyes_only', 'action', '0')],
+                    deck: [makeCard('deck-a', 'sharks_mako', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_isis_swingin_pad', [])],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'eyes-a' },
+        } as any);
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'super_spies_for_my_eyes_only_reorder');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.bottomUids?.includes('deck-a'))).toBe(true);
+    });
+
     it('超级间谍：只为我的眼睛 handler 只接受本次查看的五张牌', () => {
         const core = {
             players: {
@@ -6381,7 +6497,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(handled?.events).toEqual([]);
     });
 
-    it('超级间谍：只为我的眼睛只有一张牌时应自动查看且不弹重排 prompt', () => {
+    it('超级间谍：只为我的眼睛只有一张牌时仍需确认放回牌库顶或底', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -6406,7 +6522,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
+        const prompt = getSimpleChoicePrompt(played.finalState, 'super_spies_for_my_eyes_only_reorder');
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.bottomUids?.includes('deck-a'))).toBe(true);
         expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a']);
     });
 
@@ -6659,6 +6777,56 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(played.finalState.sys.interaction.current).toBeUndefined();
         expect(played.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([]);
         expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['q-a']);
+    });
+
+    it('超级间谍：来自Q的爱没有交互状态时只抽牌，不能自动弃前两张', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('q-a', 'super_spies_from_q_with_love', 'action', '0'),
+                        makeCard('old-hand-a', 'sharks_mako', 'minion', '0'),
+                        makeCard('old-hand-b', 'sharks_tiger_shark', 'minion', '0'),
+                    ],
+                    deck: [
+                        makeCard('draw-a', 'sharks_hammerhead', 'minion', '0'),
+                        makeCard('draw-b', 'sharks_great_white', 'minion', '0'),
+                        makeCard('draw-c', 'sharks_laser_shark', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_isis_swingin_pad', [])],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const result = invokeRegisteredAbilityContract('super_spies_from_q_with_love', 'onPlay', {
+            state: core as any,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'q-a',
+            defId: 'super_spies_from_q_with_love',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 10,
+        } as any);
+        const after = applyEvents(core as any, result.events);
+
+        expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(after.players['0'].hand.map(card => card.uid)).toEqual([
+            'q-a',
+            'old-hand-a',
+            'old-hand-b',
+            'draw-a',
+            'draw-b',
+            'draw-c',
+        ]);
+        expect(after.players['0'].discard.map(card => card.uid)).toEqual([]);
     });
 
     it('超级间谍：弃牌永恒展示到随从为止并弃掉所有展示牌', () => {
@@ -7701,7 +7869,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(forged.finalState.core.players['0'].discard.map(card => card.uid)).toContain('late-card');
     });
 
-    it('时间旅行者：时间掠夺者弃牌堆只有一张牌时应自动放到牌库底且不弹 prompt', () => {
+    it('时间旅行者：时间掠夺者弃牌堆只有一张牌时仍需确认放到牌库底', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -7728,10 +7896,14 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(talent.success).toBe(true);
-        expect(talent.finalState.sys.interaction.current).toBeUndefined();
-        expect(talent.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
-        expect(talent.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a', 'discard-a']);
-        expect(talent.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
+        const resolved = chooseSimplePromptOption(
+            talent.finalState,
+            'time_travelers_time_raider_choose',
+            candidate => candidate.value?.cardUid === 'discard-a',
+        );
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a', 'discard-a']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
     });
 
     it('时间旅行者：时间掠夺者弃牌堆为空时应给出反馈且不创建 prompt', () => {
@@ -7795,17 +7967,21 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(talent.success).toBe(true);
-        expect(talent.finalState.sys.interaction.current).toBeUndefined();
-        expect(talent.events).toContainEqual(expect.objectContaining({
+        const resolved = chooseSimplePromptOption(
+            talent.finalState,
+            'time_travelers_time_raider_choose',
+            candidate => candidate.value?.cardUid === 'borrowed-discard-a',
+        );
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
             payload: expect.objectContaining({
                 cardUid: 'borrowed-discard-a',
                 ownerId: '1',
             }),
         }));
-        expect(talent.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a']);
-        expect(talent.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['owner-deck-a', 'borrowed-discard-a']);
-        expect(talent.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['owner-deck-a', 'borrowed-discard-a']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
     });
 
     it('时间旅行者：往复时间者进场允许选择弃牌堆行动放到牌库顶', () => {
@@ -7944,7 +8120,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['discard-minion-a', 'discard-action-a']);
     });
 
-    it('时间旅行者：往复时间者弃牌堆只有一张行动时应自动放到牌库顶且不弹 prompt', () => {
+    it('时间旅行者：往复时间者弃牌堆只有一张行动时仍需确认放到牌库顶', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -7970,10 +8146,14 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
-        expect(played.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP)).toBe(true);
-        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['action-a', 'deck-a']);
-        expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
+        const resolved = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_repeater_perfect_choose',
+            candidate => candidate.value?.cardUid === 'action-a',
+        );
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP)).toBe(true);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['action-a', 'deck-a']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
     });
 
     it('时间旅行者：往复时间者弃牌堆为空时应给出反馈且不创建 prompt', () => {
@@ -8037,17 +8217,21 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
-        expect(played.events).toContainEqual(expect.objectContaining({
+        const resolved = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_repeater_perfect_choose',
+            candidate => candidate.value?.cardUid === 'borrowed-action-a',
+        );
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARD_TO_DECK_TOP,
             payload: expect.objectContaining({
                 cardUid: 'borrowed-action-a',
                 ownerId: '1',
             }),
         }));
-        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a']);
-        expect(played.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-action-a', 'owner-deck-a']);
-        expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-a']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-action-a', 'owner-deck-a']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
     });
 
     it('时间旅行者：1.21千兆瓦将所选弃牌类型洗入整副牌库，并拒绝伪造牌种', () => {
@@ -8756,12 +8940,16 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(copycatPlayed.success).toBe(true);
-        expect(copycatPlayed.finalState.sys.interaction.current).toBeUndefined();
+        const copycatSelected = chooseSimplePromptOption(
+            copycatPlayed.finalState,
+            'shapeshifters_copycat_choose',
+            candidate => candidate.value?.minionUid === 'enemy-jumper',
+        );
 
-        const copiedCopycat = copycatPlayed.finalState.core.bases[0].minions.find(minion => minion.uid === 'copy-a');
+        const copiedCopycat = copycatSelected.finalState.core.bases[0].minions.find(minion => minion.uid === 'copy-a');
         expect(copiedCopycat?.metadata?.copiedAbilityDefId).toBe('time_travelers_jumper');
 
-        const destroyed = runCommand(copycatPlayed.finalState, {
+        const destroyed = runCommand(copycatSelected.finalState, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
             payload: { cardUid: 'bacta-a', targetBaseIndex: 0, targetMinionUid: 'copy-a' },
@@ -9047,7 +9235,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.baseDiscard).toEqual(['base_the_vats']);
     });
 
-    it('时间旅行者：时间流逝在基地弃牌堆只有一个合法候选时应自动放到基地牌库顶且不弹 prompt', () => {
+    it('时间旅行者：时间流逝在基地弃牌堆只有一个合法候选时仍需确认放到基地牌库顶', () => {
         const core = {
             players: {
                 '0': makePlayer('0'),
@@ -9074,8 +9262,12 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             now: 1000,
         });
 
-        expect(result?.matchState).toBeUndefined();
-        expect(result?.events).toEqual([
+        const resolved = chooseSimplePromptOption(
+            result!.matchState!,
+            'time_travelers_time_is_fleeting_choose',
+            candidate => candidate.value?.baseDefId === 'base_the_vats',
+        );
+        expect(resolved.events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.BASE_DECK_REORDERED,
                 payload: expect.objectContaining({
@@ -9083,7 +9275,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
                     reason: 'time_travelers_time_is_fleeting',
                 }),
             }),
-        ]);
+        );
     });
 
     it('时间旅行者：时间流逝不能选择刚计分进入弃牌堆的基地', () => {
@@ -9215,7 +9407,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
     });
 
-    it('时间旅行者：时间流逝真实计分后若只剩一个合法基地弃牌堆候选则应自动替换而不弹第二层 prompt', () => {
+    it('时间旅行者：时间流逝真实计分后若只剩一个合法基地弃牌堆候选仍需确认替换目标', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -9252,11 +9444,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(advance.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
 
         const resolved = resolveInteractionChain(advance.finalState, (prompt) => {
-            expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
-            const option = findInteractionOption(prompt, candidate =>
-                candidate.value?.kind === 'play_action'
-                && candidate.value?.cardUid === 'time-fleeting-a',
-            );
+            if (prompt?.data?.sourceId === 'smashup_reaction_choose') {
+                const option = findInteractionOption(prompt, candidate =>
+                    candidate.value?.kind === 'play_action'
+                    && candidate.value?.cardUid === 'time-fleeting-a',
+                );
+                return { optionId: option.id };
+            }
+            expect(prompt?.data?.sourceId).toBe('time_travelers_time_is_fleeting_choose');
+            const option = findInteractionOption(prompt, candidate => candidate.value?.baseDefId === 'base_faceless_city');
             return { optionId: option.id };
         });
 
@@ -9275,7 +9471,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
     });
 
-    it('时间旅行者：时间流逝真实计分后若基地牌库已空且只剩一个合法基地弃牌堆候选，仍应使用该候选替换而不是退回旧 reshuffle 池', () => {
+    it('时间旅行者：时间流逝真实计分后基地牌库已空且只剩一个合法候选时，确认后仍使用该候选', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -9312,11 +9508,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(advance.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
 
         const resolved = resolveInteractionChain(advance.finalState, (prompt) => {
-            expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
-            const option = findInteractionOption(prompt, candidate =>
-                candidate.value?.kind === 'play_action'
-                && candidate.value?.cardUid === 'time-fleeting-a',
-            );
+            if (prompt?.data?.sourceId === 'smashup_reaction_choose') {
+                const option = findInteractionOption(prompt, candidate =>
+                    candidate.value?.kind === 'play_action'
+                    && candidate.value?.cardUid === 'time-fleeting-a',
+                );
+                return { optionId: option.id };
+            }
+            expect(prompt?.data?.sourceId).toBe('time_travelers_time_is_fleeting_choose');
+            const option = findInteractionOption(prompt, candidate => candidate.value?.baseDefId === 'base_faceless_city');
             return { optionId: option.id };
         });
 
@@ -10736,7 +10936,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(played.finalState.sys.interaction.current?.playerId).toBe('0');
     });
 
-    it('超级间谍：秘密特工在真实 PLAY_ACTION 链上若只剩一张手牌应自动弃掉且不弹 prompt', () => {
+    it('超级间谍：秘密特工在真实 PLAY_ACTION 链上若只剩一张手牌仍需确认弃牌', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -10771,9 +10971,13 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(played.success).toBe(true);
         expect(played.finalState.core.bases[1]?.ongoingActions.map(card => card.uid)).toContain('stasis-a');
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
-        expect(played.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([]);
-        expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['hand-a']);
+        const resolved = chooseSimplePromptOption(
+            played.finalState,
+            'super_spies_secret_agent_discard',
+            candidate => candidate.value?.cardUid === 'hand-a',
+        );
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([]);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['hand-a']);
     });
 
     it('超级间谍：秘密特工在真实 PLAY_ACTION 链上若打完后已无剩余手牌则不应创建弃牌 prompt', () => {
@@ -10890,9 +11094,14 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('super_spies_for_my_eyes_only_reorder');
+        const actionSelected = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_its_astounding_choose',
+            candidate => candidate.value?.cardUid === 'eyes-a',
+        );
+        expect(actionSelected.finalState.sys.interaction.current?.data?.sourceId).toBe('super_spies_for_my_eyes_only_reorder');
 
-        const resolved = resolveInteractionChain(played.finalState, (prompt) => {
+        const resolved = resolveInteractionChain(actionSelected.finalState, (prompt) => {
             const option = findInteractionOption(prompt, candidate =>
                 candidate.value?.topUids?.join(',') === 'deck-c,deck-a'
                 && candidate.value?.bottomUids?.join(',') === 'deck-d,deck-b,deck-e',
@@ -11024,11 +11233,16 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_its_astounding_target');
+        const actionSelected = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_its_astounding_choose',
+            candidate => candidate.value?.cardUid === 'bananas-a',
+        );
+        expect(actionSelected.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_its_astounding_target');
 
-        const prompt = played.finalState.sys.interaction.current;
+        const prompt = actionSelected.finalState.sys.interaction.current;
         const targetBase = findInteractionOption(prompt, candidate => candidate.value?.targetBaseIndex === 0);
-        const resolved = runCommand(played.finalState, {
+        const resolved = runCommand(actionSelected.finalState, {
             type: 'SYS_INTERACTION_RESPOND',
             playerId: prompt!.playerId,
             payload: { optionId: targetBase.id },
@@ -11071,14 +11285,19 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_its_astounding_target');
+        const actionSelected = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_its_astounding_choose',
+            candidate => candidate.value?.cardUid === 'evo-a',
+        );
+        expect(actionSelected.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_its_astounding_target');
 
-        const prompt = played.finalState.sys.interaction.current;
+        const prompt = actionSelected.finalState.sys.interaction.current;
         expect(findInteractionOption(prompt, candidate => candidate.value?.targetMinionUid === 'own-host')).toBeTruthy();
         expect(findInteractionOption(prompt, candidate => candidate.value?.targetMinionUid === 'enemy-host')).toBeTruthy();
 
         const targetEnemyHost = findInteractionOption(prompt, candidate => candidate.value?.targetMinionUid === 'enemy-host');
-        const resolved = runCommand(played.finalState, {
+        const resolved = runCommand(actionSelected.finalState, {
             type: 'SYS_INTERACTION_RESPOND',
             playerId: prompt!.playerId,
             payload: { optionId: targetEnemyHost.id },
@@ -11119,11 +11338,16 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        const prompt = played.finalState.sys.interaction.current;
+        const actionSelected = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_its_astounding_choose',
+            candidate => candidate.value?.cardUid === 'borrowed-evo',
+        );
+        const prompt = actionSelected.finalState.sys.interaction.current;
         expect(prompt?.data?.sourceId).toBe('time_travelers_its_astounding_target');
 
         const targetHost = findInteractionOption(prompt, candidate => candidate.value?.targetMinionUid === 'host-a');
-        const resolved = runCommand(played.finalState, {
+        const resolved = runCommand(actionSelected.finalState, {
             type: 'SYS_INTERACTION_RESPOND',
             playerId: prompt!.playerId,
             payload: { optionId: targetHost.id },
@@ -11167,13 +11391,18 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             playerId: '0',
             payload: { cardUid: 'astounding-a' },
         } as any);
-        const prompt = played.finalState.sys.interaction.current;
+        const actionSelected = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_its_astounding_choose',
+            candidate => candidate.value?.cardUid === 'bananas-a',
+        );
+        const prompt = actionSelected.finalState.sys.interaction.current;
         const forgedState = {
-            ...played.finalState,
+            ...actionSelected.finalState,
             sys: {
-                ...played.finalState.sys,
+                ...actionSelected.finalState.sys,
                 interaction: {
-                    ...played.finalState.sys.interaction,
+                    ...actionSelected.finalState.sys.interaction,
                     current: {
                         ...prompt!,
                         data: {
@@ -11229,16 +11458,21 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             playerId: '0',
             payload: { cardUid: 'astounding-a' },
         } as any);
-        const prompt = played.finalState.sys.interaction.current!;
+        const actionSelected = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_its_astounding_choose',
+            candidate => candidate.value?.cardUid === 'bananas-a',
+        );
+        const prompt = actionSelected.finalState.sys.interaction.current!;
         expect(prompt.data.sourceId).toBe('time_travelers_its_astounding_target');
         expect(prompt.data.allowedDiscardActionTargets).toEqual([{ cardUid: 'bananas-a', targetBaseIndex: 0 }]);
 
         const forgedState = {
-            ...played.finalState,
+            ...actionSelected.finalState,
             core: {
-                ...played.finalState.core,
+                ...actionSelected.finalState.core,
                 bases: [
-                    ...played.finalState.core.bases,
+                    ...actionSelected.finalState.core.bases,
                     makeBase('base_portal_room', [
                         makeMinion('host-b', 'sharks_mako', '1', 2, {
                             attachedActions: [{ uid: 'enemy-action-b', defId: 'cyborg_apes_shielding', ownerId: '1' }],
@@ -11247,9 +11481,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
                 ],
             },
             sys: {
-                ...played.finalState.sys,
+                ...actionSelected.finalState.sys,
                 interaction: {
-                    ...played.finalState.sys.interaction,
+                    ...actionSelected.finalState.sys.interaction,
                     current: {
                         ...prompt,
                         data: {
@@ -11325,7 +11559,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('minion-a');
     });
 
-    it('时间旅行者：时间流动真实入口只剩一个场上候选时应自动回手且不弹选择 prompt', () => {
+    it('时间旅行者：时间流动真实入口只剩一个场上候选时仍需确认回手目标', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -11352,10 +11586,14 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current).toBeUndefined();
-        expect(played.finalState.core.bases[0].ongoingActions).toEqual([]);
-        expect(played.finalState.core.players['1'].hand.map(card => card.uid)).toContain('stasis-only');
-        expect(played.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('stasis-only');
+        const resolved = chooseSimplePromptOption(
+            played.finalState,
+            'time_travelers_into_the_time_slip_choose',
+            candidate => candidate.value?.cardUid === 'stasis-only',
+        );
+        expect(resolved.finalState.core.bases[0].ongoingActions).toEqual([]);
+        expect(resolved.finalState.core.players['1'].hand.map(card => card.uid)).toContain('stasis-only');
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('stasis-only');
     });
 
     it('时间旅行者：时间流动可返回附着行动且 handler 拒绝非本次候选场上牌', () => {

@@ -435,7 +435,7 @@ function createDinoRampageMinionContext(
     baseIndex: number,
 ): DinoRampageMinionContext | undefined {
     const candidates = collectDinoRampageMinions(matchState.core, playerId, baseIndex);
-    if (candidates.length <= 1) return undefined;
+    if (candidates.length === 0) return undefined;
     return {
         matchState,
         playerId,
@@ -484,6 +484,7 @@ const dinoLaserTriceratopsPromptProgram = createPromptProgram<
             sourceId: 'dino_laser_triceratops',
             titleKey: 'ui.dino_laser_triceratops_title',
             targetType: 'minion',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ playerId, value, timestamp, state }) => {
@@ -511,7 +512,7 @@ const dinoLaserTriceratopsProgram = createBranchProgram<
     when: (context) => context.targets.length === 0,
     then: createEffectProgram(() => ({ events: [] })),
     else: createBranchProgram({
-        when: (context) => context.targets.length === 1,
+        when: (context) => context.targets.length === 1 && !context.matchState,
         then: createEffectProgram((context) => ({
             events: buildDinoDestroyEvents(
                 context.matchState,
@@ -553,6 +554,7 @@ const dinoLaserTriceratopsPodProgram = createBranchProgram<
                     titleKey: 'ui.dino_laser_triceratops_pod_title',
                     targetType: 'minion',
                     subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
+                    autoResolveIfSingle: false,
                 },
             );
             return {
@@ -883,11 +885,6 @@ function resolveDinoRampageBaseSelection(
     if (candidates.length === 0) {
         return { events: [] as SmashUpEvent[] };
     }
-    if (candidates.length === 1) {
-        return {
-            events: [modifyBreakpoint(baseIndex, -candidates[0].power, 'dino_rampage', now)],
-        };
-    }
     const minionContext = createDinoRampageMinionContext(matchState, playerId, now, baseIndex);
     if (!minionContext) {
         return { events: [] as SmashUpEvent[] };
@@ -913,6 +910,7 @@ const dinoRampageMinionPromptProgram = createPromptProgram<
             sourceId: 'dino_rampage_choose_minion',
             titleKey: 'ui.dino_rampage_minion_title',
             targetType: 'minion',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -947,6 +945,7 @@ const dinoRampageBasePromptProgram = createPromptProgram<
             sourceId: 'dino_rampage',
             titleKey: 'ui.dino_rampage_base_title',
             targetType: 'base',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -966,7 +965,7 @@ const dinoRampageProgram = createBranchProgram<
     when: (context) => context.baseCandidates.length === 0,
     then: createEffectProgram(() => ({ events: [] })),
     else: createBranchProgram({
-        when: (context) => context.baseCandidates.length === 1,
+        when: (context) => context.baseCandidates.length === 1 && !context.matchState,
         then: createEffectProgram((context) => resolveDinoRampageBaseSelection(
             context.matchState,
             context.playerId,

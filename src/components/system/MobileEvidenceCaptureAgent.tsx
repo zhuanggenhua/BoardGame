@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { createScopedLogger } from '../../lib/logger';
 import type {
     MobileEvidenceScenarioContext,
@@ -243,14 +242,15 @@ export interface MobileEvidenceCaptureAgentProps {
 export function MobileEvidenceCaptureAgent({
     scenarioHandlers,
 }: MobileEvidenceCaptureAgentProps) {
-    const location = useLocation();
+    const currentPathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const currentSearch = typeof window !== 'undefined' ? window.location.search : '';
 
     useEffect(() => {
         if (!import.meta.env.DEV) {
             return;
         }
 
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(currentSearch);
         const scenario = params.get(CAPTURE_PARAM);
         if (!scenario) {
             return;
@@ -272,11 +272,11 @@ export function MobileEvidenceCaptureAgent({
         void (async () => {
             try {
                 document.title = `capture-start:${scenario}`;
-                logger.info('scenario-start', { scenario, path: `${location.pathname}${location.search}` });
+                logger.info('scenario-start', { scenario, path: `${currentPathname}${currentSearch}` });
                 await reportCaptureStatus(statusUrl, {
                     scenario,
                     phase: 'scenario-start',
-                    message: `${location.pathname}${location.search}`,
+                    message: `${currentPathname}${currentSearch}`,
                     outputPath,
                 });
                 await handler(scenarioContext);
@@ -337,7 +337,7 @@ export function MobileEvidenceCaptureAgent({
             delete document.documentElement.dataset.mobileEvidenceCaptureError;
             document.title = originalTitle;
         };
-    }, [location.pathname, location.search, scenarioHandlers]);
+    }, [currentPathname, currentSearch, scenarioHandlers]);
 
     return null;
 }

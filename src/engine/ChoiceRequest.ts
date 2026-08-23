@@ -11,6 +11,8 @@ export type ChoiceRequestKind =
     | 'select-player'
     | 'select-card'
     | 'select-object'
+    | 'select-zone'
+    | 'select-position'
     | 'select-dice'
     | 'modify-value'
     | 'choose-option'
@@ -235,6 +237,8 @@ export function resolveChoiceRequestSharedAiPolicyId<TValue>(
         request.kind === 'select-player'
         || request.kind === 'select-card'
         || request.kind === 'select-object'
+        || request.kind === 'select-zone'
+        || request.kind === 'select-position'
         || request.kind === 'select-dice'
     ) {
         return CHOICE_REQUEST_SHARED_AI_POLICY_IDS.SIMPLE_TARGET;

@@ -398,8 +398,7 @@ export const getPreferredDispatchSourceRegionIdForSemantics = (
     const selectedRuntimeRegion = runtimeRegions.find((region) => region.id === selectedRuntimeRegionId) ?? null;
     const preferredSiegeSourceRegion = runtimeRegions
         .filter((region) => region.siegeState?.attackerFactionId === factionId && getDispatchScore(region) > 0)
-        .sort(compareDispatchRegion)
-        .at(0);
+        .sort(compareDispatchRegion)[0];
     if (state.turnPhase === 'dispatch-targeting' && preferredSiegeSourceRegion) {
         return preferredSiegeSourceRegion.id;
     }
@@ -416,8 +415,7 @@ export const getPreferredDispatchSourceRegionIdForSemantics = (
             && isRegionAvailableForNonDispatchAction(region)
             && getDispatchScore(region) > 0
         ))
-        .sort(compareDispatchRegion)
-        .at(0);
+        .sort(compareDispatchRegion)[0];
     return preferredControlledSourceRegion?.id ?? preferredSourceRegionId;
 };
 
@@ -582,7 +580,7 @@ export const buildWheelDispatchSelectionFromRegionSemantics = (
     }
     const candidates = reachableTargets
         .map((target): QidahenWheelDispatchCandidate | null => {
-            const previousRegionId = target.pathRegionIds.at(-2) ?? sourceRegion.id;
+            const previousRegionId = target.pathRegionIds[target.pathRegionIds.length - 2] ?? sourceRegion.id;
             const finalPassage = getQidahenDirectedPassageRule(state, previousRegionId, target.regionId, attackerFactionId);
             const finalBoundaryType = finalPassage?.boundaryType ?? target.finalBoundaryType;
             const finalBoundaryLabel = finalPassage?.boundaryLabel ?? getQidahenBoundaryTypeMeta(finalBoundaryType).label;

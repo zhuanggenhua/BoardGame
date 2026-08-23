@@ -83,6 +83,18 @@ describe('InteractionSystem', () => {
         });
     });
 
+    it('createSimpleChoice 默认不自动提交唯一候选', () => {
+        const interaction = createSimpleChoice(
+            'interaction-single-candidate',
+            '0',
+            '选择一个目标',
+            [{ id: 'only', label: 'Only', value: { minionUid: 'm1' } }],
+            { sourceId: 'single_candidate_choice', targetType: 'minion' },
+        );
+
+        expect(interaction.data.autoResolveIfSingle).toBe(false);
+    });
+
     it('SYS_INTERACTION_CANCEL 应取消当前交互并推进队列', () => {
         const system = createInteractionSystem<TestCore>();
         const state = createTestState();

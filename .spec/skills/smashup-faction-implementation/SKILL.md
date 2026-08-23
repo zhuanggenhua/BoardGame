@@ -18,6 +18,7 @@ description: "Smash Up 派系玩法实现、旧派系参考、测试、E2E 与�
 - **资源完成不等于玩法完成**：atlas、locale、选派系入口、静态数据或单测通过，只能证明结构或展示接通；玩法完成必须包含玩法实现、测试、真实入口和 evidence。
 - **先复用共享机制**：优先查 `src/games/smashup/domain/`、`src/games/smashup/abilities/`、`src/games/smashup/__tests__/` 是否已有 bury / uncover、ongoing modifier、movement、destroy、duel、before/after scoring、response window 等机制；确实缺共享抽象时再扩展共享层。
 - **共享重构默认允许**：确认共享抽象缺口后可直接做必要扩展，前提是服务当前和后续派系、不引入一次性硬编码、同步测试与 evidence，并说明影响范围。分支 / worktree / tag、删除本地数据等高风险动作仍需用户确认。
+- **新派系 AI 走 outcome 合同**：新增行动牌、可发动能力或其它会消耗手牌 / 次数 / 资源的对象时，AI 收益判断必须复用 [`game-ai-strategy-design`](../game-ai-strategy-design/SKILL.md) 的共享 outcome 合同和 `smashUpAiRuntime.projectActionOutcome`；旧派系可按触碰范围逐步迁移，但新派系不得再为单卡补“零收益 / 无目标”特例。
 
 ## 批量重审模式
 

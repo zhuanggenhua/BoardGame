@@ -1,5 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { shouldShowVictoryParticles, type GameOverResult } from '../game/framework/widgets/EndgameOverlay';
+import {
+    getEndgameOverlayScrollClassNames,
+    shouldShowVictoryParticles,
+    type GameOverResult,
+} from '../game/framework/widgets/EndgameOverlay';
+
+describe('getEndgameOverlayScrollClassNames', () => {
+    it('默认不展示结束层滚动条', () => {
+        expect(getEndgameOverlayScrollClassNames()).toEqual({
+            overlay: 'overflow-hidden overscroll-contain',
+            content: 'overflow-hidden overscroll-contain',
+        });
+    });
+
+    it('content 模式只允许内容区纵向滚动，并关闭横向滚动', () => {
+        expect(getEndgameOverlayScrollClassNames('content')).toEqual({
+            overlay: 'overflow-hidden overscroll-contain',
+            content: 'overflow-y-auto overflow-x-hidden overscroll-contain',
+        });
+    });
+
+    it('overlay 模式保留整层滚动兜底，但仍关闭横向滚动', () => {
+        expect(getEndgameOverlayScrollClassNames('overlay')).toEqual({
+            overlay: 'overflow-y-auto overflow-x-hidden overscroll-contain',
+            content: 'overflow-y-auto overflow-x-hidden overscroll-contain',
+        });
+    });
+});
 
 describe('shouldShowVictoryParticles', () => {
     it('无结果或平局不触发', () => {

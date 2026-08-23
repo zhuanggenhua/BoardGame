@@ -14,7 +14,7 @@ description: "BoardGame 生产更新最短路径。用于更新部署、发生�
 - 用户只说“更新部署 / 部署生产 / 更新线上”：直接执行“CI 构建后直传镜像到服务器并 `update-local` + Android stable OTA”，不再让本机先拉 GHCR。
 - 用户明确说“看 CI / CI 好了 / 查 CI / 等 CI”：先查远端 `origin/main` 对应的 Docker 镜像 CI；只有成功才执行服务器更新与 OTA。
 - 用户明确说“只更新服务器 / 不发 OTA”：显式加 `-SkipOta`。
-- 用户指定 tag：默认只建议用于服务器镜像更新；若同时要发 OTA，必须确认本地当前发布基线就是这次要发的版本。
+- 用户指定 tag：默认只建议用于服务器镜像更新；若同时要发 OTA，必须确认 OTA 的 git ref 与本次要发的代码一致。
 
 ## 直接部署
 
@@ -41,6 +41,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci
 ```powershell
 node scripts/release/deploy-and-ota.mjs --skip-wait --ota-channel stable
 ```
+
+服务器部署版本以 git ref、CI run 和镜像为准，不要求修改商业产品版本。OTA 包版本在上传时决定：默认自动生成内部游标和显示发布号；需要显式商业产品版本时，通过 `-OtaExtra "--product-version <version>"` 或底层 `--ota-extra "--product-version <version>"` 传入。
 
 其中服务器步骤默认等价于手动触发：
 
@@ -91,6 +93,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci
 - 不要在生产机直接运行 `docker compose up -d`。
 - 不要默认让生产机或本机从 GHCR 拉镜像；默认必须走 CI 构建后直传到服务器并 `update-local`。
 - “更新部署”默认包含 Android OTA；如果用户只要服务器更新，必须显式 `-SkipOta` 或口头说明“只更新服务器”。
-- 指定 tag 时，不要在未确认本地发布基线与该 tag 对齐的情况下顺手发 OTA。
+- 指定 tag 时，不要在未确认 OTA git ref 与该 tag 对齐的情况下顺手发 OTA。
+- 不要把服务器热更新绑到 `package.json.version` 自增；商业产品版本、OTA 包版本和原生壳版本是三类不同版本。
 - 不要默认执行本地测试、lint、构建或额外审计。
 - 部署失败时只报告：执行了哪个脚本、远端脚本失败位置、下一步最小补救。

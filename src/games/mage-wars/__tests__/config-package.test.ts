@@ -35,6 +35,7 @@ import {
     requireMageWarsStatusTokenFromConfig,
 } from '../data/configPackage';
 import { ARENA_ZONE_IDS, STATUS_TOKEN_IDS } from '../domain/ids';
+import { isMageWarsImplementedVisibleEnchantmentSpell } from '../domain/spellRules';
 
 const configPath = path.join(process.cwd(), MAGE_WARS_CONFIG_SOURCE_ID);
 
@@ -332,7 +333,7 @@ describe('mage-wars config package', () => {
 
     test('maps landed standard starting spell cards to official atlas frames and keeps missing atlas explicit', () => {
         const materialized = materializeMageWarsConfigPackage();
-        const missingRuntimeAtlasCardIds = [2303, 2500, 3800, 3801, 3802, 3803, 25700];
+        const missingRuntimeAtlasCardIds = [2303, 3800, 3801, 3802, 3803];
         const standardSpellObjects = materialized.package.objects
             .filter((object) => object.tags?.includes('standard-starting-spell'));
         const missingAtlasObjects: number[] = [];
@@ -428,9 +429,23 @@ describe('mage-wars config package', () => {
         expect(standardSpeedEntries.every(([, speed]) => speed === 'quick' || speed === 'standard')).toBe(true);
         expect(requireMageWarsSpellCardFromConfig(2500).spellActionSpeed).toBe('quick');
         expect(requireMageWarsSpellCardFromConfig(25700).spellActionSpeed).toBe('quick');
+        expect(requireMageWarsSpellCardFromConfig(2500).requiresCodeSupport).toBe(false);
+        expect(requireMageWarsSpellCardFromConfig(25700).requiresCodeSupport).toBe(false);
     });
 
     test('exposes machine-readable semantics for implemented visible object enchantments', () => {
+        const visibleObjectEnchantmentSemantics = {
+            abilityKind: 'visible-object-enchantment',
+            attachment: {
+                kind: 'enchantment',
+                visibility: 'revealed',
+                anchor: 'object',
+            },
+            continuousModifiers: undefined,
+            grants: undefined,
+            unsupportedRules: undefined,
+        };
+
         expect(requireMageWarsSpellCardFromConfig(1806).combatProfiles).toEqual({
             attacks: [],
             defenses: [{
@@ -442,6 +457,13 @@ describe('mage-wars config package', () => {
             }],
         });
         expect(requireMageWarsSpellCardFromConfig(1806).requiresCodeSupport).toBe(false);
+        expect(requireMageWarsSpellCardFromConfig(1806).semantics).toEqual(visibleObjectEnchantmentSemantics);
+        expect(requireMageWarsSpellCardFromConfig(1809).semantics).toEqual(visibleObjectEnchantmentSemantics);
+        expect(requireMageWarsSpellCardFromConfig(1818).semantics).toEqual(visibleObjectEnchantmentSemantics);
+        expect(isMageWarsImplementedVisibleEnchantmentSpell({
+            ...requireMageWarsSpellCardFromConfig(1806),
+            spellCardId: 999001,
+        })).toBe(true);
         expect(requireMageWarsSpellCardFromConfig(1808).semantics).toEqual({
             abilityKind: 'visible-object-enchantment',
             attachment: {
@@ -526,6 +548,21 @@ describe('mage-wars config package', () => {
             unsupportedRules: undefined,
         });
         expect(requireMageWarsSpellCardFromConfig(1815).requiresCodeSupport).toBe(false);
+        expect(requireMageWarsSpellCardFromConfig(1801).semantics).toEqual({
+            abilityKind: 'visible-object-enchantment',
+            attachment: {
+                kind: 'enchantment',
+                visibility: 'revealed',
+                anchor: 'object',
+            },
+            continuousModifiers: undefined,
+            grants: undefined,
+            upkeepEffects: [
+                { kind: 'heal-controller-mage-transfer-damage', maxHealing: 2 },
+            ],
+            unsupportedRules: undefined,
+        });
+        expect(requireMageWarsSpellCardFromConfig(1801).requiresCodeSupport).toBe(false);
         expect(requireMageWarsSpellCardFromConfig(1826).semantics).toEqual({
             abilityKind: 'visible-object-enchantment',
             attachment: {

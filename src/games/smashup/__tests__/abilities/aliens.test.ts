@@ -293,7 +293,7 @@ describe('外星人派系能力', () => {
     });
 
     describe('alien_probe: 探究', () => {
-        it('单对手场景会创建展示整手牌的选择交互，并只允许选择随从', () => {
+        it('单对手场景也先确认目标玩家，再创建展示整手牌的选择交互', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -319,7 +319,19 @@ describe('外星人派系能力', () => {
             } as any, defaultTestRandom);
 
             expect(result.success).toBe(true);
-            const prompt = getSimpleChoicePrompt(result.finalState, 'alien_probe');
+            const chooseTargetPrompt = getSimpleChoicePrompt(result.finalState, 'alien_probe_choose_target');
+            expect(chooseTargetPrompt.targetType).toBe('player');
+            expect(chooseTargetPrompt.autoResolveIfSingle).toBe(false);
+            expect(getPromptOptions(chooseTargetPrompt)).toHaveLength(1);
+
+            const targetResolved = respondToPrompt(
+                result.finalState,
+                getPromptOptions(chooseTargetPrompt)[0]?.id ?? 'player-0',
+                '0',
+                defaultTestRandom,
+            );
+
+            const prompt = getSimpleChoicePrompt(targetResolved.finalState, 'alien_probe');
             expect(getPromptOptions(prompt)).toHaveLength(3);
             expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-1', 'probe minion h1-1').disabled).toBeFalsy();
             expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-2', 'probe minion h1-2').disabled).toBeFalsy();
@@ -356,7 +368,15 @@ describe('外星人派系能力', () => {
 
             expect(result.success).toBe(true);
             expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
-            const prompt = getSimpleChoicePrompt(result.finalState, 'alien_probe');
+            const chooseTargetPrompt = getSimpleChoicePrompt(result.finalState, 'alien_probe_choose_target');
+            expect(chooseTargetPrompt.autoResolveIfSingle).toBe(false);
+            const targetResolved = respondToPrompt(
+                result.finalState,
+                getPromptOptions(chooseTargetPrompt)[0]?.id ?? 'player-0',
+                '0',
+                defaultTestRandom,
+            );
+            const prompt = getSimpleChoicePrompt(targetResolved.finalState, 'alien_probe');
             expect(getPromptOptions(prompt)).toHaveLength(3);
             expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-1', 'single probe minion').disabled).toBeFalsy();
             expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-2', 'single probe action h1-2').disabled).toBe(true);
@@ -387,10 +407,16 @@ describe('外星人派系能力', () => {
                 payload: { cardUid: 'probe1' },
             } as any, defaultTestRandom);
 
-            const resolved = respondToPrompt(
+            const targetResolved = respondToPrompt(
                 playResult.finalState,
+                getPromptOptions(getSimpleChoicePrompt(playResult.finalState, 'alien_probe_choose_target'))[0]?.id ?? 'player-0',
+                '0',
+                defaultTestRandom,
+            );
+            const resolved = respondToPrompt(
+                targetResolved.finalState,
                 getPromptOption(
-                    getSimpleChoicePrompt(playResult.finalState, 'alien_probe'),
+                    getSimpleChoicePrompt(targetResolved.finalState, 'alien_probe'),
                     option => option.value?.cardUid === 'h1-1',
                     'probe discard target h1-1',
                 ).id,
@@ -434,8 +460,16 @@ describe('外星人派系能力', () => {
             } as any, defaultTestRandom);
 
             expect(result.success).toBe(true);
-            expectNoPrompt(result.finalState);
-            expect(result.events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+            const chooseTargetPrompt = getSimpleChoicePrompt(result.finalState, 'alien_probe_choose_target');
+            expect(chooseTargetPrompt.autoResolveIfSingle).toBe(false);
+            const targetResolved = respondToPrompt(
+                result.finalState,
+                getPromptOptions(chooseTargetPrompt)[0]?.id ?? 'player-0',
+                '0',
+                defaultTestRandom,
+            );
+            expectNoPrompt(targetResolved.finalState);
+            expect(targetResolved.events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
         });
 
         it('多对手场景会先选择对手，再进入目标手牌选择', () => {

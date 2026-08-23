@@ -293,15 +293,6 @@ function queueCounterPrompt(params: {
             label: cardLabel(minion.defId),
         }));
     if (candidates.length === 0) return { events: [] };
-    if (candidates.length === 1 && !params.optional) {
-        return {
-            events: [addPowerCounter(candidates[0].uid, params.baseIndex, 1, params.sourceId, params.now, {
-                sourcePlayerId: params.playerId,
-                sourceDefId: params.sourceId,
-                sourceBaseIndex: params.baseIndex,
-            })],
-        };
-    }
     const options = [
         ...(params.optional ? [createSkipOption('不放置指示物', 'ui.ancient_incas_skip_place_counter_option')] : []),
         ...buildMinionTargetOptions(candidates, {

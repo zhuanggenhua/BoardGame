@@ -1465,7 +1465,9 @@ export function resolveEffectsToEvents(
         const isAttackBonusDiceAlreadyResolved = (
             ctx.state.pendingAttack?.bonusDiceResolved === true
             && ctx.isDefensiveContext !== true
+            && timing !== 'immediate'
             && ctx.state.pendingAttack.attackerId === ctx.attackerId
+            && ctx.state.pendingAttack.sourceAbilityId === ctx.sourceAbilityId
             && (
                 effect.action.type === 'rollDie'
                 || (
@@ -1477,6 +1479,7 @@ export function resolveEffectsToEvents(
         );
         // 奖励骰收口后会恢复同一攻击链。已经接受的骰子动作不能再次投掷，
         // 否则恢复主伤害时会覆盖当前骰区、重复消耗随机数并再次落地伤害。
+        // 即时响应牌（例如确认防御骰后的改骰牌）不是恢复同一攻击来源，不能被此保护拦截。
         if (
             isAttackBonusDiceAlreadyResolved
         ) {

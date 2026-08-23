@@ -81,6 +81,9 @@ export type SmashUpActivationKind = 'special' | 'talent' | 'ongoing';
 export type SmashUpActivationZone = 'board' | 'discard' | 'setaside' | 'hand';
 export type SmashUpActivationWindow = 'playCards' | 'beforeScoring' | 'afterScoring';
 export type SmashUpActivationSourceScope = 'scoringBase' | 'anyBase';
+export type SmashUpActivationUseRequirement =
+    | 'sourceInPlayAtStartOfTurn'
+    | 'attachedToOwnMinionOrSourceInPlayAtStartOfTurn';
 
 export interface SmashUpActivatableAbility {
     kind: SmashUpActivationKind;
@@ -88,6 +91,8 @@ export interface SmashUpActivatableAbility {
     window?: SmashUpActivationWindow;
     /** 计分窗口中，承载此能力的对象必须位于计分基地，还是可以位于任意基地。 */
     sourceScope?: SmashUpActivationSourceScope;
+    /** 该能力除大窗口外的发动前提。 */
+    useRequirement?: SmashUpActivationUseRequirement;
 }
 
 /**

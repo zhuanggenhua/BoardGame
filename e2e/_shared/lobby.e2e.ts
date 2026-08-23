@@ -84,6 +84,53 @@ const MOBILE_PACKAGE_ENTRY_TEST_NAME = '网页版 package-managed 游戏详情�
 const GAME_DETAILS_LOADING_FALLBACK_TEST_NAME = '首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转';
 const ACTIVE_MATCH_FLOATING_BANNER_TEST_NAME = '首页活跃房间浮层在桌面端居中且移动端不溢出';
 const WEB_APP_DOWNLOAD_ENTRY_TEST_NAME = '网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址';
+const CLASSIC_HOME_LEADERBOARD_ELO_TEST_NAME = '经典首页游戏详情排行榜显示 ELO 排行卡片';
+
+async function mockTicTacToeEloLeaderboard(page: Page): Promise<void> {
+    await page.route('**/games/tictactoe/leaderboard', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json; charset=utf-8',
+            body: JSON.stringify({
+                leaderboard: [
+                    {
+                        name: '桌游高手',
+                        rating: 306,
+                        wins: 12,
+                        losses: 0,
+                        draws: 0,
+                        matches: 12,
+                        winRate: 1,
+                        provisional: true,
+                        tier: 'strong',
+                    },
+                    {
+                        name: '稳定玩家',
+                        rating: 106,
+                        wins: 4,
+                        losses: 0,
+                        draws: 0,
+                        matches: 4,
+                        winRate: 1,
+                        provisional: true,
+                        tier: 'average',
+                    },
+                    {
+                        name: '刷局玩家',
+                        rating: 100,
+                        wins: 10,
+                        losses: 12,
+                        draws: 0,
+                        matches: 22,
+                        winRate: 0.455,
+                        provisional: true,
+                        tier: 'average',
+                    },
+                ],
+            }),
+        });
+    });
+}
 
 async function createTicTacToeRoom(page: Page): Promise<string> {
     const gameServerBaseURL = getGameServerBaseURL();
@@ -246,8 +293,34 @@ test.describe('Lobby E2E', () => {
         await expect(page.getByRole('button', { name: '教程模式' })).toBeVisible();
 
         await page.getByRole('button', { name: '排行榜' }).click();
-        await expect(page.getByRole('heading', { name: '胜场排行', level: 4 })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('heading', { name: 'ELO 排行', level: 4 })).toBeVisible({ timeout: 10000 });
         await expect(page.getByText('加载中...')).toHaveCount(0, { timeout: 10000 });
+    });
+
+    test(CLASSIC_HOME_LEADERBOARD_ELO_TEST_NAME, async ({ page }, testInfo) => {
+        await mockTicTacToeEloLeaderboard(page);
+        await expect(page.locator('body')).toHaveAttribute('data-home-entry-style', 'classic');
+        await expect(page.getByTestId('home-v2-root')).toHaveCount(0);
+
+        await page.getByRole('heading', { name: '井字棋' }).click();
+        await expect(page).toHaveURL(/game=tictactoe/);
+        const modalRoot = getVisibleGameDetailsModal(page);
+        await expect(modalRoot).toBeVisible({ timeout: 15000 });
+
+        await modalRoot.getByRole('button', { name: '排行榜' }).click();
+        await expect(modalRoot.getByRole('heading', { name: 'ELO 排行', level: 4 })).toBeVisible({ timeout: 10000 });
+        await expect(modalRoot.getByText('桌游高手')).toBeVisible({ timeout: 10000 });
+        await expect(modalRoot.getByText('306 ELO')).toBeVisible();
+        await expect(modalRoot.getByText('12胜 0负 0平 · 100% / 12局')).toBeVisible();
+        await expect(modalRoot.getByText(/强手.*定级中/)).toBeVisible();
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, '经典首页-ELO排行榜-桌面截图', {
+                subdir: '_shared/经典首页-ELO排行榜',
+                requireChineseName: true,
+            }),
+            fullPage: true,
+        });
     });
 
     test('AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳', async ({ page, game }, testInfo) => {

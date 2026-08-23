@@ -108,6 +108,55 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
         expectNoPrompt(resolved.finalState);
     });
 
+    it('葫芦小金刚复制六娃天赋时通过领域事件写入限时力量修正', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 3,
+            bases: [makeBase('base_huluwawa_mountain', [
+                makeMinion('source-da', 'huluwawa_da_wa', '0', 4),
+                makeMinion('copy-liuwa', 'huluwawa_liu_wa', '0', 4),
+            ])],
+            titans: [{
+                uid: 'king-kong',
+                defId: 'huluwawa_little_king_kong',
+                faction: SMASHUP_FACTION_IDS.HULUWAWA,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            }],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'source-da', baseIndex: 0 },
+        } as any);
+        expect(talent.success).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(talent.finalState, 'huluwawa_little_king_kong_copy_talent');
+        const resolved = respondToPrompt(
+            talent.finalState,
+            getPromptOption(prompt, entry => entry.value?.minionUid === 'copy-liuwa', '葫芦小金刚复制六娃天赋').id,
+            '0',
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.PERMANENT_POWER_ADDED
+            && (event as any).payload?.minionUid === 'copy-liuwa'
+            && (event as any).payload?.expiresOnTurnNumber === 5,
+        )).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'copy-liuwa')?.powerModifier).toBe(-4);
+        expect(resolved.finalState.core.timedPowerModifiers).toEqual([
+            { minionUid: 'copy-liuwa', amount: -4, expiresOnTurnNumber: 5, reason: 'huluwawa_liu_wa_talent' },
+        ]);
+        expect(resolved.finalState.core.titans?.find(candidate => candidate.uid === 'king-kong')?.metadata?.huluwawaCopiedTalentTurn).toBe(3);
+    });
+
     it('葫芦小金刚本回合已复制过时不会再次弹出复制提示', () => {
         const core = makeState({
             bases: [makeBase('base_huluwawa_mountain', [

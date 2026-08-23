@@ -156,7 +156,12 @@ export const BACKTIMERS_ACTIONS: ActionCardDef[] = [
 export const EXTRAMORPHS_MINIONS: MinionCardDef[] = [
     minion('extramorphs_chestbreaker', 'Chestbreaker', EXTRAMORPHS, 2, 4, 29, {
         abilityTags: ['talent', 'extra'],
-        activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }],
+        activatableAbilities: [{
+            kind: 'talent',
+            zone: 'board',
+            window: 'playCards',
+            useRequirement: 'sourceInPlayAtStartOfTurn',
+        }],
     }),
     minion('extramorphs_extradrone', 'Extradrone', EXTRAMORPHS, 3, 3, 30, { abilityTags: ['onPlay'] }),
     minion('extramorphs_alien_life_form', 'Alien Life Form', EXTRAMORPHS, 4, 2, 31, {
@@ -194,14 +199,24 @@ export const EXTRAMORPHS_ACTIONS: ActionCardDef[] = [
         ongoingTarget: 'minion',
         playNeedsMinion: true,
         playTargetMinionController: 'any',
-        activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }],
+        activatableAbilities: [{
+            kind: 'talent',
+            zone: 'board',
+            window: 'playCards',
+            useRequirement: 'attachedToOwnMinionOrSourceInPlayAtStartOfTurn',
+        }],
     }),
     action('extramorphs_nuke_it_from_orbit', 'Nuke It From Orbit', EXTRAMORPHS, 1, 39, {
         subtype: 'ongoing',
         abilityTags: ['ongoing', 'talent'],
         ongoingTarget: 'base',
         playNeedsBase: true,
-        activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }],
+        activatableAbilities: [{
+            kind: 'talent',
+            zone: 'board',
+            window: 'playCards',
+            useRequirement: 'sourceInPlayAtStartOfTurn',
+        }],
     }),
     action('extramorphs_time_to_go', 'Time to Go', EXTRAMORPHS, 1, 40, { abilityTags: ['onPlay'] }),
 ];

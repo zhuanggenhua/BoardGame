@@ -1,43 +1,32 @@
 # 游戏邀请接口
 
-> 通过消息系统发送游戏邀请。
+游戏邀请通过消息系统发送。
 
-## 1. 发送游戏邀请
+## 路由
 
-**POST** `/auth/invites/send`
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/auth/invites/send` | 向好友发送对局邀请 |
 
-### 请求头
-```
-Authorization: Bearer <token>
-```
+## 请求
 
-### 请求体
+需要 `Authorization: Bearer <token>`。
+
 ```json
 {
-  "toUserId": "好友ID",
-  "matchId": "对局ID",
-  "gameName": "tictactoe"
+  "toUserId": "<friendUserId>",
+  "matchId": "<matchId>",
+  "gameName": "<gameId>"
 }
 ```
 
-### 成功响应（201）
-```json
-{
-  "message": "邀请已发送",
-  "invite": {
-    "id": "消息ID",
-    "toUser": {
-      "id": "用户ID",
-      "username": "玩家名"
-    },
-    "matchId": "对局ID",
-    "gameName": "tictactoe"
-  }
-}
-```
+## 响应
 
-### 常见错误
-- 400 参数错误
-- 401 未登录
-- 403 非好友不可邀请
-- 404 用户不存在
+成功返回 `201`，主体包含消息 ID、接收用户、对局 ID 和游戏 ID。
+
+常见错误：
+
+- `400`：参数错误。
+- `401`：未登录或 token 无效。
+- `403`：双方不是好友，不可邀请。
+- `404`：目标用户不存在。

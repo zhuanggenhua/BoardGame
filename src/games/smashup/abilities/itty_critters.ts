@@ -397,11 +397,6 @@ const temporaryMinionChoicePromptProgram = createPromptProgram<TemporaryMinionCh
         }
         const destinations = collectBaseTargets(state.core);
         if (destinations.length === 0) return { events: [] };
-        if (destinations.length === 1) {
-            return {
-                events: buildTemporaryMinionEvents(state.core, playerId, card, destinations[0].baseIndex, timestamp),
-            };
-        }
         return executeAbilityProgram(temporaryMinionBasePromptProgram, {
             matchState: state,
             playerId,

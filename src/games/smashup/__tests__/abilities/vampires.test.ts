@@ -21,6 +21,7 @@ import {
     getPromptOption,
     getReactionPromptOptionBySourceDefId,
     respondToPrompt,
+    respondToPromptOptions,
     respondCommand,
     expectNoPrompt,
 } from '../helpers';
@@ -941,6 +942,70 @@ describe('vampires_pod: Buffet POD', () => {
             expect.arrayContaining(['draw-1', 'draw-2']),
         );
         expect(played.finalState.core.players['0'].discard.some(c => c.uid === 'bf')).toBe(true);
+    });
+});
+
+describe('vampires_pod: Cull The Weak POD', () => {
+    it('搜牌库弃随从时由玩家选择最多两张，不自动弃掉前两张合法随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cull', 'vampire_cull_the_weak_pod', 'action', '0')],
+                    deck: [
+                        makeCard('first-minion', 'vampire_fledgling_vampire_pod', 'minion', '0'),
+                        makeCard('chosen-minion-a', 'vampire_nightstalker_pod', 'minion', '0'),
+                        makeCard('chosen-minion-b', 'vampire_the_count_pod', 'minion', '0'),
+                        makeCard('deck-action', 'vampire_buffet_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('target', 'vampire_fledgling_vampire_pod', '0', 2),
+                    makeMinion('other', 'test_minion', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'cull' } },
+            defaultTestRandom,
+        );
+        expect(played.success).toBe(true);
+
+        const deckPrompt = getSimpleChoicePrompt(played.finalState, 'vampire_cull_the_weak_pod_deck');
+        expect(deckPrompt.autoResolveIfSingle).toBe(false);
+        expect(deckPrompt.targetType).toBe('generic');
+        expect(getPromptOptions(deckPrompt).map(option => option.value?.cardUid)).toEqual([
+            'first-minion',
+            'chosen-minion-a',
+            'chosen-minion-b',
+        ]);
+
+        const deckOptions = getPromptOptions(deckPrompt)
+            .filter(option => ['chosen-minion-a', 'chosen-minion-b'].includes(option.value?.cardUid))
+            .map(option => option.id);
+        const afterDeckChoice = respondToPromptOptions(played.finalState, deckOptions, '0', defaultTestRandom);
+        expect(afterDeckChoice.success, afterDeckChoice.error).toBe(true);
+
+        const targetPrompt = getSimpleChoicePrompt(afterDeckChoice.finalState, 'vampire_cull_the_weak_pod');
+        const targetOption = getPromptOption(targetPrompt, option => option.value?.minionUid === 'target', 'counter target');
+        const resolved = respondToPrompt(afterDeckChoice.finalState, targetOption.id, '0', defaultTestRandom);
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(
+            expect.arrayContaining(['cull', 'chosen-minion-a', 'chosen-minion-b']),
+        );
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('first-minion');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['first-minion', 'deck-action']);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.powerCounters).toBe(2);
     });
 });
 

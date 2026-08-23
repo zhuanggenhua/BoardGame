@@ -612,8 +612,18 @@ describe('半场战争扩 prompt 型能力', () => {
             now: 111,
         });
 
-        const swapped = respondToPromptOption(
+        const sourcePrompt = getSimpleChoicePrompt(result.matchState!, 'geckos_june_swap_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        const sourceSelected = respondToPromptOption(
             result.matchState!,
+            option => option.value?.minionUid === 'source',
+            '爱普莉尔确认交换来源随从',
+            '0',
+            defaultTestRandom,
+        );
+
+        const swapped = respondToPromptOption(
+            sourceSelected.finalState,
             option => option.value?.cardUid === 'incoming',
             '爱普莉尔交换入场随从',
             '0',
@@ -653,8 +663,18 @@ describe('半场战争扩 prompt 型能力', () => {
             now: 112,
         });
 
-        const swapped = respondToPromptOption(
+        const sourcePrompt = getSimpleChoicePrompt(result.matchState!, 'geckos_gecko_rap_swap_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        const sourceSelected = respondToPromptOption(
             result.matchState!,
+            option => option.value?.minionUid === 'source',
+            '壁虎说唱确认交换来源随从',
+            '0',
+            defaultTestRandom,
+        );
+
+        const swapped = respondToPromptOption(
+            sourceSelected.finalState,
             option => option.value?.cardUid === 'incoming',
             '壁虎说唱交换入场随从',
             '0',
@@ -693,8 +713,18 @@ describe('半场战争扩 prompt 型能力', () => {
             now: 113,
         });
 
-        const swapped = respondToPromptOption(
+        const sourcePrompt = getSimpleChoicePrompt(result.matchState!, 'rulers_cosmos_young_noble_swap_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        const sourceSelected = respondToPromptOption(
             result.matchState!,
+            option => option.value?.minionUid === 'noble',
+            '年轻的贵族确认自身交换',
+            '0',
+            defaultTestRandom,
+        );
+
+        const swapped = respondToPromptOption(
+            sourceSelected.finalState,
             option => option.value?.cardUid === 'guy',
             '年轻的贵族交换入场随从',
             '0',
@@ -1631,10 +1661,18 @@ describe('半场战争扩 prompt 型能力', () => {
             random: defaultTestRandom,
             now: 135,
         });
-        expect(mowatAction.events).toEqual([expect.objectContaining({
+        const mowatActionResolved = respondToPromptOption(
+            mowatAction.matchState!,
+            option => option.value?.minionUid === 'target',
+            '卡车式火炮行动面目标',
+            '0',
+            defaultTestRandom,
+        );
+        expect(mowatActionResolved.success, mowatActionResolved.error).toBe(true);
+        expect(mowatActionResolved.events).toEqual(expect.arrayContaining([expect.objectContaining({
             type: SU_EVENTS.TEMP_POWER_ADDED,
             payload: expect.objectContaining({ minionUid: 'target', amount: 3 }),
-        })]);
+        })]));
 
         const obstruction = invokeRegisteredAbilityContract('gi_gerald_obstruction', 'onPlay', {
             state: core,

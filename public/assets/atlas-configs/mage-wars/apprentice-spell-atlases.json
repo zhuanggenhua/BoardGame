@@ -49,6 +49,26 @@
       "cols": 7,
       "rows": 4
     },
+    "spell-wall-core-atlas": {
+      "deck": 25,
+      "label": "墙体",
+      "source": "mage-wars/cards/spells/spell-wall-core-atlas.png",
+      "compressed": "mage-wars/cards/spells/compressed/spell-wall-core-atlas.webp",
+      "width": 4096,
+      "height": 2940,
+      "cols": 4,
+      "rows": 4
+    },
+    "spell-wall-thorns-atlas": {
+      "deck": 257,
+      "label": "墙体 / 荆棘之墙",
+      "source": "mage-wars/cards/spells/spell-wall-thorns-atlas.png",
+      "compressed": "mage-wars/cards/spells/compressed/spell-wall-thorns-atlas.webp",
+      "width": 1386,
+      "height": 992,
+      "cols": 1,
+      "rows": 1
+    },
     "spell-creature-core-a-atlas": {
       "deck": 28,
       "label": "生物 A",
@@ -634,6 +654,36 @@
         "top": 0.75,
         "width": 0.142857,
         "height": 0.25
+      }
+    },
+    "2500": {
+      "atlas": "spell-wall-core-atlas",
+      "cardId": 2500,
+      "name": "烈火之墙",
+      "deck": 25,
+      "slot": 0,
+      "col": 1,
+      "row": 1,
+      "normalized": {
+        "left": 0,
+        "top": 0,
+        "width": 0.25,
+        "height": 0.25
+      }
+    },
+    "25700": {
+      "atlas": "spell-wall-thorns-atlas",
+      "cardId": 25700,
+      "name": "荆棘之墙",
+      "deck": 257,
+      "slot": 0,
+      "col": 1,
+      "row": 1,
+      "normalized": {
+        "left": 0,
+        "top": 0,
+        "width": 1,
+        "height": 1
       }
     },
     "2800": {

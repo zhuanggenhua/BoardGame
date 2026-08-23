@@ -57,7 +57,7 @@
 | 行动标记 | `tokens/action/action-marker-red-front.png`、`action-marker-blue-front.png` 等，尺寸 `86x78` | `design-asset-ready` | 贴在法师牌附近表示行动可用 / 已用 | 允许 |
 | 快速施法标记 | `tokens/quickcast/quickcast-marker-front.png` `80x80`、`quickcast-marker-back.jpg` `86x78` | `design-asset-ready` | 独立黑色快速施法标记，不能用行动标记替代 | 允许 |
 | 就绪 / 冷却标记 | `tokens/action/ready-token-front.png`、`ready-token-back.png`，尺寸 `329x329` | `design-asset-ready` | 只在召唤物或对象需要 ready/spent 时出现 | 允许 |
-| 伤害 / 聚魔 token | `tokens/damage/damage-token-front.png`、`tokens/channeling/channeling-token-front.png` 等 | `design-asset-ready` | 作为对象附近的实体 token 或状态增强；常驻法师生命 / 法力 / 聚魔仍走自制 HUD | 允许 |
+| 伤害 / 聚魔 token | `tokens/damage/damage-token-front.png`、`tokens/channeling/channeling-token-front.png` 等 | `design-asset-ready / damage-token-asset-only` | 伤害物理 token 只证明素材存在；当前真实 Board 默认用对象本体受伤覆盖层 + 数字徽章表达伤害。聚魔可作为对象附近状态增强；常驻法师生命 / 法力 / 聚魔仍走自制 HUD | 伤害不强制贴图，聚魔按阶段裁定 |
 | 守卫 / 燃烧 / 腐化 / 眩晕 / 昏迷 / 沉睡 | `tokens/status/{guard,burn,rot,daze,stun,sleep}-token.png` | `design-asset-ready` | 只在对应状态存在时贴近对象显示 | 允许 |
 | 独立法力指示物 | 未定位正式素材；规则列出但当前素材链未闭合 | `blocked` | 不得画成完成态；法师法力必须通过贴近法师牌的自制法力 HUD 表达，状态板法力池只作 `reference-only` 规则来源 | 不允许 |
 | 墙体 / 豪华竞技场 / 四人模式对象 | 本轮 foundation 不覆盖 | `out-of-scope` | 不出现在 Step 1 | 不允许 |
@@ -76,7 +76,7 @@
 | 攻击骰 | `path-exists`；`attack-die-texture.png` 尺寸 `1280x1280` | 可作为攻击骰视觉基底 |
 | 行动标记 | `path-exists`；`action-marker-red-front.png` 尺寸 `86x78`；蓝方同组路径存在于正式 token 目录 | 可作为行动标记输入 |
 | 快速施法标记 | `path-exists`；`quickcast-marker-front.png` 尺寸 `80x80` | 可作为快速施法标记输入 |
-| 伤害 / 状态 token | `path-exists`；`damage-token-front.png` 尺寸 `283x283`；`guard-token.png` 尺寸 `339x339` | 可作为状态 / 伤害 token 输入 |
+| 伤害 / 状态 token | `path-exists`；`damage-token-front.png` 尺寸 `283x283`；`guard-token.png` 尺寸 `339x339` | 只证明素材存在；伤害默认走现代受伤覆盖层 + 数字徽章，守卫 / 燃烧等离散状态可作为 token 输入 |
 | 黑 / 红状态方块、效果骰 | 来源锁定到规则页与 Workshop / 坐标合同；非图片素材 | 仅允许按来源锁定程序化对象表达 |
 
 ## 6. 已看主素材的图面结论
@@ -234,7 +234,7 @@ node D:\codex-home\tools\open-design\apps\daemon\bin\od.mjs media generate --pro
 | 学徒法术牌 | `apprentice-spell-atlases.json` crop -> `refs/mage-wars-step1/spell-*.png` | 同一 reference sheet | 法术书入口、已计划法术、弃牌堆、结界 / 生物 / 装备代表卡 |
 | 法术卡背 | `spell-card-back.jpg` -> `refs/mage-wars-step1/spell-card-back.jpg` | 同一 reference sheet | 对手隐藏卡、计划卡、隐藏结界背面 |
 | 行动 / 快速施法 / 就绪 token | `action-marker-*`、`quickcast-marker-front.png`、`ready-token-front.png` -> `refs/mage-wars-step1/` | 同一 reference sheet | 实体行动消耗、快速施法和就绪状态 |
-| 伤害 / 聚魔 / 守卫 token | `damage-token-front.png`、`channeling-token-front.png`、`guard-token.png` -> `refs/mage-wars-step1/` | 同一 reference sheet | 对象附近的实体状态 / 伤害增强；不得成为大面板资源栏 |
+| 伤害 / 聚魔 / 守卫 token | `damage-token-front.png`、`channeling-token-front.png`、`guard-token.png` -> `refs/mage-wars-step1/` | 同一 reference sheet | 伤害 token 图只作素材存在证据，不是运行时默认承载；伤害用本体覆盖层 + 数字徽章，守卫等离散状态贴近宿主；不得成为大面板资源栏 |
 | 攻击骰 / 效果骰 | `attack-die-texture.png` -> `refs/mage-wars-step1/attack-die-texture.png`；效果骰为来源锁定蓝色 `Die_12` | 同一 reference sheet + prompt 说明 | 攻击骰视觉和蓝色 12 面效果骰；禁止普通 D6 |
 
 素材复查结果：2026-07-27 本轮脚本已确认 `asset-input-manifest.json` 中的工作树输入文件、Open Design `refs/mage-wars-step1/` 文件和 `step1-runtime-board-reference-sheet.png` 均存在；因此当前状态为 `asset-input-package-ready`。

@@ -1223,6 +1223,45 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
             }),
         ]));
         expect(resolvedSpecial.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('own-second');
+
+        const untargetedScramble = invokeRegisteredAbilityContract('ultimates_scramble', 'onPlay', {
+            ...baseCtx,
+            cardUid: 'scramble-untargeted',
+            defId: 'ultimates_scramble',
+            now: 124,
+        });
+        const sourcePrompt = getSimpleChoicePrompt(untargetedScramble.matchState!, 'ultimates_scramble_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(sourcePrompt).map(option => option.value?.minionUid)).toEqual(['own-first', 'own-second']);
+
+        const pickedSource = respondToPromptOption(
+            untargetedScramble.matchState!,
+            option => option.value?.minionUid === 'own-second',
+            'choose own-second with Scramble',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(getSimpleChoicePrompt(pickedSource.finalState, 'ultimates_scramble_destination')).toBeDefined();
+        const movedUntargeted = respondToPromptOption(
+            pickedSource.finalState,
+            option => option.value?.baseIndex === 1,
+            'move chosen own-second with Scramble',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(movedUntargeted.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_MOVED,
+                payload: expect.objectContaining({
+                    minionUid: 'own-second',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'ultimates_scramble',
+                }),
+            }),
+        ]));
+        expect(movedUntargeted.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('own-first');
+        expect(movedUntargeted.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('own-second');
     });
 
     it('搬运从真实出牌命令进入目标随从选择后的目标基地交互', () => {
@@ -1270,14 +1309,27 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 130,
         });
-        expect(first.events[0]).toMatchObject({
-            type: SU_EVENTS.LIMIT_MODIFIED,
-            payload: {
-                limitType: 'minion',
-                restrictToBase: 1,
-                reason: 'ultimates_first_to_arrive',
-            },
-        });
+        expect(first.events).toEqual([]);
+        const onlyBasePrompt = getSimpleChoicePrompt(first.matchState!, 'ultimates_first_to_arrive');
+        expect(onlyBasePrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(onlyBasePrompt).map(option => option.value?.baseIndex)).toEqual([1]);
+        const selectedOnlyBase = respondToPromptOption(
+            first.matchState!,
+            option => option.value?.baseIndex === 1,
+            'only legal base for First to Arrive',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedOnlyBase.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.LIMIT_MODIFIED,
+                payload: expect.objectContaining({
+                    limitType: 'minion',
+                    restrictToBase: 1,
+                    reason: 'ultimates_first_to_arrive',
+                }),
+            }),
+        ]));
 
         const multipleCore = makeState({
             bases: [
@@ -1297,6 +1349,7 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
         });
         expect(multiple.events).toEqual([]);
         const firstPrompt = getSimpleChoicePrompt(multiple.matchState!, 'ultimates_first_to_arrive');
+        expect(firstPrompt.autoResolveIfSingle).toBe(false);
         expect(getPromptOptions(firstPrompt).map(option => option.value?.baseIndex)).toEqual([0, 1]);
         const selectedSecondBase = respondToPromptOption(
             multiple.matchState!,

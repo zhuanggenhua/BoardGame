@@ -8,6 +8,7 @@ import {
 import { createTimingPoint, type Opportunity } from '../../../engine/TimingOpportunity';
 import type { MatchState, RandomFn, ValidationResult } from '../../../engine/types';
 import {
+    getPresetSpellbookCardIdsFromConfig,
     getMageWarsSpellCardFromConfig,
     hasPresetSpellbookCardInConfig,
     type MageWarsConfigSpellCard,
@@ -242,8 +243,23 @@ export function validateMageWarsArenaObjectAbility(
     return validator({ state, player, command, phase, ability });
 }
 
-function resolveFixedObjectAbilityManaCost(ability: MageWarsObjectAbilityDef): number | undefined {
-    return ability.meta.manaCost.type === 'fixed' ? ability.meta.manaCost.amount : undefined;
+function resolveObjectAbilityManaCost(args: {
+    state: MatchState<MageWarsCore>;
+    player: MageWarsPlayerState;
+    sourceObject: MageWarsArenaObjectState;
+    ability: MageWarsObjectAbilityDef;
+}): number | undefined {
+    if (args.ability.meta.manaCost.type === 'fixed') return args.ability.meta.manaCost.amount;
+
+    if (args.ability.id === MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF) {
+        const source = resolveMageWarsAttachedBeastStaff(args.state.core, args.player.id);
+        return source?.object.id === args.sourceObject.id
+            && source.trait.abilityId === args.ability.id
+            ? source.trait.manaCost
+            : undefined;
+    }
+
+    return undefined;
 }
 
 type BuildMageWarsObjectAbilityActivationOpportunityArgs = {
@@ -351,7 +367,10 @@ function buildMageWarsObjectAbilityTargetRequest(ability: MageWarsObjectAbilityD
             description: ability.name,
         };
     }
-    if (ability.meta.targetMode === 'living-object') {
+    if (
+        ability.meta.targetMode === 'living-object'
+        || ability.meta.targetMode === 'friendly-living-animal'
+    ) {
         return {
             kind: 'select-object' as const,
             min: 1,
@@ -362,8 +381,21 @@ function buildMageWarsObjectAbilityTargetRequest(ability: MageWarsObjectAbilityD
             },
         };
     }
+    if (ability.meta.targetMode === 'bound-spell') {
+        return {
+            kind: 'select-card' as const,
+            min: 1,
+            max: 1,
+            description: ability.name,
+            metadata: {
+                targetMode: ability.meta.targetMode,
+            },
+        };
+    }
     return null;
 }
+
+const MAGE_WARS_BEAST_STAFF_MODES = ['melee-bonus', 'heal'] as const;
 
 function buildMageWarsObjectAbilityActivationCandidates(args: {
     state: MatchState<MageWarsCore>;
@@ -412,10 +444,16 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
         };
     }
 
-    if (args.ability.meta.targetMode === 'living-object') {
+    if (
+        args.ability.meta.targetMode === 'living-object'
+        || args.ability.meta.targetMode === 'friendly-living-animal'
+    ) {
+        const modes = args.ability.meta.targetMode === 'friendly-living-animal'
+            ? MAGE_WARS_BEAST_STAFF_MODES
+            : [undefined];
         const candidates = Object.values(args.state.core.objects)
             .sort((left, right) => left.id.localeCompare(right.id))
-            .map((targetObject) => {
+            .flatMap((targetObject) => modes.map((mode) => {
                 const command = createMageWarsObjectAbilityCommand({
                     playerId: args.player.id,
                     sourceObjectId: args.sourceObject.id,
@@ -423,17 +461,22 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
                     manaCost: args.manaCost,
                     timestamp: args.timestamp,
                     targetObjectId: targetObject.id,
+                    ...(mode ? { mode } : {}),
                 });
                 const validation = validateMageWarsArenaObjectAbility(args.state, args.player, command, args.phase);
+                const candidateId = mode
+                    ? `target:${targetObject.id}:mode:${mode}`
+                    : `target:${targetObject.id}`;
                 return {
-                    id: `target:${targetObject.id}`,
-                    label: targetObject.name,
+                    id: candidateId,
+                    label: mode ? `${targetObject.name} / ${mode}` : targetObject.name,
                     value: {
                         action: 'activate-object-ability' as const,
                         objectId: args.sourceObject.id,
                         abilityId: args.ability.id,
                         manaCost: args.manaCost,
                         targetObjectId: targetObject.id,
+                        ...(mode ? { mode } : {}),
                     },
                     displayMode: 'card' as const,
                     commands: [{
@@ -444,8 +487,11 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
                         targetObjectId: targetObject.id,
                         targetOwnerId: targetObject.ownerId,
                         targetZoneId: targetObject.zoneId,
+                        ...(mode ? { mode } : {}),
                     },
-                    actionKind: 'mage-wars-object-ability-target',
+                    actionKind: mode
+                        ? 'mage-wars-object-ability-target-mode'
+                        : 'mage-wars-object-ability-target',
                     actionKeyParts: [
                         'ability',
                         'activation',
@@ -453,6 +499,7 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
                         args.ability.id,
                         'target',
                         targetObject.id,
+                        ...(mode ? ['mode', mode] : []),
                     ],
                     ...(validation.valid
                         ? {}
@@ -461,13 +508,74 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
                             disabledReason: validation.error ?? 'invalidArenaObjectAbility',
                         }),
                 };
-            });
+            }));
         const firstDisabledReason = candidates.find((candidate) => candidate.disabled)?.disabledReason;
         return {
             candidates,
             condition: candidates.some((candidate) => candidate.disabled !== true)
                 ? { satisfied: true }
                 : { satisfied: false, reason: firstDisabledReason ?? 'missingTarget' },
+            aiPolicyId: 'choice-request:simple-target',
+        };
+    }
+
+    if (args.ability.meta.targetMode === 'bound-spell') {
+        const candidateSpellCardIds = Array.from(new Set(getPresetSpellbookCardIdsFromConfig(args.player.mageId)))
+            .sort((left, right) => left - right);
+        const candidates = candidateSpellCardIds.map((spellCardId) => {
+            const spell = getMageWarsSpellCardFromConfig(spellCardId);
+            const command = createMageWarsObjectAbilityCommand({
+                playerId: args.player.id,
+                sourceObjectId: args.sourceObject.id,
+                abilityId: args.ability.id,
+                manaCost: args.manaCost,
+                timestamp: args.timestamp,
+                boundSpellCardId: spellCardId,
+            });
+            const validation = validateMageWarsArenaObjectAbility(args.state, args.player, command, args.phase);
+            return {
+                id: `bound-spell:${spellCardId}`,
+                label: spell?.name ?? String(spellCardId),
+                value: {
+                    action: 'activate-object-ability' as const,
+                    objectId: args.sourceObject.id,
+                    abilityId: args.ability.id,
+                    manaCost: args.manaCost,
+                    boundSpellCardId: spellCardId,
+                },
+                displayMode: 'card' as const,
+                commands: [{
+                    type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
+                    payload: command.payload,
+                }],
+                metadata: {
+                    cardId: spellCardId,
+                    boundSpellCardId: spellCardId,
+                    spellType: spell?.spellType,
+                },
+                actionKind: 'mage-wars-object-ability-bound-spell',
+                actionKeyParts: [
+                    'ability',
+                    'activation',
+                    args.sourceObject.id,
+                    args.ability.id,
+                    'bound-spell',
+                    spellCardId,
+                ],
+                ...(validation.valid
+                    ? {}
+                    : {
+                        disabled: true,
+                        disabledReason: validation.error ?? 'invalidBoundSpell',
+                    }),
+            };
+        });
+        const firstDisabledReason = candidates.find((candidate) => candidate.disabled)?.disabledReason;
+        return {
+            candidates,
+            condition: candidates.some((candidate) => candidate.disabled !== true)
+                ? { satisfied: true }
+                : { satisfied: false, reason: firstDisabledReason ?? 'invalidBoundSpell' },
             aiPolicyId: 'choice-request:simple-target',
         };
     }
@@ -479,7 +587,7 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
  * 把一个可发动的 Mage Wars 对象能力投影成通用 Ability -> Opportunity -> ChoiceRequest 合同。
  *
  * 这是只读合同投影：它不创建 interaction、不执行命令、不支付费用。
- * 当前覆盖固定费用 self / living-object 能力；多模式、source-trait 费用和绑定法术继续由旧逻辑承载，后续逐类迁移。
+ * 当前覆盖固定费用 self / living-object / bound-spell 能力，以及群兽法杖这类 source-trait 费用 / 多模式目标合同。
  */
 export function buildMageWarsObjectAbilityActivationOpportunity(
     args: BuildMageWarsObjectAbilityActivationOpportunityArgs,
@@ -489,7 +597,12 @@ export function buildMageWarsObjectAbilityActivationOpportunity(
     const player = args.state.core.players[args.playerId];
     if (!ability || !sourceObject || !player) return null;
 
-    const manaCost = resolveFixedObjectAbilityManaCost(ability);
+    const manaCost = resolveObjectAbilityManaCost({
+        state: args.state,
+        player,
+        sourceObject,
+        ability,
+    });
     if (manaCost === undefined) return null;
 
     const phase = args.state.sys.phase as MageWarsPhase;

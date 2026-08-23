@@ -184,6 +184,24 @@
         }
       }
     },
+    "cards/spells/compressed/spell-wall-core-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "3adddd760ea1a8801ac7542c13273794ad3c3c4fb13c03197d9d4e547e69e315",
+          "bytes": 4127170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/spells/compressed/spell-wall-thorns-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "e4ba89fbd09f9c31724dd70e23d8f3c878c38e724397a2290b6508d4f88867b8",
+          "bytes": 916930,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/spells/spell-attack-core-atlas": {
       "variants": {
         "png": {
@@ -270,6 +288,24 @@
         "png": {
           "sha256": "6d4faf252a53802b84e451154377f430fe3673a0718ee066eb92c76996d09406",
           "bytes": 10496419,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/spells/spell-wall-core-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "551b54c0c540fb1dc7b694670a9e1954d2b270e97b063f84ad323e705bffd0e1",
+          "bytes": 23426065,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/spells/spell-wall-thorns-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "b66f018e86bda3909ee5fcdeacab53a6d1abf80d6569ce27ac3cee166a5b699c",
+          "bytes": 3338132,
           "mime": "image/png"
         }
       }

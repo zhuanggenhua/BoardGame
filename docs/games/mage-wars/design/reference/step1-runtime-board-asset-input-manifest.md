@@ -32,7 +32,7 @@
 | `action-marker-blue-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/action/action-marker-blue-front.png` | `86x78` | `2b851a732d0fec46` | 蓝方行动标记 |
 | `ready-token-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/action/ready-token-front.png` | `329x329` | `9161c1037c5037b6` | 生物 / 对象就绪状态 |
 | `quickcast-marker-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/quickcast/quickcast-marker-front.png` | `80x80` | `73b77e91398aea7d` | 黑色快速施法标记 |
-| `damage-token-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/damage/damage-token-front.png` | `283x283` | `e5cc8921ac176ce7` | 伤害 token |
+| `damage-token-front.png` | 正式图片副本 / `asset-only` | `public/assets/i18n/zh-CN/mage-wars/tokens/damage/damage-token-front.png` | `283x283` | `e5cc8921ac176ce7` | 伤害物理 token 素材存在；当前真实 Board 默认用受伤覆盖层 + 数字徽章表达伤害，不要求使用该图 |
 | `channeling-token-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/channeling/channeling-token-front.png` | `283x283` | `eabfe1caa5d11e49` | 聚魔 token / 辅助素材 |
 | `guard-token.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/status/guard-token.png` | `339x339` | `0fc78acd735cbde2` | 守卫状态 token |
 | `mage-warlock-card.png` | 正式 atlas crop | `mages-core-atlas.json` frame `warlock_apprentice_card` / `2600` | `360x508` | `e5d0c7922467715c` | 邪术师法师牌 |

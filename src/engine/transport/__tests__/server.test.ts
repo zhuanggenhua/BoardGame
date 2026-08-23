@@ -1999,17 +1999,18 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 queue: [],
                 isBlocked: false,
             },
-            responseWindow: {
-                current: {
-                    id: 'rw-after-card-hidden-1',
-                    sourceId: 'action-poison-tip',
-                    windowType: 'afterCardPlayed',
-                    responderQueue: ['1'],
-                    currentResponderIndex: 0,
-                    pendingInteractionId: 'card-bye-bye-1777601349600',
+                responseWindow: {
+                    current: {
+                        id: 'rw-after-card-hidden-1',
+                        sourceId: 'action-poison-tip',
+                        windowType: 'afterCardPlayed',
+                        responderQueue: ['1'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                        pendingInteractionId: 'card-bye-bye-1777601349600',
+                    },
                 },
-            },
-        }).G as any;
+            }).G as any;
 
         const seatState = createOnlineAiRecoveryState({
             activePlayerId: '0',
@@ -29918,6 +29919,24 @@ describe('GameTransportServer（离座与重连）', () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const feedbackReporter = vi.fn(async () => undefined);
+        const metadata = createOnlineAiRecoveryMetadata({
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+                '3': { type: 'local-ai' },
+            },
+        });
+        metadata.players['2'] = {
+            name: 'AI 2',
+            credentials: 'cred-2',
+            isConnected: false,
+        };
+        metadata.players['3'] = {
+            name: 'AI 3',
+            credentials: 'cred-3',
+            isConnected: false,
+        };
 
         await storage.createMatch('match-watchdog-hidden-interaction-lock', {
             initialState: createOnlineAiRecoveryState({
@@ -29930,16 +29949,17 @@ describe('GameTransportServer（离座与重连）', () => {
                 },
                 responseWindow: {
                     current: {
-                        id: 'rw-after-card-hidden-1',
+                        id: 'afterCard-action-poison-tip-1777601347690',
                         windowType: 'afterCardPlayed',
                         sourceId: 'action-poison-tip',
-                        responderQueue: ['1'],
-                        currentResponderIndex: 0,
+                        responderQueue: ['2', '3'],
+                        currentResponderIndex: 1,
+                        passedPlayers: ['2'],
                         pendingInteractionId: 'card-bye-bye-1777601349600',
                     },
                 },
             }),
-            metadata: createOnlineAiRecoveryMetadata(),
+            metadata,
         });
 
         const server = new GameTransportServer({
@@ -29969,7 +29989,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         let hiddenResolved = false;
         vi.spyOn(serverInternal.stateSynchronizer, 'applyPlayerView').mockImplementation((match, playerID) => {
-            if (playerID !== '1') {
+            if (playerID !== '3') {
                 return match.state as MatchState<unknown>;
             }
             return {
@@ -29986,7 +30006,7 @@ describe('GameTransportServer（离座与重连）', () => {
                             current: {
                                 id: 'card-bye-bye-1777601349600',
                                 kind: 'simple-choice',
-                                playerId: '1',
+                                playerId: '3',
                                 data: {
                                     sourceId: 'card-bye-bye',
                                     title: '选择要移除的状态效果',
@@ -30007,7 +30027,7 @@ describe('GameTransportServer（离座与重连）', () => {
             executed.push(commandType);
 
             if (commandType === 'SYS_INTERACTION_RESPOND') {
-                expect(playerID).toBe('1');
+                expect(playerID).toBe('3');
                 expect(payload).toEqual({ interactionId: 'card-bye-bye-1777601349600', optionId: 'skip' });
                 hiddenResolved = true;
                 match.state = {
@@ -30038,7 +30058,7 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(executed).not.toContain('RESPONSE_PASS');
         expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
             matchId: 'match-watchdog-hidden-interaction-lock',
-            playerId: '1',
+            playerId: '3',
             incidentKind: 'force-end-turn-success',
             status: 'resolved',
         }));

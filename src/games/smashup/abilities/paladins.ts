@@ -87,14 +87,31 @@ function playSeraphimHere(
         ...buildSeraphimEnterEvents(ctx.state, playEvent.payload, ctx.now, ctx.random, currentTalentMinionUid),
     ];
     const destroyTargets = getSeraphimDestroyTargets(ctx.state, ctx.baseIndex);
-    if (destroyTargets.length <= 1) return { events };
+    if (destroyTargets.length === 0) return { events };
+    if (!ctx.matchState) {
+        const destroyTarget = destroyTargets[0];
+        return {
+            events: [
+                ...events,
+                destroyMinion(
+                    destroyTarget.uid,
+                    destroyTarget.defId,
+                    destroyTarget.baseIndex,
+                    destroyTarget.owner,
+                    ctx.playerId,
+                    'paladins_seraphim',
+                    ctx.now,
+                ),
+            ],
+        };
+    }
 
     const interaction = createSimpleChoice(
         `paladins_seraphim_destroy_${titan.uid}_${ctx.now}`,
         ctx.playerId,
         'paladins_seraphim.choose_minion',
         buildMinionTargetOptions(destroyTargets, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-        { sourceId: 'paladins_seraphim', targetType: 'minion' },
+        { sourceId: 'paladins_seraphim', targetType: 'minion', autoResolveIfSingle: false },
     );
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -265,15 +282,12 @@ function paladinsSeniorMentor(ctx: AbilityContext): AbilityResult {
             label: getCardDef(minion.defId)?.name ?? minion.defId,
         }));
     if (options.length === 0) return { events: [] };
-    if (options.length === 1) {
-        return { events: [addPowerCounter(options[0].uid, ctx.baseIndex, 1, 'paladins_senior_mentor', ctx.now)] };
-    }
     const interaction = createSimpleChoice(
         `paladins_senior_mentor_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         'paladins_senior_mentor.choose_minion',
         buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-        { sourceId: 'paladins_senior_mentor', targetType: 'minion' },
+        { sourceId: 'paladins_senior_mentor', targetType: 'minion', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -356,23 +370,6 @@ function collectOngoingActionTargets(state: SmashUpCore) {
 function paladinsExpel(ctx: AbilityContext): AbilityResult {
     const targets = collectOngoingActionTargets(ctx.state);
     if (targets.length === 0) return { events: [] };
-    if (targets.length === 1) {
-        const target = targets[0];
-        return {
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: target.uid,
-                    defId: target.defId,
-                    ownerId: target.ownerId,
-                    reason: 'paladins_expel',
-                    sourcePlayerId: ctx.playerId,
-                    sourceDefId: ctx.defId,
-                },
-                timestamp: ctx.now,
-            } as OngoingDetachedEvent],
-        };
-    }
     const interaction = createSimpleChoice(
         `paladins_expel_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
@@ -383,7 +380,7 @@ function paladinsExpel(ctx: AbilityContext): AbilityResult {
             value: { cardUid: target.uid },
             displayMode: 'button' as const,
         })),
-        { sourceId: 'paladins_expel', targetType: 'button' },
+        { sourceId: 'paladins_expel', targetType: 'button', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -610,19 +607,6 @@ function buildSeraphimEnterEvents(
     const talentCount = countOwnMinionsThatUsedTalentThisTurn(state, payload.controllerId, currentTalentMinionUid);
     if (talentCount > 0) {
         events.push(addTitanPowerCounter(payload.titanUid, talentCount, 'paladins_seraphim_talents_used', now));
-    }
-    const destroyTargets = getSeraphimDestroyTargets(state, payload.baseIndex);
-    if (destroyTargets.length === 1) {
-        const destroyTarget = destroyTargets[0];
-        events.push(destroyMinion(
-            destroyTarget.uid,
-            destroyTarget.defId,
-            destroyTarget.baseIndex,
-            destroyTarget.owner,
-            payload.controllerId,
-            'paladins_seraphim',
-            now,
-        ));
     }
     return events;
 }

@@ -1,16 +1,12 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import {
-    getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
     hasPresetSpellbookCardInConfig,
-    requireMageWarsStatusTokenFromConfig,
-    type MageWarsConfigMageAbility,
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS } from './commands';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
-import type { StatusTokenId } from './ids';
 import {
     areAdjacentZones,
     doesMageWarsWallBlockLineOfSight,
@@ -27,7 +23,7 @@ import {
     isMageWarsSpellcastingObject,
 } from './spellCasting';
 import { validateMageWarsArenaObjectAbility } from './objectAbilityRuntime';
-import { getStatusTokenAmount } from './statusTokens';
+import { validateMageWarsMageAbilityStatusRemoval } from './mageAbilityRuntime';
 import {
     isMageWarsAreaTargetSpell,
     isMageWarsAttackSpell,
@@ -104,6 +100,7 @@ import {
     resolveMageWarsEquipmentManaCost,
     resolveMageWarsExplodeManaCostForTarget,
     resolveMageWarsRouseTheBeastManaCostForTarget,
+    resolveMageWarsSpellCastChoiceFamily,
     resolveMageWarsSleepSpellManaCostForTarget,
     resolveMageWarsSpellCost,
     resolveMageWarsSpellRawCostTotal,
@@ -211,100 +208,6 @@ function validateTargetedAttackSpellDamageTypeImmunity(
         }
     }
     return undefined;
-}
-
-function resolveMageAbilityActionTrack(
-    phase: MageWarsPhase,
-    ability: MageWarsConfigMageAbility,
-): 'quickcast' | 'action' | undefined {
-    if (QUICKCAST_PHASES.includes(phase)) {
-        return ability.actionSpeed === 'quick' ? 'quickcast' : undefined;
-    }
-    if (phase === 'creatureAction') {
-        return 'action';
-    }
-    return undefined;
-}
-
-function resolveStatusRemovalCost(
-    targetObject: MageWarsArenaObjectState,
-    statusTokenIds: readonly StatusTokenId[],
-): { manaCost: number } | { error: string } {
-    let manaCost = 0;
-    for (const statusTokenId of statusTokenIds) {
-        const currentAmount = getStatusTokenAmount(targetObject, statusTokenId);
-        if (currentAmount <= 0) {
-            return { error: 'targetMissingStatusToken' };
-        }
-
-        const statusToken = requireMageWarsStatusTokenFromConfig(statusTokenId);
-        if (statusToken.removalCostRule === 'none') {
-            return { error: 'statusTokenCannotBeRemoved' };
-        }
-        if (statusToken.removalCostRule === 'target-creature-level') {
-            const sourceSpell = getMageWarsSpellCardFromConfig(targetObject.sourceSpellCardId);
-            if (typeof sourceSpell?.level !== 'number') {
-                return { error: 'missingTargetCreatureLevel' };
-            }
-            manaCost += currentAmount * sourceSpell.level;
-            continue;
-        }
-        if (statusToken.removalCostRule !== 'fixed' || statusToken.removalCost === undefined) {
-            return { error: 'unsupportedStatusRemovalCostRule' };
-        }
-
-        manaCost += currentAmount * statusToken.removalCost;
-    }
-    return { manaCost };
-}
-
-function validateMageAbilityStatusRemoval(
-    state: MatchState<MageWarsCore>,
-    player: MageWarsPlayerState,
-    command: Extract<MageWarsCommand, { type: typeof MAGE_WARS_COMMANDS.USE_MAGE_ABILITY }>,
-    phase: MageWarsPhase,
-): ValidationResult {
-    if (!CAST_PHASES.includes(phase)) return invalid('wrongPhase');
-    if (!Number.isInteger(command.payload.manaCost) || command.payload.manaCost < 0) {
-        return invalid('invalidManaCost');
-    }
-
-    const ability = getMageWarsMageAbilityFromConfig(player.mageId, command.payload.abilityId);
-    if (!ability) return invalid('unknownMageAbility');
-
-    const actionTrack = resolveMageAbilityActionTrack(phase, ability);
-    if (!actionTrack) return invalid(QUICKCAST_PHASES.includes(phase) ? 'abilityNotQuick' : 'wrongPhase');
-    if (actionTrack === 'quickcast' && !player.quickcastReady) return invalid('quickcastSpent');
-    if (actionTrack === 'action' && !player.actionReady) return invalid('actionSpent');
-    if (hasMageWarsStunStatus(player)) return invalid('playerStunned');
-
-    if (command.payload.targetPlayerId || !command.payload.targetObjectId) return invalid('invalidTargetMode');
-    const targetObject = getArenaObject(state.core, command.payload.targetObjectId);
-    if (!targetObject || targetObject.kind !== 'creature') return invalid('invalidTargetObject');
-
-    const range = parseMageWarsRange(ability.range);
-    const distance = getMageWarsZoneDistance(state.core, player.mageZoneId, targetObject.zoneId);
-    if (!range || distance === undefined || distance < range.min || distance > range.max) {
-        return invalid('targetOutOfRange');
-    }
-
-    const statusTokenIds = command.payload.statusTokenIds;
-    if (!Array.isArray(statusTokenIds) || statusTokenIds.length === 0) {
-        return invalid('missingStatusToken');
-    }
-    if (new Set(statusTokenIds).size !== statusTokenIds.length) {
-        return invalid('duplicateStatusToken');
-    }
-    if (ability.statusTokenScope === 'single-status-type' && statusTokenIds.length !== 1) {
-        return invalid('tooManyStatusTokenTypes');
-    }
-
-    const costResolution = resolveStatusRemovalCost(targetObject, statusTokenIds);
-    if ('error' in costResolution) return invalid(costResolution.error);
-    if (command.payload.manaCost !== costResolution.manaCost) return invalid('manaCostMismatch');
-    if (player.mana < costResolution.manaCost) return invalid('insufficientMana');
-
-    return { valid: true };
 }
 
 function validateArenaObjectAbility(
@@ -466,6 +369,8 @@ export function validateCommand(
                 command.payload.manaCost,
             );
             if (!costResolution) return invalid('unknownSpellCard');
+            const spellCastChoiceFamily = resolveMageWarsSpellCastChoiceFamily(costResolution.spell);
+            if (!spellCastChoiceFamily) return invalid('spellRequiresCodeSupport');
             const rangePlayer = casterObject
                 ? { ...player, mageZoneId: casterObject.zoneId }
                 : player;
@@ -1058,7 +963,7 @@ export function validateCommand(
         }
 
         case MAGE_WARS_COMMANDS.USE_MAGE_ABILITY:
-            return validateMageAbilityStatusRemoval(state, player, command, phase);
+            return validateMageWarsMageAbilityStatusRemoval(state, player, command, phase);
 
         case MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY:
             return validateArenaObjectAbility(state, player, command, phase);

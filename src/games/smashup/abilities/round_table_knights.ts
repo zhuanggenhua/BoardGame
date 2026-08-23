@@ -1,5 +1,6 @@
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { PlayerId } from '../../../engine/types';
-import { getCardDef } from '../data/cards';
+import { getBaseDef, getCardDef } from '../data/cards';
 import { registerAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerActiveBaseAbility } from '../domain/baseAbilities';
 import {
@@ -8,23 +9,38 @@ import {
     registerTrigger,
     type ProtectionCheckContext,
     type TriggerContext,
+    type TriggerResult,
 } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents, findLiveOngoingCardLocation } from '../domain/ongoingDetach';
 import {
     addOngoingCardCounter,
     addPowerCounter,
+    buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedMoveEvents,
+    createSkipOption,
     findMinionByAttachedCard,
     findMinionOnBases,
     grantExtraAction,
     grantExtraMinion,
 } from '../domain/abilityHelpers';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { BaseInPlay, CardInstance, CardsDrawnEvent, MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 
 type LocatedMinion = { minion: MinionOnBase; baseIndex: number };
 type BaseOngoing = BaseInPlay['ongoingActions'][number] & { baseIndex: number };
+type CardChoice = { cardUid?: string; defId?: string; source?: 'discard' | 'deck' };
+type GuinevereMoveChoice = { minionUid?: string; fromBaseIndex?: number; toBaseIndex?: number };
+type BaseChoice = { baseIndex?: number; skip?: boolean };
+type CamelotMoveChoice = { minionUid?: string; fromBaseIndex?: number; toBaseIndex?: number };
+type ActionTransferChoice = { actionUid?: string; fromBaseIndex?: number; toBaseIndex?: number; skip?: boolean };
+type MerlinsLibraryChoice = {
+    mode?: 'extraMinion' | 'moveMinion' | 'transferSelf';
+    minionUid?: string;
+    fromBaseIndex?: number;
+    toBaseIndex?: number;
+};
 
 const KING_ARTHUR = 'round_table_knights_king_arthur';
 const GALAHAD = 'round_table_knights_galahad';
@@ -44,6 +60,11 @@ const THE_GREEN_KNIGHT = 'round_table_knights_the_green_knight';
 const THE_LADY_OF_THE_LAKE = 'round_table_knights_the_lady_of_the_lake';
 const THE_MISTS_OF_AVALON = 'round_table_knights_the_mists_of_avalon';
 const THE_QUESTING_BEAST = 'round_table_knights_the_questing_beast';
+const A_QUESTING_MOVE = 'round_table_knights_a_questing_move';
+const GOOD_DEED_TRANSFER = 'round_table_knights_good_deed_transfer';
+const GALAHAD_SPECIAL_TRANSFER = 'round_table_knights_galahad_special_transfer';
+const NOBLE_STEED_MOVE = 'round_table_knights_noble_steed_move';
+const QUESTING_BEAST_TRANSFER = 'round_table_knights_the_questing_beast_transfer';
 
 function allMinions(state: SmashUpCore, predicate: (minion: MinionOnBase, baseIndex: number) => boolean): LocatedMinion[] {
     return state.bases.flatMap((base, baseIndex) =>
@@ -183,40 +204,229 @@ function removeCardFromGame(playerId: PlayerId, cardUid: string, defId: string, 
     } as SmashUpEvent;
 }
 
+function minionChoiceLabel(state: SmashUpCore, minion: MinionOnBase, baseIndex: number): string {
+    const minionName = getCardDef(minion.defId)?.name ?? minion.defId;
+    const baseName = getBaseDef(state.bases[baseIndex]?.defId)?.name ?? `基地 ${baseIndex + 1}`;
+    return `${minionName} @ ${baseName}`;
+}
+
+function queueKingArthurTargetPrompt(ctx: AbilityContext, source: LocatedMinion, candidates: LocatedMinion[]): AbilityResult {
+    const options = buildMinionTargetOptions(
+        candidates.map(candidate => ({
+            uid: candidate.minion.uid,
+            defId: candidate.minion.defId,
+            baseIndex: candidate.baseIndex,
+            label: minionChoiceLabel(ctx.state, candidate.minion, candidate.baseIndex),
+        })),
+        {
+            state: ctx.state,
+            sourcePlayerId: ctx.playerId,
+            sourceDefId: KING_ARTHUR,
+            sourceKind: 'nonAction',
+            effectType: 'move',
+        },
+    );
+    if (options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${KING_ARTHUR}_${ctx.now}`,
+        ctx.playerId,
+        '亚瑟王：选择要移动到这里的随从',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_king_arthur_title',
+            sourceId: KING_ARTHUR,
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    );
+    (interaction.data as { continuationContext?: { sourceBaseIndex: number } }).continuationContext = {
+        sourceBaseIndex: source.baseIndex,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
 function kingArthurTalent(ctx: AbilityContext): AbilityResult {
     const source = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!source) return { events: [] };
     const candidates = allMinions(ctx.state, (minion, baseIndex) =>
         minion.controller === ctx.playerId && baseIndex !== source.baseIndex,
     );
-    const target = (ctx.targetMinionUid
+    const target = ctx.targetMinionUid
         ? candidates.find(candidate => candidate.minion.uid === ctx.targetMinionUid)
-        : candidates[0]);
-    if (!target) return { events: [] };
-    const moveEvents = moveMinion(ctx.state, target.minion, target.baseIndex, source.baseIndex, ctx.playerId, 'round_table_knights_king_arthur', ctx.now);
+        : undefined;
+    if (!target && ctx.matchState) return queueKingArthurTargetPrompt(ctx, source, candidates);
+    const resolvedTarget = target ?? candidates[0];
+    if (!resolvedTarget) return { events: [] };
+    const moveEvents = moveMinion(ctx.state, resolvedTarget.minion, resolvedTarget.baseIndex, source.baseIndex, ctx.playerId, 'round_table_knights_king_arthur', ctx.now);
     const events = [...moveEvents];
     if (ownsActionOnBase(ctx.state.bases[source.baseIndex], ctx.playerId)) {
-        events.push(addPowerCounter(target.minion.uid, source.baseIndex, 1, 'round_table_knights_king_arthur_action_bonus', ctx.now));
+        events.push(addPowerCounter(resolvedTarget.minion.uid, source.baseIndex, 1, 'round_table_knights_king_arthur_action_bonus', ctx.now));
     }
     return { events };
 }
 
 function galahadOnPlay(ctx: AbilityContext): AbilityResult {
     const deck = ctx.state.players[ctx.playerId]?.deck ?? [];
-    const target = deck.find(card => {
-        const def = getCardDef(card.defId);
-        return def?.type === 'action' && def.ongoingTarget === 'base';
-    });
+    const targets = deck.filter(isBaseOngoingAction);
+    if (targets.length > 0 && ctx.matchState) return queueGalahadDeckPrompt(ctx, targets);
+    const target = targets[0];
     return target ? { events: [topDeckReorderedEvent(ctx.playerId, target, deck, 'round_table_knights_galahad', ctx.now)] } : { events: [] };
 }
 
+function queueGalahadSpecialPrompt(ctx: AbilityContext, actions: BaseOngoing[]): AbilityResult {
+    if (!ctx.matchState) return { events: [] };
+    const options = [
+        createSkipOption('跳过（不转移行动）', 'ui.round_table_knights_galahad_special_transfer_skip_option'),
+        ...actionTransferOptions(ctx.state, actions, ctx.baseIndex),
+    ];
+    if (options.length <= 1) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${GALAHAD_SPECIAL_TRANSFER}_${ctx.now}`,
+        ctx.playerId,
+        '加拉哈德：选择要转移的己方行动和目标基地',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_galahad_special_transfer_title',
+            sourceId: GALAHAD_SPECIAL_TRANSFER,
+            targetType: 'generic',
+            genericIntent: 'composite-context',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
 function galahadSpecial(ctx: AbilityContext): AbilityResult {
-    const action = firstOwnBaseAction(ctx.state, ctx.playerId, ctx.baseIndex);
-    const toBaseIndex = ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== ctx.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
+    const actions = (ctx.state.bases[ctx.baseIndex]?.ongoingActions ?? [])
+        .filter(action => action.ownerId === ctx.playerId)
+        .map(action => ({ ...action, baseIndex: ctx.baseIndex }));
+    const action = actions[0];
+    const directToBaseIndex = ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== ctx.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
         ? ctx.targetBaseIndex
-        : firstOtherBaseIndex(ctx.state, ctx.baseIndex);
+        : undefined;
+    if (ctx.matchState && directToBaseIndex === undefined) return queueGalahadSpecialPrompt(ctx, actions);
+    const toBaseIndex = directToBaseIndex ?? firstOtherBaseIndex(ctx.state, ctx.baseIndex);
     if (!action || toBaseIndex === undefined) return { events: [] };
     return { events: transferBaseAction(ctx.state, action, toBaseIndex, ctx.playerId, 'round_table_knights_galahad', ctx.now) };
+}
+
+function buildGuinevereMoveOptions(state: SmashUpCore, source: LocatedMinion, playerId: PlayerId) {
+    const candidates = state.bases[source.baseIndex].minions.filter(minion =>
+        minion.uid !== source.minion.uid && minion.controller === playerId,
+    );
+    const destinations = state.bases
+        .map((_base, baseIndex) => baseIndex)
+        .filter(baseIndex => baseIndex !== source.baseIndex);
+    return candidates.flatMap((minion) => destinations.map((toBaseIndex) => ({
+        id: `${minion.uid}-${toBaseIndex}`,
+        label: `${getCardDef(minion.defId)?.name ?? minion.defId} -> ${getBaseDef(state.bases[toBaseIndex]?.defId)?.name ?? `基地 ${toBaseIndex + 1}`}`,
+        value: { minionUid: minion.uid, fromBaseIndex: source.baseIndex, toBaseIndex } satisfies GuinevereMoveChoice,
+        displayMode: 'button' as const,
+    })));
+}
+
+function queueGuinevereTargetPrompt(ctx: AbilityContext, source: LocatedMinion): AbilityResult {
+    const options = buildGuinevereMoveOptions(ctx.state, source, ctx.playerId);
+    if (options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${GUINEVERE}_${ctx.now}`,
+        ctx.playerId,
+        '格尼薇儿：选择要移动的随从和目标基地',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_guinevere_title',
+            sourceId: GUINEVERE,
+            targetType: 'generic',
+            autoResolveIfSingle: false,
+        },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function buildBaseChoiceOptions(state: SmashUpCore, baseIndices: number[]) {
+    return baseIndices.map(baseIndex => ({
+        id: `base-${baseIndex}`,
+        label: getBaseDef(state.bases[baseIndex]?.defId)?.name ?? `基地 ${baseIndex + 1}`,
+        value: { baseIndex },
+        displayMode: 'button' as const,
+    }));
+}
+
+function otherBaseIndices(state: SmashUpCore, fromBaseIndex: number): number[] {
+    return state.bases
+        .map((_base, baseIndex) => baseIndex)
+        .filter(baseIndex => baseIndex !== fromBaseIndex);
+}
+
+function actionTransferOptions(state: SmashUpCore, actions: BaseOngoing[], fromBaseIndex: number) {
+    const destinations = otherBaseIndices(state, fromBaseIndex);
+    return actions.flatMap(action => destinations.map(toBaseIndex => ({
+        id: `${action.uid}-${toBaseIndex}`,
+        label: `${getCardDef(action.defId)?.name ?? action.defId} -> ${getBaseDef(state.bases[toBaseIndex]?.defId)?.name ?? `基地 ${toBaseIndex + 1}`}`,
+        value: { actionUid: action.uid, fromBaseIndex: action.baseIndex, toBaseIndex } satisfies ActionTransferChoice,
+        displayMode: 'button' as const,
+    })));
+}
+
+function queueMinionDestinationPrompt(
+    matchState: NonNullable<AbilityContext['matchState']>,
+    playerId: PlayerId,
+    now: number,
+    sourceId: string,
+    title: string,
+    titleKey: string,
+    source: LocatedMinion,
+    destinationBaseIndices: number[],
+    options: { optional?: boolean; skipLabelText?: string; skipLabelKey?: string; continuationContext?: Record<string, unknown> } = {},
+): AbilityResult {
+    const baseOptions = buildBaseChoiceOptions(matchState.core, destinationBaseIndices);
+    if (baseOptions.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${sourceId}_${now}`,
+        playerId,
+        title,
+        [
+            ...(options.optional ? [createSkipOption(options.skipLabelText ?? '跳过', options.skipLabelKey)] : []),
+            ...baseOptions,
+        ],
+        {
+            sourceId,
+            titleKey,
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = {
+        sourceMinionUid: source.minion.uid,
+        sourceBaseIndex: source.baseIndex,
+        ...(options.continuationContext ?? {}),
+    };
+    return { events: [], matchState: queueInteraction(matchState, interaction) };
+}
+
+function queuePercivalDestinationPrompt(ctx: AbilityContext, source: LocatedMinion, candidateBaseIndices: number[]): AbilityResult {
+    const options = buildBaseChoiceOptions(ctx.state, candidateBaseIndices);
+    if (options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${PERCIVAL}_${ctx.now}`,
+        ctx.playerId,
+        '帕西瓦尔：选择要移动到的己方行动牌基地',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_percival_title',
+            sourceId: PERCIVAL,
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: { sourceMinionUid: string; sourceBaseIndex: number } }).continuationContext = {
+        sourceMinionUid: source.minion.uid,
+        sourceBaseIndex: source.baseIndex,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function guinevereTalent(ctx: AbilityContext): AbilityResult {
@@ -227,12 +437,15 @@ function guinevereTalent(ctx: AbilityContext): AbilityResult {
     );
     const target = ctx.targetMinionUid
         ? candidates.find(minion => minion.uid === ctx.targetMinionUid)
-        : candidates[0];
+        : undefined;
     const toBaseIndex = ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== source.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
         ? ctx.targetBaseIndex
-        : firstOtherBaseIndex(ctx.state, source.baseIndex);
-    if (!target || toBaseIndex === undefined) return { events: [] };
-    return { events: moveMinion(ctx.state, target, source.baseIndex, toBaseIndex, ctx.playerId, 'round_table_knights_guinevere', ctx.now) };
+        : undefined;
+    if ((!target || toBaseIndex === undefined) && ctx.matchState) return queueGuinevereTargetPrompt(ctx, source);
+    const resolvedTarget = target ?? candidates[0];
+    const resolvedToBaseIndex = toBaseIndex ?? firstOtherBaseIndex(ctx.state, source.baseIndex);
+    if (!resolvedTarget || resolvedToBaseIndex === undefined) return { events: [] };
+    return { events: moveMinion(ctx.state, resolvedTarget, source.baseIndex, resolvedToBaseIndex, ctx.playerId, 'round_table_knights_guinevere', ctx.now) };
 }
 
 function lancelotMoved(ctx: TriggerContext): SmashUpEvent[] {
@@ -277,6 +490,9 @@ function percivalTalent(ctx: AbilityContext): AbilityResult {
         index !== source.baseIndex && ownsActionOnBase(base, ctx.playerId),
     )
         .map(({ index }) => index);
+    if (ctx.matchState && ctx.targetBaseIndex === undefined) {
+        return queuePercivalDestinationPrompt(ctx, source, candidateBaseIndices);
+    }
     const toBaseIndex = ctx.targetBaseIndex !== undefined && candidateBaseIndices.includes(ctx.targetBaseIndex)
         ? ctx.targetBaseIndex
         : candidateBaseIndices[0];
@@ -288,7 +504,23 @@ function aQuestingOnPlay(ctx: AbilityContext): AbilityResult {
     if (!ctx.targetMinionUid) return { events: [] };
     const target = findMinionOnBases(ctx.state, ctx.targetMinionUid);
     if (!target || target.minion.controller !== ctx.playerId) return { events: [] };
-    const toBaseIndex = firstOtherBaseIndex(ctx.state, target.baseIndex);
+    const directToBaseIndex = ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== target.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
+        ? ctx.targetBaseIndex
+        : undefined;
+    if (ctx.matchState && directToBaseIndex === undefined) {
+        return queueMinionDestinationPrompt(
+            ctx.matchState,
+            ctx.playerId,
+            ctx.now,
+            A_QUESTING_MOVE,
+            '踏上征途：选择是否移动宿主随从',
+            'ui.round_table_knights_a_questing_move_title',
+            target,
+            otherBaseIndices(ctx.state, target.baseIndex),
+            { optional: true, skipLabelText: '不移动此随从', skipLabelKey: 'ui.round_table_knights_a_questing_move_skip_option' },
+        );
+    }
+    const toBaseIndex = directToBaseIndex ?? firstOtherBaseIndex(ctx.state, target.baseIndex);
     if (toBaseIndex === undefined) return { events: [] };
     return { events: moveMinion(ctx.state, target.minion, target.baseIndex, toBaseIndex, ctx.playerId, 'round_table_knights_a_questing', ctx.now) };
 }
@@ -297,7 +529,36 @@ function goodDeedOnPlay(ctx: AbilityContext): AbilityResult {
     return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
 }
 
-function goodDeedOnMove(ctx: TriggerContext): SmashUpEvent[] {
+function queueGoodDeedTransferPrompt(ctx: TriggerContext, action: BaseOngoing, metadataUpdate: Record<string, unknown>): TriggerResult {
+    const playerId = ctx.sourceControllerId;
+    const destinations = otherBaseIndices(ctx.state, action.baseIndex);
+    const options = [
+        createSkipOption('跳过（不转移善行）', 'ui.round_table_knights_good_deed_transfer_skip_option'),
+        ...buildBaseChoiceOptions(ctx.state, destinations),
+    ];
+    if (!ctx.matchState || !playerId || options.length <= 1) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${GOOD_DEED_TRANSFER}_${ctx.now}_${ctx.sourceCardUid}`,
+        playerId,
+        '善行：选择是否转移到另一个基地',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_good_deed_transfer_title',
+            sourceId: GOOD_DEED_TRANSFER,
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = {
+        actionUid: action.uid,
+        sourceBaseIndex: action.baseIndex,
+        metadataUpdate,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function goodDeedOnMove(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return [];
     if (ctx.moveToBaseIndex !== ctx.sourceBaseIndex || ctx.triggerMinion?.controller !== ctx.sourceControllerId) return [];
     const action = ownBaseActionByUid(ctx.state, ctx.sourceControllerId, ctx.sourceBaseIndex, ctx.sourceCardUid);
@@ -305,12 +566,68 @@ function goodDeedOnMove(ctx: TriggerContext): SmashUpEvent[] {
     if (Number(action.metadata?.roundTableGoodDeedUsedTurn ?? -1) === ctx.state.turnNumber) return [];
     const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.sourceBaseIndex);
     const metadataUpdate = { roundTableGoodDeedUsedTurn: ctx.state.turnNumber };
+    if (ctx.matchState && toBaseIndex !== undefined) {
+        return queueGoodDeedTransferPrompt(ctx, action, metadataUpdate);
+    }
     return [
         ...buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now),
         ...(toBaseIndex === undefined
             ? [addOngoingCardCounter(action.uid, ctx.sourceBaseIndex, 0, 'round_table_knights_good_deed_once_per_turn', ctx.now, { metadataUpdate })]
             : transferBaseAction(ctx.state, action, toBaseIndex, ctx.sourceControllerId, 'round_table_knights_good_deed', ctx.now, metadataUpdate)),
     ];
+}
+
+function buildMerlinsLibraryOptions(ctx: AbilityContext) {
+    const moveOptions = allMinions(ctx.state, (minion, baseIndex) =>
+        minion.controller === ctx.playerId && baseIndex !== ctx.baseIndex,
+    ).map(({ minion, baseIndex }) => ({
+        id: `move-${minion.uid}`,
+        label: `移动 ${minionChoiceLabel(ctx.state, minion, baseIndex)} 到这里`,
+        value: { mode: 'moveMinion' as const, minionUid: minion.uid, fromBaseIndex: baseIndex, toBaseIndex: ctx.baseIndex } satisfies MerlinsLibraryChoice,
+        displayMode: 'button' as const,
+    }));
+    const transferOptions = otherBaseIndices(ctx.state, ctx.baseIndex).map(toBaseIndex => ({
+        id: `transfer-${toBaseIndex}`,
+        label: `转移藏书馆到 ${getBaseDef(ctx.state.bases[toBaseIndex]?.defId)?.name ?? `基地 ${toBaseIndex + 1}`}`,
+        value: { mode: 'transferSelf' as const, toBaseIndex } satisfies MerlinsLibraryChoice,
+        displayMode: 'button' as const,
+    }));
+    return [
+        {
+            id: 'extra-minion',
+            label: '额外打出一个随从到这里',
+            labelKey: 'ui.round_table_knights_merlins_library_extra_minion_option',
+            value: { mode: 'extraMinion' as const } satisfies MerlinsLibraryChoice,
+            displayMode: 'button' as const,
+        },
+        ...moveOptions,
+        ...transferOptions,
+    ];
+}
+
+function queueMerlinsLibraryPrompt(ctx: AbilityContext): AbilityResult {
+    if (!ctx.matchState) return { events: [] };
+    const options = buildMerlinsLibraryOptions(ctx);
+    if (options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${MERLINS_LIBRARY}_${ctx.now}`,
+        ctx.playerId,
+        '梅林藏书馆：选择天赋效果',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_merlins_library_title',
+            sourceId: MERLINS_LIBRARY,
+            targetType: 'generic',
+            genericIntent: 'composite-context',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = {
+        sourceCardUid: ctx.cardUid,
+        sourceBaseIndex: ctx.baseIndex,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function merlinsLibraryTalent(ctx: AbilityContext): AbilityResult {
@@ -329,14 +646,28 @@ function merlinsLibraryTalent(ctx: AbilityContext): AbilityResult {
         if (!action || ctx.targetBaseIndex === ctx.baseIndex || !ctx.state.bases[ctx.targetBaseIndex]) return { events: [] };
         return { events: transferBaseAction(ctx.state, action, ctx.targetBaseIndex, ctx.playerId, 'round_table_knights_merlins_library_transfer', ctx.now) };
     }
+    if (ctx.matchState) return queueMerlinsLibraryPrompt(ctx);
     return { events: [grantExtraMinion(ctx.playerId, 'round_table_knights_merlins_library_minion', ctx.now, ctx.baseIndex)] };
 }
 
 function nobleSteedTalent(ctx: AbilityContext): AbilityResult {
     const host = findMinionByAttachedCard(ctx.state, ctx.cardUid);
-    const toBaseIndex = host && ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== host.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
+    const directToBaseIndex = host && ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== host.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
         ? ctx.targetBaseIndex
-        : host ? firstOtherBaseIndex(ctx.state, host.baseIndex) : undefined;
+        : undefined;
+    if (host && host.minion.controller === ctx.playerId && ctx.matchState && directToBaseIndex === undefined) {
+        return queueMinionDestinationPrompt(
+            ctx.matchState,
+            ctx.playerId,
+            ctx.now,
+            NOBLE_STEED_MOVE,
+            '高贵坐骑：选择目标基地',
+            'ui.round_table_knights_noble_steed_move_title',
+            host,
+            otherBaseIndices(ctx.state, host.baseIndex),
+        );
+    }
+    const toBaseIndex = directToBaseIndex ?? (host ? firstOtherBaseIndex(ctx.state, host.baseIndex) : undefined);
     if (!host || toBaseIndex === undefined || host.minion.controller !== ctx.playerId) return { events: [] };
     return { events: moveMinion(ctx.state, host.minion, host.baseIndex, toBaseIndex, ctx.playerId, 'round_table_knights_noble_steed', ctx.now) };
 }
@@ -348,6 +679,98 @@ function countDrawnCardsForPlayer(events: SmashUpEvent[], playerId: PlayerId): n
         if (drawEvent.payload.playerId !== playerId) return count;
         return count + (drawEvent.payload.cardUids?.length ?? drawEvent.payload.count ?? 0);
     }, 0);
+}
+
+function buildRoundTableDiscardCardOptions(cards: CardInstance[]) {
+    return cards.map((card, index) => ({
+        id: `discard-${index}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId, source: 'discard' } satisfies CardChoice,
+        _source: 'discard' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
+function isBaseOngoingAction(card: CardInstance): boolean {
+    const def = getCardDef(card.defId);
+    return def?.type === 'action' && def.ongoingTarget === 'base';
+}
+
+function isMinionOngoingAction(card: CardInstance): boolean {
+    const def = getCardDef(card.defId);
+    return def?.type === 'action' && def.ongoingTarget === 'minion';
+}
+
+function buildRoundTableDeckCardOptions(cards: CardInstance[]) {
+    return cards.map((card, index) => ({
+        id: `deck-${index}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId, source: 'deck' } satisfies CardChoice,
+        _source: 'deck' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
+function queueGalahadDeckPrompt(ctx: AbilityContext, cards: CardInstance[]): AbilityResult {
+    if (!ctx.matchState || cards.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${GALAHAD}_${ctx.now}`,
+        ctx.playerId,
+        '加拉哈德：选择牌库中一张可打到基地的行动置于牌库顶',
+        buildRoundTableDeckCardOptions(cards),
+        {
+            titleKey: 'ui.round_table_knights_galahad_title',
+            sourceId: GALAHAD,
+            targetType: 'generic',
+            genericIntent: 'card-pool',
+            autoRefresh: 'deck',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function queueLadyOfTheLakePrompt(ctx: AbilityContext, discardCards: CardInstance[], deckCards: CardInstance[] = []): AbilityResult {
+    const options = [
+        ...buildRoundTableDiscardCardOptions(discardCards),
+        ...buildRoundTableDeckCardOptions(deckCards),
+    ];
+    if (!ctx.matchState || options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${THE_LADY_OF_THE_LAKE}_${ctx.now}`,
+        ctx.playerId,
+        deckCards.length > 0
+            ? '湖中女神：选择牌库或弃牌堆中一张角色修正行动'
+            : '湖中女神：选择弃牌堆中一张角色修正行动',
+        options,
+        {
+            sourceId: THE_LADY_OF_THE_LAKE,
+            targetType: deckCards.length > 0 ? 'generic' : 'discard',
+            ...(deckCards.length > 0 ? { genericIntent: 'card-pool' as const } : {}),
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function queueMistsOfAvalonPrompt(ctx: AbilityContext, cards: CardInstance[]): AbilityResult {
+    if (!ctx.matchState || cards.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${THE_MISTS_OF_AVALON}_${ctx.now}`,
+        ctx.playerId,
+        '阿瓦隆迷雾：选择至多三张弃牌堆角色放到牌库顶',
+        buildRoundTableDiscardCardOptions(cards),
+        {
+            titleKey: 'ui.round_table_knights_the_mists_of_avalon_title',
+            sourceId: THE_MISTS_OF_AVALON,
+            targetType: 'discard',
+            multi: { min: 0, max: Math.min(3, cards.length) },
+            autoResolveIfSingle: false,
+        },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function fisherKingOnMove(ctx: TriggerContext): SmashUpEvent[] {
@@ -420,11 +843,12 @@ function greenKnightOnMove(ctx: TriggerContext): SmashUpEvent[] {
 
 function ladyOfTheLake(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    const isMinionAction = (card: CardInstance) => {
-        const def = getCardDef(card.defId);
-        return def?.type === 'action' && def.ongoingTarget === 'minion';
-    };
-    const discardCard = player?.discard.find(isMinionAction);
+    const discardCards = player?.discard.filter(isMinionOngoingAction) ?? [];
+    const deckCards = player?.deck.filter(isMinionOngoingAction) ?? [];
+    if ((discardCards.length > 0 || deckCards.length > 0) && ctx.matchState) {
+        return queueLadyOfTheLakePrompt(ctx, discardCards, deckCards);
+    }
+    const discardCard = discardCards[0];
     if (discardCard) {
         return {
             events: [{
@@ -437,12 +861,15 @@ function ladyOfTheLake(ctx: AbilityContext): AbilityResult {
             })],
         };
     }
-    const deckCard = player?.deck.find(isMinionAction);
+    const deckCard = deckCards[0];
     if (!player || !deckCard) return { events: [] };
     return {
         events: [
-            topDeckReorderedEvent(ctx.playerId, deckCard, player.deck, THE_LADY_OF_THE_LAKE, ctx.now),
-            ...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
+            {
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: ctx.playerId, count: 1, cardUids: [deckCard.uid] },
+                timestamp: ctx.now,
+            } as CardsDrawnEvent,
             grantExtraAction(ctx.playerId, 'round_table_knights_the_lady_of_the_lake_extra_action', ctx.now, {
                 playTiming: 'immediate',
                 restrictToCardUid: deckCard.uid,
@@ -454,15 +881,46 @@ function ladyOfTheLake(ctx: AbilityContext): AbilityResult {
 function mistsOfAvalon(ctx: AbilityContext): AbilityResult {
     const minions = (ctx.state.players[ctx.playerId]?.discard ?? [])
         .filter(card => card.type === 'minion')
-        .slice(0, 3);
-    return { events: minions.map(card => cardToDeckTop(card, ctx.playerId, THE_MISTS_OF_AVALON, ctx.now)) };
+    if (minions.length > 0 && ctx.matchState) return queueMistsOfAvalonPrompt(ctx, minions);
+    return { events: [] };
 }
 
-function questingBeastOnMove(ctx: TriggerContext): SmashUpEvent[] {
+function queueQuestingBeastTransferPrompt(ctx: TriggerContext, action: BaseOngoing): TriggerResult {
+    const playerId = ctx.sourceControllerId;
+    const sourceBaseIndex = ctx.sourceBaseIndex;
+    if (!ctx.matchState || !ctx.triggerMinion || !playerId || sourceBaseIndex === undefined) return { events: [] };
+    const destinations = otherBaseIndices(ctx.state, action.baseIndex);
+    const options = buildBaseChoiceOptions(ctx.state, destinations);
+    if (options.length === 0) return { events: [addPowerCounter(ctx.triggerMinion.uid, sourceBaseIndex, 1, 'round_table_knights_the_questing_beast', ctx.now)] };
+    const interaction = createSimpleChoice(
+        `${QUESTING_BEAST_TRANSFER}_${ctx.now}_${ctx.sourceCardUid}`,
+        playerId,
+        '追踪野兽：选择要转移到的基地',
+        options,
+        {
+            titleKey: 'ui.round_table_knights_the_questing_beast_transfer_title',
+            sourceId: QUESTING_BEAST_TRANSFER,
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = {
+        actionUid: action.uid,
+        sourceBaseIndex: action.baseIndex,
+        triggerMinionUid: ctx.triggerMinion.uid,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function questingBeastOnMove(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId || !ctx.triggerMinion) return [];
     if (ctx.moveToBaseIndex !== ctx.sourceBaseIndex || ctx.triggerMinion.controller !== ctx.sourceControllerId) return [];
     const action = ownBaseActionByUid(ctx.state, ctx.sourceControllerId, ctx.sourceBaseIndex, ctx.sourceCardUid);
     const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.sourceBaseIndex);
+    if (ctx.matchState && action && toBaseIndex !== undefined) {
+        return queueQuestingBeastTransferPrompt(ctx, action);
+    }
     return [
         addPowerCounter(ctx.triggerMinion.uid, ctx.sourceBaseIndex, 1, 'round_table_knights_the_questing_beast', ctx.now),
         ...(!action || toBaseIndex === undefined
@@ -496,11 +954,51 @@ function camelotDestinationBaseIndex(ctx: Parameters<Parameters<typeof registerA
     return firstOtherBaseIndex(ctx.state, ctx.baseIndex);
 }
 
+function buildCamelotMoveOptions(ctx: Parameters<Parameters<typeof registerActiveBaseAbility>[1]>[0]) {
+    const ownMinions = ctx.state.bases[ctx.baseIndex]?.minions
+        .filter(minion => minion.controller === ctx.playerId) ?? [];
+    const destinations = ctx.state.bases
+        .map((_base, baseIndex) => baseIndex)
+        .filter(baseIndex => baseIndex !== ctx.baseIndex);
+    return ownMinions.flatMap(minion => destinations.map(toBaseIndex => ({
+        id: `${minion.uid}-${toBaseIndex}`,
+        label: `${getCardDef(minion.defId)?.name ?? minion.defId} -> ${getBaseDef(ctx.state.bases[toBaseIndex]?.defId)?.name ?? `基地 ${toBaseIndex + 1}`}`,
+        value: { minionUid: minion.uid, fromBaseIndex: ctx.baseIndex, toBaseIndex } satisfies CamelotMoveChoice,
+        displayMode: 'button' as const,
+    })));
+}
+
+function queueCamelotMovePrompt(ctx: Parameters<Parameters<typeof registerActiveBaseAbility>[1]>[0]): AbilityResult {
+    const options = buildCamelotMoveOptions(ctx);
+    if (options.length === 0 || !ctx.matchState) return { events: [] };
+    const interaction = createSimpleChoice(
+        `base_camelot_${ctx.now}`,
+        ctx.playerId,
+        '卡美洛：选择要移动的己方随从和目标基地',
+        options,
+        {
+            titleKey: 'ui.base_camelot_title',
+            sourceId: 'base_camelot',
+            targetType: 'generic',
+            genericIntent: 'composite-context',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: { sourceBaseIndex: number } }).continuationContext = {
+        sourceBaseIndex: ctx.baseIndex,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
 function camelotCanUse(ctx: Parameters<Parameters<typeof registerActiveBaseAbility>[1]>[0]): boolean {
     return Boolean(camelotSelectedMinion(ctx) && camelotDestinationBaseIndex(ctx) !== undefined);
 }
 
-function camelotActive(ctx: Parameters<Parameters<typeof registerActiveBaseAbility>[1]>[0]): { events: SmashUpEvent[] } {
+function camelotActive(ctx: Parameters<Parameters<typeof registerActiveBaseAbility>[1]>[0]): AbilityResult {
+    if (ctx.matchState && (!ctx.targetMinionUid || ctx.targetBaseIndex === undefined)) {
+        return queueCamelotMovePrompt(ctx);
+    }
     const minion = camelotSelectedMinion(ctx);
     const toBaseIndex = camelotDestinationBaseIndex(ctx);
     if (!minion || toBaseIndex === undefined) return { events: [] };
@@ -551,7 +1049,295 @@ function camelotProtection(ctx: ProtectionCheckContext): boolean {
     return printedPower(ctx.targetMinion.defId) >= 4;
 }
 
+function registerRoundTableKnightInteractionHandlers(): void {
+    const resolveMinionDestination = (
+        state: Parameters<Parameters<typeof registerInteractionHandler>[1]>[0],
+        playerId: PlayerId,
+        value: unknown,
+        data: Parameters<Parameters<typeof registerInteractionHandler>[1]>[3],
+        timestamp: number,
+        reason: string,
+    ) => {
+        const selected = value as BaseChoice | undefined;
+        const source = (data?.continuationContext as { sourceMinionUid?: string; sourceBaseIndex?: number } | undefined);
+        if (selected?.skip) return { state, events: [] };
+        if (typeof selected?.baseIndex !== 'number' || !source?.sourceMinionUid || source.sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        if (selected.baseIndex === source.sourceBaseIndex || !state.core.bases[selected.baseIndex]) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[source.sourceBaseIndex]?.minions.find(candidate =>
+            candidate.uid === source.sourceMinionUid && candidate.controller === playerId,
+        );
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: moveMinion(state.core, minion, source.sourceBaseIndex, selected.baseIndex, playerId, reason, timestamp),
+        };
+    };
+
+    registerInteractionHandler(A_QUESTING_MOVE, (state, playerId, value, data, _random, timestamp) =>
+        resolveMinionDestination(state, playerId, value, data, timestamp, A_QUESTING));
+
+    registerInteractionHandler(NOBLE_STEED_MOVE, (state, playerId, value, data, _random, timestamp) =>
+        resolveMinionDestination(state, playerId, value, data, timestamp, NOBLE_STEED));
+
+    registerInteractionHandler(GOOD_DEED_TRANSFER, (state, playerId, value, data, random, timestamp) => {
+        const selected = value as BaseChoice | undefined;
+        const source = (data?.continuationContext as { actionUid?: string; sourceBaseIndex?: number; metadataUpdate?: Record<string, unknown> } | undefined);
+        if (selected?.skip) return { state, events: [] };
+        if (typeof selected?.baseIndex !== 'number' || !source?.actionUid || source.sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const action = ownBaseActionByUid(state.core, playerId, source.sourceBaseIndex, source.actionUid);
+        if (!action || selected.baseIndex === source.sourceBaseIndex || !state.core.bases[selected.baseIndex]) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [
+                ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+                ...transferBaseAction(state.core, action, selected.baseIndex, playerId, GOOD_DEED, timestamp, source.metadataUpdate),
+            ],
+        };
+    });
+
+    registerInteractionHandler(GALAHAD_SPECIAL_TRANSFER, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ActionTransferChoice | undefined;
+        if (selected?.skip) return { state, events: [] };
+        if (!selected?.actionUid || selected.fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const action = ownBaseActionByUid(state.core, playerId, selected.fromBaseIndex, selected.actionUid);
+        if (!action || selected.toBaseIndex === selected.fromBaseIndex || !state.core.bases[selected.toBaseIndex]) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: transferBaseAction(state.core, action, selected.toBaseIndex, playerId, GALAHAD, timestamp),
+        };
+    });
+
+    registerInteractionHandler(MERLINS_LIBRARY, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as MerlinsLibraryChoice | undefined;
+        const source = (data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined);
+        if (!selected?.mode || source?.sourceBaseIndex === undefined) return { state, events: [] };
+        if (selected.mode === 'extraMinion') {
+            return {
+                state,
+                events: [grantExtraMinion(playerId, 'round_table_knights_merlins_library_minion', timestamp, source.sourceBaseIndex)],
+            };
+        }
+        if (selected.mode === 'moveMinion') {
+            if (!selected.minionUid || selected.fromBaseIndex === undefined) return { state, events: [] };
+            const minion = state.core.bases[selected.fromBaseIndex]?.minions.find(candidate =>
+                candidate.uid === selected.minionUid && candidate.controller === playerId,
+            );
+            if (!minion || selected.fromBaseIndex === source.sourceBaseIndex) return { state, events: [] };
+            return {
+                state,
+                events: moveMinion(state.core, minion, selected.fromBaseIndex, source.sourceBaseIndex, playerId, 'round_table_knights_merlins_library_move', timestamp),
+            };
+        }
+        if (selected.mode === 'transferSelf') {
+            if (!source.sourceCardUid || selected.toBaseIndex === undefined) return { state, events: [] };
+            const action = ownBaseActionByUid(state.core, playerId, source.sourceBaseIndex, source.sourceCardUid);
+            if (!action || selected.toBaseIndex === source.sourceBaseIndex || !state.core.bases[selected.toBaseIndex]) {
+                return { state, events: [] };
+            }
+            return {
+                state,
+                events: transferBaseAction(state.core, action, selected.toBaseIndex, playerId, 'round_table_knights_merlins_library_transfer', timestamp),
+            };
+        }
+        return { state, events: [] };
+    });
+
+    registerInteractionHandler(QUESTING_BEAST_TRANSFER, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as BaseChoice | undefined;
+        const source = (data?.continuationContext as { actionUid?: string; sourceBaseIndex?: number; triggerMinionUid?: string } | undefined);
+        if (typeof selected?.baseIndex !== 'number' || !source?.actionUid || source.sourceBaseIndex === undefined || !source.triggerMinionUid) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[source.sourceBaseIndex]?.minions.find(candidate =>
+            candidate.uid === source.triggerMinionUid && candidate.controller === playerId,
+        );
+        const action = ownBaseActionByUid(state.core, playerId, source.sourceBaseIndex, source.actionUid);
+        if (!minion || !action || selected.baseIndex === source.sourceBaseIndex || !state.core.bases[selected.baseIndex]) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [
+                addPowerCounter(minion.uid, source.sourceBaseIndex, 1, THE_QUESTING_BEAST, timestamp),
+                ...transferBaseAction(state.core, action, selected.baseIndex, playerId, THE_QUESTING_BEAST, timestamp),
+            ],
+        };
+    });
+
+    registerInteractionHandler(GALAHAD, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { state, events: [] };
+        const deck = state.core.players[playerId]?.deck ?? [];
+        const card = deck.find(candidate =>
+            candidate.uid === selected.cardUid
+            && candidate.defId === selected.defId
+            && isBaseOngoingAction(candidate),
+        );
+        if (!card) return { state, events: [] };
+        return {
+            state,
+            events: [topDeckReorderedEvent(playerId, card, deck, GALAHAD, timestamp)],
+        };
+    });
+
+    registerInteractionHandler(THE_LADY_OF_THE_LAKE, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { state, events: [] };
+        const player = state.core.players[playerId];
+        const discardCard = selected.source !== 'deck'
+            ? player?.discard.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isMinionOngoingAction(candidate),
+            )
+            : undefined;
+        if (discardCard) {
+            return {
+                state,
+                events: [{
+                    type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+                    payload: { playerId, cardUids: [discardCard.uid], reason: THE_LADY_OF_THE_LAKE },
+                    timestamp,
+                } as SmashUpEvent, grantExtraAction(playerId, 'round_table_knights_the_lady_of_the_lake_extra_action', timestamp, {
+                    playTiming: 'immediate',
+                    restrictToCardUid: discardCard.uid,
+                })],
+            };
+        }
+        const deckCard = selected.source !== 'discard'
+            ? player?.deck.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isMinionOngoingAction(candidate),
+            )
+            : undefined;
+        if (!player || !deckCard) return { state, events: [] };
+        return {
+            state,
+            events: [
+                {
+                    type: SU_EVENTS.CARDS_DRAWN,
+                    payload: { playerId, count: 1, cardUids: [deckCard.uid] },
+                    timestamp,
+                } as CardsDrawnEvent,
+                grantExtraAction(playerId, 'round_table_knights_the_lady_of_the_lake_extra_action', timestamp, {
+                    playTiming: 'immediate',
+                    restrictToCardUid: deckCard.uid,
+                }),
+            ],
+        };
+    });
+
+    registerInteractionHandler(THE_MISTS_OF_AVALON, (state, playerId, value, _data, _random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : [value]) as CardChoice[];
+        const selectedUids = new Set(choices
+            .map(choice => choice?.cardUid)
+            .filter((cardUid): cardUid is string => typeof cardUid === 'string'));
+        const cards = (state.core.players[playerId]?.discard ?? [])
+            .filter(card => selectedUids.has(card.uid) && card.type === 'minion')
+            .slice(0, 3);
+        return {
+            state,
+            events: cards.map(card => cardToDeckTop(card, playerId, THE_MISTS_OF_AVALON, timestamp)),
+        };
+    });
+
+    registerInteractionHandler(PERCIVAL, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as BaseChoice | undefined;
+        const source = (data?.continuationContext as { sourceMinionUid?: string; sourceBaseIndex?: number } | undefined);
+        if (typeof selected?.baseIndex !== 'number' || !source?.sourceMinionUid || source.sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        if (selected.baseIndex === source.sourceBaseIndex || !state.core.bases[selected.baseIndex]) {
+            return { state, events: [] };
+        }
+        if (!ownsActionOnBase(state.core.bases[selected.baseIndex], playerId)) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[source.sourceBaseIndex]?.minions.find(candidate =>
+            candidate.uid === source.sourceMinionUid && candidate.controller === playerId,
+        );
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: moveMinion(state.core, minion, source.sourceBaseIndex, selected.baseIndex, playerId, PERCIVAL, timestamp),
+        };
+    });
+
+    registerInteractionHandler('base_camelot', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as CamelotMoveChoice | undefined;
+        const sourceBaseIndex = (data?.continuationContext as { sourceBaseIndex?: number } | undefined)?.sourceBaseIndex;
+        const fromBaseIndex = selected?.fromBaseIndex ?? sourceBaseIndex;
+        if (!selected?.minionUid || fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        if (fromBaseIndex !== sourceBaseIndex || fromBaseIndex === selected.toBaseIndex || !state.core.bases[selected.toBaseIndex]) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[fromBaseIndex]?.minions.find(candidate =>
+            candidate.uid === selected.minionUid && candidate.controller === playerId,
+        );
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: moveMinion(state.core, minion, fromBaseIndex, selected.toBaseIndex, playerId, 'base_camelot', timestamp),
+        };
+    });
+
+    registerInteractionHandler(KING_ARTHUR, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        const sourceBaseIndex = (data?.continuationContext as { sourceBaseIndex?: number } | undefined)?.sourceBaseIndex;
+        if (!selected?.minionUid || selected.baseIndex === undefined || sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion =>
+            minion.uid === selected.minionUid && minion.controller === playerId,
+        );
+        if (!target || selected.baseIndex === sourceBaseIndex || !state.core.bases[sourceBaseIndex]) {
+            return { state, events: [] };
+        }
+        const events = [
+            ...moveMinion(state.core, target, selected.baseIndex, sourceBaseIndex, playerId, KING_ARTHUR, timestamp),
+        ];
+        if (ownsActionOnBase(state.core.bases[sourceBaseIndex], playerId)) {
+            events.push(addPowerCounter(target.uid, sourceBaseIndex, 1, 'round_table_knights_king_arthur_action_bonus', timestamp));
+        }
+        return { state, events };
+    });
+
+    registerInteractionHandler(GUINEVERE, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as GuinevereMoveChoice | undefined;
+        if (!selected?.minionUid || selected.fromBaseIndex === undefined || selected.toBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        if (selected.fromBaseIndex === selected.toBaseIndex || !state.core.bases[selected.toBaseIndex]) {
+            return { state, events: [] };
+        }
+        const target = state.core.bases[selected.fromBaseIndex]?.minions.find(minion =>
+            minion.uid === selected.minionUid && minion.controller === playerId,
+        );
+        if (!target) return { state, events: [] };
+        return {
+            state,
+            events: moveMinion(state.core, target, selected.fromBaseIndex, selected.toBaseIndex, playerId, GUINEVERE, timestamp),
+        };
+    });
+}
+
 export function registerRoundTableKnightAbilities(): void {
+    registerRoundTableKnightInteractionHandlers();
     registerAbility(KING_ARTHUR, 'talent', kingArthurTalent);
     registerAbility(GALAHAD, 'onPlay', galahadOnPlay);
     registerAbility(GALAHAD, 'special', galahadSpecial);

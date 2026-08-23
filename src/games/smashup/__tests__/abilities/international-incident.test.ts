@@ -16,6 +16,7 @@ import {
     expectRegisteredAbilityContract,
     getFirstPrompt,
     getPromptOptions,
+    getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
     makeCard,
@@ -70,6 +71,68 @@ describe('国际事件四派系代表性玩法行为', () => {
         }
     });
 
+    it('相扑新人天赋在真实对局中必须选择弃牌和承接随从，不自动取第一项', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('discard-a', 'sumo_wrestlers_chikara_mizu', 'action', '0'),
+                        makeCard('discard-b', 'sumo_wrestlers_grasp_the_belt', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_dohyo', [
+                makeMinion('rookie-a', 'sumo_wrestlers_rookie_sumo', '0', 2),
+                makeMinion('rookie-b', 'musketeers_young_musketeer', '0', 3),
+            ])],
+        });
+
+        const result = invokeRegisteredAbilityContract('sumo_wrestlers_rookie_sumo', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'rookie-a',
+            defId: 'sumo_wrestlers_rookie_sumo',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 9,
+        });
+
+        expect(result.events).toHaveLength(0);
+        const discardPrompt = getSimpleChoicePrompt(result.matchState!, 'sumo_wrestlers_rookie_sumo_discard');
+        expect(discardPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(discardPrompt).map(option => option.value?.cardUid)).toEqual(['discard-a', 'discard-b']);
+
+        const discarded = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'discard-b',
+            '相扑新人选择第二张手牌弃掉',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(discarded.success, discarded.error).toBe(true);
+        expect(discarded.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+
+        const targetPrompt = getSimpleChoicePrompt(discarded.finalState, 'sumo_wrestlers_rookie_sumo_target');
+        expect(targetPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(targetPrompt).map(option => option.value?.minionUid)).toEqual(['rookie-a', 'rookie-b']);
+
+        const targeted = respondToPromptOption(
+            discarded.finalState,
+            option => option.value?.minionUid === 'rookie-b',
+            '相扑新人选择第二个己方随从承接力量指示物',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(targeted.success, targeted.error).toBe(true);
+        const after = targeted.finalState.core;
+        expect(after.players['0'].hand.map(card => card.uid)).toEqual(['discard-a']);
+        expect(after.players['0'].discard.map(card => card.uid)).toEqual(['discard-b']);
+        expect(after.bases[0].minions[0].powerCounters ?? 0).toBe(0);
+        expect(after.bases[0].minions[1].powerCounters).toBe(2);
+    });
+
     it('相扑手的技术奖给己方唯一随从放置 3 个力量指示物', () => {
         const core = makeState({
             bases: [makeBase('base_the_dohyo', [
@@ -88,7 +151,14 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 10,
         });
-        const after = applyEvents(core, result.events);
+        const target = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'rookie',
+            '技术奖目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        const after = target.finalState.core;
 
         expect(after.bases[0].minions[0].powerCounters).toBe(3);
         expect(getEffectivePower(after, after.bases[0].minions[0], 0)).toBe(5);
@@ -111,8 +181,15 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 12,
         });
-        const plusTwoMode = respondToPromptOption(
+        const plusTwoTarget = respondToPromptOption(
             plusTwo.matchState!,
+            option => option.value?.minionUid === 'rookie',
+            '力量满溢 +2 目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        const plusTwoMode = respondToPromptOption(
+            plusTwoTarget.finalState,
             option => option.value?.mode === 'power2',
             '力量满溢 +2 模式',
             '0',
@@ -275,7 +352,10 @@ describe('国际事件四派系代表性玩法行为', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
-                    discard: [makeCard('action-in-discard', 'luchadors_tag_team', 'action', '0')],
+                    discard: [
+                        makeCard('first-action-in-discard', 'luchadors_quick_set_up', 'action', '0'),
+                        makeCard('chosen-action-in-discard', 'luchadors_tag_team', 'action', '0'),
+                    ],
                 }),
                 '1': makePlayer('1'),
             },
@@ -294,10 +374,27 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 20,
         });
-        expect(onPlay.events[0]).toMatchObject({
+        expect(onPlay.events).toHaveLength(0);
+        const recoverPrompt = getSimpleChoicePrompt(onPlay.matchState!, 'luchadors_senor_muchoslam');
+        expect(recoverPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(recoverPrompt).map(option => option.value?.cardUid)).toEqual([
+            'first-action-in-discard',
+            'chosen-action-in-discard',
+        ]);
+        const recovered = respondToPromptOption(
+            onPlay.matchState!,
+            option => option.value?.cardUid === 'chosen-action-in-discard',
+            'Muchoslam 选择第二张弃牌堆行动',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(recovered.success, recovered.error).toBe(true);
+        expect(recovered.events.find(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toMatchObject({
             type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
-            payload: { playerId: '0', cardUids: ['action-in-discard'] },
+            payload: { playerId: '0', cardUids: ['chosen-action-in-discard'] },
         });
+        expect(recovered.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['chosen-action-in-discard']);
+        expect(recovered.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-action-in-discard']);
 
         const talent = invokeRegisteredAbilityContract('luchadors_senor_muchoslam', 'talent', {
             state: core,
@@ -1196,7 +1293,18 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 578,
         });
-        expect(outForTheCount.events).toEqual(expect.arrayContaining([
+        expect(outForTheCount.matchState).toBeDefined();
+        const outForTheCountPrompt = getSimpleChoicePrompt(outForTheCount.matchState!, 'luchadors_out_for_the_count');
+        expect(outForTheCountPrompt.autoResolveIfSingle).toBe(false);
+        const resolvedCount = respondToPromptOption(
+            outForTheCount.matchState!,
+            option => option.value?.minionUid === 'target' && option.value?.actionUid === 'setup',
+            '点名出局唯一随从和行动候选',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolvedCount.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.ONGOING_DETACHED,
                 payload: expect.objectContaining({
@@ -1213,7 +1321,7 @@ describe('国际事件四派系代表性玩法行为', () => {
                 }),
             }),
         ]));
-        const afterCount = applyEvents(countCore, outForTheCount.events);
+        const afterCount = resolvedCount.finalState.core;
         expect(afterCount.players['0'].hand.map(card => card.uid)).toContain('setup');
         expect(afterCount.bases[0].minions.map(minion => minion.uid)).toEqual(['other']);
     });
@@ -1556,7 +1664,17 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 30,
         });
-        const afterHeadButt = applyEvents(core, headButt.events);
+        expect(headButt.matchState).toBeDefined();
+        const headButtPrompt = getSimpleChoicePrompt(headButt.matchState!, 'sumo_wrestlers_head_butt');
+        expect(headButtPrompt.autoResolveIfSingle).toBe(false);
+        const resolvedHeadButt = respondToPromptOption(
+            headButt.matchState!,
+            option => option.value?.cardUid === 'enemy-action',
+            '头槌唯一行动候选',
+            '0',
+            FIXED_RANDOM,
+        );
+        const afterHeadButt = resolvedHeadButt.finalState.core;
         expect(afterHeadButt.bases[0].minions[2].attachedActions).toHaveLength(0);
         expect(afterHeadButt.players['1'].discard.map(card => card.uid)).toContain('enemy-action');
 
@@ -1750,8 +1868,15 @@ describe('国际事件四派系代表性玩法行为', () => {
         });
         expect(result.matchState).toBeDefined();
 
-        const mode = respondToPromptOption(
+        const target = respondToPromptOption(
             result.matchState!,
+            option => option.value?.minionUid === 'ally',
+            '北方搬运者目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        const mode = respondToPromptOption(
+            target.finalState,
             option => option.value?.mode === 'move',
             '北方搬运者移动分支',
             '0',
@@ -2516,7 +2641,7 @@ describe('国际事件四派系代表性玩法行为', () => {
                 '1': makePlayer('1'),
             },
             bases: [makeBase('base_the_golden_lily', [
-                makeMinion('guard', 'musketeers_young_musketeer', '0', 3),
+                makeMinion('guard', 'mounties_dudlee', '0', 3),
                 makeMinion('enemy', 'sumo_wrestlers_rookie_sumo', '1', 2),
             ])],
         });
@@ -2530,7 +2655,14 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 73,
         });
-        const afterLastStand = applyEvents(lastStand, lastStandResult.events);
+        const selectedLastStand = respondToPromptOption(
+            lastStandResult.matchState!,
+            option => option.value?.minionUid === 'guard',
+            '最后一搏目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        const afterLastStand = selectedLastStand.finalState.core;
         expect(afterLastStand.bases[0].minions[0].tempPowerModifier).toBe(2);
         expect(afterLastStand.players['0'].hand.map(card => card.uid)).toEqual(['last-draw']);
         expect(afterLastStand.bases[0].minions[1].tempPowerModifier ?? 0).toBe(0);
@@ -2704,8 +2836,15 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 77,
         });
-        const northernPower = respondToPromptOption(
+        const northernTarget = respondToPromptOption(
             northernResult.matchState!,
+            option => option.value?.minionUid === 'ally',
+            '北方搬运者 +1 目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        const northernPower = respondToPromptOption(
+            northernTarget.finalState,
             option => option.value?.mode === 'power',
             '北方搬运者 +1 分支',
             '0',
@@ -2857,7 +2996,14 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 79,
         });
-        const afterSpecial = applyEvents(specialCore, special.events);
+        const specialTarget = respondToPromptOption(
+            special.matchState!,
+            option => option.value?.baseIndex === 0,
+            '呼叫警徽 special 目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+        const afterSpecial = specialTarget.finalState.core;
         expect(afterSpecial.bases[0].minions.map(minion => minion.powerCounters ?? 0)).toEqual([1, 1, 0]);
     });
 
@@ -3050,7 +3196,14 @@ describe('国际事件四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 82,
         });
-        const afterCheapPop = applyEvents(cheapPop, cheapPopResult.events);
+        const cheapPopTarget = respondToPromptOption(
+            cheapPopResult.matchState!,
+            option => option.value?.minionUid === 'luchador',
+            '廉价欢呼目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        const afterCheapPop = cheapPopTarget.finalState.core;
         expect(afterCheapPop.bases[0].minions[0].tempPowerModifier).toBe(2);
     });
 });

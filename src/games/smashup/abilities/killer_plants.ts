@@ -366,7 +366,7 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
                 deck,
                 eligible,
             });
-            if (eligible.length === 1) {
+            if (result.events.some((event) => event.type === SU_EVENTS.MINION_PLAYED)) {
                 simulatedDecks.set(targetSprout.controller, deck.filter((card) => card.uid !== eligible[0].cardUid));
             }
             events.push(...result.events);
@@ -428,7 +428,7 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
                 deck,
                 eligible,
             });
-            if (eligible.length === 1) {
+            if (result.events.some((event) => event.type === SU_EVENTS.MINION_PLAYED)) {
                 simulatedDecks.set(m.controller, deck.filter((card) => card.uid !== eligible[0].cardUid));
             }
             events.push(...result.events);
@@ -559,6 +559,7 @@ const killerPlantVenusManTrapPromptProgram = createPromptProgram<
                     targetType: 'generic',
                     autoRefresh: 'deck',
                     responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
                     titleKey: 'ui.killer_plant_venus_man_trap_search_title',
                 },
             ),
@@ -597,7 +598,7 @@ const killerPlantVenusManTrapProgram = createBranchProgram<
         ],
     })),
     else: createBranchProgram({
-        when: (context) => context.eligible.length === 1 || !context.matchState,
+        when: (context) => !context.matchState,
         then: createEffectProgram((context) => {
             const [selected] = context.eligible;
             if (!selected) return { events: [] };
@@ -638,6 +639,7 @@ const killerPlantSproutPromptProgram = createPromptProgram<
                     targetType: 'generic',
                     autoRefresh: 'deck',
                     responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
                     titleKey: 'ui.killer_plant_sprout_search_title',
                 },
             ),
@@ -685,7 +687,7 @@ const killerPlantSproutProgram = createBranchProgram<
         ],
     })),
     else: createBranchProgram({
-        when: (context) => context.eligible.length === 1 || !context.matchState,
+        when: (context) => !context.matchState,
         then: createEffectProgram((context) => {
             const [selected] = context.eligible;
             if (!selected) return { events: [] };

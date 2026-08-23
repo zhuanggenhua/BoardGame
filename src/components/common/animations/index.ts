@@ -13,6 +13,7 @@ export * from './SummonEffect';
 export * from './SummonHybridEffect';
 export * from './ConeBlast';
 export * from './BoardFxPresets';
+export * from './BoardDamageStateOverlay';
 export * from './DamageFlash';
 export * from './FloatingText';
 export * from './RedPulse';

@@ -1,8 +1,6 @@
 import type { DomainCore, PlayerId, RandomFn } from '../../../engine/types';
-import { MAGE_WARS_EVENTS } from './events';
 import {
     MAGE_WARS_GAME_ID,
-    STATUS_TOKEN_IDS,
     type ArenaZoneId,
 } from './ids';
 import {
@@ -16,7 +14,7 @@ import { executeCommand } from './execute';
 import { reduceEvent } from './reducer';
 import { validateCommand } from './validate';
 import type { MageWarsCore, MageWarsCommand, MageWarsEvent, MageWarsPlayerState } from './types';
-import { getStatusTokenAmount } from './statusTokens';
+import { discoverMageWarsTimingOpportunities } from './timingOpportunities';
 
 function normalizePlayerIds(playerIds: PlayerId[]): PlayerId[] {
     return playerIds.length >= 2 ? playerIds.slice(0, 2) : ['0', '1'];
@@ -78,50 +76,6 @@ function createMageWarsPlayerView(core: MageWarsCore, playerId: PlayerId): Parti
         };
 }
 
-function createSleepDamageReplacementEvents(core: MageWarsCore, event: MageWarsEvent): MageWarsEvent[] | undefined {
-    if (event.type !== 'DAMAGE_DEALT') return undefined;
-    const damage = event.payload.actualDamage ?? event.payload.amount;
-    if (damage <= 0) return undefined;
-
-    const targetPlayer = core.players[event.payload.targetId];
-    const targetObject = core.objects[event.payload.targetId];
-    if (!targetPlayer && !targetObject) return undefined;
-
-    const sleepAmount = targetPlayer
-        ? getStatusTokenAmount(targetPlayer, STATUS_TOKEN_IDS.SLEEP)
-        : targetObject
-            ? getStatusTokenAmount(targetObject, STATUS_TOKEN_IDS.SLEEP)
-            : 0;
-    if (sleepAmount <= 0) return undefined;
-
-    const targetRef = targetPlayer
-        ? { targetPlayerId: targetPlayer.id }
-        : { targetObjectId: targetObject!.id };
-    const sourceAbilityId = 'mw.status.sleep.damage-replacement';
-
-    return [event, {
-        type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-        payload: {
-            ...targetRef,
-            statusTokenId: STATUS_TOKEN_IDS.SLEEP,
-            amount: sleepAmount,
-            sourceAbilityId,
-        },
-        sourceCommandType: event.sourceCommandType,
-        timestamp: event.timestamp,
-    }, {
-        type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
-        payload: {
-            ...targetRef,
-            statusTokenId: STATUS_TOKEN_IDS.DAZE,
-            amount: sleepAmount,
-            sourceAbilityId,
-        },
-        sourceCommandType: event.sourceCommandType,
-        timestamp: event.timestamp,
-    }];
-}
-
 export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsEvent> = {
     gameId: MAGE_WARS_GAME_ID,
 
@@ -157,7 +111,7 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
     validate: validateCommand,
     execute: executeCommand,
     reduce: reduceEvent,
-    interceptEvent: (core, event) => createSleepDamageReplacementEvents(core, event) ?? event,
+    discoverTimingOpportunities: discoverMageWarsTimingOpportunities,
     playerView: createMageWarsPlayerView,
     isGameOver: (core) => {
         if (core.gameResult) return core.gameResult;

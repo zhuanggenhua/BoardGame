@@ -379,7 +379,12 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
         context.playerId,
         '选择要移动到的基地',
         buildBaseTargetOptions(context.destinationBases, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base', titleKey: 'ui.sharks_move_destination_title' },
+        {
+            sourceId: context.sourceId,
+            targetType: 'base',
+            titleKey: 'ui.sharks_move_destination_title',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -400,27 +405,6 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
         });
         const targets = collectPowerTargets(state.core, context.destroyPowerMax, choice.baseIndex, context.sourceMinionUid);
         if (targets.length === 0) return { events: moveEvents };
-        if (targets.length === 1) {
-            return {
-                events: [
-                    ...moveEvents,
-                    ...destroyTarget(state, {
-                        minionUid: targets[0].uid,
-                        defId: targets[0].defId,
-                        baseIndex: targets[0].baseIndex,
-                    }, {
-                        destroyerId: playerId,
-                        reason: `${context.sourceId}_destroy`,
-                        now: timestamp,
-                        sourcePlayerId: context.sourceDefId ? playerId : undefined,
-                        sourceDefId: context.sourceDefId,
-                        sourceControllerId: context.sourceDefId ? playerId : undefined,
-                        sourceBaseIndex: choice.baseIndex,
-                        sourceKind: context.sourceKind,
-                    }),
-                ],
-            };
-        }
         return {
             events: moveEvents,
             context: {
@@ -456,7 +440,7 @@ const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAft
                 effectType: 'destroy',
             },
         ),
-        { sourceId: context.sourceId, targetType: 'minion' },
+        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false },
     ),
     onResolve: ({ state, playerId, value, timestamp, context }) => {
         const choice = value as MinionChoice;

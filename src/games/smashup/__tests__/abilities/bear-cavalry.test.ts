@@ -1572,7 +1572,7 @@ describe('bear_cavalry_commission 额外随从交互', () => {
         expect(getPromptsBySourceId(result.finalState, 'bear_cavalry_commission_choose_minion')).toHaveLength(0);
     });
 
-    it('单基地直落 borrowed 手牌随从时，应保留真实 owner', () => {
+    it('单基地也确认基地后打出 borrowed 手牌随从，并保留真实 owner', () => {
         const playedState = runCommand(
             makeMatchState(makeState({
                 players: {
@@ -1595,9 +1595,17 @@ describe('bear_cavalry_commission 额外随从交互', () => {
         );
 
         const chooseMinion = getSimpleChoicePrompt(playedState.finalState, 'bear_cavalry_commission_choose_minion');
-        const resolved = respondToPrompt(
+        const pickedMinion = respondToPrompt(
             playedState.finalState,
             getPromptOption(chooseMinion, option => option?.value?.cardUid === 'borrowed-minion', 'borrowed minion option').id,
+            '0',
+            dummyRandom,
+        );
+        const chooseBase = getSimpleChoicePrompt(pickedMinion.finalState, 'bear_cavalry_commission_choose_base');
+        expect(chooseBase.autoResolveIfSingle).toBe(false);
+        const resolved = respondToPrompt(
+            pickedMinion.finalState,
+            getPromptOption(chooseBase, option => option?.value?.baseIndex === 0, 'commission single target base option').id,
             '0',
             dummyRandom,
         );
@@ -1605,6 +1613,7 @@ describe('bear_cavalry_commission 额外随从交互', () => {
         const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
         const minion = resolved.finalState.core.bases[0].minions.find(entry => entry.uid === 'borrowed-minion');
 
+        expect(pickedMinion.success).toBe(true);
         expect(resolved.success).toBe(true);
         expect(playedEvent?.payload?.ownerId).toBe('1');
         expect(minion).toEqual(expect.objectContaining({ uid: 'borrowed-minion', controller: '0', owner: '1' }));
@@ -1707,6 +1716,57 @@ describe('bear_cavalry_bear_necessities 行为', () => {
         expect(optionValues).not.toEqual(
             expect.arrayContaining([
                 expect.objectContaining({ uid: 'attached-a1' }),
+            ]),
+        );
+    });
+
+    it('只有一个可摧毁场上目标时也必须先让玩家确认', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_necessities', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m1', 'test_minion', '1', 3)],
+                }),
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(playResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+
+        const respondResult = respondToPrompt(
+            playResult.finalState,
+            getPromptOption(
+                prompt,
+                option => option?.value?.type === 'minion' && option?.value?.uid === 'm1',
+                'bear necessities single target option for m1',
+            ).id,
+            '0',
+            dummyRandom,
+        );
+
+        expect(respondResult.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.MINION_DESTROYED,
+                    payload: expect.objectContaining({ minionUid: 'm1' }),
+                }),
             ]),
         );
     });

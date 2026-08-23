@@ -17,6 +17,7 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPromptOption,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 
@@ -99,6 +100,48 @@ describe('dino_tooth_and_claw 保护', () => {
 });
 
 describe('激光三角龙保护合同', () => {
+    it('激光三角龙只有一个合法消灭目标时仍要求玩家确认', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    hand: [makeCard('lt-1', 'dino_laser_triceratops', 'minion', '1')],
+                    factions: ['dinosaurs', 'aliens'] as [string, string],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [makeMinion('target-1', 'test_target', '0', 2)],
+                }),
+            ],
+        }));
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'lt-1', baseIndex: 0 },
+        });
+
+        expect(result.success, result.error).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'dino_laser_triceratops');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.minionUid === 'target-1',
+            'laser triceratops single target',
+            '1',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['lt-1']);
+    });
+
     it('激光三角龙不会越过秘密基地去消灭受保护的 2 力量随从', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 1,
@@ -158,7 +201,7 @@ describe('恐龙派系行动能力', () => {
         getSimpleChoicePrompt(matchState, 'dino_rampage');
     });
 
-    it('dino_rampage: 单基地多个己方随从时应创建随从选择', () => {
+    it('dino_rampage: 单基地时仍先确认基地，再创建随从选择', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -178,8 +221,63 @@ describe('恐龙派系行动能力', () => {
         });
 
         const { matchState } = execPlayAction(state, '0', 'a1');
-        const prompt = getSimpleChoicePrompt(matchState, 'dino_rampage_choose_minion');
+        const basePrompt = getSimpleChoicePrompt(matchState, 'dino_rampage');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+        const chooseBase = respondToPromptOption(
+            matchState,
+            option => option.value?.baseIndex === 0,
+            'dino rampage single base',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseBase.success, chooseBase.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(chooseBase.finalState, 'dino_rampage_choose_minion');
         expect(getPromptOptions(prompt)).toHaveLength(2);
+    });
+
+    it('dino_rampage: 单基地且只有一个己方随从时仍需确认随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_rampage', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m0', 'test', '0', 3)],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const basePrompt = getSimpleChoicePrompt(matchState, 'dino_rampage');
+        const chooseBase = respondToPromptOption(
+            matchState,
+            option => option.value?.baseIndex === 0,
+            'dino rampage single base single minion',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseBase.success, chooseBase.error).toBe(true);
+        expect(chooseBase.finalState.core.tempBreakpointModifiers ?? {}).toEqual({});
+        const minionPrompt = getSimpleChoicePrompt(chooseBase.finalState, 'dino_rampage_choose_minion');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+        expect(minionPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(minionPrompt)).toHaveLength(1);
+
+        const resolved = respondToPromptOption(
+            chooseBase.finalState,
+            option => option.value?.minionUid === 'm0',
+            'dino rampage single minion',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.tempBreakpointModifiers?.[0]).toBe(-3);
     });
 
     it('dino_augmentation: 多个己方随从时创建 Prompt 选择', () => {

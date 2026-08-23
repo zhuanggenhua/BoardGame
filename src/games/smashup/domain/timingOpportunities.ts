@@ -58,7 +58,7 @@ export function buildSmashUpTimingOpportunityChoiceRequestOptions(
     );
 }
 
-export function createSmashUpTimingOpportunitySystemConfig(): TimingOpportunitySystemConfig<ReactionChoiceValue> {
+export function createSmashUpTimingOpportunitySystemConfig(): TimingOpportunitySystemConfig<ReactionChoiceValue, SmashUpCore> {
     return {
         choiceRequestOptions: buildSmashUpTimingOpportunityChoiceRequestOptions,
     };

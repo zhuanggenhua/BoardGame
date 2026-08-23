@@ -1,10 +1,11 @@
 # 旧会话状态归档
 
-本目录保存从仓库根目录迁出的旧会话状态文件。它们只作为历史记录，不作为当前目标、任务清单或继续执行入口。
+原根目录迁入的 `findings.md`、`progress.md`、`task_plan.md` 和 `小黑屋上下文.txt` 已删除长正文。
 
-| 文件 | 来源 |
-| --- | --- |
-| [`findings.md`](findings.md) | 原根目录 `findings.md` |
-| [`progress.md`](progress.md) | 原根目录 `progress.md` |
-| [`task_plan.md`](task_plan.md) | 原根目录 `task_plan.md` |
-| [`小黑屋上下文.txt`](%E5%B0%8F%E9%BB%91%E5%B1%8B%E4%B8%8A%E4%B8%8B%E6%96%87.txt) | 原根目录 `小黑屋上下文.txt` |
+删除原因：
+
+- 这些文件是旧会话状态，不是当前目标、任务清单或继续执行入口。
+- 内容大量引用旧 worktree、旧计划、旧 OpenSpec 结果和历史代码状态，会误导后续 AI 把历史摘要当当前任务。
+- 有效历史仍可从 git 历史追溯；当前执行必须重新锁定用户最新目标、真相源、入口和验收口径。
+
+当前项目 AI 规范入口是 [`.spec`](../../../.spec/AGENTS.md)。

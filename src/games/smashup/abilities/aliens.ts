@@ -93,6 +93,7 @@ type AlienProbePromptContext = {
     playerId: PlayerId;
     now: number;
     hasNoOpponents?: boolean;
+    cannotPrompt?: boolean;
     targetPlayerId?: PlayerId;
 };
 
@@ -258,13 +259,12 @@ function createAlienProbeProgramContext(ctx: AbilityContext): AlienProbePromptCo
             effectIntent: 'inspect',
         },
     );
-    const autoTargetPlayerId = options.length === 1 ? options[0].value.targetPlayerId : undefined;
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
         hasNoOpponents: options.length === 0,
-        targetPlayerId: autoTargetPlayerId,
+        cannotPrompt: !ctx.matchState,
     };
 }
 
@@ -1519,7 +1519,7 @@ const alienProbeProgram = createBranchProgram<
     SmashUpCore,
     SmashUpEvent
 >({
-    when: (context) => !!context.hasNoOpponents,
+    when: (context) => !!context.hasNoOpponents || !!context.cannotPrompt,
     then: createStopProgram(),
     else: createBranchProgram({
         when: (context) => !!context.targetPlayerId,

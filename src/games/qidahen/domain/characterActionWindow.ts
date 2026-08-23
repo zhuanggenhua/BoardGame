@@ -149,8 +149,7 @@ const findLindanHutuktuInfluenceTarget = (
         .sort((left, right) => (
             getLindanHutuktuInfluencePriority(left.id) - getLindanHutuktuInfluencePriority(right.id)
             || left.name.localeCompare(right.name, 'zh-CN')
-        ))
-        .at(0);
+        ))[0];
     if (friendlyTarget) {
         return { regionId: friendlyTarget.id, mode: 'place-friendly' };
     }
@@ -160,8 +159,7 @@ const findLindanHutuktuInfluenceTarget = (
         .sort((left, right) => (
             getLindanHutuktuInfluencePriority(left.id) - getLindanHutuktuInfluencePriority(right.id)
             || left.name.localeCompare(right.name, 'zh-CN')
-        ))
-        .at(0);
+        ))[0];
     return vassalTarget
         ? { regionId: vassalTarget.id, mode: 'flip-vassal' }
         : null;

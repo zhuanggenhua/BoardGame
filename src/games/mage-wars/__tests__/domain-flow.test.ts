@@ -358,6 +358,37 @@ function castObjectSpellCommand(
 }
 
 describe('mage-wars domain flow', () => {
+    describe('spell cast family gate', () => {
+        it('rejects standard spellbook spells that are not admitted by a spell-cast Choice family', () => {
+            const unsupportedSpellId = 1804;
+            const baseState = setupState('creatureAction');
+            const target = makeArenaObject('unsupported-curse-target', '1', PLAYER_ZERO_START_ZONE);
+            const state: MatchState<MageWarsCore> = {
+                ...baseState,
+                core: withArenaObject(
+                    withPreparedPlayerMage(
+                        baseState.core,
+                        '0',
+                        MAGE_IDS.WARLOCK_APPRENTICE,
+                        [unsupportedSpellId],
+                        20,
+                    ),
+                    target,
+                ),
+            };
+
+            expect(validateCommand(state, {
+                type: MAGE_WARS_COMMANDS.CAST_SPELL,
+                playerId: '0',
+                payload: {
+                    spellCardId: unsupportedSpellId,
+                    manaCost: 5,
+                    targetObjectId: target.id,
+                },
+            })).toBe('spellRequiresCodeSupport');
+        });
+    });
+
     describe('wall mechanics', () => {
         it('casts a standard starting wall onto an adjacent zone boundary and rejects invalid boundaries', () => {
             const wallEdgeId = getMageWarsWallEdgeId(ARENA_ZONE_IDS.A3, ARENA_ZONE_IDS.B3);
@@ -5732,7 +5763,22 @@ describe('mage-wars domain flow', () => {
                 }),
             ]),
         });
+        expect(interaction?.data.choiceRequest).toMatchObject({
+            sourceId: 'mw.counterstrike.choice',
+            metadata: expect.objectContaining({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.counterstrike',
+                sourceAbilityId: 'mw.guard.counterstrike',
+                attackerObjectId: attacker.id,
+                defenderObjectId: enemyGuard.id,
+            }),
+        });
         expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        expect((interaction?.data.ai?.decisions?.[0] as AiDecisionDescriptor | undefined)?.metadata)
+            .toMatchObject({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.counterstrike',
+            });
         const aiActions = buildAiLegalActionsFromInteractionDecision(
             interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
         );
@@ -6363,7 +6409,22 @@ describe('mage-wars domain flow', () => {
                 }),
             ]),
         });
+        expect(interaction?.data.choiceRequest).toMatchObject({
+            sourceId: 'mw.defense.choice',
+            metadata: expect.objectContaining({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.defense',
+                sourceAbilityId: 'mw.defense.choice',
+                attackerObjectId: attacker.id,
+                defenderObjectId: defender.id,
+            }),
+        });
         expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        expect((interaction?.data.ai?.decisions?.[0] as AiDecisionDescriptor | undefined)?.metadata)
+            .toMatchObject({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.defense',
+            });
         const aiActions = buildAiLegalActionsFromInteractionDecision(
             interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
         );
@@ -9329,6 +9390,7 @@ describe('mage-wars domain flow', () => {
     });
 
     it('casts visible object enchantments as attached revealed objects and applies their continuous traits', () => {
+        const agonyId = 1800;
         const bearStrengthId = 1914;
         const regrowthId = 1916;
         const rhinoHideId = 1917;
@@ -9382,6 +9444,49 @@ describe('mage-wars domain flow', () => {
         expect(bearAttackEvent?.payload).toMatchObject({
             meleeDiceModifier: 2,
             diceResults: [3, 3, 3, 3],
+        });
+
+        const agonizedAttacker = makeArenaObject('agony-attacker-0', '0', PLAYER_ZERO_START_ZONE, {
+            attackOrTraitLine: '利爪：快速近战 4 骰',
+        });
+        const agonyTarget = makeArenaObject('agony-target-1', '1', PLAYER_ZERO_START_ZONE, { life: 20 });
+        const agonyState: MatchState<MageWarsCore> = {
+            core: [agonizedAttacker, agonyTarget].reduce(
+                (core, object) => withArenaObject(core, object),
+                withPreparedPlayerMage(setupState('creatureAction').core, '0', MAGE_IDS.WARLOCK_APPRENTICE, [agonyId]),
+            ),
+            sys: setupState('creatureAction').sys,
+        };
+        const agonyCast = runCommand(agonyState, castObjectSpellCommand(agonyId, 5, agonizedAttacker.id));
+        const agonyEnchantment = Object.values(agonyCast.state.core.objects)
+            .find((object) => object.sourceSpellCardId === agonyId);
+        const agonyCoreWithEditedEnchantmentText = withArenaObjectDisplayText(
+            agonyCast.state.core,
+            agonyEnchantment!.id,
+            '展示文案改写后不包含任何攻击骰减少。',
+        );
+
+        const agonizedAttack = runCommand({
+            core: agonyCoreWithEditedEnchantmentText,
+            sys: { ...agonyCast.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: {
+                attackerObjectId: agonizedAttacker.id,
+                attackProfileId: 'attack-0',
+                targetObjectId: agonyTarget.id,
+            },
+        });
+        const agonizedAttackEvent = agonizedAttack.events.find((event) => (
+            event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
+        ));
+        expect(agonyCast.success).toBe(true);
+        expect(agonizedAttackEvent?.payload).toMatchObject({
+            attackDiceModifier: -2,
+            attackDiceModifierSourceObjectIds: [agonyEnchantment!.id],
+            diceResults: [3, 3],
+            baseDamage: 6,
         });
 
         const woundedCat = makeArenaObject('regrowth-cat-0', '0', PLAYER_ZERO_START_ZONE, {
@@ -9857,7 +9962,22 @@ describe('mage-wars domain flow', () => {
                 ]),
             },
         });
+        expect(interaction?.data.choiceRequest).toMatchObject({
+            sourceId: 'mw.upkeep-cost.choice',
+            metadata: expect.objectContaining({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.upkeep-cost',
+                sourceAbilityId: `mw.spell.${essenceDrainSpellId}.upkeep`,
+                targetObjectId: target.id,
+                amount: 2,
+            }),
+        });
         expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        expect((interaction?.data.ai?.decisions?.[0] as AiDecisionDescriptor | undefined)?.metadata)
+            .toMatchObject({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.upkeep-cost',
+            });
         const aiActions = buildAiLegalActionsFromInteractionDecision(
             interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
         );
@@ -9968,6 +10088,138 @@ describe('mage-wars domain flow', () => {
         expect(responded.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.MANA_SPENT);
         expect(responded.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(responded.state.core.players['1'].mana).toBe(10);
+    });
+
+    it('offers Death Link upkeep healing transfer to the enchantment controller', () => {
+        const deathLinkSpellId = 1801;
+        const target = makeArenaObject('death-link-target-1', '1', ARENA_ZONE_IDS.A2, {
+            life: 20,
+            damage: 1,
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const base = setupState('creatureAction');
+        const preparedCore = withPreparedPlayerMage(
+            base.core,
+            '0',
+            MAGE_IDS.WARLOCK_APPRENTICE,
+            [deathLinkSpellId],
+        );
+        const damagedMageCore: MageWarsCore = {
+            ...preparedCore,
+            players: {
+                ...preparedCore.players,
+                '0': { ...preparedCore.players['0'], damage: 3 },
+            },
+        };
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(damagedMageCore, target),
+            sys: base.sys,
+        };
+        const cast = runCommand(state, castObjectSpellCommand(deathLinkSpellId, 8, target.id));
+        const enchantment = Object.values(cast.state.core.objects)
+            .find((object) => object.sourceSpellCardId === deathLinkSpellId);
+        const upkeep = runCommand({
+            core: withArenaObjectDisplayText(cast.state.core, enchantment!.id, '展示文案已移除。'),
+            sys: { ...cast.state.sys, phase: 'channel' },
+        }, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+        const interaction = upkeep.state.sys.interaction.current;
+        const healed = runCommand(upkeep.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                interactionId: interaction?.id,
+                optionId: 'heal-2',
+            },
+        } as Command);
+
+        expect(cast.success).toBe(true);
+        expect(upkeep.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_AVAILABLE);
+        expect(interaction).toMatchObject({
+            playerId: '0',
+            data: {
+                sourceId: 'mw.upkeep-heal-transfer.choice',
+                options: expect.arrayContaining([
+                    expect.objectContaining({ id: 'heal-1' }),
+                    expect.objectContaining({ id: 'heal-2' }),
+                    expect.objectContaining({ id: 'skip' }),
+                ]),
+            },
+        });
+        expect(interaction?.data.choiceRequest).toMatchObject({
+            sourceId: 'mw.upkeep-heal-transfer.choice',
+            metadata: expect.objectContaining({
+                opportunityId: interaction!.id,
+                mageWarsTimingOpportunity: 'mage-wars.upkeep-heal-transfer',
+                sourceAbilityId: `mw.spell.${deathLinkSpellId}.upkeep`,
+                sourceObjectId: enchantment!.id,
+                targetObjectId: target.id,
+                maxHealing: 2,
+                availableHealing: 2,
+            }),
+        });
+        expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        const aiActions = buildAiLegalActionsFromInteractionDecision(
+            interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
+        );
+        expect(aiActions.map((action) => (action.commands[0]?.payload as { optionId?: string }).optionId))
+            .toEqual(expect.arrayContaining(['heal-1', 'heal-2', 'skip']));
+        expect(healed.success).toBe(true);
+        expect(healed.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    spellCardId: deathLinkSpellId,
+                    targetPlayerId: '0',
+                    healing: 2,
+                    actualHealing: 2,
+                }),
+            }),
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({
+                    targetId: target.id,
+                    actualDamage: 2,
+                    sourceAbilityId: `mw.spell.${deathLinkSpellId}.upkeep`,
+                }),
+            }),
+        ]));
+        expect(healed.state.core.players['0'].damage).toBe(1);
+        expect(healed.state.core.objects[target.id].damage).toBe(3);
+    });
+
+    it('does not create a Death Link upkeep choice when the controller mage has no damage', () => {
+        const deathLinkSpellId = 1801;
+        const target = makeArenaObject('death-link-full-mage-target-1', '1', ARENA_ZONE_IDS.A2, {
+            life: 20,
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const base = setupState('creatureAction');
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(
+                withPreparedPlayerMage(base.core, '0', MAGE_IDS.WARLOCK_APPRENTICE, [deathLinkSpellId]),
+                target,
+            ),
+            sys: base.sys,
+        };
+        const cast = runCommand(state, castObjectSpellCommand(deathLinkSpellId, 8, target.id));
+        const upkeep = runCommand({
+            core: cast.state.core,
+            sys: { ...cast.state.sys, phase: 'channel' },
+        }, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(cast.success).toBe(true);
+        expect(upkeep.success).toBe(true);
+        expect(upkeep.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_AVAILABLE);
+        expect(upkeep.state.sys.interaction.current?.data.sourceId).not.toBe('mw.upkeep-heal-transfer.choice');
     });
 
     it('does not resolve structured toxic upkeep damage against toxin-immune creatures', () => {
@@ -12556,6 +12808,19 @@ describe('mage-wars domain flow', () => {
                     amount: 1,
                     sourceAbilityId: 'mw.status.sleep.damage-replacement',
                 }),
+            }),
+        ]));
+        expect(attacked.eventCommitEvidence).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                position: 'eventCommit',
+                factKind: 'DAMAGE_DEALT',
+                originalEventType: 'DAMAGE_DEALT',
+                opportunityIds: expect.arrayContaining([
+                    expect.stringContaining('mw-sleep-damage-replacement'),
+                ]),
+                appliedOpportunityIds: expect.arrayContaining([
+                    expect.stringContaining('mw-sleep-damage-replacement'),
+                ]),
             }),
         ]));
         expect(attacked.state.core.objects[sleepingTarget.id].damage).toBe(6);

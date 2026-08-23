@@ -269,9 +269,7 @@ function kittyCatsHangInThereOnDestroyed(ctx: TriggerContext): TriggerResult | S
         }),
     );
     if (baseChoices.length === 0) return [];
-    if (baseChoices.length === 1) {
-        return buildHangInThereSaveEvents(ctx.matchState, baseChoices[0].value, ctx.now);
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const prompt = createSimpleChoice(
         `kitty_cats_hang_in_there_${ctx.triggerMinionUid}_${ctx.now}`,

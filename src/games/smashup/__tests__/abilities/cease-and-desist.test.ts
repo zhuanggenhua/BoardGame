@@ -5,6 +5,8 @@ import { isMinionProtected } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { processReturnToHandTriggers } from '../../domain/reducer';
 import { collectBaseAbilityTriggers } from '../../domain/baseAbilityQueue';
+import { startSmashUpReactionSession } from '../../domain/reactionSession';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../../domain/scoringSession';
 import { SU_EVENTS } from '../../domain/types';
 import { getAllCardDefs } from '../../data/cards';
 import { CEASE_AND_DESIST_CARDS, CEASE_AND_DESIST_BASES } from '../../data/factions/cease_and_desist';
@@ -13,6 +15,7 @@ import {
     applyEvents,
     expectRegisteredAbilityContract,
     findInteractionOption,
+    getPromptHandlerData,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -22,6 +25,7 @@ import {
     makePlayer,
     makeState,
     respondToPromptOption,
+    respondToPromptOptions,
     triggerBaseAbilityWithMS,
 } from '../helpers';
 
@@ -31,6 +35,29 @@ const FIXED_RANDOM = {
     range: (min: number) => min,
     shuffle: <T>(items: T[]) => [...items],
 };
+
+function attachAfterScoringSession(core: ReturnType<typeof makeState>, baseIndex: number) {
+    let state = makeMatchState(core);
+    const baseRef = createScoringBaseRef(core, baseIndex);
+    if (!baseRef) {
+        throw new Error('无法构造 Port Me Up afterScoring 测试用计分基地');
+    }
+    state = setScoringSession(state, {
+        ...createScoringSession(core, [baseIndex]),
+        lockedBaseRefs: [baseRef],
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    return startSmashUpReactionSession(state, {
+        frameId: `score-after:${baseIndex}:port-me-up-test`,
+        frameKind: 'score-after',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        responseWindowType: 'afterScoring',
+    });
+}
 
 const CEASE_AND_DESIST_OBJECT_TEST_MATRIX = [
     { id: 'astroknights_block_the_probe', tag: 'onPlay' },
@@ -177,6 +204,89 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
         expect(getEffectivePower(selected.finalState.core, selected.finalState.core.bases[0].minions[1], 0)).toBe(4);
     });
 
+    it('宇宙武士的回收垃圾按玩家选择洗回至多两张行动，单候选也不自动结算', () => {
+        const singleActionCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-single', 'astroknights_mannersbot', 'minion', '0')],
+                    discard: [makeCard('only-action', 'astroknights_block_the_probe', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const singleActionResult = invokeRegisteredAbilityContract('astroknights_recycle_the_trash', 'onPlay', {
+            state: singleActionCore,
+            matchState: makeMatchState(singleActionCore),
+            playerId: '0',
+            cardUid: 'recycle-single',
+            defId: 'astroknights_recycle_the_trash',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 12,
+        });
+
+        expect(singleActionResult.events).toEqual([]);
+        const singlePrompt = getSimpleChoicePrompt(singleActionResult.matchState!, 'astroknights_recycle_the_trash');
+        expect(singlePrompt.options.map(option => option.value?.cardUid)).toEqual(['only-action']);
+        expect(getPromptHandlerData(singlePrompt).autoResolveIfSingle).toBe(false);
+        expect(getPromptHandlerData(singlePrompt).multi).toEqual({ min: 0, max: 1 });
+
+        const chooseTwoCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-keep', 'astroknights_mannersbot', 'minion', '0')],
+                    discard: [
+                        makeCard('action-a', 'astroknights_block_the_probe', 'action', '0'),
+                        makeCard('discard-minion', 'ignobles_sneaky_squire', 'minion', '0'),
+                        makeCard('action-b', 'astroknights_use_the_fours', 'action', '0'),
+                        makeCard('action-c', 'ignobles_repaying_debts', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const chooseTwoResult = invokeRegisteredAbilityContract('astroknights_recycle_the_trash', 'onPlay', {
+            state: chooseTwoCore,
+            matchState: makeMatchState(chooseTwoCore),
+            playerId: '0',
+            cardUid: 'recycle',
+            defId: 'astroknights_recycle_the_trash',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 13,
+        });
+
+        expect(chooseTwoResult.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(chooseTwoResult.matchState!, 'astroknights_recycle_the_trash');
+        expect(prompt.options.map(option => option.value?.cardUid)).toEqual(['action-a', 'action-b', 'action-c']);
+        expect(getPromptHandlerData(prompt).genericIntent).toBe('card-pool');
+        expect(getPromptHandlerData(prompt).multi).toEqual({ min: 0, max: 2 });
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+
+        const selectedOptionIds = prompt.options
+            .filter(option => ['action-b', 'action-c'].includes(option.value?.cardUid))
+            .map(option => option.id);
+        const resolved = respondToPromptOptions(chooseTwoResult.matchState!, selectedOptionIds, '0', FIXED_RANDOM);
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-keep', 'action-b', 'action-c']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['action-a', 'discard-minion']);
+
+        const noInteractionResult = invokeRegisteredAbilityContract('astroknights_recycle_the_trash', 'onPlay', {
+            state: chooseTwoCore,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'recycle',
+            defId: 'astroknights_recycle_the_trash',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 14,
+        });
+        expect(noInteractionResult.events).toEqual([]);
+    });
+
     it('宇宙武士的恶棍天赋会选择另一己方随从和目标基地', () => {
         const core = makeState({
             bases: [
@@ -281,12 +391,250 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
         expect(selected.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(true);
     });
 
-    it('星际旅者的大规模传送让每名玩家各回手一个自己控制的随从', () => {
+    it('红色生日聚会选择拥有的随从，不自动消灭第一个拥有随从', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_spikey_chair_room', [
+                    makeMinion('first-owned', 'ignobles_sneaky_squire', '0', 5, { owner: '0' }),
+                    makeMinion('first-low', 'star_roamers_ensign', '1', 2, { owner: '1' }),
+                ]),
+                makeBase('base_uss_undertaking', [
+                    makeMinion('chosen-owned', 'astroknights_mannersbot', '0', 3, { owner: '0' }),
+                    makeMinion('chosen-low', 'star_roamers_ensign', '1', 2, { owner: '1' }),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('ignobles_red_birthday_party', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'party',
+            defId: 'ignobles_red_birthday_party',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 24,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'ignobles_red_birthday_party');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'first-owned')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'chosen-owned')).toBeDefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-owned',
+            'choose second owned minion for Red Birthday Party',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['first-owned', 'first-low']);
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual([]);
+    });
+
+    it('科学指挥官天赋选择返回的己方随从，不自动返回第一个候选', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_uss_undertaking', [
+                    makeMinion('science', 'star_roamers_science_officer', '0', 4),
+                    makeMinion('first-own', 'star_roamers_ensign', '0', 2),
+                ]),
+                makeBase('base_spikey_chair_room', [
+                    makeMinion('chosen-own', 'astroknights_mannersbot', '0', 2),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('star_roamers_science_officer', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'science',
+            defId: 'star_roamers_science_officer',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 25,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'star_roamers_science_officer');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'first-own')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'chosen-own')).toBeDefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-own',
+            'choose second Science Officer return target',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: expect.objectContaining({ minionUid: 'chosen-own', reason: 'star_roamers_science_officer' }),
+            }),
+            expect.objectContaining({ type: SU_EVENTS.LIMIT_MODIFIED }),
+        ]));
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['science', 'first-own']);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('chosen-own');
+    });
+
+    it('重组形态选择同基地力量 4 或以下随从消灭，不自动消灭第一个', () => {
         const core = makeState({
             bases: [makeBase('base_uss_undertaking', [
-                makeMinion('science', 'star_roamers_science_officer', '0', 4),
-                makeMinion('squire', 'ignobles_sneaky_squire', '1', 2),
-                makeMinion('extra', 'star_roamers_ensign', '0', 2),
+                makeMinion('host', 'changerbots_huffie', '0', 3),
+                makeMinion('first-victim', 'star_roamers_ensign', '1', 2),
+                makeMinion('chosen-victim', 'astroknights_mannersbot', '1', 2),
+            ])],
+        });
+
+        const result = invokeRegisteredAbilityContract('changerbots_change_into_a_gun', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'gun',
+            defId: 'changerbots_change_into_a_gun',
+            baseIndex: 0,
+            targetMinionUid: 'host',
+            random: FIXED_RANDOM,
+            now: 26,
+        });
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'host', amount: -2 }),
+        }));
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'changerbots_change_into_a_gun');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'first-victim')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'chosen-victim')).toBeDefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-victim',
+            'choose second Change Into A Gun victim',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({ minionUid: 'chosen-victim', reason: 'changerbots_change_into_a_gun' }),
+        }));
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host', 'first-victim']);
+    });
+
+    it('星际旅者的传送超额选择返回的己方随从，不自动返回第一个候选', () => {
+        const core = makeState({
+            bases: [makeBase('base_uss_undertaking', [
+                makeMinion('first-own', 'star_roamers_science_officer', '0', 4),
+                makeMinion('chosen-own', 'star_roamers_ensign', '0', 2),
+                makeMinion('enemy', 'ignobles_sneaky_squire', '1', 2),
+            ])],
+        });
+
+        const result = invokeRegisteredAbilityContract('star_roamers_teleport_overflow', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'overflow',
+            defId: 'star_roamers_teleport_overflow',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 27,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'star_roamers_teleport_overflow');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'first-own')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'chosen-own')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'enemy')).toBeUndefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-own',
+            'choose second Teleport Overflow return target',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: expect.objectContaining({ minionUid: 'chosen-own', reason: 'star_roamers_teleport_overflow' }),
+            }),
+            expect.objectContaining({
+                type: SU_EVENTS.LIMIT_MODIFIED,
+                payload: expect.objectContaining({ reason: 'star_roamers_teleport_overflow', limitType: 'minion' }),
+            }),
+        ]));
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['first-own', 'enemy']);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('chosen-own');
+    });
+
+    it('星际旅者的传送我上船在计分后只允许选择计分基地上的己方随从', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_uss_undertaking', [
+                    makeMinion('scoring-first', 'star_roamers_science_officer', '0', 4),
+                    makeMinion('scoring-chosen', 'star_roamers_ensign', '0', 2),
+                    makeMinion('scoring-enemy', 'ignobles_sneaky_squire', '1', 2),
+                ]),
+                makeBase('base_spikey_chair_room', [
+                    makeMinion('other-base-own', 'astroknights_mannersbot', '0', 2),
+                ]),
+            ],
+        });
+        const matchState = attachAfterScoringSession(core, 0);
+
+        const result = invokeRegisteredAbilityContract('star_roamers_port_me_up', 'special', {
+            state: core,
+            matchState,
+            playerId: '0',
+            cardUid: 'port',
+            defId: 'star_roamers_port_me_up',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 28,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'star_roamers_port_me_up');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'scoring-first')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'scoring-chosen')).toBeDefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'scoring-enemy')).toBeUndefined();
+        expect(findInteractionOption(prompt, option => option.value?.minionUid === 'other-base-own')).toBeUndefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'scoring-chosen',
+            'choose scoring base Port Me Up return target',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_RETURNED,
+            payload: expect.objectContaining({ minionUid: 'scoring-chosen', reason: 'star_roamers_port_me_up' }),
+        }));
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['scoring-first', 'scoring-enemy']);
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['other-base-own']);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('scoring-chosen');
+    });
+
+    it('星际旅者的大规模传送让每名玩家选择自己控制的随从，单候选也不自动结算', () => {
+        const core = makeState({
+            bases: [makeBase('base_uss_undertaking', [
+                makeMinion('player0-first', 'star_roamers_science_officer', '0', 4),
+                makeMinion('player0-chosen', 'star_roamers_ensign', '0', 2),
+                makeMinion('player1-only', 'ignobles_sneaky_squire', '1', 2),
             ])],
         });
 
@@ -300,11 +648,147 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 30,
         });
-        const after = applyEvents(core, result.events);
 
-        expect(after.bases[0].minions.map(minion => minion.uid)).toEqual(['extra']);
-        expect(after.players['0'].hand.map(card => card.uid)).toContain('science');
-        expect(after.players['1'].hand.map(card => card.uid)).toContain('squire');
+        expect(result.events).toEqual([]);
+        const player0Prompt = getSimpleChoicePrompt(result.matchState!, 'star_roamers_mass_teleport');
+        expect(player0Prompt.playerId).toBe('0');
+        expect(getPromptHandlerData(player0Prompt).autoResolveIfSingle).toBe(false);
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'player0-first')).toBeDefined();
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'player0-chosen')).toBeDefined();
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'player1-only')).toBeUndefined();
+
+        const player0ChoseSecond = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'player0-chosen',
+            'choose second player 0 minion for Mass Teleport',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(player0ChoseSecond.success).toBe(true);
+        expect(player0ChoseSecond.finalState.core.players['0'].hand.map(card => card.uid)).toContain('player0-chosen');
+
+        const player1Prompt = getSimpleChoicePrompt(player0ChoseSecond.finalState, 'star_roamers_mass_teleport');
+        expect(player1Prompt.playerId).toBe('1');
+        expect(getPromptHandlerData(player1Prompt).autoResolveIfSingle).toBe(false);
+        expect(player1Prompt.options).toHaveLength(1);
+
+        const player1ChoseOnly = respondToPromptOption(
+            player0ChoseSecond.finalState,
+            option => option.value?.minionUid === 'player1-only',
+            'confirm only player 1 minion for Mass Teleport',
+            '1',
+            FIXED_RANDOM,
+        );
+        expect(player1ChoseOnly.success).toBe(true);
+        expect(player1ChoseOnly.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['player0-first']);
+        expect(player1ChoseOnly.finalState.core.players['1'].hand.map(card => card.uid)).toContain('player1-only');
+    });
+
+    it('卑劣封臣的宠儿的命运让每位玩家选择自己拥有的随从，单候选也不自动结算', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_spikey_chair_room', [
+                    makeMinion('owner0-a', 'ignobles_sneaky_squire', '0', 2, { owner: '0' }),
+                    makeMinion('owner0-b', 'astroknights_mannersbot', '0', 2, { owner: '0' }),
+                    makeMinion('owner1-only', 'star_roamers_ensign', '1', 2, { owner: '1' }),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('ignobles_fate_of_the_favorites', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'fate',
+            defId: 'ignobles_fate_of_the_favorites',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 31,
+        });
+
+        expect(result.events).toEqual([]);
+        const player0Prompt = getSimpleChoicePrompt(result.matchState!, 'ignobles_fate_of_the_favorites');
+        expect(player0Prompt.playerId).toBe('0');
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'owner0-a')).toBeDefined();
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'owner0-b')).toBeDefined();
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'owner1-only')).toBeUndefined();
+
+        const player0ChoseSecond = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'owner0-b',
+            'choose second owned minion for Fate of the Favorites',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(player0ChoseSecond.success).toBe(true);
+        expect(player0ChoseSecond.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['owner0-a', 'owner1-only']);
+
+        const player1Prompt = getSimpleChoicePrompt(player0ChoseSecond.finalState, 'ignobles_fate_of_the_favorites');
+        expect(player1Prompt.playerId).toBe('1');
+        expect(getSimpleChoicePrompt(player0ChoseSecond.finalState, 'ignobles_fate_of_the_favorites').options).toHaveLength(1);
+        const player1ChoseOnly = respondToPromptOption(
+            player0ChoseSecond.finalState,
+            option => option.value?.minionUid === 'owner1-only',
+            'confirm only player 1 owned minion for Fate of the Favorites',
+            '1',
+            FIXED_RANDOM,
+        );
+        expect(player1ChoseOnly.success).toBe(true);
+        expect(player1ChoseOnly.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['owner0-a']);
+    });
+
+    it('卑劣封臣的视线之外让每位玩家选择自己拥有的随从回手，单候选也要确认', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_spikey_chair_room', [
+                    makeMinion('return0-a', 'ignobles_sneaky_squire', '0', 2, { owner: '0' }),
+                    makeMinion('return0-b', 'astroknights_mannersbot', '0', 2, { owner: '0' }),
+                    makeMinion('return1-only', 'star_roamers_ensign', '1', 2, { owner: '1' }),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('ignobles_out_of_sight', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'out',
+            defId: 'ignobles_out_of_sight',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 32,
+        });
+
+        expect(result.events).toEqual([]);
+        const player0Prompt = getSimpleChoicePrompt(result.matchState!, 'ignobles_out_of_sight');
+        expect(player0Prompt.playerId).toBe('0');
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'return0-a')).toBeDefined();
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'return0-b')).toBeDefined();
+        expect(findInteractionOption(player0Prompt, option => option.value?.minionUid === 'return1-only')).toBeUndefined();
+
+        const player0ChoseSecond = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'return0-b',
+            'choose second owned minion for Out of Sight',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(player0ChoseSecond.success).toBe(true);
+        expect(player0ChoseSecond.finalState.core.players['0'].hand.map(card => card.uid)).toContain('return0-b');
+
+        const player1Prompt = getSimpleChoicePrompt(player0ChoseSecond.finalState, 'ignobles_out_of_sight');
+        expect(player1Prompt.playerId).toBe('1');
+        expect(player1Prompt.options).toHaveLength(1);
+        const player1ChoseOnly = respondToPromptOption(
+            player0ChoseSecond.finalState,
+            option => option.value?.minionUid === 'return1-only',
+            'confirm only player 1 owned minion for Out of Sight',
+            '1',
+            FIXED_RANDOM,
+        );
+        expect(player1ChoseOnly.success).toBe(true);
+        expect(player1ChoseOnly.finalState.core.players['1'].hand.map(card => card.uid)).toContain('return1-only');
+        expect(player1ChoseOnly.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['return0-a']);
     });
 
     it('星际旅者的奇异新世界从基地牌库增加新基地并给予该基地额外随从额度', () => {
@@ -328,6 +812,63 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
         expect(after.bases.map(base => base.defId)).toEqual(['base_uss_undertaking', 'base_neutral_space']);
         expect(after.baseDeck).toEqual([]);
         expect(result.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(true);
+    });
+
+    it('星际旅者的舰长搜索牌库时必须选择随从，不自动抽第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('top-action', 'astroknights_block_the_probe', 'action', '0'),
+                        makeCard('science-1', 'star_roamers_science_officer', 'minion', '0'),
+                        makeCard('ensign-1', 'star_roamers_ensign', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_uss_undertaking')],
+        });
+
+        const result = invokeRegisteredAbilityContract('star_roamers_ships_captain', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'captain-1',
+            defId: 'star_roamers_ships_captain',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 45,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'star_roamers_ships_captain');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+        expect(getPromptHandlerData(prompt).genericIntent).toBe('card-pool');
+        expect(prompt.options.map(option => option.value?.cardUid)).toEqual(['science-1', 'ensign-1']);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'ensign-1',
+            'choose second minion for Ship\'s Captain',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({ cardUids: ['ensign-1'] }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                limitType: 'minion',
+                powerMax: 3,
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('ensign-1');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-action', 'science-1']);
     });
 
     it('百变机兵的合体形态给目标基地己方随从各 +1', () => {

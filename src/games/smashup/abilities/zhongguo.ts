@@ -123,6 +123,18 @@ type CardChoice = {
     skip?: boolean;
 };
 
+type DiscardCardChoice = {
+    cardUid?: string;
+    defId?: string;
+    skip?: boolean;
+};
+
+type DeckCardChoice = {
+    cardUid?: string;
+    defId?: string;
+    skip?: boolean;
+};
+
 type CounterTransferCandidate = {
     uid: string;
     defId: string;
@@ -157,6 +169,10 @@ type LetsGetItOnContext = ZhongguoPromptContext & {
 };
 
 type EverybodyKnewContext = ZhongguoPromptContext;
+
+type TruckersFixItContext = ZhongguoPromptContext & {
+    candidates: Array<{ cardUid: string; defId: string }>;
+};
 
 type EverybodyWasDestroySelection = {
     playerId: PlayerId;
@@ -194,6 +210,8 @@ type DiscoIWillSurviveContext = ZhongguoPromptContext & {
     sourceBaseIndex: number;
     sourceBaseDefId: string;
 };
+
+type OwnDiscardPromptContext = ZhongguoPromptContext;
 
 type TruckersHighSpeedChaseContext = ZhongguoPromptContext & {
     sourceCardUid: string;
@@ -319,6 +337,10 @@ const ZHONGGUO_PROMPT_TITLES = {
     truckersSkinnyMinnieBase: '皮包骨米妮：选择目标基地',
     discoDancingKing: '舞王：选择另一个同基地随从复制这次普通战术影响',
     discoIWillSurvive: '我会活下去：选择计分基地中的一个己方随从返回拥有者手牌',
+    vigilantesShift: '铁杆神探：选择至多 2 张弃牌堆角色放到牌库顶',
+    discoUlDiscoLou: '迪斯科·卢：选择弃牌堆中的一张战术放到牌库顶',
+    discoStayinAlive: '活着：选择弃牌堆中与己方场上同名的角色回手',
+    vigilantesStoneford: '破萝飞龙：从牌库选择一张战术加入手牌',
     vigilantesBrojakFollowOption: '移动并 +1 战力',
 } as const;
 
@@ -904,6 +926,214 @@ function buildCardToDeckTopEvent(card: CardInstance, playerId: PlayerId, reason:
     } as SmashUpEvent;
 }
 
+function buildOwnDiscardCardOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (card: CardInstance) => boolean,
+    idPrefix: string,
+): Array<{
+    id: string;
+    label: string;
+    value: DiscardCardChoice;
+    _source: 'discard';
+    displayMode: 'card';
+    displayCard: { cardUid: string; defId: string };
+}> {
+    return (state.players[playerId]?.discard ?? [])
+        .filter(predicate)
+        .map((card, index) => ({
+            id: `${idPrefix}-${index}`,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId },
+            _source: 'discard' as const,
+            displayMode: 'card' as const,
+            displayCard: { cardUid: card.uid, defId: card.defId },
+        }));
+}
+
+const vigilantesShiftPromptProgram = createPromptProgram<OwnDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vigilantes_shift',
+    buildInteraction: (context) => {
+        const options = buildOwnDiscardCardOptions(
+            context.matchState.core,
+            context.playerId,
+            card => getCardDef(card.defId)?.type === 'minion',
+            'discard-minion',
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `vigilantes_shift_${context.now}`,
+            context.playerId,
+            ZHONGGUO_PROMPT_TITLES.vigilantesShift,
+            options,
+            {
+                sourceId: 'vigilantes_shift',
+                targetType: 'discard',
+                multi: { min: 0, max: Math.min(2, options.length) },
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                autoRefresh: 'discard',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const choices = (Array.isArray(value) ? value : [value]) as DiscardCardChoice[];
+        const selectedUids = new Set(
+            choices
+                .map(choice => choice?.cardUid)
+                .filter((cardUid): cardUid is string => typeof cardUid === 'string'),
+        );
+        const selected = (state.core.players[context.playerId]?.discard ?? [])
+            .filter(card => selectedUids.has(card.uid) && getCardDef(card.defId)?.type === 'minion')
+            .slice(0, 2);
+        return { events: topDeckCardsFromDiscard(selected, context.playerId, 'vigilantes_shift', timestamp) };
+    },
+});
+
+const vigilantesStonefordPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vigilantes_stoneford',
+    buildInteraction: (context) => {
+        const options = (context.matchState.core.players[context.playerId]?.deck ?? [])
+            .filter(card => getCardDef(card.defId)?.type === 'action')
+            .map((card, index) => ({
+                id: `deck-action-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId } satisfies DeckCardChoice,
+                _source: 'deck' as const,
+                displayMode: 'card' as const,
+                displayCard: { cardUid: card.uid, defId: card.defId },
+            }));
+        return createAbilityRuntimeSimpleChoice(
+            `vigilantes_stoneford_${context.now}`,
+            context.playerId,
+            ZHONGGUO_PROMPT_TITLES.vigilantesStoneford,
+            options,
+            {
+                sourceId: 'vigilantes_stoneford',
+                targetType: 'generic',
+                titleKey: 'ui.vigilantes_stoneford_title',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                autoRefresh: 'deck',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as DeckCardChoice | undefined;
+        if (!selected?.cardUid) return { events: [] };
+        const player = state.core.players[context.playerId];
+        if (!player) return { events: [] };
+        const selectedCard = player.deck.find(card =>
+            card.uid === selected.cardUid
+            && (!selected.defId || card.defId === selected.defId)
+            && getCardDef(card.defId)?.type === 'action');
+        if (!selectedCard) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: context.playerId,
+                    deckUids: [selectedCard.uid, ...player.deck.filter(card => card.uid !== selectedCard.uid).map(card => card.uid)],
+                    reason: 'vigilantes_stoneford',
+                },
+                timestamp,
+            } as SmashUpEvent, {
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: context.playerId, count: 1, cardUids: [selectedCard.uid] },
+                timestamp,
+            } as SmashUpEvent],
+        };
+    },
+});
+
+const discoUlDiscoLouPromptProgram = createPromptProgram<OwnDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'disco_dancers_ul_disco_lou',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `disco_dancers_ul_disco_lou_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.discoUlDiscoLou,
+        buildOwnDiscardCardOptions(
+            context.matchState.core,
+            context.playerId,
+            card => getCardDef(card.defId)?.type === 'action',
+            'discard-action',
+        ),
+        {
+            sourceId: 'disco_dancers_ul_disco_lou',
+            targetType: 'discard',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+            autoRefresh: 'discard',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as DiscardCardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        const card = state.core.players[context.playerId]?.discard.find(candidate =>
+            candidate.uid === selected.cardUid
+            && candidate.defId === selected.defId
+            && getCardDef(candidate.defId)?.type === 'action',
+        );
+        return {
+            events: card
+                ? [buildCardToDeckTopEvent(card, context.playerId, 'disco_dancers_ul_disco_lou', timestamp)]
+                : [],
+        };
+    },
+});
+
+function collectOwnInPlayMinionDefIds(state: SmashUpCore, playerId: PlayerId): Set<string> {
+    return new Set(collectOwnMinions(state, playerId).map(candidate => candidate.defId));
+}
+
+const discoStayinAlivePromptProgram = createPromptProgram<OwnDiscardPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'disco_dancers_stayin_alive',
+    buildInteraction: (context) => {
+        const ownInPlayDefIds = collectOwnInPlayMinionDefIds(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `disco_dancers_stayin_alive_${context.now}`,
+            context.playerId,
+            ZHONGGUO_PROMPT_TITLES.discoStayinAlive,
+            buildOwnDiscardCardOptions(
+                context.matchState.core,
+                context.playerId,
+                card => getCardDef(card.defId)?.type === 'minion' && ownInPlayDefIds.has(card.defId),
+                'matching-discard-minion',
+            ),
+            {
+                sourceId: 'disco_dancers_stayin_alive',
+                targetType: 'discard',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                autoRefresh: 'discard',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as DiscardCardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        const ownInPlayDefIds = collectOwnInPlayMinionDefIds(state.core, context.playerId);
+        const card = state.core.players[context.playerId]?.discard.find(candidate =>
+            candidate.uid === selected.cardUid
+            && candidate.defId === selected.defId
+            && getCardDef(candidate.defId)?.type === 'minion'
+            && ownInPlayDefIds.has(candidate.defId),
+        );
+        return {
+            events: card
+                ? [{
+                    type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+                    payload: {
+                        playerId: context.playerId,
+                        cardUids: [card.uid],
+                        reason: 'disco_dancers_stayin_alive',
+                    },
+                    timestamp,
+                } as SmashUpEvent]
+                : [],
+        };
+    },
+});
+
 type SimpleMinionEffectKind =
     | 'tempPower'
     | 'tempPowerDraw'
@@ -1294,6 +1524,73 @@ const vigilantesBrojakPromptProgram = createPromptProgram<VigilantesBrojakContex
         };
     },
 });
+
+function collectTruckersFixItDiscardActions(state: SmashUpCore, playerId: PlayerId): Array<{ cardUid: string; defId: string }> {
+    return (state.players[playerId]?.discard ?? [])
+        .filter(card => getCardDef(card.defId)?.type === 'action')
+        .map(card => ({ cardUid: card.uid, defId: card.defId }));
+}
+
+const truckersFixItPromptProgram = createPromptProgram<TruckersFixItContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_fixin_to_fix_it',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_fixin_to_fix_it_${context.now}`,
+        context.playerId,
+        "Fixin' to Fix It：选择弃牌堆中的行动牌",
+        context.candidates.map((card, index) => ({
+            id: `discard-action-${index}`,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: card,
+            _source: 'discard' as const,
+            displayCard: { defId: card.defId, cardUid: card.cardUid },
+        })),
+        {
+            titleKey: 'ui.truckers_fixin_to_fix_it_title',
+            sourceId: 'truckers_fixin_to_fix_it',
+            targetType: 'discard',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as { cardUid?: string; defId?: string } | undefined;
+        if (!selected?.cardUid || !context.candidates.some(candidate => candidate.cardUid === selected.cardUid)) {
+            return { events: [] };
+        }
+        const live = state.core.players[context.playerId]?.discard.find(card =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && getCardDef(card.defId)?.type === 'action');
+        if (!live) return { events: [] };
+        return {
+            events: [
+                recoverCardsFromDiscard(context.playerId, [live.uid], 'truckers_fixin_to_fix_it', timestamp),
+            ],
+        };
+    },
+});
+
+function truckersFixIt(ctx: AbilityContext): AbilityResult {
+    const discardActions = collectTruckersFixItDiscardActions(ctx.state, ctx.playerId);
+    if (discardActions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if (!ctx.matchState) {
+        return {
+            events: [
+                recoverCardsFromDiscard(ctx.playerId, [discardActions[0].cardUid], 'truckers_fixin_to_fix_it', ctx.now),
+            ],
+        };
+    }
+    const result = executeAbilityProgram(
+        truckersFixItPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { candidates: discardActions }),
+    );
+    return {
+        events: result.events,
+        matchState: result.matchState,
+    };
+}
 
 const truckersRallyPromptProgram = createPromptProgram<ZhongguoPromptContext & { sourceBaseIndex: number }, SmashUpCore, SmashUpEvent>({
     sourceId: 'truckers_rally',
@@ -3296,14 +3593,6 @@ const aLittleBitFrighteningDestroyPromptProgram = createPromptProgram<ABitFright
         if (ownMinions.length === 0) {
             return { events: destroyEvents };
         }
-        if (ownMinions.length === 1) {
-            return {
-                events: [
-                    ...destroyEvents,
-                    addPowerCounter(ownMinions[0].uid, context.referenceBaseIndex, 2, 'kung_fu_fighters_a_little_bit_frightening', timestamp),
-                ],
-            };
-        }
         return {
             events: destroyEvents,
             context,
@@ -3602,10 +3891,6 @@ const ancientChineseArtTalentProgram = createEffectProgram<AbilityContext, Smash
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     if (canAdd && !canTransfer) {
-        const onlyTargets = (base?.minions ?? []);
-        if (onlyTargets.length === 1) {
-            return { events: [addPowerCounter(onlyTargets[0].uid, ctx.baseIndex, 1, 'kung_fu_fighters_ancient_chinese_art', ctx.now)] };
-        }
         const result = executeAbilityProgram(
             ancientChineseArtAddCounterPromptProgram,
             createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -3740,31 +4025,6 @@ function ladyWhirlwindTalent(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (targets.length === 1) {
-        const target = targets[0];
-        const destroyEvents = buildValidatedDestroyEvents(ctx.matchState, {
-            minionUid: target.uid,
-            minionDefId: target.defId,
-            fromBaseIndex: ctx.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'kung_fu_fighters_lady_whirlwind',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: 'kung_fu_fighters_lady_whirlwind',
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            sourceKind: 'nonAction',
-        });
-        return {
-            events: [
-                ...destroyEvents,
-                ...(destroyEvents.some((event) => event.type === SU_EVENTS.MINION_DESTROYED)
-                    ? [addPowerCounter(self.uid, ctx.baseIndex, 1, 'kung_fu_fighters_lady_whirlwind', ctx.now)]
-                    : []),
-            ],
-        };
-    }
     const result = executeAbilityProgram(
         ladyWhirlwindPromptProgram,
         createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -3898,11 +4158,6 @@ function ohHohHohHoahTrigger(
     if (ownMinions.length === 0) {
         return [];
     }
-    if (ownMinions.length === 1) {
-        return {
-            events: [addPowerCounter(ownMinions[0].uid, ctx.baseIndex, 1, 'kung_fu_fighters_oh_hoh_hoh_hoah', ctx.now)],
-        };
-    }
     if (!ctx.matchState) {
         return {
             events: [addPowerCounter(ownMinions[0].uid, ctx.baseIndex, 1, 'kung_fu_fighters_oh_hoh_hoh_hoah', ctx.now)],
@@ -3945,19 +4200,6 @@ function runSimpleMinionEffect(
 ): AbilityResult {
     if (config.candidates.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    if (config.candidates.length === 1 && !config.allowSkip) {
-        return resolveSimpleMinionEffect(
-            ctx.matchState,
-            createPromptContext(ctx.matchState, ctx.playerId, ctx.now, config),
-            {
-                minionUid: config.candidates[0].uid,
-                baseIndex: config.candidates[0].baseIndex,
-                defId: config.candidates[0].defId,
-            },
-            ctx.now,
-            ctx.random,
-        );
     }
     const result = executeAbilityProgram(
         simpleMinionEffectPromptProgram,
@@ -4115,6 +4357,13 @@ function vigilantesStoneford(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const selected = player?.deck.find(card => getCardDef(card.defId)?.type === 'action');
     if (!player || !selected) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    if (ctx.matchState) {
+        const result = executeAbilityProgram(
+            vigilantesStonefordPromptProgram,
+            createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+        );
+        return { events: result.events, matchState: result.matchState };
+    }
     return {
         events: [
             {
@@ -4138,9 +4387,16 @@ function vigilantesStoneford(ctx: AbilityContext): AbilityResult {
 function vigilantesShift(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
-    const selected = player.discard.filter(card => getCardDef(card.defId)?.type === 'minion').slice(0, 2);
-    if (selected.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return { events: topDeckCardsFromDiscard(selected, ctx.playerId, 'vigilantes_shift', ctx.now) };
+    const candidates = player.discard.filter(card => getCardDef(card.defId)?.type === 'minion');
+    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    if (ctx.matchState) {
+        const result = executeAbilityProgram(
+            vigilantesShiftPromptProgram,
+            createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+        );
+        return { events: result.events, matchState: result.matchState };
+    }
+    return { events: [] };
 }
 
 function vigilantesDustyHenry(ctx: AbilityContext): AbilityResult {
@@ -4456,9 +4712,16 @@ function discoGetDownTonight(ctx: AbilityContext): AbilityResult {
 
 function discoUlDiscoLou(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
-    const discardAction = player?.discard.find(card => getCardDef(card.defId)?.type === 'action');
-    if (discardAction) {
-        return { events: [buildCardToDeckTopEvent(discardAction, ctx.playerId, 'disco_dancers_ul_disco_lou', ctx.now)] };
+    const discardActions = player?.discard.filter(card => getCardDef(card.defId)?.type === 'action') ?? [];
+    if (discardActions.length > 0) {
+        if (ctx.matchState) {
+            const result = executeAbilityProgram(
+                discoUlDiscoLouPromptProgram,
+                createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+            );
+            return { events: result.events, matchState: result.matchState };
+        }
+        return { events: [buildCardToDeckTopEvent(discardActions[0], ctx.playerId, 'disco_dancers_ul_disco_lou', ctx.now)] };
     }
     return { events: [grantContextualExtraAction(ctx, 'disco_dancers_ul_disco_lou')] };
 }
@@ -4518,8 +4781,19 @@ function discoLastDance(ctx: AbilityContext): AbilityResult {
 function discoStayinAlive(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
-    const ownInPlayDefIds = new Set(collectOwnMinions(ctx.state, ctx.playerId).map(candidate => candidate.defId));
-    const card = player.discard.find(candidate => ownInPlayDefIds.has(candidate.defId));
+    const ownInPlayDefIds = collectOwnInPlayMinionDefIds(ctx.state, ctx.playerId);
+    const candidates = player.discard.filter(candidate =>
+        getCardDef(candidate.defId)?.type === 'minion'
+        && ownInPlayDefIds.has(candidate.defId),
+    );
+    if (candidates.length > 0 && ctx.matchState) {
+        const result = executeAbilityProgram(
+            discoStayinAlivePromptProgram,
+            createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+        );
+        return { events: result.events, matchState: result.matchState };
+    }
+    const card = candidates[0];
     if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return {
         events: [{
@@ -4996,18 +5270,7 @@ export function registerZhongguoAbilities(): void {
     registerProtection('truckers_armored_truck', 'move', baseOwnMinionProtection('truckers_armored_truck', new Set(['destroy', 'move'])));
 
     registerAbilityProgram('truckers_fixin_to_fix_it', 'onPlay', {
-        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
-            const discardActions = ctx.state.players[ctx.playerId]?.discard.filter(card => getCardDef(card.defId)?.type === 'action') ?? [];
-            if (discardActions.length === 0) {
-                return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-            }
-            const selected = discardActions[0];
-            return {
-                events: [
-                    recoverCardsFromDiscard(ctx.playerId, [selected.uid], 'truckers_fixin_to_fix_it', ctx.now),
-                ],
-            };
-        }),
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersFixIt),
     });
     registerAbilityProgram('truckers_good_buddy', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersGoodBuddy),

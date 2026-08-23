@@ -1727,10 +1727,6 @@ const resolveDiceThroneRuntimeActorId = (args: {
     phase: string;
     fallbackPlayerId: string | null;
 }): string | null => {
-    if (args.phase !== 'defensiveRoll') {
-        return args.fallbackPlayerId;
-    }
-
     const core = args.state.core as DiceThroneBonusRecoveryCore & {
         pendingAttack?: {
             defenderId?: unknown;
@@ -1743,6 +1739,10 @@ const resolveDiceThroneRuntimeActorId = (args: {
     const currentBonusRollActorId = getCurrentBonusRollActorId(core);
     if (currentBonusRollActorId) {
         return currentBonusRollActorId;
+    }
+
+    if (args.phase !== 'defensiveRoll') {
+        return args.fallbackPlayerId;
     }
 
     const pendingDamageResponderId = core?.pendingDamage?.responderId;

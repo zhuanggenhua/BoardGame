@@ -35,7 +35,8 @@
 | 右下 / 底部空白必须有职责 | 删除 UI 后留下死空，不把空间还给主对象 | `mage-wars-ui-design-memory` 底部空间裁决；`ui-design-pipeline` 空白职责 | 右下和底边若空着，必须承载法术书、已计划、弃牌堆、分页、回合结束或结算预留 | covered |
 | 分页按钮保持原样，页码不要占大空间 | 改错对象，把按钮样式也改了 | `mage-wars-ui-design-memory` 分页专项裁决 | 按钮样式、方向、位置保持用户认可形态；页码轻量附属于法术书浏览，不撑大栏 | covered |
 | 标签放左侧 | 分类标签挤占底部牌列 / 页码空间 | `mage-wars-ui-design-memory` 法术书裁决；设计 README v66 后裁定 | 分类标签在法术书左侧，不能压缩卡牌可读尺寸 | covered |
-| 骰子、token 不能省略 | 为了干净删掉规则物件 | `mage-wars-ui-design-memory` 用户原话反思；`step1-runtime-board-saturated-ui-design.md` 素材职责矩阵 | 攻击骰、效果骰、伤害 token、燃烧 token、守卫 / 行动 token 在饱和态可见 | covered |
+| 骰子、token 不能省略 | 为了干净删掉规则信息 | `mage-wars-ui-design-memory` 用户原话反思；`rule-to-ui-element-list.md` 规则对象矩阵 | 攻击骰、效果骰、燃烧 token、守卫 / 行动 token 在饱和态可见；伤害状态在受伤对象本体上用覆盖层 + 数字徽章可见，不强制物理伤害 token 图 | covered |
+| 伤害 token 没必要，现代 UI 代替更合适 | 把物理 token 存在机械等同为数字 UI 必须用 token 图 | `ui-change-gates.md` 规则物件不等于强制贴图；`mage-wars-ui-design-memory` 伤害状态裁决；`rule-to-ui-element-list.md` 伤害状态行 | 伤害作为连续数值状态，默认由对象本体红色受伤覆盖层和数字徽章承载；只有燃烧、守卫、行动等离散状态 / 行动标记继续按 token 物件验收 | covered |
 | 攻击掷骰应该在上层 / 目标附近 | 把结算主体边栏化 | `ui-design-pipeline` 当前结算主体；`step1-runtime-board-saturated-ui-design.md` 结算层 | 骰子、效果骰、伤害、燃烧 token 位于主舞台上层，并锚定来源 / 目标 / 动作链 | covered |
 | token / 状态贴对象，不只在日志 | 状态离开宿主，玩家不知道谁受影响 | `step1-runtime-board-saturated-ui-design.md` 行动标记和状态 token；`ui-audit-loop` 保护槽位 | token 不脱离宿主，不压住关键卡面信息，数量或堆叠关系可读 | covered |
 | 对手计划放左上形成对称 | 隐藏计划法术挂到错误边栏 | `step1-runtime-board-saturated-ui-design.md` 对手计划镜像；`mage-wars-ui-design-memory` | 对手已计划只显示卡背 / 数量，位于左上，和己方计划槽形成席位镜像 | covered |
@@ -47,7 +48,7 @@
 | 用户标注图里的元素不能随意删 | 标注的骰子、token、弃牌、分页等被省略 | `ui-design-pipeline` 用户标注元素守恒；`ui-audit-loop` 用户点名元素逐项审计 | 送验前逐项回答用户标注元素是否仍在、规则名称是什么、若收起入口在哪里 | covered |
 | 设计要按数据理解布局 | 只凭感觉看图，不核坐标、尺寸、比例 | `ui-design-pipeline` 空间预算 / 可读性预算；本账本 | 导出 geometry，核卡牌尺寸、弃牌堆尺寸、计划牌比例、压叠、可读性和槽位关系 | covered |
 | 视觉肯定先 AI 验收，再人工验收 | 把未通过候选交给用户挑错 | `ui-audit-loop` 自见失败不得送验；`show-image-to-user` final gate | AI 自审发现基础问题时继续重构；只有 AI_PASS 且打开原图后才请用户看 | covered |
-| 验收图不能是空态 | E2E 通过但截图缺已计划、弃牌、骰子、token，导致用户纠正项被技术绿灯掩盖 | `mage-wars-ui-design-memory` 规则到 UI 到实现执行顺序；`e2e-verification.md` 状态型截图口径 | 设计稿 / 真实 Board/UI 送验截图必须构造饱和交互态：法术书 6 张、已计划 2 张、公开弃牌正面、骰子、效果骰、伤害 / 燃烧 / 守卫 / 行动 token、来源和合法目标高亮同时可见；空开局只能作诊断 | covered |
+| 验收图不能是空态 | E2E 通过但截图缺已计划、弃牌、骰子、状态，导致用户纠正项被技术绿灯掩盖 | `mage-wars-ui-design-memory` 规则到 UI 到实现执行顺序；`e2e-verification.md` 状态型截图口径 | 设计稿 / 真实 Board/UI 送验截图必须构造饱和交互态：法术书 6 张、已计划 2 张、公开弃牌正面、骰子、效果骰、伤害状态、燃烧 / 守卫 / 行动 token、来源和合法目标高亮同时可见；空开局只能作诊断 | covered |
 | 每次设计完用用户原话反思 | 审计只看几何 / DOM，不回看用户纠正 | `mage-wars-ui-design-memory` 用户原话反思表；本账本 | 最终审计必须逐条列用户原话自审和本账本自审，不得只报分数 | covered |
 | 单个问题不要默认多层规范同时改 | 把问题本质误判成“改了多处”或制造多重真相 | `spec-steward` 多重真相定义；本账本角色声明 | 修改前先裁定 canonical-source / adapter / evidence；审计和本账本只能引用，不各自创造新规则 | covered |
 | 规则到 UI 不能靠纠正账本兜底，必须先有对象覆盖矩阵 | 用户没有逐条骂到的规则对象可能继续被遗漏，例如骰子、token、公开弃牌、已计划法术或合法目标高亮 | `mage-wars-ui-design-memory` 规则对象覆盖矩阵；本账本仅作 drift-check / evidence | 设计 / 实现 / 送验前必须列出 foundation 规则对象，每行裁定可见性、实体锚点、素材 / 程序化来源和截图验收方式；无结论行按遗漏处理 | covered |
@@ -65,7 +66,7 @@
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。
-- [ ] 攻击骰、效果骰、伤害 token、燃烧 token、守卫 / 行动 token 未省略。
+- [ ] 攻击骰、效果骰、伤害状态 / 伤害数值、燃烧 token、守卫 / 行动 token 未省略；伤害不强制物理 token 图，但必须贴受伤对象本体并可读。
 - [ ] 设计稿 / 真实 Board/UI 截图是饱和交互态，不是空开局或只证明页面可运行的技术截图。
 - [ ] 当前动作由来源对象和棋盘 / 场上对象本体承接，合法目标高亮，不出现无授权常驻确认。
 - [ ] 当前玩家提示挂在法师头像 / 角色 HUD；竞技场只保留阶段、区域语义和真实对象高亮，不承载第二个玩家提示条。

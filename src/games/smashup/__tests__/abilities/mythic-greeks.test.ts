@@ -88,7 +88,7 @@ describe('神话希腊代表性玩法行为', () => {
         const minions = resolved.finalState.core.bases[0].minions;
         expect(minions.find(minion => minion.uid === 'own-a')?.powerCounters).toBe(1);
         expect(minions.find(minion => minion.uid === 'enemy-a')?.powerCounters).toBe(1);
-        expect(minions.find(minion => minion.uid === 'own-b')?.powerCounters).toBeUndefined();
+        expect(minions.find(minion => minion.uid === 'own-b')?.powerCounters ?? 0).toBe(0);
     });
 
     it('波塞冬的恩惠按玩家选择弃牌洗回牌库', () => {
@@ -202,7 +202,20 @@ describe('神话希腊代表性玩法行为', () => {
             payload: { cardUid: 'a-dionysus', targetBaseIndex: 0, targetMinionUid: 'own-a' },
         } as any);
         expect(play.success).toBe(true);
-        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
+                const triggerId = option.value?.triggerId;
+                return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+            if (getPromptSourceId(prompt) === 'mythic_greeks_spartan') {
+                const skip = getPromptOption(prompt, option => option.value?.skip === true, 'Spartan skip option');
+                return { optionId: skip.id };
+            }
+            if (getPromptSourceId(prompt) === 'mythic_greeks_favor_of_dionysus_minion') {
+                const target = getPromptOption(prompt, option => option.value?.minionUid === 'own-a', 'Dionysus minion option');
+                return { optionId: target.id };
+            }
             const top = getPromptOption(prompt, option => option.value?.choice === 'deck-top', 'Dionysus deck-top option');
             return { optionId: top.id };
         });
@@ -608,9 +621,63 @@ describe('神话希腊代表性玩法行为', () => {
         } as any);
 
         expect(play.success).toBe(true);
-        expectNoPrompt(play.finalState);
-        expect(play.finalState.core.bases[0].minions.find(minion => minion.uid === 'spartan')?.powerCounters).toBe(1);
-        expect(play.finalState.core.bases[0].minions.find(minion => minion.uid === 'spartan')?.metadata?.mythicGreeksSpartanTriggeredTurn).toBe(2);
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
+                const triggerId = option.value?.triggerId;
+                return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+
+            return chooseOptionBySource(prompt, 'mythic_greeks_spartan', option => option.value?.apply === true);
+        }).finalState;
+
+        expectNoPrompt(resolved);
+        expect(resolved.core.bases[0].minions.find(minion => minion.uid === 'spartan')?.powerCounters).toBe(1);
+        expect(resolved.core.bases[0].minions.find(minion => minion.uid === 'spartan')?.metadata?.mythicGreeksSpartanTriggeredTurn).toBe(2);
+    });
+
+    it('斯巴达人触发后可以跳过，不自动放置 +1 指示物', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('hermes', 'mythic_greeks_favor_of_hermes', 'action', '0')],
+                    actionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_oracle_at_delphi', [
+                    makeMinion('spartan', 'mythic_greeks_spartan', '0', 2),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 2,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'hermes' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
+                const triggerId = option.value?.triggerId;
+                return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+
+            return chooseOptionBySource(prompt, 'mythic_greeks_spartan', option => option.value?.skip === true);
+        }).finalState;
+
+        expectNoPrompt(resolved);
+        const spartan = resolved.core.bases[0].minions.find(minion => minion.uid === 'spartan');
+        expect(spartan?.powerCounters ?? 0).toBe(0);
+        expect(spartan?.metadata?.mythicGreeksSpartanTriggeredTurn).toBeUndefined();
     });
 
     it('哈迪斯的恩惠从弃牌堆行动牌中选择一张回手', () => {

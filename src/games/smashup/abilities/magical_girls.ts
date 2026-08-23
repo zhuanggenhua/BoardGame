@@ -295,6 +295,7 @@ function lunarHealingLoveSpell(ctx: AbilityContext): AbilityResult {
             titleKey: 'ui.magical_girls_lunar_healing_love_spell_title',
             targetType: 'generic',
             multi: { min: playersWithChoices.size, max: playersWithChoices.size },
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -307,9 +308,7 @@ function kissTheSkySpell(ctx: AbilityContext): AbilityResult {
     if (minions.length === 0) {
         return { events: [extra, buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (minions.length === 1) {
-        return { events: [recoverCardsFromDiscard(ctx.playerId, [minions[0].uid], 'magical_girls_kiss_the_sky_spell', ctx.now), extra] };
-    }
+    if (!ctx.matchState) return { events: [extra] };
     const interaction = createSimpleChoice(
         `magical_girls_kiss_the_sky_spell_${ctx.now}`,
         ctx.playerId,
@@ -324,6 +323,7 @@ function kissTheSkySpell(ctx: AbilityContext): AbilityResult {
             sourceId: 'magical_girls_kiss_the_sky_spell',
             titleKey: 'ui.magical_girls_kiss_the_sky_spell_title',
             targetType: 'generic',
+            autoResolveIfSingle: false,
         },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = { grantExtraAction: true };
@@ -377,6 +377,7 @@ function purgeTheDemon(ctx: AbilityContext): AbilityResult {
             sourceId: 'magical_girls_purge_the_demon',
             titleKey: 'ui.magical_girls_purge_the_demon_title',
             targetType: 'board',
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -435,6 +436,7 @@ function coordination(ctx: AbilityContext): AbilityResult {
             sourceId: 'magical_girls_coordination',
             titleKey: 'ui.magical_girls_coordination_title',
             targetType: 'button',
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -480,6 +482,7 @@ function lunarCaptain(ctx: AbilityContext): AbilityResult {
             sourceId: 'magical_girls_lunar_captain',
             titleKey: 'ui.magical_girls_lunar_captain_title',
             targetType: 'generic',
+            autoResolveIfSingle: false,
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -562,14 +565,7 @@ function searchNamedMinion(ctx: AbilityContext, sourceBaseDefId: string, targetB
     const targetDefId = getVariantScopedDefId(ctx.defId, targetBaseDefId);
     const choices = collectNamedMinionSearchChoices(ctx.state, ctx.playerId, targetDefId);
     if (choices.length === 0) return noTargets(ctx);
-    if (choices.length === 1) {
-        const choice = choices[0];
-        return {
-            events: choice.zone === 'deck'
-                ? [buildDrawCardFromDeck(ctx.playerId, choice.cardUid, ctx.now)]
-                : [recoverCardsFromDiscard(ctx.playerId, [choice.cardUid], sourceId, ctx.now)],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const options = choices.map((choice, index) => ({
         id: `card-${index}`,
         label: choice.label,
@@ -581,7 +577,7 @@ function searchNamedMinion(ctx: AbilityContext, sourceBaseDefId: string, targetB
         ctx.playerId,
         `${cardLabel(ctx.defId)}：搜索 ${cardLabel(targetDefId)} 加入手牌`,
         options,
-        { sourceId, targetType: 'generic' },
+        { sourceId, targetType: 'generic', autoResolveIfSingle: false, responseValidationMode: 'live' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -683,6 +679,7 @@ function queueQPointPrompt(matchState: MatchState<SmashUpCore>, context: QPointC
             sourceId: 'base_q_point',
             titleKey: 'ui.magical_girls_q_point_title',
             targetType: 'board',
+            autoResolveIfSingle: false,
         },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = context;
@@ -740,29 +737,13 @@ function queueMoveDestination(ctx: AbilityContext, sourceId: string, selected: M
         .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(ctx.state, baseIndex) }))
         .filter(destination => destination.baseIndex !== selected.baseIndex);
     if (destinations.length === 0) return noTargets(ctx);
-    if (destinations.length === 1) {
-        return {
-            events: buildValidatedMoveEvents(ctx.state, {
-                minionUid: selected.uid,
-                minionDefId: selected.defId,
-                fromBaseIndex: selected.baseIndex,
-                toBaseIndex: destinations[0].baseIndex,
-                reason: sourceId,
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.targetBaseIndex ?? ctx.baseIndex,
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `${sourceId}_${ctx.now}`,
         ctx.playerId,
         `${cardLabel(selected.defId)}：选择移动目的基地`,
         buildBaseTargetOptions(destinations, ctx.state),
-        { sourceId, targetType: 'base' },
+        { sourceId, targetType: 'base', autoResolveIfSingle: false },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         minionUid: selected.uid,
@@ -909,30 +890,13 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         const destinations = state.core.bases
             .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(state.core, baseIndex) }))
             .filter(destination => destination.baseIndex !== found.baseIndex);
-        if (destinations.length === 1) {
-            return {
-                state,
-                events: buildValidatedMoveEvents(state.core, {
-                    minionUid: found.minion.uid,
-                    minionDefId: found.minion.defId,
-                    fromBaseIndex: found.baseIndex,
-                    toBaseIndex: destinations[0].baseIndex,
-                    reason: 'magical_girls_celestial_teleport',
-                    now: timestamp,
-                    sourcePlayerId: playerId,
-                    sourceCardUid: continuation?.sourceCardUid,
-                    sourceDefId: continuation?.sourceDefId,
-                    sourceControllerId: playerId,
-                    sourceBaseIndex: continuation?.sourceBaseIndex,
-                }),
-            };
-        }
+        if (destinations.length === 0) return { state, events: [] };
         const interaction = createSimpleChoice(
             `magical_girls_celestial_teleport_destination_${timestamp}`,
             playerId,
             `${cardLabel(found.minion.defId)}：选择移动目的基地`,
             buildBaseTargetOptions(destinations, state.core),
-            { sourceId: 'magical_girls_celestial_teleport_destination', targetType: 'base' },
+            { sourceId: 'magical_girls_celestial_teleport_destination', targetType: 'base', autoResolveIfSingle: false },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             minionUid: found.minion.uid,
@@ -980,18 +944,6 @@ export function registerMagicalGirlsInteractionHandlers(): void {
 
         const eligibleBases = getWalkingCastleEligibleBases(state.core, playerId);
         if (eligibleBases.length === 0) return { state, events: [] };
-        if (eligibleBases.length === 1) {
-            return {
-                state,
-                events: buildPlayWalkingCastleEvents(
-                    state.core,
-                    playerId,
-                    eligibleBases[0].baseIndex,
-                    'magical_girls_coordination',
-                    timestamp,
-                ),
-            };
-        }
 
         const interaction = createSimpleChoice(
             `magical_girls_coordination_base_${timestamp}`,
@@ -1002,6 +954,7 @@ export function registerMagicalGirlsInteractionHandlers(): void {
                 sourceId: 'magical_girls_coordination_base',
                 titleKey: 'ui.magical_girls_coordination_base_title',
                 targetType: 'base',
+                autoResolveIfSingle: false,
             },
         );
         return { state: queueInteraction(state, interaction), events: [] };
@@ -1121,38 +1074,21 @@ export function registerMagicalGirlsInteractionHandlers(): void {
             sourceDefId: continuation?.sourceDefId ?? source.minion.defId,
             sourceBaseIndex: continuation?.sourceBaseIndex ?? source.baseIndex,
         } satisfies MoveChoice;
-        if (destinations.length > 1) {
-            const interaction = createSimpleChoice(
-                `magical_girls_power_maid_destination_${timestamp}`,
-                playerId,
-                `${cardLabel(source.minion.defId)}：选择移动目的基地`,
-                buildBaseTargetOptions(destinations, state.core),
-                {
-                    sourceId: 'magical_girls_power_maid_destination',
-                    titleKey: 'ui.magical_girls_power_maid_destination_title',
-                    targetType: 'base',
-                },
-            );
-            (interaction.data as { continuationContext?: unknown }).continuationContext = moveContext;
-            return { state: queueInteraction(state, interaction), events: [] };
-        }
-        return {
-            state,
-            events: buildValidatedMoveEvents(state.core, {
-                minionUid: moveContext.minionUid,
-                minionDefId: moveContext.minionDefId,
-                fromBaseIndex: moveContext.fromBaseIndex,
-                toBaseIndex: destinations[0].baseIndex,
-                reason: moveContext.sourceDefId ?? source.minion.defId,
-                now: timestamp,
-                sourcePlayerId: playerId,
-                sourceCardUid: moveContext.sourceCardUid,
-                sourceDefId: moveContext.sourceDefId,
-                sourceControllerId: playerId,
-                sourceBaseIndex: moveContext.sourceBaseIndex,
-                sourceKind: 'nonAction',
-            }),
-        };
+        if (destinations.length === 0) return { state, events: [] };
+        const interaction = createSimpleChoice(
+            `magical_girls_power_maid_destination_${timestamp}`,
+            playerId,
+            `${cardLabel(source.minion.defId)}：选择移动目的基地`,
+            buildBaseTargetOptions(destinations, state.core),
+            {
+                sourceId: 'magical_girls_power_maid_destination',
+                titleKey: 'ui.magical_girls_power_maid_destination_title',
+                targetType: 'base',
+                autoResolveIfSingle: false,
+            },
+        );
+        (interaction.data as { continuationContext?: unknown }).continuationContext = moveContext;
+        return { state: queueInteraction(state, interaction), events: [] };
     });
 
     registerInteractionHandler('magical_girls_power_maid_destination', (state, playerId, value, data, _random, timestamp) => {
@@ -1198,12 +1134,18 @@ export function registerMagicalGirlsInteractionHandlers(): void {
 function resolveMagicatSearch(sourceId: string) {
     return (state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, _data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) => {
         const selected = value as CardSearchChoice;
-        if (!selected?.cardUid) return { state, events: [] };
+        if (!selected?.cardUid || !selected.zone) return { state, events: [] };
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
+        const liveCard = selected.zone === 'deck'
+            ? player.deck.find(card => card.uid === selected.cardUid && card.defId === selected.defId)
+            : player.discard.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
+        if (!liveCard) return { state, events: [] };
         return {
             state,
             events: selected.zone === 'deck'
-                ? [buildDrawCardFromDeck(playerId, selected.cardUid, timestamp)]
-                : [recoverCardsFromDiscard(playerId, [selected.cardUid], sourceId, timestamp)],
+                ? [buildDrawCardFromDeck(playerId, liveCard.uid, timestamp)]
+                : [recoverCardsFromDiscard(playerId, [liveCard.uid], sourceId, timestamp)],
         };
     };
 }

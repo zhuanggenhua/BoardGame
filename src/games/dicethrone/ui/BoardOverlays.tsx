@@ -218,6 +218,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                 onVote={props.onRematchVote}
                 backdropClassName="bg-transparent"
                 contentWrapperClassName="max-[1023px]:max-w-[30rem]"
+                scrollMode="content"
                 renderContent={(contentProps) => (
                     <DiceThroneEndgameContent
                         {...contentProps}

@@ -467,21 +467,7 @@ const miskatonicMandatoryReadingProgram = createEffectProgram<AbilityContext, Sm
         boostMode: 'permanent',
     });
 
-    if (base.minions.length === 1) {
-        const onlyMinion = base.minions[0];
-        if ((ctx.state.madnessDeck?.length ?? 0) <= 0) {
-            return { events: [] };
-        }
-        return {
-            events: [],
-            context: {
-                ...context,
-                minionUid: onlyMinion.uid,
-                minionDefId: onlyMinion.defId,
-            },
-            nextProgram: miskatonicMandatoryReadingChooseDrawPromptProgram,
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     return {
         events: [],
@@ -509,21 +495,7 @@ const miskatonicThingsBestNotKnownPodProgram = createEffectProgram<AbilityContex
         boostMode: 'temp',
     });
 
-    if (base.minions.length === 1) {
-        const onlyMinion = base.minions[0];
-        if ((ctx.state.madnessDeck?.length ?? 0) <= 0) {
-            return { events: [] };
-        }
-        return {
-            events: [],
-            context: {
-                ...context,
-                minionUid: onlyMinion.uid,
-                minionDefId: onlyMinion.defId,
-            },
-            nextProgram: miskatonicMandatoryReadingChooseDrawPromptProgram,
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     return {
         events: [],
@@ -1607,28 +1579,7 @@ export function registerMiskatonicAbilities(): void {
             if (promptOptions.length === 0) {
                 return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
             }
-            if (candidates.length === 1) {
-                const target = candidates[0];
-                const liveTarget = ctx.state.bases[baseIndex]?.minions.find((minion) => minion.uid === target.uid && minion.defId === target.defId);
-                if (!liveTarget) {
-                    return { events: [] };
-                }
-                return {
-                    events: buildValidatedDestroyEvents(ctx.state, {
-                        minionUid: liveTarget.uid,
-                        minionDefId: liveTarget.defId,
-                        fromBaseIndex: baseIndex,
-                        destroyerId: undefined,
-                        reason: 'miskatonic_thing_on_the_doorstep',
-                        now: ctx.now,
-                        sourcePlayerId: ctx.playerId,
-                        sourceDefId: 'miskatonic_thing_on_the_doorstep',
-                        sourceControllerId: ctx.playerId,
-                        sourceBaseIndex: baseIndex,
-                        sourceKind: 'action',
-                    }),
-                };
-            }
+            if (!ctx.matchState) return { events: [] };
             return {
                 events: [],
                 context: createMiskatonicThingOnDoorstepPromptContext(ctx, { baseIndex, candidates }),
@@ -1651,28 +1602,7 @@ export function registerMiskatonicAbilities(): void {
             if (promptOptions.length === 0) {
                 return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
             }
-            if (candidates.length === 1) {
-                const target = candidates[0];
-                const liveTarget = ctx.state.bases[baseIndex]?.minions.find((minion) => minion.uid === target.uid && minion.defId === target.defId);
-                if (!liveTarget) {
-                    return { events: [] };
-                }
-                return {
-                    events: buildValidatedDestroyEvents(ctx.state, {
-                        minionUid: liveTarget.uid,
-                        minionDefId: liveTarget.defId,
-                        fromBaseIndex: baseIndex,
-                        destroyerId: undefined,
-                        reason: 'miskatonic_thing_on_the_doorstep',
-                        now: ctx.now,
-                        sourcePlayerId: ctx.playerId,
-                        sourceDefId: 'miskatonic_thing_on_the_doorstep',
-                        sourceControllerId: ctx.playerId,
-                        sourceBaseIndex: baseIndex,
-                        sourceKind: 'action',
-                    }),
-                };
-            }
+            if (!ctx.matchState) return { events: [] };
             return {
                 events: [],
                 context: createMiskatonicThingOnDoorstepPromptContext(ctx, { baseIndex, candidates }),

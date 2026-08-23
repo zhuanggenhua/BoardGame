@@ -25,8 +25,7 @@
 ```text
 public/assets/common/audio/
 ├── bgm/
-├── ui/
-├── card/
+├── sfx/
 └── ...
 ```
 
@@ -59,17 +58,17 @@ public/assets/common/audio/
 
 1. `public/assets/common/audio/registry.json`
 2. `src/assets/audio/registry.json`
-3. `docs/audio/common-audio-assets.md`
+3. `docs/audio/common-audio-assets.md`（统计、样例和检索命令；不展开全量路径）
 4. `public/assets/common/audio/phrase-mappings.zh-CN.json`（如需补中文友好名）
 5. `docs/audio/registry.ai.json`（当精简 registry 需要刷新时）
 6. `docs/audio/audio-catalog.md`（当语义目录需要刷新时）
 
 ## 4. 必跑命令入口
 
-命令定义和可选压缩参数统一见 `docs/audio/audio-usage.md` §3，本文件规定新增素材的执行顺序：
+命令定义和可选压缩参数统一见 [audio-usage](audio-usage.md) 的“常用命令”，本文件规定新增素材的执行顺序：
 
 1. 压缩新增素材并确认产物存在。
-2. 生成运行时 registry 和资源清单。
+2. 生成运行时 registry 和资源摘要。
 3. 按需要刷新 AI 精简 registry、语义目录和中文友好名。
 4. 按本文第 6 节完成 `/dev/audio` 浏览器验收，再进入代码接入。
 

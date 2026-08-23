@@ -556,7 +556,7 @@ function shapeshiftersCopycat(ctx: AbilityContext): AbilityResult {
     const target = direct
         ? candidates.find(candidate => candidate.minion.uid === direct.minion.uid)
         : candidates[0];
-    if (ctx.matchState && !direct && candidates.length > 1) {
+    if (ctx.matchState && !direct && candidates.length > 0) {
         const interaction = createSimpleChoice(
             `shapeshifters_copycat_choose_${ctx.now}`,
             ctx.playerId,
@@ -566,6 +566,7 @@ function shapeshiftersCopycat(ctx: AbilityContext): AbilityResult {
                 sourceId: 'shapeshifters_copycat_choose',
                 targetType: 'minion',
                 titleKey: 'ui.shapeshifters_copycat_choose_title',
+                autoResolveIfSingle: false,
             },
         );
         interaction.data.copycatUid = ctx.cardUid;
@@ -595,7 +596,7 @@ function shapeshiftersCellularBonding(ctx: AbilityContext): AbilityResult {
     const host = directHost?.minion.attachedActions.some(action => action.uid !== ctx.cardUid) ? directHost : undefined;
     if (!host) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const candidates = host.minion.attachedActions.filter(action => action.uid !== ctx.cardUid);
-    if (ctx.matchState && candidates.length > 1) {
+    if (ctx.matchState && candidates.length > 0) {
         const interaction = createSimpleChoice(
             `shapeshifters_cellular_bonding_choose_${ctx.now}`,
             ctx.playerId,
@@ -605,6 +606,7 @@ function shapeshiftersCellularBonding(ctx: AbilityContext): AbilityResult {
                 sourceId: 'shapeshifters_cellular_bonding_choose',
                 targetType: 'ongoing',
                 titleKey: 'ui.shapeshifters_cellular_bonding_choose_title',
+                autoResolveIfSingle: false,
             },
         );
         interaction.data.hostMinionUid = host.minion.uid;
@@ -753,7 +755,7 @@ function cyborgApesMonkeyOnYourBack(ctx: AbilityContext): AbilityResult {
     if (!host) return { events: [] };
     const targets = getMonkeyOnYourBackTargets(ctx.state, ctx.playerId, host.baseIndex);
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (targets.length > 1 && ctx.matchState) {
+    if (targets.length > 0 && ctx.matchState) {
         const interaction = createSimpleChoice(
             `cyborg_apes_monkey_on_your_back_choose_${ctx.now}`,
             ctx.playerId,
@@ -767,6 +769,7 @@ function cyborgApesMonkeyOnYourBack(ctx: AbilityContext): AbilityResult {
             {
                 sourceId: 'cyborg_apes_monkey_on_your_back_choose',
                 targetType: 'minion',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.cyborg_apes_monkey_on_your_back_choose_title',
             },
         );
@@ -973,7 +976,7 @@ function superSpiesSpy(ctx: AbilityContext): AbilityResult {
         inspectDeck(ctx.playerId, ctx.playerId, revealed.length, 'super_spies_spy', ctx.now),
         revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, 'super_spies_spy', ctx.now, ctx.playerId),
     ];
-    if (!ctx.matchState || revealed.length === 1) {
+    if (!ctx.matchState) {
         return { events };
     }
     const interaction = createSimpleChoice(
@@ -985,6 +988,7 @@ function superSpiesSpy(ctx: AbilityContext): AbilityResult {
             sourceId: 'super_spies_spy_reorder',
             targetType: 'generic',
             titleKey: 'ui.super_spies_spy_reorder_title',
+            autoResolveIfSingle: false,
         },
     );
     attachDeckReorderContext(interaction, ctx.playerId, revealed);
@@ -1031,7 +1035,7 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
         ? direct
         : candidates[0];
     const source = buildAbilityEffectSource(ctx, { sourceKind: 'action', sourceBaseIndex: baseIndex });
-    if (ctx.matchState && !direct && candidates.length > 1) {
+    if (ctx.matchState && !direct && candidates.length > 0) {
         const interaction = createSimpleChoice(
             `super_spies_live_and_let_chum_choose_${ctx.now}`,
             ctx.playerId,
@@ -1040,6 +1044,7 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
             {
                 sourceId: 'super_spies_live_and_let_chum_choose',
                 targetType: 'minion',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.super_spies_live_and_let_chum_choose_title',
             },
         );
@@ -1075,7 +1080,7 @@ function superSpiesTheSpyWhoDitchedMe(ctx: AbilityContext): AbilityResult {
         if (!player) continue;
         const minionCards = player.hand.filter(isMinionCard);
         if (minionCards.length > 0) {
-            if (matchState && minionCards.length > 1) {
+            if (matchState) {
                 const interaction = createSimpleChoice(
                     `super_spies_the_spy_who_ditched_me_discard_${playerId}_${ctx.now}`,
                     playerId,
@@ -1084,6 +1089,7 @@ function superSpiesTheSpyWhoDitchedMe(ctx: AbilityContext): AbilityResult {
                     {
                         sourceId: 'super_spies_the_spy_who_ditched_me_discard',
                         targetType: 'hand',
+                        autoResolveIfSingle: false,
                         titleKey: 'ui.super_spies_the_spy_who_ditched_me_discard_title',
                     },
                 );
@@ -1158,7 +1164,7 @@ function superSpiesForMyEyesOnly(ctx: AbilityContext): AbilityResult {
         inspectDeck(ctx.playerId, ctx.playerId, revealed.length, 'super_spies_for_my_eyes_only', ctx.now),
         revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, 'super_spies_for_my_eyes_only', ctx.now, ctx.playerId),
     ];
-    if (!ctx.matchState || revealed.length <= 1) return { events };
+    if (revealed.length === 0 || !ctx.matchState) return { events };
     const interaction = createSimpleChoice(
         `super_spies_for_my_eyes_only_reorder_${ctx.now}`,
         ctx.playerId,
@@ -1168,6 +1174,7 @@ function superSpiesForMyEyesOnly(ctx: AbilityContext): AbilityResult {
             sourceId: 'super_spies_for_my_eyes_only_reorder',
             targetType: 'generic',
             titleKey: 'ui.super_spies_for_my_eyes_only_reorder_title',
+            autoResolveIfSingle: false,
         },
     );
     attachDeckReorderContext(interaction, ctx.playerId, revealed);
@@ -1209,7 +1216,7 @@ function superSpiesTheBaseIsNotEnough(ctx: AbilityContext): AbilityResult {
     const target = direct && candidates.some(candidate => candidate.minion.uid === direct.minion.uid)
         ? direct
         : candidates[0];
-    if (ctx.matchState && !direct && candidates.length > 1) {
+    if (ctx.matchState && !direct && candidates.length > 0) {
         const interaction = createSimpleChoice(
             `super_spies_the_base_is_not_enough_choose_${ctx.now}`,
             ctx.playerId,
@@ -1218,6 +1225,7 @@ function superSpiesTheBaseIsNotEnough(ctx: AbilityContext): AbilityResult {
             {
                 sourceId: 'super_spies_the_base_is_not_enough_choose',
                 targetType: 'minion',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.super_spies_the_base_is_not_enough_choose_title',
             },
         );
@@ -1281,12 +1289,8 @@ function superSpiesFromQWithLove(ctx: AbilityContext): AbilityResult {
             matchState: queueInteraction(ctx.matchState, interaction),
         };
     }
-    const discardUids = projectedHand.slice(0, discardCount).map(card => card.uid);
     return {
-        events: [
-            ...buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now),
-            ...(discardUids.length > 0 ? [discardFromHand(ctx.playerId, discardUids, ctx.now)] : []),
-        ],
+        events: buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now),
     };
 }
 
@@ -1326,7 +1330,7 @@ function superSpiesSecretAgent(ctx: TriggerContext): SmashUpEvent[] | TriggerRes
     if (!hasSecretAgent) return [];
     const hand = ctx.state.players[actionPlayerId]?.hand ?? [];
     if (hand.length === 0) return [];
-    if (ctx.matchState && hand.length > 1) {
+    if (ctx.matchState && hand.length > 0) {
         const interaction = createSimpleChoice(
             `super_spies_secret_agent_discard_${ctx.now}`,
             actionPlayerId,
@@ -1335,18 +1339,19 @@ function superSpiesSecretAgent(ctx: TriggerContext): SmashUpEvent[] | TriggerRes
             {
                 sourceId: 'super_spies_secret_agent_discard',
                 targetType: 'hand',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.super_spies_secret_agent_discard_title',
             },
         );
         interaction.data.allowedCardUids = hand.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    return [discardFromHand(actionPlayerId, [hand[0].uid], ctx.now)];
+    return [];
 }
 
 function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
     const discard = ctx.state.players[ctx.playerId]?.discard ?? [];
-    if (discard.length > 1 && ctx.matchState) {
+    if (discard.length > 0 && ctx.matchState) {
         const interaction = createSimpleChoice(
             `time_travelers_time_raider_choose_${ctx.now}`,
             ctx.playerId,
@@ -1361,31 +1366,20 @@ function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
             {
                 sourceId: 'time_travelers_time_raider_choose',
                 targetType: 'discard',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.time_travelers_time_raider_choose_title',
             },
         );
         interaction.data.allowedCardUids = discard.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const card = discard[0];
-    if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
-    return {
-        events: buildValidatedCardToDeckBottomEvents(ctx.state, {
-            cardUid: card.uid,
-            defId: card.defId,
-            ownerId: card.owner,
-            sourcePlayerId: ctx.playerId,
-            reason: 'time_travelers_time_raider',
-            now: ctx.now,
-            locationPlayerId: ctx.playerId,
-            expectedLocation: 'discard',
-        }),
-    };
+    if (discard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
+    return { events: [] };
 }
 
 function timeTravelersRepeaterPerfect(ctx: AbilityContext): AbilityResult {
     const actions = ctx.state.players[ctx.playerId]?.discard.filter(isActionCard) ?? [];
-    if (actions.length > 1 && ctx.matchState) {
+    if (actions.length > 0 && ctx.matchState) {
         const interaction = createSimpleChoice(
             `time_travelers_repeater_perfect_choose_${ctx.now}`,
             ctx.playerId,
@@ -1400,6 +1394,7 @@ function timeTravelersRepeaterPerfect(ctx: AbilityContext): AbilityResult {
             {
                 sourceId: 'time_travelers_repeater_perfect_choose',
                 targetType: 'discard',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.time_travelers_repeater_perfect_choose_title',
             },
         );
@@ -1483,7 +1478,7 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
 function timeTravelersItsAstounding(ctx: AbilityContext): AbilityResult {
     const actions = (ctx.state.players[ctx.playerId]?.discard.filter(isActionCard) ?? [])
         .filter(card => buildDiscardActionTargetOptions(ctx.state, ctx.playerId, card).length > 0);
-    if (ctx.matchState && actions.length > 1) {
+    if (ctx.matchState && actions.length > 0) {
         const interaction = createSimpleChoice(
             `time_travelers_its_astounding_choose_${ctx.now}`,
             ctx.playerId,
@@ -1492,6 +1487,7 @@ function timeTravelersItsAstounding(ctx: AbilityContext): AbilityResult {
             {
                 sourceId: 'time_travelers_its_astounding_choose',
                 targetType: 'generic',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.time_travelers_its_astounding_choose_title',
             },
         );
@@ -1515,11 +1511,6 @@ function timeTravelersIntoTheTimeSlip(ctx: AbilityContext): AbilityResult {
     if (inPlay.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (inPlay.length === 1) {
-        return {
-            events: [returnCardInPlayToOwnerHand(inPlay[0], 'time_travelers_into_the_time_slip', ctx.now)],
-        };
-    }
     if (!ctx.matchState) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
@@ -1538,6 +1529,7 @@ function timeTravelersIntoTheTimeSlip(ctx: AbilityContext): AbilityResult {
         {
             sourceId: 'time_travelers_into_the_time_slip_choose',
             targetType: 'board',
+            autoResolveIfSingle: false,
             titleKey: 'ui.time_travelers_into_the_time_slip_choose_title',
         },
     );
@@ -1665,7 +1657,7 @@ function timeTravelersTimeIsFleeting(ctx: AbilityContext): AbilityResult {
     const scoredBaseDefId = ctx.baseIndex !== undefined ? ctx.state.bases[ctx.baseIndex]?.defId : undefined;
     const baseDiscard = (ctx.state.baseDiscard ?? []).filter(defId => defId !== scoredBaseDefId);
     if (baseDiscard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (!ctx.matchState || baseDiscard.length === 1) {
+    if (!ctx.matchState) {
         return { events: [reorderBaseDiscardTop(baseDiscard[0], 'time_travelers_time_is_fleeting', ctx.now)] };
     }
     const options: PromptOption<{ baseDefId: string }>[] = baseDiscard.map(defId => {
@@ -1684,6 +1676,7 @@ function timeTravelersTimeIsFleeting(ctx: AbilityContext): AbilityResult {
         {
             sourceId: 'time_travelers_time_is_fleeting_choose',
             targetType: 'generic',
+            autoResolveIfSingle: false,
             titleKey: 'ui.time_travelers_time_is_fleeting_choose_title',
         },
     );
@@ -1843,7 +1836,7 @@ function baseFacelessCity(ctx: BaseAbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
     const matchingCards = player.deck.filter(card => isMinionCard(card) && isSameNameDefId(card.defId, ctx.minionDefId));
-    if (ctx.matchState && matchingCards.length > 1) {
+    if (ctx.matchState && matchingCards.length > 0) {
         const interaction = createSimpleChoice(
             `base_faceless_city_choose_${ctx.now}`,
             ctx.playerId,
@@ -1855,6 +1848,7 @@ function baseFacelessCity(ctx: BaseAbilityContext): AbilityResult {
             {
                 sourceId: 'base_faceless_city_choose',
                 targetType: 'generic',
+                autoResolveIfSingle: false,
                 titleKey: 'ui.base_faceless_city_choose_title',
             },
         );
@@ -2629,9 +2623,6 @@ function queueDiscardMinionBaseChoice(
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const options = buildDiscardMinionBaseOptions(state.core, selected);
     if (options.length === 0) return { state, events: [] };
-    if (options.length === 1) {
-        return { state, events: buildDiscardMinionSearchEvents(state.core, playerId, options[0].value, timestamp) };
-    }
     const interaction = createSimpleChoice(
         `shapeshifters_really_base_${timestamp}`,
         playerId,

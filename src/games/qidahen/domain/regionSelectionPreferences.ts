@@ -41,8 +41,7 @@ const getPreferredNonSiegedControlledRuntimeRegion = (
             return rightSource.troops - leftSource.troops
                 || getQidahenEffectivePopulation(right, rightSource.population)
                     - getQidahenEffectivePopulation(left, leftSource.population);
-        })
-        .at(0)
+        })[0]
         ?? null
 );
 
@@ -58,8 +57,7 @@ const getPreferredControlledRuntimeRegion = (
             return rightSource.troops - leftSource.troops
                 || getQidahenEffectivePopulation(right, rightSource.population)
                     - getQidahenEffectivePopulation(left, leftSource.population);
-        })
-        .at(0)
+        })[0]
         ?? null
 );
 
@@ -108,8 +106,7 @@ export const getPreferredRegularTroopPlacementRegion = (
                 || getQidahenEffectivePopulation(right, rightSource.population)
                     - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
-        })
-        .at(0)
+        })[0]
         ?? null
 );
 
@@ -141,8 +138,7 @@ export const getPreferredActionWindowSelectedRegionIdForFaction = (
                 || getQidahenEffectivePopulation(right, rightSource.population)
                     - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
-        })
-        .at(0);
+        })[0];
     if (preferredSiegeRegion) {
         return preferredSiegeRegion.id;
     }

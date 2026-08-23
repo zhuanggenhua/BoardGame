@@ -99,6 +99,10 @@ type MoveMinionContext = MarvelPromptContext & {
     reason: string;
 };
 
+type ScrambleSourceContext = MarvelPromptContext & {
+    candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+};
+
 type UltimatesMoveContext = MoveMinionContext & {
     powerBonus?: number;
 };
@@ -412,6 +416,51 @@ const chooseMoveDestinationPromptProgram = createPromptProgram<MoveMinionContext
                     ? 'nonAction'
                     : 'action',
             }),
+        };
+    },
+});
+
+const scrambleSourcePromptProgram = createPromptProgram<ScrambleSourceContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ultimates_scramble_source',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `ultimates_scramble_source_${context.now}`,
+        context.playerId,
+        '争夺：选择你的一个随从',
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'ultimates_scramble',
+            sourceKind: 'action',
+            effectType: 'move',
+            respectActionProtection: true,
+        }),
+        {
+            sourceId: 'ultimates_scramble_source',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.ultimates_scramble_source_title',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as MinionChoice | undefined;
+        if (!choice?.minionUid || choice.baseIndex === undefined) return { events: [] };
+        const live = state.core.bases[choice.baseIndex]?.minions.find(minion =>
+            minion.uid === choice.minionUid && minion.controller === context.playerId);
+        if (!live) return { events: [] };
+        return {
+            events: [],
+            context: {
+                matchState: state,
+                playerId: context.playerId,
+                now: timestamp,
+                sourceId: 'ultimates_scramble_destination',
+                minionUid: live.uid,
+                minionDefId: live.defId,
+                fromBaseIndex: choice.baseIndex,
+                reason: 'ultimates_scramble',
+            } satisfies MoveMinionContext,
+            nextProgram: chooseMoveDestinationPromptProgram,
         };
     },
 });
@@ -1223,7 +1272,7 @@ function ultimatesFirstToArrive(ctx: AbilityContext): AbilityResult {
         .filter(({ base }) => !base.minions.some(minion => minion.controller === ctx.playerId))
         .map(({ baseIndex }) => baseIndex);
     if (legalBaseIndexes.length === 0) return { events: [] };
-    if (legalBaseIndexes.length === 1 || !ctx.matchState) {
+    if (!ctx.matchState) {
         return extraMinion(ctx, 'ultimates_first_to_arrive', legalBaseIndexes[0]);
     }
     return runtimeToAbilityResult(executeAbilityProgram(ultimatesFirstToArrivePromptProgram, {
@@ -1288,6 +1337,19 @@ function ultimatesScramble(ctx: AbilityContext): AbilityResult {
             .filter(minion => minion.controller === ctx.playerId)
             .map(minion => ({ minion, baseIndex }))
     ));
+    if (!ctx.targetMinionUid && ctx.matchState) {
+        return runtimeToAbilityResult(executeAbilityProgram(scrambleSourcePromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            candidates: owned.map(({ minion, baseIndex }) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })),
+        }));
+    }
     const selected = ctx.targetMinionUid
         ? owned.find(entry => entry.minion.uid === ctx.targetMinionUid)
         : owned[0];

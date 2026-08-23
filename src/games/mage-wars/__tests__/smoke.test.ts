@@ -139,7 +139,7 @@ describe('mage-wars foundation', () => {
         expect(previewGetter).toBeDefined();
 
         const registeredSpellCardIds = getMageWarsRegisteredSpellCardIds();
-        expect(registeredSpellCardIds).toHaveLength(150);
+        expect(registeredSpellCardIds).toHaveLength(152);
         expect(getMageWarsSpellCardName(1700)).toBe('火球术');
         expect(getMageWarsSpellCardPreviewRef(1700)).toEqual({
             type: 'atlas',
@@ -163,10 +163,18 @@ describe('mage-wars foundation', () => {
             atlasId: 'mage-wars:spell-creature-core-b-atlas',
             index: 8,
         });
-        expect(getMageWarsSpellCardName(25700)).toBeNull();
-        expect(getMageWarsSpellCardPreviewRef(25700)).toBeNull();
-        expect(getMageWarsSpellCardName(2500)).toBeNull();
-        expect(getMageWarsSpellCardPreviewRef(2500)).toBeNull();
+        expect(getMageWarsSpellCardName(25700)).toBe('荆棘之墙');
+        expect(getMageWarsSpellCardPreviewRef(25700)).toEqual({
+            type: 'atlas',
+            atlasId: 'mage-wars:spell-wall-thorns-atlas',
+            index: 0,
+        });
+        expect(getMageWarsSpellCardName(2500)).toBe('烈火之墙');
+        expect(getMageWarsSpellCardPreviewRef(2500)).toEqual({
+            type: 'atlas',
+            atlasId: 'mage-wars:spell-wall-core-atlas',
+            index: 0,
+        });
 
         const spellbookCardIds = new Set<string>();
         for (const mageId of getPresetMageOrderFromConfig()) {
@@ -175,7 +183,7 @@ describe('mage-wars foundation', () => {
             }
         }
 
-        const missingRuntimeAtlasCardIds = new Set(['2303', '2500', '3800', '3801', '3802', '3803', '25700']);
+        const missingRuntimeAtlasCardIds = new Set(['2303', '3800', '3801', '3802', '3803']);
         const previewableSpellbookCardIds = [...spellbookCardIds]
             .filter((cardId) => !missingRuntimeAtlasCardIds.has(cardId));
 

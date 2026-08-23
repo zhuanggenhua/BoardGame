@@ -148,7 +148,15 @@ describe('忍者派系能力', () => {
         });
 
         const { matchState } = execPlayAction(state, '0', 'a1');
-        getSimpleChoicePrompt(matchState, 'ninja_disguise_choose_minions');
+        const basePrompt = getSimpleChoicePrompt(matchState, 'ninja_disguise_choose_base');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+        const choseBase = respondToPrompt(
+            matchState,
+            getPromptOption(basePrompt, option => option.value?.baseIndex === 0, 'disguise single base').id,
+            '0',
+            defaultTestRandom,
+        );
+        getSimpleChoicePrompt(choseBase.finalState, 'ninja_disguise_choose_minions');
     });
 
     it('ninja_disguise: 没有己方随从时无事件', () => {
@@ -208,10 +216,20 @@ describe('忍者派系能力', () => {
         });
 
         const played = execPlayAction(state, '0', 'a1');
-        const chooseReturn = respondToPrompt(
+        const chooseBase = respondToPrompt(
             played.matchState,
             getPromptOption(
-                getSimpleChoicePrompt(played.matchState, 'ninja_disguise_choose_minions'),
+                getSimpleChoicePrompt(played.matchState, 'ninja_disguise_choose_base'),
+                option => option.value?.baseIndex === 0,
+                'disguise borrowed base',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+        const chooseReturn = respondToPrompt(
+            chooseBase.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(chooseBase.finalState, 'ninja_disguise_choose_minions'),
                 option => option.value?.minionUid === 'return-me',
                 'disguise return target',
             ).id,
@@ -576,7 +594,7 @@ describe('忍者 ongoing/special 能力', () => {
             expect(cardOptions[0].value.defId).toBe('zombie_overrun');
         });
 
-        it('只有一个基地战术时自动消灭，不创建交互', () => {
+        it('只有一个基地战术时也必须等待玩家选择后才消灭', () => {
             const base = makeBase({
                 ongoingActions: [{ uid: 'ongoing-1', defId: 'zombie_overrun', ownerId: '1' }],
             });
@@ -599,8 +617,14 @@ describe('忍者 ongoing/special 能力', () => {
             );
 
             expect(result.success).toBe(true);
-            expectNoPrompt(result.finalState);
-            const detached = result.events.find(event => event.type === SU_EVENTS.ONGOING_DETACHED) as any;
+            const current = getFirstPrompt(result.finalState);
+            expect(getPromptSourceId(current)).toBe('ninja_infiltrate_destroy');
+            expect(getPromptTargetType(current)).toBe('ongoing');
+            expect(getPromptOptions(current)).toHaveLength(1);
+            const option = getPromptOption(current, candidate => candidate?.value?.cardUid === 'ongoing-1', '唯一基地战术');
+
+            const resolved = respondToPrompt(result.finalState, option.id, '0', defaultTestRandom);
+            const detached = resolved.events.find(event => event.type === SU_EVENTS.ONGOING_DETACHED) as any;
             expect(detached).toBeDefined();
             expect(detached.payload.cardUid).toBe('ongoing-1');
         });

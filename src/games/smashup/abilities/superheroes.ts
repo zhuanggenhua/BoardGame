@@ -317,6 +317,7 @@ const mindLadyPromptProgram = createPromptProgram<MindLadyPromptContext, SmashUp
                 sourceId: 'superheroes_mind_lady',
                 titleKey: 'ui.superheroes_mind_lady_title',
                 targetType: 'minion',
+                autoResolveIfSingle: false,
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
             },
@@ -444,6 +445,7 @@ const sidekickPromptProgram = createPromptProgram<SuperheroesPromptContext, Smas
                 sourceId: 'superheroes_sidekick',
                 titleKey: 'ui.superheroes_sidekick_title',
                 targetType: 'base',
+                autoResolveIfSingle: false,
                 responseValidationMode: 'live',
             },
         ),
@@ -479,6 +481,7 @@ const mildManneredCitizenSearchPromptProgram = createPromptProgram<
                 sourceId: 'superheroes_mild_mannered_citizen_search',
                 titleKey: 'ui.superheroes_mild_mannered_citizen_search_title',
                 targetType: 'generic',
+                autoResolveIfSingle: false,
                 autoRefresh: 'deck',
                 responseValidationMode: 'live',
             },
@@ -519,7 +522,7 @@ function runMildManneredCitizenSearch(
         };
     }
 
-    if (context.eligible.length === 1 || !context.matchState) {
+    if (!context.matchState) {
         const [selected] = context.eligible;
         if (!selected) return { events: [] };
         return {
@@ -557,6 +560,7 @@ const radioactiveExposureSearchPromptProgram = createPromptProgram<
             {
                 sourceId: 'superheroes_radioactive_exposure_search',
                 targetType: 'generic',
+                autoResolveIfSingle: false,
                 autoRefresh: 'deck',
                 responseValidationMode: 'live',
             },
@@ -597,7 +601,7 @@ function runRadioactiveExposureSearch(
         };
     }
 
-    if (context.eligible.length === 1 || !context.matchState) {
+    if (!context.matchState) {
         const [selected] = context.eligible;
         if (!selected) return { events: [] };
         return {
@@ -717,7 +721,7 @@ function mindLadyTalent(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    if (targets.length === 1 || !ctx.matchState) {
+    if (!ctx.matchState) {
         const [target] = targets;
         if (!target?.value?.minionUid || target.value.baseIndex === undefined) {
             return { events: [] };
@@ -785,18 +789,7 @@ function sidekickOnPlay(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (targets.length === 1) {
-        const only = targets[0];
-        if (only.value.baseIndex === undefined) return { events: [] };
-        return {
-            events: [grantContextualExtraMinion(
-                { playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState },
-                'superheroes_sidekick',
-                only.value.baseIndex,
-                { powerMax: 2 },
-            )],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const result = executeAbilityProgram(sidekickPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

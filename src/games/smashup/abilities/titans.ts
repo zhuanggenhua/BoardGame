@@ -729,6 +729,7 @@ function kaijuGorgodzollaSpecial(ctx: AbilityContext): AbilityResult {
 function kaijuGorgodzollaOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined) return [];
     const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.playerId !== titanControllerId) return [];
     const titan = getGorgodzollaOnBase(ctx.state, titanControllerId, ctx.baseIndex);
     if (!titan) return [];
     return [addTitanPowerCounter(titan.uid, 1, 'kaiju_gorgodzolla', ctx.now)];
@@ -737,6 +738,7 @@ function kaijuGorgodzollaOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
 function kaijuGorgodzollaOnActionPlayed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (ctx.baseIndex === undefined) return [];
     const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.playerId !== titanControllerId) return [];
     const titan = getGorgodzollaOnBase(ctx.state, titanControllerId, ctx.baseIndex);
     if (!titan) return [];
 
@@ -3142,21 +3144,7 @@ function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResu
     }
     const { discardable } = eligible;
     if (!ctx.matchState) {
-        return [{
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId: ctx.playerId, cardUids: [discardable[0].uid] },
-            timestamp: ctx.now,
-        }];
-    }
-    if (discardable.length === 1) {
-        return {
-            events: [{
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId: ctx.playerId, cardUids: [discardable[0].uid] },
-                timestamp: ctx.now,
-            }],
-            matchState: ctx.matchState,
-        };
+        return [];
     }
 
     const interaction = createSimpleChoice(
@@ -3174,6 +3162,7 @@ function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResu
             sourceId: 'titan_tricksters_big_funny_giant_discard_to_play',
             targetType: 'hand',
             titleKey: 'ui.titan_big_funny_giant_discard_title',
+            autoResolveIfSingle: false,
         },
     );
 
@@ -5453,10 +5442,14 @@ export function registerTitanAbilities(): void {
     registerTrigger('kaiju_gorgodzolla', 'onMinionPlayed', kaijuGorgodzollaOnMinionPlayed, {
         playerContext: 'sourceController',
         canTrigger: (ctx) => ctx.baseIndex !== undefined
+            && ctx.playerId === (ctx.sourceControllerId ?? ctx.playerId)
             && !!getGorgodzollaOnBase(ctx.state, ctx.sourceControllerId ?? ctx.playerId, ctx.baseIndex),
     });
     registerTrigger('kaiju_gorgodzolla', 'onActionPlayed', kaijuGorgodzollaOnActionPlayed, {
         playerContext: 'sourceController',
+        canTrigger: (ctx) => ctx.baseIndex !== undefined
+            && ctx.playerId === (ctx.sourceControllerId ?? ctx.playerId)
+            && !!getGorgodzollaOnBase(ctx.state, ctx.sourceControllerId ?? ctx.playerId, ctx.baseIndex),
     });
 
     registerAbility('explorers_very_large_boulder', 'special', explorersVeryLargeBoulderSpecial);
@@ -5860,6 +5853,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('pirates_the_kraken', 'afterScoring', piratesTheKrakenAfterScoring, {
         global: true,
         playerContext: 'sourceController',
+        optional: true,
     });
 }
 
@@ -6525,24 +6519,6 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        if (opponentOptions.length === 1) {
-            const events: SmashUpEvent[] = [
-                changeMinionController(
-                    minion.uid,
-                    minion.defId,
-                    selected.baseIndex,
-                    minion.owner,
-                    minion.controller,
-                    opponentOptions[0].value.targetPlayerId,
-                    playerId,
-                    'ignobles_the_hill_that_strolls_talent',
-                    timestamp,
-                ),
-                ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
-            ];
-            return { state, events };
-        }
-
         const interaction = createSimpleChoice(
             `titan_ignobles_the_hill_that_strolls_choose_player_${timestamp}`,
             playerId,
@@ -6552,6 +6528,7 @@ export function registerTitanInteractionHandlers(): void {
                 sourceId: 'titan_ignobles_the_hill_that_strolls_choose_player',
                 targetType: 'player',
                 titleKey: 'ui.titan_hill_that_strolls_choose_player_title',
+                autoResolveIfSingle: false,
             },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
@@ -6717,28 +6694,6 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events };
         }
 
-        if (destroyTargets.length === 1) {
-            const [target] = destroyTargets;
-            const targetBase = state.core.bases[continuation.toBaseIndex];
-            const targetMinion = targetBase?.minions.find(minion => minion.uid === target.uid);
-            if (!targetMinion) return { state, events };
-            events.push(...buildValidatedDestroyEvents(state, {
-                minionUid: targetMinion.uid,
-                minionDefId: targetMinion.defId,
-                fromBaseIndex: continuation.toBaseIndex,
-                destroyerId: playerId,
-                reason: 'explorers_very_large_boulder_move',
-                now: timestamp,
-                sourcePlayerId: playerId,
-                sourceCardUid: titan.uid,
-                sourceDefId: titan.defId,
-                sourceControllerId: playerId,
-                sourceBaseIndex: continuation.toBaseIndex,
-                sourceKind: 'nonAction',
-            }));
-            return { state, events };
-        }
-
         const interaction = createSimpleChoice(
             `titan_explorers_very_large_boulder_destroy_${timestamp}`,
             playerId,
@@ -6748,6 +6703,7 @@ export function registerTitanInteractionHandlers(): void {
                 sourceId: 'titan_explorers_very_large_boulder_destroy',
                 targetType: 'minion',
                 titleKey: 'ui.titan_very_large_boulder_destroy_title',
+                autoResolveIfSingle: false,
             },
         );
         (interaction.data as {

@@ -129,6 +129,18 @@ function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: str
     return runCommand(state, respondCommand(optionId, playerId), name);
 }
 
+function respondToLaserTriceratops(
+    state: MatchState<SmashUpCore>,
+    playerId: string,
+    minionUid: string,
+    name: string,
+) {
+    const choice = getSimpleChoicePrompt(state, 'dino_laser_triceratops');
+    expect(choice.autoResolveIfSingle).toBe(false);
+    const targetOption = findOption(choice, option => option.value?.minionUid === minionUid);
+    return respond(state, playerId, targetOption, name);
+}
+
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
     const options = getPromptOptions(choice);
     const opt = options.find(predicate);
@@ -320,10 +332,12 @@ describe('Interceptor: dino_tooth_and_claw', () => {
         const state = makeFullMatchState(core);
 
         // 打出激光三角龙 → 消灭力量≤2的随从
-        const r1 = runCommand(state, {
+        const played = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION, playerId: '0',
             payload: { cardUid: 'lt1', baseIndex: 0 },
         }, 'laser_triceratops vs tooth_and_claw');
+        expect(played.steps[0]?.success).toBe(true);
+        const r1 = respondToLaserTriceratops(played.finalState, '0', 'target1', 'laser_triceratops vs tooth_and_claw: confirm target');
         expect(r1.steps[0]?.success).toBe(true);
         // tooth_and_claw 保护：target1 应该存活（tooth_and_claw 自毁代替）
         const base = r1.finalState.core.bases[0];
@@ -867,10 +881,12 @@ describe('onMinionDestroyed trigger: steampunk_escape_hatch', () => {
         const state = makeFullMatchState(core);
 
         // P1 打出激光三角龙 → 消灭 target1
-        const r1 = runCommand(state, {
+        const played = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION, playerId: '1',
             payload: { cardUid: 'lt1', baseIndex: 0 },
         }, 'escape_hatch: 消灭随从');
+        expect(played.steps[0]?.success).toBe(true);
+        const r1 = respondToLaserTriceratops(played.finalState, '1', 'target1', 'escape_hatch: confirm target');
         expect(r1.steps[0]?.success).toBe(true);
         // target1 应该回到 P0 手牌（escape_hatch 触发）
         const p0 = r1.finalState.core.players['0'];
@@ -908,12 +924,14 @@ describe('onMinionDestroyed trigger: steampunk_escape_hatch', () => {
         });
         const state = makeFullMatchState(core);
 
-        const result = runCommand(state, {
+        const played = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '1',
             payload: { cardUid: 'lt1', baseIndex: 0 },
         }, 'own escape hatch should not consume own hideout');
 
+        expect(played.steps[0]?.success).toBe(true);
+        const result = respondToLaserTriceratops(played.finalState, '1', 'target1', 'own escape hatch should not consume own hideout: confirm target');
         expect(result.steps[0]?.success).toBe(true);
         const base = result.finalState.core.bases[0];
         expect(base.ongoingActions.some(o => o.uid === 'hideout-1')).toBe(true);
@@ -1213,10 +1231,12 @@ describe('onMinionDestroyed trigger: robot_microbot_archive', () => {
         const handBefore = state.core.players['0'].hand.length;
 
         // P1 打出激光三角龙 → 消灭力量≤2的微型机
-        const r1 = runCommand(state, {
+        const played = runCommand(state, {
             type: SU_COMMANDS.PLAY_MINION, playerId: '1',
             payload: { cardUid: 'lt1', baseIndex: 0 },
         }, 'microbot_archive: 微型机被消灭');
+        expect(played.steps[0]?.success).toBe(true);
+        const r1 = respondToLaserTriceratops(played.finalState, '1', 'mb1', 'microbot_archive: confirm target');
         expect(r1.steps[0]?.success).toBe(true);
         // P0 应该抽了1张牌（microbot_archive 触发）
         const p0 = r1.finalState.core.players['0'];

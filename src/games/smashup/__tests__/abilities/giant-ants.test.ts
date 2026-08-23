@@ -1351,6 +1351,42 @@ describe('巨蚁派系能力', () => {
 
         expect(resolveResult.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED).length).toBe(2);
     });
+
+    it('杀手女皇只有一个本回合打出的己方随从时仍必须等待玩家选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayedPerBase: { 0: 1 },
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('q1', 'giant_ant_killer_queen', '0', 4, { powerModifier: 0, playedThisTurn: true }),
+                        makeMinion('m2', 'test_other', '0', 2, { powerModifier: 0, playedThisTurn: true }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const talentResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'q1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(talentResult.finalState, 'giant_ant_killer_queen_choose_minion');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(talentResult.finalState.core.bases[0].minions.find(m => m.uid === 'm2')?.powerCounters ?? 0).toBe(0);
+
+        const option = getPromptOption(prompt, o => o?.value?.minionUid === 'm2', 'killer queen single target');
+        const resolveResult = respondToPrompt(talentResult.finalState, option.id, '0', defaultTestRandom);
+
+        expect(resolveResult.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED).length).toBe(2);
+    });
 });
 
 describe('巨蚁 POD 行为', () => {
@@ -1567,6 +1603,43 @@ describe('巨蚁 POD 行为', () => {
         const base = chooseSecond.finalState.core.bases[0];
         expect(base.minions.find(m => m.uid === 'm1')?.powerCounters).toBe(2);
         expect(base.minions.find(m => m.uid === 'm2')?.powerCounters).toBe(1);
+    });
+
+    it('Gimme the Prize（POD）只有一个己方随从时仍必须等待玩家选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'giant_ant_gimme_the_prize_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('m1', 'test_m1', '0', 2, { powerCounters: 0, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(play.finalState, 'giant_ant_gimme_the_prize_pod_first');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(play.finalState.core.bases[0].minions.find(m => m.uid === 'm1')?.powerCounters ?? 0).toBe(0);
+
+        const firstOpt = getPromptOption(prompt, option => option?.value?.minionUid === 'm1', 'Gimme the Prize single minion option');
+        const chooseFirst = respondToPrompt(play.finalState, firstOpt.id, '0', defaultTestRandom);
+
+        const base = chooseFirst.finalState.core.bases[0];
+        expect(base.minions.find(m => m.uid === 'm1')?.powerCounters).toBe(2);
+        expect(() => getSimpleChoicePrompt(chooseFirst.finalState, 'giant_ant_gimme_the_prize_pod_second')).toThrow();
     });
 
     it('We Will Rock You（POD）：选基地后，该基地己方随从按现有指示物数获得临时力量', () => {

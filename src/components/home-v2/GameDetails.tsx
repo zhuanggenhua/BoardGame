@@ -62,6 +62,7 @@ import {
     resolveGameDisplayName,
     resolveGameDescription,
 } from '../lobby/gameDetailsContent';
+import type { LeaderboardEntry } from '../lobby/leaderboardTypes';
 import { logger } from '../../lib/logger';
 import { ensureGameCriticalImageResolverLoaded, prefetchGameImplementation } from '../../games/registry';
 import { prefetchOnlineMatchRoute } from '../../lib/prefetchPlayRoute';
@@ -224,7 +225,7 @@ function HomeV2LeaderboardPanel({
     t,
     compact = false,
 }: {
-    leaderboardData: { leaderboard: { name: string; wins: number; matches: number }[] } | null;
+    leaderboardData: { leaderboard: LeaderboardEntry[] } | null;
     error: boolean;
     t: HomeV2Translate;
     compact?: boolean;
@@ -232,7 +233,7 @@ function HomeV2LeaderboardPanel({
     const entries = leaderboardData?.leaderboard ?? [];
 
     return (
-        <HomeV2PaperPanel eyebrow={t('lobby:leaderboard.title', { defaultValue: '胜场排行' })}>
+        <HomeV2PaperPanel eyebrow={t('lobby:leaderboard.title', { defaultValue: 'ELO 排行' })}>
             {error ? (
                 <HomeV2EmptyNote>{t('lobby:leaderboard.error', { defaultValue: '排行榜加载失败' })}</HomeV2EmptyNote>
             ) : !leaderboardData ? (
@@ -255,8 +256,8 @@ function HomeV2LeaderboardPanel({
                                 key={`${player.name}-${index}`}
                                 className={`grid items-center border-t border-[rgba(105,66,37,0.28)] text-[#3f2718] ${
                                     compact
-                                        ? 'min-h-[40px] grid-cols-[30px_minmax(0,1fr)_60px] gap-[5px] py-[3px]'
-                                        : 'min-h-[66px] grid-cols-[66px_minmax(0,1fr)_148px] gap-[14px]'
+                                        ? 'min-h-[42px] grid-cols-[30px_minmax(0,1fr)_72px] gap-[5px] py-[3px]'
+                                        : 'min-h-[70px] grid-cols-[66px_minmax(0,1fr)_172px] gap-[14px]'
                                 }`}
                             >
                                 <div className="flex justify-center">
@@ -271,22 +272,44 @@ function HomeV2LeaderboardPanel({
                                         {rankLabel}
                                     </span>
                                 </div>
-                                <div
-                                    className={`min-w-0 font-bold text-[#3f2718] ${
-                                        compact
-                                            ? 'pr-[2px] text-[10px] leading-[1.08] truncate'
-                                            : 'truncate pr-[12px] text-[clamp(17px,1.16vw,20px)]'
-                                    }`}
-                                >
-                                    {player.name}
+                                <div className="min-w-0 pr-[8px]">
+                                    <div
+                                        className={`min-w-0 font-bold text-[#3f2718] ${
+                                            compact
+                                                ? 'truncate text-[10px] leading-[1.08]'
+                                                : 'truncate text-[clamp(17px,1.16vw,20px)]'
+                                        }`}
+                                    >
+                                        {player.name}
+                                    </div>
+                                    {!compact ? (
+                                        <div className="mt-[3px] truncate text-[11px] font-semibold leading-none text-[#8a6444]">
+                                            {t(`lobby:leaderboard.tiers.${player.tier}`, { defaultValue: player.tier })}
+                                            {player.provisional ? ` · ${t('lobby:leaderboard.provisional', { defaultValue: '定级中' })}` : ''}
+                                        </div>
+                                    ) : null}
                                 </div>
-                                <div data-testid="home-v2-leaderboard-record" className={`justify-self-end text-right font-semibold text-[#6e4a32] ${compact ? 'text-[9.2px] leading-[1]' : 'text-[clamp(13px,0.94vw,15px)]'}`}>
+                                <div data-testid="home-v2-leaderboard-record" className={`justify-self-end text-right font-semibold text-[#6e4a32] ${compact ? 'text-[9px] leading-[1.05]' : 'text-[clamp(12px,0.86vw,14px)] leading-[1.18]'}`}>
                                     {compact ? (
-                                        <span className="tabular-nums">
-                                            {player.wins}/{player.matches}
-                                        </span>
+                                        <>
+                                            <div className="tabular-nums text-[#3f2718]">{player.rating}</div>
+                                            <div className="mt-[2px] tabular-nums">{player.wins}-{player.losses}</div>
+                                        </>
                                     ) : (
-                                        t('lobby:leaderboard.record', { wins: player.wins, matches: player.matches })
+                                        <>
+                                            <div className="tabular-nums text-[clamp(18px,1.18vw,21px)] font-bold leading-none text-[#3f2718]">
+                                                {t('lobby:leaderboard.rating', { rating: player.rating, defaultValue: '{{rating}} ELO' })}
+                                            </div>
+                                            <div className="mt-[5px] tabular-nums">
+                                                {t('lobby:leaderboard.record', {
+                                                    wins: player.wins,
+                                                    losses: player.losses,
+                                                    draws: player.draws,
+                                                    matches: player.matches,
+                                                    winRate: Math.round(player.winRate * 100),
+                                                })}
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -969,7 +992,7 @@ export const Right = ({ game }: RightProps) => {
     const createRoomInFlightRef = React.useRef(false);
     const [activeTab, setActiveTab] = React.useState<HomeV2DetailTab>('lobby');
     const [leaderboardData, setLeaderboardData] = React.useState<{
-        leaderboard: { name: string; wins: number; matches: number }[];
+        leaderboard: LeaderboardEntry[];
     } | null>(null);
     const [leaderboardError, setLeaderboardError] = React.useState(false);
     const [changelogItems, setChangelogItems] = React.useState<GameChangelogItem[]>([]);
@@ -1251,7 +1274,7 @@ export const Right = ({ game }: RightProps) => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-                return response.json() as Promise<{ leaderboard?: { name: string; wins: number; matches: number }[]; error?: unknown }>;
+                return response.json() as Promise<{ leaderboard?: LeaderboardEntry[]; error?: unknown }>;
             })
             .then((payload) => {
                 if (cancelled) return;

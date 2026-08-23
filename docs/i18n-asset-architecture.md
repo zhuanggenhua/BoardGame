@@ -1,162 +1,64 @@
 # 国际化资源架构
 
-## 概述
+本文记录图片资源国际化目录和代码入口。资源准入、压缩、manifest、上传和移动包边界以 [`asset-pipeline`](../.spec/knowledge/standards/asset-pipeline.md) 为准。
 
-项目采用**语言目录方案**：所有游戏图片资源统一放在 `i18n/{locale}/` 目录下。
-原始路径（`public/assets/<gameId>/`）已删除，CDN 上只有国际化目录的素材。
+## 当前目录
 
-## 目录结构
-
-```
+```text
 public/assets/
 ├── i18n/
-│   ├── zh-CN/                   # 中文资源（当前唯一语言）
-│   │   ├── dicethrone/
-│   │   ├── smashup/
-│   │   ├── summonerwars/
-│   │   └── tictactoe/
-│   └── en/                      # 英文资源（未来）
-│       ├── dicethrone/
-│       ├── smashup/
-│       ├── summonerwars/
-│       └── tictactoe/
-└── common/                      # 语言无关的通用资源（音频等）
+│   └── zh-CN/<gameId>/...
+├── atlas-configs/<gameId>/...
+└── common/
     ├── audio/
     └── images/
 ```
 
-**重要**：原始路径 `public/assets/<gameId>/` 已删除，不存在 fallback。所有图片请求必须带 `/i18n/{locale}/` 前缀。
+原始 `public/assets/<gameId>/` 已删除，不存在 fallback。运行时图片请求必须进入 `i18n/<locale>/` 目录。
 
-## 代码使用
+## 路径合同
 
-### 全链路路径转换
+- 代码传入相对资源语义路径，例如 `<gameId>/cards/cards1`。
+- 调用侧不要带 `/assets/`、`/i18n/`、`compressed/`、扩展名或手写查询参数。
+- `getLocalizedAssetPath` 负责补语言目录和官方资源域名。
+- `getOptimizedImageUrls` 负责指向 `compressed/*.webp`。
+- CSS 背景图使用 `buildLocalizedImageSet`，当前只返回 WebP `url()`，不使用 `image-set()`。
 
-代码中传入相对路径（不带 `/assets/`、不带 `/i18n/`、不带 `compressed/`），系统自动完成：
+示例：
 
-```
-输入: 'smashup/cards/cards1'
-  ↓ getLocalizedAssetPath(src, 'zh-CN')
-中间: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/cards1'
-  ↓ getOptimizedImageUrls(localizedPath)
-输出: {
-  avif: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp',
-  webp: 'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp'
-}
+```ts
+const localized = getLocalizedAssetPath('<gameId>/cards/cards1', 'zh-CN');
+const urls = getOptimizedImageUrls(localized);
 ```
 
-### OptimizedImage（`<img>` 标签场景）
+## 图片组件
 
-自动从 `i18next` 获取 locale，使用 `<img>` 标签加载 webp 格式：
+| 场景 | 入口 |
+| --- | --- |
+| `<img>` | `src/components/common/media/OptimizedImage.tsx` |
+| 卡牌预览 / atlas card | `src/components/common/media/CardPreview.tsx` |
+| 通用路径解析 | `src/core/AssetLoader.ts` |
+| 直接 sprite atlas | `src/engine/primitives/spriteAtlas.ts` |
 
-```tsx
-// 自动使用当前语言
-<OptimizedImage src="dicethrone/images/pyromancer/player-board" />
+## 图集注册
 
-// 显式指定语言（未来英文版）
-<OptimizedImage src="dicethrone/images/pyromancer/player-board" locale="en" />
-```
+项目同时存在两类图集入口：
 
-### buildLocalizedImageSet（CSS background-image 场景）
+| 入口 | image 参数 | 适用 |
+| --- | --- | --- |
+| `registerSpriteAtlas` | 完整本地化 URL | 直接渲染 sprite |
+| `registerCardAtlasSource` / `registerLazyCardAtlasSource` | 原始相对路径 | `CardPreview` / `AtlasCard` |
 
-用于精灵图等需要 CSS 背景的场景，只返回 WebP 格式的 `url()`：
+不要把已本地化 URL 传给 `registerCardAtlasSource`，否则会双重本地化。不要把原始相对路径直接传给 `registerSpriteAtlas`，否则缺少 `i18n` 前缀。
 
-```tsx
-const bg = buildLocalizedImageSet('smashup/cards/cards1', locale);
-// 返回: url("https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp")
-```
+`.atlas.json` 与语言无关，统一放 `public/assets/atlas-configs/<gameId>/`。
 
-**注意**：此函数只返回 WebP 格式，不使用 `image-set()` 语法。原因：
-- 所有素材只在国际化目录下，不需要 fallback
-- `image-set()` 会导致浏览器同时请求多种格式，浪费带宽
-- 现代浏览器都支持 WebP，avif 收益不大且增加复杂度
+所有游戏应在模块顶层或明确初始化入口注册 atlas，避免首帧渲染时图集未登记。具体游戏采用哪种注册模式，以对应 `src/games/<gameId>/` 的资源初始化代码为准，不写进本通用文档。
 
+## 新语言接入
 
-## 精灵图（Sprite Atlas）本地化
-
-项目中有两套并行的精灵图注册系统，都需要正确处理本地化：
-
-### 系统 A：`registerSpriteAtlas`（用于直接渲染）
-
-注册时必须传入**完整的本地化 URL**：
-
-```typescript
-// ✅ 正确：先本地化，再优化
-const heroBase = 'summonerwars/hero/Frost/hero';
-const localizedBase = getLocalizedAssetPath(heroBase, locale);
-const urls = getOptimizedImageUrls(localizedBase);
-registerSpriteAtlas('sw:frost:hero', {
-  image: urls.webp,
-  config: HERO_ATLAS,
-});
-
-// ❌ 错误：直接优化，缺少 i18n 前缀
-const urls = getOptimizedImageUrls('summonerwars/hero/Frost/hero');
-```
-
-### 系统 B：`registerCardAtlasSource`（用于 CardPreview/AtlasCard）
-
-注册时传入**原始相对路径**，渲染时由 `AtlasCard` 组件自动本地化：
-
-```typescript
-// ✅ 正确：传入原始路径，config 通过图片尺寸探测生成
-const config = await loadCardAtlasConfig('smashup/base/base1', { rows: 4, cols: 4 });
-registerCardAtlasSource('smashup:base1', {
-  image: 'smashup/base/base1',  // 原始路径，AtlasCard 渲染时自动加 i18n 前缀
-  config,
-});
-
-// ❌ 错误：传入已本地化的路径（会导致双重本地化）
-registerCardAtlasSource('smashup:cards1', {
-  image: getLocalizedAssetPath('smashup/cards/cards1', locale),
-  config,
-});
-```
-
-### 图集配置加载
-
-图集配置文件（`.atlas.json`）与语言无关，统一存放在 `/assets/atlas-configs/` 目录。
-
-```
-public/assets/atlas-configs/
-└── dicethrone/
-    └── ability-cards-common.atlas.json   # DiceThrone 非规则网格，需要精确裁切坐标
-```
-
-**统一图集注册模式**：
-- **均匀网格**：`registerLazyCardAtlasSource(id, { image, grid: { rows, cols } })` — 尺寸从 CriticalImageGate 预加载缓存自动解析，零配置文件。SmashUp 和 SummonerWars 使用此模式。
-- **不规则网格**：`registerCardAtlasSource(id, { image, config })` — config 从静态 JSON import（构建时内联）。DiceThrone 使用此模式（`ability-cards-common.atlas.json`）。
-- **注册时机**：所有游戏在模块顶层同步注册，确保首帧渲染时 atlas 已可用。
-
-### 各游戏图集加载模式
-
-| 游戏 | 注册方式 | 网格类型 | 说明 |
-|------|----------|----------|------|
-| SmashUp | `registerLazyCardAtlasSource` | 均匀 | 模块顶层 `initSmashUpAtlases()` 同步注册，尺寸懒解析 |
-| DiceThrone | `registerCardAtlasSource` | 不规则 | 模块顶层 `initDiceThroneCardAtlases()` 同步注册，config 从 JSON import |
-| SummonerWars | `registerLazyCardAtlasSource` + `globalSpriteAtlasRegistry` | 均匀 | `initSpriteAtlases(locale)` 在 useEffect 中调用（需 locale 构建 URL），cardAtlasRegistry 懒解析 |
-
-## CDN 部署
-
-```bash
-npm run assets:upload -- --sync
-```
-
-上传 `public/assets/i18n/` 下的所有文件到 CDN，删除 CDN 上多余的文件。
-
-## 添加新语言
-
-1. 创建语言目录：`mkdir -p public/assets/i18n/en`
-2. 复制/翻译图片资源到对应目录
-3. 运行压缩脚本：`npm run compress:images -- public/assets/i18n/<locale>/<gameId>`（正式对局素材默认不降采样）
-4. 上传到 CDN：`npm run assets:upload -- --sync`
-5. 代码无需修改（组件自动从 i18next 获取当前语言）
-
-## 相关文件
-
-| 文件 | 职责 |
-|------|------|
-| `src/core/AssetLoader.ts` | 资源路径转换、预加载、`buildLocalizedImageSet` |
-| `src/components/common/media/OptimizedImage.tsx` | `<img>` 图片组件，自动 locale |
-| `src/components/common/media/CardPreview.tsx` | 卡牌预览组件（系统 B），`AtlasCard` |
-| `src/engine/primitives/spriteAtlas.ts` | 精灵图系统（系统 A） |
-| `.spec/knowledge/standards/asset-pipeline.md` | 资源管道完整规范 |
+1. 创建 `public/assets/i18n/<locale>/<gameId>/`。
+2. 放入对应语言资源。
+3. 运行 `npm run compress:images -- public/assets/i18n/<locale>/<gameId>`。
+4. 生成 / 校验 manifest。
+5. 通过服务器素材主源发布并回查公开 URL。

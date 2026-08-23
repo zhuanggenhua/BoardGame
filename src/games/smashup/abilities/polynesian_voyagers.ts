@@ -3,6 +3,11 @@ import { createSimpleChoice, queueInteraction, type PromptOption } from '../../.
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { registerBaseAbility, type BaseAbilityContext, type BaseAbilityResult } from '../domain/baseAbilities';
@@ -29,6 +34,13 @@ type GrowthChoice =
     | { mode: 'move'; minionUid: string; minionDefId: string; fromBaseIndex: number; toBaseIndex: number; toBaseDefId?: string }
     | { skip: true };
 type TattooArtistChoice = { cardUid?: string; defId?: string; zone?: 'deck' | 'discard'; playNow?: boolean; skip?: boolean };
+type VolcanicUprisingPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    toBaseIndex: number;
+    toBaseDefId?: string;
+};
 
 function baseLabel(core: SmashUpCore, baseIndex: number): string {
     return getBaseDef(core.bases[baseIndex]?.defId ?? '')?.name ?? `基地 ${baseIndex + 1}`;
@@ -119,9 +131,6 @@ function moveSelfToEmptyBaseAndCounter(ctx: AbilityContext, sourceId: string): A
     const destinations = basesWithoutOwnMinions(ctx.state, ctx.playerId, ctx.baseIndex);
     if (destinations.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    if (destinations.length === 1) {
-        return resolveMoveSelfToEmptyBase(ctx.matchState, ctx.playerId, sourceId, ctx.cardUid, ctx.defId, ctx.baseIndex, destinations[0].baseIndex, ctx.now);
     }
     const interaction = createSimpleChoice<BaseChoice>(
         `${sourceId}_${ctx.now}`,
@@ -328,23 +337,7 @@ function oceanTattooTalent(ctx: AbilityContext): AbilityResult {
         .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(ctx.state, baseIndex) }))
         .filter(base => base.baseIndex !== ctx.baseIndex);
     if (destinations.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (destinations.length === 1) {
-        const moveEvents = buildValidatedMoveEvents(ctx.state, {
-            minionUid: host.uid,
-            minionDefId: host.defId,
-            fromBaseIndex: ctx.baseIndex,
-            toBaseIndex: destinations[0].baseIndex,
-            reason: 'polynesian_voyagers_ocean_tattoo',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: 'polynesian_voyagers_ocean_tattoo',
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            sourceKind: 'nonAction',
-        });
-        return { events: [...moveEvents, addPowerCounter(host.uid, destinations[0].baseIndex, 1, 'polynesian_voyagers_ocean_tattoo', ctx.now)] };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice<BaseChoice>(
         `polynesian_voyagers_ocean_tattoo_${ctx.now}`,
         ctx.playerId,
@@ -472,15 +465,75 @@ function unityOfTheTribes(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
+const volcanicUprisingPromptProgram = createPromptProgram<VolcanicUprisingPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'polynesian_voyagers_volcanic_uprising',
+    buildInteraction: (context) => {
+        const targets = ownMinions(context.matchState.core, context.playerId)
+            .map(entry => ({
+                uid: entry.minion.uid,
+                defId: entry.minion.defId,
+                baseIndex: entry.baseIndex,
+                label: `${cardLabel(entry.minion.defId)} @ ${baseLabel(context.matchState.core, entry.baseIndex)}`,
+            }));
+        return createAbilityRuntimeSimpleChoice<MinionChoice>(
+            `polynesian_voyagers_volcanic_uprising_${context.now}`,
+            context.playerId,
+            '火山爆发：可以移动一个己方随从到新基地',
+            [
+                createSkipOption('不移动随从', 'ui.skip_option') as PromptOption<MinionChoice>,
+                ...buildMinionTargetOptions(targets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'polynesian_voyagers_volcanic_uprising',
+                    sourceKind: 'action',
+                    effectType: 'move',
+                }),
+            ],
+            {
+                sourceId: 'polynesian_voyagers_volcanic_uprising',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (
+            playerId !== context.playerId
+            || !selected
+            || selected.skip
+            || !selected.minionUid
+            || selected.baseIndex === undefined
+        ) {
+            return { events: [] };
+        }
+        return {
+            events: buildValidatedMoveEvents(state.core, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.minionDefId ?? '',
+                fromBaseIndex: selected.baseIndex,
+                toBaseIndex: context.toBaseIndex,
+                toBaseDefId: context.toBaseDefId,
+                reason: 'polynesian_voyagers_volcanic_uprising',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'polynesian_voyagers_volcanic_uprising',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex,
+                sourceKind: 'action',
+                allowMissingTargetBase: true,
+            }),
+        };
+    },
+});
+
 function volcanicUprising(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     const added = insertTopBase(ctx.state, ctx.now, 'polynesian_voyagers_volcanic_uprising');
     if (added) events.push(added);
-    const destinations = added
-        ? [{ baseIndex: ctx.state.bases.length, label: cardLabel(added.payload.newBaseDefId) }]
-        : [];
     const own = ownMinions(ctx.state, ctx.playerId);
-    if (added && own.length === 1) {
+    if (!ctx.matchState && added && own.length > 0) {
         events.push(...buildValidatedMoveEvents(ctx.state, {
             minionUid: own[0].minion.uid,
             minionDefId: own[0].minion.defId,
@@ -498,30 +551,18 @@ function volcanicUprising(ctx: AbilityContext): AbilityResult {
         }));
         return { events };
     }
-    if (destinations.length > 0 && own.length > 1) {
-        const options: PromptOption<MinionChoice>[] = [
-            createSkipOption('不移动随从', 'ui.skip_option') as PromptOption<MinionChoice>,
-            ...buildMinionTargetOptions(own.map(entry => ({ uid: entry.minion.uid, defId: entry.minion.defId, baseIndex: entry.baseIndex, label: `${cardLabel(entry.minion.defId)} @ ${baseLabel(ctx.state, entry.baseIndex)}` })), {
-                state: ctx.state,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'polynesian_voyagers_volcanic_uprising',
-                sourceKind: 'action',
-                effectType: 'move',
-            }),
-        ];
-        const interaction = createSimpleChoice<MinionChoice>(
-            `polynesian_voyagers_volcanic_uprising_${ctx.now}`,
-            ctx.playerId,
-            '火山爆发：可以移动一个己方随从到新基地',
-            options,
-            {
-                sourceId: 'polynesian_voyagers_volcanic_uprising',
-                targetType: 'minion',
-                responseValidationMode: 'live',
-                continuationContext: { toBaseIndex: ctx.state.bases.length, toBaseDefId: added.payload.newBaseDefId },
-            },
-        );
-        return { events, matchState: queueInteraction(ctx.matchState, interaction) };
+    if (ctx.matchState && added && own.length > 0) {
+        const result = executeAbilityProgram(volcanicUprisingPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            toBaseIndex: ctx.state.bases.length,
+            toBaseDefId: added.payload.newBaseDefId,
+        });
+        return {
+            events: [...events, ...result.events],
+            ...(result.matchState ? { matchState: result.matchState } : {}),
+        };
     }
     return { events };
 }
@@ -582,24 +623,7 @@ function sunTattooOnPlay(ctx: AbilityContext): AbilityResult {
         .map((_candidate, baseIndex) => ({ baseIndex, label: baseLabel(ctx.state, baseIndex) }))
         .filter(destination => destination.baseIndex !== ctx.baseIndex);
     if (destinations.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (destinations.length === 1) {
-        return {
-            events: buildValidatedMoveEvents(ctx.state, {
-                minionUid: target.uid,
-                minionDefId: target.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex: destinations[0].baseIndex,
-                reason: 'polynesian_voyagers_sun_tattoo',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: 'polynesian_voyagers_sun_tattoo',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'action',
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice<BaseChoice>(
         `polynesian_voyagers_sun_tattoo_${ctx.now}`,
         ctx.playerId,

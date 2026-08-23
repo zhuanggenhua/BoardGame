@@ -300,7 +300,7 @@ export const findAutoDefenderRetreatRegion = (
     targetRegion: QidahenCore['regions'][number],
     defenderFactionId: QidahenFactionId,
 ): QidahenCore['regions'][number] | null => (
-    findDefenderRetreatRegions(state, targetRegion, defenderFactionId).at(0) ?? null
+    findDefenderRetreatRegions(state, targetRegion, defenderFactionId)[0] ?? null
 );
 
 export const computeStructuredAttackerRout = (

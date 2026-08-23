@@ -90,7 +90,8 @@
     "weak": "虚弱",
     "cripple": "残废",
     "rot": "腐化",
-    "stun": "昏迷"
+    "stun": "昏迷",
+    "sleep": "睡眠"
   },
   "privateZones": {
     "selfPlans": "己方计划 / 法术书",
@@ -135,6 +136,11 @@
     "endTurn": "回合结束"
   },
   "interaction": {
+    "mageAbilityStatusChoice": {
+      "title": "选择要移除的状态",
+      "manaCost": "法力 {{manaCost}}",
+      "cancel": "取消"
+    },
     "counterstrike": {
       "title": "{{defenderObjectId}} 可以反击 {{attackerObjectId}}",
       "options": {
@@ -156,11 +162,24 @@
         "destroy": "摧毁结界"
       }
     },
+    "upkeepHealTransfer": {
+      "title": "{{targetObjectId}} 的死亡链接可治疗最多 {{availableHealing}} 点伤害",
+      "options": {
+        "heal": "治疗 {{amount}} 点",
+        "skip": "不治疗"
+      }
+    },
     "enchantmentResponse": {
       "title": "必须展示响应结界 {{responseObjectId}}",
       "options": {
         "reveal": "展示并结算"
       }
+    },
+    "spellCastChoice": {
+      "fallbackTitle": "施放法术"
+    },
+    "objectAbilityChoice": {
+      "fallbackTitle": "对象能力"
     }
   },
   "error": {

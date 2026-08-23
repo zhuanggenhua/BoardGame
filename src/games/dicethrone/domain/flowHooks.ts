@@ -153,6 +153,9 @@ const hasInteractivePendingBonusDiceSettlement = (core: DiceThroneCore): boolean
     hasPendingBonusDiceSettlement(core.pendingBonusDiceSettlement)
     && isCurrentBonusRollSettlement(core);
 
+const hasOpenedInteractiveBonusDiceSettlement = (events: readonly GameEvent[]): boolean =>
+    events.some(event => isInteractiveBonusDiceRerollEvent(event as DiceThroneEvent));
+
 registerBonusDiceSettlementHandler(POWDER_KEG_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
     const playerId = settlement.attackerId;
     const value = Math.max(1, Math.min(6, Math.trunc(getPendingBonusSettlementDice(settlement)[0]?.value ?? 1)));
@@ -2326,7 +2329,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const hasActiveInteraction = state.sys.interaction?.current !== undefined;
             const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
             const hasPendingDamage = core.pendingDamage !== null && core.pendingDamage !== undefined;
-            const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core);
+            const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core)
+                || hasOpenedInteractiveBonusDiceSettlement(events);
             const hasUsableUpkeepPassiveAction = phase === 'upkeep'
                 && hasUsableOwnUpkeepPassiveAction(core, core.activePlayerId);
 
@@ -2363,7 +2367,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const hasPendingDamage = !hasTokenResponseClosed && (core.pendingDamage !== null && core.pendingDamage !== undefined);
             
             // 检查是否有待处理的奖励骰结算；displayOnly 但可改骰仍阻塞阶段推进。
-            const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core);
+            const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core)
+                || hasOpenedInteractiveBonusDiceSettlement(events);
             
             // 检查是否需要等待 offensiveRollEnd Token 选择的 CHOICE_RESOLVED 被 reduce 进 core。
             //

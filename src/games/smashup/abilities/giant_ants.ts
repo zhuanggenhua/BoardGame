@@ -186,15 +186,7 @@ function giantAntKillerQueenTalent(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    if (candidates.length === 1) {
-        const target = candidates[0];
-        return {
-            events: [
-                addPowerCounter(target.uid, target.baseIndex, 1, 'giant_ant_killer_queen', ctx.now),
-                addPowerCounter(ctx.cardUid, ctx.baseIndex, 1, 'giant_ant_killer_queen', ctx.now),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeResultToAbilityResult(executeAbilityProgram(
         giantAntKillerQueenPromptProgram,
         createGiantAntPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -465,6 +457,7 @@ const giantAntKillerQueenPromptProgram = createPromptProgram<
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.giant_ant_killer_queen_title',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1440,6 +1433,7 @@ const giantAntGimmeThePrizePodFirstPromptProgram = createPromptProgram<
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.giant_ant_gimme_the_prize_pod_first_title',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1998,15 +1992,7 @@ function giantAntGimmeThePrizePod(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    // 只有 1 个随从时：效果退化为只给这一个随从 +2
-    if (ownMinions.length === 1) {
-        const m = ownMinions[0];
-        return {
-            events: [
-                addPowerCounter(m.uid, m.baseIndex, 2, 'giant_ant_gimme_the_prize_pod', ctx.now),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeResultToAbilityResult(executeAbilityProgram(
         giantAntGimmeThePrizePodFirstPromptProgram,
         createGiantAntPromptContext(ctx.matchState, ctx.playerId, ctx.now),

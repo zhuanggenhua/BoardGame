@@ -45,6 +45,11 @@ function lerpFrame(a: typeof KEYFRAMES[0], b: typeof KEYFRAMES[0], t: number) {
     };
 }
 
+function normalizeProgress(progress: number): number {
+    if (!Number.isFinite(progress)) return 1;
+    return Math.min(Math.max(progress, 0), 1);
+}
+
 // 震动容器组件 - 包裹子元素并在触发时震动
 export const ShakeContainer = ({
     children,
@@ -74,14 +79,16 @@ export const ShakeContainer = ({
         const el = elRef.current;
         if (!el) return;
 
-        if (progress >= 1) {
+        const safeProgress = normalizeProgress(progress);
+
+        if (safeProgress >= 1) {
             el.style.transform = '';
             return;
         }
 
         // 根据 progress 找到当前在哪两个关键帧之间
         const totalFrames = KEYFRAMES.length - 1;
-        const rawIdx = progress * totalFrames;
+        const rawIdx = safeProgress * totalFrames;
         const idx = Math.min(Math.floor(rawIdx), totalFrames - 1);
         const localT = rawIdx - idx;
 
@@ -111,7 +118,7 @@ export const ShakeContainer = ({
             if (pausedRef.current) return;
 
             const elapsed = performance.now() - startTimeRef.current;
-            const p = Math.min(elapsed / DURATION, 1);
+            const p = normalizeProgress(elapsed / DURATION);
             progressRef.current = p;
             applyTransform(p);
 
@@ -139,7 +146,7 @@ export const ShakeContainer = ({
         } else if (!paused && pausedRef.current) {
             // 恢复：从当前进度继续
             pausedRef.current = false;
-            const fromP = progressRef.current;
+            const fromP = normalizeProgress(progressRef.current);
             if (fromP >= 1) return;
 
             startTimeRef.current = performance.now();
@@ -148,7 +155,7 @@ export const ShakeContainer = ({
                 if (pausedRef.current) return;
 
                 const elapsed = performance.now() - startTimeRef.current;
-                const p = Math.min(fromP + elapsed / DURATION, 1);
+                const p = normalizeProgress(fromP + elapsed / DURATION);
                 progressRef.current = p;
                 applyTransform(p);
 

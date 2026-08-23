@@ -249,6 +249,6 @@ if (result) {
 
 - `docs/bugs/smashup/smashup-igor-double-trigger-root-cause-final.md` - 根本原因分析
 - `docs/bugs/smashup/smashup-igor-double-trigger-reflection.md` - 审计文档反思
-- `docs/test-fixes-igor-double-trigger.md` - 测试修复进度
+- `docs/bugs/smashup/smashup-igor-double-trigger-test-progress.md` - 测试修复进度
 - `.spec/knowledge/standards/testing-audit.md` - 审计文档（需要更新）
 - `.spec/knowledge/standards/engine-systems.md` - 引擎系统架构

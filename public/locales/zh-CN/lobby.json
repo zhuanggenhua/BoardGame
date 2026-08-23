@@ -289,9 +289,20 @@
   },
   "leaderboard": {
     "loading": "加载中…",
-    "title": "胜场排行",
+    "title": "ELO 排行",
     "empty": "暂无数据",
-    "record": "{{wins}} 胜 / {{matches}} 局",
+    "rating": "{{rating}} ELO",
+    "record": "{{wins}}胜 {{losses}}负 {{draws}}平 · {{winRate}}% / {{matches}}局",
+    "provisional": "定级中",
+    "tiers": {
+      "beginner": "新手",
+      "apprentice": "学徒",
+      "average": "普通",
+      "good": "优秀",
+      "strong": "强手",
+      "expert": "专家",
+      "master": "大师"
+    },
     "error": "排行榜加载失败",
     "changelogEmpty": "暂无日志"
   },

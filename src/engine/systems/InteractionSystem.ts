@@ -314,8 +314,8 @@ export interface SimpleChoiceData<T = unknown> {
     };
     /**
      * 单候选时是否自动解决（跳过玩家选择）。
-     * - true（默认）：强制效果，只有一个候选时自动执行
-     * - false：可选效果或"你可以"类效果，始终让玩家确认
+     * - true：纯机械继续或明确允许自动执行的强制效果，只有一个候选时自动执行
+     * - false（默认）：玩家选择语义，始终让玩家确认
      */
     autoResolveIfSingle?: boolean;
     /**
@@ -819,7 +819,7 @@ export function createSimpleChoice<T>(
             buttonIntent: config.buttonIntent,
             genericIntent: config.genericIntent,
             displayCard: config.displayCard,
-            autoResolveIfSingle: config.autoResolveIfSingle,
+            autoResolveIfSingle: config.autoResolveIfSingle ?? false,
             // 将 autoRefresh 传递到 data 中（作为私有字段）
             autoRefresh: config.autoRefresh,
             optionsGenerator: config.optionsGenerator,

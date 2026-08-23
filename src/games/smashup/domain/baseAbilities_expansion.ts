@@ -30,6 +30,7 @@ import {
     buildValidatedDestroyEvents,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedMoveEvents,
+    buildMinionTargetOptions,
     buildStandardDrawEvents,
     createSkipOption,
     drawMadnessCards,
@@ -58,6 +59,57 @@ import {
     type BranchingChoiceUpgrade,
 } from './branchingChoice';
 import { executeAbilityProgram } from './abilityRuntime';
+
+type MeanStreetsChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    skip?: boolean;
+};
+
+function buildMeanStreetsOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+): PromptOption<MeanStreetsChoice>[] {
+    const candidates = state.bases[baseIndex]?.minions
+        .filter(minion => minion.controller === playerId)
+        .map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: getCardDef(minion.defId)?.name ?? minion.defId,
+        })) ?? [];
+    if (candidates.length === 0) return [];
+    return [
+        createSkipOption('不放置指示物', 'ui.base_the_mean_streets_skip_option'),
+        ...buildMinionTargetOptions(candidates, {
+            state,
+            sourcePlayerId: playerId,
+            sourceDefId: 'base_the_mean_streets',
+            sourceKind: 'nonAction',
+            effectType: 'power_change',
+        }),
+    ];
+}
+
+function queueMeanStreetsChoice(
+    ctx: BaseAbilityContext,
+    playerId: PlayerId,
+    matchState: MatchState<SmashUpCore>,
+): MatchState<SmashUpCore> {
+    const interaction = createSimpleChoice<MeanStreetsChoice>(
+        `base_the_mean_streets_${ctx.now}_${ctx.baseIndex}_${playerId}`,
+        playerId,
+        '险恶街区：选择这里你的一个随从放置 +1 指示物',
+        buildMeanStreetsOptions(matchState.core, playerId, ctx.baseIndex),
+        {
+            sourceId: 'base_the_mean_streets',
+            targetType: 'minion',
+            responseValidationMode: 'live',
+        },
+    );
+    return queueInteraction(matchState, interaction);
+}
 import {
     createEffectDslProgram,
     grantExtraActionPrimitive,
@@ -384,24 +436,17 @@ export function registerExpansionBaseAbilities(): void {
         const actionAffectsThisBase = ctx.actionTargetBaseIndex === ctx.baseIndex;
         if (!actionAffectsThisBase) return { events: [] };
         const base = ctx.state.bases[ctx.baseIndex];
-        if (!base) return { events: [] };
+        if (!base || !ctx.matchState) return { events: [] };
         const otherPlayerIds = Array.from(new Set(
             base.minions
                 .filter(minion => minion.controller !== ctx.playerId)
                 .map(minion => minion.controller),
         ));
-        return {
-            events: otherPlayerIds.flatMap((playerId) => {
-                const target = base.minions.find(minion => minion.controller === playerId);
-                return target
-                    ? [addPowerCounter(target.uid, ctx.baseIndex, 1, 'base_the_mean_streets', ctx.now, {
-                        sourcePlayerId: playerId,
-                        sourceDefId: 'base_the_mean_streets',
-                        sourceBaseIndex: ctx.baseIndex,
-                    })]
-                    : [];
-            }),
-        };
+        let matchState = ctx.matchState;
+        for (const playerId of otherPlayerIds) {
+            matchState = queueMeanStreetsChoice(ctx, playerId, matchState);
+        }
+        return { events: [], matchState };
     }, {
     });
     registerExtendedBase('base_the_mean_streets', 'onMinionAffected', (ctx) => {
@@ -410,16 +455,10 @@ export function registerExpansionBaseAbilities(): void {
         }
         if (ctx.reason !== 'disco_dancers_disco_inferno') return { events: [] };
         const base = ctx.state.bases[ctx.baseIndex];
-        if (!base) return { events: [] };
+        if (!base || !ctx.matchState) return { events: [] };
         const target = base.minions.find(minion => minion.uid === ctx.actionTargetMinionUid);
         if (!target || target.controller === ctx.playerId) return { events: [] };
-        return {
-            events: [addPowerCounter(target.uid, ctx.baseIndex, 1, 'base_the_mean_streets', ctx.now, {
-                sourcePlayerId: target.controller,
-                sourceDefId: 'base_the_mean_streets',
-                sourceBaseIndex: ctx.baseIndex,
-            })],
-        };
+        return { events: [], matchState: queueMeanStreetsChoice(ctx, target.controller, ctx.matchState) };
     }, {
         canTrigger: (ctx) => ctx.reason === 'disco_dancers_disco_inferno' && ctx.actionTargetType === 'minion',
     });
@@ -884,50 +923,28 @@ export function registerExpansionBaseAbilities(): void {
         if (handAfterDraw.length === 0) {
             return { events: drawEvents };
         }
-        if (handAfterDraw.length <= 2) {
-            return {
-                events: [
-                    ...drawEvents,
-                    {
-                        type: SU_EVENTS.CARDS_DISCARDED,
-                        payload: {
-                            playerId: winnerId,
-                            cardUids: handAfterDraw.map((card) => card.uid),
-                        },
-                        timestamp: ctx.now,
-                    } as CardsDiscardedEvent,
-                ],
-            };
-        }
         if (!ctx.matchState) {
-            return {
-                events: [
-                    ...drawEvents,
-                    {
-                        type: SU_EVENTS.CARDS_DISCARDED,
-                        payload: {
-                            playerId: winnerId,
-                            cardUids: handAfterDraw.slice(0, 2).map((card) => card.uid),
-                        },
-                        timestamp: ctx.now,
-                    } as CardsDiscardedEvent,
-                ],
-            };
+            return { events: drawEvents };
         }
 
+        const requiredDiscardCount = Math.min(2, handAfterDraw.length);
         const interaction = createSimpleChoice(
             `base_tabletop_${ctx.now}`,
             winnerId,
-            '桌游桌：选择 2 张手牌弃掉',
+            `桌游桌：选择 ${requiredDiscardCount} 张手牌弃掉`,
             buildTableTopDiscardOptions(handAfterDraw),
             {
                 sourceId: 'base_tabletop',
                 targetType: 'hand',
-                multi: { min: 2, max: 2 },
+                multi: { min: requiredDiscardCount, max: requiredDiscardCount },
                 responseValidationMode: 'live',
                 titleKey: 'ui.base_tabletop_title',
             },
         );
+        interaction.data = {
+            ...interaction.data,
+            continuationContext: { requiredDiscardCount },
+        };
         interaction.data.optionsGenerator = (state) => {
             const liveWinner = (state.core as SmashUpCore).players[winnerId];
             return buildTableTopDiscardOptions(liveWinner?.hand ?? []);
@@ -1376,6 +1393,25 @@ export function registerExpansionBaseAbilities(): void {
 
 /** 注册扩展包基地能力的交互解决处理函数 */
 export function registerExpansionBaseInteractionHandlers(): void {
+    registerInteractionHandler('base_the_mean_streets', (state, playerId, value, _iData, _random, timestamp) => {
+        const choice = value as MeanStreetsChoice | undefined;
+        if (choice?.skip || !choice?.minionUid || typeof choice.baseIndex !== 'number') {
+            return { state, events: [] };
+        }
+        const target = state.core.bases[choice.baseIndex]?.minions.find(minion =>
+            minion.uid === choice.minionUid && minion.controller === playerId,
+        );
+        if (!target) return { state, events: [] };
+        return {
+            state,
+            events: [addPowerCounter(target.uid, choice.baseIndex, 1, 'base_the_mean_streets', timestamp, {
+                sourcePlayerId: playerId,
+                sourceDefId: 'base_the_mean_streets',
+                sourceBaseIndex: choice.baseIndex,
+            })],
+        };
+    });
+
     registerInteractionHandler('base_mermaid_pool', (state, _playerId, value, iData, _random, timestamp) => {
         const selected = value as {
             skip?: boolean;
@@ -1760,16 +1796,18 @@ export function registerExpansionBaseInteractionHandlers(): void {
 
     registerInteractionHandler('base_tabletop', (state, playerId, value, _iData, _random, timestamp) => {
         const selections = (Array.isArray(value) ? value : []) as TableTopHandChoiceValue[];
+        const context = getContinuationContext<{ requiredDiscardCount?: number }>(_iData);
+        const requiredDiscardCount = Math.max(0, Math.min(2, context?.requiredDiscardCount ?? 2));
         const selectedCardUids = Array.from(new Set(
             selections
                 .map((selection) => selection.cardUid)
                 .filter((cardUid): cardUid is string => typeof cardUid === 'string'),
         ));
-        if (selectedCardUids.length !== 2) return { state, events: [] };
+        if (selectedCardUids.length !== requiredDiscardCount) return { state, events: [] };
         const player = state.core.players[playerId];
         if (!player) return { state, events: [] };
         const liveSelected = selectedCardUids.filter((cardUid) => player.hand.some((card) => card.uid === cardUid));
-        if (liveSelected.length !== 2) return { state, events: [] };
+        if (liveSelected.length !== requiredDiscardCount) return { state, events: [] };
         return {
             state,
             events: [{

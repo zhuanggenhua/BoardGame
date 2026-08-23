@@ -247,15 +247,16 @@ describe('复仇者代表性玩法行为', () => {
         expect(moved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['iron-man']);
     });
 
-    it('索尔从牌库检索雷神锤，并以同一 UID 在角色间转移', () => {
+    it('索尔检索雷神锤时由玩家在牌库和弃牌堆候选中选择，并以同一 UID 在角色间转移', () => {
         const searchCore = makeState({
             players: {
                 '0': makePlayer('0', {
                     deck: [
                         makeCard('before', 'avengers_hulk', 'minion', '0'),
-                        makeCard('mjolnir', 'avengers_mjolnir', 'action', '0'),
+                        makeCard('deck-mjolnir', 'avengers_mjolnir', 'action', '0'),
                         makeCard('after', 'avengers_strategize', 'action', '0'),
                     ],
+                    discard: [makeCard('discard-mjolnir', 'avengers_mjolnir', 'action', '0')],
                 }),
                 '1': makePlayer('1'),
             },
@@ -270,9 +271,22 @@ describe('复仇者代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 40,
         });
-        const afterSearch = applyEvents(searchCore, searched.events);
-        expect(afterSearch.players['0'].hand.map(card => card.uid)).toEqual(['mjolnir']);
-        expect(afterSearch.players['0'].deck.map(card => card.uid)).toEqual(['before', 'after']);
+        expect(searched.events.some(event => event.type === SU_EVENTS.DECK_INSPECTED)).toBe(true);
+        const searchPrompt = getSimpleChoicePrompt(searched.matchState!, 'avengers_thor_search');
+        expect(searchPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(searchPrompt).map(option => option.value?.cardUid)).toEqual([
+            'deck-mjolnir',
+            'discard-mjolnir',
+        ]);
+        const afterSearch = respondToPromptOption(
+            searched.matchState!,
+            option => option.value?.cardUid === 'discard-mjolnir',
+            'choose discard Mjolnir',
+            '0',
+            FIXED_RANDOM,
+        ).finalState.core;
+        expect(afterSearch.players['0'].hand.map(card => card.uid)).toEqual(['discard-mjolnir']);
+        expect(afterSearch.players['0'].deck.map(card => card.uid)).toEqual(['before', 'deck-mjolnir', 'after']);
 
         const transferCore = makeState({
             bases: [
@@ -296,8 +310,17 @@ describe('复仇者代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 41,
         });
-        const transferred = respondToPromptOption(
+        const sourcePrompt = getSimpleChoicePrompt(talent.matchState!, 'avengers_thor_mjolnir_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        const sourceSelected = respondToPromptOption(
             talent.matchState!,
+            option => option.value?.actionUid === 'mjolnir',
+            'choose Mjolnir source',
+            '0',
+            FIXED_RANDOM,
+        );
+        const transferred = respondToPromptOption(
+            sourceSelected.finalState,
             option => option.value?.minionUid === 'target',
             'move Mjolnir',
             '0',
@@ -546,8 +569,17 @@ describe('复仇者代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 70,
         });
-        const moved = respondToPromptOption(
+        const sourcePrompt = getSimpleChoicePrompt(transfer.matchState!, 'avengers_modular_tech_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        const sourceSelected = respondToPromptOption(
             transfer.matchState!,
+            option => option.value?.actionUid === 'gear',
+            'choose equipment source',
+            '0',
+            FIXED_RANDOM,
+        );
+        const moved = respondToPromptOption(
+            sourceSelected.finalState,
             option => option.value?.minionUid === 'target',
             'move equipment',
             '0',
@@ -639,6 +671,40 @@ describe('复仇者代表性玩法行为', () => {
             'b',
             'd',
         ]);
+    });
+
+    it('战略部署只查看到一张牌时仍创建确认选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('only', 'avengers_hulk', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const strategize = invokeRegisteredAbilityContract('avengers_strategize', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'strategize',
+            defId: 'avengers_strategize',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 81,
+        });
+
+        const prompt = getSimpleChoicePrompt(strategize.matchState!, 'avengers_strategize_order');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt)).toHaveLength(1);
+
+        const resolved = respondToPromptOption(
+            strategize.matchState!,
+            option => option.value?.cardUid === 'only',
+            'choose only top card',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['only']);
     });
 
     it('斥力靴普通模式在能力内选择己方角色，计分前模式只移动计分基地的钢铁侠', () => {

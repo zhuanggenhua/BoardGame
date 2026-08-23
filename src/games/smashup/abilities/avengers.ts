@@ -66,6 +66,11 @@ type CardChoice = {
     skip?: boolean;
 };
 
+type ThorSearchChoice = CardChoice & {
+    zone?: 'deck' | 'discard';
+    ownerId?: PlayerId;
+};
+
 type DiscardPromptContext = AvengersPromptContext & {
     sourceId: 'avengers_hawkeye' | 'avengers_jarvis';
     count: number;
@@ -106,6 +111,10 @@ type ThorAttachmentChoice = {
 };
 
 type ThorPromptContext = AvengersPromptContext & ThorAttachmentChoice;
+
+type ThorSearchPromptContext = AvengersPromptContext & {
+    searchedDeck: boolean;
+};
 
 type HawkeyeArrowsPromptContext = AvengersPromptContext & {
     actionCards: Array<{ cardUid: string; defId: string }>;
@@ -657,6 +666,7 @@ const thorDestinationPromptProgram = createPromptProgram<ThorPromptContext, Smas
                 targetType: 'minion',
                 titleKey: 'ui.avengers_thor_mjolnir_destination_title',
                 responseValidationMode: 'live',
+                autoResolveIfSingle: false,
             },
         );
     },
@@ -707,6 +717,7 @@ const thorSourcePromptProgram = createPromptProgram<
             targetType: 'generic',
             titleKey: 'ui.avengers_thor_mjolnir_source_title',
             responseValidationMode: 'live',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -722,6 +733,115 @@ const thorSourcePromptProgram = createPromptProgram<
             },
             nextProgram: thorDestinationPromptProgram,
         };
+    },
+});
+
+function collectThorSearchChoices(state: SmashUpCore, playerId: PlayerId): ThorSearchChoice[] {
+    const player = state.players[playerId];
+    if (!player) return [];
+    const deckChoices = player.deck
+        .filter(card => matchesDefId(card.defId, 'avengers_mjolnir'))
+        .map(card => ({
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            zone: 'deck' as const,
+        }));
+    const discardChoices = player.discard
+        .filter(card => matchesDefId(card.defId, 'avengers_mjolnir'))
+        .map(card => ({
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            zone: 'discard' as const,
+        }));
+    return [...deckChoices, ...discardChoices];
+}
+
+function buildThorDeckShuffleEvent(
+    playerId: PlayerId,
+    deck: CardInstance[],
+    random: RandomFn,
+    timestamp: number,
+): DeckReorderedEvent | undefined {
+    if (deck.length <= 1) return undefined;
+    return {
+        type: SU_EVENTS.DECK_REORDERED,
+        payload: {
+            playerId,
+            deckUids: random.shuffle([...deck]).map(card => card.uid),
+        },
+        timestamp,
+    } as DeckReorderedEvent;
+}
+
+const thorSearchPromptProgram = createPromptProgram<ThorSearchPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'avengers_thor_search',
+    buildInteraction: (context) => {
+        const choices = collectThorSearchChoices(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `avengers_thor_search_${context.now}`,
+            context.playerId,
+            '索尔：选择要加入手牌的雷神锤',
+            choices.map((choice, index) => ({
+                id: `mjolnir-${index}`,
+                label: `${getCardDef(choice.defId ?? 'avengers_mjolnir')?.name ?? choice.defId ?? 'Mjolnir'}（${choice.zone === 'deck' ? '牌库' : '弃牌堆'}）`,
+                value: choice,
+                displayMode: 'card' as const,
+            })),
+            {
+                titleKey: 'ui.avengers_thor_search_title',
+                sourceId: 'avengers_thor_search',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+                autoResolveIfSingle: false,
+            },
+        );
+    },
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const choice = value as ThorSearchChoice | undefined;
+        if (!choice?.cardUid || !choice.zone) return { events: [] };
+        const player = state.core.players[context.playerId];
+        if (!player) return { events: [] };
+        const events: SmashUpEvent[] = [];
+        if (choice.zone === 'deck') {
+            const selected = player.deck.find(card =>
+                card.uid === choice.cardUid && matchesDefId(card.defId, 'avengers_mjolnir'));
+            if (!selected) return { events: [] };
+            events.push(revealDeckTop(
+                context.playerId,
+                'all',
+                [{ uid: selected.uid, defId: selected.defId }],
+                1,
+                'avengers_thor',
+                timestamp,
+                context.playerId,
+            ));
+            events.push({
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: context.playerId, count: 1, cardUids: [selected.uid] },
+                timestamp,
+            } as CardsDrawnEvent);
+            const remaining = player.deck.filter(card => card.uid !== selected.uid);
+            const shuffle = buildThorDeckShuffleEvent(context.playerId, remaining, random, timestamp);
+            if (shuffle) events.push(shuffle);
+            return { events };
+        }
+
+        const selected = player.discard.find(card =>
+            card.uid === choice.cardUid && matchesDefId(card.defId, 'avengers_mjolnir'));
+        if (!selected) return { events: [] };
+        events.push(recoverCardsFromDiscard(
+            context.playerId,
+            [selected.uid],
+            'avengers_thor',
+            timestamp,
+        ));
+        if (context.searchedDeck) {
+            const shuffle = buildThorDeckShuffleEvent(context.playerId, player.deck, random, timestamp);
+            if (shuffle) events.push(shuffle);
+        }
+        return { events };
     },
 });
 
@@ -998,6 +1118,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
                     targetType: 'base',
                     titleKey: 'ui.avengers_modular_tech_destination_base_title',
                     responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
                 },
             );
         }
@@ -1027,6 +1148,7 @@ const modularDestinationPromptProgram = createPromptProgram<ModularPromptContext
                 targetType: 'minion',
                 titleKey: 'ui.avengers_modular_tech_destination_minion_title',
                 responseValidationMode: 'live',
+                autoResolveIfSingle: false,
             },
         );
     },
@@ -1082,6 +1204,7 @@ const modularSourcePromptProgram = createPromptProgram<
             targetType: 'generic',
             titleKey: 'ui.avengers_modular_tech_source_title',
             responseValidationMode: 'live',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1121,6 +1244,7 @@ const strategizePromptProgram = createPromptProgram<StrategizePromptContext, Sma
                     ? 'ui.avengers_strategize_order_first_title'
                     : 'ui.avengers_strategize_order_second_title',
                 responseValidationMode: 'live',
+                autoResolveIfSingle: false,
             },
         );
     },
@@ -1184,8 +1308,7 @@ function ironMan(ctx: AbilityContext): AbilityResult {
 function thorOnPlay(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
-    const deckCard = player.deck.find(card => matchesDefId(card.defId, 'avengers_mjolnir'));
-    const discardCard = player.discard.find(card => matchesDefId(card.defId, 'avengers_mjolnir'));
+    const choices = collectThorSearchChoices(ctx.state, ctx.playerId);
     const events: SmashUpEvent[] = [];
 
     if (player.deck.length > 0) {
@@ -1197,6 +1320,22 @@ function thorOnPlay(ctx: AbilityContext): AbilityResult {
             ctx.now,
         ));
     }
+
+    if (ctx.matchState && choices.length > 0) {
+        const promptResult = runtimeToAbilityResult(executeAbilityProgram(thorSearchPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            searchedDeck: player.deck.length > 0,
+        }));
+        return {
+            events: [...events, ...promptResult.events],
+            ...(promptResult.matchState ? { matchState: promptResult.matchState } : {}),
+        };
+    }
+
+    const deckCard = player.deck.find(card => matchesDefId(card.defId, 'avengers_mjolnir'));
+    const discardCard = player.discard.find(card => matchesDefId(card.defId, 'avengers_mjolnir'));
 
     if (deckCard) {
         events.push(revealDeckTop(
@@ -1214,16 +1353,8 @@ function thorOnPlay(ctx: AbilityContext): AbilityResult {
             timestamp: ctx.now,
         } as CardsDrawnEvent);
         const remaining = player.deck.filter(card => card.uid !== deckCard.uid);
-        if (remaining.length > 0) {
-            events.push({
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: {
-                    playerId: ctx.playerId,
-                    deckUids: ctx.random.shuffle(remaining).map(card => card.uid),
-                },
-                timestamp: ctx.now,
-            } as DeckReorderedEvent);
-        }
+        const shuffle = buildThorDeckShuffleEvent(ctx.playerId, remaining, ctx.random, ctx.now);
+        if (shuffle) events.push(shuffle);
         return { events };
     }
 
@@ -1235,16 +1366,8 @@ function thorOnPlay(ctx: AbilityContext): AbilityResult {
             ctx.now,
         ));
     }
-    if (player.deck.length > 1) {
-        events.push({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId: ctx.playerId,
-                deckUids: ctx.random.shuffle([...player.deck]).map(card => card.uid),
-            },
-            timestamp: ctx.now,
-        } as DeckReorderedEvent);
-    }
+    const shuffle = buildThorDeckShuffleEvent(ctx.playerId, player.deck, ctx.random, ctx.now);
+    if (shuffle) events.push(shuffle);
     if (!discardCard) {
         events.push(buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now));
     }
@@ -1273,7 +1396,7 @@ function thorTalent(ctx: AbilityContext): AbilityResult {
     if (sources.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     }
-    if (sources.length === 1) {
+    if (sources.length === 1 && !ctx.matchState) {
         return runtimeToAbilityResult(executeAbilityProgram(thorDestinationPromptProgram, {
             matchState: ctx.matchState,
             playerId: ctx.playerId,
@@ -1353,7 +1476,7 @@ function modularTech(ctx: AbilityContext): AbilityResult {
             events: [grantContextualExtraAction(ctx, 'avengers_modular_tech')],
         };
     }
-    if (sources.length === 1) {
+    if (sources.length === 1 && !ctx.matchState) {
         return runtimeToAbilityResult(executeAbilityProgram(modularDestinationPromptProgram, {
             matchState: ctx.matchState,
             playerId: ctx.playerId,
@@ -1383,7 +1506,7 @@ function strategize(ctx: AbilityContext): AbilityResult {
         'avengers_strategize',
         ctx.now,
     );
-    if (topCards.length === 1) return { events: [inspectEvent] };
+    if (!ctx.matchState) return { events: [inspectEvent] };
     const prompt = executeAbilityProgram(strategizePromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

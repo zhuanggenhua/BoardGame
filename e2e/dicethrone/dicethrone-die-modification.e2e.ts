@@ -70,6 +70,13 @@ async function clickAbilitySlot(page: any, slotId: string): Promise<void> {
     await slot.click();
 }
 
+async function clickResolveAttack(page: any): Promise<void> {
+    const resolveAttackButton = page.getByRole('button', { name: /结算攻击|Resolve Attack/i });
+    await expect(resolveAttackButton).toBeVisible({ timeout: 5000 });
+    await expect(resolveAttackButton).toBeEnabled({ timeout: 5000 });
+    await resolveAttackButton.click();
+}
+
 async function openActionLogPanel(page: any): Promise<any> {
     const panel = page.getByTestId('fab-panel-action-log');
     if (await panel.isVisible().catch(() => false)) return panel;
@@ -1289,6 +1296,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await clickAbilitySlot(page, 'sky');
         await expect.poll(async () => (await game.getState())?.core?.pendingAttack?.sourceAbilityId, { timeout: 10000 })
             .toBe('war-monger');
+        await clickResolveAttack(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -1459,6 +1467,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await clickAbilitySlot(page, 'sky');
         await expect.poll(async () => (await game.getState())?.core?.pendingAttack?.sourceAbilityId, { timeout: 10000 })
             .toBe('war-monger');
+        await clickResolveAttack(page);
 
         await expect.poll(async () => {
             const state = await game.getState();

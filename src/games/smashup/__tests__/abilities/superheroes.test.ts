@@ -526,10 +526,22 @@ describe('超级英雄派系隐藏实现批', () => {
         });
 
         expect(played.success).toBe(true);
-        expect(getOptionalSimpleChoicePrompt(played.finalState, 'superheroes_radioactive_exposure_search')).toBeUndefined();
-        expect(played.finalState.core.bases[0].minions.map((minion) => minion.uid)).toEqual(['captain-deck']);
-        expect(played.finalState.core.players['0'].deck.map((card) => card.uid)).toEqual(['equal-deck']);
-        expect(played.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual([]);
+        const searchPrompt = getSimpleChoicePrompt(played.finalState, 'superheroes_radioactive_exposure_search');
+        expect(searchPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(searchPrompt).map((option) => option.value?.cardUid)).toEqual(['captain-deck']);
+        expect(played.finalState.core.bases[0].minions).toHaveLength(0);
+        expect(played.finalState.core.players['0'].deck.map((card) => card.uid)).toEqual(['captain-deck', 'equal-deck']);
+
+        const searched = respondToPromptOption(
+            played.finalState,
+            option => option.value?.cardUid === 'captain-deck',
+            '放射暴露选择唯一更高力量随从',
+            '0',
+            dummyRandom,
+        );
+        expect(searched.finalState.core.bases[0].minions.map((minion) => minion.uid)).toEqual(['captain-deck']);
+        expect(searched.finalState.core.players['0'].deck.map((card) => card.uid)).toEqual(['equal-deck']);
+        expect(searched.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual([]);
     });
 
     it('放射暴露在没有更高力量候选时仍会消灭目标，但不会额外打出新随从', () => {
@@ -743,6 +755,59 @@ describe('超级英雄派系隐藏实现批', () => {
         expect(resolved.success).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.map((minion) => minion.uid)).toEqual([]);
         expect(resolved.finalState.core.bases[1].minions.map((minion) => minion.uid)).toEqual(['enemy-minion-1', 'burst-1']);
+    });
+
+    it('爆发在秘密基地同基地保护下点击移动仍会真实移到对手打出随从的基地', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('enemy-minion-1', 'huluwawa_da_wa', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            bases: [
+                makeBase('base_inventors_salon', []),
+                makeBase('base_crystal_fortress', []),
+                makeBase('base_dragons_lair', []),
+                makeBase({
+                    defId: 'base_huluwawa_mountain',
+                    minions: [makeMinion('burst-1', 'superheroes_the_burst', '2', 5)],
+                    ongoingActions: [{ uid: 'secret-1', defId: 'superheroes_secret_base', ownerId: '2' }],
+                }),
+                makeBase('base_seven_colored_lotus', []),
+            ],
+        }));
+
+        const played = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'enemy-minion-1', baseIndex: 4 },
+        });
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'superheroes_the_burst');
+        expect(prompt.playerId).toBe('2');
+        const moveOption = getPromptOption(prompt, (option) => option.value?.move === true, '爆发移动按钮');
+
+        const resolved = runCommand(played.finalState, respondCommand(moveOption.id, '2'));
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_MOVED,
+                payload: expect.objectContaining({
+                    minionUid: 'burst-1',
+                    fromBaseIndex: 3,
+                    toBaseIndex: 4,
+                    reason: 'superheroes_the_burst',
+                }),
+            }),
+        ]));
+        expect(resolved.finalState.core.bases[3].minions.map((minion) => minion.uid)).toEqual([]);
+        expect(resolved.finalState.core.bases[4].minions.map((minion) => minion.uid)).toEqual(['enemy-minion-1', 'burst-1']);
     });
 
     it('爆发允许留在原地，不会移动自己', () => {

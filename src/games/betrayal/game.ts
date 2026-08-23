@@ -3146,6 +3146,13 @@ function withEventChoiceResolutionStep(discovery: BetrayalDiscoverySummary): Bet
     if (discovery.kind !== 'event' || discovery.resolutionSteps?.length) {
         return discovery;
     }
+    const discoveryText = [discovery.summary, discovery.detail].join(' ');
+    if (
+        discoveryText.includes('没有抽取或结算事件卡')
+        || discoveryText.includes('不抽取或结算事件卡')
+    ) {
+        return discovery;
+    }
     const detail = discovery.detail.trim();
     return {
         ...discovery,
@@ -16480,12 +16487,12 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         roomTileAdjustment,
                         discovery: {
                             kind: deckKind,
-                            title: '事件符号',
+                            title: '跳过事件',
                             summary: '跳过事件',
                             detail: '没有抽取或结算事件卡',
                             tone: 'accent',
                         },
-                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，叛徒跳过了事件符号`,
+                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，叛徒跳过了事件`,
                         hauntTriggered: false,
                     }, timestamp)];
                 }
@@ -17027,8 +17034,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         ? '已用雕像跳过'
                         : '跳过事件';
                     const logText = sourceMethod === 'idol'
-                        ? `${actor.displayName}使用雕像跳过了事件符号`
-                        : `${actor.displayName}跳过了事件符号`;
+                        ? `${actor.displayName}使用雕像跳过了事件`
+                        : `${actor.displayName}跳过了事件`;
                     return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
                         playerId: command.playerId,
                         sourceTitle: pending.sourceTitle,
@@ -17036,7 +17043,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         eventEffect: { mode: 'none' },
                         discovery: {
                             kind: 'event',
-                            title: '事件符号',
+                            title: summary,
                             summary,
                             detail: '没有抽取或结算事件卡',
                             tone: 'accent',

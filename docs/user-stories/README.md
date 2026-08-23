@@ -19,16 +19,10 @@
 
 - 项目级：`project/image-first-source-priority.md`
 - 项目级：`project/mobile-ota-mandatory-update-policy-2026-07-10.md`
-- 纸牌帮：`docs/games/the-gang/user-stories/online-viewer-and-landscape-contract-2026-07-10.md`
-- 纸牌帮：`docs/games/the-gang/user-stories/two-hand-pre-start-swap-and-touch-ui-2026-07-28.md`
-- DiceThrone：`docs/games/dicethrone/user-stories/pyromancer-burn-image-standard-2026-05-12.md`
-- DiceThrone：`docs/games/dicethrone/user-stories/response-hint-hand-rail-and-orbit-light-2026-08-09.md`
-- 召唤师战争：`docs/games/summonerwars/user-stories/ice-shards-attack-start-auto-2026-07-17.md`
-- 七大恨：`docs/games/qidahen/user-stories/population-token-no-material-exception-2026-07-07.md`
-- 山屋惊魂：`docs/games/betrayal/user-stories/first-haunt-mummy-runtime-scope-2026-07-28.md`
-- 山屋惊魂：`docs/games/betrayal/user-stories/board-ui-trait-haunt-status-contract-2026-07-31.md`
-- SmashUp：`docs/games/smashup/user-stories/body-shop-sentence-boundary-2026-05-23.md`
-- SmashUp：`docs/games/smashup/user-stories/controller-does-not-transfer-ownership-2026-06-06.md`
-- SmashUp：`docs/games/smashup/user-stories/bear-necessities-minions-and-base-actions-2026-06-07.md`
-- SmashUp：`docs/games/smashup/user-stories/geckos-pod-english-atlas-2026-08-11.md`
-- SmashUp：`docs/games/smashup/user-stories/marvel-pod-independent-english-atlases-2026-08-12.md`
+- 项目级：`project/seat-emote-recipient-first-acceptance.md`
+
+游戏级用户故事不在本入口维护手写清单；用以下命令查当前真实文件：
+
+```bash
+rg --files docs/games -g "user-stories/*.md"
+```

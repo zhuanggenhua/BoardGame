@@ -1,15 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 
-const DEFAULT_SOURCE_DIR = path.resolve('D:/gongzuo/web/BordGame/BordGameAsset/SoundEffect/_source_zips');
-const DEFAULT_TARGET_FILE = path.resolve('D:/gongzuo/web/BordGame/public/audio_assets.md');
+const DEFAULT_SOURCE_DIR = path.resolve('public/assets/common/audio');
+const DEFAULT_TARGET_FILE = path.resolve('docs/audio/common-audio-assets.md');
 const DEFAULT_EXTS = ['.wav', '.mp3', '.ogg', '.flac'];
+
+function formatProjectPath(absPath) {
+    return path.relative(process.cwd(), absPath).replace(/\\/g, '/') || '.';
+}
 
 function parseArgs(argv) {
     let source = DEFAULT_SOURCE_DIR;
     let output = DEFAULT_TARGET_FILE;
     let exts = [...DEFAULT_EXTS];
-    let mode = 'names';
+    let mode = 'summary';
 
     for (let i = 0; i < argv.length; i += 1) {
         const arg = argv[i];
@@ -150,6 +154,7 @@ function groupFiles(names) {
 
 function generateNamesMarkdown(names, sourceDir, totalFiles) {
     const grouped = groupFiles(names);
+    const projectSourceDir = formatProjectPath(sourceDir);
 
     let content = '# Audio Asset Symbols (Flat & Grouped)\n\n';
     content += `Generated on: ${new Date().toLocaleString()}\n`;
@@ -163,7 +168,7 @@ function generateNamesMarkdown(names, sourceDir, totalFiles) {
     content += '## 🔍 Search Command\n';
     content += '```json\n';
     content += '{\n';
-    content += `  "SearchDirectory": "${sourceDir.replace(/\\/g, '/')}",\n`;
+    content += `  "SearchDirectory": "${projectSourceDir}",\n`;
     content += '  "Pattern": "*SYMBOL_OR_PART*",\n';
     content += '  "Type": "file"\n';
     content += '}\n';
@@ -181,6 +186,7 @@ function generateNamesMarkdown(names, sourceDir, totalFiles) {
 function generatePathsMarkdown(paths, sourceDir, exts) {
     const normalized = paths.map(item => item.replace(/\\/g, '/'));
     normalized.sort();
+    const projectSourceDir = formatProjectPath(sourceDir);
 
     const counts = {};
     normalized.forEach(item => {
@@ -192,7 +198,7 @@ function generatePathsMarkdown(paths, sourceDir, exts) {
 
     let content = '# Common Audio Asset Manifest\n\n';
     content += `Generated on: ${new Date().toLocaleString()}\n`;
-    content += `Source: ${sourceDir.replace(/\\/g, '/')}\n`;
+    content += `Source: ${projectSourceDir}\n`;
     content += `Extensions: ${exts.join(', ')}\n`;
     content += `Total Files: ${normalized.length}\n\n`;
 
@@ -205,6 +211,60 @@ function generatePathsMarkdown(paths, sourceDir, exts) {
     content += '## 🎧 资源路径清单（相对路径）\n\n';
     normalized.forEach(item => {
         content += `- \`${item}\`\n`;
+    });
+
+    return content;
+}
+
+function generateSummaryMarkdown(paths, sourceDir, exts) {
+    const normalized = paths.map(item => item.replace(/\\/g, '/')).sort();
+    const projectSourceDir = formatProjectPath(sourceDir);
+
+    const topCounts = {};
+    const extCounts = {};
+    const examplesByTop = {};
+
+    normalized.forEach(item => {
+        const top = item.split('/')[0] || 'root';
+        const ext = path.extname(item).toLowerCase() || '(none)';
+        topCounts[top] = (topCounts[top] ?? 0) + 1;
+        extCounts[ext] = (extCounts[ext] ?? 0) + 1;
+        if (!examplesByTop[top]) examplesByTop[top] = [];
+        if (examplesByTop[top].length < 5) examplesByTop[top].push(item);
+    });
+
+    let content = '# Common Audio Asset Manifest\n\n';
+    content += `Generated on: ${new Date().toLocaleString()}\n`;
+    content += `Source: ${projectSourceDir}\n`;
+    content += `Extensions: ${exts.join(', ')}\n`;
+    content += `Total Files: ${normalized.length}\n\n`;
+
+    content += '> 自动生成。默认只保留统计、样例和检索命令；不要把全量资源路径长表写进文档。\n\n';
+
+    content += '## Top-level counts\n\n';
+    Object.keys(topCounts).sort().forEach(key => {
+        content += `- ${key}: ${topCounts[key]}\n`;
+    });
+
+    content += '\n## Extension counts\n\n';
+    Object.keys(extCounts).sort().forEach(key => {
+        content += `- ${key}: ${extCounts[key]}\n`;
+    });
+
+    content += '\n## Lookup commands\n\n';
+    content += '```powershell\n';
+    content += 'rg --files public/assets/common/audio | rg -i "keyword"\n';
+    content += 'rg -n "\\"key-or-phrase\\"" public/assets/common/audio/registry.json docs/audio/registry.ai.json docs/audio/audio-catalog.md\n';
+    content += 'node scripts/audio/generate_audio_assets_md.js\n';
+    content += '```\n\n';
+
+    content += '## Examples\n\n';
+    Object.keys(examplesByTop).sort().forEach(key => {
+        content += `### ${key}\n\n`;
+        examplesByTop[key].forEach(item => {
+            content += `- \`${item}\`\n`;
+        });
+        content += '\n';
     });
 
     return content;
@@ -223,7 +283,9 @@ try {
     console.log('Generating manifest...');
     const markdown = mode === 'paths'
         ? generatePathsMarkdown(fileList.map(item => item.relativePath), source, exts)
-        : generateNamesMarkdown(names, source, fileList.length);
+        : mode === 'names'
+            ? generateNamesMarkdown(names, source, fileList.length)
+            : generateSummaryMarkdown(fileList.map(item => item.relativePath), source, exts);
 
     fs.writeFileSync(output, markdown, 'utf8');
     console.log(`Successfully wrote to ${output}`);

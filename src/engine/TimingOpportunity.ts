@@ -158,6 +158,7 @@ export type OpportunityResolution =
 export interface OpportunityChoiceContract<TValue = unknown> {
     requestId?: string;
     playerId?: PlayerId;
+    ownerFrameId?: string;
     kind: ChoiceRequestKind;
     candidates: ChoiceRequestCandidate<TValue>[];
     selection: ChoiceRequestSelectionBounds;
@@ -459,7 +460,7 @@ export function buildChoiceRequestFromOpportunity<TValue>(
         requestId: opportunity.choice.requestId ?? opportunity.id,
         gameId: opportunity.timing.gameId,
         playerId: opportunity.choice.playerId ?? opportunity.controllerId,
-        ownerFrameId: opportunity.timing.parentFrameId,
+        ownerFrameId: opportunity.choice.ownerFrameId ?? opportunity.timing.parentFrameId,
         kind: opportunity.choice.kind,
         sourceId: opportunity.sourceRef.id,
         candidates: opportunity.choice.candidates,

@@ -11,6 +11,7 @@ import {
     getPromptOptions,
     getPromptSourceId,
     getSimpleChoicePrompt,
+    getInteractionsFromMS,
     makeBase,
     makeCard,
     makeMatchState,
@@ -259,8 +260,20 @@ describe('Kaiju 代表性玩法行为', () => {
             timestamp: 35,
         }, FIXED_RANDOM);
 
-        expect(play.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
-        expect(play.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['enemy-high']);
+        expect(play.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(play.finalState, 'kaiju_tail_smash');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.minionUid)).toEqual(['enemy-target']);
+
+        const destroy = respondToPromptOption(
+            play.finalState,
+            option => option.value?.minionUid === 'enemy-target',
+            '尾击唯一可消灭随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(destroy.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(destroy.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['enemy-high']);
     });
 
     it('Wade Through the Buildings 会摧毁这里所有其他玩家行动牌', () => {
@@ -531,9 +544,21 @@ describe('Kaiju 代表性玩法行为', () => {
             timestamp: 46,
         }, FIXED_RANDOM);
 
-        expect(play.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(true);
-        expect(play.finalState.core.players['0'].hand.map(card => card.uid)).toContain('recover-me');
-        expect(play.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('recover-me');
+        expect(play.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(false);
+        const prompt = getSimpleChoicePrompt(play.finalState, 'kaiju_pick_up_a_bus');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['recover-me']);
+
+        const recovered = respondToPromptOption(
+            play.finalState,
+            option => option.value?.cardUid === 'recover-me',
+            '拾起一辆巴士唯一可回收行动',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(recovered.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(true);
+        expect(recovered.finalState.core.players['0'].hand.map(card => card.uid)).toContain('recover-me');
+        expect(recovered.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('recover-me');
     });
 
     it('They Say He’s Got to Go 会移动一个泰坦到另一个基地', () => {
@@ -553,8 +578,31 @@ describe('Kaiju 代表性玩法行为', () => {
             timestamp: 47,
         }, FIXED_RANDOM);
 
-        expect(play.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
-        expect(play.finalState.core.titans?.find(titan => titan.uid === 'gorgodzolla')?.location).toMatchObject({
+        expect(play.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(false);
+        const titanPrompt = getSimpleChoicePrompt(play.finalState, 'kaiju_they_say_hes_got_to_go_choose_titan');
+        expect(titanPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(titanPrompt).map(option => option.value?.titanUid)).toEqual(['gorgodzolla']);
+
+        const choseTitan = respondToPromptOption(
+            play.finalState,
+            option => option.value?.titanUid === 'gorgodzolla',
+            '他们说它该走了选择唯一泰坦',
+            '0',
+            FIXED_RANDOM,
+        );
+        const basePrompt = getSimpleChoicePrompt(choseTitan.finalState, 'kaiju_they_say_hes_got_to_go_choose_base');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(basePrompt).map(option => option.value?.baseIndex)).toEqual([1]);
+
+        const moved = respondToPromptOption(
+            choseTitan.finalState,
+            option => option.value?.baseIndex === 1,
+            '他们说它该走了选择唯一目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(moved.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
+        expect(moved.finalState.core.titans?.find(titan => titan.uid === 'gorgodzolla')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 1,
         });
@@ -595,6 +643,36 @@ describe('Kaiju 代表性玩法行为', () => {
             zone: 'base',
             baseIndex: 1,
         });
+    });
+
+    it('对手在 Gorgodzolla 所在基地打战术不会给它加标记或弹抽牌提示', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-card', 'wizard_summon', 'action', '0')] }),
+                '1': makePlayer('1', { hand: [makeCard('enemy-stomp', 'kaiju_stomp', 'action', '1')] }),
+            },
+            bases: [makeBase('base_tokyo')],
+            titans: [makeGorgodzolla({ zone: 'base', baseIndex: 0, enteredAt: 1 })],
+        });
+
+        const play = runCommand(makeMatchState(core, 'playCards', '1'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'enemy-stomp', targetBaseIndex: 0 },
+            timestamp: 51,
+        }, FIXED_RANDOM);
+
+        expect(play.success, play.error).toBe(true);
+        expect(play.events.some(event =>
+            event.type === SU_EVENTS.TITAN_POWER_COUNTER_ADDED
+            && (event as any).payload?.titanUid === 'gorgodzolla',
+        )).toBe(false);
+        expect(play.finalState.core.titans?.find(titan => titan.uid === 'gorgodzolla')?.powerCounters).toBe(0);
+        expect(getInteractionsFromMS(play.finalState).some(prompt =>
+            getPromptSourceId(prompt) === 'titan_kaiju_gorgodzolla_draw',
+        )).toBe(false);
     });
 
     it('Kaiju Island 上每个泰坦给控制者 +3 总力量', () => {

@@ -153,24 +153,6 @@ function resolveWerewolfChewToySourceSelection(
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(playerId, 'feedback.all_protected', timestamp)] };
     }
-    if (options.length === 1) {
-        const target = options[0].value as WerewolfChoice;
-        return {
-            events: buildValidatedDestroyEvents(state, {
-                minionUid: target.minionUid!,
-                minionDefId: target.defId!,
-                fromBaseIndex: target.baseIndex!,
-                destroyerId: playerId,
-                reason: 'werewolf_chew_toy',
-                now: timestamp,
-                sourcePlayerId: playerId,
-                sourceCardUid: source?.cardUid,
-                sourceDefId: source?.defId,
-                sourceControllerId: playerId,
-                sourceBaseIndex: choice.baseIndex,
-            }),
-        };
-    }
     return {
         events: [],
         context: {
@@ -409,6 +391,7 @@ const werewolfChewToyTargetPromptProgram = createPromptProgram<
                 targetType: 'minion',
                 responseValidationMode: 'live',
                 titleKey: 'ui.werewolf_chew_toy_target_title',
+                autoResolveIfSingle: false,
             },
         ),
         (state) => buildWerewolfChewToyTargetOptions(
@@ -464,6 +447,7 @@ const werewolfChewToyPromptProgram = createPromptProgram<WerewolfChewToyContext,
                 targetType: 'minion',
                 responseValidationMode: 'live',
                 titleKey: 'ui.werewolf_chew_toy_title',
+                autoResolveIfSingle: false,
             },
         ),
         (state) => buildWerewolfOwnMinionPromptOptions(state.core, context.playerId),
@@ -502,7 +486,7 @@ const werewolfChewToyProgram = createBranchProgram<WerewolfChewToyContext, Smash
         events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
     })),
     else: createBranchProgram({
-        when: (context) => context.ownMinions.length === 1,
+        when: (context) => context.ownMinions.length === 1 && !context.matchState,
         then: createEffectProgram((context) => {
             const [selected] = context.ownMinions;
             return resolveWerewolfChewToySourceSelection(
@@ -658,6 +642,7 @@ const werewolfLetTheDogOutPromptProgram = createPromptProgram<
                 targetType: 'minion',
                 responseValidationMode: 'live',
                 titleKey: 'ui.werewolf_let_the_dog_out_title',
+                autoResolveIfSingle: false,
             },
         ),
         (state) => buildWerewolfOwnMinionPromptOptions(state.core, context.playerId),
@@ -696,7 +681,7 @@ const werewolfLetTheDogOutProgram = createBranchProgram<
         events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
     })),
     else: createBranchProgram({
-        when: (context) => context.ownMinions.length === 1,
+        when: (context) => context.ownMinions.length === 1 && !context.matchState,
         then: createEffectProgram((context) => {
             const [selected] = context.ownMinions;
             return resolveWerewolfLetTheDogOutSourceSelection(

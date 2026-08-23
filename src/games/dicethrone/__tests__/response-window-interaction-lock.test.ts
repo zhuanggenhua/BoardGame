@@ -303,6 +303,65 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
         });
     });
 
+    it('攻击方奖励骰结算后仍可在防御骰响应窗口用惊不惊喜改防御骰', () => {
+        const random = createQueuedRandom([1, 1, 1, 4, 5, 1, 2, 3, 4]);
+        const runner = createRunner(random, true);
+
+        const opened = runner.run({
+            name: '攻击方奖励骰已结算后进入防御骰响应窗口',
+            setup: createHeroMatchup('gunslinger', 'monk', (core) => {
+                core.players['0'].hand = [getCardById('card-surprise')];
+                core.players['0'].deck = [];
+                core.players['0'].tokens.loaded = 0;
+                core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+                core.players['1'].hand = [];
+                core.players['1'].deck = [];
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('RESPONSE_PASS', '0'),
+                cmd('RESPONSE_PASS', '1'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'revolver-3' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+            ],
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['0'],
+        });
+
+        runner.setState({
+            ...opened.finalState,
+            core: {
+                ...opened.finalState.core,
+                pendingAttack: opened.finalState.core.pendingAttack
+                    ? {
+                        ...opened.finalState.core.pendingAttack,
+                        bonusDiceResolved: true,
+                        bonusDamage: 2,
+                        attackModifierBonusDamage: 2,
+                    }
+                    : opened.finalState.core.pendingAttack,
+            },
+        });
+
+        const result = runner.dispatch('PLAY_CARD', {
+            playerId: '0',
+            cardId: 'card-surprise',
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.events.map((event: any) => event.type)).toContain('INTERACTION_REQUESTED');
+        assertWindowLockedWithInteraction(result.finalState, 'multistep-choice', '0');
+        expect(result.finalState.core.players['0'].discard.some((card: any) => card.id === 'card-surprise')).toBe(true);
+    });
+
     it('防御方枪手在防御骰确认后的响应窗口可用惊不惊喜改攻击方骰子', () => {
         const random = createQueuedRandom([1, 1, 1, 1, 1, 1, 2, 3, 4, 5]);
         const runner = createRunner(random, true);

@@ -25,6 +25,7 @@ import {
     getPromptOptions,
     getPromptSourceId,
     respondToPrompt,
+    respondToPromptOptions,
     expectNoPrompt,
     resolveInteractionChain,
     resolveDestroyedMinions,
@@ -257,6 +258,8 @@ describe('Samurai abilities', () => {
             triggerMinion: core.bases[0].minions[0],
             random: defaultTestRandom,
             now: 1000,
+        }, {
+            sourceDefIds: ['samurai_way_of_the_warrior'],
         });
 
         expect(queued).toBeDefined();
@@ -534,11 +537,19 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'combat-1' } },
             defaultTestRandom,
         );
-        const friendlyPrompt = getSimpleChoicePrompt(play.finalState, 'samurai_honorable_combat_friendly');
+        const basePrompt = getSimpleChoicePrompt(play.finalState, 'samurai_honorable_combat_base');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+        const afterBase = respondToPrompt(
+            play.finalState,
+            getPromptOption(basePrompt, entry => entry.value?.baseIndex === 0, 'honorable combat base option').id,
+            '0',
+            defaultTestRandom,
+        );
+        const friendlyPrompt = getSimpleChoicePrompt(afterBase.finalState, 'samurai_honorable_combat_friendly');
 
         const friendlyOption = getPromptOption(friendlyPrompt, entry => entry.value?.minionUid === 'ally-1', 'honorable combat friendly option');
         const afterFriendly = respondToPrompt(
-            play.finalState,
+            afterBase.finalState,
             friendlyOption.id,
             '0',
             defaultTestRandom,
@@ -681,6 +692,40 @@ describe('Samurai abilities', () => {
         expect(resolved.finalState.core.bases[0].minions.find(m => m.uid === 'ally-2')?.powerCounters).toBe(1);
     });
 
+    it('samurai_code_of_bushido 只有一个己方随从时也保留三次玩家确认', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('bushido-1', 'samurai_code_of_bushido', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'samurai_ronin', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'bushido-1' } },
+            defaultTestRandom,
+        );
+
+        expect(play.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+        let current = play.finalState;
+        for (let step = 0; step < 3; step += 1) {
+            const prompt = getSimpleChoicePrompt(current, 'samurai_code_of_bushido');
+            expect(prompt.autoResolveIfSingle).toBe(false);
+            const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'ally-1', 'code of bushido single ally option');
+            current = respondToPrompt(current, option.id, '0', defaultTestRandom).finalState;
+        }
+
+        expect(current.core.bases[0].minions.find(m => m.uid === 'ally-1')?.powerCounters).toBe(3);
+        expectNoPrompt(current);
+    });
+
     it('samurai_honor_the_ancestors 会放置一个指示物并把弃牌堆中的随从洗回牌库', () => {
         const core = makeState({
             players: {
@@ -704,11 +749,25 @@ describe('Samurai abilities', () => {
             defaultTestRandom,
         );
 
-        expect(play.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
-        expect(play.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
-        expect(play.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.powerCounters).toBe(1);
-        expect(play.finalState.core.players['0'].deck.some(card => card.uid === 'discard-1')).toBe(true);
-        expect(play.finalState.core.players['0'].discard.some(card => card.uid === 'discard-1')).toBe(false);
+        expect(play.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_honor_the_ancestors');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'ally-1', 'honor the ancestors single ally option');
+        const counterResolved = respondToPrompt(play.finalState, option.id, '0', defaultTestRandom);
+
+        expect(counterResolved.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+        expect(counterResolved.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
+        expect(counterResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.powerCounters).toBe(1);
+
+        const recyclePrompt = getSimpleChoicePrompt(counterResolved.finalState, 'samurai_honor_the_ancestors_recycle');
+        expect(recyclePrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(recyclePrompt).map(option => option.value?.cardUid)).toEqual(['discard-1']);
+        const recycleOption = getPromptOption(recyclePrompt, entry => entry.value?.cardUid === 'discard-1', 'honor the ancestors recycle option');
+        const resolved = respondToPromptOptions(counterResolved.finalState, [recycleOption.id], '0', defaultTestRandom);
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
+        expect(resolved.finalState.core.players['0'].deck.some(card => card.uid === 'discard-1')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-1')).toBe(false);
     });
 
     it('samurai_honor_the_ancestors 洗回被他人拥有的弃牌随从时，仍应洗回其拥有者牌库', () => {
@@ -736,16 +795,25 @@ describe('Samurai abilities', () => {
             defaultTestRandom,
         );
 
-        expect(play.events).toContainEqual(expect.objectContaining({
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_honor_the_ancestors');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'ally-1', 'honor the ancestors borrowed ally option');
+        const counterResolved = respondToPrompt(play.finalState, option.id, '0', defaultTestRandom);
+        const recyclePrompt = getSimpleChoicePrompt(counterResolved.finalState, 'samurai_honor_the_ancestors_recycle');
+        expect(recyclePrompt.autoResolveIfSingle).toBe(false);
+        const recycleOption = getPromptOption(recyclePrompt, entry => entry.value?.cardUid === 'borrowed-ronin', 'honor the ancestors borrowed recycle option');
+        const resolved = respondToPromptOptions(counterResolved.finalState, [recycleOption.id], '0', defaultTestRandom);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.DECK_REORDERED,
             payload: expect.objectContaining({
                 playerId: '1',
                 sourcePlayerId: '0',
             }),
         }));
-        expect(play.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-ronin')).toBe(false);
-        expect(play.finalState.core.players['0'].deck.some(card => card.uid === 'borrowed-ronin')).toBe(false);
-        expect(play.finalState.core.players['1'].deck.some(card => card.uid === 'borrowed-ronin')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-ronin')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck.some(card => card.uid === 'borrowed-ronin')).toBe(false);
+        expect(resolved.finalState.core.players['1'].deck.some(card => card.uid === 'borrowed-ronin')).toBe(true);
     });
 
     it('samurai_way_of_the_warrior 会让目标本回合进入弃牌堆时抽一张牌', () => {
@@ -1165,6 +1233,8 @@ describe('Samurai abilities', () => {
             triggerMinionDefId: 'samurai_bushi',
             random: defaultTestRandom,
             now: 1006,
+        }, {
+            sourceDefIds: ['samurai_final_haiku'],
         });
 
         expect(queued).toBeDefined();

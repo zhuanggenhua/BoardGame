@@ -57,6 +57,7 @@ import {
     resolveMageWarsObjectAttackStatusTokenEffects,
     resolveMageWarsObjectAttackManaDrain,
     resolveMageWarsObjectAegisAttackDiceModifier,
+    resolveMageWarsObjectAttackDiceModifier,
     resolveMageWarsObjectDeathMarkAttackDiceModifier,
     resolveMageWarsObjectMentalCalmSources,
     resolveMageWarsObjectMeleeAttackManaTaxSources,
@@ -665,6 +666,7 @@ export function resolveMageWarsObjectAttackEvents(
     const weakAttackDiceModifier = resolveMageWarsWeakAttackDiceModifier(attacker);
     const chargeDiceModifier = resolveMageWarsObjectChargeDiceModifier(attacker, attackProfile);
     const meleeDiceModifier = resolveMageWarsObjectMeleeDiceModifier(state.core, attacker, attackProfile);
+    const attackDiceModifier = resolveMageWarsObjectAttackDiceModifier(state.core, attacker);
     const bloodstrikePierceModifier = resolveMageWarsObjectBloodstrikePierceModifier(attacker, attackProfile);
     const hasBloodstrikeVampiric = hasMageWarsObjectBloodstrikeVampiricNextMelee(attacker, attackProfile);
     const hasEnchantmentVampiric = hasMageWarsObjectVampiricEnchantment(state.core, attacker, attackProfile);
@@ -1049,7 +1051,7 @@ export function resolveMageWarsObjectAttackEvents(
         );
         const diceCount = resolveMageWarsModifiedAttackDiceCount(
             attackProfile.diceCount + weakAttackDiceModifier + chargeDiceModifier + meleeDiceModifier + bloodthirstDiceModifier
-                + deathMarkAttackModifier.value + aegisAttackDiceModifier,
+                + attackDiceModifier.value + deathMarkAttackModifier.value + aegisAttackDiceModifier,
             damageTypeAdjustment,
         );
         const diceResults = rollD3(random, diceCount);
@@ -1107,6 +1109,10 @@ export function resolveMageWarsObjectAttackEvents(
                 strikeIndex,
                 strikeCount: attackProfile.strikeCount,
                 baseDamage,
+                ...(attackDiceModifier.value !== 0 ? {
+                    attackDiceModifier: attackDiceModifier.value,
+                    attackDiceModifierSourceObjectIds: attackDiceModifier.sourceObjectIds,
+                } : {}),
                 ...(chargeDiceModifier > 0 ? { chargeDiceModifier } : {}),
                 ...(meleeDiceModifier > 0 ? { meleeDiceModifier } : {}),
                 ...(bloodthirstDiceModifier > 0 ? { bloodthirstDiceModifier } : {}),

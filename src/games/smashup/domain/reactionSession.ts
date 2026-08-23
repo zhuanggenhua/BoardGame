@@ -1068,13 +1068,6 @@ function getTriggerByReactionChoiceValue(
     return (state.core.triggerQueue ?? []).find(candidate => candidate.id === value.triggerId);
 }
 
-function triggerOpensDedicatedInteraction(trigger: TriggerInstance | undefined): boolean {
-    return Boolean(
-        trigger?.derivedFootprint?.opensInteraction
-        || trigger?.fallbackFootprint?.opensInteraction,
-    );
-}
-
 export function resolveLiveSmashUpReactionChoice(
     state: MatchState<SmashUpCore>,
     value: ReactionChoiceValue,
@@ -1662,17 +1655,6 @@ export function advanceSmashUpReactionSession(
         }
         currentState = autoAdvancedState;
         session = autoAdvancedSession;
-    }
-    if (session.phase === 'optional' && nonPassOptions.length === 1) {
-        const onlyOption = nonPassOptions[0];
-        const trigger = onlyOption ? getTriggerByReactionChoiceValue(currentState, onlyOption.value) : undefined;
-        if (triggerOpensDedicatedInteraction(trigger)) {
-            const resolved = resolveSmashUpReactionChoice(currentState, random, now, onlyOption.value, options);
-            return {
-                state: resolved.state,
-                events: [...emittedEvents, ...resolved.events],
-            };
-        }
     }
     if (session.phase === 'mandatory' && nonPassOptions.length === 1) {
         const resolved = resolveSmashUpReactionChoice(currentState, random, now, nonPassOptions[0].value, options);

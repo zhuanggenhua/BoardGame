@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
     BoardBurstImpactPreset,
     BoardDamageImpactPreset,
+    BoardHealingImpactPreset,
     BoardProjectileAttackPreset,
     BoardProjectilePathPreset,
     BoardSummonEffectPreset,
@@ -571,6 +572,50 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 getCellPosition={getCellPosition}
             />
         </>
+    );
+};
+
+export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
+    event,
+    getCellPosition,
+    onComplete,
+    onImpact,
+}) => {
+    const cell = event.ctx.cell;
+    const stableComplete = useStableComplete(onComplete);
+
+    useEffect(() => {
+        if (!cell) stableComplete();
+    }, [cell, stableComplete]);
+
+    if (!cell) return null;
+
+    const amount = typeof event.params?.actualHealing === 'number'
+        ? event.params.actualHealing
+        : typeof event.params?.healingAmount === 'number'
+            ? event.params.healingAmount
+            : 0;
+    const targetAnchorId = stringifyAnchorId(
+        event.params?.targetObjectId
+        ?? event.params?.targetPlayerId
+        ?? event.params?.targetZoneId,
+    );
+    const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
+
+    return (
+        <BoardHealingImpactPreset
+            cell={cell}
+            getCellPosition={getCellPosition}
+            targetSnapshot={targetSnapshot}
+            targetAnchorId={targetAnchorId}
+            amount={amount}
+            quality={resolveEventQuality(event)}
+            hostTestId="mage-wars-fx-healing-impact"
+            burstTestId="mage-wars-fx-healing-burst"
+            numberTestId="mage-wars-fx-healing-number"
+            onImpact={onImpact}
+            onComplete={stableComplete}
+        />
     );
 };
 

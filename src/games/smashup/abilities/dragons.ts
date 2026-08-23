@@ -391,6 +391,7 @@ const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext, Sma
             sourceId: 'dragons_wyvern',
             titleKey: 'ui.dragons_wyvern_destroy_title',
             targetType: 'minion',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ state, context, value, playerId, timestamp }) => {
@@ -628,6 +629,7 @@ const flankAttackChooseSourcePromptProgram = createPromptProgram<FlankAttackProm
             sourceId: 'dragons_flank_attack_source',
             titleKey: 'ui.dragons_flank_attack_source_title',
             targetType: 'button',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, value }) => {
@@ -651,26 +653,7 @@ function dragonsWyvernOnPlay(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (targets.length === 1) {
-        const [target] = targets;
-        if (!target) return { events: [] };
-        return {
-            events: buildValidatedDestroyEvents(ctx.matchState, {
-                minionUid: target.uid,
-                minionDefId: target.defId,
-                fromBaseIndex: target.baseIndex,
-                destroyerId: ctx.playerId,
-                reason: 'dragons_wyvern',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: 'dragons_wyvern',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'minion',
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const result = executeAbilityProgram(wyvernDestroyPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -689,22 +672,13 @@ function dragonsFlankAttackOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const searchScope = sourceOptions.length === 1
-        ? sourceOptions[0]?.value.searchScope
-        : undefined;
     const context: FlankAttackPromptContext = {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
-        ...(searchScope ? { searchScope } : {}),
     };
 
-    if (searchScope) {
-        return {
-            events: [],
-            matchState: executeAbilityProgram(flankAttackChooseCardPromptProgram, context).matchState,
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const result = executeAbilityProgram(flankAttackChooseSourcePromptProgram, context);
     return {
@@ -740,17 +714,6 @@ function dragonsBurnItDownOnPlay(ctx: AbilityContext): AbilityResult {
     if (topDeckBaseDefId && discardBaseDefIds.length === 0) {
         return {
             events: buildBurnItDownReplacementEvents(ctx.state, promptContext, { source: 'deck' }, ctx.now),
-        };
-    }
-
-    if (!topDeckBaseDefId && discardBaseDefIds.length === 1) {
-        return {
-            events: buildBurnItDownReplacementEvents(
-                ctx.state,
-                promptContext,
-                { source: 'discard', baseDefId: discardBaseDefIds[0] },
-                ctx.now,
-            ),
         };
     }
 
@@ -820,18 +783,7 @@ function dragonsDangerousGroundTrigger(ctx: TriggerContext): AbilityResult {
     if (!player || player.hand.length === 0) {
         return { events: [] };
     }
-    if (player.hand.length === 1) {
-        return {
-            events: [{
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId: ctx.playerId, cardUids: [player.hand[0].uid] },
-                timestamp: ctx.now,
-            }],
-        };
-    }
-    if (!ctx.matchState) {
-        return { events: [] };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice(
         `dragons_dangerous_ground_${ctx.now}`,
@@ -843,6 +795,7 @@ function dragonsDangerousGroundTrigger(ctx: TriggerContext): AbilityResult {
             titleKey: 'ui.dragons_dangerous_ground_title',
             targetType: 'hand',
             responseValidationMode: 'live',
+            autoResolveIfSingle: false,
         },
     );
     interaction.data.optionsGenerator = (state) =>

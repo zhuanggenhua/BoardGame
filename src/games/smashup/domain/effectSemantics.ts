@@ -643,7 +643,7 @@ export function resolveSemanticMinionEventProtectionBlock(
 
     const rawSource = event.type === SU_EVENTS.MINION_DESTROYED
         ? event.payload.destroyerId ?? fallbackSourcePlayerId
-        : fallbackSourcePlayerId;
+        : event.payload.sourcePlayerId ?? fallbackSourcePlayerId;
     const effectiveSource = event.payload.reason?.startsWith('base_') ? minion.controller : rawSource;
     const actionRecord = buildAffectRecords(core, event, rawSource).find((record) => (
         record.targetKind === 'minion'

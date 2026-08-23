@@ -1193,6 +1193,34 @@ export function buildDestroyEventKey(event: MinionDestroyedEvent): string {
     return `${payload.minionUid}@${payload.fromBaseIndex}@${destroyerId}@${timestamp}`;
 }
 
+function buildAffectRecordEventKey(event: SmashUpEvent, record: AffectRecord, recordIndex: number): string {
+    const timestamp = typeof event.timestamp === 'number' ? event.timestamp : 0;
+    return [
+        event.type,
+        record.targetKind,
+        record.targetUid,
+        record.baseIndex ?? 'none',
+        record.affectType,
+        record.sourcePlayerId ?? 'unknown',
+        record.sourceCardUid ?? 'none',
+        record.sourceDefId ?? 'none',
+        record.reason ?? 'none',
+        recordIndex,
+        timestamp,
+    ].join('@');
+}
+
+export function buildAffectEventKeys(
+    core: SmashUpCore,
+    event: SmashUpEvent,
+    fallbackSourcePlayerId?: PlayerId,
+): string[] {
+    return buildAffectRecords(core, event, fallbackSourcePlayerId)
+        .map((record, recordIndex) => ({ record, recordIndex }))
+        .filter(({ record }) => record.countsForOnMinionAffected && record.triggerMinion && record.baseIndex !== undefined)
+        .map(({ record, recordIndex }) => buildAffectRecordEventKey(event, record, recordIndex));
+}
+
 export function processDestroyTriggers(
     events: SmashUpEvent[],
     state: MatchState<SmashUpCore>,
@@ -2342,7 +2370,8 @@ export function processAffectTriggers(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
     random: RandomFn,
-    now: number
+    now: number,
+    options?: { skipAffectEventKeys?: Set<string> },
 ): PostProcessResult {
     const retainedEvents: SmashUpEvent[] = [];
     const extraEvents: SmashUpEvent[] = [];
@@ -2401,6 +2430,7 @@ export function processAffectTriggers(
             }
 
             if (!record.countsForOnMinionAffected || !record.triggerMinion || record.baseIndex === undefined) continue;
+            if (options?.skipAffectEventKeys?.has(buildAffectRecordEventKey(event, record, recordIndex))) continue;
             const sourceEventId = `minion-affected:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
             const frameId = `minion-affected-frame:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
 

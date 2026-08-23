@@ -801,30 +801,12 @@ function buildRunEmOffTieMovePrompts(
             }))
             .filter(candidate => candidate.baseIndex !== found.baseIndex);
         if (destinationOptions.length === 0) continue;
-        if (destinationOptions.length === 1) {
-            const moveSource = buildDuelEffectSource(duel);
-            const moveEvents = buildValidatedMoveEvents(nextState, {
-                minionUid: moveUid,
-                minionDefId: found.minion.defId,
-                fromBaseIndex: found.baseIndex,
-                toBaseIndex: destinationOptions[0].baseIndex,
-                toBaseDefId: destinationOptions[0].baseDefId,
-                reason: 'cowboys_run_em_off',
-                now,
-                sourcePlayerId: moveSource.sourcePlayerId,
-                sourceDefId: moveSource.sourceDefId,
-                sourceControllerId: moveSource.sourceControllerId,
-                sourceBaseIndex: moveSource.sourceBaseIndex,
-            });
-            events.push(...moveEvents);
-            continue;
-        }
         const interaction = createSimpleChoice(
             `smashup_duel_run_em_off_move_${duel.id}_${mover}_${now}`,
             mover,
             'ui.duel_prompt_run_em_off_tie_title',
             buildBaseTargetOptions(destinationOptions, state.core),
-            { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base' },
+            { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base', autoResolveIfSingle: false },
         );
         (interaction.data as any).continuationContext = {
             duel,
@@ -1006,29 +988,14 @@ function resolveDuelResult(
                     label: getBaseDef(base.defId)?.name ?? base.defId,
                 }))
                 .filter(candidate => candidate.baseIndex !== baseIndex);
-            if (destinationOptions.length === 1) {
-                const moveSource = buildDuelEffectSource(duel, { sourceBaseIndex: baseIndex });
-                events.push(...buildValidatedMoveEvents(state, {
-                    minionUid: loser.uid,
-                    minionDefId: loser.defId,
-                    fromBaseIndex: baseIndex,
-                    toBaseIndex: destinationOptions[0].baseIndex,
-                    toBaseDefId: destinationOptions[0].baseDefId,
-                    reason: 'cowboys_run_em_off',
-                    now,
-                    sourcePlayerId: moveSource.sourcePlayerId,
-                    sourceDefId: moveSource.sourceDefId,
-                    sourceControllerId: moveSource.sourceControllerId,
-                    sourceBaseIndex: moveSource.sourceBaseIndex,
-                }));
-            } else if (destinationOptions.length > 1) {
+            if (destinationOptions.length > 0) {
                 const mover = loser.controller;
                 const interaction = createSimpleChoice(
                     `smashup_duel_run_em_off_move_${duel.id}_${mover}_${now}`,
                     mover,
                     'ui.duel_prompt_run_em_off_title',
                     buildBaseTargetOptions(destinationOptions, state.core),
-                    { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base' },
+                    { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base', autoResolveIfSingle: false },
                 );
                 (interaction.data as any).continuationContext = {
                     duel,

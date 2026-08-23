@@ -92,7 +92,7 @@ describe('龙派系可复用实现批', () => {
         });
     });
 
-    it('飞龙打出时会消灭同基地一个力量 3 或以下的随从', () => {
+    it('飞龙打出时只有一个合法随从也必须等待玩家选择后才消灭', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 0,
             players: {
@@ -116,7 +116,17 @@ describe('龙派系可复用实现批', () => {
         });
 
         expect(result.success).toBe(true);
-        const base = result.finalState.core.bases[0];
+        const prompt = getSimpleChoicePrompt(result.finalState, 'dragons_wyvern');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const target = getPromptOption(prompt, option => option.value?.minionUid === 'target-1', '飞龙唯一目标');
+
+        const resolved = runCommand(
+            result.finalState,
+            respondCommand(target.id, '0'),
+        );
+
+        expect(resolved.success).toBe(true);
+        const base = resolved.finalState.core.bases[0];
         expect(base.minions.some((minion) => minion.uid === 'target-1')).toBe(false);
         expect(base.minions.some((minion) => minion.uid === 'wy1')).toBe(true);
     });
@@ -319,7 +329,7 @@ describe('龙派系可复用实现批', () => {
         expect(movedMinion && getEffectivePower(resolved.finalState.core, movedMinion, 0)).toBe(1);
     });
 
-    it('险地会让其他玩家在这里打出随从后自动弃掉唯一剩余手牌', () => {
+    it('险地会让其他玩家在这里打出随从后选择唯一剩余手牌再弃掉', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 1,
             players: {
@@ -348,8 +358,18 @@ describe('龙派系可复用实现批', () => {
         });
 
         expect(result.success).toBe(true);
-        expect(result.finalState.core.players['1'].hand).toEqual([]);
-        expect(result.finalState.core.players['1'].discard.map((card) => card.uid)).toContain('discard-1');
+        const prompt = getSimpleChoicePrompt(result.finalState, 'dragons_dangerous_ground');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const discard = getPromptOption(prompt, option => option.value?.cardUid === 'discard-1', '险地唯一弃牌候选');
+
+        const resolved = runCommand(
+            result.finalState,
+            respondCommand(discard.id, '1'),
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['1'].hand).toEqual([]);
+        expect(resolved.finalState.core.players['1'].discard.map((card) => card.uid)).toContain('discard-1');
     });
 
     it('险地会让其他玩家在这里打出随从后通过 prompt 选择弃牌', () => {
@@ -418,7 +438,20 @@ describe('龙派系可复用实现批', () => {
         });
 
         expect(played.success).toBe(true);
-        const cardPrompt = getSimpleChoicePrompt(played.finalState, 'dragons_flank_attack_card');
+        const sourcePrompt = getSimpleChoicePrompt(played.finalState, 'dragons_flank_attack_source');
+        expect(sourcePrompt.autoResolveIfSingle).toBe(false);
+        const discardSource = getPromptOption(
+            sourcePrompt,
+            (option) => option.value?.searchScope === 'discard',
+            '侧翼攻击唯一弃牌堆搜索范围',
+        );
+        const chosenSource = runCommand(
+            played.finalState,
+            respondCommand(discardSource.id, '0'),
+        );
+
+        expect(chosenSource.success).toBe(true);
+        const cardPrompt = getSimpleChoicePrompt(chosenSource.finalState, 'dragons_flank_attack_card');
         const ruinsOption = getPromptOption(
             cardPrompt,
             (option) => option.value?.cardUid === 'ruins-1' && option.value?.sourceZone === 'discard',
@@ -426,7 +459,7 @@ describe('龙派系可复用实现批', () => {
         );
 
         const chosenCard = runCommand(
-            played.finalState,
+            chosenSource.finalState,
             respondCommand(ruinsOption.id, '0'),
         );
 

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildAiDecisionContext, registerGameAiRuntime, type AiLegalAction } from '../../../engine/ai';
+import { buildAiDecisionContext, isAiActionOutcomeNoBenefit, registerGameAiRuntime, type AiLegalAction } from '../../../engine/ai';
 import type { MatchState } from '../../../core/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
-import { SU_COMMANDS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type { SmashUpCore } from '../types';
 import {
     makeBase,
@@ -561,6 +561,145 @@ describe('Smash Up AI 交互候选枚举', () => {
                 baseIndex: 1,
             },
         });
+    });
+
+    it('暴力攻击没有可摧毁随从时，AI 不应把等力目标列为可打出的行动', async () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mega-attack-ai', 'mega_troopers_mega_attack', 'action', '0')],
+                    actionLimit: 1,
+                    actionsPlayed: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_training_camp', [
+                makeMinion('yellow-trooper-ai', 'mega_troopers_yellow_trooper', '0', 4),
+            ])],
+        }));
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+        const invalidMegaAttack = legalActions.find(action =>
+            action.kind === 'play-action'
+            && action.metadata?.defId === 'mega_troopers_mega_attack'
+            && action.metadata?.targetMinionUid === 'yellow-trooper-ai',
+        );
+
+        expect(invalidMegaAttack).toBeUndefined();
+
+        const context = buildRegisteredAiContext(state);
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide(context);
+        const chosenAction = context.legalActions.find(action => action.actionId === decision?.actionId);
+
+        expect(chosenAction?.metadata?.defId).not.toBe('mega_troopers_mega_attack');
+
+        const command = chosenAction?.commands[0];
+        expect(command).toBeDefined();
+        const resolved = runCommand(state, {
+            ...command!,
+            playerId: '0',
+        } as any, FIXED_RANDOM);
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.ABILITY_FEEDBACK
+            && (event as any).payload?.messageKey === 'feedback.no_valid_targets',
+        )).toBe(false);
+    });
+
+    it('暴力攻击存在低于己方总力量的目标时，AI 仍应保留该目标候选', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mega-attack-ai', 'mega_troopers_mega_attack', 'action', '0')],
+                    actionLimit: 1,
+                    actionsPlayed: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_training_camp', [
+                makeMinion('yellow-trooper-ai', 'mega_troopers_yellow_trooper', '0', 4),
+                makeMinion('chien-po-opponent', 'mulan_chien_po', '1', 3),
+            ])],
+        }));
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+        const validMegaAttack = legalActions.find(action =>
+            action.kind === 'play-action'
+            && action.metadata?.defId === 'mega_troopers_mega_attack'
+            && action.metadata?.targetMinionUid === 'chien-po-opponent',
+        );
+
+        expect(validMegaAttack).toBeDefined();
+    });
+
+    it('行动牌预演只有无有效目标反馈时，AI 不应把它当成收益动作', async () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('high-noon-ai', 'cowboys_high_noon', 'action', '0')],
+                    actionLimit: 1,
+                    actionsPlayed: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_training_camp', [])],
+        }));
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+        const noTargetAction = legalActions.find(action =>
+            action.kind === 'play-action'
+            && action.metadata?.defId === 'cowboys_high_noon',
+        );
+        expect(noTargetAction).toBeDefined();
+
+        const dryRun = runCommand(state, {
+            ...noTargetAction!.commands[0],
+            playerId: '0',
+        } as any, FIXED_RANDOM);
+        expect(dryRun.success, dryRun.error).toBe(true);
+        expect(dryRun.events.map(event => event.type)).toEqual([
+            SU_EVENTS.ACTION_PLAYED,
+            SU_EVENTS.ABILITY_FEEDBACK,
+        ]);
+        expect(dryRun.events.some(event =>
+            event.type === SU_EVENTS.ABILITY_FEEDBACK
+            && (event as any).payload?.messageKey === 'feedback.no_valid_targets',
+        )).toBe(true);
+
+        const context = buildRegisteredAiContext(state);
+        const outcome = smashUpAiRuntime.projectActionOutcome?.({
+            context,
+            action: noTargetAction!,
+        });
+        expect(outcome).toMatchObject({
+            status: 'succeeded',
+            feedbackKeys: ['feedback.no_valid_targets'],
+            hasMeaningfulEffect: false,
+            hasOwnedFollowUp: false,
+        });
+        expect(outcome?.utilityDelta).toBeLessThanOrEqual(0);
+        expect(isAiActionOutcomeNoBenefit(outcome, {
+            treatNonPositiveUtilityAsNoBenefit: true,
+        })).toBe(true);
+
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide(context);
+        const chosenAction = context.legalActions.find(action => action.actionId === decision?.actionId);
+
+        expect(chosenAction?.metadata?.defId).not.toBe('cowboys_high_noon');
+        expect(chosenAction?.kind).toBe('advance-phase');
     });
 
     it('未知阻塞交互属于 AI 时应生成带 interactionId 的紧急取消动作', () => {

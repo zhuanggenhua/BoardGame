@@ -22,6 +22,7 @@ import { PasswordEntryModal } from '../common/overlays/PasswordEntryModal';
 import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitPayload, notifyExitMatchErrorToast, buildCreateRoomErrorTip, resolveCreateRoomErrorCode, resolveCreateRoomErrorStatus, type Room } from './roomActions';
 import { RoomList } from './RoomList';
 import { LeaderboardTab } from './LeaderboardTab';
+import type { LeaderboardEntry } from './leaderboardTypes';
 import { GameDetailsChangelogSection } from './GameDetailsChangelogSection';
 import { GameDetailsMobilePackageCard } from './GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from './GamePackageInstallConfirmModal';
@@ -313,7 +314,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     // 排行榜状态
     const [activeTab, setActiveTab] = useState<'lobby' | 'leaderboard' | 'changelog' | 'reviews'>('lobby');
     const [leaderboardData, setLeaderboardData] = useState<{
-        leaderboard: { name: string; wins: number; matches: number }[];
+        leaderboard: LeaderboardEntry[];
     } | null>(null);
     const [leaderboardError, setLeaderboardError] = useState(false);
     // 创建房间弹窗状态

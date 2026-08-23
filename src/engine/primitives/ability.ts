@@ -280,6 +280,8 @@ const ABILITY_CHOICE_REQUEST_KINDS = new Set<OpportunityChoiceContract['kind']>(
   'select-player',
   'select-card',
   'select-object',
+  'select-zone',
+  'select-position',
   'select-dice',
   'modify-value',
   'choose-option',

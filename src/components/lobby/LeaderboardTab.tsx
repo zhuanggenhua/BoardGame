@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
+import type { LeaderboardEntry } from './leaderboardTypes';
 
 interface LeaderboardTabProps {
     leaderboardData: {
-        leaderboard: { name: string; wins: number; matches: number }[];
+        leaderboard: LeaderboardEntry[];
     } | null;
     error?: boolean;
 }
@@ -33,7 +34,7 @@ export const LeaderboardTab = ({ leaderboardData, error }: LeaderboardTabProps) 
                 ) : (
                     <div className="space-y-1">
                         {leaderboardData.leaderboard.map((player, idx) => (
-                            <div key={idx} className="flex justify-between items-center py-2 border-b border-[#e5e0d0]/50 text-sm">
+                            <div key={idx} className="flex justify-between items-center gap-4 py-2 border-b border-[#e5e0d0]/50 text-sm">
                                 <div className="flex items-center gap-3">
                                     <span className={clsx(
                                         "w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold",
@@ -44,11 +45,28 @@ export const LeaderboardTab = ({ leaderboardData, error }: LeaderboardTabProps) 
                                     )}>
                                         {idx + 1}
                                     </span>
-                                    <span className="font-bold text-[#433422]">{player.name}</span>
+                                    <div className="min-w-0">
+                                        <div className="truncate font-bold text-[#433422]">{player.name}</div>
+                                        <div className="mt-0.5 truncate text-[11px] font-semibold text-[#8c7b64]">
+                                            {t(`leaderboard.tiers.${player.tier}`, { defaultValue: player.tier })}
+                                            {player.provisional ? ` · ${t('leaderboard.provisional')}` : ''}
+                                        </div>
+                                    </div>
                                 </div>
-                                <span className="text-[#8c7b64] text-xs font-mono">
-                                    {t('leaderboard.record', { wins: player.wins, matches: player.matches })}
-                                </span>
+                                <div className="shrink-0 text-right text-[#8c7b64] text-xs font-mono">
+                                    <div className="text-sm font-bold text-[#433422]">
+                                        {t('leaderboard.rating', { rating: player.rating })}
+                                    </div>
+                                    <div>
+                                        {t('leaderboard.record', {
+                                            wins: player.wins,
+                                            losses: player.losses,
+                                            draws: player.draws,
+                                            matches: player.matches,
+                                            winRate: Math.round(player.winRate * 100),
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>

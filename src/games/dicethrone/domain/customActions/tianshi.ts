@@ -612,7 +612,19 @@ function handleDivinePunishment(ctx: CustomActionContext): DiceThroneEvent[] {
 }
 
 function handleTriumphantReturnRoll(ctx: CustomActionContext): DiceThroneEvent[] {
-    return makeNoRerollBonusDice(ctx, 1, TRIUMPHANT_RETURN_SETTLEMENT_ID, 'bonusDie.effect.tianshi.triumphantReturn', dice => resolveTriumphantReturnBonus(ctx, dice));
+    return createBonusDiceWithReroll(ctx, {
+        diceCount: 1,
+        rerollCostTokenId: NO_REROLL_TOKEN_ID,
+        rerollCostAmount: 1,
+        maxRerollCount: 0,
+        dieEffectKey: 'bonusDie.effect.tianshi.triumphantReturn',
+        rerollEffectKey: 'bonusDie.effect.tianshi.triumphantReturn',
+        resolutionMode: 'none',
+        customResolutionId: TRIUMPHANT_RETURN_SETTLEMENT_ID,
+        showTotal: false,
+        allowDiceModification: true,
+        continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
+    }, dice => resolveTriumphantReturnBonus(ctx, dice));
 }
 
 function handleHolyBlade3FourKindDazzle(ctx: CustomActionContext): DiceThroneEvent[] {

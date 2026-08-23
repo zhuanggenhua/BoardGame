@@ -1561,26 +1561,7 @@ const geeksGrieferModePromptProgram = createPromptProgram<GeeksGrieferPromptCont
 
         if (mode === 'destroy') {
             const destroyOptions = buildGeeksGrieferDestroyOptions(state.core, context.targetPlayerId);
-            if (destroyOptions.length === 1) {
-                const choice = getSelectedGeeksGrieferDestroyChoice(destroyOptions[0]?.value);
-                const events = choice
-                    ? buildValidatedDestroyEvents(state, {
-                        minionUid: choice.minionUid!,
-                        minionDefId: choice.defId!,
-                        fromBaseIndex: choice.baseIndex!,
-                        destroyerId: context.targetPlayerId,
-                        sourcePlayerId: context.targetPlayerId,
-                        sourceCardUid: context.cardUid,
-                        sourceDefId: 'geeks_griefer',
-                        sourceControllerId: context.targetPlayerId,
-                        reason: 'geeks_griefer',
-                        now: timestamp,
-                        sourceKind: 'action',
-                    })
-                    : [];
-                return continueGeeksGrieferAfterEvents(state, context, events, timestamp);
-            }
-            if (destroyOptions.length > 1) {
+            if (destroyOptions.length > 0) {
                 return {
                     events: [],
                     context: {
@@ -1625,27 +1606,7 @@ const geeksGrieferStepProgram = createEffectProgram<GeeksGrieferPromptContext, S
     }
 
     const onlyMode = targetState.modes[0];
-    if (onlyMode === 'destroy' && targetState.destroyOptions.length === 1) {
-        const choice = getSelectedGeeksGrieferDestroyChoice(targetState.destroyOptions[0]?.value);
-        const events = choice
-            ? buildValidatedDestroyEvents(context.matchState, {
-                minionUid: choice.minionUid!,
-                minionDefId: choice.defId!,
-                fromBaseIndex: choice.baseIndex!,
-                destroyerId: targetState.targetPlayerId,
-                sourcePlayerId: targetState.targetPlayerId,
-                sourceCardUid: effectiveContext.cardUid,
-                sourceDefId: 'geeks_griefer',
-                sourceControllerId: targetState.targetPlayerId,
-                reason: 'geeks_griefer',
-                now: context.now,
-                sourceKind: 'action',
-            })
-            : [];
-        return continueGeeksGrieferAfterEvents(context.matchState, effectiveContext, events, context.now);
-    }
-
-    if (onlyMode === 'destroy' && targetState.destroyOptions.length > 1) {
+    if (onlyMode === 'destroy' && targetState.destroyOptions.length > 0) {
         return {
             events: [],
             context: effectiveContext,
@@ -2500,28 +2461,7 @@ const geeksMinMaxingProgram = createEffectProgram<AbilityContext, SmashUpCore, S
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    if (opponentOptions.length === 1) {
-        const targetPlayerId = (opponentOptions[0].value as GeeksMinMaxingOpponentChoice | undefined)?.targetPlayerId;
-        const targetPlayer = targetPlayerId ? ctx.state.players[targetPlayerId] : undefined;
-        if (!targetPlayerId || !targetPlayer) {
-            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-        }
-        const revealCards = targetPlayer.hand.map((card) => ({ uid: card.uid, defId: card.defId }));
-        const revealEvents = revealCards.length > 0
-            ? [revealHand(targetPlayerId, ctx.playerId, revealCards, 'geeks_min_maxing', ctx.now, ctx.playerId)]
-            : [];
-        return {
-            events: revealEvents,
-            context: {
-                matchState: ctx.matchState,
-                playerId: ctx.playerId,
-                now: ctx.now,
-                cardUid: ctx.cardUid,
-                targetPlayerId,
-            } satisfies GeeksMinMaxingActionPromptContext,
-            nextProgram: geeksMinMaxingActionPromptProgram,
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     return {
         events: [],

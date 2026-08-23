@@ -291,7 +291,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         consumeInitialEntries: true,
         consumeOnReconcile: true,
     });
-    const latestEntryId = entries.at(-1)?.id ?? 0;
+    const latestEntryId = entries[entries.length - 1]?.id ?? 0;
 
     useLayoutEffect(() => {
         const { entries: newEntries, didReset } = consumeNew();
@@ -308,23 +308,29 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         }
         if (newEntries.length === 0) {
             previousCoreRef.current = G.core;
-            setDebug((current) => {
-                const nextDebug = {
-                    eventCount: entries.length,
-                    latestEntryId,
-                    cursor: getCursor(),
-                    lastConsumedTypes: didReset ? consumedTypes : current.lastConsumedTypes,
-                    lastFxCues: didReset ? fxCues : current.lastFxCues,
-                };
-                return current.eventCount === nextDebug.eventCount
-                    && current.latestEntryId === nextDebug.latestEntryId
-                    && current.cursor === nextDebug.cursor
-                    && current.lastConsumedTypes.join(',') === nextDebug.lastConsumedTypes.join(',')
-                    && current.lastFxCues.join(',') === nextDebug.lastFxCues.join(',')
-                    ? current
-                    : nextDebug;
+            let cancelled = false;
+            queueMicrotask(() => {
+                if (cancelled) return;
+                setDebug((current) => {
+                    const nextDebug = {
+                        eventCount: entries.length,
+                        latestEntryId,
+                        cursor: getCursor(),
+                        lastConsumedTypes: didReset ? consumedTypes : current.lastConsumedTypes,
+                        lastFxCues: didReset ? fxCues : current.lastFxCues,
+                    };
+                    return current.eventCount === nextDebug.eventCount
+                        && current.latestEntryId === nextDebug.latestEntryId
+                        && current.cursor === nextDebug.cursor
+                        && current.lastConsumedTypes.join(',') === nextDebug.lastConsumedTypes.join(',')
+                        && current.lastFxCues.join(',') === nextDebug.lastFxCues.join(',')
+                        ? current
+                        : nextDebug;
+                });
             });
-            return;
+            return () => {
+                cancelled = true;
+            };
         }
 
         const events = newEntries.map((entry) => entry.event as MageWarsEvent);
@@ -399,16 +405,23 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             lastConsumedTypes: consumedTypes,
             lastFxCues: fxCues,
         };
-        setDebug((current) => (
-            current.eventCount === nextDebug.eventCount
-            && current.latestEntryId === nextDebug.latestEntryId
-            && current.cursor === nextDebug.cursor
-            && current.lastConsumedTypes.join(',') === nextDebug.lastConsumedTypes.join(',')
-            && current.lastFxCues.join(',') === nextDebug.lastFxCues.join(',')
-                ? current
-                : nextDebug
-        ));
+        let cancelled = false;
+        queueMicrotask(() => {
+            if (cancelled) return;
+            setDebug((current) => (
+                current.eventCount === nextDebug.eventCount
+                && current.latestEntryId === nextDebug.latestEntryId
+                && current.cursor === nextDebug.cursor
+                && current.lastConsumedTypes.join(',') === nextDebug.lastConsumedTypes.join(',')
+                && current.lastFxCues.join(',') === nextDebug.lastFxCues.join(',')
+                    ? current
+                    : nextDebug
+            ));
+        });
         previousCoreRef.current = G.core;
+        return () => {
+            cancelled = true;
+        };
 
     }, [G.core, damageBuffer, visualEntityBuffer, entries.length, latestEntryId, consumeNew, getCursor, entries, resolveFxAnchorSnapshot]);
 

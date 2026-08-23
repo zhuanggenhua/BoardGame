@@ -10,26 +10,25 @@ const helpText = `
   node scripts/release/deploy-and-ota.mjs [选项]
 
 默认行为:
-  1. 先检查 package.json 版本已随本次发布自增
-  2. 等待 10 分钟
-  3. 触发 GitHub Actions 构建镜像，并由 CI 直接把镜像 tar 输送到生产机后执行 update-local
-  4. 触发 Android OTA Publish workflow，发布同一 git ref 的 stable OTA
-  5. OTA workflow 必须等 bundle/latest.json 线上可读，并校验 latest.json 的 CORS 预检
+  1. 等待 10 分钟
+  2. 触发 GitHub Actions 构建镜像，并由 CI 直接把镜像 tar 输送到生产机后执行 update-local
+  3. 触发 Android OTA Publish workflow，发布同一 git ref 的 stable OTA
+  4. OTA workflow 必须等 bundle/latest.json 线上可读，并校验 latest.json 的 CORS 预检
 
-准备版本:
+准备商业产品 / 原生版本:
   node scripts/release/deploy-and-ota.mjs --prepare-version
   node scripts/release/deploy-and-ota.mjs --prepare-version --bump minor
 
 推荐发布顺序:
-  1. 先执行 --prepare-version，默认 patch，会同步更新 package.json.version 与 androidVersionCode
-  2. 提交并 push 版本改动
-  3. 再执行 deploy-and-ota，部署 latest 并发布同一产品版本的 stable OTA
+  1. 代码热更新：提交并 push 后直接执行 deploy-and-ota，服务器版本以 git ref / 镜像为准
+  2. 商业产品或原生壳版本发布：先执行 --prepare-version，再提交并 push 版本改动
+  3. OTA 包版本在上传时通过 --ota-extra 指定，未指定时按 OTA 游标基线 + UTC 时间自动生成
   4. 若 latest.json 或 CORS 预检不可读，OTA 步骤必须失败，不能汇报更新完成
 
 选项:
-  --prepare-version          只准备版本自增，不执行部署或 OTA
+  --prepare-version          只准备商业产品 / 原生壳版本自增，不执行部署或 OTA
   --bump <patch|minor|major> 准备版本自增类型，默认 patch
-  --allow-current-version    跳过“必须先准备版本”的门禁，仅用于明确不改版本的特殊发布
+  --allow-current-version    兼容旧命令；部署默认已允许当前商业产品版本
   --wait-minutes <number>    等待多少分钟后再开始，默认 10
   --skip-wait                立即执行，不等待
   --dry-run                  只打印将执行的命令，不真正执行
@@ -54,7 +53,7 @@ const helpText = `
   --ota-git-ref <ref>        OTA workflow 实际 checkout/publish 的 git_ref，默认同 --ci-ref
   --resume-ota-run-id <id>   不重新触发 OTA workflow，继续等待已有 run
   --skip-ota                 只更新服务器，不执行 Android OTA 发布
-  --ota-extra "<args>"       追加给 OTA 的额外参数；workflow 模式支持 --version/--display-version/--ota-version-base/--dry-run/--skip-latest/--force-update-title/--force-update-message，local 模式原样传给 release-android ota；禁止传 --no-force-update
+  --ota-extra "<args>"       追加给 OTA 的额外参数；workflow 模式支持 --version/--display-version/--ota-version-base/--product-version/--expected-base-version/--dry-run/--skip-latest/--force-update-title/--force-update-message，local 模式原样传给 release-android ota；禁止传 --no-force-update
 `.trim();
 
 const readArgValue = (name, fallback = '') => {
@@ -71,8 +70,6 @@ const readArgValue = (name, fallback = '') => {
 };
 
 const hasFlag = (name) => rawArgs.includes(`--${name}`);
-
-const VERSION_PREPARED_ENV = 'BG_DEPLOY_VERSION_PREPARED';
 
 const prepareVersion = hasFlag('prepare-version');
 const bumpType = readArgValue('bump', 'patch');
@@ -162,6 +159,8 @@ const supportedWorkflowOtaExtraArgs = new Set([
     '--version',
     '--display-version',
     '--ota-version-base',
+    '--product-version',
+    '--expected-base-version',
     '--force-update-title',
     '--force-update-message',
 ]);
@@ -343,11 +342,6 @@ const triggerCiStreamDeploy = async () => {
     await waitForWorkflowRun({ runId: run.databaseId, label: 'CI 镜像直传部署' });
 };
 
-const readPackageVersion = async () => {
-    const { readProjectVersion } = await import('../mobile/version-utils.mjs');
-    return readProjectVersion();
-};
-
 const remoteDeployCommand = deployTag
     ? `cd ${remoteDir} && bash scripts/deploy/deploy-image.sh update ${deployTag}`
     : `cd ${remoteDir} && bash scripts/deploy/deploy-image.sh update`;
@@ -371,7 +365,7 @@ const otaCommandArgs = [
     ...otaExtraArgs,
 ];
 
-const workflowOtaInputs = (releaseVersion) => ([
+const workflowOtaInputs = () => ([
     'workflow',
     'run',
     otaWorkflow,
@@ -382,8 +376,6 @@ const workflowOtaInputs = (releaseVersion) => ([
     '-f',
     `git_ref=${otaGitRef}`,
     '-f',
-    `expected_base_version=${releaseVersion}`,
-    '-f',
     `dry_run=${hasExtraFlag('dry-run') ? 'true' : 'false'}`,
     '-f',
     `skip_latest=${hasExtraFlag('skip-latest') ? 'true' : 'false'}`,
@@ -392,11 +384,13 @@ const workflowOtaInputs = (releaseVersion) => ([
     ...(readExtraArgValue('version') ? ['-f', `version=${readExtraArgValue('version')}`] : []),
     ...(readExtraArgValue('display-version') ? ['-f', `display_version=${readExtraArgValue('display-version')}`] : []),
     ...(readExtraArgValue('ota-version-base') ? ['-f', `ota_version_base=${readExtraArgValue('ota-version-base')}`] : []),
+    ...(readExtraArgValue('product-version') ? ['-f', `product_version=${readExtraArgValue('product-version')}`] : []),
+    ...(readExtraArgValue('expected-base-version') ? ['-f', `expected_base_version=${readExtraArgValue('expected-base-version')}`] : []),
     ...(readExtraArgValue('force-update-title') ? ['-f', `force_update_title=${readExtraArgValue('force-update-title')}`] : []),
     ...(readExtraArgValue('force-update-message') ? ['-f', `force_update_message=${readExtraArgValue('force-update-message')}`] : []),
 ]);
 
-const triggerOtaWorkflow = async (releaseVersion) => {
+const triggerOtaWorkflow = async () => {
     if (resumeOtaRunId) {
         console.log(`[deploy-and-ota] 继续等待已有 Android OTA workflow run: ${resumeOtaRunId}`);
         await waitForWorkflowRun({ runId: resumeOtaRunId, label: 'Android OTA' });
@@ -404,7 +398,7 @@ const triggerOtaWorkflow = async (releaseVersion) => {
     }
 
     const startedAt = new Date(Date.now() - 60_000);
-    const args = workflowOtaInputs(releaseVersion);
+    const args = workflowOtaInputs();
 
     if (dryRun) {
         console.log(`[deploy-and-ota] dry-run 将触发 Android OTA workflow: gh ${args.join(' ')}`);
@@ -429,22 +423,13 @@ const main = async () => {
             bumpType,
             ...(dryRun ? ['--dry-run'] : []),
         ], '准备项目版本自增');
-        console.log(`[deploy-and-ota] 版本准备完成后，请提交并 push package.json / package-lock.json，再执行部署与 OTA。`);
-        console.log(`[deploy-and-ota] 部署时请设置环境变量 ${VERSION_PREPARED_ENV}=1；若本次明确不改版本，可改用 --allow-current-version。`);
+        console.log('[deploy-and-ota] 版本准备完成后，请提交并 push package.json / package-lock.json。');
+        console.log('[deploy-and-ota] 普通服务器热更新不需要准备版本；只有商业产品 / 原生壳版本发布才需要。');
         return;
     }
 
-    const releaseVersion = await readPackageVersion();
-    if (!allowCurrentVersion) {
-        if (process.env[VERSION_PREPARED_ENV] !== '1') {
-            throw new Error(
-                `正式更新部署默认要求先同步自增产品版本与 Android 版本号。`
-                + ` 当前产品版本: ${releaseVersion}。`
-                + ` 请先执行 node scripts/release/deploy-and-ota.mjs --prepare-version，提交并 push 后，`
-                + `再设置 ${VERSION_PREPARED_ENV}=1 执行部署；若本次明确不改版本，可加 --allow-current-version。`,
-            );
-        }
-        console.log(`[deploy-and-ota] 已确认本次版本自增准备完成，当前产品版本: ${releaseVersion}`);
+    if (allowCurrentVersion) {
+        console.log('[deploy-and-ota] --allow-current-version 已兼容保留；当前部署默认不要求修改商业产品版本。');
     }
 
     if (!skipWait) {
@@ -470,7 +455,7 @@ const main = async () => {
     if (skipOta) {
         console.log('[deploy-and-ota] OTA 命令: 已跳过');
     } else if (otaMode === 'workflow') {
-        console.log(`[deploy-and-ota] OTA workflow: gh ${workflowOtaInputs(releaseVersion).join(' ')}`);
+        console.log(`[deploy-and-ota] OTA workflow: gh ${workflowOtaInputs().join(' ')}`);
     } else {
         console.log(`[deploy-and-ota] OTA 命令: ${process.execPath} ${otaCommandArgs.join(' ')}`);
     }
@@ -488,7 +473,7 @@ const main = async () => {
     }
     if (!skipOta) {
         if (otaMode === 'workflow') {
-            await triggerOtaWorkflow(releaseVersion);
+            await triggerOtaWorkflow();
         } else {
             await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
         }

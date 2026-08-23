@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { Medal } from 'lucide-react';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { SMASHUP_FACTION_PARTICIPATION_GROUPS } from '../factionParticipationPool';
 import {
+    FACTION_METADATA,
     getFactionVariantGroupById,
     getPreferredFactionVariant,
     getVisibleFactionVariantGroups,
 } from '../ui/factionMeta';
+
+const POD_SUFFIX = '_pod';
 
 describe('SmashUp faction variant groups', () => {
     it('merges base and POD into one visible group in zh-CN', () => {
@@ -66,4 +70,38 @@ describe('SmashUp faction variant groups', () => {
         expect(singleFactionPacks?.factionIds).toContain(SMASHUP_FACTION_IDS.PALADINS);
         expect(customGroup?.factionIds).not.toContain(SMASHUP_FACTION_IDS.PALADINS);
     });
+
+    it('keeps newly added base faction icons distinct while POD variants inherit their base icon', () => {
+        const firstNewFactionIndex = FACTION_METADATA.findIndex((faction) => faction.id === SMASHUP_FACTION_IDS.HULUWAWA);
+        expect(firstNewFactionIndex).toBeGreaterThanOrEqual(0);
+
+        const newlyAddedBaseFactions = FACTION_METADATA
+            .slice(firstNewFactionIndex)
+            .filter((faction) => !faction.id.endsWith(POD_SUFFIX));
+
+        const iconAssignments = new Map<FactionMetadataIcon, string[]>();
+        for (const faction of newlyAddedBaseFactions) {
+            const factions = iconAssignments.get(faction.icon) ?? [];
+            iconAssignments.set(faction.icon, [...factions, faction.id]);
+        }
+
+        const duplicateIcons = Array.from(iconAssignments.entries())
+            .filter(([, factionIds]) => factionIds.length > 1)
+            .map(([icon, factionIds]) => ({
+                icon: icon.displayName ?? icon.name ?? 'anonymous icon',
+                factionIds,
+            }));
+
+        expect(duplicateIcons).toEqual([]);
+    });
+
+    it('keeps All-Stars on its legacy medal icon', () => {
+        const allStars = FACTION_METADATA.find((faction) => faction.id === SMASHUP_FACTION_IDS.ALL_STARS);
+        const allStarsPod = FACTION_METADATA.find((faction) => faction.id === SMASHUP_FACTION_IDS.ALL_STARS_POD);
+
+        expect(allStars?.icon).toBe(Medal);
+        expect(allStarsPod?.icon).toBe(Medal);
+    });
 });
+
+type FactionMetadataIcon = (typeof FACTION_METADATA)[number]['icon'];

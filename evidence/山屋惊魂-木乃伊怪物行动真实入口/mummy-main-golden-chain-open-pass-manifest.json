@@ -3,7 +3,7 @@
   "scope": "current-user-request",
   "display": {
     "purpose": "final-user-visible-delivery",
-    "trigger": "task-final-delivery",
+    "trigger": "user-requested-open",
     "viewer": "pureref",
     "finalPassBeforeOpen": true
   },
@@ -13,9 +13,9 @@
       "status": "PASS",
       "evidence": [
         "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts 用例：主黄金链：开局、三类发现、作祟、木乃伊行动、叛徒终局",
-        "2026-08-22 定向命令通过：node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/mummy-rampage-monster-actions.e2e.ts \"主黄金链\" => 1 passed (49.6s)",
+        "2026-08-22 合法目标绿色视觉修复后，清理 stale 共享 E2E runtime，再按默认 shared-single 测试入口执行定向命令通过：node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/mummy-rampage-monster-actions.e2e.ts \"主黄金链\" => 1 passed (1.2m)",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/e2e-test.md 记录 36 张过程截图和状态承接点",
-        "2026-08-22 整文件 E2E 桶通过：17 passed (4.1m)"
+        "2026-08-22 合法目标绿色视觉修复后，整文件 E2E 桶通过：17 passed (5.0m)"
       ]
     },
     {
@@ -43,7 +43,7 @@
         "65-主黄金链过程-19-作祟后事件符号-探索入口可见.jpg",
         "65-主黄金链过程-20-事件房探索目标高亮-点击前.jpg",
         "65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.jpg",
-        "65-主黄金链过程-22-跳过事件结算结果-没有抽事件牌.jpg",
+        "65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.jpg",
         "65-主黄金链过程-23-叛徒回合-木乃伊开回合入口可见.jpg",
         "65-主黄金链过程-24-木乃伊开回合后-移动骰入口可见.jpg",
         "65-主黄金链过程-25-木乃伊移动骰结果-三点停稳.jpg",
@@ -51,7 +51,7 @@
         "65-主黄金链过程-27-木乃伊普通移动第一步后-剩余两点.jpg",
         "65-主黄金链过程-28-木乃伊普通移动第二步-石棺目标高亮.jpg",
         "65-主黄金链过程-29-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg",
-        "65-主黄金链过程-30-攻击前-目标英雄详情持有圣符.jpg",
+        "65-主黄金链过程-30-攻击前-目标英雄面板持有圣符.jpg",
         "65-主黄金链过程-31-同房后-木乃伊攻击入口可见.jpg",
         "65-主黄金链过程-32-木乃伊攻击-选择木乃伊攻击者.jpg",
         "65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.jpg",
@@ -64,15 +64,15 @@
       "requirement": "用户点名的问题都有直接证据：急救包合法目标绿色高亮、事件符号翻出后再选择是否跳过、偷圣符前目标英雄持有圣符、英雄/叛徒分视角读本。",
       "status": "PASS",
       "evidence": [
-        "src/games/betrayal/__tests__/Board.foundation.test.tsx 断言急救包目标 data-highlight-color=\"green\"",
+        "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts 对急救包目标同时断言 data-highlight-color=\"green\"，并用 sharp 截图裁片统计绿色像素必须明显压过黄色像素",
         "65-主黄金链过程-09-急救包治疗目标高亮-点击前.jpg",
         "65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.jpg",
-        "65-主黄金链过程-22-跳过事件结算结果-没有抽事件牌.jpg",
+        "65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.jpg",
         "65-主黄金链过程-15-作祟后英雄剧本开场-继续前.jpg",
         "65-主黄金链过程-16-英雄剧本书正文-英雄目标可读.jpg",
         "65-主黄金链过程-17-作祟后叛徒剧本开场-继续前.jpg",
         "65-主黄金链过程-18-叛徒剧本书正文-敌方情报可读.jpg",
-        "65-主黄金链过程-30-攻击前-目标英雄详情持有圣符.jpg",
+        "65-主黄金链过程-30-攻击前-目标英雄面板持有圣符.jpg",
         "65-主黄金链过程-35-木乃伊攻击奖励-偷圣符入口可见.jpg"
       ]
     },
@@ -102,7 +102,7 @@
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/19-labeled-65-主黄金链过程-19-作祟后事件符号-探索入口可见.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/20-labeled-65-主黄金链过程-20-事件房探索目标高亮-点击前.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/21-labeled-65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.png",
-        "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/22-labeled-65-主黄金链过程-22-跳过事件结算结果-没有抽事件牌.png",
+        "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/22-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/23-labeled-65-主黄金链过程-23-叛徒回合-木乃伊开回合入口可见.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/24-labeled-65-主黄金链过程-24-木乃伊开回合后-移动骰入口可见.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/25-labeled-65-主黄金链过程-25-木乃伊移动骰结果-三点停稳.png",
@@ -110,7 +110,7 @@
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/27-labeled-65-主黄金链过程-27-木乃伊普通移动第一步后-剩余两点.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/28-labeled-65-主黄金链过程-28-木乃伊普通移动第二步-石棺目标高亮.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/29-labeled-65-主黄金链过程-29-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
-        "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/30-labeled-65-主黄金链过程-30-攻击前-目标英雄详情持有圣符.png",
+        "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/30-labeled-65-主黄金链过程-30-攻击前-目标英雄面板持有圣符.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/31-labeled-65-主黄金链过程-31-同房后-木乃伊攻击入口可见.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/32-labeled-65-主黄金链过程-32-木乃伊攻击-选择木乃伊攻击者.png",
         "evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/33-labeled-65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.png",
@@ -143,7 +143,7 @@
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/19-labeled-65-主黄金链过程-19-作祟后事件符号-探索入口可见.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/20-labeled-65-主黄金链过程-20-事件房探索目标高亮-点击前.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/21-labeled-65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.png",
-    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/22-labeled-65-主黄金链过程-22-跳过事件结算结果-没有抽事件牌.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/22-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/23-labeled-65-主黄金链过程-23-叛徒回合-木乃伊开回合入口可见.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/24-labeled-65-主黄金链过程-24-木乃伊开回合后-移动骰入口可见.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/25-labeled-65-主黄金链过程-25-木乃伊移动骰结果-三点停稳.png",
@@ -151,7 +151,7 @@
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/27-labeled-65-主黄金链过程-27-木乃伊普通移动第一步后-剩余两点.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/28-labeled-65-主黄金链过程-28-木乃伊普通移动第二步-石棺目标高亮.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/29-labeled-65-主黄金链过程-29-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
-    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/30-labeled-65-主黄金链过程-30-攻击前-目标英雄详情持有圣符.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/30-labeled-65-主黄金链过程-30-攻击前-目标英雄面板持有圣符.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/31-labeled-65-主黄金链过程-31-同房后-木乃伊攻击入口可见.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/32-labeled-65-主黄金链过程-32-木乃伊攻击-选择木乃伊攻击者.png",
     "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-main-golden-process-chain/33-labeled-65-主黄金链过程-33-木乃伊攻击-同房英雄目标高亮.png",

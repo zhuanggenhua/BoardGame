@@ -11,6 +11,7 @@ import { hasCardActivatableAbility } from '../../domain/activationMetadata';
 import { SU_COMMANDS } from '../../domain/types';
 import {
     applyEvents,
+    getPromptMulti,
     getPromptOptionsGenerator,
     getPromptOptions,
     getPromptsBySourceId,
@@ -43,6 +44,14 @@ beforeEach(() => {
     resetAbilityInit();
     initAllAbilities();
 });
+
+function chooseMinMaxingOpponentPrompt(state: any, targetPlayerId = '1') {
+    const opponentPrompt = getSimpleChoicePrompt(state, 'geeks_min_maxing_opponent');
+    expect(opponentPrompt?.autoResolveIfSingle).toBe(false);
+    const opponentOption = getPromptOptions(opponentPrompt).find((option: any) => option.value?.targetPlayerId === targetPlayerId);
+    expect(opponentOption).toBeTruthy();
+    return respondToPrompt(state, opponentOption.id, '0', fixedRandom as any);
+}
 
 describe('极客派系隐藏实现批', () => {
     it('粉丝会暴露为仅限出牌阶段的手牌 special 入口', () => {
@@ -338,10 +347,11 @@ describe('极客派系隐藏实现批', () => {
             payload: { cardUid: 'minmax-1' },
         });
 
-        const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_min_maxing_action');
+        const afterOpponentChoice = chooseMinMaxingOpponentPrompt(played.finalState);
+        const prompt = getSimpleChoicePrompt(afterOpponentChoice.finalState, 'geeks_min_maxing_action');
         expect(prompt).toBeTruthy();
         expect(prompt?.targetType).toBe('generic');
-        const resolved = respondToPrompt(played.finalState, 'skip', '0', fixedRandom as any);
+        const resolved = respondToPrompt(afterOpponentChoice.finalState, 'skip', '0', fixedRandom as any);
 
         expect(resolved.finalState.core.players['1'].hand.map((card) => card.uid)).toEqual(['justice-1']);
         expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
@@ -371,12 +381,13 @@ describe('极客派系隐藏实现批', () => {
             payload: { cardUid: 'minmax-1' },
         });
 
-        const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_min_maxing_action');
+        const afterOpponentChoice = chooseMinMaxingOpponentPrompt(played.finalState);
+        const prompt = getSimpleChoicePrompt(afterOpponentChoice.finalState, 'geeks_min_maxing_action');
         expect(prompt?.targetType).toBe('generic');
         const justiceOption = prompt.options.find((option: any) => option.value?.cardUid === 'justice-1');
         expect(justiceOption).toBeTruthy();
 
-        const resolved = respondToPrompt(played.finalState, justiceOption.id, '0', fixedRandom as any);
+        const resolved = respondToPrompt(afterOpponentChoice.finalState, justiceOption.id, '0', fixedRandom as any);
         const dragon = resolved.finalState.core.bases[0].minions.find((minion) => minion.uid === 'dragon-1')!;
 
         expect(getEffectivePower(resolved.finalState.core, dragon, 0)).toBe(7);
@@ -407,12 +418,13 @@ describe('极客派系隐藏实现批', () => {
             payload: { cardUid: 'minmax-1' },
         });
 
-        const actionPrompt = getSimpleChoicePrompt(played.finalState, 'geeks_min_maxing_action');
+        const afterOpponentChoice = chooseMinMaxingOpponentPrompt(played.finalState);
+        const actionPrompt = getSimpleChoicePrompt(afterOpponentChoice.finalState, 'geeks_min_maxing_action');
         expect(actionPrompt?.targetType).toBe('generic');
         const expandOption = actionPrompt.options.find((option: any) => option.value?.cardUid === 'expand-1');
         expect(expandOption).toBeTruthy();
 
-        const afterActionChoice = respondToPrompt(played.finalState, expandOption.id, '0', fixedRandom as any);
+        const afterActionChoice = respondToPrompt(afterOpponentChoice.finalState, expandOption.id, '0', fixedRandom as any);
         const minionPrompt = getSimpleChoicePrompt(afterActionChoice.finalState, 'geeks_min_maxing_minion');
         const fanOption = minionPrompt.options.find((option: any) => option.value?.minionUid === 'fan-1' || option.value?.uid === 'fan-1');
         expect(fanOption).toBeTruthy();
@@ -1175,7 +1187,7 @@ describe('极客派系隐藏实现批', () => {
         expect(resolved.finalState.core.players['0'].discard.map((card) => card.uid).sort()).toEqual(['deck-2', 'hand-0']);
     });
 
-    it('桌游桌在抽牌后手牌不足 3 张时不会创建交互，而是直接弃掉全部手牌', () => {
+    it('桌游桌在抽牌后只有 1 张手牌时也必须由玩家选择弃牌，不能自动弃掉', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -1196,10 +1208,19 @@ describe('极客派系隐藏实现批', () => {
             now: 1000,
         });
 
-        expect(triggered.matchState).toBeUndefined();
-        const finalCore = applyEvents(core, triggered.events as any);
-        expect(finalCore.players['0'].hand.map((card) => card.uid)).toEqual([]);
-        expect(finalCore.players['0'].discard.map((card) => card.uid)).toEqual(['deck-1']);
+        const afterDrawState = {
+            ...triggered.matchState!,
+            core: applyEvents(core, triggered.events as any),
+        };
+        const prompt = getSimpleChoicePrompt(afterDrawState, 'base_tabletop');
+        const liveOptions = getPromptOptionsGenerator(prompt)?.(afterDrawState, prompt.data) ?? [];
+        expect(liveOptions.map((option) => option.value?.cardUid)).toEqual(['deck-1']);
+        expect(getPromptMulti(prompt)).toEqual({ min: 1, max: 1 });
+
+        const resolved = respondToPromptOptions(afterDrawState, [liveOptions[0].id], '0', fixedRandom as any);
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual([]);
+        expect(resolved.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['deck-1']);
     });
 
     it('嘲讽会按顺序处理多个对手，并分别执行所选效果', () => {
@@ -1282,6 +1303,40 @@ describe('极客派系隐藏实现批', () => {
         expect(destroyEvent?.payload?.destroyerId).toBe('1');
         expect(resolved.finalState.core.bases[0].minions.map((minion) => minion.uid)).toEqual(['awesome-1']);
         expect(resolved.finalState.core.players['1'].discard.map((card) => card.uid)).toContain('fan-1');
+    });
+
+    it('嘲讽只有一个可消灭随从时也必须先保留目标选择', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('griefer-1', 'geeks_griefer', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [
+                makeMinion('only-target', 'geeks_fan', '1', 2),
+            ])],
+        }));
+
+        const played = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'griefer-1' },
+        });
+
+        expect(played.events.some((event: any) => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const destroyPrompt = getSimpleChoicePrompt(played.finalState, 'geeks_griefer_destroy');
+        expect(destroyPrompt.autoResolveIfSingle).toBe(false);
+        const targetOption = destroyPrompt.options.find((option: any) =>
+            option.value?.minionUid === 'only-target' || option.value?.uid === 'only-target');
+        expect(targetOption).toBeTruthy();
+
+        const resolved = respondToPrompt(played.finalState, targetOption.id, '0', fixedRandom as any);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({ minionUid: 'only-target', destroyerId: '1' }),
+        }));
     });
 
     it('嘲讽会跳过没有任何合法效果的对手，直接处理下一位', () => {

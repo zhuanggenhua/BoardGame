@@ -1,6 +1,7 @@
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
     buildAiOwnedBlockingInteractionFallbackActions,
+    createAiActionOutcomeNoBenefitScorer,
     buildDeterministicAiNoise,
     createAiLegalActionId,
     createActionKindScorer,
@@ -12,11 +13,15 @@ import {
     OPTIONAL_SKIP_AI_HINT,
     pickBestLocalAiActionEvaluation,
     withAiActionStrategyTags,
+    getCachedAiActionOutcome,
+    isAiActionOutcomeNoBenefit,
 } from '../../engine/ai';
 import type {
+    AiActionOutcome,
     AiAssignmentEvaluation,
     AiDecisionContext,
     AiHint,
+    AiInteractionSnapshot,
     AiLegalAction,
     GameAiRuntime,
     LocalAiActionEvaluation,
@@ -31,10 +36,11 @@ import {
     createTimingOpportunitySystem,
 } from '../../engine';
 import { executePipeline, type PipelineConfig } from '../../engine/pipeline';
-import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor, type PromptMultiConfig } from '../../engine/systems/InteractionSystem';
+import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor, type PromptMultiConfig, type SimpleChoiceData } from '../../engine/systems/InteractionSystem';
 import { SmashUpDomain, smashUpFlowHooks } from './domain';
 import {
     SU_COMMANDS,
+    SU_EVENTS,
     getCurrentPlayerId,
     type ActionCardDef,
     type AbilityTag,
@@ -59,7 +65,7 @@ import {
     readSmashUpReactionChoiceValue,
 } from './domain/reactionChoiceInteraction';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
-import { getSmashUpReactionSession } from './domain/reactionSession';
+import { getSmashUpReactionSession, type ReactionChoiceValue } from './domain/reactionSession';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -82,6 +88,7 @@ import {
     getResolvedPlayerFactionIds,
     scoreActionAgainstPlayerProfile,
     scoreFactionSynergy,
+    type SmashUpStrategyProfile,
 } from './aiProfiles';
 
 type SmashUpState = MatchState<SmashUpCore>;
@@ -138,6 +145,13 @@ type SmashUpTalentSimulationResult = {
     unresolved: boolean;
     executedSteps: number;
 };
+type SmashUpPlayableActionOutcome = AiActionOutcome & {
+    positionDelta: number;
+    noValidTargets: boolean;
+    hasMeaningfulEffect: boolean;
+    hasOwnedInteraction: boolean;
+    eventTypes: string[];
+};
 
 const SMASHUP_AI_SIMULATION_MAX_STEPS = 4;
 const smashUpAiSimulationPipelineConfig: PipelineConfig<SmashUpCore, SmashUpCommand, SmashUpEvent> = {
@@ -152,7 +166,10 @@ const smashUpAiSimulationPipelineConfig: PipelineConfig<SmashUpCore, SmashUpComm
         createSimpleChoiceSystem(),
         createEventStreamSystem(),
         createSmashUpEventSystem(),
-        createTimingOpportunitySystem(SmashUpDomain, createSmashUpTimingOpportunitySystemConfig()),
+        createTimingOpportunitySystem<SmashUpCore, SmashUpCommand, SmashUpEvent, ReactionChoiceValue>(
+            SmashUpDomain,
+            createSmashUpTimingOpportunitySystemConfig(),
+        ),
     ],
 };
 const smashUpAiSimulationRandom = {
@@ -162,6 +179,7 @@ const smashUpAiSimulationRandom = {
     range: (min: number, max: number) => Math.floor((min + max) / 2),
 };
 const smashUpTalentSimulationCache = new WeakMap<AiDecisionContext, Map<string, SmashUpTalentSimulationResult | null>>();
+const smashUpPlayableActionOutcomeCache = new WeakMap<AiDecisionContext, Map<string, SmashUpPlayableActionOutcome | null>>();
 
 const isInteractionControlValue = (value: unknown): boolean => {
     if (!value || typeof value !== 'object') return false;
@@ -956,7 +974,7 @@ const getProjectedPositionDelta = (
     return projectedPosition - currentPosition;
 };
 
-const buildAiInteractionSnapshotFromState = (state: SmashUpState) => {
+const buildAiInteractionSnapshotFromState = (state: SmashUpState): AiInteractionSnapshot | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
     if (!current || current.kind !== 'simple-choice') return null;
     const data = current.data as {
@@ -969,15 +987,92 @@ const buildAiInteractionSnapshotFromState = (state: SmashUpState) => {
         kind: current.kind,
         sourceId: data?.sourceId,
         playerId: current.playerId,
-        options: (data?.options ?? []).map((option) => ({
+        options: (data?.options ?? [])
+            .filter((option): option is SmashUpInteractionOption & { id: string } => typeof option.id === 'string')
+            .map((option) => ({
             id: option.id,
             label: option.label,
             disabled: option.disabled,
             displayMode: option.displayMode,
             _ai: option._ai,
-        })),
+            })),
         multi: data?.multi,
     };
+};
+
+const isNoValidTargetsFeedbackEvent = (event: { type?: unknown; payload?: unknown }): boolean => {
+    if (event.type !== SU_EVENTS.ABILITY_FEEDBACK) return false;
+    const payload = event.payload as { messageKey?: unknown; feedbackKey?: unknown } | undefined;
+    return payload?.messageKey === 'feedback.no_valid_targets'
+        || payload?.feedbackKey === 'feedback.no_valid_targets';
+};
+
+const isMeaningfulPlayableActionEvent = (event: { type?: unknown }): boolean => {
+    if (typeof event.type !== 'string') return false;
+    if (event.type === SU_EVENTS.ACTION_PLAYED || event.type === SU_EVENTS.ABILITY_FEEDBACK) return false;
+    if (event.type.startsWith('SYS_')) return false;
+    return true;
+};
+
+function projectSmashUpPlayableActionOutcome(args: {
+    context: AiDecisionContext;
+    action: AiLegalAction;
+}): SmashUpPlayableActionOutcome | null {
+    if (args.action.kind !== 'play-action' && args.action.kind !== 'response-play-action') return null;
+
+    return getCachedAiActionOutcome(
+        smashUpPlayableActionOutcomeCache,
+        args.context,
+        args.action,
+        () => {
+            const command = args.action.commands[0];
+            if (!command) return null;
+
+            const initialState = args.context.visibleState as SmashUpState;
+            const pipelineResult = executePipeline(
+                smashUpAiSimulationPipelineConfig,
+                initialState,
+                {
+                    type: command.type,
+                    playerId: args.context.playerId,
+                    payload: command.payload,
+                    timestamp: 0,
+                } as SmashUpCommand,
+                smashUpAiSimulationRandom,
+                Object.keys(initialState.core.players) as PlayerId[],
+            );
+            if (!pipelineResult.success) return null;
+
+            const simulatedState = pipelineResult.state as SmashUpState;
+            const positionDelta = Number((evaluateSmashUpPosition(simulatedState, args.context.playerId) - evaluateSmashUpPosition(initialState, args.context.playerId)).toFixed(3));
+            const noValidTargets = pipelineResult.events.some(isNoValidTargetsFeedbackEvent);
+            const hasMeaningfulEffect = pipelineResult.events.some(isMeaningfulPlayableActionEvent);
+            const hasOwnedInteraction = (simulatedState.sys.interaction?.current as EngineInteractionDescriptor | undefined)?.playerId === args.context.playerId;
+            const eventTypes = pipelineResult.events
+                .map((event) => String(event.type))
+                .filter((eventType, index, eventTypeList) => eventTypeList.indexOf(eventType) === index);
+            return {
+                actionId: args.action.actionId,
+                actionKind: args.action.kind,
+                status: 'succeeded',
+                utilityDelta: positionDelta,
+                hasMeaningfulEffect,
+                hasOwnedFollowUp: hasOwnedInteraction,
+                feedbackKeys: noValidTargets ? ['feedback.no_valid_targets'] : [],
+                tags: noValidTargets ? ['no-valid-target'] : [],
+                eventTypes,
+                positionDelta,
+                noValidTargets,
+                hasOwnedInteraction,
+            };
+        },
+    );
+}
+
+const isNoBenefitSmashUpPlayableAction = (outcome: SmashUpPlayableActionOutcome | null): boolean => {
+    return isAiActionOutcomeNoBenefit(outcome, {
+        treatNonPositiveUtilityAsNoBenefit: true,
+    });
 };
 
 function simulateSmashUpTalentAction(args: {
@@ -1065,6 +1160,9 @@ const shouldHoldPhaseForSmashUpAction = (
     action: AiLegalAction,
 ): boolean => {
     if (action.kind === 'response-pass' || action.kind === 'discard-to-limit') return false;
+    if (action.kind === 'play-action' || action.kind === 'response-play-action') {
+        return !isNoBenefitSmashUpPlayableAction(projectSmashUpPlayableActionOutcome({ context, action }));
+    }
     if (action.kind !== 'use-talent') return true;
     const talentSimulation = simulateSmashUpTalentAction({ context, action });
     return (talentSimulation?.positionDelta ?? 0) > 0;
@@ -1161,6 +1259,16 @@ const projectSmashUpAction = (args: {
 
     if (args.action.kind === 'play-action' || args.action.kind === 'response-play-action') {
         const cardMetrics = getActionCardAiMetrics(typeof args.action.metadata?.defId === 'string' ? args.action.metadata.defId : undefined);
+        const actionOutcome = projectSmashUpPlayableActionOutcome(args);
+        if (isNoBenefitSmashUpPlayableAction(actionOutcome)) {
+            return {
+                score: Number((-160 * scale).toFixed(3)),
+                reason: actionOutcome?.noValidTargets
+                    ? '行动牌预演只有“没有有效目标”反馈，不把能打出当收益'
+                    : '行动牌预演没有产生实际收益，不空耗行动牌',
+                metadata: { actionOutcome },
+            };
+        }
         if (baseIndex === null) {
             const score = args.action.kind === 'response-play-action' && urgency <= 0
                 ? Number(((-46 + strategyBonus * 0.2 + (cardMetrics.extraAction ?? 0) * 0.8) * scale).toFixed(3))
@@ -1170,7 +1278,7 @@ const projectSmashUpAction = (args: {
             return score === 0 ? null : {
                 score,
                 reason: '高难度会优先保留与当前抢分节奏相关的行动牌窗口',
-                metadata: { urgency, strategyBonus, strategyTags: strategyFit?.tags },
+                metadata: { urgency, strategyBonus, strategyTags: strategyFit?.tags, actionOutcome },
             };
         }
 
@@ -1212,6 +1320,7 @@ const projectSmashUpAction = (args: {
                 gapBefore: basePotential.gapBefore,
                 ownAward: basePotential.ownAward,
                 bestOpponentAward: basePotential.bestOpponentAward,
+                actionOutcome,
             },
         };
     }
@@ -1437,9 +1546,14 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         sourceId?: string;
         multi?: PromptMultiConfig;
     };
-    const resolvedOptions = isSmashUpReactionChoiceInteraction(current)
-        ? getSmashUpReactionChoiceOptions(state, current)
-        : getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
+    const resolvedOptions: SmashUpInteractionOption[] = (
+        isSmashUpReactionChoiceInteraction(current)
+            ? getSmashUpReactionChoiceOptions(state, current)
+            : getFreshSimpleChoiceOptions(
+                state,
+                current as EngineInteractionDescriptor<SimpleChoiceData<unknown>>,
+            )
+    ).map((option) => option as SmashUpInteractionOption);
     const options = resolvedOptions.filter((option): option is Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption => {
         return typeof option.id === 'string' && option.disabled !== true;
     });
@@ -1648,6 +1762,7 @@ const buildPlayMinionAction = (
 
 const buildPlayActionCandidates = (
     state: SmashUpState,
+    playerId: PlayerId,
     card: CardInstance,
     options?: { inResponseWindow?: boolean },
 ): AiLegalAction[] => {
@@ -1753,7 +1868,7 @@ const buildPlayableCardActions = (
         }
 
         if (isCardActionLike(card)) {
-            for (const action of buildPlayActionCandidates(state, card, {
+            for (const action of buildPlayActionCandidates(state, playerId, card, {
                 inResponseWindow: options?.inResponseWindow,
             })) {
                 appendAction(actions, state, playerId, action);
@@ -2145,6 +2260,19 @@ const minionTempoScorer: LocalAiActionScorer = {
     },
 };
 
+const playableActionOutcomeScorer: LocalAiActionScorer = createAiActionOutcomeNoBenefitScorer({
+    id: 'playable-action-outcome',
+    actionKinds: ['play-action', 'response-play-action'],
+    projectOutcome: projectSmashUpPlayableActionOutcome,
+    noBenefitScore: -180,
+    treatNonPositiveUtilityAsNoBenefit: true,
+    getReason({ outcome }) {
+        return (outcome as SmashUpPlayableActionOutcome).noValidTargets
+            ? '行动牌结算只会提示没有有效目标，不能因为能打出就加节奏分'
+            : '行动牌结算没有实际收益，跳过优先于空耗行动牌';
+    },
+});
+
 const actionTempoScorer: LocalAiActionScorer = {
     id: 'action-tempo',
     score(context, action) {
@@ -2356,7 +2484,7 @@ const estimateSmashUpReactionChoiceUrgency = (
         const targetBaseIndex = typeof choiceValue.baseIndex === 'number'
             ? choiceValue.baseIndex
             : undefined;
-        const power = getMinionLikePower(card?.defId) ?? 0;
+        const power = card ? (getMinionLikePower(card.defId) ?? 0) : 0;
 
         let score = 8 + power * 6;
         if (targetBaseIndex !== undefined) {
@@ -2473,7 +2601,7 @@ const strategyProfileScorer = createProfileAwareActionScorer({
         const state = context.visibleState as SmashUpState;
         const urgentBasePressure = context.legalActions.some((candidate) => hasUrgentBasePressure(candidate));
         const scored = scoreActionAgainstPlayerProfile({
-            profile,
+            profile: profile as SmashUpStrategyProfile,
             actionKind: action.kind,
             cardTags: actionTags,
             phase: state.sys.phase as string | undefined,
@@ -2663,6 +2791,7 @@ const smashUpTalentFollowUpScorers: LocalAiActionScorer[] = [
     interactionOrderScorer,
     strategyProfileScorer,
     minionTempoScorer,
+    playableActionOutcomeScorer,
     actionTempoScorer,
     urgentBaseTempoScorer,
     responsePassScorer,
@@ -2681,6 +2810,7 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
         factionScorer,
         setupFactionRandomScorer,
         minionTempoScorer,
+        playableActionOutcomeScorer,
         actionTempoScorer,
         urgentBaseTempoScorer,
         limitedRelativeUtilityScorer,
@@ -2710,6 +2840,9 @@ export const smashUpAiRuntime: GameAiRuntime = {
     gameId: 'smashup',
     buildLegalActions: buildSmashUpAiLegalActions,
     defaultMinimumActionDelayMs: 3000,
+    projectActionOutcome(args) {
+        return projectSmashUpPlayableActionOutcome(args);
+    },
     resolveOnlineDecisionVisibility(args) {
         if (shouldUseSharedDecisionViewForReactionOrdering({
             playerId: args.playerId,

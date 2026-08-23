@@ -1,8 +1,11 @@
 import type { PlayerId } from '../../../engine/types';
+import type { PlayerId } from '../../../engine/types';
+import { createSimpleChoice, queueInteraction, type PromptOption, type SimpleChoiceConfig } from '../../../engine/systems/InteractionSystem';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     buildAbilityFeedback,
+    createSkipOption,
     buildStandardDrawEvents,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedReturnEvents,
@@ -11,16 +14,18 @@ import {
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
 import { createEffectProgram } from '../domain/abilityRuntime';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerBaseAbility } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
+import { getCardDef } from '../data/cards';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     registerBaseVpModifier,
     registerCardAbilitySuppression,
     registerTrigger,
 } from '../domain/ongoingEffects';
-import type { TriggerContext } from '../domain/ongoingEffects';
-import type { CardToDeckBottomEvent, DeckReorderedEvent, OngoingDetachedEvent, OngoingAttachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
+import type { CardInstance, CardToDeckBottomEvent, DeckReorderedEvent, OngoingDetachedEvent, OngoingAttachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import {
     collectCharacterModifiers,
@@ -28,7 +33,6 @@ import {
     getActionControllerId,
     getActionOwnerId,
     isCharacterModifier,
-    recoverFirstDiscardCard,
     revealTopAndDrawMatches,
 } from './disney_shared';
 
@@ -47,15 +51,183 @@ const ZOMBIE_DUCK_TOY = 'nightmare_before_christmas_zombie_duck_toy';
 const BASE_HALLOWEEN_TOWN = 'base_halloween_town';
 const BASE_SPIRAL_HILL = 'base_spiral_hill';
 
-function jackOnPlay(ctx: AbilityContext): AbilityResult {
-    return {
-        events: recoverFirstDiscardCard(ctx, card => isCharacterModifier(card.defId), JACK),
-    };
+type NightmareCardChoice = {
+    cardUid?: string;
+    defId?: string;
+    ownerId?: PlayerId;
+    zone?: 'hand' | 'discard';
+    skip?: boolean;
+};
+
+type NightmareModifierChoice = {
+    cardUid?: string;
+    defId?: string;
+    ownerId?: PlayerId;
+    baseIndex?: number;
+    hostUid?: string;
+    hostDefId?: string;
+    targetBaseIndex?: number;
+    targetBaseDefId?: string;
+    targetMinionUid?: string;
+    targetMinionDefId?: string;
+    mode?: 'counter' | 'draw';
+    skip?: boolean;
+};
+
+function cardLabel(defId: string): string {
+    return getCardDef(defId)?.name ?? defId;
 }
 
-function jackOnCharacterModifierPlayed(ctx: TriggerContext): SmashUpEvent[] {
+function queueNightmarePrompt<T>(
+    ctx: Pick<AbilityContext, 'matchState' | 'playerId' | 'now'>,
+    sourceId: string,
+    title: string,
+    titleKey: string,
+    options: PromptOption<T>[],
+    targetType: 'generic' | 'hand' | 'discard' | 'minion' | 'base' = 'generic',
+    continuationContext?: Record<string, unknown>,
+    config: Partial<Pick<SimpleChoiceConfig, 'autoRefresh' | 'genericIntent' | 'multi' | 'responseValidationMode'>> = {},
+): AbilityResult {
+    const interaction = createSimpleChoice(
+        `${sourceId}_${ctx.now}`,
+        ctx.playerId,
+        title,
+        options,
+        {
+            ...config,
+            titleKey,
+            sourceId,
+            targetType,
+            autoResolveIfSingle: false,
+            responseValidationMode: config.responseValidationMode ?? 'live',
+            ...(targetType === 'generic' ? { genericIntent: 'card-pool' as const } : {}),
+        },
+    );
+    if (continuationContext) {
+        (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = continuationContext;
+    }
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function buildCharacterModifierCardOptions(
+    cards: CardInstance[],
+    zone: 'hand' | 'discard',
+): PromptOption<NightmareCardChoice>[] {
+    return cards
+        .filter(card => isCharacterModifier(card.defId))
+        .map(card => ({
+            id: `${zone}-${card.uid}`,
+            label: cardLabel(card.defId),
+            value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner, zone },
+            displayMode: 'card' as const,
+            displayCard: { defId: card.defId, cardUid: card.uid },
+        }));
+}
+
+function buildAttachedModifierOptions(
+    state: SmashUpCore,
+    baseIndex: number | undefined,
+    ownerId?: PlayerId,
+): PromptOption<NightmareModifierChoice>[] {
+    return collectCharacterModifiers(state, baseIndex)
+        .filter(entry => ownerId === undefined || getActionOwnerId(entry.action) === ownerId)
+        .map(entry => ({
+            id: `modifier-${entry.action.uid}`,
+            label: `${cardLabel(entry.action.defId)} @ ${cardLabel(entry.host.defId)}`,
+            value: {
+                cardUid: entry.action.uid,
+                defId: entry.action.defId,
+                ownerId: getActionOwnerId(entry.action),
+                baseIndex: entry.baseIndex,
+                hostUid: entry.host.uid,
+                hostDefId: entry.host.defId,
+            },
+            displayMode: 'card' as const,
+            displayCard: { defId: entry.action.defId, cardUid: entry.action.uid },
+        }));
+}
+
+function buildModifierMoveOptions(state: SmashUpCore): PromptOption<NightmareModifierChoice>[] {
+    const modifiers = collectCharacterModifiers(state);
+    const minions = state.bases.flatMap((base, baseIndex) =>
+        base.minions.map(minion => ({ minion, baseIndex })));
+    return modifiers.flatMap(entry =>
+        minions
+            .filter(destination => destination.minion.uid !== entry.host.uid)
+            .map(destination => ({
+                id: `move-${entry.action.uid}-${destination.minion.uid}`,
+                label: `${cardLabel(entry.action.defId)} -> ${cardLabel(destination.minion.defId)}`,
+                value: {
+                    cardUid: entry.action.uid,
+                    defId: entry.action.defId,
+                    ownerId: getActionOwnerId(entry.action),
+                    baseIndex: entry.baseIndex,
+                    hostUid: entry.host.uid,
+                    hostDefId: entry.host.defId,
+                    targetBaseIndex: destination.baseIndex,
+                    targetMinionUid: destination.minion.uid,
+                    targetMinionDefId: destination.minion.defId,
+                },
+                displayMode: 'card' as const,
+                displayCard: { defId: entry.action.defId, cardUid: entry.action.uid },
+            })));
+}
+
+function findAttachedModifier(
+    state: SmashUpCore,
+    choice: NightmareModifierChoice,
+) {
+    if (!choice.cardUid || !choice.defId || choice.baseIndex === undefined || !choice.hostUid) return undefined;
+    const host = state.bases[choice.baseIndex]?.minions.find(minion => minion.uid === choice.hostUid);
+    const action = host?.attachedActions.find(candidate =>
+        candidate.uid === choice.cardUid
+        && candidate.defId === choice.defId
+        && (choice.ownerId === undefined || getActionOwnerId(candidate) === choice.ownerId));
+    return host && action ? { host, action, baseIndex: choice.baseIndex } : undefined;
+}
+
+function jackOnPlay(ctx: AbilityContext): AbilityResult {
+    const options = buildCharacterModifierCardOptions(ctx.state.players[ctx.playerId]?.discard ?? [], 'discard');
+    if (options.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
+    }
+    if (ctx.matchState) {
+        return queueNightmarePrompt(
+            ctx,
+            `${JACK}_recover`,
+            'Jack Skellington：选择弃牌堆中的角色修正牌加入手牌',
+            'ui.nightmare_before_christmas_jack_skellington_recover_title',
+            options,
+            'discard',
+        );
+    }
+    return { events: [] };
+}
+
+function jackOnCharacterModifierPlayed(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (ctx.triggerCardDefId === undefined || !isCharacterModifier(ctx.triggerCardDefId)) return [];
     if (ctx.playerId !== ctx.sourceControllerId || ctx.sourceBaseIndex === undefined || !ctx.sourceCardUid) return [];
+    if (ctx.matchState) {
+        const minionOptions: PromptOption<NightmareModifierChoice>[] = ctx.state.bases.flatMap((base, baseIndex) =>
+            base.minions.map(minion => ({
+                id: `counter-${baseIndex}-${minion.uid}`,
+                label: `${cardLabel(minion.defId)} @ ${cardLabel(base.defId)}`,
+                value: { mode: 'counter' as const, baseIndex, targetMinionUid: minion.uid, targetMinionDefId: minion.defId },
+                displayMode: 'card' as const,
+            })));
+        return queueNightmarePrompt(
+            { matchState: ctx.matchState, playerId: ctx.sourceControllerId, now: ctx.now },
+            `${JACK}_trigger`,
+            'Jack Skellington：选择角色放置 +1 指示物，或抽 1 张牌',
+            'ui.nightmare_before_christmas_jack_skellington_trigger_title',
+            [
+                { id: 'draw', label: '抽 1 张牌', labelKey: 'ui.nightmare_before_christmas_jack_skellington_draw_option', value: { mode: 'draw' }, displayMode: 'button' },
+                ...minionOptions,
+            ],
+            'generic',
+            { sourceCardUid: ctx.sourceCardUid, sourceBaseIndex: ctx.sourceBaseIndex },
+        ) as TriggerResult;
+    }
     const base = ctx.state.bases[ctx.sourceBaseIndex];
     const target = base?.minions.find(minion => minion.controller === ctx.sourceControllerId);
     if (!target) {
@@ -79,23 +251,36 @@ function jackOnCharacterModifierPlayed(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 function drFinkelsteinTalent(ctx: AbilityContext): AbilityResult {
-    const modifier = collectCharacterModifiers(ctx.state)[0];
-    if (!modifier) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
-    const destination = ctx.state.bases
-        .flatMap((base, baseIndex) => base.minions.map(minion => ({ minion, baseIndex })))
-        .find(candidate => candidate.minion.uid !== modifier.host.uid);
-    if (!destination) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    const options = buildModifierMoveOptions(ctx.state);
+    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    if (ctx.matchState) {
+        return queueNightmarePrompt(
+            ctx,
+            `${DR_FINKELSTEIN}_move_modifier`,
+            'Dr. Finkelstein：选择要移动的角色修正牌和新角色',
+            'ui.nightmare_before_christmas_dr_finkelstein_move_modifier_title',
+            options,
+        );
+    }
+    const selected = options[0].value;
+    const modifier = findAttachedModifier(ctx.state, selected);
+    const destination = selected.targetBaseIndex !== undefined && selected.targetMinionUid
+        ? ctx.state.bases[selected.targetBaseIndex]?.minions.find(minion => minion.uid === selected.targetMinionUid)
+        : undefined;
+    if (!modifier || !destination || selected.targetBaseIndex === undefined) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    }
     return {
         events: [{
             type: SU_EVENTS.ONGOING_ATTACHED,
             payload: {
-                cardUid: modifier.action.uid,
-                defId: modifier.action.defId,
+                cardUid: selected.cardUid,
+                defId: selected.defId,
                 ownerId: getActionOwnerId(modifier.action),
                 sourcePlayerId: ctx.playerId,
                 targetType: 'minion',
-                targetBaseIndex: destination.baseIndex,
-                targetMinionUid: destination.minion.uid,
+                targetBaseIndex: selected.targetBaseIndex,
+                targetMinionUid: destination.uid,
                 metadata: modifier.action.metadata,
                 talentUsed: modifier.action.talentUsed,
             },
@@ -105,12 +290,37 @@ function drFinkelsteinTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function sallyTalent(ctx: AbilityContext): AbilityResult {
+    const options = buildCharacterModifierCardOptions(ctx.state.players[ctx.playerId]?.hand ?? [], 'hand');
+    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    if (ctx.matchState) {
+        return queueNightmarePrompt(
+            ctx,
+            `${SALLY}_play_modifier`,
+            'Sally：选择要作为额外行动打出的角色修正牌',
+            'ui.nightmare_before_christmas_sally_play_modifier_title',
+            options,
+            'hand',
+        );
+    }
     const card = ctx.state.players[ctx.playerId]?.hand.find(candidate => isCharacterModifier(candidate.defId));
     if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     return { events: [grantContextualExtraAction(ctx, SALLY, { restrictToCardUid: card.uid })] };
 }
 
 function lockShockBarrelSpecial(ctx: AbilityContext): AbilityResult {
+    const options = buildCharacterModifierCardOptions(ctx.state.players[ctx.playerId]?.hand ?? [], 'hand');
+    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    if (ctx.matchState) {
+        return queueNightmarePrompt(
+            ctx,
+            `${LOCK_SHOCK_BARREL}_play_modifier`,
+            'Lock, Shock & Barrel：选择要打到计分基地的角色修正牌',
+            'ui.nightmare_before_christmas_lock_shock_and_barrel_play_modifier_title',
+            options,
+            'hand',
+            { baseIndex: ctx.baseIndex },
+        );
+    }
     const card = ctx.state.players[ctx.playerId]?.hand.find(candidate => isCharacterModifier(candidate.defId));
     if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     return {
@@ -189,6 +399,32 @@ function oogieBoogie(ctx: AbilityContext): AbilityResult {
     const target = base?.minions.find(minion => minion.uid === ctx.targetMinionUid);
     const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
     if (!target || toBaseIndex === undefined) return { events: [] };
+    const options = ctx.state.bases
+        .map((candidateBase, targetBaseIndex) => ({
+            id: `base-${targetBaseIndex}`,
+            label: cardLabel(candidateBase.defId),
+            value: {
+                baseIndex: ctx.baseIndex,
+                hostUid: target.uid,
+                hostDefId: target.defId,
+                targetBaseIndex,
+                targetBaseDefId: candidateBase.defId,
+            },
+            displayMode: 'button' as const,
+        }))
+        .filter(option => option.value.targetBaseIndex !== ctx.baseIndex);
+    if (ctx.matchState) {
+        return queueNightmarePrompt(
+            ctx,
+            `${OOGIE_BOOGIE}_move_character`,
+            'Oogie Boogie：选择是否移动这个角色到另一个基地',
+            'ui.nightmare_before_christmas_oogie_boogie_move_character_title',
+            [createSkipOption('不移动', 'ui.skip') as PromptOption<NightmareModifierChoice>, ...options],
+            'base',
+            { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId },
+            { autoRefresh: 'base' },
+        );
+    }
     return {
         events: [{
             type: SU_EVENTS.MINION_MOVED,
@@ -210,7 +446,19 @@ function oogieBoogie(ctx: AbilityContext): AbilityResult {
 }
 
 function winterSurprise(ctx: AbilityContext): AbilityResult {
+    const options = buildCharacterModifierCardOptions(ctx.state.players[ctx.playerId]?.discard ?? [], 'discard');
     const card = ctx.state.players[ctx.playerId]?.discard.find(candidate => isCharacterModifier(candidate.defId));
+    if (ctx.matchState && options.length > 0) {
+        return queueNightmarePrompt(
+            ctx,
+            `${WINTER_SURPRISE}_play_modifier`,
+            'Winter Surprise：选择弃牌堆中的角色修正牌作为额外行动打出',
+            'ui.nightmare_before_christmas_winter_surprise_play_modifier_title',
+            options,
+            'discard',
+            { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+        );
+    }
     return {
         events: [
             ...(card ? [recoverCardsFromDiscard(ctx.playerId, [card.uid], WINTER_SURPRISE, ctx.now)] : []),
@@ -271,9 +519,22 @@ function sandyClawsAfterScoring(ctx: TriggerContext): SmashUpEvent[] {
 function halloweenTownAfterScoring(ctx: BaseAbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
+    const options = buildAttachedModifierOptions(ctx.state, ctx.baseIndex, ctx.playerId);
+    if (ctx.matchState && options.length > 0) {
+        return queueNightmarePrompt(
+            { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now },
+            `${BASE_HALLOWEEN_TOWN}_modifiers`,
+            'Halloween Town：选择要洗入牌库的角色修正牌',
+            'ui.base_halloween_town_modifiers_title',
+            options,
+            'generic',
+            { baseIndex: ctx.baseIndex },
+            { multi: { min: 0, max: options.length }, responseValidationMode: 'live', genericIntent: 'card-pool' },
+        );
+    }
     const selected = base.minions.flatMap(minion =>
         minion.attachedActions
-            .filter(action => isCharacterModifier(action.defId))
+            .filter(action => isCharacterModifier(action.defId) && getActionOwnerId(action) === ctx.playerId)
             .map(action => ({ action, ownerId: getActionOwnerId(action) })));
     if (selected.length === 0) return { events: [] };
 
@@ -316,6 +577,23 @@ function halloweenTownAfterScoring(ctx: BaseAbilityContext): AbilityResult {
 function spiralHillAfterScoring(ctx: BaseAbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
+    const options: PromptOption<NightmareCardChoice | NightmareModifierChoice>[] = [
+        createSkipOption('不返回角色修正牌', 'ui.skip') as PromptOption<NightmareCardChoice | NightmareModifierChoice>,
+        ...buildCharacterModifierCardOptions(ctx.state.players[ctx.playerId]?.discard ?? [], 'discard'),
+        ...buildAttachedModifierOptions(ctx.state, ctx.baseIndex, ctx.playerId),
+    ];
+    if (ctx.matchState && options.length > 1) {
+        return queueNightmarePrompt(
+            { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now },
+            `${BASE_SPIRAL_HILL}_modifier`,
+            'Spiral Hill：选择要返回手牌的角色修正牌',
+            'ui.base_spiral_hill_modifier_title',
+            options,
+            'generic',
+            { baseIndex: ctx.baseIndex },
+            { responseValidationMode: 'live', genericIntent: 'card-pool' },
+        );
+    }
     const playerIds = Array.from(new Set(base.minions.map(minion => minion.controller)));
     const events: SmashUpEvent[] = [];
     for (const playerId of playerIds) {
@@ -362,6 +640,261 @@ function zombieDuckToyVp(state: SmashUpCore, baseIndex: number, playerId: Player
 }
 
 export function registerNightmareBeforeChristmasAbilities(): void {
+    registerInteractionHandler(`${JACK}_recover`, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as NightmareCardChoice;
+        const card = selected.cardUid && selected.defId
+            ? state.core.players[playerId]?.discard.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isCharacterModifier(candidate.defId))
+            : undefined;
+        return {
+            state,
+            events: card
+                ? [recoverCardsFromDiscard(playerId, [card.uid], JACK, timestamp)]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${JACK}_trigger`, (state, playerId, value, data, random, timestamp) => {
+        const selected = value as NightmareModifierChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.mode === 'draw') {
+            return {
+                state,
+                events: buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+            };
+        }
+        const target = selected.baseIndex !== undefined && selected.targetMinionUid
+            ? state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.targetMinionUid)
+            : undefined;
+        return {
+            state,
+            events: target && selected.baseIndex !== undefined
+                ? [{
+                    type: SU_EVENTS.POWER_COUNTER_ADDED,
+                    payload: {
+                        minionUid: target.uid,
+                        baseIndex: selected.baseIndex,
+                        amount: 1,
+                        reason: JACK,
+                        sourcePlayerId: playerId,
+                        sourceCardUid: continuation?.sourceCardUid,
+                        sourceDefId: JACK,
+                        sourceControllerId: playerId,
+                        sourceBaseIndex: continuation?.sourceBaseIndex,
+                    },
+                    timestamp,
+                } as SmashUpEvent]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${DR_FINKELSTEIN}_move_modifier`, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as NightmareModifierChoice;
+        const modifier = findAttachedModifier(state.core, selected);
+        const destination = selected.targetBaseIndex !== undefined && selected.targetMinionUid
+            ? state.core.bases[selected.targetBaseIndex]?.minions.find(minion =>
+                minion.uid === selected.targetMinionUid
+                && minion.uid !== selected.hostUid)
+            : undefined;
+        return {
+            state,
+            events: modifier && destination && selected.targetBaseIndex !== undefined
+                ? [{
+                    type: SU_EVENTS.ONGOING_ATTACHED,
+                    payload: {
+                        cardUid: modifier.action.uid,
+                        defId: modifier.action.defId,
+                        ownerId: getActionOwnerId(modifier.action),
+                        sourcePlayerId: playerId,
+                        targetType: 'minion',
+                        targetBaseIndex: selected.targetBaseIndex,
+                        targetMinionUid: destination.uid,
+                        metadata: modifier.action.metadata,
+                        talentUsed: modifier.action.talentUsed,
+                    },
+                    timestamp,
+                } as OngoingAttachedEvent]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${SALLY}_play_modifier`, (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as NightmareCardChoice;
+        const card = selected.cardUid && selected.defId
+            ? state.core.players[playerId]?.hand.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isCharacterModifier(candidate.defId))
+            : undefined;
+        return {
+            state,
+            events: card
+                ? [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, SALLY, { restrictToCardUid: card.uid })]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${LOCK_SHOCK_BARREL}_play_modifier`, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as NightmareCardChoice;
+        const continuation = data?.continuationContext as { baseIndex?: number } | undefined;
+        const card = selected.cardUid && selected.defId
+            ? state.core.players[playerId]?.hand.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isCharacterModifier(candidate.defId))
+            : undefined;
+        return {
+            state,
+            events: card && continuation?.baseIndex !== undefined
+                ? [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, LOCK_SHOCK_BARREL, {
+                    playTiming: 'immediate',
+                    restrictToBase: continuation.baseIndex,
+                    restrictToCardUid: card.uid,
+                })]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${OOGIE_BOOGIE}_move_character`, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as NightmareModifierChoice;
+        if (selected.skip) return { state, events: [] };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceDefId?: string } | undefined;
+        const target = selected.baseIndex !== undefined && selected.hostUid
+            ? state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.hostUid)
+            : undefined;
+        const destination = selected.targetBaseIndex !== undefined ? state.core.bases[selected.targetBaseIndex] : undefined;
+        return {
+            state,
+            events: target && destination && selected.baseIndex !== undefined && selected.targetBaseIndex !== undefined && selected.targetBaseIndex !== selected.baseIndex
+                ? [{
+                    type: SU_EVENTS.MINION_MOVED,
+                    payload: {
+                        minionUid: target.uid,
+                        minionDefId: target.defId,
+                        fromBaseIndex: selected.baseIndex,
+                        toBaseIndex: selected.targetBaseIndex,
+                        sourcePlayerId: playerId,
+                        sourceCardUid: continuation?.sourceCardUid,
+                        sourceDefId: continuation?.sourceDefId ?? OOGIE_BOOGIE,
+                        sourceControllerId: playerId,
+                        sourceBaseIndex: selected.baseIndex,
+                        reason: OOGIE_BOOGIE,
+                    },
+                    timestamp,
+                } as SmashUpEvent]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${WINTER_SURPRISE}_play_modifier`, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as NightmareCardChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceDefId?: string; sourceBaseIndex?: number } | undefined;
+        const card = selected.cardUid && selected.defId
+            ? state.core.players[playerId]?.discard.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isCharacterModifier(candidate.defId))
+            : undefined;
+        return {
+            state,
+            events: card && continuation?.sourceCardUid
+                ? [
+                    recoverCardsFromDiscard(playerId, [card.uid], WINTER_SURPRISE, timestamp),
+                    grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, WINTER_SURPRISE, { restrictToCardUid: card.uid }),
+                    ...buildValidatedCardToDeckBottomEvents(state.core, {
+                        cardUid: continuation.sourceCardUid,
+                        defId: continuation.sourceDefId ?? WINTER_SURPRISE,
+                        ownerId: playerId,
+                        reason: WINTER_SURPRISE,
+                        now: timestamp,
+                        sourcePlayerId: playerId,
+                        sourceCardUid: continuation.sourceCardUid,
+                        sourceDefId: continuation.sourceDefId ?? WINTER_SURPRISE,
+                        sourceControllerId: playerId,
+                        sourceBaseIndex: continuation.sourceBaseIndex,
+                        expectedLocation: 'any',
+                    }),
+                ]
+                : [],
+        };
+    });
+
+    registerInteractionHandler(`${BASE_HALLOWEEN_TOWN}_modifiers`, (state, playerId, value, data, random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as NightmareModifierChoice[];
+        const continuation = data?.continuationContext as { baseIndex?: number } | undefined;
+        const selected = choices
+            .map(choice => findAttachedModifier(state.core, { ...choice, baseIndex: continuation?.baseIndex ?? choice.baseIndex, ownerId: playerId }))
+            .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+        const events: SmashUpEvent[] = [];
+        const selectedByOwner = new Map<PlayerId, string[]>();
+        for (const { action, baseIndex } of selected) {
+            const ownerId = getActionOwnerId(action);
+            events.push(...buildValidatedOngoingDetachEvents(state.core, {
+                cardUid: action.uid,
+                defId: action.defId,
+                ownerId,
+                reason: BASE_HALLOWEEN_TOWN,
+                now: timestamp,
+                expectedLocation: 'minion',
+                sourcePlayerId: playerId,
+                sourceDefId: BASE_HALLOWEEN_TOWN,
+                sourceControllerId: playerId,
+                sourceBaseIndex: baseIndex,
+            }));
+            selectedByOwner.set(ownerId, [...(selectedByOwner.get(ownerId) ?? []), action.uid]);
+        }
+        for (const [ownerId, cardUids] of selectedByOwner) {
+            const owner = state.core.players[ownerId];
+            if (!owner) continue;
+            events.push({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    deckUids: random.shuffle([...owner.deck.map(card => card.uid), ...cardUids]),
+                },
+                timestamp,
+            } as DeckReorderedEvent);
+        }
+        return { state, events };
+    });
+
+    registerInteractionHandler(`${BASE_SPIRAL_HILL}_modifier`, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as NightmareCardChoice & NightmareModifierChoice;
+        if (selected.skip) return { state, events: [] };
+        const continuation = data?.continuationContext as { baseIndex?: number } | undefined;
+        if (selected.zone === 'discard' && selected.cardUid && selected.defId) {
+            const card = state.core.players[playerId]?.discard.find(candidate =>
+                candidate.uid === selected.cardUid
+                && candidate.defId === selected.defId
+                && isCharacterModifier(candidate.defId));
+            return {
+                state,
+                events: card ? [recoverCardsFromDiscard(playerId, [card.uid], BASE_SPIRAL_HILL, timestamp)] : [],
+            };
+        }
+        const modifier = findAttachedModifier(state.core, { ...selected, baseIndex: continuation?.baseIndex ?? selected.baseIndex, ownerId: playerId });
+        return {
+            state,
+            events: modifier
+                ? buildValidatedOngoingDetachEvents(state.core, {
+                    cardUid: modifier.action.uid,
+                    defId: modifier.action.defId,
+                    ownerId: playerId,
+                    reason: BASE_SPIRAL_HILL,
+                    now: timestamp,
+                    expectedLocation: 'minion',
+                    destination: 'hand',
+                    sourcePlayerId: playerId,
+                    sourceDefId: BASE_SPIRAL_HILL,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: modifier.baseIndex,
+                })
+                : [],
+        };
+    });
+
     registerAbilityProgram(JACK, 'onPlay', { program: createEffectProgram(jackOnPlay) });
     registerAbilityProgram(DR_FINKELSTEIN, 'talent', { program: createEffectProgram(drFinkelsteinTalent) });
     registerAbilityProgram(SALLY, 'talent', { program: createEffectProgram(sallyTalent) });

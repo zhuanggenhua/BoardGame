@@ -37,7 +37,7 @@ test('OTA 仅保留资源清单，不携带嵌套游戏资源', () => {
         'logos/zhifubao.jpg',
         'logos/logo_1_grid.png',
         'locales/en/lobby.json',
-        'audio_assets.md',
+        'release-notes.md',
     ]) {
         assert.equal(classifyOtaBundleFile(relativePath), 'remote-skip', relativePath);
     }

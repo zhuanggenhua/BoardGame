@@ -4,7 +4,17 @@ import { getFactionTitans } from '../../data/cards';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 import { fireTriggers } from '../../domain/ongoingEffects';
 import { SU_COMMANDS, SU_EVENTS, type SmashUpCommand, type TitanState } from '../../domain/types';
-import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from '../helpers';
+import {
+    getPromptOption,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 
 describe('Tricksters POD titan', () => {
@@ -132,9 +142,15 @@ describe('Tricksters POD titan', () => {
         } satisfies SmashUpCommand, defaultTestRandom);
 
         expect(result.success).toBe(true);
-        expect(result.events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DISCARDED);
-        expect(result.finalState.core.players['1'].hand).toEqual([]);
-        expect(result.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-discarded-card');
+        expect(result.events.map(event => event.type)).not.toContain(SU_EVENTS.CARDS_DISCARDED);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'titan_tricksters_big_funny_giant_discard_to_play');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const discardOption = getPromptOption(prompt, option => option.value?.cardUid === 'enemy-discarded-card', 'Big Funny Giant discard option');
+        const resolved = respondToPrompt(result.finalState, discardOption.id, '1', defaultTestRandom);
+
+        expect(resolved.events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DISCARDED);
+        expect(resolved.finalState.core.players['1'].hand).toEqual([]);
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-discarded-card');
         expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('enemy-played-minion');
     });
 

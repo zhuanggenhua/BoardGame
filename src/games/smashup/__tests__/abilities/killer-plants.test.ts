@@ -402,7 +402,7 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
         expect(prompt?.autoRefresh ?? getPromptHandlerData(prompt).autoRefresh).toBe('deck');
     });
 
-    it('牌库只有一个合格随从时自动抽入手牌、增加本回合随从次数并重排牌库', () => {
+    it('牌库只有一个合格随从时仍创建选择 prompt，玩家确认后打出', () => {
         const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const state = makeState({
             bases: [makeBase({ minions: [trap] })],
@@ -427,14 +427,21 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
         );
 
         expect(result.success).toBe(true);
-        expect(result.events.map(event => event.type)).toEqual([
-            SU_EVENTS.TALENT_USED,
-            SU_EVENTS.CARDS_DRAWN,
-            SU_EVENTS.LIMIT_MODIFIED,
-            SU_EVENTS.MINION_PLAYED,
-            SU_EVENTS.DECK_REORDERED,
-        ]);
-        const minionPlayedEvent = result.events.find(event => event.type === SU_EVENTS.MINION_PLAYED);
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'killer_plant_venus_man_trap_search');
+        expect(getPromptSourceId(prompt)).toBe('killer_plant_venus_man_trap_search');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'd1',
+            'venus man trap single candidate option',
+            '0',
+            dummyRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        const minionPlayedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED);
         expect(minionPlayedEvent).toEqual(
             expect.objectContaining({
                 type: SU_EVENTS.MINION_PLAYED,
@@ -759,6 +766,48 @@ describe('killer_plant_sprout 回合开始自毁与检索', () => {
         expect(promptData.responseValidationMode).toBe('live');
         expect(getPromptOptions(current).some((opt: any) => opt.id === 'skip')).toBe(true);
         expect(getPromptOptions(current).filter((opt: any) => opt.displayMode === 'card')).toHaveLength(2);
+    });
+
+    it('真实交互下嫩芽只有一个合格候选时仍等待玩家确认', () => {
+        const state = makeState({
+            bases: [makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] })],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('wl-1', 'killer_plant_water_lily', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const matchState = {
+            core: state,
+            sys: { phase: 'startTurn', interaction: { current: undefined, queue: [] } },
+        } as any;
+
+        const result = fireTriggers(state, 'onTurnStart', {
+            state,
+            matchState,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        const current = getSimpleChoicePrompt(result.matchState as any, 'killer_plant_sprout_search');
+        expect(getPromptSourceId(current)).toBe('killer_plant_sprout_search');
+        expect(getPromptHandlerData(current).autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(current).filter((opt: any) => opt.displayMode === 'card')).toHaveLength(1);
+
+        const resolved = respondToPromptOption(
+            result.matchState as any,
+            option => option.value?.cardUid === 'wl-1',
+            'sprout single candidate option',
+            '0',
+            dummyRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(true);
     });
 
     it('多个嫩芽共享唯一候选时不会重复打出同一 UID', () => {
@@ -1338,8 +1387,19 @@ describe('killer_plants POD 数据与特殊回归', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'killer_plant_sprout_search');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
 
-        const minionUids = result.finalState.core.bases[0].minions.map(minion => minion.uid);
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'wl-1',
+            'protected sprout single deck candidate',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        const minionUids = resolved.finalState.core.bases[0].minions.map(minion => minion.uid);
         expect(minionUids).toContain('sprout-1');
         expect(minionUids).toContain('wl-1');
     });
@@ -1428,12 +1488,25 @@ describe('killer_plants POD 数据与特殊回归', () => {
         });
 
         expect(talentResult.success).toBe(true);
-        const drawEvents = talentResult.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
+        expect(talentResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        const prompt = getSimpleChoicePrompt(talentResult.finalState, 'killer_plant_venus_man_trap_search');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            talentResult.finalState,
+            option => option.value?.cardUid === 'sprout-deck',
+            'venus pod single sprout candidate',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        const drawEvents = resolved.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
         expect(drawEvents).toHaveLength(1);
         expect((drawEvents[0] as any).payload.cardUids).toEqual(['sprout-deck']);
-        expect(talentResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
-        expectNoPrompt(talentResult.finalState);
-        const finalMinionUids = talentResult.finalState.core.bases[0].minions.map(minion => minion.uid);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        expectNoPrompt(resolved.finalState);
+        const finalMinionUids = resolved.finalState.core.bases[0].minions.map(minion => minion.uid);
         expect(finalMinionUids).toContain('venus-hand');
         expect(finalMinionUids).toContain('sprout-deck');
     });
@@ -1467,16 +1540,30 @@ describe('killer_plants POD 数据与特殊回归', () => {
         });
 
         expect(result.success).toBe(true);
-        const drawEvents = result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
+        expect(result.finalState.sys.phase).toBe('startTurn');
+        expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'killer_plant_sprout_search');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'wl-1',
+            'sprout pod single water lily candidate',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        const drawEvents = resolved.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
         expect(drawEvents).toHaveLength(2);
         expect((drawEvents[0] as any).payload.cardUids).toEqual(['wl-1']);
         expect((drawEvents[1] as any).payload.cardUids).toEqual(['bud-1']);
 
-        const finalBaseMinionUids = result.finalState.core.bases[0].minions.map(minion => minion.uid);
+        const finalBaseMinionUids = resolved.finalState.core.bases[0].minions.map(minion => minion.uid);
         expect(finalBaseMinionUids).toContain('wl-1');
         expect(finalBaseMinionUids).not.toContain('sprout-1');
-        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['bud-1']);
-        expect(result.finalState.core.players['0'].deck).toHaveLength(0);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['bud-1']);
+        expect(resolved.finalState.core.players['0'].deck).toHaveLength(0);
     });
 
     it('Sprout POD 交互响应打出 Water Lily POD 时，仍应留在同一个 startTurn 窗口内继续抽牌', () => {

@@ -505,6 +505,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                     topTestId: topElement?.closest<HTMLElement>('[data-testid]')?.dataset.testid ?? null,
                     overlapsSameZoneFieldCard: sameZoneFieldCards.some((fieldCard) => overlaps(occupant, fieldCard)),
                     overlapsSpellbookShelf: spellbookShelf ? overlaps(occupant, spellbookShelf) : false,
+                    hasDamageOverlay: Boolean(occupant.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay"]')),
                 };
             });
             const arenaZoneDetails = arenaZones.map((zone) => ({
@@ -533,6 +534,8 @@ test.describe('Mage Wars foundation runtime board', () => {
                     aspectRatio: cardRect.height > 0 ? cardRect.width / cardRect.height : null,
                     zoneCoverage: cardArea > 0 ? ownZoneArea / cardArea : 0,
                     maxOtherZoneCoverage,
+                    visualDamage: Number(card.dataset.visualDamage ?? 0),
+                    hasDamageOverlay: Boolean(card.querySelector('[data-testid="mage-wars-field-card-damage-overlay"]')),
                 };
             });
             return {
@@ -572,6 +575,9 @@ test.describe('Mage Wars foundation runtime board', () => {
                 sourceZoneCount: arenaZones.filter((zone) => zone.dataset.sourceZone === 'true').length,
                 legalTargetZoneCount: arenaZones.filter((zone) => zone.dataset.legalTargetZone === 'true').length,
                 legalMoveZoneCount: arenaZones.filter((zone) => zone.dataset.legalMoveZone === 'true').length,
+                damageTokenImageCount: Array.from(document.images)
+                    .filter((image) => image.currentSrc.includes('/tokens/damage/') || image.src.includes('/tokens/damage/'))
+                    .length,
             };
         });
         expect(desktopLayoutAudit.preparedArea).not.toBeNull();
@@ -622,6 +628,9 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.ownerSide).toBe('seat-right');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
+        expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageOverlay)).toBe(true);
+        expect(desktopLayoutAudit.fieldCards.some((card) => card.visualDamage > 0 && card.hasDamageOverlay)).toBe(true);
+        expect(desktopLayoutAudit.damageTokenImageCount).toBe(0);
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('来源');
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('可选目标');
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('可移动');
@@ -757,7 +766,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(interactionVisualAudit.sourceClassName).toContain('-translate-y-2');
         expect(interactionVisualAudit.sourceFrameClassName).toContain('border-cyan-100');
         expect(interactionVisualAudit.sourceFrameClassName).toContain('border-2');
-        expect(interactionVisualAudit.targetFrameClassName).toContain('border-rose-300/90');
+        expect(interactionVisualAudit.targetFrameClassName).toContain('border-emerald-300/95');
         expect(interactionVisualAudit.legalMoveClassName).toContain('bg-sky-300/14');
         await mkdir(dirname(SCREENSHOT_PATH), { recursive: true });
         await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });

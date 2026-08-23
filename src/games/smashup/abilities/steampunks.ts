@@ -538,12 +538,13 @@ const steampunkCaptainAhabPromptProgram = createPromptProgram<SteampunkPromptCon
         context.playerId,
         '选择要移动到的基地',
         buildCaptainAhabBaseOptions(context.state, context.playerId, context.currentBaseIndex ?? -1),
-        {
-            sourceId: 'steampunk_captain_ahab',
-            titleKey: 'ui.steampunk_captain_ahab_title',
-            targetType: 'base',
-        },
-    ),
+            {
+                sourceId: 'steampunk_captain_ahab',
+                titleKey: 'ui.steampunk_captain_ahab_title',
+                targetType: 'base',
+                autoResolveIfSingle: false,
+            },
+        ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as Partial<{ baseIndex: number }> | undefined;
         if (typeof selected?.baseIndex !== 'number' || !context.sourceCardUid || !context.sourceDefId) {
@@ -582,24 +583,7 @@ const steampunkCaptainAhabProgram = createEffectProgram<AbilityContext, SmashUpC
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (options.length === 1) {
-        return {
-            events: buildValidatedMoveEvents(ctx.state, {
-                minionUid: ctx.cardUid,
-                minionDefId: ctx.defId,
-                fromBaseIndex: currentBaseIndex,
-                toBaseIndex: options[0].value.baseIndex,
-                reason: 'steampunk_captain_ahab',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: currentBaseIndex,
-                sourceKind: 'nonAction',
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {

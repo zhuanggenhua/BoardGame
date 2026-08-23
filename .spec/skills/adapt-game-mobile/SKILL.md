@@ -19,14 +19,13 @@ description: "BoardGame 单游戏移动端适配入口。用于 mobileProfile、
 
 ## 必读
 
-- 移动端历史边界：[`docs/mobile-adaptation.md`](../../../docs/mobile-adaptation.md)
 - 游戏注册与运行时入口：[`openspec/specs/game-registry/spec.md`](../../../openspec/specs/game-registry/spec.md)
 - UI 总原则：[`ui-ux`](../../knowledge/standards/ui-ux.md)
 - 引擎系统边界：[`engine-systems`](../../knowledge/standards/engine-systems.md)
 - 字段与命名：`references/manifest-fields.md`
 - 审查与验收：`references/checklist.md`
 
-通用口径以本 skill 和 [`ui-responsive-layout`](../../knowledge/standards/ui-responsive-layout.md) 为准；旧复盘不能替代当前证据。
+通用口径以本 skill 和 [`ui-responsive-layout`](../../knowledge/standards/ui-responsive-layout.md) 为准；实现入口不清时再查 [`docs/mobile-adaptation.md`](../../../docs/mobile-adaptation.md) 和 [`docs/architecture/ui-dual-platform-architecture.md`](../../../docs/architecture/ui-dual-platform-architecture.md)。旧复盘不能替代当前证据。
 
 ## 核心合同
 

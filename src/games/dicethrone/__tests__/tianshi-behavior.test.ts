@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { ChoiceRequest } from '../../../engine/ChoiceRequest';
 import { buildAiDecisionContext } from '../../../engine/ai';
 import { executePipeline } from '../../../engine/pipeline';
+import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import { DiceThroneDomain } from '../domain';
 import { getChoiceResolvedEventHandler } from '../domain/choiceResolvedEvents';
 import { getCustomActionHandler, resolveEffectsToEvents, type EffectContext } from '../domain/effects';
@@ -14,6 +16,10 @@ import { canRerollBonusDiceSettlement } from '../domain/bonusDiceSettlement';
 import { checkPlayCard } from '../domain/rules';
 import { getUsableTokensForTiming } from '../domain/tokenResponse';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import {
+    buildDiceThroneTokenResponseChoiceCandidates,
+    buildDiceThroneTokenResponseOpportunityId,
+} from '../domain/timingOpportunities';
 import { initHeroState } from '../domain/characters';
 import { DIVINE_PURIFICATION_2, DIVINE_PUNISHMENT_2, HOLY_BLADE_2, SUPREME_POWER_2, TIANSHI_ABILITIES } from '../heroes/tianshi/abilities';
 import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
@@ -56,6 +62,36 @@ const createTianshiThreePlayerState = (): MatchState<DiceThroneCore> => {
     state.core.players['2'] = initHeroState('2', 'barbarian', createQueuedRandom([1]));
     state.core.selectedCharacters['2'] = 'barbarian';
     return state;
+};
+
+const attachTokenResponseInteraction = (state: MatchState<DiceThroneCore>): void => {
+    const pendingDamage = state.core.pendingDamage;
+    if (!pendingDamage) {
+        throw new Error('测试夹具缺少待处理伤害，无法构造 Token 响应选择合同');
+    }
+
+    const choiceRequest: ChoiceRequest = {
+        requestId: buildDiceThroneTokenResponseOpportunityId(pendingDamage),
+        playerId: pendingDamage.responderId,
+        kind: 'choose-option',
+        candidates: buildDiceThroneTokenResponseChoiceCandidates(state.core, pendingDamage),
+        selection: { min: 1, max: 1 },
+        resolution: { type: 'candidate-commands' },
+        metadata: {
+            pendingDamageId: pendingDamage.id,
+            responseType: pendingDamage.responseType,
+            responderId: pendingDamage.responderId,
+            currentDamage: pendingDamage.currentDamage,
+            originalDamage: pendingDamage.originalDamage,
+        },
+    };
+
+    state.sys.interaction.current = {
+        id: `dt-token-response-${pendingDamage.id}`,
+        kind: 'dt:token-response',
+        playerId: pendingDamage.responderId,
+        data: { choiceRequestContract: choiceRequest },
+    } satisfies InteractionDescriptor;
 };
 
 const setPlayerBoardFace = (
@@ -150,11 +186,12 @@ describe('炽天使领域行为', () => {
             responderId: '0',
             isFullyEvaded: false,
         };
+        attachTokenResponseInteraction(state);
 
         const result = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
             state,
-            command('USE_TOKEN', '0', { tokenId: TOKEN_IDS.FLIGHT, amount: 1 }),
+            command('USE_TOKEN', '0', { tokenId: TOKEN_IDS.FLIGHT, amount: 1, pendingDamageId: 'tianshi-flight-response' }),
             createQueuedRandom([6, 1]),
             playerIds,
         );
@@ -353,11 +390,14 @@ describe('炽天使领域行为', () => {
             currentDamage: 6,
             responderId: '0',
         });
+        const pendingDamageId = state.core.pendingDamage?.id;
+        expect(pendingDamageId).toBeDefined();
+        if (!pendingDamageId) return;
 
         const resolved = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
             state,
-            command('SKIP_TOKEN_RESPONSE', '0'),
+            command('SKIP_TOKEN_RESPONSE', '0', { pendingDamageId }),
             createQueuedRandom([1]),
             playerIds,
         );
@@ -375,6 +415,100 @@ describe('炽天使领域行为', () => {
         expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 6);
         expect(resolved.state.core.pendingAttack).toBeNull();
         expect(resolved.state.sys.phase).toBe('main2');
+    });
+
+    it('凯旋归来奖励骰掷出 6 后应保留基础伤害并以不可防御攻击结算', () => {
+        let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
+        const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        const toOffensiveRoll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(toOffensiveRoll.success).toBe(true);
+        if (!toOffensiveRoll.success) return;
+        state = toOffensiveRoll.state;
+
+        const roll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ROLL_DICE', '0'),
+            createQueuedRandom([1, 2, 3, 4, 5]),
+            playerIds,
+        );
+        expect(roll.success).toBe(true);
+        if (!roll.success) return;
+        state = roll.state;
+
+        const confirm = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('CONFIRM_ROLL', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(confirm.success).toBe(true);
+        if (!confirm.success) return;
+        state = confirm.state;
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'triumphant-return' }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(selected.success).toBe(true);
+        if (!selected.success) return;
+        state = selected.state;
+        expect(state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'triumphant-return',
+        });
+
+        const bonusOpened = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([6]),
+            playerIds,
+        );
+        expect(bonusOpened.success).toBe(true);
+        if (!bonusOpened.success) return;
+        state = bonusOpened.state;
+        expect(state.core.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: 'triumphant-return',
+            attackerId: '0',
+        });
+
+        const settled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(settled.success).toBe(true);
+        if (!settled.success) return;
+
+        expect(settled.events).toContainEqual(expect.objectContaining({
+            type: 'ATTACK_MADE_UNDEFENDABLE',
+            payload: expect.objectContaining({ attackerId: '0' }),
+        }));
+        expect(settled.events).toContainEqual(expect.objectContaining({
+            type: 'ATTACK_RESOLVED',
+            payload: expect.objectContaining({
+                sourceAbilityId: 'triumphant-return',
+                totalDamage: 6,
+            }),
+        }));
+        expect(settled.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 6);
+        expect(settled.state.core.pendingAttack).toBeNull();
+        expect(settled.state.sys.phase).toBe('main2');
     });
 
     it.each([

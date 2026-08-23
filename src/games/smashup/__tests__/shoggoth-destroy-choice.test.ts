@@ -109,7 +109,7 @@ describe('修格斯消灭随从选择权', () => {
         expect(getPromptPlayerId(i2)).toBe('0');
     });
 
-    it('对手拒绝且只有1个随从时，直接消灭', () => {
+    it('对手拒绝且只有1个随从时，仍由修格斯控制者确认消灭', () => {
         const shoggoth = makeMinion('sh-1', 'elder_thing_shoggoth', '0', 6, { powerModifier: 0 });
         const opM1 = makeMinion('op-1', 'test_minion_a', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, opM1] });
@@ -124,8 +124,20 @@ describe('修格斯消灭随从选择权', () => {
             dummyRandom,
         );
 
-        // 只有1个随从，直接消灭
-        const destroyEvents = r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+        const destroyPrompt = getFirstPrompt(r2.finalState);
+        expect(getPromptSourceId(destroyPrompt)).toBe('elder_thing_shoggoth_destroy');
+        expect(getPromptPlayerId(destroyPrompt)).toBe('0');
+
+        const resolved = respondToPromptOption(
+            r2.finalState,
+            option => option.value?.minionUid === 'op-1',
+            'Shoggoth single destroy target op-1',
+            '0',
+            dummyRandom,
+        );
+
+        const destroyEvents = resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
         expect((destroyEvents[0] as MinionDestroyedEvent).payload.minionUid).toBe('op-1');
     });

@@ -1,11 +1,12 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter,
     addTempPower,
     buildAbilityFeedback,
+    buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildStandardDrawEventsFromRuntimeContext,
     createSkipOption,
@@ -19,6 +20,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerActiveBaseAbility } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
@@ -30,7 +32,6 @@ import { getCardDef } from '../data/cards';
 import {
     isMinionCard,
     ownMinionsAtBase,
-    shuffleFirstDiscardCardsIntoDeck,
     wasHandDiscard,
 } from './disney_shared';
 
@@ -101,6 +102,36 @@ type DiscoverTheLibraryContext = BeautyDiscardPromptContext & {
     random: RandomFn;
 };
 
+type EnchantedCastleChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    skip?: boolean;
+};
+
+type EnchantedCastleEligibilityContext = {
+    state: SmashUpCore;
+    playerId: PlayerId;
+    sourceBaseIndex?: number;
+    turnNumber: number;
+    handDiscarded: boolean;
+    requireFirstHandDiscard: boolean;
+    discardedCardUids?: string[];
+};
+
+type EnchantedCastleEligibilityMode = 'trigger-window' | 'resolve';
+
+type EverASurpriseChoice = {
+    cardUid?: string;
+    defId?: string;
+    skip?: boolean;
+};
+
+type EverASurpriseContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
 function abilityFromRuntime(result: { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> }): AbilityResult {
     return result.matchState ? { events: result.events, matchState: result.matchState } : { events: result.events };
 }
@@ -117,6 +148,95 @@ function source(ctx: AbilityContext) {
 
 function hasDiscardedFromHandThisTurn(ctx: AbilityContext | BaseAbilityContext): boolean {
     return ((ctx.state.cardsDiscardedFromHandThisTurn ?? {})[ctx.playerId] ?? 0) > 0;
+}
+
+function enchantedCastleTargets(core: SmashUpCore, playerId: PlayerId, baseIndex: number) {
+    return ownMinionsAtBase(core, playerId, baseIndex).map(minion => ({
+        uid: minion.uid,
+        defId: minion.defId,
+        baseIndex,
+        label: getCardDef(minion.defId)?.name ?? minion.defId,
+    }));
+}
+
+function isEnchantedCastleEligibleContext(ctx: EnchantedCastleEligibilityContext): boolean {
+    if (!ctx.handDiscarded) return false;
+    if (ctx.turnNumber !== ctx.state.turnNumber) return false;
+    if (ctx.state.turnOrder[ctx.state.currentPlayerIndex] !== ctx.playerId) return false;
+    if (ctx.sourceBaseIndex === undefined) return false;
+
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    if (!base || base.metadata?.enchantedCastleDiscardTurn === ctx.turnNumber) return false;
+    if (enchantedCastleTargets(ctx.state, ctx.playerId, ctx.sourceBaseIndex).length === 0) return false;
+
+    if (ctx.requireFirstHandDiscard) {
+        const currentDiscardCount = (ctx.state.cardsDiscardedFromHandThisTurn ?? {})[ctx.playerId] ?? 0;
+        const discardedUids = ctx.discardedCardUids ?? [];
+        if (discardedUids.length === 0) return currentDiscardCount === 0;
+        const discardedUidSet = new Set(discardedUids);
+        const stateStillBeforeDiscard = ctx.state.players[ctx.playerId]?.hand.some(card =>
+            discardedUidSet.has(card.uid),
+        ) ?? false;
+        return stateStillBeforeDiscard
+            ? currentDiscardCount === 0
+            : currentDiscardCount - discardedUids.length === 0;
+    }
+
+    return true;
+}
+
+function buildEnchantedCastleEligibilityContextFromTrigger(
+    ctx: TriggerContext,
+    mode: EnchantedCastleEligibilityMode,
+): EnchantedCastleEligibilityContext {
+    return {
+        state: ctx.state,
+        playerId: ctx.playerId,
+        sourceBaseIndex: ctx.sourceBaseIndex,
+        turnNumber: ctx.state.turnNumber,
+        handDiscarded: wasHandDiscard(ctx),
+        requireFirstHandDiscard: mode === 'trigger-window',
+        discardedCardUids: ctx.discardedCards?.map(card => card.uid) ?? [],
+    };
+}
+
+function isEnchantedCastleEligibleFromTrigger(
+    ctx: TriggerContext,
+    mode: EnchantedCastleEligibilityMode,
+): boolean {
+    return isEnchantedCastleEligibleContext(buildEnchantedCastleEligibilityContextFromTrigger(ctx, mode));
+}
+
+function isEnchantedCastleTargetResolutionEligible(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    turnNumber: number,
+): boolean {
+    return isEnchantedCastleEligibleContext({
+        state,
+        playerId,
+        sourceBaseIndex: baseIndex,
+        turnNumber,
+        handDiscarded: true,
+        requireFirstHandDiscard: false,
+    });
+}
+
+function buildEnchantedCastleUsedEvent(
+    baseIndex: number,
+    turnNumber: number,
+    now: number,
+): BaseMetadataUpdatedEvent {
+    return {
+        type: SU_EVENTS.BASE_METADATA_UPDATED,
+        payload: {
+            baseIndex,
+            metadataUpdate: { enchantedCastleDiscardTurn: turnNumber },
+            reason: BASE_ENCHANTED_CASTLE,
+        },
+        timestamp: now,
+    };
 }
 
 function buildBeautyDiscardOptions(context: BeautyDiscardPromptContext): PromptOption<BeautyDiscardChoice>[] {
@@ -467,10 +587,78 @@ function discoverTheLibrary(ctx: AbilityContext): AbilityResult {
     }));
 }
 
+function buildEverASurpriseOptions(context: EverASurpriseContext): PromptOption<EverASurpriseChoice>[] {
+    const minions = (context.matchState.core.players[context.playerId]?.discard ?? [])
+        .filter(card => isMinionCard(card.defId));
+    return [
+        createSkipOption('不洗回角色', 'ui.beauty_and_the_beast_ever_a_surprise_skip'),
+        ...minions.map((card, index) => ({
+            id: `discard-minion-${index}`,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId } satisfies EverASurpriseChoice,
+            displayMode: 'card' as const,
+            displayCard: { cardUid: card.uid, defId: card.defId },
+        })),
+    ];
+}
+
+const everASurprisePromptProgram = createPromptProgram<EverASurpriseContext, SmashUpCore, SmashUpEvent>({
+    sourceId: EVER_A_SURPRISE,
+    buildInteraction: (context) => {
+        const minionCount = (context.matchState.core.players[context.playerId]?.discard ?? [])
+            .filter(card => isMinionCard(card.defId)).length;
+        return createAbilityRuntimeSimpleChoice(
+            `${EVER_A_SURPRISE}_${context.playerId}_${context.now}`,
+            context.playerId,
+            '不断的惊喜：选择至多两张弃牌堆中的角色洗入牌库',
+            buildEverASurpriseOptions(context),
+            {
+                titleKey: 'ui.beauty_and_the_beast_ever_a_surprise_title',
+                sourceId: EVER_A_SURPRISE,
+                targetType: 'discard',
+                multi: { min: 0, max: Math.min(2, minionCount) },
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                autoRefresh: 'discard',
+            },
+        );
+    },
+    onResolve: ({ context, state, random, value, timestamp }) => {
+        const choices = (Array.isArray(value) ? value : [value]) as EverASurpriseChoice[];
+        if (choices.some(choice => choice?.skip)) return { events: [] };
+        const player = state.core.players[context.playerId];
+        if (!player) return { events: [] };
+        const selectedUids = new Set(
+            choices
+                .map(choice => choice?.cardUid)
+                .filter((uid): uid is string => !!uid),
+        );
+        const selected = player.discard
+            .filter(card => selectedUids.has(card.uid) && isMinionCard(card.defId))
+            .slice(0, 2);
+        if (selected.length === 0) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: context.playerId,
+                    deckUids: random.shuffle([...player.deck, ...selected]).map(card => card.uid),
+                },
+                timestamp,
+            } as DeckReorderedEvent],
+        };
+    },
+});
+
 function everASurprise(ctx: AbilityContext): AbilityResult {
-    return {
-        events: shuffleFirstDiscardCardsIntoDeck(ctx, card => isMinionCard(card.defId), 2, EVER_A_SURPRISE),
-    };
+    const hasMinions = (ctx.state.players[ctx.playerId]?.discard ?? []).some(card => isMinionCard(card.defId));
+    if (!hasMinions) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
+    if (!ctx.matchState) return { events: [] };
+    return abilityFromRuntime(executeAbilityProgram(everASurprisePromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    }));
 }
 
 function thisProvincialTown(ctx: AbilityContext): AbilityResult {
@@ -608,31 +796,38 @@ function petalsOfTheRose(ctx: TriggerContext): TriggerResult {
     });
 }
 
-function enchantedCastle(ctx: TriggerContext): SmashUpEvent[] {
-    if (!wasHandDiscard(ctx)) return [];
-    if (ctx.state.turnOrder[ctx.state.currentPlayerIndex] !== ctx.playerId) return [];
-    if (ctx.sourceBaseIndex === undefined) return [];
-    const base = ctx.state.bases[ctx.sourceBaseIndex];
-    if (!base || base.metadata?.enchantedCastleDiscardTurn === ctx.state.turnNumber) return [];
-    const target = base.minions.find(minion => minion.controller === ctx.playerId);
-    if (!target) return [];
-    return [
-        addPowerCounter(target.uid, ctx.sourceBaseIndex, 1, BASE_ENCHANTED_CASTLE, ctx.now, {
+function enchantedCastle(ctx: TriggerContext): TriggerResult {
+    if (!isEnchantedCastleEligibleFromTrigger(ctx, 'resolve')) return { events: [] };
+    if (ctx.sourceBaseIndex === undefined || !ctx.matchState) return { events: [] };
+
+    const baseIndex = ctx.sourceBaseIndex;
+    const interaction = createSimpleChoice<EnchantedCastleChoice>(
+        `${BASE_ENCHANTED_CASTLE}_${ctx.now}_${baseIndex}`,
+        ctx.playerId,
+        '魔法城堡：选择这里你的一个角色放置 +1 指示物',
+        buildMinionTargetOptions(enchantedCastleTargets(ctx.state, ctx.playerId, baseIndex), {
+            state: ctx.state,
             sourcePlayerId: ctx.playerId,
             sourceDefId: BASE_ENCHANTED_CASTLE,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.sourceBaseIndex,
-        }),
+            sourceKind: 'nonAction',
+            effectType: 'power_change',
+        }) as PromptOption<EnchantedCastleChoice>[],
         {
-            type: SU_EVENTS.BASE_METADATA_UPDATED,
-            payload: {
-                baseIndex: ctx.sourceBaseIndex,
-                metadataUpdate: { enchantedCastleDiscardTurn: ctx.state.turnNumber },
-                reason: BASE_ENCHANTED_CASTLE,
-            },
-            timestamp: ctx.now,
-        } as BaseMetadataUpdatedEvent,
-    ];
+            sourceId: BASE_ENCHANTED_CASTLE,
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: unknown }).continuationContext = {
+        baseIndex,
+        turnNumber: ctx.state.turnNumber,
+    };
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, interaction),
+    };
 }
 
 function gastonsTavern(ctx: BaseAbilityContext): AbilityResult {
@@ -665,6 +860,42 @@ export function registerBeautyAndTheBeastAbilities(): void {
     registerAbilityProgram(EVER_A_SURPRISE, 'special', { program: createEffectProgram(discardedActionSpecial) });
     registerAbilityProgram('beauty_and_the_beast_this_provincial_town', 'onPlay', { program: createEffectProgram(thisProvincialTown) });
 
+    registerInteractionHandler(BASE_ENCHANTED_CASTLE, (state, playerId, value, data, _random, timestamp) => {
+        const choice = value as EnchantedCastleChoice | undefined;
+        if (!choice || choice.skip || !choice.minionUid) return { state, events: [] };
+
+        const continuation = (data as { continuationContext?: { baseIndex?: number; turnNumber?: number } } | undefined)
+            ?.continuationContext;
+        const baseIndex = typeof continuation?.baseIndex === 'number'
+            ? continuation.baseIndex
+            : choice.baseIndex;
+        const turnNumber = typeof continuation?.turnNumber === 'number'
+            ? continuation.turnNumber
+            : state.core.turnNumber;
+        if (typeof baseIndex !== 'number') return { state, events: [] };
+        if (!isEnchantedCastleTargetResolutionEligible(state.core, playerId, baseIndex, turnNumber)) {
+            return { state, events: [] };
+        }
+
+        const target = state.core.bases[baseIndex]?.minions.find(minion =>
+            minion.uid === choice.minionUid && minion.controller === playerId,
+        );
+        if (!target) return { state, events: [] };
+
+        return {
+            state,
+            events: [
+                addPowerCounter(target.uid, baseIndex, 1, BASE_ENCHANTED_CASTLE, timestamp, {
+                    sourcePlayerId: playerId,
+                    sourceDefId: BASE_ENCHANTED_CASTLE,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: baseIndex,
+                }),
+                buildEnchantedCastleUsedEvent(baseIndex, turnNumber, timestamp),
+            ],
+        };
+    });
+
     registerTrigger(ENCHANTED_OBJECTS, 'onCardsDiscarded', playDiscardedEnchantedObject, {
         global: true,
         globalZones: ['hand', 'discard'],
@@ -692,8 +923,7 @@ export function registerBeautyAndTheBeastAbilities(): void {
         optional: true,
         playerContext: 'eventPlayer',
         baseScoped: false,
-        canTrigger: ctx => wasHandDiscard(ctx)
-            && ctx.state.turnOrder[ctx.state.currentPlayerIndex] === ctx.playerId,
+        canTrigger: ctx => isEnchantedCastleEligibleFromTrigger(ctx, 'trigger-window'),
     });
     registerActiveBaseAbility(BASE_GASTONS_TAVERN, gastonsTavern, {
         oncePerTurn: false,

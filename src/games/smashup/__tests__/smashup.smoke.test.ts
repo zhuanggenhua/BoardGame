@@ -7400,12 +7400,23 @@ describe('smashup', () => {
             '0',
             FIXED_RANDOM,
         );
-        expect(giveResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(true);
-        expect(giveResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(giveResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(false);
 
-        const giveResolvedCore = giveResult.finalState.core;
+        const choosePlayerPrompt = getSimpleChoicePrompt(giveResult.finalState, 'titan_ignobles_the_hill_that_strolls_choose_player');
+        expect(getPromptOption(choosePlayerPrompt, entry => entry.value?.targetPlayerId === '1')).toBeDefined();
+        const choosePlayerResult = respondToPromptOption(
+            giveResult.finalState,
+            entry => entry.value?.targetPlayerId === '1',
+            'Hill give-minion receiver option',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(choosePlayerResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(true);
+        expect(choosePlayerResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+
+        const giveResolvedCore = choosePlayerResult.finalState.core;
         expect(giveResolvedCore.bases[0].minions.find(minion => minion.uid === 'hill-give-target')?.controller).toBe('1');
-        let reactionState = giveResult.finalState;
+        let reactionState = choosePlayerResult.finalState;
 
         const hillReactionPrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
         if (hillReactionPrompt) {
@@ -7481,9 +7492,20 @@ describe('smashup', () => {
             '0',
             FIXED_RANDOM,
         );
-        expect(giveResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(true);
+        expect(giveResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(false);
 
-        let reactionState = giveResult.finalState;
+        const choosePlayerPrompt = getSimpleChoicePrompt(giveResult.finalState, 'titan_ignobles_the_hill_that_strolls_choose_player');
+        expect(getPromptOption(choosePlayerPrompt, entry => entry.value?.targetPlayerId === '1')).toBeDefined();
+        const choosePlayerResult = respondToPromptOption(
+            giveResult.finalState,
+            entry => entry.value?.targetPlayerId === '1',
+            'Hill stale give-minion receiver option',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(choosePlayerResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(true);
+
+        let reactionState = choosePlayerResult.finalState;
         const hillReactionPrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
         if (hillReactionPrompt) {
             const hillOption = getReactionPromptOptionBySourceDefId(reactionState, hillReactionPrompt, 'ignobles_the_hill_that_strolls');
@@ -9385,7 +9407,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, command).valid).toBe(false);
     });
 
-    it('滑稽巨人在场时，对手把随从打到此基地后会被迫弃置 1 张剩余手牌', () => {
+    it('滑稽巨人在场时，对手把随从打到此基地后会被要求选择弃置 1 张剩余手牌', () => {
         const core = makeState({
             currentPlayerIndex: 1,
             players: {
@@ -9422,9 +9444,21 @@ describe('smashup', () => {
         );
 
         expect(result.success).toBe(true);
-        expect(result.events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DISCARDED);
-        expect(result.finalState.core.players['1'].hand).toEqual([]);
-        expect(result.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-discarded-card');
+        expect(result.events.map(event => event.type)).not.toContain(SU_EVENTS.CARDS_DISCARDED);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'titan_tricksters_big_funny_giant_discard_to_play');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'enemy-discarded-card',
+            'Big Funny Giant discard option',
+            '1',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DISCARDED);
+        expect(resolved.finalState.core.players['1'].hand).toEqual([]);
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-discarded-card');
         expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('enemy-played-minion');
     });
 

@@ -1063,6 +1063,12 @@ export function reduceBaseDeckShuffledEvent(
     };
 }
 
+function clearPlayedThisTurnMetadata(metadata?: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!metadata || metadata.playedThisTurn !== true) return metadata;
+    const { playedThisTurn: _playedThisTurn, ...remainingMetadata } = metadata;
+    return Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined;
+}
+
 export function reduceTurnStartedEvent(
     state: SmashUpCore,
     event: SmashUpEvent,
@@ -1103,12 +1109,19 @@ export function reduceTurnStartedEvent(
                 talentUsed: m.controller === playerId ? false : m.talentUsed,
                 playedThisTurn: m.controller === playerId ? undefined : m.playedThisTurn,
                 tempPowerModifier: 0,
-                attachedActions: m.attachedActions.map(a => ({
-                    ...a,
-                    talentUsed: ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === playerId
-                        ? false
-                        : a.talentUsed,
-                })),
+                attachedActions: m.attachedActions.map(a => {
+                    const controllerId = (a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId;
+                    const metadata = controllerId === playerId
+                        ? clearPlayedThisTurnMetadata(a.metadata)
+                        : a.metadata;
+                    return {
+                        ...a,
+                        ...(metadata ? { metadata } : { metadata: undefined }),
+                        talentUsed: controllerId === playerId
+                            ? false
+                            : a.talentUsed,
+                    };
+                }),
             };
         }),
         ongoingActions: base.ongoingActions.map(o => {
@@ -1119,9 +1132,12 @@ export function reduceTurnStartedEvent(
             } = (controllerId === playerId && o.defId === 'wreck_it_ralph_king_candy')
                 ? (o.metadata ?? {})
                 : {};
-            const metadata = controllerId === playerId && o.defId === 'wreck_it_ralph_king_candy'
+            const kingCandyMetadata = controllerId === playerId && o.defId === 'wreck_it_ralph_king_candy'
                 ? (Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined)
                 : o.metadata;
+            const metadata = controllerId === playerId
+                ? clearPlayedThisTurnMetadata(kingCandyMetadata)
+                : kingCandyMetadata;
             return {
                 ...o,
                 ...(metadata ? { metadata } : { metadata: undefined }),

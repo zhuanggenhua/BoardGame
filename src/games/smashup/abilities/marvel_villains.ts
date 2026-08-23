@@ -1343,21 +1343,7 @@ function kreePrepareToEngage(ctx: AbilityContext): AbilityResult {
             leadingEvents: revealEvents,
         }));
     }
-    const picked = revealed.filter(card => getCardDef(card.defId)?.type === 'action').slice(0, 2);
-    const remaining = revealed.filter(card => !picked.some(hit => hit.uid === card.uid));
-    const restDeck = player.deck.slice(revealed.length);
-    const events: SmashUpEvent[] = [
-        ...revealEvents,
-        deckReordered(ctx.playerId, [...picked, ...ctx.random.shuffle([...remaining, ...restDeck])].map(card => card.uid), ctx.now),
-    ];
-    if (picked.length > 0) {
-        events.push({
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId: ctx.playerId, count: picked.length, cardUids: picked.map(card => card.uid) },
-            timestamp: ctx.now,
-        } as SmashUpEvent);
-    }
-    return { events };
+    return { events: revealEvents };
 }
 
 function kreeProvenMethods(ctx: AbilityContext): AbilityResult {
@@ -1374,10 +1360,7 @@ function kreeProvenMethods(ctx: AbilityContext): AbilityResult {
             sourceBaseIndex: ctx.baseIndex,
         });
     }
-    const selected = player.discard.filter(card => getCardDef(card.defId)?.type === 'action').slice(0, 2);
-    return selected.length > 0
-        ? { events: [deckReordered(ctx.playerId, [...selected, ...player.deck].map(card => card.uid), ctx.now)] }
-        : { events: [] };
+    return { events: [] };
 }
 
 function buffTargetOrPrompt(ctx: AbilityContext, amount: number, drawCount = 0, extraAction = false): AbilityResult {

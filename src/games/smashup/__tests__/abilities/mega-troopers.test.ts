@@ -209,6 +209,7 @@ describe('Mega Troopers 代表性玩法行为', () => {
         }, FIXED_RANDOM);
         const prompt = getSimpleChoicePrompt(play.finalState, 'mega_troopers_lightning_crystal');
         expect(prompt.targetType).toBe('ongoing');
+        expect(prompt.autoResolveIfSingle).toBe(false);
         const destroy = respondToPromptOption(
             play.finalState,
             option => option.value?.cardUid === 'attached-action',
@@ -220,6 +221,39 @@ describe('Mega Troopers 代表性玩法行为', () => {
         expect(destroy.events.some(event => event.type === SU_EVENTS.ONGOING_DETACHED)).toBe(true);
         expect(destroy.finalState.core.bases[0].minions[0].attachedActions).toEqual([]);
         expect(destroy.finalState.core.players['1'].discard.map(card => card.uid)).toContain('attached-action');
+    });
+
+    it('Lightning Crystal 只有一个行动牌候选也必须选择后才摧毁', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('crystal', 'mega_troopers_lightning_crystal', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_juice_bar',
+                ongoingActions: [{ uid: 'base-action', defId: 'kaiju_stomp', ownerId: '1' }],
+            })],
+        });
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'crystal' },
+            timestamp: 31,
+        }, FIXED_RANDOM);
+        const prompt = getSimpleChoicePrompt(play.finalState, 'mega_troopers_lightning_crystal');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(play.finalState.core.bases[0].ongoingActions.map(action => action.uid)).toContain('base-action');
+
+        const destroy = respondToPromptOption(
+            play.finalState,
+            option => option.value?.cardUid === 'base-action',
+            'single base action',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(destroy.events.some(event => event.type === SU_EVENTS.ONGOING_DETACHED)).toBe(true);
+        expect(destroy.finalState.core.bases[0].ongoingActions).toEqual([]);
     });
 
     it('It’s Blitzin’ Time! 让己方随从直到回合结束 +3', () => {
@@ -265,6 +299,30 @@ describe('Mega Troopers 代表性玩法行为', () => {
 
         expect(play.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
         expect(play.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['ally-a', 'ally-b', 'too-big']);
+    });
+
+    it('Mega Attack 拒绝力量不低于本基地己方随从总力量的目标', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('attack', 'mega_troopers_mega_attack', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar', [
+                makeMinion('yellow-trooper', 'mega_troopers_yellow_trooper', '0', 4),
+            ])],
+        });
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'attack', targetBaseIndex: 0, targetMinionUid: 'yellow-trooper' },
+            timestamp: 51,
+        }, FIXED_RANDOM);
+
+        expect(play.success).toBe(false);
+        expect(play.error).toContain('暴力攻击只能选择力量低于你在该基地随从总力量的随从');
+        expect(play.finalState.core.players['0'].hand.map(card => card.uid)).toContain('attack');
+        expect(play.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['yellow-trooper']);
     });
 
     it('Plan For More! 展示牌库顶三张，拿走随从并可把其中一张作为额外随从打出', () => {
@@ -417,10 +475,18 @@ describe('Mega Troopers 代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 90,
         });
-        const moved = applyEvents(core, result.events);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'mega_troopers_yellow_trooper');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const moved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'ally',
+            'Yellow Trooper 唯一随从',
+            '0',
+            FIXED_RANDOM,
+        );
 
-        expect(moved.bases[0].minions).toEqual([]);
-        expect(moved.bases[1].minions.map(minion => minion.uid)).toEqual(['yellow', 'ally']);
+        expect(moved.finalState.core.bases[0].minions).toEqual([]);
+        expect(moved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['yellow', 'ally']);
     });
 
     it('Pink Trooper 计分后 special 可让力量 3 或以下的己方随从回手，而不是进弃牌堆', () => {
@@ -747,8 +813,19 @@ describe('Mega Troopers 代表性玩法行为', () => {
             timestamp: 139,
         }, FIXED_RANDOM);
 
-        expect(play.events.some(event => event.type === SU_EVENTS.TITAN_REMOVED_FROM_PLAY)).toBe(true);
-        expect(play.finalState.core.titans?.[0]?.location).toEqual({ zone: 'setaside' });
+        const prompt = getSimpleChoicePrompt(play.finalState, 'mega_troopers_lightning_crystal_pod');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(play.finalState.core.titans?.[0]?.location).toEqual({ zone: 'base', baseIndex: 0, enteredAt: 1 });
+        const resolved = respondToPromptOption(
+            play.finalState,
+            option => option.value?.titanUid === 'megabot',
+            'Lightning Crystal POD 唯一泰坦',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TITAN_REMOVED_FROM_PLAY)).toBe(true);
+        expect(resolved.finalState.core.titans?.[0]?.location).toEqual({ zone: 'setaside' });
     });
 
     it('闪电时刻 POD 只给己方目标直到回合结束 +4，基础版仍保持 +3', () => {
@@ -1434,5 +1511,36 @@ describe('Mega Troopers 代表性玩法行为', () => {
         );
 
         expect(getPlayerEffectivePowerOnBase(boosted.finalState.core, boosted.finalState.core.bases[0], 0, '0')).toBe(6);
+    });
+
+    it('Juice Bar 只有一个随从也必须选择后才加力量', () => {
+        const core = makeState({
+            bases: [makeBase('base_juice_bar', [
+                makeMinion('target', 'mega_troopers_beta_6', '0', 2),
+            ])],
+            specialLimitUsed: {
+                mega_troopers_before_scoring_power: [0],
+            },
+        });
+        const result = triggerBaseAbility('base_juice_bar', 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            baseIndex: 0,
+            baseDefId: 'base_juice_bar',
+            playerId: '0',
+            now: 151,
+        });
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_juice_bar');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPlayerEffectivePowerOnBase(result.matchState!.core, result.matchState!.core.bases[0], 0, '0')).toBe(2);
+
+        const boosted = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'target',
+            'Juice Bar 唯一随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(getPlayerEffectivePowerOnBase(boosted.finalState.core, boosted.finalState.core.bases[0], 0, '0')).toBe(4);
     });
 });

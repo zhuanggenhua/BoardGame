@@ -1,4 +1,5 @@
 import type { MatchState, PlayerId } from '../types';
+import type { AiActionOutcome } from './actionOutcome';
 import type { AiDecisionDescriptor, AiInteractionSupportDeclaration } from './decisionSemantics';
 
 export type AiRelationToActor = 'self' | 'ally' | 'enemy' | 'neutral';
@@ -271,6 +272,14 @@ export interface GameAiRuntime {
         proposedAction: AiLegalAction;
         source: 'local-policy' | 'local-fallback' | 'remote-ai' | 'remote-ai-fallback';
     }): AiLegalAction | null | undefined;
+    /**
+     * 游戏层把自己的真实执行预演翻译成共享 AI 结果合同。
+     * 共享评分器只消费结果分类；具体收益 / 成本语义仍由游戏 adapter 定义。
+     */
+    projectActionOutcome?(args: {
+        context: AiDecisionContext;
+        action: AiLegalAction;
+    }): AiActionOutcome | null | undefined;
     resolveOnlineDecisionVisibility?(args: {
         playerId: PlayerId;
         sharedState: MatchState<unknown>;

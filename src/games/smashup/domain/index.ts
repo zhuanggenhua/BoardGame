@@ -14,6 +14,7 @@ import {
     processReturnToHandTriggers,
     filterProtectedAffectEvents,
     buildDestroyEventKey,
+    buildAffectEventKeys,
 } from './reducer';
 import type { FlowHooks, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import type {
@@ -146,6 +147,7 @@ type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _ppseImmediateStartTurnProcessedMinionUids?: string[];
     _processedPlayedEvents?: Set<string>;
     _processedDestroyEvents?: Set<string>;
+    _processedAffectEvents?: Set<string>;
     _processedTitanPositionEvents?: Set<string>;
     _processedTitanRemovedEvents?: Set<string>;
     _processedMunchkinMonsterPlayedEvents?: Set<string>;
@@ -3457,19 +3459,30 @@ function postProcessSystemEvents(
     if (!destroySys._processedDestroyEvents || !(destroySys._processedDestroyEvents instanceof Set)) {
         destroySys._processedDestroyEvents = new Set<string>();
     }
+    if (!destroySys._processedAffectEvents || !(destroySys._processedAffectEvents instanceof Set)) {
+        destroySys._processedAffectEvents = new Set<string>();
+    }
     const processedDestroyEventKeys = destroySys._processedDestroyEvents;
+    const processedAffectEventKeys = destroySys._processedAffectEvents;
     const destroyEventKeysInBatch = new Set<string>();
+    const affectEventKeysInBatch = new Set<string>();
     for (const event of events) {
         if (event.type === SU_EVENTS.MINION_DESTROYED) {
             destroyEventKeysInBatch.add(buildDestroyEventKey(event as MinionDestroyedEvent));
         }
+        for (const key of buildAffectEventKeys(ms.core, event as SmashUpEvent, pid)) {
+            affectEventKeysInBatch.add(key);
+        }
     }
     // 如果输入事件已在 execute 阶段完成 destroy→move→affect 链，
-    // 则这些 MINION_DESTROYED 不应在 PPSE 再次触发（避免 onDestroy 重复结算）。
+    // 则这些 MINION_DESTROYED / 影响类事件不应在 PPSE 再次触发。
     // 通过提前写入去重集合，让本轮 processDestroyMoveCycle 跳过。
     if (inputEventsAlreadyReduced) {
         for (const key of destroyEventKeysInBatch) {
             processedDestroyEventKeys.add(key);
+        }
+        for (const key of affectEventKeysInBatch) {
+            processedAffectEventKeys.add(key);
         }
     }
 
@@ -3484,13 +3497,18 @@ function postProcessSystemEvents(
     if (afterReturnToHand.matchState) ms = afterReturnToHand.matchState;
     // 杩斿洖鎵嬬墝/鏀剧墝搴撳簳淇濇姢杩囨护锛堜笌 execute() 鍚庡鐞嗗榻愶級
     const afterProtectedAffect = filterProtectedAffectEvents(afterReturnToHand.events, ms.core, pid);
-    const afterAffect = processAffectTriggers(afterProtectedAffect, ms, pid, random, now);
+    const afterAffect = processAffectTriggers(afterProtectedAffect, ms, pid, random, now, {
+        skipAffectEventKeys: processedAffectEventKeys,
+    });
     if (afterAffect.matchState) ms = afterAffect.matchState;
     const afterDeckInspection = processDeckInspectionTriggers(afterAffect.events, ms, pid, random, now);
     if (afterDeckInspection.matchState) ms = afterDeckInspection.matchState;
 
     for (const key of destroyEventKeysInBatch) {
         processedDestroyEventKeys.add(key);
+    }
+    for (const key of affectEventKeysInBatch) {
+        processedAffectEventKeys.add(key);
     }
 
     // 先 reduce 到临时 core 中，让 fireMinionPlayedTriggers 拿到最新的牌库/手牌状态。
@@ -3937,9 +3955,13 @@ function postProcessSystemEvents(
 
     let finalDerived = derivedEvents;
     if (derivedEvents.length > 0) {
+        const derivedAffectEventKeysInBatch = new Set<string>();
         for (const event of derivedEvents) {
             if (event.type === SU_EVENTS.MINION_DESTROYED) {
                 destroyEventKeysInBatch.add(buildDestroyEventKey(event as MinionDestroyedEvent));
+            }
+            for (const key of buildAffectEventKeys(ms.core, event as SmashUpEvent, pid)) {
+                derivedAffectEventKeysInBatch.add(key);
             }
         }
         const afterDerivedDestroyMove = processDestroyMoveCycle(derivedEvents, ms, pid, random, now, {
@@ -3951,11 +3973,16 @@ function postProcessSystemEvents(
         if (afterDerivedReturnToHand.matchState) ms = afterDerivedReturnToHand.matchState;
         // 杩斿洖鎵嬬墝/鏀剧墝搴撳簳淇濇姢杩囨护锛堜笌 execute() 鍚庡鐞嗗榻愶級
         const afterDerivedProtectedAffect = filterProtectedAffectEvents(afterDerivedReturnToHand.events, ms.core, pid);
-        const afterDerivedAffect = processAffectTriggers(afterDerivedProtectedAffect, ms, pid, random, now);
+        const afterDerivedAffect = processAffectTriggers(afterDerivedProtectedAffect, ms, pid, random, now, {
+            skipAffectEventKeys: processedAffectEventKeys,
+        });
         if (afterDerivedAffect.matchState) ms = afterDerivedAffect.matchState;
         const afterDerivedDeckInspection = processDeckInspectionTriggers(afterDerivedAffect.events, ms, pid, random, now);
         if (afterDerivedDeckInspection.matchState) ms = afterDerivedDeckInspection.matchState;
         finalDerived = afterDerivedDeckInspection.events;
+        for (const key of derivedAffectEventKeysInBatch) {
+            processedAffectEventKeys.add(key);
+        }
     }
 
     const combined = [...afterDeckInspection.events, ...finalDerived];

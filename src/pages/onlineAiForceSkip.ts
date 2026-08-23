@@ -42,8 +42,14 @@ export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): OnlineAiAutoRecoveryCompletionNotice | null {
     const { candidateReason, authoritativeState, seatControllers, engineConfig } = args;
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(authoritativeState, {
+        engineConfig,
+    });
 
     if (candidateReason === 'active-turn') {
+        if (currentPlayerId && seatControllers[currentPlayerId]?.type === 'human') {
+            return null;
+        }
         return {
             tone: 'warning',
             title: 'AI 强制结束回合',
@@ -60,9 +66,6 @@ export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
         return null;
     }
 
-    const currentPlayerId = resolveOnlineAiCurrentPlayerId(authoritativeState, {
-        engineConfig,
-    });
     if (currentPlayerId && seatControllers[currentPlayerId]?.type === 'human') {
         return null;
     }

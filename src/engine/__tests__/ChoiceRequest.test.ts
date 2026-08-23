@@ -413,6 +413,181 @@ describe('ChoiceRequest', () => {
         ]);
     });
 
+    it('direct adapter 优先把目标字段投给棋盘，而不是误用来源对象', () => {
+        const request: ChoiceRequest<{ objectId: string; targetObjectId: string }> = {
+            ...createTargetChoiceRequest(),
+            candidates: [{
+                id: 'heal-target',
+                label: '治疗目标',
+                value: {
+                    objectId: 'source-cleric',
+                    targetObjectId: 'wounded-cat',
+                },
+                commands: [{
+                    type: 'USE_OBJECT_ABILITY',
+                    payload: {
+                        objectId: 'source-cleric',
+                        targetObjectId: 'wounded-cat',
+                    },
+                }],
+            }],
+            resolution: { type: 'candidate-commands' },
+        };
+
+        const surface = projectChoiceRequestToDirectSelectionTargets(request);
+
+        expect(surface.targets).toHaveLength(1);
+        expect(surface.targets[0]).toMatchObject({
+            id: 'heal-target',
+            targetRef: 'wounded-cat',
+            commandPreview: [{
+                type: 'USE_OBJECT_ABILITY',
+                payload: {
+                    objectId: 'source-cleric',
+                    targetObjectId: 'wounded-cat',
+                },
+            }],
+        });
+    });
+
+    it('select-zone 使用同一份 Choice Request 投给区域 UI 和 AI', () => {
+        const request: ChoiceRequest<{ targetZoneId: string }> = {
+            requestId: 'choose-zone',
+            gameId: 'test-game',
+            playerId: 'p1',
+            ownerFrameId: 'frame-1',
+            kind: 'select-zone',
+            sourceId: 'test-zone-spell',
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'candidate-commands' },
+            ai: { status: 'shared-policy' },
+            candidates: [{
+                id: 'target-zone-a1',
+                label: 'A1',
+                value: { targetZoneId: 'a1' },
+                commands: [{
+                    type: 'CAST_SPELL',
+                    payload: { spellCardId: 1913, targetZoneId: 'a1' },
+                }],
+            }],
+        };
+
+        const surface = projectChoiceRequestToDirectSelectionTargets(request);
+        expect(surface).toMatchObject({
+            requestId: 'choose-zone',
+            kind: 'select-zone',
+            targets: [{
+                id: 'target-zone-a1',
+                targetRef: 'a1',
+                commandPreview: [{
+                    type: 'CAST_SPELL',
+                    payload: { spellCardId: 1913, targetZoneId: 'a1' },
+                }],
+            }],
+        });
+
+        const legalActions = projectChoiceRequestToAiLegalActions(request);
+        expect(legalActions.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+        expect(legalActions.actions).toHaveLength(1);
+        expect(legalActions.actions[0]).toMatchObject({
+            actionId: 'choice-request:choose-zone:select-zone:target-zone-a1',
+            kind: 'choice-select-zone',
+            commands: [{
+                type: 'CAST_SPELL',
+                payload: { spellCardId: 1913, targetZoneId: 'a1' },
+            }],
+            metadata: {
+                requestId: 'choose-zone',
+                choiceKind: 'select-zone',
+                sourceId: 'test-zone-spell',
+            },
+        });
+    });
+
+    it('select-position 可以把边界或格点投给直接选择 UI', () => {
+        const request: ChoiceRequest<{ targetWallEdgeId: string }> = {
+            requestId: 'choose-wall-edge',
+            gameId: 'test-game',
+            playerId: 'p1',
+            ownerFrameId: 'frame-1',
+            kind: 'select-position',
+            sourceId: 'test-wall-spell',
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'candidate-commands' },
+            ai: { status: 'shared-policy' },
+            candidates: [{
+                id: 'target-wall-edge-a3-b3',
+                label: 'A3-B3',
+                value: { targetWallEdgeId: 'a3-b3' },
+                commands: [{
+                    type: 'CAST_SPELL',
+                    payload: { spellCardId: 25700, targetWallEdgeId: 'a3-b3' },
+                }],
+            }],
+        };
+
+        const surface = projectChoiceRequestToDirectSelectionTargets(request);
+        expect(surface.targets).toEqual([expect.objectContaining({
+            id: 'target-wall-edge-a3-b3',
+            targetRef: 'a3-b3',
+            commandPreview: [{
+                type: 'CAST_SPELL',
+                payload: { spellCardId: 25700, targetWallEdgeId: 'a3-b3' },
+            }],
+        })]);
+
+        const legalActions = projectChoiceRequestToAiLegalActions(request);
+        expect(legalActions.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+        expect(legalActions.actions[0]).toMatchObject({
+            actionId: 'choice-request:choose-wall-edge:select-position:target-wall-edge-a3-b3',
+            kind: 'choice-select-position',
+            commands: [{
+                type: 'CAST_SPELL',
+                payload: { spellCardId: 25700, targetWallEdgeId: 'a3-b3' },
+            }],
+        });
+    });
+
+    it('direct adapter 优先把绑定法术字段投给卡牌 UI，而不是误用来源装备', () => {
+        const request: ChoiceRequest<{ objectId: string; boundSpellCardId: number }> = {
+            ...createTargetChoiceRequest(),
+            kind: 'select-card',
+            candidates: [{
+                id: 'bind-spell',
+                label: '绑定法术',
+                value: {
+                    objectId: 'source-staff',
+                    boundSpellCardId: 1705,
+                },
+                commands: [{
+                    type: 'USE_OBJECT_ABILITY',
+                    payload: {
+                        objectId: 'source-staff',
+                        boundSpellCardId: 1705,
+                    },
+                }],
+            }],
+            resolution: { type: 'candidate-commands' },
+        };
+
+        const surface = projectChoiceRequestToDirectSelectionTargets(request);
+
+        expect(surface.targets).toHaveLength(1);
+        expect(surface.targets[0]).toMatchObject({
+            id: 'bind-spell',
+            targetRef: 1705,
+            commandPreview: [{
+                type: 'USE_OBJECT_ABILITY',
+                payload: {
+                    objectId: 'source-staff',
+                    boundSpellCardId: 1705,
+                },
+            }],
+        });
+    });
+
     it('confirm-current / dice surface 只暴露声明的确认命令和骰子候选', () => {
         const request: ChoiceRequest<{ dieId: number }> = {
             requestId: 'confirm-dice',

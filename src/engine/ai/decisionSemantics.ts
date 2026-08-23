@@ -6,6 +6,8 @@ export type AiDecisionKind =
     | 'select-player'
     | 'select-card'
     | 'select-object'
+    | 'select-zone'
+    | 'select-position'
     | 'select-dice'
     | 'modify-value'
     | 'choose-option'
@@ -61,6 +63,14 @@ export interface AiSelectObjectDecisionCandidate extends AiDecisionCandidate {
     ownerId?: PlayerId;
 }
 
+export interface AiSelectZoneDecisionCandidate extends AiDecisionCandidate {
+    zoneId: string;
+}
+
+export interface AiSelectPositionDecisionCandidate extends AiDecisionCandidate {
+    positionId: string;
+}
+
 export interface AiSelectDiceDecisionCandidate extends AiDecisionCandidate {
     dieId: string | number;
     ownerId?: PlayerId;
@@ -90,6 +100,12 @@ export type AiSelectCardDecisionDescriptor =
 export type AiSelectObjectDecisionDescriptor =
     AiBaseDecisionDescriptor<'select-object', AiSelectObjectDecisionCandidate>;
 
+export type AiSelectZoneDecisionDescriptor =
+    AiBaseDecisionDescriptor<'select-zone', AiSelectZoneDecisionCandidate>;
+
+export type AiSelectPositionDecisionDescriptor =
+    AiBaseDecisionDescriptor<'select-position', AiSelectPositionDecisionCandidate>;
+
 export type AiSelectDiceDecisionDescriptor =
     AiBaseDecisionDescriptor<'select-dice', AiSelectDiceDecisionCandidate>;
 
@@ -115,6 +131,8 @@ export type AiDecisionDescriptor =
     | AiSelectPlayerDecisionDescriptor
     | AiSelectCardDecisionDescriptor
     | AiSelectObjectDecisionDescriptor
+    | AiSelectZoneDecisionDescriptor
+    | AiSelectPositionDecisionDescriptor
     | AiSelectDiceDecisionDescriptor
     | AiChooseOptionDecisionDescriptor
     | AiModifyValueDecisionDescriptor

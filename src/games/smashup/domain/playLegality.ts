@@ -2,7 +2,7 @@ import type { ValidationResult } from '../../../engine/types';
 import type { ActionCardDef, FusionCardDef, PlayConstraint, SmashUpCore } from './types';
 import { getCardDef, getFusionDef, getMinionDef, getMinionLikePower } from '../data/cards';
 import { hasPlayerTurnRestriction, isOperationRestricted } from './ongoingEffects';
-import { getPlayerEffectivePowerOnBase } from './ongoingModifiers';
+import { getEffectivePower, getPlayerEffectivePowerOnBase } from './ongoingModifiers';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -62,6 +62,27 @@ export function getActionPlayRestrictionError(
         return `本回合不能再打出${name}`;
     }
     return null;
+}
+
+function validateMegaAttackTarget(
+    core: SmashUpCore,
+    playerId: string,
+    targetBaseIndex: number,
+    targetMinionUid: string,
+): ValidationResult {
+    const base = core.bases[targetBaseIndex];
+    const target = base?.minions.find(minion => minion.uid === targetMinionUid);
+    if (!base || !target) return { valid: false, error: '基地上没有该随从' };
+
+    const ownPowerAtBase = base.minions
+        .filter(minion => minion.controller === playerId)
+        .reduce((total, minion) => total + getEffectivePower(core, minion, targetBaseIndex), 0);
+    const targetPower = getEffectivePower(core, target, targetBaseIndex);
+    if (targetPower >= ownPowerAtBase) {
+        return { valid: false, error: '暴力攻击只能选择力量低于你在该基地随从总力量的随从' };
+    }
+
+    return { valid: true };
 }
 
 export function validateConsumableMinionQuota(
@@ -314,6 +335,10 @@ export function validateActionPlaySemantics(
         }
         if (controllerConstraint === 'opponent' && targetMinion.controller === playerId) {
             return { valid: false, error: '该行动卡需要选择其他玩家的随从' };
+        }
+        if (params.defId === 'mega_troopers_mega_attack') {
+            const targetValidation = validateMegaAttackTarget(core, playerId, targetBaseIndex, params.targetMinionUid);
+            if (!targetValidation.valid) return targetValidation;
         }
     }
 

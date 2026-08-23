@@ -491,6 +491,7 @@ describe('僵尸派系能力', () => {
         expect(events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toHaveLength(0);
         const prompt = getSimpleChoicePrompt(matchState, 'zombie_outbreak_choose_base');
         expect(getPromptSourceId(prompt)).toBe('zombie_outbreak_choose_base');
+        expect(prompt.autoResolveIfSingle).toBe(false);
 
         const resolved = respondToPromptOption(
             matchState,
@@ -506,7 +507,7 @@ describe('僵尸派系能力', () => {
         expect((granted[0] as any).payload.restrictToBase).toBe(1);
     });
 
-    it('zombie_outbreak: 只有一个空基地时直接授予额度', () => {
+    it('zombie_outbreak: 只有一个空基地时仍创建选择 prompt，玩家确认后授予额度', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -527,8 +528,22 @@ describe('僵尸派系能力', () => {
             ],
         });
 
-        const { events } = execPlayAction(state, '0', 'a1');
-        const limitEvents = events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
+        const { events, matchState } = execPlayAction(state, '0', 'a1');
+        expect(events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toHaveLength(0);
+        const prompt = getSimpleChoicePrompt(matchState, 'zombie_outbreak_choose_base');
+        expect(getPromptSourceId(prompt)).toBe('zombie_outbreak_choose_base');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            matchState,
+            option => option.value?.baseIndex === 1,
+            'zombie outbreak single empty base option',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        const limitEvents = resolved.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvents).toHaveLength(1);
         expect((limitEvents[0] as any).payload.limitType).toBe('minion');
         expect((limitEvents[0] as any).payload.restrictToBase).toBe(1);

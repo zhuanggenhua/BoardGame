@@ -7,6 +7,7 @@ import { reduce } from '../../domain/reduce';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     getPromptOption,
+    getPromptOptions,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -129,7 +130,7 @@ describe('Magical Girls 代表性玩法行为', () => {
         expect(getEffectivePower(play.finalState.core, ally, 0)).toBe(5);
     });
 
-    it('Kiss the Sky Spell 回收弃牌堆随从并给一个额外行动', () => {
+    it('Kiss the Sky Spell 只有一个弃牌堆随从也必须选择后才回收并给额外行动', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -147,8 +148,12 @@ describe('Magical Girls 代表性玩法行为', () => {
             timestamp: 40,
         }, FIXED_RANDOM);
 
-        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toContain('maid');
-        expect(result.finalState.core.players['0'].actionLimit).toBe(2);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'magical_girls_kiss_the_sky_spell');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(result.finalState, option => option.value?.cardUid === 'maid', 'Kiss the Sky 唯一随从', '0', FIXED_RANDOM);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('maid');
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
     });
 
     it('Silver Shard 将所有玩家弃牌堆随从洗回牌库并保留非随从弃牌', () => {
@@ -192,7 +197,10 @@ describe('Magical Girls 代表性玩法行为', () => {
                         makeCard('black', 'magical_girls_black_magicat', 'minion', '0'),
                     ],
                     deck: [makeCard('maid', 'magical_girls_power_maid', 'minion', '0')],
-                    discard: [makeCard('captain', 'magical_girls_lunar_captain', 'minion', '0')],
+                    discard: [
+                        makeCard('discard-maid', 'magical_girls_power_maid', 'minion', '0'),
+                        makeCard('captain', 'magical_girls_lunar_captain', 'minion', '0'),
+                    ],
                 }),
                 '1': makePlayer('1'),
             },
@@ -205,15 +213,24 @@ describe('Magical Girls 代表性玩法行为', () => {
             payload: { cardUid: 'white', baseIndex: 0 },
             timestamp: 60,
         }, FIXED_RANDOM);
-        expect(white.finalState.core.players['0'].hand.map(card => card.uid)).toContain('maid');
+        const whitePrompt = getSimpleChoicePrompt(white.finalState, 'magical_girls_white_magicat');
+        expect(whitePrompt.autoResolveIfSingle).toBe(false);
+        expect(whitePrompt.responseValidationMode).toBe('live');
+        expect(getPromptOptions(whitePrompt).map(option => option.value?.cardUid)).toEqual(['maid', 'discard-maid']);
+        const whiteResolved = respondToPromptOption(white.finalState, option => option.value?.cardUid === 'discard-maid', 'White Magicat 弃牌堆目标', '0', FIXED_RANDOM);
+        expect(whiteResolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('discard-maid');
+        expect(whiteResolved.finalState.core.players['0'].deck.map(card => card.uid)).toContain('maid');
 
-        const black = runCommand(white.finalState, {
+        const black = runCommand(whiteResolved.finalState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'black', baseIndex: 0 },
             timestamp: 61,
         }, FIXED_RANDOM);
-        expect(black.finalState.core.players['0'].hand.map(card => card.uid)).toContain('captain');
+        const blackPrompt = getSimpleChoicePrompt(black.finalState, 'magical_girls_black_magicat');
+        expect(blackPrompt.autoResolveIfSingle).toBe(false);
+        const blackResolved = respondToPromptOption(black.finalState, option => option.value?.cardUid === 'captain', 'Black Magicat 唯一目标', '0', FIXED_RANDOM);
+        expect(blackResolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('captain');
     });
 
     it('Lunar Captain、Technomagical Lass、Bewitching Gal、Sakura Warrior 的数量缩放天赋生效', () => {
@@ -247,7 +264,8 @@ describe('Magical Girls 代表性玩法行为', () => {
             payload: { minionUid: 'lass', baseIndex: 0 },
             timestamp: 71,
         }, FIXED_RANDOM);
-        expect(lass.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy')).toBe(false);
+        const lassResolved = respondToPromptOption(lass.finalState, option => option.value?.minionUid === 'enemy', 'Technomagical Lass 唯一目标', '0', FIXED_RANDOM);
+        expect(lassResolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy')).toBe(false);
 
         const gal = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
@@ -321,7 +339,10 @@ describe('Magical Girls 代表性玩法行为', () => {
             payload: { cardUid: 'teleport', targetBaseIndex: 0, targetMinionUid: 'maid' },
             timestamp: 90,
         }, FIXED_RANDOM);
-        expect(teleport.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('maid');
+        const teleportPrompt = getSimpleChoicePrompt(teleport.finalState, 'magical_girls_celestial_teleport_destination');
+        expect(teleportPrompt.autoResolveIfSingle).toBe(false);
+        const teleportResolved = respondToPromptOption(teleport.finalState, option => option.value?.baseIndex === 1, 'Teleport 唯一目的基地', '0', FIXED_RANDOM);
+        expect(teleportResolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('maid');
 
         const coordination = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -337,7 +358,10 @@ describe('Magical Girls 代表性玩法行为', () => {
             payload: { minionUid: 'maid', baseIndex: 0 },
             timestamp: 92,
         }, FIXED_RANDOM);
-        const moved = respondToPromptOption(maid.finalState, option => option.value?.minionUid === 'target', 'target', '0', FIXED_RANDOM);
+        const selectedTarget = respondToPromptOption(maid.finalState, option => option.value?.minionUid === 'target', 'target', '0', FIXED_RANDOM);
+        const targetDestinationPrompt = getSimpleChoicePrompt(selectedTarget.finalState, 'magical_girls_power_maid_destination');
+        expect(targetDestinationPrompt.autoResolveIfSingle).toBe(false);
+        const moved = respondToPromptOption(selectedTarget.finalState, option => option.value?.baseIndex === 1, 'Power Maid 唯一目的基地', '0', FIXED_RANDOM);
         expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
         expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'target')).toBe(true);
     });
@@ -408,7 +432,10 @@ describe('Magical Girls 代表性玩法行为', () => {
 
         const prompt = getSimpleChoicePrompt(play.finalState, 'magical_girls_coordination');
         const castleOption = getPromptOption(prompt, option => option.value?.choice === 'walking_castle', 'Coordination Walking Castle option');
-        const resolved = respondToPromptOption(play.finalState, option => option.id === castleOption.id, 'walking castle', '0', FIXED_RANDOM);
+        const selectedCastle = respondToPromptOption(play.finalState, option => option.id === castleOption.id, 'walking castle', '0', FIXED_RANDOM);
+        const basePrompt = getSimpleChoicePrompt(selectedCastle.finalState, 'magical_girls_coordination_base');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+        const resolved = respondToPromptOption(selectedCastle.finalState, option => option.value?.baseIndex === 0, 'Walking Castle 唯一基地', '0', FIXED_RANDOM);
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
         expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'borrowed-castle')).toMatchObject({

@@ -464,21 +464,30 @@ describe('米斯卡塔尼克 新增能力', () => {
             expect(getPromptOptions(prompt)).toHaveLength(2);
         });
 
-        test('唯一随从时自动进入抽疯狂卡数量交互', () => {
+        test('唯一随从时也先创建随从确认交互', () => {
             const promptState = playMandatoryReading('mandatory-single', [
                 makeMinion({ uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 21 }),
             ]);
-            const prompt = getSimpleChoicePrompt(promptState, 'miskatonic_mandatory_reading_draw');
-            expect(getPromptSourceId(prompt)).toBe('miskatonic_mandatory_reading_draw');
-            expect(getPromptTargetType(prompt)).toBe('button');
+            const prompt = getSimpleChoicePrompt(promptState, 'miskatonic_mandatory_reading');
+            expect(getPromptSourceId(prompt)).toBe('miskatonic_mandatory_reading');
+            expect(getPromptTargetType(prompt)).toBe('minion');
+            expect(getPromptOptions(prompt)).toHaveLength(1);
         });
 
         test('选择抽 2 张疯狂卡后产生抽牌与永久力量加成', () => {
             const firstStep = playMandatoryReading('mandatory-draw2', [
                 makeMinion({ uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 21 }),
             ]);
-            const result = respondToPromptOption(
+            const targetStep = respondToPromptOption(
                 firstStep,
+                option => option.value?.minionUid === 'm1',
+                'mandatory reading only minion option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(targetStep.success, targetStep.error).toBe(true);
+            const result = respondToPromptOption(
+                targetStep.finalState,
                 option => option.value?.count === 2,
                 'mandatory reading draw 2 option',
                 '0',
@@ -498,8 +507,16 @@ describe('米斯卡塔尼克 新增能力', () => {
             const firstStep = playMandatoryReading('mandatory-skip', [
                 makeMinion({ uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 21 }),
             ]);
-            const result = respondToPromptOption(
+            const targetStep = respondToPromptOption(
                 firstStep,
+                option => option.value?.minionUid === 'm1',
+                'mandatory reading only minion option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(targetStep.success, targetStep.error).toBe(true);
+            const result = respondToPromptOption(
+                targetStep.finalState,
                 option => option.value?.skip === true,
                 'mandatory reading skip option',
                 '0',
@@ -514,8 +531,16 @@ describe('米斯卡塔尼克 新增能力', () => {
             const firstStep = playMandatoryReading('mandatory-draw3', [
                 makeMinion({ uid: 'm1', defId: 'test_a', controller: '0', owner: '0', basePower: 21 }),
             ]);
-            const result = respondToPromptOption(
+            const targetStep = respondToPromptOption(
                 firstStep,
+                option => option.value?.minionUid === 'm1',
+                'mandatory reading only minion option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(targetStep.success, targetStep.error).toBe(true);
+            const result = respondToPromptOption(
+                targetStep.finalState,
                 option => option.value?.count === 3,
                 'mandatory reading draw 3 option',
                 '0',
@@ -772,8 +797,16 @@ describe('米斯卡塔尼克 新增能力', () => {
             } as any, defaultTestRandom);
             expect(firstStep.success, firstStep.error).toBe(true);
 
-            const result = respondToPromptOption(
+            const targetStep = respondToPromptOption(
                 firstStep.finalState,
+                option => option.value?.minionUid === 'target-1',
+                'miskatonic things best not known only minion option',
+                '0',
+                dummyRandom,
+            );
+            expect(targetStep.success, targetStep.error).toBe(true);
+            const result = respondToPromptOption(
+                targetStep.finalState,
                 option => option.value?.count === 2,
                 'miskatonic things best not known draw 2 option',
                 '0',
@@ -1152,7 +1185,7 @@ describe('米斯卡塔尼克疯狂卡行动', () => {
             });
         }
 
-        test('唯一最高力量随从时直接消灭', () => {
+        test('唯一最高力量随从时也先创建确认交互', () => {
             const state = makeMiskatonicMadnessState({
                 bases: [{
                     defId: 'base_test',
@@ -1166,7 +1199,18 @@ describe('米斯卡塔尼克疯狂卡行动', () => {
             });
 
             const result = execSpecial(state, '0', 0);
-            const destroyEvents = result.events.filter((event: any) => event.type === SU_EVENTS.MINION_DESTROYED);
+            const prompt = getSimpleChoicePrompt(result.matchState!, 'miskatonic_thing_on_the_doorstep');
+            expect(getPromptSourceId(prompt)).toBe('miskatonic_thing_on_the_doorstep');
+            expect(getPromptOptions(prompt)).toHaveLength(1);
+            const resolved = respondToPromptOption(
+                result.matchState!,
+                option => option.value?.minionUid === 'strong',
+                'Thing on the Doorstep only target option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const destroyEvents = resolved.events.filter((event: any) => event.type === SU_EVENTS.MINION_DESTROYED);
             expect(destroyEvents).toHaveLength(1);
             expect((destroyEvents[0] as any).payload.minionUid).toBe('strong');
         });
@@ -1247,8 +1291,15 @@ describe('米斯卡塔尼克疯狂卡行动', () => {
             });
 
             const result = execSpecial(state, '0', 0);
-            const finalCore = result.events.reduce((core, event) => reduce(core, event as any), state);
-            const remaining = finalCore.bases[0].minions;
+            const resolved = respondToPromptOption(
+                result.matchState!,
+                option => option.value?.minionUid === 'target',
+                'Thing on the Doorstep only target option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const remaining = resolved.finalState.core.bases[0].minions;
             expect(remaining).toHaveLength(1);
             expect(remaining[0].uid).toBe('survivor');
         });

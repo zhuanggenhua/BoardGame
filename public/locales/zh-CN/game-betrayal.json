@@ -487,7 +487,8 @@
     },
     "feedback": {
       "label": "刚发生",
-      "idle": "等待第一步"
+      "idle": "等待第一步",
+      "healTraitCount": "治疗 +{{count}} 项"
     },
     "reference": {
       "button": "提示",
@@ -826,7 +827,8 @@
       "mask": "面具",
       "eventItemChoice": "选择物品",
       "noEventItemChoices": "无可选物品",
-      "rollTotalReplacement": "替代结果"
+      "rollTotalReplacement": "替代结果",
+      "held": "持有"
     },
     "decks": {
       "omen": "预兆牌堆",
@@ -941,6 +943,9 @@
       "eventCard": "事件牌",
       "itemCard": "物品牌",
       "omenCard": "预兆牌",
+      "eventSymbol": "事件符号",
+      "eventSkipped": "跳过事件",
+      "noEventCardDrawn": "没有抽取或结算事件卡",
       "noCard": "无发现牌",
       "roomEffect": "房间效果",
       "eventResolved": "即时生效",
@@ -951,7 +956,8 @@
       "confirmWithProgress": "确认 {{confirmed}}/{{total}}",
       "nextSearchCard": "下一张",
       "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
-      "waitingForAll": "等待其他玩家 {{confirmed}}/{{total}}"
+      "waitingForAll": "等待其他玩家 {{confirmed}}/{{total}}",
+      "eventSymbolSkipPrompt": "已翻出带事件符号的房间；现在选择跳过事件，或抽取事件牌。"
     },
     "roll": {
       "fallbackLabel": "投骰",

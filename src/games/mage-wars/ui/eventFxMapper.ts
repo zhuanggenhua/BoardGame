@@ -177,6 +177,34 @@ export function mapMageWarsEventToFx(
             },
         };
     }
+
+    if (event.type === MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED) {
+        const payload = event.payload;
+        const target = resolveObjectCell(core, payload.targetObjectId)
+            ?? resolvePlayerCell(core, payload.targetPlayerId)
+            ?? resolveZoneCell(core, payload.targetZoneId);
+        if (!target) return null;
+
+        return {
+            sourceEventId: entry.id,
+            cue: MW_FX.HEALING_IMPACT,
+            ctx: {
+                cell: target,
+                intensity: resolveIntensity(payload.actualHealing),
+            },
+            params: {
+                targetPlayerId: payload.targetPlayerId,
+                targetObjectId: payload.targetObjectId,
+                targetZoneId: payload.targetZoneId,
+                spellCardId: payload.spellCardId,
+                sourceAbilityId: payload.sourceAbilityId,
+                diceResults: payload.diceResults,
+                healingAmount: payload.healing,
+                actualHealing: payload.actualHealing,
+            },
+        };
+    }
+
     if (event.type === MAGE_WARS_EVENTS.SPELL_TELEPORT_RESOLVED) {
         const payload = event.payload;
         const source = resolveZoneCell(core, payload.fromZoneId);

@@ -91,6 +91,7 @@ export interface ConfigReviewTableProps<TRow extends ConfigReviewBaseRow, TField
   description?: React.ReactNode;
   onBack: () => void;
   filters?: React.ReactNode;
+  leadingContent?: React.ReactNode;
   filterKey?: string | number;
   getSearchText: (row: TRow) => string;
   getCellValue: (row: TRow, fieldKey: TFieldKey) => unknown;
@@ -251,6 +252,7 @@ export function ConfigReviewTable<TRow extends ConfigReviewBaseRow, TFieldKey ex
   description,
   onBack,
   filters,
+  leadingContent,
   filterKey,
   getSearchText,
   getCellValue,
@@ -418,6 +420,8 @@ export function ConfigReviewTable<TRow extends ConfigReviewBaseRow, TFieldKey ex
         </header>
 
         <section className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-[clamp(8px,1.2vw,16px)]">
+          {leadingContent}
+
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-[6px] bg-[#fff1cf]/62 px-3 py-1.5 text-xs font-semibold text-[#5e3d27]">
             <span className="inline-flex items-center gap-2 text-[#4b2c18]" data-testid={`${testIdPrefix}-horizontal-scroll-hint`}>
               <MoveHorizontal aria-hidden="true" className="h-4 w-4" />

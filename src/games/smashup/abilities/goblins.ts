@@ -4,20 +4,30 @@ import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbil
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerTrigger, type TriggerContext, type TriggerResult } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
-import { createEffectProgram, executeAbilityProgram } from '../domain/abilityRuntime';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import {
     addPowerCounter,
     addTempPower,
+    buildBaseTargetOptions,
+    buildFieldSourceActionOptions,
+    buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
+    createSkipOption,
     emitSpecialLimitUsed,
     findMinionByAttachedCard,
     findMinionOnBases,
     grantExtraAction,
     grantExtraMinion,
 } from '../domain/abilityHelpers';
-import type { CardInstance, CardsDrawnEvent, MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
+import { getCardDef } from '../data/cards';
+import type { CardInstance, MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 
 type LocatedMinion = { minion: MinionOnBase; baseIndex: number };
@@ -51,6 +61,41 @@ type GoblinCoinProgramContext = {
     purpose: GoblinCoinPurpose;
 };
 
+type GoblinChoicePromptKind =
+    | 'diviner_change_discard'
+    | 'chaos_lord_counter_target'
+    | 'discard_hand_cards'
+    | 'recruiters_shuffle_discard'
+    | 'blaster_heads_confirm'
+    | 'blaster_tails_destination'
+    | 'demolition_counter_target'
+    | 'demolition_destroy_action'
+    | 'he_who_smelt_it_next_target';
+
+type GoblinChoicePromptContext = GoblinCoinProgramContext & {
+    choiceKind: GoblinChoicePromptKind;
+    choiceCount?: number;
+};
+
+type GoblinMinionChoice = {
+    minionUid?: string;
+    minionDefId?: string;
+    defId?: string;
+    baseIndex?: number;
+    skip?: boolean;
+};
+
+type GoblinCardChoice = {
+    cardUid?: string;
+    defId?: string;
+    skip?: boolean;
+};
+
+type GoblinBaseChoice = {
+    baseIndex?: number;
+    skip?: boolean;
+};
+
 const CHAOS_LORD = 'goblins_chaos_lord';
 const DIVINER = 'goblins_diviner';
 const BLASTER = 'goblins_blaster';
@@ -73,43 +118,84 @@ function allMinions(state: SmashUpCore, predicate: (minion: MinionOnBase, baseIn
     );
 }
 
-function firstOwnMinion(state: SmashUpCore, playerId: PlayerId, baseIndex?: number): LocatedMinion | undefined {
-    return allMinions(state, (minion, index) =>
-        minion.controller === playerId && (baseIndex === undefined || index === baseIndex),
-    )[0];
-}
-
 function firstOtherBaseIndex(state: SmashUpCore, fromBaseIndex: number): number | undefined {
     const index = state.bases.findIndex((_, candidateIndex) => candidateIndex !== fromBaseIndex);
     return index >= 0 ? index : undefined;
 }
 
-function discardFirstHandCards(state: SmashUpCore, playerId: PlayerId, count: number, now: number): SmashUpEvent[] {
-    const cards = state.players[playerId]?.hand.slice(0, count) ?? [];
-    if (cards.length === 0) return [];
-    return [{
-        type: SU_EVENTS.CARDS_DISCARDED,
-        payload: { playerId, cardUids: cards.map(card => card.uid) },
-        timestamp: now,
-    } as SmashUpEvent];
+function cardLabel(card: CardInstance): string {
+    return getCardDef(card.defId)?.name ?? card.defId;
 }
 
-function drawThenDiscard(state: SmashUpCore, playerId: PlayerId, count: number, random: AbilityContext['random'], now: number): SmashUpEvent[] {
-    const drawEvents = buildStandardDrawEvents(state, playerId, count, random, now);
-    const existingHandUids = state.players[playerId]?.hand.map(card => card.uid) ?? [];
-    const drawnUids = drawEvents.flatMap(event =>
-        event.type === SU_EVENTS.CARDS_DRAWN ? (event as CardsDrawnEvent).payload.cardUids : [],
-    );
-    const discardUids = [...existingHandUids, ...drawnUids].slice(0, count);
-    if (discardUids.length === 0) return drawEvents;
-    return [
-        ...drawEvents,
+function minionLabel(minion: MinionOnBase): string {
+    return getCardDef(minion.defId)?.name ?? minion.defId;
+}
+
+function handCardOptions(state: SmashUpCore, playerId: PlayerId) {
+    return (state.players[playerId]?.hand ?? []).map((card, index) => ({
+        id: `card-${index}`,
+        label: cardLabel(card),
+        value: { cardUid: card.uid, defId: card.defId },
+        displayMode: 'card' as const,
+    }));
+}
+
+function discardCardOptions(state: SmashUpCore, playerId: PlayerId) {
+    return (state.players[playerId]?.discard ?? []).map((card, index) => ({
+        id: `discard-${index}`,
+        label: cardLabel(card),
+        value: { cardUid: card.uid, defId: card.defId },
+        displayMode: 'card' as const,
+    }));
+}
+
+function minionTargetOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (minion: MinionOnBase, baseIndex: number) => boolean,
+    sourceDefId: string,
+) {
+    return buildMinionTargetOptions(
+        allMinions(state, predicate).map(({ minion, baseIndex }) => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: minionLabel(minion),
+        })),
         {
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId, cardUids: discardUids },
-            timestamp: now,
-        } as SmashUpEvent,
-    ];
+            state,
+            sourcePlayerId: playerId,
+            sourceDefId,
+            sourceKind: 'nonAction',
+            effectType: 'affect',
+        },
+    );
+}
+
+function ongoingActionOptions(state: SmashUpCore) {
+    return state.bases.flatMap((base, baseIndex) => {
+        const baseActions = base.ongoingActions.flatMap(action =>
+            buildFieldSourceActionOptions({
+                type: 'ongoing',
+                uid: action.uid,
+                defId: action.defId,
+                baseIndex,
+                label: getCardDef(action.defId)?.name ?? action.defId,
+            }, { cardUid: action.uid, baseIndex }),
+        );
+        const attachedActions = base.minions.flatMap(minion =>
+            minion.attachedActions.flatMap(action =>
+                buildFieldSourceActionOptions({
+                    type: 'ongoing',
+                    uid: action.uid,
+                    defId: action.defId,
+                    baseIndex,
+                    label: getCardDef(action.defId)?.name ?? action.defId,
+                }, { cardUid: action.uid, baseIndex, minionUid: minion.uid }),
+            ),
+        );
+        return [...baseActions, ...attachedActions];
+    });
 }
 
 function actionPlayedFromHand(card: CardInstance, playerId: PlayerId, now: number): SmashUpEvent {
@@ -187,6 +273,417 @@ function continueGoblinCoin(
     };
 }
 
+function stripChoiceContext(context: GoblinChoicePromptContext, state: MatchState<SmashUpCore>, now: number): GoblinCoinProgramContext {
+    const { choiceKind: _choiceKind, choiceCount: _choiceCount, ...rest } = context;
+    return {
+        ...rest,
+        matchState: state,
+        now,
+    };
+}
+
+function continueAfterPrompt(
+    context: GoblinChoicePromptContext,
+    state: MatchState<SmashUpCore>,
+    timestamp: number,
+    events: SmashUpEvent[],
+) {
+    const baseContext = stripChoiceContext(context, state, timestamp);
+    const purpose = baseContext.purpose;
+
+    if (purpose.kind === 'demolition' && (
+        context.choiceKind === 'demolition_counter_target'
+        || context.choiceKind === 'demolition_destroy_action'
+    )) {
+        if (purpose.remainingFlips <= 1) {
+            return { events, matchState: state };
+        }
+        return {
+            events,
+            matchState: state,
+            context: {
+                ...baseContext,
+                stage: 'start' as const,
+                heads: undefined,
+                afterEffects: undefined,
+                purpose: { ...purpose, remainingFlips: purpose.remainingFlips - 1 },
+            },
+            nextProgram: goblinCoinProgram,
+        };
+    }
+
+    if (purpose.kind === 'he_who_smelt_it' && context.choiceKind === 'he_who_smelt_it_next_target') {
+        return { events, matchState: state };
+    }
+
+    if (purpose.kind === 'goblin_caves' && context.choiceKind === 'discard_hand_cards') {
+        if (purpose.index + 1 >= purpose.playerIds.length) {
+            return { events, matchState: state };
+        }
+        return {
+            events,
+            matchState: state,
+            context: {
+                ...baseContext,
+                stage: 'start' as const,
+                playerId: purpose.playerIds[purpose.index + 1],
+                heads: undefined,
+                afterEffects: undefined,
+                purpose: { ...purpose, index: purpose.index + 1 },
+            },
+            nextProgram: goblinCoinProgram,
+        };
+    }
+
+    return {
+        events,
+        matchState: state,
+        context: baseContext,
+        nextProgram: goblinCoinProgram,
+    };
+}
+
+function discardSelectedHandCards(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    choices: GoblinCardChoice[],
+    count: number,
+    timestamp: number,
+): SmashUpEvent[] {
+    const allowed = new Set((state.players[playerId]?.hand ?? []).map(card => card.uid));
+    const selected = choices
+        .map(choice => choice.cardUid)
+        .filter((uid): uid is string => !!uid && allowed.has(uid))
+        .slice(0, count);
+    if (selected.length === 0) return [];
+    return [{
+        type: SU_EVENTS.CARDS_DISCARDED,
+        payload: { playerId, cardUids: selected },
+        timestamp,
+    } as SmashUpEvent];
+}
+
+function buildBlasterHeadsEvents(context: GoblinCoinProgramContext, state: SmashUpCore): SmashUpEvent[] {
+    if (context.purpose.kind !== 'blaster') return [];
+    const source = findMinionOnBases(state, context.purpose.sourceCardUid);
+    if (!source) return [];
+    return [addTempPower(source.minion.uid, source.baseIndex, 2, 'goblins_blaster_heads', context.now, {
+        sourcePlayerId: context.playerId,
+        sourceDefId: BLASTER,
+        sourceControllerId: context.playerId,
+        sourceBaseIndex: source.baseIndex,
+    })];
+}
+
+function buildBlasterMoveEvents(
+    context: GoblinCoinProgramContext,
+    state: SmashUpCore,
+    selectedBaseIndex: number | undefined,
+): SmashUpEvent[] {
+    if (context.purpose.kind !== 'blaster') return [];
+    const source = findMinionOnBases(state, context.purpose.sourceCardUid);
+    if (!source || selectedBaseIndex === undefined || selectedBaseIndex === source.baseIndex || !state.bases[selectedBaseIndex]) return [];
+    return buildValidatedMoveEvents(state, {
+        minionUid: source.minion.uid,
+        minionDefId: source.minion.defId,
+        fromBaseIndex: source.baseIndex,
+        toBaseIndex: selectedBaseIndex,
+        reason: 'goblins_blaster_tails',
+        now: context.now,
+        sourcePlayerId: context.playerId,
+        sourceDefId: BLASTER,
+        sourceControllerId: context.playerId,
+        sourceBaseIndex: source.baseIndex,
+        sourceKind: 'nonAction',
+    });
+}
+
+function buildDemolitionDestroyEvents(
+    context: GoblinCoinProgramContext,
+    state: SmashUpCore,
+    cardUid: string | undefined,
+): SmashUpEvent[] {
+    if (context.purpose.kind !== 'demolition' || !cardUid) return [];
+    return buildValidatedOngoingDetachEvents(state, {
+        cardUid,
+        reason: 'goblins_demolition_tails',
+        now: context.now,
+        expectedLocation: 'any',
+        sourcePlayerId: context.playerId,
+        sourceCardUid: context.purpose.sourceCardUid,
+        sourceDefId: context.purpose.sourceDefId,
+        sourceControllerId: context.playerId,
+        sourceBaseIndex: context.purpose.sourceBaseIndex,
+    });
+}
+
+const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'goblins_choice',
+    interactionSourceIds: [
+        'goblins_diviner',
+        'goblins_chaos_lord',
+        'goblins_recruiters',
+        'goblins_blaster',
+        'goblins_demolition',
+        'goblins_he_who_smelt_it',
+        'base_goblin_caves',
+    ],
+    buildInteraction: (context) => {
+        const state = context.matchState!.core;
+        switch (context.choiceKind) {
+            case 'diviner_change_discard':
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_diviner_discard_${context.now}`,
+                    context.playerId,
+                    '占卜师：选择弃掉一张牌来改变硬币结果',
+                    [createSkipOption(), ...handCardOptions(state, context.playerId)],
+                    {
+                        titleKey: 'ui.goblins_diviner_discard_title',
+                        sourceId: 'goblins_diviner',
+                        targetType: 'generic',
+                        genericIntent: 'mixed-card-and-control',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            case 'chaos_lord_counter_target':
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_chaos_lord_target_${context.now}`,
+                    context.playerId,
+                    '混沌领主：选择一个你的随从放置 +1 指示物',
+                    minionTargetOptions(state, context.playerId, minion => minion.controller === context.playerId, CHAOS_LORD),
+                    {
+                        titleKey: 'ui.goblins_chaos_lord_target_title',
+                        sourceId: 'goblins_chaos_lord',
+                        targetType: 'minion',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            case 'discard_hand_cards': {
+                const count = Math.min(context.choiceCount ?? 1, state.players[context.playerId]?.hand.length ?? 0);
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_discard_${context.playerId}_${context.now}`,
+                    context.playerId,
+                    count > 1 ? `选择弃掉 ${count} 张牌` : '选择弃掉一张牌',
+                    handCardOptions(state, context.playerId),
+                    {
+                        sourceId: context.purpose.kind === 'goblin_caves' ? 'base_goblin_caves' : 'goblins_chaos_lord',
+                        targetType: 'generic',
+                        genericIntent: 'card-pool',
+                        multi: { min: count, max: count },
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            }
+            case 'recruiters_shuffle_discard':
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_recruiters_discard_${context.now}`,
+                    context.playerId,
+                    '哥布林招募员：选择弃牌堆一张牌洗回牌库',
+                    [createSkipOption(), ...discardCardOptions(state, context.playerId)],
+                    {
+                        titleKey: 'ui.goblins_recruiters_discard_title',
+                        sourceId: 'goblins_recruiters',
+                        targetType: 'generic',
+                        genericIntent: 'mixed-card-and-control',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            case 'blaster_heads_confirm':
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_blaster_heads_${context.now}`,
+                    context.playerId,
+                    '爆破手：是否让此随从直到回合结束 +2 力量？',
+                    [
+                        { id: 'confirm', label: '+2 力量', labelKey: 'ui.goblins_blaster_plus_power_option', value: { confirm: true }, displayMode: 'button' as const },
+                        createSkipOption(),
+                    ],
+                    {
+                        titleKey: 'ui.goblins_blaster_heads_title',
+                        sourceId: 'goblins_blaster',
+                        targetType: 'button',
+                        buttonIntent: 'confirm-known-object',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            case 'blaster_tails_destination': {
+                const source = context.purpose.kind === 'blaster'
+                    ? findMinionOnBases(state, context.purpose.sourceCardUid)
+                    : undefined;
+                const candidates = state.bases
+                    .map((base, baseIndex) => ({ baseIndex, label: base.defId }))
+                    .filter(candidate => candidate.baseIndex !== source?.baseIndex);
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_blaster_tails_${context.now}`,
+                    context.playerId,
+                    '爆破手：选择要移动到的基地',
+                    [createSkipOption(), ...buildBaseTargetOptions(candidates, state)],
+                    {
+                        titleKey: 'ui.goblins_blaster_tails_title',
+                        sourceId: 'goblins_blaster',
+                        targetType: 'generic',
+                        genericIntent: 'mixed-card-and-control',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            }
+            case 'demolition_counter_target':
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_demolition_counter_${context.now}`,
+                    context.playerId,
+                    '爆破：选择你的一个随从放置 +1 指示物',
+                    minionTargetOptions(state, context.playerId, minion => minion.controller === context.playerId, 'goblins_demolition'),
+                    {
+                        titleKey: 'ui.goblins_demolition_counter_title',
+                        sourceId: 'goblins_demolition',
+                        targetType: 'minion',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            case 'demolition_destroy_action':
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_demolition_action_${context.now}`,
+                    context.playerId,
+                    '爆破：选择一个基地或随从上的行动摧毁',
+                    [createSkipOption(), ...ongoingActionOptions(state)],
+                    {
+                        titleKey: 'ui.goblins_demolition_action_title',
+                        sourceId: 'goblins_demolition',
+                        targetType: 'generic',
+                        genericIntent: 'mixed-card-and-control',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            case 'he_who_smelt_it_next_target': {
+                const previousTarget = context.purpose.kind === 'he_who_smelt_it' ? context.purpose.targetMinionUid : undefined;
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_he_who_smelt_it_next_${context.now}`,
+                    context.playerId,
+                    '谁放的屁：是否选择另一个随从继续投硬币？',
+                    [
+                        createSkipOption(),
+                        ...minionTargetOptions(
+                            state,
+                            context.playerId,
+                            minion => minion.uid !== previousTarget,
+                            'goblins_he_who_smelt_it',
+                        ),
+                    ],
+                    {
+                        titleKey: 'ui.goblins_he_who_smelt_it_next_title',
+                        sourceId: 'goblins_he_who_smelt_it',
+                        targetType: 'generic',
+                        genericIntent: 'mixed-card-and-control',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            }
+            default:
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_choice_${context.now}`,
+                    context.playerId,
+                    '哥布林：选择',
+                    [createSkipOption()],
+                    {
+                        titleKey: 'ui.goblins_choice_title',
+                        sourceId: 'goblins_choice',
+                        targetType: 'button',
+                        autoResolveIfSingle: false,
+                    },
+                );
+        }
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const values = (Array.isArray(value) ? value : [value]) as Array<GoblinMinionChoice & GoblinCardChoice & GoblinBaseChoice & { confirm?: boolean; cardUid?: string }>;
+        const selected = values.find(entry => !entry?.skip);
+        const events = (() => {
+            switch (context.choiceKind) {
+                case 'diviner_change_discard': {
+                    if (!selected?.cardUid) return [];
+                    const preferredHeads = context.preferredResult === 'heads';
+                    const diviner = allMinions(state.core, minion => minion.defId === DIVINER && minion.controller === context.playerId)
+                        .find(source => source.minion.metadata?.goblinsDivinerChangeTurn !== state.core.turnNumber);
+                    const card = state.core.players[context.playerId]?.hand.find(candidate => candidate.uid === selected.cardUid);
+                    if (!diviner || !card) return [];
+                    context.heads = preferredHeads;
+                    return [
+                        {
+                            type: SU_EVENTS.CARDS_DISCARDED,
+                            payload: { playerId: context.playerId, cardUids: [card.uid] },
+                            timestamp,
+                        } as SmashUpEvent,
+                        markDivinerChangeUsed(diviner, state.core.turnNumber, context.reason + '_diviner_change', timestamp),
+                    ];
+                }
+                case 'chaos_lord_counter_target':
+                case 'demolition_counter_target': {
+                    if (!selected?.minionUid || selected.baseIndex === undefined) return [];
+                    const target = state.core.bases[selected.baseIndex]?.minions.find(minion =>
+                        minion.uid === selected.minionUid
+                        && (context.choiceKind !== 'demolition_counter_target' || minion.controller === context.playerId));
+                    if (!target) return [];
+                    return [addPowerCounter(
+                        target.uid,
+                        selected.baseIndex,
+                        1,
+                        context.choiceKind === 'chaos_lord_counter_target' ? context.reason + '_chaos_lord' : 'goblins_demolition_heads',
+                        timestamp,
+                    )];
+                }
+                case 'discard_hand_cards':
+                    return discardSelectedHandCards(state.core, context.playerId, values, context.choiceCount ?? 1, timestamp);
+                case 'recruiters_shuffle_discard': {
+                    if (!selected?.cardUid) return [];
+                    const card = state.core.players[context.playerId]?.discard.find(candidate => candidate.uid === selected.cardUid);
+                    return card ? [shuffleDiscardCardIntoDeck(state.core, context.playerId, card, context.random, context.reason + '_goblin_recruiters', timestamp)] : [];
+                }
+                case 'blaster_heads_confirm':
+                    return selected?.confirm ? buildBlasterHeadsEvents({ ...context, now: timestamp }, state.core) : [];
+                case 'blaster_tails_destination':
+                    return buildBlasterMoveEvents({ ...context, now: timestamp }, state.core, selected?.baseIndex);
+                case 'demolition_destroy_action':
+                    return buildDemolitionDestroyEvents({ ...context, now: timestamp }, state.core, selected?.cardUid);
+                case 'he_who_smelt_it_next_target':
+                    return [];
+                default:
+                    return [];
+            }
+        })();
+
+        if (context.choiceKind === 'he_who_smelt_it_next_target') {
+            if (!selected?.minionUid) return { events, matchState: state };
+            const nextContext = stripChoiceContext(context, state, timestamp);
+            if (nextContext.purpose.kind !== 'he_who_smelt_it') return { events, matchState: state };
+            return {
+                events,
+                matchState: state,
+                context: {
+                    ...nextContext,
+                    stage: 'start' as const,
+                    heads: undefined,
+                    afterEffects: undefined,
+                    purpose: {
+                        ...nextContext.purpose,
+                        flipIndex: nextContext.purpose.flipIndex + 1,
+                        targetMinionUid: selected.minionUid,
+                    },
+                },
+                nextProgram: goblinCoinProgram,
+            };
+        }
+
+        return continueAfterPrompt(context, state, timestamp, events);
+    },
+});
+
 function buildCoinResultChangeEvents(
     state: SmashUpCore,
     playerId: PlayerId,
@@ -216,21 +713,13 @@ function buildCoinResultChangeEvents(
         return { heads: preferredHeads, events };
     }
 
+    return { heads, events };
+}
+
+function canPromptDivinerChange(state: SmashUpCore, playerId: PlayerId): boolean {
     const diviner = allMinions(state, minion => minion.defId === DIVINER && minion.controller === playerId)
         .find(source => source.minion.metadata?.goblinsDivinerChangeTurn !== state.turnNumber);
-    const discardCard = state.players[playerId]?.hand[0];
-    if (diviner && discardCard) {
-        const discard = {
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId, cardUids: [discardCard.uid] },
-            timestamp: now,
-        } as SmashUpEvent;
-        const mark = markDivinerChangeUsed(diviner, state.turnNumber, reason + '_diviner_change', now);
-        events.push(discard, mark);
-        return { heads: preferredHeads, events };
-    }
-
-    return { heads, events };
+    return !!diviner && (state.players[playerId]?.hand.length ?? 0) > 0;
 }
 
 function buildAfterOwnCoinFlipQueue(
@@ -264,14 +753,8 @@ function buildAfterOwnCoinFlipEffectEvents(
     reason: string,
 ): SmashUpEvent[] {
     switch (effect.kind) {
-        case 'chaos_lord': {
-            if (!state.bases[effect.sourceBaseIndex]?.minions.some(minion => minion.uid === effect.sourceCardUid && minion.defId === CHAOS_LORD)) return [];
-            if (heads) {
-                const target = firstOwnMinion(state, playerId);
-                return target ? [addPowerCounter(target.minion.uid, target.baseIndex, 1, reason + '_chaos_lord', now)] : [];
-            }
-            return drawThenDiscard(state, playerId, 1, random, now);
-        }
+        case 'chaos_lord':
+            return [];
         case 'diviner_draw': {
             const source = state.bases[effect.sourceBaseIndex]?.minions.find(minion => minion.uid === effect.sourceCardUid && minion.defId === DIVINER);
             if (!source || source.metadata?.goblinsDivinerDrawTurn === state.turnNumber) return [];
@@ -293,15 +776,14 @@ function buildAfterOwnCoinFlipEffectEvents(
             const active = state.bases[effect.sourceBaseIndex]?.ongoingActions.some(action => action.uid === effect.sourceCardUid && action.defId === RECRUITERS && action.ownerId === playerId);
             if (!active) return [];
             if (heads) return buildStandardDrawEvents(state, playerId, 1, random, now);
-            const discardCard = state.players[playerId]?.discard[0];
-            return discardCard ? [shuffleDiscardCardIntoDeck(state, playerId, discardCard, random, reason + '_goblin_recruiters', now)] : [];
+            return [];
         }
         default:
             return [];
     }
 }
 
-function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: SmashUpCore): ReturnType<typeof continueGoblinCoin> {
+function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: SmashUpCore) {
     const heads = context.heads === true;
     const purpose = context.purpose;
     switch (purpose.kind) {
@@ -316,12 +798,18 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
             const source = findMinionOnBases(state, purpose.sourceCardUid);
             if (!source) return continueGoblinCoin(context, []);
             if (heads) {
-                return continueGoblinCoin(context, [addTempPower(source.minion.uid, source.baseIndex, 2, 'goblins_blaster_heads', context.now, {
-                    sourcePlayerId: context.playerId,
-                    sourceDefId: BLASTER,
-                    sourceControllerId: context.playerId,
-                    sourceBaseIndex: source.baseIndex,
-                })]);
+                return {
+                    events: [],
+                    context: { ...context, choiceKind: 'blaster_heads_confirm' as const },
+                    nextProgram: goblinChoicePromptProgram,
+                };
+            }
+            if (purpose.targetBaseIndex === undefined) {
+                return {
+                    events: [],
+                    context: { ...context, choiceKind: 'blaster_tails_destination' as const },
+                    nextProgram: goblinChoicePromptProgram,
+                };
             }
             const toBaseIndex = purpose.targetBaseIndex !== undefined && purpose.targetBaseIndex !== source.baseIndex && state.bases[purpose.targetBaseIndex]
                 ? purpose.targetBaseIndex
@@ -411,26 +899,20 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
                 : []);
         }
         case 'demolition': {
-            const events = (() => {
-                if (heads) {
-                    const explicitTarget = purpose.targetMinionUid ? findMinionOnBases(state, purpose.targetMinionUid) : undefined;
-                    const target = explicitTarget?.minion.controller === context.playerId ? explicitTarget : firstOwnMinion(state, context.playerId);
-                    return target ? [addPowerCounter(target.minion.uid, target.baseIndex, 1, 'goblins_demolition_heads', context.now)] : [];
-                }
-                const target = firstOngoingAction(state, purpose.targetBaseIndex);
-                return target ? buildValidatedOngoingDetachEvents(state, {
-                    cardUid: target.uid,
-                    reason: 'goblins_demolition_tails',
-                    now: context.now,
-                    expectedLocation: 'any',
-                    sourcePlayerId: context.playerId,
-                    sourceCardUid: purpose.sourceCardUid,
-                    sourceDefId: purpose.sourceDefId,
-                    sourceControllerId: context.playerId,
-                    sourceBaseIndex: purpose.sourceBaseIndex,
-                }) : [];
-            })();
-            return continueGoblinCoin(context, events, purpose.remainingFlips > 1 ? {
+            const hasChoice = heads
+                ? allMinions(state, minion => minion.controller === context.playerId).length > 0
+                : ongoingActionOptions(state).length > 0;
+            if (hasChoice) {
+                return {
+                    events: [],
+                    context: {
+                        ...context,
+                        choiceKind: heads ? 'demolition_counter_target' as const : 'demolition_destroy_action' as const,
+                    },
+                    nextProgram: goblinChoicePromptProgram,
+                };
+            }
+            return continueGoblinCoin(context, [], purpose.remainingFlips > 1 ? {
                 ...context,
                 stage: 'start',
                 heads: undefined,
@@ -449,13 +931,19 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
                     ? targets.find(candidate => candidate.minion.uid === purpose.targetMinionUid)
                     : targets[purpose.flipIndex % targets.length]) ?? targets[0];
                 if (!target) return continueGoblinCoin(context, []);
-                return continueGoblinCoin(context, [addPowerCounter(target.minion.uid, target.baseIndex, 1, 'goblins_he_who_smelt_it_heads', context.now)], {
-                    ...context,
-                    stage: 'start',
-                    heads: undefined,
-                    afterEffects: undefined,
-                    purpose: { ...purpose, flipIndex: purpose.flipIndex + 1 },
-                });
+                const remainingTargets = targets.filter(candidate => candidate.minion.uid !== target.minion.uid);
+                if (remainingTargets.length === 0) {
+                    return continueGoblinCoin(context, [addPowerCounter(target.minion.uid, target.baseIndex, 1, 'goblins_he_who_smelt_it_heads', context.now)]);
+                }
+                return {
+                    events: [addPowerCounter(target.minion.uid, target.baseIndex, 1, 'goblins_he_who_smelt_it_heads', context.now)],
+                    context: {
+                        ...context,
+                        choiceKind: 'he_who_smelt_it_next_target' as const,
+                        purpose: { ...purpose, targetMinionUid: target.minion.uid },
+                    },
+                    nextProgram: goblinChoicePromptProgram,
+                };
             }
         case 'revving_up': {
             const minionUid = purpose.minionUids[purpose.index];
@@ -474,16 +962,35 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
         }
         case 'goblin_caves': {
             const playerId = purpose.playerIds[purpose.index];
-            const events = !playerId
-                ? []
-                : heads
-                ? [{
+            if (!playerId) return continueGoblinCoin(context, []);
+            if (heads) {
+                return continueGoblinCoin(context, [{
                     type: SU_EVENTS.VP_AWARDED,
                     payload: { playerId, amount: 1, reason: 'base_goblin_caves_heads' },
                     timestamp: context.now,
-                } as SmashUpEvent]
-                : discardFirstHandCards(state, playerId, 2, context.now);
-            return continueGoblinCoin(context, events, purpose.index + 1 < purpose.playerIds.length ? {
+                } as SmashUpEvent], purpose.index + 1 < purpose.playerIds.length ? {
+                    ...context,
+                    stage: 'start',
+                    playerId: purpose.playerIds[purpose.index + 1],
+                    heads: undefined,
+                    afterEffects: undefined,
+                    purpose: { ...purpose, index: purpose.index + 1 },
+                } : undefined);
+            }
+            const discardCount = Math.min(2, state.players[playerId]?.hand.length ?? 0);
+            if (discardCount > 0) {
+                return {
+                    events: [],
+                    context: {
+                        ...context,
+                        playerId,
+                        choiceKind: 'discard_hand_cards' as const,
+                        choiceCount: discardCount,
+                    },
+                    nextProgram: goblinChoicePromptProgram,
+                };
+            }
+            return continueGoblinCoin(context, [], purpose.index + 1 < purpose.playerIds.length ? {
                 ...context,
                 stage: 'start',
                 playerId: purpose.playerIds[purpose.index + 1],
@@ -514,6 +1021,23 @@ const goblinCoinProgram = createEffectProgram<
         }
         const rawHeads = flip(random);
         const changed = buildCoinResultChangeEvents(matchState.core, context.playerId, rawHeads, context.now, context.reason, context.preferredResult);
+        if (
+            context.preferredResult !== undefined
+            && changed.heads !== (context.preferredResult === 'heads')
+            && canPromptDivinerChange(matchState.core, context.playerId)
+        ) {
+            return {
+                events: changed.events,
+                context: {
+                    ...context,
+                    stage: 'after-change' as const,
+                    heads: changed.heads,
+                    initialEvents: undefined,
+                    choiceKind: 'diviner_change_discard' as const,
+                },
+                nextProgram: goblinChoicePromptProgram,
+            };
+        }
         return continueGoblinCoin(context, changed.events, {
             ...context,
             stage: 'after-change',
@@ -532,6 +1056,57 @@ const goblinCoinProgram = createEffectProgram<
         const [effect, ...remainingEffects] = context.afterEffects ?? [];
         if (!effect) {
             return continueGoblinCoin(context, [], { ...context, stage: 'post-coin' });
+        }
+        if (effect.kind === 'chaos_lord') {
+            const active = matchState.core.bases[effect.sourceBaseIndex]?.minions.some(minion =>
+                minion.uid === effect.sourceCardUid && minion.defId === CHAOS_LORD);
+            if (!active) return continueGoblinCoin(context, [], { ...context, afterEffects: remainingEffects });
+            if (context.heads === true) {
+                if (allMinions(matchState.core, minion => minion.controller === context.playerId).length === 0) {
+                    return continueGoblinCoin(context, [], { ...context, afterEffects: remainingEffects });
+                }
+                return {
+                    events: [],
+                    context: {
+                        ...context,
+                        afterEffects: remainingEffects,
+                        choiceKind: 'chaos_lord_counter_target' as const,
+                    },
+                    nextProgram: goblinChoicePromptProgram,
+                };
+            }
+            const drawEvents = buildStandardDrawEvents(matchState.core, context.playerId, 1, random, context.now);
+            const canDiscardAfterDraw = (matchState.core.players[context.playerId]?.hand.length ?? 0) > 0
+                || drawEvents.some(event => event.type === SU_EVENTS.CARDS_DRAWN);
+            if (!canDiscardAfterDraw) {
+                return continueGoblinCoin(context, drawEvents, { ...context, afterEffects: remainingEffects });
+            }
+            return {
+                events: drawEvents,
+                context: {
+                    ...context,
+                    afterEffects: remainingEffects,
+                    choiceKind: 'discard_hand_cards' as const,
+                    choiceCount: 1,
+                },
+                nextProgram: goblinChoicePromptProgram,
+            };
+        }
+        if (effect.kind === 'recruiters' && context.heads !== true) {
+            const active = matchState.core.bases[effect.sourceBaseIndex]?.ongoingActions.some(action =>
+                action.uid === effect.sourceCardUid && action.defId === RECRUITERS && action.ownerId === context.playerId);
+            if (!active || (matchState.core.players[context.playerId]?.discard.length ?? 0) === 0) {
+                return continueGoblinCoin(context, [], { ...context, afterEffects: remainingEffects });
+            }
+            return {
+                events: [],
+                context: {
+                    ...context,
+                    afterEffects: remainingEffects,
+                    choiceKind: 'recruiters_shuffle_discard' as const,
+                },
+                nextProgram: goblinChoicePromptProgram,
+            };
         }
         return continueGoblinCoin(
             context,
@@ -619,19 +1194,6 @@ function bushwhacking(ctx: AbilityContext): AbilityResult {
             targetBaseIndex: ctx.targetBaseIndex,
         },
     });
-}
-
-function firstOngoingAction(state: SmashUpCore, baseIndex?: number): { uid: string } | undefined {
-    for (const [index, base] of state.bases.entries()) {
-        if (baseIndex !== undefined && index !== baseIndex) continue;
-        const baseAction = base.ongoingActions[0];
-        if (baseAction) return { uid: baseAction.uid };
-        for (const minion of base.minions) {
-            const attached = minion.attachedActions[0];
-            if (attached) return { uid: attached.uid };
-        }
-    }
-    return undefined;
 }
 
 function demolition(ctx: AbilityContext): AbilityResult {

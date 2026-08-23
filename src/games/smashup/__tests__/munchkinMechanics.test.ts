@@ -3873,7 +3873,7 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         });
     });
 
-    it('夏尔首领只有一个合法基地时，直接授予该基地额外随从额度', () => {
+    it('夏尔首领只有一个合法基地时，也先让玩家确认目标基地', () => {
         const state = makeState({
             bases: [
                 makeBase({
@@ -3902,18 +3902,31 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         }, fixedRandom);
 
         expect(activated.success).toBe(true);
-        expect(activated.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
-        expect(validate(activated.finalState, {
+        const prompt = getSimpleChoicePrompt(activated.finalState, 'munchkin_halflings_shire_marshal_choose_base');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.options.map((option: any) => option.value?.baseIndex)).toEqual([0]);
+
+        const resolved = respondToPromptOption(
+            activated.finalState,
+            option => option.value?.baseIndex === 0,
+            '夏尔首领唯一目标基地',
+            '0',
+            fixedRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
+        expect(validate(resolved.finalState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'ally-1', baseIndex: 0 },
         })).toEqual({ valid: true });
-        expect(validate(activated.finalState, {
+        expect(validate(resolved.finalState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'ally-1', baseIndex: 1 },
         })).toMatchObject({ valid: false });
-        expect(activated.finalState.core.bases[0].minions[0].talentUsed).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions[0].talentUsed).toBe(true);
     });
 
     it('夏尔首领有多个合法基地时，选择其中一个基地后只授予该基地额度', () => {

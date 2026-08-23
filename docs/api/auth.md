@@ -1,291 +1,53 @@
-# 认证接口
+# 认证 API
 
-> 负责注册、登录、JWT、邮箱验证、登出、修改密码。
+本文是认证接口索引。精确校验逻辑以 [`auth.controller.ts`](../../apps/api/src/modules/auth/auth.controller.ts) 和 [`auth.dto.ts`](../../apps/api/src/modules/auth/dtos/auth.dto.ts) 为准。
 
-## 1. 注册
+## 约定
 
-**POST** `/auth/register`
+- Access Token 通过 `Authorization: Bearer <token>` 传入。
+- Refresh Token 使用 httpOnly Cookie：`refresh_token`，path 为 `/auth`。
+- `login`、`refresh`、`logout` 使用 `{ success, code, message, data }` 包装响应；其它接口多为普通 JSON 或 `{ error }`。
+- Access Token 当前有效期 30 天；Refresh Token 当前有效期 180 天。
 
-### 请求体
-```json
-{
-  "username": "昵称",
-  "email": "user@example.com",
-  "code": "123456",
-  "password": "密码"
-}
-```
+## 路由
 
-### 成功响应（201）
-```json
-{
-  "message": "注册成功",
-  "user": {
-    "id": "用户ID",
-    "username": "昵称",
-    "email": "user@example.com",
-    "emailVerified": true
-  },
-  "token": "JWT Token"
-}
-```
+| 方法 | 路径 | 权限 | 请求体 / 参数 | 说明 |
+| --- | --- | --- | --- | --- |
+| POST | `/auth/send-register-code` | 公开 | `email` | 发送注册验证码；60 秒冷却，10 分钟内最多 5 次；邮箱已注册返回 `409` 和 `suggestLogin` |
+| POST | `/auth/register` | 公开 | `username`、`email`、`code`、`password` | 注册并签发 Access Token + Refresh Cookie；用户名 2-20，密码至少 4 |
+| POST | `/auth/send-reset-code` | 公开 | `email` | 发送重置密码验证码；邮箱不存在返回 `404` |
+| POST | `/auth/reset-password` | 公开 | `email`、`code`、`newPassword` | 校验验证码后更新密码，并撤销该用户 Refresh Token |
+| POST | `/auth/login` | 公开 | `account`、`password` | 仅邮箱登录；失败也返回 200，但 `success=false` |
+| POST | `/auth/refresh` | Refresh Cookie | 无 | 轮换 Refresh Token，并返回新的 Access Token |
+| POST | `/auth/logout` | 登录用户 | 无 | 当前 Access Token 进黑名单；Refresh Token 同步撤销 |
+| GET | `/auth/me` | 登录用户 | 无 | 当前用户、头像、后台角色、封禁状态和反馈积分 |
+| POST | `/auth/send-email-code` | 登录用户 | `email` | 给当前登录用户发送绑定 / 换绑邮箱验证码 |
+| POST | `/auth/verify-email` | 登录用户 | `email`、`code` | 绑定 / 更新邮箱 |
+| POST | `/auth/update-username` | 登录用户 | `username` | 更新昵称并返回新 JWT |
+| POST | `/auth/update-avatar` | 登录用户 | `avatar` | 更新头像 URL / 标识 |
+| POST | `/auth/upload-avatar` | 登录用户 | multipart `file`，可选裁剪参数 | 上传头像；允许 jpeg / png / webp / gif，最大 5MB |
+| POST | `/auth/change-password` | 登录用户 | `currentPassword`、`newPassword` | 校验旧密码后更新 |
 
-### 常见错误
-- 400 字段缺失
-- 400 昵称长度不合法
-- 400 密码长度不足
-- 400 邮箱格式错误
-- 400 邮箱验证码错误或过期
-- 409 邮箱已存在
+## 主要错误
 
----
+| 状态 / code | 含义 |
+| --- | --- |
+| `400` | 缺字段、邮箱格式错误、验证码错误 / 过期、用户名或密码长度不合法 |
+| `401` | 未登录、Token 无效、旧密码错误 |
+| `404` | 用户或邮箱不存在 |
+| `409` | 邮箱已注册 / 已绑定 |
+| `429` | 验证码发送或重置尝试过于频繁 |
+| `AUTH_INVALID_EMAIL` | 登录账号不是邮箱格式 |
+| `AUTH_EMAIL_NOT_REGISTERED` | 登录邮箱未注册 |
+| `AUTH_INVALID_PASSWORD` | 登录密码错误 |
+| `AUTH_LOGIN_LOCKED` | 登录失败次数过多，需等待 `retryAfterSeconds` |
+| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` | Refresh Token 缺失或无效 |
+| `AUTH_USER_NOT_FOUND` | Refresh Token 对应用户不存在 |
 
-## 2. 登录（仅邮箱）
+## 初始化管理员
 
-**POST** `/auth/login`
+CLI 入口：`npm run init:admin -- --email=admin@example.com --password=admin1234 --username=管理员 --actor=cli`
 
-### 请求体
-```json
-{
-  "account": "user@example.com",
-  "password": "密码"
-}
-```
+生产环境禁止执行。CLI 按邮箱查找用户：已存在则确保 `role=admin`、`emailVerified=true`；不存在则创建管理员。
 
-### 成功响应（200）
-```json
-{
-  "success": true,
-  "code": "AUTH_LOGIN_OK",
-  "message": "登录成功",
-  "data": {
-    "token": "JWT Token",
-    "user": {
-      "id": "用户ID",
-      "username": "昵称",
-      "email": "user@example.com",
-      "emailVerified": true
-    }
-  }
-}
-```
-
-### 常见错误（统一 200 返回，success=false）
-```json
-{
-  "success": false,
-  "code": "AUTH_INVALID_CREDENTIALS",
-  "message": "邮箱或密码错误",
-  "data": {}
-}
-```
-
-```json
-{
-  "success": false,
-  "code": "AUTH_LOGIN_LOCKED",
-  "message": "登录失败次数过多，请在 1800 秒后再试",
-  "data": { "retryAfterSeconds": 1800 }
-}
-```
-
----
-
-## 3. 获取当前用户
-
-**GET** `/auth/me`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 成功响应（200）
-```json
-{
-  "user": {
-    "id": "用户ID",
-    "username": "玩家名",
-    "email": "user@example.com",
-    "emailVerified": true,
-    "createdAt": "2026-01-01T00:00:00.000Z"
-  }
-}
-```
-
-### 常见错误
-- 401 未登录或 Token 无效
-- 404 用户不存在
-
----
-
-## 4. 发送邮箱验证码
-
-**POST** `/auth/send-email-code`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 请求体
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-### 成功响应（200）
-```json
-{
-  "message": "验证码已发送"
-}
-```
-
-### 常见错误
-- 400 缺少邮箱
-- 400 邮箱格式错误
-- 409 邮箱已被占用
-- 401 未登录
-
----
-
-## 5. 验证邮箱
-
-**POST** `/auth/verify-email`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 请求体
-```json
-{
-  "email": "user@example.com",
-  "code": "123456"
-}
-```
-
-### 成功响应（200）
-```json
-{
-  "message": "邮箱绑定成功",
-  "user": {
-    "id": "用户ID",
-    "username": "玩家名",
-    "email": "user@example.com",
-    "emailVerified": true
-  }
-}
-```
-
-### 常见错误
-- 400 邮箱或验证码缺失
-- 400 验证码错误或过期
-- 401 未登录
-
----
-
-## 6. 登出
-
-**POST** `/auth/logout`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 成功响应（200）
-```json
-{
-  "success": true,
-  "code": "AUTH_LOGOUT_OK",
-  "message": "退出登录成功",
-  "data": {}
-}
-```
-
-### 说明
-- 登出后 Token 会写入黑名单，直到过期为止。
-
----
-
-## 7. 刷新访问令牌
-
-**POST** `/auth/refresh`
-
-### 请求体
-无需请求体，Refresh Token 来自 Cookie。
-
-### 说明
-- Access Token 当前有效期为 30 天。
-- Refresh Token 通过 httpOnly Cookie 保存，当前有效期为 180 天。
-- 客户端启动、页面恢复可见、或 Access Token 即将/已经过期时，会优先调用本接口续签；续签失败后才要求重新登录。
-
-### 成功响应（200）
-```json
-{
-  "success": true,
-  "code": "AUTH_REFRESH_OK",
-  "message": "令牌刷新成功",
-  "data": { "token": "JWT Token" }
-}
-```
-
-### 常见错误（统一 200 返回，success=false）
-- `AUTH_MISSING_TOKEN` Refresh Token 缺失
-- `AUTH_INVALID_TOKEN` Refresh Token 无效
-- `AUTH_USER_NOT_FOUND` 用户不存在
-
-
-## 8. 修改密码
-
-**POST** `/auth/change-password`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 请求体
-```json
-{
-  "currentPassword": "旧密码",
-  "newPassword": "新密码"
-}
-```
-
-### 成功响应（200）
-```json
-{
-  "message": "密码修改成功"
-}
-```
-
-### 常见错误
-- 401 未登录
-- 400 缺少字段
-- 401 旧密码错误
-
----
-
-## 9. 初始化管理员（CLI，一次性）
-
-### 说明
-- **生产环境禁止执行**，执行会写入审计日志并报错。
-- CLI 会按 `email` 查找用户：
-  - 已存在：不会重复创建；会确保 `role=admin`、`emailVerified=true`。
-  - 不存在：创建管理员用户，`role=admin`、`emailVerified=true`。
-
-### 使用方式
-```bash
-npm run init:admin -- --email=admin@example.com --password=admin1234 --username=管理员 --actor=cli
-```
-
-可用环境变量（供 CLI 读取）：
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-- `ADMIN_USERNAME`
-- `ADMIN_ACTOR`
-- `ADMIN_ACTOR_IP`
+可用环境变量：`ADMIN_EMAIL`、`ADMIN_PASSWORD`、`ADMIN_USERNAME`、`ADMIN_ACTOR`、`ADMIN_ACTOR_IP`。

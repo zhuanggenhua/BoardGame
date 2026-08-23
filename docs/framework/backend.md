@@ -1,112 +1,68 @@
 ---
-description: 后端框架封装说明（避免重复造轮子）
+description: 后端框架入口：服务边界、复用能力和扩展落点
 ---
 
-# 后端框架封装说明
+# 后端框架入口
 
-> 目标：明确后端已有的「框架级封装」与复用入口，避免重复造轮子。
+本文只记录稳定后端入口和扩展边界；精确字段、DTO 和控制器实现以源码与测试为准。
 
-## 1. 架构总览（实际代码结构）
+## 服务边界
 
-```
-apps/api/src/main.ts         # 认证 + 社交服务入口（NestJS）
-apps/api/src/app.module.ts   # Nest 应用模块
-apps/api/src/modules/        # Auth/Friend/Message/Invite/Health 模块
-├── auth/             # 认证
-├── friend/           # 好友
-├── health/           # 健康检查
-├── invite/           # 邀请
-├── message/          # 消息
-└── review/           # 审核/反馈
-apps/api/src/gateways/       # 社交 Socket 网关
-└── social.gateway.ts # 社交 Socket 网关实现
-apps/api/src/shared/         # 公用模块（DTO/工具/中间件）
-├── decorators/       # 装饰器
-├── dtos/             # DTO 定义
-├── filters/          # 异常过滤器
-├── guards/           # 鉴权守卫
-└── i18n.ts           # 服务端 i18n
-server.ts                    # 游戏服务入口（GameTransportServer + Lobby Socket）
-src/server/
-├── db.ts                    # MongoDB 连接封装
-├── email.ts                 # 邮件发送封装（NestJS 复用）
-├── i18n.ts                  # 服务端 i18n（读取 public/locales/*/server.json）
-├── storage/                 # 游戏状态存储适配器
-│   └── MongoStorage.ts      # MongoDB 持久化 + TTL
-└── models/
-    └── MatchRecord.ts       # 对局归档模型
-```
+| 服务 | 职责 | 入口 |
+| --- | --- | --- |
+| 游戏服务 | 对局运行、房间、Lobby socket、对局归档 | [`server.ts`](../../server.ts) |
+| API 服务 | 认证、社交、后台、反馈、通知等 HTTP / Socket 能力 | [`apps/api/src/main.ts`](../../apps/api/src/main.ts) |
+| 数据与存储 | Mongo 连接、对局记录、持久化适配 | [`src/server/`](../../src/server/) |
+| 服务端 i18n | 服务端文案加载与语言资源 | [`src/server/i18n.ts`](../../src/server/i18n.ts) |
 
-## 2. 端口与入口
+## 端口与环境
 
-- **开发入口**：`http://localhost:4173`（同域代理详见 `docs/deploy.md`）
-- **游戏服务**：`18000`（`GAME_SERVER_PORT`）
-- **认证/社交服务**：`18001`（`API_SERVER_PORT`，前缀 `/auth`）
-- **MongoDB**：`27017`
+| 配置 | 默认 / 含义 |
+| --- | --- |
+| Web 开发入口 | `http://localhost:4173` |
+| `GAME_SERVER_PORT` | 游戏服务端口，默认 `18000` |
+| `API_SERVER_PORT` | API 服务端口，默认 `18001` |
+| `MONGO_URI` | Mongo 连接串；Docker 默认 `mongodb://mongodb:27017/boardgame` |
+| `JWT_SECRET` | JWT 密钥，生产环境必须显式配置 |
+| `USE_PERSISTENT_STORAGE` | `true` 启用 Mongo 持久化；`false` 使用内存存储 |
+| `LOCALES_DIR` | 服务端 i18n 目录，默认 `public/locales` |
 
-## 3. 数据库
+`USE_PERSISTENT_STORAGE=false` 用于本地轻量复现和 E2E 临时起服：游戏房间只在进程内保存，重启即丢；依赖 Mongo 的 UGC、排行榜和归档能力会降级或返回空结果。
 
-- 服务端通过 `MONGO_URI` 连接数据库
-- Docker 环境默认使用 `mongodb://mongodb:27017/boardgame`
+## 复用能力
 
-## 4. 环境变量
+| 能力 | 入口 | 何时查 |
+| --- | --- | --- |
+| Nest 模块与 controller | [`apps/api/src/modules/`](../../apps/api/src/modules/) | 新增或排查 HTTP API |
+| 社交 Socket | [`apps/api/src/gateways/social.gateway.ts`](../../apps/api/src/gateways/social.gateway.ts) | 好友、私聊、邀请推送 |
+| 大厅 Socket | [`server.ts`](../../server.ts) 与 [`src/services/lobbySocket.ts`](../../src/services/lobbySocket.ts) | 房间列表和大厅心跳 |
+| 游戏注册 | [`src/games/manifest.server.ts`](../../src/games/manifest.server.ts) | 服务端可运行游戏清单 |
+| Mongo 连接 | [`src/server/db.ts`](../../src/server/db.ts) | 数据库连接与本地降级 |
+| 对局归档 | [`src/server/models/MatchRecord.ts`](../../src/server/models/MatchRecord.ts) | 结束对局记录与历史查询 |
+| 邮件发送 | [`src/server/email.ts`](../../src/server/email.ts) | 邮件通知或验证码 |
 
-- `GAME_SERVER_PORT`：游戏服务端口
-- `API_SERVER_PORT`：认证服务端口
-- `MONGO_URI`：Mongo 连接串
-- `JWT_SECRET`：JWT 密钥（生产必须改）
-- `USE_PERSISTENT_STORAGE`：是否启用 Mongo 持久化存储（`true` 启用）
-- `LOCALES_DIR`：服务端 i18n 目录（默认 `public/locales`）
+新增后端能力先查表中入口；已有能力能扩展时，不新建第二套连接、鉴权、socket 或存储封装。
 
-### `USE_PERSISTENT_STORAGE=false` 的实际行为
+## 扩展落点
 
-- 游戏服务跳过 `connectDB()`，可在无 Mongo 的机器上直接启动
-- `HybridStorage` 退化为纯内存实现，房间只保存在进程内，重启即丢失
-- UGC 动态注册、排行榜查询、对局归档等依赖 Mongo 的能力会自动降级或返回空结果
-- 适用场景：`npm run dev:lite`、E2E 临时起服、本地快速复现 UI / 交互问题
+| 需求 | 落点 |
+| --- | --- |
+| 新增 HTTP API | `apps/api/src/modules/<domain>/` |
+| 跨 API 模块复用 DTO / guard / filter / decorator | `apps/api/src/shared/` |
+| 游戏服务私有逻辑 | `server.ts` 附近或 `src/server/` 内明确模块 |
+| 跨游戏服务端能力 | `src/server/` |
+| 数据模型 | `src/server/models/` |
+| 后台管理接口 | 先看 [`docs/api/admin.md`](../api/admin.md)，再改对应 controller / DTO |
 
-## 5. 已封装的服务层能力
+## 排查顺序
 
-- **认证/社交服务（NestJS）**
-  - 入口：`apps/api/src/main.ts`
-  - 模块：`apps/api/src/modules/*`
-  - Socket.IO：`apps/api/src/gateways/social.gateway.ts`
+- API 返回错误：先看 controller / DTO / guard，再看 [`docs/api/`](../api/) 的端点索引。
+- Socket 不推送：先确认命名空间、认证 token、订阅事件和服务端日志。
+- 本地起服不依赖 Mongo：确认 `USE_PERSISTENT_STORAGE=false`，再判断相关功能是否允许降级。
+- 对局没有归档：先查游戏结束回调、`MatchRecord` 写入和 Mongo 连接状态。
 
-- **游戏服务（GameTransportServer）**
-  - 入口：`server.ts`
-  - 服务端游戏注册：基于 `src/games/manifest.server.ts`（`GAME_SERVER_MANIFEST`）
-  - 比赛归档：`MatchRecord` + `archiveMatchResult`（通过 `onGameOver` 回调触发）
-  - 持久化存储：`src/server/storage/MongoStorage.ts`（TTL + `USE_PERSISTENT_STORAGE`）
+## 相关文档
 
-- **大厅实时通信（Socket.IO）**
-  - 服务端：`server.ts` 内的 Lobby Socket（`/lobby-socket`）
-  - 客户端：`src/services/lobbySocket.ts`
-  - 使用方式：订阅/取消订阅大厅更新 + 心跳
-
-- **数据库封装**
-  - 统一连接：`src/server/db.ts`
-  - Mongoose 模型：`src/server/models/`
-
-- **服务端 i18n**
-  - 入口：`src/server/i18n.ts`
-  - 资源：`public/locales/<lang>/server.json`（可用 `LOCALES_DIR` 覆盖）
-
-## 6. 何时扩展“框架”层（后端）
-
-- **跨服务复用**（认证/游戏/大厅通用） → 放 `src/server/` 目录下封装模块
-- **仅游戏服务内部使用** → 放 `server.ts` 附近的私有逻辑
-- **数据层复用** → 放 `src/server/models/`
-
-## 7. 扩展入口清单
-
-- **新增 API 服务**：在 `apps/api/src/modules/` 内新增模块
-- **新增路由模块**：通过 NestJS Controller 暴露
-- **新增数据模型**：`src/server/models/<Model>.ts`
-
-## 8. 相关文档
-
-- **部署与同域策略**：`docs/deploy.md`
-- **测试模式（调试面板）**：`docs/test-mode.md`
-- **工具脚本**：`docs/tools.md`
-
-> ✅ 所有新增封装必须优先复用现有基础设施（DB、JWT、Socket.IO 机制）。
+- [`deploy.md`](../deploy.md)：部署与同域策略。
+- [`debugging/test-mode.md`](../debugging/test-mode.md)：测试模式与调试入口。
+- [`tools.md`](../tools.md)：项目工具脚本。

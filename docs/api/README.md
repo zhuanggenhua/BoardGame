@@ -1,92 +1,34 @@
-# API 接口文档
+# API 文档入口
 
-> 本目录包含所有后端 API 的接口文档
+本目录只做后端接口导航和通用约定；精确字段、校验和返回结构以 controller / DTO / 测试为准。
 
-## 文档索引
+## 索引
 
-| 模块 | 文件 | 说明 |
-|------|------|------|
-| 认证 | [auth.md](auth.md) | 注册、登录、JWT、邮箱验证 |
-| 好友 | [friend.md](friend.md) | 好友添加/删除/搜索、在线状态 |
-| 消息 | [message.md](message.md) | 私聊消息、会话列表 |
-| 邀请 | [invite.md](invite.md) | 游戏邀请 |
-| 评论 | [review.md](review.md) | 游戏评论、好评率统计 |
-| 后台管理 | [admin.md](admin.md) | 用户管理、对局记录、统计数据 |
+| 模块 | 文件 | 主源 |
+| --- | --- | --- |
+| 认证 | [`auth.md`](auth.md) | `apps/api/src/modules/auth/` |
+| 好友 | [`friend.md`](friend.md) | `apps/api/src/modules/social/` |
+| 消息 | [`message.md`](message.md) | `apps/api/src/modules/social/` |
+| 邀请 | [`invite.md`](invite.md) | `apps/api/src/modules/social/` |
+| 评论 | [`review.md`](review.md) | `apps/api/src/modules/review/` |
+| 后台管理 | [`admin.md`](admin.md) | `apps/api/src/modules/admin/` 和相关 controller |
 
 ## 通用约定
 
-### 基础 URL
-- **开发环境**: `http://localhost:18001`
-- **生产环境**: 与 Web 同域（单体部署）
-
-### 认证方式
-所有需认证的接口需在请求头携带 JWT：
-```
-Authorization: Bearer <token>
-```
-
-### 分页参数
-列表接口统一使用以下分页参数：
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| page | number | 1 | 页码（从 1 开始） |
-| limit | number | 50 | 每页数量（最大 100） |
-
-### 分页响应格式
-```typescript
-interface PaginatedResponse<T> {
-  items: T[];      // 数据列表
-  page: number;    // 当前页码
-  limit: number;   // 每页数量
-  total: number;   // 总数
-  hasMore: boolean; // 是否有更多
-}
-```
-
-### 错误响应格式
-```typescript
-interface ErrorResponse {
-  statusCode: number;  // HTTP 状态码
-  message: string;     // 错误信息
-  error?: string;      // 错误类型
-}
-```
-
-### 常见状态码
-| 状态码 | 说明 |
-|--------|------|
-| 200 | 成功 |
-| 201 | 创建成功 |
-| 400 | 参数错误 |
-| 401 | 未认证 |
-| 403 | 无权限 |
-| 404 | 资源不存在 |
-| 409 | 冲突（如用户名已存在） |
-| 500 | 服务器错误 |
+- 开发 API 默认端口：`http://localhost:18001`。
+- 生产 API 与 Web 同域，除非部署文档另行指定。
+- 需要登录的 HTTP 接口使用 `Authorization: Bearer <token>`。
+- 列表接口通常使用 `page`、`limit`，返回 `items`、`page`、`limit`、`total`、`hasMore`；例外以对应接口文档或源码为准。
+- 常见错误：`400` 参数错误，`401` 未登录或 token 无效，`403` 无权限，`404` 资源不存在，`409` 冲突，`500` 服务端错误。
 
 ## 实时通信
 
-### WebSocket 端点
-| 端点 | 说明 |
-|------|------|
-| `/lobby-socket` | 大厅广播（房间列表更新） |
-| `/social-socket` | 社交消息推送（好友状态、消息通知） |
+| 端点 | 用途 | 认证 |
+| --- | --- | --- |
+| `/lobby-socket` | 大厅房间列表更新 | 按具体事件要求 |
+| `/social-socket` | 好友状态、私聊和邀请推送 | `Authorization: Bearer <token>` 或 socket.io `auth.token` |
 
-### Social Socket 认证
-连接时在握手信息中携带 JWT：
-```
-Authorization: Bearer <token>
-```
-或在 socket.io 的 `auth.token` 字段中传入。
+`social-socket` 事件：
 
-### Social Socket 事件
-客户端 → 服务端：
-- `social:heartbeat` 心跳续期在线状态
-
-服务端 → 客户端：
-- `social:friendOnline` 好友上线 `{ userId }`
-- `social:friendOffline` 好友离线 `{ userId }`
-- `social:friendRequest` 新好友请求 `{ id, fromUser }`
-- `social:newMessage` 新消息 `{ id, fromUser, content, type, inviteData, createdAt }`
-- `social:gameInvite` 游戏邀请 `{ id, fromUser, content, type, inviteData, createdAt }`
+- 客户端发送：`social:heartbeat`。
+- 服务端推送：`social:friendOnline`、`social:friendOffline`、`social:friendRequest`、`social:newMessage`、`social:gameInvite`。

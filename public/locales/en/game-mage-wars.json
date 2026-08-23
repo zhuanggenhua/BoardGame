@@ -90,7 +90,8 @@
     "weak": "Weak",
     "cripple": "Cripple",
     "rot": "Rot",
-    "stun": "Stun"
+    "stun": "Stun",
+    "sleep": "Sleep"
   },
   "privateZones": {
     "selfPlans": "Your prepared spells / spellbook",
@@ -135,6 +136,11 @@
     "endTurn": "End Turn"
   },
   "interaction": {
+    "mageAbilityStatusChoice": {
+      "title": "Choose statuses to remove",
+      "manaCost": "Mana {{manaCost}}",
+      "cancel": "Cancel"
+    },
     "counterstrike": {
       "title": "{{defenderObjectId}} may counterstrike {{attackerObjectId}}",
       "options": {
@@ -156,11 +162,24 @@
         "destroy": "Destroy enchantment"
       }
     },
+    "upkeepHealTransfer": {
+      "title": "Death Link on {{targetObjectId}} may heal up to {{availableHealing}} damage",
+      "options": {
+        "heal": "Heal {{amount}}",
+        "skip": "Do not heal"
+      }
+    },
     "enchantmentResponse": {
       "title": "Reveal response enchantment {{responseObjectId}}",
       "options": {
         "reveal": "Reveal and resolve"
       }
+    },
+    "spellCastChoice": {
+      "fallbackTitle": "Cast Spell"
+    },
+    "objectAbilityChoice": {
+      "fallbackTitle": "Object Ability"
     }
   },
   "error": {

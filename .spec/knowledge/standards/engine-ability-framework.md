@@ -73,7 +73,7 @@ metadata:
 - 新游戏不得模仿历史 ad-hoc 字段、私有 manager 或散落状态桥。
 - 旧游戏迁移时，adapter 只能把旧字段投影到 `AbilityDef`、constraints 或 executor，不能保留第二套能力真相源。
 - 旧游戏触碰被动触发、响应、替代、防止或长事务能力时，先把旧能力定义或 handler 投影到 `AbilityDef -> Opportunity` 合同，再决定是否接入 `TimingOpportunitySystem` 或 `EventCommit`。
-- Mage Wars 已提供第一条真实消费试点：自我发动的对象能力可通过 `buildMageWarsSelfObjectAbilityActivationOpportunity` 投影为 `AbilityDef -> Opportunity -> ChoiceRequest` 合同；该入口只覆盖固定费用、自身确认型能力，不枚举治疗、绑定法术或多模式目标，复杂目标仍待逐类迁移。
+- 具体游戏试点、迁移进度和剩余缺口不写进本标准；放对应游戏代码、evidence、专项文档或迁移记录。
 - 状态 / buff 使用稳定原语表达，例如 tag、modifier、duration 和对象 ref；不得新增散落临时字段集合。
 - 对象生命周期和延迟交互必须显式建模，不能靠 payload 形状、当前 pending 字段或 resolve 时回查 handler 推断语义。
 

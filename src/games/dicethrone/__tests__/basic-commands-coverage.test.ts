@@ -5709,6 +5709,72 @@ describe('调试改骰与当前骰区一致', () => {
         ]);
         expect(nextCore.rollCount).toBe(1);
     });
+
+    it('主投骰阶段存在回看骰时，调试改骰必须优先写入真实当前骰池', () => {
+        const core = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom).core;
+        const replayContext = createMainRollContext(core, {
+            phase: 'offensiveRoll',
+            ownerPlayerId: '0',
+            dice: core.dice.map((die) => ({ ...die, value: 1 })),
+        });
+
+        const nextCore = diceThroneCheatModifier.setDice!({
+            ...core,
+            rollCount: 1,
+            rollConfirmed: true,
+            currentRollContext: {
+                ...replayContext,
+                status: 'settled',
+                display: { ...replayContext.display, replayOnly: true },
+            },
+        }, [6, 5, 4, 3, 2], { phase: 'offensiveRoll' });
+
+        expect(nextCore.dice.map((die) => die.value)).toEqual([6, 5, 4, 3, 2]);
+    });
+
+    it('非投骰阶段只剩回看骰时，调试改骰必须同步玩家当前看到的回看骰面', () => {
+        const core = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom).core;
+        const replayContext = createMainRollContext(core, {
+            phase: 'offensiveRoll',
+            ownerPlayerId: '0',
+            dice: core.dice.map((die) => ({ ...die, value: 1 })),
+        });
+
+        const nextCore = diceThroneCheatModifier.setDice!({
+            ...core,
+            rollCount: 1,
+            rollConfirmed: true,
+            currentRollContext: {
+                ...replayContext,
+                status: 'settled',
+                display: { ...replayContext.display, replayOnly: true },
+            },
+        }, [6, 5, 4, 3, 2], { phase: 'main2' });
+
+        expect(nextCore.currentRollContext?.dice.map((die) => die.value)).toEqual([6, 5, 4, 3, 2]);
+    });
+
+    it('已选角但骰子数组缺失时，调试改骰应创建真实角色骰并写入输入值', () => {
+        const core = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom).core;
+
+        const nextCore = diceThroneCheatModifier.setDice!({
+            ...core,
+            dice: [],
+            rollCount: 0,
+            rollConfirmed: false,
+            currentRollContext: undefined,
+        }, [6, 5, 4, 3, 2], { phase: 'offensiveRoll' });
+
+        expect(nextCore.dice.map((die) => die.value)).toEqual([6, 5, 4, 3, 2]);
+        expect(nextCore.dice.map((die) => die.definitionId)).toEqual([
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+        ]);
+        expect(nextCore.rollCount).toBe(1);
+    });
 });
 
 describe('本地 AI setup 视角切换', () => {

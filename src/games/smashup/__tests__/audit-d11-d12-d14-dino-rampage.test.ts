@@ -79,6 +79,32 @@ function wrapState(core: SmashUpCore) {
     return { core, sys };
 }
 
+function resolveRampageSelection(
+    runner: ReturnType<typeof createRunner>,
+    baseIndex: number,
+    minionUid: string,
+    expectedModifiersBeforeMinion: Record<string, number> = {},
+) {
+    let state = runner.getState();
+    let interaction = getFirstPrompt(state);
+    expect(interaction).toBeDefined();
+    expect(interaction?.kind).toBe('simple-choice');
+    expect(getPromptSourceId(interaction)).toBe('dino_rampage');
+
+    const baseOption = getPromptOption(interaction, (opt: any) => opt.value.baseIndex === baseIndex, `base ${baseIndex} option`);
+    runner.resolveInteraction('0', { optionId: baseOption.id });
+
+    state = runner.getState();
+    interaction = getFirstPrompt(state);
+    expect(interaction).toBeDefined();
+    expect(interaction?.kind).toBe('simple-choice');
+    expect(getPromptSourceId(interaction)).toBe('dino_rampage_choose_minion');
+    expect(state.core.tempBreakpointModifiers ?? {}).toEqual(expectedModifiersBeforeMinion);
+
+    const minionOption = getPromptOption(interaction, (opt: any) => opt.value.minionUid === minionUid, `${minionUid} minion option`);
+    runner.resolveInteraction('0', { optionId: minionOption.id });
+}
+
 describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
     it('D11/D12: 写入-消耗对称性 — 单基地降低爆破点', () => {
         const runner = createRunner();
@@ -101,8 +127,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             currentPlayerIndex: 0,
         }));
 
-        // 只有一个基地且只有一个己方随从时，允许自动执行
+        // 即使只有一个基地和一个己方随从，真实对局也必须先确认基地与随从
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        resolveRampageSelection(runner, 0, 'm1');
 
         const state = runner.getState();
         expect(state.core.tempBreakpointModifiers?.[0]).toBe(-3);
@@ -143,11 +170,19 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
         const interaction = getFirstPrompt(state);
         expect(interaction).toBeDefined();
         expect(interaction?.kind).toBe('simple-choice');
-        expect(getPromptSourceId(interaction)).toBe('dino_rampage_choose_minion');
+        expect(getPromptSourceId(interaction)).toBe('dino_rampage');
         expect(state.core.tempBreakpointModifiers ?? {}).toEqual({});
 
-        const option = getPromptOption(interaction, (opt: any) => opt.value.minionUid === 'm2', 'm2 minion option');
+        const baseOption = getPromptOption(interaction, (opt: any) => opt.value.baseIndex === 0, 'base 0 option');
+        runner.resolveInteraction('0', { optionId: baseOption.id });
 
+        state = runner.getState();
+        const minionPrompt = getFirstPrompt(state);
+        expect(minionPrompt).toBeDefined();
+        expect(getPromptSourceId(minionPrompt)).toBe('dino_rampage_choose_minion');
+        expect(state.core.tempBreakpointModifiers ?? {}).toEqual({});
+
+        const option = getPromptOption(minionPrompt, (opt: any) => opt.value.minionUid === 'm2', 'm2 minion option');
         runner.resolveInteraction('0', { optionId: option.id });
 
         state = runner.getState();
@@ -175,9 +210,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             currentPlayerIndex: 0,
         }));
 
-        // 打出狂暴
-        // 注意：只有一个基地时，resolveOrPrompt 会自动执行，不创建交互
+        // 打出狂暴并确认唯一基地/唯一随从
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        resolveRampageSelection(runner, 0, 'm1');
 
         let state = runner.getState();
         // 验证临时修正已写入
@@ -224,35 +259,13 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
 
         // 打出第一张狂暴，选择基地0
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
-        
-        // 获取当前交互并找到对应的选项ID
-        let state = runner.getState();
-        let interaction = getFirstPrompt(state);
-        expect(interaction).toBeDefined();
-        expect(interaction?.kind).toBe('simple-choice');
-        
-        // 找到 baseIndex=0 的选项
-        const option1 = getPromptOption(interaction, (opt: any) => opt.value.baseIndex === 0, 'base 0 option');
-        
-        // 使用正确的 optionId 解决交互
-        runner.resolveInteraction('0', { optionId: option1.id });
+        resolveRampageSelection(runner, 0, 'm1');
 
         // 打出第二张狂暴，选择基地1
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
-        
-        // 获取当前交互并找到对应的选项ID
-        state = runner.getState();
-        interaction = getFirstPrompt(state);
-        expect(interaction).toBeDefined();
-        expect(interaction?.kind).toBe('simple-choice');
-        
-        // 找到 baseIndex=1 的选项
-        const option2 = getPromptOption(interaction, (opt: any) => opt.value.baseIndex === 1, 'base 1 option');
-        
-        // 使用正确的 optionId 解决交互
-        runner.resolveInteraction('0', { optionId: option2.id });
+        resolveRampageSelection(runner, 1, 'm2', { 0: -3 });
 
-        state = runner.getState();
+        const state = runner.getState();
         // 验证两个基地的修正独立存储
         expect(state.core.tempBreakpointModifiers?.[0]).toBe(-3);
         expect(state.core.tempBreakpointModifiers?.[1]).toBe(-5);
@@ -282,9 +295,9 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
             currentPlayerIndex: 0,
         }));
 
-        // 打出狂暴（此时随从力量为3）
-        // 注意：只有一个基地时，resolveOrPrompt 会自动执行，不创建交互
+        // 打出狂暴（此时随从力量为3）并确认唯一目标
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
+        resolveRampageSelection(runner, 0, 'm1');
 
         let state = runner.getState();
         // 验证修正值为-3（基于打出时的力量）

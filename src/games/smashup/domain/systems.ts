@@ -165,13 +165,6 @@ function materializeBodyShopDistribution(
         return { state, events: [] };
     }
 
-    if (candidates.length === 1) {
-        return {
-            state,
-            events: [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, pending.totalCounters, 'frankenstein_body_shop', timestamp)],
-        };
-    }
-
     return {
         state: queueInteraction(
             state,

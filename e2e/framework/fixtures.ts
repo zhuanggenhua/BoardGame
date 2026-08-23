@@ -55,7 +55,7 @@ interface FrameworkFixtures {
      * Worker 端口信息
      * 
      * 多 worker 模式下，每个 worker 使用独立的端口。
-     * 单 worker 模式下，使用固定端口（6173, 20000, 21000）。
+     * 单 worker 模式下，使用固定端口（6174, 20000, 21000）。
      */
     workerPorts: WorkerPorts;
 }

@@ -68,4 +68,15 @@ describe('QidahenRuntimePreview compatibility source guards', () => {
         expect(source).toContain('data-testid={`qidahen-runtime-preview-shared-printed-runtime-guide-candidates-${mapping.printedRegionId}`}');
         expect(source).toContain("t('devtools.runtimePreview.sharedPrinted.pendingCandidates'");
     });
+
+    it('maskUrl 必须先声明再进入共享 printed 预览 effect，避免初始化前访问', () => {
+        const source = readSource();
+        const maskUrlDeclarationIndex = source.indexOf('const maskUrl = React.useMemo(() => (');
+        const previewEffectIndex = source.indexOf('const loadPreviewCards = async () => {');
+        const imageSrcIndex = source.indexOf('image.src = maskUrl;');
+
+        expect(maskUrlDeclarationIndex).toBeGreaterThanOrEqual(0);
+        expect(previewEffectIndex).toBeGreaterThan(maskUrlDeclarationIndex);
+        expect(imageSrcIndex).toBeGreaterThan(maskUrlDeclarationIndex);
+    });
 });

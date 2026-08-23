@@ -231,6 +231,66 @@ function collectKnownSingleCandidateChoiceBypasses(): string[] {
             pattern: /targets\.length === 1\s*&&\s*!options\.optional/,
             meaning: 'Mythic Greeks 目标选择',
         },
+        {
+            file: 'abilities/killer_plants.ts',
+            pattern: /context\.eligible\.length === 1\s*\|\|\s*!context\.matchState/,
+            meaning: 'Killer Plants 牌库检索选择',
+        },
+        {
+            file: 'abilities/werewolves.ts',
+            pattern: /context\.ownMinions\.length === 1\s*,/,
+            meaning: 'Werewolves 己方来源随从选择',
+        },
+        {
+            file: 'abilities/zombies.ts',
+            pattern: /context\.emptyBases\.length === 1\s*,/,
+            meaning: 'Zombies Outbreak 基地选择',
+        },
+        {
+            file: 'abilities/dinosaurs.ts',
+            pattern: /context\.targets\.length === 1\s*,/,
+            meaning: 'Dinosaurs Laser Triceratops 目标选择',
+        },
+        {
+            file: 'abilities/dinosaurs.ts',
+            pattern: /context\.baseCandidates\.length === 1\s*,/,
+            meaning: 'Dinosaurs Rampage 基地选择',
+        },
+        {
+            file: 'abilities/dinosaurs.ts',
+            pattern: /candidates\.length <= 1\) return undefined;/,
+            meaning: 'Dinosaurs Rampage 随从选择',
+        },
+        {
+            file: 'abilities/avengers.ts',
+            pattern: /if \(sources\.length === 1\) \{/,
+            meaning: 'Avengers 装备来源选择',
+        },
+        {
+            file: 'abilities/avengers.ts',
+            pattern: /if \(topCards\.length === 1\) return \{ events: \[inspectEvent\] \};/,
+            meaning: 'Avengers Strategize 牌序确认',
+        },
+        {
+            file: 'abilities/yuanhou.ts',
+            pattern: /!ctx\.matchState \|\| revealed\.length === 1/,
+            meaning: 'Super Spies Spy 顶底选择',
+        },
+        {
+            file: 'abilities/yuanhou.ts',
+            pattern: /!ctx\.matchState \|\| revealed\.length <= 1/,
+            meaning: 'Super Spies For My Eyes Only 顶底选择',
+        },
+        {
+            file: 'abilities/yuanhou.ts',
+            pattern: /matchState && minionCards\.length > 1/,
+            meaning: 'Super Spies The Spy Who Ditched Me 弃牌选择',
+        },
+        {
+            file: 'abilities/marvel.ts',
+            pattern: /legalBaseIndexes\.length === 1\s*\|\|\s*!ctx\.matchState/,
+            meaning: 'Ultimates First to Arrive 基地选择',
+        },
     ];
 
     return checks.flatMap(({ file, pattern, meaning }) => {

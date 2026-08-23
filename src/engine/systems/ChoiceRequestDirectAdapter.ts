@@ -78,7 +78,20 @@ const resolveDefaultTargetRef = <TValue>(
     const value = readRecord(candidate.value);
     const metadata = readRecord(candidate.metadata);
     const candidateRecord = candidate as unknown as Record<string, unknown>;
-    const keys = ['targetId', 'objectId', 'cardId', 'playerId', 'dieId', 'positionId', 'position'];
+    const keys = [
+        'targetObjectId',
+        'targetPlayerId',
+        'targetWallEdgeId',
+        'targetZoneId',
+        'boundSpellCardId',
+        'targetId',
+        'objectId',
+        'cardId',
+        'playerId',
+        'dieId',
+        'positionId',
+        'position',
+    ];
 
     for (const source of [candidateRecord, value, metadata]) {
         if (!source) continue;

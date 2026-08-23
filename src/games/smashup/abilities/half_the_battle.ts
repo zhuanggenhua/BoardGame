@@ -1660,6 +1660,14 @@ function runMinionSwapPrompt(
     if (context.sources.length === 1) {
         const candidates = collectMinionSwapCandidates(ctx.state, ctx.playerId, context.sources[0], context.mode, context.zones);
         if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        if (ctx.matchState) {
+            return runtimeToAbilityResult(executeAbilityProgram(minionSwapSourcePromptProgram, {
+                matchState: ctx.matchState,
+                playerId: ctx.playerId,
+                now: ctx.now,
+                ...context,
+            }));
+        }
         return runtimeToAbilityResult(executeAbilityProgram(minionSwapCandidatePromptProgram, {
             matchState: ctx.matchState,
             playerId: ctx.playerId,

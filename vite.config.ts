@@ -60,6 +60,7 @@ const CONFIG_REVIEW_SPA_ROUTES = [
   '/games/summonerwars/config',
   '/games/dicethrone/config',
   '/games/betrayal/config',
+  '/games/smashup/config',
 ] as const
 const QIDAHEN_REGION_MASK_DEFAULT_OUTPUT_DIR = path.resolve(configDir, 'src/games/qidahen/data')
 const QIDAHEN_REGION_MASK_WORKSPACE_ROOT = path.resolve(configDir, 'temp/devtools/qidahen-region-mask-workspaces')

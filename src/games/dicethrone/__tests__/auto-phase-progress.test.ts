@@ -148,6 +148,63 @@ describe('DiceThrone 开局自动推进门禁', () => {
         expect(advanced.state?.sys.phase).toBe('defensiveRoll');
     });
 
+    it('装填奖励骰刚创建时不应自动推进并重复打开攻击结束 Token 选择', () => {
+        const state = createHeroMatchup('gunslinger', 'shadow_thief')(playerIds, fixedRandom);
+        state.sys.phase = 'targetingRoll';
+        state.sys.flowHalted = true;
+        state.core.activePlayerId = '0';
+        state.core.players['0'].tokens[TOKEN_IDS.LOADED] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'revolver-3',
+            damage: 3,
+            bonusDamage: 0,
+            isDefendable: true,
+            offensiveRollEndTokenResolved: false,
+            preDefenseResolved: true,
+            damageResolved: false,
+            attackFaceCounts: {},
+        } as any;
+
+        const auto = diceThroneFlowHooks.onAutoContinueCheck?.({
+            state,
+            events: [
+                {
+                    type: 'CHOICE_RESOLVED',
+                    payload: {
+                        playerId: '0',
+                        tokenId: TOKEN_IDS.LOADED,
+                        value: 1,
+                        customId: 'use-loaded',
+                        sourceAbilityId: 'revolver-3',
+                    },
+                },
+                {
+                    type: 'BONUS_DICE_REROLL_REQUESTED',
+                    payload: {
+                        settlement: {
+                            id: 'revolver-3-1',
+                            sourceAbilityId: 'revolver-3',
+                            attackerId: '0',
+                            targetId: '1',
+                            dice: [{
+                                index: 0,
+                                value: 3,
+                                face: 'bullet',
+                            }],
+                            rerollCount: 0,
+                            maxRerollCount: 1,
+                            readyToSettle: false,
+                        },
+                    },
+                },
+            ],
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onAutoContinueCheck>>[0]);
+
+        expect(auto).toBeUndefined();
+    });
+
     it('防御技能选择不是阻塞收口事件，不能靠 flowHalted 残留自动离开防御阶段', () => {
         const random = createQueuedRandom([1, 1, 1, 1, 1, 2, 2, 2, 2]);
         let state = createHeroMatchup('monk', 'shadow_thief')(playerIds, random);

@@ -640,7 +640,7 @@ const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnf
             continue;
         }
 
-        if (opponentMinions.length === 1) {
+        if (!context.matchState && opponentMinions.length === 1) {
             const target = opponentMinions[0];
             events.push(...buildValidatedDestroyEvents(context.matchState, {
                 minionUid: target.uid,
@@ -686,6 +686,7 @@ const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingU
                 sourceId: 'elder_thing_unfathomable_goals',
                 targetType: 'minion',
                 titleKey: 'ui.elder_thing_unfathomable_goals_title',
+                autoResolveIfSingle: false,
             },
         );
         return attachOptionsGenerator(
@@ -2470,28 +2471,6 @@ const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPr
                 ? { events: [], context: nextContext, nextProgram: elderThingShoggothPromptProgram }
                 : { events: [] };
         }
-        if (destroyOptions.length === 1) {
-            const onlyOption = destroyOptions[0]?.value as ElderThingSelfDestroyChoice | undefined;
-            const events = onlyOption
-                ? buildValidatedDestroyEvents(state, {
-                    minionUid: onlyOption.minionUid,
-                    minionDefId: onlyOption.defId,
-                    fromBaseIndex: onlyOption.baseIndex,
-                    destroyerId: context.casterPlayerId,
-                    sourcePlayerId: context.casterPlayerId,
-                    sourceCardUid: context.cardUid,
-                    sourceDefId: 'elder_thing_shoggoth',
-                    sourceControllerId: context.casterPlayerId,
-                    sourceBaseIndex: context.baseIndex,
-                    reason: 'elder_thing_shoggoth',
-                    now: timestamp,
-                })
-                : [];
-            const nextContext = getNextShoggothPromptContext(context, state, timestamp);
-            return nextContext
-                ? { events, context: nextContext, nextProgram: elderThingShoggothPromptProgram }
-                : { events };
-        }
 
         return {
             events: [],
@@ -2608,10 +2587,6 @@ function applyPriceOfPower(
 
 function resolvePriceOfPowerPodBaseIndex(ctx: AbilityContext): number | undefined {
     if (ctx.targetBaseIndex !== undefined) return ctx.targetBaseIndex;
-    const candidates = getPriceOfPowerPodCandidateBases(ctx);
-    if (candidates.length === 1) {
-        return candidates[0].baseIndex;
-    }
     return undefined;
 }
 
@@ -2654,6 +2629,7 @@ const elderThingPriceOfPowerPodChooseBasePromptProgram = createPromptProgram<Eld
             sourceId: 'elder_thing_the_price_of_power_pod_choose_base',
             titleKey: 'ui.elder_thing_the_price_of_power_pod_choose_base_title',
             targetType: 'base',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {

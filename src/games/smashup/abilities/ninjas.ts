@@ -347,7 +347,7 @@ const ninjaDestroyOngoingPromptProgram = createPromptProgram<NinjaDestroyOngoing
             context.playerId,
             context.title,
             options as any[],
-            { sourceId: context.sourceId, targetType: 'ongoing' },
+            { sourceId: context.sourceId, targetType: 'ongoing', autoResolveIfSingle: false },
         );
     },
     onResolve: ({ state, value, context, timestamp }) => {
@@ -376,18 +376,7 @@ const ninjaInfiltrateOnPlayProgram = createEffectProgram<AbilityContext, Ability
             return { uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: def?.name ?? ongoing.defId };
         });
     if (targets.length === 0) return { events: [] };
-    if (targets.length === 1) {
-        return {
-            events: buildValidatedOngoingDetachEvents(ctx.state, {
-                cardUid: targets[0].uid,
-                defId: targets[0].defId,
-                ownerId: targets[0].ownerId,
-                reason: 'ninja_infiltrate_destroy',
-                now: ctx.now,
-                expectedLocation: 'base',
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -770,6 +759,7 @@ const ninjaDisguiseChooseBasePromptProgram = createPromptProgram<NinjaDisguiseCo
             sourceId: 'ninja_disguise_choose_base',
             targetType: 'base',
             autoCancelOption: true,
+            autoResolveIfSingle: false,
             titleKey: 'ui.ninja_disguise_choose_base_title',
         },
     ),
@@ -990,18 +980,7 @@ const ninjaDisguiseProgram = createEffectProgram<AbilityContext, AbilityContext[
         return { events: [] };
     }
 
-    if (eligibleBases.length === 1) {
-        return {
-            events: [],
-            context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-                sourceId: 'ninja_disguise_choose_minions',
-                cardUid: ctx.cardUid,
-                eligibleBases,
-                baseIndex: eligibleBases[0].baseIndex,
-            }),
-            nextProgram: ninjaDisguiseChooseMinionsPromptProgram,
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     return {
         events: [],

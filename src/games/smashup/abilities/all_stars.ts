@@ -560,12 +560,41 @@ function seeingStars(ctx: AbilityContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function buildDiscardCardOptions(cards: CardInstance[]) {
+    return cards.map(card => ({
+        id: card.uid,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId } satisfies CardChoice,
+        displayMode: 'card' as const,
+        displayCard: { defId: card.defId, cardUid: card.uid },
+        _source: 'discard' as const,
+    }));
+}
+
 function beginTheSummoning(ctx: AbilityContext): AbilityResult {
-    const minion = ctx.state.players[ctx.playerId]?.discard.find(card => getMinionLikePower(card.defId) !== undefined);
+    const minions = ctx.state.players[ctx.playerId]?.discard.filter(card => getMinionLikePower(card.defId) !== undefined) ?? [];
+    const extraAction = grantContextualExtraAction(ctx, 'all_stars_begin_the_summoning');
+    if (ctx.matchState && minions.length > 0) {
+        const interaction = createSimpleChoice(
+            `all_stars_begin_the_summoning_${ctx.now}`,
+            ctx.playerId,
+            '开始召唤：选择弃牌堆中的一个随从置于牌库顶',
+            buildDiscardCardOptions(minions),
+            {
+                sourceId: 'all_stars_begin_the_summoning',
+                titleKey: 'ui.all_stars_begin_the_summoning_title',
+                targetType: 'discard',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        return { events: [extraAction], matchState: queueInteraction(ctx.matchState, interaction) };
+    }
+    const minion = minions[0];
     return {
         events: [
             ...(minion ? [cardToDeckTop(minion, minion.owner, 'all_stars_begin_the_summoning', ctx.now, ctx.playerId)] : []),
-            grantContextualExtraAction(ctx, 'all_stars_begin_the_summoning'),
+            extraAction,
         ],
     };
 }
@@ -625,7 +654,24 @@ function nonInfiniteLoop(ctx: AbilityContext): AbilityResult {
 }
 
 function itsAstounding(ctx: AbilityContext): AbilityResult {
-    const action = ctx.state.players[ctx.playerId]?.discard.find(card => getCardDef(card.defId)?.type === 'action');
+    const actions = ctx.state.players[ctx.playerId]?.discard.filter(card => getCardDef(card.defId)?.type === 'action') ?? [];
+    if (ctx.matchState && actions.length > 0) {
+        const interaction = createSimpleChoice(
+            `all_stars_its_astounding_${ctx.now}`,
+            ctx.playerId,
+            '令人惊叹：选择从弃牌堆打出的行动',
+            buildDiscardCardOptions(actions),
+            {
+                sourceId: 'all_stars_its_astounding',
+                titleKey: 'ui.all_stars_its_astounding_title',
+                targetType: 'discard',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }
+    const action = actions[0];
     if (!action) return { events: [] };
     return {
         events: [buildActionPlayedEvent({
@@ -681,18 +727,6 @@ function prepareForBattle(ctx: AbilityContext): AbilityResult {
         inspectDeck(ctx.playerId, ctx.playerId, top.length, 'all_stars_prepare_for_battle', ctx.now),
         revealDeckTop(ctx.playerId, 'all', top.map(card => ({ uid: card.uid, defId: card.defId })), top.length, 'all_stars_prepare_for_battle', ctx.now, ctx.playerId),
     ];
-    if (top.length === 1) {
-        return {
-            events: [
-                ...revealEvents,
-                {
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId: ctx.playerId, count: 1, cardUids: [top[0].uid] },
-                    timestamp: ctx.now,
-                } as SmashUpEvent,
-            ],
-        };
-    }
     const interaction = createSimpleChoice(
         `all_stars_prepare_for_battle_${ctx.now}`,
         ctx.playerId,
@@ -703,7 +737,7 @@ function prepareForBattle(ctx: AbilityContext): AbilityResult {
             value: { cardUid: card.uid, defId: card.defId } satisfies CardChoice,
             displayMode: 'card' as const,
         })),
-        { sourceId: 'all_stars_prepare_for_battle', titleKey: 'ui.all_stars_prepare_for_battle_title', targetType: 'hand', responseValidationMode: 'live' },
+        { sourceId: 'all_stars_prepare_for_battle', titleKey: 'ui.all_stars_prepare_for_battle_title', targetType: 'hand', autoResolveIfSingle: false, responseValidationMode: 'live' },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         cardUids: top.map(card => card.uid),
@@ -715,27 +749,53 @@ function prepareForBattle(ctx: AbilityContext): AbilityResult {
 }
 
 function sproutTurnStart(ctx: import('../domain/ongoingEffects').TriggerContext) {
-    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceOwnerPlayerId) return [];
-    const target = ctx.state.players[ctx.sourceOwnerPlayerId]?.deck.find(card => {
+    const sourcePlayerId = ctx.sourceControllerId ?? ctx.sourceOwnerPlayerId;
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !sourcePlayerId) return [];
+    const candidates = (ctx.state.players[sourcePlayerId]?.deck ?? []).filter(card => {
         const power = getMinionLikePower(card.defId);
         return power !== undefined && power <= 3;
     });
-    return [
+    const destroyEvents = [
         ...buildValidatedDestroyEvents(ctx.matchState ?? ctx.state, {
             minionUid: ctx.sourceCardUid,
             minionDefId: ctx.sourceDefId ?? 'all_stars_sprout',
             fromBaseIndex: ctx.sourceBaseIndex,
-            destroyerId: ctx.sourceOwnerPlayerId,
+            destroyerId: sourcePlayerId,
             reason: 'all_stars_sprout',
             now: ctx.now,
-            sourcePlayerId: ctx.sourceOwnerPlayerId,
+            sourcePlayerId,
             sourceDefId: 'all_stars_sprout',
-            sourceControllerId: ctx.sourceOwnerPlayerId,
+            sourceControllerId: sourcePlayerId,
             sourceBaseIndex: ctx.sourceBaseIndex,
             sourceKind: 'nonAction',
         }),
-        ...(target ? playDeckMinionEvents(ctx.state, ctx.sourceOwnerPlayerId, target, ctx.sourceBaseIndex, 'all_stars_sprout', ctx.now) : []),
     ];
+    if (candidates.length === 0) return destroyEvents;
+    if (!ctx.matchState) {
+        return [
+            ...destroyEvents,
+            ...playDeckMinionEvents(ctx.state, sourcePlayerId, candidates[0], ctx.sourceBaseIndex, 'all_stars_sprout', ctx.now),
+        ];
+    }
+    const interaction = createSimpleChoice(
+        `all_stars_sprout_search_${ctx.sourceCardUid}_${ctx.now}`,
+        sourcePlayerId,
+        '萌芽：选择是否从牌库打出力量 3 或以下的随从',
+        [
+            createSkipOption('跳过搜寻', 'ui.all_stars_sprout_skip_search_option'),
+            ...candidates.map(card => ({
+                id: card.uid,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId } satisfies CardChoice,
+                displayMode: 'card' as const,
+            })),
+        ],
+        { titleKey: 'ui.all_stars_sprout_search_title', sourceId: 'all_stars_sprout_search', targetType: 'deck', autoResolveIfSingle: false, responseValidationMode: 'live' },
+    );
+    (interaction.data as { continuationContext?: unknown }).continuationContext = {
+        sourceBaseIndex: ctx.sourceBaseIndex,
+    };
+    return { events: destroyEvents, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function fanSpecial(ctx: AbilityContext): AbilityResult {
@@ -754,22 +814,40 @@ function fanSpecial(ctx: AbilityContext): AbilityResult {
 function servitorTalent(ctx: AbilityContext): AbilityResult {
     const live = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!live || live.minion.controller !== ctx.playerId) return { events: [] };
-    const action = ctx.state.players[ctx.playerId]?.discard.find(card => getCardDef(card.defId)?.type === 'action');
+    const destroyEvents = buildValidatedDestroyEvents(ctx.matchState, {
+        minionUid: live.minion.uid,
+        minionDefId: live.minion.defId,
+        fromBaseIndex: live.baseIndex,
+        destroyerId: ctx.playerId,
+        reason: 'all_stars_servitor_of_cthulhu',
+        now: ctx.now,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: 'all_stars_servitor_of_cthulhu',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: live.baseIndex,
+        sourceKind: 'nonAction',
+    });
+    const actions = ctx.state.players[ctx.playerId]?.discard.filter(card => getCardDef(card.defId)?.type === 'action') ?? [];
+    if (ctx.matchState && actions.length > 0) {
+        const interaction = createSimpleChoice(
+            `all_stars_servitor_of_cthulhu_${ctx.now}`,
+            ctx.playerId,
+            '克苏鲁仆从：选择弃牌堆中的一张行动置于牌库顶',
+            buildDiscardCardOptions(actions),
+            {
+                sourceId: 'all_stars_servitor_of_cthulhu',
+                titleKey: 'ui.all_stars_servitor_of_cthulhu_title',
+                targetType: 'discard',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        return { events: destroyEvents, matchState: queueInteraction(ctx.matchState, interaction) };
+    }
+    const action = actions[0];
     return {
         events: [
-            ...buildValidatedDestroyEvents(ctx.matchState, {
-                minionUid: live.minion.uid,
-                minionDefId: live.minion.defId,
-                fromBaseIndex: live.baseIndex,
-                destroyerId: ctx.playerId,
-                reason: 'all_stars_servitor_of_cthulhu',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'all_stars_servitor_of_cthulhu',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: live.baseIndex,
-                sourceKind: 'nonAction',
-            }),
+            ...destroyEvents,
             ...(action ? [cardToDeckTop(action, action.owner, 'all_stars_servitor_of_cthulhu', ctx.now, ctx.playerId)] : []),
         ],
     };
@@ -1088,6 +1166,22 @@ export function registerAllStarsInteractionHandlers(): void {
         };
     });
 
+    registerInteractionHandler('all_stars_sprout_search', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        const context = (data as { continuationContext?: { sourceBaseIndex?: number } } | undefined)?.continuationContext;
+        if (selected?.skip || !selected?.cardUid || !selected.defId || context?.sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const card = state.core.players[playerId]?.deck.find(candidate =>
+            candidate.uid === selected.cardUid && candidate.defId === selected.defId);
+        const power = card ? getMinionLikePower(card.defId) : undefined;
+        if (!card || power === undefined || power > 3) return { state, events: [] };
+        return {
+            state,
+            events: playDeckMinionEvents(state.core, playerId, card, context.sourceBaseIndex, 'all_stars_sprout', timestamp),
+        };
+    });
+
     registerInteractionHandler('all_stars_seeing_stars', (state, playerId, value, _data, _random, timestamp) => {
         const selected = value as MinionChoice | undefined;
         if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { state, events: [] };
@@ -1106,6 +1200,20 @@ export function registerAllStarsInteractionHandlers(): void {
                 sourceBaseIndex: selected.baseIndex,
                 sourceKind: 'action',
             }),
+        };
+    });
+
+    registerInteractionHandler('all_stars_begin_the_summoning', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { state, events: [] };
+        const card = state.core.players[playerId]?.discard.find(candidate =>
+            candidate.uid === selected.cardUid
+            && candidate.defId === selected.defId
+            && getMinionLikePower(candidate.defId) !== undefined);
+        if (!card) return { state, events: [] };
+        return {
+            state,
+            events: [cardToDeckTop(card, card.owner, 'all_stars_begin_the_summoning', timestamp, playerId)],
         };
     });
 
@@ -1158,6 +1266,42 @@ export function registerAllStarsInteractionHandlers(): void {
             selected.targetMinionUid,
         );
         return { state: resolved.state, events: resolved.events };
+    });
+
+    registerInteractionHandler('all_stars_its_astounding', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { state, events: [] };
+        const action = state.core.players[playerId]?.discard.find(card =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && getCardDef(card.defId)?.type === 'action');
+        if (!action) return { state, events: [] };
+        return {
+            state,
+            events: [buildActionPlayedEvent({
+                playerId,
+                cardUid: action.uid,
+                defId: action.defId,
+                ownerId: action.owner,
+                isExtraAction: true,
+                fromDiscard: true,
+                timestamp,
+            }) as SmashUpEvent],
+        };
+    });
+
+    registerInteractionHandler('all_stars_servitor_of_cthulhu', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        if (!selected?.cardUid || !selected.defId) return { state, events: [] };
+        const action = state.core.players[playerId]?.discard.find(card =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && getCardDef(card.defId)?.type === 'action');
+        if (!action) return { state, events: [] };
+        return {
+            state,
+            events: [cardToDeckTop(action, action.owner, 'all_stars_servitor_of_cthulhu', timestamp, playerId)],
+        };
     });
 
     registerInteractionHandler('all_stars_puck', (state, playerId, value, _data, random, timestamp) => {

@@ -199,7 +199,7 @@ function diyClownsBananaPeel(ctx: AbilityContext): AbilityResult {
             value: { fromBaseIndex: baseIndex },
             displayMode: 'button' as const,
         })),
-        { sourceId: 'diy_clowns_banana_peel', targetType: 'base', titleKey: 'ui.diy_clowns_banana_peel_title' },
+        { sourceId: 'diy_clowns_banana_peel', targetType: 'base', autoResolveIfSingle: false, titleKey: 'ui.diy_clowns_banana_peel_title' },
     );
     interaction.data.continuationContext = { fromDiscard };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -283,7 +283,7 @@ const bananaPeelChooseMinions: InteractionHandler = (state, playerId, value, dat
         playerId,
         '选择移动目标基地',
         destinationOptions,
-        { sourceId: 'diy_clowns_banana_peel_base', targetType: 'base', titleKey: 'ui.diy_clowns_banana_peel_base_title' },
+        { sourceId: 'diy_clowns_banana_peel_base', targetType: 'base', autoResolveIfSingle: false, titleKey: 'ui.diy_clowns_banana_peel_base_title' },
     );
     interaction.data.continuationContext = {
         fromDiscard: ctx.fromDiscard === true,
@@ -397,15 +397,13 @@ function diyClownsClownPyramid(ctx: AbilityContext): AbilityResult {
         }));
     const extra = grantContextualExtraAction({ playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState }, 'diy_clowns_clown_pyramid');
     if (ownMinions.length === 0) return { events: [extra] };
-    if (ownMinions.length === 1) {
-        return { events: [addTempPower(ownMinions[0].uid, baseIndex, ownMinions.length, 'diy_clowns_clown_pyramid', ctx.now), extra] };
-    }
+    if (!ctx.matchState) return { events: [extra] };
     const interaction = createSimpleChoice(
         `diy_clowns_clown_pyramid_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '选择获得小丑金字塔力量的己方仆从',
         buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'power_change' }),
-        { sourceId: 'diy_clowns_clown_pyramid', targetType: 'minion', titleKey: 'ui.diy_clowns_clown_pyramid_title' },
+        { sourceId: 'diy_clowns_clown_pyramid', targetType: 'minion', autoResolveIfSingle: false, titleKey: 'ui.diy_clowns_clown_pyramid_title' },
     );
     interaction.data.continuationContext = { amount: ownMinions.length };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -518,15 +516,13 @@ function diyClownsPieInTheFace(ctx: AbilityContext): AbilityResult {
             })),
     );
     if (ownMinions.length === 0) return { events: [] };
-    if (ownMinions.length === 1) {
-        return { events: [addTempPower(ownMinions[0].uid, ownMinions[0].baseIndex, amount, 'diy_clowns_pie_in_the_face', ctx.now)] };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `diy_clowns_pie_in_the_face_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '选择获得力量的己方仆从',
         buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'power_change' }),
-        { sourceId: 'diy_clowns_pie_in_the_face', targetType: 'minion', titleKey: 'ui.diy_clowns_pie_in_the_face_title' },
+        { sourceId: 'diy_clowns_pie_in_the_face', targetType: 'minion', autoResolveIfSingle: false, titleKey: 'ui.diy_clowns_pie_in_the_face_title' },
     );
     interaction.data.continuationContext = { amount };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -553,6 +549,7 @@ function diyClownsClownGirl(ctx: AbilityContext): AbilityResult {
         {
             sourceId: 'diy_clowns_clown_girl',
             targetType: 'deck',
+            autoResolveIfSingle: false,
             autoRefresh: 'deck',
             responseValidationMode: 'live',
             titleKey: 'ui.diy_clowns_clown_girl_title',
@@ -577,33 +574,25 @@ function diyClownsMcDonaldClown(ctx: AbilityContext): AbilityResult {
         if (actions.length >= 2) break;
     }
     if (actions.length === 0) return { events: [] };
-    if (actions.length === 1) {
-        return {
-            events: [
-                inspectDeck(ctx.playerId, ctx.playerId, revealed.length, 'diy_clowns_mcdonald_clown', ctx.now),
-                revealDeckTop(ctx.playerId, 'all', revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, 'diy_clowns_mcdonald_clown', ctx.now, ctx.playerId),
-                deckReordered(ctx.playerId, [actions[0].uid, ...ctx.random.shuffle(deck.filter(card => card.uid !== actions[0].uid)).map(card => card.uid)], ctx.now),
-                drawSpecificCard(ctx.playerId, actions[0].uid, ctx.now),
-            ],
-        };
-    }
+    const revealEvents = [
+        inspectDeck(ctx.playerId, ctx.playerId, revealed.length, 'diy_clowns_mcdonald_clown', ctx.now),
+        revealDeckTop(ctx.playerId, 'all', revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, 'diy_clowns_mcdonald_clown', ctx.now, ctx.playerId),
+    ];
+    if (!ctx.matchState) return { events: revealEvents };
 
     const interaction = createSimpleChoice(
         `diy_clowns_mcdonald_clown_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '选择抽取的行动牌，另一张行动牌将被丢弃',
         buildCardOptions(actions, 'deck'),
-        { sourceId: 'diy_clowns_mcdonald_clown', targetType: 'deck', titleKey: 'ui.diy_clowns_mcdonald_clown_title' },
+        { sourceId: 'diy_clowns_mcdonald_clown', targetType: 'deck', autoResolveIfSingle: false, titleKey: 'ui.diy_clowns_mcdonald_clown_title' },
     );
     interaction.data.continuationContext = {
         actionUids: actions.map(card => card.uid),
         revealedUids: revealed.map(card => card.uid),
     };
     return {
-        events: [
-            inspectDeck(ctx.playerId, ctx.playerId, revealed.length, 'diy_clowns_mcdonald_clown', ctx.now),
-            revealDeckTop(ctx.playerId, 'all', revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, 'diy_clowns_mcdonald_clown', ctx.now, ctx.playerId),
-        ],
+        events: revealEvents,
         matchState: queueInteraction(ctx.matchState, interaction),
     };
 }

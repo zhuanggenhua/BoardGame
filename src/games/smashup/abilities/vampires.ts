@@ -14,7 +14,6 @@ import {
     buildValidatedDestroyEvents,
     addTempPower,
     addPermanentPower,
-    revealAndPickFromDeck,
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     createSkipOption,
@@ -90,9 +89,12 @@ type VampireDinnerDatePodPromptContext = VampirePromptContext & {
 };
 
 type VampireCullTheWeakPodPromptContext = VampirePromptContext & {
-    discardedCount: number;
-    deckEvents: SmashUpEvent[];
     discardUids: string[];
+};
+
+type VampireCullTheWeakPodDeckChoice = {
+    cardUid: string;
+    defId: string;
 };
 
 type VampireWolfPactPodMinionPromptContext = VampirePromptContext & {
@@ -1487,6 +1489,57 @@ const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext,
     },
 });
 
+const vampireCullTheWeakPodDeckPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_cull_the_weak_pod_deck',
+    buildInteraction: (context) => {
+        const cards = (context.matchState.core.players[context.playerId]?.deck ?? [])
+            .filter(card => card.type === 'minion')
+            .map((card, index) => ({
+                id: `deck-minion-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId },
+                displayMode: 'card' as const,
+                displayCard: { cardUid: card.uid, defId: card.defId },
+            }));
+        return createSimpleChoice(
+            `vampire_cull_the_weak_pod_deck_${context.now}`,
+            context.playerId,
+            '剔除弱者：选择牌库中最多两张随从弃掉',
+            cards as any,
+            {
+                titleKey: 'ui.vampire_cull_the_weak_pod_deck_title',
+                sourceId: 'vampire_cull_the_weak_pod_deck',
+                targetType: 'generic',
+                genericIntent: 'card-pool',
+                autoRefresh: 'deck',
+                responseValidationMode: 'live',
+                autoResolveIfSingle: false,
+                multi: { min: 0, max: 2 },
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const choices = (Array.isArray(value) ? value : [value]) as VampireCullTheWeakPodDeckChoice[];
+        const liveDeckMinionUids = new Set(
+            (state.core.players[context.playerId]?.deck ?? [])
+                .filter(card => card.type === 'minion')
+                .map(card => card.uid),
+        );
+        const selectedUids = choices
+            .map(choice => choice?.cardUid)
+            .filter((cardUid): cardUid is string => typeof cardUid === 'string' && liveDeckMinionUids.has(cardUid))
+            .slice(0, 2);
+        if (selectedUids.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
+                discardUids: selectedUids,
+            }),
+            nextProgram: vampireCullTheWeakPodPromptProgram,
+        };
+    },
+});
+
 const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWeakPodPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'vampire_cull_the_weak_pod',
     buildInteraction: (context) => {
@@ -1507,19 +1560,36 @@ const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWea
                 sourcePlayerId: context.playerId,
                 effectType: 'affect',
             }) as any,
-            { sourceId: 'vampire_cull_the_weak_pod', targetType: 'minion', titleKey: 'ui.vampire_cull_the_weak_pod_title' },
+            {
+                sourceId: 'vampire_cull_the_weak_pod',
+                targetType: 'minion',
+                titleKey: 'ui.vampire_cull_the_weak_pod_title',
+                responseValidationMode: 'live',
+                autoResolveIfSingle: false,
+            },
         );
     },
-    onResolve: ({ context, value, playerId, timestamp }) => {
+    onResolve: ({ state, context, value, playerId, timestamp }) => {
         const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
-        const events: SmashUpEvent[] = [...context.deckEvents];
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        const liveDeckMinionUids = new Set(
+            (state.core.players[playerId]?.deck ?? [])
+                .filter(card => card.type === 'minion')
+                .map(card => card.uid),
+        );
+        const discardUids = context.discardUids
+            .filter(cardUid => liveDeckMinionUids.has(cardUid))
+            .slice(0, 2);
+        if (discardUids.length === 0) return { events: [] };
+        const events: SmashUpEvent[] = [];
         events.push({
             type: SU_EVENTS.CARDS_MILLED,
-            payload: { playerId, count: context.discardUids.length, cardUids: context.discardUids },
+            payload: { playerId, cardUids: discardUids, reason: 'vampire_cull_the_weak_pod' },
             timestamp,
         } as any);
-        for (let index = 0; index < context.discardedCount; index += 1) {
+        for (let index = 0; index < discardUids.length; index += 1) {
             events.push(addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'vampire_cull_the_weak_pod', timestamp));
         }
         return { events };
@@ -1901,33 +1971,13 @@ function vampireBigGulpPod(ctx: AbilityContext): AbilityResult {
 }
 
 function vampireCullTheWeakPod(ctx: AbilityContext): AbilityResult {
-    // Engine limitation: no full deck browse UI. We approximate by searching until 2 minions found, discard them, then place counters.
-    const picked = revealAndPickFromDeck({
-        state: ctx.state,
-        random: ctx.random,
-        playerId: ctx.playerId,
-        predicate: (c) => c.type === 'minion',
-        maxPick: 2,
-        revealTo: ctx.playerId,
-        reason: 'vampire_cull_the_weak_pod',
-        now: ctx.now,
-    });
-    if (picked.picked.length === 0) return { events: [] };
-    // Choose target minion to receive counters (one per discarded minion)
-    const myMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const def = getCardDef(m.defId);
-            myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: def?.name ?? m.defId });
-        }
-    }
+    const hasDeckMinion = ctx.state.players[ctx.playerId]?.deck.some(card => card.type === 'minion') ?? false;
+    if (!hasDeckMinion) return { events: [] };
+    const hasCounterTarget = ctx.state.bases.some(base => base.minions.length > 0);
+    if (!hasCounterTarget) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const result = executeAbilityProgram(
-        vampireCullTheWeakPodPromptProgram,
-        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-            discardedCount: picked.picked.length,
-            deckEvents: picked.events,
-            discardUids: picked.picked.map(card => card.uid),
-        }),
+        vampireCullTheWeakPodDeckPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
     return { events: result.events, matchState: result.matchState };
 }

@@ -4,6 +4,7 @@ import type {
     MinionCardDef,
     SmashUpActivatableAbility,
     SmashUpActivationKind,
+    SmashUpActivationUseRequirement,
     SmashUpActivationWindow,
 } from './types';
 
@@ -25,7 +26,13 @@ function dedupeActivatableAbilities(
     const seen = new Set<string>();
     const result: SmashUpActivatableAbility[] = [];
     for (const ability of abilities) {
-        const key = `${ability.kind}:${ability.zone}:${ability.window ?? '*'}`;
+        const key = [
+            ability.kind,
+            ability.zone,
+            ability.window ?? '*',
+            ability.sourceScope ?? '*',
+            ability.useRequirement ?? '*',
+        ].join(':');
         if (seen.has(key)) continue;
         seen.add(key);
         result.push(ability);
@@ -112,4 +119,30 @@ export function hasCardActivatableAbility(
         if (query.window && ability.window && ability.window !== query.window) return false;
         return true;
     });
+}
+
+export function getBoardTalentUseRequirement(defId: string): SmashUpActivationUseRequirement | undefined {
+    return getCardActivatableAbilities(defId).find(ability =>
+        ability.kind === 'talent'
+        && ability.zone === 'board'
+        && (!ability.window || ability.window === 'playCards'))?.useRequirement;
+}
+
+export function shouldTrackActivationPlayedThisTurn(defId: string): boolean {
+    const requirement = getBoardTalentUseRequirement(defId);
+    return requirement === 'sourceInPlayAtStartOfTurn'
+        || requirement === 'attachedToOwnMinionOrSourceInPlayAtStartOfTurn';
+}
+
+export function buildActivationPlayedThisTurnMetadata(defId: string): Record<string, unknown> | undefined {
+    return shouldTrackActivationPlayedThisTurn(defId)
+        ? { playedThisTurn: true }
+        : undefined;
+}
+
+export function wasActivationSourcePlayedThisTurn(source: {
+    playedThisTurn?: boolean;
+    metadata?: Record<string, unknown>;
+}): boolean {
+    return source.playedThisTurn === true || source.metadata?.playedThisTurn === true;
 }

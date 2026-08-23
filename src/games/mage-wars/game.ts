@@ -1,4 +1,9 @@
-import { createBaseSystems, createFlowSystem, createGameEngine } from '../../engine';
+import {
+    createBaseSystems,
+    createFlowSystem,
+    createGameEngine,
+    createTimingOpportunitySystem,
+} from '../../engine';
 import { registerCriticalImageResolver } from '../../core';
 import { MageWarsDomain, MAGE_WARS_COMMANDS } from './domain';
 import type { MageWarsCommand, MageWarsCore, MageWarsEvent } from './domain';
@@ -9,6 +14,7 @@ import { registerCardPreviewGetter } from '../../components/game/registry/cardPr
 import { getMageWarsCardPreviewRef } from './ui/cardAtlas';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatMageWarsActionEntry } from './actionLog';
 import { createMageWarsInteractionSystem } from './domain/systems';
+import { createMageWarsTimingOpportunitySystemConfig } from './domain/timingOpportunities';
 
 const systems = [
     createFlowSystem<MageWarsCore>({ hooks: mageWarsFlowHooks }),
@@ -21,6 +27,7 @@ const systems = [
             snapshotCommandAllowlist: UNDO_ALLOWLIST,
         },
     }),
+    createTimingOpportunitySystem(MageWarsDomain, createMageWarsTimingOpportunitySystemConfig()),
     createMageWarsInteractionSystem(),
 ];
 

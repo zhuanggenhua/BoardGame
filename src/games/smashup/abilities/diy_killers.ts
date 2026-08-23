@@ -393,15 +393,13 @@ function diyKillersGoodBoy(ctx: AbilityContext): AbilityResult {
     const minions = ctx.state.players[ctx.playerId]?.discard.filter(card => getCardDef(card.defId)?.type === 'minion') ?? [];
     const extra = grantContextualExtraAction({ playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState }, 'diy_killers_good_boy');
     if (minions.length === 0) return { events: [extra] };
-    if (minions.length === 1) {
-        return { events: [recoverCardsFromDiscard(ctx.playerId, [minions[0].uid], 'diy_killers_good_boy', ctx.now), extra] };
-    }
+    if (!ctx.matchState) return { events: [extra] };
     const interaction = createSimpleChoice(
         `diy_killers_good_boy_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '选择从弃牌堆回手的仆从',
         buildCardOptions(minions),
-        { sourceId: 'diy_killers_good_boy', targetType: 'discard_minion', titleKey: 'ui.diy_killers_good_boy_title' },
+        { sourceId: 'diy_killers_good_boy', targetType: 'discard_minion', titleKey: 'ui.diy_killers_good_boy_title', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -607,15 +605,13 @@ function diyKillersOhNo(ctx: AbilityContext): AbilityResult {
             })),
     );
     if (ownMinions.length === 0) return { events: [] };
-    if (ownMinions.length === 1) {
-        return { events: [addTempPower(ownMinions[0].uid, ownMinions[0].baseIndex, 3, 'diy_killers_oh_no', ctx.now)] };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `diy_killers_oh_no_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '选择获得 +3 力量的己方仆从',
         buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'power_change' }),
-        { sourceId: 'diy_killers_oh_no', targetType: 'minion', titleKey: 'ui.diy_killers_oh_no_title' },
+        { sourceId: 'diy_killers_oh_no', targetType: 'minion', titleKey: 'ui.diy_killers_oh_no_title', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -922,22 +918,7 @@ function diyKillersMacheteTalent(ctx: AbilityContext): AbilityResult {
         .map((base, baseIndex) => ({ base, baseIndex }))
         .filter(({ base, baseIndex }) => baseIndex !== host.baseIndex && base.minions.some(minion => minion.controller !== ctx.playerId));
     if (targetBases.length === 0) return { events: [] };
-    if (targetBases.length === 1) {
-        return {
-            events: buildValidatedBaseMoveEvents(ctx.matchState, {
-                minionUid: host.minion.uid,
-                minionDefId: host.minion.defId,
-                fromBaseIndex: host.baseIndex,
-                toBaseIndex: targetBases[0].baseIndex,
-                toBaseDefId: targetBases[0].base.defId,
-                reason: 'diy_killers_machete',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'diy_killers_machete',
-                sourceBaseIndex: host.baseIndex,
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `diy_killers_machete_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
@@ -954,7 +935,7 @@ function diyKillersMacheteTalent(ctx: AbilityContext): AbilityResult {
             },
             displayMode: 'card' as const,
         })),
-        { sourceId: 'diy_killers_machete', targetType: 'base', titleKey: 'ui.diy_killers_machete_title' },
+        { sourceId: 'diy_killers_machete', targetType: 'base', autoResolveIfSingle: false, titleKey: 'ui.diy_killers_machete_title' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -1077,25 +1058,13 @@ function diyKillersClawedGloveTalent(ctx: AbilityContext): AbilityResult {
         label: getCardName(minion.defId),
     })) ?? [];
     if (targets.length === 0) return { events: [] };
-    if (targets.length === 1) {
-        return {
-            events: [addPermanentPower(targets[0].uid, host.baseIndex, -1, 'diy_killers_clawed_glove', ctx.now, {
-                expiresOnTurnNumber: nextPlayerTurnStartExpiration(ctx.state, ctx.playerId),
-                expiresOnPlayerId: ctx.playerId,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: 'diy_killers_clawed_glove',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: host.baseIndex,
-            })],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `diy_killers_clawed_glove_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '爪子手套：选择获得 -1 力量直到你下回合开始的仆从',
         buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'power_change' }),
-        { sourceId: 'diy_killers_clawed_glove', targetType: 'minion', titleKey: 'ui.diy_killers_clawed_glove_title' },
+        { sourceId: 'diy_killers_clawed_glove', targetType: 'minion', titleKey: 'ui.diy_killers_clawed_glove_title', autoResolveIfSingle: false },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -1617,23 +1586,13 @@ function campCrystalLakeAfterDestroy(ctx: BaseAbilityContext): BaseAbilityResult
     if (!ctx.destroyerId || amount <= 0) return { events: [] };
     const targets = campCrystalLakePowerTargets(ctx.state, ctx.baseIndex);
     if (targets.length === 0) return { events: [] };
-    if (targets.length === 1) {
-        return {
-            events: [addTempPower(targets[0].uid, ctx.baseIndex, amount, 'base_diy_killers_camp_crystal_lake', ctx.now, {
-                sourcePlayerId: ctx.destroyerId,
-                sourceDefId: 'base_diy_killers_camp_crystal_lake',
-                sourceControllerId: ctx.destroyerId,
-                sourceBaseIndex: ctx.baseIndex,
-            })],
-        };
-    }
     if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
         `base_diy_killers_camp_crystal_lake_power_${ctx.baseIndex}_${ctx.now}`,
         ctx.destroyerId,
         `水晶湖营地：选择获得 +${amount} 力量的仆从`,
         buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.destroyerId, effectType: 'power_change' }),
-        { sourceId: 'base_diy_killers_camp_crystal_lake_power', targetType: 'minion', titleKey: 'ui.base_diy_killers_camp_crystal_lake_power_title' },
+        { sourceId: 'base_diy_killers_camp_crystal_lake_power', targetType: 'minion', titleKey: 'ui.base_diy_killers_camp_crystal_lake_power_title', autoResolveIfSingle: false },
     );
     (interaction.data as Record<string, unknown>).continuationContext = {
         amount,

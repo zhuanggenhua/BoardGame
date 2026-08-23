@@ -180,6 +180,49 @@ describe('AudioManager', () => {
         expect(howlInstances[1].play).toHaveBeenCalledTimes(1);
     });
 
+    it('共享音频包本地 _capacitor_file_ 路径失败时，BGM 会优先走原生 blob 读取并继续播放', async () => {
+        setCommonAudioAssetBaseOverride('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/common-audio/current/assets');
+        readInstalledGamePackageAssetBlobUrl.mockResolvedValue({
+            blobUrl: 'blob:common-audio-bgm',
+            mimeType: 'audio/ogg',
+            size: 456,
+        });
+        const eventListener = vi.fn();
+        window.addEventListener(AUDIO_RUNTIME_TOAST_EVENT, eventListener as EventListener);
+
+        const config: GameAudioConfig = {
+            bgm: [{
+                key: 'bgm-local',
+                name: 'Local BGM',
+                src: 'bgm/fantasy/theme.ogg',
+            }],
+        };
+
+        AudioManager.registerAll(config, 'common/audio');
+        expect(() => AudioManager.playBgm('bgm-local')).not.toThrow();
+
+        expect(howlInstances).toHaveLength(1);
+        expect(howlInstances[0].options.src).toEqual([
+            'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/common-audio/current/assets/common/audio/bgm/fantasy/compressed/theme.ogg',
+        ]);
+
+        const firstLoadError = howlInstances[0].options.onloaderror as ((id: number, error: unknown) => void);
+        firstLoadError(1, 'Decoding audio data failed.');
+
+        await waitForInstalledAssetRead();
+
+        expect(readInstalledGamePackageAssetBlobUrl).toHaveBeenCalledWith(
+            'common-audio',
+            'common/audio/bgm/fantasy/compressed/theme.ogg',
+        );
+        expect(howlInstances).toHaveLength(2);
+        expect(howlInstances[1].options.src).toEqual(['blob:common-audio-bgm']);
+        expect(howlInstances[1].play).toHaveBeenCalledTimes(1);
+        expect(eventListener).not.toHaveBeenCalled();
+
+        window.removeEventListener(AUDIO_RUNTIME_TOAST_EVENT, eventListener as EventListener);
+    });
+
     it('首播音效 1 秒内加载完成才播放，避免事件过期后补播', async () => {
         vi.spyOn(Date, 'now').mockReturnValue(1000);
         const config: GameAudioConfig = {

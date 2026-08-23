@@ -5,12 +5,12 @@ import { resolveOnPlay, resolveSpecial } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { buildActionPlayedEvent } from './actionPlayEvent';
 import { buildSemanticOngoingAttachEvents } from './abilityHelpers';
+import { buildActivationPlayedThisTurnMetadata } from './activationMetadata';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import type {
     ActionCardDef,
     FusionCardDef,
-    MatchPhase,
     MinionCardDef,
     MinionPlayedEvent,
     SmashUpCore,
@@ -463,6 +463,7 @@ export function resolvePendingActionExecution(
             sourceKind: 'action',
             targetBaseIndex,
             targetMinionUid: pending.targetMinionUid,
+            metadata: buildActivationPlayedThisTurnMetadata(pending.defId),
             onBlockedSourceDestination: 'discard',
             now,
         }));

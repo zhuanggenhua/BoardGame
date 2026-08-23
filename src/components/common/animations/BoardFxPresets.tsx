@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   createFxPathBox,
   createFxScaledCellBox,
@@ -518,6 +519,94 @@ export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
           quality={quality}
           overflow={overflow}
         />
+      </div>
+    </div>
+  );
+};
+
+export interface BoardHealingImpactPresetProps {
+  cell: FxCellCoord;
+  getCellPosition: CellPositionResolver;
+  targetSnapshot?: FxAnchorSnapshot | null;
+  box?: FxBox | null;
+  targetAnchorId?: string;
+  amount: number;
+  quality?: FxQuality;
+  delayMs?: number;
+  completeMs?: number;
+  hostTestId?: string;
+  burstTestId?: string;
+  numberTestId?: string;
+  color?: string[];
+  overflow?: number;
+  sizeClassName?: string;
+  numberClassName?: string;
+  onImpact?: () => void;
+  onComplete?: () => void;
+}
+
+export const BoardHealingImpactPreset: React.FC<BoardHealingImpactPresetProps> = ({
+  cell,
+  getCellPosition,
+  targetSnapshot,
+  box,
+  targetAnchorId,
+  amount,
+  quality = 'full',
+  delayMs = 0,
+  completeMs = 1_100,
+  hostTestId = 'board-fx-healing-impact',
+  burstTestId = 'board-fx-healing-burst',
+  numberTestId = 'board-fx-healing-number',
+  color = ['#ecfdf5', '#a7f3d0', '#34d399', '#047857'],
+  overflow = 2.25,
+  sizeClassName = 'relative h-28 w-28',
+  numberClassName = 'text-emerald-100 drop-shadow-[0_0_12px_rgba(16,185,129,0.82)]',
+  onImpact,
+  onComplete,
+}) => {
+  const resolvedSnapshotBox = snapshotBox(targetSnapshot);
+  const active = useDelayedActive(delayMs);
+
+  useTimedImpactAndComplete({
+    active: true,
+    impactMs: delayMs,
+    completeMs: completeMs + delayMs,
+    onImpact,
+    onComplete,
+  });
+
+  return (
+    <div
+      className="absolute pointer-events-none z-30 grid place-items-center"
+      data-testid={hostTestId}
+      data-target-anchor-id={targetAnchorId ?? targetSnapshot?.anchorId ?? ''}
+      data-surface-id={targetSnapshot?.surfaceId ?? ''}
+      style={resolvedSnapshotBox ? fxBoxStyle(resolvedSnapshotBox) : box ? fxBoxStyle(box) : { ...cellBox(getCellPosition, cell), overflow: 'visible' }}
+    >
+      <div className={sizeClassName}>
+        <DelayedBurstParticles
+          testId={burstTestId}
+          delayMs={delayMs}
+          preset="summonGlow"
+          color={color}
+          quality={quality}
+          overflow={overflow}
+        />
+        {amount > 0 ? (
+          <motion.div
+            className={`absolute inset-0 grid place-items-center text-[1.9rem] font-black leading-none ${numberClassName}`}
+            data-testid={numberTestId}
+            data-healing-amount={amount}
+            initial={{ opacity: 0, scale: 0.62, y: 8 }}
+            animate={active
+              ? { opacity: [0, 1, 1, 0], scale: [0.62, 1.12, 1, 1.04], y: [8, -2, -8, -18] }
+              : { opacity: 0, scale: 0.62, y: 8 }}
+            transition={{ duration: 1.1, ease: 'easeOut', times: [0, 0.18, 0.72, 1] }}
+          >
+            +{amount}
+          </motion.div>
+        ) : null}
       </div>
     </div>
   );

@@ -359,8 +359,7 @@ const resolveTakeChipValue = (core: TheGangCore, command: Extract<TheGangCommand
         return getUnoccupiedChipValues(
             getChipValues(core.playerIds.length, core.rules.config, core.round),
             core.currentRoundChips,
-        )
-            .at(0)
+        )[0]
             ?? null;
     }
     return command.payload.chip;

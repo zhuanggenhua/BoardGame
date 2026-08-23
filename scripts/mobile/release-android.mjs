@@ -48,6 +48,9 @@ ota / native / full 额外选项:
 ota 额外选项:
   --version <bundleVersion>     显式指定 OTA 内部游标
   --display-version <number>    显式指定用户可见更新号；不传则从线上 latest.json 自动递增，最低 600
+  --product-version <version>   显式指定商业产品版本；不传则使用 package.json.version 作为兼容展示值
+  --expected-base-version <version>
+                                可选 package.json 断言；用于确认发布 ref，不传则不阻塞 OTA
 
 ota / full 额外选项:
   --ota-version-base <semver>   未显式 --version 时的 OTA 游标基线，可与产品版本解耦
@@ -60,7 +63,8 @@ full 额外选项:
   --game <gameId>              指定游戏包; 传了该参数会自动启用 packages 阶段
 
 说明:
-  - OTA 发布已禁止隐式版本；发布时会强制传 --expected-base-version=<package.json.version>
+  - OTA 包版本在发布时决定；可通过 --version/--display-version/--product-version 显式指定
+  - --expected-base-version 只是可选 package.json 断言，不再作为 OTA 或服务器部署门禁
   - 所有 OTA 都强制更新；--no-force-update 已禁用
   - 正式 Android OTA 必须写入 latest.json，禁止跳过更新发现入口
   - OTA 客户端按 bundle version 这个内部游标判断新旧；publishedAt 只用于审计和展示
@@ -269,6 +273,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
         'version',
         'display-version',
         'ota-version-base',
+        'product-version',
         'native-version',
         'expected-base-version',
         'force-update-title',
@@ -337,15 +342,9 @@ const prepareReleaseVersion = () => {
     };
 };
 
-const buildOtaArgsWithExpectedVersion = (releaseVersion, sourceArgs = args) => [
-    ...buildOtaArgs(sourceArgs).filter((arg, index, list) => {
-        if (arg === '--expected-base-version') return false;
-        const prev = list[index - 1];
-        if (prev === '--expected-base-version') return false;
-        return true;
-    }),
-    `--expected-base-version=${releaseVersion}`,
-];
+const describeOtaProductVersion = (fallbackVersion, sourceArgs = args) => (
+    readArgValue('product-version', '', sourceArgs) || fallbackVersion
+);
 
 const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
@@ -356,8 +355,8 @@ const runOtaRelease = async () => {
     await runDoctor();
     await runTypecheck();
     await runSync();
-    logStep(`发布 Android OTA (expectedBaseVersion=${releaseInfo.version})`);
-    await runNodeScript('scripts/mobile/publish-android-ota.mjs', buildOtaArgsWithExpectedVersion(releaseInfo.version));
+    logStep(`发布 Android OTA (productVersion=${describeOtaProductVersion(releaseInfo.version)})`);
+    await runNodeScript('scripts/mobile/publish-android-ota.mjs', buildOtaArgs());
 };
 
 const runPackagesRelease = async (sourceArgs = args) => {
@@ -397,8 +396,8 @@ const runFullRelease = async () => {
     applyOtaClientBuildDefaults();
     await runDoctor();
     await runSync();
-    logStep(`发布 Android OTA (expectedBaseVersion=${nativeInfo.version})`);
-    await runNodeScript('scripts/mobile/publish-android-ota.mjs', buildOtaArgsWithExpectedVersion(nativeInfo.version));
+    logStep(`发布 Android OTA (productVersion=${describeOtaProductVersion(nativeInfo.version)})`);
+    await runNodeScript('scripts/mobile/publish-android-ota.mjs', buildOtaArgs());
     if (shouldRunPackagesInFull()) {
         await runPackagesRelease(args);
     }

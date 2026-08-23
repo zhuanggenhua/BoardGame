@@ -116,7 +116,7 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
   ): GameEvent[] => {
     if (options?.inputEventsAlreadyReduced) return events;
     const processedEvents = postProcessDeathChecks(events, core);
-    const timestamp = processedEvents.at(-1)?.timestamp ?? 0;
+    const timestamp = processedEvents[processedEvents.length - 1]?.timestamp ?? 0;
     const existingBloodMagicCharges = processedEvents.filter((event) => (
       event.type === SW_EVENTS.UNIT_CHARGED
       && (event.payload as { sourceAbilityId?: string }).sourceAbilityId === 'shadow_blood_magic'

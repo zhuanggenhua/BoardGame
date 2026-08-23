@@ -15,9 +15,8 @@ beforeAll(() => {
 });
 
 describe('base_crypt: 消灭者放指示物', () => {
-    it('消灭者在这里只有一个随从时自动放指示物', () => {
-        const ctx: BaseAbilityContext = {
-            state: makeState({
+    it('消灭者在这里只有一个随从时也必须先让玩家确认', () => {
+        const core = makeState({
                 bases: [{
                     defId: 'base_crypt',
                     minions: [
@@ -29,7 +28,10 @@ describe('base_crypt: 消灭者放指示物', () => {
                     '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                     '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
                 } as any,
-            }),
+        });
+        const ctx: BaseAbilityContext = {
+            state: core,
+            matchState: makeMatchState(core),
             baseIndex: 0,
             baseDefId: 'base_crypt',
             playerId: '0',
@@ -38,10 +40,9 @@ describe('base_crypt: 消灭者放指示物', () => {
             now: 1000,
         };
 
-        const { events } = triggerExtendedBaseAbility('base_crypt', 'onMinionDestroyed', ctx);
-        expect(events.length).toBe(1);
-        expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
-        expect((events[0] as any).payload.minionUid).toBe('m_destroyer');
+        const result = triggerExtendedBaseAbility('base_crypt', 'onMinionDestroyed', ctx);
+        expect(result.events).toHaveLength(0);
+        expect(getPromptsBySourceId(result.matchState!, 'base_crypt')).toHaveLength(1);
     });
 
     it('消灭者在这里没有随从时不放指示物', () => {

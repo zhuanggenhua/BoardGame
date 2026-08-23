@@ -31,6 +31,7 @@ const allowedValueArgs = new Set([
     'version',
     'display-version',
     'ota-version-base',
+    'product-version',
     'native-version',
     'expected-base-version',
     'force-update-title',
@@ -64,8 +65,9 @@ Android OTA 发布脚本
 - --version <bundleVersion>
 - --display-version <number> 用户可见发布号；不传则从线上 latest.json 自动递增，最低 600
 - --ota-version-base <semver> 仅用于未显式 --version 时生成 OTA 内部游标；默认取 package.json.version
+- --product-version <version> 商业产品版本；不传则使用 package.json.version 作为兼容展示值
 - --native-version <version>
-- --expected-base-version <package.json.version>
+- --expected-base-version <package.json.version> 可选 package.json 断言；用于确认发布 ref，没有传则不阻塞 OTA
 - --force-update 兼容旧命令，可省略
 - --force-update-title <text>
 - --force-update-message <text>
@@ -137,6 +139,7 @@ const nativeVersion = readArgValue('native-version', packageJson.version);
 const expectedBaseVersion = readArgValue('expected-base-version', '').trim();
 const explicitBundleVersion = readArgValue('version', '');
 const explicitDisplayVersion = readArgValue('display-version', '').trim();
+const productVersion = readArgValue('product-version', packageJson.version).trim() || packageJson.version;
 const requestedOtaVersionBase = readArgValue(
     'ota-version-base',
     process.env.ANDROID_OTA_VERSION_BASE?.trim() || '',
@@ -281,14 +284,10 @@ if (explicitDisplayVersion && explicitDisplayVersionNumber === null) {
     throw new Error(`Android OTA 显示发布号非法：${explicitDisplayVersion}。请使用 600、601 这类非负整数。`);
 }
 
-if (!expectedBaseVersion) {
-    throw new Error('Android OTA 发布已禁止隐式版本：必须显式传 --expected-base-version，并与 package.json.version 完全一致。');
-}
-
-if (expectedBaseVersion !== packageJson.version) {
+if (expectedBaseVersion && expectedBaseVersion !== packageJson.version) {
     throw new Error(
         `Android OTA 基线版本不匹配：期望 ${expectedBaseVersion}，实际 package.json.version=${packageJson.version}。`
-        + ' 请先 bump 到正确版本，或改用正确 ref / 正确显式版本后再发布。',
+        + ' 请改用正确 ref，或移除该断言后通过 --product-version 指定商业产品版本。',
     );
 }
 
@@ -378,7 +377,7 @@ const displayVersion = String(
 const manifest = {
     version: bundleVersion,
     displayVersion,
-    productVersion: packageJson.version,
+    productVersion,
     url: bundleUrl,
     checksum,
     channel,
@@ -447,7 +446,8 @@ console.log(dryRun ? 'OTA bundle 预演完成（未上传）' : 'OTA bundle 已�
 console.log(`channel=${channel}`);
 console.log(`bundleVersion=${bundleVersion}`);
 console.log(`displayVersion=${displayVersion}`);
-console.log(`productVersion=${packageJson.version}`);
+console.log(`productVersion=${productVersion}`);
+console.log(`packageVersion=${packageJson.version}`);
 console.log(`bundleVersionHumanTime=${bundleVersionHumanTime}`);
 console.log(`otaVersionBase=${explicitBundleVersion ? '(explicit-version)' : otaVersionBase}`);
 console.log(`nativeVersion=${nativeVersion}`);

@@ -6,7 +6,8 @@
 
 - 游戏入口：`src/games/<gameId>/manifest.ts`、`Board.tsx`、`ui/`。
 - 共享能力：`src/shared/mobileSupport.ts`、移动壳、手势 hook、共享按钮 / 弹层组件。
-- 规格和标准：`docs/mobile-adaptation.md`、`ui-responsive-layout`、`ui-ux`、`engine-systems`。
+- 标准：`ui-responsive-layout`、`ui-ux`、`engine-systems`。
+- 实现入口不清时，再查 [`docs/mobile-adaptation.md`](../../../../docs/mobile-adaptation.md)。
 
 ## 风险归属
 

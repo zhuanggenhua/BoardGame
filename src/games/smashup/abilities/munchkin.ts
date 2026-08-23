@@ -558,11 +558,7 @@ function shireMarshalTalent(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     }
-    if (candidates.length === 1) {
-        return {
-            events: [grantExtraMinion(ctx.playerId, HALFLINGS_SHIRE_MARSHAL, ctx.now, candidates[0].baseIndex)],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const interaction = createSimpleChoice<ShireMarshalBaseChoice>(
         `${HALFLINGS_SHIRE_MARSHAL_CHOOSE_BASE_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
@@ -574,6 +570,7 @@ function shireMarshalTalent(ctx: AbilityContext): AbilityResult {
             targetType: 'base',
             titleKey: 'ui.munchkin_halflings_shire_marshal_choose_base_title',
             responseValidationMode: 'live',
+            autoResolveIfSingle: false,
             displayCard: { defId: HALFLINGS_SHIRE_MARSHAL, cardUid: ctx.cardUid },
         },
     );

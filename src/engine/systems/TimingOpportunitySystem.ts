@@ -59,6 +59,17 @@ export interface TimingOpportunitySystemConfig<TValue = unknown, TCore = unknown
         choiceRequest: ChoiceRequest<TValue>;
         interaction: InteractionDescriptor;
     }) => MatchState<TCore>;
+    /**
+     * ChoiceRequest 已由本系统实际创建 / 入队后，需要同步追加的领域事件。
+     * 用于把“已打开响应窗口”“已请求交互”等证据挂到同一 Opportunity。
+     */
+    choiceRequestEvents?: (args: {
+        state: MatchState<TCore>;
+        opportunity: Opportunity<TValue>;
+        choiceRequest: ChoiceRequest<TValue>;
+        interaction: InteractionDescriptor;
+        queuedState: MatchState<TCore>;
+    }) => GameEvent[] | undefined;
 }
 
 export interface CreateSimpleChoiceFromTimingOpportunityOverrides {
@@ -179,13 +190,21 @@ function applyOpportunity<TCore, TValue>(
                         }),
                     };
                 }
+                const queuedState = config.queueChoiceInteraction?.({
+                    state,
+                    opportunity,
+                    choiceRequest,
+                    interaction: customInteraction,
+                }) ?? queueInteraction(state, customInteraction);
                 return {
-                    state: config.queueChoiceInteraction?.({
+                    state: queuedState,
+                    events: config.choiceRequestEvents?.({
                         state,
                         opportunity,
                         choiceRequest,
                         interaction: customInteraction,
-                    }) ?? queueInteraction(state, customInteraction),
+                        queuedState,
+                    }),
                 };
             }
 
@@ -195,13 +214,21 @@ function applyOpportunity<TCore, TValue>(
             }
 
             const interaction = createSimpleChoiceFromTimingOpportunity(opportunity, options);
+            const queuedState = config.queueChoiceInteraction?.({
+                state,
+                opportunity,
+                choiceRequest,
+                interaction,
+            }) ?? queueInteraction(state, interaction);
             return {
-                state: config.queueChoiceInteraction?.({
+                state: queuedState,
+                events: config.choiceRequestEvents?.({
                     state,
                     opportunity,
                     choiceRequest,
                     interaction,
-                }) ?? queueInteraction(state, interaction),
+                    queuedState,
+                }),
             };
         }
         case 'response-window': {

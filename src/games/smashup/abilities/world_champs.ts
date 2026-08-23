@@ -296,6 +296,7 @@ const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptC
             {
                 sourceId: 'world_champs_stoneford',
                 targetType: 'generic',
+                autoResolveIfSingle: false,
                 autoRefresh: 'deck',
                 responseValidationMode: 'live',
                 titleKey: 'ui.world_champs_stoneford_title',
@@ -1006,9 +1007,6 @@ function worldChampsCalicoinOnPlay(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (targets.length === 1) {
-        return { events: [addPowerCounter(targets[0].uid, targets[0].baseIndex, 1, 'world_champs_calicoin', ctx.now)] };
-    }
     const result = executeAbilityProgram(
         worldChampsCalicoinPromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -1034,9 +1032,6 @@ function worldChampsItsBlitzinTimeOnPlay(ctx: AbilityContext): AbilityResult {
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (ownMinions.length === 1) {
-        return { events: [addTempPower(ownMinions[0].uid, ownMinions[0].baseIndex, 3, 'world_champs_its_blitzin_time', ctx.now)] };
-    }
     const result = executeAbilityProgram(
         worldChampsItsBlitzinTimePromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
@@ -1059,16 +1054,6 @@ function worldChampsFightingSpiritPrizeOnPlay(ctx: AbilityContext): AbilityResul
     if (ownMinions.length === 0) {
         return { events: drawEvents };
     }
-    if (ownMinions.length === 1) {
-        return {
-            events: [
-                ...drawEvents,
-                addPowerCounter(ownMinions[0].uid, ownMinions[0].baseIndex, 1, 'world_champs_fighting_spirit_prize', ctx.now),
-                addPowerCounter(ownMinions[0].uid, ownMinions[0].baseIndex, 1, 'world_champs_fighting_spirit_prize', ctx.now),
-            ],
-        };
-    }
-
     const result = executeAbilityProgram(
         worldChampsFightingSpiritPrizePromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
@@ -1097,9 +1082,6 @@ function worldChampsFastAsLightningOnPlay(ctx: AbilityContext): AbilityResult {
     const minions = collectAllMinions(ctx.state);
     if (minions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    if (minions.length === 1) {
-        return { events: [addTempPower(minions[0].uid, minions[0].baseIndex, 2, 'world_champs_fast_as_lightning', ctx.now)] };
     }
 
     const result = executeAbilityProgram(

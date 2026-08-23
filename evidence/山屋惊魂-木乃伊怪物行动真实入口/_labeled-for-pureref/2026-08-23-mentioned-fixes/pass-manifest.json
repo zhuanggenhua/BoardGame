@@ -1,0 +1,63 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "治疗反馈只用目标角色旁飘字，不显示底部治疗结果条",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\01-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png"
+      ]
+    },
+    {
+      "requirement": "急救包可选目标高亮为贴角色本体的单层绿色实线",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\02-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png"
+      ]
+    },
+    {
+      "requirement": "英雄读本不显示剧本大标题，副标题/段落标题承担标题",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\03-labeled-65-主黄金链过程-16-英雄目标读本正文-段落标题可读.png"
+      ]
+    },
+    {
+      "requirement": "叛徒读本显示敌方情报，不串英雄秘密页",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\04-labeled-65-主黄金链过程-18-叛徒读本正文-敌方情报可读.png"
+      ]
+    },
+    {
+      "requirement": "队友持有物通过切换观察视角查看，不在队友卡默认展开",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\05-labeled-65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.png"
+      ]
+    },
+    {
+      "requirement": "跳过事件后回到牌桌，无黑卡、牌背或未发生结果面板",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\06-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\01-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\02-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\03-labeled-65-主黄金链过程-16-英雄目标读本正文-段落标题可读.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\04-labeled-65-主黄金链过程-18-叛徒读本正文-敌方情报可读.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\05-labeled-65-主黄金链过程-30-攻击前-切换观察目标英雄后圣符可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref\\2026-08-23-mentioned-fixes\\06-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png"
+  ]
+}

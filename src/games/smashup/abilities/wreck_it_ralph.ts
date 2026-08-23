@@ -1,14 +1,25 @@
+import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter,
     addTempPower,
+    buildBaseTargetOptions,
     buildAbilityFeedback,
+    buildMinionTargetOptions,
     buildStandardDrawEvents,
     buildValidatedMoveEvents,
     grantContextualExtraAction,
+    recoverCardsFromDiscard,
+    shuffleBaseDeck,
 } from '../domain/abilityHelpers';
-import { createEffectProgram } from '../domain/abilityRuntime';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import {
@@ -22,11 +33,14 @@ import type {
     CardSuppressedEvent,
     MinionMetadataUpdatedEvent,
     OngoingAttachedEvent,
+    SmashUpCore,
     SmashUpEvent,
 } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
-import { getMinionDef } from '../data/cards';
+import { getBaseDef, getMinionDef } from '../data/cards';
 import {
+    baseLabel,
+    cardLabel,
     collectBaseModifiers,
     collectMinions,
     cardToDeckTop,
@@ -34,7 +48,7 @@ import {
     getActionControllerId,
     isBaseModifier,
     moveMinionToBase,
-    recoverFirstDiscardCard,
+    runtimeToAbilityResult,
 } from './disney_shared';
 
 const RALPH = 'wreck_it_ralph_wreck_it_ralph';
@@ -53,6 +67,81 @@ const SUGAR_RUSH = 'wreck_it_ralph_sugar_rush';
 const BASE_THE_DUMP = 'base_the_dump';
 const BASE_THE_POWER_STRIP = 'base_the_power_strip';
 
+type PowerStripMoveChoice = {
+    minionUid?: string;
+    minionDefId?: string;
+    fromBaseIndex?: number;
+    toBaseIndex?: number;
+};
+
+type PowerStripPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    baseIndex: number;
+    now: number;
+};
+
+type BaseModifierChoice = {
+    cardUid: string;
+    defId: string;
+    ownerId: PlayerId;
+    baseIndex: number;
+};
+
+type RalphChoice =
+    | (BaseModifierChoice & { mode: 'destroy' })
+    | { mode: 'play'; cardUid: string; defId: string };
+
+type BaseChoice = {
+    baseIndex: number;
+    baseDefId?: string;
+};
+
+type DiscardCardChoice = {
+    cardUid: string;
+    defId: string;
+};
+
+type BaseDiscardChoice = {
+    baseDefId: string;
+};
+
+type MinionChoice = {
+    minionUid: string;
+    minionDefId: string;
+    baseIndex: number;
+};
+
+type SkipChoice = {
+    skip: true;
+};
+
+type FactionChoice = {
+    factionId: string;
+};
+
+type WreckPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    sourceCardUid: string;
+    sourceDefId: string;
+    sourceBaseIndex: number;
+    now: number;
+};
+
+type MovePromptContext = WreckPromptContext & {
+    reason: typeof ESCAPE_POD | typeof SUGAR_RUSH;
+    maxCount: number;
+    addTempPowerAfterMove: boolean;
+    destinationBaseIndex?: number;
+};
+
+type KingCandyPromptContext = WreckPromptContext & {
+    destinationBaseIndex?: number;
+};
+
+type WreckSourceContext = Pick<WreckPromptContext, 'playerId' | 'sourceCardUid' | 'sourceDefId' | 'sourceBaseIndex' | 'now'>;
+
 function source(ctx: AbilityContext) {
     return {
         sourcePlayerId: ctx.playerId,
@@ -63,11 +152,679 @@ function source(ctx: AbilityContext) {
     };
 }
 
+function promptSource(context: WreckPromptContext) {
+    return {
+        sourcePlayerId: context.playerId,
+        sourceCardUid: context.sourceCardUid,
+        sourceDefId: context.sourceDefId,
+        sourceControllerId: context.playerId,
+        sourceBaseIndex: context.sourceBaseIndex,
+    };
+}
+
 function firstOwnMinionHere(ctx: AbilityContext) {
     return ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.controller === ctx.playerId);
 }
 
+function collectBaseModifierPromptOptions(
+    core: SmashUpCore,
+    baseIndex: number,
+): PromptOption<BaseModifierChoice>[] {
+    return collectBaseModifiers(core, baseIndex).map((entry, index) => ({
+        id: `base-modifier-${index}-${entry.action.uid}`,
+        label: `${cardLabel(entry.action.defId)} @ ${baseLabel(core, baseIndex)}`,
+        value: {
+            cardUid: entry.action.uid,
+            defId: entry.action.defId,
+            ownerId: entry.action.ownerId,
+            baseIndex,
+        },
+        displayMode: 'card' as const,
+        _source: 'field' as const,
+    }));
+}
+
+function collectDiscardBaseModifierOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+): PromptOption<DiscardCardChoice>[] {
+    return (core.players[playerId]?.discard ?? [])
+        .filter(card => isBaseModifier(card.defId))
+        .map(card => ({
+            id: `discard-${card.uid}`,
+            label: cardLabel(card.defId),
+            value: { cardUid: card.uid, defId: card.defId },
+            displayMode: 'card' as const,
+            _source: 'discard' as const,
+        }));
+}
+
+function collectBaseDiscardOptions(core: SmashUpCore): PromptOption<BaseDiscardChoice>[] {
+    return (core.baseDiscard ?? []).map((defId, index) => ({
+        id: `base-discard-${index}-${defId}`,
+        label: getBaseDef(defId)?.name ?? defId,
+        value: { baseDefId: defId },
+        displayMode: 'button' as const,
+        _source: 'discard' as const,
+    }));
+}
+
+function removeFirstBaseDefId(defIds: string[], targetDefId: string): string[] {
+    const index = defIds.indexOf(targetDefId);
+    if (index < 0) return defIds;
+    return [...defIds.slice(0, index), ...defIds.slice(index + 1)];
+}
+
+function collectRalphOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+): PromptOption<RalphChoice>[] {
+    const destroyOptions: PromptOption<RalphChoice>[] = collectBaseModifiers(core, baseIndex).map((entry, index) => ({
+        id: `destroy-${index}-${entry.action.uid}`,
+        label: `消灭 ${cardLabel(entry.action.defId)} @ ${baseLabel(core, baseIndex)}`,
+        value: {
+            mode: 'destroy',
+            cardUid: entry.action.uid,
+            defId: entry.action.defId,
+            ownerId: entry.action.ownerId,
+            baseIndex,
+        },
+        displayMode: 'card' as const,
+        _source: 'field' as const,
+    }));
+    const playOptions: PromptOption<RalphChoice>[] = (core.players[playerId]?.hand ?? [])
+        .filter(card => isBaseModifier(card.defId))
+        .map(card => ({
+            id: `play-${card.uid}`,
+            label: `额外打出 ${cardLabel(card.defId)}`,
+            value: {
+                mode: 'play',
+                cardUid: card.uid,
+                defId: card.defId,
+            },
+            displayMode: 'card' as const,
+            _source: 'hand' as const,
+        }));
+    return [...destroyOptions, ...playOptions];
+}
+
+function collectOtherBaseOptions(core: SmashUpCore, baseIndex: number): PromptOption<BaseChoice>[] {
+    return buildBaseTargetOptions(
+        core.bases
+            .map((base, index) => ({
+                baseIndex: index,
+                label: baseLabel(core, index),
+                baseDefId: base.defId,
+            }))
+            .filter(base => base.baseIndex !== baseIndex),
+        core,
+    ) as PromptOption<BaseChoice>[];
+}
+
+function collectMoveMinionOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+): PromptOption<MinionChoice | SkipChoice>[] {
+    const candidates = (core.bases[baseIndex]?.minions ?? [])
+        .filter(minion => minion.controller === playerId)
+        .map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: getMinionDef(minion.defId)?.name ?? minion.defId,
+        }));
+    return [
+        {
+            id: 'skip',
+            label: '跳过',
+            labelKey: 'ui.skip',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
+        ...(buildMinionTargetOptions(candidates, {
+            state: core,
+            sourcePlayerId: playerId,
+            sourceKind: 'nonAction',
+            semanticRole: 'reference',
+        }) as PromptOption<MinionChoice>[]),
+    ];
+}
+
+function collectKingCandyDestinationOptions(core: SmashUpCore, baseIndex: number): PromptOption<BaseChoice>[] {
+    return buildBaseTargetOptions(
+        core.bases
+            .map((base, index) => ({
+                baseIndex: index,
+                label: baseLabel(core, index),
+                baseDefId: base.defId,
+                hasMinions: base.minions.length > 0,
+            }))
+            .filter(base => base.baseIndex !== baseIndex && base.hasMinions)
+            .map(({ hasMinions: _hasMinions, ...base }) => base),
+        core,
+    ) as PromptOption<BaseChoice>[];
+}
+
+function collectMinionsAtBaseOptions(
+    core: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+): PromptOption<MinionChoice>[] {
+    return (core.bases[baseIndex]?.minions ?? []).map((minion, index) => ({
+        id: `minion-${index}-${minion.uid}`,
+        label: `${getMinionDef(minion.defId)?.name ?? minion.defId} @ ${baseLabel(core, baseIndex)}`,
+        value: {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            baseIndex,
+        },
+        displayMode: 'card' as const,
+        _source: 'field' as const,
+    }));
+}
+
+function collectFactionOptions(core: SmashUpCore): PromptOption<FactionChoice>[] {
+    const factions = new Map<string, string>();
+    for (const base of core.bases) {
+        for (const minion of base.minions) {
+            const faction = getMinionDef(minion.defId)?.faction;
+            if (faction && !factions.has(faction)) {
+                factions.set(faction, faction);
+            }
+        }
+    }
+    return Array.from(factions.entries())
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([factionId, label]) => ({
+            id: `faction-${factionId}`,
+            label,
+            value: { factionId },
+            displayMode: 'button' as const,
+        }));
+}
+
+const ralphPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: RALPH,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${RALPH}_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '我要破坏它！：选择打出或消灭的基地修正牌',
+        collectRalphOptions(context.matchState.core, context.playerId, context.sourceBaseIndex),
+        {
+            titleKey: 'ui.wreck_it_ralph_wreck_it_ralph_title',
+            sourceId: RALPH,
+            targetType: 'generic',
+            genericIntent: 'mixed-card-and-control',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as RalphChoice | undefined;
+        if (choice?.mode === 'destroy') {
+            const target = collectBaseModifiers(state.core, context.sourceBaseIndex)
+                .find(entry => entry.action.uid === choice.cardUid);
+            if (!target) return { events: [] };
+            return {
+                events: buildValidatedOngoingDetachEvents(state.core, {
+                    cardUid: target.action.uid,
+                    defId: target.action.defId,
+                    ownerId: target.action.ownerId,
+                    reason: RALPH,
+                    now: timestamp,
+                    expectedLocation: 'base',
+                    ...promptSource(context),
+                }),
+            };
+        }
+
+        if (choice?.mode === 'play') {
+            const liveCard = state.core.players[context.playerId]?.hand.find(card =>
+                card.uid === choice.cardUid && isBaseModifier(card.defId));
+            if (!liveCard) return { events: [] };
+            return {
+                events: [grantContextualExtraAction({
+                    playerId: context.playerId,
+                    now: timestamp,
+                    matchState: state,
+                }, RALPH, {
+                    restrictToBase: context.sourceBaseIndex,
+                    restrictToCardUid: liveCard.uid,
+                })],
+            };
+        }
+
+        return { events: [] };
+    },
+});
+
+const felixBaseModifierPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: FELIX,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${FELIX}_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '阿修：选择要放回牌库顶的基地修正牌',
+        collectBaseModifierPromptOptions(context.matchState.core, context.sourceBaseIndex),
+        {
+            titleKey: 'ui.wreck_it_ralph_fix_it_felix_jr_title',
+            sourceId: FELIX,
+            targetType: 'ongoing',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+            autoRefresh: 'field',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseModifierChoice | undefined;
+        const target = collectBaseModifiers(state.core, context.sourceBaseIndex)
+            .find(entry => entry.action.uid === choice?.cardUid);
+        if (!target) return { events: [] };
+        return {
+            events: [cardToDeckTop(
+                target.action.uid,
+                target.action.defId,
+                target.action.ownerId,
+                FELIX,
+                timestamp,
+                context.playerId,
+                context.sourceCardUid,
+                context.sourceBaseIndex,
+            )],
+        };
+    },
+});
+
+const felixDiscardRecoverPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: `${FELIX}_recover`,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${FELIX}_recover_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '阿修：选择弃牌堆中的基地修正牌加入手牌',
+        collectDiscardBaseModifierOptions(context.matchState.core, context.playerId),
+        {
+            titleKey: 'ui.wreck_it_ralph_fix_it_felix_jr_recover_title',
+            sourceId: `${FELIX}_recover`,
+            targetType: 'discard',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+            autoRefresh: 'discard',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as DiscardCardChoice | undefined;
+        const card = state.core.players[context.playerId]?.discard.find(candidate =>
+            candidate.uid === choice?.cardUid
+            && candidate.defId === choice?.defId
+            && isBaseModifier(candidate.defId));
+        return { events: card ? [recoverCardsFromDiscard(context.playerId, [card.uid], FELIX, timestamp)] : [] };
+    },
+});
+
+const vanellopeDestinationPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: VANELLOPE,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${VANELLOPE}_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '云妮洛普：选择要移动到的基地',
+        collectOtherBaseOptions(context.matchState.core, context.sourceBaseIndex),
+        {
+            titleKey: 'ui.wreck_it_ralph_vanellope_von_schweetz_title',
+            sourceId: VANELLOPE,
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseChoice | undefined;
+        const toBaseIndex = choice?.baseIndex;
+        if (typeof toBaseIndex !== 'number' || toBaseIndex === context.sourceBaseIndex || !state.core.bases[toBaseIndex]) {
+            return { events: [] };
+        }
+        const self = state.core.bases[context.sourceBaseIndex]?.minions.find(minion =>
+            minion.uid === context.sourceCardUid && minion.controller === context.playerId);
+        if (!self) return { events: [] };
+        return {
+            events: [
+                ...moveMinionToBase(state, self, context.sourceBaseIndex, toBaseIndex, context.playerId, VANELLOPE, timestamp),
+                addPowerCounter(self.uid, toBaseIndex, 1, VANELLOPE, timestamp, promptSource(context)),
+            ],
+        };
+    },
+});
+
+const moveDestinationPromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'wreck_it_ralph_choose_move_destination',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `wreck_it_ralph_choose_move_destination_${context.reason}_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        `${cardLabel(context.reason)}：选择目标基地`,
+        collectOtherBaseOptions(context.matchState.core, context.sourceBaseIndex),
+        {
+            sourceId: 'wreck_it_ralph_choose_move_destination',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseChoice | undefined;
+        const toBaseIndex = choice?.baseIndex;
+        if (typeof toBaseIndex !== 'number' || toBaseIndex === context.sourceBaseIndex || !state.core.bases[toBaseIndex]) {
+            return { events: [] };
+        }
+        return {
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                destinationBaseIndex: toBaseIndex,
+            },
+            nextProgram: moveMinionsPromptProgram,
+        };
+    },
+});
+
+const moveMinionsPromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'wreck_it_ralph_choose_move_minions',
+    buildInteraction: (context) => {
+        const options = collectMoveMinionOptions(
+            context.matchState.core,
+            context.playerId,
+            context.sourceBaseIndex,
+        );
+        const liveTargetCount = options.filter(option => !(option.value as SkipChoice).skip).length;
+        const max = Math.min(context.maxCount, liveTargetCount);
+        return createAbilityRuntimeSimpleChoice(
+            `wreck_it_ralph_choose_move_minions_${context.reason}_${context.now}_${context.sourceCardUid}`,
+            context.playerId,
+            `${cardLabel(context.reason)}：选择至多 ${context.maxCount} 个己方角色移动`,
+            options,
+            {
+                sourceId: 'wreck_it_ralph_choose_move_minions',
+                targetType: 'minion',
+                multi: context.maxCount > 1 ? { min: 0, max } : undefined,
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                autoRefresh: 'field',
+            },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        if (typeof context.destinationBaseIndex !== 'number') return { events: [] };
+        const choices = (Array.isArray(value) ? value : [value]) as Array<MinionChoice | SkipChoice | undefined>;
+        if (choices.some(choice => choice?.skip)) return { events: [] };
+        const selected = Array.from(new Map(
+            choices
+                .filter((choice): choice is MinionChoice => !!choice && !(choice as SkipChoice).skip)
+                .map(choice => [choice.minionUid, choice] as const),
+        ).values()).slice(0, context.maxCount);
+        const events: SmashUpEvent[] = [];
+        for (const choice of selected) {
+            const minion = state.core.bases[context.sourceBaseIndex]?.minions.find(candidate =>
+                candidate.uid === choice.minionUid
+                && candidate.defId === choice.minionDefId
+                && candidate.controller === context.playerId);
+            if (!minion) continue;
+            events.push(...moveMinionToBase(
+                state,
+                minion,
+                context.sourceBaseIndex,
+                context.destinationBaseIndex,
+                context.playerId,
+                context.reason,
+                timestamp,
+            ));
+            if (context.addTempPowerAfterMove) {
+                events.push(addTempPower(
+                    minion.uid,
+                    context.destinationBaseIndex,
+                    1,
+                    context.reason,
+                    timestamp,
+                    promptSource(context),
+                ));
+            }
+        }
+        return { events };
+    },
+});
+
+const kingCandyDestinationPromptProgram = createPromptProgram<KingCandyPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'wreck_it_ralph_king_candy_destination',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${KING_CANDY}_destination_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '糖果国王：选择移动到的基地',
+        collectKingCandyDestinationOptions(context.matchState.core, context.sourceBaseIndex),
+        {
+            titleKey: 'ui.wreck_it_ralph_king_candy_destination_title',
+            sourceId: 'wreck_it_ralph_king_candy_destination',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseChoice | undefined;
+        const destinationBaseIndex = choice?.baseIndex;
+        if (
+            typeof destinationBaseIndex !== 'number'
+            || destinationBaseIndex === context.sourceBaseIndex
+            || !state.core.bases[destinationBaseIndex]
+            || state.core.bases[destinationBaseIndex].minions.length === 0
+        ) {
+            return { events: [] };
+        }
+        return {
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                destinationBaseIndex,
+            },
+            nextProgram: kingCandyTargetPromptProgram,
+        };
+    },
+});
+
+function buildKingCandyEvents(
+    state: SmashUpCore,
+    context: KingCandyPromptContext,
+    destinationBaseIndex: number,
+    target: MinionChoice,
+    timestamp: number,
+): SmashUpEvent[] {
+    const current = collectBaseModifiers(state, context.sourceBaseIndex)
+        .find(entry => entry.action.uid === context.sourceCardUid);
+    const liveTarget = state.bases[destinationBaseIndex]?.minions.find(minion =>
+        minion.uid === target.minionUid && minion.defId === target.minionDefId);
+    if (!current || !liveTarget) return [];
+    return [
+        {
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: context.sourceCardUid,
+                defId: context.sourceDefId,
+                ownerId: current.action.ownerId,
+                sourcePlayerId: context.playerId,
+                targetType: 'base',
+                targetBaseIndex: destinationBaseIndex,
+                metadata: {
+                    ...(current.action.metadata ?? {}),
+                    kingCandyTargetMinionUid: liveTarget.uid,
+                },
+                talentUsed: true,
+            },
+            timestamp,
+        } as OngoingAttachedEvent,
+        ...liveTarget.attachedActions.map(action => ({
+            type: SU_EVENTS.CARD_SUPPRESSED,
+            payload: {
+                cardUid: action.uid,
+                baseIndex: destinationBaseIndex,
+                suppressorPlayerId: context.playerId,
+                cardType: 'attached',
+                reason: KING_CANDY,
+                ...promptSource(context),
+            },
+            timestamp,
+        } as CardSuppressedEvent)),
+        {
+            type: SU_EVENTS.MINION_METADATA_UPDATED,
+            payload: {
+                minionUid: liveTarget.uid,
+                baseIndex: destinationBaseIndex,
+                metadataUpdate: {
+                    kingCandyCounterSuppressedBy: context.sourceCardUid,
+                    kingCandyCounterSuppressedByPlayerId: context.playerId,
+                },
+                reason: KING_CANDY,
+            },
+            timestamp,
+        } as MinionMetadataUpdatedEvent,
+    ];
+}
+
+const kingCandyTargetPromptProgram = createPromptProgram<KingCandyPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'wreck_it_ralph_king_candy_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${KING_CANDY}_target_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '糖果国王：选择该基地的角色',
+        collectMinionsAtBaseOptions(context.matchState.core, context.destinationBaseIndex ?? context.sourceBaseIndex, context.playerId),
+        {
+            titleKey: 'ui.wreck_it_ralph_king_candy_target_title',
+            sourceId: 'wreck_it_ralph_king_candy_target',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+            autoRefresh: 'field',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as MinionChoice | undefined;
+        if (typeof context.destinationBaseIndex !== 'number' || choice?.baseIndex !== context.destinationBaseIndex) {
+            return { events: [] };
+        }
+        return {
+            events: buildKingCandyEvents(state.core, context, context.destinationBaseIndex, choice, timestamp),
+        };
+    },
+});
+
+const researchLabBeaconPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: RESEARCH_LAB_BEACON,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${RESEARCH_LAB_BEACON}_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '研究灯塔：指定一个派系',
+        collectFactionOptions(context.matchState.core),
+        {
+            titleKey: 'ui.wreck_it_ralph_research_lab_beacon_title',
+            sourceId: RESEARCH_LAB_BEACON,
+            targetType: 'generic',
+            genericIntent: 'definition-choice',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as FactionChoice | undefined;
+        const factionId = choice?.factionId;
+        if (!factionId) return { events: [] };
+        return {
+            events: collectMinions(state.core, minion => getMinionDef(minion.defId)?.faction === factionId)
+                .filter(entry => entry.baseIndex !== context.sourceBaseIndex)
+                .flatMap(entry => buildValidatedMoveEvents(state, {
+                    minionUid: entry.minion.uid,
+                    minionDefId: entry.minion.defId,
+                    fromBaseIndex: entry.baseIndex,
+                    toBaseIndex: context.sourceBaseIndex,
+                    ...promptSource(context),
+                    sourceKind: 'action',
+                    reason: RESEARCH_LAB_BEACON,
+                    now: timestamp,
+                })),
+        };
+    },
+});
+
+function buildMintsEruptionEvents(
+    core: SmashUpCore,
+    context: WreckSourceContext,
+    replacementBaseDefId: string,
+    timestamp: number,
+): SmashUpEvent[] {
+    const oldBaseDefId = core.bases[context.sourceBaseIndex]?.defId;
+    if (!oldBaseDefId || !core.baseDiscard?.includes(replacementBaseDefId)) return [];
+    return [
+        {
+            type: SU_EVENTS.BASE_REPLACED,
+            payload: {
+                baseIndex: context.sourceBaseIndex,
+                oldBaseDefId,
+                newBaseDefId: replacementBaseDefId,
+                keepCards: true,
+                allowMissingFromBaseDeck: true,
+            },
+            timestamp,
+        } as BaseReplacedEvent,
+        shuffleBaseDeck(core.baseDeck, MINTS_ERUPTION, timestamp, {
+            newBaseDiscardDefIds: [
+                ...removeFirstBaseDefId(core.baseDiscard ?? [], replacementBaseDefId),
+                oldBaseDefId,
+            ],
+        }) as SmashUpEvent,
+    ];
+}
+
+const mintsEruptionPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: MINTS_ERUPTION,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${MINTS_ERUPTION}_${context.now}_${context.sourceCardUid}`,
+        context.playerId,
+        '薄荷喷发：选择要交换的弃牌堆基地',
+        collectBaseDiscardOptions(context.matchState.core),
+        {
+            titleKey: 'ui.wreck_it_ralph_mints_eruption_title',
+            sourceId: MINTS_ERUPTION,
+            targetType: 'generic',
+            genericIntent: 'definition-choice',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseDiscardChoice | undefined;
+        return {
+            events: choice?.baseDefId
+                ? buildMintsEruptionEvents(state.core, context, choice.baseDefId, timestamp)
+                : [],
+        };
+    },
+});
+
 function ralphTalent(ctx: AbilityContext): AbilityResult {
+    if (ctx.matchState) {
+        const options = collectRalphOptions(ctx.matchState.core, ctx.playerId, ctx.baseIndex);
+        if (options.length === 0) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+        }
+        return runtimeToAbilityResult(executeAbilityProgram(ralphPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
+
     const baseModifier = collectBaseModifiers(ctx.state, ctx.baseIndex)[0];
     if (baseModifier) {
         return {
@@ -97,10 +854,38 @@ function ralphTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function felixOnPlay(ctx: AbilityContext): AbilityResult {
-    return { events: recoverFirstDiscardCard(ctx, card => isBaseModifier(card.defId), FELIX) };
+    const options = collectDiscardBaseModifierOptions(ctx.state, ctx.playerId);
+    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
+    if (ctx.matchState) {
+        return runtimeToAbilityResult(executeAbilityProgram(felixDiscardRecoverPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
+    const first = options[0].value;
+    return { events: first?.cardUid ? [recoverCardsFromDiscard(ctx.playerId, [first.cardUid], FELIX, ctx.now)] : [] };
 }
 
 function felixTalent(ctx: AbilityContext): AbilityResult {
+    if (ctx.matchState) {
+        const options = collectBaseModifierPromptOptions(ctx.matchState.core, ctx.baseIndex);
+        if (options.length === 0) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+        }
+        return runtimeToAbilityResult(executeAbilityProgram(felixBaseModifierPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
+
     const baseModifier = collectBaseModifiers(ctx.state, ctx.baseIndex)[0];
     if (!baseModifier) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     return {
@@ -122,6 +907,16 @@ function vanellopeTalent(ctx: AbilityContext): AbilityResult {
     const self = base?.minions.find(minion => minion.uid === ctx.cardUid && minion.controller === ctx.playerId);
     const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
     if (!self || toBaseIndex === undefined) return { events: [] };
+    if (ctx.matchState) {
+        return runtimeToAbilityResult(executeAbilityProgram(vanellopeDestinationPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
     return {
         events: [
             ...moveMinionToBase(ctx.matchState, self, ctx.baseIndex, toBaseIndex, ctx.playerId, VANELLOPE, ctx.now),
@@ -188,6 +983,22 @@ function cyBugInfestationTalent(ctx: AbilityContext): AbilityResult {
 function escapePodMove(ctx: AbilityContext, maxCount: number): AbilityResult {
     const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
     if (toBaseIndex === undefined) return { events: [] };
+    const movableCount = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
+        .filter(minion => minion.controller === ctx.playerId).length;
+    if (movableCount === 0) return { events: [] };
+    if (ctx.matchState) {
+        return runtimeToAbilityResult(executeAbilityProgram(moveDestinationPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+            reason: ESCAPE_POD,
+            maxCount,
+            addTempPowerAfterMove: false,
+        }));
+    }
     const targets = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
         .filter(minion => minion.controller === ctx.playerId)
         .slice(0, maxCount);
@@ -221,6 +1032,18 @@ function kingCandyTalent(ctx: AbilityContext): AbilityResult {
     const current = collectBaseModifiers(ctx.state, ctx.baseIndex).find(entry => entry.action.uid === ctx.cardUid);
     const destinationBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
     if (!current || destinationBaseIndex === undefined) return { events: [] };
+    if (ctx.matchState) {
+        const options = collectKingCandyDestinationOptions(ctx.matchState.core, ctx.baseIndex);
+        if (options.length === 0) return { events: [] };
+        return runtimeToAbilityResult(executeAbilityProgram(kingCandyDestinationPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
     const target = ctx.state.bases[destinationBaseIndex]?.minions[0]
         ?? ctx.state.bases[ctx.baseIndex]?.minions[0];
     return {
@@ -276,22 +1099,39 @@ function kingCandyTalent(ctx: AbilityContext): AbilityResult {
 function mintsEruption(ctx: AbilityContext): AbilityResult {
     const replacement = ctx.state.baseDiscard?.[0];
     if (!replacement) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
-    return {
-        events: [{
-            type: SU_EVENTS.BASE_REPLACED,
-            payload: {
-                baseIndex: ctx.baseIndex,
-                oldBaseDefId: ctx.state.bases[ctx.baseIndex]?.defId,
-                newBaseDefId: replacement,
-                keepCards: true,
-                allowMissingFromBaseDeck: true,
-            },
-            timestamp: ctx.now,
-        } as BaseReplacedEvent],
-    };
+    if (ctx.matchState) {
+        return runtimeToAbilityResult(executeAbilityProgram(mintsEruptionPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
+    return { events: buildMintsEruptionEvents(ctx.state, {
+        playerId: ctx.playerId,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceBaseIndex: ctx.baseIndex,
+        now: ctx.now,
+    }, replacement, ctx.now) };
 }
 
 function researchLabBeaconTalent(ctx: AbilityContext): AbilityResult {
+    if (ctx.matchState) {
+        const options = collectFactionOptions(ctx.matchState.core);
+        if (options.length === 0) return { events: [] };
+        return runtimeToAbilityResult(executeAbilityProgram(researchLabBeaconPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+        }));
+    }
+
     const sourceFaction = ctx.state.bases[ctx.baseIndex]?.minions[0]
         ? getMinionDef(ctx.state.bases[ctx.baseIndex].minions[0].defId)?.faction
         : undefined;
@@ -338,15 +1178,23 @@ function researchLabBeaconSelfDestruct(ctx: TriggerContext): SmashUpEvent[] {
 function sugarRushTalent(ctx: AbilityContext): AbilityResult {
     const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
     if (toBaseIndex === undefined) return { events: [] };
-    const targets = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
-        .filter(minion => minion.controller === ctx.playerId)
-        .slice(0, 2);
-    return {
-        events: targets.flatMap(minion => [
-            ...moveMinionToBase(ctx.matchState, minion, ctx.baseIndex, toBaseIndex, ctx.playerId, SUGAR_RUSH, ctx.now),
-            addTempPower(minion.uid, toBaseIndex, 1, SUGAR_RUSH, ctx.now, source(ctx)),
-        ]),
-    };
+    const movableCount = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
+        .filter(minion => minion.controller === ctx.playerId).length;
+    if (movableCount === 0) return { events: [] };
+    if (ctx.matchState) {
+        return runtimeToAbilityResult(executeAbilityProgram(moveDestinationPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+            reason: SUGAR_RUSH,
+            maxCount: 2,
+            addTempPowerAfterMove: true,
+        }));
+    }
+    return { events: [] };
 }
 
 function theDumpAfterScoring(ctx: BaseAbilityContext): AbilityResult {
@@ -372,22 +1220,98 @@ function theDumpAfterScoring(ctx: BaseAbilityContext): AbilityResult {
     };
 }
 
+function collectPowerStripMoveOptions(core: SmashUpCore, playerId: string, baseIndex: number): PromptOption<PowerStripMoveChoice>[] {
+    const options: PromptOption<PowerStripMoveChoice>[] = [];
+    const sourceBase = core.bases[baseIndex];
+    if (!sourceBase) return options;
+
+    core.bases.forEach((base, fromBaseIndex) => {
+        base.minions
+            .filter(minion => minion.controller === playerId)
+            .forEach((minion) => {
+                const label = getMinionDef(minion.defId)?.name ?? minion.defId;
+                if (fromBaseIndex === baseIndex) {
+                    core.bases.forEach((destination, toBaseIndex) => {
+                        if (toBaseIndex === baseIndex) return;
+                        options.push({
+                            id: `move-${minion.uid}-to-${toBaseIndex}`,
+                            label: `${label} -> ${destination.defId}`,
+                            value: {
+                                minionUid: minion.uid,
+                                minionDefId: minion.defId,
+                                fromBaseIndex,
+                                toBaseIndex,
+                            },
+                            _source: 'field',
+                            displayMode: 'card',
+                        });
+                    });
+                    return;
+                }
+                options.push({
+                    id: `move-${minion.uid}-to-power-strip`,
+                    label: `${label} -> ${sourceBase.defId}`,
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        fromBaseIndex,
+                        toBaseIndex: baseIndex,
+                    },
+                    _source: 'field',
+                    displayMode: 'card',
+                });
+            });
+    });
+
+    return options;
+}
+
+const powerStripPromptProgram = createPromptProgram<PowerStripPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: BASE_THE_POWER_STRIP,
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${BASE_THE_POWER_STRIP}_${context.now}_${context.baseIndex}`,
+        context.playerId,
+        '电源插排：选择一个己方角色移入或移出此基地',
+        collectPowerStripMoveOptions(context.matchState.core, context.playerId, context.baseIndex),
+        {
+            titleKey: 'ui.base_the_power_strip_title',
+            sourceId: BASE_THE_POWER_STRIP,
+            targetType: 'minion',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ state, playerId, value, context, timestamp }) => {
+        const choice = value as PowerStripMoveChoice | undefined;
+        if (!choice?.minionUid || typeof choice.fromBaseIndex !== 'number' || typeof choice.toBaseIndex !== 'number') {
+            return { events: [] };
+        }
+        const minion = state.core.bases[choice.fromBaseIndex]?.minions.find(candidate =>
+            candidate.uid === choice.minionUid
+            && candidate.defId === choice.minionDefId
+            && candidate.controller === playerId,
+        );
+        if (!minion) return { events: [] };
+        if (state.core.bases[context.baseIndex]?.defId !== BASE_THE_POWER_STRIP) return { events: [] };
+        const fromIsPowerStrip = choice.fromBaseIndex === context.baseIndex;
+        const toIsPowerStrip = choice.toBaseIndex === context.baseIndex;
+        if (fromIsPowerStrip === toIsPowerStrip) return { events: [] };
+        return {
+            events: moveMinionToBase(state, minion, choice.fromBaseIndex, choice.toBaseIndex, playerId, BASE_THE_POWER_STRIP, timestamp),
+        };
+    },
+});
+
 function powerStripActive(ctx: BaseAbilityContext): AbilityResult {
-    const fromHere = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.controller === ctx.playerId);
-    const other = collectMinions(ctx.state, (minion, baseIndex) => minion.controller === ctx.playerId && baseIndex !== ctx.baseIndex)[0];
-    if (fromHere) {
-        const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-        if (toBaseIndex === undefined) return { events: [] };
-        return {
-            events: moveMinionToBase(ctx.matchState ?? ctx.state, fromHere, ctx.baseIndex, toBaseIndex, ctx.playerId, BASE_THE_POWER_STRIP, ctx.now),
-        };
-    }
-    if (other) {
-        return {
-            events: moveMinionToBase(ctx.matchState ?? ctx.state, other.minion, other.baseIndex, ctx.baseIndex, ctx.playerId, BASE_THE_POWER_STRIP, ctx.now),
-        };
-    }
-    return { events: [] };
+    if (!ctx.matchState) return { events: [] };
+    const options = collectPowerStripMoveOptions(ctx.state, ctx.playerId, ctx.baseIndex);
+    if (options.length === 0) return { events: [] };
+    const result = executeAbilityProgram(powerStripPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        baseIndex: ctx.baseIndex,
+        now: ctx.now,
+    });
+    return { events: result.events, matchState: result.matchState };
 }
 
 export function registerWreckItRalphAbilities(): void {
@@ -437,9 +1361,6 @@ export function registerWreckItRalphAbilities(): void {
     registerBaseAbility(BASE_THE_DUMP, 'afterScoring', theDumpAfterScoring, { mandatory: false });
     registerActiveBaseAbility(BASE_THE_POWER_STRIP, powerStripActive, {
         oncePerTurn: false,
-        canUse: ctx => ctx.state.bases.some((base, baseIndex) =>
-            base.minions.some(minion => minion.controller === ctx.playerId)
-            && (baseIndex === ctx.baseIndex || ctx.state.bases[ctx.baseIndex]?.minions.some(candidate => candidate.controller === ctx.playerId)),
-        ),
+        canUse: ctx => collectPowerStripMoveOptions(ctx.state, ctx.playerId, ctx.baseIndex).length > 0,
     });
 }

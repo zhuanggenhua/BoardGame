@@ -164,6 +164,40 @@ describe('TimingOpportunitySystem', () => {
         ]);
     });
 
+    it('允许 choice-request 机会在入队时追加同源领域事件', () => {
+        const state = createTestState();
+        const domain = createDomain(({ timing }) => ({
+            opportunities: [createChoiceOpportunity({ timing })],
+        }));
+        const system = createTimingOpportunitySystem(domain, {
+            choiceRequestOptions: () => ({ title: '选择护盾响应' }),
+            choiceRequestEvents: ({ opportunity, choiceRequest, interaction }) => [{
+                type: 'CHOICE_REQUESTED',
+                payload: {
+                    opportunityId: opportunity.id,
+                    requestId: choiceRequest.requestId,
+                    interactionId: interaction.id,
+                },
+                sourceCommandType: 'ATTACK',
+                timestamp: 1,
+            }],
+        });
+
+        const result = system.afterEvents?.(createPipelineArgs(state));
+
+        expect(result?.state.sys.interaction.current?.id).toBe('opp-choice');
+        expect(result?.events).toEqual([{
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                opportunityId: 'opp-choice',
+                requestId: 'opp-choice',
+                interactionId: 'opp-choice',
+            },
+            sourceCommandType: 'ATTACK',
+            timestamp: 1,
+        }]);
+    });
+
     it('允许 choice-request 机会投影到游戏专用 interaction', () => {
         const state = createTestState();
         const domain = createDomain(({ timing }) => ({

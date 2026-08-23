@@ -11,6 +11,7 @@ import {
     applyEvents,
     expectRegisteredAbilityContract,
     getOptionalSimpleChoicePrompt,
+    getPromptOptions,
     getPromptSourceId,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
@@ -97,6 +98,57 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
                 }),
             }),
         ]));
+    });
+
+    it('全明星萌芽回合开始检索牌库时由玩家选择低力量随从，不自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('first-target', 'all_stars_fan', 'minion', '0'),
+                        makeCard('chosen-target', 'all_stars_puck', 'minion', '0'),
+                        makeCard('too-large', 'all_stars_king_rex', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_locker_room', [
+                makeMinion('sprout', 'all_stars_sprout', '0', 2),
+            ])],
+        });
+
+        const result = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: FIXED_RANDOM,
+            now: 12,
+        });
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({ minionUid: 'sprout', reason: 'all_stars_sprout' }),
+        }));
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        const prompted = { ...result.matchState!, core: applyEvents(core, result.events) };
+        const prompt = getSimpleChoicePrompt(prompted, 'all_stars_sprout_search');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid ?? option.id)).toEqual([
+            'skip',
+            'first-target',
+            'chosen-target',
+        ]);
+
+        const resolved = respondToPromptOption(
+            prompted,
+            option => option.value?.cardUid === 'chosen-target',
+            'Sprout chosen deck minion',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['chosen-target']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['first-target', 'too-large']);
     });
 
     it('羊群跟随同基地随从移动，黑色牧羊在新随从进场后离开该基地', () => {
@@ -430,6 +482,141 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
         });
         const afterDraw = applyEvents(squareDealCore, squareDeal.events);
         expect(afterDraw.players['0'].hand.map(card => card.uid)).toEqual(['h', 'd1', 'd2', 'd3']);
+    });
+
+    it('开始召唤从弃牌堆选择随从置于牌库顶，不自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-tail', 'all_stars_square_deal', 'action', '0')],
+                    discard: [
+                        makeCard('first-discard', 'all_stars_fan', 'minion', '0'),
+                        makeCard('chosen-discard', 'all_stars_puck', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('all_stars_begin_the_summoning', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'begin',
+            defId: 'all_stars_begin_the_summoning',
+            random: FIXED_RANDOM,
+            now: 55,
+        });
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'all_stars_begin_the_summoning');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['first-discard', 'chosen-discard']);
+        expect(result.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP)).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'chosen-discard',
+            '开始召唤选择第二张弃牌堆随从',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: expect.objectContaining({ cardUid: 'chosen-discard' }),
+        }));
+        expect(resolved.finalState.core.players['0'].deck[0]?.uid).toBe('chosen-discard');
+    });
+
+    it('令人惊叹从弃牌堆选择行动作为额外行动打出，不自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('first-action', 'all_stars_square_deal', 'action', '0'),
+                        makeCard('chosen-action', 'all_stars_seeing_stars', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('all_stars_its_astounding', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'astounding',
+            defId: 'all_stars_its_astounding',
+            random: FIXED_RANDOM,
+            now: 56,
+        });
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'all_stars_its_astounding');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['first-action', 'chosen-action']);
+        expect(result.events).toEqual([]);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'chosen-action',
+            '令人惊叹选择第二张弃牌堆行动',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: expect.objectContaining({ cardUid: 'chosen-action', isExtraAction: true, fromDiscard: true }),
+        }));
+    });
+
+    it('克苏鲁仆从消灭自身后由玩家选择弃牌堆行动置顶，不自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-tail', 'all_stars_fan', 'minion', '0')],
+                    discard: [
+                        makeCard('first-action', 'all_stars_square_deal', 'action', '0'),
+                        makeCard('chosen-action', 'all_stars_seeing_stars', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_locker_room', [
+                makeMinion('servitor', 'all_stars_servitor_of_cthulhu', '0', 2),
+            ])],
+        });
+        const result = invokeRegisteredAbilityContract('all_stars_servitor_of_cthulhu', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'servitor',
+            defId: 'all_stars_servitor_of_cthulhu',
+            random: FIXED_RANDOM,
+            now: 57,
+        });
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({ minionUid: 'servitor', reason: 'all_stars_servitor_of_cthulhu' }),
+        }));
+        expect(result.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_TOP)).toBe(false);
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'all_stars_servitor_of_cthulhu');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['first-action', 'chosen-action']);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'chosen-action',
+            '克苏鲁仆从选择第二张弃牌堆行动',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: expect.objectContaining({ cardUid: 'chosen-action', reason: 'all_stars_servitor_of_cthulhu' }),
+        }));
+        expect(resolved.finalState.core.players['0'].deck[0]?.uid).toBe('chosen-action');
     });
 
     it('友情的力量移动己方随从，并把本行动从弃牌堆回手', () => {
@@ -800,6 +987,39 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
 
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['top-b']);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['tail', 'top-a']);
+    });
+
+    it('准备战斗只展示到一张牌时也必须让玩家确认', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('only-top', 'all_stars_puck', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('all_stars_prepare_for_battle', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'prepare',
+            defId: 'all_stars_prepare_for_battle',
+            random: FIXED_RANDOM,
+            now: 81,
+        });
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'all_stars_prepare_for_battle');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'only-top',
+            'prepare for battle single card',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['only-top']);
+        expect(resolved.finalState.core.players['0'].deck).toEqual([]);
     });
 
     it('更衣室与体育场基地能力，以及帝国龙触发抽牌', () => {

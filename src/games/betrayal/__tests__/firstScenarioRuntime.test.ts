@@ -2299,7 +2299,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.kind).toBe('event');
         expect(core.latestDiscovery?.summary).toBe('跳过事件');
         expect(core.currentExplorer.traits.might).toBe(mightBefore);
-        expect(core.activityLog[0]?.text).toContain('叛徒跳过了事件符号');
+        expect(core.activityLog[0]?.text).toContain('叛徒跳过了事件');
     });
 
     it('会封死同区域可探索走廊的房间会被掩埋并继续重抽', () => {
@@ -19983,10 +19983,21 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.summary).toBe('已用雕像跳过');
         expect(core.latestDiscovery?.detail).toContain('没有抽取或结算事件卡');
         expect(core.pendingEventChoice).toBeNull();
+        expect(core.latestDiscovery?.resolutionSteps ?? []).toEqual([]);
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.traits.might).toBe(mightBefore);
         expect(core.discardCounts.event).toBe(0);
         expect(core.eventOrder.map((event) => event.name)).toEqual(['阴影扑面']);
-        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件符号');
+        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件');
+
+        const currentPlayerBeforeEndTurn = core.currentPlayer;
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, currentPlayerBeforeEndTurn, {}),
+        )).toMatchObject({ valid: true });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, currentPlayerBeforeEndTurn, {});
+        expect(core.currentPlayer).not.toBe(currentPlayerBeforeEndTurn);
+        expect(core.turnEndedByDiscovery).toBe(false);
     });
 
     it('雕像会让事件中的力量检定结果 +1', () => {
@@ -23919,17 +23930,28 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.latestDiscovery).toMatchObject({
             kind: 'event',
-            title: '事件符号',
+            title: '跳过事件',
             summary: '跳过事件',
             detail: '没有抽取或结算事件卡',
         });
         expect(core.pendingEventChoice).toBeNull();
+        expect(core.latestDiscovery?.resolutionSteps ?? []).toEqual([]);
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.discardCounts.event).toBe(discardCountBefore);
         expect(core.eventOrder.map((event) => event.name)).toEqual(eventOrderBefore);
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.recentRoll?.kind).not.toBe('hauntRoll');
-        expect(core.activityLog[0]?.text).toContain('跳过了事件符号');
+        expect(core.activityLog[0]?.text).toContain('跳过了事件');
+
+        const currentPlayerBeforeEndTurn = core.currentPlayer;
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, currentPlayerBeforeEndTurn, {}),
+        )).toMatchObject({ valid: true });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, currentPlayerBeforeEndTurn, {});
+        expect(core.currentPlayer).not.toBe(currentPlayerBeforeEndTurn);
+        expect(core.turnEndedByDiscovery).toBe(false);
     });
 
     it('叛徒作祟后探索事件符号房间时若不忽略事件，则正常抽取并结算事件牌', () => {

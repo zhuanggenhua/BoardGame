@@ -8,7 +8,7 @@ import {
 import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
 import { TestHarness, isTestEnvironment } from '../testing';
-import { refreshInteractionOptions } from '../systems/InteractionSystem';
+import { INTERACTION_COMMANDS, refreshInteractionOptions } from '../systems/InteractionSystem';
 import type {
     ManualForceEndAiPhaseResult,
     ManualSetupSelectionRequest,
@@ -34,9 +34,16 @@ import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackConte
 import type { GameClientContextValue } from './reactContext';
 
 const SERIALIZED_COMMAND_TYPES = new Set(['ADVANCE_PHASE']);
+const PENDING_COMPANION_COMMAND_TYPES = new Set<string>([
+    INTERACTION_COMMANDS.CONFIRM,
+]);
 
 function shouldSerializeCommand(type: string): boolean {
     return SERIALIZED_COMMAND_TYPES.has(type);
+}
+
+function canSendWhileOptimisticPending(type: string): boolean {
+    return PENDING_COMPANION_COMMAND_TYPES.has(type);
 }
 
 export function useGameProviderRuntime(args: {
@@ -331,11 +338,12 @@ export function useGameProviderRuntime(args: {
             return;
         }
         const engine = optimisticEngineRef.current;
-        if (engine?.hasPendingCommands()) {
+        const sendWithoutPrediction = Boolean(engine?.hasPendingCommands() && canSendWhileOptimisticPending(type));
+        if (engine?.hasPendingCommands() && !sendWithoutPrediction) {
             return;
         }
         let shouldSend = true;
-        if (engine) {
+        if (engine && !sendWithoutPrediction) {
             const result = engine.processCommand(type, payload, playerId ?? '0');
             shouldSend = result.shouldSend;
             if (result.stateToRender) {

@@ -14,6 +14,7 @@ import {
     applyEvents,
     expectRegisteredAbilityContract,
     getPromptOption,
+    getPromptHandlerData,
     getPromptOptions,
     getReactionPrompt,
     getReactionPromptOptionBySourceDefId,
@@ -68,7 +69,10 @@ describe('迪士尼四派系代表性玩法行为', () => {
                         makeCard('draw-1', 'frozen_snowgie', 'minion', '0'),
                         makeCard('draw-2', 'frozen_snowgie', 'minion', '0'),
                     ],
-                    discard: [makeCard('discarded-swarm', 'big_hero_6_microbot_swarm', 'minion', '0')],
+                    discard: [
+                        makeCard('discarded-swarm-a', 'big_hero_6_microbot_swarm', 'minion', '0'),
+                        makeCard('discarded-swarm-b', 'big_hero_6_microbot_swarm', 'minion', '0'),
+                    ],
                 }),
                 '1': makePlayer('1'),
             },
@@ -89,10 +93,20 @@ describe('迪士尼四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 10,
         });
-        expect(recovered.events).toContainEqual(expect.objectContaining({
-            type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
-            payload: expect.objectContaining({ cardUids: ['discarded-swarm'] }),
-        }));
+        expect(recovered.events).toEqual([]);
+        const recoveredPrompt = getSimpleChoicePrompt(recovered.matchState!, 'disney_four_factions_prompt');
+        expect(recoveredPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(recoveredPrompt).map(option => option.value?.cardUid)).toEqual(['discarded-swarm-a', 'discarded-swarm-b']);
+        const recoveredSwarm = respondToPromptOption(
+            recovered.matchState!,
+            option => option.value?.cardUid === 'discarded-swarm-b',
+            '微型机器群弃牌堆目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(recoveredSwarm.success, recoveredSwarm.error).toBe(true);
+        expect(recoveredSwarm.finalState.core.players['0'].hand.map(card => card.uid)).toContain('discarded-swarm-b');
+        expect(recoveredSwarm.finalState.core.players['0'].discard.map(card => card.uid)).toContain('discarded-swarm-a');
 
         const talent = invokeRegisteredAbilityContract('big_hero_6_microbot_swarm', 'talent', {
             state: core,
@@ -163,6 +177,46 @@ describe('迪士尼四派系代表性玩法行为', () => {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: expect.objectContaining({ playerId: '0', count: 1, cardUids: ['draw-1'] }),
         }));
+    });
+
+    it('超能陆战队：控制面具搜微型机器群时由玩家选择，不自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('swarm-first', 'big_hero_6_microbot_swarm', 'minion', '0'),
+                        makeCard('swarm-chosen', 'big_hero_6_microbot_swarm', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('big_hero_6_control_mask', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'control-mask',
+            defId: 'big_hero_6_control_mask',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 15,
+        });
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['swarm-first', 'swarm-chosen']);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'swarm-chosen',
+            '控制面具选择第二张微型机器群',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('swarm-chosen');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toContain('swarm-first');
     });
 
     it('超能陆战队：升级从真实出牌管线打开选择后，应离开手牌并进入弃牌堆', () => {
@@ -256,6 +310,322 @@ describe('迪士尼四派系代表性玩法行为', () => {
             tempProtectAffectUntilTurnNumber: 1,
             tempProtectSourcePlayerId: '0',
         });
+    });
+
+    it('超能陆战队：大白计分后必须选择要移动的己方角色和目标基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_sfit_robotics_lab', [
+                    makeMinion('baymax', 'big_hero_6_baymax', '0', 3, { powerCounters: 1 }),
+                    makeMinion('first-ally', 'big_hero_6_microbot_swarm', '0', 2),
+                    makeMinion('chosen-ally', 'big_hero_6_hiro_hamada', '0', 2),
+                ]),
+                makeBase('base_arendelle'),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('big_hero_6_baymax', 'special', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'baymax',
+            defId: 'big_hero_6_baymax',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 16,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        const targetPrompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(targetPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(targetPrompt).map(option => option.value?.minionUid)).toEqual(['first-ally', 'chosen-ally']);
+
+        const choseTarget = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            '大白移动目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        const destinationPrompt = getSimpleChoicePrompt(choseTarget.finalState, 'disney_four_factions_prompt');
+        const moved = respondToPromptOption(
+            choseTarget.finalState,
+            option => option.value?.baseIndex === 1,
+            '大白目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(destinationPrompt.targetType).toBe('base');
+        expect(moved.success, moved.error).toBe(true);
+        expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'first-ally')).toBe(true);
+        expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'chosen-ally')).toBe(false);
+        expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'chosen-ally')).toBe(true);
+    });
+
+    it('超能陆战队：妖怪计分后必须选择是否和谁接收力量标记', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_sfit_robotics_lab', [
+                    makeMinion('yokai', 'big_hero_6_yokai', '0', 4, { powerCounters: 1 }),
+                    makeMinion('source-ally', 'big_hero_6_microbot_swarm', '0', 2, { powerCounters: 1 }),
+                ]),
+                makeBase('base_arendelle', [
+                    makeMinion('first-receiver', 'frozen_snowgie', '0', 2),
+                    makeMinion('chosen-receiver', 'frozen_olaf', '0', 3),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('big_hero_6_yokai', 'special', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'yokai',
+            defId: 'big_hero_6_yokai',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 17,
+        });
+
+        expect(result.events).toEqual([]);
+        const receiverPrompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(receiverPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(receiverPrompt).map(option => option.value?.minionUid ?? option.id)).toEqual(['first-receiver', 'chosen-receiver', 'skip']);
+
+        const movedCounters = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-receiver',
+            '妖怪接收者',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(movedCounters.success, movedCounters.error).toBe(true);
+        expect(movedCounters.finalState.core.bases[0].minions.find(minion => minion.uid === 'yokai')?.powerCounters ?? 0).toBe(0);
+        expect(movedCounters.finalState.core.bases[0].minions.find(minion => minion.uid === 'source-ally')?.powerCounters ?? 0).toBe(0);
+        expect(movedCounters.finalState.core.bases[1].minions.find(minion => minion.uid === 'first-receiver')?.powerCounters ?? 0).toBe(0);
+        expect(movedCounters.finalState.core.bases[1].minions.find(minion => minion.uid === 'chosen-receiver')?.powerCounters ?? 0).toBe(2);
+    });
+
+    it('冰雪奇缘：雪宝必须先选择要移动的己方角色，不能自动移动第一个角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('olaf-draw', 'frozen_snowgie', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('first-ally', 'frozen_snowgie', '0', 2),
+                    makeMinion('chosen-ally', 'frozen_olaf', '0', 3),
+                ]),
+                makeBase('base_ice_palace'),
+            ],
+        });
+
+        const olaf = invokeRegisteredAbilityContract('frozen_olaf', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'olaf',
+            defId: 'frozen_olaf',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 24,
+        });
+
+        expect(olaf.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        const targetPrompt = getSimpleChoicePrompt(olaf.matchState!, 'disney_four_factions_prompt');
+        expect(getPromptOptions(targetPrompt).map(option => option.value?.minionUid)).toEqual(['first-ally', 'chosen-ally']);
+
+        const choseTarget = respondToPromptOption(
+            olaf.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            '雪宝移动目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        const destinationPrompt = getSimpleChoicePrompt(choseTarget.finalState, 'disney_four_factions_prompt');
+        const moved = respondToPromptOption(
+            choseTarget.finalState,
+            option => option.value?.baseIndex === 1,
+            '雪宝目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(destinationPrompt.targetType).toBe('base');
+        expect(moved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_MOVED,
+                payload: expect.objectContaining({ minionUid: 'chosen-ally', fromBaseIndex: 0, toBaseIndex: 1 }),
+            }),
+            expect.objectContaining({
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: expect.objectContaining({ playerId: '0', cardUids: ['olaf-draw'] }),
+            }),
+        ]));
+        expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'first-ally')).toBe(true);
+        expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'chosen-ally')).toBe(true);
+    });
+
+    it('冰雪奇缘：斯文可跳过弃牌堆回收，不应自动拿第一张合格角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('first-low-power', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('second-low-power', 'frozen_olaf', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('frozen_sven', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'sven',
+            defId: 'frozen_sven',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 26,
+        });
+
+        expect(result.events).toEqual([]);
+        const promptedAfterDraw = { ...result.matchState!, core: applyEvents(core, result.events) };
+        const prompt = getSimpleChoicePrompt(promptedAfterDraw, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptHandlerData(prompt).multi).toEqual({ min: 0, max: 1 });
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid ?? option.id)).toEqual(['first-low-power', 'second-low-power', 'skip']);
+
+        const skipped = respondToPromptOption(
+            promptedAfterDraw,
+            option => option.id === 'skip',
+            '斯文跳过',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(skipped.success, skipped.error).toBe(true);
+        expect(skipped.finalState.core.players['0'].hand).toEqual([]);
+        expect(skipped.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-low-power', 'second-low-power']);
+    });
+
+    it('冰雪奇缘：你想堆雪人吗必须从牌库和弃牌堆合并候选中选择至多两张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('deck-snowgie', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('deck-other', 'frozen_olaf', 'minion', '0'),
+                    ],
+                    discard: [
+                        makeCard('discard-snowgie-a', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('discard-snowgie-b', 'frozen_snowgie', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('frozen_do_you_want_to_build_a_snowman', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'snowman',
+            defId: 'frozen_do_you_want_to_build_a_snowman',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 27,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('generic');
+        expect(getPromptHandlerData(prompt).genericIntent).toBe('card-pool');
+        expect(getPromptHandlerData(prompt).multi).toEqual({ min: 0, max: 2 });
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid ?? option.id)).toEqual(['discard-snowgie-a', 'discard-snowgie-b', 'deck-snowgie', 'skip']);
+
+        const selected = getPromptOptions(prompt)
+            .filter(option => ['discard-snowgie-b', 'deck-snowgie'].includes(option.value?.cardUid))
+            .map(option => option.id);
+        const resolved = respondToPromptOptions(result.matchState!, selected, '0', FIXED_RANDOM);
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['discard-snowgie-b', 'deck-snowgie']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['discard-snowgie-a']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-other']);
+
+        const noInteractionResult = invokeRegisteredAbilityContract('frozen_do_you_want_to_build_a_snowman', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'snowman',
+            defId: 'frozen_do_you_want_to_build_a_snowman',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 28,
+        });
+        expect(noInteractionResult.events).toEqual([]);
+    });
+
+    it('冰雪奇缘：放手吧必须选择要返回的己方角色，不能自动返回第一个角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_arendelle', [
+                makeMinion('first-ally', 'frozen_snowgie', '0', 2),
+                makeMinion('chosen-ally', 'frozen_olaf', '0', 3),
+            ])],
+        });
+
+        const letItGo = invokeRegisteredAbilityContract('frozen_let_it_go', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'let-it-go',
+            defId: 'frozen_let_it_go',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 25,
+        });
+
+        expect(letItGo.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
+        const targetPrompt = getSimpleChoicePrompt(letItGo.matchState!, 'disney_four_factions_prompt');
+        expect(getPromptOptions(targetPrompt).map(option => option.value?.minionUid)).toEqual(['first-ally', 'chosen-ally']);
+
+        const resolved = respondToPromptOption(
+            letItGo.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            '放手吧返回目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: expect.objectContaining({ minionUid: 'chosen-ally', fromBaseIndex: 0 }),
+            }),
+            expect.objectContaining({
+                type: SU_EVENTS.LIMIT_MODIFIED,
+                payload: expect.objectContaining({ playerId: '0', limitType: 'action' }),
+            }),
+        ]));
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'first-ally')).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'chosen-ally')).toBe(false);
     });
 
     it('冰雪奇缘：冻结的港口不阻止打出角色，冰宫减力和安娜保护按同基地条件生效', () => {
@@ -353,6 +723,263 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(getPlayerEffectivePowerOnBase(core, core.bases[0], 0, '0')).toBe(8);
     });
 
+    it('狮子王：拉飞奇必须选择力量 2 或更低的弃牌堆角色，不能自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('first-cub', 'lion_king_lion_cub', 'minion', '0'),
+                        makeCard('chosen-snowgie', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('too-strong', 'frozen_olaf', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('lion_king_rafiki', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'rafiki',
+            defId: 'lion_king_rafiki',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 32,
+        });
+
+        expect(result.events).toEqual([]);
+        const promptedAfterDraw = { ...result.matchState!, core: applyEvents(core, result.events) };
+        const prompt = getSimpleChoicePrompt(promptedAfterDraw, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['first-cub', 'chosen-snowgie']);
+
+        const resolved = respondToPromptOption(
+            promptedAfterDraw,
+            option => option.value?.cardUid === 'chosen-snowgie',
+            '拉飞奇回收目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['chosen-snowgie']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-cub', 'too-strong']);
+    });
+
+    it('狮子王：哈库那玛塔塔先抽两张，再让玩家选择是否回收丁满和彭彭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-a', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('draw-b', 'lion_king_zazu', 'minion', '0'),
+                    ],
+                    discard: [
+                        makeCard('timon-first', 'lion_king_timon_and_pumbaa', 'minion', '0'),
+                        makeCard('timon-chosen', 'lion_king_timon_and_pumbaa', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('lion_king_hakuna_matata', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'hakuna',
+            defId: 'lion_king_hakuna_matata',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 33,
+        });
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({ playerId: '0', cardUids: ['draw-a', 'draw-b'] }),
+        }));
+        expect(result.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(false);
+        const promptedAfterDraw = { ...result.matchState!, core: applyEvents(core, result.events) };
+        const prompt = getSimpleChoicePrompt(promptedAfterDraw, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptHandlerData(prompt).multi).toEqual({ min: 0, max: 1 });
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid ?? option.id)).toEqual(['timon-first', 'timon-chosen', 'skip']);
+
+        const recovered = respondToPromptOption(
+            promptedAfterDraw,
+            option => option.value?.cardUid === 'timon-chosen',
+            '哈库那玛塔塔回收目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(recovered.success, recovered.error).toBe(true);
+        expect(recovered.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b', 'timon-chosen']);
+        expect(recovered.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['timon-first']);
+    });
+
+    it('狮子王：鬣狗巢穴计分后必须选择要移动的己方角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('mufasa-discard', 'lion_king_mufasa', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_pride_rock',
+                    minions: [
+                        makeMinion('first-ally', 'lion_king_zazu', '0', 2),
+                        makeMinion('chosen-ally', 'lion_king_nala', '0', 4),
+                    ],
+                    ongoingActions: [{ uid: 'hyenas-den', defId: 'lion_king_hyenas_den', ownerId: '0' }],
+                }),
+                makeBase('base_elephant_graveyard'),
+            ],
+        });
+
+        const hyenasDen = invokeRegisteredAbilityContract('lion_king_hyenas_den', 'special', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'hyenas-den',
+            defId: 'lion_king_hyenas_den',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 31,
+        });
+
+        expect(hyenasDen.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        const targetPrompt = getSimpleChoicePrompt(hyenasDen.matchState!, 'disney_four_factions_prompt');
+        expect(getPromptOptions(targetPrompt).map(option => option.value?.minionUid)).toEqual(['first-ally', 'chosen-ally']);
+
+        const choseTarget = respondToPromptOption(
+            hyenasDen.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            '鬣狗巢穴移动目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        const moved = respondToPromptOption(
+            choseTarget.finalState,
+            option => option.value?.baseIndex === 1,
+            '鬣狗巢穴目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(moved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_MOVED,
+            payload: expect.objectContaining({ minionUid: 'chosen-ally', fromBaseIndex: 0, toBaseIndex: 1 }),
+        }));
+        expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'first-ally')).toBe(true);
+        expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'chosen-ally')).toBe(true);
+    });
+
+    it('狮子王：牛羚踩踏必须选择要摧毁的己方角色，再选择牌库角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('deck-first', 'lion_king_zazu', 'minion', '0'),
+                        makeCard('deck-second', 'lion_king_lion_cub', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_pride_rock', [
+                makeMinion('first-ally', 'lion_king_zazu', '0', 2),
+                makeMinion('chosen-ally', 'lion_king_nala', '0', 4),
+            ])],
+        });
+
+        const stampede = invokeRegisteredAbilityContract('lion_king_wildebeest_stampede', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'stampede',
+            defId: 'lion_king_wildebeest_stampede',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 35,
+        });
+
+        expect(stampede.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const destroyPrompt = getSimpleChoicePrompt(stampede.matchState!, 'disney_four_factions_prompt');
+        expect(getPromptOptions(destroyPrompt).map(option => option.value?.minionUid)).toEqual(['first-ally', 'chosen-ally']);
+
+        const destroyed = respondToPromptOption(
+            stampede.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            '牛羚踩踏摧毁目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(destroyed.finalState.core.bases[0].minions.some(minion => minion.uid === 'first-ally')).toBe(true);
+        expect(destroyed.finalState.core.bases[0].minions.some(minion => minion.uid === 'chosen-ally')).toBe(false);
+
+        const deckPrompt = getSimpleChoicePrompt(destroyed.finalState, 'disney_four_factions_prompt');
+        expect(getPromptOptions(deckPrompt).map(option => option.value?.cardUid)).toEqual(['deck-first', 'deck-second']);
+        const played = respondToPromptOption(
+            destroyed.finalState,
+            option => option.value?.cardUid === 'deck-second',
+            '牛羚踩踏牌库角色',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(played.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: expect.objectContaining({ cardUid: 'deck-second', defId: 'lion_king_lion_cub', baseIndex: 0 }),
+        }));
+    });
+
+    it('狮子王：幼狮搜牌库时由玩家选择力量不超过 4 的角色，不自动拿第一张', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('first-eligible', 'lion_king_zazu', 'minion', '0'),
+                        makeCard('chosen-eligible', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('too-large', 'lion_king_mufasa', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('lion_king_lion_cub', 'special', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'cub',
+            defId: 'lion_king_lion_cub',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 35,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['first-eligible', 'chosen-eligible']);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'chosen-eligible',
+            '幼狮牌库目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['chosen-eligible']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['first-eligible', 'too-large']);
+    });
+
     it('狮子王：刀疤按目标所在基地计算有效力量，跨基地持续修正不会漏算', () => {
         const core = makeState({
             bases: [
@@ -441,7 +1068,8 @@ describe('迪士尼四派系代表性玩法行为', () => {
                     deck: [
                         makeCard('scar-draw-a', 'frozen_snowgie', 'minion', '0'),
                         makeCard('scar-draw-b', 'lion_king_zazu', 'minion', '0'),
-                        makeCard('eligible-minion', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('first-eligible-minion', 'lion_king_zazu', 'minion', '0'),
+                        makeCard('chosen-eligible-minion', 'frozen_snowgie', 'minion', '0'),
                         makeCard('too-large', 'lion_king_mufasa', 'minion', '0'),
                     ],
                 }),
@@ -473,15 +1101,28 @@ describe('迪士尼四派系代表性玩法行为', () => {
         );
         const reactionPrompt = getReactionPrompt(destroyed.finalState);
         const cubOption = getReactionPromptOptionBySourceDefId(destroyed.finalState, reactionPrompt, 'lion_king_lion_cub');
-        const searched = respondToPrompt(destroyed.finalState, cubOption.id, '0', FIXED_RANDOM);
+        const prompted = respondToPrompt(destroyed.finalState, cubOption.id, '0', FIXED_RANDOM);
 
-        expect(searched.success).toBe(true);
-        expect(searched.finalState.core.players['0'].hand.map(card => card.uid)).toContain('eligible-minion');
-        expect(searched.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['too-large']);
+        expect(prompted.success, prompted.error).toBe(true);
+        const searchPrompt = getSimpleChoicePrompt(prompted.finalState, 'disney_four_factions_prompt');
+        expect(searchPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(searchPrompt).map(option => option.value?.cardUid)).toEqual(['first-eligible-minion', 'chosen-eligible-minion']);
+
+        const searched = respondToPromptOption(
+            prompted.finalState,
+            option => option.value?.cardUid === 'chosen-eligible-minion',
+            '幼狮触发牌库目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(searched.success, searched.error).toBe(true);
+        expect(searched.finalState.core.players['0'].hand.map(card => card.uid)).toContain('chosen-eligible-minion');
+        expect(searched.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['first-eligible-minion', 'too-large']);
         expect(searched.finalState.core.triggerQueue).toBeUndefined();
         expect(searched.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARDS_DRAWN,
-            payload: expect.objectContaining({ playerId: '0', cardUids: ['eligible-minion'] }),
+            payload: expect.objectContaining({ playerId: '0', cardUids: ['chosen-eligible-minion'] }),
         }));
     });
 

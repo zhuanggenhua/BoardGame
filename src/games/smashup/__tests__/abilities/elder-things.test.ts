@@ -725,7 +725,7 @@ describe('elder_thing_unfathomable_goals（深不可测的目的）', () => {
             expect(getPromptSourceId(prompt)).toBe('elder_thing_unfathomable_goals');
         });
 
-        it('有疯狂卡的对手只有一个随从时直接消灭，且先展示手牌', () => {
+        it('有疯狂卡的对手只有一个随从时也先确认目标，且先展示手牌', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -744,12 +744,21 @@ describe('elder_thing_unfathomable_goals（深不可测的目的）', () => {
                 }],
             });
 
-            const events = execPlayAction(state, '0', 'a1');
+            const { events, matchState } = runPlayAction(state, '0', 'a1');
             // 展示对手手牌
             const revealEvents = events.filter(e => e.type === SU_EVENTS.REVEAL_HAND);
             expect(revealEvents.length).toBe(1);
             expect((revealEvents[0] as any).payload.viewerPlayerId).toBe('all');
-            const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+            expect(events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+
+            const prompt = getSimpleChoicePrompt(matchState, 'elder_thing_unfathomable_goals');
+            expect(prompt.autoResolveIfSingle).toBe(false);
+            const resolved = runCommand(
+                matchState,
+                respondCommand(getPromptOption(prompt, option => option.value?.minionUid === 'm1', '深不可测的目的唯一随从候选').id, '1'),
+                defaultRandom,
+            );
+            const destroyEvents = resolved.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
             expect(destroyEvents.length).toBe(1);
             expect((destroyEvents[0] as any).payload.minionUid).toBe('m1');
         });
@@ -1535,6 +1544,46 @@ describe('elder_things_pod 专项行为', () => {
         const counters = chooseBase.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
         expect(counters).toHaveLength(1);
         expect(counters[0].payload.amount).toBe(1);
+        expect(counters[0].payload.reason).toBe('elder_thing_the_price_of_power_pod');
+    });
+
+    it('The Price of Power POD：非 Me First 窗口只有一个基地时仍让玩家确认基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('a1', 'elder_thing_the_price_of_power_pod', 'action', '0')] }),
+                '1': makePlayer('1', { hand: [makeCard('m1', MADNESS_CARD_DEF_ID, 'action', '1')] }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [{
+                defId: 'base_temple_of_goju',
+                minions: [
+                    makeMinion('p0m1', 'robot_microbot', '0', 3),
+                    makeMinion('p1m1', 'robot_microbot', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultRandom,
+        );
+
+        const prompt = getFirstPrompt(played.finalState);
+        expect(getPromptSourceId(prompt)).toBe('elder_thing_the_price_of_power_pod_choose_base');
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+        const options = getPromptOptions(prompt);
+        expect(options.map(option => option.value?.baseIndex)).toEqual([0]);
+
+        const chooseBase = runCommand(
+            played.finalState,
+            respondCommand(options[0].id, '0'),
+            defaultRandom,
+        );
+
+        const counters = chooseBase.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
+        expect(counters).toHaveLength(1);
         expect(counters[0].payload.reason).toBe('elder_thing_the_price_of_power_pod');
     });
 

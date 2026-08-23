@@ -9,6 +9,7 @@ import { requireLazyModuleExport } from '../lib/lazyModuleExport';
 
 type ConfigReviewPageComponent = React.ComponentType;
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function loadConfigReviewPageModule(
   loader: () => Promise<{ default?: ConfigReviewPageComponent | null } | null | undefined>,
   moduleId: string,
@@ -30,6 +31,10 @@ const CONFIG_REVIEW_PAGE_BY_GAME_ID = {
   betrayal: React.lazy(() => loadConfigReviewPageModule(
     () => import('./BetrayalConfigReview'),
     './pages/BetrayalConfigReview',
+  )),
+  smashup: React.lazy(() => loadConfigReviewPageModule(
+    () => import('./SmashUpConfigReview'),
+    './pages/SmashUpConfigReview',
   )),
 } as const;
 

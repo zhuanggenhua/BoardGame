@@ -7,7 +7,7 @@
 ```ts
 mobileProfile: 'none' | 'landscape-adapted' | 'portrait-adapted' | 'tablet-only';
 preferredOrientation?: 'landscape' | 'portrait';
-mobileLayoutPreset?: 'board-shell' | 'portrait-simple';
+mobileLayoutPreset?: 'board-shell' | 'portrait-simple' | 'map-shell';
 shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 ```
 
@@ -39,6 +39,8 @@ shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
   - 适用于“保留桌面主画布 + 外围 HUD/侧栏/预览改为移动壳”的模式。
 - `portrait-simple`
   - 只给本来就能在竖屏单列完成主循环的简单游戏。
+- `map-shell`
+  - 适用于地图本体需要独立缩放、平移或触摸手势，而 HUD 需要保持独立安全区的游戏。
 
 ### `shellTargets`
 

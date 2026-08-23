@@ -57,7 +57,7 @@ export const getDeployProgressSnapshot = (result: DeployProgressSource | null): 
 
     const output = result.output || '';
     const pullSummaryMatches = [...output.matchAll(/Pulling\s+(\d+)\/(\d+)/g)];
-    const latestPullSummary = pullSummaryMatches.at(-1);
+    const latestPullSummary = pullSummaryMatches[pullSummaryMatches.length - 1];
     if (latestPullSummary) {
         const completed = Number.parseInt(latestPullSummary[1], 10);
         const total = Number.parseInt(latestPullSummary[2], 10);

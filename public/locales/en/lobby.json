@@ -289,9 +289,20 @@
   },
   "leaderboard": {
     "loading": "Loading...",
-    "title": "Top Wins",
+    "title": "ELO Ranking",
     "empty": "No data",
-    "record": "{{wins}} W / {{matches}} G",
+    "rating": "{{rating}} ELO",
+    "record": "{{wins}}W {{losses}}L {{draws}}D · {{winRate}}% / {{matches}}G",
+    "provisional": "Provisional",
+    "tiers": {
+      "beginner": "Beginner",
+      "apprentice": "Apprentice",
+      "average": "Average",
+      "good": "Good",
+      "strong": "Strong",
+      "expert": "Expert",
+      "master": "Master"
+    },
     "error": "Failed to load leaderboard",
     "changelogEmpty": "No updates yet"
   },

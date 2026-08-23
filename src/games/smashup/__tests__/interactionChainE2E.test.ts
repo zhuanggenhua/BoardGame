@@ -1250,7 +1250,7 @@ describe('P2: zombie_outbreak（爆发）授予额度', () => {
         expect(player.baseLimitedMinionQuota?.[1]).toBe(1);
     });
 
-    it('只有一个空基地：直接授予额度（不创建交互）', () => {
+    it('只有一个空基地：仍需确认基地后授予额度', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -1272,17 +1272,25 @@ describe('P2: zombie_outbreak（爆发）授予额度', () => {
 
         const state = makeFullMatchState(core);
 
-        // 打出 outbreak → 直接授予额度
+        // 打出 outbreak → 即使只有一个空基地，也要让玩家确认选择
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'outbreak1' },
         }, 'outbreak: 唯一空基地');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expectNoPrompt(r1.finalState);
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
+        expect(choice1.sourceId).toBe('zombie_outbreak_choose_base');
+        expect(choice1.autoResolveIfSingle).toBe(false);
+
+        const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 1);
+        const r2 = respond(r1.finalState, '0', baseOpt, 'outbreak: 确认唯一空基地');
+
+        expect(r2.steps[0]?.success).toBe(true);
+        expectNoPrompt(r2.finalState);
 
         // 验证：授予了基地限定额度
-        const player = r1.finalState.core.players['0'];
+        const player = r2.finalState.core.players['0'];
         expect(player.baseLimitedMinionQuota?.[1]).toBe(1);
     });
 });

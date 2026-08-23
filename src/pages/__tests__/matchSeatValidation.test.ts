@@ -776,6 +776,23 @@ describe('resolveOnlineAiAutoRecoveryCompletionNotice', () => {
         });
     });
 
+    it('active-turn 恢复完成后如果已经切回人类回合，不再弹强制结束回合提示', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'active-turn',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '0',
+                },
+                sys: {
+                    phase: 'main1',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+        });
+
+        expect(notice).toBeNull();
+    });
+
     it('custom current-player seam 变化时，恢复完成提示应按 seam-aware current player 抑制人类回合 toast', () => {
         const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
             candidateReason: 'response-window',

@@ -64,7 +64,7 @@ describe('base_haunted_house_al9000: 随从入场后弃牌', () => {
         ).toBe('live');
     });
 
-    it('只有 1 张手牌时自动弃掉', () => {
+    it('只有 1 张手牌时也必须由玩家选择弃牌，不能自动弃掉', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
                 bases: [{
@@ -92,14 +92,15 @@ describe('base_haunted_house_al9000: 随从入场后弃牌', () => {
             now: 1000,
         };
 
-        const { events } = triggerBaseAbility('base_haunted_house_al9000', 'onMinionPlayed', {
+        const result = triggerBaseAbility('base_haunted_house_al9000', 'onMinionPlayed', {
             ...ctx,
             matchState: makeMatchState(ctx.state),
         });
 
-        expect(events).toHaveLength(1);
-        expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
-        expect((events[0] as any).payload.cardUids).toEqual(['h1']);
+        expect(result.events).toHaveLength(0);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_haunted_house_al9000');
+        expect(getPromptOptions(prompt)).toHaveLength(1);
+        expect(getPromptOptions(prompt)[0].value?.cardUid).toBe('h1');
     });
 
     it('响应交互后弃掉所选手牌', () => {

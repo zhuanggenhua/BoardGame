@@ -67,7 +67,7 @@ export type MageWarsMageAbilityStatusTokenScope = 'single-status-type' | 'multip
 export type MageWarsStatusTokenRemovalCostRule = 'fixed' | 'target-creature-level' | 'none';
 export type MageWarsConfigSpellSemanticsAbilityKind = 'visible-object-enchantment' | 'visible-area-enchantment' | 'hidden-response-enchantment';
 export type MageWarsConfigSpellResponseKind = 'quick-spell-counter' | 'target-spell-counter' | 'attack-reversal';
-export type MageWarsConfigSpellContinuousModifierStat = 'life' | 'armor' | 'meleeDice';
+export type MageWarsConfigSpellContinuousModifierStat = 'life' | 'armor' | 'meleeDice' | 'attackDice';
 export type MageWarsConfigSpellModifierOperation = 'add';
 export type MageWarsConfigSpellGrantedTraitId = 'slow' | 'regeneration' | 'counterstrike' | 'vampiric' | 'restrained' | 'death-mark' | 'aegis' | 'mental-calm';
 export type MageWarsConfigCombatAction = 'quick' | 'full';
@@ -171,7 +171,10 @@ export interface MageWarsConfigSpellGrantedTrait {
     value?: number;
 }
 
-export type MageWarsConfigSpellUpkeepEffectKind = 'direct-damage' | 'mana-cost';
+export type MageWarsConfigSpellUpkeepEffectKind =
+    | 'direct-damage'
+    | 'mana-cost'
+    | 'heal-controller-mage-transfer-damage';
 
 export type MageWarsConfigSpellUpkeepEffect =
     | {
@@ -182,6 +185,10 @@ export type MageWarsConfigSpellUpkeepEffect =
     | {
         kind: 'mana-cost';
         amount: number;
+    }
+    | {
+        kind: 'heal-controller-mage-transfer-damage';
+        maxHealing: number;
     };
 
 export interface MageWarsConfigSpellSemantics {
@@ -766,7 +773,7 @@ function readSpellContinuousModifierStat(
     value: unknown,
     context: string,
 ): MageWarsConfigSpellContinuousModifierStat {
-    if (value === 'life' || value === 'armor' || value === 'meleeDice') return value;
+    if (value === 'life' || value === 'armor' || value === 'meleeDice' || value === 'attackDice') return value;
     throw new Error(`invalid Mage Wars spell semantics modifier stat at ${context}`);
 }
 
@@ -866,6 +873,12 @@ function readOptionalSpellUpkeepEffects(
             return {
                 kind: 'mana-cost',
                 amount: assertPositiveInteger(data.amount, `${context}[${index}].amount`),
+            };
+        }
+        if (data.kind === 'heal-controller-mage-transfer-damage') {
+            return {
+                kind: 'heal-controller-mage-transfer-damage',
+                maxHealing: assertPositiveInteger(data.maxHealing, `${context}[${index}].maxHealing`),
             };
         }
         if (data.kind !== 'direct-damage') {

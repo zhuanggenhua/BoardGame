@@ -2037,7 +2037,7 @@ const MapSceneLayer: React.FC<{
         : undefined;
     const hoveredRegion = hoveredRegionId ? core.regions.find((region) => region.id === hoveredRegionId) : undefined;
     const pendingCommittedOptions = getPendingCommittedTroopOptions(pendingTargetAction);
-    const pendingCommittedMax = pendingCommittedOptions.at(-1) ?? 0;
+    const pendingCommittedMax = pendingCommittedOptions[pendingCommittedOptions.length - 1] ?? 0;
     const wheelDispatchSelectableTroopCount = wheelDispatchSelection
         ? Math.max(0, ...wheelDispatchSelection.candidates.map((candidate) => candidate.committedTroops))
         : 0;

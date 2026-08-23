@@ -1025,15 +1025,6 @@ export function registerBaseAbilities(): void {
     registerBaseAbility('base_haunted_house_al9000', 'onMinionPlayed', (ctx) => {
         const player = ctx.state.players[ctx.playerId];
         if (!player || player.hand.length === 0) return { events: [] };
-        // 只有1张手牌→自动弃掉
-        if (player.hand.length === 1) {
-            return {
-                events: [{
-                    type: SU_EVENTS.CARDS_DISCARDED,
-                    payload: { playerId: ctx.playerId, cardUids: [player.hand[0].uid] },
-                    timestamp: ctx.now } as CardsDiscardedEvent] };
-        }
-        // 多张手牌→Prompt 选择弃哪张
         if (!ctx.matchState) return { events: [] };
         
         // 生成初始选项（基于当前状态）
@@ -1112,11 +1103,6 @@ export function registerBaseAbilities(): void {
         // 消灭者在这里有随从才能放指示物
         const destroyerMinions = base.minions.filter(m => m.controller === destroyerId && m.uid !== ctx.minionUid);
         if (destroyerMinions.length === 0) return { events: [] };
-        if (!ctx.matchState && destroyerMinions.length === 1) {
-            // 无交互上下文时保持兼容：默认执行放置
-            return {
-                events: [addPowerCounter(destroyerMinions[0].uid, ctx.baseIndex, 1, 'base_crypt', ctx.now)] };
-        }
         // 可选效果：单目标/多目标都允许跳过
         if (!ctx.matchState) return { events: [] };
         const minionOptions = destroyerMinions.map((m, i) => {
@@ -2206,29 +2192,21 @@ export function registerBaseInteractionHandlers(): void {
             baseCandidates.push({ baseIndex: i, label: bDef?.name ?? `基地 ${i + 1}` });
         }
         
-        // 只有一个目标基地→自动移动
-        if (baseCandidates.length <= 1) {
-            const targetBase = baseCandidates.length === 1 ? baseCandidates[0].baseIndex : 0;
-            return {
-                state,
-                events: buildValidatedBaseMoveEvents(state, {
-                    minionUid: selected.minionUid!,
-                    minionDefId: selected.minionDefId!,
-                    fromBaseIndex: ctx.baseIndex,
-                    toBaseIndex: targetBase,
-                    sourcePlayerId: playerId,
-                    sourceDefId: 'base_pirate_cove',
-                    sourceBaseIndex: ctx.baseIndex,
-                    reason: '海盗湾：移动随从到其他基地',
-                    now: timestamp }) };
+        if (baseCandidates.length === 0) {
+            return { state, events: [] };
         }
         
-        // 多个目标基地→链式交互选择
+        // 链式交互选择目标基地；唯一目标也必须由玩家确认。
         const options = buildBaseTargetOptions(baseCandidates, state.core);
         const interaction = createSimpleChoice(
             `base_pirate_cove_choose_base_${timestamp}`, playerId,
             '海盗湾：选择移动到的基地', options,
-            { sourceId: 'base_pirate_cove_choose_base', targetType: 'base', titleKey: 'ui.base_pirate_cove_choose_base_title' },
+            {
+                sourceId: 'base_pirate_cove_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.base_pirate_cove_choose_base_title',
+                autoResolveIfSingle: false,
+            },
         );
         return {
             // 使用 urgent 标志，确保链式交互的第二步不被其他交互插队
@@ -2505,26 +2483,11 @@ export function registerBaseInteractionHandlers(): void {
             baseCandidates.push({ baseIndex: i, label: bDef?.name ?? `基地 ${i + 1}` });
         }
         if (baseCandidates.length === 0) return { state, events: [] };
-        if (baseCandidates.length === 1) {
-            return {
-                state,
-                events: buildValidatedBaseMoveEvents(state, {
-                    minionUid: selected.minionUid,
-                    minionDefId: selected.minionDefId,
-                    fromBaseIndex: selected.fromBaseIndex,
-                    toBaseIndex: baseCandidates[0].baseIndex,
-                    sourcePlayerId: playerId,
-                    sourceDefId: 'base_mushroom_kingdom_pod',
-                    sourceBaseIndex: selected.fromBaseIndex,
-                    reason: 'base_mushroom_kingdom_pod',
-                    now: timestamp }) };
-        }
-
         const interaction = createSimpleChoice(
             `base_mushroom_kingdom_pod_choose_base_${timestamp}`, playerId,
             '蘑菇王国（POD）：选择要移动到的基地',
             buildBaseTargetOptions(baseCandidates, state.core),
-            { sourceId: 'base_mushroom_kingdom_pod_choose_base', targetType: 'base', titleKey: 'ui.base_mushroom_kingdom_pod_choose_destination_title' },
+            { sourceId: 'base_mushroom_kingdom_pod_choose_base', targetType: 'base', titleKey: 'ui.base_mushroom_kingdom_pod_choose_destination_title', autoResolveIfSingle: false },
         );
         return {
             state: queueInteraction(state, {

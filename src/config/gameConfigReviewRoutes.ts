@@ -1,4 +1,4 @@
-export const CONFIG_REVIEW_GAME_IDS = ['summonerwars', 'dicethrone', 'betrayal'] as const;
+export const CONFIG_REVIEW_GAME_IDS = ['summonerwars', 'dicethrone', 'betrayal', 'smashup'] as const;
 
 type ConfigReviewGameId = typeof CONFIG_REVIEW_GAME_IDS[number];
 

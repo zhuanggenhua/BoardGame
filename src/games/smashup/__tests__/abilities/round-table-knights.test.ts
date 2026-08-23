@@ -10,12 +10,16 @@ import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { defaultTestRandom, runCommand } from '../testRunner';
 import {
     applyEvents,
+    getPromptOptions,
+    getSimpleChoicePrompt,
     makeBase,
     makeCard,
     makeMatchState,
     makeMinion,
     makePlayer,
     makeState,
+    respondToPromptOption,
+    respondToPromptOptions,
 } from '../helpers';
 
 beforeEach(() => {
@@ -259,6 +263,44 @@ describe('圆桌骑士能力', () => {
         expect(result.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('percival-1');
     });
 
+    it('卡美洛：未指定目标时必须打开选择窗口，不自动移动第一个随从', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_camelot',
+                    minions: [
+                        makeMinion('lancelot-1', 'round_table_knights_lancelot', '0', 4),
+                        makeMinion('percival-1', 'round_table_knights_percival', '0', 4),
+                    ],
+                    ongoingActions: [],
+                }),
+                makeBase({ defId: 'base_round_table', minions: [], ongoingActions: [] }),
+                makeBase({ defId: 'base_goblin_town', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_BASE_ABILITY,
+            playerId: '0',
+            payload: { baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'base_camelot');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['lancelot-1', 'percival-1']);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.minionUid === 'percival-1' && option.value?.toBaseIndex === 2,
+            '卡美洛选择第二个己方随从移动到第三个基地',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['lancelot-1']);
+        expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('percival-1');
+    });
+
     it('圆桌会议：相同印刷战力的己方随从只获得 +1，不按同伴数叠加', () => {
         const state = makeState({
             bases: [makeBase({
@@ -318,6 +360,79 @@ describe('圆桌骑士能力', () => {
         expect(result.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('percival-1');
     });
 
+    it('帕西瓦尔：未指定目标基地时必须等待玩家选择，不自动移动到第一个候选基地', () => {
+        const state = makeState({
+            bases: [
+                makeBase({ defId: 'base_camelot', minions: [makeMinion('percival-1', 'round_table_knights_percival', '0', 4)], ongoingActions: [] }),
+                makeBase({ defId: 'base_round_table', minions: [], ongoingActions: [{ uid: 'good-deed-1', defId: 'round_table_knights_good_deed', ownerId: '0' }] }),
+                makeBase({ defId: 'base_goblin_town', minions: [], ongoingActions: [{ uid: 'grail-1', defId: 'round_table_knights_the_grail', ownerId: '0' }] }),
+            ],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'percival-1', baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_percival');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('percival-1');
+        expect(result.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('percival-1');
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.baseIndex === 2,
+            '帕西瓦尔选择第二个候选基地',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('percival-1');
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('percival-1');
+    });
+
+    it('加拉哈德：搜索牌库时必须让玩家选择要置顶的基地行动，不自动取第一张', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('galahad-1', 'round_table_knights_galahad', 'minion', '0')],
+                    deck: [
+                        makeCard('good-deed-1', 'round_table_knights_good_deed', 'action', '0'),
+                        makeCard('noble-steed-1', 'round_table_knights_noble_steed', 'action', '0'),
+                        makeCard('grail-1', 'round_table_knights_the_grail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'base_camelot', minions: [], ongoingActions: [] })],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'galahad-1', baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_galahad');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('generic');
+        expect(prompt.genericIntent).toBe('card-pool');
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['good-deed-1', 'grail-1']);
+        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['good-deed-1', 'noble-steed-1', 'grail-1']);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'grail-1',
+            '加拉哈德选择第二张可打到基地的行动',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['grail-1', 'good-deed-1', 'noble-steed-1']);
+    });
+
     it('梅林：牌库顶是行动牌时抽起并提供立即额外打出该行动的机会', () => {
         const state = makeState({
             players: {
@@ -346,12 +461,15 @@ describe('圆桌骑士能力', () => {
         }));
     });
 
-    it('湖中女神：从弃牌堆找可打到随从的行动后，提供立即额外打出该行动的机会', () => {
+    it('湖中女神：从弃牌堆选择可打到随从的行动，单候选也不自动结算', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
                     hand: [makeCard('lady-1', 'round_table_knights_the_lady_of_the_lake', 'action', '0')],
-                    discard: [makeCard('excalibur-1', 'round_table_knights_excalibur', 'action', '0')],
+                    discard: [
+                        makeCard('noble-steed-1', 'round_table_knights_noble_steed', 'action', '0'),
+                        makeCard('excalibur-1', 'round_table_knights_excalibur', 'action', '0'),
+                    ],
                 }),
                 '1': makePlayer('1'),
             },
@@ -365,11 +483,22 @@ describe('圆桌骑士能力', () => {
         } as any, defaultTestRandom);
 
         expect(result.success, result.error).toBe(true);
-        expect(result.events).toContainEqual(expect.objectContaining({
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_the_lady_of_the_lake');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['noble-steed-1', 'excalibur-1']);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'excalibur-1',
+            '湖中女神选择第二张角色修正行动',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
             payload: expect.objectContaining({ cardUids: ['excalibur-1'] }),
         }));
-        expect(result.events).toContainEqual(expect.objectContaining({
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.LIMIT_MODIFIED,
             payload: expect.objectContaining({
                 playerId: '0',
@@ -380,7 +509,101 @@ describe('圆桌骑士能力', () => {
         }));
     });
 
-    it('善行：同基地还有其他己方行动牌时，也应定位并触发善行自身', () => {
+    it('湖中女神：弃牌堆为空时也必须从牌库候选中选择，不自动抽第一张', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('lady-1', 'round_table_knights_the_lady_of_the_lake', 'action', '0')],
+                    deck: [
+                        makeCard('noble-steed-1', 'round_table_knights_noble_steed', 'action', '0'),
+                        makeCard('good-deed-1', 'round_table_knights_good_deed', 'action', '0'),
+                        makeCard('excalibur-1', 'round_table_knights_excalibur', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'base_camelot', minions: [makeMinion('arthur-1', 'round_table_knights_king_arthur', '0', 5)], ongoingActions: [] })],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'lady-1' },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_the_lady_of_the_lake');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('generic');
+        expect(prompt.genericIntent).toBe('card-pool');
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['noble-steed-1', 'excalibur-1']);
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('excalibur-1');
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'excalibur-1',
+            '湖中女神从牌库选择第二张角色修正行动',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({ cardUids: ['excalibur-1'] }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                limitType: 'action',
+                playTiming: 'immediate',
+                restrictToCardUid: 'excalibur-1',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('excalibur-1');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['noble-steed-1', 'good-deed-1']);
+    });
+
+    it('阿瓦隆迷雾：选择至多三张弃牌堆角色放到牌库顶，不默认取前三张', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mists-1', 'round_table_knights_the_mists_of_avalon', 'action', '0')],
+                    deck: [makeCard('deck-a', 'round_table_knights_good_deed', 'action', '0')],
+                    discard: [
+                        makeCard('minion-a', 'round_table_knights_lancelot', 'minion', '0'),
+                        makeCard('minion-b', 'round_table_knights_percival', 'minion', '0'),
+                        makeCard('minion-c', 'round_table_knights_merlin', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'mists-1' },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_the_mists_of_avalon');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.multi).toMatchObject({ min: 0, max: 3 });
+        const resolved = respondToPromptOptions(
+            result.finalState,
+            getPromptOptions(prompt)
+                .filter(option => option.value?.cardUid === 'minion-b')
+                .map(option => option.id),
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['minion-b', 'deck-a']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['minion-a', 'minion-c', 'mists-1']);
+    });
+
+    it('善行：同基地还有其他己方行动牌时，也应定位善行自身并等待玩家选择', () => {
         const moved = makeMinion('moved-1', 'round_table_knights_lancelot', '0', 4);
         const state = makeState({
             players: {
@@ -411,12 +634,31 @@ describe('圆桌骑士能力', () => {
             now: 1000,
         });
 
-        expect(result.events).toContainEqual(expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN }));
-        expect(result.events).toContainEqual(expect.objectContaining({
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'round_table_knights_good_deed_transfer');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.events).not.toContainEqual(expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN }));
+        expect(result.events).not.toContainEqual(expect.objectContaining({
             type: SU_EVENTS.ONGOING_DETACHED,
             payload: expect.objectContaining({ cardUid: 'good-deed-1' }),
         }));
         expect(result.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'other-action-1' }),
+        }));
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.baseIndex === 1,
+            '善行转移到第二个基地',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.events).toContainEqual(expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'good-deed-1' }),
+        }));
+        expect(resolved.events).not.toContainEqual(expect.objectContaining({
             type: SU_EVENTS.ONGOING_DETACHED,
             payload: expect.objectContaining({ cardUid: 'other-action-1' }),
         }));
@@ -439,5 +681,112 @@ describe('圆桌骑士能力', () => {
         expect(result.success, result.error).toBe(true);
         expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('lancelot-1');
         expect(result.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('lancelot-1');
+    });
+
+    it('踏上征途：打出后只打开移动确认窗口，不自动移动到第一个基地', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('quest-1', 'round_table_knights_a_questing', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_camelot', minions: [makeMinion('lancelot-1', 'round_table_knights_lancelot', '0', 4)], ongoingActions: [] }),
+                makeBase({ defId: 'base_round_table', minions: [], ongoingActions: [] }),
+                makeBase({ defId: 'base_goblin_town', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'quest-1', targetBaseIndex: 0, targetMinionUid: 'lancelot-1' },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_a_questing_move');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('lancelot-1');
+        expect(result.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('lancelot-1');
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.baseIndex === 2,
+            '踏上征途选择第三个基地',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('lancelot-1');
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('lancelot-1');
+    });
+
+    it('高贵坐骑：天赋未指定目标基地时必须等待玩家选择', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_camelot',
+                    minions: [makeMinion('lancelot-1', 'round_table_knights_lancelot', '0', 4, {
+                        attachedActions: [{ uid: 'steed-1', defId: 'round_table_knights_noble_steed', ownerId: '0' }],
+                    })],
+                    ongoingActions: [],
+                }),
+                makeBase({ defId: 'base_round_table', minions: [], ongoingActions: [] }),
+                makeBase({ defId: 'base_goblin_town', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'steed-1', baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_noble_steed_move');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('lancelot-1');
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.baseIndex === 2,
+            '高贵坐骑选择第三个基地',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('lancelot-1');
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('lancelot-1');
+    });
+
+    it('梅林藏书馆：未指定模式时必须让玩家选择天赋效果', () => {
+        const state = makeState({
+            bases: [
+                makeBase({ defId: 'base_camelot', minions: [], ongoingActions: [{ uid: 'library-1', defId: 'round_table_knights_merlins_library', ownerId: '0' }] }),
+                makeBase({ defId: 'base_round_table', minions: [makeMinion('lancelot-1', 'round_table_knights_lancelot', '0', 4)], ongoingActions: [] }),
+                makeBase({ defId: 'base_goblin_town', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'library-1', baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'round_table_knights_merlins_library');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({ limitType: 'minion' }),
+        }));
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.mode === 'moveMinion' && option.value?.minionUid === 'lancelot-1',
+            '梅林藏书馆选择移动随从',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('lancelot-1');
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('lancelot-1');
     });
 });

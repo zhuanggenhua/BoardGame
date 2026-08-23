@@ -486,7 +486,8 @@
     },
     "feedback": {
       "label": "Latest",
-      "idle": "Waiting for the first action"
+      "idle": "Waiting for the first action",
+      "healTraitCount": "Heal +{{count}} traits"
     },
     "reference": {
       "button": "Reference",
@@ -825,7 +826,8 @@
       "mask": "Mask",
       "eventItemChoice": "Choose Item",
       "noEventItemChoices": "No eligible items",
-      "rollTotalReplacement": "Replacement total"
+      "rollTotalReplacement": "Replacement total",
+      "held": "Holding"
     },
     "decks": {
       "omen": "Omen Deck",
@@ -940,6 +942,9 @@
       "eventCard": "Event Card",
       "itemCard": "Item Card",
       "omenCard": "Omen Card",
+      "eventSymbol": "Event Symbol",
+      "eventSkipped": "Event skipped",
+      "noEventCardDrawn": "No event card drawn or resolved",
       "noCard": "No Discovery Card",
       "roomEffect": "Room effect",
       "eventResolved": "Immediate effect",
@@ -950,7 +955,8 @@
       "confirmWithProgress": "Confirm {{confirmed}}/{{total}}",
       "nextSearchCard": "Next card",
       "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
-      "waitingForAll": "Waiting for other players ({{confirmed}}/{{total}})"
+      "waitingForAll": "Waiting for other players ({{confirmed}}/{{total}})",
+      "eventSymbolSkipPrompt": "A room with an event symbol has been revealed; choose to skip the event or draw an event card."
     },
     "roll": {
       "fallbackLabel": "Dice Roll",

@@ -7,6 +7,7 @@ import type { MageWarsCore, MageWarsEvent, MageWarsPhase } from './types';
 import {
     isMageWarsLivingArenaObject,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepDirectDamage,
+    resolveMageWarsAttachedVisibleEnchantmentUpkeepHealTransfers,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepManaCosts,
     resolveMageWarsDamageTypeImmunity,
     resolveMageWarsObjectEffectiveLife,
@@ -311,6 +312,36 @@ function createUpkeepEnchantmentCostEvents(
                 sourceCommandType,
                 timestamp,
             }));
+    });
+}
+
+function createUpkeepEnchantmentHealTransferEvents(
+    core: MageWarsCore,
+    sourceCommandType: string,
+    timestamp: number,
+): MageWarsEvent[] {
+    return Object.values(core.objects).flatMap((object) => {
+        if (!isMageWarsLivingArenaObject(object)) return [];
+
+        return resolveMageWarsAttachedVisibleEnchantmentUpkeepHealTransfers(core, object)
+            .flatMap((source): MageWarsEvent[] => {
+                const player = core.players[source.playerId];
+                const availableHealing = Math.min(source.maxHealing, player?.damage ?? 0);
+                if (availableHealing <= 0) return [];
+                return [{
+                    type: MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_AVAILABLE,
+                    payload: {
+                        playerId: source.playerId,
+                        sourceObjectId: source.sourceObjectId,
+                        sourceSpellCardId: source.sourceSpellCardId,
+                        targetObjectId: object.id,
+                        maxHealing: source.maxHealing,
+                        availableHealing,
+                    },
+                    sourceCommandType,
+                    timestamp,
+                }];
+            });
     });
 }
 
@@ -697,6 +728,7 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                     ...createUpkeepRotDamageEvents(state, command.type, timestamp),
                     ...createUpkeepEnchantmentDirectDamageEvents(state, command.type, timestamp),
                     ...createUpkeepEnchantmentCostEvents(state.core, command.type, timestamp),
+                    ...createUpkeepEnchantmentHealTransferEvents(state.core, command.type, timestamp),
                     ...createUpkeepBurnEvents(state, command.type, timestamp, random),
                 ],
             };

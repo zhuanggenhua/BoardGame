@@ -8,7 +8,7 @@ metadata:
 
 # 引擎伤害计算管线
 
-本文定义 `engine/primitives/damageCalculation.ts` 的项目使用合同。具体函数签名、迁移步骤和代码样例见 [`docs/damage-calculation-pipeline-migration-guide.md`](../../../docs/damage-calculation-pipeline-migration-guide.md) 与源码。
+本文定义 `engine/primitives/damageCalculation.ts` 的项目使用合同。具体函数签名、迁移入口和代码样例见 [`damage-calculation-pipeline-migration-guide`](../../../docs/refactor/damage-calculation-pipeline-migration-guide.md) 与源码。
 
 ## 目标
 

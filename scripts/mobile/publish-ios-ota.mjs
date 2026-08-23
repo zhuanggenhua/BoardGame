@@ -24,6 +24,7 @@ const args = process.argv.slice(2);
 const allowedValueArgs = new Set([
     'channel',
     'version',
+    'product-version',
     'native-version',
     'expected-base-version',
     'force-update-title',
@@ -43,22 +44,23 @@ iOS OTA 发布脚本
 默认策略：
 - iOS 原生壳通过 TestFlight 分发；本脚本只发布 H5 OTA bundle
 - OTA 路径与 Android 平行隔离：official/app-updates/ios/<channel>/**
-- 发布前必须显式传 --expected-base-version，防止拿错版本或 dist
+- OTA 包版本在发布时决定；--expected-base-version 只作为可选 package.json 断言
 - 所有 OTA 都强制更新，客户端必须阻塞下载并立即切换 bundle
 - --no-force-update 已禁用，任何发布入口都不得关闭强制更新
 - OTA 只携带 H5 代码、中文语言包、字体和资源清单；游戏资源继续走服务器资源链
 - 兼容策略与 Android OTA 保持一致：面向所有已安装 TestFlight 壳版本，不写 target/min/max 原生版本门禁
 
 常见用法：
-- node scripts/mobile/publish-ios-ota.mjs --channel stable --expected-base-version 0.5.8
-- node scripts/mobile/publish-ios-ota.mjs --channel edge --expected-base-version 0.5.8 --dry-run
-- node scripts/mobile/publish-ios-ota.mjs --channel stable --expected-base-version 0.5.8 --force-update
+- node scripts/mobile/publish-ios-ota.mjs --channel stable
+- node scripts/mobile/publish-ios-ota.mjs --channel edge --dry-run
+- node scripts/mobile/publish-ios-ota.mjs --channel stable --product-version 0.5.8 --force-update
 
 参数：
 - --channel <name>
 - --version <bundleVersion>
+- --product-version <version> 商业产品版本；不传则使用 package.json.version 作为兼容展示值
 - --native-version <version>
-- --expected-base-version <package.json.version>
+- --expected-base-version <package.json.version> 可选 package.json 断言；用于确认发布 ref，没有传则不阻塞 OTA
 - --force-update 兼容旧命令，可省略
 - --force-update-title <text>
 - --force-update-message <text>
@@ -128,6 +130,7 @@ const channel = readArgValue(
 const nativeVersion = readArgValue('native-version', packageJson.version);
 const expectedBaseVersion = readArgValue('expected-base-version', '').trim();
 const explicitBundleVersion = readArgValue('version', '');
+const productVersion = readArgValue('product-version', packageJson.version).trim() || packageJson.version;
 const notes = readArgValue('notes', 'iOS TestFlight embedded OTA bundle');
 const forbiddenCompatibilityArgs = [
     'target-native-version',
@@ -159,7 +162,7 @@ const distDir = path.join(rootDir, 'dist');
 const iosBuildMetaPath = path.join(distDir, 'ios-build-meta.json');
 const buildInstant = new Date();
 const builtAt = buildInstant.toISOString().replace(/[:.]/g, '-');
-const bundleVersion = explicitBundleVersion || `${packageJson.version}-ota-${builtAt}`;
+const bundleVersion = explicitBundleVersion || `${productVersion}-ota-${builtAt}`;
 const manifestPrefix = `official/app-updates/ios/${channel}`;
 const humanDateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -190,14 +193,10 @@ if (!validChannelPattern.test(channel)) {
     throw new Error(`非法 channel: ${channel}。仅允许字母、数字、点、下划线、短横线。`);
 }
 
-if (!expectedBaseVersion) {
-    throw new Error('iOS OTA 发布已禁止隐式版本：必须显式传 --expected-base-version，并与 package.json.version 完全一致。');
-}
-
-if (expectedBaseVersion !== packageJson.version) {
+if (expectedBaseVersion && expectedBaseVersion !== packageJson.version) {
     throw new Error(
         `iOS OTA 基线版本不匹配：期望 ${expectedBaseVersion}，实际 package.json.version=${packageJson.version}。`
-        + ' 请先 bump 到正确版本，或改用正确 ref / 正确显式版本后再发布。',
+        + ' 请改用正确 ref，或移除该断言后通过 --product-version 指定商业产品版本。',
     );
 }
 
@@ -270,6 +269,7 @@ const checksum = createHash('sha256').update(zipBuffer).digest('hex');
 const publishedAt = new Date();
 const manifest = {
     version: bundleVersion,
+    productVersion,
     url: bundleUrl,
     checksum,
     channel,
@@ -321,6 +321,8 @@ const distStats = statSync(path.join(distDir, 'index.html'));
 console.log(dryRun ? 'iOS OTA bundle 预演完成（未上传）' : 'iOS OTA bundle 已发布');
 console.log(`channel=${channel}`);
 console.log(`bundleVersion=${bundleVersion}`);
+console.log(`productVersion=${productVersion}`);
+console.log(`packageVersion=${packageJson.version}`);
 console.log(`bundleVersionHumanTime=${bundleVersionHumanTime}`);
 console.log(`nativeVersion=${nativeVersion}`);
 console.log(`mode=${dryRun ? 'dry-run' : 'publish'}`);

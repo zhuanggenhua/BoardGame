@@ -159,12 +159,20 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.events.some(event =>
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vigilantes_a_whole_lot_meaner');
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'target', '凶恶百倍目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
             event.type === SU_EVENTS.TEMP_POWER_ADDED
             && (event as any).payload?.minionUid === 'target'
             && (event as any).payload?.amount === 3,
         )).toBe(true);
-        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.tempPowerModifier).toBe(3);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.tempPowerModifier).toBe(3);
     });
 
     it('打到穿越会把目标随从洗回其拥有者牌库', () => {
@@ -193,11 +201,19 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
-        expect(played.finalState.core.players['1'].deck.some(card => card.uid === 'target')).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vigilantes_knocked_into_next_week');
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'target', '打到穿越目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
+        expect(resolved.finalState.core.players['1'].deck.some(card => card.uid === 'target')).toBe(true);
     });
 
-    it('破萝飞龙打出时会找到牌库中的战术并抽到手牌', () => {
+    it('破萝飞龙打出时从牌库选择战术加入手牌，不自动拿第一张', () => {
         const played = runCommand(
             makeMatchState(makeState({
                 players: {
@@ -205,7 +221,8 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
                         hand: [makeCard('stoneford-1', 'vigilantes_stoneford', '0')],
                         deck: [
                             makeCard('deck-minion', 'truckers_good_buddy', 'minion', '0'),
-                            makeCard('deck-action', 'vigilantes_who_loves_ya_baby', 'action', '0'),
+                            makeCard('first-action', 'vigilantes_who_loves_ya_baby', 'action', '0'),
+                            makeCard('chosen-action', 'vigilantes_make_my_day', 'action', '0'),
                         ],
                     }),
                     '1': makePlayer('1'),
@@ -221,11 +238,25 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.events.some(event =>
+        expect(played.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
+        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'first-action')).toBe(false);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vigilantes_stoneford');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(['first-action', 'chosen-action']);
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.cardUid === 'chosen-action', '破萝飞龙选择第二张战术').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
             event.type === SU_EVENTS.DECK_REORDERED
-            && (event as any).payload?.deckUids?.[0] === 'deck-action',
+            && (event as any).payload?.deckUids?.[0] === 'chosen-action',
         )).toBe(true);
-        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'deck-action')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'chosen-action')).toBe(true);
     });
 
     it('杰基比尔会在其他玩家打出战术后获得 +2 临时战力', () => {
@@ -556,13 +587,29 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.finalState.core.players['0'].deck.slice(0, 2).map(card => card.uid)).toEqual([
-            'discard-minion-a',
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vigilantes_shift');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.multi).toMatchObject({ min: 0, max: 2 });
+        expect(played.finalState.core.players['0'].deck[0]?.uid).toBe('deck-1');
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-a')).toBe(true);
+
+        const resolved = respondToPromptOptions(
+            played.finalState,
+            getPromptOptions(prompt)
+                .filter(option => option.value?.cardUid === 'discard-minion-b')
+                .map(option => option.id),
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].deck.slice(0, 2).map(card => card.uid)).toEqual([
             'discard-minion-b',
+            'deck-1',
         ]);
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-a')).toBe(false);
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-b')).toBe(false);
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-a')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-b')).toBe(false);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(true);
     });
 
     it('瞌睡的亨利会把本基地一个随从洗回牌库', () => {
@@ -681,7 +728,8 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             && (event as any).payload?.baseIndex === 0
             && (event as any).payload?.delta === -25,
         )).toBe(true);
-        expect(resolved!.state.core.tempBreakpointModifiers?.[0]).toBe(-25);
+        const finalCore = resolved!.events.reduce((state, event) => reduce(state, event as any), resolved!.state.core);
+        expect(finalCore.tempBreakpointModifiers?.[0]).toBe(-25);
     });
 
     it('时髦镇会在影响本基地随从的战术后给该随从 +1 指示物', () => {
@@ -918,7 +966,18 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             now: 1000,
         });
 
-        expect(result.events.some(event =>
+        expect(result.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_the_mean_streets');
+        expect(prompt.playerId).toBe('1');
+        const resolved = respondToPrompt(
+            result.matchState!,
+            getPromptOption(prompt, option => option.value?.minionUid === 'enemy', '险恶街区唯一敌方随从').id,
+            '1',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
             event.type === SU_EVENTS.POWER_COUNTER_ADDED
             && (event as any).payload?.minionUid === 'enemy'
             && (event as any).payload?.amount === 1,
@@ -974,8 +1033,23 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             event.type === SU_EVENTS.POWER_COUNTER_ADDED
             && (event as any).payload?.minionUid === 'enemy'
             && (event as any).payload?.reason === 'base_the_mean_streets',
+        )).toBe(false);
+        const prompt = getSimpleChoicePrompt(processed.matchState!, 'base_the_mean_streets');
+        expect(prompt.playerId).toBe('1');
+        const resolved = respondToPrompt(
+            processed.matchState!,
+            getPromptOption(prompt, option => option.value?.minionUid === 'enemy', '险恶街区真实后处理唯一敌方随从').id,
+            '1',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'enemy'
+            && (event as any).payload?.reason === 'base_the_mean_streets',
         )).toBe(true);
-        expect(processed.matchState!.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.powerCounters).toBe(2);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.powerCounters).toBe(2);
     });
 
     it('猛龙怪客会在其他玩家消灭别人随从后反杀其一个随从，且每回合仅一次', () => {
@@ -1363,9 +1437,17 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
-        expect(played.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
-        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.tempPowerModifier).toBe(2);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'disco_dancers_get_down_tonight');
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'target', '就在今晚目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.tempPowerModifier).toBe(2);
     });
 
     it('主唱会复制己方其他随从受到的普通战术影响', () => {
@@ -1550,7 +1632,10 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
                     '0': makePlayer('0', {
                         hand: [makeCard('lou-1', 'disco_dancers_ul_disco_lou', '0')],
                         deck: [makeCard('deck-1', 'test_action_a', 'action', '0')],
-                        discard: [makeCard('discard-action', 'disco_dancers_celebration', 'action', '0')],
+                        discard: [
+                            makeCard('discard-action-a', 'disco_dancers_celebration', 'action', '0'),
+                            makeCard('discard-action-b', 'vigilantes_who_loves_ya_baby', 'action', '0'),
+                        ],
                     }),
                     '1': makePlayer('1'),
                 },
@@ -1565,12 +1650,25 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.events.some(event =>
+        const prompt = getSimpleChoicePrompt(played.finalState, 'disco_dancers_ul_disco_lou');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(played.finalState.core.players['0'].deck[0]?.uid).toBe('deck-1');
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.cardUid === 'discard-action-b', '迪斯科·卢弃牌堆战术').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
             event.type === SU_EVENTS.CARD_TO_DECK_TOP
-            && (event as any).payload?.cardUid === 'discard-action',
+            && (event as any).payload?.cardUid === 'discard-action-b',
         )).toBe(true);
-        expect(played.finalState.core.players['0'].deck[0]?.uid).toBe('discard-action');
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck[0]?.uid).toBe('discard-action-b');
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action-a')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action-b')).toBe(false);
     });
 
     it('迪斯科地狱会给目标随从 +1 指示物并抓牌', () => {
@@ -1762,7 +1860,8 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
                     '0': makePlayer('0', {
                         hand: [makeCard('stayin-1', 'disco_dancers_stayin_alive', 'action', '0')],
                         discard: [
-                            makeCard('discard-roller', 'disco_dancers_roller', 'minion', '0'),
+                            makeCard('discard-roller-a', 'disco_dancers_roller', 'minion', '0'),
+                            makeCard('discard-roller-b', 'disco_dancers_roller', 'minion', '0'),
                             makeCard('discard-other', 'truckers_good_buddy', 'minion', '0'),
                         ],
                     }),
@@ -1783,12 +1882,25 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.events.some(event =>
+        const prompt = getSimpleChoicePrompt(played.finalState, 'disco_dancers_stayin_alive');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'discard-roller-a')).toBe(false);
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.cardUid === 'discard-roller-b', '活着同名角色').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
             event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD
-            && (event as any).payload?.cardUids?.includes('discard-roller'),
+            && (event as any).payload?.cardUids?.includes('discard-roller-b'),
         )).toBe(true);
-        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'discard-roller')).toBe(true);
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-other')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'discard-roller-b')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-roller-a')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-other')).toBe(true);
     });
 
     it('轮滑舞娘被影响时若没有 +1 指示物，会给自己加 1 枚', () => {
@@ -1928,7 +2040,7 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(getPlayerEffectivePowerOnBase(state, state.bases[0], 0, '0')).toBe(4);
     });
 
-    it('修理会把弃牌堆中的战术回收到手牌', () => {
+    it('修理会让玩家确认弃牌堆中的唯一行动牌，不自动选择', () => {
         const played = runCommand(
             makeMatchState(makeState({
                 players: {
@@ -1951,13 +2063,63 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(played.success).toBe(true);
-        expect(played.events.some(event =>
+        expect(played.events.filter(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toHaveLength(0);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'truckers_fixin_to_fix_it');
+        expect(getPromptOptions(prompt)).toHaveLength(1);
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.cardUid === 'discard-action', '修理唯一弃牌行动').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
             event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD
             && (event as any).payload?.cardUids?.includes('discard-action'),
         )).toBe(true);
-        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'discard-action')).toBe(true);
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(false);
-        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'discard-action')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(false);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion')).toBe(true);
+    });
+
+    it('修理有多张弃牌行动时按玩家选择回收，不默认第一张', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('fix-1', 'truckers_fixin_to_fix_it', 'action', '0')],
+                        discard: [
+                            makeCard('discard-first', 'truckers_convoy', 'action', '0'),
+                            makeCard('discard-second', 'truckers_armored_truck', 'action', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'fix-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'truckers_fixin_to_fix_it');
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.cardUid === 'discard-second', '修理选择第二张弃牌行动').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'discard-second')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-first')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'discard-second')).toBe(false);
     });
 
     it('装甲卡车会保护同基地己方随从不受消灭和移动影响', () => {
@@ -2342,9 +2504,19 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         }, defaultTestRandom);
 
         expect(usedTalent.success).toBe(true);
-        expect(usedTalent.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
-        expect(usedTalent.finalState.core.players['1'].hand.some(card => card.uid === 'target')).toBe(true);
-        expect(usedTalent.events.some(event =>
+        expect(usedTalent.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const ladyPrompt = getSimpleChoicePrompt(usedTalent.finalState, 'kung_fu_fighters_lady_whirlwind');
+        const destroyed = respondToPrompt(
+            usedTalent.finalState,
+            getPromptOption(ladyPrompt, option => option.value?.minionUid === 'target', '旋风女士目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(destroyed.success).toBe(true);
+        expect(destroyed.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
+        expect(destroyed.finalState.core.players['1'].hand.some(card => card.uid === 'target')).toBe(true);
+        expect(destroyed.events.some(event =>
             event.type === SU_EVENTS.MINION_RETURNED
             && (event as any).payload?.minionUid === 'target',
         )).toBe(true);

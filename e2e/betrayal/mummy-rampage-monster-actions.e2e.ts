@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import sharp from 'sharp';
 import {
     BETRAYAL_COMMANDS,
     resolveBetrayalMonsterMoveTargetRooms,
@@ -83,8 +84,8 @@ const GOLDEN_FLOW_EVENT_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/54-主黄金链-
 const GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/55-主黄金链-翻出物品房并获得物品牌.jpg`;
 const GOLDEN_FLOW_ITEM_USE_SCREENSHOT = `${EVIDENCE_DIR}/56-主黄金链-同类物品牌主动使用治疗.jpg`;
 const GOLDEN_FLOW_OMEN_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/57-主黄金链-翻出预兆并触发作祟检定.jpg`;
-const GOLDEN_FLOW_HERO_READER_SCREENSHOT = `${EVIDENCE_DIR}/58-主黄金链-英雄身份与英雄剧本书.jpg`;
-const GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/59-主黄金链-叛徒身份与叛徒剧本书.jpg`;
+const GOLDEN_FLOW_HERO_READER_SCREENSHOT = `${EVIDENCE_DIR}/58-主黄金链-英雄身份与英雄目标读本.jpg`;
+const GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/59-主黄金链-叛徒身份与敌方情报读本.jpg`;
 const GOLDEN_FLOW_SKIP_EVENT_SCREENSHOT = `${EVIDENCE_DIR}/60-主黄金链-作祟后叛徒跳过事件.jpg`;
 const GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/61-主黄金链-木乃伊移动骰3点.jpg`;
 const GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT = `${EVIDENCE_DIR}/62-主黄金链-木乃伊普通连续移动进石棺.jpg`;
@@ -97,6 +98,105 @@ const humanTestUrlForPlayer = (playerId: string) =>
 const HUMAN_HOTSEAT_TEST_URL = '/play/betrayal?players=3&seat0=human&seat1=human&seat2=human';
 const HUMAN_TRAITOR_TEST_URL = humanTestUrlForPlayer('2');
 const MUMMY_MONSTER_ID = 'mummy';
+
+const expectGreenDominantHighlightPixels = async (locator: Locator, label: string): Promise<void> => {
+    const screenshot = await locator.screenshot({ animations: 'disabled' });
+    const { data, info } = await sharp(screenshot)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+    let greenPixels = 0;
+    let yellowPixels = 0;
+    const perimeterBand = Math.max(6, Math.ceil(Math.min(info.width, info.height) * 0.22));
+    for (let offset = 0; offset < data.length; offset += info.channels) {
+        const pixelIndex = offset / info.channels;
+        const x = pixelIndex % info.width;
+        const y = Math.floor(pixelIndex / info.width);
+        const isPerimeterPixel =
+            x < perimeterBand ||
+            x >= info.width - perimeterBand ||
+            y < perimeterBand ||
+            y >= info.height - perimeterBand;
+        if (!isPerimeterPixel) {
+            continue;
+        }
+        const r = data[offset] ?? 0;
+        const g = data[offset + 1] ?? 0;
+        const b = data[offset + 2] ?? 0;
+        const a = data[offset + 3] ?? 255;
+        if (a < 16 || Math.max(r, g, b) < 70 || Math.max(r, g, b) - Math.min(r, g, b) < 24) {
+            continue;
+        }
+        if (g >= 110 && g > r * 1.18 && g > b * 1.15) {
+            greenPixels += 1;
+        }
+        if (r >= 130 && g >= 105 && b <= 145 && r > b * 1.25 && g > b * 1.15 && r < g * 1.65) {
+            yellowPixels += 1;
+        }
+    }
+    expect(greenPixels, `${label} 边界区域必须在真实截图像素里出现足够绿色高亮`).toBeGreaterThan(250);
+    expect(greenPixels, `${label} 边界区域的绿色像素必须明显压过黄色像素`).toBeGreaterThan(yellowPixels * 2 + 50);
+};
+
+const expectSolidTargetOutlineFits = async (
+    outline: Locator,
+    target: Locator,
+    label: string,
+    options: { maxCenterDelta?: number; maxSizeDelta?: number } = {},
+): Promise<void> => {
+    const maxCenterDelta = options.maxCenterDelta ?? 6;
+    const maxSizeDelta = options.maxSizeDelta ?? 6;
+    await expect(outline, `${label} 必须使用实线高亮语法`).toHaveAttribute('data-highlight-style', 'solid');
+    const styles = await outline.evaluate((element) => {
+        const computed = window.getComputedStyle(element);
+        return {
+            boxShadow: computed.boxShadow,
+            borderTopWidth: computed.borderTopWidth,
+            filter: computed.filter,
+            highlightLayerCount: element.getAttribute('data-highlight-layer-count'),
+        };
+    });
+    expect(styles.filter, `${label} 不能靠 CSS filter 光晕表达目标边界`).toBe('none');
+    expect(styles.boxShadow, `${label} 不能叠加第二层阴影描边`).toBe('none');
+    expect(styles.borderTopWidth, `${label} 不能用会压住目标本体的 CSS 内边框`).toBe('0px');
+    expect(styles.highlightLayerCount, `${label} 必须是单层绿色实线描边`).toBe('1');
+
+    const [outlineBox, targetBox] = await Promise.all([
+        outline.boundingBox(),
+        target.boundingBox(),
+    ]);
+    expect(outlineBox, `${label} 缺少高亮边框 bbox`).toBeTruthy();
+    expect(targetBox, `${label} 缺少目标本体 bbox`).toBeTruthy();
+    const outlineCenterX = outlineBox!.x + outlineBox!.width / 2;
+    const outlineCenterY = outlineBox!.y + outlineBox!.height / 2;
+    const targetCenterX = targetBox!.x + targetBox!.width / 2;
+    const targetCenterY = targetBox!.y + targetBox!.height / 2;
+    expect(Math.abs(outlineCenterX - targetCenterX), `${label} 高亮中心必须贴合目标本体 X`).toBeLessThanOrEqual(maxCenterDelta);
+    expect(Math.abs(outlineCenterY - targetCenterY), `${label} 高亮中心必须贴合目标本体 Y`).toBeLessThanOrEqual(maxCenterDelta);
+    expect(Math.abs(outlineBox!.width - targetBox!.width), `${label} 高亮宽度不能明显大于目标本体`).toBeLessThanOrEqual(maxSizeDelta);
+    expect(Math.abs(outlineBox!.height - targetBox!.height), `${label} 高亮高度不能明显大于目标本体`).toBeLessThanOrEqual(maxSizeDelta);
+};
+
+const expectEventChoiceControlsInDecisionZone = async (page: Page, panel: Locator): Promise<void> => {
+    const [panelBox, confirmBox, declineBox, summaryBox] = await Promise.all([
+        panel.boundingBox(),
+        page.getByTestId('betrayal-event-choice-confirm').boundingBox(),
+        page.getByTestId('betrayal-event-choice-decline').boundingBox(),
+        page.getByTestId('betrayal-event-choice-symbol-summary').boundingBox(),
+    ]);
+    expect(panelBox, '跳过事件选择面板必须有可测量区域').toBeTruthy();
+    expect(summaryBox, '跳过事件选择说明必须可见').toBeTruthy();
+    expect(confirmBox, '跳过事件按钮必须有可测量区域').toBeTruthy();
+    expect(declineBox, '抽取事件牌按钮必须有可测量区域').toBeTruthy();
+
+    const panelMidY = panelBox!.y + panelBox!.height / 2;
+    const summaryBottom = summaryBox!.y + summaryBox!.height;
+    for (const [box, label] of [[confirmBox!, '跳过事件'], [declineBox!, '抽取事件牌']] as const) {
+        const centerY = box.y + box.height / 2;
+        expect(centerY, `${label} 按钮不能停在面板顶部`).toBeGreaterThan(panelMidY);
+        expect(box.y, `${label} 按钮必须在事件符号说明之后出现`).toBeGreaterThanOrEqual(summaryBottom - 2);
+    }
+};
 
 const expectRollContinueButtonUsable = async (page: Page) => {
     const continueButton = page.getByTestId('betrayal-roll-continue');
@@ -1214,6 +1314,12 @@ const expectMonsterMoveActionFocusesMummy = async (
     const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`);
     await expect(mummyToken).toBeVisible();
     await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
+    await expectSolidTargetOutlineFits(
+        page.getByTestId(`betrayal-room-monster-target-outline-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`),
+        mummyToken.getByTestId(`betrayal-monster-board-token-${MUMMY_MONSTER_ID}`),
+        '木乃伊行动来源目标高亮',
+        { maxCenterDelta: 3, maxSizeDelta: 4 },
+    );
     return mummyToken;
 };
 
@@ -1549,12 +1655,6 @@ const acknowledgeRemainingMummyGoldenCardResolutionPlayers = async (page: Page):
     throw new Error('木乃伊横行主黄金链发现牌确认队列超过安全上限');
 };
 
-const closeMummyGoldenDiscoveryPanel = async (page: Page): Promise<void> => {
-    await page.getByTestId('betrayal-discovery-continue').click();
-    await acknowledgeRemainingMummyGoldenCardResolutionPlayers(page);
-    await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
-};
-
 const exploreMummyGoldenDiscoveryRoom = async (
     page: Page,
     fixture: ReturnType<typeof createMummyGoldenPreHauntDiscoveryCore>,
@@ -1599,8 +1699,12 @@ const exerciseEventSymbolSkipAfterRoomReveal = async (
     const choicePanel = page.getByTestId('betrayal-event-choice-panel');
     await expect(choicePanel).toBeVisible({ timeout: 30000 });
     await expect(choicePanel).toHaveAttribute('aria-label', /事件符号/);
+    await expect(page.getByTestId('betrayal-event-choice-card-front-atlas')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-event-choice-card-front-missing')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-event-choice-symbol-summary')).toContainText('已翻出带事件符号的房间');
     await expect(page.getByTestId('betrayal-event-choice-confirm')).toContainText('跳过事件');
     await expect(page.getByTestId('betrayal-event-choice-decline')).toContainText('抽取事件牌');
+    await expectEventChoiceControlsInDecisionZone(page, choicePanel);
     const discoveryDetail = page.getByTestId('betrayal-discovery-detail');
     if (await discoveryDetail.isVisible({ timeout: 500 }).catch(() => false)) {
         await expect(discoveryDetail).toContainText(/可选择跳过事件|等待选择是否跳过事件/);
@@ -1611,10 +1715,12 @@ const exerciseEventSymbolSkipAfterRoomReveal = async (
 
     await page.getByTestId('betrayal-event-choice-confirm').click();
     await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
-    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-    await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('没有抽取或结算事件卡');
-    await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/跳过了事件符号|跳过事件符号/);
+    await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-discovery-card-front-atlas')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-discovery-card-front-missing')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-discovery-no-card-result')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/跳过了事件|跳过事件/);
+    await expect(page.getByTestId('betrayal-board')).toBeVisible();
     if (screenshots.settled) {
         await saveScreenshot(page, screenshots.settled);
     }
@@ -1659,6 +1765,12 @@ const exerciseMummyGoldenMedicalKitUse = async (
     const teammateTargetOutline = page.getByTestId('betrayal-room-occupant-target-outline-hallway-1');
     await expect(teammateTargetOutline).toHaveAttribute('data-highlight-shape', 'pentagon');
     await expect(teammateTargetOutline).toHaveAttribute('data-highlight-color', 'green');
+    await expectSolidTargetOutlineFits(
+        teammateTargetOutline,
+        teammateTarget.getByTestId('betrayal-explorer-figure-token-1'),
+        '急救包治疗目标高亮',
+    );
+    await expectGreenDominantHighlightPixels(teammateTargetOutline, '急救包治疗目标高亮');
     if (screenshots.targetReady) {
         await saveScreenshot(page, screenshots.targetReady);
     }
@@ -1670,6 +1782,12 @@ const exerciseMummyGoldenMedicalKitUse = async (
     await page.getByTestId('betrayal-action-use').click();
 
     await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/急救包|治疗/);
+    await expect(page.getByTestId('betrayal-visible-feedback')).toHaveCount(0);
+    const targetFeedback = page.getByTestId('betrayal-room-occupant-feedback-hallway-1');
+    await expect(targetFeedback).toBeVisible();
+    await expect(targetFeedback).toHaveAttribute('data-feedback-style', 'floating-text');
+    await expect(targetFeedback).toContainText(/治疗\s*\+4\s*项/);
+    await expect(targetFeedback).toContainText('力量 / 速度 / 知识 / 神志');
     await expect(page.getByTestId('betrayal-inventory-medical-kit')).toHaveCount(0);
     await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveCount(0);
     const afterUseCore = await readInjectedCore(page);
@@ -1865,9 +1983,11 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             await heroReader.getByTestId('betrayal-scenario-reader-next-zone').click();
         }
         await expect(heroReader.getByTestId('betrayal-scenario-book')).toBeVisible({ timeout: 30000 });
+        await expect(heroReader.getByTestId('betrayal-scenario-objective-page')).not.toContainText('木乃伊横行');
+        await expect(heroReader.getByTestId('betrayal-scenario-book-section-title-heroes')).toContainText('敌方情报 / 胜利条件');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-heroes')).toContainText('将木乃伊驱逐回亡者之国');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-traitor')).toHaveCount(0);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(16, '英雄剧本书正文-英雄目标可读'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(16, '英雄目标读本正文-段落标题可读'));
         await saveScreenshot(page, GOLDEN_FLOW_HERO_READER_SCREENSHOT);
 
         await closeScenarioReaderIfPresent(page);
@@ -1891,10 +2011,12 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             await traitorReader.getByTestId('betrayal-scenario-reader-next-zone').click();
         }
         await expect(traitorReader.getByTestId('betrayal-scenario-book')).toBeVisible({ timeout: 30000 });
+        await expect(traitorReader.getByTestId('betrayal-scenario-objective-page')).not.toContainText('木乃伊横行');
+        await expect(traitorReader.getByTestId('betrayal-scenario-book-section-title-traitor')).toContainText('敌方情报 / 胜利条件');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-traitor')).toContainText('敌方情报 / 胜利条件');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-traitor')).toContainText('他们妄图将木乃伊驱逐回亡者之国');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-heroes')).toHaveCount(0);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(18, '叛徒剧本书正文-敌方情报可读'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(18, '叛徒读本正文-敌方情报可读'));
         await saveScreenshot(page, GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT);
         await closeScenarioReaderIfPresent(page);
         await dismissHauntRevealIfPresent(page);
@@ -1923,10 +2045,9 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             exploreReady: goldenFlowProcessScreenshot(19, '作祟后事件符号-探索入口可见'),
             targetReady: goldenFlowProcessScreenshot(20, '事件房探索目标高亮-点击前'),
             choiceReady: goldenFlowProcessScreenshot(21, '翻出事件符号后-是否跳过事件弹窗'),
-            settled: goldenFlowProcessScreenshot(22, '跳过事件结算结果-没有抽事件牌'),
+            settled: goldenFlowProcessScreenshot(22, '跳过事件后回到牌桌-无结果面板'),
         });
         await saveScreenshot(page, GOLDEN_FLOW_SKIP_EVENT_SCREENSHOT);
-        await closeMummyGoldenDiscoveryPanel(page);
         await advanceByRealEndTurnsUntilActivePlayer(page, fixture.traitorId, fixture.heroTargetId);
 
         await switchRoomMapToFloor(page, fixture.mummyStartRoomFloor);
@@ -1993,18 +2114,28 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT);
 
         await switchRoomMapToFloor(page, fixture.sarcophagusRoomFloor);
-        const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`);
-        const heroToken = page.getByTestId(`betrayal-room-occupant-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`);
+        const mummyToken = page.getByTestId(
+            `betrayal-room-monster-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`,
+        );
+        const heroToken = page.getByTestId(
+            `betrayal-room-occupant-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`,
+        );
         const monsterAttackAction = page.getByTestId('betrayal-action-monsterAttack');
         await expect(monsterAttackAction).toContainText('木乃伊攻击');
-        await heroToken.click();
-        const heroDetail = page.getByTestId(`betrayal-explorer-detail-dialog-${fixture.heroTargetId}`);
-        await expect(heroDetail).toBeVisible();
-        await expect(heroDetail).toContainText('圣符');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(30, '攻击前-目标英雄详情持有圣符'));
-        await page.getByTestId('betrayal-explorer-detail-close').click();
-        await expect(heroDetail).toHaveCount(0);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(31, '同房后-木乃伊攻击入口可见'));
+        await page.getByTestId(`betrayal-bottom-teammate-${fixture.heroTargetId}`).click();
+        const heroInventoryHolySymbol = page.getByTestId(
+            `betrayal-observed-inventory-${fixture.heroTargetId}-holy-symbol`,
+        );
+        await expect(heroInventoryHolySymbol).toBeVisible();
+        await expect(heroInventoryHolySymbol).toContainText('圣符');
+        await saveScreenshot(
+            page,
+            goldenFlowProcessScreenshot(30, '攻击前-切换观察目标英雄后圣符可见'),
+        );
+        await saveScreenshot(
+            page,
+            goldenFlowProcessScreenshot(31, '同房后-木乃伊攻击入口可见'),
+        );
         await monsterAttackAction.click();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
         await saveScreenshot(page, goldenFlowProcessScreenshot(32, '木乃伊攻击-选择木乃伊攻击者'));
@@ -2087,8 +2218,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         }, {
             choiceReady: BRIDGED_CANDIDATE_SKIP_EVENT_SCREENSHOT,
         });
-        await closeMummyGoldenDiscoveryPanel(page);
-
         const omenExploreFixture = createMummyBridgedCandidateWeddingOmenCore();
         await injectCore(page, omenExploreFixture.core);
         await closeScenarioReaderIfPresent(page);
@@ -2307,8 +2436,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             recentRollKind: null,
             currentExplorerRoomId: exploreFixture.targetRoomId,
         });
-        await closeMummyGoldenDiscoveryPanel(page);
-
         const moveFixture = createMummyNormalContinuousMoveCore();
         await injectCore(page, moveFixture.core);
         await closeScenarioReaderIfPresent(page);
@@ -2576,6 +2703,12 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await monsterMoveAction.click();
         const mummyToken = page.getByTestId(`betrayal-room-monster-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
+        await expectSolidTargetOutlineFits(
+            page.getByTestId(`betrayal-room-monster-target-outline-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`),
+            mummyToken.getByTestId(`betrayal-monster-board-token-${MUMMY_MONSTER_ID}`),
+            '携带女孩和圣符时木乃伊目标高亮',
+            { maxCenterDelta: 3, maxSizeDelta: 4 },
+        );
         await mummyToken.click();
         await switchRoomMapToFloor(page, fixture.sarcophagusRoomFloor);
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.sarcophagusRoomId}`)).toBeVisible();

@@ -722,10 +722,6 @@ const frankensteinLabAssistantProgram = createEffectProgram<AbilityContext, Smas
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (options.length === 1) {
-        const selected = options[0].value;
-        return { events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_lab_assistant', ctx.now)] };
-    }
     return {
         events: [],
         context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -741,10 +737,6 @@ const frankensteinHerrDoktorProgram = createEffectProgram<AbilityContext, SmashU
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (options.length === 1) {
-        const selected = options[0].value;
-        return { events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_herr_doktor', ctx.now)] };
-    }
     return {
         events: [],
         context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
@@ -759,10 +751,6 @@ const frankensteinIgorOnDestroyProgram = createEffectProgram<AbilityContext, Sma
     const options = buildCounterTargetOptions(ctx.state, ctx.playerId, ctx.cardUid);
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    if (options.length === 1) {
-        const selected = options[0].value;
-        return { events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, ctx.defId, ctx.now)] };
     }
     return {
         events: [],
@@ -895,10 +883,6 @@ function registerFrankensteinOngoingEffects(): void {
         if (options.length === 0) return [];
 
         const reasonDefId = ctx.triggerMinionDefId;
-        if (options.length === 1) {
-            const selected = options[0].value;
-            return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, reasonDefId, ctx.now)];
-        }
         if (!ctx.matchState) {
             const selected = options[0].value;
             return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, reasonDefId, ctx.now)];

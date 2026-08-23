@@ -340,26 +340,6 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
     const ownerId = minion?.owner ?? ctx.triggerMinion?.owner ?? ctx.playerId;
     const controllerId = minion?.controller ?? ctx.triggerMinion?.controller ?? ctx.playerId;
 
-    // 只有一个基地时自动移动（无需交互）
-    if (candidates.length === 1) {
-        const reason = isPod ? 'pirate_buccaneer_pod' : 'pirate_buccaneer';
-        return buildValidatedMoveEvents(state, {
-            minionUid: triggerMinionUid,
-            minionDefId: triggerMinionDefId,
-            fromBaseIndex: baseIndex,
-            toBaseIndex: candidates[0].baseIndex,
-            reason,
-            now: ctx.now,
-            sourcePlayerId: controllerId,
-            sourceDefId: triggerMinionDefId,
-            sourceControllerId: controllerId,
-            sourceBaseIndex: baseIndex,
-            sourceKind: 'nonAction',
-            targetSnapshot: { ownerId, controllerId },
-        });
-    }
-
-    // 多个基地→创建玩家选择交互
     if (!ctx.matchState) {
         // 无 matchState 降级：自动选第一个
         const reason = isPod ? 'pirate_buccaneer_pod' : 'pirate_buccaneer';
@@ -1442,7 +1422,12 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
                 value: { toBaseIndex: candidate.baseIndex, baseDefId: candidate.baseDefId },
                 displayMode: 'button' as const,
             })),
-            { sourceId: 'pirate_buccaneer_move', targetType: 'base', titleKey: 'ui.pirate_buccaneer_move_title' },
+            {
+                sourceId: 'pirate_buccaneer_move',
+                targetType: 'base',
+                titleKey: 'ui.pirate_buccaneer_move_title',
+                autoResolveIfSingle: false,
+            },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {

@@ -13,6 +13,7 @@ export const MAGE_WARS_EVENTS = {
     MANA_CHANNELED: 'MW_MANA_CHANNELED',
     MANA_SPENT: 'MW_MANA_SPENT',
     UPKEEP_COST_AVAILABLE: 'MW_UPKEEP_COST_AVAILABLE',
+    UPKEEP_HEAL_TRANSFER_AVAILABLE: 'MW_UPKEEP_HEAL_TRANSFER_AVAILABLE',
     MANA_DRAINED: 'MW_MANA_DRAINED',
     SPELL_CAST_STARTED: 'MW_SPELL_CAST_STARTED',
     SPELL_CAST_RESOLVED: 'MW_SPELL_CAST_RESOLVED',
@@ -122,6 +123,17 @@ export interface MageWarsUpkeepCostAvailableEvent extends GameEvent<typeof MAGE_
         sourceSpellCardId: number;
         targetObjectId: string;
         amount: number;
+    };
+}
+
+export interface MageWarsUpkeepHealTransferAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_AVAILABLE> {
+    payload: {
+        playerId: PlayerId;
+        sourceObjectId: string;
+        sourceSpellCardId: number;
+        targetObjectId: string;
+        maxHealing: number;
+        availableHealing: number;
     };
 }
 
@@ -530,6 +542,8 @@ export interface MageWarsArenaObjectAttackDeclaredEvent extends GameEvent<typeof
         deathMarkDiceModifier?: number;
         deathMarkSourceObjectIds?: string[];
         deathMarkRoundNumber?: number;
+        attackDiceModifier?: number;
+        attackDiceModifierSourceObjectIds?: string[];
         chargeDiceModifier?: number;
         meleeDiceModifier?: number;
         bloodthirstDiceModifier?: number;
@@ -671,6 +685,7 @@ export type MageWarsEvent =
     | MageWarsManaChanneledEvent
     | MageWarsManaSpentEvent
     | MageWarsUpkeepCostAvailableEvent
+    | MageWarsUpkeepHealTransferAvailableEvent
     | MageWarsManaDrainedEvent
     | MageWarsSpellCastStartedEvent
     | MageWarsSpellCastResolvedEvent

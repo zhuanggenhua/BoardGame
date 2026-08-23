@@ -43,6 +43,34 @@ describe('ShakeContainer', () => {
         expect(target.style.transform).not.toContain('undefined');
     });
 
+    it('动画时钟短暂回退时不应读取越界关键帧', () => {
+        const pendingFrames: FrameRequestCallback[] = [];
+        vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+            pendingFrames.push(callback);
+            return pendingFrames.length;
+        }));
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
+        const now = vi.spyOn(performance, 'now').mockReturnValue(500);
+
+        render(
+            <ShakeContainer isShaking className="target">
+                <div data-testid="content" />
+            </ShakeContainer>,
+        );
+
+        const target = screen.getByTestId('content').parentElement as HTMLElement;
+        now.mockReturnValue(480);
+
+        expect(() => {
+            act(() => {
+                pendingFrames.shift()!(480);
+            });
+        }).not.toThrow();
+        expect(target.style.transform).toContain('translate3d(');
+        expect(target.style.transform).not.toContain('NaN');
+        expect(target.style.transform).not.toContain('undefined');
+    });
+
     it('受击反馈组件不应接入共享 FX 帧时钟', () => {
         const localFeedbackFiles = [
             '../ShakeContainer.tsx',

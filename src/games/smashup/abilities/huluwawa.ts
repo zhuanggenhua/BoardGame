@@ -523,25 +523,10 @@ function huluwawaWuWaTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function huluwawaLiuWaTalent(ctx: AbilityResult extends never ? never : AbilityContext): AbilityResult {
-    const timedPowerModifiers = [
-        ...(ctx.matchState.core.timedPowerModifiers ?? []),
-        {
-            minionUid: ctx.cardUid,
-            amount: -4,
-            expiresOnTurnNumber: ctx.matchState.core.turnNumber + ctx.matchState.core.turnOrder.length,
-            reason: 'huluwawa_liu_wa_talent',
-        },
-    ];
-    const matchState: MatchState<SmashUpCore> = {
-        ...ctx.matchState,
-        core: {
-            ...ctx.matchState.core,
-            timedPowerModifiers,
-        },
-    };
     return {
-        events: [addPermanentPower(ctx.cardUid, ctx.baseIndex, -4, 'huluwawa_liu_wa_talent', ctx.now)],
-        matchState,
+        events: [addPermanentPower(ctx.cardUid, ctx.baseIndex, -4, 'huluwawa_liu_wa_talent', ctx.now, {
+            expiresOnTurnNumber: ctx.matchState.core.turnNumber + ctx.matchState.core.turnOrder.length,
+        })],
     };
 }
 

@@ -13,10 +13,17 @@ import MageWarsBoard from '../Board';
 import { MageWarsDomain, MAGE_WARS_COMMANDS, type MageWarsArenaObjectState, type MageWarsCore } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
-import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
+import {
+    ARENA_ZONE_IDS,
+    MAGE_IDS,
+    MAGE_WARS_MAGE_ABILITY_IDS,
+    MAGE_WARS_OBJECT_ABILITY_IDS,
+    STATUS_TOKEN_IDS,
+} from '../domain/ids';
 import {
     AttackImpactRenderer,
     DamageImpactRenderer,
+    HealingImpactRenderer,
     SpellPushRenderer,
     SpellTeleportRenderer,
     SummonRenderer,
@@ -953,6 +960,36 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1');
     });
 
+    it('renders healing with a shared burst and positive recovery number', () => {
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-healing',
+            cue: 'mage-wars.healing.impact',
+            ctx: { cell: { row: 1, col: 1 }, intensity: 'normal' },
+            params: {
+                targetObjectId: 'mwobj-healed-cat',
+                healingAmount: 3,
+                actualHealing: 2,
+            },
+        };
+
+        renderFxRenderer(
+            <HealingImpactRenderer
+                event={event}
+                getCellPosition={getCellPosition}
+                onImpact={onImpact}
+                onComplete={onComplete}
+            />,
+        );
+
+        expect(screen.queryByTestId('mage-wars-fx-healing-impact')).not.toBeNull();
+        expect(screen.getByTestId('mage-wars-fx-healing-impact').getAttribute('data-target-anchor-id')).toBe('mwobj-healed-cat');
+        expect(screen.queryByTestId('mage-wars-fx-healing-burst')).not.toBeNull();
+        expect(screen.getByTestId('mage-wars-fx-healing-number').getAttribute('data-healing-amount')).toBe('2');
+        expect(screen.getByTestId('mage-wars-fx-healing-number').textContent).toContain('+2');
+    });
+
     it('renders force push with source-to-target travel before impact', () => {
         vi.useFakeTimers();
         const onImpact = vi.fn();
@@ -1056,6 +1093,1602 @@ describe('MageWarsBoard FX wiring', () => {
             resetFxFrameClockForTests();
             vi.useRealTimers();
         }
+    });
+});
+
+describe('MageWarsBoard spell cast choices', () => {
+    function createRouseChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const beastmaster = baseCore.players['0'];
+        const freshCat: MageWarsArenaObjectState = {
+            ...creatureObject('fresh-cat-0', '0', 2906, 'Fresh Cat', ARENA_ZONE_IDS.A3),
+            actionReady: false,
+            summonedTurnNumber: baseCore.turnNumber,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [freshCat.id]: freshCat,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...beastmaster,
+                    mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3403],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === freshCat.zoneId
+                    ? [freshCat.id]
+                    : zone.objectIds.filter((id) => id !== freshCat.id),
+            })),
+        };
+    }
+
+    function createCallOfTheWildInsufficientManaCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const beastmaster = baseCore.players['0'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...beastmaster,
+                    mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 0,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3417],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
+    function createSummonZoneChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const beastmaster = baseCore.players['0'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...beastmaster,
+                    mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [2906],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
+    function createForcePushChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const warlock = baseCore.players['0'];
+        const forcePushTarget = creatureObject(
+            'force-push-target-1',
+            '1',
+            2906,
+            'Force Push Target',
+            ARENA_ZONE_IDS.A2,
+        );
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [forcePushTarget.id]: forcePushTarget,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...warlock,
+                    mageId: MAGE_IDS.WARLOCK_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3425],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === forcePushTarget.zoneId
+                    ? [forcePushTarget.id]
+                    : zone.objectIds.filter((id) => id !== forcePushTarget.id),
+            })),
+        };
+    }
+
+    function createJetStreamChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const beastmaster = baseCore.players['0'];
+        const jetStreamTarget = creatureObject(
+            'jet-stream-target-1',
+            '1',
+            2906,
+            'Jet Stream Target',
+            ARENA_ZONE_IDS.A2,
+        );
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [jetStreamTarget.id]: jetStreamTarget,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...beastmaster,
+                    mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [1711],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === jetStreamTarget.zoneId
+                    ? [jetStreamTarget.id]
+                    : zone.objectIds.filter((id) => id !== jetStreamTarget.id),
+            })),
+        };
+    }
+
+    function createLifeDrainChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const warlock = baseCore.players['0'];
+        const opponent = baseCore.players['1'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...warlock,
+                    mageId: MAGE_IDS.WARLOCK_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    damage: 5,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3400],
+                },
+                '1': {
+                    ...opponent,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0', '1']
+                    : zone.occupantIds.filter((id) => id !== '0' && id !== '1'),
+            })),
+        };
+    }
+
+    function createLeatherGlovesChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const warlock = baseCore.players['0'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...warlock,
+                    mageId: MAGE_IDS.WARLOCK_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3702],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
+    function createDemonCuirassChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const warlock = baseCore.players['0'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...warlock,
+                    mageId: MAGE_IDS.WARLOCK_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3700],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
+    function createElementalStaffCastChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3716],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+            })),
+        };
+    }
+
+    function createFireballChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const warlock = baseCore.players['0'];
+        const opponent = baseCore.players['1'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...warlock,
+                    mageId: MAGE_IDS.WARLOCK_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [1700],
+                },
+                '1': {
+                    ...opponent,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0', '1']
+                    : zone.occupantIds.filter((id) => id !== '0' && id !== '1'),
+            })),
+        };
+    }
+
+    function createDoomChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+        const opponent = baseCore.players['1'];
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [1825],
+                },
+                '1': {
+                    ...opponent,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0', '1']
+                    : zone.occupantIds.filter((id) => id !== '0' && id !== '1'),
+            })),
+        };
+    }
+
+    function createStealEnchantmentChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+        const opponent = baseCore.players['1'];
+        const friendlyCreature = creatureObject('steal-friendly-cat-0', '0', 2906, 'Friendly Cat', ARENA_ZONE_IDS.A3);
+        const enchantedCreature = creatureObject('steal-enchanted-cat-1', '1', 2906, 'Enemy Cat', ARENA_ZONE_IDS.A2);
+        const visibleEnchantment: MageWarsArenaObjectState = {
+            ...creatureObject('steal-visible-enchantment-1800', '1', 1800, '剧痛难当', ARENA_ZONE_IDS.A2),
+            kind: 'enchantment',
+            sourceObjectId: 'spell-card-1800',
+            life: 1,
+            actionReady: false,
+            typeLine: '结界 / 诅咒',
+            attackOrTraitLine: undefined,
+            rulesText: '每当本生物进行非法术远程或近战攻击时，少投掷2颗攻击骰子。',
+            revealed: true,
+            anchoredToObjectId: enchantedCreature.id,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [friendlyCreature.id]: friendlyCreature,
+                [enchantedCreature.id]: enchantedCreature,
+                [visibleEnchantment.id]: visibleEnchantment,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [3409],
+                },
+                '1': {
+                    ...opponent,
+                    mageZoneId: ARENA_ZONE_IDS.A2,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.id === ARENA_ZONE_IDS.A2
+                        ? ['1']
+                        : zone.occupantIds.filter((id) => id !== '0' && id !== '1'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [friendlyCreature.id]
+                    : zone.id === ARENA_ZONE_IDS.A2
+                        ? [enchantedCreature.id, visibleEnchantment.id]
+                        : zone.objectIds.filter((id) => ![
+                            friendlyCreature.id,
+                            enchantedCreature.id,
+                            visibleEnchantment.id,
+                        ].includes(id)),
+            })),
+        };
+    }
+
+    function createChainLightningChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+        const firstTarget = creatureObject('chain-first-1', '1', 2906, 'Chain First', ARENA_ZONE_IDS.A3);
+        const secondTarget = creatureObject('chain-second-1', '1', 2906, 'Chain Second', ARENA_ZONE_IDS.B3);
+        const thirdTarget = creatureObject('chain-third-1', '1', 2906, 'Chain Third', ARENA_ZONE_IDS.B2);
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [firstTarget.id]: firstTarget,
+                [secondTarget.id]: secondTarget,
+                [thirdTarget.id]: thirdTarget,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                    preparedSpellSlots: 1,
+                    preparedSpellCardIds: [1703],
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [firstTarget.id]
+                    : zone.id === ARENA_ZONE_IDS.B3
+                        ? [secondTarget.id]
+                        : zone.id === ARENA_ZONE_IDS.B2
+                            ? [thirdTarget.id]
+                            : zone.objectIds.filter((id) => ![
+                                firstTarget.id,
+                                secondTarget.id,
+                                thirdTarget.id,
+                            ].includes(id)),
+            })),
+        };
+    }
+
+    it('casts Rouse the Beast from the spell ChoiceRequest target command', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createRouseChoiceCore(), '0', { phase: 'finalQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const rousePreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3403"]',
+        );
+        expect(rousePreparedCard).not.toBeNull();
+        fireEvent.click(rousePreparedCard!);
+
+        const targetCard = screen.getByText('Fresh Cat')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(targetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+
+        fireEvent.click(targetCard!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3403,
+            manaCost: 1,
+            targetObjectId: 'fresh-cat-0',
+        });
+    });
+
+    it('does not fall back to a hand-built no-target cast when confirm ChoiceRequest is disabled', () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createCallOfTheWildInsufficientManaCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const callOfTheWildPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3417"]',
+        );
+        expect(callOfTheWildPreparedCard).not.toBeNull();
+        fireEvent.click(callOfTheWildPreparedCard!);
+
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('marks creature summon targets as explicit zone targets for whole-zone highlighting', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createSummonZoneChoiceCore(), '0', { phase: 'creatureAction' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const bobcatPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="2906"]',
+        );
+        expect(bobcatPreparedCard).not.toBeNull();
+        fireEvent.click(bobcatPreparedCard!);
+
+        await waitFor(() => {
+            expect(container.querySelector('[data-legal-target-zone="true"][data-zone-target-scope="zone"]')).not.toBeNull();
+        });
+        expect(container.querySelector('[data-legal-target-zone="true"][data-zone-target-scope="object"]')).toBeNull();
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('does not fall back to a hand-built Force Push command for an illegal destination zone', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createForcePushChoiceCore(), '0', { phase: 'creatureAction' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const forcePushPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3425"]',
+        );
+        expect(forcePushPreparedCard).not.toBeNull();
+        fireEvent.click(forcePushPreparedCard!);
+
+        const targetCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="force-push-target-1"]',
+        );
+        expect(targetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        fireEvent.click(targetCard!);
+
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('source');
+            expect(screen.getByTestId('mage-wars-arena-zone-a3').getAttribute('data-legal-target-zone')).toBe('true');
+        });
+
+        fireEvent.click(screen.getByTestId('mage-wars-arena-zone-c3'));
+
+        expect(dispatch).not.toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, expect.anything());
+    });
+
+    it('casts Jet Stream by selecting an object and legal push destination from ChoiceRequest', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createJetStreamChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const jetStreamPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="1711"]',
+        );
+        expect(jetStreamPreparedCard).not.toBeNull();
+        fireEvent.click(jetStreamPreparedCard!);
+
+        const targetCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="jet-stream-target-1"]',
+        );
+        expect(targetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        fireEvent.click(targetCard!);
+
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('source');
+            expect(screen.getByTestId('mage-wars-arena-zone-a3').getAttribute('data-legal-target-zone')).toBe('true');
+        });
+
+        fireEvent.click(screen.getByTestId('mage-wars-arena-zone-a3'));
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 1711,
+            manaCost: 4,
+            targetObjectId: 'jet-stream-target-1',
+            pushToZoneId: ARENA_ZONE_IDS.A3,
+        });
+    });
+
+    it('casts Life Drain on an opposing mage from the spell ChoiceRequest player target command', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createLifeDrainChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const lifeDrainPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3400"]',
+        );
+        expect(lifeDrainPreparedCard).not.toBeNull();
+        fireEvent.click(lifeDrainPreparedCard!);
+
+        const opponentMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+        );
+        expect(opponentMage).not.toBeNull();
+        await waitFor(() => {
+            expect(opponentMage?.getAttribute('role')).toBe('button');
+            expect(opponentMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        fireEvent.click(opponentMage!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3400,
+            manaCost: 12,
+            targetPlayerId: '1',
+        });
+    });
+
+    it('casts Leather Gloves on own mage from the spell ChoiceRequest player target command', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createLeatherGlovesChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const leatherGlovesPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3702"]',
+        );
+        expect(leatherGlovesPreparedCard).not.toBeNull();
+        fireEvent.click(leatherGlovesPreparedCard!);
+
+        const ownMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        );
+        expect(ownMage).not.toBeNull();
+        await waitFor(() => {
+            expect(ownMage?.getAttribute('role')).toBe('button');
+            expect(ownMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        fireEvent.click(ownMage!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3702,
+            manaCost: 2,
+            targetPlayerId: '0',
+        });
+    });
+
+    it('casts Demon Cuirass on own mage from the spell ChoiceRequest player target command', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createDemonCuirassChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const demonCuirassPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3700"]',
+        );
+        expect(demonCuirassPreparedCard).not.toBeNull();
+        fireEvent.click(demonCuirassPreparedCard!);
+
+        const ownMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        );
+        expect(ownMage).not.toBeNull();
+        await waitFor(() => {
+            expect(ownMage?.getAttribute('role')).toBe('button');
+            expect(ownMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        fireEvent.click(ownMage!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3700,
+            manaCost: 8,
+            targetPlayerId: '0',
+        });
+    });
+
+    it('casts Elemental Staff by choosing a bound spell from the spell ChoiceRequest candidates', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createElementalStaffCastChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const elementalStaffPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3716"]',
+        );
+        expect(elementalStaffPreparedCard).not.toBeNull();
+        fireEvent.click(elementalStaffPreparedCard!);
+
+        const ownMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        );
+        expect(ownMage).not.toBeNull();
+        await waitFor(() => {
+            expect(ownMage?.getAttribute('role')).toBe('button');
+            expect(ownMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        fireEvent.click(ownMage!);
+
+        expect(dispatch).not.toHaveBeenCalled();
+        await waitFor(() => {
+            expect(screen.queryByTestId('mage-wars-spell-cast-choice-dock')).not.toBeNull();
+        });
+
+        const boundSpellOption = screen.getAllByTestId('mage-wars-spell-cast-choice-option')
+            .find((option) => option.getAttribute('data-bound-spell-card-id') === '1705');
+        expect(boundSpellOption).not.toBeUndefined();
+        fireEvent.click(boundSpellOption!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3716,
+            manaCost: 5,
+            targetPlayerId: '0',
+            boundSpellCardId: 1705,
+        });
+    });
+
+    it('casts Fireball on an opposing mage from the spell ChoiceRequest player target command', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createFireballChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const fireballPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="1700"]',
+        );
+        expect(fireballPreparedCard).not.toBeNull();
+        fireEvent.click(fireballPreparedCard!);
+
+        const opponentMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+        );
+        expect(opponentMage).not.toBeNull();
+        await waitFor(() => {
+            expect(opponentMage?.getAttribute('role')).toBe('button');
+            expect(opponentMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        fireEvent.click(opponentMage!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 1700,
+            manaCost: 8,
+            targetPlayerId: '1',
+        });
+    });
+
+    it('casts Doom on an opposing mage from the spell ChoiceRequest player target command', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createDoomChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const doomPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="1825"]',
+        );
+        expect(doomPreparedCard).not.toBeNull();
+        fireEvent.click(doomPreparedCard!);
+
+        const opponentMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+        );
+        expect(opponentMage).not.toBeNull();
+        await waitFor(() => {
+            expect(opponentMage?.getAttribute('role')).toBe('button');
+            expect(opponentMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+
+        fireEvent.click(opponentMage!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 1825,
+            manaCost: 3,
+            targetPlayerId: '1',
+        });
+    });
+
+    it('casts Steal Enchantment by selecting the visible enchantment and then a new legal target', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createStealEnchantmentChoiceCore(), '0', { phase: 'creatureAction' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const stealPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="3409"]',
+        );
+        expect(stealPreparedCard).not.toBeNull();
+        fireEvent.click(stealPreparedCard!);
+
+        const visibleEnchantmentCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-attached-card"][data-object-id="steal-visible-enchantment-1800"]',
+        );
+        expect(visibleEnchantmentCard).not.toBeNull();
+        await waitFor(() => {
+            expect(visibleEnchantmentCard?.getAttribute('data-attachment-role')).toBe('target');
+        });
+        fireEvent.click(visibleEnchantmentCard!);
+
+        await waitFor(() => {
+            expect(container.querySelector<HTMLElement>(
+                '[data-testid="mage-wars-attached-card"][data-object-id="steal-visible-enchantment-1800"]',
+            )?.getAttribute('data-attachment-role')).toBe('source');
+        });
+        const friendlyTargetCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="steal-friendly-cat-0"]',
+        );
+        expect(friendlyTargetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(friendlyTargetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+
+        fireEvent.click(friendlyTargetCard!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 3409,
+            manaCost: 10,
+            targetObjectId: 'steal-visible-enchantment-1800',
+            newTargetObjectId: 'steal-friendly-cat-0',
+        });
+    });
+
+    it('casts Chain Lightning by selecting each object in the ChoiceRequest chain', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createChainLightningChoiceCore(), '0', { phase: 'creatureAction' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const chainPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="1703"]',
+        );
+        expect(chainPreparedCard).not.toBeNull();
+        fireEvent.click(chainPreparedCard!);
+
+        const firstCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="chain-first-1"]',
+        );
+        expect(firstCard).not.toBeNull();
+        await waitFor(() => {
+            expect(firstCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        fireEvent.click(firstCard!);
+
+        const secondCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="chain-second-1"]',
+        );
+        expect(secondCard).not.toBeNull();
+        await waitFor(() => {
+            expect(firstCard?.getAttribute('data-field-card-role')).toBe('source');
+            expect(secondCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        expect(dispatch).not.toHaveBeenCalled();
+        fireEvent.click(secondCard!);
+
+        const thirdCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="chain-third-1"]',
+        );
+        expect(thirdCard).not.toBeNull();
+        await waitFor(() => {
+            expect(secondCard?.getAttribute('data-field-card-role')).toBe('source');
+            expect(thirdCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        expect(dispatch).not.toHaveBeenCalled();
+        fireEvent.click(thirdCard!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 1703,
+            manaCost: 12,
+            targetObjectId: 'chain-first-1',
+            chainLightningTargets: [
+                { targetObjectId: 'chain-second-1' },
+                { targetObjectId: 'chain-third-1' },
+            ],
+        });
+    });
+
+    it('allows Chain Lightning to stop at the current chain target without forcing the longest chain', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createChainLightningChoiceCore(), '0', { phase: 'creatureAction' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const chainPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="1703"]',
+        );
+        expect(chainPreparedCard).not.toBeNull();
+        fireEvent.click(chainPreparedCard!);
+
+        const firstCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="chain-first-1"]',
+        );
+        const secondCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="chain-second-1"]',
+        );
+        const thirdCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-field-card"][data-object-id="chain-third-1"]',
+        );
+        expect(firstCard).not.toBeNull();
+        expect(secondCard).not.toBeNull();
+        expect(thirdCard).not.toBeNull();
+
+        fireEvent.click(firstCard!);
+        await waitFor(() => {
+            expect(secondCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        fireEvent.click(secondCard!);
+        await waitFor(() => {
+            expect(secondCard?.getAttribute('data-field-card-role')).toBe('source');
+            expect(thirdCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        fireEvent.click(secondCard!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 1703,
+            manaCost: 12,
+            targetObjectId: 'chain-first-1',
+            chainLightningTargets: [
+                { targetObjectId: 'chain-second-1' },
+            ],
+        });
+    });
+});
+
+describe('MageWarsBoard object ability choices', () => {
+    function createBlueGremlinAbilityCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+        const gremlin = creatureObject('blue-gremlin-0', '0', 2822, 'Blue Gremlin', ARENA_ZONE_IDS.A3);
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [gremlin.id]: gremlin,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 5,
+                    actionReady: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === gremlin.zoneId
+                    ? [gremlin.id]
+                    : zone.objectIds.filter((id) => id !== gremlin.id),
+            })),
+        };
+    }
+
+    function createGreyAngelAbilityCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const priestess = baseCore.players['0'];
+        const angel = creatureObject('grey-angel-0', '0', 2907, 'Grey Angel', ARENA_ZONE_IDS.A3);
+        const woundedCat: MageWarsArenaObjectState = {
+            ...creatureObject('wounded-cat-0', '0', 2906, 'Wounded Cat', ARENA_ZONE_IDS.A2),
+            damage: 3,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [angel.id]: angel,
+                [woundedCat.id]: woundedCat,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...priestess,
+                    mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 10,
+                    actionReady: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === angel.zoneId
+                    ? [angel.id]
+                    : zone.id === woundedCat.zoneId
+                        ? [woundedCat.id]
+                        : zone.objectIds.filter((id) => ![angel.id, woundedCat.id].includes(id)),
+            })),
+        };
+    }
+
+    function createAsyranClericHealingLightCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const priestess = baseCore.players['0'];
+        const cleric = creatureObject('asyran-cleric-0', '0', 2811, 'Asyran Cleric', ARENA_ZONE_IDS.A3);
+        const woundedCat: MageWarsArenaObjectState = {
+            ...creatureObject('healing-target-cat-0', '0', 2906, 'Healing Target Cat', ARENA_ZONE_IDS.A2),
+            damage: 2,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [cleric.id]: cleric,
+                [woundedCat.id]: woundedCat,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...priestess,
+                    mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 10,
+                    actionReady: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === cleric.zoneId
+                    ? [cleric.id]
+                    : zone.id === woundedCat.zoneId
+                        ? [woundedCat.id]
+                        : zone.objectIds.filter((id) => ![cleric.id, woundedCat.id].includes(id)),
+            })),
+        };
+    }
+
+    function createBeastStaffAbilityCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const beastmaster = baseCore.players['0'];
+        const beastStaff: MageWarsArenaObjectState = {
+            ...creatureObject('beast-staff-0', '0', 3710, '群兽法杖', ARENA_ZONE_IDS.A3),
+            kind: 'equipment',
+            sourceObjectId: 'spell-card-3710',
+            typeLine: '装备 / 武器',
+            attackOrTraitLine: '蛮力一击：快速近战 4 骰',
+            combatProfilesSource: 'config',
+            combatTraitsSource: 'config',
+            anchoredToPlayerId: '0',
+            actionReady: false,
+        };
+        const friendlyWolf: MageWarsArenaObjectState = {
+            ...creatureObject('friendly-wolf-0', '0', 2819, 'Friendly Wolf', ARENA_ZONE_IDS.A3),
+            typeLine: '生物 / 动物',
+            damage: 2,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [beastStaff.id]: beastStaff,
+                [friendlyWolf.id]: friendlyWolf,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...beastmaster,
+                    mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 10,
+                    actionReady: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [beastStaff.id, friendlyWolf.id]
+                    : zone.objectIds.filter((id) => ![beastStaff.id, friendlyWolf.id].includes(id)),
+            })),
+        };
+    }
+
+    function createElementalStaffAbilityCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wizard = baseCore.players['0'];
+        const elementalStaff: MageWarsArenaObjectState = {
+            ...creatureObject('elemental-staff-0', '0', 3716, '元素魔杖', ARENA_ZONE_IDS.A3),
+            kind: 'equipment',
+            sourceObjectId: 'spell-card-3716',
+            typeLine: '装备 / 法杖',
+            attackOrTraitLine: '法术绑定',
+            rulesText: '你可以从你的法术书中绑定一个非史诗攻击类法术到元素魔杖上。',
+            anchoredToPlayerId: '0',
+            boundSpellCardId: 1704,
+            actionReady: false,
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [elementalStaff.id]: elementalStaff,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...wizard,
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 10,
+                    quickcastReady: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [elementalStaff.id]
+                    : zone.objectIds.filter((id) => id !== elementalStaff.id),
+            })),
+        };
+    }
+
+    it('submits Blue Gremlin self ability from its ChoiceRequest command', () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard {...boardProps(createBlueGremlinAbilityCore())} dispatch={dispatch} />,
+        );
+
+        const gremlinCard = screen.getByText('Blue Gremlin')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(gremlinCard).not.toBeNull();
+        fireEvent.click(gremlinCard!);
+
+        const abilityButton = container.querySelector<HTMLElement>(
+            `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT}"]`,
+        );
+        expect(abilityButton).not.toBeNull();
+        fireEvent.click(abilityButton!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
+            objectId: 'blue-gremlin-0',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BLUE_GREMLIN_SWIFT_TELEPORT,
+            manaCost: 1,
+        });
+    });
+
+    it('casts Grey Angel redemption sacrifice by selecting a living object target', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard {...boardProps(createGreyAngelAbilityCore())} dispatch={dispatch} />,
+        );
+
+        const angelCard = screen.getByText('Grey Angel')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(angelCard).not.toBeNull();
+        fireEvent.click(angelCard!);
+
+        const abilityButton = container.querySelector<HTMLElement>(
+            `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE}"]`,
+        );
+        expect(abilityButton).not.toBeNull();
+        fireEvent.click(abilityButton!);
+        expect(dispatch).not.toHaveBeenCalled();
+
+        const targetCard = screen.getByText('Wounded Cat')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(targetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        expect(targetCard?.querySelector('[data-testid="mage-wars-field-card-target-frame"]')?.className).toContain('emerald');
+        fireEvent.click(targetCard!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
+            objectId: 'grey-angel-0',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.GREY_ANGEL_REDEMPTION_SACRIFICE,
+            manaCost: 0,
+            targetObjectId: 'wounded-cat-0',
+        });
+    });
+
+    it('requires Asyran Cleric Healing Light to select a highlighted living object target', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard {...boardProps(createAsyranClericHealingLightCore())} dispatch={dispatch} />,
+        );
+
+        const clericCard = screen.getByText('Asyran Cleric')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(clericCard).not.toBeNull();
+        fireEvent.click(clericCard!);
+
+        const abilityButton = container.querySelector<HTMLElement>(
+            `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT}"]`,
+        );
+        expect(abilityButton).not.toBeNull();
+        fireEvent.click(abilityButton!);
+        expect(dispatch).not.toHaveBeenCalled();
+
+        const targetCard = screen.getByText('Healing Target Cat')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(targetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        expect(targetCard?.querySelector('[data-testid="mage-wars-field-card-target-frame"]')?.className).toContain('emerald');
+        fireEvent.click(targetCard!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
+            objectId: 'asyran-cleric-0',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+            manaCost: 0,
+            targetObjectId: 'healing-target-cat-0',
+        });
+    });
+
+    it('requires a Beast Staff mode choice when one target has multiple legal candidates', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard {...boardProps(createBeastStaffAbilityCore())} dispatch={dispatch} />,
+        );
+
+        const staffCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-attached-card"][data-object-id="beast-staff-0"]',
+        );
+        expect(staffCard).not.toBeNull();
+        fireEvent.click(staffCard!);
+
+        const abilityButton = container.querySelector<HTMLElement>(
+            `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF}"]`,
+        );
+        expect(abilityButton).not.toBeNull();
+        fireEvent.click(abilityButton!);
+
+        const wolfCard = screen.getByText('Friendly Wolf')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(wolfCard).not.toBeNull();
+        await waitFor(() => {
+            expect(wolfCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+        fireEvent.click(wolfCard!);
+
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(screen.queryByTestId('mage-wars-object-ability-choice-dock')).not.toBeNull();
+
+        const healOption = screen.getAllByTestId('mage-wars-object-ability-choice-option')
+            .find((option) => option.getAttribute('data-mode') === 'heal');
+        expect(healOption).not.toBeUndefined();
+        fireEvent.click(healOption!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
+            objectId: 'beast-staff-0',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+            manaCost: 2,
+            targetObjectId: 'friendly-wolf-0',
+            mode: 'heal',
+        });
+    });
+
+    it('rebinds Elemental Staff by selecting a spell card candidate from ChoiceRequest', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createElementalStaffAbilityCore(), '0', { phase: 'finalQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const staffCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-attached-card"][data-object-id="elemental-staff-0"]',
+        );
+        expect(staffCard).not.toBeNull();
+        fireEvent.click(staffCard!);
+
+        const abilityButton = container.querySelector<HTMLElement>(
+            `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND}"]`,
+        );
+        expect(abilityButton).not.toBeNull();
+        fireEvent.click(abilityButton!);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('mage-wars-object-ability-choice-dock')).not.toBeNull();
+        });
+
+        const spellOption = screen.getAllByTestId('mage-wars-object-ability-choice-option')
+            .find((option) => option.getAttribute('data-bound-spell-card-id') === '1705');
+        expect(spellOption).not.toBeUndefined();
+        fireEvent.click(spellOption!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
+            objectId: 'elemental-staff-0',
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND,
+            manaCost: 3,
+            boundSpellCardId: 1705,
+        });
+    });
+});
+
+describe('MageWarsBoard mage ability status choices', () => {
+    function createPriestessRestoreChoiceCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const priestess = baseCore.players['0'];
+        const afflictedAngel: MageWarsArenaObjectState = {
+            ...creatureObject('afflicted-angel-0', '1', 2907, 'Afflicted Angel', ARENA_ZONE_IDS.A2),
+            statusTokens: {
+                [STATUS_TOKEN_IDS.BURN]: 1,
+                [STATUS_TOKEN_IDS.STUN]: 1,
+                [STATUS_TOKEN_IDS.SLEEP]: 1,
+            },
+        };
+
+        return {
+            ...baseCore,
+            currentPlayerId: '0',
+            phaseActorId: '0',
+            objects: {
+                ...baseCore.objects,
+                [afflictedAngel.id]: afflictedAngel,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...priestess,
+                    mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    mana: 20,
+                    actionReady: true,
+                    quickcastReady: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === afflictedAngel.zoneId
+                    ? [afflictedAngel.id]
+                    : zone.objectIds.filter((id) => id !== afflictedAngel.id),
+            })),
+        };
+    }
+
+    it('requires an explicit status combination selection for Priestess standard restoration', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard {...boardProps(createPriestessRestoreChoiceCore())} dispatch={dispatch} />,
+        );
+
+        const priestessMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        );
+        expect(priestessMage).not.toBeNull();
+        fireEvent.click(priestessMage!);
+
+        fireEvent.click(screen.getByTestId('mage-wars-selected-mage-ability-restore'));
+
+        const targetCard = screen.getByText('Afflicted Angel')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(targetCard).not.toBeNull();
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
+        });
+
+        fireEvent.click(targetCard!);
+
+        expect(dispatch).not.toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_MAGE_ABILITY, expect.anything());
+        expect(screen.queryByTestId('mage-wars-mage-ability-status-choice-dock')).not.toBeNull();
+
+        const fullRestoreOption = screen.getAllByTestId('mage-wars-mage-ability-status-option')
+            .find((option) => option.getAttribute('data-status-token-ids') === [
+                STATUS_TOKEN_IDS.BURN,
+                STATUS_TOKEN_IDS.STUN,
+                STATUS_TOKEN_IDS.SLEEP,
+            ].join(','));
+        expect(fullRestoreOption).not.toBeUndefined();
+        expect(fullRestoreOption?.getAttribute('data-mana-cost')).toBe('9');
+
+        fireEvent.click(fullRestoreOption!);
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_MAGE_ABILITY, {
+            abilityId: MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_STANDARD,
+            manaCost: 9,
+            targetObjectId: 'afflicted-angel-0',
+            statusTokenIds: [STATUS_TOKEN_IDS.BURN, STATUS_TOKEN_IDS.STUN, STATUS_TOKEN_IDS.SLEEP],
+        });
+    });
+});
+
+describe('MageWarsBoard token placement', () => {
+    function createGuardTokenPlacementCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const guardedCat: MageWarsArenaObjectState = {
+            ...creatureObject('guarded-cat-0', '0', 2906, 'Guarded Cat', ARENA_ZONE_IDS.A3),
+            guarding: true,
+        };
+
+        return {
+            ...baseCore,
+            objects: {
+                ...baseCore.objects,
+                [guardedCat.id]: guardedCat,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...baseCore.players['0'],
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    guarding: true,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [guardedCat.id]
+                    : zone.objectIds.filter((id) => id !== guardedCat.id),
+            })),
+        };
+    }
+
+    function createWoundedTokenPlacementCore(): MageWarsCore {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const woundedCat: MageWarsArenaObjectState = {
+            ...creatureObject('wounded-overlay-cat-0', '0', 2906, 'Wounded Overlay Cat', ARENA_ZONE_IDS.A3),
+            damage: 2,
+        };
+
+        return {
+            ...baseCore,
+            objects: {
+                ...baseCore.objects,
+                [woundedCat.id]: woundedCat,
+            },
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...baseCore.players['0'],
+                    mageZoneId: ARENA_ZONE_IDS.A3,
+                    damage: 6,
+                },
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [woundedCat.id]
+                    : zone.objectIds.filter((id) => id !== woundedCat.id),
+            })),
+        };
+    }
+
+    it('renders guard tokens below mage and creature cards instead of covering the card face', () => {
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(createGuardTokenPlacementCore())} />);
+
+        const guardImages = screen.getAllByAltText('tokens.guard');
+        expect(guardImages.length).toBeGreaterThanOrEqual(2);
+        for (const guardImage of guardImages) {
+            const tokenRail = guardImage.parentElement;
+            expect(tokenRail?.className).toContain('top-full');
+            expect(tokenRail?.className).not.toContain('bottom');
+        }
+    });
+
+    it('renders wounded state as a modern card overlay instead of damage token images', () => {
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps(createWoundedTokenPlacementCore())} />);
+
+        const creatureCard = screen.getByText('Wounded Overlay Cat')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        expect(creatureCard).not.toBeNull();
+        const creatureOverlay = creatureCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-damage-overlay"]');
+        expect(creatureOverlay).not.toBeNull();
+        expect(creatureOverlay?.getAttribute('data-damage')).toBe('2');
+        expect(creatureOverlay?.getAttribute('data-life')).toBe('4');
+        expect(creatureOverlay?.querySelector('[data-testid="mage-wars-field-card-damage-overlay-value"]')?.textContent).toBe('2');
+
+        const mageEntity = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        );
+        expect(mageEntity).not.toBeNull();
+        const mageOverlay = mageEntity?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-entity-damage-overlay"]');
+        expect(mageOverlay).not.toBeNull();
+        expect(mageOverlay?.getAttribute('data-damage')).toBe('6');
+        expect(mageOverlay?.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay-value"]')?.textContent).toBe('6');
+
+        expect(screen.queryByAltText('tokens.damage')).toBeNull();
     });
 });
 

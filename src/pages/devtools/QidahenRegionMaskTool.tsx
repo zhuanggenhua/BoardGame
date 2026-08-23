@@ -2435,7 +2435,7 @@ const smoothClosedPolyline = (
 const buildRoughShapeOutlineBoundaryMask = (): Uint8Array => unionBinaryMasks(
     ...QIDAHEN_MAP_REGION_SHAPES.map((shape) => {
         const smoothed = smoothClosedPolyline(shape.polygon);
-        const closed = [...smoothed, smoothed[0] ?? smoothed.at(-1) ?? shape.polygon[0]];
+        const closed = [...smoothed, smoothed[0] ?? smoothed[smoothed.length - 1] ?? shape.polygon[0]];
         return rasterizeStrokeMask({
         width: MASK_WIDTH,
         height: MASK_HEIGHT,
@@ -4872,7 +4872,8 @@ const findBoundarySupportPath = ({
         }
         currentIndex = previous[currentIndex];
     }
-    if (reversedPoints.at(-1)?.x !== snappedStart.x || reversedPoints.at(-1)?.y !== snappedStart.y) {
+    const lastReversedPoint = reversedPoints[reversedPoints.length - 1];
+    if (lastReversedPoint?.x !== snappedStart.x || lastReversedPoint?.y !== snappedStart.y) {
         return null;
     }
     const points = reversedPoints.reverse();
@@ -8765,7 +8766,7 @@ const QidahenRegionMaskTool: React.FC = () => {
 
     const pushBarrierHistorySnapshot = React.useCallback((snapshot: BarrierHistorySnapshot) => {
         const undoStack = barrierHistoryUndoRef.current;
-        const lastSnapshot = undoStack.at(-1);
+        const lastSnapshot = undoStack[undoStack.length - 1];
         if (lastSnapshot && barrierHistorySnapshotsEqual(lastSnapshot, snapshot)) {
             return;
         }
@@ -10650,7 +10651,8 @@ const QidahenRegionMaskTool: React.FC = () => {
         }
         if (mode === 'chain') {
             const point = snapChainPointToBarrier(mapClientPointToCanvas(event.currentTarget, event.clientX, event.clientY));
-            const last = chainPointsRef.current.at(-1);
+            const chainPoints = chainPointsRef.current;
+            const last = chainPoints[chainPoints.length - 1];
             if (!last || Math.hypot(point.x - last.x, point.y - last.y) >= 4) {
                 chainPointsRef.current.push(point);
                 setChainPreviewPoints([...chainPointsRef.current]);

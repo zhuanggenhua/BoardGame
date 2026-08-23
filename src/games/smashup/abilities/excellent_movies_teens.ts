@@ -13,8 +13,13 @@ import {
     addTempPower,
     buildActionMinionTargetOptions,
     buildBaseTargetOptions,
+    buildFieldSourceActionOptions,
+    buildFieldSourceToBaseTargetOptions,
+    buildFieldSourceToMinionTargetOptions,
+    buildMinionTargetOptions,
     buildSemanticOngoingAttachEvents,
     buildStandardDrawEvents,
+    buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     buildValidatedReturnEvents,
@@ -36,8 +41,16 @@ import {
 import { registerProtection, registerTrigger, type ProtectionCheckContext, type TriggerContext, type TriggerResult } from '../domain/ongoingEffects';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { getCardDef, getMinionDef } from '../data/cards';
+import {
+    buildActivationPlayedThisTurnMetadata,
+    getBoardTalentUseRequirement,
+    wasActivationSourcePlayedThisTurn,
+} from '../domain/activationMetadata';
 import { SU_EVENT_TYPES as SU_EVENTS } from '../domain/events';
 import type {
+    BaseReplacedEvent,
+    CardRemovedFromGameEvent,
+    CardsDrawnEvent,
     DeckReorderedEvent,
     CardInstance,
     MinionOnBase,
@@ -66,6 +79,24 @@ function sourceFor(ctx: Pick<AbilityContext, 'playerId' | 'cardUid' | 'defId' | 
         sourceControllerId: ctx.playerId,
         sourceBaseIndex: ctx.baseIndex,
     };
+}
+
+function findAttachedOngoingHost(core: SmashUpCore, baseIndex: number, cardUid: string, defId: string) {
+    const base = core.bases[baseIndex];
+    if (!base) return undefined;
+    for (const host of base.minions) {
+        const action = host.attachedActions.find(candidate =>
+            candidate.uid === cardUid
+            && candidate.defId === defId);
+        if (action) return { host, action, baseIndex };
+    }
+    return undefined;
+}
+
+function findBaseOngoing(core: SmashUpCore, baseIndex: number, cardUid: string, defId: string) {
+    return core.bases[baseIndex]?.ongoingActions.find(action =>
+        action.uid === cardUid
+        && action.defId === defId);
 }
 
 function onlyOwnMinionAtBase(core: SmashUpCore, baseIndex: number, playerId: PlayerId): MinionOnBase | undefined {
@@ -119,17 +150,18 @@ function queuePrompt<T>(
     title: string,
     options: PromptOption<T>[],
     now: number,
-    targetType: 'button' | 'base' | 'minion' | 'generic',
+    targetType: 'button' | 'base' | 'hand' | 'minion' | 'generic' | 'field-source-target' | 'field-source-action',
     titleKey?: string,
     continuationContext?: Record<string, unknown>,
     titleParams?: SimpleChoiceConfig['titleParams'],
+    config: Partial<Pick<SimpleChoiceConfig, 'autoRefresh' | 'genericIntent' | 'multi' | 'responseValidationMode'>> = {},
 ): MatchState<SmashUpCore> {
     const interaction = createSimpleChoice(
         `${sourceId}_${now}`,
         playerId,
         title,
         options,
-        { sourceId, targetType, titleKey, titleParams },
+        { ...config, sourceId, targetType, titleKey, titleParams, autoResolveIfSingle: false },
     );
     return queueInteraction(matchState, {
         ...interaction,
@@ -144,6 +176,13 @@ type ActionHeroesPushingCandidate = {
     baseIndex: number;
     minionUid: string;
     minionDefId: string;
+};
+
+type ActionHeroesFinalStandChoice = {
+    baseIndex?: number;
+    minionUid?: string;
+    minionDefId?: string;
+    controllerId?: PlayerId;
 };
 
 function getActionHeroesPushingCandidates(core: SmashUpCore, playerId: PlayerId): ActionHeroesPushingCandidate[] {
@@ -187,6 +226,64 @@ function queueActionHeroesPushingChoice(
         'ui.action_heroes_pushing_the_limit_title',
         { remainingCandidates: remaining },
         { base: baseLabel },
+    );
+}
+
+function getActionHeroesFinalStandCandidates(
+    core: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+    controllerId: PlayerId,
+): ActionHeroesFinalStandChoice[] {
+    const base = core.bases[baseIndex];
+    if (!base) return [];
+    return base.minions
+        .filter(minion => minion.controller === controllerId && minion.controller !== playerId)
+        .filter(minion => (getMinionDef(minion.defId)?.power ?? minion.basePower) <= 3)
+        .map(minion => ({
+            baseIndex,
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            controllerId,
+        }));
+}
+
+function getActionHeroesFinalStandControllers(
+    core: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+): PlayerId[] {
+    return core.turnOrder.filter(controllerId =>
+        controllerId !== playerId
+        && getActionHeroesFinalStandCandidates(core, baseIndex, playerId, controllerId).length > 0);
+}
+
+function queueActionHeroesFinalStandChoice(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    baseIndex: number,
+    controllerIds: PlayerId[],
+    now: number,
+): MatchState<SmashUpCore> {
+    const [controllerId, ...remainingControllerIds] = controllerIds;
+    const options = controllerId
+        ? getActionHeroesFinalStandCandidates(matchState.core, baseIndex, playerId, controllerId).map((candidate, index) => ({
+            id: `final-stand-${controllerId}-${index}`,
+            label: cardName(candidate.minionDefId ?? ''),
+            value: candidate,
+            displayMode: 'card' as const,
+        }))
+        : [];
+    return queuePrompt(
+        matchState,
+        playerId,
+        'action_heroes_final_stand',
+        '最后一搏：选择要摧毁的随从',
+        options,
+        now,
+        'minion',
+        'ui.action_heroes_final_stand_title',
+        { baseIndex, remainingControllerIds },
     );
 }
 
@@ -248,33 +345,35 @@ function actionHeroesFinalStand(ctx: AbilityContext): AbilityResult {
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     const base = ctx.state.bases[baseIndex];
     if (!base || !isOnlyOwnMinionHere(ctx.state, baseIndex, ctx.playerId)) return { events: [] };
-    const events: SmashUpEvent[] = [];
-    const byController = new Map<PlayerId, MinionOnBase[]>();
-    for (const minion of base.minions) {
-        if (minion.controller === ctx.playerId) continue;
-        const printedPower = getMinionDef(minion.defId)?.power ?? minion.basePower;
-        if (printedPower > 3) continue;
-        byController.set(minion.controller, [...(byController.get(minion.controller) ?? []), minion]);
+    const controllerIds = getActionHeroesFinalStandControllers(ctx.state, baseIndex, ctx.playerId);
+    if (controllerIds.length === 0) return { events: [] };
+    if (!ctx.matchState) {
+        const events = controllerIds.flatMap(controllerId => {
+            const target = getActionHeroesFinalStandCandidates(ctx.state, baseIndex, ctx.playerId, controllerId)[0];
+            const live = target ? ctx.state.bases[baseIndex]?.minions.find(minion => minion.uid === target.minionUid) : undefined;
+            if (!target || !live) return [];
+            return buildValidatedDestroyEvents(ctx.state, {
+                minionUid: live.uid,
+                minionDefId: live.defId,
+                fromBaseIndex: baseIndex,
+                destroyerId: ctx.playerId,
+                reason: ctx.defId,
+                now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: baseIndex,
+                sourceKind: 'action',
+                targetSnapshot: { ownerId: live.owner, controllerId },
+            });
+        });
+        return { events };
     }
-    for (const [controllerId, candidates] of byController.entries()) {
-        const target = candidates[0];
-        events.push(...buildValidatedDestroyEvents(ctx.state, {
-            minionUid: target.uid,
-            minionDefId: target.defId,
-            fromBaseIndex: baseIndex,
-            destroyerId: ctx.playerId,
-            reason: ctx.defId,
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: baseIndex,
-            sourceKind: 'action',
-            targetSnapshot: { ownerId: target.owner, controllerId },
-        }));
-    }
-    return { events };
+    return {
+        events: [],
+        matchState: queueActionHeroesFinalStandChoice(ctx.matchState, ctx.playerId, baseIndex, controllerIds, ctx.now),
+    };
 }
 
 function actionHeroesFriendsThroughEternity(ctx: AbilityContext): AbilityResult {
@@ -350,10 +449,7 @@ function actionHeroesTheRightPerson(ctx: AbilityContext): AbilityResult {
         .filter(candidate => !ctx.state.bases[candidate.baseIndex].minions.some(minion => minion.controller === ctx.playerId));
     const events: SmashUpEvent[] = [grantContextualExtraAction(ctx, ctx.defId)];
     if (candidates.length === 0) return { events };
-    if (candidates.length === 1) {
-        events.unshift(grantContextualExtraMinion(ctx, ctx.defId, candidates[0].baseIndex));
-        return { events };
-    }
+    if (!ctx.matchState) return { events };
     return {
         events,
         matchState: queuePrompt(
@@ -407,7 +503,7 @@ function actionHeroesWarbro(ctx: AbilityContext): AbilityResult {
         .map((base, baseIndex) => ({ baseIndex, label: baseName(ctx.state, baseIndex) }))
         .filter(candidate => candidate.baseIndex !== ctx.baseIndex && isOnlyOwnMinionHere(ctx.state, candidate.baseIndex, ctx.playerId));
     if (candidates.length === 0) return { events: [] };
-    if (candidates.length === 1) return { events: [modifyBreakpoint(candidates[0].baseIndex, -3, ctx.defId, ctx.now)] };
+    if (!ctx.matchState) return { events: [] };
     return {
         events: [],
         matchState: queuePrompt(
@@ -652,6 +748,45 @@ function registerActionHeroesInteractionHandlers(): void {
         const selected = value as { cardUid?: string };
         if (!selected.cardUid) return { state, events: [] };
         return { state, events: reorderDeckWithCardOnTop(state.core, playerId, selected.cardUid, 'action_heroes_hostage_rescue', timestamp) };
+    });
+
+    registerInteractionHandler('action_heroes_final_stand', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ActionHeroesFinalStandChoice;
+        const continuation = data?.continuationContext as {
+            baseIndex?: number;
+            remainingControllerIds?: PlayerId[];
+        } | undefined;
+        const baseIndex = continuation?.baseIndex ?? selected.baseIndex;
+        const remainingControllerIds = continuation?.remainingControllerIds ?? [];
+        const live = baseIndex !== undefined && selected.minionUid
+            ? state.core.bases[baseIndex]?.minions.find(minion =>
+                minion.uid === selected.minionUid
+                && minion.controller === selected.controllerId
+                && minion.controller !== playerId
+                && (getMinionDef(minion.defId)?.power ?? minion.basePower) <= 3)
+            : undefined;
+        const events = live && baseIndex !== undefined
+            ? buildValidatedDestroyEvents(state.core, {
+                minionUid: live.uid,
+                minionDefId: live.defId,
+                fromBaseIndex: baseIndex,
+                destroyerId: playerId,
+                reason: 'action_heroes_final_stand',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'action_heroes_final_stand',
+                sourceControllerId: playerId,
+                sourceBaseIndex: baseIndex,
+                sourceKind: 'action',
+                targetSnapshot: { ownerId: live.owner, controllerId: live.controller },
+            })
+            : [];
+        return {
+            state: baseIndex !== undefined && remainingControllerIds.length > 0
+                ? queueActionHeroesFinalStandChoice(state, playerId, baseIndex, remainingControllerIds, timestamp)
+                : state,
+            events,
+        };
     });
 
     registerInteractionHandler('action_heroes_pushing_the_limit', (state, playerId, value, data, random, timestamp) => {
@@ -906,6 +1041,224 @@ function buildCardToDeckBottomEvent(
     } as SmashUpEvent;
 }
 
+type ExcellentMoviesCardChoice = {
+    cardUid?: string;
+    defId?: string;
+    ownerId?: PlayerId;
+    zone?: 'hand' | 'deck' | 'discard';
+    skip?: boolean;
+};
+
+type ExcellentMoviesMinionChoice = {
+    minionUid?: string;
+    minionDefId?: string;
+    defId?: string;
+    baseIndex?: number;
+    baseDefId?: string;
+    targetBaseIndex?: number;
+    targetBaseDefId?: string;
+    skip?: boolean;
+};
+
+type TeensBrunchBunchChoice = ExcellentMoviesMinionChoice & ExcellentMoviesCardChoice & {
+    effect?: 'move' | 'draw' | 'extra-minion' | 'power' | 'discard';
+};
+
+type ExcellentMoviesPowerChoice = {
+    power?: number;
+    baseIndex?: number;
+    baseDefId?: string;
+    skip?: boolean;
+};
+
+function buildCardPoolOptions(
+    cards: CardInstance[],
+    zone: ExcellentMoviesCardChoice['zone'],
+    prefix: string,
+): PromptOption<ExcellentMoviesCardChoice>[] {
+    return cards.map(card => ({
+        id: `${prefix}-${card.uid}`,
+        label: cardName(card.defId),
+        value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner, zone },
+        displayMode: 'card' as const,
+    }));
+}
+
+function buildTopDeckCardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    count: number,
+    predicate: (card: CardInstance) => boolean = () => true,
+): PromptOption<ExcellentMoviesCardChoice>[] {
+    return buildCardPoolOptions(
+        (core.players[playerId]?.deck ?? []).slice(0, count).filter(predicate),
+        'deck',
+        'deck',
+    );
+}
+
+function buildDeckCardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (card: CardInstance) => boolean = () => true,
+): PromptOption<ExcellentMoviesCardChoice>[] {
+    return buildCardPoolOptions(
+        (core.players[playerId]?.deck ?? []).filter(predicate),
+        'deck',
+        'deck',
+    );
+}
+
+function buildDiscardCardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (card: CardInstance) => boolean = () => true,
+): PromptOption<ExcellentMoviesCardChoice>[] {
+    return buildCardPoolOptions(
+        (core.players[playerId]?.discard ?? []).filter(predicate),
+        'discard',
+        'discard',
+    );
+}
+
+function buildHandCardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    excludeCardUid?: string,
+    predicate: (card: CardInstance) => boolean = () => true,
+): PromptOption<ExcellentMoviesCardChoice>[] {
+    return buildCardPoolOptions(
+        (core.players[playerId]?.hand ?? [])
+            .filter(card => card.uid !== excludeCardUid && predicate(card)),
+        'hand',
+        'hand',
+    );
+}
+
+function buildMinionChoiceOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    sourceDefId: string,
+    predicate: (minion: MinionOnBase, baseIndex: number) => boolean,
+    effectType: 'affect' | 'move' | 'destroy' | 'return' = 'move',
+    sourceKind: 'action' | 'nonAction' = 'action',
+): PromptOption<ExcellentMoviesMinionChoice>[] {
+    return buildMinionTargetOptions(
+        core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => predicate(minion, baseIndex))
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: `${cardName(minion.defId)} @ ${baseName(core, baseIndex)}`,
+                })),
+        ),
+        {
+            state: core,
+            sourcePlayerId: playerId,
+            sourceDefId,
+            sourceKind,
+            effectType,
+            respectActionProtection: sourceKind === 'action',
+        },
+    ) as PromptOption<ExcellentMoviesMinionChoice>[];
+}
+
+function buildOtherBaseChoiceOptions(core: SmashUpCore, excludedBaseIndex: number): PromptOption<{ baseIndex?: number; baseDefId?: string }>[] {
+    return buildBaseTargetOptions(
+        core.bases
+            .map((_base, baseIndex) => ({ baseIndex, label: baseName(core, baseIndex) }))
+            .filter(candidate => candidate.baseIndex !== excludedBaseIndex),
+        core,
+    );
+}
+
+function buildMinionToOtherBaseChoiceOptions(
+    core: SmashUpCore,
+    predicate: (minion: MinionOnBase, baseIndex: number) => boolean,
+): PromptOption<ExcellentMoviesMinionChoice>[] {
+    return core.bases.flatMap((base, baseIndex) =>
+        base.minions
+            .filter(minion => predicate(minion, baseIndex))
+            .flatMap(minion => core.bases
+                .map((_targetBase, targetBaseIndex) => ({ targetBaseIndex, targetBaseDefId: core.bases[targetBaseIndex]?.defId }))
+                .filter(target => target.targetBaseIndex !== baseIndex)
+                .map(target => ({
+                    id: `move-${minion.uid}-${target.targetBaseIndex}`,
+                    label: `${cardName(minion.defId)} -> ${baseName(core, target.targetBaseIndex)}`,
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        targetBaseIndex: target.targetBaseIndex,
+                        targetBaseDefId: target.targetBaseDefId,
+                    },
+                    displayMode: 'card' as const,
+                }))),
+    );
+}
+
+function buildMoveSelectedMinionEvents(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    selected: ExcellentMoviesMinionChoice,
+    targetBaseIndex: number | undefined,
+    reason: string,
+    now: number,
+    sourceCardUid: string | undefined,
+    sourceBaseIndex: number | undefined,
+    sourceKind: 'action' | 'nonAction',
+): SmashUpEvent[] {
+    const fromBaseIndex = selected.baseIndex;
+    const minionDefId = selected.minionDefId ?? selected.defId;
+    if (!selected.minionUid || !minionDefId || fromBaseIndex === undefined || targetBaseIndex === undefined || fromBaseIndex === targetBaseIndex) return [];
+    return buildValidatedMoveEvents(core, {
+        minionUid: selected.minionUid,
+        minionDefId,
+        fromBaseIndex,
+        toBaseIndex: targetBaseIndex,
+        reason,
+        now,
+        sourcePlayerId: playerId,
+        sourceCardUid,
+        sourceDefId: reason,
+        sourceControllerId: playerId,
+        sourceBaseIndex,
+        sourceKind,
+    });
+}
+
+function buildDestroySelectedMinionEvents(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    selected: ExcellentMoviesMinionChoice,
+    reason: string,
+    now: number,
+    sourceCardUid: string | undefined,
+    sourceBaseIndex: number | undefined,
+    sourceKind: 'action' | 'nonAction',
+): SmashUpEvent[] {
+    const baseIndex = selected.baseIndex;
+    const minionDefId = selected.minionDefId ?? selected.defId;
+    if (!selected.minionUid || !minionDefId || baseIndex === undefined) return [];
+    return buildValidatedDestroyEvents(core, {
+        minionUid: selected.minionUid,
+        minionDefId,
+        fromBaseIndex: baseIndex,
+        destroyerId: playerId,
+        reason,
+        now,
+        sourcePlayerId: playerId,
+        sourceCardUid,
+        sourceDefId: reason,
+        sourceControllerId: playerId,
+        sourceBaseIndex,
+        sourceKind,
+    });
+}
+
 function buildOngoingAttachedEvent(
     card: { uid: string; defId: string; ownerId: PlayerId; metadata?: Record<string, unknown>; talentUsed?: boolean; removeFromDiscard?: boolean },
     targetBaseIndex: number,
@@ -1090,6 +1443,82 @@ function buildBacktimersOwnMinionCounterOptions(core: SmashUpCore, playerId: Pla
     );
 }
 
+function buildOwnMinionTargetOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    sourceDefId: string,
+    effectType: 'affect' | 'move' = 'affect',
+) {
+    return buildActionMinionTargetOptions(
+        core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => minion.controller === playerId)
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: `${cardName(minion.defId)} @ ${baseName(core, baseIndex)}`,
+                })),
+        ),
+        {
+            state: core,
+            sourcePlayerId: playerId,
+            sourceDefId,
+            effectType,
+        },
+    );
+}
+
+function buildHandCardChoiceOptions(core: SmashUpCore, playerId: PlayerId, excludeCardUid?: string) {
+    return (core.players[playerId]?.hand ?? [])
+        .filter(card => card.uid !== excludeCardUid)
+        .map((card, index) => ({
+            id: `hand-${index}`,
+            label: cardName(card.defId),
+            value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+            displayMode: 'card' as const,
+        }));
+}
+
+function buildDiscardCardChoiceOptions(core: SmashUpCore, playerId: PlayerId) {
+    return (core.players[playerId]?.discard ?? []).map((card, index) => ({
+        id: `discard-${index}`,
+        label: cardName(card.defId),
+        value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+        displayMode: 'card' as const,
+    }));
+}
+
+function buildWillHaveToDoCounterOptions(core: SmashUpCore, playerId: PlayerId) {
+    return core.bases.flatMap((base, baseIndex) =>
+        base.minions
+            .filter(minion => minion.controller === playerId)
+            .flatMap(minion => [0, 1].map(slot => ({
+                id: `counter-${baseIndex}-${minion.uid}-${slot}`,
+                label: `${cardName(minion.defId)} @ ${baseName(core, baseIndex)} +1`,
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex,
+                    counterSlot: slot,
+                },
+                displayMode: 'card' as const,
+            }))),
+    );
+}
+
+function buildWillHaveToDoStasisOptions(core: SmashUpCore, playerId: PlayerId) {
+    return getBacktimersStasisCards(core, playerId)
+        .filter(card => (card.counters ?? 0) > 0)
+        .flatMap(card => Array.from({ length: Math.min(2, card.counters ?? 0) }, (_, slot) => ({
+            id: `stasis-${card.uid}-${slot}`,
+            label: `${cardName(card.defId)} -1 停滞`,
+            value: { cardUid: card.uid, defId: card.defId, counterSlot: slot },
+            displayMode: 'card' as const,
+        })));
+}
+
 function queueBacktimersMinionCounterPrompt(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -1213,6 +1642,178 @@ function registerBacktimersInteractionHandlers(): void {
     registerStoreHandler('backtimers_99_mph');
     registerStoreHandler('backtimers_alex_p_mcglide');
 
+    registerInteractionHandler('backtimers_will_have_to_do_mode', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as { mode?: 'counters' | 'stasis'; skip?: boolean };
+        if (selected.skip || !selected.mode) return { state, events: [] };
+        if (selected.mode === 'counters') {
+            const options = buildWillHaveToDoCounterOptions(state.core, playerId);
+            if (options.length === 0) return { state, events: [] };
+            return {
+                state: queuePrompt(
+                    state,
+                    playerId,
+                    'backtimers_will_have_to_do_counters',
+                    '将就一下：选择至多两个力量指示物放置位置',
+                    options,
+                    timestamp,
+                    'minion',
+                    'ui.backtimers_will_have_to_do_counters_title',
+                    undefined,
+                    undefined,
+                    { autoRefresh: 'field', multi: { min: 0, max: Math.min(2, options.length) }, responseValidationMode: 'live' },
+                ),
+                events: [],
+            };
+        }
+        const options = buildWillHaveToDoStasisOptions(state.core, playerId);
+        if (options.length === 0) return { state, events: [] };
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'backtimers_will_have_to_do_stasis',
+                '将就一下：选择至多两个要移除的停滞指示物',
+                options,
+                timestamp,
+                'generic',
+                'ui.backtimers_will_have_to_do_stasis_title',
+                undefined,
+                undefined,
+                { genericIntent: 'card-pool', multi: { min: 0, max: Math.min(2, options.length) }, responseValidationMode: 'live' },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('backtimers_will_have_to_do_counters', (state, playerId, value, _data, _random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as Array<{
+            minionUid?: string;
+            minionDefId?: string;
+            defId?: string;
+            baseIndex?: number;
+        }>;
+        const events = choices.flatMap(choice => {
+            const minionDefId = choice.minionDefId ?? choice.defId;
+            if (!choice.minionUid || !minionDefId || choice.baseIndex === undefined) return [];
+            const live = state.core.bases[choice.baseIndex]?.minions.find(minion =>
+                minion.uid === choice.minionUid && minion.controller === playerId
+            );
+            return live
+                ? [addPowerCounter(choice.minionUid, choice.baseIndex, 1, 'backtimers_will_have_to_do', timestamp, {
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'backtimers_will_have_to_do',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: choice.baseIndex,
+                })]
+                : [];
+        });
+        return { state, events };
+    });
+
+    registerInteractionHandler('backtimers_will_have_to_do_stasis', (state, playerId, value, _data, _random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as Array<{ cardUid?: string }>;
+        const usedByCardUid = new Map<string, number>();
+        const events: SmashUpEvent[] = [];
+        for (const choice of choices) {
+            if (!choice.cardUid) continue;
+            const alreadyUsed = usedByCardUid.get(choice.cardUid) ?? 0;
+            const card = getBacktimersStasisCards(state.core, playerId).find(candidate => candidate.uid === choice.cardUid);
+            if (!card || (card.counters ?? 0) <= alreadyUsed) continue;
+            usedByCardUid.set(choice.cardUid, alreadyUsed + 1);
+            events.push(stasisCounterChanged(playerId, card.uid, -1, 'backtimers_will_have_to_do', timestamp));
+        }
+        return { state, events };
+    });
+
+    registerInteractionHandler('backtimers_help_from_the_past_discard', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { cardUid?: string; skip?: boolean };
+        const continuation = data?.continuationContext as { storedUnderUid?: string } | undefined;
+        if (selected.skip || !selected.cardUid || !continuation?.storedUnderUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.discard.find(candidate => candidate.uid === selected.cardUid);
+        if (!card) return { state, events: [] };
+        return {
+            state,
+            events: [buildStoredCardEvent(playerId, card, 'discard', 'backtimers_help_from_the_past', timestamp, {
+                storedUnderUid: continuation.storedUnderUid,
+                storedUnderDefId: 'backtimers_help_from_the_past',
+            })],
+        };
+    });
+
+    registerInteractionHandler('backtimers_lifelong_bully', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice & { mode?: 'stasis' | 'deck' };
+        if (selected.skip || !selected.cardUid || !selected.mode) return { state, events: [] };
+        if (selected.mode === 'stasis') {
+            const stasisCard = getBacktimersStasisCards(state.core, playerId).find(card => card.uid === selected.cardUid);
+            return stasisCard
+                ? { state, events: [stasisCounterChanged(playerId, stasisCard.uid, 1, 'backtimers_lifelong_bully', timestamp)] }
+                : { state, events: [] };
+        }
+        const player = state.core.players[playerId];
+        const card = player?.deck.find(candidate => candidate.uid === selected.cardUid);
+        return player && card
+            ? {
+                state,
+                events: [
+                    inspectDeck(playerId, playerId, Math.min(2, player.deck.length), 'backtimers_lifelong_bully', timestamp),
+                    buildBacktimersStasisStoreEvent(playerId, card.uid, card.defId, card.owner, 2, 'backtimers_lifelong_bully', timestamp, 'deck'),
+                ],
+            }
+            : { state, events: [] };
+    });
+
+    registerInteractionHandler('backtimers_back_from_the_future', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.deck.find(candidate => candidate.uid === selected.cardUid);
+        return card
+            ? {
+                state,
+                events: [buildBacktimersStasisStoreEvent(playerId, card.uid, card.defId, card.owner, 2, 'backtimers_back_from_the_future', timestamp, 'deck')],
+            }
+            : { state, events: [] };
+    });
+
+    registerInteractionHandler('backtimers_letter_from_another_time_deck', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        const continuation = data?.continuationContext as { storedUnderUid?: string } | undefined;
+        if (selected.skip || !selected.cardUid || !continuation?.storedUnderUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.deck.find(candidate => candidate.uid === selected.cardUid);
+        return card
+            ? {
+                state,
+                events: [
+                    inspectDeck(playerId, playerId, state.core.players[playerId]?.deck.length ?? 0, 'backtimers_letter_from_another_time', timestamp),
+                    buildStoredCardEvent(playerId, card, 'deck', 'backtimers_letter_from_another_time', timestamp, {
+                        storedUnderUid: continuation.storedUnderUid,
+                        storedUnderDefId: 'backtimers_letter_from_another_time',
+                    }),
+                ],
+            }
+            : { state, events: [] };
+    });
+
+    registerInteractionHandler('backtimers_disrupt_the_space_time_continuum', (state, playerId, value, _data, _random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as Array<{ cardUid?: string }>;
+        const selectedCards = choices
+            .map(choice => state.core.players[playerId]?.hand.find(card => card.uid === choice.cardUid))
+            .filter((card): card is CardInstance => Boolean(card))
+            .slice(0, 2);
+        const counters = selectedCards.length;
+        return {
+            state,
+            events: selectedCards.map(card => buildBacktimersStasisStoreEvent(
+                playerId,
+                card.uid,
+                card.defId,
+                card.owner,
+                counters,
+                'backtimers_disrupt_the_space_time_continuum',
+                timestamp,
+            )),
+        };
+    });
+
     registerInteractionHandler('backtimers_zany_prof_stasis', (state, playerId, value, _data, _random, timestamp) => {
         const selected = value as { mode?: 'add' | 'remove'; cardUid?: string; skip?: boolean };
         if (selected.skip || !selected.cardUid || !selected.mode) return { state, events: [] };
@@ -1260,20 +1861,43 @@ function registerBacktimers(): void {
         matchState: backtimersStoreHandCard(ctx, 2, 'backtimers_99_mph').matchState,
     }));
     registerSimpleAbility('backtimers_will_have_to_do', 'onPlay', ctx => {
-        const stasisTargets = getBacktimersStasisCards(ctx.state, ctx.playerId)
-            .filter(card => (card.counters ?? 0) > 0)
-            .slice(0, 2);
-        if (stasisTargets.length > 0) {
+        if (ctx.matchState) {
+            const modeOptions = [
+                ...(buildWillHaveToDoCounterOptions(ctx.state, ctx.playerId).length > 0
+                    ? [{
+                        id: 'counters',
+                        label: '+1 力量指示物',
+                        labelKey: 'ui.backtimers_will_have_to_do_counters_option',
+                        value: { mode: 'counters' as const },
+                        displayMode: 'button' as const,
+                    }]
+                    : []),
+                ...(buildWillHaveToDoStasisOptions(ctx.state, ctx.playerId).length > 0
+                    ? [{
+                        id: 'stasis',
+                        label: '移除停滞指示物',
+                        labelKey: 'ui.backtimers_will_have_to_do_stasis_option',
+                        value: { mode: 'stasis' as const },
+                        displayMode: 'button' as const,
+                    }]
+                    : []),
+            ];
+            if (modeOptions.length === 0) return { events: [] };
             return {
-                events: stasisTargets.map(card => stasisCounterChanged(ctx.playerId, card.uid, -1, ctx.defId, ctx.now)),
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'backtimers_will_have_to_do_mode',
+                    '将就一下：选择放置力量指示物或移除停滞指示物',
+                    [createSkipOption('跳过（不使用效果）', 'ui.backtimers_will_have_to_do_skip_option'), ...modeOptions],
+                    ctx.now,
+                    'button',
+                    'ui.backtimers_will_have_to_do_mode_title',
+                ),
             };
         }
-        const owned = ctx.state.bases.flatMap((base, baseIndex) =>
-            base.minions
-                .filter(minion => minion.controller === ctx.playerId)
-                .map(minion => addPowerCounter(minion.uid, baseIndex, 1, ctx.defId, ctx.now, sourceFor(ctx))),
-        );
-        return { events: owned.slice(0, 2) };
+        return { events: [] };
     });
     registerSimpleAbility('backtimers_sidelined_girlfriend', 'onPlay', backtimersSidelinedGirlfriend);
     registerSimpleAbility('backtimers_sidelined_girlfriend', 'special', ctx => {
@@ -1288,18 +1912,39 @@ function registerBacktimers(): void {
         return promptState ? { events: [], matchState: promptState } : { events: [] };
     });
     registerSimpleAbility('backtimers_lifelong_bully', 'onPlay', ctx => {
-        const stasis = getBacktimersStasisCards(ctx.state, ctx.playerId)[0];
-        if (stasis) {
-            return { events: [stasisCounterChanged(ctx.playerId, stasis.uid, 1, ctx.defId, ctx.now)] };
-        }
-        const player = ctx.state.players[ctx.playerId];
-        const card = player?.deck[0];
-        if (!player || !card) return { events: [] };
+        const stasisOptions = getBacktimersStasisCards(ctx.state, ctx.playerId).map(card => ({
+            id: `stasis-${card.uid}`,
+            label: `停滞区：${cardName(card.defId)}`,
+            value: { mode: 'stasis' as const, cardUid: card.uid, defId: card.defId },
+            displayMode: 'card' as const,
+        }));
+        const deckOptions = buildTopDeckCardOptions(ctx.state, ctx.playerId, 2).map(option => ({
+            ...option,
+            id: `deck-choice-${option.value?.cardUid ?? option.id}`,
+            label: `牌库顶：${option.label}`,
+            value: { ...option.value, mode: 'deck' as const },
+        }));
+        const options = [
+            createSkipOption('跳过（不放置停滞指示物）', 'ui.backtimers_lifelong_bully_skip_option'),
+            ...stasisOptions,
+            ...deckOptions,
+        ] as PromptOption<ExcellentMoviesCardChoice & { mode?: 'stasis' | 'deck' }>[];
+        if (options.length <= 1) return { events: [] };
         return {
-            events: [
-                inspectDeck(ctx.playerId, ctx.playerId, Math.min(2, player.deck.length), ctx.defId, ctx.now),
-                buildBacktimersStasisStoreEvent(ctx.playerId, card.uid, card.defId, card.owner, 2, ctx.defId, ctx.now, 'deck'),
-            ],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                ctx.defId,
+                '一生恶霸：选择停滞牌或牌库顶牌放置停滞指示物',
+                options,
+                ctx.now,
+                'generic',
+                'ui.backtimers_lifelong_bully_title',
+                undefined,
+                undefined,
+                { genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
         };
     });
     registerSimpleAbility('backtimers_alex_p_mcglide', 'onPlay', ctx => backtimersStoreHandCard(ctx, 2, ctx.defId, {
@@ -1321,13 +1966,25 @@ function registerBacktimers(): void {
     });
     registerSimpleAbility('backtimers_back_from_the_future', 'onPlay', ctx => {
         const player = ctx.state.players[ctx.playerId];
-        const card = player?.deck[0];
-        if (!player || !card) return { events: [] };
+        const options = buildTopDeckCardOptions(ctx.state, ctx.playerId, 3);
+        if (!player || options.length === 0) return { events: [] };
         return {
             events: [
                 inspectDeck(ctx.playerId, ctx.playerId, Math.min(3, player.deck.length), ctx.defId, ctx.now),
-                buildBacktimersStasisStoreEvent(ctx.playerId, card.uid, card.defId, card.owner, 2, ctx.defId, ctx.now, 'deck'),
             ],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                ctx.defId,
+                '从未来回来：选择是否将展示牌之一置入停滞',
+                [createSkipOption('跳过（不置入停滞）', 'ui.backtimers_back_from_the_future_skip_option'), ...options],
+                ctx.now,
+                'generic',
+                'ui.backtimers_back_from_the_future_title',
+                undefined,
+                undefined,
+                { genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
         };
     });
     registerSimpleAbility('backtimers_future_almanac', 'onPlay', ctx => {
@@ -1336,7 +1993,7 @@ function registerBacktimers(): void {
         }
         const card = ctx.state.players[ctx.playerId]?.hand.find(candidate => candidate.uid === ctx.cardUid);
         return {
-            events: card ? [buildBacktimersStasisStoreEvent(ctx.playerId, card.uid, card.defId, card.owner, 3, ctx.defId, ctx.now)] : [],
+            events: card ? [buildBacktimersStasisStoreEvent(ctx.playerId, card.uid, card.defId, card.owner, 3, ctx.defId, ctx.now, 'discard')] : [],
         };
     });
     registerSimpleAbility('backtimers_future_almanac', 'special', ctx => ({
@@ -1351,7 +2008,7 @@ function registerBacktimers(): void {
         }
         const card = ctx.state.players[ctx.playerId]?.hand.find(candidate => candidate.uid === ctx.cardUid);
         return {
-            events: card ? [buildBacktimersStasisStoreEvent(ctx.playerId, card.uid, card.defId, card.owner, 2, ctx.defId, ctx.now)] : [],
+            events: card ? [buildBacktimersStasisStoreEvent(ctx.playerId, card.uid, card.defId, card.owner, 2, ctx.defId, ctx.now, 'discard')] : [],
         };
     });
     registerSimpleAbility('backtimers_lightning_strike', 'special', ctx => {
@@ -1366,14 +2023,25 @@ function registerBacktimers(): void {
             return tucked ? { events: playStoredCardAsExtra(ctx.playerId, tucked, ctx.defId, ctx.now, ctx.baseIndex) } : { events: [] };
         }
         const self = ctx.state.players[ctx.playerId]?.hand.find(card => card.uid === ctx.cardUid);
-        const discardCard = ctx.state.players[ctx.playerId]?.discard[0];
         const events: SmashUpEvent[] = [];
-        if (self) events.push(buildBacktimersStasisStoreEvent(ctx.playerId, self.uid, self.defId, self.owner, 3, ctx.defId, ctx.now));
-        if (discardCard && self) {
-            events.push(buildStoredCardEvent(ctx.playerId, discardCard, 'discard', ctx.defId, ctx.now, {
-                storedUnderUid: self.uid,
-                storedUnderDefId: ctx.defId,
-            }));
+        if (self) events.push(buildBacktimersStasisStoreEvent(ctx.playerId, self.uid, self.defId, self.owner, 3, ctx.defId, ctx.now, 'discard'));
+        if (ctx.matchState && self && (ctx.state.players[ctx.playerId]?.discard.length ?? 0) > 0) {
+            return {
+                events,
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'backtimers_help_from_the_past_discard',
+                    '来自过去的帮助：选择弃牌堆中要储存的牌',
+                    buildDiscardCardChoiceOptions(ctx.state, ctx.playerId),
+                    ctx.now,
+                    'generic',
+                    'ui.backtimers_help_from_the_past_discard_title',
+                    { storedUnderUid: self.uid },
+                    undefined,
+                    { autoRefresh: 'discard', genericIntent: 'card-pool', responseValidationMode: 'live' },
+                ),
+            };
         }
         return { events };
     });
@@ -1388,15 +2056,26 @@ function registerBacktimers(): void {
             return tucked ? { events: playStoredCardAsExtra(ctx.playerId, tucked, ctx.defId, ctx.now, ctx.baseIndex) } : { events: [] };
         }
         const self = ctx.state.players[ctx.playerId]?.hand.find(card => card.uid === ctx.cardUid);
-        const deckCard = ctx.state.players[ctx.playerId]?.deck[0];
         const events: SmashUpEvent[] = [];
-        if (self) events.push(buildBacktimersStasisStoreEvent(ctx.playerId, self.uid, self.defId, self.owner, 3, ctx.defId, ctx.now));
-        if (deckCard && self) {
-            events.push(inspectDeck(ctx.playerId, ctx.playerId, ctx.state.players[ctx.playerId]?.deck.length ?? 0, ctx.defId, ctx.now));
-            events.push(buildStoredCardEvent(ctx.playerId, deckCard, 'deck', ctx.defId, ctx.now, {
-                storedUnderUid: self.uid,
-                storedUnderDefId: ctx.defId,
-            }));
+        if (self) events.push(buildBacktimersStasisStoreEvent(ctx.playerId, self.uid, self.defId, self.owner, 3, ctx.defId, ctx.now, 'discard'));
+        const deckOptions = buildDeckCardOptions(ctx.state, ctx.playerId);
+        if (self && deckOptions.length > 0) {
+            return {
+                events,
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'backtimers_letter_from_another_time_deck',
+                    '来自另一个时间的信：选择牌库中要储存的牌',
+                    deckOptions,
+                    ctx.now,
+                    'generic',
+                    'ui.backtimers_letter_from_another_time_deck_title',
+                    { storedUnderUid: self.uid },
+                    undefined,
+                    { autoRefresh: 'deck', genericIntent: 'card-pool', responseValidationMode: 'live' },
+                ),
+            };
         }
         return { events };
     });
@@ -1404,21 +2083,27 @@ function registerBacktimers(): void {
         events: buildStandardDrawEvents(ctx.state, ctx.playerId, 0, ctx.random, ctx.now),
     }));
     registerSimpleAbility('backtimers_disrupt_the_space_time_continuum', 'onPlay', ctx => {
-        const cards = (ctx.state.players[ctx.playerId]?.hand ?? [])
-            .filter(card => card.uid !== ctx.cardUid)
-            .slice(0, 2);
-        const counters = Math.max(1, cards.length);
-        return {
-            events: cards.map(card => buildBacktimersStasisStoreEvent(
-                ctx.playerId,
-                card.uid,
-                card.defId,
-                card.owner,
-                counters,
-                ctx.defId,
-                ctx.now,
-            )),
-        };
+        if (ctx.matchState) {
+            const options = buildHandCardChoiceOptions(ctx.state, ctx.playerId, ctx.cardUid);
+            if (options.length === 0) return { events: [] };
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    ctx.defId,
+                    '扰乱时空连续体：选择至多两张手牌置入停滞',
+                    options,
+                    ctx.now,
+                    'hand',
+                    'ui.backtimers_disrupt_the_space_time_continuum_title',
+                    undefined,
+                    undefined,
+                    { autoRefresh: 'hand', multi: { min: 0, max: Math.min(2, options.length) }, responseValidationMode: 'live' },
+                ),
+            };
+        }
+        return { events: [] };
     });
     registerTrigger('backtimers_zany_prof', 'onTurnStart', backtimersZanyProfTurnStart, {
         perInstance: true,
@@ -1461,6 +2146,46 @@ function playTopMinionOfPower(
     ];
 }
 
+function buildAvailablePowerOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    powers: number[],
+    prefix: string,
+): PromptOption<ExcellentMoviesPowerChoice>[] {
+    return powers
+        .filter(power => (core.players[playerId]?.deck ?? []).some(card => getMinionDef(card.defId)?.power === power))
+        .map(power => ({
+            id: `${prefix}-${power}`,
+            label: `选择力量 ${power}`,
+            value: { power },
+            displayMode: 'button' as const,
+        }));
+}
+
+function queueGameOverDudePowerPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    sourceCardUid: string | undefined,
+    baseIndex: number,
+    now: number,
+): MatchState<SmashUpCore> | undefined {
+    const options = buildAvailablePowerOptions(matchState.core, playerId, [1, 2, 3, 4], 'power');
+    if (options.length === 0) return undefined;
+    return queuePrompt(
+        matchState,
+        playerId,
+        'extramorphs_game_over_dude_power',
+        '游戏结束了伙计：选择要打出的随从力量',
+        options,
+        now,
+        'button',
+        'ui.extramorphs_game_over_dude_power_title',
+        { sourceCardUid, sourceBaseIndex: baseIndex },
+        undefined,
+        { responseValidationMode: 'live' },
+    );
+}
+
 function extramorphsAncientCrashedShipTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
     if (baseIndex === undefined) return [];
@@ -1479,118 +2204,686 @@ function extramorphsAncientCrashedShipTrigger(ctx: TriggerContext): SmashUpEvent
     })];
 }
 
+function registerExtramorphsInteractionHandlers(): void {
+    registerInteractionHandler('extramorphs_chestbreaker_power', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesPowerChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip || selected.power === undefined || !continuation?.sourceCardUid || continuation.sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[continuation.sourceBaseIndex]?.minions.find(candidate =>
+            candidate.uid === continuation.sourceCardUid
+            && candidate.defId === 'extramorphs_chestbreaker'
+            && candidate.controller === playerId);
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: [
+                ...playTopMinionOfPower(
+                    state.core,
+                    playerId,
+                    selected.power,
+                    continuation.sourceBaseIndex,
+                    'extramorphs_chestbreaker',
+                    timestamp,
+                    selected.power,
+                    state,
+                ),
+                ...buildValidatedCardToDeckBottomEvents(state.core, {
+                    cardUid: continuation.sourceCardUid,
+                    defId: 'extramorphs_chestbreaker',
+                    ownerId: minion.owner ?? playerId,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: continuation.sourceCardUid,
+                    sourceDefId: 'extramorphs_chestbreaker',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation.sourceBaseIndex,
+                    reason: 'extramorphs_chestbreaker',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            ],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_game_over_dude_base', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesPowerChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string } | undefined;
+        if (selected.skip || selected.baseIndex === undefined) return { state, events: [] };
+        return {
+            state: queueGameOverDudePowerPrompt(
+                state,
+                playerId,
+                continuation?.sourceCardUid,
+                selected.baseIndex,
+                timestamp,
+            ) ?? state,
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_game_over_dude_power', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesPowerChoice;
+        const continuation = data?.continuationContext as { sourceBaseIndex?: number } | undefined;
+        if (selected.skip || selected.power === undefined || continuation?.sourceBaseIndex === undefined) return { state, events: [] };
+        return {
+            state,
+            events: playTopMinionOfPower(
+                state.core,
+                playerId,
+                selected.power,
+                continuation.sourceBaseIndex,
+                'extramorphs_game_over_dude',
+                timestamp,
+                selected.power,
+                state,
+            ),
+        };
+    });
+
+    registerInteractionHandler('extramorphs_extradrone_target', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesMinionChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip || !selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
+        const targetBaseOptions = buildOtherBaseChoiceOptions(state.core, selected.baseIndex);
+        if (targetBaseOptions.length === 0) return { state, events: [] };
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'extramorphs_extradrone_base',
+                '额外工蜂：选择敌方随从移动到的基地',
+                targetBaseOptions,
+                timestamp,
+                'base',
+                'ui.extramorphs_extradrone_base_title',
+                {
+                    targetMinionUid: selected.minionUid,
+                    targetMinionDefId: selected.minionDefId ?? selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                    sourceCardUid: continuation?.sourceCardUid,
+                    sourceBaseIndex: continuation?.sourceBaseIndex,
+                },
+                undefined,
+                { autoRefresh: 'base', responseValidationMode: 'live' },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_extradrone_base', (state, playerId, value, data, _random, timestamp) => {
+        const selectedBase = value as { baseIndex?: number; baseDefId?: string };
+        const continuation = data?.continuationContext as {
+            targetMinionUid?: string;
+            targetMinionDefId?: string;
+            fromBaseIndex?: number;
+            sourceCardUid?: string;
+            sourceBaseIndex?: number;
+        } | undefined;
+        if (
+            selectedBase.baseIndex === undefined
+            || !continuation?.targetMinionUid
+            || !continuation.targetMinionDefId
+            || continuation.fromBaseIndex === undefined
+        ) {
+            return { state, events: [] };
+        }
+        const events = buildValidatedMoveEvents(state, {
+            minionUid: continuation.targetMinionUid,
+            minionDefId: continuation.targetMinionDefId,
+            fromBaseIndex: continuation.fromBaseIndex,
+            toBaseIndex: selectedBase.baseIndex,
+            toBaseDefId: selectedBase.baseDefId,
+            reason: 'extramorphs_extradrone',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceCardUid: continuation.sourceCardUid,
+            sourceDefId: 'extramorphs_extradrone',
+            sourceControllerId: playerId,
+            sourceBaseIndex: continuation.sourceBaseIndex,
+            sourceKind: 'nonAction',
+        });
+        const self = continuation.sourceCardUid && continuation.sourceBaseIndex !== undefined
+            ? state.core.bases[continuation.sourceBaseIndex]?.minions.find(minion => minion.uid === continuation.sourceCardUid)
+            : undefined;
+        if (!self || continuation.sourceBaseIndex === selectedBase.baseIndex) return { state, events };
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'extramorphs_extradrone_self',
+                '额外工蜂：选择是否把额外工蜂也移动到该基地',
+                [
+                    createSkipOption('跳过（不移动额外工蜂）', 'ui.extramorphs_extradrone_self_skip_option'),
+                    {
+                        id: 'move-self',
+                        label: `移动到 ${baseName(state.core, selectedBase.baseIndex)}`,
+                        value: { targetBaseIndex: selectedBase.baseIndex, targetBaseDefId: selectedBase.baseDefId },
+                        displayMode: 'button' as const,
+                    },
+                ],
+                timestamp,
+                'button',
+                'ui.extramorphs_extradrone_self_title',
+                {
+                    sourceCardUid: continuation.sourceCardUid,
+                    sourceBaseIndex: continuation.sourceBaseIndex,
+                },
+                undefined,
+                { responseValidationMode: 'live' },
+            ),
+            events,
+        };
+    });
+
+    registerInteractionHandler('extramorphs_extradrone_self', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { targetBaseIndex?: number; targetBaseDefId?: string; skip?: boolean };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip || !continuation?.sourceCardUid || continuation.sourceBaseIndex === undefined || selected.targetBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: continuation.sourceCardUid,
+                minionDefId: 'extramorphs_extradrone',
+                fromBaseIndex: continuation.sourceBaseIndex,
+                toBaseIndex: selected.targetBaseIndex,
+                toBaseDefId: selected.targetBaseDefId,
+                reason: 'extramorphs_extradrone',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation.sourceCardUid,
+                sourceDefId: 'extramorphs_extradrone',
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation.sourceBaseIndex,
+                sourceKind: 'nonAction',
+            }),
+        };
+    });
+
+    registerInteractionHandler('extramorphs_alien_life_form_destroy', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesMinionChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip) return { state, events: [] };
+        return {
+            state,
+            events: buildDestroySelectedMinionEvents(
+                state.core,
+                playerId,
+                selected,
+                'extramorphs_alien_life_form',
+                timestamp,
+                continuation?.sourceCardUid,
+                continuation?.sourceBaseIndex,
+                'nonAction',
+            ),
+        };
+    });
+
+    registerInteractionHandler('extramorphs_alien_life_form_talent_base', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number; baseDefId?: string; skip?: boolean };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip || !continuation?.sourceCardUid || continuation.sourceBaseIndex === undefined || selected.baseIndex === undefined) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [
+                removePowerCounter(continuation.sourceCardUid, continuation.sourceBaseIndex, 1, 'extramorphs_alien_life_form', timestamp, {
+                    sourcePlayerId: playerId,
+                    sourceCardUid: continuation.sourceCardUid,
+                    sourceDefId: 'extramorphs_alien_life_form',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation.sourceBaseIndex,
+                }),
+                ...buildValidatedMoveEvents(state, {
+                    minionUid: continuation.sourceCardUid,
+                    minionDefId: 'extramorphs_alien_life_form',
+                    fromBaseIndex: continuation.sourceBaseIndex,
+                    toBaseIndex: selected.baseIndex,
+                    toBaseDefId: selected.baseDefId,
+                    reason: 'extramorphs_alien_life_form',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: continuation.sourceCardUid,
+                    sourceDefId: 'extramorphs_alien_life_form',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation.sourceBaseIndex,
+                    sourceKind: 'nonAction',
+                }),
+            ],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_distress_call_minion', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesMinionChoice;
+        if (selected.skip || !selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
+        const baseOptions = buildOtherBaseChoiceOptions(state.core, selected.baseIndex);
+        if (baseOptions.length === 0) return { state, events: [] };
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'extramorphs_distress_call_base',
+                '求救信号：选择移动目的基地',
+                baseOptions,
+                timestamp,
+                'base',
+                'ui.extramorphs_distress_call_base_title',
+                {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.minionDefId ?? selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                },
+                undefined,
+                { autoRefresh: 'base', responseValidationMode: 'live' },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_distress_call_base', (state, playerId, value, data, _random, timestamp) => {
+        const selectedBase = value as { baseIndex?: number; baseDefId?: string };
+        const continuation = data?.continuationContext as { minionUid?: string; minionDefId?: string; fromBaseIndex?: number } | undefined;
+        if (selectedBase.baseIndex === undefined || !continuation?.minionUid || !continuation.minionDefId || continuation.fromBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: continuation.minionUid,
+                minionDefId: continuation.minionDefId,
+                fromBaseIndex: continuation.fromBaseIndex,
+                toBaseIndex: selectedBase.baseIndex,
+                toBaseDefId: selectedBase.baseDefId,
+                reason: 'extramorphs_distress_call',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'extramorphs_distress_call',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
+            }),
+        };
+    });
+
+    registerInteractionHandler('extramorphs_egg_field_head_grabber', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        const continuation = data?.continuationContext as { sourceBaseIndex?: number } | undefined;
+        if (selected.skip || !selected.cardUid || !selected.defId || !selected.zone || continuation?.sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const minionOptions = buildMinionChoiceOptions(
+            state.core,
+            playerId,
+            'extramorphs_egg_field',
+            (minion, baseIndex) => baseIndex === continuation.sourceBaseIndex && isPrintedPowerAtMost(minion.defId, 3),
+            'affect',
+        );
+        if (minionOptions.length === 0) return { state, events: [] };
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'extramorphs_egg_field_target',
+                '卵场：选择抱头虫附着的弱随从',
+                minionOptions,
+                timestamp,
+                'minion',
+                'ui.extramorphs_egg_field_target_title',
+                {
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    zone: selected.zone,
+                    sourceBaseIndex: continuation.sourceBaseIndex,
+                },
+                undefined,
+                { autoRefresh: 'field', responseValidationMode: 'live' },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_egg_field_target', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesMinionChoice;
+        const continuation = data?.continuationContext as {
+            cardUid?: string;
+            defId?: string;
+            ownerId?: PlayerId;
+            zone?: 'hand' | 'deck' | 'discard';
+            sourceBaseIndex?: number;
+        } | undefined;
+        if (
+            selected.skip
+            || !selected.minionUid
+            || selected.baseIndex === undefined
+            || !continuation?.cardUid
+            || !continuation.defId
+            || !continuation.ownerId
+        ) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [
+                buildActionPlayedEvent({
+                    playerId,
+                    cardUid: continuation.cardUid,
+                    defId: continuation.defId,
+                    ownerId: continuation.ownerId,
+                    isExtraAction: true,
+                    targetBaseIndex: selected.baseIndex,
+                    targetMinionUid: selected.minionUid,
+                    fromDiscard: continuation.zone === 'discard',
+                    timestamp,
+                }) as SmashUpEvent,
+                ...buildSemanticOngoingAttachEvents(state, {
+                    cardUid: continuation.cardUid,
+                    defId: continuation.defId,
+                    ownerId: continuation.ownerId,
+                    sourcePlayerId: playerId,
+                    sourceKind: 'action',
+                    targetBaseIndex: selected.baseIndex,
+                    targetMinionUid: selected.minionUid,
+                    metadata: buildActivationPlayedThisTurnMetadata(continuation.defId),
+                    removeFromDiscard: continuation.zone === 'discard',
+                    onBlockedSourceDestination: 'discard',
+                    now: timestamp,
+                }),
+            ],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_time_to_go', (state, playerId, value, _data, _random, timestamp) => {
+        const selectedCards = ((Array.isArray(value) ? value : value ? [value] : []) as ExcellentMoviesCardChoice[])
+            .filter(choice => !choice.skip && choice.cardUid)
+            .slice(0, 3)
+            .map(choice => state.core.players[playerId]?.discard.find(card => card.uid === choice.cardUid))
+            .filter((card): card is CardInstance => Boolean(card));
+        return {
+            state,
+            events: selectedCards.map(card => buildCardToDeckBottomEvent(card, playerId, 'extramorphs_time_to_go', timestamp, {
+                sourcePlayerId: playerId,
+                sourceDefId: 'extramorphs_time_to_go',
+                sourceControllerId: playerId,
+            })),
+        };
+    });
+
+    registerInteractionHandler('extramorphs_close_encounters_hand', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.hand.find(candidate => candidate.uid === selected.cardUid);
+        if (!card) return { state, events: [] };
+        return {
+            state,
+            events: [buildCardToDeckTopEvent(card, playerId, 'extramorphs_close_encounters', timestamp, {
+                sourcePlayerId: playerId,
+                sourceDefId: 'extramorphs_close_encounters',
+                sourceControllerId: playerId,
+            })],
+        };
+    });
+
+    registerInteractionHandler('extramorphs_five_by_five_order', (state, playerId, value, data, _random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as ExcellentMoviesCardChoice[];
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
+        const used = new Set<string>();
+        const selectedCards = choices
+            .map(choice => {
+                if (!choice.cardUid || used.has(choice.cardUid)) return undefined;
+                used.add(choice.cardUid);
+                return player.hand.find(card => card.uid === choice.cardUid);
+            })
+            .filter((card): card is CardInstance => Boolean(card))
+            .slice(0, 5);
+        return {
+            state,
+            events: [...selectedCards].reverse().map(card => buildCardToDeckTopEvent(card, playerId, 'extramorphs_five_by_five', timestamp, {
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: 'extramorphs_five_by_five',
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
+            })),
+        };
+    });
+}
+
 function registerExtramorphs(): void {
-    registerSimpleAbility('extramorphs_close_encounters', 'onPlay', ctx => ({
-        events: [
-            ...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
+    registerExtramorphsInteractionHandlers();
+
+    registerSimpleAbility('extramorphs_close_encounters', 'onPlay', ctx => {
+        const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+        const events = [
+            ...drawEvents,
             grantContextualExtraAction(ctx, ctx.defId),
-            ...((ctx.state.players[ctx.playerId]?.hand ?? [])
-                .filter(card => card.uid !== ctx.cardUid)
-                .slice(0, 1)
-                .map(card => buildCardToDeckTopEvent(card, ctx.playerId, ctx.defId, ctx.now, sourceFor(ctx)))),
-        ],
-    }));
-    registerSimpleAbility('extramorphs_chestbreaker', 'talent', ctx => {
-        const baseIndex = ctx.baseIndex;
-        const hasExact3 = ctx.state.players[ctx.playerId]?.deck.some(card => getMinionDef(card.defId)?.power === 3) ?? false;
-        return { events: playTopMinionOfPower(ctx.state, ctx.playerId, hasExact3 ? 3 : 4, baseIndex, ctx.defId, ctx.now, hasExact3 ? 3 : 4, ctx.matchState) };
+        ];
+        const drawnCardUids = new Set(drawEvents
+            .filter((event): event is CardsDrawnEvent => event.type === SU_EVENTS.CARDS_DRAWN)
+            .flatMap(event => event.payload.cardUids));
+        const drawnCardOptions = buildCardPoolOptions(
+            [
+                ...(ctx.state.players[ctx.playerId]?.deck ?? []),
+                ...(ctx.state.players[ctx.playerId]?.discard ?? []),
+            ].filter(card => drawnCardUids.has(card.uid)),
+            'hand',
+            'hand',
+        );
+        const initialHandOptions = buildHandCardOptions(ctx.state, ctx.playerId, ctx.cardUid);
+        const initialOptions = [
+            ...initialHandOptions,
+            ...drawnCardOptions.filter(option =>
+                !initialHandOptions.some(existing => existing.value.cardUid === option.value.cardUid)),
+        ];
+        if (initialOptions.length === 0) {
+            return { events };
+        }
+        return {
+            events,
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_close_encounters_hand',
+                '近距离接触：选择是否将一张手牌置于牌库顶',
+                [createSkipOption('跳过（不放回牌库顶）', 'ui.extramorphs_close_encounters_hand_skip_option'), ...initialOptions],
+                ctx.now,
+                'hand',
+                'ui.extramorphs_close_encounters_hand_title',
+                { sourceCardUid: ctx.cardUid },
+                undefined,
+                {
+                    autoRefresh: 'hand',
+                    responseValidationMode: 'live',
+                },
+            ),
+        };
+    });
+    registerSimpleAbility('extramorphs_chestbreaker', 'talent', {
+        validateUse: ctx => {
+            const minion = ctx.state.bases[ctx.baseIndex]?.minions.find(candidate =>
+                candidate.uid === ctx.cardUid
+                && candidate.defId === ctx.defId
+                && candidate.controller === ctx.playerId);
+            if (!minion) return '破胸者必须在基地上才能使用天赋';
+            if (
+                getBoardTalentUseRequirement(ctx.defId) === 'sourceInPlayAtStartOfTurn'
+                && wasActivationSourcePlayedThisTurn(minion)
+            ) {
+                return '破胸者必须在本回合开始时已经位于基地上才能使用';
+            }
+            return null;
+        },
+        execute: ctx => {
+            const baseIndex = ctx.baseIndex;
+            const options = buildAvailablePowerOptions(ctx.state, ctx.playerId, [3, 4], 'chestbreaker-power');
+            if (options.length === 0) return { events: [] };
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'extramorphs_chestbreaker_power',
+                    '破胸者：选择要从牌库顶打出的随从力量',
+                    options,
+                    ctx.now,
+                    'button',
+                    'ui.extramorphs_chestbreaker_power_title',
+                    { sourceCardUid: ctx.cardUid, sourceBaseIndex: baseIndex },
+                    undefined,
+                    { responseValidationMode: 'live' },
+                ),
+            };
+        },
     });
     registerSimpleAbility('extramorphs_extradrone', 'onPlay', ctx => {
         const events: SmashUpEvent[] = [];
         if (ctx.fromDeck) {
             events.push(addPowerCounter(ctx.cardUid, ctx.baseIndex, 1, ctx.defId, ctx.now, sourceFor(ctx)));
         }
-        const target = firstOtherPlayerMinionAtBase(ctx.state, ctx.playerId, ctx.baseIndex, minion => isPrintedPowerAtMost(minion.defId, 3));
-        const destination = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-        if (target && destination !== undefined) {
-            events.push(...buildValidatedMoveEvents(ctx.state, {
-                minionUid: target.minion.uid,
-                minionDefId: target.minion.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex: destination,
-                reason: ctx.defId,
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'nonAction',
-            }));
-            events.push(...buildValidatedMoveEvents(ctx.state, {
-                minionUid: ctx.cardUid,
-                minionDefId: ctx.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex: destination,
-                reason: ctx.defId,
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'nonAction',
-            }));
-        }
-        return { events };
+        const options = buildMinionChoiceOptions(
+            ctx.state,
+            ctx.playerId,
+            ctx.defId,
+            (minion, baseIndex) =>
+                baseIndex === ctx.baseIndex
+                && minion.controller !== ctx.playerId
+                && isPrintedPowerAtMost(minion.defId, 3)
+                && firstOtherBaseIndex(ctx.state, baseIndex) !== undefined,
+            'move',
+            'nonAction',
+        );
+        if (options.length === 0) return { events };
+        return {
+            events,
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_extradrone_target',
+                '额外工蜂：选择要移动的敌方弱随从',
+                [createSkipOption('跳过（不移动敌方随从）', 'ui.extramorphs_extradrone_skip_option'), ...options],
+                ctx.now,
+                'minion',
+                'ui.extramorphs_extradrone_target_title',
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'field', responseValidationMode: 'live' },
+            ),
+        };
     });
     registerSimpleAbility('extramorphs_alien_life_form', 'onPlay', ctx => {
         const events: SmashUpEvent[] = [];
-        const target = firstOtherPlayerMinionAtBase(ctx.state, ctx.playerId, ctx.baseIndex, minion => isPrintedPowerAtMost(minion.defId, 3))
-            ?? firstMinionAtBase(ctx.state, ctx.baseIndex, minion => minion.uid !== ctx.cardUid && isPrintedPowerAtMost(minion.defId, 3));
-        if (target) {
-            events.push(...buildValidatedDestroyEvents(ctx.state, {
-                minionUid: target.minion.uid,
-                minionDefId: target.minion.defId,
-                fromBaseIndex: target.baseIndex,
-                destroyerId: ctx.playerId,
-                reason: ctx.defId,
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'nonAction',
-            }));
-        }
         if (ctx.fromDeck) {
             events.push(addPowerCounter(ctx.cardUid, ctx.baseIndex, 2, ctx.defId, ctx.now, sourceFor(ctx)));
         }
-        return { events };
+        const options = buildMinionChoiceOptions(
+            ctx.state,
+            ctx.playerId,
+            ctx.defId,
+            (minion, baseIndex) =>
+                baseIndex === ctx.baseIndex
+                && minion.uid !== ctx.cardUid
+                && isPrintedPowerAtMost(minion.defId, 3),
+            'destroy',
+            'nonAction',
+        );
+        if (options.length === 0) return { events };
+        return {
+            events,
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_alien_life_form_destroy',
+                '异形生命体：选择是否摧毁这里的弱随从',
+                [createSkipOption('跳过（不摧毁随从）', 'ui.extramorphs_alien_life_form_destroy_skip_option'), ...options],
+                ctx.now,
+                'minion',
+                'ui.extramorphs_alien_life_form_destroy_title',
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'field', responseValidationMode: 'live' },
+            ),
+        };
     });
     registerSimpleAbility('extramorphs_alien_life_form', 'talent', ctx => {
         const minion = ctx.state.bases[ctx.baseIndex]?.minions.find(candidate => candidate.uid === ctx.cardUid);
-        const destination = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-        if (!minion || (minion.powerCounters ?? 0) < 1 || destination === undefined) return { events: [] };
+        const options = buildOtherBaseChoiceOptions(ctx.state, ctx.baseIndex);
+        if (!minion || (minion.powerCounters ?? 0) < 1 || options.length === 0) return { events: [] };
         return {
-            events: [
-                removePowerCounter(ctx.cardUid, ctx.baseIndex, 1, ctx.defId, ctx.now, sourceFor(ctx)),
-                ...buildValidatedMoveEvents(ctx.state, {
-                    minionUid: ctx.cardUid,
-                    minionDefId: ctx.defId,
-                    fromBaseIndex: ctx.baseIndex,
-                    toBaseIndex: destination,
-                    reason: ctx.defId,
-                    now: ctx.now,
-                    sourcePlayerId: ctx.playerId,
-                    sourceCardUid: ctx.cardUid,
-                    sourceDefId: ctx.defId,
-                    sourceControllerId: ctx.playerId,
-                    sourceBaseIndex: ctx.baseIndex,
-                    sourceKind: 'nonAction',
-                }),
-            ],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_alien_life_form_talent_base',
+                '异形生命体：选择移动到的基地',
+                options,
+                ctx.now,
+                'base',
+                'ui.extramorphs_alien_life_form_talent_base_title',
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'base', responseValidationMode: 'live' },
+            ),
         };
     });
-    registerSimpleAbility('extramorphs_hive_queen', 'onPlay', ctx => {
-        const located = findCardInZones(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_egg_field');
-        if (!located) return { events: [] };
-        if (located.zone === 'deck') {
-            return { events: drawSpecificDeckCard(ctx.playerId, located.card, ctx.state.players[ctx.playerId]?.deck ?? [], ctx.defId, ctx.now) };
+    registerInteractionHandler('extramorphs_hive_queen', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid || !selected.defId || !selected.zone) return { state, events: [] };
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
+        if (selected.zone === 'deck') {
+            const card = player.deck.find(candidate => candidate.uid === selected.cardUid && candidate.defId === selected.defId);
+            return {
+                state,
+                events: card ? drawSpecificDeckCard(playerId, card, player.deck, 'extramorphs_hive_queen', timestamp) : [],
+            };
         }
-        const recovered = buildRecoverOrTransferToHandEvent(ctx.playerId, located.card, located.zone, ctx.defId, ctx.now);
-        return { events: recovered ? [recovered] : [] };
+        if (selected.zone === 'discard') {
+            const card = player.discard.find(candidate => candidate.uid === selected.cardUid && candidate.defId === selected.defId);
+            return {
+                state,
+                events: card ? [recoverCardsFromDiscard(playerId, [card.uid], 'extramorphs_hive_queen', timestamp)] : [],
+            };
+        }
+        return { state, events: [] };
+    });
+    registerSimpleAbility('extramorphs_hive_queen', 'onPlay', ctx => {
+        const player = ctx.state.players[ctx.playerId];
+        if (!player) return { events: [] };
+        const options = [
+            ...buildDeckCardOptions(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_egg_field')
+                .map(option => ({ ...option, label: `${option.label}（牌库）` })),
+            ...buildDiscardCardOptions(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_egg_field')
+                .map(option => ({ ...option, label: `${option.label}（弃牌堆）` })),
+        ];
+        if (options.length === 0) return { events: [] };
+        if (ctx.matchState) {
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'extramorphs_hive_queen',
+                    '异形女王：选择牌库或弃牌堆中的卵场加入手牌',
+                    [createSkipOption('跳过（不检索卵场）', 'ui.skip'), ...options],
+                    ctx.now,
+                    'generic',
+                    undefined,
+                    undefined,
+                    undefined,
+                    { genericIntent: 'card-pool', responseValidationMode: 'live' },
+                ),
+            };
+        }
+        const deckCard = player.deck.find(card => card.defId === 'extramorphs_egg_field');
+        if (deckCard) {
+            return { events: drawSpecificDeckCard(ctx.playerId, deckCard, player.deck, ctx.defId, ctx.now) };
+        }
+        const discardCard = player.discard.find(card => card.defId === 'extramorphs_egg_field');
+        return { events: discardCard ? [recoverCardsFromDiscard(ctx.playerId, [discardCard.uid], ctx.defId, ctx.now)] : [] };
     });
     registerSimpleAbility('extramorphs_hive_queen', 'talent', ctx => {
         const eggBases = new Set(ctx.state.bases.flatMap((base, baseIndex) =>
@@ -1607,78 +2900,140 @@ function registerExtramorphs(): void {
         };
     });
     registerSimpleAbility('extramorphs_distress_call', 'onPlay', ctx => {
-        const located = ctx.targetMinionUid ? findMinionLocation(ctx.state, ctx.targetMinionUid) : undefined;
-        const fallback = located ?? firstOwnMinion(ctx.state, ctx.playerId);
-        const destination = fallback ? firstOtherBaseIndex(ctx.state, fallback.baseIndex) : undefined;
-        if (!fallback || destination === undefined) return { events: [] };
-        return { events: buildValidatedMoveEvents(ctx.state, {
-            minionUid: fallback.minion.uid,
-            minionDefId: fallback.minion.defId,
-            fromBaseIndex: fallback.baseIndex,
-            toBaseIndex: destination,
-            reason: ctx.defId,
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            sourceKind: 'nonAction',
-        }) };
+        const options = buildMinionChoiceOptions(
+            ctx.state,
+            ctx.playerId,
+            ctx.defId,
+            (_minion, baseIndex) => firstOtherBaseIndex(ctx.state, baseIndex) !== undefined,
+            'move',
+        );
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_distress_call_minion',
+                '求救信号：选择要移动的随从',
+                options,
+                ctx.now,
+                'minion',
+                'ui.extramorphs_distress_call_minion_title',
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'field', responseValidationMode: 'live' },
+            ),
+        };
     });
     registerSimpleAbility('extramorphs_egg_field', 'onPlay', ctx => {
-        const located = findCardInZones(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_head_grabber');
-        const target = firstMinionAtBase(ctx.state, ctx.targetBaseIndex ?? ctx.baseIndex, minion => isPrintedPowerAtMost(minion.defId, 3));
-        if (!located || !target) return { events: [] };
+        const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+        const headGrabberOptions = [
+            ...buildHandCardOptions(ctx.state, ctx.playerId, undefined, card => card.defId === 'extramorphs_head_grabber'),
+            ...buildDeckCardOptions(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_head_grabber'),
+            ...buildDiscardCardOptions(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_head_grabber'),
+        ];
+        const hasTarget = ctx.state.bases[baseIndex]?.minions.some(minion => isPrintedPowerAtMost(minion.defId, 3)) ?? false;
+        if (headGrabberOptions.length === 0 || !hasTarget) return { events: [] };
         return {
-            events: [
-                buildActionPlayedEvent({
-                    playerId: ctx.playerId,
-                    cardUid: located.card.uid,
-                    defId: located.card.defId,
-                    ownerId: located.card.owner,
-                    isExtraAction: true,
-                    targetBaseIndex: target.baseIndex,
-                    targetMinionUid: target.minion.uid,
-                    fromDiscard: located.zone === 'discard',
-                    timestamp: ctx.now,
-                }) as SmashUpEvent,
-                ...buildSemanticOngoingAttachEvents(ctx.matchState, {
-                    cardUid: located.card.uid,
-                    defId: located.card.defId,
-                    ownerId: located.card.owner,
-                    sourcePlayerId: ctx.playerId,
-                    sourceKind: 'action',
-                    targetBaseIndex: target.baseIndex,
-                    targetMinionUid: target.minion.uid,
-                    removeFromDiscard: located.zone === 'discard',
-                    onBlockedSourceDestination: 'discard',
-                    now: ctx.now,
-                }),
-            ],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_egg_field_head_grabber',
+                '卵场：选择是否检索并打出抱头虫',
+                [createSkipOption('跳过（不打出抱头虫）', 'ui.extramorphs_egg_field_skip_option'), ...headGrabberOptions],
+                ctx.now,
+                'generic',
+                'ui.extramorphs_egg_field_head_grabber_title',
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: baseIndex },
+                undefined,
+                { genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
         };
     });
     registerSimpleAbility('extramorphs_egg_field', 'talent', ctx => ({
         events: playTopMinionOfPower(ctx.state, ctx.playerId, 2, ctx.baseIndex, ctx.defId, ctx.now, undefined, ctx.matchState),
     }));
     registerSimpleAbility('extramorphs_five_by_five', 'onPlay', ctx => {
-        const topCards = (ctx.state.players[ctx.playerId]?.hand ?? [])
-            .filter(card => card.uid !== ctx.cardUid)
-            .slice(0, 5);
+        const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 5, ctx.random, ctx.now);
+        const drawnCardUids = new Set(drawEvents
+            .filter((event): event is CardsDrawnEvent => event.type === SU_EVENTS.CARDS_DRAWN)
+            .flatMap(event => event.payload.cardUids));
+        const handOptions = buildHandCardOptions(ctx.state, ctx.playerId, ctx.cardUid);
+        const drawnOptions = buildCardPoolOptions(
+            (ctx.state.players[ctx.playerId]?.deck ?? []).filter(card => drawnCardUids.has(card.uid)),
+            'hand',
+            'drawn',
+        );
+        const options = [
+            ...handOptions,
+            ...drawnOptions.filter(option => !handOptions.some(existing => existing.value.cardUid === option.value.cardUid)),
+        ];
+        const requiredCount = Math.min(5, options.length);
+        if (requiredCount === 0) {
+            return { events: drawEvents };
+        }
         return {
-            events: [
-                ...buildStandardDrawEvents(ctx.state, ctx.playerId, 5, ctx.random, ctx.now),
-                ...topCards.map(card => buildCardToDeckTopEvent(card, ctx.playerId, ctx.defId, ctx.now, sourceFor(ctx))),
-            ],
+            events: drawEvents,
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'extramorphs_five_by_five_order',
+                '五乘五：按顺序选择要放回牌库顶的五张手牌',
+                options,
+                ctx.now,
+                'hand',
+                undefined,
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'hand', multi: { min: requiredCount, max: requiredCount, ordered: true }, responseValidationMode: 'live' },
+            ),
         };
     });
-    registerSimpleAbility('extramorphs_game_over_dude', 'onPlay', ctx => ({
-        events: playTopMinionOfPower(ctx.state, ctx.playerId, 4, ctx.targetBaseIndex ?? ctx.baseIndex, ctx.defId, ctx.now, undefined, ctx.matchState),
-    }));
-    registerSimpleAbility('extramorphs_head_grabber', 'talent', ctx => {
-        for (const [baseIndex, base] of ctx.state.bases.entries()) {
-            const host = base.minions.find(minion => minion.attachedActions.some(action => action.uid === ctx.cardUid || action.defId === ctx.defId));
-            if (!host) continue;
+    registerSimpleAbility('extramorphs_game_over_dude', 'onPlay', ctx => {
+        if (ctx.targetBaseIndex === undefined) {
+            const options = buildBaseTargetOptions(
+                ctx.state.bases.map((_base, baseIndex) => ({ baseIndex, label: baseName(ctx.state, baseIndex) })),
+                ctx.state,
+            );
+            if (options.length === 0) return { events: [] };
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'extramorphs_game_over_dude_base',
+                    '游戏结束了伙计：选择一个基地',
+                    options,
+                    ctx.now,
+                    'base',
+                    'ui.extramorphs_game_over_dude_base_title',
+                    { sourceCardUid: ctx.cardUid },
+                    undefined,
+                    { autoRefresh: 'base', responseValidationMode: 'live' },
+                ),
+            };
+        }
+        const matchState = queueGameOverDudePowerPrompt(ctx.matchState, ctx.playerId, ctx.cardUid, ctx.targetBaseIndex, ctx.now);
+        return matchState ? { events: [], matchState } : { events: [] };
+    });
+    registerSimpleAbility('extramorphs_head_grabber', 'talent', {
+        validateUse: ctx => {
+            const located = findAttachedOngoingHost(ctx.state, ctx.baseIndex, ctx.cardUid, ctx.defId);
+            if (!located) return '抱头虫必须附着在佣兵上才能使用天赋';
+            if (
+                getBoardTalentUseRequirement(ctx.defId) === 'attachedToOwnMinionOrSourceInPlayAtStartOfTurn'
+                && located.host.controller !== ctx.playerId
+                && wasActivationSourcePlayedThisTurn(located.action)
+            ) {
+                return '抱头虫必须在本回合开始时已经附着在该佣兵上，或附着在你的佣兵上，才能使用';
+            }
+            return null;
+        },
+        execute: ctx => {
+            const located = findAttachedOngoingHost(ctx.state, ctx.baseIndex, ctx.cardUid, ctx.defId);
+            if (!located) return { events: [] };
+            const { host, baseIndex } = located;
             return {
                 events: [
                     ...buildValidatedDestroyEvents(ctx.state, {
@@ -1698,14 +3053,26 @@ function registerExtramorphs(): void {
                     ...playTopMinionOfPower(ctx.state, ctx.playerId, 4, baseIndex, ctx.defId, ctx.now, undefined, ctx.matchState),
                 ],
             };
-        }
-        return { events: [] };
+        },
     });
-    registerSimpleAbility('extramorphs_nuke_it_from_orbit', 'talent', ctx => {
-        const base = ctx.state.bases[ctx.baseIndex];
-        if (!base) return { events: [] };
-        return {
-            events: [
+    registerSimpleAbility('extramorphs_nuke_it_from_orbit', 'talent', {
+        validateUse: ctx => {
+            const action = findBaseOngoing(ctx.state, ctx.baseIndex, ctx.cardUid, ctx.defId);
+            if (!action) return '从轨道核平必须位于基地上才能使用天赋';
+            if (
+                getBoardTalentUseRequirement(ctx.defId) === 'sourceInPlayAtStartOfTurn'
+                && wasActivationSourcePlayedThisTurn(action)
+            ) {
+                return '从轨道核平必须在本回合开始时已经位于基地上才能使用';
+            }
+            return null;
+        },
+        execute: ctx => {
+            const base = ctx.state.bases[ctx.baseIndex];
+            if (!base) return { events: [] };
+            const sourceAction = findBaseOngoing(ctx.state, ctx.baseIndex, ctx.cardUid, ctx.defId);
+            if (!sourceAction) return { events: [] };
+            const events: SmashUpEvent[] = [
                 ...base.minions.flatMap(minion => buildValidatedDestroyEvents(ctx.state, {
                     minionUid: minion.uid,
                     minionDefId: minion.defId,
@@ -1720,17 +3087,53 @@ function registerExtramorphs(): void {
                     sourceBaseIndex: ctx.baseIndex,
                     sourceKind: 'nonAction',
                 })),
-                ...base.ongoingActions.map(action => detachOngoing(action.uid, action.defId, action.ownerId, ctx.defId, ctx.now)),
-            ],
-        };
+                ...base.ongoingActions
+                    .filter(action => action.uid !== ctx.cardUid)
+                    .map(action => detachOngoing(action.uid, action.defId, action.ownerId, ctx.defId, ctx.now, sourceFor(ctx))),
+                {
+                    type: SU_EVENTS.CARD_REMOVED_FROM_GAME,
+                    payload: {
+                        playerId: sourceAction.ownerId,
+                        cardUid: sourceAction.uid,
+                        defId: sourceAction.defId,
+                        reason: ctx.defId,
+                    },
+                    timestamp: ctx.now,
+                } as CardRemovedFromGameEvent,
+            ];
+            const newBaseDefId = ctx.state.baseDeck[0];
+            if (newBaseDefId) {
+                events.push({
+                    type: SU_EVENTS.BASE_REPLACED,
+                    payload: {
+                        baseIndex: ctx.baseIndex,
+                        oldBaseDefId: base.defId,
+                        newBaseDefId,
+                    },
+                    timestamp: ctx.now,
+                } as BaseReplacedEvent);
+            }
+            return { events };
+        },
     });
     registerSimpleAbility('extramorphs_time_to_go', 'onPlay', ctx => {
-        const player = ctx.state.players[ctx.playerId];
-        if (!player) return { events: [] };
-        const chosen = player.discard.slice(0, 3);
-        if (chosen.length === 0) return { events: [] };
+        const options = buildDiscardCardOptions(ctx.state, ctx.playerId);
+        if (options.length === 0) return { events: [] };
         return {
-            events: chosen.map(card => buildCardToDeckBottomEvent(card, ctx.playerId, ctx.defId, ctx.now, sourceFor(ctx))),
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                ctx.defId,
+                '该走了：选择至多三张弃牌洗回牌库',
+                options,
+                ctx.now,
+                'generic',
+                'ui.extramorphs_time_to_go_title',
+                undefined,
+                undefined,
+                { autoRefresh: 'discard', genericIntent: 'card-pool', multi: { min: 0, max: Math.min(3, options.length) }, responseValidationMode: 'live' },
+            ),
         };
     });
     registerTrigger('base_ancient_crashed_ship', 'onMinionPlayed', extramorphsAncientCrashedShipTrigger, {
@@ -1791,7 +3194,109 @@ function moveFirstOwnMinionAway(ctx: AbilityContext, baseIndex = ctx.baseIndex):
     });
 }
 
-function teensPower3Trigger(sourceDefId: string, ctx: TriggerContext): SmashUpEvent[] {
+function countBrunchBunchNames(core: SmashUpCore, playerId: PlayerId, baseIndex: number): number {
+    return new Set((core.bases[baseIndex]?.minions ?? [])
+        .filter(minion => minion.controller === playerId && isPrintedPower(minion.defId, 3))
+        .map(minion => minion.defId)).size;
+}
+
+function buildBrunchBunchEffectOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    targetBaseIndex: number,
+): PromptOption<TeensBrunchBunchChoice>[] {
+    const options: PromptOption<TeensBrunchBunchChoice>[] = [];
+    const targetBaseLabel = baseName(core, targetBaseIndex);
+    for (const [baseIndex, base] of core.bases.entries()) {
+        if (baseIndex === targetBaseIndex) continue;
+        for (const minion of base.minions.filter(candidate => candidate.controller === playerId)) {
+            options.push({
+                id: `move-${minion.uid}-to-${targetBaseIndex}`,
+                label: `移动 ${cardName(minion.defId)} 到 ${targetBaseLabel}`,
+                value: {
+                    effect: 'move',
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex,
+                    targetBaseIndex,
+                    targetBaseDefId: core.bases[targetBaseIndex]?.defId,
+                },
+                displayMode: 'card',
+            });
+        }
+    }
+    if ((core.players[playerId]?.deck.length ?? 0) > 0) {
+        options.push({
+            id: 'draw-card',
+            label: '抓 1 张牌',
+            labelKey: 'ui.teens_brunch_bunch_draw_option',
+            value: { effect: 'draw' },
+            displayMode: 'button',
+        });
+    }
+    if ((core.players[playerId]?.hand ?? []).some(card => getMinionDef(card.defId)?.power === 3)) {
+        options.push({
+            id: `extra-minion-${targetBaseIndex}`,
+            label: `在 ${targetBaseLabel} 打出 1 个力量 3 的额外佣兵`,
+            value: { effect: 'extra-minion', targetBaseIndex, targetBaseDefId: core.bases[targetBaseIndex]?.defId },
+            displayMode: 'button',
+        });
+    }
+    for (const option of buildMinionChoiceOptions(
+        core,
+        playerId,
+        'teens_brunch_bunch',
+        (_minion, baseIndex) => baseIndex === targetBaseIndex,
+        'affect',
+    )) {
+        options.push({
+            ...option,
+            id: `power-${option.id}`,
+            label: `令 ${option.label} +2 战力`,
+            value: { ...(option.value ?? {}), effect: 'power' },
+        });
+    }
+    for (const option of buildDiscardCardOptions(core, playerId)) {
+        options.push({
+            ...option,
+            id: `discard-bottom-${option.id}`,
+            label: `将 ${option.label} 置于牌库底`,
+            value: { ...(option.value ?? {}), effect: 'discard' },
+        });
+    }
+    return options;
+}
+
+function queueBrunchBunchEffectPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    sourceCardUid: string | undefined,
+    targetBaseIndex: number,
+    now: number,
+): MatchState<SmashUpCore> | undefined {
+    const names = countBrunchBunchNames(matchState.core, playerId, targetBaseIndex);
+    if (names <= 0) return undefined;
+    const effectOptions = buildBrunchBunchEffectOptions(matchState.core, playerId, targetBaseIndex);
+    const effectCount = new Set(effectOptions.map(option => option.value?.effect).filter(Boolean)).size;
+    const max = Math.min(names, effectCount);
+    if (max <= 0) return undefined;
+    return queuePrompt(
+        matchState,
+        playerId,
+        'teens_brunch_bunch_effects',
+        '早午餐帮：选择不同效果',
+        [createSkipOption('跳过（不选择更多效果）', 'ui.teens_brunch_bunch_skip_option'), ...effectOptions],
+        now,
+        'generic',
+        'ui.teens_brunch_bunch_effects_title',
+        { sourceCardUid, sourceBaseIndex: targetBaseIndex },
+        undefined,
+        { genericIntent: 'composite-context', multi: { min: 0, max }, responseValidationMode: 'live' },
+    );
+}
+
+function teensPower3Trigger(sourceDefId: string, ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (!ctx.sourceControllerId || ctx.sourceBaseIndex === undefined) return [];
     if (ctx.playerId !== ctx.sourceControllerId) return [];
     if (!ctx.triggerMinionDefId || !isPrintedPower(ctx.triggerMinionDefId, 3)) return [];
@@ -1811,10 +3316,56 @@ function teensPower3Trigger(sourceDefId: string, ctx: TriggerContext): SmashUpEv
         case 'teens_jock':
             return [addPowerCounter(source.uid, ctx.sourceBaseIndex, 1, sourceDefId, ctx.now, sourceInfo)];
         case 'teens_prep': {
+            if (ctx.matchState) {
+                const options = buildOwnMinionTargetOptions(ctx.state, ctx.sourceControllerId, sourceDefId, 'affect');
+                if (options.length === 0) return [];
+                return {
+                    events: [],
+                    matchState: queuePrompt(
+                        ctx.matchState,
+                        ctx.sourceControllerId,
+                        'teens_prep_power3_trigger',
+                        '优等生：选择一个己方佣兵本回合 +2 战力',
+                        [createSkipOption('跳过（不加战力）', 'ui.teens_prep_power3_skip_option'), ...options],
+                        ctx.now,
+                        'minion',
+                        'ui.teens_prep_power3_trigger_title',
+                        {
+                            sourceCardUid: ctx.sourceCardUid,
+                            sourceBaseIndex: ctx.sourceBaseIndex,
+                        },
+                    ),
+                };
+            }
             const target = firstOwnMinion(ctx.state, ctx.sourceControllerId);
             return target ? [addTempPower(target.minion.uid, target.baseIndex, 2, sourceDefId, ctx.now, sourceInfo)] : [];
         }
         case 'teens_rebel': {
+            if (ctx.matchState) {
+                const options = buildOwnMinionTargetOptions(ctx.state, ctx.sourceControllerId, sourceDefId, 'move')
+                    .filter(option => {
+                        const value = option.value as { baseIndex?: number };
+                        return value.baseIndex !== undefined && firstOtherBaseIndex(ctx.state, value.baseIndex) !== undefined;
+                    });
+                if (options.length === 0) return [];
+                return {
+                    events: [],
+                    matchState: queuePrompt(
+                        ctx.matchState,
+                        ctx.sourceControllerId,
+                        'teens_rebel_power3_minion',
+                        '叛逆者：选择要移动的己方佣兵',
+                        [createSkipOption('跳过（不移动佣兵）', 'ui.teens_rebel_power3_skip_option'), ...options],
+                        ctx.now,
+                        'minion',
+                        'ui.teens_rebel_power3_minion_title',
+                        {
+                            sourceCardUid: ctx.sourceCardUid,
+                            sourceBaseIndex: ctx.sourceBaseIndex,
+                        },
+                    ),
+                };
+            }
             const target = firstOwnMinion(ctx.state, ctx.sourceControllerId);
             const destination = target ? firstOtherBaseIndex(ctx.state, target.baseIndex) : undefined;
             if (!target || destination === undefined) return [];
@@ -1834,8 +3385,30 @@ function teensPower3Trigger(sourceDefId: string, ctx: TriggerContext): SmashUpEv
             });
         }
         case 'teens_slacker': {
-            const card = ctx.state.players[ctx.sourceControllerId]?.discard[0];
-            return card ? [buildCardToDeckBottomEvent(card, ctx.sourceControllerId, sourceDefId, ctx.now, sourceInfo)] : [];
+            if (ctx.matchState) {
+                const options = buildDiscardCardChoiceOptions(ctx.state, ctx.sourceControllerId);
+                if (options.length === 0) return [];
+                return {
+                    events: [],
+                    matchState: queuePrompt(
+                        ctx.matchState,
+                        ctx.sourceControllerId,
+                        'teens_slacker_power3_trigger',
+                        '懒散者：选择弃牌堆中要置于牌库底的牌',
+                        [createSkipOption('跳过（不放回牌库底）', 'ui.teens_slacker_power3_skip_option'), ...options],
+                        ctx.now,
+                        'generic',
+                        'ui.teens_slacker_power3_trigger_title',
+                        {
+                            sourceCardUid: ctx.sourceCardUid,
+                            sourceBaseIndex: ctx.sourceBaseIndex,
+                        },
+                        undefined,
+                        { autoRefresh: 'discard', genericIntent: 'card-pool', responseValidationMode: 'live' },
+                    ),
+                };
+            }
+            return [];
         }
         default:
             return [];
@@ -1863,6 +3436,337 @@ function registerTeensModifiers(): void {
     ]);
 }
 
+function registerTeensInteractionHandlers(): void {
+    registerInteractionHandler('teens_prep_power3_trigger', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number; skip?: boolean };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        const minionDefId = selected.minionDefId ?? selected.defId;
+        if (selected.skip || !selected.minionUid || !minionDefId || selected.baseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[selected.baseIndex]?.minions.find(candidate =>
+            candidate.uid === selected.minionUid && candidate.controller === playerId
+        );
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: [addTempPower(selected.minionUid, selected.baseIndex, 2, 'teens_prep', timestamp, {
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: 'teens_prep',
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
+            })],
+        };
+    });
+
+    registerInteractionHandler('teens_rebel_power3_minion', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { minionUid?: string; minionDefId?: string; defId?: string; baseIndex?: number; skip?: boolean };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        const minionDefId = selected.minionDefId ?? selected.defId;
+        if (selected.skip || !selected.minionUid || !minionDefId || selected.baseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[selected.baseIndex]?.minions.find(candidate =>
+            candidate.uid === selected.minionUid && candidate.controller === playerId
+        );
+        if (!minion) return { state, events: [] };
+        const options = buildBaseTargetOptions(
+            state.core.bases
+                .map((base, baseIndex) => ({ baseIndex, label: baseName(state.core, baseIndex) }))
+                .filter(candidate => candidate.baseIndex !== selected.baseIndex),
+            state.core,
+        );
+        if (options.length === 0) return { state, events: [] };
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'teens_rebel_power3_base',
+                '叛逆者：选择移动目的基地',
+                options,
+                timestamp,
+                'base',
+                'ui.teens_rebel_power3_base_title',
+                {
+                    minionUid: selected.minionUid,
+                    minionDefId,
+                    fromBaseIndex: selected.baseIndex,
+                    sourceCardUid: continuation?.sourceCardUid,
+                    sourceBaseIndex: continuation?.sourceBaseIndex,
+                },
+                undefined,
+                { autoRefresh: 'base', responseValidationMode: 'live' },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('teens_rebel_power3_base', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number; baseDefId?: string };
+        const continuation = data?.continuationContext as {
+            minionUid?: string;
+            minionDefId?: string;
+            fromBaseIndex?: number;
+            sourceCardUid?: string;
+            sourceBaseIndex?: number;
+        } | undefined;
+        if (
+            selected.baseIndex === undefined
+            || !continuation?.minionUid
+            || !continuation.minionDefId
+            || continuation.fromBaseIndex === undefined
+            || selected.baseIndex === continuation.fromBaseIndex
+        ) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[continuation.fromBaseIndex]?.minions.find(candidate =>
+            candidate.uid === continuation.minionUid && candidate.controller === playerId
+        );
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: continuation.minionUid,
+                minionDefId: continuation.minionDefId,
+                fromBaseIndex: continuation.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'teens_rebel',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation.sourceCardUid,
+                sourceDefId: 'teens_rebel',
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation.sourceBaseIndex,
+                sourceKind: 'nonAction',
+            }),
+        };
+    });
+
+    registerInteractionHandler('teens_slacker_power3_trigger', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { cardUid?: string; skip?: boolean };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.discard.find(candidate => candidate.uid === selected.cardUid);
+        if (!card) return { state, events: [] };
+        return {
+            state,
+            events: [buildCardToDeckBottomEvent(card, playerId, 'teens_slacker', timestamp, {
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: 'teens_slacker',
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
+            })],
+        };
+    });
+
+    registerInteractionHandler('teens_slacker_on_play', (state, playerId, value, data, _random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as ExcellentMoviesMinionChoice[];
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        const seen = new Set<string>();
+        const events: SmashUpEvent[] = [];
+        for (const choice of choices) {
+            if (choice.skip || !choice.minionUid || seen.has(choice.minionUid)) continue;
+            seen.add(choice.minionUid);
+            events.push(...buildMoveSelectedMinionEvents(
+                state.core,
+                playerId,
+                choice,
+                choice.targetBaseIndex,
+                'teens_slacker',
+                timestamp,
+                continuation?.sourceCardUid,
+                continuation?.sourceBaseIndex,
+                'nonAction',
+            ));
+            if (seen.size >= 2) break;
+        }
+        return { state, events };
+    });
+
+    registerInteractionHandler('teens_brunch_bunch_base', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number; skip?: boolean };
+        const continuation = data?.continuationContext as { sourceCardUid?: string } | undefined;
+        if (selected.skip || selected.baseIndex === undefined) return { state, events: [] };
+        return {
+            state: queueBrunchBunchEffectPrompt(
+                state,
+                playerId,
+                continuation?.sourceCardUid,
+                selected.baseIndex,
+                timestamp,
+            ) ?? state,
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('teens_brunch_bunch_effects', (state, playerId, value, data, random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as TeensBrunchBunchChoice[];
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (continuation?.sourceBaseIndex === undefined) return { state, events: [] };
+        const usedEffects = new Set<NonNullable<TeensBrunchBunchChoice['effect']>>();
+        const source = {
+            sourcePlayerId: playerId,
+            sourceCardUid: continuation.sourceCardUid,
+            sourceDefId: 'teens_brunch_bunch',
+            sourceControllerId: playerId,
+            sourceBaseIndex: continuation.sourceBaseIndex,
+        };
+        const events: SmashUpEvent[] = [];
+        for (const choice of choices) {
+            if (choice.skip || !choice.effect || usedEffects.has(choice.effect)) continue;
+            usedEffects.add(choice.effect);
+            if (choice.effect === 'move') {
+                events.push(...buildMoveSelectedMinionEvents(
+                    state.core,
+                    playerId,
+                    choice,
+                    continuation.sourceBaseIndex,
+                    'teens_brunch_bunch',
+                    timestamp,
+                    continuation.sourceCardUid,
+                    continuation.sourceBaseIndex,
+                    'action',
+                ));
+            } else if (choice.effect === 'draw') {
+                events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
+            } else if (choice.effect === 'extra-minion') {
+                events.push(grantContextualExtraMinion(
+                    { playerId, now: timestamp, matchState: state },
+                    'teens_brunch_bunch',
+                    continuation.sourceBaseIndex,
+                    { powerMax: 3 },
+                ));
+            } else if (choice.effect === 'power') {
+                const minionDefId = choice.minionDefId ?? choice.defId;
+                const live = choice.baseIndex === undefined || !choice.minionUid
+                    ? undefined
+                    : state.core.bases[choice.baseIndex]?.minions.find(minion => minion.uid === choice.minionUid && minion.defId === minionDefId);
+                if (live && choice.baseIndex === continuation.sourceBaseIndex) {
+                    events.push(addTempPower(choice.minionUid!, choice.baseIndex, 2, 'teens_brunch_bunch', timestamp, source));
+                }
+            } else if (choice.effect === 'discard' && choice.cardUid) {
+                const card = state.core.players[playerId]?.discard.find(candidate => candidate.uid === choice.cardUid);
+                if (card) events.push(buildCardToDeckBottomEvent(card, playerId, 'teens_brunch_bunch', timestamp, source));
+            }
+        }
+        return { state, events };
+    });
+
+    registerInteractionHandler('teens_new_kid_deck', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.deck.find(candidate =>
+            candidate.uid === selected.cardUid && getMinionDef(candidate.defId)?.power === 3);
+        return card
+            ? {
+                state,
+                events: [
+                    ...reorderDeckWithCardOnTop(state.core, playerId, card.uid, 'teens_new_kid', timestamp),
+                    grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'teens_new_kid', undefined, { powerMax: 3, specificCardUid: card.uid }),
+                ],
+            }
+            : { state, events: [] };
+    });
+
+    registerInteractionHandler('teens_prep_deck', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.deck.find(candidate =>
+            candidate.uid === selected.cardUid && (!selected.defId || candidate.defId === selected.defId) && isPrintedPower(candidate.defId, 3));
+        return card
+            ? {
+                state,
+                events: drawSpecificDeckCard(playerId, card, state.core.players[playerId]?.deck ?? [], 'teens_prep', timestamp),
+            }
+            : { state, events: [] };
+    });
+
+    registerInteractionHandler('teens_principals_office_return', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesMinionChoice;
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        if (selected.skip) return { state, events: [] };
+        const minionDefId = selected.minionDefId ?? selected.defId;
+        const returnEvents = selected.minionUid && minionDefId && selected.baseIndex !== undefined
+            ? buildValidatedReturnEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId,
+                fromBaseIndex: selected.baseIndex,
+                reason: 'teens_principals_office',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: 'teens_principals_office',
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
+                sourceKind: 'action',
+            })
+            : [];
+        const extraBaseIndex = selected.baseIndex ?? continuation?.sourceBaseIndex ?? 0;
+        const extraCard = state.core.players[playerId]?.deck.find(candidate => getMinionDef(candidate.defId)?.power === 3);
+        return {
+            state,
+            events: [
+                ...returnEvents,
+                ...(extraCard
+                    ? [
+                        ...reorderDeckWithCardOnTop(state.core, playerId, extraCard.uid, 'teens_principals_office', timestamp),
+                        grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'teens_principals_office', extraBaseIndex, {
+                            powerMax: 3,
+                            specificCardUid: extraCard.uid,
+                        }),
+                    ]
+                    : []),
+            ],
+        };
+    });
+
+    registerInteractionHandler('teens_strange_science_discard', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.discard.find(candidate =>
+            candidate.uid === selected.cardUid && getMinionDef(candidate.defId)?.power === 3);
+        return card
+            ? {
+                state,
+                events: [
+                    recoverCardsFromDiscard(playerId, [card.uid], 'teens_strange_science', timestamp),
+                    grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'teens_strange_science', undefined, { powerMax: 3, specificCardUid: card.uid }),
+                ],
+            }
+            : { state, events: [] };
+    });
+
+    registerInteractionHandler('teens_explosion_at_school_discard', (state, playerId, value, _data, random, timestamp) => {
+        const choices = (Array.isArray(value) ? value : value ? [value] : []) as ExcellentMoviesCardChoice[];
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
+        const seenDefIds = new Set<string>();
+        const selectedCards = choices
+            .map(choice => {
+                if (!choice.cardUid) return undefined;
+                const card = player.discard.find(candidate => candidate.uid === choice.cardUid && isPrintedPower(candidate.defId, 3));
+                if (!card || seenDefIds.has(card.defId)) return undefined;
+                seenDefIds.add(card.defId);
+                return card;
+            })
+            .filter((card): card is CardInstance => Boolean(card));
+        return {
+            state,
+            events: [
+                ...selectedCards.map(card => buildCardToDeckBottomEvent(card, playerId, 'teens_explosion_at_school', timestamp, {
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'teens_explosion_at_school',
+                    sourceControllerId: playerId,
+                })),
+                ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+            ],
+        };
+    });
+}
+
 function registerTeens(): void {
     registerSimpleAbility('teens_brain', 'onPlay', ctx => {
         const hasSlacker = hasTeensMinionAtBase(ctx.state, ctx.baseIndex, 'teens_slacker', ctx.playerId);
@@ -1874,6 +3778,26 @@ function registerTeens(): void {
     });
     registerSimpleAbility('teens_prep', 'onPlay', ctx => {
         if (!hasTeensMinionAtBase(ctx.state, ctx.baseIndex, 'teens_brain', ctx.playerId)) return { events: [] };
+        const options = buildDeckCardOptions(ctx.state, ctx.playerId, card => isPrintedPower(card.defId, 3));
+        if (options.length === 0) return { events: [] };
+        if (ctx.matchState) {
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'teens_prep_deck',
+                    '优等生：选择牌库中的 3 力随从加入手牌',
+                    options,
+                    ctx.now,
+                    'generic',
+                    'ui.teens_prep_deck_title',
+                    undefined,
+                    undefined,
+                    { autoRefresh: 'deck', genericIntent: 'card-pool', responseValidationMode: 'live' },
+                ),
+            };
+        }
         const card = ctx.state.players[ctx.playerId]?.deck.find(candidate => isPrintedPower(candidate.defId, 3));
         if (!card) return { events: [] };
         return { events: drawSpecificDeckCard(ctx.playerId, card, ctx.state.players[ctx.playerId]?.deck ?? [], ctx.defId, ctx.now) };
@@ -1884,28 +3808,27 @@ function registerTeens(): void {
     });
     registerSimpleAbility('teens_slacker', 'onPlay', ctx => {
         if (!hasTeensMinionAtBase(ctx.state, ctx.baseIndex, 'teens_rebel', ctx.playerId)) return { events: [] };
-        return { events: ctx.state.bases.flatMap((base, baseIndex) =>
-            base.minions
-                .filter(minion => minion.controller === ctx.playerId)
-                .slice(0, 2)
-                .flatMap(minion => {
-                    const destination = firstOtherBaseIndex(ctx.state, baseIndex);
-                    return destination === undefined ? [] : buildValidatedMoveEvents(ctx.state, {
-                        minionUid: minion.uid,
-                        minionDefId: minion.defId,
-                        fromBaseIndex: baseIndex,
-                        toBaseIndex: destination,
-                        reason: ctx.defId,
-                        now: ctx.now,
-                        sourcePlayerId: ctx.playerId,
-                        sourceCardUid: ctx.cardUid,
-                        sourceDefId: ctx.defId,
-                        sourceControllerId: ctx.playerId,
-                        sourceBaseIndex: ctx.baseIndex,
-                        sourceKind: 'nonAction',
-                    });
-                }),
-        ).slice(0, 2) };
+        const options = buildMinionToOtherBaseChoiceOptions(
+            ctx.state,
+            (minion, baseIndex) => minion.controller === ctx.playerId && firstOtherBaseIndex(ctx.state, baseIndex) !== undefined,
+        );
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'teens_slacker_on_play',
+                '懒散者：选择至多两个己方佣兵移动到其它基地',
+                options,
+                ctx.now,
+                'generic',
+                'ui.teens_slacker_on_play_title',
+                { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'field', genericIntent: 'composite-context', multi: { min: 0, max: Math.min(2, options.length) }, responseValidationMode: 'live' },
+            ),
+        };
     });
     registerSimpleAbility('teens_abe_frohman', 'talent', ctx => {
         const host = firstOwnMinion(ctx.state, ctx.playerId, minion =>
@@ -1930,55 +3853,120 @@ function registerTeens(): void {
         } as SmashUpEvent];
     });
     registerSimpleAbility('teens_brunch_bunch', 'onPlay', ctx => {
-        const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-        const printedPower3Minions = ctx.state.bases[baseIndex]?.minions
-            .filter(minion => minion.controller === ctx.playerId && isPrintedPower(minion.defId, 3)) ?? [];
-        const names = new Set(printedPower3Minions.map(minion => minion.defId));
-        const events: SmashUpEvent[] = [];
-        if (names.size >= 1) {
-            const moved = moveFirstOwnMinionAway(ctx, baseIndex);
-            events.push(...moved);
+        if (ctx.targetBaseIndex === undefined) {
+            const options = buildBaseTargetOptions(
+                ctx.state.bases.map((_base, baseIndex) => ({ baseIndex, label: baseName(ctx.state, baseIndex) })),
+                ctx.state,
+            );
+            if (options.length === 0) return { events: [] };
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'teens_brunch_bunch_base',
+                    '早午餐帮：选择一个基地',
+                    options,
+                    ctx.now,
+                    'base',
+                    'ui.teens_brunch_bunch_base_title',
+                    { sourceCardUid: ctx.cardUid },
+                    undefined,
+                    { autoRefresh: 'base', responseValidationMode: 'live' },
+                ),
+            };
         }
-        if (names.size >= 2) events.push(...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now));
-        if (names.size >= 3) events.push(...playExtraPrintedPower3FromDeck(ctx, baseIndex));
-        if (names.size >= 4) {
-            const movedUid = events.find(event => event.type === SU_EVENTS.MINION_MOVED)?.payload?.minionUid;
-            const target = printedPower3Minions.find(minion => minion.uid !== movedUid) ?? printedPower3Minions[0];
-            if (target) events.push(addTempPower(target.uid, baseIndex, 2, ctx.defId, ctx.now, sourceFor(ctx)));
-        }
-        if (names.size >= 5) {
-            const card = ctx.state.players[ctx.playerId]?.discard[0];
-            if (card) events.push(buildCardToDeckBottomEvent(card, ctx.playerId, ctx.defId, ctx.now, sourceFor(ctx)));
-        }
-        return { events };
+        const matchState = queueBrunchBunchEffectPrompt(
+            ctx.matchState,
+            ctx.playerId,
+            ctx.cardUid,
+            ctx.targetBaseIndex,
+            ctx.now,
+        );
+        return matchState ? { events: [], matchState } : { events: [] };
     });
     registerSimpleAbility('teens_explosion_at_school', 'onPlay', ctx => {
-        const unique: CardInstance[] = [];
+        const options: PromptOption<ExcellentMoviesCardChoice>[] = [];
         const seen = new Set<string>();
         for (const card of ctx.state.players[ctx.playerId]?.discard ?? []) {
             if (!isPrintedPower(card.defId, 3) || seen.has(card.defId)) continue;
             seen.add(card.defId);
-            unique.push(card);
+            options.push({
+                id: `discard-${card.uid}`,
+                label: cardName(card.defId),
+                value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner, zone: 'discard' },
+                displayMode: 'card' as const,
+            });
+        }
+        if (options.length === 0) {
+            return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
         }
         return {
-            events: [
-                ...unique.map(card => buildCardToDeckBottomEvent(card, ctx.playerId, ctx.defId, ctx.now, sourceFor(ctx))),
-                ...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
-            ],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'teens_explosion_at_school_discard',
+                '学校爆炸：选择任意数量不同名称的 3 力随从洗回牌库',
+                options,
+                ctx.now,
+                'generic',
+                undefined,
+                undefined,
+                undefined,
+                { autoRefresh: 'discard', genericIntent: 'card-pool', multi: { min: 0, max: options.length }, responseValidationMode: 'live' },
+            ),
         };
     });
     registerSimpleAbility('teens_new_kid', 'onPlay', ctx => {
-        const card = ctx.state.players[ctx.playerId]?.deck.find(candidate => getMinionDef(candidate.defId)?.power === 3);
-        if (!card) return { events: [] };
+        const options = buildDeckCardOptions(ctx.state, ctx.playerId, card => getMinionDef(card.defId)?.power === 3);
+        if (options.length === 0) return { events: [] };
         return {
-            events: [
-                ...reorderDeckWithCardOnTop(ctx.state, ctx.playerId, card.uid, ctx.defId, ctx.now),
-                grantContextualExtraMinion(ctx, ctx.defId, undefined, { powerMax: 3, specificCardUid: card.uid }),
-            ],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'teens_new_kid_deck',
+                '新来的孩子：选择牌库中的 3 力随从',
+                options,
+                ctx.now,
+                'generic',
+                'ui.teens_new_kid_deck_title',
+                undefined,
+                undefined,
+                { autoRefresh: 'deck', genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
         };
     });
     registerSimpleAbility('teens_principals_office', 'onPlay', ctx => {
-        const target = ctx.targetMinionUid ? findMinionLocation(ctx.state, ctx.targetMinionUid) : firstOwnMinion(ctx.state, ctx.playerId);
+        const target = ctx.targetMinionUid ? findMinionLocation(ctx.state, ctx.targetMinionUid) : undefined;
+        if (!target) {
+            const options = buildMinionChoiceOptions(
+                ctx.state,
+                ctx.playerId,
+                ctx.defId,
+                minion => minion.controller === ctx.playerId,
+                'return',
+                'action',
+            );
+            if (options.length === 0) return { events: [] };
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'teens_principals_office_return',
+                    '校长办公室：选择要返回手牌的己方佣兵',
+                    options,
+                    ctx.now,
+                    'minion',
+                    'ui.teens_principals_office_return_title',
+                    { sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex },
+                    undefined,
+                    { autoRefresh: 'field', responseValidationMode: 'live' },
+                ),
+            };
+        }
         return {
             events: [
                 ...(target ? buildValidatedReturnEvents(ctx.state, {
@@ -1999,13 +3987,23 @@ function registerTeens(): void {
         };
     });
     registerSimpleAbility('teens_strange_science', 'onPlay', ctx => {
-        const card = ctx.state.players[ctx.playerId]?.discard.find(candidate => getMinionDef(candidate.defId)?.power === 3);
-        if (!card) return { events: [] };
+        const options = buildDiscardCardOptions(ctx.state, ctx.playerId, card => getMinionDef(card.defId)?.power === 3);
+        if (options.length === 0) return { events: [] };
         return {
-            events: [
-                recoverCardsFromDiscard(ctx.playerId, [card.uid], ctx.defId, ctx.now),
-                grantContextualExtraMinion(ctx, ctx.defId, undefined, { powerMax: 3, specificCardUid: card.uid }),
-            ],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'teens_strange_science_discard',
+                '怪科学：选择弃牌堆中的 3 力随从',
+                options,
+                ctx.now,
+                'generic',
+                'ui.teens_strange_science_discard_title',
+                undefined,
+                undefined,
+                { autoRefresh: 'discard', genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
         };
     });
     for (const defId of ['teens_brain', 'teens_jock', 'teens_prep', 'teens_rebel', 'teens_slacker']) {
@@ -2043,6 +4041,7 @@ function registerTeens(): void {
     registerProtection('teens_babysitter', 'destroy', teensBabysitterProtection);
     registerProtection('teens_babysitter', 'move', teensBabysitterProtection);
     registerTeensModifiers();
+    registerTeensInteractionHandlers();
 }
 
 function isWraith(defId: string): boolean {
@@ -2060,16 +4059,217 @@ type WraithOngoingAction = {
     talentUsed?: boolean;
 };
 
-function firstOwnActionOnBase(core: SmashUpCore, playerId: PlayerId, baseIndex: number): { action: WraithOngoingAction; hostUid?: string } | undefined {
+type WraithActionLocation = {
+    action: WraithOngoingAction;
+    baseIndex: number;
+    hostUid?: string;
+};
+
+type WraithEffectSourceInfo = {
+    sourcePlayerId?: PlayerId;
+    sourceCardUid?: string;
+    sourceDefId?: string;
+    sourceControllerId?: PlayerId;
+    sourceBaseIndex?: number;
+};
+
+type WraithStoredCardChoice = {
+    cardUid?: string;
+    defId?: string;
+    zone?: 'hand' | 'discard';
+    skip?: boolean;
+};
+
+type WraithActionChoice = {
+    cardUid?: string;
+    ongoingUid?: string;
+    sourceUid?: string;
+    sourceBaseIndex?: number;
+    fromBaseIndex?: number;
+    baseIndex?: number;
+    targetBaseIndex?: number;
+    baseDefId?: string;
+    mode?: 'destroy' | 'transfer' | 'reveal';
+    skip?: boolean;
+};
+
+function actionController(action: WraithOngoingAction): PlayerId {
+    return getActionControllerId(action);
+}
+
+function collectActionsOnBase(
+    core: SmashUpCore,
+    baseIndex: number,
+    predicate: (location: WraithActionLocation) => boolean = () => true,
+): WraithActionLocation[] {
     const base = core.bases[baseIndex];
-    if (!base) return undefined;
-    const baseAction = base.ongoingActions.find(candidate => getActionControllerId(candidate) === playerId);
-    if (baseAction) return { action: baseAction };
+    if (!base) return [];
+    const locations: WraithActionLocation[] = [];
+    for (const action of base.ongoingActions) {
+        locations.push({ action, baseIndex });
+    }
     for (const minion of base.minions) {
-        const attached = minion.attachedActions.find(action => action.ownerId === playerId);
-        if (attached) return { action: attached, hostUid: minion.uid };
+        for (const action of minion.attachedActions) {
+            locations.push({ action, baseIndex, hostUid: minion.uid });
+        }
+    }
+    return locations.filter(predicate);
+}
+
+function collectOwnActionsOnBase(core: SmashUpCore, playerId: PlayerId, baseIndex: number): WraithActionLocation[] {
+    return collectActionsOnBase(core, baseIndex, location => actionController(location.action) === playerId);
+}
+
+function collectOwnActionsOutsideBase(core: SmashUpCore, playerId: PlayerId, excludedBaseIndex: number): WraithActionLocation[] {
+    return core.bases.flatMap((_base, baseIndex) =>
+        baseIndex === excludedBaseIndex ? [] : collectOwnActionsOnBase(core, playerId, baseIndex));
+}
+
+function firstOwnActionOnBase(core: SmashUpCore, playerId: PlayerId, baseIndex: number): WraithActionLocation | undefined {
+    return collectOwnActionsOnBase(core, playerId, baseIndex)[0];
+}
+
+function findActionLocationByUid(core: SmashUpCore, cardUid: string, baseIndex?: number): WraithActionLocation | undefined {
+    const indexes = baseIndex === undefined
+        ? core.bases.map((_base, index) => index)
+        : [baseIndex];
+    for (const index of indexes) {
+        const found = collectActionsOnBase(core, index, location => location.action.uid === cardUid)[0];
+        if (found) return found;
     }
     return undefined;
+}
+
+function selectedActionUid(selected: WraithActionChoice): string | undefined {
+    return selected.cardUid ?? selected.ongoingUid ?? selected.sourceUid;
+}
+
+function selectedSourceBaseIndex(selected: WraithActionChoice): number | undefined {
+    return selected.sourceBaseIndex ?? selected.fromBaseIndex;
+}
+
+function wraithActionSource(location: WraithActionLocation) {
+    return {
+        type: 'ongoing' as const,
+        uid: location.action.uid,
+        defId: location.action.defId,
+        fromBaseIndex: location.baseIndex,
+    };
+}
+
+function buildWraithActionSourceActionOptions(
+    locations: WraithActionLocation[],
+): PromptOption<WraithActionChoice>[] {
+    return locations.flatMap(location => buildFieldSourceActionOptions({
+        ...wraithActionSource(location),
+        label: cardName(location.action.defId),
+    })) as PromptOption<WraithActionChoice>[];
+}
+
+function buildWraithActionTransferOptions(
+    core: SmashUpCore,
+    locations: WraithActionLocation[],
+    targetBases: { baseIndex: number; label: string }[],
+): PromptOption<WraithActionChoice>[] {
+    return locations.flatMap(location => buildFieldSourceToBaseTargetOptions(
+        wraithActionSource(location),
+        targetBases,
+        core,
+    )) as PromptOption<WraithActionChoice>[];
+}
+
+function queueWraithFieldSourceActionPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    sourceId: string,
+    title: string,
+    options: PromptOption<WraithActionChoice>[],
+    now: number,
+    continuationContext?: Record<string, unknown>,
+): MatchState<SmashUpCore> {
+    return queuePrompt(
+        matchState,
+        playerId,
+        sourceId,
+        title,
+        options,
+        now,
+        'field-source-action',
+        undefined,
+        continuationContext,
+        undefined,
+        { responseValidationMode: 'live' },
+    );
+}
+
+function queueWraithFieldSourceTargetPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    sourceId: string,
+    title: string,
+    options: PromptOption<WraithActionChoice>[],
+    now: number,
+    continuationContext?: Record<string, unknown>,
+): MatchState<SmashUpCore> {
+    return queuePrompt(
+        matchState,
+        playerId,
+        sourceId,
+        title,
+        options,
+        now,
+        'field-source-target',
+        undefined,
+        continuationContext,
+        undefined,
+        { responseValidationMode: 'live' },
+    );
+}
+
+function wraithSourceInfo(
+    playerId: PlayerId,
+    sourceDefId: string,
+    sourceCardUid?: string,
+    sourceBaseIndex?: number,
+): WraithEffectSourceInfo {
+    return {
+        sourcePlayerId: playerId,
+        sourceCardUid,
+        sourceDefId,
+        sourceControllerId: playerId,
+        sourceBaseIndex,
+    };
+}
+
+function sourceInfoFromContinuation(
+    playerId: PlayerId,
+    continuation: Record<string, unknown> | undefined,
+    fallbackDefId: string,
+): WraithEffectSourceInfo {
+    return wraithSourceInfo(
+        playerId,
+        typeof continuation?.sourceDefId === 'string' ? continuation.sourceDefId : fallbackDefId,
+        typeof continuation?.sourceCardUid === 'string' ? continuation.sourceCardUid : undefined,
+        typeof continuation?.sourceBaseIndex === 'number' ? continuation.sourceBaseIndex : undefined,
+    );
+}
+
+function buildDestroyActionLocationEvents(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    location: WraithActionLocation,
+    reason: string,
+    now: number,
+    sourceInfo: WraithEffectSourceInfo,
+): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [
+        detachOngoing(location.action.uid, location.action.defId, location.action.ownerId, reason, now, sourceInfo),
+    ];
+    if (isWraith(location.action.defId)) {
+        const marker = markWraithActionDestroyedOnBase(core, location.baseIndex, playerId, reason, now);
+        if (marker) events.push(marker);
+    }
+    return events;
 }
 
 function baseWraithDestroyedMap(core: SmashUpCore, baseIndex: number): Record<string, number> {
@@ -2098,32 +4298,39 @@ function markWraithActionDestroyedOnBase(core: SmashUpCore, baseIndex: number, p
     } as SmashUpEvent;
 }
 
-function destroyFirstOwnActionOnBase(ctx: AbilityContext, baseIndex = ctx.baseIndex): SmashUpEvent[] {
-    const found = firstOwnActionOnBase(ctx.state, ctx.playerId, baseIndex);
-    if (!found) return [];
-    const events: SmashUpEvent[] = [
-        detachOngoing(found.action.uid, found.action.defId, found.action.ownerId, ctx.defId, ctx.now, sourceFor(ctx)),
+function buildWatsonRevealWraithEvents(core: SmashUpCore, playerId: PlayerId, reason: string, now: number): SmashUpEvent[] {
+    const player = core.players[playerId];
+    const wraith = player?.deck.find(card => isWraith(card.defId));
+    if (!player || !wraith) return [];
+    return [
+        inspectDeck(playerId, playerId, player.deck.length, reason, now),
+        buildDeckReorderedEvent(playerId, [
+            wraith.uid,
+            ...player.deck.filter(card => card.uid !== wraith.uid).map(card => card.uid),
+        ], reason, now),
+        {
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: { playerId, count: 1, cardUids: [wraith.uid] },
+            timestamp: now,
+        } as SmashUpEvent,
     ];
-    if (isWraith(found.action.defId)) {
-        const marker = markWraithActionDestroyedOnBase(ctx.state, baseIndex, ctx.playerId, ctx.defId, ctx.now);
-        if (marker) events.push(marker);
-    }
-    return events;
 }
 
 function findAttachedActionHost(core: SmashUpCore, actionUid: string, baseIndex: number): MinionOnBase | undefined {
     return core.bases[baseIndex]?.minions.find(minion => minion.attachedActions.some(action => action.uid === actionUid));
 }
 
-function buildTransferOngoingActionEvents(
-    ctx: AbilityContext,
+function buildTransferOngoingActionEventsWithSource(
     action: WraithOngoingAction,
     fromBaseIndex: number,
     toBaseIndex: number,
+    reason: string,
+    now: number,
+    sourceInfo: WraithEffectSourceInfo,
 ): SmashUpEvent[] {
     if (fromBaseIndex === toBaseIndex) return [];
     return [
-        detachOngoing(action.uid, action.defId, action.ownerId, ctx.defId, ctx.now, sourceFor(ctx)),
+        detachOngoing(action.uid, action.defId, action.ownerId, reason, now, sourceInfo),
         buildOngoingAttachedEvent({
             uid: action.uid,
             defId: action.defId,
@@ -2131,7 +4338,7 @@ function buildTransferOngoingActionEvents(
             metadata: action.metadata,
             talentUsed: action.talentUsed,
             removeFromDiscard: true,
-        }, toBaseIndex, 'base', ctx.now, undefined, ctx.playerId),
+        }, toBaseIndex, 'base', now, undefined, sourceInfo.sourcePlayerId),
     ];
 }
 
@@ -2221,96 +4428,679 @@ function wraithrustlersRooftopPortalTrigger(ctx: TriggerContext): SmashUpEvent[]
     ];
 }
 
-function registerWraithrustlers(): void {
-    registerSimpleAbility('wraithrustlers_watson', 'onPlay', ctx => {
-        const destroyEvents = destroyFirstOwnActionOnBase(ctx);
-        if (destroyEvents.length > 0) return { events: destroyEvents };
-        const player = ctx.state.players[ctx.playerId];
-        const wraith = player?.deck.find(card => isWraith(card.defId));
-        if (!player || !wraith) return { events: [] };
+function buildWraithStoredCardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (card: CardInstance) => boolean,
+): PromptOption<WraithStoredCardChoice>[] {
+    const player = core.players[playerId];
+    if (!player) return [];
+    const candidates = [
+        ...player.hand.map(card => ({ card, zone: 'hand' as const })),
+        ...player.discard.map(card => ({ card, zone: 'discard' as const })),
+    ].filter(({ card }) => predicate(card));
+    return candidates.map(({ card, zone }) => ({
+        id: `${zone}-${card.uid}`,
+        label: cardName(card.defId),
+        value: { cardUid: card.uid, defId: card.defId, zone },
+        displayMode: 'card',
+    }));
+}
+
+function resolveWraithTransferChoice(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    selected: WraithActionChoice,
+    continuation: Record<string, unknown> | undefined,
+    fallbackSourceId: string,
+    requireOwnAction: boolean,
+    timestamp: number,
+): SmashUpEvent[] {
+    if (selected.skip) return [];
+    const actionUid = selectedActionUid(selected);
+    const fromBaseIndex = selectedSourceBaseIndex(selected);
+    const toBaseIndex = selected.targetBaseIndex ?? selected.baseIndex;
+    if (!actionUid || fromBaseIndex === undefined || toBaseIndex === undefined || !state.core.bases[toBaseIndex]) return [];
+    const location = findActionLocationByUid(state.core, actionUid, fromBaseIndex);
+    if (!location) return [];
+    if (requireOwnAction && actionController(location.action) !== playerId) return [];
+    const sourceInfo = sourceInfoFromContinuation(playerId, continuation, fallbackSourceId);
+    return buildTransferOngoingActionEventsWithSource(
+        location.action,
+        location.baseIndex,
+        toBaseIndex,
+        sourceInfo.sourceDefId ?? fallbackSourceId,
+        timestamp,
+        sourceInfo,
+    );
+}
+
+function resolveWraithDestroyChoice(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    selected: WraithActionChoice,
+    continuation: Record<string, unknown> | undefined,
+    fallbackSourceId: string,
+    requireOwnAction: boolean,
+    timestamp: number,
+): SmashUpEvent[] {
+    if (selected.skip) return [];
+    const actionUid = selectedActionUid(selected);
+    const baseIndex = selectedSourceBaseIndex(selected);
+    if (!actionUid || baseIndex === undefined) return [];
+    const location = findActionLocationByUid(state.core, actionUid, baseIndex);
+    if (!location) return [];
+    if (requireOwnAction && actionController(location.action) !== playerId) return [];
+    const sourceInfo = sourceInfoFromContinuation(playerId, continuation, fallbackSourceId);
+    return buildDestroyActionLocationEvents(
+        state.core,
+        playerId,
+        location,
+        sourceInfo.sourceDefId ?? fallbackSourceId,
+        timestamp,
+        sourceInfo,
+    );
+}
+
+function registerWraithrustlersInteractionHandlers(): void {
+    registerInteractionHandler('wraithrustlers_roy', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const events = resolveWraithTransferChoice(
+            state,
+            playerId,
+            value as WraithActionChoice,
+            continuation,
+            'wraithrustlers_roy',
+            true,
+            timestamp,
+        );
+        return { state, events };
+    });
+
+    registerInteractionHandler('wraithrustlers_funkman', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const events = resolveWraithTransferChoice(
+            state,
+            playerId,
+            value as WraithActionChoice,
+            continuation,
+            'wraithrustlers_funkman',
+            false,
+            timestamp,
+        );
+        return { state, events };
+    });
+
+    registerInteractionHandler('wraithrustlers_ellen_destroy_action', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const events = resolveWraithDestroyChoice(
+            state,
+            playerId,
+            value as WraithActionChoice,
+            continuation,
+            'wraithrustlers_ellen',
+            true,
+            timestamp,
+        );
+        if (events.length === 0) return { state, events };
+        const sourceBaseIndex = typeof continuation?.sourceBaseIndex === 'number'
+            ? continuation.sourceBaseIndex
+            : selectedSourceBaseIndex(value as WraithActionChoice);
         return {
-            events: [
-                inspectDeck(ctx.playerId, ctx.playerId, player.deck.length, ctx.defId, ctx.now),
-                buildDeckReorderedEvent(ctx.playerId, [
-                    wraith.uid,
-                    ...player.deck.filter(card => card.uid !== wraith.uid).map(card => card.uid),
-                ], ctx.defId, ctx.now),
+            state,
+            events: sourceBaseIndex === undefined
+                ? events
+                : [...events, modifyBreakpoint(sourceBaseIndex, -3, 'wraithrustlers_ellen', timestamp)],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_unlicensed_nuclear_accelerator_destroy_action', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const events = resolveWraithDestroyChoice(
+            state,
+            playerId,
+            value as WraithActionChoice,
+            continuation,
+            'wraithrustlers_unlicensed_nuclear_accelerator',
+            true,
+            timestamp,
+        );
+        if (events.length === 0) return { state, events };
+        const sourceCardUid = typeof continuation?.sourceCardUid === 'string' ? continuation.sourceCardUid : undefined;
+        const sourceBaseIndex = typeof continuation?.sourceBaseIndex === 'number' ? continuation.sourceBaseIndex : undefined;
+        const host = sourceCardUid !== undefined && sourceBaseIndex !== undefined
+            ? findAttachedActionHost(state.core, sourceCardUid, sourceBaseIndex)
+            : undefined;
+        return {
+            state,
+            events: host
+                ? [...events, addPowerCounter(host.uid, sourceBaseIndex!, 1, 'wraithrustlers_unlicensed_nuclear_accelerator', timestamp, wraithSourceInfo(playerId, 'wraithrustlers_unlicensed_nuclear_accelerator', sourceCardUid, sourceBaseIndex))]
+                : events,
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_demon_dogs_store_minion', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithStoredCardChoice;
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        if (selected.skip || !selected.cardUid || !selected.zone) return { state, events: [] };
+        const card = state.core.players[playerId]?.[selected.zone]?.find(candidate => candidate.uid === selected.cardUid);
+        if (!card || getMinionDef(card.defId)?.power === undefined || (getMinionDef(card.defId)?.power ?? 99) > 3) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [buildStoredCardEvent(playerId, card, selected.zone, 'wraithrustlers_demon_dogs', timestamp, {
+                storedUnderUid: typeof continuation?.sourceCardUid === 'string' ? continuation.sourceCardUid : undefined,
+                storedUnderDefId: 'wraithrustlers_demon_dogs',
+            })],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_ancient_sumerian_god_store_action', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithStoredCardChoice;
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const card = state.core.players[playerId]?.discard.find(candidate => candidate.uid === selected.cardUid);
+        if (!card || !isActionPlayableOnBase(card)) return { state, events: [] };
+        return {
+            state,
+            events: [buildStoredCardEvent(playerId, card, 'discard', 'wraithrustlers_ancient_sumerian_god', timestamp, {
+                storedUnderUid: typeof continuation?.sourceCardUid === 'string' ? continuation.sourceCardUid : undefined,
+                storedUnderDefId: 'wraithrustlers_ancient_sumerian_god',
+            })],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_resurgence_choose_action', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithActionChoice;
+        const actionUid = selectedActionUid(selected);
+        const sourceBaseIndex = selectedSourceBaseIndex(selected);
+        if (!actionUid || sourceBaseIndex === undefined) return { state, events: [] };
+        const location = findActionLocationByUid(state.core, actionUid, sourceBaseIndex);
+        if (!location) return { state, events: [] };
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const otherBases = state.core.bases
+            .map((_base, baseIndex) => ({ baseIndex, label: baseName(state.core, baseIndex) }))
+            .filter(candidate => candidate.baseIndex !== location.baseIndex);
+        const options: PromptOption<WraithActionChoice>[] = [
+            { id: 'destroy', label: '摧毁此行动', labelKey: 'ui.wraithrustlers_resurgence_destroy_option', value: { mode: 'destroy', cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' },
+            ...(otherBases.length > 0 ? [{ id: 'transfer', label: '转移到另一个基地', labelKey: 'ui.wraithrustlers_resurgence_transfer_option', value: { mode: 'transfer', cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' as const }] : []),
+        ];
+        return {
+            state: queuePrompt(
+                state,
+                playerId,
+                'wraithrustlers_resurgence_choose_mode',
+                '复苏：选择摧毁或转移此行动',
+                options,
+                timestamp,
+                'button',
+                undefined,
                 {
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId: ctx.playerId, count: 1, cardUids: [wraith.uid] },
-                    timestamp: ctx.now,
-                } as SmashUpEvent,
-            ],
+                    ...(continuation ?? {}),
+                    selectedActionUid: actionUid,
+                    selectedActionBaseIndex: location.baseIndex,
+                },
+                undefined,
+                { responseValidationMode: 'live' },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_resurgence_choose_mode', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithActionChoice;
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const actionUid = typeof continuation?.selectedActionUid === 'string' ? continuation.selectedActionUid : selected.cardUid;
+        const sourceBaseIndex = typeof continuation?.selectedActionBaseIndex === 'number' ? continuation.selectedActionBaseIndex : selected.sourceBaseIndex;
+        if (!actionUid || sourceBaseIndex === undefined) return { state, events: [] };
+        const location = findActionLocationByUid(state.core, actionUid, sourceBaseIndex);
+        if (!location) return { state, events: [] };
+        if (selected.mode === 'destroy') {
+            return {
+                state,
+                events: buildDestroyActionLocationEvents(
+                    state.core,
+                    playerId,
+                    location,
+                    'wraithrustlers_resurgence',
+                    timestamp,
+                    sourceInfoFromContinuation(playerId, continuation, 'wraithrustlers_resurgence'),
+                ),
+            };
+        }
+        if (selected.mode !== 'transfer') return { state, events: [] };
+        const options = buildWraithActionTransferOptions(
+            state.core,
+            [location],
+            state.core.bases
+                .map((_base, baseIndex) => ({ baseIndex, label: baseName(state.core, baseIndex) }))
+                .filter(candidate => candidate.baseIndex !== location.baseIndex),
+        );
+        if (options.length === 0) return { state, events: [] };
+        return {
+            state: queueWraithFieldSourceTargetPrompt(
+                state,
+                playerId,
+                'wraithrustlers_resurgence_choose_destination',
+                '复苏：选择行动转移到的基地',
+                options,
+                timestamp,
+                continuation,
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_resurgence_choose_destination', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const events = resolveWraithTransferChoice(
+            state,
+            playerId,
+            value as WraithActionChoice,
+            continuation,
+            'wraithrustlers_resurgence',
+            false,
+            timestamp,
+        );
+        return { state, events };
+    });
+
+    registerInteractionHandler('wraithrustlers_watson_choose_mode', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithActionChoice;
+        if (selected.skip || !selected.mode) return { state, events: [] };
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        if (selected.mode === 'reveal') {
+            return { state, events: buildWatsonRevealWraithEvents(state.core, playerId, 'wraithrustlers_watson', timestamp) };
+        }
+        if (selected.mode !== 'destroy') return { state, events: [] };
+        const sourceBaseIndex = typeof continuation?.sourceBaseIndex === 'number' ? continuation.sourceBaseIndex : selected.sourceBaseIndex;
+        if (sourceBaseIndex === undefined) return { state, events: [] };
+        const options = buildWraithActionSourceActionOptions(collectOwnActionsOnBase(state.core, playerId, sourceBaseIndex));
+        if (options.length === 0) return { state, events: [] };
+        return {
+            state: queueWraithFieldSourceActionPrompt(
+                state,
+                playerId,
+                'wraithrustlers_watson_destroy_action',
+                '沃森：选择要摧毁的己方行动',
+                options,
+                timestamp,
+                {
+                    ...(continuation ?? {}),
+                    sourceBaseIndex,
+                    sourceDefId: 'wraithrustlers_watson',
+                },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_watson_destroy_action', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        return {
+            state,
+            events: resolveWraithDestroyChoice(
+                state,
+                playerId,
+                value as WraithActionChoice,
+                continuation,
+                'wraithrustlers_watson',
+                true,
+                timestamp,
+            ),
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_ectoplasm_one_choose_base', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithActionChoice;
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const actionUid = selectedActionUid(selected);
+        const sourceBaseIndex = selectedSourceBaseIndex(selected);
+        const targetBaseIndex = selected.targetBaseIndex ?? selected.baseIndex;
+        if (
+            selected.skip
+            || !actionUid
+            || sourceBaseIndex === undefined
+            || targetBaseIndex === undefined
+            || sourceBaseIndex === targetBaseIndex
+        ) {
+            return { state, events: [] };
+        }
+        const location = findActionLocationByUid(state.core, actionUid, sourceBaseIndex);
+        if (!location || location.action.defId !== 'wraithrustlers_ectoplasm_one' || actionController(location.action) !== playerId) {
+            return { state, events: [] };
+        }
+        const minionOptions = buildFieldSourceToMinionTargetOptions(
+            wraithActionSource(location),
+            (state.core.bases[sourceBaseIndex]?.minions ?? [])
+                .filter(minion => minion.controller === playerId)
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex: sourceBaseIndex,
+                    label: cardName(minion.defId),
+                })),
+            {
+                state: state.core,
+                sourcePlayerId: playerId,
+                sourceDefId: 'wraithrustlers_ectoplasm_one',
+                sourceKind: 'action',
+                effectType: 'move',
+            },
+            { targetBaseIndex },
+        );
+        if (minionOptions.length === 0) return { state, events: [] };
+        return {
+            state: queueWraithFieldSourceTargetPrompt(
+                state,
+                playerId,
+                'wraithrustlers_ectoplasm_one_choose_minion',
+                '灵质一号：选择要移动到目标基地的己方佣兵',
+                minionOptions as PromptOption<WraithActionChoice>[],
+                timestamp,
+                {
+                    ...(continuation ?? {}),
+                    sourceCardUid: actionUid,
+                    sourceDefId: 'wraithrustlers_ectoplasm_one',
+                    sourceBaseIndex,
+                    targetBaseIndex,
+                },
+            ),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_ectoplasm_one_choose_minion', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as WraithActionChoice & { targetMinionUid?: string; targetMinionDefId?: string };
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        const actionUid = typeof continuation?.sourceCardUid === 'string' ? continuation.sourceCardUid : selectedActionUid(selected);
+        const sourceBaseIndex = typeof continuation?.sourceBaseIndex === 'number' ? continuation.sourceBaseIndex : selectedSourceBaseIndex(selected);
+        const targetBaseIndex = typeof continuation?.targetBaseIndex === 'number' ? continuation.targetBaseIndex : selected.targetBaseIndex;
+        const targetMinionUid = selected.targetMinionUid;
+        const targetMinionDefId = selected.targetMinionDefId ?? selected.defId;
+        if (
+            selected.skip
+            || !actionUid
+            || sourceBaseIndex === undefined
+            || targetBaseIndex === undefined
+            || !targetMinionUid
+            || !targetMinionDefId
+        ) {
+            return { state, events: [] };
+        }
+        const location = findActionLocationByUid(state.core, actionUid, sourceBaseIndex);
+        const minion = state.core.bases[sourceBaseIndex]?.minions.find(candidate =>
+            candidate.uid === targetMinionUid && candidate.controller === playerId
+        );
+        if (!location || location.action.defId !== 'wraithrustlers_ectoplasm_one' || !minion) {
+            return { state, events: [] };
+        }
+        const events = [
+            ...buildTransferOngoingActionEventsWithSource(
+                location.action,
+                sourceBaseIndex,
+                targetBaseIndex,
+                'wraithrustlers_ectoplasm_one',
+                timestamp,
+                wraithSourceInfo(playerId, 'wraithrustlers_ectoplasm_one', actionUid, sourceBaseIndex),
+            ),
+            ...buildValidatedMoveEvents(state, {
+                minionUid: targetMinionUid,
+                minionDefId: targetMinionDefId,
+                fromBaseIndex: sourceBaseIndex,
+                toBaseIndex: targetBaseIndex,
+                reason: 'wraithrustlers_ectoplasm_one',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: actionUid,
+                sourceDefId: 'wraithrustlers_ectoplasm_one',
+                sourceControllerId: playerId,
+                sourceBaseIndex,
+                sourceKind: 'nonAction',
+            }),
+        ];
+        const destroyOptions = [
+            createSkipOption('跳过（不摧毁行动）', 'ui.wraithrustlers_ectoplasm_one_destroy_skip_option'),
+            ...buildWraithActionSourceActionOptions(collectActionsOnBase(
+                state.core,
+                targetBaseIndex,
+                locationOnBase => locationOnBase.action.uid !== actionUid,
+            )),
+        ] as PromptOption<WraithActionChoice>[];
+        return {
+            state: queueWraithFieldSourceActionPrompt(
+                state,
+                playerId,
+                'wraithrustlers_ectoplasm_one_destroy_action',
+                '灵质一号：选择是否摧毁新基地上的行动',
+                destroyOptions,
+                timestamp,
+                {
+                    sourceCardUid: actionUid,
+                    sourceDefId: 'wraithrustlers_ectoplasm_one',
+                    sourceBaseIndex: targetBaseIndex,
+                },
+            ),
+            events,
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_ectoplasm_one_destroy_action', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = data?.continuationContext as Record<string, unknown> | undefined;
+        return {
+            state,
+            events: resolveWraithDestroyChoice(
+                state,
+                playerId,
+                value as WraithActionChoice,
+                continuation,
+                'wraithrustlers_ectoplasm_one',
+                false,
+                timestamp,
+            ),
+        };
+    });
+
+    registerInteractionHandler('wraithrustlers_the_tools_and_the_talent_deck', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as ExcellentMoviesCardChoice;
+        if (selected.skip || !selected.cardUid) return { state, events: [] };
+        const player = state.core.players[playerId];
+        const card = player?.deck.find(candidate =>
+            candidate.uid === selected.cardUid && (!selected.defId || candidate.defId === selected.defId));
+        return player && card
+            ? {
+                state,
+                events: [
+                    inspectDeck(playerId, playerId, player.deck.length, 'wraithrustlers_the_tools_and_the_talent', timestamp),
+                    buildDeckReorderedEvent(playerId, [
+                        card.uid,
+                        ...player.deck.filter(candidate => candidate.uid !== card.uid).map(candidate => candidate.uid),
+                    ], 'wraithrustlers_the_tools_and_the_talent', timestamp),
+                ],
+            }
+            : { state, events: [] };
+    });
+}
+
+function registerWraithrustlers(): void {
+    registerWraithrustlersInteractionHandlers();
+
+    registerSimpleAbility('wraithrustlers_watson', 'onPlay', ctx => {
+        const canDestroy = collectOwnActionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex).length > 0;
+        const canReveal = ctx.state.players[ctx.playerId]?.deck.some(card => isWraith(card.defId)) ?? false;
+        const options: PromptOption<WraithActionChoice>[] = [
+            createSkipOption('跳过（不使用沃森效果）', 'ui.wraithrustlers_watson_skip_option'),
+            ...(canDestroy ? [{
+                id: 'destroy',
+                label: '摧毁本基地上的己方行动',
+                labelKey: 'ui.wraithrustlers_watson_destroy_option',
+                value: { mode: 'destroy' as const, sourceBaseIndex: ctx.baseIndex },
+                displayMode: 'button' as const,
+            }] : []),
+            ...(canReveal ? [{
+                id: 'reveal',
+                label: '展示牌库直到找到怨灵',
+                labelKey: 'ui.wraithrustlers_watson_reveal_option',
+                value: { mode: 'reveal' as const },
+                displayMode: 'button' as const,
+            }] : []),
+        ] as PromptOption<WraithActionChoice>[];
+        if (options.length <= 1) return { events: [] };
+        return {
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_watson_choose_mode',
+                '沃森：选择摧毁己方行动或展示牌库寻找怨灵',
+                options,
+                ctx.now,
+                'button',
+                undefined,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+            ),
         };
     });
     registerSimpleAbility('wraithrustlers_roy', 'onPlay', ctx => {
-        const from = firstBaseOngoingAction(ctx.state, ctx.playerId, (_action, baseIndex) => baseIndex !== ctx.baseIndex);
-        return { events: from ? buildTransferOngoingActionEvents(ctx, from.action, from.baseIndex, ctx.baseIndex) : [] };
+        const options = buildWraithActionTransferOptions(
+            ctx.state,
+            collectOwnActionsOutsideBase(ctx.state, ctx.playerId, ctx.baseIndex),
+            [{ baseIndex: ctx.baseIndex, label: baseName(ctx.state, ctx.baseIndex) }],
+        );
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queueWraithFieldSourceTargetPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_roy',
+                '罗伊：选择要转移到此基地的己方行动',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+            ),
+        };
     });
     registerSimpleAbility('wraithrustlers_ellen', 'talent', ctx => {
-        const events = destroyFirstOwnActionOnBase(ctx);
-        if (events.length === 0) return { events: [] };
-        events.push(modifyBreakpoint(ctx.baseIndex, -3, ctx.defId, ctx.now));
-        return { events };
+        const options = buildWraithActionSourceActionOptions(collectOwnActionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex));
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queueWraithFieldSourceActionPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_ellen_destroy_action',
+                '艾伦：选择要摧毁的己方行动',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+            ),
+        };
     });
     registerSimpleAbility('wraithrustlers_unlicensed_nuclear_accelerator', 'talent', ctx => {
-        const events = destroyFirstOwnActionOnBase(ctx);
-        if (events.length === 0) return { events: [] };
-        const host = findAttachedActionHost(ctx.state, ctx.cardUid, ctx.baseIndex);
-        if (host) {
-            events.push(addPowerCounter(host.uid, ctx.baseIndex, 1, ctx.defId, ctx.now, sourceFor(ctx)));
-        }
-        return { events };
+        const options = buildWraithActionSourceActionOptions(collectOwnActionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex));
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queueWraithFieldSourceActionPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_unlicensed_nuclear_accelerator_destroy_action',
+                '未授权核加速器：选择要摧毁的己方行动',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+            ),
+        };
     });
     registerSimpleAbility('wraithrustlers_resurgence', 'onPlay', ctx => {
         const sourceBaseIndex = ctx.baseIndex;
-        const action = firstOngoingActionOnBase(ctx.state, sourceBaseIndex);
-        if (!action) return { events: [] };
-        const destination = ctx.targetBaseIndex;
+        const options = buildWraithActionSourceActionOptions(collectActionsOnBase(ctx.state, sourceBaseIndex));
+        if (options.length === 0) return { events: [] };
         return {
-            events: destination !== undefined && destination !== sourceBaseIndex && ctx.state.bases[destination]
-                ? buildTransferOngoingActionEvents(ctx, action, sourceBaseIndex, destination)
-                : [
-                    detachOngoing(action.uid, action.defId, action.ownerId, ctx.defId, ctx.now, sourceFor(ctx)),
-                    ...(isWraith(action.defId) ? wraithDestroyedMarker({
-                        state: ctx.state,
-                        baseIndex: sourceBaseIndex,
-                        sourceBaseIndex,
-                        sourceControllerId: ctx.playerId,
-                        triggerCardOwnerId: action.ownerId,
-                        now: ctx.now,
-                    }, ctx.defId) : []),
-                ],
+            events: [],
+            matchState: queueWraithFieldSourceActionPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_resurgence_choose_action',
+                '复苏：选择一个基地上的行动',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex },
+            ),
         };
     });
     registerSimpleAbility('wraithrustlers_resurgence', 'special', ctx => {
         const sourceBaseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-        const action = firstOngoingActionOnBase(ctx.state, sourceBaseIndex);
-        const destination = firstOtherBaseIndex(ctx.state, sourceBaseIndex);
+        const options = buildWraithActionSourceActionOptions(collectActionsOnBase(ctx.state, sourceBaseIndex));
+        if (options.length === 0) return { events: [] };
         return {
-            events: action && destination !== undefined
-                ? buildTransferOngoingActionEvents(ctx, action, sourceBaseIndex, destination)
-                : [],
+            events: [],
+            matchState: queueWraithFieldSourceActionPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_resurgence_choose_action',
+                '复苏：选择一个基地上的行动',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex },
+            ),
         };
     });
     registerSimpleAbility('wraithrustlers_funkman', 'special', ctx => {
         const sourceBaseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-        const action = firstOngoingActionOnBase(ctx.state, sourceBaseIndex);
-        const destination = firstOtherBaseIndex(ctx.state, sourceBaseIndex);
-        return { events: action && destination !== undefined ? buildTransferOngoingActionEvents(ctx, action, sourceBaseIndex, destination) : [] };
+        const options = buildWraithActionTransferOptions(
+            ctx.state,
+            collectActionsOnBase(ctx.state, sourceBaseIndex),
+            ctx.state.bases
+                .map((_base, baseIndex) => ({ baseIndex, label: baseName(ctx.state, baseIndex) }))
+                .filter(candidate => candidate.baseIndex !== sourceBaseIndex),
+        );
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queueWraithFieldSourceTargetPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_funkman',
+                '芬克曼：选择行动转移到的基地',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex },
+            ),
+        };
     });
     registerSimpleAbility('wraithrustlers_ancient_sumerian_god', 'onPlay', _ctx => ({
         events: [],
     }));
-    registerSimpleAbility('wraithrustlers_ancient_sumerian_god', 'talent', ctx => ({
-        events: (() => {
-            const card = ctx.state.players[ctx.playerId]?.discard.find(isActionPlayableOnBase);
-            return card ? [buildStoredCardEvent(ctx.playerId, card, 'discard', ctx.defId, ctx.now, {
-                storedUnderUid: ctx.cardUid,
-                storedUnderDefId: ctx.defId,
-            })] : [];
-        })(),
-    }));
+    registerSimpleAbility('wraithrustlers_ancient_sumerian_god', 'talent', ctx => {
+        const options = (ctx.state.players[ctx.playerId]?.discard ?? [])
+            .filter(isActionPlayableOnBase)
+            .map(card => ({
+                id: `discard-${card.uid}`,
+                label: cardName(card.defId),
+                value: { cardUid: card.uid, defId: card.defId, zone: 'discard' as const },
+                displayMode: 'card' as const,
+            })) as PromptOption<WraithStoredCardChoice>[];
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_ancient_sumerian_god_store_action',
+                '古苏美尔神：选择要储存的基地行动',
+                options,
+                ctx.now,
+                'generic',
+                undefined,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'discard', genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
+        };
+    });
     registerSimpleAbility('wraithrustlers_ancient_sumerian_god', 'onDestroy', ctx => ({
         events: wraithAncientSumerianGodDestroyed({
             state: ctx.state,
@@ -2323,20 +5113,24 @@ function registerWraithrustlers(): void {
         }),
     }));
     registerSimpleAbility('wraithrustlers_demon_dogs', 'onPlay', ctx => {
-        const player = ctx.state.players[ctx.playerId];
-        const located = (player?.hand ?? [])
-            .map(card => ({ card, zone: 'hand' as const }))
-            .find(({ card }) => getMinionDef(card.defId)?.power !== undefined && (getMinionDef(card.defId)?.power ?? 99) <= 3)
-            ?? (player?.discard ?? [])
-                .map(card => ({ card, zone: 'discard' as const }))
-                .find(({ card }) => getMinionDef(card.defId)?.power !== undefined && (getMinionDef(card.defId)?.power ?? 99) <= 3);
+        const storeOptions = buildWraithStoredCardOptions(ctx.state, ctx.playerId, card =>
+            getMinionDef(card.defId)?.power !== undefined && (getMinionDef(card.defId)?.power ?? 99) <= 3);
+        if (storeOptions.length === 0) return { events: [] };
         return {
-            events: located
-                ? [buildStoredCardEvent(ctx.playerId, located.card, located.zone, ctx.defId, ctx.now, {
-                    storedUnderUid: ctx.cardUid,
-                    storedUnderDefId: ctx.defId,
-                })]
-                : [],
+            events: [],
+            matchState: queuePrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_demon_dogs_store_minion',
+                '恶魔犬：选择要储存在此牌下方的弱随从',
+                [createSkipOption(), ...storeOptions] as PromptOption<WraithStoredCardChoice>[],
+                ctx.now,
+                'generic',
+                undefined,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+                undefined,
+                { autoRefresh: 'hand_or_discard', genericIntent: 'card-pool', responseValidationMode: 'live' },
+            ),
         };
     });
     registerSimpleAbility('wraithrustlers_demon_dogs', 'onDestroy', ctx => ({
@@ -2361,38 +5155,28 @@ function registerWraithrustlers(): void {
         ],
     }));
     registerSimpleAbility('wraithrustlers_ectoplasm_one', 'talent', ctx => {
-        const targetBaseIndex = ctx.targetBaseIndex;
         const self = ctx.state.bases[ctx.baseIndex]?.ongoingActions.find(action => action.uid === ctx.cardUid);
-        if (self && targetBaseIndex !== undefined && targetBaseIndex !== ctx.baseIndex && ctx.state.bases[targetBaseIndex]) {
-            const minion = ctx.targetMinionUid
-                ? ctx.state.bases[ctx.baseIndex]?.minions.find(candidate => candidate.uid === ctx.targetMinionUid && candidate.controller === ctx.playerId)
-                : ctx.state.bases[ctx.baseIndex]?.minions.find(candidate => candidate.controller === ctx.playerId);
-            const moved = minion ? buildValidatedMoveEvents(ctx.state, {
-                minionUid: minion.uid,
-                minionDefId: minion.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex: targetBaseIndex,
-                reason: ctx.defId,
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'nonAction',
-            }) : [];
-            const destroyable = moved.length > 0
-                ? firstOngoingActionOnBase(ctx.state, targetBaseIndex, action => action.uid !== ctx.cardUid)
-                : undefined;
-            return {
-                events: [
-                    ...buildTransferOngoingActionEvents(ctx, self, ctx.baseIndex, targetBaseIndex),
-                    ...moved,
-                    ...(destroyable ? [detachOngoing(destroyable.uid, destroyable.defId, destroyable.ownerId, ctx.defId, ctx.now, sourceFor(ctx))] : []),
-                ],
-            };
-        }
-        return { events: [] };
+        if (!self || !ctx.state.bases[ctx.baseIndex]?.minions.some(minion => minion.controller === ctx.playerId)) return { events: [] };
+        const options = buildWraithActionTransferOptions(
+            ctx.state,
+            [{ action: self, baseIndex: ctx.baseIndex }],
+            ctx.state.bases
+                .map((_base, baseIndex) => ({ baseIndex, label: baseName(ctx.state, baseIndex) }))
+                .filter(candidate => candidate.baseIndex !== ctx.baseIndex),
+        );
+        if (options.length === 0) return { events: [] };
+        return {
+            events: [],
+            matchState: queueWraithFieldSourceTargetPrompt(
+                ctx.matchState,
+                ctx.playerId,
+                'wraithrustlers_ectoplasm_one_choose_base',
+                '灵质一号：选择此行动转移到的基地',
+                options,
+                ctx.now,
+                { sourceCardUid: ctx.cardUid, sourceDefId: ctx.defId, sourceBaseIndex: ctx.baseIndex },
+            ),
+        };
     });
     registerSimpleAbility('wraithrustlers_librarian_haunt', 'onDestroy', ctx => ({
         events: [
@@ -2424,7 +5208,27 @@ function registerWraithrustlers(): void {
     }));
     registerSimpleAbility('wraithrustlers_the_tools_and_the_talent', 'onPlay', ctx => {
         const player = ctx.state.players[ctx.playerId];
-        const card = player?.deck.at(-1);
+        const options = buildDeckCardOptions(ctx.state, ctx.playerId);
+        if (options.length === 0) return { events: [] };
+        if (ctx.matchState) {
+            return {
+                events: [],
+                matchState: queuePrompt(
+                    ctx.matchState,
+                    ctx.playerId,
+                    'wraithrustlers_the_tools_and_the_talent_deck',
+                    '工具与天赋：选择牌库中的一张牌置于牌库顶',
+                    options,
+                    ctx.now,
+                    'generic',
+                    undefined,
+                    undefined,
+                    undefined,
+                    { autoRefresh: 'deck', genericIntent: 'card-pool', responseValidationMode: 'live' },
+                ),
+            };
+        }
+        const card = player?.deck[player.deck.length - 1];
         return {
             events: player && card
                 ? [

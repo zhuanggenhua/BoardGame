@@ -14,22 +14,13 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import type { ContentSlotProps, ActionsSlotProps } from '../../../components/game/framework/widgets/EndgameOverlay';
-import type { SmashUpCore, PlayerState } from '../domain/types';
-import { MADNESS_CARD_DEF_ID } from '../domain/types';
+import type { SmashUpCore } from '../domain/types';
 import { PLAYER_CONFIG } from './playerConfig';
 import { getFactionMeta } from './factionMeta';
 import { getScores } from '../domain/index';
+import { countMadnessCardsForPlayer } from '../domain/abilityHelpers';
 import { SMASHUP_TEAM_IDS, getSmashUpTeamMembers, getSmashUpTeamScores, getSmashUpVictoryTarget, isSmashUpTwoVsTwoMode } from '../domain/teamMode';
 import { GameButton } from './GameButton';
-
-/** 计算玩家的疯狂卡数量（仅用于前端展示；真实结算由领域层完成） */
-function countMadness(player: PlayerState): number {
-    let count = 0;
-    for (const c of player.hand) if (c.defId === MADNESS_CARD_DEF_ID) count++;
-    for (const c of player.deck) if (c.defId === MADNESS_CARD_DEF_ID) count++;
-    for (const c of player.discard) if (c.defId === MADNESS_CARD_DEF_ID) count++;
-    return count;
-}
 
 /** 计算计分轨最大刻度（跟随最高分与胜利线） */
 function getTrackMax(
@@ -178,7 +169,7 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                         const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
                         const rawVp = player.vp;
                         const finalVp = finalScores[pid] ?? 0;
-                        const madnessCount = countMadness(player);
+                        const madnessCount = countMadnessCardsForPlayer(core, pid);
                         const penalty = rawVp - finalVp;
                         const isMe = pid === myPlayerId;
                         const isThisWinner = winners.has(pid);

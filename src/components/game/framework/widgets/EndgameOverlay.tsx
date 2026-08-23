@@ -41,6 +41,31 @@ export function shouldShowVictoryParticles(
 
 const OVERLAY_FADE_MS = 300;
 
+export type EndgameOverlayScrollMode = 'none' | 'content' | 'overlay';
+
+export function getEndgameOverlayScrollClassNames(
+    scrollMode: EndgameOverlayScrollMode = 'none',
+): { overlay: string; content: string } {
+    switch (scrollMode) {
+        case 'content':
+            return {
+                overlay: 'overflow-hidden overscroll-contain',
+                content: 'overflow-y-auto overflow-x-hidden overscroll-contain',
+            };
+        case 'overlay':
+            return {
+                overlay: 'overflow-y-auto overflow-x-hidden overscroll-contain',
+                content: 'overflow-y-auto overflow-x-hidden overscroll-contain',
+            };
+        case 'none':
+        default:
+            return {
+                overlay: 'overflow-hidden overscroll-contain',
+                content: 'overflow-hidden overscroll-contain',
+            };
+    }
+}
+
 export interface ContentSlotProps {
     result?: GameOverResult;
     playerID?: string | null;
@@ -74,6 +99,8 @@ export interface EndgameOverlayProps {
     backdropClassName?: string;
     /** 内容容器附加样式，用于游戏专属移动端压缩 */
     contentWrapperClassName?: string;
+    /** 结束层滚动模式：默认不滚；长内容游戏可显式开启内容区或整层滚动 */
+    scrollMode?: EndgameOverlayScrollMode;
 }
 
 /**
@@ -159,6 +186,7 @@ export function EndgameOverlay({
     renderActions,
     backdropClassName = 'bg-black/60 backdrop-blur-sm',
     contentWrapperClassName,
+    scrollMode = 'none',
 }: EndgameOverlayProps): React.ReactElement | null {
     const [shouldShow, setShouldShow] = useState(false);
     const [frozenResult, setFrozenResult] = useState<GameOverResult | undefined>(undefined);
@@ -203,6 +231,7 @@ export function EndgameOverlay({
         isLocalMode: gameMode?.mode === 'local',
         isSpectator: gameMode?.isSpectator === true,
     });
+    const scrollClassNames = getEndgameOverlayScrollClassNames(scrollMode);
 
     const overlayContent = (
         <AnimatePresence>
@@ -216,7 +245,8 @@ export function EndgameOverlay({
                     exit={{ opacity: 0 }}
                     transition={{ duration: OVERLAY_FADE_MS / 1000 }}
                     className={cn(
-                        'fixed inset-0 pointer-events-auto overflow-y-auto overscroll-contain',
+                        'fixed inset-0 pointer-events-auto',
+                        scrollClassNames.overlay,
                         backdropClassName,
                     )}
                     style={{ zIndex: UI_Z_INDEX.overlayRaised }}
@@ -233,7 +263,8 @@ export function EndgameOverlay({
                             exit={{ scale: 0.9, y: 20, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                             className={cn(
-                                'relative flex max-h-[var(--runtime-modal-max-height,calc(100dvh-2rem))] w-full max-w-md flex-col items-center overflow-y-auto overscroll-contain pointer-events-auto',
+                                'relative flex max-h-[var(--runtime-modal-max-height,calc(100dvh-2rem))] w-full max-w-md flex-col items-center pointer-events-auto',
+                                scrollClassNames.content,
                                 contentWrapperClassName,
                             )}
                         >

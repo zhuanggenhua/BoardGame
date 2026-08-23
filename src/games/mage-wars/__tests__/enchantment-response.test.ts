@@ -194,9 +194,34 @@ describe('mage-wars enchantment response windows', () => {
             preparedSpellCardIds: [],
             discardSpellCardIds: [],
         });
-        expect(blockedCast.state.sys.responseWindow.current?.requiredInteractionId).toBeDefined();
+        const responseWindow = blockedCast.state.sys.responseWindow.current;
+        expect(responseWindow?.requiredInteractionId).toBeDefined();
         const interaction = blockedCast.state.sys.interaction.current;
+        expect(interaction).toMatchObject({
+            id: responseWindow?.requiredInteractionId,
+            kind: 'simple-choice',
+            playerId: '1',
+            data: {
+                sourceId: 'mw.enchantment-response.reveal',
+                targetType: 'button',
+                choiceRequest: {
+                    sourceId: 'mw.enchantment-response.reveal',
+                    metadata: expect.objectContaining({
+                        opportunityId: responseWindow?.requiredInteractionId,
+                        mageWarsTimingOpportunity: 'mage-wars.enchantment-response',
+                        responseId: responseWindow?.id,
+                        responseObjectId: response.id,
+                        responseCardId: 1901,
+                    }),
+                },
+            },
+        });
         expect(interaction?.data.ai).toMatchObject({ status: 'semantic' });
+        expect((interaction?.data.ai?.decisions?.[0] as AiDecisionDescriptor | undefined)?.metadata)
+            .toMatchObject({
+                opportunityId: responseWindow?.requiredInteractionId,
+                mageWarsTimingOpportunity: 'mage-wars.enchantment-response',
+            });
         const aiActions = buildAiLegalActionsFromInteractionDecision(
             interaction!.data.ai!.decisions![0] as AiDecisionDescriptor,
         );

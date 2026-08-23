@@ -137,8 +137,7 @@ export const buildPendingTargetAction = (
                 return rightSource.troops - leftSource.troops
                     || rightSource.population - leftSource.population
                     || left.name.localeCompare(right.name, 'zh-CN');
-            })
-            .at(0);
+            })[0];
         return fallbackTarget ?? selectedRegion;
     })();
 
@@ -167,8 +166,7 @@ export const buildPendingTargetAction = (
             return Boolean(passage?.usable);
         })
         .map((region) => materializeNonSiegedCityActionSourceRegion(region))
-        .sort((left, right) => right.troops - left.troops || left.name.localeCompare(right.name, 'zh-CN'))
-        .at(0);
+        .sort((left, right) => right.troops - left.troops || left.name.localeCompare(right.name, 'zh-CN'))[0];
     if (!sourceRegion) {
         return null;
     }

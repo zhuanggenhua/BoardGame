@@ -415,6 +415,70 @@ describe('mage-wars event FX mapper', () => {
             },
         });
     });
+
+    it('maps healing roll events to a visible healing impact cue at the healed object', () => {
+        const objectId = 'mwobj-0-wounded-cat';
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const core = {
+            ...baseCore,
+            objects: {
+                [objectId]: {
+                    id: objectId,
+                    kind: 'creature' as const,
+                    ownerId: '0',
+                    sourceSpellCardId: 2906,
+                    sourceObjectId: 'spell-2906',
+                    name: 'Wounded Cat',
+                    zoneId: ARENA_ZONE_IDS.A2,
+                    life: 4,
+                    damage: 2,
+                    armor: 0,
+                    actionReady: false,
+                    guarding: false,
+                    statusTokens: {},
+                },
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A2
+                    ? { ...zone, objectIds: [objectId] }
+                    : zone
+            )),
+        };
+
+        const instruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
+            payload: {
+                playerId: '0',
+                spellCardId: 2811,
+                sourceAbilityId: 'mw.object.2811.healing-light',
+                targetObjectId: objectId,
+                targetZoneId: ARENA_ZONE_IDS.A2,
+                diceResults: [2],
+                healing: 2,
+                actualHealing: 2,
+            },
+            timestamp: 8,
+        }), core);
+
+        expect(instruction).toMatchObject({
+            sourceEventId: 1,
+            cue: MW_FX.HEALING_IMPACT,
+            ctx: {
+                cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
+                intensity: 'normal',
+            },
+            params: {
+                targetObjectId: objectId,
+                targetZoneId: ARENA_ZONE_IDS.A2,
+                spellCardId: 2811,
+                sourceAbilityId: 'mw.object.2811.healing-light',
+                diceResults: [2],
+                healingAmount: 2,
+                actualHealing: 2,
+            },
+        });
+    });
+
     it('maps spell teleport events to the destination zone with a teleport cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 

@@ -1,0 +1,809 @@
+import type { ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
+import { queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
+import {
+    getActiveResolutionFrame,
+    upsertActiveResolutionFrame,
+} from '../../../engine/systems/resolutionStack';
+import type { TimingOpportunitySystemConfig } from '../../../engine/systems/TimingOpportunitySystem';
+import type {
+    Opportunity,
+    TimingOpportunityDiscoveryArgs,
+    TimingOpportunityDiscoveryResult,
+} from '../../../engine/TimingOpportunity';
+import type { GameEvent, MatchState } from '../../../engine/types';
+import {
+    MAGE_WARS_INTERACTION_SOURCE_IDS,
+    type MageWarsCounterstrikeChoiceValue,
+    type MageWarsDefenseChoiceValue,
+    type MageWarsEnchantmentResponseChoiceValue,
+    type MageWarsUpkeepCostChoiceValue,
+    type MageWarsUpkeepHealTransferChoiceValue,
+} from './systems';
+import {
+    MAGE_WARS_EVENTS,
+    type MageWarsCounterstrikeAvailableEvent,
+    type MageWarsDamageDealtEvent,
+    type MageWarsDefenseAvailableEvent,
+    type MageWarsEnchantmentResponseRequiredEvent,
+    type MageWarsUpkeepCostAvailableEvent,
+    type MageWarsUpkeepHealTransferAvailableEvent,
+} from './events';
+import { STATUS_TOKEN_IDS } from './ids';
+import type { MageWarsCommand, MageWarsCore, MageWarsEvent } from './types';
+import {
+    createMageWarsResponseFrame,
+    readMageWarsResponseContext,
+    type MageWarsResponseContext,
+} from './responseResolution';
+import { getStatusTokenAmount } from './statusTokens';
+
+export type MageWarsTimingOpportunityChoiceValue =
+    | MageWarsCounterstrikeChoiceValue
+    | MageWarsDefenseChoiceValue
+    | MageWarsEnchantmentResponseChoiceValue
+    | MageWarsUpkeepCostChoiceValue
+    | MageWarsUpkeepHealTransferChoiceValue;
+
+const MAGE_WARS_TIMING_OPPORTUNITY_KINDS = {
+    COUNTERSTRIKE: 'mage-wars.counterstrike',
+    DEFENSE: 'mage-wars.defense',
+    ENCHANTMENT_RESPONSE: 'mage-wars.enchantment-response',
+    SLEEP_DAMAGE_REPLACEMENT: 'mage-wars.sleep-damage-replacement',
+    UPKEEP_COST: 'mage-wars.upkeep-cost',
+    UPKEEP_HEAL_TRANSFER: 'mage-wars.upkeep-heal-transfer',
+} as const;
+
+function isCounterstrikeAvailableEvent(event: GameEvent): event is MageWarsCounterstrikeAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.COUNTERSTRIKE_AVAILABLE;
+}
+
+function isDefenseAvailableEvent(event: GameEvent): event is MageWarsDefenseAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.DEFENSE_AVAILABLE;
+}
+
+function isUpkeepCostAvailableEvent(event: GameEvent): event is MageWarsUpkeepCostAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.UPKEEP_COST_AVAILABLE;
+}
+
+function isUpkeepHealTransferAvailableEvent(event: GameEvent): event is MageWarsUpkeepHealTransferAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_AVAILABLE;
+}
+
+function isEnchantmentResponseRequiredEvent(event: GameEvent): event is MageWarsEnchantmentResponseRequiredEvent {
+    return event.type === MAGE_WARS_EVENTS.ENCHANTMENT_RESPONSE_REQUIRED;
+}
+
+function isDamageDealtEvent(event: GameEvent): event is MageWarsDamageDealtEvent {
+    return event.type === 'DAMAGE_DEALT';
+}
+
+function counterstrikeInteractionId(event: MageWarsCounterstrikeAvailableEvent): string {
+    return [
+        'mw-counterstrike',
+        event.payload.defenderObjectId,
+        event.payload.attackerObjectId,
+        event.payload.counterstrikeAttackProfileId,
+        event.timestamp ?? 0,
+    ].join('-');
+}
+
+function defenseInteractionId(event: MageWarsDefenseAvailableEvent): string {
+    return [
+        'mw-defense',
+        event.payload.defenderObjectId ?? event.payload.defenderId,
+        event.payload.attackerObjectId ?? event.payload.attackerId,
+        event.payload.incomingAttackProfileId,
+        event.timestamp ?? 0,
+    ].join('-');
+}
+
+function upkeepCostInteractionId(event: MageWarsUpkeepCostAvailableEvent): string {
+    return [
+        'mw-upkeep-cost',
+        event.payload.sourceObjectId,
+        event.payload.targetObjectId,
+        event.timestamp ?? 0,
+    ].join('-');
+}
+
+function upkeepHealTransferInteractionId(event: MageWarsUpkeepHealTransferAvailableEvent): string {
+    return [
+        'mw-upkeep-heal-transfer',
+        event.payload.sourceObjectId,
+        event.payload.targetObjectId,
+        event.timestamp ?? 0,
+    ].join('-');
+}
+
+function createCounterstrikeOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsCounterstrikeAvailableEvent,
+): Opportunity<MageWarsCounterstrikeChoiceValue> {
+    const requestId = counterstrikeInteractionId(event);
+    const baseValue = {
+        attackerObjectId: event.payload.attackerObjectId,
+        defenderObjectId: event.payload.defenderObjectId,
+        incomingAttackProfileId: event.payload.incomingAttackProfileId,
+        counterstrikeAttackProfileId: event.payload.counterstrikeAttackProfileId,
+        ...(event.payload.counterstrikeSourceObjectId
+            ? { counterstrikeSourceObjectId: event.payload.counterstrikeSourceObjectId }
+            : {}),
+    };
+    const candidates: ChoiceRequestCandidate<MageWarsCounterstrikeChoiceValue>[] = [{
+        id: 'counterstrike',
+        label: 'interaction.counterstrike.options.counterstrike',
+        labelKey: 'interaction.counterstrike.options.counterstrike',
+        value: {
+            action: 'counterstrike',
+            ...baseValue,
+        },
+        displayMode: 'button',
+    }, {
+        id: 'pass',
+        label: 'interaction.counterstrike.options.pass',
+        labelKey: 'interaction.counterstrike.options.pass',
+        value: {
+            action: 'pass',
+            ...baseValue,
+        },
+        displayMode: 'button',
+    }];
+
+    return {
+        id: requestId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'ability',
+            id: MAGE_WARS_INTERACTION_SOURCE_IDS.COUNTERSTRIKE_CHOICE,
+            ownerId: event.payload.ownerId,
+            controllerId: event.payload.ownerId,
+            metadata: {
+                sourceAbilityId: event.payload.sourceAbilityId,
+            },
+        },
+        controllerId: event.payload.ownerId,
+        class: 'optional',
+        condition: { satisfied: true },
+        targetRequest: {
+            kind: 'choose-option',
+            min: 1,
+            max: 1,
+            description: 'interaction.counterstrike.title',
+        },
+        resolution: { type: 'choice-request' },
+        choice: {
+            requestId,
+            playerId: event.payload.ownerId,
+            kind: 'choose-option',
+            candidates,
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response', interactionId: requestId },
+            ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+            metadata: {
+                mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.COUNTERSTRIKE,
+            },
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.COUNTERSTRIKE,
+            sourceAbilityId: event.payload.sourceAbilityId,
+            attackerObjectId: event.payload.attackerObjectId,
+            defenderObjectId: event.payload.defenderObjectId,
+        },
+    };
+}
+
+function createDefenseOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsDefenseAvailableEvent,
+): Opportunity<MageWarsDefenseChoiceValue> {
+    const requestId = defenseInteractionId(event);
+    const baseValue = {
+        ...(event.payload.attackerObjectId ? { attackerObjectId: event.payload.attackerObjectId } : {}),
+        ...(event.payload.attackerId ? { attackerId: event.payload.attackerId } : {}),
+        ...(event.payload.defenderObjectId ? { defenderObjectId: event.payload.defenderObjectId } : {}),
+        ...(event.payload.defenderId ? { defenderId: event.payload.defenderId } : {}),
+        incomingAttackProfileId: event.payload.incomingAttackProfileId,
+        allowCounterstrikeOpportunity: event.payload.allowCounterstrikeOpportunity,
+        removeGuardAfterMelee: event.payload.removeGuardAfterMelee,
+        ...(event.payload.counterstrikeSourceObjectId
+            ? { counterstrikeSourceObjectId: event.payload.counterstrikeSourceObjectId }
+            : {}),
+        ...(event.payload.spellCardId ? { spellCardId: event.payload.spellCardId } : {}),
+    };
+    const defenseOptions: ChoiceRequestCandidate<MageWarsDefenseChoiceValue>[] = event.payload.defenseProfileIds
+        .filter((defenseProfileId) => (
+            !event.payload.requiredDefenseProfileId
+            || defenseProfileId === event.payload.requiredDefenseProfileId
+        ))
+        .map((defenseProfileId) => ({
+            id: `defend-${defenseProfileId}`,
+            label: 'interaction.defense.options.defend',
+            labelKey: 'interaction.defense.options.defend',
+            value: {
+                action: 'defend',
+                defenseProfileId,
+                ...baseValue,
+            },
+            displayMode: 'button',
+        }));
+    const candidates: ChoiceRequestCandidate<MageWarsDefenseChoiceValue>[] = event.payload.requiredDefenseProfileId
+        ? defenseOptions
+        : [
+            ...defenseOptions,
+            {
+                id: 'pass',
+                label: 'interaction.defense.options.pass',
+                labelKey: 'interaction.defense.options.pass',
+                value: {
+                    action: 'pass',
+                    ...baseValue,
+                },
+                displayMode: 'button',
+            },
+        ];
+
+    return {
+        id: requestId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'ability',
+            id: MAGE_WARS_INTERACTION_SOURCE_IDS.DEFENSE_CHOICE,
+            ownerId: event.payload.ownerId,
+            controllerId: event.payload.ownerId,
+            metadata: {
+                sourceAbilityId: event.payload.sourceAbilityId,
+            },
+        },
+        controllerId: event.payload.ownerId,
+        class: 'optional',
+        condition: { satisfied: true },
+        targetRequest: {
+            kind: 'choose-option',
+            min: 1,
+            max: 1,
+            description: 'interaction.defense.title',
+        },
+        resolution: { type: 'choice-request' },
+        choice: {
+            requestId,
+            playerId: event.payload.ownerId,
+            kind: 'choose-option',
+            candidates,
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response', interactionId: requestId },
+            ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+            metadata: {
+                mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.DEFENSE,
+            },
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.DEFENSE,
+            sourceAbilityId: event.payload.sourceAbilityId,
+            ...(event.payload.attackerObjectId ? { attackerObjectId: event.payload.attackerObjectId } : {}),
+            ...(event.payload.defenderObjectId ? { defenderObjectId: event.payload.defenderObjectId } : {}),
+            ...(event.payload.attackerId ? { attackerId: event.payload.attackerId } : {}),
+            ...(event.payload.defenderId ? { defenderId: event.payload.defenderId } : {}),
+        },
+    };
+}
+
+function createUpkeepCostOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsUpkeepCostAvailableEvent,
+): Opportunity<MageWarsUpkeepCostChoiceValue> | null {
+    if (!args.state.core.objects[event.payload.sourceObjectId]) return null;
+
+    const requestId = upkeepCostInteractionId(event);
+    const baseValue = {
+        playerId: event.payload.playerId,
+        sourceObjectId: event.payload.sourceObjectId,
+        sourceSpellCardId: event.payload.sourceSpellCardId,
+        targetObjectId: event.payload.targetObjectId,
+        amount: event.payload.amount,
+    };
+    const player = args.state.core.players[event.payload.playerId];
+    const canPay = (player?.mana ?? 0) >= event.payload.amount;
+    const candidates: ChoiceRequestCandidate<MageWarsUpkeepCostChoiceValue>[] = [
+        ...(canPay ? [{
+            id: 'pay',
+            label: 'interaction.upkeep.options.pay',
+            labelKey: 'interaction.upkeep.options.pay',
+            value: { action: 'pay' as const, ...baseValue },
+            displayMode: 'button' as const,
+        }] : []),
+        {
+            id: 'destroy',
+            label: 'interaction.upkeep.options.destroy',
+            labelKey: 'interaction.upkeep.options.destroy',
+            value: { action: 'destroy' as const, ...baseValue },
+            displayMode: 'button' as const,
+        },
+    ];
+
+    return {
+        id: requestId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'ability',
+            id: MAGE_WARS_INTERACTION_SOURCE_IDS.UPKEEP_COST_CHOICE,
+            ownerId: event.payload.playerId,
+            controllerId: event.payload.playerId,
+            metadata: {
+                sourceAbilityId: `mw.spell.${event.payload.sourceSpellCardId}.upkeep`,
+                sourceObjectId: event.payload.sourceObjectId,
+            },
+        },
+        controllerId: event.payload.playerId,
+        class: 'mandatory',
+        condition: { satisfied: true },
+        targetRequest: {
+            kind: 'choose-option',
+            min: 1,
+            max: 1,
+            description: 'interaction.upkeep.title',
+        },
+        resolution: { type: 'choice-request' },
+        choice: {
+            requestId,
+            playerId: event.payload.playerId,
+            kind: 'choose-option',
+            candidates,
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response', interactionId: requestId },
+            ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+            metadata: {
+                mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_COST,
+            },
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_COST,
+            sourceAbilityId: `mw.spell.${event.payload.sourceSpellCardId}.upkeep`,
+            targetObjectId: event.payload.targetObjectId,
+            amount: event.payload.amount,
+        },
+    };
+}
+
+function createUpkeepHealTransferOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsUpkeepHealTransferAvailableEvent,
+): Opportunity<MageWarsUpkeepHealTransferChoiceValue> | null {
+    if (!args.state.core.objects[event.payload.sourceObjectId]) return null;
+    if (event.payload.availableHealing <= 0) return null;
+
+    const requestId = upkeepHealTransferInteractionId(event);
+    const baseValue = {
+        playerId: event.payload.playerId,
+        sourceObjectId: event.payload.sourceObjectId,
+        sourceSpellCardId: event.payload.sourceSpellCardId,
+        targetObjectId: event.payload.targetObjectId,
+        maxHealing: event.payload.maxHealing,
+    };
+    const healCandidates: ChoiceRequestCandidate<MageWarsUpkeepHealTransferChoiceValue>[] =
+        Array.from({ length: event.payload.availableHealing }, (_, index) => {
+            const amount = index + 1;
+            return {
+                id: `heal-${amount}`,
+                label: 'interaction.upkeepHealTransfer.options.heal',
+                labelKey: 'interaction.upkeepHealTransfer.options.heal',
+                labelParams: { amount },
+                value: { action: 'heal' as const, ...baseValue, amount },
+                displayMode: 'button',
+            };
+        });
+    const candidates: ChoiceRequestCandidate<MageWarsUpkeepHealTransferChoiceValue>[] = [
+        ...healCandidates,
+        {
+            id: 'skip',
+            label: 'interaction.upkeepHealTransfer.options.skip',
+            labelKey: 'interaction.upkeepHealTransfer.options.skip',
+            value: { action: 'skip', ...baseValue, amount: 0 },
+            displayMode: 'button',
+        },
+    ];
+
+    return {
+        id: requestId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'ability',
+            id: MAGE_WARS_INTERACTION_SOURCE_IDS.UPKEEP_HEAL_TRANSFER_CHOICE,
+            ownerId: event.payload.playerId,
+            controllerId: event.payload.playerId,
+            metadata: {
+                sourceAbilityId: `mw.spell.${event.payload.sourceSpellCardId}.upkeep`,
+                sourceObjectId: event.payload.sourceObjectId,
+            },
+        },
+        controllerId: event.payload.playerId,
+        class: 'optional',
+        condition: { satisfied: true },
+        targetRequest: {
+            kind: 'choose-option',
+            min: 1,
+            max: 1,
+            description: 'interaction.upkeepHealTransfer.title',
+        },
+        resolution: { type: 'choice-request' },
+        choice: {
+            requestId,
+            playerId: event.payload.playerId,
+            kind: 'choose-option',
+            candidates,
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response', interactionId: requestId },
+            ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+            metadata: {
+                mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_HEAL_TRANSFER,
+            },
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_HEAL_TRANSFER,
+            sourceAbilityId: `mw.spell.${event.payload.sourceSpellCardId}.upkeep`,
+            sourceObjectId: event.payload.sourceObjectId,
+            targetObjectId: event.payload.targetObjectId,
+            maxHealing: event.payload.maxHealing,
+            availableHealing: event.payload.availableHealing,
+        },
+    };
+}
+
+function createEnchantmentResponseOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsEnchantmentResponseRequiredEvent,
+): Opportunity<MageWarsEnchantmentResponseChoiceValue> {
+    const context = event.payload.context;
+    const value: MageWarsEnchantmentResponseChoiceValue = {
+        action: 'reveal',
+        responseId: context.responseId,
+        responseObjectId: context.responseObjectId,
+        responseCardId: context.responseCardId,
+    };
+    const sourceAbilityId = `mw.spell.${context.responseCardId}.response`;
+    const candidate: ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue> = {
+        id: 'reveal',
+        label: 'interaction.enchantmentResponse.options.reveal',
+        labelKey: 'interaction.enchantmentResponse.options.reveal',
+        value,
+        displayMode: 'button',
+    };
+
+    return {
+        id: event.payload.interactionId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'ability',
+            id: MAGE_WARS_INTERACTION_SOURCE_IDS.ENCHANTMENT_RESPONSE_REVEAL,
+            ownerId: context.responseOwnerId,
+            controllerId: context.responseOwnerId,
+            metadata: {
+                sourceAbilityId,
+                responseId: context.responseId,
+                responseObjectId: context.responseObjectId,
+                responseCardId: context.responseCardId,
+            },
+        },
+        controllerId: context.responseOwnerId,
+        class: 'response',
+        condition: { satisfied: true },
+        targetRequest: {
+            kind: 'choose-option',
+            min: 1,
+            max: 1,
+            description: 'interaction.enchantmentResponse.title',
+        },
+        resolution: { type: 'choice-request' },
+        choice: {
+            requestId: event.payload.interactionId,
+            ownerFrameId: context.responseId,
+            playerId: context.responseOwnerId,
+            kind: 'choose-option',
+            candidates: [candidate],
+            selection: { min: 1, max: 1 },
+            skipPolicy: 'forbidden',
+            resolution: { type: 'interaction-response', interactionId: event.payload.interactionId },
+            ai: { status: 'shared-policy', policyId: 'mage-wars-button-options' },
+            metadata: {
+                mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.ENCHANTMENT_RESPONSE,
+                responseId: context.responseId,
+                responseObjectId: context.responseObjectId,
+                responseCardId: context.responseCardId,
+            },
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.ENCHANTMENT_RESPONSE,
+            sourceAbilityId,
+            responseId: context.responseId,
+            responseObjectId: context.responseObjectId,
+            responseCardId: context.responseCardId,
+            responseOwnerId: context.responseOwnerId,
+            windowType: event.payload.windowType,
+            mageWarsResponseContext: context,
+        },
+    };
+}
+
+function createSleepDamageReplacementOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsDamageDealtEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue> | null {
+    if (args.timing.position !== 'replace') return null;
+    const damage = event.payload.actualDamage ?? event.payload.amount;
+    if (damage <= 0) return null;
+
+    const targetPlayer = args.state.core.players[event.payload.targetId];
+    const targetObject = args.state.core.objects[event.payload.targetId];
+    if (!targetPlayer && !targetObject) return null;
+
+    const sleepAmount = targetPlayer
+        ? getStatusTokenAmount(targetPlayer, STATUS_TOKEN_IDS.SLEEP)
+        : targetObject
+            ? getStatusTokenAmount(targetObject, STATUS_TOKEN_IDS.SLEEP)
+            : 0;
+    if (sleepAmount <= 0) return null;
+
+    const targetRef = targetPlayer
+        ? { targetPlayerId: targetPlayer.id }
+        : { targetObjectId: targetObject!.id };
+    const controllerId = targetPlayer?.id ?? targetObject!.ownerId;
+    const sourceAbilityId = 'mw.status.sleep.damage-replacement';
+    const opportunityId = [
+        'mw-sleep-damage-replacement',
+        event.payload.targetId,
+        event.timestamp ?? 0,
+    ].join('-');
+
+    return {
+        id: opportunityId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'status',
+            id: sourceAbilityId,
+            ownerId: controllerId,
+            controllerId,
+            metadata: {
+                statusTokenId: STATUS_TOKEN_IDS.SLEEP,
+                targetId: event.payload.targetId,
+            },
+        },
+        controllerId,
+        class: 'replacement',
+        condition: { satisfied: true },
+        resolution: {
+            type: 'events',
+            events: [event, {
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+                payload: {
+                    ...targetRef,
+                    statusTokenId: STATUS_TOKEN_IDS.SLEEP,
+                    amount: sleepAmount,
+                    sourceAbilityId,
+                },
+                sourceCommandType: event.sourceCommandType,
+                timestamp: event.timestamp,
+            }, {
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                payload: {
+                    ...targetRef,
+                    statusTokenId: STATUS_TOKEN_IDS.DAZE,
+                    amount: sleepAmount,
+                    sourceAbilityId,
+                },
+                sourceCommandType: event.sourceCommandType,
+                timestamp: event.timestamp,
+            }],
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.SLEEP_DAMAGE_REPLACEMENT,
+            sourceAbilityId,
+            targetId: event.payload.targetId,
+            sleepAmount,
+        },
+    };
+}
+
+function getMageWarsResponseContextFromOpportunity(
+    opportunity: Opportunity<MageWarsTimingOpportunityChoiceValue>,
+): MageWarsResponseContext | undefined {
+    const value = opportunity.metadata?.mageWarsResponseContext;
+    if (!value || typeof value !== 'object') return undefined;
+    return value as MageWarsResponseContext;
+}
+
+function createLiveRevealOption(
+    context: MageWarsResponseContext,
+): ChoiceRequestCandidate<MageWarsEnchantmentResponseChoiceValue> {
+    return {
+        id: 'reveal',
+        label: 'interaction.enchantmentResponse.options.reveal',
+        labelKey: 'interaction.enchantmentResponse.options.reveal',
+        value: {
+            action: 'reveal',
+            responseId: context.responseId,
+            responseObjectId: context.responseObjectId,
+            responseCardId: context.responseCardId,
+        },
+        displayMode: 'button',
+    };
+}
+
+export function discoverMageWarsTimingOpportunities(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+): TimingOpportunityDiscoveryResult<MageWarsTimingOpportunityChoiceValue> {
+    const event = args.timing.event;
+    if (!event) return { opportunities: [] };
+
+    if (isCounterstrikeAvailableEvent(event)) {
+        return { opportunities: [createCounterstrikeOpportunity(args, event)] };
+    }
+    if (isDefenseAvailableEvent(event)) {
+        return { opportunities: [createDefenseOpportunity(args, event)] };
+    }
+    if (isUpkeepCostAvailableEvent(event)) {
+        const opportunity = createUpkeepCostOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
+    if (isUpkeepHealTransferAvailableEvent(event)) {
+        const opportunity = createUpkeepHealTransferOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
+    if (isEnchantmentResponseRequiredEvent(event)) {
+        return { opportunities: [createEnchantmentResponseOpportunity(args, event)] };
+    }
+    if (isDamageDealtEvent(event)) {
+        const opportunity = createSleepDamageReplacementOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
+
+    return { opportunities: [] };
+}
+
+export function createMageWarsTimingOpportunitySystemConfig():
+TimingOpportunitySystemConfig<MageWarsTimingOpportunityChoiceValue, MageWarsCore> {
+    return {
+        choiceRequestOptions: (opportunity) => {
+            const kind = opportunity.metadata?.mageWarsTimingOpportunity;
+            if (kind === MAGE_WARS_TIMING_OPPORTUNITY_KINDS.COUNTERSTRIKE) {
+                return {
+                    title: 'interaction.counterstrike.title',
+                    titleKey: 'interaction.counterstrike.title',
+                    titleParams: {
+                        attackerObjectId: opportunity.metadata?.attackerObjectId,
+                        defenderObjectId: opportunity.metadata?.defenderObjectId,
+                    },
+                    targetType: 'button',
+                    autoResolveIfSingle: false,
+                };
+            }
+            if (kind === MAGE_WARS_TIMING_OPPORTUNITY_KINDS.DEFENSE) {
+                return {
+                    title: 'interaction.defense.title',
+                    titleKey: 'interaction.defense.title',
+                    titleParams: {
+                        ...(typeof opportunity.metadata?.attackerObjectId === 'string'
+                            ? { attackerObjectId: opportunity.metadata.attackerObjectId }
+                            : {}),
+                        ...(typeof opportunity.metadata?.defenderObjectId === 'string'
+                            ? { defenderObjectId: opportunity.metadata.defenderObjectId }
+                            : {}),
+                        ...(typeof opportunity.metadata?.attackerId === 'string'
+                            ? { attackerId: opportunity.metadata.attackerId }
+                            : {}),
+                        ...(typeof opportunity.metadata?.defenderId === 'string'
+                            ? { defenderId: opportunity.metadata.defenderId }
+                            : {}),
+                    },
+                    targetType: 'button',
+                    autoResolveIfSingle: false,
+                };
+            }
+            if (kind === MAGE_WARS_TIMING_OPPORTUNITY_KINDS.ENCHANTMENT_RESPONSE) {
+                const context = getMageWarsResponseContextFromOpportunity(opportunity);
+                if (!context) return null;
+                return {
+                    title: 'interaction.enchantmentResponse.title',
+                    titleKey: 'interaction.enchantmentResponse.title',
+                    titleParams: {
+                        responseCardId: context.responseCardId,
+                        responseObjectId: context.responseObjectId,
+                    },
+                    targetType: 'button',
+                    autoResolveIfSingle: false,
+                    responseValidationMode: 'live',
+                    optionsGenerator: <TCore>(state: { core: TCore; sys: unknown }) => {
+                        const option = createLiveRevealOption(context);
+                        const frame = getActiveResolutionFrame(
+                            state as unknown as MatchState<MageWarsCore>,
+                        );
+                        const activeContext = readMageWarsResponseContext(frame);
+                        const isCurrentResponse = frame?.id === context.responseId
+                            && activeContext?.responseId === context.responseId
+                            && activeContext.responseObjectId === context.responseObjectId
+                            && activeContext.responseCardId === context.responseCardId;
+
+                        return [
+                            isCurrentResponse
+                                ? option
+                                : {
+                                    ...option,
+                                    disabled: true,
+                                    disabledReason: '响应窗口已过期或响应来源已变化',
+                                },
+                        ];
+                    },
+                };
+            }
+            if (kind === MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_COST) {
+                return {
+                    title: 'interaction.upkeep.title',
+                    titleKey: 'interaction.upkeep.title',
+                    titleParams: {
+                        targetObjectId: opportunity.metadata?.targetObjectId,
+                        amount: opportunity.metadata?.amount,
+                    },
+                    targetType: 'button',
+                    autoResolveIfSingle: true,
+                };
+            }
+            if (kind === MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_HEAL_TRANSFER) {
+                return {
+                    title: 'interaction.upkeepHealTransfer.title',
+                    titleKey: 'interaction.upkeepHealTransfer.title',
+                    titleParams: {
+                        targetObjectId: opportunity.metadata?.targetObjectId,
+                        maxHealing: opportunity.metadata?.maxHealing,
+                        availableHealing: opportunity.metadata?.availableHealing,
+                    },
+                    targetType: 'button',
+                    autoResolveIfSingle: false,
+                };
+            }
+            return null;
+        },
+        queueChoiceInteraction: ({ state, opportunity, interaction }) => {
+            const context = getMageWarsResponseContextFromOpportunity(opportunity);
+            const frameState = context
+                ? upsertActiveResolutionFrame(state, createMageWarsResponseFrame(context))
+                : state;
+            return queueInteraction(frameState, interaction);
+        },
+        choiceRequestEvents: ({ opportunity, choiceRequest }) => {
+            const context = getMageWarsResponseContextFromOpportunity(opportunity);
+            if (!context) return undefined;
+
+            const windowType = opportunity.metadata?.windowType === 'attack-evasion'
+                ? 'attack-evasion'
+                : 'spell-counter';
+            const sourceCommandType = opportunity.timing.command?.type ?? context.sourceCommandType;
+            const timestamp = opportunity.timing.timestamp ?? 0;
+            return [{
+                type: RESPONSE_WINDOW_EVENTS.OPENED,
+                payload: {
+                    windowId: context.responseId,
+                    responderQueue: [context.responseOwnerId],
+                    windowType,
+                    sourceId: context.responseId,
+                    resolutionFrameId: context.responseId,
+                    requiredInteractionId: choiceRequest.requestId,
+                },
+                sourceCommandType,
+                timestamp,
+            }, {
+                type: MAGE_WARS_EVENTS.RESPONSE_INTERACTION_REQUESTED,
+                payload: {
+                    interaction: {
+                        id: choiceRequest.requestId,
+                        playerId: context.responseOwnerId,
+                    },
+                },
+                sourceCommandType,
+                timestamp,
+            }];
+        },
+    };
+}

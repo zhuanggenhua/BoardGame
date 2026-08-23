@@ -3,6 +3,7 @@ export const MW_FX = {
     SPELL_PUSH: 'mage-wars.spell.push',
     SPELL_TELEPORT: 'mage-wars.spell.teleport',
     ATTACK_IMPACT: 'mage-wars.attack.impact',
+    HEALING_IMPACT: 'mage-wars.healing.impact',
     DAMAGE_IMPACT: 'mage-wars.damage.impact',
 } as const;
 

@@ -1,143 +1,31 @@
-# 消息接口
+# 消息 API
 
-> 负责私聊消息、会话列表与已读标记。
+本文是私聊接口索引。精确行为以 [`message.controller.ts`](../../apps/api/src/modules/message/message.controller.ts) 和 [`message.dto.ts`](../../apps/api/src/modules/message/dtos/message.dto.ts) 为准。
 
-## 1. 获取会话列表
+所有接口都需要 `Authorization: Bearer <token>`。
 
-**GET** `/auth/messages/conversations`
+## 路由
 
-### 请求头
-```
-Authorization: Bearer <token>
-```
+| 方法 | 路径 | 请求体 / 参数 | 说明 |
+| --- | --- | --- | --- |
+| GET | `/auth/messages/conversations` | 无 | 获取会话列表，包含最近一条消息和未读数 |
+| GET | `/auth/messages/:userId` | query `page`、`limit` | 获取与目标用户的消息历史；默认分页口径见 [`README`](README.md) |
+| POST | `/auth/messages/send` | `toUserId`、`content`、可选 `type` | 发送文本消息或邀请消息 |
+| POST | `/auth/messages/read/:userId` | 路径 `userId` | 将与目标用户的消息标记已读 |
 
-### 成功响应（200）
+## 邀请消息
+
+发送邀请时 `type` 为 `invite`，`content` 必须是 JSON 字符串，并至少包含：
+
 ```json
-{
-  "conversations": [
-    {
-      "user": {
-        "id": "用户ID",
-        "username": "玩家名"
-      },
-      "lastMessage": {
-        "id": "消息ID",
-        "content": "最近一条消息",
-        "type": "text",
-        "inviteData": null,
-        "createdAt": "2026-01-01T00:00:00.000Z",
-        "fromSelf": false
-      },
-      "unread": 2
-    }
-  ]
-}
+{ "matchId": "<matchId>", "gameName": "<gameName>" }
 ```
 
-### 常见错误
-- 401 未登录
+## 主要错误
 
----
-
-## 2. 获取与某用户的消息历史
-
-**GET** `/auth/messages/:userId?page=1&limit=50`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 成功响应（200）
-```json
-{
-  "targetUser": {
-    "id": "用户ID",
-    "username": "玩家名"
-  },
-  "messages": [
-    {
-      "id": "消息ID",
-      "from": "发送方ID",
-      "to": "接收方ID",
-      "content": "消息内容",
-      "type": "text",
-      "inviteData": null,
-      "createdAt": "2026-01-01T00:00:00.000Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 50,
-    "total": 100
-  }
-}
-```
-
-### 常见错误
-- 401 未登录
-- 403 非好友不可访问
-- 404 用户不存在
-
----
-
-## 3. 发送消息
-
-**POST** `/auth/messages/send`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 请求体
-```json
-{
-  "toUserId": "目标用户ID",
-  "content": "你好"
-}
-```
-
-### 成功响应（201）
-```json
-{
-  "message": "消息已发送",
-  "messageData": {
-    "id": "消息ID",
-    "toUser": {
-      "id": "用户ID",
-      "username": "玩家名"
-    }
-  }
-}
-```
-
-### 常见错误
-- 400 参数错误
-- 401 未登录
-- 403 非好友不可发送
-- 404 用户不存在
-
----
-
-## 4. 标记已读
-
-**POST** `/auth/messages/read/:userId`
-
-### 请求头
-```
-Authorization: Bearer <token>
-```
-
-### 成功响应（200）
-```json
-{
-  "message": "已标记为已读",
-  "updated": 3
-}
-```
-
-### 常见错误
-- 401 未登录
-- 403 非好友不可操作
-- 404 用户不存在
+| 状态 | 含义 |
+| --- | --- |
+| `400` | 参数错误、目标用户无效，或邀请数据不是合法 JSON |
+| `401` | 未登录 |
+| `403` | 双方不是好友，不能查看、发送或标记已读 |
+| `404` | 目标用户不存在 |

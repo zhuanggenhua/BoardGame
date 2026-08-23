@@ -13,6 +13,9 @@ import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { runCommand } from '../testRunner';
 import {
     applyEvents,
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOptions,
     invokeRegisteredAbilityContract,
     makeBase,
     makeCard,
@@ -20,6 +23,7 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
 } from '../helpers';
 
 function randomSequence(values: number[]): RandomFn {
@@ -118,8 +122,9 @@ describe('哥布林能力', () => {
         }));
     });
 
-    it('谁放的屁：连续正面会放置指示物，第一次反面后给额外行动并停止', () => {
+    it('谁放的屁：连续正面后必须让玩家选择另一个随从再继续投掷', () => {
         const target = makeMinion('target-1', 'robot_zapbot', '0', 2);
+        const secondTarget = makeMinion('target-2', 'robot_zapbot', '0', 2);
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -127,18 +132,30 @@ describe('哥布林能力', () => {
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase({ defId: 'base_goblin_town', minions: [target], ongoingActions: [] })],
+            bases: [makeBase({ defId: 'base_goblin_town', minions: [target, secondTarget], ongoingActions: [] })],
         });
 
         const result = runCommand(makeMatchState(state), {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
             payload: { cardUid: 'smelt-it', targetBaseIndex: 0, targetMinionUid: 'target-1' },
-        }, randomSequence([0.9, 0.8, 0.1]));
+        }, randomSequence([0.9]));
 
         const counters = result.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED);
-        expect(counters).toHaveLength(2);
-        expect(result.events.filter(event =>
+        expect(counters).toHaveLength(1);
+        const nextPrompt = getFirstPrompt(result.finalState);
+        expect(getPromptHandlerData(nextPrompt).autoResolveIfSingle).toBe(false);
+        const targetTwo = getPromptOptions(nextPrompt).find(option => option.value?.minionUid === 'target-2');
+        expect(targetTwo).toBeDefined();
+
+        const choseSecond = respondToPrompt(result.finalState, targetTwo.id, '0', randomSequence([0.8]));
+        expect(choseSecond.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toHaveLength(1);
+        const finalPrompt = getFirstPrompt(choseSecond.finalState);
+        const targetOne = getPromptOptions(finalPrompt).find(option => option.value?.minionUid === 'target-1');
+        expect(targetOne).toBeDefined();
+
+        const tails = respondToPrompt(choseSecond.finalState, targetOne.id, '0', randomSequence([0.1]));
+        expect(tails.events.filter(event =>
             event.type === SU_EVENTS.LIMIT_MODIFIED && (event as any).payload.limitType === 'action',
         )).toHaveLength(1);
     });
@@ -170,11 +187,18 @@ describe('哥布林能力', () => {
             now: 1000,
         });
 
-        const reorder = result.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
+        expect(result.events.find(event => event.type === SU_EVENTS.DECK_REORDERED)).toBeUndefined();
+        const prompt = getFirstPrompt(result.matchState!);
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+        const discardOption = getPromptOptions(prompt).find(option => option.value?.cardUid === 'discard-1');
+        expect(discardOption).toBeDefined();
+
+        const resolved = respondToPrompt(result.matchState!, discardOption.id, '0', randomSequence([0.9]));
+        const reorder = resolved.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
         expect(reorder).toBeDefined();
         expect(reorder.payload.deckUids).toContain('discard-1');
 
-        const after = applyEvents(state, result.events);
+        const after = resolved.finalState.core;
         expect(after.players['0'].deck.map(card => card.uid)).toContain('discard-1');
         expect(after.players['0'].discard.map(card => card.uid)).not.toContain('discard-1');
     });
@@ -251,23 +275,46 @@ describe('哥布林能力', () => {
             bases: [makeBase({ defId: 'base_goblin_town', minions: [diviner], ongoingActions: [] })],
         });
 
-        const result = runCommand(makeMatchState(state), {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId: '0',
-            payload: { cardUid: 'new-minion', baseIndex: 0 },
-        }, randomSequence([0.1]));
+        const stateAfterPlay = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('discard-me', 'robot_zapbot', 'minion', '0')],
+                    deck: [makeCard('draw-1', 'robot_zapbot', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'base_goblin_town', minions: [
+                diviner,
+                makeMinion('new-minion', 'robot_zapbot', '0', 2),
+            ], ongoingActions: [] })],
+        });
 
-        expect(result.events).toContainEqual(expect.objectContaining({
+        const result = triggerBaseAbility('base_goblin_town', 'onMinionPlayed', {
+            state: stateAfterPlay,
+            matchState: makeMatchState(stateAfterPlay),
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_goblin_town',
+            minionUid: 'new-minion',
+            random: randomSequence([0.1]),
+            now: 1000,
+        } as any);
+
+        expect(result.events.find(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBeUndefined();
+        const prompt = getFirstPrompt(result.matchState!);
+        expect(getPromptHandlerData(prompt).autoResolveIfSingle).toBe(false);
+        const discardOption = getPromptOptions(prompt).find(option => option.value?.cardUid === 'discard-me');
+        expect(discardOption).toBeDefined();
+
+        const resolved = respondToPrompt(result.matchState!, discardOption.id, '0', randomSequence([0.9]));
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARDS_DISCARDED,
             payload: expect.objectContaining({ cardUids: ['discard-me'] }),
         }));
-        expect(result.events).toContainEqual(expect.objectContaining({
+        expect(resolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.MINION_METADATA_UPDATED,
             payload: expect.objectContaining({ minionUid: 'diviner-1' }),
-        }));
-        expect(result.events).toContainEqual(expect.objectContaining({
-            type: SU_EVENTS.POWER_COUNTER_ADDED,
-            payload: expect.objectContaining({ minionUid: 'new-minion', amount: 1 }),
         }));
     });
 

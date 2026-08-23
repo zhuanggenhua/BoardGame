@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
-import { clearBaseAbilityRegistry, triggerBaseAbility } from '../../domain/baseAbilities';
+import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbility } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
@@ -93,9 +93,20 @@ describe('DIY 杀人狂 abilities', () => {
             payload: { cardUid: 'a1' },
         });
         expect(result.success, result.error).toBe(true);
-        expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'm1')).toBe(true);
-        expect(result.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(true);
-        expect(result.events.some((event): event is LimitModifiedEvent =>
+        const prompt = getSimpleChoicePrompt(result.finalState, 'diy_killers_good_boy');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'm1')).toBe(false);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.cardUid === 'm1',
+            '好孩子唯一弃牌堆仆从',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'm1')).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(true);
+        expect(resolved.events.some((event): event is LimitModifiedEvent =>
             event.type === SU_EVENTS.LIMIT_MODIFIED
             && event.payload.reason === 'diy_killers_good_boy'
             && event.payload.limitType === 'action',
@@ -259,7 +270,16 @@ describe('DIY 杀人狂 abilities', () => {
         );
         expect(accepted.success, accepted.error).toBe(true);
         expect(accepted.finalState.core.players['0'].hand.some(card => card.uid === 'oh-no')).toBe(false);
-        expect(accepted.finalState.core.bases[0].minions.find(minion => minion.uid === 'own1')?.tempPowerModifier).toBe(3);
+        const boostPrompt = getSimpleChoicePrompt(accepted.finalState, 'diy_killers_oh_no');
+        expect(boostPrompt.autoResolveIfSingle).toBe(false);
+        const boosted = respondToPromptOption(
+            accepted.finalState,
+            option => option.value?.minionUid === 'own1',
+            '哦 不！！！唯一己方仆从',
+            '0',
+            defaultTestRandom,
+        );
+        expect(boosted.finalState.core.bases[0].minions.find(minion => minion.uid === 'own1')?.tempPowerModifier).toBe(3);
     });
 
     it('水晶湖营地在你打出牌后每回合一次摧毁力量不高于己方牌数的仆从', () => {
@@ -299,6 +319,40 @@ describe('DIY 杀人狂 abilities', () => {
             baseIndex: 0,
             baseDefId: 'base_diy_killers_camp_crystal_lake',
         });
+    });
+
+    it('水晶湖营地消灭后只有一个加力量候选也必须选择后才结算', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_diy_killers_camp_crystal_lake', [
+                makeMinion('target', 'diy_killers_jason', '0', 5),
+            ])],
+        });
+        const result = triggerExtendedBaseAbility('base_diy_killers_camp_crystal_lake', 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            baseIndex: 0,
+            baseDefId: 'base_diy_killers_camp_crystal_lake',
+            playerId: '1',
+            destroyerId: '0',
+            minionPower: 3,
+            now: 11,
+        });
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_diy_killers_camp_crystal_lake_power');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.matchState!.core.bases[0].minions[0].tempPowerModifier ?? 0).toBe(0);
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'target',
+            '水晶湖营地唯一加力量目标',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(3);
     });
 
     it('躲藏在洗衣间在杀人狂移动到同基地后可摧毁未逃走的附着仆从', () => {
@@ -371,8 +425,49 @@ describe('DIY 杀人狂 abilities', () => {
             payload: { ongoingCardUid: 'machete1', baseIndex: 0 },
         });
         expect(result.success, result.error).toBe(true);
-        expect(result.finalState.core.bases[0].minions.some(minion => minion.uid === 'killer1')).toBe(false);
-        expect(result.finalState.core.bases[1].minions.some(minion => minion.uid === 'killer1')).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'diy_killers_machete');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        const moved = respondToPrompt(
+            result.finalState,
+            getPromptOption(prompt, option => option.value?.toBaseIndex === 1, 'machete destination base').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'killer1')).toBe(false);
+        expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'killer1')).toBe(true);
+    });
+
+    it('爪子手套只有一个候选仆从也必须选择后才给 -1 力量', () => {
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [
+                makeMinion('freddy', 'diy_killers_freddy_krueger', '0', 5, {
+                    attachedActions: [{ uid: 'glove1', defId: 'diy_killers_clawed_glove', ownerId: '0' }],
+                }),
+            ])],
+        }));
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'glove1', baseIndex: 0 },
+        });
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'diy_killers_clawed_glove');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(result.finalState.core.bases[0].minions[0].powerModifier).toBe(0);
+
+        const resolved = respondToPromptOption(
+            result.finalState,
+            option => option.value?.minionUid === 'freddy',
+            '爪子手套唯一仆从',
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[0].minions[0].powerModifier).toBe(-1);
     });
 
     it('麦克尔·麦尔斯计分前先以本体作为来源，再选择同基地弱随从摧毁', () => {

@@ -556,6 +556,18 @@
       "description": "缠绕藤蔓"
     },
     {
+      "id": "spell-card-2500-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2500",
+      "kind": "atlas-frame",
+      "description": "烈火之墙"
+    },
+    {
+      "id": "spell-card-25700-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#25700",
+      "kind": "atlas-frame",
+      "description": "荆棘之墙"
+    },
+    {
       "id": "spell-card-2800-frame",
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2800",
       "kind": "atlas-frame",
@@ -2478,6 +2490,21 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "continuousModifiers": [
+            {
+              "stat": "attackDice",
+              "operation": "add",
+              "value": -2
+            }
+          ]
+        },
         "rawCost": "2 + 3",
         "manaCost": 5,
         "standardStartingRulesName": "剧痛难当",
@@ -2528,6 +2555,20 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "upkeepEffects": [
+            {
+              "kind": "heal-controller-mage-transfer-damage",
+              "maxHealing": 2
+            }
+          ]
+        },
         "rawCost": "2 + 6",
         "manaCost": 8,
         "standardStartingRulesName": "死亡链接",
@@ -2640,6 +2681,14 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          }
+        },
         "rawCost": "2 + 2",
         "manaCost": 4,
         "standardStartingRulesName": "格挡",
@@ -2806,6 +2855,14 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          }
+        },
         "rawCost": "2 + 5",
         "manaCost": 7,
         "standardStartingRulesName": "灵蛇反射",
@@ -3210,6 +3267,14 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          }
+        },
         "rawCost": "2 + 3",
         "manaCost": 5,
         "standardStartingRulesName": "原力法剑",
@@ -5020,7 +5085,11 @@
         "魔物",
         "墙体"
       ],
-      "text": "标准起始法术书包含的墙体法术；公共墙体机制已接入边界目标、墙体状态、视线阻挡和通行伤害代表结算，正式 runtime atlas 与精确牌面审计仍待补。",
+      "text": "标准起始法术书包含的墙体法术；公共墙体机制已接入边界目标、墙体状态、视线阻挡和通行伤害代表结算；正式 runtime atlas 已接入。",
+      "assetRefs": [
+        "spell-card-2500-frame",
+        "wall-card-back"
+      ],
       "data": {
         "cardId": 2500,
         "spellType": "魔物",
@@ -5030,17 +5099,24 @@
         "range": "0-1",
         "targetRule": "墙体边界",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "烈火之墙",
         "standardStartingMageIds": [
           "warlock_apprentice"
         ],
         "mappingStatus": "single-candidate",
+        "atlasId": "spell-wall-core-atlas",
+        "atlasCardId": 2500,
         "deck": 25,
         "slot": 0,
-        "assetStatus": "blocked-missing-runtime-atlas",
-        "wallMechanicStatus": "public-mechanic-implemented-needs-runtime-atlas-and-exact-card-audit"
+        "frame": {
+          "left": 0,
+          "top": 0,
+          "width": 0.25,
+          "height": 0.25
+        },
+        "wallMechanicStatus": "public-mechanic-implemented-runtime-atlas-wired"
       }
     },
     {
@@ -5057,7 +5133,11 @@
         "魔物",
         "墙体"
       ],
-      "text": "标准起始法术书包含的墙体法术；公共墙体机制已接入边界目标、墙体状态、视线阻挡和通行伤害代表结算，正式 runtime atlas 与精确牌面审计仍待补。",
+      "text": "标准起始法术书包含的墙体法术；公共墙体机制已接入边界目标、墙体状态、视线阻挡和通行伤害代表结算；正式 runtime atlas 已接入。",
+      "assetRefs": [
+        "spell-card-25700-frame",
+        "wall-card-back"
+      ],
       "data": {
         "cardId": 25700,
         "spellType": "魔物",
@@ -5067,17 +5147,24 @@
         "range": "0-1",
         "targetRule": "墙体边界",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "荆棘之墙",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
         ],
         "mappingStatus": "single-candidate",
+        "atlasId": "spell-wall-thorns-atlas",
+        "atlasCardId": 25700,
         "deck": 257,
         "slot": 0,
-        "assetStatus": "blocked-missing-runtime-atlas",
-        "wallMechanicStatus": "public-mechanic-implemented-needs-runtime-atlas-and-exact-card-audit"
+        "frame": {
+          "left": 0,
+          "top": 0,
+          "width": 1,
+          "height": 1
+        },
+        "wallMechanicStatus": "public-mechanic-implemented-runtime-atlas-wired"
       }
     },
     {
