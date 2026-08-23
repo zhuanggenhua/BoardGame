@@ -40,7 +40,7 @@
 - `node scripts\infra\vitest-cli-safe.mjs run src\games\dicethrone\ui\__tests__\clientDiceMultistepInteraction.test.ts src\games\dicethrone\ui\__tests__\DiceTray.test.tsx --configLoader native`
   - 2 files passed / 15 tests passed。
 - `node scripts\infra\vitest-cli-safe.mjs run src\engine\transport\__tests__\onlineAiRecovery-gameover.test.ts src\engine\transport\__tests__\onlineAiRecoveryCandidateResolver.test.ts --configLoader native`
-  - 2 files passed / 64 tests passed。
+  - 2 files passed / 65 tests passed。
 
 ## 状态回写建议
 

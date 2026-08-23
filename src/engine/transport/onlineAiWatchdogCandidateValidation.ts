@@ -59,12 +59,19 @@ export function resolveRevalidatedOnlineAiRecoveryCandidateFromLatest(args: {
             fingerprint: args.latestFingerprint,
         })
         : undefined;
+    const compatibleLatestTrackerKey = latestTrackerKey && (
+        latestTrackerKey === args.expectedTrackerKey
+        || (latestTrackerKey?.startsWith(`${args.expectedTrackerKey}|referee:`) ?? false)
+    )
+        ? latestTrackerKey
+        : undefined;
+    const expectedTrackerKey = compatibleLatestTrackerKey ?? args.expectedTrackerKey;
 
     return resolveRevalidatedOnlineAiRecoveryCandidate({
         latestCandidate,
         expectedCandidate: args.expectedCandidate,
         latestTrackerKey,
-        expectedTrackerKey: args.expectedTrackerKey,
+        expectedTrackerKey,
     });
 }
 

@@ -189,6 +189,7 @@ function buildResponseWindowSnapshot(
 ): RefereeResponseWindowSnapshot | undefined {
     if (!window) return undefined;
     const currentResponderId = getCurrentResponderId(window);
+    const passedPlayers = Array.isArray(window.passedPlayers) ? window.passedPlayers : [];
     return {
         id: window.id,
         windowType: window.windowType,
@@ -196,7 +197,7 @@ function buildResponseWindowSnapshot(
         responderQueue: [...window.responderQueue],
         currentResponderId,
         currentResponderIndex: window.currentResponderIndex,
-        passedPlayers: [...window.passedPlayers],
+        passedPlayers: [...passedPlayers],
         pendingInteractionId: window.pendingInteractionId,
         requiredInteractionId: window.requiredInteractionId,
         resolutionFrameId: window.resolutionFrameId,

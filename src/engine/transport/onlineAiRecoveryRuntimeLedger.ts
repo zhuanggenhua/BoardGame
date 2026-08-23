@@ -62,7 +62,7 @@ export class OnlineAiRecoveryRuntimeLedger {
     }
 
     buildRepeatedAttemptKey(matchId: string, trackerKey: string): string {
-        return `${matchId}:${trackerKey}`;
+        return `${matchId}:${this.normalizeRepeatedAttemptTrackerKey(trackerKey)}`;
     }
 
     getRepeatedAttempt(repeatedAttemptKey: string): OnlineAiRepeatedRecoveryAttempt | undefined {
@@ -166,6 +166,13 @@ export class OnlineAiRecoveryRuntimeLedger {
 
     private buildOverlayResyncCooldownKey(args: OnlineAiOverlayResyncRequest): string {
         return `${args.matchId}:${args.playerId}:${args.blockedKey}:${args.progressMarker}`;
+    }
+
+    private normalizeRepeatedAttemptTrackerKey(trackerKey: string): string {
+        const refereeFingerprintIndex = trackerKey.indexOf('|referee:');
+        return refereeFingerprintIndex >= 0
+            ? trackerKey.slice(0, refereeFingerprintIndex)
+            : trackerKey;
     }
 
     private clearOverlayResyncCooldownsForMatch(matchId: string): void {
