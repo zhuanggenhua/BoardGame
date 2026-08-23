@@ -87,6 +87,7 @@ function renderBaseZone(options?: {
     ongoingActions?: Array<{ uid: string; defId: string; ownerId: string; talentUsed?: boolean }>;
     minions?: Array<Record<string, unknown>>;
     buriedCards?: Array<Record<string, unknown>>;
+    storedCards?: Array<Record<string, unknown>>;
     titans?: Array<Record<string, unknown>>;
     usableOngoingTalentUids?: Set<string>;
     isMobileViewport?: boolean;
@@ -104,6 +105,7 @@ function renderBaseZone(options?: {
         ongoingActions: (options?.ongoingActions ?? []) as any,
         buriedCards: (options?.buriedCards ?? []) as any,
     };
+    core.players['0'].storedCards = (options?.storedCards ?? []) as any;
     (core as any).titans = options?.titans ?? [];
 
     render(
@@ -133,6 +135,37 @@ function renderBaseZone(options?: {
 }
 
 describe('BaseZone 移动端 ongoing 交互', () => {
+    it('怨灵捕手幽灵行动下方应显示已存放的牌', () => {
+        const { onViewMinion } = renderBaseZone({
+            ongoingActions: [
+                { uid: 'dogs', defId: 'wraithrustlers_demon_dogs', ownerId: '0', talentUsed: false },
+            ],
+            storedCards: [
+                {
+                    uid: 'stored-minion',
+                    defId: 'teens_prep',
+                    type: 'minion',
+                    owner: '0',
+                    storedByPlayerId: '0',
+                    storedUnderUid: 'dogs',
+                    storedUnderDefId: 'wraithrustlers_demon_dogs',
+                    reason: 'wraithrustlers_demon_dogs',
+                },
+            ],
+        });
+
+        const storedRow = document.querySelector('[data-testid="su-stored-under-dogs"]');
+        const storedCard = document.querySelector('[data-stored-card-uid="stored-minion"]');
+        expect(storedRow).not.toBeNull();
+        expect(storedRow?.getAttribute('data-stored-count')).toBe('1');
+        expect(storedCard).not.toBeNull();
+        expect(storedCard?.getAttribute('data-stored-under-uid')).toBe('dogs');
+        expect(storedCard?.innerHTML).toContain('teens_prep');
+
+        fireEvent.click(storedCard as Element);
+        expect(onViewMinion).toHaveBeenCalledWith('teens_prep');
+    });
+
     it('基地上的天赋战术在移动端应先选中，再次点击才发动', () => {
         const { dispatch } = renderBaseZone({
             ongoingActions: [

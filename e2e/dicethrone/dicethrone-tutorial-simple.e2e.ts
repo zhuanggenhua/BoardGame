@@ -43,7 +43,9 @@ const clickNextOverlayStep = async (page: Parameters<typeof test>[0]['page']) =>
     await page.waitForFunction(
         (prev) => {
             const el = document.querySelector('[data-tutorial-step]');
-            return el && el.getAttribute('data-tutorial-step') !== prev;
+            const visibleStep = el?.getAttribute('data-tutorial-step') ?? null;
+            const runtimeStep = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.tutorial?.step?.id ?? null;
+            return (visibleStep && visibleStep !== prev) || (runtimeStep && runtimeStep !== prev);
         },
         beforeStep,
         { timeout: 5000 },
@@ -524,18 +526,23 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         await waitForTutorialStep(page, 'play-six', 10000);
         await captureAlignedStep(14, 'play-six', 'hand-area');
         await clickHandCardVisibleArea(page, 'card-play-six');
+        await waitForTutorialStep(page, 'play-six-modify', 10000);
+        await captureAlignedStep(15, 'play-six-modify', 'dice-tray');
         await page.locator('[data-testid="die-button-0"]').click();
+        const interactionConfirm = page.getByTestId('dice-interaction-confirm-button');
+        await expect(interactionConfirm).toBeEnabled({ timeout: 10000 });
+        await interactionConfirm.click();
 
         await waitForTutorialStep(page, 'dice-confirm', 10000);
-        await captureAlignedStep(15, 'dice-confirm', 'dice-confirm-button');
+        await captureAlignedStep(16, 'dice-confirm', 'dice-confirm-button');
         await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
 
         await waitForTutorialStep(page, 'abilities', 10000);
-        await captureAlignedStep(16, 'abilities', 'ability-slots');
+        await captureAlignedStep(17, 'abilities', 'ability-slots');
         await clickAbilitySlot(page, 'fist');
 
         await waitForTutorialStep(page, 'resolve-attack', 10000);
-        await captureAlignedStep(17, 'resolve-attack', 'advance-phase-button');
+        await captureAlignedStep(18, 'resolve-attack', 'advance-phase-button');
         await page.locator('[data-tutorial-id="advance-phase-button"]').click();
 
         await waitForTutorialStepIn(page, ['opponent-defense', 'main2-intro'], 30000);
@@ -543,40 +550,48 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
             await waitForTutorialStep(page, 'main2-intro', 30000);
         }
 
-        await captureAlignedStep(18, 'main2-intro', 'hand-area');
+        await captureAlignedStep(19, 'main2-intro', 'hand-area');
         await clickNextOverlayStep(page);
 
-        await captureAlignedStep(19, 'enlightenment-play', 'hand-area');
+        await captureAlignedStep(20, 'enlightenment-play', 'hand-area');
         await clickHandCardVisibleArea(page, 'card-enlightenment');
         await expectRightTrayBonusDiceConfirmation(page, () => readTutorialState(page));
         await settleCurrentBonusDice(page, () => readTutorialState(page), {});
 
         await waitForTutorialStep(page, 'inner-peace', 10000);
-        await captureAlignedStep(20, 'inner-peace', 'hand-area');
+        await captureAlignedStep(21, 'inner-peace', 'hand-area');
         await clickHandCardVisibleArea(page, 'card-inner-peace');
+
+        const postInnerPeaceStep = await waitForTutorialStepIn(page, ['inner-peace-response', 'ai-turn-intro'], 10000);
+        if (postInnerPeaceStep === 'inner-peace-response') {
+            await captureAlignedStep(22, 'inner-peace-response', 'response-pass-button');
+            await page.getByTestId('dicethrone-response-pass-button').click();
+        }
 
         await waitForTutorialStep(page, 'ai-turn-intro', 10000);
         await clickNextOverlayStep(page);
         await waitForTutorialStep(page, 'knockdown-explain', 45000);
-        await captureAlignedStep(21, 'knockdown-explain', 'status-tokens');
+        await captureAlignedStep(23, 'knockdown-explain', 'status-tokens');
         await clickNextOverlayStep(page);
 
-        await captureAlignedStep(22, 'purify-use', 'status-tokens');
-        await page.locator('[data-tutorial-id="status-tokens"] .animate-pulse').first().click();
+        await captureAlignedStep(24, 'purify-use', 'status-tokens');
+        const purifyToken = page.getByTestId('dt-player-0-token-purify-hit-target');
+        await expect(purifyToken).toBeVisible({ timeout: 10000 });
+        await purifyToken.click();
         await expect(page.getByRole('heading', { name: /使用净化|Purify/i }).first()).toBeVisible({ timeout: 10000 });
         await page.getByRole('button', { name: /^确认$|^Confirm$/i }).last().click();
 
         await waitForTutorialStep(page, 'meditation-2', 15000);
-        await captureAlignedStep(23, 'meditation-2', 'hand-area');
+        await captureAlignedStep(25, 'meditation-2', 'hand-area');
         await clickHandCardVisibleArea(page, 'card-meditation-2');
 
         await waitForTutorialStep(page, 'finish', 30000);
         await page.screenshot({
-            path: testInfo.outputPath('24-finish.png'),
+            path: testInfo.outputPath('26-finish.png'),
             fullPage: false,
         });
         await page.screenshot({
-            path: join(evidenceDir, '24-finish.png'),
+            path: join(evidenceDir, '26-finish.png'),
             fullPage: false,
         });
     });
@@ -716,20 +731,19 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
             fullPage: false,
         });
 
-        let advancedToAiTurn = false;
-        for (let attempt = 0; attempt < 3; attempt += 1) {
-            await clickHandCardVisibleArea(page, 'card-inner-peace');
-            try {
-                await page.waitForFunction(() => {
-                    const stepId = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
-                    return stepId === 'ai-turn-intro' || stepId === 'ai-turn';
-                }, { timeout: 2500 });
-                advancedToAiTurn = true;
-                break;
-            } catch {
-                await page.waitForTimeout(250);
-            }
+        const postInnerPeaceStep = await waitForTutorialStepIn(page, ['inner-peace-response', 'ai-turn-intro'], 10000);
+        if (postInnerPeaceStep === 'inner-peace-response') {
+            await page.getByTestId('dicethrone-response-pass-button').click();
         }
+
+        const advancedToAiTurn = await page.waitForFunction(() => {
+            const visibleStepId = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
+            const runtimeStepId = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.tutorial?.step?.id ?? null;
+            return visibleStepId === 'ai-turn-intro'
+                || visibleStepId === 'ai-turn'
+                || runtimeStepId === 'ai-turn-intro'
+                || runtimeStepId === 'ai-turn';
+        }, { timeout: 10000 }).then(() => true).catch(() => false);
 
         expect(advancedToAiTurn).toBe(true);
     });

@@ -1396,14 +1396,7 @@ function thorTalent(ctx: AbilityContext): AbilityResult {
     if (sources.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
     }
-    if (sources.length === 1 && !ctx.matchState) {
-        return runtimeToAbilityResult(executeAbilityProgram(thorDestinationPromptProgram, {
-            matchState: ctx.matchState,
-            playerId: ctx.playerId,
-            now: ctx.now,
-            ...sources[0],
-        }));
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(thorSourcePromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -1476,14 +1469,7 @@ function modularTech(ctx: AbilityContext): AbilityResult {
             events: [grantContextualExtraAction(ctx, 'avengers_modular_tech')],
         };
     }
-    if (sources.length === 1 && !ctx.matchState) {
-        return runtimeToAbilityResult(executeAbilityProgram(modularDestinationPromptProgram, {
-            matchState: ctx.matchState,
-            playerId: ctx.playerId,
-            now: ctx.now,
-            ...sources[0],
-        }));
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(modularSourcePromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

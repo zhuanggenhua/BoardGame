@@ -122,4 +122,24 @@ describe('useDieRerollAnimationConsumer rollback consumer', () => {
         expect(screen.getByTestId('rerolling-dice-ids').textContent).toBe('[7]');
         expect(screen.getByTestId('reroll-animation-seq').textContent).toBe('2');
     });
+
+    it('连续收到不同骰子的重掷事件时，不应让后一颗覆盖前一颗动画', async () => {
+        vi.useFakeTimers();
+
+        const firstEntry = createDieRerolledEntry(1, 0, 1000);
+        const secondEntry = createDieRerolledEntry(2, 1, 1200);
+
+        const view = render(<HookProbe entries={[]} />);
+
+        await act(async () => {
+            view.rerender(<HookProbe entries={[firstEntry]} />);
+        });
+        expect(screen.getByTestId('rerolling-dice-ids').textContent).toBe('[0]');
+
+        await act(async () => {
+            view.rerender(<HookProbe entries={[firstEntry, secondEntry]} />);
+        });
+        expect(screen.getByTestId('rerolling-dice-ids').textContent).toBe('[0,1]');
+        expect(screen.getByTestId('reroll-animation-seq').textContent).toBe('2');
+    });
 });

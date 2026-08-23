@@ -58,6 +58,7 @@ function createHarness(options?: {
     const rejected: unknown[] = [];
     const traces: Array<{ stage: string; payload: Record<string, unknown> }> = [];
     const recordedCircuit: unknown[] = [];
+    const randomRestores: number[] = [];
     const emitBatchRejected = vi.fn((matchId, batchId, reason) => {
         rejected.push({ matchId, batchId, reason });
     });
@@ -74,7 +75,12 @@ function createHarness(options?: {
             }
             match.stateID += 1;
             match.state = createState(match.stateID) as MatchState<unknown>;
+            match.getRandomCursor = () => 11;
             return true;
+        }),
+        restoreRandomCursor: vi.fn((match, randomCursor) => {
+            randomRestores.push(randomCursor);
+            match.getRandomCursor = () => randomCursor;
         }),
         persistRollbackState: vi.fn(async (_match, storedState) => {
             persistedRollback.push(storedState);
@@ -111,6 +117,7 @@ function createHarness(options?: {
         rejected,
         traces,
         recordedCircuit,
+        randomRestores,
     };
 }
 
@@ -157,6 +164,8 @@ describe('AuthoritativeBatchCoordinator', () => {
         expect(result).toBe(false);
         expect(match.state).toBe(initialState);
         expect(match.stateID).toBe(1);
+        expect(match.getRandomCursor()).toBe(7);
+        expect(harness.randomRestores).toEqual([7]);
         expect(harness.persistedRollback).toEqual([{
             G: initialState,
             _stateID: 1,

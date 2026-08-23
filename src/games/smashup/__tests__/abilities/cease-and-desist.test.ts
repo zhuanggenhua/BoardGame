@@ -5,6 +5,7 @@ import { isMinionProtected } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { processReturnToHandTriggers } from '../../domain/reducer';
 import { collectBaseAbilityTriggers } from '../../domain/baseAbilityQueue';
+import { fireTriggers } from '../../domain/ongoingEffects';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../../domain/scoringSession';
 import { SU_EVENTS } from '../../domain/types';
@@ -432,6 +433,80 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['first-owned', 'first-low']);
         expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual([]);
+    });
+
+    it('无交互状态下不会替玩家自动选择第一个 Ignobles / Star Roamers 目标', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_spikey_chair_room', [
+                    makeMinion('foot', 'ignobles_foot_of_the_king', '0', 4),
+                    makeMinion('owner0-first', 'ignobles_sneaky_squire', '0', 2, { owner: '0' }),
+                    makeMinion('owner0-stolen', 'astroknights_mannersbot', '1', 2, { owner: '0' }),
+                    makeMinion('owner1-only', 'star_roamers_ensign', '1', 2, { owner: '1' }),
+                ]),
+                makeBase('base_uss_undertaking', [
+                    makeMinion('science', 'star_roamers_science_officer', '0', 4),
+                    makeMinion('star-chosen', 'star_roamers_ensign', '0', 2),
+                ]),
+            ],
+        });
+
+        const baseContext = {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'source',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 241,
+        };
+
+        expect(invokeRegisteredAbilityContract('ignobles_fate_of_the_favorites', 'onPlay', {
+            ...baseContext,
+            defId: 'ignobles_fate_of_the_favorites',
+        }).events).toEqual([]);
+        expect(invokeRegisteredAbilityContract('ignobles_out_of_sight', 'onPlay', {
+            ...baseContext,
+            defId: 'ignobles_out_of_sight',
+        }).events).toEqual([]);
+        expect(invokeRegisteredAbilityContract('star_roamers_mass_teleport', 'onPlay', {
+            ...baseContext,
+            defId: 'star_roamers_mass_teleport',
+        }).events).toEqual([]);
+        expect(invokeRegisteredAbilityContract('ignobles_red_birthday_party', 'onPlay', {
+            ...baseContext,
+            defId: 'ignobles_red_birthday_party',
+        }).events).toEqual([]);
+        expect(invokeRegisteredAbilityContract('changerbots_change_into_a_gun', 'onPlay', {
+            ...baseContext,
+            defId: 'changerbots_change_into_a_gun',
+            targetMinionUid: 'owner0-first',
+        }).events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.TEMP_POWER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'owner0-first', amount: -2 }),
+            }),
+        ]);
+        expect(invokeRegisteredAbilityContract('ignobles_activate_the_spy', 'onPlay', {
+            ...baseContext,
+            defId: 'ignobles_activate_the_spy',
+        }).events).toEqual([]);
+        expect(invokeRegisteredAbilityContract('ignobles_inevitable_betrayal', 'special', {
+            ...baseContext,
+            defId: 'ignobles_inevitable_betrayal',
+        }).events).toEqual([]);
+        expect(invokeRegisteredAbilityContract('star_roamers_science_officer', 'talent', {
+            ...baseContext,
+            cardUid: 'science',
+            defId: 'star_roamers_science_officer',
+            baseIndex: 1,
+        }).events).toEqual([]);
+        expect(fireTriggers(core, 'onTurnEnd', {
+            state: core,
+            playerId: '0',
+            random: FIXED_RANDOM,
+            now: 242,
+        }).events).toEqual([]);
     });
 
     it('科学指挥官天赋选择返回的己方随从，不自动返回第一个候选', () => {
@@ -1074,14 +1149,15 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
     it('星际旅者的鞭绳回旋可将其他基地己方随从回手替代为移至本基地', () => {
         const core = makeState({
             bases: [
+                makeBase('base_alpha'),
+                makeBase('base_neutral_space', [
+                    makeMinion('returned', 'star_roamers_ensign', '0', 2),
+                ]),
                 makeBase({
                     defId: 'base_uss_undertaking',
                     ongoingActions: [{ uid: 'whiplash', defId: 'star_roamers_whiplash_maneuver', ownerId: '0' }],
                     minions: [],
                 }),
-                makeBase('base_neutral_space', [
-                    makeMinion('returned', 'star_roamers_ensign', '0', 2),
-                ]),
             ],
         });
 
@@ -1115,7 +1191,7 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.MINION_MOVED
             && (event as any).payload?.minionUid === 'returned'
             && (event as any).payload?.fromBaseIndex === 1
-            && (event as any).payload?.toBaseIndex === 0,
+            && (event as any).payload?.toBaseIndex === 2,
         )).toBe(true);
     });
 
@@ -1127,6 +1203,7 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
                     makeMinion('returned', 'star_roamers_ensign', '0', 2),
                 ]),
                 makeBase('base_neutral_space'),
+                makeBase('base_alpha'),
             ],
         });
 
@@ -1150,7 +1227,7 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
         expect(result.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
         const selected = respondToPromptOption(
             result.matchState!,
-            option => option.value?.replace === true,
+            option => option.value?.replace === true && option.value?.targetBaseIndex === 2,
             'engineer replace return with move',
             '0',
             FIXED_RANDOM,
@@ -1160,7 +1237,7 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.MINION_MOVED
             && (event as any).payload?.minionUid === 'returned'
             && (event as any).payload?.fromBaseIndex === 0
-            && (event as any).payload?.toBaseIndex === 1,
+            && (event as any).payload?.toBaseIndex === 2,
         )).toBe(true);
     });
 
@@ -1223,6 +1300,7 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
                 makeBase('base_neutral_space', [
                     makeMinion('off-ship', 'star_roamers_ensign', '0', 2),
                 ]),
+                makeBase('base_alpha'),
             ],
         });
         const uss = triggerBaseAbilityWithMS('base_uss_undertaking', 'onTurnStart', {
@@ -1245,6 +1323,18 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.MINION_MOVED
             && (event as any).payload.minionUid === 'off-ship'
             && (event as any).payload.toBaseIndex === 0,
+        )).toBe(true);
+        const ussMoveOut = respondToPromptOption(
+            uss.matchState!,
+            option => option.value?.minionUid === 'on-ship' && option.value?.toBaseIndex === 2,
+            'move own minion away from USS Undertaking',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(ussMoveOut.events.some(event =>
+            event.type === SU_EVENTS.MINION_MOVED
+            && (event as any).payload.minionUid === 'on-ship'
+            && (event as any).payload.toBaseIndex === 2,
         )).toBe(true);
 
         const wintersquashedCore = makeState({

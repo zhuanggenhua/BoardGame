@@ -88,23 +88,7 @@ function playSeraphimHere(
     ];
     const destroyTargets = getSeraphimDestroyTargets(ctx.state, ctx.baseIndex);
     if (destroyTargets.length === 0) return { events };
-    if (!ctx.matchState) {
-        const destroyTarget = destroyTargets[0];
-        return {
-            events: [
-                ...events,
-                destroyMinion(
-                    destroyTarget.uid,
-                    destroyTarget.defId,
-                    destroyTarget.baseIndex,
-                    destroyTarget.owner,
-                    ctx.playerId,
-                    'paladins_seraphim',
-                    ctx.now,
-                ),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events };
 
     const interaction = createSimpleChoice(
         `paladins_seraphim_destroy_${titan.uid}_${ctx.now}`,

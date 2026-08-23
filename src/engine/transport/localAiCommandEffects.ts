@@ -3,6 +3,8 @@ import type { MatchState } from '../types';
 export type LocalAiCommandEffect = {
     hasStateDelta: boolean;
     markerProgressed: boolean;
+    rejected?: boolean;
+    failureReason?: string;
 };
 
 export type LocalAiCommandStateSnapshot = {
@@ -65,6 +67,8 @@ export function resolveLocalAiCommandEffect(args: {
     return {
         hasStateDelta,
         markerProgressed,
+        ...(args.override?.rejected ? { rejected: true } : {}),
+        ...(args.override?.failureReason ? { failureReason: args.override.failureReason } : {}),
     };
 }
 
@@ -85,6 +89,8 @@ export function buildLocalAiCommandAppliedPayload(args: {
         playerId,
         progressed: effect.markerProgressed,
         hasStateDelta: effect.hasStateDelta,
+        rejected: effect.rejected === true,
+        failureReason: effect.failureReason ?? null,
         phaseBefore: before.phase,
         phaseAfter: after.phase,
         handCountBefore: before.handCount,
@@ -133,6 +139,8 @@ export function buildLocalAiCommandProgressPayload(args: {
         commandTotal,
         progressed: effect.markerProgressed,
         hasStateDelta: effect.hasStateDelta,
+        rejected: effect.rejected === true,
+        failureReason: effect.failureReason ?? null,
         handCountBefore: before.handCount,
         handCountAfter: after.handCount,
         cpBefore: before.cp,

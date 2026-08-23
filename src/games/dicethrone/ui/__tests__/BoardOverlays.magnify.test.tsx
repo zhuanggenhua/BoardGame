@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardOverlays, type BoardOverlaysProps } from '../BoardOverlays';
 
 const abilityOverlaysSpy = vi.fn();
+const cardSpotlightOverlaySpy = vi.fn();
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -43,7 +44,10 @@ vi.mock('../../../components/common/media/OptimizedImage', () => ({
 }));
 
 vi.mock('../CardSpotlightOverlay', () => ({
-    CardSpotlightOverlay: () => null,
+    CardSpotlightOverlay: (props: unknown) => {
+        cardSpotlightOverlaySpy(props);
+        return null;
+    },
 }));
 
 vi.mock('../../../components/game/framework/widgets/EndgameOverlay', () => ({
@@ -77,6 +81,7 @@ vi.mock('../abilitySlotLayout', async () => {
 describe('BoardOverlays 放大预览', () => {
     beforeEach(() => {
         abilityOverlaysSpy.mockClear();
+        cardSpotlightOverlaySpy.mockClear();
     });
 
     const buildProps = (overrides: Partial<BoardOverlaysProps> = {}): BoardOverlaysProps => ({
@@ -157,5 +162,29 @@ describe('BoardOverlays 放大预览', () => {
         expect(closeButton.className).toContain('absolute');
         expect(closeButton.className).toContain('-top-12');
         expect(closeButton.className).toContain('right-0');
+    });
+
+    it('教程模式下会把牌面特写自动关闭延迟传给特写层', () => {
+        render(
+            <BoardOverlays
+                {...buildProps({
+                    isMagnifyOpen: false,
+                    cardSpotlightQueue: [
+                        {
+                            id: 'card-spotlight-1',
+                            cardId: 'ai-card',
+                            timestamp: 1,
+                            playerId: '1',
+                        },
+                    ],
+                    tutorialSpotlightAutoCloseDelayMs: 3000,
+                })}
+            />
+        );
+
+        const spotlightProps = cardSpotlightOverlaySpy.mock.lastCall?.[0] as
+            | { autoCloseDelay?: number }
+            | undefined;
+        expect(spotlightProps?.autoCloseDelay).toBe(3000);
     });
 });

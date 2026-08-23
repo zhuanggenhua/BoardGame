@@ -30,6 +30,8 @@ export function startLocalAiAutomationEffect(args: {
     startDelay: (delayMs: number) => CancelableAiDelayHandle;
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
+    getRandomCursor: () => number;
+    restoreBatchSnapshot: (snapshot: { state: MatchState<unknown>; randomCursor: number | null }) => void;
     scheduleRetry: () => void;
     onVisibleActionAt: (timestamp: number) => void;
     idleRetryMs: number;
@@ -74,6 +76,8 @@ export function startLocalAiAutomationEffect(args: {
         },
         dispatch: args.dispatch,
         getState: args.getState,
+        getRandomCursor: args.getRandomCursor,
+        restoreBatchSnapshot: args.restoreBatchSnapshot,
         commandEffectsByToken: args.aiCommandEffectByTokenRef.current,
         scheduleRetry: args.scheduleRetry,
         onVisibleActionAt: args.onVisibleActionAt,

@@ -39,6 +39,7 @@ export type ExecuteAuthoritativeCommandBatchArgs = {
     emitTrace: AuthoritativeBatchTrace;
     rejectWhenStatePreconditionFails: () => Promise<boolean>;
     executeCommand: (command: AuthoritativeBatchCommand) => Promise<boolean>;
+    restoreRandomCursor: (randomCursor: number) => void;
     persistRollbackState: (state: StoredMatchState) => Promise<void>;
     broadcastState: () => void;
     buildAuthoritativeState: () => unknown;
@@ -50,6 +51,7 @@ export async function executeAuthoritativeCommandBatch(
     const { match } = args;
     const snapshotState = match.state;
     const snapshotStateID = match.stateID;
+    const snapshotRandomCursor = match.getRandomCursor();
 
     if (await args.rejectWhenStatePreconditionFails()) {
         args.emitTrace(`${args.tracePrefix}-stale-rejected`, args.staleTracePayload);
@@ -69,11 +71,12 @@ export async function executeAuthoritativeCommandBatch(
 
             match.state = snapshotState;
             match.stateID = snapshotStateID;
+            args.restoreRandomCursor(snapshotRandomCursor);
             await args.persistRollbackState({
                 G: snapshotState,
                 _stateID: snapshotStateID,
                 randomSeed: match.randomSeed,
-                randomCursor: match.getRandomCursor(),
+                randomCursor: snapshotRandomCursor,
             });
             args.broadcastState();
             return {

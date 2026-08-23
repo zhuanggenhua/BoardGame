@@ -1466,22 +1466,7 @@ function sumoHeadButt(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (!ctx.matchState) {
-        const target = candidates[0];
-        if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-        return {
-            events: buildValidatedOngoingDetachEvents(ctx.state, {
-                cardUid: target.uid,
-                reason: 'sumo_wrestlers_head_butt',
-                now: ctx.now,
-                expectedLocation: 'any',
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'sumo_wrestlers_head_butt',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: target.baseIndex,
-            }),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(sumoHeadButtPrompt, createPromptContext(
         ctx.matchState,
         ctx.playerId,
@@ -2358,7 +2343,7 @@ function luchadorsSenorMuchoslamOnPlay(ctx: AbilityContext): AbilityResult {
             })),
         })));
     }
-    return { events: [recoverCardsFromDiscard(ctx.playerId, [discardActions[0].uid], 'luchadors_senor_muchoslam', ctx.now)] };
+    return { events: [] };
 }
 
 function luchadorsSenorMuchoslamTalent(ctx: AbilityContext): AbilityResult {
@@ -2945,9 +2930,7 @@ function luchadorsOutForTheCount(ctx: AbilityContext): AbilityResult {
     if (candidates.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    if (!ctx.matchState) {
-        return { events: buildOutForTheCountEvents(ctx.state, ctx.playerId, candidates[0], ctx.now) };
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(luchadorsOutForTheCountPrompt, createPromptContext(
         ctx.matchState,
         ctx.playerId,

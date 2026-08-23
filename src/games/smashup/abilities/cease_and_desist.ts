@@ -53,10 +53,10 @@ import type {
 import { SU_EVENTS } from '../domain/types';
 
 type RuntimeResult = ReturnType<typeof executeAbilityProgram<any, SmashUpCore, SmashUpEvent>>;
-type MinionChoice = { minionUid: string; minionDefId?: string; defId?: string; baseIndex: number };
+type MinionChoice = { minionUid: string; minionDefId?: string; defId?: string; baseIndex: number; toBaseIndex?: number };
 type BaseChoice = { baseIndex: number; baseDefId?: string };
 type ActionChoice = { cardUid: string; defId: string; ownerId?: PlayerId; baseIndex?: number; hostMinionUid?: string };
-type ReturnReplacementChoice = { replace?: boolean; skip?: boolean };
+type ReturnReplacementChoice = { replace?: boolean; targetBaseIndex?: number; skip?: boolean };
 type PlayerChoice = { playerId?: PlayerId; skip?: boolean };
 type GiveControlAfterGiveMode = 'draw2_extra_minion' | 'draw1_extra_action' | 'extra_minion' | 'none';
 type BaseAbilityPromptContext<T extends Record<string, unknown> = Record<string, never>> = PromptContext<T & { sourceId: string }>;
@@ -392,9 +392,8 @@ function eachOwnerMinionChoice(
     sourceId: EachOwnerMinionContext['sourceId'],
     mode: EachOwnerMinionEffectMode,
     selectionScope: EachOwnerMinionSelectionScope,
-    fallback: () => SmashUpEvent[],
 ): AbilityResult {
-    if (!ctx.matchState) return { events: fallback() };
+    if (!ctx.matchState) return { events: [] };
     const context = nextEachOwnerMinionContext(
         ctx.matchState,
         { sourceId, sourcePlayerId: ctx.playerId, mode, selectionScope },
@@ -408,10 +407,6 @@ function eachOwnerMinionChoice(
 function findAnotherPlayer(state: SmashUpCore, playerId: PlayerId): PlayerId | undefined {
     return state.turnOrder.find(candidate => candidate !== playerId)
         ?? Object.keys(state.players).find(candidate => candidate !== playerId);
-}
-
-function firstOtherBaseIndex(state: SmashUpCore, fromBaseIndex: number): number | undefined {
-    return state.bases.findIndex((_base, index) => index !== fromBaseIndex);
 }
 
 function findLiveActionAtBase(
@@ -1526,19 +1521,7 @@ function takeControlOwned(
             ],
         };
     }
-    if (!ctx.matchState) {
-        return {
-            events: buildTakeControlOwnedEvents(
-                ctx.state,
-                ctx.playerId,
-                sourceId,
-                { minionUid: candidates[0].uid, minionDefId: candidates[0].defId, baseIndex: candidates[0].baseIndex },
-                ctx.now,
-                afterTake,
-                ctx.matchState,
-            ),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(takeControlOwnedPrompt, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -1575,52 +1558,11 @@ function inevitableBetrayal(ctx: AbilityContext): AbilityResult {
 }
 
 function fateOfTheFavorites(ctx: AbilityContext): AbilityResult {
-    return eachOwnerMinionChoice(ctx, 'ignobles_fate_of_the_favorites', 'destroy', 'owner', () => {
-        const events: SmashUpEvent[] = [];
-        for (const playerId of getPlayerOrder(ctx.state)) {
-            const owned = ctx.state.bases
-                .flatMap((base, baseIndex) => base.minions.map(minion => ({ minion, baseIndex })))
-                .find(candidate => candidate.minion.owner === playerId);
-            if (!owned) continue;
-            events.push(...buildValidatedDestroyEvents(ctx.state, {
-                minionUid: owned.minion.uid,
-                minionDefId: owned.minion.defId,
-                fromBaseIndex: owned.baseIndex,
-                destroyerId: ctx.playerId,
-                reason: 'ignobles_fate_of_the_favorites',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'ignobles_fate_of_the_favorites',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: owned.baseIndex,
-                sourceKind: 'action',
-            }));
-        }
-        return events;
-    });
+    return eachOwnerMinionChoice(ctx, 'ignobles_fate_of_the_favorites', 'destroy', 'owner');
 }
 
 function outOfSight(ctx: AbilityContext): AbilityResult {
-    return eachOwnerMinionChoice(ctx, 'ignobles_out_of_sight', 'return', 'owner', () =>
-        getPlayerOrder(ctx.state).flatMap(playerId => {
-            const owned = ctx.state.bases
-                .flatMap((base, baseIndex) => base.minions.map(minion => ({ minion, baseIndex })))
-                .find(candidate => candidate.minion.owner === playerId);
-            if (!owned) return [];
-            return buildValidatedReturnEvents(ctx.state, {
-                minionUid: owned.minion.uid,
-                minionDefId: owned.minion.defId,
-                fromBaseIndex: owned.baseIndex,
-                toPlayerId: owned.minion.owner,
-                reason: 'ignobles_out_of_sight',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'ignobles_out_of_sight',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: owned.baseIndex,
-                sourceKind: 'action',
-            });
-        }));
+    return eachOwnerMinionChoice(ctx, 'ignobles_out_of_sight', 'return', 'owner');
 }
 
 function redBirthdayPartyEvents(
@@ -1665,9 +1607,7 @@ function redBirthdayParty(ctx: AbilityContext): AbilityResult {
             candidates,
         }));
     }
-    const selected = candidates[0];
-    const live = ctx.state.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.uid);
-    return live ? { events: redBirthdayPartyEvents(ctx.state, ctx.playerId, { minion: live, baseIndex: selected.baseIndex }, ctx.now) } : { events: [] };
+    return { events: [] };
 }
 
 function hostageExchange(ctx: AbilityContext): AbilityResult {
@@ -1710,15 +1650,7 @@ function footOfTheKing(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (!playerId) return [];
     const candidates = getOwnedControlCandidates(ctx.state, playerId);
     if (candidates.length === 0) return [];
-    if (!ctx.matchState) {
-        return buildTakeControlOwnedEvents(
-            ctx.state,
-            playerId,
-            'ignobles_foot_of_the_king',
-            { minionUid: candidates[0].uid, minionDefId: candidates[0].defId, baseIndex: candidates[0].baseIndex },
-            ctx.now,
-        );
-    }
+    if (!ctx.matchState) return [];
     const result = executeAbilityProgram(takeControlOwnedPrompt, {
         matchState: ctx.matchState,
         playerId,
@@ -1761,23 +1693,7 @@ function starReturn(ctx: AbilityContext, sourceId: StarReturnSourceId, extraMini
             ...(restrictToBaseIndex !== undefined ? { restrictToBaseIndex } : {}),
         }));
     }
-    const selected = candidates[0];
-    if (!selected) return { events: [] };
-    const live = ctx.state.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.uid);
-    if (!live) return { events: [] };
-    const events = buildStarReturnEvents(
-        ctx.state,
-        ctx.playerId,
-        { minion: live, baseIndex: selected.baseIndex },
-        sourceId,
-        ctx.cardUid,
-        ctx.now,
-    );
-    return {
-        events: extraMinionAfterReturn
-            ? [...events, grantContextualExtraMinion(ctx, sourceId)]
-            : events,
-    };
+    return { events: [] };
 }
 
 function portMeUp(ctx: AbilityContext): AbilityResult {
@@ -1789,26 +1705,7 @@ function teleportOverflow(ctx: AbilityContext): AbilityResult {
 }
 
 function massTeleport(ctx: AbilityContext): AbilityResult {
-    return eachOwnerMinionChoice(ctx, 'star_roamers_mass_teleport', 'return', 'controller', () =>
-        getPlayerOrder(ctx.state).flatMap(playerId => {
-            const controlled = ctx.state.bases
-                .flatMap((base, baseIndex) => base.minions.map(minion => ({ minion, baseIndex })))
-                .find(candidate => candidate.minion.controller === playerId);
-            if (!controlled) return [];
-            return buildValidatedReturnEvents(ctx.state, {
-                minionUid: controlled.minion.uid,
-                minionDefId: controlled.minion.defId,
-                fromBaseIndex: controlled.baseIndex,
-                toPlayerId: controlled.minion.owner,
-                reason: 'star_roamers_mass_teleport',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'star_roamers_mass_teleport',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: controlled.baseIndex,
-                sourceKind: 'action',
-            });
-        }));
+    return eachOwnerMinionChoice(ctx, 'star_roamers_mass_teleport', 'return', 'controller');
 }
 
 function teleportError(ctx: AbilityContext): AbilityResult {
@@ -1888,7 +1785,7 @@ const starRoamersReturnReplacementPrompt = createPromptProgram<
         minionUid: string;
         minionDefId: string;
         fromBaseIndex: number;
-        destinationBaseIndex: number;
+        destinationBaseIndex?: number;
     }>
 , SmashUpCore, SmashUpEvent>({
     sourceId: 'star_roamers_return_replacement',
@@ -1899,17 +1796,40 @@ const starRoamersReturnReplacementPrompt = createPromptProgram<
         context.sourceId,
         [
             createSkipOption(),
-            {
-                id: 'replace',
-                label: '改为移动到另一基地',
-                labelKey: 'ui.star_roamers_return_replacement_move_option',
-                value: { replace: true } satisfies ReturnReplacementChoice,
-                displayMode: 'button' as const,
-            },
+            ...(context.sourceId === 'star_roamers_ships_engineer'
+                ? buildBaseTargetOptions(
+                    context.matchState.core.bases
+                        .map((base, baseIndex) => ({
+                            baseIndex,
+                            baseDefId: base.defId,
+                            label: getCardDef(base.defId)?.name ?? base.defId,
+                        }))
+                        .filter(base => base.baseIndex !== context.fromBaseIndex),
+                    context.matchState.core,
+                ).map(option => ({
+                    ...option,
+                    id: `replace-${option.id}`,
+                    label: `改为移动到 ${option.label}`,
+                    value: {
+                        replace: true,
+                        targetBaseIndex: option.value.baseIndex,
+                    } satisfies ReturnReplacementChoice,
+                    displayMode: 'button' as const,
+                }))
+                : [{
+                    id: 'replace',
+                    label: '改为移动到这里',
+                    labelKey: 'ui.star_roamers_return_replacement_move_option',
+                    value: {
+                        replace: true,
+                        targetBaseIndex: context.destinationBaseIndex,
+                    } satisfies ReturnReplacementChoice,
+                    displayMode: 'button' as const,
+                }]),
         ],
         {
             sourceId: context.sourceId,
-            targetType: 'generic',
+            targetType: context.sourceId === 'star_roamers_ships_engineer' ? 'base' : 'generic',
             responseValidationMode: 'live',
         },
     ),
@@ -1930,12 +1850,16 @@ const starRoamersReturnReplacementPrompt = createPromptProgram<
         if (!fromBase?.minions.some(minion => minion.uid === context.minionUid)) {
             return { events: [] };
         }
+        const toBaseIndex = choice.targetBaseIndex ?? context.destinationBaseIndex;
+        if (toBaseIndex === undefined || toBaseIndex === context.fromBaseIndex) {
+            return { events: [] };
+        }
         return {
             events: buildValidatedMoveEvents(state.core, {
                 minionUid: context.minionUid,
                 minionDefId: context.minionDefId,
                 fromBaseIndex: context.fromBaseIndex,
-                toBaseIndex: context.destinationBaseIndex,
+                toBaseIndex,
                 reason: context.sourceId,
                 now: timestamp,
                 sourcePlayerId: context.playerId,
@@ -1954,14 +1878,20 @@ function buildStarRoamersReturnReplacement(ctx: TriggerContext, sourceId: 'star_
     if (ctx.baseIndex === undefined) return { events: [] };
     const returnEvent = ctx.affectEvent as SmashUpEvent | undefined;
     if (!returnEvent || returnEvent.type !== SU_EVENTS.MINION_RETURNED) return { events: [] };
-    const destinationBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (destinationBaseIndex === undefined) return { events: [] };
+    const sourceBaseIndex = ctx.sourceBaseIndex ?? ctx.baseIndex;
+    const destinationBaseIndex = sourceId === 'star_roamers_whiplash_maneuver'
+        ? ctx.sourceBaseIndex
+        : undefined;
+    if (sourceId === 'star_roamers_whiplash_maneuver'
+        && (destinationBaseIndex === undefined || destinationBaseIndex === ctx.baseIndex)) return { events: [] };
+    if (sourceId === 'star_roamers_ships_engineer'
+        && !ctx.state.bases.some((_base, baseIndex) => baseIndex !== ctx.baseIndex)) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(starRoamersReturnReplacementPrompt, {
         matchState: ctx.matchState,
         playerId: ctx.sourceControllerId ?? ctx.playerId,
         now: ctx.now,
         sourceId,
-        sourceBaseIndex: ctx.sourceBaseIndex ?? ctx.baseIndex,
+        sourceBaseIndex,
         sourceCardUid: ctx.sourceCardUid,
         returnEvent,
         minionUid: ctx.triggerMinionUid,
@@ -2070,9 +2000,7 @@ function scienceOfficer(ctx: AbilityContext): AbilityResult {
             candidates,
         }));
     }
-    const selected = candidates[0];
-    const live = ctx.state.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.uid);
-    return live ? { events: scienceOfficerEvents(ctx.state, ctx.playerId, { minion: live, baseIndex: selected.baseIndex }, ctx.now, ctx.matchState) } : { events: [] };
+    return { events: [] };
 }
 
 function weirdNewWorlds(ctx: AbilityContext): AbilityResult {
@@ -2148,26 +2076,7 @@ function changeIntoAGun(ctx: AbilityContext): AbilityResult {
             ...(result.matchState ? { matchState: result.matchState } : {}),
         };
     }
-    const selected = candidates[0];
-    const victim = selected ? ctx.state.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.uid) : undefined;
-    return {
-        events: [
-            ...(victim ? buildValidatedDestroyEvents(ctx.state, {
-                minionUid: victim.uid,
-                minionDefId: victim.defId,
-                fromBaseIndex: selectedHost.baseIndex,
-                destroyerId: ctx.playerId,
-                reason: 'changerbots_change_into_a_gun',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'changerbots_change_into_a_gun',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: selectedHost.baseIndex,
-                sourceKind: 'action',
-            }) : []),
-            penalty,
-        ],
-    };
+    return { events: [penalty] };
 }
 
 function leaderTwo(ctx: AbilityContext): AbilityResult {
@@ -2377,16 +2286,34 @@ const baseMoveMinionPrompt = createPromptProgram<
         context.sourceId,
         [
             createSkipOption(),
-            ...context.minions.map(minion => ({
-                id: minion.minionUid,
-                label: getCardDef(minion.minionDefId ?? minion.defId ?? '')?.name ?? minion.minionUid,
-                value: minion,
-                _source: 'field' as const,
-            })),
+            ...context.minions.flatMap(minion => {
+                const fromBaseIndex = context.fromBaseIndex ?? minion.baseIndex;
+                const name = getCardDef(minion.minionDefId ?? minion.defId ?? '')?.name ?? minion.minionUid;
+                const fixedDestination = context.toBaseIndex ?? (fromBaseIndex === context.baseIndex ? undefined : context.baseIndex);
+                if (fixedDestination !== undefined) {
+                    const baseDefId = context.matchState.core.bases[fixedDestination]?.defId;
+                    return [{
+                        id: `${minion.minionUid}-to-${fixedDestination}`,
+                        label: `${name} → ${getCardDef(baseDefId ?? '')?.name ?? baseDefId ?? `基地 ${fixedDestination + 1}`}`,
+                        value: { ...minion, toBaseIndex: fixedDestination },
+                        _source: 'field' as const,
+                    }];
+                }
+                return context.matchState.core.bases
+                    .map((base, baseIndex) => ({ base, baseIndex }))
+                    .filter(candidate => candidate.baseIndex !== fromBaseIndex)
+                    .map(candidate => ({
+                        id: `${minion.minionUid}-to-${candidate.baseIndex}`,
+                        label: `${name} → ${getCardDef(candidate.base.defId)?.name ?? candidate.base.defId}`,
+                        value: { ...minion, toBaseIndex: candidate.baseIndex },
+                        _source: 'field' as const,
+                    }));
+            }),
         ],
         {
             sourceId: context.sourceId,
-            targetType: 'minion',
+            targetType: 'generic',
+            genericIntent: 'composite-context',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
         },
@@ -2396,8 +2323,8 @@ const baseMoveMinionPrompt = createPromptProgram<
         const selected = value as MinionChoice | undefined;
         if (!selected) return { events: [] };
         const fromBaseIndex = context.fromBaseIndex ?? selected.baseIndex;
-        const toBaseIndex = context.toBaseIndex ?? (selected.baseIndex === context.baseIndex
-            ? firstOtherBaseIndex(state.core, context.baseIndex)
+        const toBaseIndex = context.toBaseIndex ?? selected.toBaseIndex ?? (selected.baseIndex === context.baseIndex
+            ? undefined
             : context.baseIndex);
         if (toBaseIndex === undefined || fromBaseIndex === toBaseIndex) return { events: [] };
         const live = state.core.bases[fromBaseIndex]?.minions.find(minion => minion.uid === selected.minionUid);

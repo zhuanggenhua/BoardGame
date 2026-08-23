@@ -20,15 +20,6 @@ import {
 import {
     getMageWarsZoneDistance,
     isMageWarsChainLightningTargetObject,
-    isMageWarsImplementedBloodstrikeSpell,
-    isMageWarsImplementedChargeOnSpell,
-    isMageWarsImplementedDissolveSpell,
-    isMageWarsImplementedDispelSpell,
-    isMageWarsImplementedExplodeSpell,
-    isMageWarsImplementedRouseTheBeastSpell,
-    isMageWarsImplementedSleepSpell,
-    isMageWarsImplementedTanglevineSpell,
-    isMageWarsImplementedVisibleEnchantmentSpell,
     isMageWarsElementalStaffSpell,
     isMageWarsElementalStaffBindableSpell,
     isMageWarsLegalHiddenResponseEnchantmentTarget,
@@ -65,6 +56,8 @@ type MageWarsSpellCastTargetMode =
     | 'direct-player'
     | 'object-chain'
     | 'object-push-zone'
+    | 'player-push-zone'
+    | 'target-push-zone'
     | 'object-target-zone'
     | 'object-new-anchor'
     | 'zone'
@@ -111,7 +104,14 @@ function resolveMageWarsSpellCastBaseTargetMode(
     if (family === 'self-equipment') return 'direct-player';
     if (family === 'steal-enchantment') return 'object-new-anchor';
     if (family === 'chain-lightning') return 'object-chain';
-    if (family === 'zone-target' || family === 'visible-area-enchantment') return 'zone';
+    if (family === 'jet-stream') return 'target-push-zone';
+    if (family === 'force-push') return 'object-push-zone';
+    if (
+        family === 'summon-creature'
+        || family === 'zone-attack'
+        || family === 'zone-healing'
+        || family === 'visible-area-enchantment'
+    ) return 'zone';
     if (family === 'call-of-the-wild') return 'no-target';
     return 'direct-object';
 }
@@ -141,33 +141,28 @@ function isMageWarsDirectAttackTargetObject(object: MageWarsArenaObjectState): b
 
 function resolveDirectObjectSpellManaCost(
     spell: MageWarsConfigSpellCard,
+    family: MageWarsSpellCastChoiceFamily,
     targetObject: MageWarsArenaObjectState,
 ): number | undefined {
-    if (isMageWarsImplementedRouseTheBeastSpell(spell)) {
-        return resolveMageWarsRouseTheBeastManaCostForTarget(targetObject);
+    switch (family) {
+        case 'rouse-the-beast':
+            return resolveMageWarsRouseTheBeastManaCostForTarget(targetObject);
+        case 'sleep':
+            return resolveMageWarsSleepSpellManaCostForTarget(targetObject);
+        case 'dissolve':
+            return resolveMageWarsEquipmentManaCost(targetObject);
+        case 'dispel':
+            return resolveMageWarsEnchantmentTotalManaCost(targetObject);
+        case 'explode':
+            return resolveMageWarsExplodeManaCostForTarget(targetObject);
+        case 'bloodstrike':
+        case 'charge-on':
+        case 'tanglevine':
+        case 'visible-object-enchantment':
+            return resolveMageWarsSpellRawCostTotal(spell);
+        default:
+            return undefined;
     }
-    if (isMageWarsImplementedSleepSpell(spell)) {
-        return resolveMageWarsSleepSpellManaCostForTarget(targetObject);
-    }
-    if (isMageWarsImplementedBloodstrikeSpell(spell)) {
-        return resolveMageWarsSpellRawCostTotal(spell);
-    }
-    if (isMageWarsImplementedChargeOnSpell(spell)) {
-        return resolveMageWarsSpellRawCostTotal(spell);
-    }
-    if (isMageWarsImplementedDissolveSpell(spell)) {
-        return resolveMageWarsEquipmentManaCost(targetObject);
-    }
-    if (isMageWarsImplementedDispelSpell(spell)) {
-        return resolveMageWarsEnchantmentTotalManaCost(targetObject);
-    }
-    if (isMageWarsImplementedExplodeSpell(spell)) {
-        return resolveMageWarsExplodeManaCostForTarget(targetObject);
-    }
-    if (isMageWarsImplementedTanglevineSpell(spell) || isMageWarsImplementedVisibleEnchantmentSpell(spell)) {
-        return resolveMageWarsSpellRawCostTotal(spell);
-    }
-    return undefined;
 }
 
 function createMageWarsSpellCastCommand(args: {
@@ -277,7 +272,7 @@ function buildMageWarsSpellCastCandidates(args: {
         label?: string;
     }) => {
         const targetMode = candidateArgs.targetMode ?? (candidateArgs.pushToZoneId
-            ? 'object-push-zone'
+            ? candidateArgs.targetPlayer ? 'player-push-zone' : 'object-push-zone'
             : candidateArgs.targetWallEdgeId
                 ? 'wall-edge'
                 : candidateArgs.targetPlayer && isMageWarsElementalStaffSpell(args.spell)
@@ -508,16 +503,28 @@ function buildMageWarsSpellCastCandidates(args: {
         }
         if (args.family === 'jet-stream') {
             const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
-            return targetObjects
-                .filter(isMageWarsDirectAttackTargetObject)
-                .flatMap((targetObject) => args.state.core.arena
+            return [
+                ...targetObjects
+                    .filter(isMageWarsDirectAttackTargetObject)
+                    .flatMap((targetObject) => args.state.core.arena
                     .filter((zone) => areAdjacentZones(args.state.core, targetObject.zoneId, zone.id))
                     .map((zone) => buildCandidate({
                         targetObject,
                         manaCost,
                         id: `target:${targetObject.id}:push-zone:${zone.id}`,
                         pushToZoneId: zone.id,
-                    })));
+                    }))),
+                ...players
+                    .filter((targetPlayer) => targetPlayer.id !== args.player.id)
+                    .flatMap((targetPlayer) => args.state.core.arena
+                        .filter((zone) => areAdjacentZones(args.state.core, targetPlayer.mageZoneId, zone.id))
+                        .map((zone) => buildCandidate({
+                            targetPlayer,
+                            manaCost,
+                            id: `target-player:${targetPlayer.id}:push-zone:${zone.id}`,
+                            pushToZoneId: zone.id,
+                        }))),
+            ];
         }
         if (args.family === 'hidden-response-enchantment') {
             const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
@@ -699,7 +706,12 @@ function buildMageWarsSpellCastCandidates(args: {
             }
             return chainCandidates;
         }
-        if (args.family === 'zone-target' || args.family === 'visible-area-enchantment') {
+        if (
+            args.family === 'summon-creature'
+            || args.family === 'zone-attack'
+            || args.family === 'zone-healing'
+            || args.family === 'visible-area-enchantment'
+        ) {
             const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
             return args.state.core.arena.map((zone) => buildCandidate({
                 manaCost,
@@ -718,7 +730,7 @@ function buildMageWarsSpellCastCandidates(args: {
         }
         return targetObjects.map((targetObject) => buildCandidate({
             targetObject,
-            manaCost: resolveDirectObjectSpellManaCost(args.spell, targetObject) ?? 0,
+            manaCost: resolveDirectObjectSpellManaCost(args.spell, args.family, targetObject) ?? 0,
         }));
     })();
     const firstDisabledReason = candidates.find((candidate) => candidate.disabled)?.disabledReason;
@@ -751,6 +763,7 @@ export function buildMageWarsSpellCastOpportunity(args: {
         family === 'single-healing'
         || family === 'life-drain'
         || family === 'direct-attack'
+        || family === 'jet-stream'
         || (
             family === 'hidden-response-enchantment'
             && spell.semantics?.attachment?.anchor === 'creature'

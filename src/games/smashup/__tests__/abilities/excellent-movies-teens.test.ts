@@ -2466,6 +2466,32 @@ describe('青少年代表性力量 3 协同玩法行为', () => {
         expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toEqual(['ally-b']);
     });
 
+    it('叛逆者持续触发无交互态时不会自动移动第一个己方佣兵', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_the_jungle', [
+                    makeMinion('rebel', 'teens_rebel', '0', 3),
+                    makeMinion('ally', 'teens_brain', '0', 3),
+                    makeMinion('played', 'teens_jock', '0', 3),
+                ]),
+                makeBase('base_tar_pits'),
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'played',
+            triggerMinionDefId: 'teens_jock',
+            random: FIXED_RANDOM,
+            now: 245,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+    });
+
     it('怪科学由玩家选择弃牌堆中的 3 力随从作为额外随从', () => {
         const core = makeState({
             players: {

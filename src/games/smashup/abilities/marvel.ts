@@ -1231,21 +1231,7 @@ function ultimatesCoordinatedAttack(ctx: AbilityContext): AbilityResult {
                 .map(minion => ({ minion, baseIndex }))
     ));
     if (movable.length === 0) return { events: [] };
-    if (!ctx.matchState) {
-        return {
-            events: buildCoordinatedAttackEvents(
-                ctx.state,
-                ctx.playerId,
-                movable.slice(0, 3).map(({ minion, baseIndex }) => ({
-                    minionUid: minion.uid,
-                    minionDefId: minion.defId,
-                    baseIndex,
-                })),
-                targetBaseIndex,
-                ctx.now,
-            ),
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return runtimeToAbilityResult(executeAbilityProgram(coordinatedAttackPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

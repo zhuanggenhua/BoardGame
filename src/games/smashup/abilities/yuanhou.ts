@@ -555,7 +555,7 @@ function shapeshiftersCopycat(ctx: AbilityContext): AbilityResult {
     const direct = locateMinion(ctx.state, ctx.targetMinionUid);
     const target = direct
         ? candidates.find(candidate => candidate.minion.uid === direct.minion.uid)
-        : candidates[0];
+        : undefined;
     if (ctx.matchState && !direct && candidates.length > 0) {
         const interaction = createSimpleChoice(
             `shapeshifters_copycat_choose_${ctx.now}`,
@@ -573,6 +573,7 @@ function shapeshiftersCopycat(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
+    if (!direct && !ctx.matchState && candidates.length > 0) return { events: [] };
     if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return {
         events: [{
@@ -615,23 +616,8 @@ function shapeshiftersCellularBonding(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedActionUids = candidates.map(action => action.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const copied = candidates[0];
-    if (!copied) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return {
-        events: [{
-            type: SU_EVENTS.MINION_METADATA_UPDATED,
-            payload: {
-                minionUid: host.minion.uid,
-                baseIndex: host.baseIndex,
-                metadataUpdate: {
-                    cellularBondingCardUid: ctx.cardUid,
-                    cellularBondingCopiedActionDefId: copied.defId,
-                },
-                reason: 'shapeshifters_cellular_bonding',
-            },
-            timestamp: ctx.now,
-        } as SmashUpEvent],
-    };
+    if (!ctx.matchState && candidates.length > 0) return { events: [] };
+    return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
 }
 
 function getCopycatCopiedDefId(minion: MinionOnBase, state: SmashUpCore): string | undefined {
@@ -777,7 +763,8 @@ function cyborgApesMonkeyOnYourBack(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedMinionUids = targets.map(({ minion }) => minion.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    return { events: buildMonkeyOnYourBackEvents(ctx.state, ctx.playerId, ctx.cardUid, targets[0].minion.uid, ctx.now) };
+    if (!ctx.matchState) return { events: [] };
+    return { events: [] };
 }
 function cyborgApesGoingBananas(ctx: AbilityContext): AbilityResult {
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
@@ -1033,7 +1020,7 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
     const direct = locateMinion(ctx.state, ctx.targetMinionUid);
     const target = direct && candidates.some(candidate => candidate.minion.uid === direct.minion.uid)
         ? direct
-        : candidates[0];
+        : undefined;
     const source = buildAbilityEffectSource(ctx, { sourceKind: 'action', sourceBaseIndex: baseIndex });
     if (ctx.matchState && !direct && candidates.length > 0) {
         const interaction = createSimpleChoice(
@@ -1052,6 +1039,7 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
+    if (!direct && !ctx.matchState && candidates.length > 0) return { events: [] };
     if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return {
         events: buildValidatedDestroyEvents(ctx.state, {
@@ -1215,7 +1203,7 @@ function superSpiesTheBaseIsNotEnough(ctx: AbilityContext): AbilityResult {
     const direct = locateMinion(ctx.state, ctx.targetMinionUid);
     const target = direct && candidates.some(candidate => candidate.minion.uid === direct.minion.uid)
         ? direct
-        : candidates[0];
+        : undefined;
     if (ctx.matchState && !direct && candidates.length > 0) {
         const interaction = createSimpleChoice(
             `super_spies_the_base_is_not_enough_choose_${ctx.now}`,
@@ -1233,6 +1221,7 @@ function superSpiesTheBaseIsNotEnough(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
+    if (!direct && !ctx.matchState && candidates.length > 0) return { events: [] };
     if (!target) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return {
         events: [
@@ -1401,9 +1390,8 @@ function timeTravelersRepeaterPerfect(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedCardUids = actions.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const card = actions[0];
-    if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
-    return { events: [cardToDeckTop(card, card.owner, 'time_travelers_repeater_perfect', ctx.now, ctx.playerId)] };
+    if (actions.length > 0 && !ctx.matchState) return { events: [] };
+    return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
 }
 
 function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
@@ -1413,8 +1401,8 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
     const direct = locateMinion(ctx.state, ctx.targetMinionUid);
     const target = direct && candidates.some(candidate => candidate.minion.uid === direct.minion.uid)
         ? direct
-        : candidates[0];
-    if (ctx.matchState && !direct && candidates.length > 1) {
+        : undefined;
+    if (ctx.matchState && !target && candidates.length > 1) {
         const interaction = createSimpleChoice(
             `time_travelers_doctor_when_choose_${ctx.now}`,
             ctx.playerId,
@@ -1434,7 +1422,7 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    if (ctx.matchState && !direct && candidates.length === 1) {
+    if (ctx.matchState && !target && candidates.length === 1) {
         const interaction = createSimpleChoice(
             `time_travelers_doctor_when_choose_${ctx.now}`,
             ctx.playerId,
@@ -1454,7 +1442,7 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    if (!ctx.matchState && !direct) return { events: [] };
+    if (!ctx.matchState && !target) return { events: [] };
     if (!target) return { events: [] };
     return {
         events: [
@@ -1494,10 +1482,7 @@ function timeTravelersItsAstounding(ctx: AbilityContext): AbilityResult {
         interaction.data.allowedCardUids = actions.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const action = actions[0];
-    if (!action) return { events: [] };
-    const resolved = resolveItsAstoundingAction(ctx.matchState, ctx.playerId, action.uid, ctx.random, ctx.now);
-    return { events: resolved.events, matchState: resolved.state };
+    return { events: [] };
 }
 
 function timeTravelersIntoTheTimeSlip(ctx: AbilityContext): AbilityResult {
@@ -1657,9 +1642,7 @@ function timeTravelersTimeIsFleeting(ctx: AbilityContext): AbilityResult {
     const scoredBaseDefId = ctx.baseIndex !== undefined ? ctx.state.bases[ctx.baseIndex]?.defId : undefined;
     const baseDiscard = (ctx.state.baseDiscard ?? []).filter(defId => defId !== scoredBaseDefId);
     if (baseDiscard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (!ctx.matchState) {
-        return { events: [reorderBaseDiscardTop(baseDiscard[0], 'time_travelers_time_is_fleeting', ctx.now)] };
-    }
+    if (!ctx.matchState) return { events: [] };
     const options: PromptOption<{ baseDefId: string }>[] = baseDiscard.map(defId => {
         const def = getBaseDef(defId);
         return {

@@ -106,6 +106,8 @@ export function executeLocalDispatch(args: {
             commandEffectsByToken[aiTraceToken] = {
                 hasStateDelta: false,
                 markerProgressed: false,
+                rejected: true,
+                failureReason: result.error ?? 'command_failed',
             };
         }
         logLocalAiPerfWarn('command-rejected', {

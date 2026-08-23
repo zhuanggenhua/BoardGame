@@ -671,19 +671,7 @@ function itsAstounding(ctx: AbilityContext): AbilityResult {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const action = actions[0];
-    if (!action) return { events: [] };
-    return {
-        events: [buildActionPlayedEvent({
-            playerId: ctx.playerId,
-            cardUid: action.uid,
-            defId: action.defId,
-            ownerId: action.owner,
-            isExtraAction: true,
-            fromDiscard: true,
-            timestamp: ctx.now,
-        }) as SmashUpEvent],
-    };
+    return { events: [] };
 }
 
 function puck(ctx: AbilityContext): AbilityResult {
@@ -772,10 +760,7 @@ function sproutTurnStart(ctx: import('../domain/ongoingEffects').TriggerContext)
     ];
     if (candidates.length === 0) return destroyEvents;
     if (!ctx.matchState) {
-        return [
-            ...destroyEvents,
-            ...playDeckMinionEvents(ctx.state, sourcePlayerId, candidates[0], ctx.sourceBaseIndex, 'all_stars_sprout', ctx.now),
-        ];
+        return destroyEvents;
     }
     const interaction = createSimpleChoice(
         `all_stars_sprout_search_${ctx.sourceCardUid}_${ctx.now}`,
@@ -814,6 +799,7 @@ function fanSpecial(ctx: AbilityContext): AbilityResult {
 function servitorTalent(ctx: AbilityContext): AbilityResult {
     const live = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!live || live.minion.controller !== ctx.playerId) return { events: [] };
+    if (!ctx.matchState) return { events: [] };
     const destroyEvents = buildValidatedDestroyEvents(ctx.matchState, {
         minionUid: live.minion.uid,
         minionDefId: live.minion.defId,
@@ -844,13 +830,7 @@ function servitorTalent(ctx: AbilityContext): AbilityResult {
         );
         return { events: destroyEvents, matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    const action = actions[0];
-    return {
-        events: [
-            ...destroyEvents,
-            ...(action ? [cardToDeckTop(action, action.owner, 'all_stars_servitor_of_cthulhu', ctx.now, ctx.playerId)] : []),
-        ],
-    };
+    return { events: destroyEvents };
 }
 
 function lockerRoom(ctx: BaseAbilityContext) {

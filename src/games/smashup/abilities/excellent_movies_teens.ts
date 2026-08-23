@@ -3174,26 +3174,6 @@ function playExtraPrintedPower3FromDeck(ctx: AbilityContext, baseIndex = ctx.bas
     ];
 }
 
-function moveFirstOwnMinionAway(ctx: AbilityContext, baseIndex = ctx.baseIndex): SmashUpEvent[] {
-    const candidate = firstOwnMinion(ctx.state, ctx.playerId, (_minion, index) => index === baseIndex);
-    const destination = firstOtherBaseIndex(ctx.state, baseIndex);
-    if (!candidate || destination === undefined) return [];
-    return buildValidatedMoveEvents(ctx.state, {
-        minionUid: candidate.minion.uid,
-        minionDefId: candidate.minion.defId,
-        fromBaseIndex: baseIndex,
-        toBaseIndex: destination,
-        reason: ctx.defId,
-        now: ctx.now,
-        sourcePlayerId: ctx.playerId,
-        sourceCardUid: ctx.cardUid,
-        sourceDefId: ctx.defId,
-        sourceControllerId: ctx.playerId,
-        sourceBaseIndex: ctx.baseIndex,
-        sourceKind: 'nonAction',
-    });
-}
-
 function countBrunchBunchNames(core: SmashUpCore, playerId: PlayerId, baseIndex: number): number {
     return new Set((core.bases[baseIndex]?.minions ?? [])
         .filter(minion => minion.controller === playerId && isPrintedPower(minion.defId, 3))
@@ -3366,23 +3346,7 @@ function teensPower3Trigger(sourceDefId: string, ctx: TriggerContext): TriggerRe
                     ),
                 };
             }
-            const target = firstOwnMinion(ctx.state, ctx.sourceControllerId);
-            const destination = target ? firstOtherBaseIndex(ctx.state, target.baseIndex) : undefined;
-            if (!target || destination === undefined) return [];
-            return buildValidatedMoveEvents(ctx.state, {
-                minionUid: target.minion.uid,
-                minionDefId: target.minion.defId,
-                fromBaseIndex: target.baseIndex,
-                toBaseIndex: destination,
-                reason: sourceDefId,
-                now: ctx.now,
-                sourcePlayerId: ctx.sourceControllerId,
-                sourceCardUid: ctx.sourceCardUid,
-                sourceDefId,
-                sourceControllerId: ctx.sourceControllerId,
-                sourceBaseIndex: ctx.sourceBaseIndex,
-                sourceKind: 'nonAction',
-            });
+            return [];
         }
         case 'teens_slacker': {
             if (ctx.matchState) {
@@ -3780,6 +3744,7 @@ function registerTeens(): void {
         if (!hasTeensMinionAtBase(ctx.state, ctx.baseIndex, 'teens_brain', ctx.playerId)) return { events: [] };
         const options = buildDeckCardOptions(ctx.state, ctx.playerId, card => isPrintedPower(card.defId, 3));
         if (options.length === 0) return { events: [] };
+        if (!ctx.matchState) return { events: [] };
         if (ctx.matchState) {
             return {
                 events: [],

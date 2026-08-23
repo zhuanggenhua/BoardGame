@@ -938,31 +938,7 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
         const movedPower = getMinionPower(ctx.state, movedMinion, destBaseIndex);
 
         if (movedPower < scoutPower) {
-            // 无 matchState：自动执行“是”分支（消灭），不创建交互
-            if (!ctx.matchState) {
-                events.push(...buildValidatedDestroyEvents(ctx.state, {
-                    minionUid: movedMinion.uid,
-                    minionDefId: movedMinion.defId,
-                    fromBaseIndex: destBaseIndex,
-                    destroyerId: scout.controller,
-                    sourcePlayerId: scout.controller,
-                    sourceCardUid: scout.uid,
-                    sourceDefId: scout.defId,
-                    sourceControllerId: scout.controller,
-                    sourceBaseIndex: destBaseIndex,
-                    sourceKind: 'nonAction',
-                    reason: 'bear_cavalry_cub_scout_pod',
-                    now: ctx.now,
-                    targetSnapshot: {
-                        ownerId: movedMinion.owner,
-                        controllerId: movedMinion.controller,
-                        attachedActions: movedMinion.attachedActions,
-                        metadata: movedMinion.metadata,
-                        playedThisTurn: movedMinion.playedThisTurn,
-                    },
-                }));
-                return events;
-            }
+            if (!ctx.matchState) return events;
 
             // 有 matchState：创建交互，询问是否消灭并后续可移动己方小随从
             const interaction = createSimpleChoice(

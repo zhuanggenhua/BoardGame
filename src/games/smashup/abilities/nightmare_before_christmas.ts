@@ -29,7 +29,6 @@ import type { CardInstance, CardToDeckBottomEvent, DeckReorderedEvent, OngoingDe
 import { SU_EVENTS } from '../domain/types';
 import {
     collectCharacterModifiers,
-    firstOtherBaseIndex,
     getActionControllerId,
     getActionOwnerId,
     isCharacterModifier,
@@ -262,31 +261,7 @@ function drFinkelsteinTalent(ctx: AbilityContext): AbilityResult {
             options,
         );
     }
-    const selected = options[0].value;
-    const modifier = findAttachedModifier(ctx.state, selected);
-    const destination = selected.targetBaseIndex !== undefined && selected.targetMinionUid
-        ? ctx.state.bases[selected.targetBaseIndex]?.minions.find(minion => minion.uid === selected.targetMinionUid)
-        : undefined;
-    if (!modifier || !destination || selected.targetBaseIndex === undefined) {
-        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
-    }
-    return {
-        events: [{
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                ownerId: getActionOwnerId(modifier.action),
-                sourcePlayerId: ctx.playerId,
-                targetType: 'minion',
-                targetBaseIndex: selected.targetBaseIndex,
-                targetMinionUid: destination.uid,
-                metadata: modifier.action.metadata,
-                talentUsed: modifier.action.talentUsed,
-            },
-            timestamp: ctx.now,
-        } as OngoingAttachedEvent],
-    };
+    return { events: [] };
 }
 
 function sallyTalent(ctx: AbilityContext): AbilityResult {
@@ -397,8 +372,7 @@ function ghostlyPresents(ctx: AbilityContext): AbilityResult {
 function oogieBoogie(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     const target = base?.minions.find(minion => minion.uid === ctx.targetMinionUid);
-    const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (!target || toBaseIndex === undefined) return { events: [] };
+    if (!target) return { events: [] };
     const options = ctx.state.bases
         .map((candidateBase, targetBaseIndex) => ({
             id: `base-${targetBaseIndex}`,
@@ -413,6 +387,7 @@ function oogieBoogie(ctx: AbilityContext): AbilityResult {
             displayMode: 'button' as const,
         }))
         .filter(option => option.value.targetBaseIndex !== ctx.baseIndex);
+    if (options.length === 0) return { events: [] };
     if (ctx.matchState) {
         return queueNightmarePrompt(
             ctx,
@@ -425,24 +400,7 @@ function oogieBoogie(ctx: AbilityContext): AbilityResult {
             { autoRefresh: 'base' },
         );
     }
-    return {
-        events: [{
-            type: SU_EVENTS.MINION_MOVED,
-            payload: {
-                minionUid: target.uid,
-                minionDefId: target.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex,
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                reason: OOGIE_BOOGIE,
-            },
-            timestamp: ctx.now,
-        } as SmashUpEvent],
-    };
+    return { events: [] };
 }
 
 function winterSurprise(ctx: AbilityContext): AbilityResult {

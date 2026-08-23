@@ -6,7 +6,7 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Hourglass, Paperclip } from 'lucide-react';
-import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
+import type { SmashUpCore, BaseInPlay, MinionOnBase, StoredCardInstance } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
 import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
@@ -314,6 +314,82 @@ export const BaseZone: React.FC<{
         return grouped;
     }, [base.minions]);
 
+    const storedCardsByHostUid = React.useMemo(() => {
+        const grouped = new Map<string, StoredCardInstance[]>();
+        for (const player of Object.values(core.players)) {
+            for (const card of player.storedCards ?? []) {
+                if (!card.storedUnderUid) continue;
+                const existing = grouped.get(card.storedUnderUid) ?? [];
+                existing.push(card);
+                grouped.set(card.storedUnderUid, existing);
+            }
+        }
+        return grouped;
+    }, [core.players]);
+
+    const renderStoredCardsUnderHost = (hostUid: string, compact = false) => {
+        const storedCards = storedCardsByHostUid.get(hostUid) ?? [];
+        if (storedCards.length === 0) return null;
+        const storedCardWidth = compact ? 1.25 : 1.45;
+        const storedOverlap = compact ? 0.78 : 0.9;
+        return (
+            <div
+                data-testid={`su-stored-under-${hostUid}`}
+                data-stored-host-uid={hostUid}
+                data-stored-count={storedCards.length}
+                className="absolute left-1/2 z-50 flex -translate-x-1/2 items-end"
+                style={{
+                    bottom: layoutInlineSize(compact ? -0.75 : -0.88, layout),
+                    gap: layoutInlineSize(0.08, layout),
+                }}
+            >
+                {storedCards.map((card, index) => {
+                    const cardDef = getCardDef(card.defId);
+                    const cardNameText = resolveCardName(cardDef, t) || card.defId;
+                    const cardTitle = `${t('ui.stored_under_card')}\n${cardNameText}`.trim();
+                    const isMinionCard = card.type === 'minion' || cardDef?.type === 'minion';
+                    const previewRef = cardDef?.previewRef
+                        ? {
+                            type: 'renderer' as const,
+                            rendererId: 'smashup-card-renderer',
+                            payload: { defId: card.defId, cardUid: card.uid, disableHoverOverlay: true },
+                        }
+                        : SMASHUP_CARD_BACK;
+                    return (
+                        <button
+                            key={card.uid}
+                            type="button"
+                            data-stored-card-uid={card.uid}
+                            data-stored-under-uid={hostUid}
+                            className="group/stored relative aspect-[0.714] overflow-hidden rounded-[0.08vw] border-[0.08vw] border-violet-200 bg-slate-900 shadow-[0_3px_9px_rgba(15,23,42,0.35)] transition-transform hover:z-50 hover:-translate-y-[0.28vw] hover:scale-125"
+                            style={{
+                                width: layoutInlineSize(storedCardWidth, layout),
+                                height: layoutCardHeight(storedCardWidth, layout),
+                                marginLeft: index === 0 ? '0vw' : layoutInlineSize(-storedOverlap, layout),
+                                transform: `rotate(${(index - (storedCards.length - 1) / 2) * 4}deg)`,
+                            }}
+                            title={cardTitle}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                if (isMinionCard) {
+                                    onViewMinion(card.defId);
+                                    return;
+                                }
+                                onViewAction(card.defId);
+                            }}
+                        >
+                            <CardPreview
+                                previewRef={previewRef}
+                                className="h-full w-full"
+                                title={cardTitle}
+                            />
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    };
+
     const currentMinionUidSnapshot = React.useMemo<Record<string, Set<string>>>(() => (
         buildMinionUidSnapshotByController(turnOrder, minionsByController)
     ), [minionsByController, turnOrder]);
@@ -508,6 +584,7 @@ export const BaseZone: React.FC<{
                             testId={`su-base-ongoing-extra-talent-badge-${oa.uid}`}
                         />
                     )}
+                    {renderStoredCardsUnderHost(oa.uid)}
                 </motion.div>
                 {showOngoingInspectButton && (
                     <div

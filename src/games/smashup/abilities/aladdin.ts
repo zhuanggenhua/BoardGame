@@ -41,7 +41,6 @@ import {
     cardLabel,
     collectMinions,
     discardFirstHandAction,
-    firstOtherBaseIndex,
     isActionCard,
     moveMinionToBase,
     ownMinionsAtBase,
@@ -437,8 +436,7 @@ function carpetTalent(ctx: AbilityContext): AbilityResult {
             sourceBaseIndex: ctx.baseIndex,
         }));
     }
-    const toBaseIndex = destinationBaseIndex ?? firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (toBaseIndex === undefined) return { events: [] };
+    if (destinationBaseIndex === undefined) return { events: [] };
     if (ctx.matchState && collectCarpetCompanionTargets(ctx.state, ctx.playerId, ctx.baseIndex, ctx.cardUid).length > 0) {
         return runtimeToAbilityResult(executeAbilityProgram(carpetCompanionPromptProgram, {
             matchState: ctx.matchState,
@@ -447,16 +445,11 @@ function carpetTalent(ctx: AbilityContext): AbilityResult {
             cardUid: ctx.cardUid,
             defId: ctx.defId,
             sourceBaseIndex: ctx.baseIndex,
-            targetBaseIndex: toBaseIndex,
+            targetBaseIndex: destinationBaseIndex,
         }));
     }
-    const companions = base.minions
-        .filter(minion => minion.controller === ctx.playerId && minion.uid !== self.uid)
-        .slice(0, 2);
-    const batch = [self, ...companions];
     return {
-        events: batch.flatMap(minion =>
-            moveMinionToBase(ctx.matchState, minion, ctx.baseIndex, toBaseIndex, ctx.playerId, 'aladdin_carpet', ctx.now)),
+        events: moveMinionToBase(ctx.matchState ?? ctx.state, self, ctx.baseIndex, destinationBaseIndex, ctx.playerId, 'aladdin_carpet', ctx.now),
     };
 }
 
@@ -783,42 +776,7 @@ function caveOfWonders(ctx: AbilityContext): AbilityResult {
 }
 
 function jafarFallback(ctx: AbilityContext): AbilityResult {
-    const events: SmashUpEvent[] = [];
-    const discardedActions: Array<{ card: CardInstance; playerId: PlayerId }> = [];
-    for (const [otherPlayerId, player] of Object.entries(ctx.state.players)) {
-        if (otherPlayerId === ctx.playerId) continue;
-        const action = player.hand.find(card => isActionCard(card.defId));
-        if (action) {
-            events.push({
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId: otherPlayerId, cardUids: [action.uid] },
-                timestamp: ctx.now,
-            } as CardsDiscardedEvent);
-            discardedActions.push({ card: action, playerId: otherPlayerId });
-        } else {
-            events.push(revealHand(
-                otherPlayerId,
-                ctx.playerId,
-                player.hand.map(card => ({ uid: card.uid, defId: card.defId })),
-                'aladdin_jafar',
-                ctx.now,
-                ctx.playerId,
-            ) as RevealHandEvent);
-        }
-    }
-
-    const stolen = discardedActions[0];
-    if (stolen) {
-        events.push(transferCardToSelf(stolen.card, stolen.playerId, ctx.playerId, 'aladdin_jafar', ctx.now));
-        events.push(grantContextualExtraAction(ctx, 'aladdin_jafar', { restrictToCardUid: stolen.card.uid }));
-        return { events };
-    }
-
-    const ownAction = ctx.state.players[ctx.playerId]?.hand.find(card => card.uid !== ctx.cardUid && isActionCard(card.defId));
-    if (ownAction) {
-        events.push(grantContextualExtraAction(ctx, 'aladdin_jafar', { restrictToCardUid: ownAction.uid }));
-    }
-    return { events };
+    return { events: [] };
 }
 
 function getOtherPlayerIds(state: SmashUpCore, playerId: PlayerId): PlayerId[] {

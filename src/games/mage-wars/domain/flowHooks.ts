@@ -1,4 +1,3 @@
-import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import type { FlowHooks } from '../../../engine/systems/FlowSystem';
 import type { RandomFn } from '../../../engine/types';
 import { MAGE_WARS_EVENTS } from './events';
@@ -9,8 +8,6 @@ import {
     resolveMageWarsAttachedVisibleEnchantmentUpkeepDirectDamage,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepHealTransfers,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepManaCosts,
-    resolveMageWarsDamageTypeImmunity,
-    resolveMageWarsObjectEffectiveLife,
     resolveMageWarsObjectRegeneration,
 } from './spellRules';
 import { MAGE_WARS_PHASE_ORDER } from './types';
@@ -166,125 +163,70 @@ function createObjectSpellReturnEvents(
         }));
 }
 
-function appendDirectDamageEventsForTarget(
-    events: MageWarsEvent[],
-    state: { core: MageWarsCore },
-    target: {
-        targetId: string;
-        sourcePlayerId: string;
-        damageAmount: number;
-        currentDamage: number;
-        life: number;
-        ownerId?: string;
-        sourceAbilityId: string;
-    },
-    sourceCommandType: string,
-    timestamp: number,
-): void {
-    const damageEvents = createDamageCalculation({
-        state,
-        source: { playerId: target.sourcePlayerId, abilityId: target.sourceAbilityId },
-        target: { playerId: target.targetId },
-        baseDamage: target.damageAmount,
-        autoCollectTokens: false,
-        autoCollectStatus: false,
-        autoCollectBonusDamage: false,
-        damageScope: 'direct',
-        timestamp,
-    }).toEvents() as MageWarsEvent[];
-
-    events.push(...damageEvents);
-
-    const damageAmount = damageEvents.reduce((total, event) => {
-        if (event.type !== 'DAMAGE_DEALT') return total;
-        return total + (event.payload.actualDamage ?? event.payload.amount);
-    }, 0);
-    if (damageAmount <= 0 || target.currentDamage + damageAmount < target.life) return;
-
-    if (target.ownerId) {
-        events.push({
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-            payload: {
-                objectId: target.targetId,
-                ownerId: target.ownerId,
-                sourceAbilityId: target.sourceAbilityId,
-            },
-            sourceCommandType,
-            timestamp,
-        });
-        return;
-    }
-
-    events.push({
-        type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
-        payload: {
-            defeatedPlayerId: target.targetId,
-            winnerId: getOpponentId(state.core, target.targetId),
-        },
-        sourceCommandType,
-        timestamp,
-    });
-}
-
-function createUpkeepRotDamageEvents(
-    state: { core: MageWarsCore },
+function createUpkeepRotDamageAvailableEvents(
+    core: MageWarsCore,
     sourceCommandType: string,
     timestamp: number,
 ): MageWarsEvent[] {
     const events: MageWarsEvent[] = [];
 
-    for (const player of Object.values(state.core.players)) {
+    for (const player of Object.values(core.players)) {
         const rotAmount = getStatusTokenAmount(player, STATUS_TOKEN_IDS.ROT);
         if (rotAmount <= 0) continue;
-        appendDirectDamageEventsForTarget(events, state, {
-            targetId: player.id,
-            sourcePlayerId: player.id,
-            damageAmount: rotAmount,
-            currentDamage: player.damage,
-            life: player.life,
-            sourceAbilityId: 'mw.status.rot.upkeep',
-        }, sourceCommandType, timestamp);
+        events.push({
+            type: MAGE_WARS_EVENTS.UPKEEP_ROT_DAMAGE_AVAILABLE,
+            payload: {
+                targetPlayerId: player.id,
+                sourcePlayerId: player.id,
+                amount: rotAmount,
+            },
+            sourceCommandType,
+            timestamp,
+        });
     }
 
-    for (const object of Object.values(state.core.objects)) {
+    for (const object of Object.values(core.objects)) {
         const rotAmount = getStatusTokenAmount(object, STATUS_TOKEN_IDS.ROT);
         if (rotAmount <= 0 || !isMageWarsLivingArenaObject(object)) continue;
-        appendDirectDamageEventsForTarget(events, state, {
-            targetId: object.id,
-            sourcePlayerId: object.ownerId,
-            damageAmount: rotAmount,
-            currentDamage: object.damage,
-            life: resolveMageWarsObjectEffectiveLife(state.core, object),
-            ownerId: object.ownerId,
-            sourceAbilityId: 'mw.status.rot.upkeep',
-        }, sourceCommandType, timestamp);
+        events.push({
+            type: MAGE_WARS_EVENTS.UPKEEP_ROT_DAMAGE_AVAILABLE,
+            payload: {
+                targetObjectId: object.id,
+                sourcePlayerId: object.ownerId,
+                amount: rotAmount,
+            },
+            sourceCommandType,
+            timestamp,
+        });
     }
 
     return events;
 }
 
-function createUpkeepEnchantmentDirectDamageEvents(
-    state: { core: MageWarsCore },
+function createUpkeepEnchantmentDirectDamageAvailableEvents(
+    core: MageWarsCore,
     sourceCommandType: string,
     timestamp: number,
 ): MageWarsEvent[] {
     const events: MageWarsEvent[] = [];
 
-    for (const object of Object.values(state.core.objects)) {
+    for (const object of Object.values(core.objects)) {
         if (!isMageWarsLivingArenaObject(object)) continue;
 
-        for (const source of resolveMageWarsAttachedVisibleEnchantmentUpkeepDirectDamage(state.core, object)) {
-            if (resolveMageWarsDamageTypeImmunity([source.effect.damageType], object).immune) continue;
-
-            appendDirectDamageEventsForTarget(events, state, {
-                targetId: object.id,
-                sourcePlayerId: object.ownerId,
-                damageAmount: source.effect.amount,
-                currentDamage: object.damage,
-                life: resolveMageWarsObjectEffectiveLife(state.core, object),
-                ownerId: object.ownerId,
-                sourceAbilityId: `mw.spell.${source.sourceSpellCardId}.upkeep`,
-            }, sourceCommandType, timestamp);
+        for (const source of resolveMageWarsAttachedVisibleEnchantmentUpkeepDirectDamage(core, object)) {
+            events.push({
+                type: MAGE_WARS_EVENTS.UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE,
+                payload: {
+                    sourceObjectId: source.sourceObjectId,
+                    sourceSpellCardId: source.sourceSpellCardId,
+                    sourcePlayerId: source.ownerId,
+                    targetObjectId: object.id,
+                    amount: source.effect.amount,
+                    damageType: source.effect.damageType,
+                },
+                sourceCommandType,
+                timestamp,
+            });
         }
     }
 
@@ -345,118 +287,42 @@ function createUpkeepEnchantmentHealTransferEvents(
     });
 }
 
-function appendBurnUpkeepEventsForTarget(
-    events: MageWarsEvent[],
-    state: { core: MageWarsCore },
-    target: {
-        targetId: string;
-        sourcePlayerId: string;
-        burnAmount: number;
-        currentDamage: number;
-        life: number;
-        ownerId?: string;
-    },
-    sourceCommandType: string,
-    timestamp: number,
-    random: RandomFn,
-): void {
-    const sourceAbilityId = 'mw.status.burn.upkeep';
-    const burnRolls = Array.from({ length: target.burnAmount }, () => random.range(0, 2));
-    const blankCount = burnRolls.filter((roll) => roll === 0).length;
-    const directDamage = burnRolls.reduce((total, roll) => total + roll, 0);
-    const damageEvents = directDamage > 0
-        ? createDamageCalculation({
-            state,
-            source: { playerId: target.sourcePlayerId, abilityId: sourceAbilityId },
-            target: { playerId: target.targetId },
-            baseDamage: directDamage,
-            autoCollectTokens: false,
-            autoCollectStatus: false,
-            autoCollectBonusDamage: false,
-            damageScope: 'direct',
-            timestamp,
-        }).toEvents() as MageWarsEvent[]
-        : [];
-
-    events.push(...damageEvents);
-
-    if (blankCount > 0) {
-        events.push({
-            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
-            payload: {
-                targetPlayerId: target.ownerId ? undefined : target.targetId,
-                targetObjectId: target.ownerId ? target.targetId : undefined,
-                statusTokenId: STATUS_TOKEN_IDS.BURN,
-                amount: blankCount,
-                sourceAbilityId,
-            },
-            sourceCommandType,
-            timestamp,
-        });
-    }
-
-    const damageAmount = damageEvents.reduce((total, event) => {
-        if (event.type !== 'DAMAGE_DEALT') return total;
-        return total + (event.payload.actualDamage ?? event.payload.amount);
-    }, 0);
-    if (damageAmount <= 0 || target.currentDamage + damageAmount < target.life) return;
-
-    if (target.ownerId) {
-        events.push({
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-            payload: {
-                objectId: target.targetId,
-                ownerId: target.ownerId,
-                sourceAbilityId,
-            },
-            sourceCommandType,
-            timestamp,
-        });
-        return;
-    }
-
-    events.push({
-        type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
-        payload: {
-            defeatedPlayerId: target.targetId,
-            winnerId: getOpponentId(state.core, target.targetId),
-        },
-        sourceCommandType,
-        timestamp,
-    });
-}
-
-function createUpkeepBurnEvents(
-    state: { core: MageWarsCore },
+function createUpkeepBurnRollAvailableEvents(
+    core: MageWarsCore,
     sourceCommandType: string,
     timestamp: number,
     random: RandomFn,
 ): MageWarsEvent[] {
     const events: MageWarsEvent[] = [];
 
-    for (const player of Object.values(state.core.players)) {
+    for (const player of Object.values(core.players)) {
         const burnAmount = getStatusTokenAmount(player, STATUS_TOKEN_IDS.BURN);
         if (burnAmount <= 0) continue;
-        appendBurnUpkeepEventsForTarget(events, state, {
-            targetId: player.id,
-            sourcePlayerId: player.id,
-            burnAmount,
-            currentDamage: player.damage,
-            life: player.life,
-        }, sourceCommandType, timestamp, random);
+        events.push({
+            type: MAGE_WARS_EVENTS.UPKEEP_BURN_ROLL_AVAILABLE,
+            payload: {
+                targetPlayerId: player.id,
+                sourcePlayerId: player.id,
+                burnRolls: Array.from({ length: burnAmount }, () => random.range(0, 2)),
+            },
+            sourceCommandType,
+            timestamp,
+        });
     }
 
-    for (const object of Object.values(state.core.objects)) {
+    for (const object of Object.values(core.objects)) {
         const burnAmount = getStatusTokenAmount(object, STATUS_TOKEN_IDS.BURN);
         if (burnAmount <= 0) continue;
-        appendBurnUpkeepEventsForTarget(events, state, {
-            targetId: object.id,
-            sourcePlayerId: object.ownerId,
-            burnAmount,
-            currentDamage: object.damage,
-            life: resolveMageWarsObjectEffectiveLife(state.core, object),
-            ownerId: object.ownerId,
-        }, sourceCommandType, timestamp, random);
+        events.push({
+            type: MAGE_WARS_EVENTS.UPKEEP_BURN_ROLL_AVAILABLE,
+            payload: {
+                targetObjectId: object.id,
+                sourcePlayerId: object.ownerId,
+                burnRolls: Array.from({ length: burnAmount }, () => random.range(0, 2)),
+            },
+            sourceCommandType,
+            timestamp,
+        });
     }
 
     return events;
@@ -725,11 +591,11 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                 }),
                 events: [
                     ...createUpkeepRegenerationEvents(state.core, command.type, timestamp),
-                    ...createUpkeepRotDamageEvents(state, command.type, timestamp),
-                    ...createUpkeepEnchantmentDirectDamageEvents(state, command.type, timestamp),
+                    ...createUpkeepRotDamageAvailableEvents(state.core, command.type, timestamp),
+                    ...createUpkeepEnchantmentDirectDamageAvailableEvents(state.core, command.type, timestamp),
                     ...createUpkeepEnchantmentCostEvents(state.core, command.type, timestamp),
                     ...createUpkeepEnchantmentHealTransferEvents(state.core, command.type, timestamp),
-                    ...createUpkeepBurnEvents(state, command.type, timestamp, random),
+                    ...createUpkeepBurnRollAvailableEvents(state.core, command.type, timestamp, random),
                 ],
             };
         }

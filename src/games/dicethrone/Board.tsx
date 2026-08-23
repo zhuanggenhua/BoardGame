@@ -186,7 +186,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         { logPrefix: 'Spectate[DiceThrone]' }
     ) as DiceThroneMoveMap;
     const { t, i18n } = useTranslation('game-dicethrone');
-    useTutorialBridge(rawG.sys.tutorial, dispatch);
+    const tutorialRuntimeSyncKey = [
+        rawG.sys.phase,
+        rawG.core.activePlayerId,
+        rawG.core.turnNumber,
+        rawG.sys.eventStream?.nextId ?? 0,
+        rawG.sys.decisionEpoch ?? 0,
+        rawG.sys.interaction?.current?.id ?? '',
+        rawG.sys.responseWindow?.current?.id ?? '',
+        rawG.sys.responseWindow?.current?.currentResponderIndex ?? '',
+    ].join('|');
+    useTutorialBridge(rawG.sys.tutorial, dispatch, tutorialRuntimeSyncKey);
     const { isActive: isTutorialActive, currentStep: tutorialStep, nextStep: nextTutorialStep } = useTutorial();
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
@@ -1120,6 +1130,63 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }, 100);
         return () => clearTimeout(timer);
     }, [gameMode?.mode, isResponseWindowOpen, currentResponderId, rootPid, engineMoves]);
+
+    // 教程脚本进入 AI 介绍/AI 自动回合时，当前玩家的普通响应窗口也应收口；
+    // 否则隐藏的 AI 步骤会被正式响应窗口挡住，玩家看不到下一步教程。
+    React.useEffect(() => {
+        if (gameMode?.mode !== 'tutorial') return;
+        if (!isTutorialActive) return;
+        if (tutorialStep?.id !== 'ai-turn-intro' && tutorialStep?.id !== 'ai-turn') return;
+        if (!isResponseWindowOpen || !currentResponderId || currentResponderId !== rootPid) return;
+        if (currentResponseWindow?.pendingInteractionId || currentResponseWindow?.requiredInteractionId) return;
+        const timer = setTimeout(() => {
+            engineMoves.responsePass(currentResponderId);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [
+        gameMode?.mode,
+        isTutorialActive,
+        tutorialStep?.id,
+        isResponseWindowOpen,
+        currentResponderId,
+        rootPid,
+        currentResponseWindow?.pendingInteractionId,
+        currentResponseWindow?.requiredInteractionId,
+        engineMoves,
+    ]);
+
+    // 教程 AI 自动回合还可能在攻击结算后打开 Token 响应。这里同样只收口
+    // ai-turn-intro / ai-turn 两个隐藏 AI 步骤，避免把玩家自己的净化或手动
+    // Token 教学响应当成可自动处理的普通窗口。
+    React.useEffect(() => {
+        if (gameMode?.mode !== 'tutorial') return;
+        if (!isTutorialActive) return;
+        if (tutorialStep?.id !== 'ai-turn-intro' && tutorialStep?.id !== 'ai-turn') return;
+        if (!isTokenResponseInteraction || !pendingDamage || !isTokenResponder) return;
+        if (tokenResponseChoiceProjection && !tokenResponseChoiceProjection.skipAvailable) return;
+
+        const pendingDamageId = tokenResponseChoiceProjection?.pendingDamageId ?? pendingDamage.id;
+        if (!pendingDamageId && !tokenResponseChoiceProjection?.skipCommand) return;
+
+        const timer = setTimeout(() => {
+            if (tokenResponseChoiceProjection?.skipCommand) {
+                dispatchTokenResponseChoiceCommand(tokenResponseChoiceProjection.skipCommand);
+                return;
+            }
+            engineMoves.skipTokenResponse(pendingDamageId);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [
+        gameMode?.mode,
+        isTutorialActive,
+        tutorialStep?.id,
+        isTokenResponseInteraction,
+        pendingDamage,
+        isTokenResponder,
+        tokenResponseChoiceProjection,
+        dispatchTokenResponseChoiceCommand,
+        engineMoves,
+    ]);
     // 自动推进只是便利；按钮保持常驻显示，能否点击交给 canAdvancePhase 控制。
     const showAdvancePhaseButton = shouldShowManualPhaseAdvance(currentPhase, isSpectator);
     const handleCancelInteraction = React.useCallback(() => {
@@ -1800,6 +1867,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
     }, [isTutorialActive, tutorialStep, nextTutorialStep]);
 
+    const shouldPlayTutorialHandCardOnClick = Boolean(
+        isTutorialActive
+        && tutorialStep?.requireAction
+        && tutorialStep.highlightTarget === 'hand-area'
+        && tutorialStep.allowedCommands?.some(command => command === 'PLAY_CARD' || command === 'PLAY_UPGRADE_CARD')
+    );
+
     const handleBoardAbilitySelect = React.useCallback((abilityId: string) => {
         if (shouldBlockTutorialAction('ability-slots')) return;
         if (currentPhase === 'offensiveRoll' && G.rollConfirmed) {
@@ -2407,6 +2481,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 characterId={handOwner.characterId}
                                 playerBoardFace={handOwner.playerBoardFace}
                                 disableCardPointerEvents={Boolean(diceMultistepInteraction) || isHandHidden}
+                                playCardOnClick={shouldPlayTutorialHandCardOnClick}
                                 isHidden={isHandHidden}
                             />
                         </>

@@ -398,7 +398,10 @@ test.describe('Mage Wars foundation runtime board', () => {
         await page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-red-angel"]').click();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-red-angel"][data-field-card-role="source"]')).toBeVisible();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-blue-angel"][data-field-card-role="target"]')).toBeVisible();
-        await expect(page.getByTestId('mage-wars-selected-unit-guard')).toBeVisible();
+        const guardActionButton = page.getByTestId('mage-wars-selected-unit-guard');
+        await expect(guardActionButton).toBeVisible();
+        await expect(guardActionButton.locator('svg')).toHaveCount(0);
+        await expect(guardActionButton.getByAltText(/守卫|guard/i)).toBeVisible();
         await expect(page.getByTestId('mage-wars-field-card-target-badge')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-field-card-source-badge')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-mage-hud-target-badge')).toHaveCount(0);
@@ -483,6 +486,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                 const sameZoneFieldCards = zone
                     ? Array.from(zone.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-field-card"]'))
                     : [];
+                const lifeReadout = occupant.querySelector<HTMLElement>('[data-testid="mage-wars-mage-entity-life-readout"]');
                 const centerX = rect.x + rect.width / 2;
                 const centerY = rect.y + rect.height / 2;
                 const topElement = document.elementFromPoint(centerX, centerY);
@@ -506,6 +510,9 @@ test.describe('Mage Wars foundation runtime board', () => {
                     overlapsSameZoneFieldCard: sameZoneFieldCards.some((fieldCard) => overlaps(occupant, fieldCard)),
                     overlapsSpellbookShelf: spellbookShelf ? overlaps(occupant, spellbookShelf) : false,
                     hasDamageOverlay: Boolean(occupant.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay"]')),
+                    hasDamageValueBadge: Boolean(occupant.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay-value"]')),
+                    lifeReadoutText: lifeReadout?.textContent ?? null,
+                    lifeRemaining: lifeReadout?.dataset.lifeRemaining ?? null,
                 };
             });
             const arenaZoneDetails = arenaZones.map((zone) => ({
@@ -518,6 +525,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                 const zoneRect = zone?.getBoundingClientRect();
                 const cardArea = cardRect.width * cardRect.height;
                 const ownZoneArea = zoneRect ? overlapArea(cardRect, zoneRect) : 0;
+                const lifeReadout = card.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-life-readout"]');
                 const maxOtherZoneCoverage = Math.max(0, ...arenaZones
                     .filter((candidate) => candidate !== zone)
                     .map((candidate) => {
@@ -536,6 +544,9 @@ test.describe('Mage Wars foundation runtime board', () => {
                     maxOtherZoneCoverage,
                     visualDamage: Number(card.dataset.visualDamage ?? 0),
                     hasDamageOverlay: Boolean(card.querySelector('[data-testid="mage-wars-field-card-damage-overlay"]')),
+                    hasDamageValueBadge: Boolean(card.querySelector('[data-testid="mage-wars-field-card-damage-overlay-value"]')),
+                    lifeReadoutText: lifeReadout?.textContent ?? null,
+                    lifeRemaining: lifeReadout?.dataset.lifeRemaining ?? null,
                 };
             });
             return {
@@ -629,7 +640,11 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageOverlay)).toBe(true);
+        expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageValueBadge === false)).toBe(true);
+        expect(desktopLayoutAudit.zoneMageEntities.map((occupant) => occupant.lifeReadoutText).sort()).toEqual(['17/24', '19/24']);
         expect(desktopLayoutAudit.fieldCards.some((card) => card.visualDamage > 0 && card.hasDamageOverlay)).toBe(true);
+        expect(desktopLayoutAudit.fieldCards.every((card) => card.hasDamageValueBadge === false)).toBe(true);
+        expect(desktopLayoutAudit.fieldCards.some((card) => card.visualDamage > 0 && card.lifeReadoutText === '4/6')).toBe(true);
         expect(desktopLayoutAudit.damageTokenImageCount).toBe(0);
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('来源');
         expect(desktopLayoutAudit.visibleArenaText).not.toContain('可选目标');
@@ -726,7 +741,10 @@ test.describe('Mage Wars foundation runtime board', () => {
         await page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-red-angel"]').click();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-red-angel"][data-field-card-role="source"]')).toBeVisible();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-blue-archer"][data-field-card-role="target"]')).toBeVisible();
-        await expect(page.getByTestId('mage-wars-selected-unit-guard')).toBeVisible();
+        const focusGuardActionButton = page.getByTestId('mage-wars-selected-unit-guard');
+        await expect(focusGuardActionButton).toBeVisible();
+        await expect(focusGuardActionButton.locator('svg')).toHaveCount(0);
+        await expect(focusGuardActionButton.getByAltText(/守卫|guard/i)).toBeVisible();
         await expect(page.getByTestId('mage-wars-desktop-settlement-overlay')).toHaveCount(0);
         const combatFocusAudit = await page.evaluate(() => {
             const zone = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-zone-a2"]')?.getBoundingClientRect();
@@ -754,12 +772,42 @@ test.describe('Mage Wars foundation runtime board', () => {
             const target = document.querySelector<HTMLElement>('[data-object-id="mw-test-focus-blue-archer"]');
             const sourceFrame = source?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-source-frame"]');
             const targetFrame = target?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-target-frame"]');
+            const targetZone = target?.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]');
             const legalMoveZone = document.querySelector<HTMLElement>('[data-legal-move-zone="true"]');
+            const readRect = (element?: HTMLElement | null) => {
+                if (!element) return null;
+                const rect = element.getBoundingClientRect();
+                return {
+                    left: rect.left,
+                    top: rect.top,
+                    right: rect.right,
+                    bottom: rect.bottom,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            };
+            const readFrameDelta = (host?: HTMLElement | null, frame?: HTMLElement | null) => {
+                const hostRect = readRect(host);
+                const frameRect = readRect(frame);
+                if (!hostRect || !frameRect) return null;
+                return {
+                    left: Math.abs(frameRect.left - hostRect.left),
+                    top: Math.abs(frameRect.top - hostRect.top),
+                    right: Math.abs(frameRect.right - hostRect.right),
+                    bottom: Math.abs(frameRect.bottom - hostRect.bottom),
+                    width: Math.abs(frameRect.width - hostRect.width),
+                    height: Math.abs(frameRect.height - hostRect.height),
+                };
+            };
             return {
                 sourceClassName: source?.className ?? '',
                 targetClassName: target?.className ?? '',
                 sourceFrameClassName: sourceFrame?.className ?? '',
                 targetFrameClassName: targetFrame?.className ?? '',
+                sourceFrameDelta: readFrameDelta(source, sourceFrame),
+                targetFrameDelta: readFrameDelta(target, targetFrame),
+                targetZoneScope: targetZone?.dataset.zoneTargetScope ?? '',
+                targetZoneClassName: targetZone?.className ?? '',
                 legalMoveClassName: legalMoveZone?.className ?? '',
             };
         });
@@ -767,7 +815,23 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(interactionVisualAudit.sourceFrameClassName).toContain('border-cyan-100');
         expect(interactionVisualAudit.sourceFrameClassName).toContain('border-2');
         expect(interactionVisualAudit.targetFrameClassName).toContain('border-emerald-300/95');
-        expect(interactionVisualAudit.legalMoveClassName).toContain('bg-sky-300/14');
+        expect(interactionVisualAudit.targetFrameClassName).toContain('border-2');
+        expect(interactionVisualAudit.sourceFrameClassName).toContain('inset-0');
+        expect(interactionVisualAudit.targetFrameClassName).toContain('inset-0');
+        expect(interactionVisualAudit.sourceFrameClassName).not.toContain('-inset');
+        expect(interactionVisualAudit.targetFrameClassName).not.toContain('-inset');
+        expect(interactionVisualAudit.sourceFrameDelta).not.toBeNull();
+        expect(interactionVisualAudit.targetFrameDelta).not.toBeNull();
+        Object.entries(interactionVisualAudit.sourceFrameDelta!).forEach(([edge, delta]) => {
+            expect(delta, `来源描边必须贴来源本体 ${edge}`).toBeLessThanOrEqual(2);
+        });
+        Object.entries(interactionVisualAudit.targetFrameDelta!).forEach(([edge, delta]) => {
+            expect(delta, `目标描边必须贴目标本体 ${edge}`).toBeLessThanOrEqual(2);
+        });
+        expect(['', 'object']).toContain(interactionVisualAudit.targetZoneScope);
+        expect(interactionVisualAudit.targetZoneClassName).not.toContain('outline-emerald');
+        expect(interactionVisualAudit.targetZoneClassName).not.toContain('rgba(110,231,183');
+        expect(interactionVisualAudit.legalMoveClassName).toContain('bg-sky-300/8');
         await mkdir(dirname(SCREENSHOT_PATH), { recursive: true });
         await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
 

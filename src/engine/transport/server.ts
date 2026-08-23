@@ -522,6 +522,12 @@ export class GameTransportServer {
                     onlineAiAttemptKey,
                     clientTransport,
                 }),
+                restoreRandomCursor: (match, randomCursor) => {
+                    const rebuilt = createTrackedRandom(match.randomSeed, randomCursor);
+                    match.random = rebuilt.random;
+                    match.getRandomCursor = rebuilt.getCursor;
+                    match.lastBroadcastedViews.clear();
+                },
                 persistRollbackState: (match, storedState) => (
                     this.storage.setState(match.matchID, storedState)
                 ),

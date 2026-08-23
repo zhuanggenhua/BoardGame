@@ -202,6 +202,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         locale={props.locale}
                         onClose={props.onCardSpotlightClose}
                         opponentHeaderRef={props.opponentHeaderRef}
+                        autoCloseDelay={props.tutorialSpotlightAutoCloseDelayMs}
                     />
                 )}
             </AnimatePresence>

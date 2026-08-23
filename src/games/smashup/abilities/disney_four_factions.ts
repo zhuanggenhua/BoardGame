@@ -998,7 +998,7 @@ function recoverFirstDiscard(
             reason,
         });
     }
-    return { events: [recoverCardsFromDiscard(ctx.playerId, [cards[0].cardUid], reason, ctx.now)] };
+    return { events: [] };
 }
 
 function recoverDiscardByPower(ctx: AbilityContext, maxPower: number, reason: string, title: string, optional = false): AbilityResult {
@@ -1311,24 +1311,7 @@ function baymaxAfterScoring(ctx: AbilityContext): AbilityResult {
             reason: 'big_hero_6_baymax',
         });
     }
-    const target = targets[0];
-    const destination = destinations[0];
-    return {
-        events: buildValidatedMoveEvents(ctx.matchState, {
-            minionUid: target.minionUid,
-            minionDefId: target.minionDefId,
-            fromBaseIndex: target.baseIndex,
-            toBaseIndex: destination.baseIndex,
-            reason: 'big_hero_6_baymax',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: ctx.cardUid,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-            sourceKind: 'nonAction',
-        }),
-    };
+    return { events: [] };
 }
 
 function yokaiAfterScoring(ctx: AbilityContext): AbilityResult {
@@ -1499,26 +1482,7 @@ function hans(ctx: AbilityContext): AbilityResult {
 
 function letItGo(ctx: AbilityContext): AbilityResult {
     const targets = collectOwnMinions(ctx.state, ctx.playerId);
-    if (!ctx.matchState) {
-        const target = targets[0];
-        return {
-            events: [
-                ...(target ? buildValidatedReturnEvents(ctx.matchState, {
-                    minionUid: target.minionUid,
-                    minionDefId: target.minionDefId,
-                    fromBaseIndex: target.baseIndex,
-                    reason: 'frozen_let_it_go',
-                    now: ctx.now,
-                    sourcePlayerId: ctx.playerId,
-                    sourceDefId: ctx.defId,
-                    sourceControllerId: ctx.playerId,
-                    sourceBaseIndex: target.baseIndex,
-                    sourceKind: 'action',
-                }) : []),
-                grantContextualExtraAction(ctx, 'frozen_let_it_go'),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return promptMinion(ctx, {
         sourceId: 'frozen_let_it_go',
         title: '放手吧：选择返回手牌的角色',
@@ -1657,29 +1621,7 @@ function wildebeestStampede(ctx: AbilityContext): AbilityResult {
         .filter(card => getMinionDef(card.defId))
         .map(card => ({ cardUid: card.uid, defId: card.defId, ownerId: card.owner, label: getCardDef(card.defId)?.name ?? card.defId })) ?? [];
     if (ownMinions.length === 0 || deckMinions.length === 0) return { events: [] };
-    if (!ctx.matchState) {
-        const own = ownMinions[0];
-        const deckCard = ctx.state.players[ctx.playerId]?.deck.find(card => card.uid === deckMinions[0]?.cardUid);
-        const destroyEvents = buildValidatedDestroyEvents(ctx.matchState, {
-            minionUid: own.minionUid,
-            minionDefId: own.minionDefId,
-            fromBaseIndex: own.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'lion_king_wildebeest_stampede',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: own.baseIndex,
-            sourceKind: 'action',
-        });
-        return {
-            events: [
-                ...destroyEvents,
-                ...(deckCard ? playDeckMinionEvents(ctx.state, ctx.playerId, deckCard, own.baseIndex, 'lion_king_wildebeest_stampede', ctx.now) : []),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
     return promptMinion(ctx, {
         sourceId: 'lion_king_wildebeest_stampede_destroy',
         title: '牛羚踩踏：选择要摧毁的己方角色',

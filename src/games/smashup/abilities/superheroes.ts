@@ -721,24 +721,7 @@ function mindLadyTalent(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    if (!ctx.matchState) {
-        const [target] = targets;
-        if (!target?.value?.minionUid || target.value.baseIndex === undefined) {
-            return { events: [] };
-        }
-        return {
-            events: [
-                buildCardSuppressedEvent(
-                    target.value.minionUid,
-                    target.value.baseIndex,
-                    ctx.playerId,
-                    'minion',
-                    'superheroes_mind_lady',
-                    ctx.now,
-                ),
-            ],
-        };
-    }
+    if (!ctx.matchState) return { events: [] };
 
     const result = executeAbilityProgram(mindLadyPromptProgram, {
         matchState: ctx.matchState,

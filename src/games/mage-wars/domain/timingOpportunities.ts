@@ -1,4 +1,5 @@
 import type { ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
+import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import { queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
 import {
@@ -21,13 +22,23 @@ import {
     type MageWarsUpkeepHealTransferChoiceValue,
 } from './systems';
 import {
+    createMageWarsMageEquipmentArmorDamageModifiers,
+    createMageWarsObjectArmorDamageModifiers,
+} from './damageRules';
+import {
     MAGE_WARS_EVENTS,
     type MageWarsCounterstrikeAvailableEvent,
     type MageWarsDamageDealtEvent,
+    type MageWarsDamageBarrierAvailableEvent,
     type MageWarsDefenseAvailableEvent,
     type MageWarsEnchantmentResponseRequiredEvent,
+    type MageWarsSpellCastResolvedEvent,
+    type MageWarsUpkeepBurnRollAvailableEvent,
     type MageWarsUpkeepCostAvailableEvent,
+    type MageWarsUpkeepEnchantmentDirectDamageAvailableEvent,
     type MageWarsUpkeepHealTransferAvailableEvent,
+    type MageWarsUpkeepHealTransferDamageAvailableEvent,
+    type MageWarsUpkeepRotDamageAvailableEvent,
 } from './events';
 import { STATUS_TOKEN_IDS } from './ids';
 import type { MageWarsCommand, MageWarsCore, MageWarsEvent } from './types';
@@ -37,6 +48,13 @@ import {
     type MageWarsResponseContext,
 } from './responseResolution';
 import { getStatusTokenAmount } from './statusTokens';
+import {
+    isMageWarsLivingArenaObject,
+    resolveMageWarsDamageTypeImmunity,
+    resolveMageWarsMagebaneCurseDamageSource,
+    resolveMageWarsObjectEffectiveLife,
+} from './spellRules';
+import { getOpponentId } from './utils';
 
 export type MageWarsTimingOpportunityChoiceValue =
     | MageWarsCounterstrikeChoiceValue
@@ -49,9 +67,15 @@ const MAGE_WARS_TIMING_OPPORTUNITY_KINDS = {
     COUNTERSTRIKE: 'mage-wars.counterstrike',
     DEFENSE: 'mage-wars.defense',
     ENCHANTMENT_RESPONSE: 'mage-wars.enchantment-response',
+    MAGEBANE_CURSE_DAMAGE: 'mage-wars.magebane-curse-damage',
     SLEEP_DAMAGE_REPLACEMENT: 'mage-wars.sleep-damage-replacement',
     UPKEEP_COST: 'mage-wars.upkeep-cost',
     UPKEEP_HEAL_TRANSFER: 'mage-wars.upkeep-heal-transfer',
+    UPKEEP_HEAL_TRANSFER_DAMAGE: 'mage-wars.upkeep-heal-transfer-damage',
+    UPKEEP_ROT_DAMAGE: 'mage-wars.upkeep-rot-damage',
+    UPKEEP_BURN_ROLL: 'mage-wars.upkeep-burn-roll',
+    UPKEEP_ENCHANTMENT_DIRECT_DAMAGE: 'mage-wars.upkeep-enchantment-direct-damage',
+    DAMAGE_BARRIER: 'mage-wars.damage-barrier',
 } as const;
 
 function isCounterstrikeAvailableEvent(event: GameEvent): event is MageWarsCounterstrikeAvailableEvent {
@@ -62,6 +86,10 @@ function isDefenseAvailableEvent(event: GameEvent): event is MageWarsDefenseAvai
     return event.type === MAGE_WARS_EVENTS.DEFENSE_AVAILABLE;
 }
 
+function isDamageBarrierAvailableEvent(event: GameEvent): event is MageWarsDamageBarrierAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.DAMAGE_BARRIER_AVAILABLE;
+}
+
 function isUpkeepCostAvailableEvent(event: GameEvent): event is MageWarsUpkeepCostAvailableEvent {
     return event.type === MAGE_WARS_EVENTS.UPKEEP_COST_AVAILABLE;
 }
@@ -70,12 +98,36 @@ function isUpkeepHealTransferAvailableEvent(event: GameEvent): event is MageWars
     return event.type === MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_AVAILABLE;
 }
 
+function isUpkeepHealTransferDamageAvailableEvent(
+    event: GameEvent,
+): event is MageWarsUpkeepHealTransferDamageAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_DAMAGE_AVAILABLE;
+}
+
+function isUpkeepRotDamageAvailableEvent(event: GameEvent): event is MageWarsUpkeepRotDamageAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.UPKEEP_ROT_DAMAGE_AVAILABLE;
+}
+
+function isUpkeepBurnRollAvailableEvent(event: GameEvent): event is MageWarsUpkeepBurnRollAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.UPKEEP_BURN_ROLL_AVAILABLE;
+}
+
+function isUpkeepEnchantmentDirectDamageAvailableEvent(
+    event: GameEvent,
+): event is MageWarsUpkeepEnchantmentDirectDamageAvailableEvent {
+    return event.type === MAGE_WARS_EVENTS.UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE;
+}
+
 function isEnchantmentResponseRequiredEvent(event: GameEvent): event is MageWarsEnchantmentResponseRequiredEvent {
     return event.type === MAGE_WARS_EVENTS.ENCHANTMENT_RESPONSE_REQUIRED;
 }
 
 function isDamageDealtEvent(event: GameEvent): event is MageWarsDamageDealtEvent {
     return event.type === 'DAMAGE_DEALT';
+}
+
+function isSpellCastResolvedEvent(event: GameEvent): event is MageWarsSpellCastResolvedEvent {
+    return event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED;
 }
 
 function counterstrikeInteractionId(event: MageWarsCounterstrikeAvailableEvent): string {
@@ -114,6 +166,205 @@ function upkeepHealTransferInteractionId(event: MageWarsUpkeepHealTransferAvaila
         event.payload.targetObjectId,
         event.timestamp ?? 0,
     ].join('-');
+}
+
+interface MageWarsDirectDamageTarget {
+    targetPlayerId?: string;
+    targetObjectId?: string;
+    sourcePlayerId: string;
+    sourceAbilityId: string;
+    amount: number;
+}
+
+interface MageWarsDirectDamageResolution {
+    damageEvents: MageWarsEvent[];
+    defeatEvents: MageWarsEvent[];
+}
+
+function resolveDirectDamageTargetId(target: Pick<MageWarsDirectDamageTarget, 'targetPlayerId' | 'targetObjectId'>):
+string | undefined {
+    return target.targetPlayerId ?? target.targetObjectId;
+}
+
+function createDirectDamageResolutionEvents(
+    state: MatchState<MageWarsCore>,
+    target: MageWarsDirectDamageTarget,
+    sourceCommandType: string | undefined,
+    timestamp: number | undefined,
+): MageWarsDirectDamageResolution | null {
+    const targetId = resolveDirectDamageTargetId(target);
+    if (!targetId || target.amount <= 0) return null;
+
+    const targetPlayer = target.targetPlayerId ? state.core.players[target.targetPlayerId] : undefined;
+    const targetObject = target.targetObjectId ? state.core.objects[target.targetObjectId] : undefined;
+    if (!targetPlayer && !targetObject) return null;
+    if (targetObject && !isMageWarsLivingArenaObject(targetObject)) return null;
+
+    const damageEvents = createDamageCalculation({
+        state,
+        source: { playerId: target.sourcePlayerId, abilityId: target.sourceAbilityId },
+        target: { playerId: targetId },
+        baseDamage: target.amount,
+        autoCollectTokens: false,
+        autoCollectStatus: false,
+        autoCollectBonusDamage: false,
+        damageScope: 'direct',
+        timestamp: timestamp ?? 0,
+    }).toEvents() as MageWarsEvent[];
+
+    const damageAmount = damageEvents.reduce((total, event) => {
+        if (event.type !== 'DAMAGE_DEALT') return total;
+        return total + (event.payload.actualDamage ?? event.payload.amount);
+    }, 0);
+    if (damageAmount <= 0) return { damageEvents, defeatEvents: [] };
+
+    if (targetObject) {
+        if (targetObject.damage + damageAmount < resolveMageWarsObjectEffectiveLife(state.core, targetObject)) {
+            return { damageEvents, defeatEvents: [] };
+        }
+        return {
+            damageEvents,
+            defeatEvents: [{
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: {
+                    objectId: targetObject.id,
+                    ownerId: targetObject.ownerId,
+                    sourceAbilityId: target.sourceAbilityId,
+                },
+                sourceCommandType,
+                timestamp,
+            }],
+        };
+    }
+
+    if (!targetPlayer || targetPlayer.damage + damageAmount < targetPlayer.life) {
+        return { damageEvents, defeatEvents: [] };
+    }
+    return {
+        damageEvents,
+        defeatEvents: [{
+            type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
+            payload: {
+                defeatedPlayerId: targetPlayer.id,
+                winnerId: getOpponentId(state.core, targetPlayer.id),
+            },
+            sourceCommandType,
+            timestamp,
+        }],
+    };
+}
+
+function createDamageBarrierOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsDamageBarrierAvailableEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue> | null {
+    const sourceObject = args.state.core.objects[event.payload.sourceObjectId];
+    if (!sourceObject || sourceObject.sourceSpellCardId !== event.payload.sourceSpellCardId) return null;
+
+    const attackerObject = event.payload.attackerObjectId
+        ? args.state.core.objects[event.payload.attackerObjectId]
+        : undefined;
+    const attackerPlayer = event.payload.attackerId
+        ? args.state.core.players[event.payload.attackerId]
+        : undefined;
+    if ((event.payload.attackerObjectId && !attackerObject) || (event.payload.attackerId && !attackerPlayer)) {
+        return null;
+    }
+
+    const targetId = event.payload.attackerObjectId ?? event.payload.attackerId;
+    if (!targetId) return null;
+
+    const sourceAbilityId = `mw.equipment.${event.payload.sourceSpellCardId}.damage-barrier`;
+    const damageEvents = createDamageCalculation({
+        state: args.state,
+        source: { playerId: event.payload.targetPlayerId, abilityId: sourceAbilityId },
+        target: { playerId: targetId },
+        baseDamage: event.payload.baseDamage,
+        autoCollectTokens: false,
+        autoCollectStatus: false,
+        autoCollectBonusDamage: false,
+        damageScope: 'attack',
+        additionalModifiers: event.payload.lethal
+            ? []
+            : attackerObject
+                ? createMageWarsObjectArmorDamageModifiers(attackerObject, { pierce: 0 })
+                : createMageWarsMageEquipmentArmorDamageModifiers(args.state.core, { targetPlayerId: targetId }),
+        timestamp: event.timestamp ?? 0,
+    }).toEvents() as MageWarsEvent[];
+    const damageAmount = damageEvents.reduce((total, damageEvent) => (
+        damageEvent.type === 'DAMAGE_DEALT'
+            ? total + (damageEvent.payload.actualDamage ?? damageEvent.payload.amount)
+            : total
+    ), 0);
+    const defeatEvents: MageWarsEvent[] = [];
+    if (damageAmount > 0 && attackerObject) {
+        if (attackerObject.damage + damageAmount >= resolveMageWarsObjectEffectiveLife(args.state.core, attackerObject)) {
+            defeatEvents.push({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: {
+                    objectId: attackerObject.id,
+                    ownerId: attackerObject.ownerId,
+                    sourceAbilityId,
+                },
+                sourceCommandType: event.sourceCommandType,
+                timestamp: event.timestamp,
+            });
+        }
+    } else if (damageAmount > 0 && attackerPlayer && attackerPlayer.damage + damageAmount >= attackerPlayer.life) {
+        defeatEvents.push({
+            type: MAGE_WARS_EVENTS.MAGE_DEFEATED,
+            payload: {
+                defeatedPlayerId: attackerPlayer.id,
+                winnerId: event.payload.targetPlayerId,
+            },
+            sourceCommandType: event.sourceCommandType,
+            timestamp: event.timestamp,
+        });
+    }
+
+    const opportunityId = [
+        'mw-damage-barrier',
+        event.payload.sourceObjectId,
+        targetId,
+        event.timestamp ?? 0,
+    ].join('-');
+
+    return {
+        id: opportunityId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'equipment',
+            id: sourceAbilityId,
+            ownerId: sourceObject.ownerId,
+            controllerId: sourceObject.ownerId,
+            metadata: {
+                sourceObjectId: event.payload.sourceObjectId,
+                sourceSpellCardId: event.payload.sourceSpellCardId,
+                targetId,
+            },
+        },
+        controllerId: sourceObject.ownerId,
+        class: 'mandatory',
+        condition: { satisfied: true },
+        resolution: {
+            type: 'events',
+            events: [{
+                type: MAGE_WARS_EVENTS.DAMAGE_BARRIER_TRIGGERED,
+                payload: { ...event.payload },
+                sourceCommandType: event.sourceCommandType,
+                timestamp: event.timestamp,
+            }, ...damageEvents, ...defeatEvents],
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.DAMAGE_BARRIER,
+            sourceAbilityId,
+            sourceObjectId: event.payload.sourceObjectId,
+            sourceSpellCardId: event.payload.sourceSpellCardId,
+            targetId,
+            baseDamage: event.payload.baseDamage,
+            diceResults: [...event.payload.diceResults],
+        },
+    };
 }
 
 function createCounterstrikeOpportunity(
@@ -453,6 +704,257 @@ function createUpkeepHealTransferOpportunity(
     };
 }
 
+function createUpkeepHealTransferDamageOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsUpkeepHealTransferDamageAvailableEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue> | null {
+    const source = args.state.core.objects[event.payload.sourceObjectId];
+    const target = args.state.core.objects[event.payload.targetObjectId];
+    if (
+        !source
+        || !target
+        || source.kind !== 'enchantment'
+        || source.sourceSpellCardId !== event.payload.sourceSpellCardId
+        || source.ownerId !== event.payload.playerId
+        || source.anchoredToObjectId !== target.id
+        || !isMageWarsLivingArenaObject(target)
+    ) {
+        return null;
+    }
+
+    const sourceAbilityId = `mw.spell.${source.sourceSpellCardId}.upkeep`;
+    const resolution = createDirectDamageResolutionEvents(args.state, {
+        targetObjectId: target.id,
+        sourcePlayerId: event.payload.playerId,
+        sourceAbilityId,
+        amount: event.payload.amount,
+    }, event.sourceCommandType, event.timestamp);
+    if (!resolution) return null;
+
+    const opportunityId = [
+        'mw-upkeep-heal-transfer-damage',
+        source.id,
+        target.id,
+        event.timestamp ?? 0,
+    ].join('-');
+
+    return {
+        id: opportunityId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'card',
+            id: sourceAbilityId,
+            ownerId: source.ownerId,
+            controllerId: source.ownerId,
+            metadata: {
+                sourceObjectId: source.id,
+                sourceSpellCardId: source.sourceSpellCardId,
+                targetObjectId: target.id,
+            },
+        },
+        controllerId: source.ownerId,
+        class: 'mandatory',
+        condition: { satisfied: true },
+        resolution: {
+            type: 'events',
+            events: [...resolution.damageEvents, ...resolution.defeatEvents],
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_HEAL_TRANSFER_DAMAGE,
+            sourceAbilityId,
+            sourceObjectId: source.id,
+            sourceSpellCardId: source.sourceSpellCardId,
+            targetObjectId: target.id,
+            amount: event.payload.amount,
+        },
+    };
+}
+
+function createUpkeepRotDamageOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsUpkeepRotDamageAvailableEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue> | null {
+    const targetId = resolveDirectDamageTargetId(event.payload);
+    if (!targetId) return null;
+    const sourceAbilityId = 'mw.status.rot.upkeep';
+    const resolution = createDirectDamageResolutionEvents(args.state, {
+        targetPlayerId: event.payload.targetPlayerId,
+        targetObjectId: event.payload.targetObjectId,
+        sourcePlayerId: event.payload.sourcePlayerId,
+        sourceAbilityId,
+        amount: event.payload.amount,
+    }, event.sourceCommandType, event.timestamp);
+    if (!resolution) return null;
+    const opportunityId = [
+        'mw-upkeep-rot-damage',
+        targetId,
+        event.timestamp ?? 0,
+    ].join('-');
+
+    return {
+        id: opportunityId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'status',
+            id: sourceAbilityId,
+            ownerId: event.payload.sourcePlayerId,
+            controllerId: event.payload.sourcePlayerId,
+            metadata: {
+                statusTokenId: STATUS_TOKEN_IDS.ROT,
+                targetId,
+            },
+        },
+        controllerId: event.payload.sourcePlayerId,
+        class: 'mandatory',
+        condition: { satisfied: true },
+        resolution: {
+            type: 'events',
+            events: [...resolution.damageEvents, ...resolution.defeatEvents],
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_ROT_DAMAGE,
+            sourceAbilityId,
+            statusTokenId: STATUS_TOKEN_IDS.ROT,
+            targetId,
+            amount: event.payload.amount,
+        },
+    };
+}
+
+function createUpkeepBurnRollOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsUpkeepBurnRollAvailableEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue> | null {
+    const targetId = resolveDirectDamageTargetId(event.payload);
+    if (!targetId) return null;
+    const sourceAbilityId = 'mw.status.burn.upkeep';
+    const blankCount = event.payload.burnRolls.filter((roll) => roll === 0).length;
+    const directDamage = event.payload.burnRolls.reduce((total, roll) => total + roll, 0);
+    const resolution = directDamage > 0
+        ? createDirectDamageResolutionEvents(args.state, {
+            targetPlayerId: event.payload.targetPlayerId,
+            targetObjectId: event.payload.targetObjectId,
+            sourcePlayerId: event.payload.sourcePlayerId,
+            sourceAbilityId,
+            amount: directDamage,
+        }, event.sourceCommandType, event.timestamp)
+        : { damageEvents: [], defeatEvents: [] };
+    if (!resolution) return null;
+
+    const removalEvents: MageWarsEvent[] = blankCount > 0
+        ? [{
+            type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED,
+            payload: {
+                targetPlayerId: event.payload.targetPlayerId,
+                targetObjectId: event.payload.targetObjectId,
+                statusTokenId: STATUS_TOKEN_IDS.BURN,
+                amount: blankCount,
+                sourceAbilityId,
+            },
+            sourceCommandType: event.sourceCommandType,
+            timestamp: event.timestamp,
+        }]
+        : [];
+    const opportunityId = [
+        'mw-upkeep-burn-roll',
+        targetId,
+        event.timestamp ?? 0,
+    ].join('-');
+
+    return {
+        id: opportunityId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'status',
+            id: sourceAbilityId,
+            ownerId: event.payload.sourcePlayerId,
+            controllerId: event.payload.sourcePlayerId,
+            metadata: {
+                statusTokenId: STATUS_TOKEN_IDS.BURN,
+                targetId,
+            },
+        },
+        controllerId: event.payload.sourcePlayerId,
+        class: 'mandatory',
+        condition: { satisfied: true },
+        resolution: {
+            type: 'events',
+            events: [
+                ...resolution.damageEvents,
+                ...removalEvents,
+                ...resolution.defeatEvents,
+            ],
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_BURN_ROLL,
+            sourceAbilityId,
+            statusTokenId: STATUS_TOKEN_IDS.BURN,
+            targetId,
+            burnRolls: [...event.payload.burnRolls],
+            blankCount,
+            directDamage,
+        },
+    };
+}
+
+function createUpkeepEnchantmentDirectDamageOpportunity(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsUpkeepEnchantmentDirectDamageAvailableEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue> | null {
+    const sourceObject = args.state.core.objects[event.payload.sourceObjectId];
+    const targetObject = args.state.core.objects[event.payload.targetObjectId];
+    if (!sourceObject || !targetObject || !isMageWarsLivingArenaObject(targetObject)) return null;
+    if (sourceObject.sourceSpellCardId !== event.payload.sourceSpellCardId) return null;
+    if (resolveMageWarsDamageTypeImmunity([event.payload.damageType], targetObject).immune) return null;
+
+    const sourceAbilityId = `mw.spell.${event.payload.sourceSpellCardId}.upkeep`;
+    const resolution = createDirectDamageResolutionEvents(args.state, {
+        targetObjectId: event.payload.targetObjectId,
+        sourcePlayerId: event.payload.sourcePlayerId,
+        sourceAbilityId,
+        amount: event.payload.amount,
+    }, event.sourceCommandType, event.timestamp);
+    if (!resolution) return null;
+    const opportunityId = [
+        'mw-upkeep-enchantment-direct-damage',
+        event.payload.sourceObjectId,
+        event.payload.targetObjectId,
+        event.timestamp ?? 0,
+    ].join('-');
+
+    return {
+        id: opportunityId,
+        timing: args.timing,
+        sourceRef: {
+            kind: 'card',
+            id: sourceAbilityId,
+            ownerId: sourceObject.ownerId,
+            controllerId: sourceObject.ownerId,
+            metadata: {
+                sourceObjectId: event.payload.sourceObjectId,
+                sourceSpellCardId: event.payload.sourceSpellCardId,
+                targetObjectId: event.payload.targetObjectId,
+            },
+        },
+        controllerId: sourceObject.ownerId,
+        class: 'mandatory',
+        condition: { satisfied: true },
+        resolution: {
+            type: 'events',
+            events: [...resolution.damageEvents, ...resolution.defeatEvents],
+        },
+        metadata: {
+            mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.UPKEEP_ENCHANTMENT_DIRECT_DAMAGE,
+            sourceAbilityId,
+            sourceObjectId: event.payload.sourceObjectId,
+            sourceSpellCardId: event.payload.sourceSpellCardId,
+            targetObjectId: event.payload.targetObjectId,
+            amount: event.payload.amount,
+            damageType: event.payload.damageType,
+        },
+    };
+}
+
 function createEnchantmentResponseOpportunity(
     args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
     event: MageWarsEnchantmentResponseRequiredEvent,
@@ -526,6 +1028,76 @@ function createEnchantmentResponseOpportunity(
             mageWarsResponseContext: context,
         },
     };
+}
+
+function createMagebaneCurseDamageOpportunities(
+    args: TimingOpportunityDiscoveryArgs<MageWarsCore, MageWarsCommand, MageWarsEvent>,
+    event: MageWarsSpellCastResolvedEvent,
+): Opportunity<MageWarsTimingOpportunityChoiceValue>[] {
+    if (event.payload.caster.kind !== 'arena-object') return [];
+
+    const caster = args.state.core.objects[event.payload.caster.objectId];
+    if (
+        !caster
+        || caster.kind !== 'creature'
+        || caster.ownerId !== event.payload.caster.ownerId
+        || !caster.spellcastingSource
+    ) {
+        return [];
+    }
+
+    return Object.values(args.state.core.objects).flatMap((object) => {
+        const source = resolveMageWarsMagebaneCurseDamageSource(object, caster.id);
+        if (!source) return [];
+        const opportunityId = [
+            'mw-magebane-curse-damage',
+            source.sourceObjectId,
+            caster.id,
+            event.payload.spellCardId,
+            event.timestamp ?? 0,
+        ].join('-');
+
+        return [{
+            id: opportunityId,
+            timing: args.timing,
+            sourceRef: {
+                kind: 'card',
+                id: source.sourceAbilityId,
+                ownerId: source.ownerId,
+                controllerId: source.ownerId,
+                metadata: {
+                    sourceObjectId: source.sourceObjectId,
+                    sourceSpellCardId: source.sourceSpellCardId,
+                    targetObjectId: caster.id,
+                },
+            },
+            controllerId: source.ownerId,
+            class: 'mandatory',
+            condition: { satisfied: true },
+            resolution: {
+                type: 'events',
+                events: createDamageCalculation({
+                    state: args.state,
+                    source: { playerId: source.ownerId, abilityId: source.sourceAbilityId },
+                    target: { playerId: caster.id },
+                    baseDamage: source.amount,
+                    autoCollectTokens: false,
+                    autoCollectStatus: false,
+                    autoCollectBonusDamage: false,
+                    damageScope: 'direct',
+                    timestamp: event.timestamp ?? 0,
+                }).toEvents() as MageWarsEvent[],
+            },
+            metadata: {
+                mageWarsTimingOpportunity: MAGE_WARS_TIMING_OPPORTUNITY_KINDS.MAGEBANE_CURSE_DAMAGE,
+                sourceAbilityId: source.sourceAbilityId,
+                sourceObjectId: source.sourceObjectId,
+                sourceSpellCardId: source.sourceSpellCardId,
+                targetObjectId: caster.id,
+                amount: source.amount,
+            },
+        } satisfies Opportunity<MageWarsTimingOpportunityChoiceValue>];
+    });
 }
 
 function createSleepDamageReplacementOpportunity(
@@ -644,6 +1216,10 @@ export function discoverMageWarsTimingOpportunities(
     if (isDefenseAvailableEvent(event)) {
         return { opportunities: [createDefenseOpportunity(args, event)] };
     }
+    if (isDamageBarrierAvailableEvent(event)) {
+        const opportunity = createDamageBarrierOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
     if (isUpkeepCostAvailableEvent(event)) {
         const opportunity = createUpkeepCostOpportunity(args, event);
         return { opportunities: opportunity ? [opportunity] : [] };
@@ -652,8 +1228,27 @@ export function discoverMageWarsTimingOpportunities(
         const opportunity = createUpkeepHealTransferOpportunity(args, event);
         return { opportunities: opportunity ? [opportunity] : [] };
     }
+    if (isUpkeepHealTransferDamageAvailableEvent(event)) {
+        const opportunity = createUpkeepHealTransferDamageOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
+    if (isUpkeepRotDamageAvailableEvent(event)) {
+        const opportunity = createUpkeepRotDamageOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
+    if (isUpkeepBurnRollAvailableEvent(event)) {
+        const opportunity = createUpkeepBurnRollOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
+    if (isUpkeepEnchantmentDirectDamageAvailableEvent(event)) {
+        const opportunity = createUpkeepEnchantmentDirectDamageOpportunity(args, event);
+        return { opportunities: opportunity ? [opportunity] : [] };
+    }
     if (isEnchantmentResponseRequiredEvent(event)) {
         return { opportunities: [createEnchantmentResponseOpportunity(args, event)] };
+    }
+    if (isSpellCastResolvedEvent(event)) {
+        return { opportunities: createMagebaneCurseDamageOpportunities(args, event) };
     }
     if (isDamageDealtEvent(event)) {
         const opportunity = createSleepDamageReplacementOpportunity(args, event);

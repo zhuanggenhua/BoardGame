@@ -104,12 +104,13 @@ type DinoRampageMinionContext = DinoPromptContext & {
 };
 
 function filterProtectedDestroyTargets(
-    matchState: MatchState<SmashUpCore>,
+    matchState: MatchState<SmashUpCore> | undefined,
     playerId: PlayerId,
     sourceDefId: string,
     targets: DinoMinionTarget[],
 ): DinoMinionTarget[] {
     if (targets.length === 0) return targets;
+    if (!matchState) return [];
     const allowedKeys = new Set(
         buildMinionTargetOptions(targets, {
             state: matchState.core,
@@ -513,15 +514,7 @@ const dinoLaserTriceratopsProgram = createBranchProgram<
     then: createEffectProgram(() => ({ events: [] })),
     else: createBranchProgram({
         when: (context) => context.targets.length === 1 && !context.matchState,
-        then: createEffectProgram((context) => ({
-            events: buildDinoDestroyEvents(
-                context.matchState,
-                context.targets[0],
-                'dino_laser_triceratops',
-                context.playerId,
-                context.now,
-            ),
-        })),
+        then: createEffectProgram(() => ({ events: [] })),
         else: dinoLaserTriceratopsPromptProgram,
     }),
 });
@@ -965,13 +958,8 @@ const dinoRampageProgram = createBranchProgram<
     when: (context) => context.baseCandidates.length === 0,
     then: createEffectProgram(() => ({ events: [] })),
     else: createBranchProgram({
-        when: (context) => context.baseCandidates.length === 1 && !context.matchState,
-        then: createEffectProgram((context) => resolveDinoRampageBaseSelection(
-            context.matchState,
-            context.playerId,
-            context.now,
-            context.baseCandidates[0].baseIndex,
-        )),
+        when: (context) => !context.matchState,
+        then: createEffectProgram(() => ({ events: [] })),
         else: dinoRampageBasePromptProgram,
     }),
 });

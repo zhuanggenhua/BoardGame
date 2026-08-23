@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { TRANSPORT_BATCH_COMMAND } from '../../batchDispatchCommand';
 import type { InteractionDescriptor, MultistepChoiceData } from '../InteractionSystem';
 import { INTERACTION_COMMANDS } from '../InteractionSystem';
 import { useMultistepInteraction } from '../useMultistepInteraction';
@@ -78,10 +79,68 @@ describe('useMultistepInteraction', () => {
         fireEvent.click(screen.getByText('confirm'));
 
         expect(dispatchLog).toEqual([
-            { type: 'REROLL_DIE', payload: { dieId: 0 } },
-            { type: 'REROLL_DIE', payload: { dieId: 1 } },
+            {
+                type: TRANSPORT_BATCH_COMMAND,
+                payload: {
+                    commands: [
+                        { type: 'REROLL_DIE', payload: { dieId: 0 } },
+                        { type: 'REROLL_DIE', payload: { dieId: 1 } },
+                    ],
+                },
+            },
         ]);
         expect(dispatchLog.some((entry) => entry.type === INTERACTION_COMMANDS.CONFIRM)).toBe(false);
         expect(screen.getByTestId('selected')).toHaveTextContent('');
+    });
+
+    it('普通多选确认把业务命令和关闭交互命令放进同一个批次', () => {
+        const dispatchLog: Array<{ type: string; payload?: unknown }> = [];
+        const interaction: InteractionDescriptor<MultistepChoiceData<SelectStep, SelectResult>> = {
+            id: 'single-confirm-reroll-batch',
+            kind: 'multistep-choice',
+            playerId: '0',
+            data: {
+                title: 'interaction.selectDiceToReroll',
+                minSteps: 1,
+                maxSteps: 5,
+                initialResult: { selectedDiceIds: [] },
+                localReducer: (current, step) => {
+                    if (step.action !== 'toggle') return current;
+                    if (current.selectedDiceIds.includes(step.dieId)) {
+                        return {
+                            selectedDiceIds: current.selectedDiceIds.filter((id) => id !== step.dieId),
+                        };
+                    }
+                    return { selectedDiceIds: [...current.selectedDiceIds, step.dieId] };
+                },
+                toCommands: (result) => result.selectedDiceIds.map((dieId) => ({
+                    type: 'REROLL_DIE',
+                    payload: { dieId },
+                })),
+                getCompletedSteps: (result) => result.selectedDiceIds.length,
+            },
+        };
+
+        render(<BatchHarness interaction={interaction} dispatchLog={dispatchLog} />);
+
+        fireEvent.click(screen.getByText('die-0'));
+        fireEvent.click(screen.getByText('die-1'));
+        fireEvent.click(screen.getByText('confirm'));
+
+        expect(dispatchLog).toEqual([
+            {
+                type: TRANSPORT_BATCH_COMMAND,
+                payload: {
+                    commands: [
+                        { type: 'REROLL_DIE', payload: { dieId: 0 } },
+                        { type: 'REROLL_DIE', payload: { dieId: 1 } },
+                        {
+                            type: INTERACTION_COMMANDS.CONFIRM,
+                            payload: { interactionId: 'single-confirm-reroll-batch' },
+                        },
+                    ],
+                },
+            },
+        ]);
     });
 });

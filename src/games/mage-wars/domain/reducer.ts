@@ -8,7 +8,10 @@ import {
     updateArenaObject,
     updatePlayer,
 } from './utils';
-import { resolveMageWarsObjectEffectiveLife } from './spellRules';
+import {
+    isMageWarsQuickSpellCounterResponseCardId,
+    resolveMageWarsObjectEffectiveLife,
+} from './spellRules';
 import {
     applyMovementTemporaryTraits,
     applyObjectAbilityTemporaryGrants,
@@ -319,7 +322,7 @@ export function reduceEvent(core: MageWarsCore, event: MageWarsEvent): MageWarsC
             }));
 
         case MAGE_WARS_EVENTS.SPELL_COUNTERED:
-            if (event.payload.responseCardId !== 1825) return core;
+            if (!isMageWarsQuickSpellCounterResponseCardId(event.payload.responseCardId)) return core;
             if (event.payload.caster?.kind === 'arena-object') {
                 const object = core.objects[event.payload.caster.objectId];
                 if (!object) return core;

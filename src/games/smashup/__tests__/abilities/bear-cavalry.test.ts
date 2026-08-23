@@ -423,7 +423,7 @@ describe('bear_cavalry_cub_scout 触发', () => {
         expect(destroyEvent.payload.ownerId).toBe('1');
     });
 
-    it('POD 版斥候也会消灭移入的低力量对手随从', () => {
+    it('POD 版斥候在无交互态不会自动选择消灭移入的低力量对手随从', () => {
         const scout = makeMinion('scout-pod', 'bear_cavalry_cub_scout_pod', '0', 3, { powerModifier: 0 });
         const moved = makeMinion('moved', 'test_minion', '1', 2, { powerModifier: 0 });
         const state = makeState({
@@ -443,7 +443,35 @@ describe('bear_cavalry_cub_scout 触发', () => {
             now: 0,
         });
 
-        expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+
+    it('POD 版斥候在有交互态时会让玩家确认是否消灭', () => {
+        const scout = makeMinion('scout-pod', 'bear_cavalry_cub_scout_pod', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 2, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({ minions: [scout, moved] }),
+            ],
+        });
+
+        const result = fireTriggers(state, 'onMinionMoved', {
+            state,
+            matchState: makeMatchState(state),
+            playerId: '0',
+            baseIndex: 0,
+            moveToBaseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'bear_cavalry_cub_scout_pod_destroy');
+        expect(prompt).toBeDefined();
+        expect(getPromptTargetType(prompt)).toBe('generic');
+        expect(getPromptOptions(prompt).map(option => option.id)).toEqual(['yes', 'no']);
     });
 
     it('力量不低于斥候的随从不被消灭', () => {

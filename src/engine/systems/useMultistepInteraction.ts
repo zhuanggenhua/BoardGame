@@ -3,13 +3,14 @@
  *
  * 管理 result / stepCount 本地状态。
  * step() 调用 localReducer（纯本地，不经过 pipeline）。
- * confirm() 调用 toCommands() 生成命令列表并依次 dispatch。
+ * confirm() 调用 toCommands() 生成命令列表；多命令按一次 transport 批次 dispatch。
  * cancel() dispatch SYS_INTERACTION_CANCEL。
  * 交互 ID 变化时自动重置本地状态。
  * maxSteps 达到时自动 confirm。
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { TRANSPORT_BATCH_COMMAND, type TransportBatchCommand } from '../batchDispatchCommand';
 import { INTERACTION_COMMANDS, type InteractionDescriptor, type MultistepChoiceData } from './InteractionSystem';
 
 export interface MultistepInteractionState<TResult> {
@@ -50,6 +51,16 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
 
     // 防止 auto-confirm（step 达到 maxSteps）和手动 confirm 重复 dispatch
     const confirmedRef = useRef(false);
+
+    const dispatchCommands = useCallback((commands: TransportBatchCommand[]) => {
+        if (commands.length === 0) return;
+        if (commands.length === 1) {
+            const command = commands[0]!;
+            dispatch(command.type, command.payload);
+            return;
+        }
+        dispatch(TRANSPORT_BATCH_COMMAND, { commands });
+    }, [dispatch]);
 
     useEffect(() => {
         resultRef.current = result;
@@ -113,16 +124,19 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
                     const confirmId = interactionId;
                     // 用 queueMicrotask 确保在当前 React 渲染批次完成后再 dispatch
                     queueMicrotask(() => {
-                        for (const cmd of commands) {
-                            dispatch(cmd.type, cmd.payload);
-                        }
-                        dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
+                        dispatchCommands([
+                            ...commands,
+                            {
+                                type: INTERACTION_COMMANDS.CONFIRM,
+                                payload: { interactionId: confirmId },
+                            },
+                        ]);
                     });
                 }
             }
             return next;
         });
-    }, [data, dispatch, interactionId]);
+    }, [data, dispatchCommands, interactionId]);
 
     const confirm = useCallback(() => {
         if (!data || resultRef.current === null) return;
@@ -138,14 +152,19 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         const commands = data.toCommands(resultRef.current);
         // 捕获当前 interactionId，防止闭包中引用变化
         const confirmId = interactionId;
-        for (const cmd of commands) {
-            dispatch(cmd.type, cmd.payload);
-        }
         if (shouldResolve) {
             // 所有业务命令 dispatch 完后，发送确认信号 resolve 交互（携带 interactionId 防止误 resolve 下一个交互）
-            dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: confirmId });
+            dispatchCommands([
+                ...commands,
+                {
+                    type: INTERACTION_COMMANDS.CONFIRM,
+                    payload: { interactionId: confirmId },
+                },
+            ]);
             return;
         }
+
+        dispatchCommands(commands);
 
         const nextResult = data.initialResult ?? null;
         resultRef.current = nextResult;
@@ -153,7 +172,7 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         setResult(nextResult);
         setStepCount(0);
         confirmedRef.current = false;
-    }, [data, dispatch, getCompletedStepCount, interactionId]);
+    }, [data, dispatchCommands, getCompletedStepCount, interactionId]);
 
     const cancel = useCallback(() => {
         if (!interaction) return;

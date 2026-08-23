@@ -486,25 +486,8 @@ const werewolfChewToyProgram = createBranchProgram<WerewolfChewToyContext, Smash
         events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
     })),
     else: createBranchProgram({
-        when: (context) => context.ownMinions.length === 1 && !context.matchState,
-        then: createEffectProgram((context) => {
-            const [selected] = context.ownMinions;
-            return resolveWerewolfChewToySourceSelection(
-                context.matchState,
-                context.playerId,
-                {
-                    minionUid: selected.uid,
-                    minionDefId: selected.defId,
-                    baseIndex: selected.baseIndex,
-                    defId: selected.defId,
-                },
-                context.now,
-                {
-                    cardUid: context.sourceCardUid,
-                    defId: context.sourceDefId,
-                },
-            );
-        }),
+        when: (context) => !context.matchState,
+        then: createEffectProgram(() => ({ events: [] })),
         else: werewolfChewToyPromptProgram,
     }),
 });
@@ -681,21 +664,8 @@ const werewolfLetTheDogOutProgram = createBranchProgram<
         events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
     })),
     else: createBranchProgram({
-        when: (context) => context.ownMinions.length === 1 && !context.matchState,
-        then: createEffectProgram((context) => {
-            const [selected] = context.ownMinions;
-            return resolveWerewolfLetTheDogOutSourceSelection(
-                context.matchState,
-                context.playerId,
-                {
-                    minionUid: selected.uid,
-                    minionDefId: selected.defId,
-                    baseIndex: selected.baseIndex,
-                    defId: selected.defId,
-                },
-                context.now,
-            );
-        }),
+        when: (context) => !context.matchState,
+        then: createEffectProgram(() => ({ events: [] })),
         else: werewolfLetTheDogOutPromptProgram,
     }),
 });

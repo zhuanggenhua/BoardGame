@@ -1,5 +1,4 @@
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
-import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import type { EngineSystem } from '../../../engine/systems/types';
 import {
@@ -10,7 +9,6 @@ import {
     MAGE_WARS_EVENTS,
     type MageWarsArenaObjectDefenseRolledEvent,
     type MageWarsEvent,
-    type MageWarsSpellCastResolvedEvent,
 } from './events';
 import {
     createMageWarsArenaObjectSourceConsumedEvent,
@@ -24,9 +22,12 @@ import { resolveMageWarsSpellAttackAfterDefense } from './spellAbilityExecutors'
 import {
     getMageWarsPlayerDefenseProfile,
     getMageWarsObjectDefenseProfile,
+    getMageWarsObjectAttackProfile,
     isMageWarsObjectDefenseProfileAutomatic,
     isMageWarsLivingArenaObject,
-    resolveMageWarsObjectEffectiveLife,
+    isMageWarsHiddenResponseCardId,
+    isMageWarsTargetSpellCounterResponseCardId,
+    type MageWarsHiddenResponseCardId,
 } from './spellRules';
 import type { MageWarsCore } from './types';
 import {
@@ -34,7 +35,6 @@ import {
     type MageWarsResponseContext,
 } from './responseResolution';
 import { getArenaObject } from './utils';
-import { getMageWarsObjectAttackProfile } from './spellRules';
 
 export const MAGE_WARS_INTERACTION_SOURCE_IDS = {
     COUNTERSTRIKE_CHOICE: 'mw.counterstrike.choice',
@@ -48,7 +48,7 @@ export type MageWarsEnchantmentResponseChoiceValue = {
     action: 'reveal';
     responseId: string;
     responseObjectId: string;
-    responseCardId: 1825 | 1901 | 1904;
+    responseCardId: MageWarsHiddenResponseCardId;
 };
 
 export type MageWarsUpkeepCostChoiceValue = {
@@ -123,10 +123,6 @@ export type MageWarsDefenseChoiceValue =
         counterstrikeSourceObjectId?: string;
         spellCardId?: number;
     };
-
-function isSpellCastResolvedEvent(event: GameEvent): event is MageWarsSpellCastResolvedEvent {
-    return event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED;
-}
 
 function isInteractionResolvedEvent(event: GameEvent): event is GameEvent<typeof INTERACTION_EVENTS.RESOLVED, {
     sourceId?: string;
@@ -203,7 +199,7 @@ function isEnchantmentResponseChoiceValue(value: unknown): value is MageWarsEnch
     return candidate.action === 'reveal'
         && typeof candidate.responseId === 'string'
         && typeof candidate.responseObjectId === 'string'
-        && (candidate.responseCardId === 1825 || candidate.responseCardId === 1901 || candidate.responseCardId === 1904);
+        && isMageWarsHiddenResponseCardId(candidate.responseCardId);
 }
 
 function resolveAttackAfterDefenseChoice(
@@ -311,7 +307,7 @@ function resolveMageWarsEnchantmentResponse(
             },
             sourceCommandType: context.sourceCommandType,
             timestamp,
-        }, ...(context.responseCardId === 1901 && context.caster.kind === 'mage' ? [{
+        }, ...(isMageWarsTargetSpellCounterResponseCardId(context.responseCardId) && context.caster.kind === 'mage' ? [{
             type: MAGE_WARS_EVENTS.SPELL_DISCARDED,
             payload: {
                 playerId: context.triggeringPlayerId,
@@ -358,8 +354,8 @@ function resolveMageWarsEnchantmentResponse(
             payload: {
                 objectId: responseObject.id,
                 ownerId: responseObject.ownerId,
-                sourceAbilityId: 'mw.spell.1904.response',
-                spellCardId: 1904,
+                sourceAbilityId: `mw.spell.${context.responseCardId}.response`,
+                spellCardId: context.responseCardId,
             },
             sourceCommandType: context.sourceCommandType,
             timestamp,
@@ -396,8 +392,8 @@ function resolveMageWarsEnchantmentResponse(
         payload: {
             objectId: responseObject.id,
             ownerId: responseObject.ownerId,
-            sourceAbilityId: 'mw.spell.1904.response',
-            spellCardId: 1904,
+            sourceAbilityId: `mw.spell.${context.responseCardId}.response`,
+            spellCardId: context.responseCardId,
         },
         sourceCommandType: context.sourceCommandType,
         timestamp,
@@ -467,37 +463,6 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
             const events: GameEvent[] = [];
 
             for (const event of ctx.events) {
-                if (isSpellCastResolvedEvent(event)) {
-                    if (event.payload.caster.kind !== 'arena-object') continue;
-                    const caster = nextState.core.objects[event.payload.caster.objectId];
-                    if (
-                        !caster
-                        || caster.kind !== 'creature'
-                        || caster.ownerId !== event.payload.caster.ownerId
-                        || !caster.spellcastingSource
-                    ) continue;
-
-                    const curseSources = Object.values(nextState.core.objects).filter((object) => (
-                        object.kind === 'enchantment'
-                        && object.sourceSpellCardId === 1804
-                        && object.anchoredToObjectId === caster.id
-                    ));
-                    for (const _source of curseSources) {
-                        events.push(...createDamageCalculation({
-                            state: nextState,
-                            source: { playerId: caster.ownerId, abilityId: 'mw.spell.1804' },
-                            target: { playerId: caster.id },
-                            baseDamage: 1,
-                            autoCollectTokens: false,
-                            autoCollectStatus: false,
-                            autoCollectBonusDamage: false,
-                            damageScope: 'direct',
-                            timestamp: event.timestamp ?? 0,
-                        }).toEvents() as MageWarsEvent[]);
-                    }
-                    continue;
-                }
-
                 if (isInteractionResolvedEvent(event)) {
                     if (event.payload.sourceId === MAGE_WARS_INTERACTION_SOURCE_IDS.ENCHANTMENT_RESPONSE_REVEAL) {
                         if (!isEnchantmentResponseChoiceValue(event.payload.value)) continue;
@@ -608,36 +573,18 @@ export function createMageWarsInteractionSystem(): EngineSystem<MageWarsCore> {
                             timestamp: event.timestamp,
                         });
 
-                        const damageEvents = createDamageCalculation({
-                            state: nextState,
-                            source: { playerId: player.id, abilityId: sourceAbilityId },
-                            target: { playerId: target.id },
-                            baseDamage: actualHealing,
-                            autoCollectTokens: false,
-                            autoCollectStatus: false,
-                            autoCollectBonusDamage: false,
-                            damageScope: 'direct',
-                            timestamp: event.timestamp ?? 0,
-                        }).toEvents() as MageWarsEvent[];
-                        events.push(...damageEvents);
-
-                        const damageAmount = damageEvents.reduce((total, damageEvent) => {
-                            if (damageEvent.type !== 'DAMAGE_DEALT') return total;
-                            return total + (damageEvent.payload.actualDamage ?? damageEvent.payload.amount);
-                        }, 0);
-                        if (damageAmount > 0 && target.damage + damageAmount >= resolveMageWarsObjectEffectiveLife(nextState.core, target)) {
-                            events.push({
-                                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
-                                payload: {
-                                    objectId: target.id,
-                                    ownerId: target.ownerId,
-                                    sourceAbilityId,
-                                    spellCardId: source.sourceSpellCardId,
-                                },
-                                sourceCommandType: ctx.command.type,
-                                timestamp: event.timestamp,
-                            });
-                        }
+                        events.push({
+                            type: MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_DAMAGE_AVAILABLE,
+                            payload: {
+                                playerId: player.id,
+                                sourceObjectId: source.id,
+                                sourceSpellCardId: source.sourceSpellCardId,
+                                targetObjectId: target.id,
+                                amount: actualHealing,
+                            },
+                            sourceCommandType: ctx.command.type,
+                            timestamp: event.timestamp,
+                        });
                         continue;
                     }
                     if (event.payload.sourceId === MAGE_WARS_INTERACTION_SOURCE_IDS.COUNTERSTRIKE_CHOICE) {

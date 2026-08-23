@@ -231,6 +231,7 @@ const ResponseWindowHint: React.FC<{
                         <button
                             type="button"
                             data-testid="dicethrone-response-pass-button"
+                            data-tutorial-id="response-pass-button"
                             onClick={handleClick}
                             className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] px-[1vw] text-[0.78vw] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
                             style={{

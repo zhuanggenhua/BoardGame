@@ -86,6 +86,10 @@ export async function executeLocalAiCommandWithProgress(args: {
         effect,
     });
 
+    if (effect.rejected) {
+        return effect;
+    }
+
     if (!effect.hasStateDelta) {
         logLocalAiPerfWarn('command-no-progress', commandProgressPayload);
         return effect;
@@ -157,9 +161,18 @@ export async function executeLocalAiCommandBatch(args: {
     turnTimeline?: LocalAiTurnTimeline;
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
+    getRandomCursor?: () => number;
+    restoreBatchSnapshot?: (snapshot: { state: MatchState<unknown>; randomCursor: number | null }) => void;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
-}): Promise<{ hasAnyCommandEffect: boolean }> {
+}): Promise<{
+    hasAnyCommandEffect: boolean;
+    rolledBack: boolean;
+    failedCommandType?: string;
+    failureReason?: string;
+}> {
+    const snapshotState = args.getState();
+    const snapshotRandomCursor = args.getRandomCursor?.() ?? null;
     let hasAnyCommandEffect = false;
 
     for (const [commandIndex, command] of args.commands.entries()) {
@@ -180,10 +193,33 @@ export async function executeLocalAiCommandBatch(args: {
             commandEffectsByToken: args.commandEffectsByToken,
             engineConfig: args.engineConfig,
         });
+        if (effect.rejected) {
+            args.restoreBatchSnapshot?.({
+                state: snapshotState,
+                randomCursor: snapshotRandomCursor,
+            });
+            logLocalAiPerfWarn('batch-rolled-back', {
+                gameId: args.gameId,
+                matchId: `local:${args.gameId}:${args.seed}`,
+                playerId: args.playerId,
+                source: args.source,
+                actionKind: args.actionKind,
+                failedCommandType: command.type,
+                failureReason: effect.failureReason ?? 'command_failed',
+                commandIndex,
+                commandTotal: args.commands.length,
+            });
+            return {
+                hasAnyCommandEffect: false,
+                rolledBack: true,
+                failedCommandType: command.type,
+                failureReason: effect.failureReason,
+            };
+        }
         if (effect.hasStateDelta) {
             hasAnyCommandEffect = true;
         }
     }
 
-    return { hasAnyCommandEffect };
+    return { hasAnyCommandEffect, rolledBack: false };
 }

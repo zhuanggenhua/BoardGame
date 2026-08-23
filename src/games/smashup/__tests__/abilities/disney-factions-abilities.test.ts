@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { hasActiveBaseAbility, hasBaseAbility, triggerActiveBaseAbility, triggerBaseAbility } from '../../domain/baseAbilities';
+import { fireTriggers } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
@@ -802,6 +803,58 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(getEffectivePower(core, core.bases[0].minions[4], 0)).toBe(0);
     });
 
+    it('乌基布基移动角色时必须按玩家选择的目的地移动', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_halloween_town', [
+                    makeMinion('oogie-host', 'frozen_anna', '1', 3),
+                ]),
+                makeBase('base_spiral_hill'),
+                makeBase('base_alpha'),
+            ],
+        });
+        const result = invokeRegisteredAbilityContract('nightmare_before_christmas_oogie_boogie', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'oogie',
+            defId: 'nightmare_before_christmas_oogie_boogie',
+            baseIndex: 0,
+            targetMinionUid: 'oogie-host',
+            random: FIXED_RANDOM,
+            now: 41,
+        });
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'nightmare_before_christmas_oogie_boogie_move_character');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).filter(option => option.value?.targetBaseIndex !== undefined)
+            .map(option => option.value?.targetBaseIndex)).toEqual([1, 2]);
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.targetBaseIndex === 2,
+            'move Oogie Boogie host to selected base',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.MINION_MOVED
+            && (event as any).payload.minionUid === 'oogie-host'
+            && (event as any).payload.toBaseIndex === 2,
+        )).toBe(true);
+
+        const noInteraction = invokeRegisteredAbilityContract('nightmare_before_christmas_oogie_boogie', 'onPlay', {
+            state: core,
+            matchState: undefined,
+            playerId: '0',
+            cardUid: 'oogie',
+            defId: 'nightmare_before_christmas_oogie_boogie',
+            baseIndex: 0,
+            targetMinionUid: 'oogie-host',
+            random: FIXED_RANDOM,
+            now: 42,
+        });
+        expect(noInteraction.events).toEqual([]);
+    });
+
     it('圣诞夜惊魂检索或额外打出角色修正牌时必须由玩家选择具体牌', () => {
         const core = makeState({
             players: {
@@ -1396,6 +1449,49 @@ describe('迪士尼四派系代表性玩法行为', () => {
         } as any]);
         expect(cleared.bases[1].minions[0].metadata?.kingCandyCounterSuppressedBy).toBeUndefined();
         expect(getEffectivePower(cleared, cleared.bases[1].minions[0], 1)).toBe(8);
+    });
+
+    it('甜蜜冲刺车手触发后必须让玩家选择是否移出当前基地', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [
+                makeBase('base_the_dump', [
+                    makeMinion('racer', 'wreck_it_ralph_sugar_rush_racer', '0', 2),
+                ]),
+                makeBase('base_the_power_strip'),
+                makeBase('base_alpha'),
+            ],
+        });
+
+        const prompted = fireTriggers(core, 'onActionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            actionTargetBaseIndex: 0,
+            triggerCardDefId: 'wreck_it_ralph_king_candy',
+            random: FIXED_RANDOM,
+            now: 82,
+        });
+
+        expect(prompted.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(prompted.matchState!, 'wreck_it_ralph_sugar_rush_racer_move');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.baseIndex ?? (option.value?.skip ? 'skip' : undefined))).toEqual(['skip', 1, 2]);
+
+        const resolved = respondToPromptOption(
+            prompted.matchState!,
+            option => option.value?.baseIndex === 2,
+            '甜蜜冲刺车手选择第三个基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual([]);
+        expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toEqual(['racer']);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_MOVED,
+            payload: expect.objectContaining({ minionUid: 'racer', toBaseIndex: 2 }),
+        }));
     });
 
     it('阿修进场从弃牌堆拿基地修正牌时必须等待玩家选择，不自动拿第一张', () => {

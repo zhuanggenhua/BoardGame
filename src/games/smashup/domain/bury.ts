@@ -291,7 +291,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
             if (!targetMinionUid && options.length === 0) {
                 return { state: matchState, events: [], discardWithoutPlay: true };
             }
-            if (!targetMinionUid && options.length > 1) {
+            if (!targetMinionUid && options.length > 0) {
                 const interaction = createSimpleChoice(
                     `bury_uncover_ongoing_target_${now}`,
                     playerId,
@@ -301,6 +301,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                         sourceId: 'bury_uncover_ongoing_target',
                         targetType: 'minion',
                         titleKey: 'ui.bury_uncover_ongoing_target_title',
+                        autoResolveIfSingle: false,
                     },
                 );
                 (interaction.data as any).continuationContext = { cardUid: buried.uid, defId: buried.defId, baseIndex };
@@ -313,14 +314,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                     targetBaseIndex: targetBaseIndex
                         ?? matchState.core.bases.findIndex(entry => entry.minions.some(minion => minion.uid === targetMinionUid)),
                 }
-                : (() => {
-                    const singleValue = options[0]?.value as { minionUid?: string; baseIndex?: number } | undefined;
-                    if (!singleValue?.minionUid || singleValue.baseIndex === undefined) return undefined;
-                    return {
-                        targetMinionUid: singleValue.minionUid,
-                        targetBaseIndex: singleValue.baseIndex,
-                    };
-                })();
+                : undefined;
             if (!resolvedTarget || resolvedTarget.targetBaseIndex === undefined || resolvedTarget.targetBaseIndex < 0) {
                 return { state: matchState, events: [], discardWithoutPlay: true };
             }

@@ -33,7 +33,7 @@ import { collectLegalActionPlayTargets, validateActionPlaySemantics, validateImm
 import type { ActionCardDef, CardInstance, MinionOnBase, MinionPlayedEvent, OngoingDetachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 
-type MinionChoice = { minionUid?: string; defId?: string; baseIndex?: number; skip?: boolean };
+type MinionChoice = { minionUid?: string; defId?: string; baseIndex?: number; toBaseIndex?: number; skip?: boolean };
 type BaseChoice = { baseIndex?: number; baseDefId?: string; skip?: boolean };
 type PlayerChoice = { playerId?: PlayerId; skip?: boolean };
 type ActionPlayChoice = { mode?: 'play' | 'return'; targetBaseIndex?: number; targetMinionUid?: string; skip?: boolean };
@@ -131,10 +131,6 @@ function otherBaseOptions(core: SmashUpCore, fromBaseIndex: number) {
             .filter(option => option.baseIndex !== fromBaseIndex),
         core,
     );
-}
-
-function firstOtherBaseIndex(core: SmashUpCore, fromBaseIndex: number): number | undefined {
-    return core.bases.findIndex((_base, index) => index !== fromBaseIndex);
 }
 
 function ownMinionOptions(core: SmashUpCore, playerId: PlayerId, predicate?: (minion: MinionOnBase, baseIndex: number) => boolean) {
@@ -368,6 +364,51 @@ function queueMoveOwnMinion(ctx: AbilityContext, sourceId: string, predicate?: (
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function buildMoveOwnMinionToOtherBaseOptions(
+    ctx: AbilityContext,
+    predicate?: (minion: MinionOnBase, baseIndex: number) => boolean,
+) {
+    return ownMinionOptions(ctx.state, ctx.playerId, predicate)
+        .flatMap(candidate => otherBaseOptions(ctx.state, candidate.baseIndex).map(destination => ({
+            id: `${candidate.uid}-${destination.value.baseIndex}`,
+            label: `${candidate.label} -> ${destination.label}`,
+            value: {
+                minionUid: candidate.uid,
+                defId: candidate.defId,
+                baseIndex: candidate.baseIndex,
+                toBaseIndex: destination.value.baseIndex,
+            } satisfies MinionChoice,
+            displayMode: 'button' as const,
+        })));
+}
+
+function queueMoveOwnMinionToOtherBase(
+    ctx: AbilityContext,
+    sourceId: string,
+    predicate?: (minion: MinionOnBase, baseIndex: number) => boolean,
+): AbilityResult {
+    const options = buildMoveOwnMinionToOtherBaseOptions(ctx, predicate);
+    if (options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        `${sourceId}_${ctx.now}`,
+        ctx.playerId,
+        MOVE_OWN_MINION_TITLES[sourceId] ?? sourceId,
+        [
+            createSkipOption(),
+            ...options,
+        ],
+        {
+            sourceId,
+            titleKey: `ui.${sourceId}_title`,
+            targetType: 'generic',
+            genericIntent: 'composite-context',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
 function ramTalent(ctx: AbilityContext): AbilityResult {
     const live = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!live || live.minion.controller !== ctx.playerId) return { events: [] };
@@ -397,11 +438,11 @@ function littleBoPeepTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function eweShallPass(ctx: AbilityContext): AbilityResult {
-    return queueMoveOwnMinion(ctx, 'sheep_ewe_shall_pass');
+    return queueMoveOwnMinionToOtherBase(ctx, 'sheep_ewe_shall_pass');
 }
 
 function onTheLamb(ctx: AbilityContext): AbilityResult {
-    return queueMoveOwnMinion(
+    return queueMoveOwnMinionToOtherBase(
         ctx,
         'sheep_on_the_lamb',
         (_minion, baseIndex) => {
@@ -540,10 +581,10 @@ function registerMoveInteractionHandlers(): void {
 
     registerInteractionHandler('sheep_ewe_shall_pass', (state, playerId, value, _data, random, timestamp) => {
         const selected = value as MinionChoice | undefined;
-        if (selected?.skip || !selected?.minionUid || !selected.defId || selected.baseIndex === undefined) {
+        if (selected?.skip || !selected?.minionUid || !selected.defId || selected.baseIndex === undefined || selected.toBaseIndex === undefined) {
             return { state, events: [] };
         }
-        const destination = firstOtherBaseIndex(state.core, selected.baseIndex);
+        const destination = selected.toBaseIndex;
         if (destination === undefined || destination < 0) return { state, events: [] };
         return {
             state,
@@ -557,10 +598,10 @@ function registerMoveInteractionHandlers(): void {
 
     registerInteractionHandler('sheep_on_the_lamb', (state, playerId, value, _data, _random, timestamp) => {
         const selected = value as MinionChoice | undefined;
-        if (selected?.skip || !selected?.minionUid || !selected.defId || selected.baseIndex === undefined) {
+        if (selected?.skip || !selected?.minionUid || !selected.defId || selected.baseIndex === undefined || selected.toBaseIndex === undefined) {
             return { state, events: [] };
         }
-        const destination = firstOtherBaseIndex(state.core, selected.baseIndex);
+        const destination = selected.toBaseIndex;
         const sourceBase = state.core.bases[selected.baseIndex];
         if (destination === undefined || destination < 0 || !sourceBase) return { state, events: [] };
         const otherPlayer = sourceBase.minions.find(minion => minion.controller !== playerId)?.controller;
@@ -583,6 +624,35 @@ function registerMoveInteractionHandlers(): void {
                 sourceKind: 'action',
                 batchId,
             })),
+        };
+    });
+
+    registerInteractionHandler('sheep_black_sheep', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as BaseChoice | undefined;
+        const context = data as { minionUid?: string; fromBaseIndex?: number; sourceControllerId?: PlayerId } | undefined;
+        const minionUid = context?.minionUid;
+        const fromBaseIndex = context?.fromBaseIndex;
+        const toBaseIndex = selected?.baseIndex;
+        if (selected?.skip || !minionUid || fromBaseIndex === undefined || toBaseIndex === undefined || fromBaseIndex === toBaseIndex) {
+            return { state, events: [] };
+        }
+        const live = state.core.bases[fromBaseIndex]?.minions.find(minion => minion.uid === minionUid);
+        if (!live || live.controller !== (context?.sourceControllerId ?? playerId)) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state.core, {
+                minionUid: live.uid,
+                minionDefId: live.defId,
+                fromBaseIndex,
+                toBaseIndex,
+                reason: 'sheep_black_sheep',
+                now: timestamp,
+                sourcePlayerId: context?.sourceControllerId ?? playerId,
+                sourceDefId: 'sheep_black_sheep',
+                sourceControllerId: context?.sourceControllerId ?? playerId,
+                sourceBaseIndex: fromBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -835,21 +905,28 @@ function registerSheepTriggers(): void {
 
     registerTrigger('sheep_black_sheep', 'onMinionPlayed', (ctx) => {
         if (ctx.sourceCardUid === undefined || ctx.sourceBaseIndex === undefined) return [];
-        const destination = firstOtherBaseIndex(ctx.state, ctx.sourceBaseIndex);
-        if (destination === undefined || destination < 0) return [];
-        return buildValidatedMoveEvents(ctx.matchState ?? ctx.state, {
-            minionUid: ctx.sourceCardUid,
-            minionDefId: 'sheep_black_sheep',
-            fromBaseIndex: ctx.sourceBaseIndex,
-            toBaseIndex: destination,
-            reason: 'sheep_black_sheep',
-            now: ctx.now,
-            sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
-            sourceDefId: 'sheep_black_sheep',
-            sourceControllerId: ctx.sourceControllerId,
-            sourceBaseIndex: ctx.sourceBaseIndex,
-            sourceKind: 'nonAction',
-        });
+        const options = otherBaseOptions(ctx.state, ctx.sourceBaseIndex);
+        if (options.length === 0 || !ctx.matchState) return [];
+        const interaction = createSimpleChoice(
+            `sheep_black_sheep_${ctx.now}`,
+            ctx.sourceControllerId ?? ctx.playerId,
+            '黑羊：选择要移动到的基地',
+            options,
+            {
+                sourceId: 'sheep_black_sheep',
+                titleKey: 'ui.sheep_black_sheep_title',
+                targetType: 'base',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        (interaction.data as { minionUid?: string; fromBaseIndex?: number; sourceControllerId?: PlayerId }).minionUid = ctx.sourceCardUid;
+        (interaction.data as { minionUid?: string; fromBaseIndex?: number; sourceControllerId?: PlayerId }).fromBaseIndex = ctx.sourceBaseIndex;
+        (interaction.data as { minionUid?: string; fromBaseIndex?: number; sourceControllerId?: PlayerId }).sourceControllerId = ctx.sourceControllerId ?? ctx.playerId;
+        return {
+            events: [],
+            matchState: queueInteraction(ctx.matchState, interaction),
+        };
     }, {
         perInstance: true,
         mandatory: true,

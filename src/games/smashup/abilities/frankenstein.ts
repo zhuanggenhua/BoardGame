@@ -883,10 +883,7 @@ function registerFrankensteinOngoingEffects(): void {
         if (options.length === 0) return [];
 
         const reasonDefId = ctx.triggerMinionDefId;
-        if (!ctx.matchState) {
-            const selected = options[0].value;
-            return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, reasonDefId, ctx.now)];
-        }
+        if (!ctx.matchState) return [];
 
         return runtimeResultToTriggerResult(
             executeAbilityProgram(

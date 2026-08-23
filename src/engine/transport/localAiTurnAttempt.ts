@@ -27,6 +27,8 @@ export async function runLocalAiTurnAttempt(args: {
     setDelayTimer: (handle: ReturnType<typeof setTimeout> | null) => void;
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
+    getRandomCursor?: () => number;
+    restoreBatchSnapshot?: (snapshot: { state: MatchState<unknown>; randomCursor: number | null }) => void;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     scheduleRetry: () => void;
     onVisibleActionAt: (timestamp: number) => void;
@@ -101,6 +103,8 @@ export async function runLocalAiTurnAttempt(args: {
         setPendingDelayHandle: args.setPendingDelayHandle,
         dispatch: args.dispatch,
         getState: args.getState,
+        getRandomCursor: args.getRandomCursor,
+        restoreBatchSnapshot: args.restoreBatchSnapshot,
         commandEffectsByToken: args.commandEffectsByToken,
         activeAttemptKeyRef: args.lastAiAttemptKeyRef,
         markerBeforeDispatch: progressMarkerBeforeDispatch,

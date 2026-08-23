@@ -104,6 +104,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { GameProvider, useGameClient } from '../react';
+import { TRANSPORT_BATCH_COMMAND } from '../../batchDispatchCommand';
 import { useEventStreamRollback } from '../../hooks/EventStreamRollbackContext';
 
 function StateProbe(): JSX.Element {
@@ -158,6 +159,30 @@ function DoubleAdvanceProbe(): JSX.Element {
             }}
         >
             double advance
+        </button>
+    );
+}
+
+function TransportBatchProbe(): JSX.Element {
+    const { dispatch } = useGameClient();
+
+    return (
+        <button
+            data-testid="dispatch-transport-batch"
+            onClick={() => {
+                dispatch(TRANSPORT_BATCH_COMMAND, {
+                    commands: [
+                        { type: 'REROLL_DIE', payload: { dieId: 0 } },
+                        { type: 'REROLL_DIE', payload: { dieId: 1 } },
+                        {
+                            type: 'SYS_INTERACTION_CONFIRM',
+                            payload: { interactionId: 'multi-reroll' },
+                        },
+                    ],
+                });
+            }}
+        >
+            transport batch
         </button>
     );
 }
@@ -1136,6 +1161,101 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
         expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+    });
+
+    it('sends an interaction transport batch as one server batch without per-command optimistic gating', () => {
+        let hasPending = false;
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => hasPending),
+            reconcile: vi.fn((state: unknown) => {
+                hasPending = false;
+                return {
+                    stateToRender: state,
+                    didRollback: false,
+                    optimisticEventWatermark: null,
+                };
+            }),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(() => {
+                hasPending = false;
+            }),
+            processCommand: vi.fn(() => {
+                hasPending = true;
+                return {
+                    stateToRender: {
+                        core: { marker: 'predicted-single-command' },
+                        sys: {
+                            interaction: {
+                                current: undefined,
+                                queue: [],
+                                isBlocked: false,
+                            },
+                            eventStream: { entries: [], nextId: 1 },
+                        },
+                    },
+                    shouldSend: true,
+                    animationMode: 'wait-confirm',
+                };
+            }),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-transport-batch"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{ optimistic: { enabled: true } } as any}
+            >
+                <TransportBatchProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        act(() => {
+            client.emitStateUpdate({
+                core: { marker: 'authoritative-start' },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    eventStream: { entries: [], nextId: 1 },
+                },
+            }, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        client.sendCommand.mockClear();
+        client.sendBatch.mockClear();
+        mockEngine.hasPendingCommands.mockClear();
+        mockEngine.processCommand.mockClear();
+
+        act(() => {
+            screen.getByTestId('dispatch-transport-batch').click();
+        });
+
+        expect(client.sendCommand).not.toHaveBeenCalled();
+        expect(mockEngine.processCommand).not.toHaveBeenCalled();
+        expect(mockEngine.hasPendingCommands).toHaveBeenCalledTimes(1);
+        expect(client.sendBatch).toHaveBeenCalledTimes(1);
+        expect(client.sendBatch).toHaveBeenCalledWith(
+            expect.any(String),
+            [
+                { type: 'REROLL_DIE', payload: { dieId: 0 } },
+                { type: 'REROLL_DIE', payload: { dieId: 1 } },
+                {
+                    type: 'SYS_INTERACTION_CONFIRM',
+                    payload: { interactionId: 'multi-reroll' },
+                },
+            ],
+            undefined,
+            expect.any(Function),
+        );
     });
 
     it('rolls back optimistic render and resyncs when the predicted command is not sent', () => {

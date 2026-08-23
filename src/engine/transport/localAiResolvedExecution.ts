@@ -39,6 +39,8 @@ export async function executeResolvedLocalAiAction(args: {
     setPendingDelayHandle: (handle: CancelableAiDelayHandle | null) => void;
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
+    getRandomCursor?: () => number;
+    restoreBatchSnapshot?: (snapshot: { state: MatchState<unknown>; randomCursor: number | null }) => void;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     activeAttemptKeyRef: { current: string | null };
     markerBeforeDispatch: string;
@@ -126,6 +128,8 @@ export async function executeResolvedLocalAiAction(args: {
         turnTimeline,
         dispatch: args.dispatch,
         getState: args.getState,
+        getRandomCursor: args.getRandomCursor,
+        restoreBatchSnapshot: args.restoreBatchSnapshot,
         commandEffectsByToken: args.commandEffectsByToken,
         engineConfig: args.config,
     });

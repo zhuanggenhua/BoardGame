@@ -342,21 +342,6 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             const deck = simulatedDecks.get(targetSprout.controller) ?? [...player.deck];
             simulatedDecks.set(targetSprout.controller, deck);
             const eligible = buildKillerPlantDeckSearchCandidates(deck, 3);
-            if (!matchState && eligible.length > 0) {
-                const [selected] = eligible;
-                simulatedDecks.set(targetSprout.controller, deck.filter((card) => card.uid !== selected.cardUid));
-                events.push(...buildKillerPlantDeckSearchResolutionEvents({
-                    core: ctx.state,
-                    deck,
-                    playerId: targetSprout.controller,
-                    selection: { cardUid: selected.cardUid, defId: selected.defId },
-                    baseIndex: sproutBaseIndex,
-                    abilitySourceId: 'killer_plant_sprout',
-                    timestamp: ctx.now,
-                }));
-                return { events, matchState };
-            }
-
             const result = executeAbilityProgram(killerPlantSproutProgram, {
                 core: ctx.state,
                 matchState,
@@ -404,21 +389,6 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             const deck = simulatedDecks.get(m.controller) ?? [...player.deck];
             simulatedDecks.set(m.controller, deck);
             const eligible = buildKillerPlantDeckSearchCandidates(deck, 3);
-            if (!matchState && eligible.length > 0) {
-                const [selected] = eligible;
-                simulatedDecks.set(m.controller, deck.filter((card) => card.uid !== selected.cardUid));
-                events.push(...buildKillerPlantDeckSearchResolutionEvents({
-                    core: ctx.state,
-                    deck,
-                    playerId: m.controller,
-                    selection: { cardUid: selected.cardUid, defId: selected.defId },
-                    baseIndex: sproutBaseIndex,
-                    abilitySourceId: 'killer_plant_sprout',
-                    timestamp: ctx.now,
-                }));
-                continue;
-            }
-
             const result = executeAbilityProgram(killerPlantSproutProgram, {
                 core: ctx.state,
                 matchState,
@@ -599,21 +569,7 @@ const killerPlantVenusManTrapProgram = createBranchProgram<
     })),
     else: createBranchProgram({
         when: (context) => !context.matchState,
-        then: createEffectProgram((context) => {
-            const [selected] = context.eligible;
-            if (!selected) return { events: [] };
-            return {
-                events: buildKillerPlantDeckSearchResolutionEvents({
-                    core: context.core,
-                    deck: context.deck,
-                    playerId: context.playerId,
-                    selection: { cardUid: selected.cardUid, defId: selected.defId },
-                    baseIndex: context.baseIndex,
-                    abilitySourceId: 'killer_plant_venus_man_trap',
-                    timestamp: context.now,
-                }),
-            };
-        }),
+        then: createEffectProgram(() => ({ events: [] })),
         else: killerPlantVenusManTrapPromptProgram,
     }),
 });
@@ -688,21 +644,7 @@ const killerPlantSproutProgram = createBranchProgram<
     })),
     else: createBranchProgram({
         when: (context) => !context.matchState,
-        then: createEffectProgram((context) => {
-            const [selected] = context.eligible;
-            if (!selected) return { events: [] };
-            return {
-                events: buildKillerPlantDeckSearchResolutionEvents({
-                    core: context.core,
-                    deck: context.deck,
-                    playerId: context.playerId,
-                    selection: { cardUid: selected.cardUid, defId: selected.defId },
-                    baseIndex: context.baseIndex,
-                    abilitySourceId: 'killer_plant_sprout',
-                    timestamp: context.now,
-                }),
-            };
-        }),
+        then: createEffectProgram(() => ({ events: [] })),
         else: killerPlantSproutPromptProgram,
     }),
 });

@@ -1287,6 +1287,26 @@ describe('MageWarsBoard spell cast choices', () => {
         };
     }
 
+    function createJetStreamPlayerChoiceCore(): MageWarsCore {
+        const core = createJetStreamChoiceCore();
+        return {
+            ...core,
+            players: {
+                ...core.players,
+                '1': {
+                    ...core.players['1'],
+                    mageZoneId: ARENA_ZONE_IDS.A2,
+                },
+            },
+            arena: core.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A2
+                    ? Array.from(new Set([...zone.occupantIds.filter((id) => id !== '1'), '1']))
+                    : zone.occupantIds.filter((id) => id !== '1'),
+            })),
+        };
+    }
+
     function createLifeDrainChoiceCore(): MageWarsCore {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const warlock = baseCore.players['0'];
@@ -1743,6 +1763,48 @@ describe('MageWarsBoard spell cast choices', () => {
         });
     });
 
+    it('casts Jet Stream by selecting an opposing mage and legal push destination from ChoiceRequest', async () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(createJetStreamPlayerChoiceCore(), '0', { phase: 'initiativeQuickcast' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        const jetStreamPreparedCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="1711"]',
+        );
+        expect(jetStreamPreparedCard).not.toBeNull();
+        fireEvent.click(jetStreamPreparedCard!);
+
+        const opponentMage = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+        );
+        expect(opponentMage).not.toBeNull();
+        await waitFor(() => {
+            expect(opponentMage?.getAttribute('role')).toBe('button');
+            expect(opponentMage?.className).toContain('rgba(16,185,129,0.48)');
+        });
+        const opponentMageFrame = opponentMage?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-entity-target-frame"]');
+        expect(opponentMage?.className).not.toContain('outline');
+        expect(opponentMageFrame?.className).toContain('inset-0');
+        expect(opponentMageFrame?.className).not.toContain('-inset');
+        fireEvent.click(opponentMage!);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('mage-wars-arena-zone-a3').getAttribute('data-legal-target-zone')).toBe('true');
+        });
+        fireEvent.click(screen.getByTestId('mage-wars-arena-zone-a3'));
+
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.CAST_SPELL, {
+            spellCardId: 1711,
+            manaCost: 4,
+            targetPlayerId: '1',
+            pushToZoneId: ARENA_ZONE_IDS.A3,
+        });
+    });
+
     it('casts Life Drain on an opposing mage from the spell ChoiceRequest player target command', async () => {
         const dispatch = vi.fn();
         const { container } = renderBoardWithProviders(
@@ -1766,6 +1828,7 @@ describe('MageWarsBoard spell cast choices', () => {
             expect(opponentMage?.getAttribute('role')).toBe('button');
             expect(opponentMage?.className).toContain('rgba(16,185,129,0.48)');
         });
+        expect(opponentMage?.querySelector('[data-testid="mage-wars-mage-entity-target-frame"]')?.className).toContain('inset-0');
 
         fireEvent.click(opponentMage!);
 
@@ -1974,6 +2037,9 @@ describe('MageWarsBoard spell cast choices', () => {
         await waitFor(() => {
             expect(visibleEnchantmentCard?.getAttribute('data-attachment-role')).toBe('target');
         });
+        const attachmentTargetFrame = visibleEnchantmentCard?.querySelector<HTMLElement>('[data-testid="mage-wars-attachment-target-frame"]');
+        expect(attachmentTargetFrame?.className).toContain('inset-0');
+        expect(attachmentTargetFrame?.className).not.toContain('-inset');
         fireEvent.click(visibleEnchantmentCard!);
 
         await waitFor(() => {
@@ -1981,6 +2047,11 @@ describe('MageWarsBoard spell cast choices', () => {
                 '[data-testid="mage-wars-attached-card"][data-object-id="steal-visible-enchantment-1800"]',
             )?.getAttribute('data-attachment-role')).toBe('source');
         });
+        const attachmentSourceFrame = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-attached-card"][data-object-id="steal-visible-enchantment-1800"] [data-testid="mage-wars-attachment-source-frame"]',
+        );
+        expect(attachmentSourceFrame?.className).toContain('inset-0');
+        expect(attachmentSourceFrame?.className).not.toContain('-inset');
         const friendlyTargetCard = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-zone-field-card"][data-object-id="steal-friendly-cat-0"]',
         );
@@ -2370,7 +2441,14 @@ describe('MageWarsBoard object ability choices', () => {
         await waitFor(() => {
             expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
         });
-        expect(targetCard?.querySelector('[data-testid="mage-wars-field-card-target-frame"]')?.className).toContain('emerald');
+        const targetZone = targetCard?.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]');
+        expect(targetZone?.getAttribute('data-zone-target-scope')).toBe('object');
+        expect(targetZone?.className).not.toContain('outline-emerald');
+        expect(targetZone?.className).not.toContain('rgba(110,231,183');
+        const targetFrame = targetCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-target-frame"]');
+        expect(targetFrame?.className).toContain('emerald');
+        expect(targetFrame?.className).toContain('inset-0');
+        expect(targetFrame?.className).not.toContain('-inset');
         fireEvent.click(targetCard!);
 
         expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
@@ -2396,6 +2474,8 @@ describe('MageWarsBoard object ability choices', () => {
             `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT}"]`,
         );
         expect(abilityButton).not.toBeNull();
+        expect(abilityButton?.getAttribute('data-ability-visual')).toBe('source-card');
+        expect(abilityButton?.querySelector('svg')).toBeNull();
         fireEvent.click(abilityButton!);
         expect(dispatch).not.toHaveBeenCalled();
 
@@ -2405,7 +2485,10 @@ describe('MageWarsBoard object ability choices', () => {
         await waitFor(() => {
             expect(targetCard?.getAttribute('data-field-card-role')).toBe('target');
         });
-        expect(targetCard?.querySelector('[data-testid="mage-wars-field-card-target-frame"]')?.className).toContain('emerald');
+        const targetFrame = targetCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-target-frame"]');
+        expect(targetFrame?.className).toContain('emerald');
+        expect(targetFrame?.className).toContain('inset-0');
+        expect(targetFrame?.className).not.toContain('-inset');
         fireEvent.click(targetCard!);
 
         expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY, {
@@ -2554,7 +2637,10 @@ describe('MageWarsBoard mage ability status choices', () => {
         expect(priestessMage).not.toBeNull();
         fireEvent.click(priestessMage!);
 
-        fireEvent.click(screen.getByTestId('mage-wars-selected-mage-ability-restore'));
+        const restoreButton = screen.getByTestId('mage-wars-selected-mage-ability-restore');
+        expect(restoreButton.getAttribute('data-ability-visual')).toBe('mage-portrait');
+        expect(restoreButton.querySelector('svg')).toBeNull();
+        fireEvent.click(restoreButton);
 
         const targetCard = screen.getByText('Afflicted Angel')
             .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
@@ -2656,18 +2742,20 @@ describe('MageWarsBoard token placement', () => {
     }
 
     it('renders guard tokens below mage and creature cards instead of covering the card face', () => {
-        renderBoardWithProviders(<MageWarsBoard {...boardProps(createGuardTokenPlacementCore())} />);
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps(createGuardTokenPlacementCore())} />);
 
-        const guardImages = screen.getAllByAltText('tokens.guard');
-        expect(guardImages.length).toBeGreaterThanOrEqual(2);
-        for (const guardImage of guardImages) {
-            const tokenRail = guardImage.parentElement;
+        const tokenRails = Array.from(container.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-entity-status-token-rail"]',
+        ));
+        expect(tokenRails.length).toBeGreaterThanOrEqual(2);
+        for (const tokenRail of tokenRails) {
+            expect(tokenRail.querySelector('img[alt="tokens.guard"]')).not.toBeNull();
             expect(tokenRail?.className).toContain('top-full');
             expect(tokenRail?.className).not.toContain('bottom');
         }
     });
 
-    it('renders wounded state as a modern card overlay instead of damage token images', () => {
+    it('renders wounded state as a Summoner Wars style life readout instead of generic badges or damage token images', () => {
         const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps(createWoundedTokenPlacementCore())} />);
 
         const creatureCard = screen.getByText('Wounded Overlay Cat')
@@ -2677,7 +2765,11 @@ describe('MageWarsBoard token placement', () => {
         expect(creatureOverlay).not.toBeNull();
         expect(creatureOverlay?.getAttribute('data-damage')).toBe('2');
         expect(creatureOverlay?.getAttribute('data-life')).toBe('4');
-        expect(creatureOverlay?.querySelector('[data-testid="mage-wars-field-card-damage-overlay-value"]')?.textContent).toBe('2');
+        expect(creatureOverlay?.querySelector('[data-testid="mage-wars-field-card-damage-overlay-value"]')).toBeNull();
+        const creatureLifeReadout = creatureCard?.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-life-readout"]');
+        expect(creatureLifeReadout).not.toBeNull();
+        expect(creatureLifeReadout?.getAttribute('data-life-remaining')).toBe('2');
+        expect(creatureLifeReadout?.querySelector('[data-testid="mage-wars-field-card-life-readout-text"]')?.textContent).toBe('2/4');
 
         const mageEntity = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
@@ -2686,7 +2778,11 @@ describe('MageWarsBoard token placement', () => {
         const mageOverlay = mageEntity?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-entity-damage-overlay"]');
         expect(mageOverlay).not.toBeNull();
         expect(mageOverlay?.getAttribute('data-damage')).toBe('6');
-        expect(mageOverlay?.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay-value"]')?.textContent).toBe('6');
+        expect(mageOverlay?.querySelector('[data-testid="mage-wars-mage-entity-damage-overlay-value"]')).toBeNull();
+        const mageLifeReadout = mageEntity?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-entity-life-readout"]');
+        expect(mageLifeReadout).not.toBeNull();
+        expect(mageLifeReadout?.getAttribute('data-life-remaining')).toBe('18');
+        expect(mageLifeReadout?.querySelector('[data-testid="mage-wars-mage-entity-life-readout-text"]')?.textContent).toBe('18/24');
 
         expect(screen.queryByAltText('tokens.damage')).toBeNull();
     });

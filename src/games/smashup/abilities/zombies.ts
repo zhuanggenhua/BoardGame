@@ -709,10 +709,8 @@ const zombieOutbreakProgram = createBranchProgram<ZombieOutbreakContext, SmashUp
     when: (context) => context.emptyBases.length === 0,
     then: createEffectProgram((context) => ({ events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] })),
     else: createBranchProgram({
-        when: (context) => context.emptyBases.length === 1 && !context.matchState,
-        then: createEffectProgram((context) => ({
-            events: [grantContextualExtraMinion({ playerId: context.playerId, now: context.now, matchState: context.matchState }, 'zombie_outbreak', context.emptyBases[0].baseIndex)],
-        })),
+        when: (context) => !context.matchState,
+        then: createEffectProgram(() => ({ events: [] })),
         else: zombieOutbreakChooseBasePromptProgram,
     }),
 });

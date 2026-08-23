@@ -810,7 +810,7 @@ describe('killer_plant_sprout 回合开始自毁与检索', () => {
         expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(true);
     });
 
-    it('多个嫩芽共享唯一候选时不会重复打出同一 UID', () => {
+    it('无交互态多个嫩芽共享唯一候选时不会自动打出同一 UID', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] }),
@@ -831,9 +831,9 @@ describe('killer_plant_sprout 回合开始自毁与检索', () => {
             now: 1000,
         });
 
-        const playedEvents = events.filter(event => event.type === SU_EVENTS.MINION_PLAYED);
-        expect(playedEvents).toHaveLength(1);
-        expect((playedEvents[0] as any).payload.cardUid).toBe('wl-1');
+        const destroyedEvents = events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyedEvents).toHaveLength(2);
+        expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
     });
 
     it('多个嫩芽在不同基地会分别消灭自身', () => {

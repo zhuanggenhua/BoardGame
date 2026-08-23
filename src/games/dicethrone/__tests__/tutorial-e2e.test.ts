@@ -194,6 +194,7 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         expect(s.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(INITIAL_CP - 1);
         expect(s.sys.interaction.current).toBeDefined();
         expect(s.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(s.sys.tutorial.step?.id).toBe('play-six-modify');
 
         s = exec(s, 'MODIFY_DIE', '0', { dieId: 0, newValue: 6 }, 'B: modify-die-to-6');
         expect(s.sys.tutorial.step?.id).toBe('dice-confirm');
@@ -231,6 +232,10 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         expect(s.sys.tutorial.step?.id).toBe('inner-peace');
         s = exec(s, 'PLAY_CARD', '0', { cardId: 'card-inner-peace' }, 'C: play-inner-peace');
         expect(s.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBeGreaterThanOrEqual(4);
+        if (s.sys.tutorial.step?.id === 'inner-peace-response') {
+            expect(s.sys.responseWindow?.current).toBeDefined();
+            s = exec(s, 'RESPONSE_PASS', '0', {}, 'C: pass-inner-peace-response');
+        }
 
         // 段 D：AI 回合
         expect(s.sys.tutorial.step?.id).toBe('ai-turn-intro');

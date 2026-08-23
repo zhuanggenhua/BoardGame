@@ -1927,8 +1927,14 @@ describe('Betrayal Board foundation', () => {
        expect(observedPlayerPanel).not.toHaveAttribute('data-token-asset');
        expect(observedPlayerPanel).toHaveAttribute('data-panel-asset', anita.portraitAsset);
        expect(observedPlayerPanel).not.toHaveTextContent('缺少正式标记');
-       expect(screen.getByTestId('betrayal-observed-inventory-zone')).toHaveTextContent('圣符');
-       expect(screen.getByTestId('betrayal-observed-inventory-1-holy-symbol')).toHaveTextContent('圣符');
+        expect(screen.queryByTestId('betrayal-observed-inventory-zone')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-observed-player', 'true');
+        expect(screen.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-player-id', '1');
+        expect(screen.getByTestId('betrayal-inventory-owner-label')).toHaveTextContent('队友一');
+        expect(screen.getByTestId('betrayal-inventory-holy-symbol')).toHaveTextContent('圣符');
+        expect(screen.getByTestId('betrayal-inventory-holy-symbol')).toHaveAttribute('data-inventory-read-only', 'true');
+        fireEvent.click(screen.getByTestId('betrayal-inventory-holy-symbol'));
+        expect(screen.queryByTestId('betrayal-selected-inventory-card-name')).not.toBeInTheDocument();
        expect(screen.queryByTestId('betrayal-current-panel-token-1')).not.toBeInTheDocument();
         const mapOccupantToken = screen.getByTestId(`betrayal-room-occupant-${core.currentExplorer.roomId}-1`);
         expect(mapOccupantToken.querySelector('[data-testid="betrayal-explorer-figure-token-1"]')).toBeInTheDocument();
@@ -3770,9 +3776,10 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('埋葬急救包');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent(`治疗${medicalKitTargetName}的力量和速度和知识和神志`);
         expect(screen.queryByTestId('betrayal-visible-feedback')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveTextContent(/治疗\s*\+4\s*项/);
-        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveTextContent('力量 / 速度 / 知识 / 神志');
+        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveTextContent(/治疗\s*\+4$/);
+        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).not.toHaveTextContent('力量 / 速度 / 知识 / 神志');
         expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveAttribute('data-feedback-style', 'floating-text');
+        expect(screen.getByTestId('betrayal-room-occupant-feedback-entrance-hall-1')).toHaveAttribute('data-feedback-anchor', 'target-token');
         expect(screen.queryByTestId('betrayal-inventory-medical-kit')).not.toBeInTheDocument();
     });
 

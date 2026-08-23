@@ -11,7 +11,7 @@ import type { AiSeatController } from '../ai/types';
 import type { MatchState } from '../types';
 import type { GameEngineConfig } from './engineConfig';
 import type { LocalAiCommandEffect } from './localAiCommandEffects';
-import type { LocalProviderRandom } from './localProviderBootstrap';
+import { createLocalProviderRandom, type LocalProviderRandom } from './localProviderBootstrap';
 import {
     LOCAL_AI_IDLE_RETRY_MS,
     LOCAL_AI_STALL_RECOVERY_GRACE_MS,
@@ -66,6 +66,16 @@ export function useLocalAiRuntime(args: {
     const scheduleAiRetry = useCallback(() => {
         setAiRetryVersion((version) => version + 1);
     }, []);
+    const restoreLocalAiBatchSnapshot = useCallback((snapshot: {
+        state: MatchState<unknown>;
+        randomCursor: number | null;
+    }) => {
+        if (typeof snapshot.randomCursor === 'number') {
+            randomRef.current = createLocalProviderRandom(seed, snapshot.randomCursor);
+        }
+        stateRef.current = snapshot.state;
+        setState(snapshot.state);
+    }, [randomRef, seed, setState, stateRef]);
     const dispatch = useCallback((type: string, payload: unknown) => {
         const nextState = executeLocalDispatch({
             commandType: type,
@@ -156,6 +166,8 @@ export function useLocalAiRuntime(args: {
             startDelay: startCancelableAiDelay,
             dispatch,
             getState: () => stateRef.current,
+            getRandomCursor: () => randomRef.current.getCursor(),
+            restoreBatchSnapshot: restoreLocalAiBatchSnapshot,
             scheduleRetry: scheduleAiRetry,
             onVisibleActionAt: (timestamp) => {
                 lastVisibleAiActionAtRef.current = timestamp;
@@ -172,8 +184,10 @@ export function useLocalAiRuntime(args: {
         seed,
         state,
         stateRef,
+        randomRef,
         dispatch,
         ensureAiTurnTimeline,
+        restoreLocalAiBatchSnapshot,
         scheduleAiRetry,
     ]);
 

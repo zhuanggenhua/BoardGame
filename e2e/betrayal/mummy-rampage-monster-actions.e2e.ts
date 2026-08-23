@@ -153,12 +153,14 @@ const expectSolidTargetOutlineFits = async (
             boxShadow: computed.boxShadow,
             borderTopWidth: computed.borderTopWidth,
             filter: computed.filter,
+            highlightAnchor: element.getAttribute('data-highlight-anchor'),
             highlightLayerCount: element.getAttribute('data-highlight-layer-count'),
         };
     });
     expect(styles.filter, `${label} 不能靠 CSS filter 光晕表达目标边界`).toBe('none');
     expect(styles.boxShadow, `${label} 不能叠加第二层阴影描边`).toBe('none');
     expect(styles.borderTopWidth, `${label} 不能用会压住目标本体的 CSS 内边框`).toBe('0px');
+    expect(styles.highlightAnchor, `${label} 必须锚定目标本体表面，不得锚定按钮热区或外挂 token`).toBe('token-surface');
     expect(styles.highlightLayerCount, `${label} 必须是单层绿色实线描边`).toBe('1');
 
     const [outlineBox, targetBox] = await Promise.all([
@@ -1316,7 +1318,7 @@ const expectMonsterMoveActionFocusesMummy = async (
     await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
     await expectSolidTargetOutlineFits(
         page.getByTestId(`betrayal-room-monster-target-outline-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`),
-        mummyToken.getByTestId(`betrayal-monster-board-token-${MUMMY_MONSTER_ID}`),
+        mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
         '木乃伊行动来源目标高亮',
         { maxCenterDelta: 3, maxSizeDelta: 4 },
     );
@@ -1767,7 +1769,7 @@ const exerciseMummyGoldenMedicalKitUse = async (
     await expect(teammateTargetOutline).toHaveAttribute('data-highlight-color', 'green');
     await expectSolidTargetOutlineFits(
         teammateTargetOutline,
-        teammateTarget.getByTestId('betrayal-explorer-figure-token-1'),
+        teammateTarget.getByTestId('betrayal-explorer-figure-token-surface-1'),
         '急救包治疗目标高亮',
     );
     await expectGreenDominantHighlightPixels(teammateTargetOutline, '急救包治疗目标高亮');
@@ -1786,8 +1788,9 @@ const exerciseMummyGoldenMedicalKitUse = async (
     const targetFeedback = page.getByTestId('betrayal-room-occupant-feedback-hallway-1');
     await expect(targetFeedback).toBeVisible();
     await expect(targetFeedback).toHaveAttribute('data-feedback-style', 'floating-text');
-    await expect(targetFeedback).toContainText(/治疗\s*\+4\s*项/);
-    await expect(targetFeedback).toContainText('力量 / 速度 / 知识 / 神志');
+    await expect(targetFeedback).toHaveAttribute('data-feedback-anchor', 'target-token');
+    await expect(targetFeedback).toContainText(/治疗\s*\+4$/);
+    await expect(targetFeedback).not.toContainText('力量 / 速度 / 知识 / 神志');
     await expect(page.getByTestId('betrayal-inventory-medical-kit')).toHaveCount(0);
     await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveCount(0);
     const afterUseCore = await readInjectedCore(page);
@@ -2123,11 +2126,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const monsterAttackAction = page.getByTestId('betrayal-action-monsterAttack');
         await expect(monsterAttackAction).toContainText('木乃伊攻击');
         await page.getByTestId(`betrayal-bottom-teammate-${fixture.heroTargetId}`).click();
-        const heroInventoryHolySymbol = page.getByTestId(
-            `betrayal-observed-inventory-${fixture.heroTargetId}-holy-symbol`,
-        );
+        await expect(page.getByTestId('betrayal-observed-inventory-zone')).toHaveCount(0);
+        const observedInventory = page.getByTestId('betrayal-inventory-section');
+        await expect(observedInventory).toHaveAttribute('data-observed-player', 'true');
+        await expect(observedInventory).toHaveAttribute('data-player-id', fixture.heroTargetId);
+        const heroInventoryHolySymbol = page.getByTestId('betrayal-inventory-holy-symbol');
         await expect(heroInventoryHolySymbol).toBeVisible();
         await expect(heroInventoryHolySymbol).toContainText('圣符');
+        await expect(heroInventoryHolySymbol).toHaveAttribute('data-inventory-read-only', 'true');
         await saveScreenshot(
             page,
             goldenFlowProcessScreenshot(30, '攻击前-切换观察目标英雄后圣符可见'),
@@ -2705,7 +2711,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
         await expectSolidTargetOutlineFits(
             page.getByTestId(`betrayal-room-monster-target-outline-${fixture.startRoomId}-${MUMMY_MONSTER_ID}`),
-            mummyToken.getByTestId(`betrayal-monster-board-token-${MUMMY_MONSTER_ID}`),
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
             '携带女孩和圣符时木乃伊目标高亮',
             { maxCenterDelta: 3, maxSizeDelta: 4 },
         );

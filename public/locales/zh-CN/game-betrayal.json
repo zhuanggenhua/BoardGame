@@ -488,7 +488,8 @@
     "feedback": {
       "label": "刚发生",
       "idle": "等待第一步",
-      "healTraitCount": "治疗 +{{count}} 项"
+      "healTraitCount": "治疗 +{{count}} 项",
+      "healFloatingText": "治疗 +{{count}}"
     },
     "reference": {
       "button": "提示",

@@ -1576,11 +1576,7 @@ function truckersFixIt(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     if (!ctx.matchState) {
-        return {
-            events: [
-                recoverCardsFromDiscard(ctx.playerId, [discardActions[0].cardUid], 'truckers_fixin_to_fix_it', ctx.now),
-            ],
-        };
+        return { events: [] };
     }
     const result = executeAbilityProgram(
         truckersFixItPromptProgram,
@@ -4158,11 +4154,7 @@ function ohHohHohHoahTrigger(
     if (ownMinions.length === 0) {
         return [];
     }
-    if (!ctx.matchState) {
-        return {
-            events: [addPowerCounter(ownMinions[0].uid, ctx.baseIndex, 1, 'kung_fu_fighters_oh_hoh_hoh_hoah', ctx.now)],
-        };
-    }
+    if (!ctx.matchState) return [];
     const result = executeAbilityProgram(
         ohHohHohHoahPromptProgram,
         createPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
@@ -4364,24 +4356,7 @@ function vigilantesStoneford(ctx: AbilityContext): AbilityResult {
         );
         return { events: result.events, matchState: result.matchState };
     }
-    return {
-        events: [
-            {
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: {
-                    playerId: ctx.playerId,
-                    deckUids: [selected.uid, ...player.deck.filter(card => card.uid !== selected.uid).map(card => card.uid)],
-                    reason: 'vigilantes_stoneford',
-                },
-                timestamp: ctx.now,
-            } as SmashUpEvent,
-            {
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: ctx.playerId, count: 1, cardUids: [selected.uid] },
-                timestamp: ctx.now,
-            } as SmashUpEvent,
-        ],
-    };
+    return { events: [] };
 }
 
 function vigilantesShift(ctx: AbilityContext): AbilityResult {
@@ -4721,7 +4696,7 @@ function discoUlDiscoLou(ctx: AbilityContext): AbilityResult {
             );
             return { events: result.events, matchState: result.matchState };
         }
-        return { events: [buildCardToDeckTopEvent(discardActions[0], ctx.playerId, 'disco_dancers_ul_disco_lou', ctx.now)] };
+        return { events: [] };
     }
     return { events: [grantContextualExtraAction(ctx, 'disco_dancers_ul_disco_lou')] };
 }
@@ -4793,15 +4768,8 @@ function discoStayinAlive(ctx: AbilityContext): AbilityResult {
         );
         return { events: result.events, matchState: result.matchState };
     }
-    const card = candidates[0];
-    if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return {
-        events: [{
-            type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
-            payload: { playerId: ctx.playerId, cardUids: [card.uid], reason: 'disco_dancers_stayin_alive' },
-            timestamp: ctx.now,
-        } as SmashUpEvent],
-    };
+    if (candidates.length > 0 && !ctx.matchState) return { events: [] };
+    return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
 }
 
 function discoIWillSurvive(ctx: AbilityContext): AbilityResult {

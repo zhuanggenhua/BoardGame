@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MatchState } from '../../types';
 import { createInitialSystemState } from '../../pipeline';
 import {
@@ -54,6 +54,9 @@ describe('executeAuthoritativeCommandBatch', () => {
                 match.stateID += 1;
                 return true;
             },
+            restoreRandomCursor: () => {
+                throw new Error('random rollback should not run');
+            },
             persistRollbackState: async () => {
                 throw new Error('rollback should not run');
             },
@@ -75,6 +78,11 @@ describe('executeAuthoritativeCommandBatch', () => {
         const persisted: StoredMatchState[] = [];
         const traces: Array<{ stage: string; payload: Record<string, unknown> }> = [];
         let broadcastCount = 0;
+        let randomCursor = 7;
+        match.getRandomCursor = () => randomCursor;
+        const restoreRandomCursor = vi.fn((cursor: number) => {
+            randomCursor = cursor;
+        });
 
         const result = await executeAuthoritativeCommandBatch({
             match,
@@ -91,11 +99,14 @@ describe('executeAuthoritativeCommandBatch', () => {
                 if (command.type === 'A') {
                     match.state = createState(1) as MatchState<unknown>;
                     match.stateID = 2;
+                    randomCursor = 11;
                     return true;
                 }
+                randomCursor = 12;
                 match.lastCommandFailureReason = 'domain_rejected';
                 return false;
             },
+            restoreRandomCursor,
             persistRollbackState: async (state) => {
                 persisted.push(state);
             },
@@ -112,6 +123,8 @@ describe('executeAuthoritativeCommandBatch', () => {
         });
         expect(match.state).toBe(initialState);
         expect(match.stateID).toBe(1);
+        expect(randomCursor).toBe(7);
+        expect(restoreRandomCursor).toHaveBeenCalledWith(7);
         expect(persisted).toEqual([{
             G: initialState,
             _stateID: 1,
@@ -144,6 +157,9 @@ describe('executeAuthoritativeCommandBatch', () => {
             rejectWhenStatePreconditionFails: async () => true,
             executeCommand: async () => {
                 throw new Error('command should not execute');
+            },
+            restoreRandomCursor: () => {
+                throw new Error('random rollback should not run');
             },
             persistRollbackState: async () => {
                 throw new Error('rollback should not run');

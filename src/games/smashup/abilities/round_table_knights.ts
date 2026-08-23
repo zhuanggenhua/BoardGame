@@ -255,7 +255,8 @@ function kingArthurTalent(ctx: AbilityContext): AbilityResult {
         ? candidates.find(candidate => candidate.minion.uid === ctx.targetMinionUid)
         : undefined;
     if (!target && ctx.matchState) return queueKingArthurTargetPrompt(ctx, source, candidates);
-    const resolvedTarget = target ?? candidates[0];
+    if (!target && !ctx.matchState) return { events: [] };
+    const resolvedTarget = target;
     if (!resolvedTarget) return { events: [] };
     const moveEvents = moveMinion(ctx.state, resolvedTarget.minion, resolvedTarget.baseIndex, source.baseIndex, ctx.playerId, 'round_table_knights_king_arthur', ctx.now);
     const events = [...moveEvents];
@@ -269,8 +270,8 @@ function galahadOnPlay(ctx: AbilityContext): AbilityResult {
     const deck = ctx.state.players[ctx.playerId]?.deck ?? [];
     const targets = deck.filter(isBaseOngoingAction);
     if (targets.length > 0 && ctx.matchState) return queueGalahadDeckPrompt(ctx, targets);
-    const target = targets[0];
-    return target ? { events: [topDeckReorderedEvent(ctx.playerId, target, deck, 'round_table_knights_galahad', ctx.now)] } : { events: [] };
+    if (targets.length > 0 && !ctx.matchState) return { events: [] };
+    return { events: [] };
 }
 
 function queueGalahadSpecialPrompt(ctx: AbilityContext, actions: BaseOngoing[]): AbilityResult {
@@ -301,14 +302,13 @@ function galahadSpecial(ctx: AbilityContext): AbilityResult {
     const actions = (ctx.state.bases[ctx.baseIndex]?.ongoingActions ?? [])
         .filter(action => action.ownerId === ctx.playerId)
         .map(action => ({ ...action, baseIndex: ctx.baseIndex }));
-    const action = actions[0];
     const directToBaseIndex = ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== ctx.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
         ? ctx.targetBaseIndex
         : undefined;
-    if (ctx.matchState && directToBaseIndex === undefined) return queueGalahadSpecialPrompt(ctx, actions);
-    const toBaseIndex = directToBaseIndex ?? firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (!action || toBaseIndex === undefined) return { events: [] };
-    return { events: transferBaseAction(ctx.state, action, toBaseIndex, ctx.playerId, 'round_table_knights_galahad', ctx.now) };
+    if (ctx.matchState && (directToBaseIndex === undefined || actions.length !== 1)) return queueGalahadSpecialPrompt(ctx, actions);
+    const action = actions.length === 1 ? actions[0] : undefined;
+    if (!action || directToBaseIndex === undefined) return { events: [] };
+    return { events: transferBaseAction(ctx.state, action, directToBaseIndex, ctx.playerId, 'round_table_knights_galahad', ctx.now) };
 }
 
 function buildGuinevereMoveOptions(state: SmashUpCore, source: LocatedMinion, playerId: PlayerId) {
@@ -442,8 +442,9 @@ function guinevereTalent(ctx: AbilityContext): AbilityResult {
         ? ctx.targetBaseIndex
         : undefined;
     if ((!target || toBaseIndex === undefined) && ctx.matchState) return queueGuinevereTargetPrompt(ctx, source);
-    const resolvedTarget = target ?? candidates[0];
-    const resolvedToBaseIndex = toBaseIndex ?? firstOtherBaseIndex(ctx.state, source.baseIndex);
+    if ((!target || toBaseIndex === undefined) && !ctx.matchState) return { events: [] };
+    const resolvedTarget = target;
+    const resolvedToBaseIndex = toBaseIndex;
     if (!resolvedTarget || resolvedToBaseIndex === undefined) return { events: [] };
     return { events: moveMinion(ctx.state, resolvedTarget, source.baseIndex, resolvedToBaseIndex, ctx.playerId, 'round_table_knights_guinevere', ctx.now) };
 }
@@ -520,9 +521,8 @@ function aQuestingOnPlay(ctx: AbilityContext): AbilityResult {
             { optional: true, skipLabelText: '不移动此随从', skipLabelKey: 'ui.round_table_knights_a_questing_move_skip_option' },
         );
     }
-    const toBaseIndex = directToBaseIndex ?? firstOtherBaseIndex(ctx.state, target.baseIndex);
-    if (toBaseIndex === undefined) return { events: [] };
-    return { events: moveMinion(ctx.state, target.minion, target.baseIndex, toBaseIndex, ctx.playerId, 'round_table_knights_a_questing', ctx.now) };
+    if (directToBaseIndex === undefined) return { events: [] };
+    return { events: moveMinion(ctx.state, target.minion, target.baseIndex, directToBaseIndex, ctx.playerId, 'round_table_knights_a_questing', ctx.now) };
 }
 
 function goodDeedOnPlay(ctx: AbilityContext): AbilityResult {
@@ -564,17 +564,18 @@ function goodDeedOnMove(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     const action = ownBaseActionByUid(ctx.state, ctx.sourceControllerId, ctx.sourceBaseIndex, ctx.sourceCardUid);
     if (!action) return [];
     if (Number(action.metadata?.roundTableGoodDeedUsedTurn ?? -1) === ctx.state.turnNumber) return [];
-    const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.sourceBaseIndex);
     const metadataUpdate = { roundTableGoodDeedUsedTurn: ctx.state.turnNumber };
+    const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.sourceBaseIndex);
     if (ctx.matchState && toBaseIndex !== undefined) {
         return queueGoodDeedTransferPrompt(ctx, action, metadataUpdate);
     }
-    return [
-        ...buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now),
-        ...(toBaseIndex === undefined
-            ? [addOngoingCardCounter(action.uid, ctx.sourceBaseIndex, 0, 'round_table_knights_good_deed_once_per_turn', ctx.now, { metadataUpdate })]
-            : transferBaseAction(ctx.state, action, toBaseIndex, ctx.sourceControllerId, 'round_table_knights_good_deed', ctx.now, metadataUpdate)),
-    ];
+    if (toBaseIndex === undefined) {
+        return [
+            ...buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now),
+            addOngoingCardCounter(action.uid, ctx.sourceBaseIndex, 0, 'round_table_knights_good_deed_once_per_turn', ctx.now, { metadataUpdate }),
+        ];
+    }
+    return [];
 }
 
 function buildMerlinsLibraryOptions(ctx: AbilityContext) {
@@ -667,9 +668,8 @@ function nobleSteedTalent(ctx: AbilityContext): AbilityResult {
             otherBaseIndices(ctx.state, host.baseIndex),
         );
     }
-    const toBaseIndex = directToBaseIndex ?? (host ? firstOtherBaseIndex(ctx.state, host.baseIndex) : undefined);
-    if (!host || toBaseIndex === undefined || host.minion.controller !== ctx.playerId) return { events: [] };
-    return { events: moveMinion(ctx.state, host.minion, host.baseIndex, toBaseIndex, ctx.playerId, 'round_table_knights_noble_steed', ctx.now) };
+    if (!host || directToBaseIndex === undefined || host.minion.controller !== ctx.playerId) return { events: [] };
+    return { events: moveMinion(ctx.state, host.minion, host.baseIndex, directToBaseIndex, ctx.playerId, 'round_table_knights_noble_steed', ctx.now) };
 }
 
 function countDrawnCardsForPlayer(events: SmashUpEvent[], playerId: PlayerId): number {
@@ -923,9 +923,6 @@ function questingBeastOnMove(ctx: TriggerContext): SmashUpEvent[] | TriggerResul
     }
     return [
         addPowerCounter(ctx.triggerMinion.uid, ctx.sourceBaseIndex, 1, 'round_table_knights_the_questing_beast', ctx.now),
-        ...(!action || toBaseIndex === undefined
-            ? []
-            : transferBaseAction(ctx.state, action, toBaseIndex, ctx.sourceControllerId, 'round_table_knights_the_questing_beast', ctx.now)),
     ];
 }
 
@@ -999,6 +996,7 @@ function camelotActive(ctx: Parameters<Parameters<typeof registerActiveBaseAbili
     if (ctx.matchState && (!ctx.targetMinionUid || ctx.targetBaseIndex === undefined)) {
         return queueCamelotMovePrompt(ctx);
     }
+    if (!ctx.matchState && (!ctx.targetMinionUid || ctx.targetBaseIndex === undefined)) return { events: [] };
     const minion = camelotSelectedMinion(ctx);
     const toBaseIndex = camelotDestinationBaseIndex(ctx);
     if (!minion || toBaseIndex === undefined) return { events: [] };

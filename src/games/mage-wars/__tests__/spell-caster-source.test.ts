@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { createTimingOpportunitySystem } from '../../../engine';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
 import {
     MAGE_WARS_EVENTS,
@@ -13,9 +14,11 @@ import {
     type MageWarsSpellResponseContext,
 } from '../domain/responseResolution';
 import { resolveMageWarsSpellCasterRef } from '../domain/spellCasting';
+import { resolveMageWarsMagebaneCurseDamageSource } from '../domain/spellRules';
 import type { MageWarsArenaObjectState, MageWarsCore } from '../domain/types';
 import { ARENA_ZONE_IDS } from '../domain/ids';
 import { createMageWarsInteractionSystem } from '../domain/systems';
+import { createMageWarsTimingOpportunitySystemConfig } from '../domain/timingOpportunities';
 import { engineConfig } from '../game';
 
 const fixedRandom: RandomFn = {
@@ -87,13 +90,6 @@ function afterSpellResolved(
     core: MageWarsCore,
     caster: MageWarsSpellCastResolvedEvent['payload']['caster'],
 ) {
-    const state: MatchState<MageWarsCore> = {
-        core,
-        sys: {
-            ...createInitialSystemState(['0', '1'], engineConfig.systems, 'local:mage-wars-spell-caster-source'),
-            phase: 'creatureAction',
-        },
-    };
     const event: MageWarsSpellCastResolvedEvent = {
         type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
         payload: {
@@ -107,7 +103,25 @@ function afterSpellResolved(
         timestamp: 4,
     };
 
-    return createMageWarsInteractionSystem().afterEvents?.({
+    return runMageWarsTimingAfterEvents(core, event);
+}
+
+function runMageWarsTimingAfterEvents(
+    core: MageWarsCore,
+    event: MageWarsSpellCastResolvedEvent | MageWarsSpellCastStartedEvent,
+) {
+    const state: MatchState<MageWarsCore> = {
+        core,
+        sys: {
+            ...createInitialSystemState(['0', '1'], engineConfig.systems, 'local:mage-wars-spell-caster-source'),
+            phase: 'creatureAction',
+        },
+    };
+
+    return createTimingOpportunitySystem(
+        MageWarsDomain,
+        createMageWarsTimingOpportunitySystemConfig(),
+    ).afterEvents?.({
         state,
         command: { type: 'mw:test_cast_spell', playerId: '0', payload: {} } as Command,
         events: [event],
@@ -135,10 +149,11 @@ describe('mage-wars spell caster source', () => {
 
     it('applies 1804 direct damage only after a configured creature caster resolves a spell', () => {
         const caster = creature('spellcaster-with-curse', '0', { abilityId: 'mw.creature.test.spellcasting' });
+        const curse = hiddenCurse('curse-on-spellcaster', '1', caster.id);
         const core = addObject(
             addObject(
                 addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
-                hiddenCurse('curse-on-spellcaster', '1', caster.id),
+                curse,
             ),
             hiddenCurse('second-curse-on-spellcaster', '1', caster.id),
         );
@@ -160,6 +175,13 @@ describe('mage-wars spell caster source', () => {
                 sourceAbilityId: 'mw.spell.1804',
             },
         });
+        expect(resolveMageWarsMagebaneCurseDamageSource(curse, caster.id)).toMatchObject({
+            sourceObjectId: curse.id,
+            sourceSpellCardId: 1804,
+            ownerId: '1',
+            sourceAbilityId: 'mw.spell.1804',
+            amount: 1,
+        });
     });
 
     it('does not apply 1804 before the spell reaches successful resolution', () => {
@@ -168,6 +190,30 @@ describe('mage-wars spell caster source', () => {
             addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
             hiddenCurse('curse-before-resolution', '1', caster.id),
         );
+        const event: MageWarsSpellCastStartedEvent = {
+            type: MAGE_WARS_EVENTS.SPELL_CAST_STARTED,
+            payload: {
+                playerId: '0',
+                caster: { kind: 'arena-object', objectId: caster.id, ownerId: '0' },
+                spellCardId: 3405,
+                manaCost: 5,
+                castMode: 'action',
+            },
+            sourceCommandType: 'mw:test_cast_spell',
+            timestamp: 4,
+        };
+
+        const result = runMageWarsTimingAfterEvents(core, event);
+
+        expect(result?.events?.some((candidate) => candidate.type === 'DAMAGE_DEALT') ?? false).toBe(false);
+    });
+
+    it('does not let the legacy interaction system discover 1804 triggers', () => {
+        const caster = creature('spellcaster-legacy-owner', '0', { abilityId: 'mw.creature.test.spellcasting' });
+        const core = addObject(
+            addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
+            hiddenCurse('curse-legacy-owner', '1', caster.id),
+        );
         const state: MatchState<MageWarsCore> = {
             core,
             sys: {
@@ -175,8 +221,8 @@ describe('mage-wars spell caster source', () => {
                 phase: 'creatureAction',
             },
         };
-        const event: MageWarsSpellCastStartedEvent = {
-            type: MAGE_WARS_EVENTS.SPELL_CAST_STARTED,
+        const event: MageWarsSpellCastResolvedEvent = {
+            type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
             payload: {
                 playerId: '0',
                 caster: { kind: 'arena-object', objectId: caster.id, ownerId: '0' },
@@ -215,7 +261,6 @@ describe('mage-wars spell caster source', () => {
             caster: { kind: 'arena-object', objectId: caster.id, ownerId: caster.ownerId },
             spellCardId: 3405,
             manaCost: 5,
-            spellType: '咒语',
             castMode: 'action',
             sourceCommandType: 'mw:test_cast_spell',
         };

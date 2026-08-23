@@ -78,6 +78,8 @@ const WALL_PASSAGE_DAMAGE_BY_SPELL_CARD_ID: Record<number, MageWarsWallPassageDa
     2500: { amount: 3, damageTypes: ['火焰'] },
     25700: { amount: 3, damageTypes: ['穿越墙体'] },
 };
+const MAGE_WARS_MAGEBANE_CURSE_SPELL_CARD_ID = 1804;
+const MAGE_WARS_MAGEBANE_CURSE_DIRECT_DAMAGE = 1;
 
 export interface MageWarsObjectAttackProfile {
     id: string;
@@ -111,6 +113,14 @@ export interface MageWarsElementalStaffSource {
     object: MageWarsArenaObjectState;
 }
 
+export interface MageWarsMagebaneCurseDamageSource {
+    sourceObjectId: string;
+    sourceSpellCardId: number;
+    ownerId: PlayerId;
+    sourceAbilityId: string;
+    amount: number;
+}
+
 export type MageWarsObjectCombatSource = Pick<
     MageWarsArenaObjectState,
     'sourceSpellCardId' | 'attackOrTraitLine' | 'combatProfilesSource' | 'combatTraitsSource'
@@ -141,6 +151,7 @@ export interface MageWarsObjectRegeneration {
 export interface MageWarsObjectUpkeepDirectDamage {
     sourceObjectId: string;
     sourceSpellCardId: number;
+    ownerId: PlayerId;
     effect: Extract<MageWarsConfigSpellUpkeepEffect, { kind: 'direct-damage' }>;
 }
 
@@ -554,6 +565,109 @@ export function getMageWarsHiddenResponseKind(
         : undefined;
 }
 
+export const MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS = {
+    QUICK_SPELL_COUNTER: 1825,
+    TARGET_SPELL_COUNTER: 1901,
+    ATTACK_REVERSAL: 1904,
+} as const;
+
+export type MageWarsQuickSpellCounterResponseCardId = typeof MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.QUICK_SPELL_COUNTER;
+export type MageWarsTargetSpellCounterResponseCardId = typeof MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.TARGET_SPELL_COUNTER;
+export type MageWarsSpellCounterResponseCardId =
+    | MageWarsQuickSpellCounterResponseCardId
+    | MageWarsTargetSpellCounterResponseCardId;
+export type MageWarsAttackReversalResponseCardId = typeof MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.ATTACK_REVERSAL;
+export type MageWarsHiddenResponseCardId =
+    | MageWarsSpellCounterResponseCardId
+    | MageWarsAttackReversalResponseCardId;
+
+export function isMageWarsQuickSpellCounterResponseCardId(
+    value: unknown,
+): value is MageWarsQuickSpellCounterResponseCardId {
+    return value === MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.QUICK_SPELL_COUNTER;
+}
+
+export function isMageWarsTargetSpellCounterResponseCardId(
+    value: unknown,
+): value is MageWarsTargetSpellCounterResponseCardId {
+    return value === MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.TARGET_SPELL_COUNTER;
+}
+
+export function isMageWarsSpellCounterResponseCardId(
+    value: unknown,
+): value is MageWarsSpellCounterResponseCardId {
+    return isMageWarsQuickSpellCounterResponseCardId(value)
+        || isMageWarsTargetSpellCounterResponseCardId(value);
+}
+
+export function isMageWarsAttackReversalResponseCardId(
+    value: unknown,
+): value is MageWarsAttackReversalResponseCardId {
+    return value === MAGE_WARS_HIDDEN_RESPONSE_CARD_IDS.ATTACK_REVERSAL;
+}
+
+export function isMageWarsHiddenResponseCardId(
+    value: unknown,
+): value is MageWarsHiddenResponseCardId {
+    return isMageWarsSpellCounterResponseCardId(value)
+        || isMageWarsAttackReversalResponseCardId(value);
+}
+
+export function resolveMageWarsSpellCounterResponseCardId(
+    responseObject: Pick<MageWarsArenaObjectState, 'sourceSpellCardId'>,
+): MageWarsSpellCounterResponseCardId | undefined {
+    const spell = getMageWarsSpellCardFromConfig(responseObject.sourceSpellCardId);
+    const responseKind = spell ? getMageWarsHiddenResponseKind(spell) : undefined;
+    if (
+        responseKind === 'quick-spell-counter'
+        && isMageWarsQuickSpellCounterResponseCardId(responseObject.sourceSpellCardId)
+    ) {
+        return responseObject.sourceSpellCardId;
+    }
+    if (
+        responseKind === 'target-spell-counter'
+        && isMageWarsTargetSpellCounterResponseCardId(responseObject.sourceSpellCardId)
+    ) {
+        return responseObject.sourceSpellCardId;
+    }
+    return undefined;
+}
+
+export function resolveMageWarsAttackReversalResponseCardId(
+    responseObject: Pick<MageWarsArenaObjectState, 'sourceSpellCardId'>,
+): MageWarsAttackReversalResponseCardId | undefined {
+    const spell = getMageWarsSpellCardFromConfig(responseObject.sourceSpellCardId);
+    return spell
+        && getMageWarsHiddenResponseKind(spell) === 'attack-reversal'
+        && isMageWarsAttackReversalResponseCardId(responseObject.sourceSpellCardId)
+        ? responseObject.sourceSpellCardId
+        : undefined;
+}
+
+export function isMageWarsTargetSpellCounterTriggerSpell(spell: MageWarsConfigSpellCard): boolean {
+    return spell.spellType === '咒语' || spell.spellType === '结界';
+}
+
+export function isMageWarsMagebaneCurseSpell(spell: MageWarsConfigSpellCard): boolean {
+    return spell.spellCardId === MAGE_WARS_MAGEBANE_CURSE_SPELL_CARD_ID;
+}
+
+export function resolveMageWarsMagebaneCurseDamageSource(
+    source: Pick<MageWarsArenaObjectState, 'id' | 'kind' | 'ownerId' | 'sourceSpellCardId' | 'anchoredToObjectId'>,
+    targetObjectId: string,
+): MageWarsMagebaneCurseDamageSource | undefined {
+    if (source.kind !== 'enchantment' || source.anchoredToObjectId !== targetObjectId) return undefined;
+    const spell = getMageWarsSpellCardFromConfig(source.sourceSpellCardId);
+    if (!spell || !isMageWarsMagebaneCurseSpell(spell)) return undefined;
+    return {
+        sourceObjectId: source.id,
+        sourceSpellCardId: spell.spellCardId,
+        ownerId: source.ownerId,
+        sourceAbilityId: `mw.spell.${spell.spellCardId}`,
+        amount: MAGE_WARS_MAGEBANE_CURSE_DIRECT_DAMAGE,
+    };
+}
+
 export function isMageWarsForceGripSpell(spell: MageWarsConfigSpellCard): boolean {
     return spell.spellCardId === 1908;
 }
@@ -608,10 +722,6 @@ export function resolveMageWarsChainLightningEffectDieResult(
     return rawEffectDieResult - chainIndex;
 }
 
-export function isMageWarsZoneTargetSpell(spell: MageWarsConfigSpellCard): boolean {
-    return isMageWarsAreaTargetSpell(spell) || isMageWarsCreatureSpell(spell);
-}
-
 export type MageWarsSpellCastChoiceFamily =
     | 'bloodstrike'
     | 'call-of-the-wild'
@@ -630,12 +740,14 @@ export type MageWarsSpellCastChoiceFamily =
     | 'single-healing'
     | 'sleep'
     | 'steal-enchantment'
+    | 'summon-creature'
     | 'tanglevine'
     | 'teleport'
+    | 'zone-attack'
+    | 'zone-healing'
     | 'visible-area-enchantment'
     | 'visible-object-enchantment'
     | 'wall'
-    | 'zone-target'
     | 'rouse-the-beast';
 
 export function isMageWarsDirectAttackChoiceSpell(spell: MageWarsConfigSpellCard): boolean {
@@ -654,6 +766,20 @@ export function isMageWarsHiddenResponseEnchantmentChoiceSpell(spell: MageWarsCo
     return isMageWarsHiddenResponseEnchantmentSpell(spell) && spell.requiresCodeSupport === false;
 }
 
+export function isMageWarsSummonCreatureChoiceSpell(spell: MageWarsConfigSpellCard): boolean {
+    return isMageWarsCreatureSpell(spell) && spell.requiresCodeSupport === false;
+}
+
+export function isMageWarsZoneAttackChoiceSpell(spell: MageWarsConfigSpellCard): boolean {
+    return isMageWarsAttackSpell(spell)
+        && isMageWarsAreaTargetSpell(spell)
+        && spell.requiresCodeSupport === false;
+}
+
+export function isMageWarsZoneHealingChoiceSpell(spell: MageWarsConfigSpellCard): boolean {
+    return isMageWarsImplementedHealingSpell(spell) && isMageWarsAreaTargetSpell(spell);
+}
+
 export function resolveMageWarsSpellCastChoiceFamily(
     spell: MageWarsConfigSpellCard,
 ): MageWarsSpellCastChoiceFamily | undefined {
@@ -663,7 +789,9 @@ export function resolveMageWarsSpellCastChoiceFamily(
     if (isMageWarsImplementedStealEnchantmentSpell(spell)) return 'steal-enchantment';
     if (isMageWarsChainLightningSpell(spell) && spell.requiresCodeSupport === false) return 'chain-lightning';
     if (isMageWarsImplementedVisibleAreaEnchantmentSpell(spell)) return 'visible-area-enchantment';
-    if (isMageWarsZoneTargetSpell(spell) && spell.requiresCodeSupport === false) return 'zone-target';
+    if (isMageWarsSummonCreatureChoiceSpell(spell)) return 'summon-creature';
+    if (isMageWarsZoneAttackChoiceSpell(spell)) return 'zone-attack';
+    if (isMageWarsZoneHealingChoiceSpell(spell)) return 'zone-healing';
     if (isMageWarsDirectAttackChoiceSpell(spell)) return 'direct-attack';
     if (isMageWarsJetStreamChoiceSpell(spell)) return 'jet-stream';
     if (isMageWarsHiddenResponseEnchantmentChoiceSpell(spell)) return 'hidden-response-enchantment';
@@ -865,6 +993,7 @@ export function resolveMageWarsAttachedVisibleEnchantmentUpkeepDirectDamage(
                 .map((effect) => ({
                     sourceObjectId: enchantment.id,
                     sourceSpellCardId: enchantment.sourceSpellCardId,
+                    ownerId: enchantment.ownerId,
                     effect,
                 }))
             ?? []

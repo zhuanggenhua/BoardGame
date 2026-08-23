@@ -9,6 +9,7 @@ import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
 import { TestHarness, isTestEnvironment } from '../testing';
 import { INTERACTION_COMMANDS, refreshInteractionOptions } from '../systems/InteractionSystem';
+import { getTransportBatchCommands, TRANSPORT_BATCH_COMMAND } from '../batchDispatchCommand';
 import type {
     ManualForceEndAiPhaseResult,
     ManualSetupSelectionRequest,
@@ -337,6 +338,34 @@ export function useGameProviderRuntime(args: {
         if (!client?.canSendCommand()) {
             return;
         }
+        if (type === TRANSPORT_BATCH_COMMAND) {
+            const commands = getTransportBatchCommands(payload);
+            if (commands.length === 0) {
+                return;
+            }
+            const engine = optimisticEngineRef.current;
+            if (engine?.hasPendingCommands()) {
+                return;
+            }
+            const batcher = batcherRef.current;
+            if (batcher && !batcher.flush()) {
+                if (engine) {
+                    rollbackOptimisticRenderAndResync();
+                }
+                return;
+            }
+            const batchId = `b-${++batchSeqRef.current}`;
+            const sent = client.sendBatch(batchId, commands, undefined, (reason) => {
+                recoverFromRejectedCommand(reason);
+                if (baseShouldForwardOnlineBatchRejectionToError(reason, shouldSilentlyRetryOnlineAiBatchRejection)) {
+                    onErrorRef.current?.(reason);
+                }
+            });
+            if (!sent && engine) {
+                rollbackOptimisticRenderAndResync();
+            }
+            return;
+        }
         const engine = optimisticEngineRef.current;
         const sendWithoutPrediction = Boolean(engine?.hasPendingCommands() && canSendWhileOptimisticPending(type));
         if (engine?.hasPendingCommands() && !sendWithoutPrediction) {
@@ -368,7 +397,7 @@ export function useGameProviderRuntime(args: {
         if (sent && shouldSerializeCommand(type)) {
             inFlightSerializedCommandTypeRef.current = type;
         }
-    }, [playerId, rollbackOptimisticRenderAndResync]);
+    }, [playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
 
     const requestManualSetupSelection = useCallback((
         request: ManualSetupSelectionRequest,

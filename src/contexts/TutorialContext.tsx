@@ -46,7 +46,7 @@ interface TutorialContextType {
     bindDispatch: (dispatch: (type: string, payload?: unknown) => void) => number;
     /** Board 卸载时清理 controller，防止残留的 dispatch 指向已销毁的 Provider */
     unbindDispatch: (generation?: number) => void;
-    syncTutorialState: (tutorial: TutorialState) => void;
+    syncTutorialState: (tutorial: TutorialState, runtimeSyncKey?: string) => void;
     /** 由 useTutorialBridge 调用，标记 Board 已挂载 */
     notifyBoardMounted: (generation?: number) => void;
     /** 由 useTutorialBridge 调用，标记 Board 已卸载 */
@@ -118,6 +118,11 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const isBoardMountedRef = useRef(false);
     // 兜底 timer：防止 bindDispatch 永远不执行导致教程卡死
     const fallbackTimerRef = useRef<number | undefined>(undefined);
+    // AI 动作 timer 与执行代际：防止旧步骤的自动命令在步骤切换后继续派发
+    const aiTimerRef = useRef<number | undefined>(undefined);
+    const aiExecutionGenerationRef = useRef(0);
+    const latestTutorialStepIdRef = useRef<string | null>(null);
+    const boardSyncVersionRef = useRef(0);
     const toast = useToast();
     const toastRef = useRef(toast);
     useEffect(() => {
@@ -202,8 +207,20 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsBoardMounted(false);
     }, []);
 
-    const syncTutorialState = useCallback((nextTutorial: TutorialState) => {
+    const syncTutorialState = useCallback((nextTutorial: TutorialState, _runtimeSyncKey?: string) => {
+        boardSyncVersionRef.current += 1;
         const normalized = normalizeTutorialState(nextTutorial);
+        const nextStepId = normalized.active ? (normalized.step?.id ?? null) : null;
+        if (!normalized.active || latestTutorialStepIdRef.current !== nextStepId) {
+            aiExecutionGenerationRef.current += 1;
+            if (aiTimerRef.current !== undefined) {
+                window.clearTimeout(aiTimerRef.current);
+                aiTimerRef.current = undefined;
+            }
+            isAiExecutingRef.current = false;
+            setIsAiExecuting(false);
+            latestTutorialStepIdRef.current = nextStepId;
+        }
         setTutorial(normalized);
         if (!normalized.active) {
             executedAiStepsRef.current = new Set();
@@ -216,6 +233,14 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             window.clearTimeout(fallbackTimerRef.current);
             fallbackTimerRef.current = undefined;
         }
+        aiExecutionGenerationRef.current += 1;
+        if (aiTimerRef.current !== undefined) {
+            window.clearTimeout(aiTimerRef.current);
+            aiTimerRef.current = undefined;
+        }
+        isAiExecutingRef.current = false;
+        setIsAiExecuting(false);
+        latestTutorialStepIdRef.current = null;
         
         executedAiStepsRef.current = new Set();
         
@@ -250,6 +275,14 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, []);
 
     const closeTutorial = useCallback(() => {
+        aiExecutionGenerationRef.current += 1;
+        if (aiTimerRef.current !== undefined) {
+            window.clearTimeout(aiTimerRef.current);
+            aiTimerRef.current = undefined;
+        }
+        isAiExecutingRef.current = false;
+        setIsAiExecuting(false);
+        latestTutorialStepIdRef.current = null;
         controllerRef.current?.close();
         // 教程关闭时清除 controller（唯一清除点）
         controllerRef.current = null;
@@ -277,8 +310,6 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // AI 动作执行 effect
     // 使用 ref 管理 timer，避免 tutorial 对象频繁变化导致 timer 被 React effect cleanup 取消
-    const aiTimerRef = useRef<number | undefined>(undefined);
-
     useEffect(() => {
         if (!tutorial.active || !tutorial.step || !hasAiActions(tutorial.step)) return;
         if (!isControllerReady) return;
@@ -291,6 +322,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // 缓存当前步骤的 autoAdvance 判断和 aiActions，避免闭包引用被清理后的状态
         const shouldAutoAdvanceAfterAi = shouldAutoAdvance(tutorial.step);
         const aiActions = tutorial.step.aiActions ? [...tutorial.step.aiActions] : [];
+        const shouldYieldBetweenAiActions = tutorial.stepIndex !== 0;
 
         // 使用 ref 管理 timer，不在 cleanup 中取消
         // 这样即使 tutorial 对象变化触发 effect 重新执行，timer 也不会被取消
@@ -307,33 +339,71 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             aiTimerRef.current = undefined;
             const controller = controllerRef.current;
             if (!controller) return;
+            const executionGeneration = aiExecutionGenerationRef.current + 1;
+            aiExecutionGenerationRef.current = executionGeneration;
 
             setIsAiExecuting(true);
             isAiExecutingRef.current = true;
 
-            // 逐个执行 AI actions
-            for (let i = 0; i < aiActions.length; i++) {
-                const action = aiActions[i] as TutorialAiAction;
-                const actionPayload: Record<string, unknown> = {
-                    ...(action.payload as Record<string, unknown> ?? {}),
-                    __tutorialAiCommand: true,
-                };
-                if (action.playerId) {
-                    actionPayload.__tutorialPlayerId = action.playerId;
+            void (async () => {
+                let completed = false;
+                try {
+                    // setup 步骤必须同步完成初始化，避免棋盘挂载与关键图门禁互等。
+                    // 后续运行中 AI actions 每条命令后让出一个状态帧，保证下一条命令
+                    // 能读到前一条命令产生的当前交互、待处理伤害等运行态。
+                    for (let i = 0; i < aiActions.length; i++) {
+                        if (aiExecutionGenerationRef.current !== executionGeneration) return;
+                        const action = aiActions[i] as TutorialAiAction;
+                        const actionPayload: Record<string, unknown> = {
+                            ...(action.payload as Record<string, unknown> ?? {}),
+                            __tutorialAiCommand: true,
+                        };
+                        if (action.playerId) {
+                            actionPayload.__tutorialPlayerId = action.playerId;
+                        }
+                        const beforeBoardSyncVersion = boardSyncVersionRef.current;
+                        const liveController = controllerRef.current ?? controller;
+                        liveController.dispatchCommand(action.commandType, actionPayload);
+                        if (shouldYieldBetweenAiActions) {
+                            const synced = await new Promise<boolean>((resolve) => {
+                                const startedAt = Date.now();
+                                const poll = () => {
+                                    if (aiExecutionGenerationRef.current !== executionGeneration) {
+                                        resolve(false);
+                                        return;
+                                    }
+                                    if (boardSyncVersionRef.current > beforeBoardSyncVersion) {
+                                        resolve(true);
+                                        return;
+                                    }
+                                    if (Date.now() - startedAt > 1000) {
+                                        resolve(false);
+                                        return;
+                                    }
+                                    window.setTimeout(poll, 16);
+                                };
+                                window.setTimeout(poll, 0);
+                            });
+                            if (!synced) return;
+                        }
+                    }
+                    completed = true;
+                } finally {
+                    if (aiExecutionGenerationRef.current === executionGeneration) {
+                        isAiExecutingRef.current = false;
+                        setIsAiExecuting(false);
+                    }
                 }
-                controller.dispatchCommand(action.commandType, actionPayload);
-            }
 
-            isAiExecutingRef.current = false;
-            setIsAiExecuting(false);
+                if (!completed || aiExecutionGenerationRef.current !== executionGeneration) return;
 
-            // 始终调用 consumeAi 清除 aiActions（防止 effect 重复触发）
-            // 但只在全部成功时才自动推进
-            controller.consumeAi(stepId);
+                // 始终调用 consumeAi 清除 aiActions（防止 effect 重复触发）
+                controller.consumeAi(stepId);
 
-            if (shouldAutoAdvanceAfterAi) {
-                controller.next('auto');
-            }
+                if (shouldAutoAdvanceAfterAi) {
+                    controller.next('auto');
+                }
+            })();
         }, delay);
 
         // 不返回 cleanup 函数 — timer 通过 aiTimerRef 管理
@@ -380,7 +450,11 @@ export const useTutorial = () => {
     return context;
 };
 
-export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: string, payload?: unknown) => void) => {
+export const useTutorialBridge = (
+    tutorial: TutorialState,
+    dispatch: (type: string, payload?: unknown) => void,
+    runtimeSyncKey?: string,
+) => {
     const context = useContext(TutorialContext);
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
@@ -399,11 +473,11 @@ export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: stri
         if (!context) return;
         // 只在教程模式下同步状态，防止在线对局的 sys.tutorial 污染 TutorialContext
         if (!isTutorialMode) return;
-        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}`;
+        const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}-${runtimeSyncKey ?? ''}`;
         if (lastSyncSignatureRef.current === signature) return;
         lastSyncSignatureRef.current = signature;
-        context.syncTutorialState(tutorial);
-    }, [context, tutorial, isTutorialMode]);
+        context.syncTutorialState(tutorial, runtimeSyncKey);
+    }, [context, tutorial, isTutorialMode, runtimeSyncKey]);
 
     useEffect(() => {
         // 只在教程模式下注册 controller，在线/本地模式的 Board 不应污染教程状态

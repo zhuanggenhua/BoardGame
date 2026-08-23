@@ -64,6 +64,10 @@ const MATCH_PHASE_MAIN2: TutorialEventMatcher = {
     match: { to: 'main2' },
 };
 
+const MATCH_RESPONSE_WINDOW_CLOSED: TutorialEventMatcher = {
+    type: 'RESPONSE_WINDOW_CLOSED',
+};
+
 // ============================================================================
 // 教程定义
 // ============================================================================
@@ -73,6 +77,10 @@ export const DiceThroneTutorial: TutorialManifest = {
     randomPolicy: {
         mode: 'fixed',
         values: [6],
+    },
+    stepValidator: (state, step) => {
+        if (step.id !== 'inner-peace-response') return true;
+        return Boolean(state.sys.responseWindow?.current);
     },
     steps: [
         // ==== 段 A：初始化 + UI 介绍 ====
@@ -219,7 +227,18 @@ export const DiceThroneTutorial: TutorialManifest = {
             highlightTarget: 'hand-area',
             position: 'top',
             requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'MODIFY_DIE', 'SYS_INTERACTION_RESPOND'],
+            allowedCommands: ['PLAY_CARD'],
+            advanceOnEvents: [
+                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-play-six' } },
+            ],
+        },
+        {
+            id: 'play-six-modify',
+            content: 'game-dicethrone:tutorial.steps.playSixModify',
+            highlightTarget: 'dice-tray',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: ['MODIFY_DIE', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
             advanceOnEvents: [
                 { type: 'DIE_MODIFIED' },
             ],
@@ -307,6 +326,16 @@ export const DiceThroneTutorial: TutorialManifest = {
             advanceOnEvents: [
                 { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-inner-peace' } },
             ],
+        },
+        {
+            id: 'inner-peace-response',
+            content: 'game-dicethrone:tutorial.steps.innerPeaceResponse',
+            highlightTarget: 'response-pass-button',
+            position: 'top',
+            requireAction: true,
+            allowManualSkip: false,
+            allowedCommands: ['RESPONSE_PASS'],
+            advanceOnEvents: [MATCH_RESPONSE_WINDOW_CLOSED],
         },
 
         // ==== 段 D：AI 回合（P0 main2 已操作完，推进到 AI 回合） ====

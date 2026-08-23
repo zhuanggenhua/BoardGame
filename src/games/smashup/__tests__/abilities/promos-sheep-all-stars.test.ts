@@ -205,7 +205,17 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 21,
         });
-        expect(entered.events).toEqual(expect.arrayContaining([
+        expect(entered.events).toEqual([]);
+        const blackSheepPrompt = getSimpleChoicePrompt(entered.matchState!, 'sheep_black_sheep');
+        expect(blackSheepPrompt.autoResolveIfSingle).toBe(false);
+        const resolvedBlackSheep = respondToPromptOption(
+            entered.matchState!,
+            option => option.value?.baseIndex === 1,
+            'move Black Sheep to selected base',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolvedBlackSheep.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.MINION_MOVED,
                 payload: expect.objectContaining({
@@ -402,6 +412,50 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
                 payload: expect.objectContaining({ reason: 'sheep_ewe_shall_pass' }),
             }),
         ]));
+    });
+
+    it('母羊 Shall Pass 有多个其它基地时必须按玩家选择的目的地移动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('drawn', 'sheep_flock', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_pasture', [
+                    makeMinion('ally', 'sheep_flock', '0', 2),
+                ]),
+                makeBase('base_stadium'),
+                makeBase('base_alpha'),
+            ],
+        });
+        const result = invokeRegisteredAbilityContract('sheep_ewe_shall_pass', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'ewe',
+            defId: 'sheep_ewe_shall_pass',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 31,
+        });
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'sheep_ewe_shall_pass');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).filter(option => option.value?.minionUid === 'ally')
+            .map(option => option.value?.toBaseIndex)).toEqual([1, 2]);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'ally' && option.value?.toBaseIndex === 2,
+            'move sheep ally to third base',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual([]);
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual([]);
+        expect(resolved.finalState.core.bases[2].minions.map(minion => minion.uid)).toEqual(['ally']);
     });
 
     it('公羊移动到新基地后可把力量 2 或以下随从返回手牌', () => {

@@ -185,4 +185,77 @@ describe('DiceThrone compatibility sizing', () => {
         expect(restoredHandArea.style.display).toBe('');
         expect(restoredHandCard?.getAttribute('data-card-key')).toBe(firstCardKey);
     });
+
+    it('普通点击手牌仍只打开预览，不直接出牌', () => {
+        vi.useFakeTimers();
+
+        const topCard: AbilityCard = {
+            id: 'c1',
+            name: 'Card',
+            cpCost: 1,
+            previewRef: { type: 'image', src: 'x' },
+            effects: [],
+        };
+        const onMagnifyCard = vi.fn();
+        const onPlayCard = vi.fn();
+
+        render(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                onMagnifyCard={onMagnifyCard}
+                onPlayCard={onPlayCard}
+            />,
+        );
+
+        act(() => {
+            vi.runAllTimers();
+        });
+
+        const handCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(handCard).not.toBeNull();
+        fireEvent.click(handCard!);
+
+        expect(onMagnifyCard).toHaveBeenCalledWith(topCard);
+        expect(onPlayCard).not.toHaveBeenCalled();
+    });
+
+    it('教程单击出牌模式会直接出牌并跳过预览层', () => {
+        vi.useFakeTimers();
+
+        const topCard: AbilityCard = {
+            id: 'c1',
+            name: 'Card',
+            cpCost: 1,
+            previewRef: { type: 'image', src: 'x' },
+            effects: [],
+        };
+        const onMagnifyCard = vi.fn();
+        const onPlayCard = vi.fn(() => true);
+
+        render(
+            <HandArea
+                hand={[topCard]}
+                playerCp={2}
+                onMagnifyCard={onMagnifyCard}
+                onPlayCard={onPlayCard}
+                playCardOnClick
+            />,
+        );
+
+        act(() => {
+            vi.runAllTimers();
+        });
+
+        const handCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(handCard).not.toBeNull();
+        fireEvent.click(handCard!);
+
+        expect(onPlayCard).toHaveBeenCalledWith(topCard);
+        expect(onMagnifyCard).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
+    });
 });

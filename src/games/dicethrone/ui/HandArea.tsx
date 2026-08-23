@@ -194,6 +194,7 @@ export const HandArea = ({
     characterId,
     playerBoardFace,
     disableCardPointerEvents = false,
+    playCardOnClick = false,
     isHidden = false,
 }: {
     hand: AbilityCard[];
@@ -222,6 +223,8 @@ export const HandArea = ({
     characterId?: string;
     playerBoardFace?: HeroState['playerBoardFace'];
     disableCardPointerEvents?: boolean;
+    /** 教程等引导模式下，点击手牌直接承接真实出牌动作；普通对局仍点击预览。 */
+    playCardOnClick?: boolean;
     isHidden?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
@@ -751,9 +754,10 @@ export const HandArea = ({
 
     const handleCardClick = React.useCallback((entry: HandCardEntry, options: {
         canClickDiscard: boolean;
+        canClickPlay: boolean;
         canPreviewCard: boolean;
     }) => {
-        const { canClickDiscard, canPreviewCard } = options;
+        const { canClickDiscard, canClickPlay, canPreviewCard } = options;
         if (shouldBlockLongPressClick(entry.key)) return;
 
         const lastDragEnd = lastDragEndRef.current;
@@ -775,10 +779,41 @@ export const HandArea = ({
             return;
         }
 
+        if (canClickPlay && onPlayCard) {
+            const currentIndex = handEntries.findIndex(item => item.key === entry.key);
+            pendingPlayRef.current = {
+                cardKey: entry.key,
+                card: entry.card,
+                offset: { x: 0, y: 0 },
+                originalIndex: currentIndex,
+            };
+            if (pendingPlayTimeoutRef.current) {
+                window.clearTimeout(pendingPlayTimeoutRef.current);
+            }
+            pendingPlayTimeoutRef.current = window.setTimeout(() => {
+                resetDragValues(entry.key, 'drag');
+                clearPendingPlay();
+            }, PENDING_PLAY_TIMEOUT);
+
+            const playAccepted = onPlayCard(entry.card);
+            if (playAccepted === false) {
+                clearPendingPlay();
+            }
+            return;
+        }
+
         if (canPreviewCard) {
             onMagnifyCard?.(entry.card);
         }
-    }, [onDiscardCard, onMagnifyCard, shouldBlockLongPressClick]);
+    }, [
+        clearPendingPlay,
+        handEntries,
+        onDiscardCard,
+        onMagnifyCard,
+        onPlayCard,
+        resetDragValues,
+        shouldBlockLongPressClick,
+    ]);
 
     React.useEffect(() => {
         const handlePointerEnd = (_event: PointerEvent) => {
@@ -861,6 +896,7 @@ export const HandArea = ({
                         // 弃牌模式下禁用拖拽，改用点击
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
+                        const canClickPlay = playCardOnClick && canPlayCards && isFlipped && !isReturning && !isDiscardMode;
                         const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning;
                         const canHoverCard = (canDrag || canClickDiscard || canPreviewCard || respondableCardIds?.has(card.id))
                             && !disableCardPointerEvents;
@@ -915,14 +951,14 @@ export const HandArea = ({
                                 onDragStart={() => handleCardDragStart(entry, canDrag, dragValues)}
                                 onDrag={(_, info) => canDrag && handleDrag(cardKey, info)}
                                 onDragEnd={() => canDrag && handleDragEnd(entry, 'drag')}
-                                onClick={() => handleCardClick(entry, { canClickDiscard, canPreviewCard })}
+                                onClick={() => handleCardClick(entry, { canClickDiscard, canClickPlay, canPreviewCard })}
                                 onHoverStart={() => undefined}
                                 onHoverEnd={() => {
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}
                                 className={`
                                     absolute bottom-0 rounded-[0.8vw]
-                                    ${canClickDiscard ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
+                                    ${canClickDiscard || canClickPlay ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
                                     ${disableCardPointerEvents ? 'pointer-events-none' : 'pointer-events-auto'}
                                     origin-bottom-center bg-transparent overflow-visible
                                 `}

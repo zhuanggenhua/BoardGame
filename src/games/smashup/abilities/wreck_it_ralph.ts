@@ -1,4 +1,4 @@
-import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -20,18 +20,20 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import {
     registerCardAbilitySuppression,
     registerTrigger,
 } from '../domain/ongoingEffects';
-import type { TriggerContext } from '../domain/ongoingEffects';
+import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import type {
     BaseReplacedEvent,
     CardSuppressedEvent,
     MinionMetadataUpdatedEvent,
+    MinionOnBase,
     OngoingAttachedEvent,
     SmashUpCore,
     SmashUpEvent,
@@ -56,6 +58,7 @@ const FELIX = 'wreck_it_ralph_fix_it_felix_jr';
 const VANELLOPE = 'wreck_it_ralph_vanellope_von_schweetz';
 const CALHOUN = 'wreck_it_ralph_sergeant_calhoun';
 const SUGAR_RUSH_RACER = 'wreck_it_ralph_sugar_rush_racer';
+const SUGAR_RUSH_RACER_MOVE = 'wreck_it_ralph_sugar_rush_racer_move';
 const CY_BUG_INFESTATION = 'wreck_it_ralph_cy_bug_infestation';
 const ESCAPE_POD = 'wreck_it_ralph_escape_pod';
 const IM_GONNA_WRECK_IT = 'wreck_it_ralph_i_m_gonna_wreck_it';
@@ -115,6 +118,8 @@ type MinionChoice = {
 type SkipChoice = {
     skip: true;
 };
+
+type SugarRushRacerMoveChoice = BaseChoice | SkipChoice;
 
 type FactionChoice = {
     factionId: string;
@@ -260,6 +265,76 @@ function collectOtherBaseOptions(core: SmashUpCore, baseIndex: number): PromptOp
             .filter(base => base.baseIndex !== baseIndex),
         core,
     ) as PromptOption<BaseChoice>[];
+}
+
+function skipPromptOption(label = '跳过'): PromptOption<SkipChoice> {
+    return {
+        id: 'skip',
+        label,
+        labelKey: 'ui.skip',
+        value: { skip: true },
+        displayMode: 'button',
+    };
+}
+
+function collectSugarRushRacerMoveOptions(ctx: TriggerContext): PromptOption<SugarRushRacerMoveChoice>[] {
+    const sourceBaseIndex = ctx.sourceBaseIndex;
+    const actionTargetBaseIndex = ctx.actionTargetBaseIndex;
+    if (sourceBaseIndex === undefined || actionTargetBaseIndex === undefined) {
+        return [];
+    }
+    const destinations = sourceBaseIndex === actionTargetBaseIndex
+        ? collectOtherBaseOptions(ctx.state, sourceBaseIndex)
+        : buildBaseTargetOptions([{
+            baseIndex: actionTargetBaseIndex,
+            label: baseLabel(ctx.state, actionTargetBaseIndex),
+        }], ctx.state) as PromptOption<BaseChoice>[];
+    return [skipPromptOption('不移动'), ...destinations];
+}
+
+function buildSugarRushRacerMoveEvents(
+    state: MatchState<SmashUpCore> | SmashUpCore,
+    core: SmashUpCore,
+    racer: MinionOnBase,
+    sourceBaseIndex: number,
+    toBaseIndex: number,
+    playerId: PlayerId,
+    now: number,
+): SmashUpEvent[] {
+    if (sourceBaseIndex === toBaseIndex || !core.bases[toBaseIndex]) return [];
+    return [
+        ...moveMinionToBase(state, racer, sourceBaseIndex, toBaseIndex, playerId, SUGAR_RUSH_RACER, now),
+        addTempPower(racer.uid, toBaseIndex, 1, SUGAR_RUSH_RACER, now, {
+            sourcePlayerId: playerId,
+            sourceCardUid: racer.uid,
+            sourceDefId: SUGAR_RUSH_RACER,
+            sourceControllerId: playerId,
+            sourceBaseIndex,
+        }),
+    ];
+}
+
+function queueSugarRushRacerMovePrompt(ctx: TriggerContext, racer: MinionOnBase): TriggerResult {
+    if (!ctx.matchState || !ctx.sourceControllerId || ctx.sourceBaseIndex === undefined) return { events: [] };
+    const options = collectSugarRushRacerMoveOptions(ctx);
+    if (options.length <= 1) return { events: [] };
+    const interaction = createSimpleChoice<SugarRushRacerMoveChoice>(
+        `${SUGAR_RUSH_RACER_MOVE}_${ctx.now}_${ctx.sourceCardUid}`,
+        ctx.sourceControllerId,
+        '甜蜜冲刺车手：选择是否移动此角色',
+        options,
+        {
+            sourceId: SUGAR_RUSH_RACER_MOVE,
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = {
+        sourceCardUid: racer.uid,
+        sourceBaseIndex: ctx.sourceBaseIndex,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function collectMoveMinionOptions(
@@ -866,8 +941,7 @@ function felixOnPlay(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
         }));
     }
-    const first = options[0].value;
-    return { events: first?.cardUid ? [recoverCardsFromDiscard(ctx.playerId, [first.cardUid], FELIX, ctx.now)] : [] };
+    return { events: [] };
 }
 
 function felixTalent(ctx: AbilityContext): AbilityResult {
@@ -886,28 +960,17 @@ function felixTalent(ctx: AbilityContext): AbilityResult {
         }));
     }
 
-    const baseModifier = collectBaseModifiers(ctx.state, ctx.baseIndex)[0];
-    if (!baseModifier) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
-    return {
-        events: [cardToDeckTop(
-            baseModifier.action.uid,
-            baseModifier.action.defId,
-            baseModifier.action.ownerId,
-            FELIX,
-            ctx.now,
-            ctx.playerId,
-            ctx.cardUid,
-            ctx.baseIndex,
-        )],
-    };
+    return { events: [] };
 }
 
 function vanellopeTalent(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     const self = base?.minions.find(minion => minion.uid === ctx.cardUid && minion.controller === ctx.playerId);
-    const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (!self || toBaseIndex === undefined) return { events: [] };
-    if (ctx.matchState) {
+    if (!self) return { events: [] };
+    const directToBaseIndex = ctx.targetBaseIndex !== undefined && ctx.targetBaseIndex !== ctx.baseIndex && ctx.state.bases[ctx.targetBaseIndex]
+        ? ctx.targetBaseIndex
+        : undefined;
+    if (ctx.matchState && directToBaseIndex === undefined) {
         return runtimeToAbilityResult(executeAbilityProgram(vanellopeDestinationPromptProgram, {
             matchState: ctx.matchState,
             playerId: ctx.playerId,
@@ -917,10 +980,11 @@ function vanellopeTalent(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
         }));
     }
+    if (directToBaseIndex === undefined) return { events: [] };
     return {
         events: [
-            ...moveMinionToBase(ctx.matchState, self, ctx.baseIndex, toBaseIndex, ctx.playerId, VANELLOPE, ctx.now),
-            addPowerCounter(self.uid, toBaseIndex, 1, VANELLOPE, ctx.now, source(ctx)),
+            ...moveMinionToBase(ctx.matchState, self, ctx.baseIndex, directToBaseIndex, ctx.playerId, VANELLOPE, ctx.now),
+            addPowerCounter(self.uid, directToBaseIndex, 1, VANELLOPE, ctx.now, source(ctx)),
         ],
     };
 }
@@ -935,7 +999,7 @@ function calhounTalent(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function sugarRushRacerOnBaseModifier(ctx: TriggerContext): SmashUpEvent[] {
+function sugarRushRacerOnBaseModifier(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (!ctx.sourceCardUid || !ctx.sourceControllerId || ctx.actionTargetBaseIndex === undefined) return [];
     if (!ctx.triggerCardDefId || !isBaseModifier(ctx.triggerCardDefId)) return [];
     const sourceBaseIndex = ctx.sourceBaseIndex;
@@ -943,20 +1007,8 @@ function sugarRushRacerOnBaseModifier(ctx: TriggerContext): SmashUpEvent[] {
     const sourceBase = ctx.state.bases[sourceBaseIndex];
     const racer = sourceBase?.minions.find(minion => minion.uid === ctx.sourceCardUid);
     if (!racer) return [];
-    const toBaseIndex = sourceBaseIndex === ctx.actionTargetBaseIndex
-        ? firstOtherBaseIndex(ctx.state, sourceBaseIndex)
-        : ctx.actionTargetBaseIndex;
-    if (toBaseIndex === undefined) return [];
-    return [
-        ...moveMinionToBase(ctx.matchState ?? ctx.state, racer, sourceBaseIndex, toBaseIndex, ctx.sourceControllerId, SUGAR_RUSH_RACER, ctx.now),
-        addTempPower(racer.uid, toBaseIndex, 1, SUGAR_RUSH_RACER, ctx.now, {
-            sourcePlayerId: ctx.sourceControllerId,
-            sourceCardUid: ctx.sourceCardUid,
-            sourceDefId: SUGAR_RUSH_RACER,
-            sourceControllerId: ctx.sourceControllerId,
-            sourceBaseIndex,
-        }),
-    ];
+    if (ctx.matchState) return queueSugarRushRacerMovePrompt(ctx, racer);
+    return [];
 }
 
 function cyBugInfestationTalent(ctx: AbilityContext): AbilityResult {
@@ -981,8 +1033,6 @@ function cyBugInfestationTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function escapePodMove(ctx: AbilityContext, maxCount: number): AbilityResult {
-    const toBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (toBaseIndex === undefined) return { events: [] };
     const movableCount = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
         .filter(minion => minion.controller === ctx.playerId).length;
     if (movableCount === 0) return { events: [] };
@@ -999,13 +1049,7 @@ function escapePodMove(ctx: AbilityContext, maxCount: number): AbilityResult {
             addTempPowerAfterMove: false,
         }));
     }
-    const targets = (ctx.state.bases[ctx.baseIndex]?.minions ?? [])
-        .filter(minion => minion.controller === ctx.playerId)
-        .slice(0, maxCount);
-    return {
-        events: targets.flatMap(minion =>
-            moveMinionToBase(ctx.matchState, minion, ctx.baseIndex, toBaseIndex, ctx.playerId, ESCAPE_POD, ctx.now)),
-    };
+    return { events: [] };
 }
 
 function iAmGonnaWreckItTalent(ctx: AbilityContext): AbilityResult {
@@ -1030,8 +1074,7 @@ function kartBakeryTalent(ctx: AbilityContext): AbilityResult {
 
 function kingCandyTalent(ctx: AbilityContext): AbilityResult {
     const current = collectBaseModifiers(ctx.state, ctx.baseIndex).find(entry => entry.action.uid === ctx.cardUid);
-    const destinationBaseIndex = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (!current || destinationBaseIndex === undefined) return { events: [] };
+    if (!current) return { events: [] };
     if (ctx.matchState) {
         const options = collectKingCandyDestinationOptions(ctx.matchState.core, ctx.baseIndex);
         if (options.length === 0) return { events: [] };
@@ -1044,56 +1087,7 @@ function kingCandyTalent(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
         }));
     }
-    const target = ctx.state.bases[destinationBaseIndex]?.minions[0]
-        ?? ctx.state.bases[ctx.baseIndex]?.minions[0];
-    return {
-        events: [
-            {
-                type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: {
-                    cardUid: ctx.cardUid,
-                    defId: ctx.defId,
-                    ownerId: current.action.ownerId,
-                    sourcePlayerId: ctx.playerId,
-                    targetType: 'base',
-                    targetBaseIndex: destinationBaseIndex,
-                    metadata: {
-                        ...(current.action.metadata ?? {}),
-                        kingCandyTargetMinionUid: target?.uid,
-                    },
-                    talentUsed: true,
-                },
-                timestamp: ctx.now,
-            } as OngoingAttachedEvent,
-            ...(target?.attachedActions ?? []).map(action => ({
-                type: SU_EVENTS.CARD_SUPPRESSED,
-                payload: {
-                    cardUid: action.uid,
-                    baseIndex: destinationBaseIndex,
-                    suppressorPlayerId: ctx.playerId,
-                    cardType: 'attached',
-                    reason: KING_CANDY,
-                    ...source(ctx),
-                },
-                timestamp: ctx.now,
-            } as CardSuppressedEvent)),
-            ...(target
-                ? [{
-                    type: SU_EVENTS.MINION_METADATA_UPDATED,
-                    payload: {
-                        minionUid: target.uid,
-                        baseIndex: destinationBaseIndex,
-                        metadataUpdate: {
-                            kingCandyCounterSuppressedBy: ctx.cardUid,
-                            kingCandyCounterSuppressedByPlayerId: ctx.playerId,
-                        },
-                        reason: KING_CANDY,
-                    },
-                    timestamp: ctx.now,
-                } as MinionMetadataUpdatedEvent]
-                : []),
-        ],
-    };
+    return { events: [] };
 }
 
 function mintsEruption(ctx: AbilityContext): AbilityResult {
@@ -1315,6 +1309,31 @@ function powerStripActive(ctx: BaseAbilityContext): AbilityResult {
 }
 
 export function registerWreckItRalphAbilities(): void {
+    registerInteractionHandler(SUGAR_RUSH_RACER_MOVE, (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as SugarRushRacerMoveChoice | undefined;
+        if ((selected as SkipChoice | undefined)?.skip) return { state, events: [] };
+        const source = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        const toBaseIndex = (selected as BaseChoice | undefined)?.baseIndex;
+        if (!source?.sourceCardUid || source.sourceBaseIndex === undefined || typeof toBaseIndex !== 'number') {
+            return { state, events: [] };
+        }
+        const racer = state.core.bases[source.sourceBaseIndex]?.minions.find(minion =>
+            minion.uid === source.sourceCardUid && minion.controller === playerId);
+        if (!racer) return { state, events: [] };
+        return {
+            state,
+            events: buildSugarRushRacerMoveEvents(
+                state,
+                state.core,
+                racer,
+                source.sourceBaseIndex,
+                toBaseIndex,
+                playerId,
+                timestamp,
+            ),
+        };
+    });
+
     registerAbilityProgram(RALPH, 'talent', { program: createEffectProgram(ralphTalent) });
     registerAbilityProgram(FELIX, 'onPlay', { program: createEffectProgram(felixOnPlay) });
     registerAbilityProgram(FELIX, 'talent', { program: createEffectProgram(felixTalent) });

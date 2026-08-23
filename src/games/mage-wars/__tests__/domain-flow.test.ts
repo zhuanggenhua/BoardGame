@@ -15,6 +15,8 @@ import {
     getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
+import { resolveMageWarsObjectAttackEvents } from '../domain/execute';
+import { mageWarsFlowHooks } from '../domain/flowHooks';
 import { reduceEvent } from '../domain/reducer';
 import {
     ARENA_ZONE_IDS,
@@ -10180,6 +10182,16 @@ describe('mage-wars domain flow', () => {
                 }),
             }),
             expect.objectContaining({
+                type: MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_DAMAGE_AVAILABLE,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    sourceObjectId: enchantment!.id,
+                    sourceSpellCardId: deathLinkSpellId,
+                    targetObjectId: target.id,
+                    amount: 2,
+                }),
+            }),
+            expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
@@ -12603,6 +12615,76 @@ describe('mage-wars domain flow', () => {
         expect(actionLogKinds(upkeep.state)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_REGENERATED);
     });
 
+    it('emits upkeep automatic damage facts from flow hooks without resolving damage there', () => {
+        const baseState = setupState('channel');
+        const rottedCat = makeArenaObject('flow-rot-cat-0', '0', PLAYER_ZERO_START_ZONE, {
+            statusTokens: { [STATUS_TOKEN_IDS.ROT]: 1 },
+        });
+        const toxicTarget = makeArenaObject('flow-toxic-target-1', '1', ARENA_ZONE_IDS.A2, {
+            life: 20,
+            damage: 3,
+        });
+        const toxicEnchantment = makeVisibleEnchantmentObject('flow-toxic-enchantment-0', '0', ARENA_ZONE_IDS.A2, {
+            sourceSpellCardId: 1820,
+            sourceObjectId: 'spell-card-1820',
+            name: 'Ghoul Rot',
+            anchoredToObjectId: toxicTarget.id,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: [rottedCat, toxicTarget, toxicEnchantment].reduce(
+                (core, object) => withArenaObject(core, object),
+                {
+                    ...baseState.core,
+                    players: {
+                        ...baseState.core.players,
+                        '0': {
+                            ...baseState.core.players['0'],
+                            statusTokens: { [STATUS_TOKEN_IDS.BURN]: 1 },
+                        },
+                    },
+                },
+            ),
+            sys: baseState.sys,
+        };
+
+        const result = mageWarsFlowHooks.onPhaseEnter?.({
+            state,
+            from: 'channel',
+            to: 'upkeep',
+            command: {
+                type: FLOW_COMMANDS.ADVANCE_PHASE,
+                playerId: '0',
+                payload: {},
+            },
+            random: fixedRandom,
+        });
+        const hookEvents = (Array.isArray(result) ? result : result?.events) ?? [];
+        const toxicAvailable = hookEvents.find((event) => (
+            event.type === MAGE_WARS_EVENTS.UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE
+        ));
+
+        expect(hookEvents.map((event) => event.type)).toEqual(expect.arrayContaining([
+            MAGE_WARS_EVENTS.UPKEEP_ROT_DAMAGE_AVAILABLE,
+            MAGE_WARS_EVENTS.UPKEEP_BURN_ROLL_AVAILABLE,
+            MAGE_WARS_EVENTS.UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE,
+        ]));
+        expect(hookEvents).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: 'DAMAGE_DEALT' }),
+            expect.objectContaining({ type: MAGE_WARS_EVENTS.STATUS_TOKEN_REMOVED }),
+            expect.objectContaining({ type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED }),
+            expect.objectContaining({ type: MAGE_WARS_EVENTS.MAGE_DEFEATED }),
+        ]));
+        expect(toxicAvailable).toMatchObject({
+            payload: expect.objectContaining({
+                sourceObjectId: toxicEnchantment.id,
+                sourceSpellCardId: 1820,
+                sourcePlayerId: '0',
+                targetObjectId: toxicTarget.id,
+                amount: 2,
+            }),
+        });
+    });
+
     it('deals direct rot damage to mages and living arena objects during upkeep', () => {
         const baseState = setupState('channel');
         const rottedCat = makeArenaObject('rotted-cat-0', '0', PLAYER_ZERO_START_ZONE, {
@@ -14188,10 +14270,20 @@ describe('mage-wars domain flow', () => {
             '1',
             PLAYER_ONE_START_ZONE,
         );
-        const attacked = runCommand({
+        const state: MatchState<MageWarsCore> = {
             core: [attacker, cuirass].reduce(withArenaObject, baseState.core),
             sys: baseState.sys,
-        }, {
+        };
+        const rawAttackEvents = resolveMageWarsObjectAttackEvents({
+            state,
+            sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            timestamp: 0,
+            random: fixedRandom,
+            attackerObjectId: attacker.id,
+            attackProfileId: 'attack-0',
+            targetPlayerId: '1',
+        });
+        const attacked = runCommand(state, {
             type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             playerId: '0',
             payload: {
@@ -14205,6 +14297,14 @@ describe('mage-wars domain flow', () => {
             event.type === 'DAMAGE_DEALT'
             && event.payload.sourceAbilityId === 'mw.equipment.3700.damage-barrier'
         ));
+        expect(rawAttackEvents.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.DAMAGE_BARRIER_AVAILABLE);
+        expect(rawAttackEvents.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.DAMAGE_BARRIER_TRIGGERED);
+        expect(rawAttackEvents).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({ sourceAbilityId: 'mw.equipment.3700.damage-barrier' }),
+            }),
+        ]));
         expect(attacked.success).toBe(true);
         expect(attacked.events).toEqual(expect.arrayContaining([
             expect.objectContaining({

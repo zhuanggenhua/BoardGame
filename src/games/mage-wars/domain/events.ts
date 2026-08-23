@@ -2,6 +2,7 @@ import type { GameEvent, PlayerId } from '../../../engine/types';
 import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, MageWarsWallEdgeId, StatusTokenId } from './ids';
 import type { MageWarsArenaObjectState, MageWarsSpellCasterRef, MageWarsWallState } from './core-types';
 import type { MageWarsResponseContext } from './responseResolution';
+import type { MageWarsDamageType, MageWarsSpellCounterResponseCardId } from './spellRules';
 import type { MageWarsTemporaryTraitGrantId, MageWarsTemporaryTraitId } from './temporaryTraits';
 
 export const MAGE_WARS_EVENTS = {
@@ -14,6 +15,10 @@ export const MAGE_WARS_EVENTS = {
     MANA_SPENT: 'MW_MANA_SPENT',
     UPKEEP_COST_AVAILABLE: 'MW_UPKEEP_COST_AVAILABLE',
     UPKEEP_HEAL_TRANSFER_AVAILABLE: 'MW_UPKEEP_HEAL_TRANSFER_AVAILABLE',
+    UPKEEP_HEAL_TRANSFER_DAMAGE_AVAILABLE: 'MW_UPKEEP_HEAL_TRANSFER_DAMAGE_AVAILABLE',
+    UPKEEP_ROT_DAMAGE_AVAILABLE: 'MW_UPKEEP_ROT_DAMAGE_AVAILABLE',
+    UPKEEP_BURN_ROLL_AVAILABLE: 'MW_UPKEEP_BURN_ROLL_AVAILABLE',
+    UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE: 'MW_UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE',
     MANA_DRAINED: 'MW_MANA_DRAINED',
     SPELL_CAST_STARTED: 'MW_SPELL_CAST_STARTED',
     SPELL_CAST_RESOLVED: 'MW_SPELL_CAST_RESOLVED',
@@ -55,6 +60,7 @@ export const MAGE_WARS_EVENTS = {
     SPELL_COUNTERED: 'MW_SPELL_COUNTERED',
     ATTACK_REVERSED: 'MW_ATTACK_REVERSED',
     ATTACK_MISSED: 'MW_ATTACK_MISSED',
+    DAMAGE_BARRIER_AVAILABLE: 'MW_DAMAGE_BARRIER_AVAILABLE',
     DAMAGE_BARRIER_TRIGGERED: 'MW_DAMAGE_BARRIER_TRIGGERED',
     MAGE_DEFEATED: 'MW_MAGE_DEFEATED',
     TURN_ADVANCED: 'MW_TURN_ADVANCED',
@@ -134,6 +140,45 @@ export interface MageWarsUpkeepHealTransferAvailableEvent extends GameEvent<type
         targetObjectId: string;
         maxHealing: number;
         availableHealing: number;
+    };
+}
+
+export interface MageWarsUpkeepHealTransferDamageAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.UPKEEP_HEAL_TRANSFER_DAMAGE_AVAILABLE> {
+    payload: {
+        playerId: PlayerId;
+        sourceObjectId: string;
+        sourceSpellCardId: number;
+        targetObjectId: string;
+        amount: number;
+    };
+}
+
+export interface MageWarsUpkeepRotDamageAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.UPKEEP_ROT_DAMAGE_AVAILABLE> {
+    payload: {
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        sourcePlayerId: PlayerId;
+        amount: number;
+    };
+}
+
+export interface MageWarsUpkeepBurnRollAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.UPKEEP_BURN_ROLL_AVAILABLE> {
+    payload: {
+        targetPlayerId?: PlayerId;
+        targetObjectId?: string;
+        sourcePlayerId: PlayerId;
+        burnRolls: number[];
+    };
+}
+
+export interface MageWarsUpkeepEnchantmentDirectDamageAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.UPKEEP_ENCHANTMENT_DIRECT_DAMAGE_AVAILABLE> {
+    payload: {
+        sourceObjectId: string;
+        sourceSpellCardId: number;
+        sourcePlayerId: PlayerId;
+        targetObjectId: string;
+        amount: number;
+        damageType: MageWarsDamageType;
     };
 }
 
@@ -507,20 +552,26 @@ export interface MageWarsMeleeAttackManaTaxTriggeredEvent extends GameEvent<type
     };
 }
 
+export interface MageWarsDamageBarrierPayload {
+    sourceObjectId: string;
+    sourceSpellCardId: number;
+    targetPlayerId: PlayerId;
+    attackerId?: PlayerId;
+    attackerObjectId?: string;
+    roundNumber: number;
+    diceResults: number[];
+    baseDamage: number;
+    damageTypes: string[];
+    unavoidable: boolean;
+    lethal: boolean;
+}
+
+export interface MageWarsDamageBarrierAvailableEvent extends GameEvent<typeof MAGE_WARS_EVENTS.DAMAGE_BARRIER_AVAILABLE> {
+    payload: MageWarsDamageBarrierPayload;
+}
+
 export interface MageWarsDamageBarrierTriggeredEvent extends GameEvent<typeof MAGE_WARS_EVENTS.DAMAGE_BARRIER_TRIGGERED> {
-    payload: {
-        sourceObjectId: string;
-        sourceSpellCardId: number;
-        targetPlayerId: PlayerId;
-        attackerId?: PlayerId;
-        attackerObjectId?: string;
-        roundNumber: number;
-        diceResults: number[];
-        baseDamage: number;
-        damageTypes: string[];
-        unavoidable: boolean;
-        lethal: boolean;
-    };
+    payload: MageWarsDamageBarrierPayload;
 }
 
 export interface MageWarsArenaObjectAttackDeclaredEvent extends GameEvent<typeof MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED> {
@@ -608,7 +659,7 @@ export interface MageWarsEnchantmentRevealedEvent extends GameEvent<typeof MAGE_
 
 export interface MageWarsSpellCounteredEvent extends GameEvent<typeof MAGE_WARS_EVENTS.SPELL_COUNTERED> {
     payload: {
-        responseCardId: 1825 | 1901;
+        responseCardId: MageWarsSpellCounterResponseCardId;
         responseObjectId: string;
         spellCardId: number;
         spellOwnerId: PlayerId;
@@ -686,6 +737,10 @@ export type MageWarsEvent =
     | MageWarsManaSpentEvent
     | MageWarsUpkeepCostAvailableEvent
     | MageWarsUpkeepHealTransferAvailableEvent
+    | MageWarsUpkeepHealTransferDamageAvailableEvent
+    | MageWarsUpkeepRotDamageAvailableEvent
+    | MageWarsUpkeepBurnRollAvailableEvent
+    | MageWarsUpkeepEnchantmentDirectDamageAvailableEvent
     | MageWarsManaDrainedEvent
     | MageWarsSpellCastStartedEvent
     | MageWarsSpellCastResolvedEvent
@@ -718,6 +773,7 @@ export type MageWarsEvent =
     | MageWarsAttackDeclaredEvent
     | MageWarsMentalCalmTriggeredEvent
     | MageWarsMeleeAttackManaTaxTriggeredEvent
+    | MageWarsDamageBarrierAvailableEvent
     | MageWarsDamageBarrierTriggeredEvent
     | MageWarsArenaObjectAttackDeclaredEvent
     | MageWarsArenaObjectDefenseRolledEvent

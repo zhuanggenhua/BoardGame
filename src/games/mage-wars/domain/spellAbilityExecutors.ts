@@ -21,33 +21,10 @@ import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, M
 import { getStatusTokenAmount } from './statusTokens';
 import {
     canMageWarsStatusTokenAffectArenaObject,
-    isMageWarsConjurationSpell,
-    isMageWarsEquipmentSpell,
     isMageWarsElementalStaffSpell,
     isMageWarsAreaTargetSpell,
-    isMageWarsChainLightningSpell,
     isMageWarsChainLightningTargetObject,
-    isMageWarsCreatureSpell,
     isMageWarsAnimalArenaObject,
-    isMageWarsImplementedBloodstrikeSpell,
-    isMageWarsImplementedCallOfTheWildSpell,
-    isMageWarsImplementedChargeOnSpell,
-    isMageWarsImplementedDissolveSpell,
-    isMageWarsImplementedDispelSpell,
-    isMageWarsImplementedExplodeSpell,
-    isMageWarsImplementedEquipmentSpell,
-    isMageWarsImplementedForcePushSpell,
-    isMageWarsImplementedHealingSpell,
-    isMageWarsImplementedLifeDrainSpell,
-    isMageWarsImplementedRouseTheBeastSpell,
-    isMageWarsImplementedSleepSpell,
-    isMageWarsImplementedStealEnchantmentSpell,
-    isMageWarsImplementedTanglevineSpell,
-    isMageWarsImplementedTeleportSpell,
-    isMageWarsImplementedWallSpell,
-    isMageWarsImplementedVisibleAreaEnchantmentSpell,
-    isMageWarsImplementedVisibleEnchantmentSpell,
-    isMageWarsHiddenResponseEnchantmentSpell,
     hasMageWarsSpellGrantedTrait,
     isMageWarsIntermittentJetSpell,
     isMageWarsFlyingArenaObject,
@@ -75,12 +52,14 @@ import {
     resolveMageWarsObjectEffectiveLife,
     resolveMageWarsChainLightningEffectDieResult,
     resolveMageWarsAttackPushEffect,
+    resolveMageWarsSpellCastChoiceFamily,
     resolveMageWarsTeleportSpellManaCostForTargetZone,
     resolveMageWarsStealEnchantmentNewTargetZoneId,
     resolveMageWarsSpellTargetZoneId,
     resolveMageWarsVisibleEnchantmentZoneId,
     resolveMageWarsAttackStatusTokenEffects,
     resolveMageWarsWallPassageDamage,
+    type MageWarsSpellCastChoiceFamily,
 } from './spellRules';
 import { getArenaObject, getArenaZone, removeArenaObject, resolveMageWarsWallEdgeZones } from './utils';
 
@@ -110,6 +89,10 @@ export const mageWarsSpellAbilityExecutorRegistry = createAbilityExecutorRegistr
 >('mage-wars-spell-ability-executors');
 
 export const MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG = 'spell-cast' as const;
+
+type MageWarsSpellCastFamilyExecutor = (
+    ctx: MageWarsSpellAbilityContext,
+) => AbilityResult<MageWarsEvent>;
 
 interface MageWarsResolvedAttackTarget {
     targetId: string;
@@ -298,9 +281,7 @@ function buildArenaObject(
 }
 
 function buildEquipmentObject(ctx: MageWarsSpellAbilityContext): MageWarsArenaObjectState | undefined {
-    if (!isMageWarsEquipmentSpell(ctx.spell) || !ctx.command.payload.targetPlayerId) {
-        return undefined;
-    }
+    if (!ctx.command.payload.targetPlayerId) return undefined;
 
     const targetMage = ctx.state.core.players[ctx.command.payload.targetPlayerId];
     if (!targetMage) return undefined;
@@ -333,9 +314,7 @@ function buildEquipmentObject(ctx: MageWarsSpellAbilityContext): MageWarsArenaOb
 }
 
 function executeSummonCreatureSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsCreatureSpell(ctx.spell) || !ctx.command.payload.targetZoneId) {
-        return { events: [] };
-    }
+    if (!ctx.command.payload.targetZoneId) return { events: [] };
 
     const object = buildArenaObject(ctx, 'creature', ctx.command.payload.targetZoneId);
     if (!object) return { events: [] };
@@ -350,47 +329,36 @@ function executeSummonCreatureSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
     };
 }
 
-function executeSummonConjurationSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsConjurationSpell(ctx.spell)) {
-        return { events: [] };
-    }
-
-    if (isMageWarsImplementedWallSpell(ctx.spell)) {
-        return executeSummonWallSpell(ctx);
-    }
+function executeTanglevineSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
+    const targetObjectId = ctx.command.payload.targetObjectId;
+    if (!targetObjectId) return { events: [] };
 
     const targetZoneId = resolveMageWarsSpellTargetZoneId(ctx.state.core, ctx.command.payload);
     if (!targetZoneId) return { events: [] };
 
-    const anchor = ctx.command.payload.targetObjectId
-        ? { anchoredToObjectId: ctx.command.payload.targetObjectId }
-        : ctx.command.payload.targetPlayerId
-            ? { anchoredToPlayerId: ctx.command.payload.targetPlayerId }
-            : undefined;
-    const object = buildArenaObject(ctx, 'conjuration', targetZoneId, anchor);
+    const object = buildArenaObject(ctx, 'conjuration', targetZoneId, { anchoredToObjectId: targetObjectId });
     if (!object) return { events: [] };
 
-    const restrainEvent: MageWarsEvent[] = isMageWarsImplementedTanglevineSpell(ctx.spell) && ctx.command.payload.targetObjectId
-        ? [{
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_RESTRAINED,
-            payload: {
-                objectId: ctx.command.payload.targetObjectId,
-                restrainedByObjectId: object.id,
-                sourceAbilityId: ctx.sourceId,
-                spellCardId: ctx.spell.spellCardId,
-            },
-            sourceCommandType: ctx.command.type,
-            timestamp: ctx.timestamp,
-        }]
-        : [];
-
     return {
-        events: [{
-            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
-            payload: { object },
-            sourceCommandType: ctx.command.type,
-            timestamp: ctx.timestamp,
-        }, ...restrainEvent],
+        events: [
+            {
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+                payload: { object },
+                sourceCommandType: ctx.command.type,
+                timestamp: ctx.timestamp,
+            },
+            {
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_RESTRAINED,
+                payload: {
+                    objectId: targetObjectId,
+                    restrainedByObjectId: object.id,
+                    sourceAbilityId: ctx.sourceId,
+                    spellCardId: ctx.spell.spellCardId,
+                },
+                sourceCommandType: ctx.command.type,
+                timestamp: ctx.timestamp,
+            },
+        ],
     };
 }
 
@@ -423,10 +391,6 @@ function executeSummonWallSpell(ctx: MageWarsSpellAbilityContext): AbilityResult
 }
 
 function executeEquipmentSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedEquipmentSpell(ctx.spell)) {
-        return { events: [] };
-    }
-
     const object = buildEquipmentObject(ctx);
     if (!object) return { events: [] };
 
@@ -440,20 +404,11 @@ function executeEquipmentSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<
     };
 }
 
-function buildVisibleEnchantmentObject(ctx: MageWarsSpellAbilityContext): MageWarsArenaObjectState | undefined {
-    const isAreaEnchantment = isMageWarsImplementedVisibleAreaEnchantmentSpell(ctx.spell);
-    if (!isAreaEnchantment && !isMageWarsImplementedVisibleEnchantmentSpell(ctx.spell)) {
-        return undefined;
-    }
-
-    const targetObject = ctx.command.payload.targetObjectId
-        ? getArenaObject(ctx.state.core, ctx.command.payload.targetObjectId)
-        : undefined;
-    const targetZoneId = isAreaEnchantment
-        ? ctx.command.payload.targetZoneId
-        : targetObject?.zoneId;
-    if (!targetZoneId) return undefined;
-
+function buildVisibleEnchantmentObject(
+    ctx: MageWarsSpellAbilityContext,
+    targetZoneId: MageWarsArenaObjectState['zoneId'],
+    anchor: Pick<MageWarsArenaObjectState, 'anchoredToObjectId'> | Pick<MageWarsArenaObjectState, 'anchoredToZoneId'>,
+): MageWarsArenaObjectState {
     return {
         id: createArenaObjectInstanceId(ctx),
         kind: 'enchantment',
@@ -474,17 +429,11 @@ function buildVisibleEnchantmentObject(ctx: MageWarsSpellAbilityContext): MageWa
         attackOrTraitLine: ctx.spell.attackOrTraitLine,
         rulesText: ctx.spell.rulesText,
         revealed: true,
-        ...(isAreaEnchantment
-            ? { anchoredToZoneId: targetZoneId }
-            : targetObject ? { anchoredToObjectId: targetObject.id } : {}),
+        ...anchor,
     };
 }
 
 function buildHiddenResponseEnchantmentObject(ctx: MageWarsSpellAbilityContext): MageWarsArenaObjectState | undefined {
-    if (!isMageWarsHiddenResponseEnchantmentSpell(ctx.spell)) {
-        return undefined;
-    }
-
     const targetObject = ctx.command.payload.targetObjectId
         ? getArenaObject(ctx.state.core, ctx.command.payload.targetObjectId)
         : undefined;
@@ -532,17 +481,35 @@ function executeHiddenResponseEnchantmentSpell(ctx: MageWarsSpellAbilityContext)
     };
 }
 
-function executeVisibleEnchantmentSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    const object = buildVisibleEnchantmentObject(ctx);
-    if (!object) return { events: [] };
+function executeVisibleAreaEnchantmentSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
+    const targetZoneId = ctx.command.payload.targetZoneId;
+    if (!targetZoneId) return { events: [] };
 
-    const restrainedTargetId = ctx.command.payload.targetObjectId;
-    const restraintEvent: MageWarsEvent[] = restrainedTargetId
-        && hasMageWarsSpellGrantedTrait(ctx.spell, 'restrained')
+    const object = buildVisibleEnchantmentObject(ctx, targetZoneId, { anchoredToZoneId: targetZoneId });
+
+    return {
+        events: [{
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+            payload: { object },
+            sourceCommandType: ctx.command.type,
+            timestamp: ctx.timestamp,
+        }],
+    };
+}
+
+function executeVisibleObjectEnchantmentSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
+    const targetObjectId = ctx.command.payload.targetObjectId;
+    if (!targetObjectId) return { events: [] };
+
+    const targetObject = getArenaObject(ctx.state.core, targetObjectId);
+    if (!targetObject) return { events: [] };
+
+    const object = buildVisibleEnchantmentObject(ctx, targetObject.zoneId, { anchoredToObjectId: targetObject.id });
+    const restraintEvent: MageWarsEvent[] = hasMageWarsSpellGrantedTrait(ctx.spell, 'restrained')
         ? [{
             type: MAGE_WARS_EVENTS.ARENA_OBJECT_RESTRAINED,
             payload: {
-                objectId: restrainedTargetId,
+                objectId: targetObjectId,
                 restrainedByObjectId: object.id,
                 sourceAbilityId: ctx.sourceId,
                 spellCardId: ctx.spell.spellCardId,
@@ -704,8 +671,6 @@ function resolveLifeDrainTarget(ctx: MageWarsSpellAbilityContext): MageWarsResol
 }
 
 function executeHealingSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedHealingSpell(ctx.spell)) return { events: [] };
-
     const diceCount = parseMageWarsHealingDiceCount(ctx.spell);
     if (!diceCount) return { events: [] };
 
@@ -738,8 +703,6 @@ function executeHealingSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Ma
 }
 
 function executeLifeDrainSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedLifeDrainSpell(ctx.spell)) return { events: [] };
-
     const diceCount = parseMageWarsDirectDamageDiceCount(ctx.spell);
     const target = resolveLifeDrainTarget(ctx);
     if (!diceCount || !target) return { events: [] };
@@ -829,8 +792,6 @@ function executeLifeDrainSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<
 }
 
 function executeForcePushSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedForcePushSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     const pushToZoneId = ctx.command.payload.pushToZoneId;
     if (!targetObjectId || !pushToZoneId) return { events: [] };
@@ -856,8 +817,6 @@ function executeForcePushSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<
 }
 
 function executeSleepSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedSleepSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -881,8 +840,6 @@ function executeSleepSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mage
 }
 
 function executeTeleportSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedTeleportSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     const targetZoneId = ctx.command.payload.targetZoneId;
     if (!targetObjectId || !targetZoneId) return { events: [] };
@@ -916,8 +873,6 @@ function executeTeleportSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<M
 }
 
 function executeChargeOnSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedChargeOnSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -942,8 +897,6 @@ function executeChargeOnSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<M
 }
 
 function executeBloodstrikeSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedBloodstrikeSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -968,8 +921,6 @@ function executeBloodstrikeSpell(ctx: MageWarsSpellAbilityContext): AbilityResul
 }
 
 function executeCallOfTheWildSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedCallOfTheWildSpell(ctx.spell)) return { events: [] };
-
     const events = Object.values(ctx.state.core.objects)
         .filter((object) => object.ownerId === ctx.ownerId && isMageWarsAnimalArenaObject(object))
         .map((object): MageWarsEvent => ({
@@ -990,8 +941,6 @@ function executeCallOfTheWildSpell(ctx: MageWarsSpellAbilityContext): AbilityRes
 }
 
 function executeRouseTheBeastSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedRouseTheBeastSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -1015,8 +964,6 @@ function executeRouseTheBeastSpell(ctx: MageWarsSpellAbilityContext): AbilityRes
 }
 
 function executeDissolveSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedDissolveSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -1039,8 +986,6 @@ function executeDissolveSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<M
 }
 
 function executeDispelSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedDispelSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -1063,8 +1008,6 @@ function executeDispelSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
 }
 
 function executeStealEnchantmentSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedStealEnchantmentSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -1097,8 +1040,6 @@ function executeStealEnchantmentSpell(ctx: MageWarsSpellAbilityContext): Ability
 }
 
 function executeExplodeSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsImplementedExplodeSpell(ctx.spell)) return { events: [] };
-
     const targetObjectId = ctx.command.payload.targetObjectId;
     if (!targetObjectId) return { events: [] };
 
@@ -1142,26 +1083,6 @@ function executeExplodeSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Ma
     };
 }
 
-function executeIncantationSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    return {
-        events: [
-            ...executeHealingSpell(ctx).events,
-            ...executeLifeDrainSpell(ctx).events,
-            ...executeForcePushSpell(ctx).events,
-            ...executeSleepSpell(ctx).events,
-            ...executeTeleportSpell(ctx).events,
-            ...executeChargeOnSpell(ctx).events,
-            ...executeBloodstrikeSpell(ctx).events,
-            ...executeCallOfTheWildSpell(ctx).events,
-            ...executeRouseTheBeastSpell(ctx).events,
-            ...executeDissolveSpell(ctx).events,
-            ...executeDispelSpell(ctx).events,
-            ...executeStealEnchantmentSpell(ctx).events,
-            ...executeExplodeSpell(ctx).events,
-        ],
-    };
-}
-
 function resolveChainLightningTargets(ctx: MageWarsSpellAbilityContext): MageWarsResolvedAttackTarget[] {
     const initialTargetObjectId = ctx.command.payload.targetObjectId;
     if (!initialTargetObjectId) return [];
@@ -1179,8 +1100,6 @@ function resolveChainLightningTargets(ctx: MageWarsSpellAbilityContext): MageWar
 }
 
 function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (!isMageWarsChainLightningSpell(ctx.spell)) return { events: [] };
-
     const attackProfile = parseMageWarsSpellAttackProfile(ctx.spell);
     if (!attackProfile) return { events: [] };
 
@@ -1306,10 +1225,6 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
 }
 
 function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<MageWarsEvent> {
-    if (isMageWarsChainLightningSpell(ctx.spell)) {
-        return executeChainLightningSpell(ctx);
-    }
-
     const attackProfile = parseMageWarsSpellAttackProfile(ctx.spell);
     if (!attackProfile) return { events: [] };
 
@@ -1512,52 +1427,58 @@ export function resolveMageWarsSpellAttackAfterDefense(
     });
 }
 
-for (const def of mageWarsAbilityRegistry.getByTag('spell-type:攻击')) {
-    mageWarsSpellAbilityExecutorRegistry.register(def.id, executeAttackSpell, {
-        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
-    });
+const MAGE_WARS_SPELL_CAST_FAMILY_EXECUTORS: Readonly<Record<
+    MageWarsSpellCastChoiceFamily,
+    MageWarsSpellCastFamilyExecutor
+>> = {
+    bloodstrike: executeBloodstrikeSpell,
+    'call-of-the-wild': executeCallOfTheWildSpell,
+    'charge-on': executeChargeOnSpell,
+    'chain-lightning': executeChainLightningSpell,
+    'direct-attack': executeAttackSpell,
+    dissolve: executeDissolveSpell,
+    dispel: executeDispelSpell,
+    'elemental-staff-binding': executeEquipmentSpell,
+    explode: executeExplodeSpell,
+    'force-push': executeForcePushSpell,
+    'hidden-response-enchantment': executeHiddenResponseEnchantmentSpell,
+    'jet-stream': executeAttackSpell,
+    'life-drain': executeLifeDrainSpell,
+    'self-equipment': executeEquipmentSpell,
+    'single-healing': executeHealingSpell,
+    sleep: executeSleepSpell,
+    'steal-enchantment': executeStealEnchantmentSpell,
+    'summon-creature': executeSummonCreatureSpell,
+    tanglevine: executeTanglevineSpell,
+    teleport: executeTeleportSpell,
+    'visible-area-enchantment': executeVisibleAreaEnchantmentSpell,
+    'visible-object-enchantment': executeVisibleObjectEnchantmentSpell,
+    wall: executeSummonWallSpell,
+    'zone-attack': executeAttackSpell,
+    'zone-healing': executeHealingSpell,
+    'rouse-the-beast': executeRouseTheBeastSpell,
+};
+
+function executeMageWarsSpellAbilityByFamily(
+    ctx: MageWarsSpellAbilityContext,
+): AbilityResult<MageWarsEvent> {
+    const family = resolveMageWarsSpellCastChoiceFamily(ctx.spell);
+    if (!family) {
+        throw new Error(`Mage Wars spell ${ctx.spell.spellCardId} reached execution without a spell-cast family`);
+    }
+
+    return MAGE_WARS_SPELL_CAST_FAMILY_EXECUTORS[family](ctx);
 }
 
-for (const def of mageWarsAbilityRegistry.getByTag('spell-type:生物')) {
-    mageWarsSpellAbilityExecutorRegistry.register(def.id, executeSummonCreatureSpell, {
-        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
-    });
-}
-
-for (const def of mageWarsAbilityRegistry.getByTag('spell-type:魔物')) {
-    mageWarsSpellAbilityExecutorRegistry.register(def.id, executeSummonConjurationSpell, {
-        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
-    });
-}
-
-for (const def of mageWarsAbilityRegistry.getByTag('spell-type:咒语')) {
-    mageWarsSpellAbilityExecutorRegistry.register(def.id, executeIncantationSpell, {
-        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
-    });
-}
-
-for (const def of mageWarsAbilityRegistry.getByTag('spell-type:装备')) {
-    mageWarsSpellAbilityExecutorRegistry.register(def.id, executeEquipmentSpell, {
-        tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
-    });
-}
-
-for (const def of mageWarsAbilityRegistry.getByTag('spell-type:结界')) {
-    mageWarsSpellAbilityExecutorRegistry.register(def.id, (ctx) => (
-        isMageWarsHiddenResponseEnchantmentSpell(ctx.spell)
-            ? executeHiddenResponseEnchantmentSpell(ctx)
-            : executeVisibleEnchantmentSpell(ctx)
-    ), {
+for (const def of mageWarsAbilityRegistry.getAll()) {
+    mageWarsSpellAbilityExecutorRegistry.register(def.id, executeMageWarsSpellAbilityByFamily, {
         tag: MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
     });
 }
 
 export function executeMageWarsSpellAbility(ctx: MageWarsSpellAbilityInput): MageWarsEvent[] {
     const abilityId = getMageWarsSpellAbilityId(ctx.spell.spellCardId);
-    const executor = mageWarsSpellAbilityExecutorRegistry.resolve(abilityId, MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG);
-    if (!executor) return [];
-
-    return executor({
+    return executeMageWarsSpellAbilityByFamily({
         ...ctx,
         sourceId: abilityId,
     }).events;

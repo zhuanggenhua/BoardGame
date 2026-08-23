@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { TRANSPORT_BATCH_COMMAND } from '../../batchDispatchCommand';
 import { useMultistepInteraction } from '../useMultistepInteraction';
 import type { InteractionDescriptor, MultistepChoiceData } from '../InteractionSystem';
 
@@ -145,9 +146,14 @@ describe('useMultistepInteraction', () => {
             // 手动确认
             act(() => { result.current.confirm(); });
 
-            const calls = dispatch.mock.calls.map(c => c[0]);
-            expect(calls.filter(c => c === 'MODIFY_DIE')).toHaveLength(2);
-            expect(calls).toContain('SYS_INTERACTION_CONFIRM');
+            expect(dispatch).toHaveBeenCalledTimes(1);
+            expect(dispatch).toHaveBeenCalledWith(TRANSPORT_BATCH_COMMAND, {
+                commands: [
+                    { type: 'MODIFY_DIE', payload: { dieId: 0, newValue: 5 } },
+                    { type: 'MODIFY_DIE', payload: { dieId: 2, newValue: 3 } },
+                    { type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId: 'test-any-mode' } },
+                ],
+            });
         });
 
         it('未达到 minSteps 时 canConfirm=false', () => {
@@ -182,9 +188,12 @@ describe('useMultistepInteraction', () => {
                 expect(dispatch).toHaveBeenCalled();
             });
 
-            const calls = dispatch.mock.calls.map(c => c[0]);
-            expect(calls).toContain('MODIFY_DIE');
-            expect(calls).toContain('SYS_INTERACTION_CONFIRM');
+            expect(dispatch).toHaveBeenCalledWith(TRANSPORT_BATCH_COMMAND, {
+                commands: [
+                    { type: 'MODIFY_DIE', payload: { dieId: 0, newValue: 6 } },
+                    { type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId: 'test-set-mode' } },
+                ],
+            });
         });
     });
 
@@ -231,8 +240,13 @@ describe('useMultistepInteraction', () => {
                 expect(dispatch).toHaveBeenCalled();
             });
 
-            const calls = dispatch.mock.calls.map(c => c[0]);
-            expect(calls).toContain('SYS_INTERACTION_CONFIRM');
+            expect(dispatch).toHaveBeenCalledWith(TRANSPORT_BATCH_COMMAND, {
+                commands: [
+                    { type: 'MODIFY_DIE', payload: { dieId: 0, newValue: 5 } },
+                    { type: 'MODIFY_DIE', payload: { dieId: 1, newValue: 6 } },
+                    { type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId: 'test-with-getter' } },
+                ],
+            });
         });
 
         it('手动确认也按语义步骤数判断，重复点击同一颗骰子不能点亮确认', () => {

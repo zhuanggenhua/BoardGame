@@ -340,24 +340,7 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
     const ownerId = minion?.owner ?? ctx.triggerMinion?.owner ?? ctx.playerId;
     const controllerId = minion?.controller ?? ctx.triggerMinion?.controller ?? ctx.playerId;
 
-    if (!ctx.matchState) {
-        // 无 matchState 降级：自动选第一个
-        const reason = isPod ? 'pirate_buccaneer_pod' : 'pirate_buccaneer';
-        return buildValidatedMoveEvents(state, {
-            minionUid: triggerMinionUid,
-            minionDefId: triggerMinionDefId,
-            fromBaseIndex: baseIndex,
-            toBaseIndex: candidates[0].baseIndex,
-            reason,
-            now: ctx.now,
-            sourcePlayerId: controllerId,
-            sourceDefId: triggerMinionDefId,
-            sourceControllerId: controllerId,
-            sourceBaseIndex: baseIndex,
-            sourceKind: 'nonAction',
-            targetSnapshot: { ownerId, controllerId },
-        });
-    }
+    if (!ctx.matchState) return [];
 
     const result = executeAbilityProgram(
         pirateBuccaneerMovePromptProgram,
@@ -477,22 +460,8 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
     const controllerId = mate?.controller ?? ctx.sourceControllerId ?? ctx.playerId;
     const ownerId = mate?.owner ?? ctx.triggerMinion?.owner ?? controllerId;
 
-    // 无 matchState 时回退自动移动 first_mate 自身到第一个可用基地
     if (!ctx.matchState) {
-        return buildValidatedMoveEvents(ctx.state, {
-            minionUid: mateUid,
-            minionDefId: mateDefId,
-            fromBaseIndex: mateBaseIndex,
-            toBaseIndex: otherBases[0].index,
-            reason: mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
-            now: ctx.now,
-            sourcePlayerId: controllerId,
-            sourceDefId: mateDefId,
-            sourceControllerId: controllerId,
-            sourceBaseIndex: mateBaseIndex,
-            sourceKind: 'nonAction',
-            targetSnapshot: { ownerId, controllerId },
-        });
+        return [];
     }
 
     const result = executeAbilityProgram(

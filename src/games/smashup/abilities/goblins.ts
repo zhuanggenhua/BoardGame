@@ -68,6 +68,7 @@ type GoblinChoicePromptKind =
     | 'recruiters_shuffle_discard'
     | 'blaster_heads_confirm'
     | 'blaster_tails_destination'
+    | 'bushwhacking_tails_destination'
     | 'demolition_counter_target'
     | 'demolition_destroy_action'
     | 'he_who_smelt_it_next_target';
@@ -116,11 +117,6 @@ function allMinions(state: SmashUpCore, predicate: (minion: MinionOnBase, baseIn
             .filter(minion => predicate(minion, baseIndex))
             .map(minion => ({ minion, baseIndex })),
     );
-}
-
-function firstOtherBaseIndex(state: SmashUpCore, fromBaseIndex: number): number | undefined {
-    const index = state.bases.findIndex((_, candidateIndex) => candidateIndex !== fromBaseIndex);
-    return index >= 0 ? index : undefined;
 }
 
 function cardLabel(card: CardInstance): string {
@@ -398,6 +394,30 @@ function buildBlasterMoveEvents(
     });
 }
 
+function buildBushwhackingMoveEvents(
+    context: GoblinCoinProgramContext,
+    state: SmashUpCore,
+    selectedBaseIndex: number | undefined,
+): SmashUpEvent[] {
+    if (context.purpose.kind !== 'bushwhacking') return [];
+    const target = findMinionOnBases(state, context.purpose.targetMinionUid ?? '');
+    if (!target || selectedBaseIndex === undefined || selectedBaseIndex === target.baseIndex || !state.bases[selectedBaseIndex]) return [];
+    return buildValidatedMoveEvents(state, {
+        minionUid: target.minion.uid,
+        minionDefId: target.minion.defId,
+        fromBaseIndex: target.baseIndex,
+        toBaseIndex: selectedBaseIndex,
+        reason: 'goblins_bushwhacking_tails',
+        now: context.now,
+        sourcePlayerId: context.playerId,
+        sourceCardUid: context.purpose.sourceCardUid,
+        sourceDefId: context.purpose.sourceDefId,
+        sourceControllerId: context.playerId,
+        sourceBaseIndex: context.purpose.sourceBaseIndex,
+        sourceKind: 'action',
+    });
+}
+
 function buildDemolitionDestroyEvents(
     context: GoblinCoinProgramContext,
     state: SmashUpCore,
@@ -424,6 +444,7 @@ const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext,
         'goblins_chaos_lord',
         'goblins_recruiters',
         'goblins_blaster',
+        'goblins_bushwhacking',
         'goblins_demolition',
         'goblins_he_who_smelt_it',
         'base_goblin_caves',
@@ -525,6 +546,28 @@ const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext,
                     {
                         titleKey: 'ui.goblins_blaster_tails_title',
                         sourceId: 'goblins_blaster',
+                        targetType: 'generic',
+                        genericIntent: 'mixed-card-and-control',
+                        responseValidationMode: 'live',
+                        autoResolveIfSingle: false,
+                    },
+                );
+            }
+            case 'bushwhacking_tails_destination': {
+                const target = context.purpose.kind === 'bushwhacking'
+                    ? findMinionOnBases(state, context.purpose.targetMinionUid ?? '')
+                    : undefined;
+                const candidates = state.bases
+                    .map((base, baseIndex) => ({ baseIndex, label: base.defId }))
+                    .filter(candidate => candidate.baseIndex !== target?.baseIndex);
+                return createAbilityRuntimeSimpleChoice(
+                    `goblins_bushwhacking_tails_${context.now}`,
+                    context.playerId,
+                    '伏击：选择要移动到的基地',
+                    [createSkipOption(), ...buildBaseTargetOptions(candidates, state)],
+                    {
+                        titleKey: 'ui.goblins_bushwhacking_tails_title',
+                        sourceId: 'goblins_bushwhacking',
                         targetType: 'generic',
                         genericIntent: 'mixed-card-and-control',
                         responseValidationMode: 'live',
@@ -649,6 +692,8 @@ const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext,
                     return selected?.confirm ? buildBlasterHeadsEvents({ ...context, now: timestamp }, state.core) : [];
                 case 'blaster_tails_destination':
                     return buildBlasterMoveEvents({ ...context, now: timestamp }, state.core, selected?.baseIndex);
+                case 'bushwhacking_tails_destination':
+                    return buildBushwhackingMoveEvents({ ...context, now: timestamp }, state.core, selected?.baseIndex);
                 case 'demolition_destroy_action':
                     return buildDemolitionDestroyEvents({ ...context, now: timestamp }, state.core, selected?.cardUid);
                 case 'he_who_smelt_it_next_target':
@@ -811,22 +856,7 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
                     nextProgram: goblinChoicePromptProgram,
                 };
             }
-            const toBaseIndex = purpose.targetBaseIndex !== undefined && purpose.targetBaseIndex !== source.baseIndex && state.bases[purpose.targetBaseIndex]
-                ? purpose.targetBaseIndex
-                : firstOtherBaseIndex(state, source.baseIndex);
-            return continueGoblinCoin(context, toBaseIndex === undefined ? [] : buildValidatedMoveEvents(state, {
-                minionUid: source.minion.uid,
-                minionDefId: source.minion.defId,
-                fromBaseIndex: source.baseIndex,
-                toBaseIndex,
-                reason: 'goblins_blaster_tails',
-                now: context.now,
-                sourcePlayerId: context.playerId,
-                sourceDefId: BLASTER,
-                sourceControllerId: context.playerId,
-                sourceBaseIndex: source.baseIndex,
-                sourceKind: 'nonAction',
-            }));
+            return continueGoblinCoin(context, buildBlasterMoveEvents(context, state, purpose.targetBaseIndex));
         }
         case 'bushwhacking': {
             const target = findMinionOnBases(state, purpose.targetMinionUid ?? '');
@@ -847,23 +877,15 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
                     sourceKind: 'action',
                 }));
             }
-            const toBaseIndex = purpose.targetBaseIndex !== undefined && purpose.targetBaseIndex !== target.baseIndex && state.bases[purpose.targetBaseIndex]
-                ? purpose.targetBaseIndex
-                : firstOtherBaseIndex(state, target.baseIndex);
-            return continueGoblinCoin(context, toBaseIndex === undefined ? [] : buildValidatedMoveEvents(state, {
-                minionUid: target.minion.uid,
-                minionDefId: target.minion.defId,
-                fromBaseIndex: target.baseIndex,
-                toBaseIndex,
-                reason: 'goblins_bushwhacking_tails',
-                now: context.now,
-                sourcePlayerId: context.playerId,
-                sourceCardUid: purpose.sourceCardUid,
-                sourceDefId: purpose.sourceDefId,
-                sourceControllerId: context.playerId,
-                sourceBaseIndex: purpose.sourceBaseIndex,
-                sourceKind: 'action',
-            }));
+            if (purpose.targetBaseIndex === undefined) {
+                if (!context.matchState) return continueGoblinCoin(context, []);
+                return {
+                    events: [],
+                    context: { ...context, choiceKind: 'bushwhacking_tails_destination' as const },
+                    nextProgram: goblinChoicePromptProgram,
+                };
+            }
+            return continueGoblinCoin(context, buildBushwhackingMoveEvents(context, state, purpose.targetBaseIndex));
         }
         case 'goblin_town': {
             const minion = findMinionOnBases(state, purpose.minionUid);
@@ -927,9 +949,9 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
             if (purpose.flipIndex >= 50) return continueGoblinCoin(context, []);
             {
                 const targets = allMinions(state, () => true);
-                const target = (purpose.targetMinionUid
+                const target = purpose.targetMinionUid
                     ? targets.find(candidate => candidate.minion.uid === purpose.targetMinionUid)
-                    : targets[purpose.flipIndex % targets.length]) ?? targets[0];
+                    : undefined;
                 if (!target) return continueGoblinCoin(context, []);
                 const remainingTargets = targets.filter(candidate => candidate.minion.uid !== target.minion.uid);
                 if (remainingTargets.length === 0) {
@@ -1172,12 +1194,15 @@ function aLittleHelp(ctx: AbilityContext): AbilityResult {
 
 function findTargetMinion(ctx: AbilityContext): LocatedMinion | undefined {
     if (ctx.targetMinionUid) return findMinionOnBases(ctx.state, ctx.targetMinionUid);
-    return allMinions(ctx.state, () => true)[0];
+    return undefined;
 }
 
 function bushwhacking(ctx: AbilityContext): AbilityResult {
     const target = findTargetMinion(ctx);
     if (!target) return { events: [] };
+    if (!ctx.matchState && target.minion.controller === ctx.playerId && ctx.targetBaseIndex === undefined) {
+        return { events: [] };
+    }
     return runGoblinCoin({
         matchState: ctx.matchState,
         random: ctx.random,
@@ -1216,8 +1241,7 @@ function demolition(ctx: AbilityContext): AbilityResult {
 }
 
 function heWhoSmeltIt(ctx: AbilityContext): AbilityResult {
-    const targets = allMinions(ctx.state, () => true);
-    if (targets.length === 0) return { events: [] };
+    if (!ctx.targetMinionUid || !findMinionOnBases(ctx.state, ctx.targetMinionUid)) return { events: [] };
     return runGoblinCoin({
         matchState: ctx.matchState,
         random: ctx.random,

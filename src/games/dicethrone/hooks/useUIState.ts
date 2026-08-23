@@ -9,7 +9,7 @@
  * - 提示显示状态
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { AbilityCard } from '../domain/types';
 
 /**
@@ -79,7 +79,7 @@ export interface UIState {
     isRolling: boolean;
     setIsRolling: (rolling: boolean) => void;
     rerollingDiceIds: number[];
-    setRerollingDiceIds: (ids: number[]) => void;
+    setRerollingDiceIds: Dispatch<SetStateAction<number[]>>;
     rerollAnimationSeq: number;
     setRerollAnimationSeq: (seq: number | ((seq: number) => number)) => void;
     activatingAbilityId: string | undefined;

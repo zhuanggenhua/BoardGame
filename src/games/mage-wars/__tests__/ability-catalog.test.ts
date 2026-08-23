@@ -6,7 +6,10 @@ import { projectChoiceRequestToDirectSelectionTargets } from '../../../engine/sy
 import { buildChoiceRequestFromOpportunity } from '../../../engine/TimingOpportunity';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { materializeMageWarsConfigPackage } from '../data/configPackage';
+import {
+    getMageWarsSpellCardFromConfig,
+    materializeMageWarsConfigPackage,
+} from '../data/configPackage';
 import {
     buildMageWarsConfigAbilityCatalog,
     getMageWarsSpellAbilityDef,
@@ -32,8 +35,10 @@ import {
     buildMageWarsSpellCastOpportunity,
     type MageWarsSpellCastChoiceValue,
 } from '../domain/spellCastRuntime';
+import { resolveMageWarsSpellCastChoiceFamily } from '../domain/spellRules';
 import {
     MAGE_WARS_SPELL_ABILITY_EXECUTION_TAG,
+    executeMageWarsSpellAbility,
     mageWarsSpellAbilityExecutorRegistry,
 } from '../domain/spellAbilityExecutors';
 import {
@@ -245,6 +250,56 @@ describe('mage-wars ability catalog', () => {
         expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(3407));
         expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(2500));
         expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(25700));
+    });
+
+    test('uses concrete spell-cast families instead of a coarse zone target family', () => {
+        const familyBySpellCardId = (spellCardId: number): string | undefined => {
+            const spell = getMageWarsSpellCardFromConfig(spellCardId);
+            expect(spell).toBeDefined();
+            return resolveMageWarsSpellCastChoiceFamily(spell!);
+        };
+        const families = [
+            familyBySpellCardId(2800),
+            familyBySpellCardId(1701),
+            familyBySpellCardId(3405),
+            familyBySpellCardId(1913),
+        ];
+
+        expect(families).toEqual([
+            'summon-creature',
+            'zone-attack',
+            'zone-healing',
+            'visible-area-enchantment',
+        ]);
+        expect(families).not.toContain('zone-target');
+    });
+
+    test('throws a contract error when execution is reached without a spell-cast family', () => {
+        const spellCardId = 1804;
+        const spell = getMageWarsSpellCardFromConfig(spellCardId);
+        expect(spell).toBeDefined();
+
+        expect(() => executeMageWarsSpellAbility({
+            ownerId: '0',
+            timestamp: 104,
+            state: makeMageWarsAbilityState({
+                mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                mana: 20,
+                phase: 'creatureAction',
+            }),
+            command: {
+                type: MAGE_WARS_COMMANDS.CAST_SPELL,
+                playerId: '0',
+                payload: {
+                    spellCardId,
+                    manaCost: 8,
+                    targetPlayerId: '1',
+                },
+            },
+            random: fixedRandom,
+            spell: spell!,
+            manaCost: 8,
+        })).toThrow(/without a spell-cast family/);
     });
 
     test('tracks standard starting spell effects separately from code gaps', () => {
@@ -1737,7 +1792,7 @@ describe('mage-wars ability catalog', () => {
 
     test('projects Jet Stream object and push destination choices through ChoiceRequest', () => {
         const spellCardId = 1711;
-        const state = withPreparedMageWarsSpell(makeMageWarsAbilityState({
+        const baseState = withPreparedMageWarsSpell(makeMageWarsAbilityState({
             mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
             mana: 20,
             phase: 'initiativeQuickcast',
@@ -1750,6 +1805,25 @@ describe('mage-wars ability catalog', () => {
                 zoneId: ARENA_ZONE_IDS.A2,
             },
         }), '0', spellCardId);
+        const state = {
+            ...baseState,
+            core: {
+                ...baseState.core,
+                players: {
+                    ...baseState.core.players,
+                    '1': {
+                        ...baseState.core.players['1'],
+                        mageZoneId: ARENA_ZONE_IDS.A2,
+                    },
+                },
+                arena: baseState.core.arena.map((zone) => ({
+                    ...zone,
+                    occupantIds: zone.id === ARENA_ZONE_IDS.A2
+                        ? Array.from(new Set([...zone.occupantIds.filter((id) => id !== '1'), '1']))
+                        : zone.occupantIds.filter((id) => id !== '1'),
+                })),
+            },
+        };
 
         const opportunity = buildMageWarsSpellCastOpportunity({
             state,
@@ -1761,9 +1835,9 @@ describe('mage-wars ability catalog', () => {
         expect(opportunity).toMatchObject({
             condition: { satisfied: true },
             targetRequest: {
-                kind: 'select-object',
+                kind: 'choose-option',
                 metadata: {
-                    targetMode: 'direct-object',
+                    targetMode: 'target-push-zone',
                     spellCardId,
                 },
             },
@@ -1779,11 +1853,22 @@ describe('mage-wars ability catalog', () => {
                 pushToZoneId: ARENA_ZONE_IDS.A3,
             },
         };
+        const expectedPlayerCommand = {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            payload: {
+                spellCardId,
+                manaCost: 4,
+                targetPlayerId: '1',
+                pushToZoneId: ARENA_ZONE_IDS.A3,
+            },
+        };
         const candidateId = `target:jet-stream-target-cat:push-zone:${ARENA_ZONE_IDS.A3}`;
+        const playerCandidateId = `target-player:1:push-zone:${ARENA_ZONE_IDS.A3}`;
 
-        expect(request.kind).toBe('select-object');
+        expect(request.kind).toBe('choose-option');
         expect(request.candidates).toEqual(expect.arrayContaining([
             expect.objectContaining({ id: candidateId, commands: [expectedCommand] }),
+            expect.objectContaining({ id: playerCandidateId, commands: [expectedPlayerCommand] }),
         ]));
 
         const directSurface = projectChoiceRequestToDirectSelectionTargets<MageWarsSpellCastChoiceValue>(request);
@@ -1796,11 +1881,21 @@ describe('mage-wars ability catalog', () => {
             targetRef: 'jet-stream-target-cat',
             commandPreview: [expectedCommand],
         }]);
+        expect(directSurface.targets
+            .filter((target) => target.id === playerCandidateId)
+            .map((target) => ({
+                targetRef: target.targetRef,
+                commandPreview: target.commandPreview,
+            }))).toEqual([{
+            targetRef: '1',
+            commandPreview: [expectedPlayerCommand],
+        }]);
 
         const legalActions = projectChoiceRequestToAiLegalActions(request);
         expect(legalActions.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
         expect(legalActions.actions.map((action) => action.commands[0])).toEqual(expect.arrayContaining([
             expectedCommand,
+            expectedPlayerCommand,
         ]));
     });
 
@@ -2561,7 +2656,7 @@ describe('mage-wars ability catalog', () => {
                 min: 1,
                 max: 1,
                 metadata: {
-                    targetMode: 'direct-object',
+                    targetMode: 'object-push-zone',
                     spellCardId,
                 },
             },

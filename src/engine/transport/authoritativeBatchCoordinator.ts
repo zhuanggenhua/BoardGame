@@ -35,6 +35,7 @@ export type AuthoritativeBatchCoordinatorHooks<
         onlineAiAttemptKey?: string | null;
         clientTransport?: OnlineAiClientTransportDiagnostics | null;
     }) => Promise<boolean>;
+    restoreRandomCursor: (match: TMatch, randomCursor: number) => void;
     persistRollbackState: (match: TMatch, storedState: StoredMatchState) => Promise<void>;
     broadcastState: (match: TMatch) => void;
     buildAuthoritativeState: (match: TMatch) => unknown;
@@ -120,6 +121,7 @@ export class AuthoritativeBatchCoordinator<
                 onlineAiAttemptKey,
                 clientTransport,
             }),
+            restoreRandomCursor: (randomCursor) => this.hooks.restoreRandomCursor(match, randomCursor),
             persistRollbackState: (storedState) => this.hooks.persistRollbackState(match, storedState),
             broadcastState: () => this.hooks.broadcastState(match),
             buildAuthoritativeState: () => this.hooks.buildAuthoritativeState(match),

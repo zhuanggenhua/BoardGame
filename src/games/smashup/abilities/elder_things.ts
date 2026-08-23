@@ -640,26 +640,6 @@ const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnf
             continue;
         }
 
-        if (!context.matchState && opponentMinions.length === 1) {
-            const target = opponentMinions[0];
-            events.push(...buildValidatedDestroyEvents(context.matchState, {
-                minionUid: target.uid,
-                minionDefId: target.defId,
-                fromBaseIndex: target.baseIndex,
-                destroyerId: context.playerId,
-                reason: 'elder_thing_unfathomable_goals',
-                now: context.now,
-                sourcePlayerId: context.playerId,
-                sourceCardUid: context.cardUid,
-                sourceDefId: 'elder_thing_unfathomable_goals',
-                sourceControllerId: context.playerId,
-                sourceBaseIndex: target.baseIndex,
-                sourceKind: 'action',
-            }));
-            nextIdx += 1;
-            continue;
-        }
-
         return {
             events,
             context: {
@@ -756,6 +736,9 @@ const elderThingUnfathomableGoalsProgram = createEffectProgram<AbilityContext, S
     ));
 
     if (opponentsWithMadness.length === 0) {
+        return { events };
+    }
+    if (!ctx.matchState) {
         return { events };
     }
 

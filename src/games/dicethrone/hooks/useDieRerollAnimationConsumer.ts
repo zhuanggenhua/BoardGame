@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 
 import { useEventStreamCursor } from '../../../engine/hooks';
 import type { EventStreamEntry } from '../../../engine/types';
 
 interface UseDieRerollAnimationConsumerConfig {
     eventStreamEntries: EventStreamEntry[];
-    setRerollingDiceIds: (ids: number[]) => void;
+    setRerollingDiceIds: Dispatch<SetStateAction<number[]>>;
     setRerollAnimationSeq?: (seq: number | ((seq: number) => number)) => void;
     /** 当前右侧骰盘承接的奖励骰；首次投出时整组一起翻滚。 */
     bonusDiceIds?: number[];
@@ -64,7 +64,7 @@ export function useDieRerollAnimationConsumer(config: UseDieRerollAnimationConsu
         if (clearTimerRef.current) {
             clearTimeout(clearTimerRef.current);
         }
-        setRerollingDiceIds(rollingDiceIds);
+        setRerollingDiceIds((current) => Array.from(new Set([...current, ...rollingDiceIds])));
         setRerollAnimationSeq?.((seq) => seq + 1);
         clearTimerRef.current = setTimeout(() => {
             clearTimerRef.current = null;

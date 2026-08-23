@@ -664,6 +664,76 @@ describe('圆桌骑士能力', () => {
         }));
     });
 
+    it('善行：无交互态有其它基地时不自动转移到第一个基地', () => {
+        const moved = makeMinion('moved-1', 'round_table_knights_galahad', '0', 4);
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-1', 'robot_zapbot', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_round_table',
+                    minions: [moved],
+                    ongoingActions: [{ uid: 'good-deed-1', defId: 'round_table_knights_good_deed', ownerId: '0' }],
+                }),
+                makeBase({ defId: 'base_camelot', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const result = fireTriggers(state, 'onMinionMoved', {
+            state,
+            matchState: undefined,
+            playerId: '0',
+            baseIndex: 0,
+            moveToBaseIndex: 0,
+            triggerMinion: moved,
+            random: defaultTestRandom,
+            now: 1002,
+        });
+
+        expect(result.events).not.toContainEqual(expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN }));
+        expect(result.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'good-deed-1' }),
+        }));
+    });
+
+    it('追踪野兽：无交互态只加力量，不自动转移到第一个其它基地', () => {
+        const moved = makeMinion('moved-1', 'round_table_knights_lancelot', '0', 4);
+        const state = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [
+                makeBase({
+                    defId: 'base_round_table',
+                    minions: [moved],
+                    ongoingActions: [{ uid: 'questing-beast-1', defId: 'round_table_knights_the_questing_beast', ownerId: '0' }],
+                }),
+                makeBase({ defId: 'base_camelot', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const result = fireTriggers(state, 'onMinionMoved', {
+            state,
+            matchState: undefined,
+            playerId: '0',
+            baseIndex: 0,
+            moveToBaseIndex: 0,
+            triggerMinion: moved,
+            random: defaultTestRandom,
+            now: 1003,
+        });
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.POWER_COUNTER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'moved-1' }),
+        }));
+        expect(result.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'questing-beast-1' }),
+        }));
+    });
+
     it('梅林藏书馆：天赋可移动玩家指定的己方随从到这里', () => {
         const state = makeState({
             bases: [

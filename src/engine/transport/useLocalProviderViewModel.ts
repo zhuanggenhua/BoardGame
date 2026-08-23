@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import type { MatchState } from '../types';
 import { resolveSeatPlayerDisplayName } from '../ai/seatDisplayName';
 import type { AiSeatController } from '../ai/types';
+import { getTransportBatchCommands, TRANSPORT_BATCH_COMMAND } from '../batchDispatchCommand';
 import {
     resolveFollowCurrentTurnPlayerId,
     type LocalRuntimeControlResolver,
@@ -72,7 +73,7 @@ export function useLocalProviderViewModel(args: {
         state,
     ]);
 
-    const dispatch = useCallback((type: string, payload: unknown) => {
+    const dispatchSingleCommand = useCallback((type: string, payload: unknown) => {
         if (!localBoardPlayerId) {
             dispatchCommand(type, payload);
             return;
@@ -95,6 +96,18 @@ export function useLocalProviderViewModel(args: {
             __internalPlayerId: localBoardPlayerId,
         });
     }, [dispatchCommand, localBoardPlayerId]);
+
+    const dispatch = useCallback((type: string, payload: unknown) => {
+        if (type === TRANSPORT_BATCH_COMMAND) {
+            const commands = getTransportBatchCommands(payload);
+            for (const command of commands) {
+                dispatchSingleCommand(command.type, command.payload);
+            }
+            return;
+        }
+
+        dispatchSingleCommand(type, payload);
+    }, [dispatchSingleCommand]);
 
     const sendUiEvent = useCallback(() => undefined, []);
     const subscribeUiEvent = useCallback(() => () => undefined, []);

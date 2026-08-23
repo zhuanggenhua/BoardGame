@@ -1,6 +1,6 @@
 # Mage Wars 用户纠正覆盖账本
 
-> 角色：`drift-check / evidence`。本文件只把用户在 Mage Wars PC Open Design 设计稿线上反复指出的纠正，映射到规则证据、项目设计合同和送验前检查项。它不是独立规范来源；新增硬规则必须回写到 `.spec/skills/ui-design-pipeline/SKILL.md`、`.spec/skills/ui-audit-loop/SKILL.md` 或 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 后，再由本账本引用。
+> 角色：`drift-check / evidence`。本文件只把用户在 Mage Wars PC Open Design 设计稿线上反复指出的纠正，映射到规则证据、项目设计合同和送验前检查项。它不是独立规范来源；新增硬规则必须回写到 `.spec/knowledge/standards/ui-change-gates.md`、`.spec/skills/ui-design-pipeline/SKILL.md`、`.spec/skills/ui-audit-loop/SKILL.md` 或 `.spec/skills/mage-wars-ui-design-memory/SKILL.md` 后，再由本账本引用。
 
 ## 使用方式
 
@@ -35,10 +35,13 @@
 | 右下 / 底部空白必须有职责 | 删除 UI 后留下死空，不把空间还给主对象 | `mage-wars-ui-design-memory` 底部空间裁决；`ui-design-pipeline` 空白职责 | 右下和底边若空着，必须承载法术书、已计划、弃牌堆、分页、回合结束或结算预留 | covered |
 | 分页按钮保持原样，页码不要占大空间 | 改错对象，把按钮样式也改了 | `mage-wars-ui-design-memory` 分页专项裁决 | 按钮样式、方向、位置保持用户认可形态；页码轻量附属于法术书浏览，不撑大栏 | covered |
 | 标签放左侧 | 分类标签挤占底部牌列 / 页码空间 | `mage-wars-ui-design-memory` 法术书裁决；设计 README v66 后裁定 | 分类标签在法术书左侧，不能压缩卡牌可读尺寸 | covered |
-| 骰子、token 不能省略 | 为了干净删掉规则信息 | `mage-wars-ui-design-memory` 用户原话反思；`rule-to-ui-element-list.md` 规则对象矩阵 | 攻击骰、效果骰、燃烧 token、守卫 / 行动 token 在饱和态可见；伤害状态在受伤对象本体上用覆盖层 + 数字徽章可见，不强制物理伤害 token 图 | covered |
-| 伤害 token 没必要，现代 UI 代替更合适 | 把物理 token 存在机械等同为数字 UI 必须用 token 图 | `ui-change-gates.md` 规则物件不等于强制贴图；`mage-wars-ui-design-memory` 伤害状态裁决；`rule-to-ui-element-list.md` 伤害状态行 | 伤害作为连续数值状态，默认由对象本体红色受伤覆盖层和数字徽章承载；只有燃烧、守卫、行动等离散状态 / 行动标记继续按 token 物件验收 | covered |
+| 骰子、token 不能省略 | 为了干净删掉规则信息 | `mage-wars-ui-design-memory` 用户原话反思；`rule-to-ui-element-list.md` 规则对象矩阵 | 攻击骰、效果骰、燃烧 token、守卫 / 行动 token 在饱和态可见；伤害状态在受伤对象本体上用受伤遮罩 + 贴宿主剩余 / 总生命读数可见，不强制物理伤害 token 图 | covered |
+| 伤害 token 没必要，现代 UI 代替更合适 | 把物理 token 存在机械等同为数字 UI 必须用 token 图，或反过来把现代 UI 误写成任意数字徽章都可用 | `ui-change-gates.md` 规则物件不等于强制贴图；`mage-wars-ui-design-memory` 伤害状态裁决；`rule-to-ui-element-list.md` 伤害状态行 | 伤害作为连续数值状态，默认由对象本体红色受伤遮罩 + 贴宿主剩余 / 总生命读数承载；只有燃烧、守卫、行动等离散状态 / 行动标记继续按 token 物件验收 | covered |
+| 守卫必须用 token，伤害可以走现代 UI | 把“token 是否存在”误当成唯一标准，忽略守卫是离散规则身份而伤害是连续累计数值 | `ui-change-gates.md` 规则物件不等于强制贴图、token/角标不盖主体；`mage-wars-ui-design-memory` 用户原话反思表 | 守卫 / 护卫、燃烧、行动准备等可被规则引用的离散状态必须用真实 token 图或等价正式状态物件；伤害必须贴受伤对象本体并可读，但不强制物理 token 图 | covered |
+| 护盾、爱心、右下角圆球都不是 Mage Wars 状态语法 | 用通用护盾 / 爱心 icon 或右下角数字球替代真实 token 与生命读数 | `ui-change-gates.md` 规则物件不等于强制贴图；`mage-wars-ui-design-memory` 护盾 / 爱心纠偏；`rule-to-ui-element-list.md` Token / 状态层 | 守卫 / 状态用真实 token 图；能力动作优先来源牌面 / 法师头像 / 正式对象；伤害 / 血量用受伤遮罩 + 剩余 / 总生命读数，不出现通用 SVG 护盾 / 爱心或右下角圆形数字球 | covered |
 | 攻击掷骰应该在上层 / 目标附近 | 把结算主体边栏化 | `ui-design-pipeline` 当前结算主体；`step1-runtime-board-saturated-ui-design.md` 结算层 | 骰子、效果骰、伤害、燃烧 token 位于主舞台上层，并锚定来源 / 目标 / 动作链 | covered |
 | token / 状态贴对象，不只在日志 | 状态离开宿主，玩家不知道谁受影响 | `step1-runtime-board-saturated-ui-design.md` 行动标记和状态 token；`ui-audit-loop` 保护槽位 | token 不脱离宿主，不压住关键卡面信息，数量或堆叠关系可读 | covered |
+| 描边不贴边 | 把用户说的描边几何问题误读成“对象目标是否整格高亮”的语义问题，导致悬浮外扩框仍可能存在 | `ui-change-gates.md` 高亮必须清楚贴合、目标高亮要验几何；`mage-wars-ui-design-memory` 用户原话反思表 | 目标描边必须沿目标卡牌 / 法师本体可见边界；E2E 不能只查绿色存在，必须量目标框与本体四边差值，常规容差不超过 2px | covered |
 | 对手计划放左上形成对称 | 隐藏计划法术挂到错误边栏 | `step1-runtime-board-saturated-ui-design.md` 对手计划镜像；`mage-wars-ui-design-memory` | 对手已计划只显示卡背 / 数量，位于左上，和己方计划槽形成席位镜像 | covered |
 | 弃牌堆放右侧竖向空位，不能小过头 | 归档入口过小、放错位或抢位 | `mage-wars-ui-design-memory` 弃牌裁决；设计 README v73-v75 裁定 | 弃牌堆位于用户标注右侧空位，尺寸低权重但可识别，不压计划 / 回合结束 / 对手状态 | covered |
 | 弃牌堆规则上能看就显示正面 | 公开归档被误画成隐藏信息 | 规则 `page_015.md`；`ui-design-pipeline` 公开归档；`mage-wars-ui-design-memory` | 弃牌堆显示紧凑顶牌正面 / 半露正面 + 数量；点击可展开完整公开弃牌 | covered |
@@ -66,7 +69,7 @@
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。
-- [ ] 攻击骰、效果骰、伤害状态 / 伤害数值、燃烧 token、守卫 / 行动 token 未省略；伤害不强制物理 token 图，但必须贴受伤对象本体并可读。
+- [ ] 攻击骰、效果骰、伤害状态 / 伤害数值、燃烧 token、守卫 / 行动 token 未省略；伤害不强制物理 token 图，但必须贴受伤对象本体并以受伤遮罩 + 生命读数可读，不出现通用护盾 / 爱心或右下角圆形数字球。
 - [ ] 设计稿 / 真实 Board/UI 截图是饱和交互态，不是空开局或只证明页面可运行的技术截图。
 - [ ] 当前动作由来源对象和棋盘 / 场上对象本体承接，合法目标高亮，不出现无授权常驻确认。
 - [ ] 当前玩家提示挂在法师头像 / 角色 HUD；竞技场只保留阶段、区域语义和真实对象高亮，不承载第二个玩家提示条。

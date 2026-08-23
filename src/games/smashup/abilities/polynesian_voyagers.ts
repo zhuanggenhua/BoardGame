@@ -533,24 +533,6 @@ function volcanicUprising(ctx: AbilityContext): AbilityResult {
     const added = insertTopBase(ctx.state, ctx.now, 'polynesian_voyagers_volcanic_uprising');
     if (added) events.push(added);
     const own = ownMinions(ctx.state, ctx.playerId);
-    if (!ctx.matchState && added && own.length > 0) {
-        events.push(...buildValidatedMoveEvents(ctx.state, {
-            minionUid: own[0].minion.uid,
-            minionDefId: own[0].minion.defId,
-            fromBaseIndex: own[0].baseIndex,
-            toBaseIndex: ctx.state.bases.length,
-            toBaseDefId: added.payload.newBaseDefId,
-            reason: 'polynesian_voyagers_volcanic_uprising',
-            now: ctx.now,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: 'polynesian_voyagers_volcanic_uprising',
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: own[0].baseIndex,
-            sourceKind: 'action',
-            allowMissingTargetBase: true,
-        }));
-        return { events };
-    }
     if (ctx.matchState && added && own.length > 0) {
         const result = executeAbilityProgram(volcanicUprisingPromptProgram, {
             matchState: ctx.matchState,

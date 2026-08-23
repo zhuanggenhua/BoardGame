@@ -1383,20 +1383,22 @@ function ExplorerFigureToken({
   const tokenShape = "polygon(50% 0%, 96% 30%, 82% 100%, 18% 100%, 4% 30%)";
   const sizeClass =
     size === "panel"
-      ? {
-          root: "h-[38px] w-[36px]",
-          outline: "h-[34px] w-[32px]",
-          frame: "h-[31px] w-[30px]",
-          officialImage: "h-full w-full scale-[1.16] object-cover",
-          fallbackImage: "h-full w-full scale-[1.08] object-cover",
-        }
-      : {
-          root: "h-[54px] w-[50px]",
-          outline: "h-[48px] w-[46px]",
-          frame: "h-[44px] w-[42px]",
-          officialImage: "h-full w-full scale-[1.16] object-cover",
-          fallbackImage: "h-full w-full scale-[1.08] object-cover",
-        };
+        ? {
+            root: "h-[38px] w-[36px]",
+            outline: "h-[38px] w-[36px]",
+            frame: "h-[31px] w-[30px]",
+            targetOutline: "h-[31px] w-[30px]",
+            officialImage: "h-full w-full scale-[1.16] object-cover",
+            fallbackImage: "h-full w-full scale-[1.08] object-cover",
+          }
+        : {
+            root: "h-[54px] w-[50px]",
+            outline: "h-[54px] w-[50px]",
+            frame: "h-[44px] w-[42px]",
+            targetOutline: "h-[44px] w-[42px]",
+            officialImage: "h-full w-full scale-[1.16] object-cover",
+            fallbackImage: "h-full w-full scale-[1.08] object-cover",
+          };
 
   return (
     <span
@@ -1416,7 +1418,7 @@ function ExplorerFigureToken({
     >
       {targetHighlight ? (
         <svg
-          className={`pointer-events-none absolute left-1/2 top-1/2 z-20 ${sizeClass.outline} -translate-x-1/2 -translate-y-1/2 overflow-visible`}
+          className={`pointer-events-none absolute left-1/2 top-1/2 z-20 ${sizeClass.targetOutline} -translate-x-1/2 -translate-y-1/2 overflow-visible`}
           data-testid={
             targetHighlightTestId ?? `${testIdPrefix}-outline-${explorer.playerId}`
           }
@@ -1424,15 +1426,16 @@ function ExplorerFigureToken({
           data-highlight-color="green"
           data-highlight-layer-count="1"
           data-highlight-style="solid"
+          data-highlight-anchor="token-surface"
           data-selected={targetHighlightSelected ? "true" : "false"}
           aria-hidden="true"
-          viewBox="0 0 100 100"
+          viewBox="0 0 100 108"
         >
           <polygon
-            points="50,3 94,30 81,96 19,96 6,30"
+            points="50,0 100,30 82,108 18,108 0,30"
             fill="none"
             stroke={outlineColor}
-            strokeWidth="9"
+            strokeWidth="6"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
@@ -1450,6 +1453,7 @@ function ExplorerFigureToken({
       )}
       <span
         className={`relative z-10 flex ${sizeClass.frame} items-center justify-center overflow-hidden bg-transparent`}
+        data-testid={`${testIdPrefix}-surface-${explorer.playerId}`}
         style={{
           clipPath: tokenShape,
         }}
@@ -1523,7 +1527,7 @@ function MonsterBoardToken({
     >
       {targetHighlight ? (
         <svg
-          className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[48px] w-[48px] -translate-x-1/2 -translate-y-1/2 overflow-visible"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[42px] w-[42px] -translate-x-1/2 -translate-y-1/2 overflow-visible"
           data-testid={
             targetHighlightTestId ?? `${testIdPrefix}-outline-${monster.id}`
           }
@@ -1531,18 +1535,19 @@ function MonsterBoardToken({
           data-highlight-color="green"
           data-highlight-layer-count="1"
           data-highlight-style="solid"
+          data-highlight-anchor="token-surface"
           aria-hidden="true"
-          viewBox="0 0 48 48"
+          viewBox="0 0 42 42"
         >
           <rect
-            x="3"
-            y="3"
+            x="0"
+            y="0"
             width="42"
             height="42"
-            rx="7"
+            rx="6"
             fill="none"
             stroke={outlineColor}
-            strokeWidth="4.5"
+            strokeWidth="4"
             vectorEffect="non-scaling-stroke"
           />
         </svg>
@@ -1556,7 +1561,10 @@ function MonsterBoardToken({
           }}
         />
       )}
-      <span className="relative z-10 flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[6px] bg-transparent">
+      <span
+        className="relative z-10 flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[6px] bg-transparent"
+        data-testid={`${testIdPrefix}-surface-${monster.id}`}
+      >
         <OptimizedImage
           src={tokenAsset}
           locale={locale}
@@ -7318,9 +7326,21 @@ export default function BetrayalBoard({
     },
     [core.monsters, focusRoomOnMap],
   );
+  const clearSelectedInventoryInteraction = React.useCallback(() => {
+    setPreviewState((previousState) => ({
+      ...previousState,
+      selectedInventoryCardId: null,
+      selectedInventoryTargetPlayerId: null,
+      selectedInventoryTargetRoomId: null,
+      selectedInventoryReplacementRollTotal: null,
+      selectedMaskTargetRoomIdsByTokenId: {},
+      activeMaskTargetTokenId: null,
+    }));
+  }, []);
   const handleObserveExplorer = React.useCallback(
     (playerId: string) => {
       setInspectedExplorerPlayerId(null);
+      clearSelectedInventoryInteraction();
       if (playerId === core.currentExplorer.playerId) {
         observationReturnPlayerIdRef.current = null;
         setObservedExplorerPlayerId(null);
@@ -7338,7 +7358,12 @@ export default function BetrayalBoard({
       setObservedExplorerPlayerId(playerId);
       focusExplorerRoom(playerId);
     },
-    [core.currentExplorer.playerId, focusExplorerRoom, observedExplorerPlayerId],
+    [
+      clearSelectedInventoryInteraction,
+      core.currentExplorer.playerId,
+      focusExplorerRoom,
+      observedExplorerPlayerId,
+    ],
   );
   const handleFocusSelfRoom = React.useCallback(() => {
     const selfRoom = core.rooms.find(
@@ -8002,11 +8027,17 @@ export default function BetrayalBoard({
     }
     return cardIds;
   }, [core.pendingCardResolutionQueue]);
-  const visibleInventoryCards = (
+  const actionInventoryCards = (
     recentRollRerollOwner?.inventory ?? core.currentExplorerInventory
   ).filter((card) => !pendingDiscoveryInventoryCardIds.has(card.id));
+  const inventoryDisplayExplorer = recentRollRerollOwner ?? observedExplorer;
+  const isInventoryDisplayReadOnly =
+    inventoryDisplayExplorer.playerId !== inventoryActionPlayerId;
+  const visibleInventoryCards = inventoryDisplayExplorer.inventory.filter(
+    (card) => !pendingDiscoveryInventoryCardIds.has(card.id),
+  );
   const selectedInventoryCard =
-    visibleInventoryCards.find(
+    actionInventoryCards.find(
       (item) => item.id === previewState.selectedInventoryCardId,
     ) ?? null;
   const selectedInventoryUseEffect = selectedInventoryCard
@@ -8044,9 +8075,11 @@ export default function BetrayalBoard({
         )
       : [];
   const previewInventoryCard =
-    core.currentExplorerInventory.find(
-      (item) => item.id === inventoryPreviewCardId,
-    ) ?? null;
+    [
+      ...visibleInventoryCards,
+      ...core.currentExplorerInventory,
+      ...core.otherExplorers.flatMap((explorer) => explorer.inventory),
+    ].find((item) => item.id === inventoryPreviewCardId) ?? null;
   const inventoryPreviewFrameWidth = React.useMemo(() => {
     if (runtimeViewport.width <= 0 || runtimeViewport.height <= 0) {
       return `min(84vw, ${INVENTORY_PREVIEW_MAX_WIDTH}px)`;
@@ -9391,7 +9424,7 @@ export default function BetrayalBoard({
     });
   }, [core.pendingEventRollResolution, dispatchCommand]);
   const rollModifierCardIds = new Set(
-    visibleInventoryCards
+    actionInventoryCards
       .filter((card) =>
         canUseRecentRollRerollItemForRecentRoll(
           core,
@@ -14415,31 +14448,36 @@ export default function BetrayalBoard({
       tradeStatus?: BetrayalTradeCardStatus | null;
       disabled?: boolean;
       disabledReason?: string | null;
+      readOnly?: boolean;
       instanceKey?: string;
     },
   ) => {
+    const isReadOnly = Boolean(options.readOnly);
     const resolvedTradeStatus =
-      options.tradeStatus ??
-      (!isDustSicknessExchangeMode &&
+      isReadOnly
+        ? null
+        : (options.tradeStatus ??
+          (!isDustSicknessExchangeMode &&
       core.recommendedAction === "trade" &&
       !pendingTradeAgreement
         ? resolveBetrayalTradeCardStatus(core, item.id, {
             ownerPlayerId: core.currentExplorer.playerId,
             ownerRole: "requester",
           })
-        : null);
+        : null));
     const disabledReason =
       options.disabledReason ?? resolvedTradeStatus?.reason ?? null;
     const isCardDisabled = Boolean(
       options.disabled ?? (resolvedTradeStatus && !resolvedTradeStatus.canTrade),
     );
     const isSelected =
-      options.selected ??
-      (core.recommendedAction === "trade" &&
+      !isReadOnly &&
+      (options.selected ??
+        (core.recommendedAction === "trade" &&
       !isDustSicknessExchangeMode &&
       selectedTradeGiveCardIds.includes(item.id)
         ? true
-        : item.id === selectedInventoryCard?.id);
+        : item.id === selectedInventoryCard?.id));
     const shouldShowTurnStatus = options.showTurnStatus ?? true;
     const isUsedThisTurn =
       shouldShowTurnStatus && core.usedCardIdsThisTurn.includes(item.id);
@@ -14458,7 +14496,8 @@ export default function BetrayalBoard({
       isTutorialActive &&
       tutorialStep?.id === "use-book" &&
       item.id === "omen-book";
-    const canModifyRecentRoll = !isPreview && rollModifierCardIds.has(item.id);
+    const canModifyRecentRoll =
+      !isReadOnly && !isPreview && rollModifierCardIds.has(item.id);
     const isTradeCompact =
       isCompact && Boolean(frontVisual) && core.recommendedAction === "trade";
     const isDenseNoFrontCompact =
@@ -14508,6 +14547,10 @@ export default function BetrayalBoard({
             if (isPreview) {
               return;
             }
+            if (isReadOnly) {
+              setInventoryPreviewCardId(item.id);
+              return;
+            }
             if (options.onSelect) {
               options.onSelect();
               return;
@@ -14531,17 +14574,20 @@ export default function BetrayalBoard({
             }));
           }}
           data-testid={options.testId}
+          data-inventory-read-only={isReadOnly ? "true" : undefined}
           data-roll-modifier-available={canModifyRecentRoll ? "true" : "false"}
           data-trade-card-status={resolvedTradeStatus?.canTrade === false ? "disabled" : resolvedTradeStatus ? "available" : undefined}
           data-trade-card-disabled-reason={disabledReason ?? undefined}
           title={
-            disabledReason
+            isReadOnly
+              ? `${item.name} · ${resolveInventoryRulesSummary(item, t)} · 点击查看`
+              : disabledReason
               ? `${item.name} · ${disabledReason}`
               : `${item.name} · ${resolveInventoryRulesSummary(item, t)} · 点击选择`
           }
           disabled={isCardDisabled}
           className={`pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed ${showSelectedState ? "" : "focus-visible:ring-0"} ${isCardDisabled ? "cursor-not-allowed" : buttonOutlineClass}`}
-          aria-pressed={isPreview ? undefined : isSelected}
+          aria-pressed={isPreview || isReadOnly ? undefined : isSelected}
         >
           {showSelectedState ? (
             <span
@@ -14839,110 +14885,6 @@ export default function BetrayalBoard({
           >
             <Search size={isCompact ? 13 : 16} aria-hidden="true" />
           </button>
-        ) : null}
-      </div>
-    );
-  };
-
-  const renderExplorerInventoryStrip = (
-    explorer: BetrayalExplorerSummary,
-    options: {
-      testIdPrefix: string;
-      density: "rail" | "compact";
-    },
-  ) => {
-    if (explorer.inventory.length === 0) {
-      return null;
-    }
-
-    const visibleCards = explorer.inventory.slice(0, 4);
-    const hiddenCount = explorer.inventory.length - visibleCards.length;
-
-    return (
-      <div
-        data-testid={`${options.testIdPrefix}-inventory-${explorer.playerId}`}
-        className={`mt-1.5 flex min-w-0 flex-wrap items-center gap-1 ${
-          options.density === "rail" ? "max-h-[54px] overflow-hidden" : ""
-        }`}
-        aria-label={`${resolvePlayerName(
-          explorer.playerId,
-          explorer.displayName,
-          matchData,
-        )}持有${explorer.inventory.map((card) => card.name).join("、")}`}
-      >
-        <span
-          data-testid={`${options.testIdPrefix}-inventory-${explorer.playerId}-label`}
-          className="shrink-0 rounded-[4px] border border-[rgba(117,98,68,0.34)] bg-[rgba(28,24,19,0.50)] px-1.5 py-0.5 text-[10px] font-semibold text-[#c9bda1]"
-        >
-          {t("board.inventory.held")}
-        </span>
-        {visibleCards.map((card) => {
-          const visual = resolvePossessionAtlasVisual(card);
-          const tone = INVENTORY_FACE_TONE[card.kind];
-          const cardLabel =
-            card.kind === "item"
-              ? t("board.inventory.item")
-              : t("board.inventory.omen");
-
-          return (
-            <span
-              key={`${explorer.playerId}-${card.id}`}
-              data-testid={`${options.testIdPrefix}-inventory-${explorer.playerId}-${card.id}`}
-              data-card-id={card.id}
-              data-card-kind={card.kind}
-              title={`${card.name} · ${cardLabel}`}
-              className={`inline-flex min-w-0 items-center gap-1 rounded-[5px] border bg-[rgba(14,17,13,0.72)] text-[#efe2c4] shadow-[0_3px_8px_rgba(0,0,0,0.20)] ${
-                options.density === "rail"
-                  ? "max-w-[122px] px-1.5 py-0.5 text-[10px]"
-                  : "max-w-[116px] px-1.5 py-0.5 text-[10px]"
-              } ${
-                card.kind === "omen"
-                  ? "border-[rgba(159,225,167,0.30)]"
-                  : "border-[rgba(214,191,129,0.24)]"
-              }`}
-            >
-              <span
-                className={`relative shrink-0 overflow-hidden rounded-[3px] border ${
-                  options.density === "rail"
-                    ? "h-6 w-[18px]"
-                    : "h-6 w-[18px]"
-                } ${
-                  visual
-                    ? "border-[rgba(227,206,170,0.24)] bg-[rgba(10,8,6,0.72)]"
-                    : tone.frameClass
-                }`}
-                aria-hidden="true"
-              >
-                {visual ? (
-                  <PossessionAtlasFrame
-                    visual={visual}
-                    locale={effectiveLocale}
-                    alt=""
-                    testId={`${options.testIdPrefix}-inventory-${explorer.playerId}-${card.id}-front-atlas`}
-                  />
-                ) : (
-                  <OptimizedImage
-                    src={INVENTORY_CARD_BACK_ASSET[card.kind]}
-                    locale={effectiveLocale}
-                    alt=""
-                    className="h-full w-full object-cover opacity-60"
-                    draggable={false}
-                  />
-                )}
-              </span>
-              <span className="min-w-0 truncate font-semibold">
-                {card.name}
-              </span>
-            </span>
-          );
-        })}
-        {hiddenCount > 0 ? (
-          <span
-            data-testid={`${options.testIdPrefix}-inventory-${explorer.playerId}-more`}
-            className="rounded-[5px] border border-[rgba(117,98,68,0.34)] bg-[rgba(28,24,19,0.56)] px-1.5 py-0.5 text-[9px] font-semibold text-[#c9bda1]"
-          >
-            +{hiddenCount}
-          </span>
         ) : null}
       </div>
     );
@@ -15559,35 +15501,6 @@ export default function BetrayalBoard({
                         {observedExplorerAbilityText}
                       </span>
                     </div>
-                    {isObservingOtherExplorer ? (
-                      <div
-                        data-testid="betrayal-observed-inventory-zone"
-                        className="mt-2 border-t border-[rgba(96,80,54,0.34)] pt-1.5"
-                      >
-                        <div className="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d8bf81]">
-                          <span>{t("board.hud.holdingLabel")}</span>
-                          <span
-                            data-testid="betrayal-observed-inventory-count"
-                            className="text-[#f0e2c0]"
-                          >
-                            {observedExplorer.inventory.length}
-                          </span>
-                        </div>
-                        {observedExplorer.inventory.length > 0 ? (
-                          renderExplorerInventoryStrip(observedExplorer, {
-                            testIdPrefix: "betrayal-observed",
-                            density: "compact",
-                          })
-                        ) : (
-                          <div
-                            data-testid="betrayal-observed-inventory-empty"
-                            className="mt-1 text-[10px] font-medium text-[#9f937b]"
-                          >
-                            {t("board.players.inventoryCount", { count: 0 })}
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               </div>
@@ -15816,6 +15729,10 @@ export default function BetrayalBoard({
             id="betrayal-inventory-section"
             data-testid="betrayal-inventory-section"
             data-tutorial-id="betrayal-inventory-zone"
+            data-player-id={inventoryDisplayExplorer.playerId}
+            data-observed-player={
+              isInventoryDisplayReadOnly ? "true" : "false"
+            }
             className={`pointer-events-none absolute ${
               shouldShowLatestDiscovery &&
               !shouldAutoReturnAfterLatestDiscovery &&
@@ -15840,6 +15757,18 @@ export default function BetrayalBoard({
               <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
                 <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
                 {t("board.sections.inventory")}
+                {isInventoryDisplayReadOnly ? (
+                  <span
+                    data-testid="betrayal-inventory-owner-label"
+                    className="max-w-[130px] truncate text-[#d8bf81]"
+                  >
+                    {resolvePlayerName(
+                      inventoryDisplayExplorer.playerId,
+                      inventoryDisplayExplorer.displayName,
+                      matchData,
+                    )}
+                  </span>
+                ) : null}
                 <span className="h-px w-8 bg-[rgba(214,191,129,0.12)]" />
               </div>
               <div className="sr-only">
@@ -15869,6 +15798,7 @@ export default function BetrayalBoard({
                     renderInventoryCard(item, {
                       layout: "compact",
                       testId: `betrayal-inventory-${item.id}`,
+                      readOnly: isInventoryDisplayReadOnly,
                       instanceKey: `inventory-item-${item.id}-${index}`,
                     }),
                   )}
@@ -15888,6 +15818,7 @@ export default function BetrayalBoard({
                       layout: "compact",
                       testId: `betrayal-inventory-${item.id}`,
                       compactDenseNoFront: true,
+                      readOnly: isInventoryDisplayReadOnly,
                       instanceKey: `inventory-omen-${item.id}-${index}`,
                     }),
                   )}
@@ -18264,20 +18195,19 @@ export default function BetrayalBoard({
                                             <span
                                               data-testid={`betrayal-room-occupant-feedback-${room.id}-${occupant.playerId}`}
                                               data-feedback-style="floating-text"
-                                              className="pointer-events-none absolute left-1/2 top-[calc(100%+2px)] z-40 flex min-w-[122px] -translate-x-1/2 -translate-y-1 flex-col items-center gap-0.5 text-center [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
+                                              data-feedback-anchor="target-token"
+                                              aria-label={`${t("board.feedback.healTraitCount", {
+                                                count:
+                                                  visibleBoardResultFeedback.traitCount ||
+                                                  1,
+                                              })}：${visibleBoardResultFeedback.traitSummary}`}
+                                              className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 -translate-x-1/2 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
                                             >
-                                              <span className="text-[15px] font-black leading-none text-[#dcfce7]">
-                                                {t("board.feedback.healTraitCount", {
-                                                  count:
-                                                    visibleBoardResultFeedback.traitCount ||
-                                                    1,
-                                                })}
-                                              </span>
-                                              <span className="max-w-[150px] truncate text-[10px] font-black leading-none text-[#bbf7d0]">
-                                                {
-                                                  visibleBoardResultFeedback.traitSummary
-                                                }
-                                              </span>
+                                              {t("board.feedback.healFloatingText", {
+                                                count:
+                                                  visibleBoardResultFeedback.traitCount ||
+                                                  1,
+                                              })}
                                             </span>
                                           ) : null}
                                         </>
@@ -18462,33 +18392,6 @@ export default function BetrayalBoard({
                                               />
                                             ) : null}
                                           </span>
-                                          {!isHauntGuideMonsterTarget &&
-                                          (canSelectMonsterTarget ||
-                                            canSelectHelpingHandsTrollMoveMonster ||
-                                            canSelectMonsterMoveMonster ||
-                                            canSelectMonsterAttackMonster ||
-                                            canSelectPeekabooMonsterTarget) ? (
-                                            <span
-                                              className="pointer-events-none absolute -bottom-1 left-1/2 z-20 -translate-x-1/2 rounded-[4px] border border-[#86efac] bg-[rgba(5,46,22,0.92)] px-1.5 py-0.5 text-[8px] font-black leading-none tracking-[0.04em] text-[#dcfce7] shadow-[0_3px_8px_rgba(0,0,0,0.38)]"
-                                            >
-                                              {canSelectHelpingHandsTrollMoveMonster ||
-                                              canSelectMonsterMoveMonster ||
-                                              canSelectMonsterAttackMonster ||
-                                              canSelectPeekabooMonsterTarget
-                                                ? t(
-                                                    canSelectHelpingHandsTrollMoveMonster
-                                                      ? "board.status.helpingHandsTrollMoveToken"
-                                                      : canSelectMonsterMoveMonster
-                                                        ? "board.status.monsterMoveToken"
-                                                        : canSelectMonsterAttackMonster
-                                                          ? "board.status.monsterAttackToken"
-                                                          : previewState.selectedPeekabooSameRoomMonsterId
-                                                            ? "board.status.playPeekabooLineOfSightToken"
-                                                            : "board.status.playPeekabooSameRoomToken",
-                                                  )
-                                                : monster.name}
-                                            </span>
-                                          ) : null}
                                           {isHauntGuideMonsterTarget ? (
                                             <span
                                               data-testid={`betrayal-room-monster-target-cue-${room.id}-${monster.id}`}
