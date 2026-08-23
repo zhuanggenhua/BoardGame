@@ -61,7 +61,7 @@ import { useEndgame } from '../../hooks/game/useEndgame';
 import { useCurrentChoice, useCurrentDefenderChoice, useDiceThroneState } from './hooks/useDiceThroneState';
 import { INTERACTION_COMMANDS, asCompareRollChoice } from '../../engine/systems/InteractionSystem';
 import { useMultistepInteraction } from '../../engine/systems/useMultistepInteraction';
-import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands, type DiceModifyResult, type DiceModifyStep, type DiceSelectResult, type DiceSelectStep } from './domain/systems';
+import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from './domain/systems';
 // 引擎层 Hooks
 import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks
@@ -114,6 +114,7 @@ import {
     projectDiceThroneTokenResponseChoiceContract,
     readDiceThroneTokenResponseChoiceContract,
 } from './domain/tokenResponseChoiceContract';
+import { rebuildClientDiceMultistepInteraction } from './ui/clientDiceMultistepInteraction';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 
@@ -537,91 +538,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // 骰子多步交互（multistep-choice，替代旧的 dt:card-interaction 骰子类型）
     // 注意：MultistepChoiceData 里的函数（localReducer/toCommands）经过 JSON 序列化后会丢失，
     // 必须在客户端根据 meta 重新注入，不能依赖从服务端传来的 data 字段。
-    const diceMultistepInteraction = React.useMemo(() => {
-        if (sysInteraction?.kind !== 'multistep-choice') return undefined;
-        const meta = (sysInteraction.data as Record<string, unknown>)?.meta as Record<string, unknown> | undefined;
-        if (!meta) return undefined;
-
-        if (meta.dtType === 'modifyDie') {
-            const config = meta.dieModifyConfig as DiceModifyConfig | undefined;
-            const isManualConfirmMode = config?.mode === 'any' || config?.mode === 'adjust';
-            const originalData = sysInteraction.data as Record<string, unknown>;
-            const selectCount = Number(meta.selectCount) || 1;
-            const completedDieIds = Array.isArray(originalData.completedDieIds)
-                ? originalData.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
-                : [];
-            const completedSteps = typeof originalData.completedSteps === 'number' && Number.isFinite(originalData.completedSteps)
-                ? Math.max(0, Math.floor(originalData.completedSteps))
-                : undefined;
-            const completedCount = completedSteps ?? Array.from(new Set(completedDieIds)).length;
-            const remainingSelectCount = Math.max(0, selectCount - completedCount);
-            return {
-                ...sysInteraction,
-                data: {
-                    ...sysInteraction.data,
-                    initialResult: (originalData.initialResult as DiceModifyResult | undefined)
-                        ?? { modifications: {}, modCount: 0, totalAdjustment: 0 },
-                    localReducer: (current: unknown, step: unknown) =>
-                        diceModifyReducer(current as DiceModifyResult, step as DiceModifyStep, config, remainingSelectCount),
-                    toCommands: (result: DiceModifyResult) => diceModifyToCommands(result, remainingSelectCount),
-                    getCompletedSteps: (result: DiceModifyResult) => completedCount + result.modCount,
-                    // any/adjust 模式：手动确认，禁用 auto-confirm
-                    maxSteps: isManualConfirmMode ? undefined : originalData.maxSteps,
-                    minSteps: isManualConfirmMode
-                        ? (Number(originalData.minSteps) || 1)
-                        : (originalData.minSteps ?? originalData.maxSteps),
-                    completedDieIds,
-                    completedSteps,
-                },
-            };
-        }
-
-        if (meta.dtType === 'selectDie') {
-            const originalData = sysInteraction.data as Record<string, unknown>;
-            const selectCount = Number(meta.selectCount) || 1;
-            const allowRepeatedDieSelection = meta.allowRepeatedDieSelection === true;
-            const isRepeatedReroll = allowRepeatedDieSelection;
-            const completedDieIds = Array.isArray(originalData.completedDieIds)
-                ? originalData.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
-                : [];
-            const completedSteps = typeof originalData.completedSteps === 'number' && Number.isFinite(originalData.completedSteps)
-                ? Math.max(0, Math.floor(originalData.completedSteps))
-                : undefined;
-            const completedCount = allowRepeatedDieSelection
-                ? (completedSteps ?? completedDieIds.length)
-                : Array.from(new Set(completedDieIds)).length;
-            const remainingSelectCount = Math.max(0, selectCount - completedCount);
-            return {
-                ...sysInteraction,
-                data: {
-                    ...sysInteraction.data,
-                    initialResult: { selectedDiceIds: [] } as DiceSelectResult,
-                    localReducer: (current: unknown, step: unknown) =>
-                        diceSelectReducer(current as DiceSelectResult, step as DiceSelectStep, remainingSelectCount, allowRepeatedDieSelection),
-                    toCommands: (result: DiceSelectResult) => diceSelectToCommands(result, remainingSelectCount),
-                    getCompletedSteps: (result: DiceSelectResult) => completedCount + result.selectedDiceIds.length,
-                    maxSteps: isRepeatedReroll
-                        ? (typeof originalData.maxSteps === 'number' && Number.isFinite(originalData.maxSteps)
-                            ? originalData.maxSteps
-                            : selectCount)
-                        : (typeof originalData.maxSteps === 'number' && Number.isFinite(originalData.maxSteps)
-                            ? originalData.maxSteps
-                            : undefined),
-                    minSteps: originalData.minSteps ?? 1,
-                    confirmationMode: isRepeatedReroll ? 'submitBatch' : originalData.confirmationMode,
-                    shouldResolveOnConfirm: isRepeatedReroll
-                        ? (result: DiceSelectResult) => result.selectedDiceIds.length === 0
-                        : undefined,
-                    allowedDieIds: originalData.allowedDieIds,
-                    completedDieIds,
-                    completedSteps,
-                    allowRepeatedDieSelection,
-                },
-            };
-        }
-
-        return undefined;
-    }, [sysInteraction]);
+    const diceMultistepInteraction = React.useMemo(
+        () => rebuildClientDiceMultistepInteraction(sysInteraction),
+        [sysInteraction],
+    );
     const diceMultistepState = useMultistepInteraction<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>(
         diceMultistepInteraction,
         dispatch,
