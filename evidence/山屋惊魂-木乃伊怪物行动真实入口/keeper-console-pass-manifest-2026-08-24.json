@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "参考成熟桌游辅助程序的信息架构，但不照搬皮肤或把山屋改成 3D/重后处理游戏。",
+      "status": "PASS",
+      "evidence": [
+        "67-主黄金链-守秘人辅助面板贯穿提示.jpg 右侧固定守秘人面板承接当前指令、怪物行动、目标、发现和调查日志；主棋盘、卡牌、人物、怪物和奖励按钮仍使用山屋现有运行界面。"
+      ]
+    },
+    {
+      "requirement": "守秘人辅助层必须来自现有规则状态，不新增重复持有物 UI 或平行规则真相源。",
+      "status": "PASS",
+      "evidence": [
+        "67-主黄金链-守秘人辅助面板贯穿提示.jpg 可见守秘人只显示流程摘要；持有物仍在左侧持有区和原观察视角槽位。"
+      ]
+    },
+    {
+      "requirement": "黄金端到端过程截图必须覆盖开局、发现、作祟、跳过事件、木乃伊行动、攻击奖励和终局，且守秘人面板在关键节点保持可见。",
+      "status": "PASS",
+      "evidence": [
+        "主黄金链重新生成 65-主黄金链过程-01 至 37 过程图。",
+        "E2E 对守秘人当前指令、发现摘要、怪物行动、目标摘要、日志和视口位置做了断言。",
+        "67-主黄金链-守秘人辅助面板贯穿提示.jpg 证明攻击奖励节点中守秘人面板未被右侧栏滚出屏幕。"
+      ]
+    },
+    {
+      "requirement": "最终截图必须可读、无遮挡，不压住棋盘、持有区、牌堆、角色状态或主操作按钮。",
+      "status": "PASS",
+      "evidence": [
+        "67-主黄金链-守秘人辅助面板贯穿提示.jpg 中棋盘居中可见，左侧角色和持有区可见，右侧牌堆/预兆状态/队友槽位可见，底部奖励按钮可见。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/67-主黄金链-守秘人辅助面板贯穿提示.jpg"
+  ],
+  "imageDetails": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/67-主黄金链-守秘人辅助面板贯穿提示.jpg",
+      "role": "final-user-visible-delivery",
+      "viewport": "1600x900",
+      "observed": "守秘人面板固定在右上侧，显示当前回合、下一步、怪物行动、目标、发现和调查日志；当前攻击奖励按钮仍在底部可操作。"
+    }
+  ]
+}
