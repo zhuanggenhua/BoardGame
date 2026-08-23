@@ -92,6 +92,14 @@
 - 结果：通过。
 - 证明了什么：新增内部批量命令类型没有破坏 TypeScript 编译面。
 
+- 命令：`npm run audit:evidence:selfcheck -- evidence/dicethrone/dicethrone-multistep-command-transaction-audit-2026-08-23.md`
+- 结果：OK。
+- 证明了什么：当前 evidence 的范围、原子语义、实现消费链、缺口分类和对外口径结构完整。
+
+- 命令：`npm run spec:lint`
+- 结果：OK。
+- 证明了什么：本轮 `.spec/knowledge/standards` 规范更新没有破坏项目规范索引和结构校验。
+
 ## 缺口分类与范围裁定
 
 | 条目 | 分类 | 是否阻塞当前规则实现 | 是否阻塞完成口径 | 当前范围裁定 | 最小补救 |
