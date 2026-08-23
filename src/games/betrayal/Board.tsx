@@ -14629,6 +14629,72 @@ export default function BetrayalBoard({
         }),
       ];
 
+  const keeperPrimaryAction =
+    visibleActionItems.find((action) => !action.disabled) ??
+    visibleActionItems[0] ??
+    null;
+  const keeperRecentLogs = React.useMemo(
+    () => visibleActivityEntries.slice(0, 3),
+    [visibleActivityEntries],
+  );
+  const keeperMonsterSummary = React.useMemo(() => {
+    const preferredMonsterId = core.scenarioRuntime.mummy?.mummyMonsterId;
+    const status =
+      (preferredMonsterId
+        ? monsterStatuses.find(
+            (candidate) => candidate.monsterId === preferredMonsterId,
+          )
+        : null) ??
+      monsterStatuses.find((candidate) =>
+        monsterActionPanel.monsterIds.includes(candidate.monsterId),
+      ) ??
+      monsterStatuses[0] ??
+      null;
+    if (!status) {
+      return null;
+    }
+    const roomName =
+      status.roomId
+        ? (core.rooms.find((room) => room.id === status.roomId)?.name ??
+          t("board.rooms.unknown"))
+        : t("board.rooms.unknown");
+    const moveSlot = monsterActionPanel.slots.find(
+      (slot) => slot.monsterId === status.monsterId && slot.kind === "move",
+    );
+    const attackSlot = monsterActionPanel.slots.find(
+      (slot) => slot.monsterId === status.monsterId && slot.kind === "attack",
+    );
+    const turnStartSlot = monsterActionPanel.slots.find(
+      (slot) =>
+        slot.monsterId === status.monsterId && slot.kind === "turn-start",
+    );
+    const movementRollSlot = monsterActionPanel.slots.find(
+      (slot) => slot.kind === "movement-roll" && slot.enabled,
+    );
+    const currentPrimaryMonsterSlot =
+      monsterTurnStartActionSlot?.monsterId === status.monsterId
+        ? turnStartSlot
+        : monsterMovementRollActionSlot
+          ? movementRollSlot
+          : null;
+    const nextSlot =
+      currentPrimaryMonsterSlot ?? moveSlot ?? attackSlot ?? null;
+    return {
+      status,
+      roomName,
+      moveRemaining: moveSlot?.moveRemaining ?? null,
+      nextLabel: nextSlot?.label ?? monsterActionPanel.reason ?? null,
+    };
+  }, [core.rooms, core.scenarioRuntime.mummy?.mummyMonsterId, monsterActionPanel, monsterMovementRollActionSlot, monsterStatuses, monsterTurnStartActionSlot?.monsterId, t]);
+  const keeperObjectiveText =
+    core.phase === "haunt"
+      ? scenarioReaderScope === "traitor"
+        ? t(activeHauntDossier.traitorGoalKey)
+        : scenarioReaderScope === "heroes"
+          ? t(activeHauntDossier.heroGoalKey)
+          : t(activeHauntDossier.objectiveKey)
+      : t(activeHauntDossier.objectiveKey);
+
   const tutorialMapTargetRoomId = React.useMemo(() => {
     const target = tutorialStep?.highlightTarget;
     if (!isTutorialActive || !target) {
@@ -20089,6 +20155,163 @@ export default function BetrayalBoard({
                   : `flex ${activeHauntTargetGuide ? "opacity-[0.72]" : ""}`
             }`}
           >
+            <article
+              data-testid="betrayal-keeper-console"
+              data-keeper-phase={core.phase}
+              className="sticky top-0 z-30 ml-auto w-full max-w-[198px] overflow-visible rounded-[10px] border border-[rgba(183,145,82,0.38)] bg-[linear-gradient(180deg,rgba(19,22,20,0.94),rgba(8,10,9,0.90))] px-2.5 py-2.5 text-[#eadbb8] shadow-[0_14px_28px_rgba(0,0,0,0.30),inset_0_0_0_1px_rgba(246,215,144,0.04)] backdrop-blur-md"
+            >
+              <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(246,215,144,0.34),transparent)]" />
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.20em] text-[#c7a768]">
+                    <Compass size={11} aria-hidden="true" />
+                    {t("board.keeper.title")}
+                  </div>
+                  <div
+                    data-testid="betrayal-keeper-current-directive"
+                    className="mt-1 text-[13px] font-black leading-snug text-[#fff1b8]"
+                  >
+                    {actionCueText}
+                  </div>
+                </div>
+                <span
+                  data-testid="betrayal-keeper-phase"
+                  className="shrink-0 rounded-[5px] border border-[rgba(246,215,144,0.22)] bg-[rgba(246,215,144,0.08)] px-1.5 py-0.5 text-[9px] font-bold text-[#f2d58b]"
+                >
+                  {phaseLabel}
+                </span>
+              </div>
+              <div className="mt-2 grid gap-1">
+                <section
+                  data-testid="betrayal-keeper-next"
+                  className="rounded-[7px] border border-[rgba(117,98,68,0.36)] bg-[rgba(7,10,8,0.42)] px-2 py-1"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
+                      {t("board.keeper.next")}
+                    </span>
+                    {keeperPrimaryAction ? (
+                      <span className="max-w-[78px] truncate text-[10px] font-bold text-[#d9ff97]">
+                        {keeperPrimaryAction.label}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 line-clamp-1 text-[11px] font-semibold leading-snug text-[#e8d7a5]">
+                    {turnHintText}
+                  </p>
+                </section>
+                {keeperMonsterSummary ? (
+                  <section
+                    data-testid="betrayal-keeper-monster"
+                    className="rounded-[7px] border border-[rgba(169,42,46,0.30)] bg-[rgba(53,22,19,0.30)] px-2 py-1"
+                  >
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#d99a72]">
+                      <Skull size={10} aria-hidden="true" />
+                      {t("board.keeper.monster")}
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span className="truncate text-[12px] font-black text-[#fff1b8]">
+                        {keeperMonsterSummary.status.name}
+                      </span>
+                      {keeperMonsterSummary.moveRemaining != null ? (
+                        <span
+                          data-testid="betrayal-keeper-monster-move"
+                          className="rounded-[4px] border border-[rgba(217,255,151,0.20)] bg-[rgba(77,102,35,0.30)] px-1.5 py-0.5 text-[10px] font-black text-[#d9ff97]"
+                        >
+                          {t("board.keeper.moveRemaining", {
+                            count: keeperMonsterSummary.moveRemaining,
+                          })}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-[#e1c39a]">
+                      {keeperMonsterSummary.roomName}
+                      {keeperMonsterSummary.nextLabel
+                        ? ` · ${keeperMonsterSummary.nextLabel}`
+                        : ""}
+                    </p>
+                  </section>
+                ) : null}
+                <section
+                  data-testid="betrayal-keeper-objective"
+                  className="rounded-[7px] border border-[rgba(117,98,68,0.28)] bg-[rgba(7,10,8,0.30)] px-2 py-1"
+                >
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
+                    <Eye size={10} aria-hidden="true" />
+                    {t("board.keeper.objective")}
+                  </div>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-snug text-[#d8c692]">
+                    {keeperObjectiveText}
+                  </p>
+                </section>
+                <section
+                  data-testid="betrayal-keeper-discovery"
+                  className="rounded-[7px] border border-[rgba(117,98,68,0.30)] bg-[rgba(7,10,8,0.30)] px-2 py-1"
+                >
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
+                    <BookOpen size={10} aria-hidden="true" />
+                    {t("board.keeper.discovery")}
+                  </div>
+                  {pendingEventChoice ? (
+                    <>
+                      <div className="mt-0.5 truncate text-[11px] font-black text-[#fff1b8]">
+                        {pendingEventChoice.sourceTitle}
+                      </div>
+                      <p className="line-clamp-1 text-[10px] font-semibold leading-snug text-[#d8c692]">
+                        {pendingEventChoice.sourceKind === "event-symbol-skip"
+                          ? t("board.keeper.eventChoiceSkip")
+                          : t("board.keeper.eventChoice")}
+                      </p>
+                    </>
+                  ) : latestDiscovery ? (
+                    <>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <span className="shrink-0 rounded-[4px] border border-[rgba(238,204,126,0.22)] bg-[rgba(238,204,126,0.08)] px-1.5 py-0.5 text-[9px] font-bold text-[#d8bf81]">
+                          {latestDiscoveryDisplayedKindLabel}
+                        </span>
+                        <span className="truncate text-[11px] font-black text-[#fff1b8]">
+                          {latestDiscoveryDisplayedTitle}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-[#d8c692]">
+                        {latestDiscoveryDisplaySummary ||
+                          t("board.keeper.discoveryResolved")}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-[#bcae8f]">
+                      {t("board.keeper.discoveryIdle")}
+                    </p>
+                  )}
+                </section>
+                <section
+                  data-testid="betrayal-keeper-log"
+                  className="rounded-[7px] border border-[rgba(117,98,68,0.24)] bg-[rgba(7,10,8,0.26)] px-2 py-1"
+                >
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
+                    <Hourglass size={10} aria-hidden="true" />
+                    {t("board.keeper.log")}
+                  </div>
+                  <div className="mt-1 grid gap-1">
+                    {keeperRecentLogs.length > 0 ? (
+                      keeperRecentLogs.map((entry) => (
+                        <p
+                          key={entry.id}
+                          className="line-clamp-1 text-[10px] font-semibold leading-snug text-[#cfc0a0]"
+                        >
+                          {entry.text}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-[10px] font-semibold leading-snug text-[#a99a78]">
+                        {t("board.keeper.logIdle")}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              </div>
+            </article>
+
             <article
               id="betrayal-decks-section"
               className="relative ml-auto w-full max-w-[198px] overflow-visible bg-transparent px-0 pb-2 pt-3"

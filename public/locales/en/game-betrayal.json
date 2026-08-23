@@ -490,6 +490,20 @@
       "healTraitCount": "Heal +{{count}} traits",
       "healFloatingText": "Heal +{{count}}"
     },
+    "keeper": {
+      "title": "Keeper",
+      "next": "Next",
+      "discovery": "Discovery",
+      "monster": "Monster Action",
+      "objective": "Objective",
+      "log": "Investigation Log",
+      "discoveryIdle": "Explore a room, reveal a card, or resolve a room effect.",
+      "discoveryResolved": "The discovery is resolved. Return to the table and continue.",
+      "eventChoice": "An event choice is pending. Review the effect before choosing.",
+      "eventChoiceSkip": "An event symbol has been revealed. Choose whether to skip it or draw the Event card.",
+      "moveRemaining": "Move {{count}}",
+      "logIdle": "No new entries."
+    },
     "reference": {
       "button": "Reference",
       "front": "Player reference front",

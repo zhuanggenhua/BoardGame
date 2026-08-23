@@ -491,6 +491,20 @@
       "healTraitCount": "治疗 +{{count}} 项",
       "healFloatingText": "治疗 +{{count}}"
     },
+    "keeper": {
+      "title": "守秘人",
+      "next": "下一步",
+      "discovery": "发现",
+      "monster": "怪物行动",
+      "objective": "目标",
+      "log": "调查日志",
+      "discoveryIdle": "等待探索房间、翻出卡牌或处理房间效果。",
+      "discoveryResolved": "发现已经结算，回到牌桌继续行动。",
+      "eventChoice": "当前有事件抉择，先看清效果再选择。",
+      "eventChoiceSkip": "已翻出事件符号，现在决定跳过事件或抽取事件牌。",
+      "moveRemaining": "移 {{count}}",
+      "logIdle": "暂无新记录。"
+    },
     "reference": {
       "button": "提示",
       "front": "玩家参考卡正面",
