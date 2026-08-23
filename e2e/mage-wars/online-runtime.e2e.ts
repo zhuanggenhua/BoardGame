@@ -4152,6 +4152,19 @@ test.describe('Mage Wars formal online runtime', () => {
                     await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体施放完成截图前');
                     await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A2-A3边界墙体可见');
 
+                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                    continue;
+                }
+
+                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+            }
+
+            await advanceToNextPlanningPhase(match, diagnostics);
+            await planNamedSpells(match.hostPage, ['缠绕藤蔓', '间歇喷泉']);
+            await planNamedSpells(match.guestPage, ['圣光之柱']);
+            const thirdRoundOrder = await resolveCurrentActorOrder(match, '魔物和攻击代表链', diagnostics);
+            for (const actorId of thirdRoundOrder) {
+                if (actorId === '0') {
                     const hostBobcatForWallPassage = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
                     const bobcatDamageBeforeWallPassage = await readServerCoreSnapshot(match.hostPage, match, '0').then((snapshot) => {
                         const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
@@ -4189,19 +4202,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     }).toBe(true);
                     await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链穿墙伤害截图前');
                     await saveEvidenceScreenshot(match.hostPage, testInfo, '10H-野性山猫穿越荆棘之墙后-通行伤害可见');
-                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
-                    continue;
-                }
 
-                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
-            }
-
-            await advanceToNextPlanningPhase(match, diagnostics);
-            await planNamedSpells(match.hostPage, ['缠绕藤蔓', '间歇喷泉']);
-            await planNamedSpells(match.guestPage, ['圣光之柱']);
-            const thirdRoundOrder = await resolveCurrentActorOrder(match, '魔物和攻击代表链', diagnostics);
-            for (const actorId of thirdRoundOrder) {
-                if (actorId === '0') {
                     const hostTargetBobcat = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
                     await castPreparedSpellOnFieldObject(match.hostPage, '缠绕藤蔓', hostTargetBobcat);
                     await expectServerObject(match.hostPage, match, '0', {

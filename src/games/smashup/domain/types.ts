@@ -518,6 +518,11 @@ export interface PlayerState {
     baseLimitedMinionQuota?: Record<number, number>;
     /** 基地限定且带力量上限的额外随从额度集合（baseIndex → 每个元素代表 1 次受限额度） */
     baseLimitedMinionPowerCaps?: Record<number, number[]>;
+    /** 基地限定额外随从额度的逐次限制（baseIndex → 每个元素代表 1 次受限额度） */
+    baseLimitedMinionQuotaRestrictions?: Record<number, Array<{
+        powerMax?: number;
+        excludedDefIds?: string[];
+    }>>;
     /** 基地限定额度是否要求同名（baseIndex → true），与 baseLimitedMinionQuota 配合 */
     baseLimitedSameNameRequired?: Record<number, boolean>;
     /** 基地限定额度的同名 defId（baseIndex → defId），与 baseLimitedSameNameRequired 配合 */
@@ -1781,6 +1786,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         restrictToBaseModifier?: boolean;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */
         powerMax?: number;
+        /** 额外随从不能打出的随从 defId 列表 */
+        excludedMinionDefIds?: string[];
         /** 同名限制：这些额度只能用于打出同一 defId 的随从（第一个打出时锁定） */
         sameNameOnly?: boolean;
         /** 预锁定的 defId（与 sameNameOnly 配合使用，跳过首次锁定直接限定） */
