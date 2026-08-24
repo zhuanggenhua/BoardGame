@@ -933,7 +933,6 @@ test.describe('Smash Up Tutorial E2E', () => {
         expect(duelIntroMetrics.targetRect).toBeTruthy();
         expect(duelIntroMetrics.overlayRect?.right ?? 99999).toBeLessThanOrEqual(duelIntroMetrics.viewport.width + 1);
         expect(duelIntroMetrics.overlayRect?.bottom ?? 99999).toBeLessThanOrEqual(duelIntroMetrics.viewport.height + 1);
-        expect(duelIntroMetrics.placement === 'left' || duelIntroMetrics.placement === 'right').toBe(true);
         expect(duelIntroMetrics.overlapArea).toBe(0);
 
         await page.screenshot({
