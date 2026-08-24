@@ -1,0 +1,566 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "fantasyrealms",
+  "basePrefix": "official/i18n/zh-CN/fantasyrealms/",
+  "files": {
+    "cards/atlases/compressed/fantasyrealms-base-cards-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "f9f54569480a73a6d2a54e46f2315decd8d28ea8c88931b9a46baedb3fb49e4c",
+          "bytes": 775812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/atlases/compressed/fantasyrealms-cursed-hoard-cards-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "61c09ae1108bfa31958b936e94ddae7abd7b995b119b0f1d41d8d4f5b712baeb",
+          "bytes": 280692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/atlases/fantasyrealms-base-cards-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "27748edd4bb782d60106ead5c7bca46ee0cea02b34a16b438ba41f67c0f9b9ed",
+          "bytes": 26441844,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/atlases/fantasyrealms-cursed-hoard-cards-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "61884852b9bb0ebf7559db1ac9785474bbc2e2137ce11698369e6e558566f63a",
+          "bytes": 12508340,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/backs/compressed/fantasyrealms-base-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "368c57dc9f644fc0c4f61e3b69ebaec0e4b19ee6a59f2b5e6243f2ed1635d450",
+          "bytes": 332308,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/backs/compressed/fantasyrealms-cursed-hoard-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "56e5b4d4c186e0153a30f77f7f1dac2224630e03c48d05589742d0ccaf852733",
+          "bytes": 580680,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/backs/fantasyrealms-base-card-back": {
+      "variants": {
+        "png": {
+          "sha256": "71b3a9083ca6cd5406154db1f11b3914c0336e818bc0c623ed5015584465f60a",
+          "bytes": 2520767,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/backs/fantasyrealms-cursed-hoard-card-back": {
+      "variants": {
+        "png": {
+          "sha256": "224dabd090af43bb040e62a723ebb93c0271692b374792652fa6a5699ad7a045",
+          "bytes": 2932833,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/compressed/army-celestial-knights": {
+      "variants": {
+        "webp": {
+          "sha256": "3f739689bd13e9048cef822fc2819a6ed3e31d1cad08e19c996c101104594717",
+          "bytes": 65578,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/army-dwarvish-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "f2c53ddace157f8c100d9048e320ba2fea156de93441e93f838c6d779803f10c",
+          "bytes": 65830,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/army-elven-archers": {
+      "variants": {
+        "webp": {
+          "sha256": "678a005bcc496109363327bef3ae1d1e1f7952e5aa53b83107f407834f3a6e76",
+          "bytes": 62666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/army-light-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "162ebe8cf7476caa84e595931eaa16cf40be29dce3969abaf429910fc321961a",
+          "bytes": 64840,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/army-rangers": {
+      "variants": {
+        "webp": {
+          "sha256": "bd28f96e2c9a31fb6f1482bd02cf8f1b5f436cc019558516ed7422d1464e7acf",
+          "bytes": 72214,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/artifact-book-of-changes": {
+      "variants": {
+        "webp": {
+          "sha256": "43036386af24a698a2b8a0c97135b3515d65114cdfe18d85f8065f55ab53a8b7",
+          "bytes": 62432,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/artifact-gem-of-order": {
+      "variants": {
+        "webp": {
+          "sha256": "f7231c81efe09be7a5a2bb11a05d5a269a98b85d420b62ee85a0dd751d2ce7dc",
+          "bytes": 61942,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/artifact-protection-rune": {
+      "variants": {
+        "webp": {
+          "sha256": "918e9b034a0edfeeb5b63b3a64e647ef324b866eec9f75e28c62b1d605f8a6b2",
+          "bytes": 57728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/artifact-shield-of-keth": {
+      "variants": {
+        "webp": {
+          "sha256": "0dd2d40d7c344cce2c7da2907a52bcff2b9eb032c181a68b0be298051d76bfbe",
+          "bytes": 58384,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/artifact-world-tree": {
+      "variants": {
+        "webp": {
+          "sha256": "106661e8f78ae3bbfcb41e8454375f0651879b17f858a3637b730a68ad252993",
+          "bytes": 67364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/beast-basilisk": {
+      "variants": {
+        "webp": {
+          "sha256": "bc21092ecb4bce170395577db58f8f5e4d3d63664a48b739484a89f812a3a3fe",
+          "bytes": 66740,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/beast-dragon": {
+      "variants": {
+        "webp": {
+          "sha256": "df8bdd523073ac482adcfdf16a8131f0f2c6144c4c5998fc65b1860a14a382c7",
+          "bytes": 61362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/beast-hydra": {
+      "variants": {
+        "webp": {
+          "sha256": "39ffde8cf1b5c36777d945cab8fa3cc9319c95d2c58f555d451304cf199e4d1a",
+          "bytes": 61054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/beast-unicorn": {
+      "variants": {
+        "webp": {
+          "sha256": "a5811a64ccf7ae67461faa312925feb233fa7c6b6b0d8bd8c49120e42e7e7ffa",
+          "bytes": 65384,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/beast-warhorse": {
+      "variants": {
+        "webp": {
+          "sha256": "2f2121c4cfa50cd06ef8ab84ca399a84188e2a63921e76dc69ea809e3ac73406",
+          "bytes": 60676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flame-candle": {
+      "variants": {
+        "webp": {
+          "sha256": "5d42f1767d0e646dde731f1e931a29d29f3a1c12b4cfb93c8b7d64dc81037326",
+          "bytes": 57060,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flame-fire-elemental": {
+      "variants": {
+        "webp": {
+          "sha256": "82250edd5fb02715dd1b9571b8aa3843481819edef759194553519ae92406307",
+          "bytes": 60204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flame-forge": {
+      "variants": {
+        "webp": {
+          "sha256": "2c8d51766cb035c3cdb7dedee6df9f40825010e442268d32d5237ef0c182901a",
+          "bytes": 61270,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flame-lightning": {
+      "variants": {
+        "webp": {
+          "sha256": "712569b57dcaf95d0ac19cb84b86ed42debd0e644dd9a5b74fe9bb963f051a1d",
+          "bytes": 53336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flame-wildfire": {
+      "variants": {
+        "webp": {
+          "sha256": "fd78d9058e7f4ad84209f1558b607ac26b7d033d0768e707ca49e6f907d4a400",
+          "bytes": 71504,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flood-fountain-of-life": {
+      "variants": {
+        "webp": {
+          "sha256": "2b4738f8df46ba69b1baf18a76d4f7124bd8f64ddb3e0615313b3bb6818cb437",
+          "bytes": 64070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flood-great-flood": {
+      "variants": {
+        "webp": {
+          "sha256": "02e584b22f91912453160935528d51b1625cf4c03b707f319397fa41fc1458a2",
+          "bytes": 70276,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flood-island": {
+      "variants": {
+        "webp": {
+          "sha256": "9d4e1ad3c0ededd8c823eb3553994b9a26ce8811b816b2e316c9dc5a47f1b677",
+          "bytes": 64142,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flood-swamp": {
+      "variants": {
+        "webp": {
+          "sha256": "852b6afc37ad85967688967204828132dd11de0f268143c7a79115988b2ae79f",
+          "bytes": 66008,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/flood-water-elemental": {
+      "variants": {
+        "webp": {
+          "sha256": "fc49d73588d79659fe6f07532fc77654421924a44e4d5703e0fbfbd64dea3113",
+          "bytes": 55108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/land-bell-tower": {
+      "variants": {
+        "webp": {
+          "sha256": "c8f93e8d19fe983d3bd512c02ce12b01f2900ecc30d56d21793b5b4323faf619",
+          "bytes": 61302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/land-earth-elemental": {
+      "variants": {
+        "webp": {
+          "sha256": "ed5e22a69d6808260969daa239fbcb3f9fd867adf25b836564ccfe32ca5a7a71",
+          "bytes": 63652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/land-forest": {
+      "variants": {
+        "webp": {
+          "sha256": "e4569b513ec0233e68db35f2fa10c67df6aeb8d5afacf266f7c69576dd53a377",
+          "bytes": 65788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/land-mountain": {
+      "variants": {
+        "webp": {
+          "sha256": "147ac98e6d05a887e2b10a88809e64650af4cf504c1e898b059adea89aaa6199",
+          "bytes": 67510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/land-underground-caverns": {
+      "variants": {
+        "webp": {
+          "sha256": "28595f3e44d52d7632ce09e58b43a99fc064fa8b71c36627be4d8c1660d57b59",
+          "bytes": 69844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/leader-empress": {
+      "variants": {
+        "webp": {
+          "sha256": "932493f46de0d986ea35ef5b611930c75ed523e92834d751ea1d718cb3badeee",
+          "bytes": 61002,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/leader-king": {
+      "variants": {
+        "webp": {
+          "sha256": "1f0f3c25e7178b1508d310eefcc58c53da5e18b06555a9976d7698be4679e476",
+          "bytes": 68558,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/leader-princess": {
+      "variants": {
+        "webp": {
+          "sha256": "868915943d586e369425da59c497f9fb5fb04402988e6293a93600b15009bab1",
+          "bytes": 58118,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/leader-queen": {
+      "variants": {
+        "webp": {
+          "sha256": "e9f194a1a33caef2b58e3dbc8115ce2c1889267d1ec035bd37659041a06dcd7d",
+          "bytes": 66506,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/leader-warlord": {
+      "variants": {
+        "webp": {
+          "sha256": "dc6e32f43b00107506bdfaa1ff66a09a7530e7e7d4af87458f929aa7f31c65f8",
+          "bytes": 61764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weapon-elven-longbow": {
+      "variants": {
+        "webp": {
+          "sha256": "33553cf5144df4b7b66e4c3920b1c936d93b4248d9317bafed63873f2313f4f8",
+          "bytes": 58878,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weapon-magic-wand": {
+      "variants": {
+        "webp": {
+          "sha256": "d423c30b3a9202e5ff3ec9ed6fb57d2bf46303e78956d218134f5479cd94fab1",
+          "bytes": 49294,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weapon-sword-of-keth": {
+      "variants": {
+        "webp": {
+          "sha256": "f83014e15fcf0a3fa0e682f8a63406b567bdc0a9252e771b4dfdb6574cbbe992",
+          "bytes": 61508,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weapon-war-dirigible": {
+      "variants": {
+        "webp": {
+          "sha256": "fb0d45c037d99a0f9389c8b6a5ae1b5c98589de5ca22b645e6d4f102d6926b08",
+          "bytes": 64430,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weapon-warship": {
+      "variants": {
+        "webp": {
+          "sha256": "89ee0e924f355b1d18f810d3f4fe09cb66e3853d9b315f8a0c9eb407542cd06f",
+          "bytes": 68964,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weather-air-elemental": {
+      "variants": {
+        "webp": {
+          "sha256": "b1180116791735c6392be9376d486ecf05dd4a1f3dc00152216ec11ff32dace1",
+          "bytes": 52488,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weather-blizzard": {
+      "variants": {
+        "webp": {
+          "sha256": "6075b9915c8c6bc175ca3086251d4ff8ee64370f5ecea3fa7baceb7e76537e6c",
+          "bytes": 70338,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weather-rainstorm": {
+      "variants": {
+        "webp": {
+          "sha256": "682a3ba3857f31da4f3a55dfd9d6a7753ad482e74d484f28707c9cdbb3231f00",
+          "bytes": 61600,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weather-smoke": {
+      "variants": {
+        "webp": {
+          "sha256": "e23a17d684c25327816cd89af2d232e2eb2610c08987b198f5ce65bdb8fec958",
+          "bytes": 53826,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/weather-whirlwind": {
+      "variants": {
+        "webp": {
+          "sha256": "8fa647e15b8de61727334c650ec2499e091507adb80c9bcd1a727a0c9c4fc7ef",
+          "bytes": 60598,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wild-doppelganger": {
+      "variants": {
+        "webp": {
+          "sha256": "dd959ccc0f38a4e719711154a89ba5a6bac59ffa6006ec1ff4a07eae88703359",
+          "bytes": 61726,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wild-mirage": {
+      "variants": {
+        "webp": {
+          "sha256": "52fd9f27bf363cffc6acfb0ad1dba077bdacc9ff6f5366319a4ffd5b1930061e",
+          "bytes": 71670,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wild-shapeshifter": {
+      "variants": {
+        "webp": {
+          "sha256": "fe385f8f1f063a288cc7db857a781b4df1ca1e7ff08aac69ea6692fef5123355",
+          "bytes": 77812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wizard-beastmaster": {
+      "variants": {
+        "webp": {
+          "sha256": "f2121e214549208a6ef1087a708dca925c87869fd3028228d5ca59467834113f",
+          "bytes": 58180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wizard-collector": {
+      "variants": {
+        "webp": {
+          "sha256": "c3dae032e628d02f54ecdf21cfba2e2f1e0c0839121c1670e3e391fb2761d5e0",
+          "bytes": 65582,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wizard-elemental-enchantress": {
+      "variants": {
+        "webp": {
+          "sha256": "e923becf6da06493cfdf4c40aed88ec3f139ec8c20f4203baa575e113a22f203",
+          "bytes": 57032,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wizard-necromancer": {
+      "variants": {
+        "webp": {
+          "sha256": "aa9e5a079f5cdd50000d8cec0dd8f00895594cb08804e4f3cde0a6a0ab51b2a6",
+          "bytes": 75742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/wizard-warlock-lord": {
+      "variants": {
+        "webp": {
+          "sha256": "9dab184d0fa5088bd09ddee06b8cf9e1ecd2d053ece93364cb6e77755f025285",
+          "bytes": 63920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "ab3c82285c5181d3a2ee960e383a9cb33905000ed90c144e994d9843e154ecb5",
+          "bytes": 182306,
+          "mime": "image/webp"
+        }
+      }
+    }
+  }
+}

@@ -2803,7 +2803,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         {t('ui.card_count_short', { count: backtimersStasisCards.length })}
                     </div>
                 </div>
-                <div className="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1">
+                <div className={isMobileViewport
+                    ? 'mt-2 flex max-w-full gap-2 overflow-x-auto pb-1'
+                    : 'mt-2 flex max-h-[22rem] max-w-full flex-wrap gap-2 overflow-y-auto pr-1'
+                }>
                     {backtimersStasisCards.map(({ playerId: ownerPlayerId, playerName, card }) => {
                         const def = getCardDef(card.defId);
                         const cardName = resolveCardName(def, t) || card.defId;
@@ -4760,6 +4763,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
+                                        data-testid={opt.id === 'skip' ? 'su-hand-prompt-skip-option' : undefined}
+                                        data-tutorial-id={opt.id === 'skip' ? 'su-hand-prompt-skip-option' : undefined}
                                         onClick={() => {
                                             if (isMultiDirectHandSelect) {
                                                 respondCurrentPrompt({ optionIds: [opt.id] });

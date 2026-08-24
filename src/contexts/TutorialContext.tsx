@@ -365,26 +365,29 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         const liveController = controllerRef.current ?? controller;
                         liveController.dispatchCommand(action.commandType, actionPayload);
                         if (shouldYieldBetweenAiActions) {
-                            const synced = await new Promise<boolean>((resolve) => {
+                            await new Promise<void>((resolve) => {
                                 const startedAt = Date.now();
                                 const poll = () => {
                                     if (aiExecutionGenerationRef.current !== executionGeneration) {
-                                        resolve(false);
+                                        resolve();
                                         return;
                                     }
                                     if (boardSyncVersionRef.current > beforeBoardSyncVersion) {
-                                        resolve(true);
+                                        resolve();
                                         return;
                                     }
                                     if (Date.now() - startedAt > 1000) {
-                                        resolve(false);
+                                        console.warn('[TutorialContext] AI 命令后未观察到教程签名同步，继续推进', {
+                                            stepId,
+                                            commandType: action.commandType,
+                                        });
+                                        resolve();
                                         return;
                                     }
                                     window.setTimeout(poll, 16);
                                 };
                                 window.setTimeout(poll, 0);
                             });
-                            if (!synced) return;
                         }
                     }
                     completed = true;

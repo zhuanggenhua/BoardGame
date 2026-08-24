@@ -11,7 +11,7 @@
  */
 
 import { test, expect } from '../framework';
-import type { Locator, Page } from '@playwright/test';
+import type { Locator, Page, TestInfo } from '@playwright/test';
 import { setChineseLocale, setEnglishLocale, disableAudio, blockAudioRequests } from '../helpers/common';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { MOBILE_REFERENCE_VIEWPORT } from '../../src/shared/referenceViewports';
@@ -225,6 +225,39 @@ const readTutorialOcclusionMetrics = async (page: Page, targetSelector: string) 
         },
     };
 }, targetSelector);
+
+const HAND_PROMPT_SKIP_SELECTOR = '[data-tutorial-id="su-hand-prompt-skip-option"]';
+
+const assertHandPromptSkipTutorialTarget = async (page: Page) => {
+    const skipButton = page.locator(HAND_PROMPT_SKIP_SELECTOR);
+    await expect(skipButton).toBeVisible({ timeout: 10000 });
+    await expect(skipButton).toBeEnabled({ timeout: 10000 });
+    await expect(page.getByTestId('tutorial-highlight-ring')).toHaveAttribute(
+        'data-tutorial-highlight-target',
+        'su-hand-prompt-skip-option',
+        { timeout: 10000 },
+    );
+    const metrics = await readTutorialOcclusionMetrics(page, HAND_PROMPT_SKIP_SELECTOR);
+    expect(metrics.overlayRect).toBeTruthy();
+    expect(metrics.targetRect).toBeTruthy();
+    expect(metrics.targetRect?.width ?? 0).toBeGreaterThan(20);
+    expect(metrics.targetRect?.height ?? 0).toBeGreaterThan(20);
+    expect(metrics.overlapArea).toBe(0);
+};
+
+const clickHandPromptSkip = async (page: Page) => {
+    await assertHandPromptSkipTutorialTarget(page);
+    await page.locator(HAND_PROMPT_SKIP_SELECTOR).click();
+};
+
+const captureCowboysDuelFlow = async (page: Page, testInfo: TestInfo, name: string) => {
+    await page.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, name, {
+            filename: `${name}.png`,
+        }),
+        fullPage: false,
+    });
+};
 
 const sampleElementRectDrift = async (page: Page, selector: string, samples = 6, intervalMs = 120) => page.evaluate(
     async ({ selector: elementSelector, samples: sampleCount, intervalMs: sampleIntervalMs }) => {
@@ -664,39 +697,44 @@ test.describe('Smash Up Tutorial E2E', () => {
         expect((entryBox?.x ?? 0) + 8).toBeGreaterThan((titleBox?.x ?? 0) + (titleBox?.width ?? 0));
         expect(Math.abs((entryBox?.y ?? 0) - (titleBox?.y ?? 0))).toBeLessThan(36);
 
-        await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'cowboys-detail-entry', {
-                filename: 'cowboys-detail-entry.png',
-            }),
-            fullPage: false,
-        });
+        await captureCowboysDuelFlow(page, testInfo, '00-cowboys-detail-entry');
 
         await tutorialEntry.click();
         await page.waitForURL(/\/play\/smashup\/tutorial\/cowboys-duel$/, { timeout: 15000 });
         await waitForTutorialStep(page, 'duelIntro', 40000);
+        await captureCowboysDuelFlow(page, testInfo, '01-cowboys-duel-intro');
         await clickNext(page);
 
         await waitForTutorialStep(page, 'playGunfighter', 10000);
+        await captureCowboysDuelFlow(page, testInfo, '02-cowboys-play-gunfighter-ready');
         await page.locator('[data-testid="su-hand-area"] [data-card-uid="gun-1"]').click({ force: true });
         await page.locator('[data-base-index="0"]').click({ force: true });
+        await captureCowboysDuelFlow(page, testInfo, '03-cowboys-gunfighter-target-ready');
         await clickLocatorCenter(page, page.locator('[data-minion-uid="enemy-1"]'));
 
         await waitForTutorialStep(page, 'pecosBillWindow', 10000);
         await waitForInteractionSource(game, 'titan_pecos_bill_duel_start');
-        await selectInteractionOption(game, option => option.value?.skip === true, 'Pecos Bill 跳过');
+        await assertHandPromptSkipTutorialTarget(page);
+        await captureCowboysDuelFlow(page, testInfo, '04-cowboys-pecos-skip-target');
+        await clickHandPromptSkip(page);
 
         await waitForTutorialStep(page, 'pinkertonCounter', 10000);
         await waitForInteractionSource(game, 'smashup_duel_pinkerton');
+        await captureCowboysDuelFlow(page, testInfo, '05-cowboys-pinkerton-counter-ready');
         await page.getByRole('button', { name: /Place 1 counter|放置 1 个指示物/i }).click();
 
         await waitForTutorialStep(page, 'duelCard', 10000);
         await waitForInteractionSource(game, 'smashup_duel_card');
-        await selectInteractionOption(game, option => option.value?.skip === true, '决斗牌跳过');
+        await assertHandPromptSkipTutorialTarget(page);
+        await captureCowboysDuelFlow(page, testInfo, '06-cowboys-duel-card-skip-target');
+        await clickHandPromptSkip(page);
 
         await waitForTutorialStep(page, 'deputyBoost', 20000);
         await waitForInteractionSource(game, 'smashup_duel_deputy_card');
+        await captureCowboysDuelFlow(page, testInfo, '07-cowboys-deputy-card-ready');
         await clickHandCard(page, page.locator('[data-testid="su-hand-area"] [data-card-uid="deputy-1"]'));
         await waitForInteractionSource(game, 'smashup_duel_deputy_target');
+        await captureCowboysDuelFlow(page, testInfo, '08-cowboys-deputy-target-ready');
         await selectInteractionOption(
             game,
             option => option.value?.minionUid === 'gun-1' || option.value?.targetMinionUid === 'gun-1',
@@ -723,22 +761,12 @@ test.describe('Smash Up Tutorial E2E', () => {
         });
 
         await waitForTutorialStep(page, 'finish', 10000);
-        await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'cowboys-duel-resolved', {
-                filename: 'cowboys-duel-resolved.png',
-            }),
-            fullPage: false,
-        });
-        await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'cowboys-duel-finish', {
-                filename: 'cowboys-duel-finish.png',
-            }),
-            fullPage: false,
-        });
+        await captureCowboysDuelFlow(page, testInfo, '09-cowboys-duel-finish');
 
         await clickFinish(page);
         await page.waitForURL(/\/play\/smashup$/, { timeout: 15000 });
         await expect(page.getByTestId('faction-option-cowboys')).toBeVisible({ timeout: 15000 });
+        await captureCowboysDuelFlow(page, testInfo, '10-cowboys-returned-to-faction-select');
     });
 
     test('教程高亮目标与关键 UI 元素一一对应', async ({ page }) => {
@@ -951,7 +979,7 @@ test.describe('Smash Up Tutorial E2E', () => {
 
         await waitForTutorialStep(page, 'pecosBillWindow', 10000);
         await waitForInteractionSource(game, 'titan_pecos_bill_duel_start');
-        await selectInteractionOption(game, option => option.value?.skip === true, 'Pecos Bill 跳过');
+        await clickHandPromptSkip(page);
 
         await waitForTutorialStep(page, 'pinkertonCounter', 10000);
         await waitForInteractionSource(game, 'smashup_duel_pinkerton');
@@ -959,7 +987,7 @@ test.describe('Smash Up Tutorial E2E', () => {
 
         await waitForTutorialStep(page, 'duelCard', 10000);
         await waitForInteractionSource(game, 'smashup_duel_card');
-        await selectInteractionOption(game, option => option.value?.skip === true, '决斗牌跳过');
+        await clickHandPromptSkip(page);
 
         await waitForTutorialStep(page, 'deputyBoost', 20000);
         await waitForInteractionSource(game, 'smashup_duel_deputy_card');

@@ -459,8 +459,8 @@ export const SMASH_UP_COWBOYS_DUEL_TUTORIAL: TutorialManifest = {
         {
             id: 'pecosBillWindow',
             content: 'game-smashup:tutorial.subTutorials.cowboysDuel.steps.pecosBillWindow',
-            highlightTarget: 'su-hand-area',
-            position: 'top',
+            highlightTarget: 'su-hand-prompt-skip-option',
+            position: 'left',
             requireAction: true,
             advanceOnEvents: [
                 {
@@ -485,8 +485,8 @@ export const SMASH_UP_COWBOYS_DUEL_TUTORIAL: TutorialManifest = {
         {
             id: 'duelCard',
             content: 'game-smashup:tutorial.subTutorials.cowboysDuel.steps.duelCard',
-            highlightTarget: 'su-hand-area',
-            position: 'top',
+            highlightTarget: 'su-hand-prompt-skip-option',
+            position: 'left',
             requireAction: true,
             advanceOnEvents: [
                 {

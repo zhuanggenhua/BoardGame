@@ -162,4 +162,12 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
         const last = SMASH_UP_COWBOYS_DUEL_TUTORIAL.steps[SMASH_UP_COWBOYS_DUEL_TUTORIAL.steps.length - 1];
         expect(last.id).toBe('finish');
     });
+
+    it('牛仔决斗子教程的跳过步骤高亮真实跳过按钮而不是手牌区', () => {
+        const pecosBillWindow = SMASH_UP_COWBOYS_DUEL_TUTORIAL.steps.find(s => s.id === 'pecosBillWindow');
+        const duelCard = SMASH_UP_COWBOYS_DUEL_TUTORIAL.steps.find(s => s.id === 'duelCard');
+
+        expect(pecosBillWindow?.highlightTarget).toBe('su-hand-prompt-skip-option');
+        expect(duelCard?.highlightTarget).toBe('su-hand-prompt-skip-option');
+    });
 });

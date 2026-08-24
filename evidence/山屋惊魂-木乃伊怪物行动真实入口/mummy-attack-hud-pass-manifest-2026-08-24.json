@@ -1,0 +1,47 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "第 04 张木乃伊攻击奖励图必须明确表达是木乃伊攻击英雄后产生奖励，不能读成玩家攻击木乃伊。",
+      "status": "PASS",
+      "evidence": [
+        "UI 文案：public/locales/zh-CN/game-betrayal.json 将奖励横幅改为“木乃伊攻击英雄后”，步骤文案改为“目标{{player}}：造成{{damage}}伤害或偷取”。",
+        "E2E 断言：e2e/betrayal/mummy-rampage-monster-actions.e2e.ts 断言 betrayal-mummy-reward-banner 包含“木乃伊攻击英雄后”。",
+        "截图 4：65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.jpg 顶部横幅显示“木乃伊攻击英雄后”，底部显示造成伤害、偷走圣符、偷走地图入口。"
+      ]
+    },
+    {
+      "requirement": "左上角角色属性显示不能密密麻麻像点阵，常驻 HUD 要能快速读数。",
+      "status": "PASS",
+      "evidence": [
+        "实现：src/games/betrayal/Board.tsx 用 ExplorerTraitValueCard 替代左上常驻完整属性轨，并移除常驻人物牌上的属性夹子覆盖。",
+        "单测：Board.foundation.test.tsx 验证常驻属性为 hud-current-value 数值卡，并验证常驻人物牌不再渲染 betrayal-explorer-board-marker-speed。",
+        "E2E：trait-track-ui.e2e.ts 验证左上属性读数卡无属性轨、无属性格、无指针、无夹子，仍保留 data-trait-track-position 和 data-trait-track-value。",
+        "截图 1：01-左上角色属性读数卡-无属性夹子.jpg 左上显示四个清楚数值卡，常驻人物牌不再叠加四枚属性夹子。"
+      ]
+    },
+    {
+      "requirement": "给用户看的必须是本轮新跑的真实过程截图，不是旧截图或单张结果图。",
+      "status": "PASS",
+      "evidence": [
+        "E2E：node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/mummy-rampage-monster-actions.e2e.ts --project=chromium --grep \"主黄金链\" 通过，1 passed。",
+        "E2E：node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/trait-track-ui.e2e.ts --project=chromium 通过，1 passed。",
+        "标注图组：2026-08-24-mummy-attack-hud-pass 包含顺序索引、左上属性、目标高亮、攻击骰结果、攻击后奖励入口四步。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-mummy-attack-hud-pass/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-mummy-attack-hud-pass/01-labeled-01-左上角色属性读数卡-无属性夹子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-mummy-attack-hud-pass/02-labeled-65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-mummy-attack-hud-pass/03-labeled-65-主黄金链过程-35-木乃伊攻击骰结果-可选择伤害或偷取.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-mummy-attack-hud-pass/04-labeled-65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.png"
+  ]
+}

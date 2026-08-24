@@ -25,6 +25,7 @@
 - 根本机制：固定两步 copy 交互本应选“源骰 + 目标骰”后自动提交；前端缺少自动提交上限后，`useMultistepInteraction` 无法在第二步触发提交，玩家只能取消并重复打牌。
 - 修复：新增 `src/games/dicethrone/ui/clientDiceMultistepInteraction.ts`，把 Dice Throne 多步骰子交互重建逻辑集中起来；对非手动确认的 `modifyDie` 模式补 `maxSteps = explicitMaxSteps ?? selectCount`，保留 `any / adjust` 手动确认模式不变。`Board.tsx` 改为调用该重建入口。
 - 回归保护：新增 `src/games/dicethrone/ui/__tests__/clientDiceMultistepInteraction.test.ts`，覆盖线上 `card-me-too` 只有 `minSteps` 时补 `maxSteps=2`，并生成两条 `MODIFY_DIE` 命令；同时覆盖 `adjust` 模式不会自动提交。
+- 浏览器端到端验证：`e2e/dicethrone/dicethrone-die-modification.e2e.ts` 的玩家链路从手牌拖出 `card-me-too`，先点源骰，再点目标骰；第二颗骰点完后自动结算，不再等待额外确认按钮，目标骰变为源骰数值，手牌里的“俺也一样！”被消耗。随后同一条浏览器链继续确认骰面，并从玩家板点击新成型的“拳法”技能，断言攻击已由 `fist-technique-3` 发起。
 
 ## 系统反馈：`TRANSFER_STATUS` 等待对方响应
 
@@ -41,6 +42,8 @@
   - 2 files passed / 15 tests passed。
 - `node scripts\infra\vitest-cli-safe.mjs run src\engine\transport\__tests__\onlineAiRecovery-gameover.test.ts src\engine\transport\__tests__\onlineAiRecoveryCandidateResolver.test.ts --configLoader native`
   - 2 files passed / 65 tests passed。
+- `node scripts\infra\run-e2e-single.mjs default e2e/dicethrone/dicethrone-die-modification.e2e.ts "card-me-too 复制骰面后能确认骰面并选择新成型技能"`
+  - 1 test passed；最终截图：`test-results/evidence-screenshots/dicethrone/dicethrone-die-modification.e2e/card-me-too-复制骰面后能确认骰面并选择新成型技能/me-too-copy-then-select-fist-technique.jpg`。
 
 ## 状态回写建议
 

@@ -1781,24 +1781,18 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent('特性：');
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent(/\S+：\S+/);
         const currentTraits = screen.getByTestId('betrayal-current-traits');
-        expect(currentTraits.querySelector('[data-trait-track-rail="true"]')).toBeInTheDocument();
-        expect(currentTraits.querySelector('[data-trait-track-rail-shape="continuous-segmented"]')).toBeInTheDocument();
-        expect(currentTraits.querySelector('[data-trait-track-repeat-value-policy="separate-physical-slots"]')).toBeInTheDocument();
-        expect(currentTraits.querySelector('[data-trait-track-segmented-rail="true"]')).toBeInTheDocument();
-        expect(currentTraits.querySelector('[data-trait-track-slot="true"]')).toBeInTheDocument();
-        expect(currentTraits.querySelector('[data-trait-track-pointer="true"]')).toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-rail="true"]')).not.toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-slot="true"]')).not.toBeInTheDocument();
+        expect(currentTraits.querySelectorAll('[data-trait-value-shape="hud-tile"]')).toHaveLength(4);
         expect(currentTraits.querySelector('[data-trait-track-tick="true"]')).not.toBeInTheDocument();
-        const skullEndpoint = currentTraits.querySelector('[data-trait-track-skull="true"]');
-        expect(skullEndpoint).toBeInTheDocument();
-        expect(skullEndpoint).toHaveAttribute('title', expect.stringContaining('死亡格'));
+        expect(currentTraits.querySelector('[data-trait-track-skull="true"]')).not.toBeInTheDocument();
         expect(currentTraits.querySelector('[data-trait-track-start-marker="true"]')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-current-trait-track-might')).toHaveAttribute('data-trait-track-position');
         for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
             const track = screen.getByTestId(`betrayal-current-trait-track-${trait}`);
-            const startSlot = track.querySelector('[data-trait-track-start="true"]');
-            expect(startSlot).toBeInTheDocument();
-            expect(startSlot).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
-            expect(startSlot).toHaveAttribute('title', expect.stringContaining('初始格'));
+            expect(track).toHaveAttribute('data-trait-display', 'hud-current-value');
+            expect(track).toHaveAttribute('data-trait-track-value', String(core.currentExplorer.traits[trait]));
+            expect(track.querySelector('[data-trait-current-value="true"]')).toHaveTextContent(String(core.currentExplorer.traits[trait]));
         }
         expect(within(currentTraits).getByText('力量').parentElement).toHaveClass('text-[#e8b09f]');
         expect(within(currentTraits).getByText('速度').parentElement).toHaveClass('text-[#ebdca1]');
@@ -1828,7 +1822,7 @@ describe('Betrayal Board foundation', () => {
         expect(desktopTeammatePanel).not.toHaveAttribute('data-token-asset');
     });
 
-    it('当前角色板按属性轨位置显示夹子，重复数值不会吞掉位置变化', () => {
+    it('当前角色板常驻属性显示当前数值，并且常驻人物牌不叠加属性夹子', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer.traitTracks.speed = {
             trackId: 'test-speed-full-physical-slots',
@@ -1850,33 +1844,16 @@ describe('Betrayal Board foundation', () => {
         const speedTrack = screen.getByTestId('betrayal-current-trait-track-speed');
         expect(speedTrack).toHaveAttribute('data-trait-track-position', '2');
         expect(speedTrack).toHaveAttribute('data-trait-track-value', '3');
-        expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
-        expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-repeat-value-policy', 'separate-physical-slots');
-        expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toBeInTheDocument();
-        expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
-        expect(speedTrack.querySelectorAll('[data-trait-track-slot="true"]')).toHaveLength(9);
-        expect(speedTrack.querySelectorAll('[data-trait-track-slot-boundary="rail-start"]')).toHaveLength(1);
-        expect(speedTrack.querySelectorAll('[data-trait-track-slot-boundary="internal-divider"]')).toHaveLength(8);
-        expect(speedTrack.querySelectorAll('[data-trait-track-pointer="true"]')).toHaveLength(1);
-        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
-        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
-        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-pointer-shape', 'material-slot-highlight');
-        expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-color', 'current-green');
-        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-color', 'start-green');
-        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
-        expect(speedTrack.querySelector('[data-trait-track-position="2"] [data-trait-track-slot-label="true"]')).toHaveAttribute('data-trait-track-slot-label-align', 'center');
+        expect(speedTrack).toHaveAttribute('data-trait-display', 'hud-current-value');
+        expect(speedTrack).toHaveAttribute('data-trait-value-shape', 'hud-tile');
+        expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).not.toBeInTheDocument();
+        expect(speedTrack.querySelector('[data-trait-track-slot="true"]')).not.toBeInTheDocument();
+        expect(speedTrack.querySelector('[data-trait-current-value="true"]')).toHaveTextContent('3');
         expect(speedTrack.querySelector('[data-trait-track-marker-asset]')).not.toBeInTheDocument();
         expect(speedTrack.querySelector('[data-trait-track-tick="true"]')).not.toBeInTheDocument();
-        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveTextContent('3');
-        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-current', 'false');
 
-        const boardMarker = screen.getByTestId('betrayal-explorer-board-marker-speed');
-        expect(boardMarker).toHaveAttribute('data-trait-track-position', '2');
-        expect(boardMarker).toHaveAttribute('data-trait-track-value', '3');
-        expect(boardMarker).toHaveAttribute('data-trait-board-marker-shape', 'blank-material-marker');
-        expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
-        expect(boardMarker).toHaveAttribute('data-trait-board-marker-visible-value', 'false');
-        expect(boardMarker).not.toHaveTextContent('3');
+        expect(screen.getByTestId('betrayal-observed-explorer-panel')).toHaveAttribute('data-panel-crop', 'hud-identity-portrait');
+        expect(screen.queryByTestId('betrayal-explorer-board-marker-speed')).not.toBeInTheDocument();
     });
 
     it('探索者玩家面板恢复人物板，地图 token 保持正式资源状态', async () => {
@@ -2670,8 +2647,8 @@ describe('Betrayal Board foundation', () => {
             matchData: defaultMatchData.slice(0, 3),
         });
 
-        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('木乃伊：伤害或偷取');
-        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('造成3伤害或偷取');
+        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('木乃伊攻击英雄后');
+        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('目标测试玩家：造成3伤害或偷取');
         const rewardActions = screen.getByTestId('betrayal-mummy-reward-actions');
         expect(within(rewardActions).getByTestId('betrayal-mummy-reward-damage')).toHaveTextContent('造成3伤害');
         expect(within(rewardActions).getByTestId('betrayal-mummy-reward-steal-map')).toHaveTextContent('偷走地图');
@@ -2699,7 +2676,7 @@ describe('Betrayal Board foundation', () => {
             matchData: defaultMatchData.slice(0, 3),
         });
 
-        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('木乃伊：伤害或偷取');
+        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('木乃伊攻击英雄后');
         expect(screen.getByTestId('betrayal-mummy-reward-invalid-targets')).toHaveTextContent('2 个偷取目标已失效');
         const rewardActions = screen.getByTestId('betrayal-mummy-reward-actions');
         expect(within(rewardActions).getByTestId('betrayal-mummy-reward-damage')).toHaveTextContent('造成3伤害');

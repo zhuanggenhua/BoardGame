@@ -21,6 +21,7 @@ const REQUIRED_IDS = [
     'su-opponent-view-toggle',
     'su-back-to-self',
     'su-faction-select',
+    'su-hand-prompt-skip-option',
 ];
 
 /** 读取源码文件内容 */

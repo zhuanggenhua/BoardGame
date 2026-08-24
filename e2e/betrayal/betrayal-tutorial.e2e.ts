@@ -3102,7 +3102,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStep(page, "mummy-attack-reward");
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-mummy-reward-banner")).toContainText(
-      "木乃伊：伤害或偷取",
+      "木乃伊攻击英雄后",
     );
     await expect(page.getByTestId("betrayal-mummy-reward-steal-map")).toContainText(
       "偷走地图",

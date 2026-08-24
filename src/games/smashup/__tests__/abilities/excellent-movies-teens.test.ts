@@ -10,6 +10,7 @@ import {
     getPromptOption,
     getPromptOptions,
     getOptionalSimpleChoicePrompt,
+    getPromptsBySourceId,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -971,6 +972,85 @@ describe('返时者代表性停滞玩法行为', () => {
                 }),
             }),
         ]));
+    });
+
+    it('四人局回合开始只处理当前玩家的多张停滞牌，并为每张归零牌保留独立额外打出机会', () => {
+        const makeStasisCard = (
+            uid: string,
+            defId: string,
+            type: 'minion' | 'action',
+            owner: string,
+            counters: number,
+        ) => ({
+            ...makeCard(uid, defId, type, owner),
+            storedByPlayerId: owner,
+            counters,
+            reason: 'backtimers_stasis',
+        });
+        const p0ReleaseA = makeStasisCard('p0-release-a', 'backtimers_sidelined_girlfriend', 'minion', '0', 1);
+        const p0ReleaseB = makeStasisCard('p0-release-b', 'backtimers_zany_prof', 'minion', '0', 1);
+        const p0ReleaseAction = makeStasisCard('p0-release-action', 'backtimers_future_almanac', 'action', '0', 1);
+        const p0Waiting = makeStasisCard('p0-waiting', 'backtimers_lightning_strike', 'action', '0', 2);
+        const p1Stasis = makeStasisCard('p1-stasis', 'backtimers_sidelined_girlfriend', 'minion', '1', 1);
+        const p2Stasis = makeStasisCard('p2-stasis', 'backtimers_future_almanac', 'action', '2', 1);
+        const p3Stasis = makeStasisCard('p3-stasis', 'backtimers_zany_prof', 'minion', '3', 1);
+        const core = makeState({
+            currentPlayerIndex: 3,
+            turnOrder: ['0', '1', '2', '3'],
+            turnNumber: 8,
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                    storedCards: [p0ReleaseA, p0ReleaseB, p0ReleaseAction, p0Waiting] as any,
+                }),
+                '1': makePlayer('1', { storedCards: [p1Stasis] as any }),
+                '2': makePlayer('2', { storedCards: [p2Stasis] as any }),
+                '3': makePlayer('3', { storedCards: [p3Stasis] as any }),
+            },
+            bases: [makeBase('base_the_jungle')],
+        });
+
+        const startTurn = runCommand(makeMatchState(core), {
+            type: 'ADVANCE_PHASE',
+            playerId: '3',
+            payload: undefined,
+        } as any, FIXED_RANDOM);
+
+        expect(startTurn.success, startTurn.error).toBe(true);
+        const counterEvents = startTurn.events.filter(event => event.type === SU_EVENTS.STORED_CARD_COUNTER_CHANGED);
+        expect(counterEvents.map((event: any) => event.payload)).toEqual(expect.arrayContaining([
+            expect.objectContaining({ playerId: '0', cardUid: 'p0-release-a', delta: -1 }),
+            expect.objectContaining({ playerId: '0', cardUid: 'p0-release-b', delta: -1 }),
+            expect.objectContaining({ playerId: '0', cardUid: 'p0-release-action', delta: -1 }),
+            expect.objectContaining({ playerId: '0', cardUid: 'p0-waiting', delta: -1 }),
+        ]));
+        expect(counterEvents.map((event: any) => event.payload.playerId)).toEqual(['0', '0', '0', '0']);
+        expect(startTurn.finalState.core.players['0'].storedCards?.map(card => [card.uid, card.counters])).toEqual([
+            ['p0-release-a', 0],
+            ['p0-release-b', 0],
+            ['p0-release-action', 0],
+            ['p0-waiting', 1],
+        ]);
+        expect(startTurn.finalState.core.players['1'].storedCards?.[0]?.counters).toBe(1);
+        expect(startTurn.finalState.core.players['2'].storedCards?.[0]?.counters).toBe(1);
+        expect(startTurn.finalState.core.players['3'].storedCards?.[0]?.counters).toBe(1);
+
+        const minionPrompts = getPromptsBySourceId(startTurn.finalState, 'smashup_immediate_extra_minion');
+        const actionPrompts = getPromptsBySourceId(startTurn.finalState, 'smashup_immediate_extra_action');
+        expect(minionPrompts).toHaveLength(2);
+        expect(actionPrompts).toHaveLength(1);
+        const prompts = [...minionPrompts, ...actionPrompts];
+        const optionCardUidsByPrompt = prompts.map(prompt =>
+            getPromptOptions(prompt).map((option: any) => option.value?.cardUid).filter(Boolean),
+        );
+        expect(optionCardUidsByPrompt).toEqual([
+            ['p0-release-a'],
+            ['p0-release-b'],
+            ['p0-release-action'],
+        ]);
     });
 
     it('亚历克斯仅在本回合移除过最后一个停滞指示物后，天赋可给己方随从 +1 指示物', () => {

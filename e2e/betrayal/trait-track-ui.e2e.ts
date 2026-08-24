@@ -18,8 +18,8 @@ import {
 } from '../../src/games/betrayal/scenarioConfig';
 
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/trait-track-ui';
-const CURRENT_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/01-属性轨角色板-连续轨指针位置.jpg`;
-const OBSERVED_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/02-属性轨观察队友-连续轨指针位置.jpg`;
+const CURRENT_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/01-左上角色属性读数卡-无属性夹子.jpg`;
+const OBSERVED_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/02-观察队友后左上属性读数卡同步切换.jpg`;
 const TRAIT_KEYS = ['might', 'speed', 'knowledge', 'sanity'] as const satisfies readonly BetrayalTraitKey[];
 
 function requireExplorerTemplate(explorerId: string): BetrayalExplorerCatalogEntry {
@@ -75,7 +75,7 @@ function applyOfficialExplorerTemplate(
 }
 
 test.describe('山屋惊魂属性轨 UI', () => {
-    test('真实牌桌入口按属性轨位置显示夹子，重复数值不吞掉位置变化', async ({ page, context }) => {
+    test('真实牌桌入口常驻属性读数不显示属性夹子，并保留轨道位置数据', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-trait-track-ui');
@@ -115,64 +115,30 @@ test.describe('山屋惊魂属性轨 UI', () => {
 
         for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as const) {
             const track = page.getByTestId(`betrayal-current-trait-track-${trait}`);
-            await expect(track.locator('[data-trait-track-start="true"]')).toHaveCount(1);
-            await expect(track.locator('[data-trait-track-start="true"]')).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
+            await expect(track).toHaveAttribute('data-trait-display', 'hud-current-value');
+            await expect(track).toHaveAttribute('data-trait-value-shape', 'hud-tile');
+            await expect(track.locator('[data-trait-track-rail="true"]')).toHaveCount(0);
+            await expect(track.locator('[data-trait-track-slot="true"]')).toHaveCount(0);
         }
 
         const speedTrack = page.getByTestId('betrayal-current-trait-track-speed');
         await expect(speedTrack).toBeVisible();
         await expect(speedTrack).toHaveAttribute('data-trait-track-position', '2');
         await expect(speedTrack).toHaveAttribute('data-trait-track-value', '3');
-        await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
-        await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
-        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toBeVisible();
-        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
+        await expect(speedTrack.locator('[data-trait-current-value="true"]')).toHaveText('3');
+        await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toHaveCount(0);
+        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveCount(0);
         await expect(speedTrack.locator('[data-trait-track-tick="true"]')).toHaveCount(0);
-        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(1);
-        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
-        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
-        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-pointer-shape', 'material-slot-highlight');
-        await expect(speedTrack.locator('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-color', 'current-green');
-        await expect(speedTrack.locator('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-color', 'start-green');
-        await expect(speedTrack.locator('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
-        await expect(speedTrack.locator('[data-trait-track-position="2"] [data-trait-track-slot-label="true"]')).toHaveAttribute('data-trait-track-slot-label-align', 'center');
+        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(0);
         await expect(speedTrack.locator('[data-trait-track-marker-asset]')).toHaveCount(0);
-        await expect(speedTrack.locator('[data-trait-track-position="1"][data-trait-track-current="false"]')).toHaveText('3');
-        await expect(speedTrack.locator('[data-trait-track-position="2"][data-trait-track-current="true"]')).toHaveText('3');
-        const currentDuplicateSlotGap = await speedTrack.locator('[data-trait-track-position="1"], [data-trait-track-position="2"]').evaluateAll((slots) => {
-            const boxes = slots.map((slot) => slot.getBoundingClientRect());
-            return Math.round(boxes[1].left - boxes[0].right);
-        });
-        expect(currentDuplicateSlotGap).toBeGreaterThanOrEqual(0);
-        expect(currentDuplicateSlotGap).toBeLessThanOrEqual(1);
-        const currentSlotWidths = await speedTrack.locator('[data-trait-track-slot="true"]').evaluateAll((slots) =>
-            slots.map((slot) => slot.getBoundingClientRect().width),
-        );
-        expect(currentSlotWidths.length).toBe(9);
-        expect(Math.max(...currentSlotWidths) - Math.min(...currentSlotWidths)).toBeLessThanOrEqual(1);
-        const currentSlotVerticalCenterDelta = await speedTrack.locator('[data-trait-track-position="2"] [data-trait-track-slot-label="true"]').evaluate((label) => {
-            const slot = label.closest('[data-trait-track-slot="true"]');
-            if (!slot) {
-                return Number.POSITIVE_INFINITY;
-            }
-            const labelBox = label.getBoundingClientRect();
-            const slotBox = slot.getBoundingClientRect();
-            return Math.abs((labelBox.top + labelBox.height / 2) - (slotBox.top + slotBox.height / 2));
-        });
-        expect(currentSlotVerticalCenterDelta).toBeLessThanOrEqual(1);
 
-        const boardMarker = page.getByTestId('betrayal-explorer-board-marker-speed');
-        await expect(boardMarker).toHaveAttribute('data-trait-track-position', '2');
-        await expect(boardMarker).toHaveAttribute('data-trait-track-value', '3');
-        await expect(boardMarker).toHaveAttribute('data-trait-board-marker-shape', 'blank-material-marker');
-        await expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
-        await expect(boardMarker).toHaveAttribute('data-trait-board-marker-visible-value', 'false');
-        expect((await boardMarker.textContent())?.trim()).toBe('');
         const currentExplorerPanel = page.getByTestId('betrayal-observed-explorer-panel');
         await expect(currentExplorerPanel).toBeVisible();
         await expect(currentExplorerPanel).toHaveAttribute('data-player-id', '0');
         await expect(currentExplorerPanel).toHaveAttribute('data-panel-asset', core.currentExplorer.portraitAsset);
+        await expect(currentExplorerPanel).toHaveAttribute('data-panel-crop', 'hud-identity-portrait');
         await expect(currentExplorerPanel).not.toHaveAttribute('data-token-asset', /.*/);
+        await expect(page.getByTestId('betrayal-explorer-board-marker-speed')).toHaveCount(0);
         await expect(page.locator('[data-testid^="betrayal-bottom-teammate-"] [data-player-status-tone="neutral"]').filter({ hasText: '同房间' }).first()).toBeVisible();
         await expect(page.locator('[data-player-status-tone="target"]').filter({ hasText: '同房间' })).toHaveCount(0);
         await saveScreenshot(page, CURRENT_TRACK_SCREENSHOT);
@@ -185,47 +151,20 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(page.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '1');
         for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as const) {
             const track = page.getByTestId(`betrayal-current-trait-track-${trait}`);
-            await expect(track.locator('[data-trait-track-start="true"]')).toHaveCount(1);
-            await expect(track.locator('[data-trait-track-start="true"]')).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
+            await expect(track).toHaveAttribute('data-trait-display', 'hud-current-value');
+            await expect(track).toHaveAttribute('data-trait-value-shape', 'hud-tile');
+            await expect(track.locator('[data-trait-track-rail="true"]')).toHaveCount(0);
+            await expect(track.locator('[data-trait-track-slot="true"]')).toHaveCount(0);
         }
         const observedSpeedTrack = page.getByTestId('betrayal-current-trait-track-speed');
         await expect(observedSpeedTrack).toHaveAttribute('data-trait-track-position', '2');
-        await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
-        await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
-        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toBeVisible();
-        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
+        await expect(observedSpeedTrack).toHaveAttribute('data-trait-track-value', '3');
+        await expect(observedSpeedTrack.locator('[data-trait-current-value="true"]')).toHaveText('3');
+        await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toHaveCount(0);
+        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveCount(0);
         await expect(observedSpeedTrack.locator('[data-trait-track-tick="true"]')).toHaveCount(0);
-        await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(1);
-        await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
-        await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
-        await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-pointer-shape', 'material-slot-highlight');
-        await expect(observedSpeedTrack.locator('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-color', 'current-green');
-        await expect(observedSpeedTrack.locator('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-color', 'start-green');
-        await expect(observedSpeedTrack.locator('[data-trait-track-position="2"] [data-trait-track-slot-label="true"]')).toHaveAttribute('data-trait-track-slot-label-align', 'center');
+        await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(0);
         await expect(observedSpeedTrack.locator('[data-trait-track-marker-asset]')).toHaveCount(0);
-        await expect(observedSpeedTrack.locator('[data-trait-track-position="1"][data-trait-track-current="false"]')).toHaveText('3');
-        await expect(observedSpeedTrack.locator('[data-trait-track-position="2"][data-trait-track-current="true"]')).toHaveText('3');
-        const observedDuplicateSlotGap = await observedSpeedTrack.locator('[data-trait-track-position="1"], [data-trait-track-position="2"]').evaluateAll((slots) => {
-            const boxes = slots.map((slot) => slot.getBoundingClientRect());
-            return Math.round(boxes[1].left - boxes[0].right);
-        });
-        expect(observedDuplicateSlotGap).toBeGreaterThanOrEqual(0);
-        expect(observedDuplicateSlotGap).toBeLessThanOrEqual(1);
-        const observedSlotWidths = await observedSpeedTrack.locator('[data-trait-track-slot="true"]').evaluateAll((slots) =>
-            slots.map((slot) => slot.getBoundingClientRect().width),
-        );
-        expect(observedSlotWidths.length).toBe(9);
-        expect(Math.max(...observedSlotWidths) - Math.min(...observedSlotWidths)).toBeLessThanOrEqual(1);
-        const observedSlotVerticalCenterDelta = await observedSpeedTrack.locator('[data-trait-track-position="2"] [data-trait-track-slot-label="true"]').evaluate((label) => {
-            const slot = label.closest('[data-trait-track-slot="true"]');
-            if (!slot) {
-                return Number.POSITIVE_INFINITY;
-            }
-            const labelBox = label.getBoundingClientRect();
-            const slotBox = slot.getBoundingClientRect();
-            return Math.abs((labelBox.top + labelBox.height / 2) - (slotBox.top + slotBox.height / 2));
-        });
-        expect(observedSlotVerticalCenterDelta).toBeLessThanOrEqual(1);
         const observedExplorerPanel = page.getByTestId('betrayal-observed-explorer-panel');
         await expect(observedExplorerPanel).toBeVisible();
         await expect(observedExplorerPanel).toHaveAttribute('data-player-id', '1');

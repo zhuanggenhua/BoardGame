@@ -291,7 +291,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await game.screenshot('AI全同骰复制无变化自动取消并解除交互', testInfo);
     });
 
-    test('card-me-too 复制骰面时重复点源骰不会提前完成，点目标骰后才结算', async ({ page, game }, testInfo) => {
+    test('card-me-too 复制骰面后能确认骰面并选择新成型技能', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
 
         await game.setupScene({
@@ -312,11 +312,11 @@ test.describe('DiceThrone - 选择骰子修改', () => {
                 rollLimit: 3,
                 rollConfirmed: false,
                 dice: [
-                    { id: 0, value: 6, isKept: false },
-                    { id: 1, value: 5, isKept: false },
+                    { id: 0, value: 1, isKept: false },
+                    { id: 1, value: 1, isKept: false },
                     { id: 2, value: 4, isKept: false },
-                    { id: 3, value: 2, isKept: false },
-                    { id: 4, value: 3, isKept: false },
+                    { id: 3, value: 5, isKept: false },
+                    { id: 4, value: 6, isKept: false },
                 ],
             },
         });
@@ -333,6 +333,8 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             hasCard: true,
             diceCount: 5,
         });
+        await expect(page.locator('[data-testid="player-board-surface"] [data-ability-slot="fist"]').first())
+            .toHaveAttribute('data-available-ability-id', '', { timeout: 5000 });
 
         const diceTray = page.getByTestId('dicethrone-2d-dice-tray');
         await expect(diceTray).toBeVisible({ timeout: 10000 });
@@ -381,7 +383,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         }, { timeout: 5000 }).toMatchObject({
             interactionKind: 'multistep-choice',
             dtType: 'modifyDie',
-            diceValues: [6, 5, 4, 2, 3],
+            diceValues: [1, 1, 4, 5, 6],
             modifiedCount: 0,
         });
         await expect(page.getByTestId('dice-interaction-confirm-button')).toBeDisabled();
@@ -391,7 +393,6 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         const targetDieButton = page.locator('[data-testid="die-button-3"]');
         await expect(targetDieButton).toBeVisible({ timeout: 5000 });
         await targetDieButton.click();
-        await confirmDiceInteraction(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -403,12 +404,13 @@ test.describe('DiceThrone - 选择骰子修改', () => {
                 lastEventTypes: lastEvents.map((entry: any) => entry.event?.type),
             };
         }, { timeout: 5000 }).toMatchObject({
-            targetDie: 6,
+            targetDie: 1,
             interactionKind: null,
             handIds: [],
         });
 
-        await game.screenshot('me-too-copy-settled', testInfo);
+        await expect(page.getByTestId('dice-interaction-confirm-button')).toBeHidden({ timeout: 5000 });
+        await game.screenshot('me-too-copy-auto-settled', testInfo);
 
         const finalState = await game.getState();
         const finalHandIds = (finalState?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id);
@@ -416,10 +418,45 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             .slice(-8)
             .map((entry: any) => entry.event?.type);
 
-        expect(finalState?.core?.dice?.[3]?.value ?? null).toBe(6);
+        expect(finalState?.core?.dice?.[3]?.value ?? null).toBe(1);
         expect(finalHandIds).not.toContain('card-me-too');
         expect(finalEventTypes).toContain('CARD_PLAYED');
         expect(finalEventTypes).toContain('DIE_MODIFIED');
+
+        const confirmRollButton = page.locator('[data-tutorial-id="dice-confirm-button"]').first();
+        await expect(confirmRollButton).toBeEnabled({ timeout: 5000 });
+        await confirmRollButton.click();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                rollConfirmed: state?.core?.rollConfirmed ?? null,
+                diceValues: (state?.core?.dice ?? []).map((die: any) => die.value),
+                availableAbilityId: await page.locator('[data-testid="player-board-surface"] [data-ability-slot="fist"]').first()
+                    .getAttribute('data-available-ability-id'),
+                canClick: await page.locator('[data-testid="player-board-surface"] [data-ability-slot="fist"]').first()
+                    .getAttribute('data-can-click'),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            rollConfirmed: true,
+            diceValues: [1, 1, 4, 1, 6],
+            availableAbilityId: 'fist-technique-3',
+            canClick: 'true',
+        });
+
+        await clickAbilitySlot(page, 'fist');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+                activatingAbilityId: state?.core?.activatingAbilityId ?? null,
+                attackDiceValues: state?.core?.pendingAttack?.attackDiceValues ?? [],
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            sourceAbilityId: 'fist-technique-3',
+            activatingAbilityId: 'fist-technique-3',
+            attackDiceValues: [1, 1, 4, 1, 6],
+        });
+        await game.screenshot('me-too-copy-then-select-fist-technique', testInfo);
     });
 
     test('card-play-six 应通过 framework 场景完成改骰到 6', async ({ page, game }) => {

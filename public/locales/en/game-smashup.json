@@ -2613,11 +2613,11 @@
           "setup": "Preparing the Cowboys duel tutorial scenario…",
           "duelIntro": "This tutorial focuses only on the Cowboys duel mechanic. You will see the challenge, Pinkerton counter timing, duel-card windows, and Deputy boost before the duel resolves.",
           "playGunfighter": "Play Gunfighter first, then target the enemy Microbot in the Saloon to start the duel.",
-          "pecosBillWindow": "When the duel starts, the Cowboys titan Pecos Bill asks whether you want to discard a card and join this duel. Skip it here so the tutorial can stay focused on the core duel flow.",
+          "pecosBillWindow": "When the duel starts, the Cowboys titan Pecos Bill asks whether you want to discard a card and join this duel. Use the highlighted Skip button so the titan stays out for now.",
           "pinkertonCounter": "Pinkerton triggers before duel cards resolve. Place 1 +1 power counter on your dueling minion.",
-          "duelCard": "Now your duel-card window opens. Skip it in this tutorial so we can focus on the core Cowboys duel flow.",
+          "duelCard": "Now you are choosing a duel card. Use the highlighted \"Skip (play no duel card)\" button instead of playing a card from hand.",
           "opponentDuelCard": "The opponent has no extra response here, so the tutorial will automatically pass their duel-card window.",
-          "deputyBoost": "Discard Deputy now to give Gunfighter +2 power until end of turn and secure the duel win.",
+          "deputyBoost": "Discard Deputy now to give Gunfighter +2 power until end of turn and demonstrate the Deputy boost during a duel.",
           "finish": "The duel has resolved: the enemy minion is gone, Deputy is in your discard pile, and there is no active duel left. You have completed the core Cowboys duel flow."
         }
       }

@@ -520,6 +520,12 @@ async function clickToolbarButton(page: Page, tutorialId: string): Promise<void>
     await page.waitForTimeout(500);
 }
 
+async function confirmRollIfNeeded(page: Page): Promise<void> {
+    const summary = await readStateSummary(page);
+    if (summary?.rollConfirmed === true) return;
+    await clickToolbarButton(page, 'dice-confirm-button');
+}
+
 async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
     const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(handCard, `手牌 ${cardId} 必须在真实手牌区可见`).toBeVisible({ timeout: 15000 });
@@ -1154,7 +1160,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForState(hostPage, (state) => state.core?.dice?.[4]?.value === 6 && !state.sys?.interaction?.current);
             await screenshotStep(hostPage, testInfo, '06-进攻方改骰完成-一颗骰子改为六');
 
-            await clickToolbarButton(hostPage, 'dice-confirm-button');
+            await confirmRollIfNeeded(hostPage);
             await waitForState(hostPage, (state) => state.core?.rollConfirmed === true);
             await waitForResponseWindow(guestPage, '1');
             await dismissAttackShowcaseIfVisible(hostPage);
@@ -1175,7 +1181,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             ));
             await screenshotStep(hostPage, testInfo, '09-防御方改我投骰后-攻击方需要重新确认骰面');
 
-            await clickToolbarButton(hostPage, 'dice-confirm-button');
+            await confirmRollIfNeeded(hostPage);
             await waitForState(hostPage, (state) => (
                 state.core?.rollConfirmed === true
                 && !state.sys?.responseWindow?.current

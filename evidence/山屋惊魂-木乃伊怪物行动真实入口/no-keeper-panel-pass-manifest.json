@@ -1,0 +1,51 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "《山屋惊魂》不能因为参考《疯狂诡宅》辅助程序而新增固定“守秘人”面板。",
+      "status": "PASS",
+      "evidence": [
+        "代码：src/games/betrayal/Board.tsx 已移除 betrayal-keeper-console 渲染和派生数据。",
+        "翻译：public/locales/zh-CN/game-betrayal.json 与 public/locales/en/game-betrayal.json 已移除 board.keeper 文案。",
+        "搜索：rg 未再命中 board.keeper、betrayal-keeper、守秘人辅助面板或守秘人。",
+        "截图：53、60、62、63 四张新图均来自 2026-08-24 08:24:50 之后重新运行的主黄金链。"
+      ]
+    },
+    {
+      "requirement": "受影响的主黄金链仍要覆盖开局、跳过事件、木乃伊连续移动和攻击奖励偷圣符。",
+      "status": "PASS",
+      "evidence": [
+        "E2E：node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/mummy-rampage-monster-actions.e2e.ts --project=chromium --grep \"主黄金链\" 通过，1 passed。",
+        "截图 1：53-主黄金链-开局牌桌.jpg，开局牌桌和探索入口可见。",
+        "截图 2：60-主黄金链-作祟后叛徒跳过事件.jpg，跳过事件后回到牌桌且无结果面板。",
+        "截图 3：62-主黄金链-木乃伊普通连续移动进石棺.jpg，木乃伊移动骰后可连续移动。",
+        "截图 4：63-主黄金链-木乃伊攻击奖励偷圣符.jpg，木乃伊攻击奖励入口由真实攻击结果承接。"
+      ]
+    },
+    {
+      "requirement": "打开给用户看的必须是这次修正后的新截图组，不是旧的守秘人面板图。",
+      "status": "PASS",
+      "evidence": [
+        "标注图组：evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-no-keeper-panel/00-sequence-index.png。",
+        "标注图 1：01-labeled-53-主黄金链-开局牌桌.png。",
+        "标注图 2：02-labeled-60-主黄金链-作祟后叛徒跳过事件.png。",
+        "标注图 3：03-labeled-62-主黄金链-木乃伊普通连续移动进石棺.png。",
+        "标注图 4：04-labeled-63-主黄金链-木乃伊攻击奖励偷圣符.png。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-no-keeper-panel/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-no-keeper-panel/01-labeled-53-主黄金链-开局牌桌.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-no-keeper-panel/02-labeled-60-主黄金链-作祟后叛徒跳过事件.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-no-keeper-panel/03-labeled-62-主黄金链-木乃伊普通连续移动进石棺.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref/2026-08-24-no-keeper-panel/04-labeled-63-主黄金链-木乃伊攻击奖励偷圣符.png"
+  ]
+}

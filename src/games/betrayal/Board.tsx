@@ -738,16 +738,6 @@ const ASSETS = {
   } as const,
 } as const;
 
-const EXPLORER_BOARD_MARKER_RANGE: Record<
-  BetrayalTraitKey,
-  { from: { x: number; y: number }; to: { x: number; y: number } }
-> = {
-  might: { from: { x: 14.5, y: 44.5 }, to: { x: 35.5, y: 23.5 } },
-  speed: { from: { x: 18.5, y: 79.5 }, to: { x: 18.5, y: 54.5 } },
-  knowledge: { from: { x: 85.5, y: 44.5 }, to: { x: 64.5, y: 23.5 } },
-  sanity: { from: { x: 81.5, y: 79.5 }, to: { x: 81.5, y: 54.5 } },
-};
-
 const ACTION_ICON_BY_ID = {
   move: Footprints,
   monsterMove: Footprints,
@@ -2247,20 +2237,6 @@ function resolveRoomEdgeLabel(
   t: ReturnType<typeof useTranslation>["t"],
 ): string {
   return t(`board.rooms.edges.${edge}`);
-}
-
-function resolveExplorerBoardMarkerPosition(
-  trait: BetrayalTraitKey,
-  position: number,
-  maxPosition: number,
-) {
-  const range = EXPLORER_BOARD_MARKER_RANGE[trait];
-  const clampedPosition = Math.max(0, Math.min(maxPosition, Math.round(position)));
-  const progress = clampedPosition / Math.max(1, maxPosition);
-  return {
-    left: `${range.from.x + (range.to.x - range.from.x) * progress}%`,
-    top: `${range.from.y + (range.to.y - range.from.y) * progress}%`,
-  };
 }
 
 function buildRoomOccupants(
@@ -4800,6 +4776,65 @@ function ExplorerTraitTrackRail({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ExplorerTraitValueCard({
+  explorer,
+  trait,
+  locale,
+  testIdPrefix = "betrayal-current-trait-track",
+}: {
+  explorer: BetrayalExplorerSummary;
+  trait: BetrayalTraitKey;
+  locale: string;
+  testIdPrefix?: string;
+}) {
+  const track = resolveExplorerTraitTrack(explorer, trait);
+  const currentPosition = clampTraitTrackPosition(track);
+  const currentValue = resolveTraitTrackValueAtPosition(track, currentPosition);
+
+  return (
+    <div
+      data-testid={`${testIdPrefix}-${trait}`}
+      data-player-id={explorer.playerId}
+      data-explorer-id={explorer.explorerId}
+      data-trait={trait}
+      data-trait-display="hud-current-value"
+      data-trait-track-id={track.trackId}
+      data-trait-track-position={currentPosition}
+      data-trait-track-start-position={track.startPosition}
+      data-trait-track-critical-position={track.criticalPosition}
+      data-trait-track-skull-position={track.skullPosition}
+      data-trait-track-value={currentValue}
+      data-trait-value-shape="hud-tile"
+      className={`relative min-w-0 overflow-hidden rounded-[8px] border bg-[rgba(16,15,12,0.82)] px-2 py-1.5 shadow-[inset_0_0_0_1px_rgba(255,235,176,0.05),0_5px_12px_rgba(0,0,0,0.16)] ${
+        TRAIT_TONE_CLASS[trait].inactive
+      }`}
+      title={`${TRAIT_LABEL_LOCAL[trait]}当前数值 ${currentValue}，属性轨第 ${currentPosition} 位`}
+      aria-label={`${TRAIT_LABEL_LOCAL[trait]}当前数值 ${currentValue}，属性轨第 ${currentPosition} 位`}
+    >
+      <div className="flex items-center justify-between gap-1.5">
+        <span
+          className={`inline-flex min-w-0 items-center gap-1 text-[10px] font-semibold tracking-[0.08em] ${TRAIT_TONE_CLASS[trait].text}`}
+        >
+          <OptimizedImage
+            src={ASSETS.trait[trait]}
+            locale={locale}
+            alt=""
+            className="h-3.5 w-3.5 shrink-0 object-contain opacity-82"
+            draggable={false}
+          />
+          <span className="truncate">{TRAIT_LABEL_LOCAL[trait]}</span>
+        </span>
+        <span
+          data-trait-current-value="true"
+          className={`shrink-0 text-[20px] font-black leading-none tabular-nums ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
+        >
+          {currentValue}
+        </span>
       </div>
     </div>
   );
@@ -14629,72 +14664,6 @@ export default function BetrayalBoard({
         }),
       ];
 
-  const keeperPrimaryAction =
-    visibleActionItems.find((action) => !action.disabled) ??
-    visibleActionItems[0] ??
-    null;
-  const keeperRecentLogs = React.useMemo(
-    () => visibleActivityEntries.slice(0, 3),
-    [visibleActivityEntries],
-  );
-  const keeperMonsterSummary = React.useMemo(() => {
-    const preferredMonsterId = core.scenarioRuntime.mummy?.mummyMonsterId;
-    const status =
-      (preferredMonsterId
-        ? monsterStatuses.find(
-            (candidate) => candidate.monsterId === preferredMonsterId,
-          )
-        : null) ??
-      monsterStatuses.find((candidate) =>
-        monsterActionPanel.monsterIds.includes(candidate.monsterId),
-      ) ??
-      monsterStatuses[0] ??
-      null;
-    if (!status) {
-      return null;
-    }
-    const roomName =
-      status.roomId
-        ? (core.rooms.find((room) => room.id === status.roomId)?.name ??
-          t("board.rooms.unknown"))
-        : t("board.rooms.unknown");
-    const moveSlot = monsterActionPanel.slots.find(
-      (slot) => slot.monsterId === status.monsterId && slot.kind === "move",
-    );
-    const attackSlot = monsterActionPanel.slots.find(
-      (slot) => slot.monsterId === status.monsterId && slot.kind === "attack",
-    );
-    const turnStartSlot = monsterActionPanel.slots.find(
-      (slot) =>
-        slot.monsterId === status.monsterId && slot.kind === "turn-start",
-    );
-    const movementRollSlot = monsterActionPanel.slots.find(
-      (slot) => slot.kind === "movement-roll" && slot.enabled,
-    );
-    const currentPrimaryMonsterSlot =
-      monsterTurnStartActionSlot?.monsterId === status.monsterId
-        ? turnStartSlot
-        : monsterMovementRollActionSlot
-          ? movementRollSlot
-          : null;
-    const nextSlot =
-      currentPrimaryMonsterSlot ?? moveSlot ?? attackSlot ?? null;
-    return {
-      status,
-      roomName,
-      moveRemaining: moveSlot?.moveRemaining ?? null,
-      nextLabel: nextSlot?.label ?? monsterActionPanel.reason ?? null,
-    };
-  }, [core.rooms, core.scenarioRuntime.mummy?.mummyMonsterId, monsterActionPanel, monsterMovementRollActionSlot, monsterStatuses, monsterTurnStartActionSlot?.monsterId, t]);
-  const keeperObjectiveText =
-    core.phase === "haunt"
-      ? scenarioReaderScope === "traitor"
-        ? t(activeHauntDossier.traitorGoalKey)
-        : scenarioReaderScope === "heroes"
-          ? t(activeHauntDossier.heroGoalKey)
-          : t(activeHauntDossier.objectiveKey)
-      : t(activeHauntDossier.objectiveKey);
-
   const tutorialMapTargetRoomId = React.useMemo(() => {
     const target = tutorialStep?.highlightTarget;
     if (!isTutorialActive || !target) {
@@ -15667,9 +15636,10 @@ export default function BetrayalBoard({
             <article className="pointer-events-none relative overflow-visible bg-transparent px-1 py-1">
               <div className="mx-auto flex w-full max-w-[252px] flex-col gap-1 pb-1 pt-1 xl:mx-0">
                 <div
-                  className="relative mx-auto w-full max-w-[188px]"
+                  className="relative mx-auto aspect-[1/1.05] w-full max-w-[174px] overflow-hidden rounded-[16px] border border-[rgba(116,98,63,0.36)] bg-[radial-gradient(circle_at_50%_18%,rgba(230,214,164,0.11),rgba(11,14,12,0.92)_68%)] shadow-[0_16px_30px_rgba(0,0,0,0.26),inset_0_0_0_1px_rgba(255,235,176,0.05)]"
                   data-testid="betrayal-observed-explorer-panel"
                   data-panel-asset={observedExplorer.portraitAsset}
+                  data-panel-crop="hud-identity-portrait"
                   data-player-id={observedExplorer.playerId}
                   data-explorer-id={observedExplorer.explorerId}
                 >
@@ -15678,48 +15648,13 @@ export default function BetrayalBoard({
                     src={observedExplorer.portraitAsset}
                     locale={effectiveLocale}
                     alt={observedExplorer.displayName}
-                    className="relative z-10 aspect-[1/1.05] h-auto w-full object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.38)]"
+                    className="relative z-10 h-full w-full object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.38)]"
+                    style={{
+                      transform: "scale(1.48)",
+                      transformOrigin: "50% 42%",
+                    }}
                     draggable={false}
                   />
-                  {(
-                    Object.entries(observedExplorer.traits) as [
-                      BetrayalTraitKey,
-                      number,
-                    ][]
-                  ).map(([key, value]) => {
-                    const track = resolveExplorerTraitTrack(
-                      observedExplorer,
-                      key,
-                    );
-                    const markerPosition = resolveExplorerBoardMarkerPosition(
-                      key,
-                      track.position,
-                      track.maxPosition,
-                    );
-                    return (
-                      <div
-                        key={`explorer-board-marker-${key}`}
-                        data-testid={`betrayal-explorer-board-marker-${key}`}
-                        data-trait-track-position={track.position}
-                        data-trait-track-value={value}
-                        data-trait-board-marker-shape="blank-material-marker"
-                        data-trait-board-marker-asset={ASSETS.marker.numberBlank}
-                        data-trait-board-marker-visible-value="false"
-                        aria-label={`${TRAIT_LABEL_LOCAL[key]}当前位置，第 ${track.position} 位，数值 ${value}`}
-                        title={`${TRAIT_LABEL_LOCAL[key]}当前位置：第 ${track.position} 位，数值 ${value}`}
-                        className="pointer-events-none absolute z-20 h-[20px] w-[20px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_3px_7px_rgba(0,0,0,0.44)]"
-                        style={markerPosition}
-                      >
-                        <OptimizedImage
-                          src={ASSETS.marker.numberBlank}
-                          locale={effectiveLocale}
-                          alt=""
-                          className="h-full w-full object-contain"
-                          draggable={false}
-                        />
-                      </div>
-                    );
-                  })}
                 </div>
                 <div className="-mt-4 flex justify-center px-2">
                   <div className="relative inline-flex min-w-[174px] max-w-[194px] items-center justify-between gap-2 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-2.5 py-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.14)]">
@@ -15772,7 +15707,7 @@ export default function BetrayalBoard({
                         )}
                       </span>
                     </div>
-                    <div className="grid gap-0.5">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {(
                         [
                           "might",
@@ -15785,7 +15720,7 @@ export default function BetrayalBoard({
                           key={trait}
                           data-testid={`betrayal-current-trait-row-${trait}`}
                         >
-                          <ExplorerTraitTrackRail
+                          <ExplorerTraitValueCard
                             explorer={observedExplorer}
                             trait={trait}
                             locale={effectiveLocale}
@@ -20155,163 +20090,6 @@ export default function BetrayalBoard({
                   : `flex ${activeHauntTargetGuide ? "opacity-[0.72]" : ""}`
             }`}
           >
-            <article
-              data-testid="betrayal-keeper-console"
-              data-keeper-phase={core.phase}
-              className="sticky top-0 z-30 ml-auto w-full max-w-[198px] overflow-visible rounded-[10px] border border-[rgba(183,145,82,0.38)] bg-[linear-gradient(180deg,rgba(19,22,20,0.94),rgba(8,10,9,0.90))] px-2.5 py-2.5 text-[#eadbb8] shadow-[0_14px_28px_rgba(0,0,0,0.30),inset_0_0_0_1px_rgba(246,215,144,0.04)] backdrop-blur-md"
-            >
-              <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(246,215,144,0.34),transparent)]" />
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.20em] text-[#c7a768]">
-                    <Compass size={11} aria-hidden="true" />
-                    {t("board.keeper.title")}
-                  </div>
-                  <div
-                    data-testid="betrayal-keeper-current-directive"
-                    className="mt-1 text-[13px] font-black leading-snug text-[#fff1b8]"
-                  >
-                    {actionCueText}
-                  </div>
-                </div>
-                <span
-                  data-testid="betrayal-keeper-phase"
-                  className="shrink-0 rounded-[5px] border border-[rgba(246,215,144,0.22)] bg-[rgba(246,215,144,0.08)] px-1.5 py-0.5 text-[9px] font-bold text-[#f2d58b]"
-                >
-                  {phaseLabel}
-                </span>
-              </div>
-              <div className="mt-2 grid gap-1">
-                <section
-                  data-testid="betrayal-keeper-next"
-                  className="rounded-[7px] border border-[rgba(117,98,68,0.36)] bg-[rgba(7,10,8,0.42)] px-2 py-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
-                      {t("board.keeper.next")}
-                    </span>
-                    {keeperPrimaryAction ? (
-                      <span className="max-w-[78px] truncate text-[10px] font-bold text-[#d9ff97]">
-                        {keeperPrimaryAction.label}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-0.5 line-clamp-1 text-[11px] font-semibold leading-snug text-[#e8d7a5]">
-                    {turnHintText}
-                  </p>
-                </section>
-                {keeperMonsterSummary ? (
-                  <section
-                    data-testid="betrayal-keeper-monster"
-                    className="rounded-[7px] border border-[rgba(169,42,46,0.30)] bg-[rgba(53,22,19,0.30)] px-2 py-1"
-                  >
-                    <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#d99a72]">
-                      <Skull size={10} aria-hidden="true" />
-                      {t("board.keeper.monster")}
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2">
-                      <span className="truncate text-[12px] font-black text-[#fff1b8]">
-                        {keeperMonsterSummary.status.name}
-                      </span>
-                      {keeperMonsterSummary.moveRemaining != null ? (
-                        <span
-                          data-testid="betrayal-keeper-monster-move"
-                          className="rounded-[4px] border border-[rgba(217,255,151,0.20)] bg-[rgba(77,102,35,0.30)] px-1.5 py-0.5 text-[10px] font-black text-[#d9ff97]"
-                        >
-                          {t("board.keeper.moveRemaining", {
-                            count: keeperMonsterSummary.moveRemaining,
-                          })}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-[#e1c39a]">
-                      {keeperMonsterSummary.roomName}
-                      {keeperMonsterSummary.nextLabel
-                        ? ` · ${keeperMonsterSummary.nextLabel}`
-                        : ""}
-                    </p>
-                  </section>
-                ) : null}
-                <section
-                  data-testid="betrayal-keeper-objective"
-                  className="rounded-[7px] border border-[rgba(117,98,68,0.28)] bg-[rgba(7,10,8,0.30)] px-2 py-1"
-                >
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
-                    <Eye size={10} aria-hidden="true" />
-                    {t("board.keeper.objective")}
-                  </div>
-                  <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-snug text-[#d8c692]">
-                    {keeperObjectiveText}
-                  </p>
-                </section>
-                <section
-                  data-testid="betrayal-keeper-discovery"
-                  className="rounded-[7px] border border-[rgba(117,98,68,0.30)] bg-[rgba(7,10,8,0.30)] px-2 py-1"
-                >
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
-                    <BookOpen size={10} aria-hidden="true" />
-                    {t("board.keeper.discovery")}
-                  </div>
-                  {pendingEventChoice ? (
-                    <>
-                      <div className="mt-0.5 truncate text-[11px] font-black text-[#fff1b8]">
-                        {pendingEventChoice.sourceTitle}
-                      </div>
-                      <p className="line-clamp-1 text-[10px] font-semibold leading-snug text-[#d8c692]">
-                        {pendingEventChoice.sourceKind === "event-symbol-skip"
-                          ? t("board.keeper.eventChoiceSkip")
-                          : t("board.keeper.eventChoice")}
-                      </p>
-                    </>
-                  ) : latestDiscovery ? (
-                    <>
-                      <div className="mt-0.5 flex items-center gap-1.5">
-                        <span className="shrink-0 rounded-[4px] border border-[rgba(238,204,126,0.22)] bg-[rgba(238,204,126,0.08)] px-1.5 py-0.5 text-[9px] font-bold text-[#d8bf81]">
-                          {latestDiscoveryDisplayedKindLabel}
-                        </span>
-                        <span className="truncate text-[11px] font-black text-[#fff1b8]">
-                          {latestDiscoveryDisplayedTitle}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-[#d8c692]">
-                        {latestDiscoveryDisplaySummary ||
-                          t("board.keeper.discoveryResolved")}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-snug text-[#bcae8f]">
-                      {t("board.keeper.discoveryIdle")}
-                    </p>
-                  )}
-                </section>
-                <section
-                  data-testid="betrayal-keeper-log"
-                  className="rounded-[7px] border border-[rgba(117,98,68,0.24)] bg-[rgba(7,10,8,0.26)] px-2 py-1"
-                >
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-[#a99a78]">
-                    <Hourglass size={10} aria-hidden="true" />
-                    {t("board.keeper.log")}
-                  </div>
-                  <div className="mt-1 grid gap-1">
-                    {keeperRecentLogs.length > 0 ? (
-                      keeperRecentLogs.map((entry) => (
-                        <p
-                          key={entry.id}
-                          className="line-clamp-1 text-[10px] font-semibold leading-snug text-[#cfc0a0]"
-                        >
-                          {entry.text}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-[10px] font-semibold leading-snug text-[#a99a78]">
-                        {t("board.keeper.logIdle")}
-                      </p>
-                    )}
-                  </div>
-                </section>
-              </div>
-            </article>
-
             <article
               id="betrayal-decks-section"
               className="relative ml-auto w-full max-w-[198px] overflow-visible bg-transparent px-0 pb-2 pt-3"

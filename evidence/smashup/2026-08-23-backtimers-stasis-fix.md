@@ -44,6 +44,24 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities
 - 返时者回合开始会从自己的停滞牌移除指示物，归零后出现 `smashup_immediate_extra_minion`。
 - 将就一下移除最后一个停滞指示物后开放该牌额外打出窗口。
 
+### 四人多停滞压力补测
+
+补测日期：2026-08-24
+
+命令：
+
+```powershell
+node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/excellent-movies-teens.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "四人局回合开始只处理当前玩家"
+```
+
+结果：通过。1 个测试文件，1 passed / 83 skipped。
+
+覆盖点：
+
+- 四人局中，进入玩家 0 回合开始时，只移除玩家 0 自己停滞牌上的停滞指示物；玩家 1、2、3 的停滞牌不被提前处理。
+- 玩家 0 同时有 4 张停滞牌时，每张有指示物的牌都各自 -1；其中 3 张归零牌分别保留独立额外打出机会。
+- 两张归零随从和一张归零行动不会被后一个提示覆盖：交互队列依次保留 2 个额外随从提示和 1 个额外行动提示，并且每个提示只允许打出对应那一张归零停滞牌。
+
 ### 公开视角遮罩回归
 
 命令：
@@ -85,29 +103,82 @@ $env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-single.mjs defa
 
 AI 图面审计结论：PASS。本轮三项玩家可见要求都能从原图直接确认；截图未出现空白牌、错误路由、遮挡关键决策或停滞区缺失。
 
+### 四人真实页面 E2E
+
+补测日期：2026-08-24
+
+命令：
+
+```powershell
+$env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-excellent-movies-teens-five-factions.e2e.ts "返时者四人多停滞"
+```
+
+结果：通过。1 passed。
+
+首跑记录：第一次四人 E2E 从 P4 的出牌阶段起跑，只能证明停滞区初始展示，不能触发下一名玩家回合开始的停滞移除和额外打出队列；该失败截图不能作为验收图。用例已改为从 P4 的回合结束阶段起跑，并在测试内先断言当前是真四人、P4、endTurn，再推进到 P1 回合开始。
+
+截图：
+
+1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人多停滞初始区.jpg`
+   - 画面是四人局记分板，当前 P4 回合结束阶段。
+   - 停滞区显示 7 张牌：P1 有 4 张，P2/P3/P4 各 1 张；P1 的一张“闪电击”显示 2 个停滞指示物，其余显示 1 个。
+2. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人回合开始只归零玩家0.jpg`
+   - 进入回合 9 后变为 P1 回合开始，停滞区仍显示 7 张。
+   - 只处理 P1 的牌：P1 三张牌变为“可打出”，P1 的“闪电击”从 2 变 1；P2/P3/P4 的停滞牌仍各为 1。
+   - 中央出现“立刻打出一个额外随从，或放弃这次机会”的第一张随从提示。
+3. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人第一张打出后第二张仍提示.jpg`
+   - 第一张 P1 归零随从已进入基地，停滞区数量从 7 变 6。
+   - 第二张 P1 归零随从仍显示“可打出”，中央继续出现独立额外随从提示，证明前一张额外打出没有吞掉后续机会。
+4. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人行动牌独立提示且其他玩家未处理.jpg`
+   - 放弃第二个额外随从机会后，中央继续出现“立刻打出一张额外战术，或放弃这次机会”的行动牌提示。
+   - 停滞区里 P2/P3/P4 的牌仍显示 1 个停滞指示物，未被 P1 回合开始提前处理。
+
+AI 图面审计结论：PASS。四张原图直接覆盖“四人局、多张停滞、只处理当前玩家、多个归零提示队列、其他玩家停滞不变”。截图不是单牌旧图，也不是低层单测替代。
+
 ### 静态检查
 
 命令：
 
 ```powershell
-npx eslint src/games/smashup/Board.tsx src/games/smashup/domain/index.ts src/games/smashup/__tests__/playerViewBuriedMask.test.ts e2e/smashup/smashup-excellent-movies-teens-five-factions.e2e.ts
+npx eslint src/games/smashup/Board.tsx e2e/smashup/smashup-excellent-movies-teens-five-factions.e2e.ts
 npm run typecheck -- --pretty false
+npm run audit:evidence:selfcheck -- evidence/smashup/2026-08-23-backtimers-stasis-fix.md
 ```
 
 结果：
 
-- ESLint：0 errors，24 warnings。警告为当前文件内既有未用变量、hook dependency 和测试 `any`，未阻断。
+- ESLint：0 errors，25 warnings。警告为当前文件内既有未用变量、hook dependency、React purity warning 和测试 `any`，未阻断。
 - Typecheck：通过。
+- Evidence 自检：OK。
 
-## 漏审复盘
+## 同类扩审记录
+
+搜索范围：
+
+- 根因关键词：`backtimers_stasis`、`storedCards`、`fromStored`、`grantImmediateExtraPlayForStoredCard`、`buildBacktimersStartTurnStasisEvents`。
+- 共享调用点：返时者牌能力、基地把牌置入停滞、回合开始生命周期、暂存牌释放、额外打出限制、玩家视角遮罩、主牌桌 UI 展示。
+- 验证对象：返时者主动置入停滞、疯狂博士调整停滞指示物、将就一下移除停滞指示物、回合开始自动移除、普通私密暂存牌遮罩、公开停滞区展示。
+
+命中项与处理：
+
+- 命中回合开始只覆盖单张停滞牌的测试缺口，已补“四人局回合开始只处理当前玩家的多张停滞牌，并为每张归零牌保留独立额外打出机会”。
+- 命中返时者停滞牌和普通“藏在某张牌下”的私密暂存牌共用 `storedCards`，已用公开遮罩测试证明二者分流：普通暂存仍隐藏，返时者停滞公开。
+- 命中“归零释放”既来自回合开始，也来自疯狂博士 / 将就一下移除最后指示物，已在低层回归中覆盖这些入口。
+
+残余扩审范围：
+
+- 本轮已覆盖桌面真实页面单牌链、桌面真实页面四人多停滞压力态，以及低层四人多停滞压力态；移动端同状态仍未单独截图。
+- 未把返时者每一张牌都升级成单独 E2E；当前按共享停滞生命周期和额外打出入口做代表链验证，独有牌面效果仍以低层用例覆盖。
+
+## 漏审归因与复盘
 
 这是返时者机制未充分覆盖却被误收口，不是玩家误解。
 
 - 旧 progress 已写过返时者未完成，缺完整停滞生命周期、entry/exit effects、L3/L4。
 - 后续 closeout 把五派系玩法写成 Passed，但真实入口截图只覆盖五派系详情页和异形变体蛋田代表链，没有覆盖返时者停滞区、指示物数量、归零释放提示和打出后清理。
-- 旧审计的问题不是“测试不够多”这么简单，而是代表链外推过度：异形变体的牌库额外随从链不能证明返时者的公开停滞区和回合开始释放链。
+- 漏审归因：证据停在中间态 / 代表链外推过度。异形变体的牌库额外随从链只能证明“额外打出”共享入口存在，不能证明返时者独有的公开停滞区、停滞指示物数量、回合开始释放链、四人局归属隔离和多张归零提示队列。
 
 ## 残余风险
 
-- 本轮 E2E 覆盖桌面真实页面。移动端同状态未单独截图。
+- 本轮 E2E 覆盖桌面真实页面单牌链和四人多停滞链。移动端同状态未单独截图。
 - 当前仓库仍有非本轮无关脏改动，本证据只覆盖返时者停滞修复链。

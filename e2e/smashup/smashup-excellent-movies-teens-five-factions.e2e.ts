@@ -5,6 +5,8 @@ import { SU_COMMANDS } from '../../src/games/smashup/domain/types';
 
 type SmashUpE2EState = {
   core: {
+    turnOrder: string[];
+    currentPlayerIndex: number;
     bases: Array<{
       minions: Array<{
         uid: string;
@@ -365,6 +367,282 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       minionUids: ['stasis-zany-prof'],
       minionsPlayed: 0,
       interactionOpen: false,
+    });
+  });
+
+  test('返时者四人多停滞只处理当前玩家并保留多个额外打出提示', async ({ page, game }, testInfo) => {
+    test.setTimeout(150000);
+    await setChineseLocale(page.context());
+    await clearEvidenceScreenshotsForTest(testInfo);
+
+    await game.openTestGame('smashup', {
+      players: 4,
+      playerID: '0',
+      seat0: 'human',
+      seat1: 'human',
+      seat2: 'human',
+      seat3: 'human',
+      disableLocalAiAutomation: true,
+      skipInitialization: true,
+      seed: 20260824,
+    }, 45000);
+
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '3',
+      phase: 'endTurn',
+      extra: {
+        core: {
+          turnOrder: ['0', '1', '2', '3'],
+          currentPlayerIndex: 3,
+          turnNumber: 8,
+          nextUid: 9000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['backtimers', 'teens'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 1,
+              actionLimit: 1,
+              storedCards: [
+                {
+                  uid: 'p0-release-a',
+                  defId: 'backtimers_sidelined_girlfriend',
+                  type: 'minion',
+                  owner: '0',
+                  storedByPlayerId: '0',
+                  counters: 1,
+                  reason: 'backtimers_stasis',
+                },
+                {
+                  uid: 'p0-release-b',
+                  defId: 'backtimers_zany_prof',
+                  type: 'minion',
+                  owner: '0',
+                  storedByPlayerId: '0',
+                  counters: 1,
+                  reason: 'backtimers_stasis',
+                },
+                {
+                  uid: 'p0-release-action',
+                  defId: 'backtimers_future_almanac',
+                  type: 'action',
+                  owner: '0',
+                  storedByPlayerId: '0',
+                  counters: 1,
+                  reason: 'backtimers_stasis',
+                },
+                {
+                  uid: 'p0-waiting',
+                  defId: 'backtimers_lightning_strike',
+                  type: 'action',
+                  owner: '0',
+                  storedByPlayerId: '0',
+                  counters: 2,
+                  reason: 'backtimers_stasis',
+                },
+              ],
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['backtimers', 'action_heroes'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+              storedCards: [{
+                uid: 'p1-stasis',
+                defId: 'backtimers_sidelined_girlfriend',
+                type: 'minion',
+                owner: '1',
+                storedByPlayerId: '1',
+                counters: 1,
+                reason: 'backtimers_stasis',
+              }],
+            },
+            '2': {
+              id: '2',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['backtimers', 'extramorphs'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+              storedCards: [{
+                uid: 'p2-stasis',
+                defId: 'backtimers_future_almanac',
+                type: 'action',
+                owner: '2',
+                storedByPlayerId: '2',
+                counters: 1,
+                reason: 'backtimers_stasis',
+              }],
+            },
+            '3': {
+              id: '3',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['backtimers', 'wraithrustlers'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 1,
+              actionLimit: 1,
+              storedCards: [{
+                uid: 'p3-stasis',
+                defId: 'backtimers_zany_prof',
+                type: 'minion',
+                owner: '3',
+                storedByPlayerId: '3',
+                counters: 1,
+                reason: 'backtimers_stasis',
+              }],
+            },
+          },
+          bases: [
+            {
+              defId: 'base_alternate_present',
+              minions: [],
+              ongoingActions: [],
+            },
+          ],
+        },
+      },
+    });
+
+    await game.waitForPhase('endTurn');
+    await expect.poll(async () => {
+      const state = await game.getState() as SmashUpE2EState;
+      return {
+        playerIds: Object.keys(state.core.players).sort(),
+        currentPlayerId: state.core.turnOrder[state.core.currentPlayerIndex],
+        phase: state.sys.phase,
+      };
+    }, { timeout: 10000 }).toEqual({
+      playerIds: ['0', '1', '2', '3'],
+      currentPlayerId: '3',
+      phase: 'endTurn',
+    });
+    const stasisZone = page.getByTestId('su-backtimers-stasis-zone');
+    await expect(stasisZone).toBeVisible({ timeout: 15000 });
+    await expect(stasisZone).toHaveAttribute('data-stasis-card-count', '7');
+    for (const [uid, ownerId, counters] of [
+      ['p0-release-a', '0', '1'],
+      ['p0-release-b', '0', '1'],
+      ['p0-release-action', '0', '1'],
+      ['p0-waiting', '0', '2'],
+      ['p1-stasis', '1', '1'],
+      ['p2-stasis', '2', '1'],
+      ['p3-stasis', '3', '1'],
+    ] as const) {
+      const card = page.locator(`[data-stasis-card-uid="${uid}"]`);
+      await expect(card).toBeVisible({ timeout: 15000 });
+      await expect(card).toHaveAttribute('data-stasis-owner-id', ownerId);
+      await expect(card).toHaveAttribute('data-stasis-counters', counters);
+    }
+    await game.screenshot('返时者四人多停滞初始区', testInfo);
+
+    await page.evaluate(async () => {
+      const harness = (window as any).__BG_TEST_HARNESS__;
+      const state = harness.state.get();
+      const playerId = state.core.turnOrder[state.core.currentPlayerIndex];
+      await harness.command.dispatch({
+        type: 'ADVANCE_PHASE',
+        playerId,
+        payload: {},
+      });
+    });
+
+    await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
+    await expect(stasisZone).toHaveAttribute('data-stasis-card-count', '7');
+    for (const [uid, counters, ready] of [
+      ['p0-release-a', '0', 'true'],
+      ['p0-release-b', '0', 'true'],
+      ['p0-release-action', '0', 'true'],
+      ['p0-waiting', '1', 'false'],
+      ['p1-stasis', '1', 'false'],
+      ['p2-stasis', '1', 'false'],
+      ['p3-stasis', '1', 'false'],
+    ] as const) {
+      const card = page.locator(`[data-stasis-card-uid="${uid}"]`);
+      await expect(card).toHaveAttribute('data-stasis-counters', counters);
+      await expect(card).toHaveAttribute('data-stasis-ready', ready);
+    }
+    await expect(page.getByTestId('prompt-card-grid')).toBeVisible({ timeout: 15000 });
+    await game.screenshot('返时者四人回合开始只归零玩家0', testInfo);
+
+    const firstMinionOptions = await game.getInteractionOptions();
+    const firstMinionOption = firstMinionOptions.find((option: any) => option.value?.cardUid === 'p0-release-a');
+    expect(firstMinionOption, '玩家0第一张归零随从应先获得独立额外打出提示').toBeTruthy();
+    await game.selectOption(firstMinionOption.id);
+
+    await game.waitForInteraction('smashup_immediate_extra_minion_base', 15000);
+    const firstBaseOptions = await game.getInteractionOptions();
+    const firstBaseOption = firstBaseOptions.find((option: any) => option.value?.baseIndex === 0);
+    expect(firstBaseOption, '玩家0第一张归零随从应能选择基地打出').toBeTruthy();
+    await game.selectOption(firstBaseOption.id);
+
+    await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
+    const secondMinionOptions = await game.getInteractionOptions();
+    const secondMinionOption = secondMinionOptions.find((option: any) => option.value?.cardUid === 'p0-release-b');
+    expect(secondMinionOption, '玩家0第二张归零随从不能被第一张额外打出吞掉').toBeTruthy();
+    await expect(page.locator('[data-minion-uid="p0-release-a"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-stasis-card-uid="p0-release-a"]')).toHaveCount(0, { timeout: 15000 });
+    await expect(page.locator('[data-stasis-card-uid="p0-release-b"]')).toHaveAttribute('data-stasis-ready', 'true');
+    await game.screenshot('返时者四人第一张打出后第二张仍提示', testInfo);
+
+    const secondSkipOption = secondMinionOptions.find((option: any) => option.id === 'skip');
+    expect(secondSkipOption, '第二个额外随从提示应保留放弃选项').toBeTruthy();
+    await game.selectOption(secondSkipOption.id);
+
+    await game.waitForInteraction('smashup_immediate_extra_action', 15000);
+    const actionOptions = await game.getInteractionOptions();
+    const actionOption = actionOptions.find((option: any) => option.value?.cardUid === 'p0-release-action');
+    expect(actionOption, '玩家0归零行动牌应在两个随从机会后继续获得独立额外打出提示').toBeTruthy();
+    await expect(page.locator('[data-stasis-card-uid="p1-stasis"]')).toHaveAttribute('data-stasis-counters', '1');
+    await expect(page.locator('[data-stasis-card-uid="p2-stasis"]')).toHaveAttribute('data-stasis-counters', '1');
+    await expect(page.locator('[data-stasis-card-uid="p3-stasis"]')).toHaveAttribute('data-stasis-counters', '1');
+    await game.screenshot('返时者四人行动牌独立提示且其他玩家未处理', testInfo);
+
+    await expect.poll(async () => {
+      const state = await game.getState() as SmashUpE2EState;
+      const countersByPlayer = Object.fromEntries(Object.entries(state.core.players).map(([playerId, player]) => [
+        playerId,
+        (player.storedCards ?? []).map(card => [card.uid, card.counters ?? 0]),
+      ]));
+      return {
+        currentPlayerId: state.core.turnOrder[state.core.currentPlayerIndex],
+        countersByPlayer,
+        minionUids: state.core.bases[0].minions.map(minion => minion.uid),
+        interactionSourceId: (state.sys.interaction?.current as any)?.data?.sourceId,
+      };
+    }, { timeout: 10000 }).toEqual({
+      currentPlayerId: '0',
+      countersByPlayer: {
+        '0': [
+          ['p0-release-b', 0],
+          ['p0-release-action', 0],
+          ['p0-waiting', 1],
+        ],
+        '1': [['p1-stasis', 1]],
+        '2': [['p2-stasis', 1]],
+        '3': [['p3-stasis', 1]],
+      },
+      minionUids: ['p0-release-a'],
+      interactionSourceId: 'smashup_immediate_extra_action',
     });
   });
 });
