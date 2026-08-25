@@ -37,6 +37,7 @@ import {
     type MageWarsCore,
     type MageWarsPlayerState,
 } from './domain';
+import type { MageWarsWallState } from './domain/types';
 import {
     getPresetMageSetupFromConfig,
     getPresetSpellbookCardIdsFromConfig,
@@ -412,6 +413,7 @@ function MageWarsGuardTokenAction({
             aria-label={t('actions.guard')}
             title={t('actions.guard')}
             data-testid="mage-wars-selected-unit-guard"
+            data-tutorial-id="mw-selected-unit-guard"
             data-mage-wars-guard-action-placement="bottom-center"
             style={{
                 left: '50%',
@@ -519,6 +521,7 @@ function MageWarsLifeToggle({
             aria-pressed={pressed}
             title={label}
             data-testid="mage-wars-life-toggle"
+            data-tutorial-id="mw-life-toggle"
             data-life-visible={pressed ? 'true' : 'false'}
             onClick={(event) => {
                 event.preventDefault();
@@ -1196,6 +1199,7 @@ function ZoneFieldCard({
             aria-label={title}
             data-testid="mage-wars-zone-field-card"
             data-tutorial-id={object ? `mw-field-object-${object.sourceSpellCardId}` : `mw-field-card-${cardId}`}
+            data-tutorial-object-id={object ? `mw-arena-object-${object.id}` : undefined}
             data-object-id={object?.id}
             data-source-card-id={cardId}
             data-owner-side={ownerSide}
@@ -1203,6 +1207,13 @@ function ZoneFieldCard({
             data-visual-damage={visualDamage ?? 0}
             data-visual-held={visualHeld ? 'true' : undefined}
         >
+            {object ? (
+                <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    data-tutorial-id={`mw-arena-object-${object.id}`}
+                />
+            ) : null}
             {content}
         </button>
     );
@@ -1736,6 +1747,7 @@ function ZoneOccupant({
             }}
             aria-label={t(`mages.${player.mageId}`)}
             data-testid="mage-wars-zone-mage-entity"
+            data-tutorial-id={`mw-mage-entity-${player.id}`}
             data-player-id={player.id}
             data-mage-id={player.mageId}
             data-mage-preview-kind="portrait"
@@ -2444,7 +2456,7 @@ function ArenaStage({
                                 ? 'shadow-[0_0_18px_rgba(251,146,60,0.34)]'
                                 : 'shadow-[0_0_16px_rgba(251,146,60,0.3)]',
                             wall
-                                ? 'border-orange-200/95 bg-gradient-to-r from-red-700/80 via-orange-300/90 to-red-700/80'
+                                ? 'border-amber-100/70 bg-amber-950/18'
                                 : 'border-amber-100/82 bg-amber-300/18 hover:bg-amber-300/30',
                         )}
                         style={edge.style}
@@ -2452,6 +2464,7 @@ function ArenaStage({
                         title={label}
                         disabled={!isLegalWallTarget}
                         data-testid={`mage-wars-wall-edge-${edge.edgeId}`}
+                        data-tutorial-id={`mw-wall-edge-${edge.edgeId}`}
                         data-wall-edge-id={edge.edgeId}
                         data-legal-target-wall-edge={isLegalWallTarget ? 'true' : undefined}
                         data-wall-object={wall ? 'true' : undefined}
@@ -2462,15 +2475,17 @@ function ArenaStage({
                             onWallEdgeSelect?.(edge.edgeId);
                         }}
                     >
-                        <span
-                            className={cx(
-                                'pointer-events-none absolute inset-0 rounded-full',
-                                wall
-                                    ? 'shadow-[inset_0_0_0_1px_rgba(255,247,237,0.52),0_0_20px_rgba(248,113,22,0.72)]'
-                                    : 'shadow-[inset_0_0_0_1px_rgba(254,243,199,0.5),0_0_18px_rgba(251,191,36,0.38)]',
-                            )}
-                            data-testid={wall ? 'mage-wars-wall-object' : undefined}
-                        />
+                        {wall ? (
+                            <WallSpellCardOnEdge
+                                wall={wall}
+                                orientation={edge.orientation}
+                                label={label}
+                            />
+                        ) : (
+                            <span
+                                className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_0_1px_rgba(254,243,199,0.5),0_0_18px_rgba(251,191,36,0.38)]"
+                            />
+                        )}
                     </button>
                 );
             })}
@@ -2488,6 +2503,61 @@ function ArenaStage({
                 onEffectComplete={onFxComplete}
             />
         </section>
+    );
+}
+
+function WallSpellCardOnEdge({
+    wall,
+    orientation,
+    label,
+}: {
+    wall: MageWarsWallState;
+    orientation: WallEdgeDescriptor['orientation'];
+    label: string;
+}) {
+    const previewRef = getMageWarsSpellCardPreviewRef(wall.sourceSpellCardId);
+    const title = wall.name || getMageWarsSpellCardName(wall.sourceSpellCardId) || label;
+    const cardAspectRatio = getMageWarsSpellCardAspectRatio(wall.sourceSpellCardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
+    const isVerticalEdge = orientation === 'vertical';
+
+    if (!previewRef) return null;
+
+    return (
+        <span
+            className="pointer-events-none absolute inset-[-0.18rem] z-20 rounded-full border border-amber-100/55 bg-amber-950/18 shadow-[0_0_20px_rgba(251,146,60,0.32)]"
+            data-testid="mage-wars-wall-object"
+            data-source-card-id={wall.sourceSpellCardId}
+            data-wall-visual="spell-card"
+            data-wall-edge-orientation={orientation}
+            aria-hidden="true"
+        >
+            <span
+                className={cx(
+                    'absolute left-1/2 top-1/2 block overflow-hidden rounded-[0.24rem] border border-orange-100/90 bg-stone-950/92',
+                    'shadow-[0_12px_28px_rgba(0,0,0,0.62),0_0_18px_rgba(251,146,60,0.42)]',
+                    isVerticalEdge ? 'origin-center' : '',
+                )}
+                style={{
+                    width: isVerticalEdge
+                        ? 'clamp(4.9rem, 9.4vmin, 6.4rem)'
+                        : 'clamp(5.8rem, 11vmin, 8.2rem)',
+                    aspectRatio: cardAspectRatio,
+                    transform: `translate(-50%, -50%)${isVerticalEdge ? ' rotate(90deg)' : ''}`,
+                }}
+                data-testid="mage-wars-wall-card-preview"
+                data-tutorial-id={`mw-wall-card-${wall.sourceSpellCardId}`}
+                data-source-card-id={wall.sourceSpellCardId}
+                data-wall-visual="spell-card"
+                data-wall-edge-orientation={orientation}
+            >
+                <CardPreview
+                    previewRef={previewRef}
+                    className="h-full w-full rounded-[0.2rem]"
+                    title={title}
+                    alt={title}
+                />
+            </span>
+        </span>
     );
 }
 
@@ -2602,6 +2672,7 @@ function MageWarsSelectedAbilityActionDock({
         <aside
             className="pointer-events-none absolute inset-x-0 bottom-[15.75rem] z-50 flex justify-center px-4"
             data-testid="mage-wars-selected-ability-action-dock"
+            data-tutorial-id="mw-ability-action-dock"
             data-ability-action-placement="middle-lower-action-dock"
         >
             <section className="pointer-events-auto flex max-w-[38rem] items-center gap-3 rounded-[0.35rem] border border-amber-100/18 bg-stone-950/90 px-4 py-2.5 shadow-[0_16px_38px_rgba(0,0,0,0.52)]">
@@ -2622,6 +2693,9 @@ function MageWarsSelectedAbilityActionDock({
                             aria-label={ability.name}
                             title={ability.name}
                             data-testid={getMageWarsObjectAbilityButtonTestId(ability.id)}
+                            data-tutorial-id={ability.id === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT
+                                ? 'mw-ability-healing-light'
+                                : `mw-object-ability-${ability.id.replace(/[^a-z0-9]+/gi, '-')}`}
                             data-ability-id={ability.id}
                             data-ability-visual="text-action"
                             data-ability-action-placement="middle-lower-action-dock"
@@ -2637,6 +2711,7 @@ function MageWarsSelectedAbilityActionDock({
                             aria-label={mageAbility.name}
                             title={mageAbility.name}
                             data-testid="mage-wars-selected-mage-ability-restore"
+                            data-tutorial-id="mw-ability-restore"
                             data-ability-visual="text-action"
                             data-ability-action-placement="middle-lower-action-dock"
                             onClick={() => onMageAbilitySelect(magePlayerId, mageAbility.abilityId)}

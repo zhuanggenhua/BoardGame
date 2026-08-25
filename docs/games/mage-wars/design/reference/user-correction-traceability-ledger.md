@@ -43,6 +43,7 @@
 | 守卫单位旁不能出现让人误读的能力小牌 | 单位能力快捷入口使用来源牌面缩略图或锚在格子 / 宿主附近，玩家会把它看成守卫单位附属的小牌或额外场上实体 | `mage-wars-ui-design-memory` 用户原话反思表；`rule-to-ui-element-list.md` 当前动作层 / 守卫 token 行 | 能力触发按 Summoner Wars 职责分层：来源本体选中，顶部横幅只做描述提示，能力按钮在屏幕中下统一动作 dock，目标回到棋盘本体高亮；由单测 / E2E 断言没有 img / svg 小牌，且 placement 为 `middle-lower-action-dock` | covered-by-runtime-e2e |
 | 顶部横幅不是能力按钮容器 | 把 Summoner Wars 式顶部横幅误读成按钮 dock，会把描述提示和玩家动作混在一起 | `mage-wars-ui-design-memory` 用户原话反思表；`rule-to-ui-element-list.md` 单位能力动作入口行 | 顶部横幅 / 阶段条只显示当前描述或提示；能力按钮固定在屏幕中下统一动作 dock，测试字段为 `middle-lower-action-dock` | covered-by-runtime-e2e |
 | 伤害显示复用 Summoner Wars 显隐合同，并提供眼睛开关 | 只做剩余 / 总生命读数但没有显隐控制，或改成自创常驻压牌面样式，会偏离用户认可的成熟样本 | `ui-change-gates.md` 同类视觉先对照成熟样本；`mage-wars-ui-design-memory` 用户原话反思表；`rule-to-ui-element-list.md` 伤害状态 / 生命读数行 | 红色受伤遮罩按伤害比例贴对象本体；生命读数默认 hover / 聚焦显示，眼睛按钮切换全场常显；没有右下角圆球、爱心 / 护盾或物理伤害 token 图 | covered-by-runtime-e2e |
+| 墙法术结算后应该把墙牌摆上边界 | 只显示泛化彩色墙条会让正式墙法术牌面缺席，也无法证明 `sourceSpellCardId` 对应素材被消费 | `mage-wars-ui-design-memory` 用户原话反思表；`rule-to-ui-element-list.md` 墙体 / 墙壁法术牌行 | 墙体目标仍点击共享边界；结算后边界上必须可见源墙法术正式牌面 / 墙牌，E2E 断言墙牌预览、来源卡 id 和 `spell-card` 视觉类型 | covered-by-runtime-e2e |
 | 攻击掷骰应该在上层 / 目标附近 | 把结算主体边栏化 | `ui-design-pipeline` 当前结算主体；`step1-runtime-board-saturated-ui-design.md` 结算层 | 骰子、效果骰、伤害、燃烧 token 位于主舞台上层，并锚定来源 / 目标 / 动作链 | covered |
 | token / 状态贴对象，不只在日志 | 状态离开宿主，玩家不知道谁受影响 | `step1-runtime-board-saturated-ui-design.md` 行动标记和状态 token；`ui-audit-loop` 保护槽位 | token 不脱离宿主，不压住关键卡面信息，数量或堆叠关系可读 | covered |
 | 描边不贴边 | 把用户说的描边几何问题误读成“对象目标是否整格高亮”的语义问题，导致悬浮外扩框仍可能存在 | `ui-change-gates.md` 高亮必须清楚贴合、目标高亮要验几何；`mage-wars-ui-design-memory` 用户原话反思表 | 目标描边必须沿目标卡牌 / 法师本体可见边界；E2E 不能只查绿色存在，必须量目标框与本体四边差值，常规容差不超过 2px | covered |
@@ -73,7 +74,7 @@
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。
-- [ ] 攻击骰、效果骰、伤害状态 / 伤害数值、燃烧 token、守卫 / 行动 token 未省略；伤害不强制物理 token 图，但必须贴受伤对象本体并以受伤遮罩 + 生命读数可读，不出现通用护盾 / 爱心或右下角圆形数字球。
+- [ ] 攻击骰、效果骰、伤害状态 / 伤害数值、燃烧 token、守卫 / 行动 token 未省略；墙体法术结算后边界上显示源墙法术正式牌面 / 墙牌，不退化成泛化墙条；伤害不强制物理 token 图，但必须贴受伤对象本体并以受伤遮罩 + 生命读数可读，不出现通用护盾 / 爱心或右下角圆形数字球。
 - [ ] 设计稿 / 真实 Board/UI 截图是饱和交互态，不是空开局或只证明页面可运行的技术截图。
 - [ ] 当前动作由来源对象和棋盘 / 场上对象本体承接，合法目标高亮，不出现无授权常驻确认。
 - [ ] 当前玩家提示挂在法师头像 / 角色 HUD；竞技场只保留阶段、区域语义和真实对象高亮，不承载第二个玩家提示条。

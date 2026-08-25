@@ -7,7 +7,9 @@ type SmashUpE2EState = {
   core: {
     turnOrder: string[];
     currentPlayerIndex: number;
+    madnessDeck?: string[];
     bases: Array<{
+      defId: string;
       minions: Array<{
         uid: string;
         defId: string;
@@ -59,6 +61,14 @@ const FIVE_FACTIONS = [
 ] as const;
 
 const EXCELLENT_MOVIES_TEENS_BASE_ATLAS = 'smashup:excellent-movies-teens-bases';
+const FOUR_PLAYER_STASIS_BASE_IDS = [
+  'base_alternate_present',
+  'base_the_jungle',
+  'base_the_mothership',
+  'base_central_brain',
+  'base_tortuga',
+] as const;
+const FOUR_PLAYER_STASIS_BASE_INDICES = [0, 1, 2, 3, 4] as const;
 
 test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', () => {
   test('派系选择页可看到五个已完成派系，并能显示卡牌与基地详情', async ({ page, game }, testInfo) => {
@@ -312,14 +322,27 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
     });
 
     await game.waitForPhase('playCards');
+    const stasisEntry = page.getByTestId('su-backtimers-stasis-entry');
+    await expect(stasisEntry).toBeVisible({ timeout: 15000 });
+    await expect(stasisEntry).toHaveAttribute('data-stasis-card-count', '1');
+    await expect.poll(async () => stasisEntry.evaluate((element) => Math.round(element.getBoundingClientRect().left)), { timeout: 10000 }).toBeLessThan(260);
+    await expect.poll(async () => stasisEntry.evaluate((element) => Math.round(element.getBoundingClientRect().top)), { timeout: 10000 }).toBeLessThan(180);
+    await expect(page.getByTestId('su-backtimers-stasis-zone')).toHaveCount(0);
+    await stasisEntry.click();
     const stasisZone = page.getByTestId('su-backtimers-stasis-zone');
     const stasisCard = page.locator('[data-stasis-card-uid="stasis-zany-prof"]');
     await expect(stasisZone).toBeVisible({ timeout: 15000 });
+    await expect(stasisZone).toHaveAttribute('data-stasis-anchor', 'top-left-hud');
     await expect(stasisZone).toContainText('停滞区');
     await expect(stasisCard).toBeVisible({ timeout: 15000 });
     await expect(stasisCard).toHaveAttribute('data-stasis-counters', '1');
-    await expect(stasisCard).toContainText('停滞 × 1');
-    await game.screenshot('返时者停滞区显示1个指示物', testInfo);
+    await expect(stasisCard).not.toContainText('停滞 × 1');
+    await expect(page.getByTestId('su-backtimers-stasis-badge-stasis-zany-prof')).toHaveText('停滞');
+    await expect(page.getByTestId('su-backtimers-stasis-counter-stasis-zany-prof')).toHaveText('1');
+    await expect.poll(async () => {
+      return page.getByTestId('su-backtimers-stasis-zone').evaluate((element) => Math.round(element.getBoundingClientRect().width));
+    }, { timeout: 10000 }).toBeLessThanOrEqual(260);
+    await game.screenshot('返时者停滞入口展开后显示1个指示物', testInfo);
 
     await page.evaluate(async () => {
       const harness = (window as any).__BG_TEST_HARNESS__;
@@ -331,9 +354,6 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
     });
 
     await game.waitForInteraction('smashup_immediate_extra_minion', 15000);
-    await expect(stasisCard).toBeVisible({ timeout: 15000 });
-    await expect(stasisCard).toHaveAttribute('data-stasis-counters', '0');
-    await expect(stasisCard).toContainText('可打出');
     await expect(page.getByTestId('prompt-card-grid')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('[data-option-id="stored-card-0"]')).toBeVisible({ timeout: 15000 });
     await game.screenshot('返时者回合开始归零后额外打出提示', testInfo);
@@ -391,12 +411,18 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       gameId: 'smashup',
       currentPlayer: '3',
       phase: 'endTurn',
+      bases: FOUR_PLAYER_STASIS_BASE_IDS.map(defId => ({
+        defId,
+        minions: [],
+        ongoingActions: [],
+      })),
       extra: {
         core: {
           turnOrder: ['0', '1', '2', '3'],
           currentPlayerIndex: 3,
           turnNumber: 8,
           nextUid: 9000,
+          madnessDeck: Array.from({ length: 30 }, () => 'special_madness'),
           players: {
             '0': {
               id: '0',
@@ -512,13 +538,6 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
               }],
             },
           },
-          bases: [
-            {
-              defId: 'base_alternate_present',
-              minions: [],
-              ongoingActions: [],
-            },
-          ],
         },
       },
     });
@@ -530,15 +549,91 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
         playerIds: Object.keys(state.core.players).sort(),
         currentPlayerId: state.core.turnOrder[state.core.currentPlayerIndex],
         phase: state.sys.phase,
+        baseCount: state.core.bases.length,
+        baseDefIds: state.core.bases.map(base => base.defId),
+        madnessCount: state.core.madnessDeck?.length ?? null,
       };
     }, { timeout: 10000 }).toEqual({
       playerIds: ['0', '1', '2', '3'],
       currentPlayerId: '3',
       phase: 'endTurn',
+      baseCount: 5,
+      baseDefIds: [...FOUR_PLAYER_STASIS_BASE_IDS],
+      madnessCount: 30,
     });
+    const expectSelectorsInsideViewport = async (selectors: string[], label: string) => {
+      const clippingIssues = await page.evaluate((targetSelectors) => {
+        return targetSelectors.flatMap((selector) => {
+          const element = document.querySelector<HTMLElement>(selector);
+          if (!element) return [`${selector}: missing`];
+          const rect = element.getBoundingClientRect();
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          const isVisible = rect.width > 0 && rect.height > 0;
+          const isInside = rect.left >= 0 && rect.top >= 0 && rect.right <= viewportWidth && rect.bottom <= viewportHeight;
+          return isVisible && isInside
+            ? []
+            : [`${selector}: ${Math.round(rect.left)},${Math.round(rect.top)}-${Math.round(rect.right)},${Math.round(rect.bottom)} / ${viewportWidth}x${viewportHeight}`];
+        });
+      }, selectors);
+      expect(clippingIssues, label).toEqual([]);
+    };
+    const expectSelectorsDoNotOverlap = async (firstSelector: string, secondSelector: string, label: string) => {
+      const overlap = await page.evaluate(({ firstSelector, secondSelector }) => {
+        const rectOf = (selector: string) => {
+          const element = document.querySelector<HTMLElement>(selector);
+          if (!element) return null;
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+        };
+        const first = rectOf(firstSelector);
+        const second = rectOf(secondSelector);
+        if (!first || !second) return { missing: true, overlaps: true, first, second };
+        const overlaps = !(first.right <= second.left || second.right <= first.left || first.bottom <= second.top || second.bottom <= first.top);
+        return { missing: false, overlaps, first, second };
+      }, { firstSelector, secondSelector });
+      expect(overlap.missing, `${label}: selector missing ${JSON.stringify(overlap)}`).toBe(false);
+      expect(overlap.overlaps, `${label}: ${JSON.stringify(overlap)}`).toBe(false);
+    };
+
+    for (const baseIndex of FOUR_PLAYER_STASIS_BASE_INDICES) {
+      await expect(page.getByTestId(`base-zone-${baseIndex}`)).toBeVisible({ timeout: 15000 });
+      await expect(page.getByTestId(`base-zone-${baseIndex}`)).toHaveAttribute('data-base-index', String(baseIndex));
+    }
+    await expect(page.getByTestId('su-madness-supply')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('su-madness-supply-count')).toHaveText('x 30');
+    const stasisEntry = page.getByTestId('su-backtimers-stasis-entry');
+    await expect(stasisEntry).toBeVisible({ timeout: 15000 });
+    await expect(stasisEntry).toHaveAttribute('data-stasis-card-count', '7');
+    await expect.poll(async () => stasisEntry.evaluate((element) => Math.round(element.getBoundingClientRect().left)), { timeout: 10000 }).toBeLessThan(260);
+    await expect.poll(async () => stasisEntry.evaluate((element) => Math.round(element.getBoundingClientRect().top)), { timeout: 10000 }).toBeLessThan(180);
+    await expect(page.getByTestId('su-backtimers-stasis-zone')).toHaveCount(0);
+    await expectSelectorsDoNotOverlap(
+      '[data-testid="su-backtimers-stasis-entry"]',
+      '[data-testid="su-turn-tracker"]',
+      '停滞入口不能压住左上回合牌',
+    );
+    await expectSelectorsDoNotOverlap(
+      '[data-testid="su-backtimers-stasis-entry"]',
+      '[data-testid="su-special-supply-row"]',
+      '停滞入口不能压住疯狂牌供应行',
+    );
+    await expectSelectorsInsideViewport([
+      ...FOUR_PLAYER_STASIS_BASE_INDICES.map(baseIndex => `[data-testid="base-zone-${baseIndex}"]`),
+      ...FOUR_PLAYER_STASIS_BASE_INDICES.map(baseIndex => `[data-testid="su-base-breakpoint-token-${baseIndex}"]`),
+      '[data-testid="su-backtimers-stasis-entry"]',
+      '[data-testid="su-special-supply-row"]',
+    ], '四人五基地截图中所有基地本体和计分圆都不能被视口裁切');
+    await game.screenshot('返时者四人五基地停滞入口初始态', testInfo);
+    await stasisEntry.click();
     const stasisZone = page.getByTestId('su-backtimers-stasis-zone');
     await expect(stasisZone).toBeVisible({ timeout: 15000 });
+    await expect(stasisZone).toHaveAttribute('data-stasis-anchor', 'top-left-hud');
     await expect(stasisZone).toHaveAttribute('data-stasis-card-count', '7');
+    await expectSelectorsInsideViewport([
+      '[data-testid="su-backtimers-stasis-entry"]',
+      '[data-testid="su-backtimers-stasis-zone"]',
+    ], '停滞区展开面板必须从左上公开入口打开且不能被视口裁切');
     for (const [uid, ownerId, counters] of [
       ['p0-release-a', '0', '1'],
       ['p0-release-b', '0', '1'],
@@ -553,7 +648,7 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       await expect(card).toHaveAttribute('data-stasis-owner-id', ownerId);
       await expect(card).toHaveAttribute('data-stasis-counters', counters);
     }
-    await game.screenshot('返时者四人多停滞初始区', testInfo);
+    await game.screenshot('返时者四人五基地停滞面板展开', testInfo);
 
     await page.evaluate(async () => {
       const harness = (window as any).__BG_TEST_HARNESS__;
@@ -582,7 +677,7 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       await expect(card).toHaveAttribute('data-stasis-ready', ready);
     }
     await expect(page.getByTestId('prompt-card-grid')).toBeVisible({ timeout: 15000 });
-    await game.screenshot('返时者四人回合开始只归零玩家0', testInfo);
+    await game.screenshot('返时者四人五基地回合开始只归零玩家0', testInfo);
 
     const firstMinionOptions = await game.getInteractionOptions();
     const firstMinionOption = firstMinionOptions.find((option: any) => option.value?.cardUid === 'p0-release-a');
@@ -600,9 +695,10 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
     const secondMinionOption = secondMinionOptions.find((option: any) => option.value?.cardUid === 'p0-release-b');
     expect(secondMinionOption, '玩家0第二张归零随从不能被第一张额外打出吞掉').toBeTruthy();
     await expect(page.locator('[data-minion-uid="p0-release-a"]')).toBeVisible({ timeout: 15000 });
+    await expectSelectorsInsideViewport(['[data-minion-uid="p0-release-a"]'], '额外打出的第一张随从不能被视口边缘裁切');
     await expect(page.locator('[data-stasis-card-uid="p0-release-a"]')).toHaveCount(0, { timeout: 15000 });
     await expect(page.locator('[data-stasis-card-uid="p0-release-b"]')).toHaveAttribute('data-stasis-ready', 'true');
-    await game.screenshot('返时者四人第一张打出后第二张仍提示', testInfo);
+    await game.screenshot('返时者四人五基地第一张打出后第二张仍提示', testInfo);
 
     const secondSkipOption = secondMinionOptions.find((option: any) => option.id === 'skip');
     expect(secondSkipOption, '第二个额外随从提示应保留放弃选项').toBeTruthy();
@@ -615,7 +711,7 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
     await expect(page.locator('[data-stasis-card-uid="p1-stasis"]')).toHaveAttribute('data-stasis-counters', '1');
     await expect(page.locator('[data-stasis-card-uid="p2-stasis"]')).toHaveAttribute('data-stasis-counters', '1');
     await expect(page.locator('[data-stasis-card-uid="p3-stasis"]')).toHaveAttribute('data-stasis-counters', '1');
-    await game.screenshot('返时者四人行动牌独立提示且其他玩家未处理', testInfo);
+    await game.screenshot('返时者四人五基地行动牌独立提示且其他玩家未处理', testInfo);
 
     await expect.poll(async () => {
       const state = await game.getState() as SmashUpE2EState;
@@ -625,12 +721,14 @@ test.describe('SmashUp Excellent Movies + Teens 五派系真实入口验证', ()
       ]));
       return {
         currentPlayerId: state.core.turnOrder[state.core.currentPlayerIndex],
+        baseCount: state.core.bases.length,
         countersByPlayer,
         minionUids: state.core.bases[0].minions.map(minion => minion.uid),
         interactionSourceId: (state.sys.interaction?.current as any)?.data?.sourceId,
       };
     }, { timeout: 10000 }).toEqual({
       currentPlayerId: '0',
+      baseCount: 5,
       countersByPlayer: {
         '0': [
           ['p0-release-b', 0],

@@ -61,6 +61,8 @@ interface UseCellInteractionParams {
   undoSnapshotCount: number;
   /** 当前系统交互（来自 sys.interaction.current） */
   interaction?: InteractionDescriptor | null;
+  /** 教程进行中时不自动跳过阶段，避免教程提示落后于真实阶段 */
+  isTutorialActive?: boolean;
   // 外部模式状态
   abilityMode: AbilityModeState | null;
   setAbilityMode: (mode: AbilityModeState | null) => void;
@@ -82,6 +84,7 @@ export function useCellInteraction({
   myPlayerId, activePlayerId, myHand, fromViewCoord,
   undoSnapshotCount,
   interaction,
+  isTutorialActive = false,
   abilityMode, setAbilityMode, soulTransferMode,
   mindCaptureMode,
   afterAttackAbilityMode,
@@ -916,7 +919,7 @@ export function useCellInteraction({
     hasAvailableActions: hasAvailableActions(core, activePlayerId as '0' | '1'),
     hasActiveInteraction,
     advancePhase,
-    enabled: !!core.hostStarted && !debugDisabled,
+    enabled: !!core.hostStarted && !debugDisabled && !isTutorialActive,
     undoSnapshotCount,
   });
 

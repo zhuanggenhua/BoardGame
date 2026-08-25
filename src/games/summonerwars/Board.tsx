@@ -558,6 +558,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     myPlayerId, activePlayerId, myHand, fromViewCoord,
     undoSnapshotCount: getUndoSnapshotCount(G.sys?.undo),
     interaction: currentInteraction,
+    isTutorialActive,
     abilityMode, setAbilityMode, soulTransferMode,
     mindCaptureMode,
     afterAttackAbilityMode,

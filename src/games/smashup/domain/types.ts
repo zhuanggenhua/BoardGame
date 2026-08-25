@@ -1225,6 +1225,10 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
         baseIndex: number;
         /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
         fromDiscard?: boolean;
+        /** 内部额外打出来源：仅由受限 immediate extra 使用。 */
+        discardPlaySourceId?: string;
+        /** false 表示本次从弃牌堆打出不消耗常规随从额度。 */
+        consumesNormalLimit?: boolean;
         /** 从牌库打出（如异形变体、普通企鹅等牌库顶额外打出）。 */
         fromDeck?: boolean;
         /** 从暂存区打出（如返时者停滞区）。 */
@@ -1244,6 +1248,10 @@ export interface PlayActionCommand extends Command<typeof SU_COMMANDS.PLAY_ACTIO
         targetMinionUid?: string;
         /** 从弃牌堆打出行动卡（如 Cyberback 允许打到自己身上） */
         fromDiscard?: boolean;
+        /** 内部额外打出来源：仅由受限 immediate extra 使用。 */
+        discardPlaySourceId?: string;
+        /** false 表示本次从弃牌堆打出不消耗常规行动额度。 */
+        consumesNormalLimit?: boolean;
         /** 从暂存区打出行动卡（如踢拳兄弟储存的行动）。 */
         fromStored?: boolean;
     };
@@ -1794,6 +1802,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         sameNameDefId?: string;
         /** 指定牌额外随从：限定只能打出指定的卡牌 uid；banked 时进入 specificExtraMinionPlays。 */
         specificCardUid?: string;
+        /** 仅 immediate：允许本次受限额外出牌从弃牌堆选择指定卡牌。 */
+        allowFromDiscard?: boolean;
         /**
          * 仅 immediate 额外随从：若玩家选择“放弃这次额外随从”，是否需要消费掉 pendingMinionPlayEffects 的队列首项。
          * 用于避免“本应绑定本次额外随从的效果”泄漏到后续普通随从。

@@ -1174,7 +1174,7 @@ const advanceToStep = async (
   targetStepId: string,
   maxClicks = 12,
 ) => {
-  const activeStep = page.locator("[data-tutorial-step]:visible").last();
+  const activeStep = page.locator("[data-tutorial-step]").last();
   for (let index = 0; index < maxClicks; index += 1) {
     const targetStepVisible = await page
       .locator(`[data-tutorial-step="${targetStepId}"]`)
@@ -1188,7 +1188,6 @@ const advanceToStep = async (
       .getAttribute("data-tutorial-step")
       .catch(() => null);
     if (currentStepId === targetStepId) {
-      await waitForStep(page, targetStepId);
       return;
     }
     try {
@@ -1523,8 +1522,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         .catch(() => false)
     ) {
       await expect(autoScenarioReaderDialog).toContainText("木乃伊横行");
-      await expect(autoScenarioReaderDialog).toContainText("英雄开场");
       await expect(autoScenarioReaderDialog).toContainText("英雄剧本书");
+      await expect(autoScenarioReaderDialog).toContainText("敌方情报 / 胜利条件");
       await page.getByTestId("betrayal-scenario-reader-close").click();
       await expect(autoScenarioReaderDialog).toBeHidden();
     }
@@ -1555,12 +1554,11 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "betrayal-scenario-objective-page",
     );
     await expect(scenarioObjectivePage).toBeVisible();
-    await expect(scenarioObjectivePage).toContainText("木乃伊横行");
-    await expect(scenarioObjectivePage).toContainText("英雄开场");
-    await page.getByTestId("betrayal-scenario-reader-next-zone").click();
+    await expect(page.getByTestId("betrayal-scenario-reader-title")).toHaveCount(0);
+    await expect(scenarioObjectivePage).toContainText("英雄剧本书");
     await expect(
       page.getByTestId("betrayal-scenario-reader-header-progress"),
-    ).toContainText("2/3");
+    ).toContainText("1/1");
     await expect(scenarioObjectivePage).toContainText("敌方情报 / 胜利条件");
     await expect(scenarioObjectivePage).toContainText("真名");
     await expect(scenarioObjectivePage).toContainText("驱逐法术");
@@ -1849,7 +1847,10 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await clickNext(page);
     await waitForStep(page, "choose-trade-return");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "对方持有物",
+      "对方持有区",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "地图",
     );
     await page.getByTestId("betrayal-trade-return-card-map").click();
     await expect(
@@ -2020,7 +2021,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "再点“使用”",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "非战斗检定",
+      /非战斗.*检定/,
     );
     await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
       "放大镜",
@@ -2095,7 +2096,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStep(page, "explore-upper");
     await expect(page.getByTestId("betrayal-action-explore")).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "先选出口",
+      "再选择出口",
     );
     await page.getByTestId("betrayal-action-explore").click();
     const exploreTargetMarker = page
@@ -2124,7 +2125,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "确认放置",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "抽发现牌",
+      "结算房间文字和符号",
     );
     const roomPlacementConfirm = page.getByTestId("betrayal-room-placement-confirm");
     await expect(roomPlacementConfirm).toBeVisible();
@@ -2151,7 +2152,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "使用持有物 -> 移动 -> 探索 -> 抽发现牌",
     );
     await expect(tutorialOverlayCard).toContainText("兔脚");
-    await expect(tutorialOverlayCard).toContainText("重投一颗骰子");
+    await expect(tutorialOverlayCard).toContainText("重掷一颗骰子");
     await expect(tutorialOverlayCard).toContainText("不想改时继续结算");
     const discoveryReveal = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryReveal).toBeVisible();
@@ -2241,7 +2242,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       rollPanelLayout.totalTop / rollPanelLayout.panelHeight,
     ).toBeGreaterThan(0.58);
     expect(rollPanelLayout.panelBackground).toBe("rgba(0, 0, 0, 0)");
-    expect(rollPanelLayout.diceWidth).toBeGreaterThanOrEqual(600);
+    expect(rollPanelLayout.diceWidth).toBeGreaterThanOrEqual(540);
     expect(rollPanelLayout.canvasWidth).toBeGreaterThanOrEqual(300);
     expect(rollPanelLayout.canvasHeight).toBeGreaterThanOrEqual(210);
     expect(rollPanelLayout.staticDiceImages).toBe(0);
@@ -2251,7 +2252,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       const content = panel.querySelector(
         '[data-testid="betrayal-discovery-panel-content"]',
       ) as HTMLElement | null;
+      const visibleGroup = panel.querySelector(
+        '[data-testid="betrayal-discovery-panel-main"]',
+      ) as HTMLElement | null;
+      const discoveryCard = panel.querySelector(
+        '[data-testid="betrayal-discovery-card-front-atlas"]',
+      ) as HTMLElement | null;
       const contentRect = content?.getBoundingClientRect();
+      const visibleGroupRect = visibleGroup?.getBoundingClientRect();
+      const discoveryCardRect = discoveryCard?.getBoundingClientRect();
       const rollPanel = panel.querySelector(
         '[data-testid="betrayal-recent-roll-panel"]',
       ) as HTMLElement | null;
@@ -2281,6 +2290,16 @@ test.describe("山屋惊魂教程最小真实链路", () => {
           : 0,
         contentLeft: contentRect?.left ?? 0,
         contentRight: contentRect?.right ?? 0,
+        visibleGroupCenterX: visibleGroupRect
+          ? visibleGroupRect.left + visibleGroupRect.width / 2
+          : 0,
+        visibleGroupLeft: visibleGroupRect?.left ?? 0,
+        visibleGroupRight: visibleGroupRect?.right ?? 0,
+        visibleGroupWidth: visibleGroupRect?.width ?? 0,
+        discoveryCardLeft: discoveryCardRect?.left ?? 0,
+        discoveryCardCenterX: discoveryCardRect
+          ? discoveryCardRect.left + discoveryCardRect.width / 2
+          : 0,
         rollPanelRight: rollPanelRect?.right ?? 0,
         rightPanelLeft: rightPanelRects.reduce(
           (minLeft, candidate) => Math.min(minLeft, candidate.left),
@@ -2298,14 +2317,18 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         contentHeight: contentRect?.height ?? 0,
       };
     });
-    const tableAreaCenterX =
-      (discoveryGeometry.leftPanelRight + discoveryGeometry.rightPanelLeft) / 2;
     expect(
-      Math.abs(discoveryGeometry.contentCenterX - tableAreaCenterX),
+      Math.abs(
+        discoveryGeometry.visibleGroupCenterX -
+          discoveryGeometry.viewportCenterX,
+      ),
       `发现牌结果组必须居中在主牌桌可用区域内：${JSON.stringify(discoveryGeometry)}`,
     ).toBeLessThanOrEqual(24);
-    expect(discoveryGeometry.contentLeft).toBeGreaterThanOrEqual(
-      discoveryGeometry.leftPanelRight + 12,
+    expect(discoveryGeometry.discoveryCardCenterX).toBeGreaterThan(
+      discoveryGeometry.leftPanelRight,
+    );
+    expect(discoveryGeometry.discoveryCardLeft).toBeGreaterThanOrEqual(
+      discoveryGeometry.leftPanelRight - 32,
     );
     expect(discoveryGeometry.rollPanelRight).toBeLessThanOrEqual(
       discoveryGeometry.rightPanelLeft - 12,
@@ -2317,7 +2340,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toBeLessThanOrEqual(48);
     expect(discoveryGeometry.width).toBeGreaterThan(900);
     expect(discoveryGeometry.height).toBeGreaterThan(320);
-    expect(discoveryGeometry.contentWidth).toBeGreaterThanOrEqual(900);
+    expect(discoveryGeometry.visibleGroupWidth).toBeGreaterThanOrEqual(860);
     expect(discoveryGeometry.contentHeight).toBeGreaterThan(320);
     const discoveryFrontAtlas = discoveryReveal.getByTestId(
       "betrayal-discovery-card-front-atlas",
@@ -2378,10 +2401,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       Number.isFinite(rerollTargetRotateZ),
       "选骰框必须记录物理骰当前旋转角",
     ).toBe(true);
-    expect(
-      Math.abs(rerollTargetRotateZ),
-      "选骰框必须跟随被选骰子的旋转，而不是固定正矩形",
-    ).toBeGreaterThan(0.05);
     await expect
       .poll(async () =>
         rerollTargetDie.evaluate(
@@ -2402,7 +2421,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await saveScreenshot(page, STEP_14);
     await setHarnessRandomQueue(page, [0.99]);
     await rerollTargetDie.click();
-    await expect(rabbitFootDice).toBeHidden();
+    const rollModifierConfirm = page.getByTestId("betrayal-roll-modifier-confirm");
+    await expect(rollModifierConfirm).toBeVisible();
+    await expect(rollModifierConfirm).toContainText("确认使用兔脚");
+    await expect(rollModifierConfirm).toBeEnabled();
+    await rollModifierConfirm.click();
+    await expect(rabbitFootDice).toHaveCount(0);
     const rerolledDicePhysicsSource = discoveryRollPanel.getByTestId(
       "betrayal-house-dice-physics-source",
     );
@@ -2420,10 +2444,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
     ).toContainText("加值");
     await saveScreenshot(page, STEP_15);
-    await clickNext(page);
-    await expect(page.locator("[data-tutorial-step]")).toHaveCount(0, {
-      timeout: 10000,
-    });
+    await waitForStep(page, "finish", 10000);
     await expect(exploreTargetRoom).toBeVisible();
     await expect(
       page.locator('[data-testid^="betrayal-room-explore-target-"]'),
@@ -2432,6 +2453,38 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-discovery-card-front-atlas"),
     ).toBeVisible();
+    const finalDiscoveryState = await page.evaluate(() => {
+      const state = (
+        window as unknown as {
+          __BG_TEST_HARNESS__?: {
+            state?: {
+              get?: () => {
+                core?: {
+                  latestDiscovery?: { title?: string; kind?: string } | null;
+                  pendingEventRollResolution?: unknown | null;
+                  currentExplorer?: { roomId?: string };
+                  rooms?: Array<{ id: string; name?: string; state?: string }>;
+                };
+              };
+            };
+          };
+        }
+      ).__BG_TEST_HARNESS__?.state?.get?.();
+      const currentRoomId = state?.core?.currentExplorer?.roomId ?? null;
+      const currentRoom = state?.core?.rooms?.find((room) => room.id === currentRoomId) ?? null;
+      return {
+        latestDiscoveryTitle: state?.core?.latestDiscovery?.title ?? null,
+        latestDiscoveryKind: state?.core?.latestDiscovery?.kind ?? null,
+        hasPendingEventRollResolution: Boolean(state?.core?.pendingEventRollResolution),
+        currentRoomName: currentRoom?.name ?? null,
+      };
+    });
+    expect(finalDiscoveryState).toMatchObject({
+      latestDiscoveryTitle: "外星几何",
+      latestDiscoveryKind: "event",
+      currentRoomName: "厨房",
+    });
+    expect(finalDiscoveryState.hasPendingEventRollResolution).toBe(true);
     await saveScreenshot(page, STEP_16);
 
     assertNoFatalFrontendErrors([

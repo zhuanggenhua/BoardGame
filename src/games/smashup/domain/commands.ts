@@ -79,6 +79,7 @@ export interface SmashUpImmediateExtraValidationContext {
     sameNameDefId?: string;
     specificCardUid?: string;
     excludedMinionDefIds?: string[];
+    allowFromDiscard?: boolean;
 }
 
 export interface SmashUpValidateOptions {
@@ -560,16 +561,30 @@ export function validate(
 
             // 从弃牌堆打出：通过 discardPlayability 模块验证
             if (fromDiscard) {
-                const discardCheck = canPlayFromDiscard(core, command.playerId, command.payload.cardUid, baseIndex);
-                if (!discardCheck) {
-                    return { valid: false, error: '该卡牌不能从弃牌堆打出到此基地' };
-                }
-                // 限制检查
                 const discardCard = player.discard.find(c => c.uid === command.payload.cardUid);
                 if (!discardCard || !isCardMinionLike(discardCard)) {
                     return { valid: false, error: '弃牌堆中没有该随从' };
                 }
                 const basePower = getMinionLikePower(discardCard.defId) ?? 0;
+                const immediateExtraMinion = getImmediateExtraContext(options, command.playerId, 'minion');
+                const immediateExtraMinionValidation = validateImmediateExtraMinionUse(immediateExtraMinion, {
+                    cardUid: discardCard.uid,
+                    defId: discardCard.defId,
+                    baseIndex,
+                    basePower,
+                });
+                if (immediateExtraMinionValidation && !immediateExtraMinionValidation.valid) {
+                    return immediateExtraMinionValidation;
+                }
+                const allowImmediateDiscard = immediateExtraMinion?.allowFromDiscard === true
+                    && immediateExtraMinionValidation?.valid === true;
+                const discardCheck = canPlayFromDiscard(core, command.playerId, command.payload.cardUid, baseIndex)
+                    ?? (allowImmediateDiscard
+                        ? { allowed: true, consumesNormalLimit: false, sourceId: command.payload.discardPlaySourceId ?? 'immediate_extra_discard' }
+                        : null);
+                if (!discardCheck) {
+                    return { valid: false, error: '该卡牌不能从弃牌堆打出到此基地' };
+                }
                 const discardSemantics = validateDiscardMinionPlaySemantics(core, command.playerId, {
                     cardUid: discardCard.uid,
                     baseIndex,
@@ -1081,6 +1096,13 @@ export function validate(
                     return { valid: false, error: '从弃牌堆打出该行动需要选择合法的基地目标' };
                 }
                 discardActionPlay = canPlayActionFromDiscard(core, command.playerId, card.uid, targetBaseIndex, targetMinionUid);
+                if (!discardActionPlay && immediateExtraAction?.allowFromDiscard === true && hasImmediateExtraActionQuota) {
+                    discardActionPlay = {
+                        allowed: true,
+                        sourceId: command.payload.discardPlaySourceId ?? 'immediate_extra_discard',
+                        consumesNormalLimit: false,
+                    };
+                }
                 if (!discardActionPlay) {
                     return { valid: false, error: '该行动当前不能从弃牌堆以该目标打出' };
                 }

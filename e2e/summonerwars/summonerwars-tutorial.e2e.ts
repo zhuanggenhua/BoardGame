@@ -33,6 +33,7 @@ import {
   disableAudio,
   blockAudioRequests,
 } from '../helpers/common';
+import { clickBoardElement } from '../helpers/summonerwars';
 
 /** 等待教程覆盖层出现并显示指定步骤 */
 const waitForTutorialStep = async (page: Page, stepId: string, timeout = 30000) => {
@@ -196,18 +197,8 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     const summonCells = page.locator('[data-valid-summon="true"]');
     await expect(summonCells.first()).toBeVisible({ timeout: 5000 });
     await summonCells.first().click({ force: true });
-    await page.waitForTimeout(500);
-
-    const stillOnSummon = await page.locator('[data-tutorial-step="summon-action"]')
-      .isVisible({ timeout: 2000 }).catch(() => false);
-    if (stillOnSummon) {
-      await playableUnits.first().click({ force: true });
-      await page.waitForTimeout(500);
-      const summonCells2 = page.locator('[data-valid-summon="true"]');
-      if (await summonCells2.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-        await summonCells2.first().dispatchEvent('click');
-      }
-    }
+    await waitForTutorialStep(page, 'ability-explain', 15000);
+    await expect(page.locator('[data-valid-summon="true"]')).toHaveCount(0);
 
     // Step 11: ability-explain — 高亮己方召唤师
     await waitForTutorialStep(page, 'ability-explain', 15000);
@@ -218,10 +209,9 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await waitForActionPrompt(page);
 
     // 点击己方召唤师 → 在召唤阶段直接进入复活死灵的卡牌选择模式（无中间按钮）
-    const summoner = page.locator('[data-testid^="sw-unit-"][data-unit-class="summoner"][data-owner="0"]');
-    await expect(summoner.first()).toBeVisible({ timeout: 5000 });
-    await summoner.first().click({ force: true });
-    await page.waitForTimeout(800);
+    const summoner = page.locator('[data-tutorial-id="sw-my-summoner"]');
+    await expect(summoner).toBeVisible({ timeout: 5000 });
+    await clickBoardElement(page, '[data-tutorial-id="sw-my-summoner"]');
 
     // 弃牌堆卡牌选择浮层应自动弹出
     const cardSelectorOverlay = page.locator('[data-testid="sw-card-selector-overlay"]');
@@ -230,12 +220,11 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await discardCard.first().click({ force: true });
     await page.waitForTimeout(500);
 
-    // 选择放置位置（复活死灵需要选择召唤师相邻空格）
-    const reviveCells = page.locator('[data-valid-summon="true"]');
-    if (await reviveCells.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await reviveCells.first().click({ force: true });
-      await page.waitForTimeout(500);
-    }
+    // 选择放置位置（复活死灵使用系统能力落点，不是普通召唤落点）
+    const reviveCells = page.locator('[data-valid-ability-pos="true"]');
+    await expect(reviveCells.first()).toBeVisible({ timeout: 5000 });
+    await reviveCells.first().click({ force: true });
+    await page.waitForTimeout(500);
 
     // Step 13: end-summon
     await waitForTutorialStep(page, 'end-summon', 15000);
@@ -312,7 +301,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
 
     // Step 23: ranged-explain — 高亮己方召唤师
     await waitForTutorialStep(page, 'ranged-explain', 10000);
-    await expect(page.locator('[data-tutorial-id="sw-my-summoner"]')).toBeVisible();
+    await expect(page.locator('[data-tutorial-id="sw-start-archer"]').first()).toBeVisible();
     await clickNext(page);
 
     // Step 24: attack-action（requireAction: 必须攻击）
@@ -344,11 +333,13 @@ test.describe('Summoner Wars Tutorial E2E', () => {
           await diceConfirm.click();
         }
       }
-    }
 
-    // Step 25: attack-result — 高亮敌方召唤师
-    await waitForTutorialStep(page, 'attack-result', 15000);
-    await clickNext(page);
+      const skipResponse = page.getByRole('button', { name: /^(Skip|跳过)$/i });
+      if (await skipResponse.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await skipResponse.click();
+        await page.waitForTimeout(500);
+      }
+    }
 
     // Step 26: end-attack
     await waitForTutorialStep(page, 'end-attack', 15000);

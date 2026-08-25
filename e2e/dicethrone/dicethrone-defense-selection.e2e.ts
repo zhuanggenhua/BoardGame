@@ -474,12 +474,19 @@ async function dismissAttackShowcaseIfVisible(page: Page): Promise<void> {
     }
 }
 
-async function openGunslingerDuelCompareRollChoice(page: Page, game: GameTestContext): Promise<void> {
+async function openGunslingerDuelCompareRollChoice(
+    page: Page,
+    game: GameTestContext,
+    values: { defenderValue?: number; attackerValue?: number } = {},
+): Promise<void> {
+    const defenderValue = values.defenderValue ?? 6;
+    const attackerValue = values.attackerValue ?? 1;
+    const diceValues = [defenderValue, 2, 2, 2, 2, attackerValue];
     await dismissAttackShowcaseIfVisible(page);
     await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice), { timeout: 5000 });
-    await page.evaluate(() => {
-        window.__BG_TEST_HARNESS__?.dice.setValues([6, 2, 2, 2, 2, 1]);
-    });
+    await page.evaluate((nextDiceValues) => {
+        window.__BG_TEST_HARNESS__?.dice.setValues(nextDiceValues);
+    }, diceValues);
 
     await dispatchHarnessCommand(page, 'ROLL_DICE', '0');
     await expect.poll(async () => {
@@ -496,7 +503,7 @@ async function openGunslingerDuelCompareRollChoice(page: Page, game: GameTestCon
         rollCount: 1,
         rollConfirmed: false,
         rollContextKind: 'defensive',
-        dice: [6, 2, 2, 2, 2, 1],
+        dice: diceValues,
     });
 
     await dispatchHarnessCommand(page, 'CONFIRM_ROLL', '0');
@@ -1513,6 +1520,74 @@ test.describe('DiceThrone - 防御技能选择', () => {
         } finally {
             const audit = await readDuelAuditProbe(page);
             auditPath = await saveDuelAuditLog(testInfo, 'gunslinger-duel-compare-roll-audit.json', audit);
+            testInfo.annotations.push({ type: 'duel-audit-json', description: auditPath });
+        }
+    });
+
+    test('枪手 Duel 输掉后的无选项确认应能手动继续并结算 1 点不可防御伤害', async ({ page, game }, testInfo) => {
+        await setupGunslingerDuelAgainstHarmonyScene(game);
+        await installDuelAuditProbe(page);
+        let auditPath = '';
+
+        try {
+            await openGunslingerDuelCompareRollChoice(page, game, { defenderValue: 1, attackerValue: 6 });
+
+            await expectCompareRollMainResultLayer(page);
+            const panel = page.getByTestId('compare-roll-overlay');
+            await expect(panel.getByTestId('compare-roll-result')).toContainText('你输掉了对决');
+            await expect(panel.getByRole('button', { name: '确认继续' })).toBeVisible({ timeout: 5000 });
+            await expect(panel.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
+            await expect(panel.getByRole('button', { name: '造成 3 点不可防御伤害' })).toHaveCount(0);
+            await expect(panel.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toHaveCount(0);
+            await game.screenshot('gunslinger-duel-lose-confirm-before-click', testInfo);
+
+            await recordDuelAuditMarker(page, 'ui:click-duel-loss-confirm');
+            await panel.getByRole('button', { name: '确认继续' }).click();
+
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return {
+                    phase: state?.sys?.phase ?? null,
+                    interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                    defenderHp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    attackerHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                };
+            }, { timeout: 5000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                interactionKind: null,
+                defenderHp: 50,
+                attackerHp: 49,
+            });
+            await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 5000 });
+
+            await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+            await expect.poll(async () => {
+                const state = await game.getState();
+                return {
+                    phase: state?.sys?.phase ?? null,
+                    interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                    defenderHp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    attackerHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                };
+            }, { timeout: 5000 }).toMatchObject({
+                phase: 'main2',
+                interactionKind: null,
+                defenderHp: 45,
+                attackerHp: 49,
+            });
+
+            await expect.poll(async () => {
+                const audit = await readDuelAuditProbe(page);
+                return audit.damageEvents.some((event) =>
+                    event.targetId === '1'
+                    && event.sourceAbilityId === 'duel'
+                    && event.amount === 1
+                );
+            }, { timeout: 5000 }).toBe(true);
+            await game.screenshot('gunslinger-duel-lose-confirm-closed-and-advanced', testInfo);
+        } finally {
+            const audit = await readDuelAuditProbe(page);
+            auditPath = await saveDuelAuditLog(testInfo, 'gunslinger-duel-loss-confirm-audit.json', audit);
             testInfo.annotations.push({ type: 'duel-audit-json', description: auditPath });
         }
     });

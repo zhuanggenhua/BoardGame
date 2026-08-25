@@ -147,6 +147,9 @@
     "tutorial_step_locked": "当前步骤不能跳过"
   },
   "ui": {
+    "common": {
+      "skip": "跳过"
+    },
     "turn": "回合",
     "you": "你自己",
     "opp": "对手",
@@ -299,6 +302,7 @@
     "card_placeholder": "卡牌",
     "stored_under_card": "存放在此牌下",
     "backtimers_stasis_zone_title": "停滞区",
+    "backtimers_stasis_overlay": "停滞",
     "backtimers_stasis_counters": "停滞 × {{count}}",
     "backtimers_stasis_ready": "可打出",
     "backtimers_stasis_ready_short": "可",

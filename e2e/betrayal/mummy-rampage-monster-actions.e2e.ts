@@ -309,44 +309,20 @@ const placeExplorer = (
     ));
 };
 
-const setExplorerTraitToMax = (
-    core: BetrayalCore,
-    playerId: string,
-    trait: 'might' | 'speed',
-): void => {
-    const updateExplorer = (explorer: BetrayalCore['currentExplorer']): BetrayalCore['currentExplorer'] => {
-        if (explorer.playerId !== playerId) {
-            return explorer;
-        }
-        const currentValue = explorer.traits[trait];
-        const values = Array.from({ length: 25 }, () => currentValue);
-        const position = 20;
-        return {
-            ...explorer,
-            traits: {
-                ...explorer.traits,
-                [trait]: currentValue,
-            },
-            traitTracks: {
-                ...explorer.traitTracks,
-                [trait]: {
-                    ...explorer.traitTracks[trait],
-                    values,
-                    position,
-                    startPosition: position,
-                    criticalPosition: 0,
-                    skullPosition: -1,
-                    maxPosition: values.length - 1,
-                },
-            },
-        };
-    };
-    if (core.currentExplorer.playerId === playerId) {
-        core.currentExplorer = updateExplorer(core.currentExplorer);
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        return;
+const expectVisibleTraitTracksStayOnOfficialSlots = async (
+    page: Page,
+    expectedSlotCount: number,
+): Promise<void> => {
+    for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as const) {
+        const track = page.getByTestId(`betrayal-current-trait-track-${trait}`);
+        await expect(track.locator('[data-trait-track-slot="true"]')).toHaveCount(expectedSlotCount);
+        await expect(track).toHaveAttribute('data-explorer-id', 'isa-valencia');
+        await expect(track).toHaveAttribute('data-trait-track-id', `isa-valencia-${trait}`);
+        const slotWidths = await track.locator('[data-trait-track-slot="true"]').evaluateAll((slots) =>
+            slots.map((slot) => slot.getBoundingClientRect().width),
+        );
+        expect(Math.max(...slotWidths) - Math.min(...slotWidths)).toBeLessThanOrEqual(1);
     }
-    core.otherExplorers = core.otherExplorers.map(updateExplorer);
 };
 
 const setExplorerPhysicalTraitsNearSkull = (
@@ -911,9 +887,6 @@ const createMummyPostHauntContractFlowCore = () => {
         { id: 'map', name: '地图', kind: 'item' },
     ]);
     placeExplorer(core, quietHeroId, 'entrance-hall', []);
-    setExplorerTraitToMax(core, heroTargetId, 'speed');
-    setExplorerTraitToMax(core, heroTargetId, 'might');
-
     seedNextGroundEventRoom(core);
     core.drawOrder = ['event'];
     core.eventOrder = [
@@ -1192,8 +1165,6 @@ const createMummyAttackReadyCore = () => {
 const createMummyNonFatalDamageReadyCore = () => {
     const fixture = createMummyAttackReadyCore();
     fixture.core.scenarioRuntime.deadExplorerPlayerIds = [];
-    setExplorerTraitToMax(fixture.core, fixture.heroTargetId, 'speed');
-    setExplorerTraitToMax(fixture.core, fixture.heroTargetId, 'might');
     return fixture;
 };
 
@@ -2164,6 +2135,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(heroInventoryHolySymbol).toBeVisible();
         await expect(heroInventoryHolySymbol).toContainText('圣符');
         await expect(heroInventoryHolySymbol).toHaveAttribute('data-inventory-read-only', 'true');
+        await expectVisibleTraitTracksStayOnOfficialSlots(page, 9);
         await saveScreenshot(
             page,
             goldenFlowProcessScreenshot(31, '攻击前-切换观察目标英雄后圣符可见'),
@@ -2174,9 +2146,21 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         );
         await monsterAttackAction.click();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
+        await expect(
+            page.getByTestId(`betrayal-room-occupant-target-outline-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`),
+        ).toHaveCount(0);
         await saveScreenshot(page, goldenFlowProcessScreenshot(33, '木乃伊攻击-选择木乃伊攻击者'));
         await mummyToken.click();
+        await expect(
+            page.getByTestId(`betrayal-room-monster-target-outline-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
+        ).toHaveAttribute('data-highlight-role', 'source');
+        await expect(
+            page.getByTestId(`betrayal-room-monster-target-outline-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
+        ).toHaveAttribute('data-highlight-color', 'red');
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
+        await expect(
+            page.getByTestId(`betrayal-room-occupant-target-outline-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`),
+        ).toHaveAttribute('data-highlight-color', 'green');
         await saveScreenshot(page, goldenFlowProcessScreenshot(34, '木乃伊攻击-同房英雄目标高亮'));
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,

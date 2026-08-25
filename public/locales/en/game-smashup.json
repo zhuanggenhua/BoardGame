@@ -190,6 +190,9 @@
     "tutorial_step_locked": "The current step cannot be skipped"
   },
   "ui": {
+    "common": {
+      "skip": "Skip"
+    },
     "turn": "Turn",
     "you": "YOU",
     "opp": "OPP",
@@ -349,6 +352,7 @@
     "card_placeholder": "Card",
     "stored_under_card": "Stored under this card",
     "backtimers_stasis_zone_title": "Stasis Zone",
+    "backtimers_stasis_overlay": "Stasis",
     "backtimers_stasis_counters": "Stasis × {{count}}",
     "backtimers_stasis_ready": "Ready to play",
     "backtimers_stasis_ready_short": "Ready",

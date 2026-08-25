@@ -756,49 +756,6 @@ function clearTutorialBlockingState(core: BetrayalCore): void {
   core.usedCardIdsThisTurn = [];
 }
 
-function setFixtureExplorerTraitToMax(
-  core: BetrayalCore,
-  playerId: string,
-  trait: "might" | "speed",
-): void {
-  const updateExplorer = (
-    explorer: BetrayalCore["currentExplorer"],
-  ): BetrayalCore["currentExplorer"] => {
-    if (explorer.playerId !== playerId) {
-      return explorer;
-    }
-    const currentValue = explorer.traits[trait];
-    const values = Array.from({ length: 25 }, () => currentValue);
-    const position = 20;
-    return {
-      ...explorer,
-      traits: {
-        ...explorer.traits,
-        [trait]: currentValue,
-      },
-      traitTracks: {
-        ...explorer.traitTracks,
-        [trait]: {
-          ...explorer.traitTracks[trait],
-          values,
-          position,
-          startPosition: position,
-          criticalPosition: 0,
-          skullPosition: -1,
-          maxPosition: values.length - 1,
-        },
-      },
-    };
-  };
-
-  if (core.currentExplorer.playerId === playerId) {
-    core.currentExplorer = updateExplorer(core.currentExplorer);
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
-    return;
-  }
-  core.otherExplorers = core.otherExplorers.map(updateExplorer);
-}
-
 function completeMummyMonsterPreparationForAttackSlot(
   core: BetrayalCore,
   monsterId: string,
@@ -931,6 +888,18 @@ export function createMummyTraitorVictoryReadyTutorialCore(): BetrayalCore {
   core.pendingCardResolutionQueue = [];
   core.recentRoll = null;
   core.recommendedAction = "use";
+  const completedMonsterIds = core.monsters.map((monster) => monster.id);
+  core.scenarioRuntime.monsterTurn = {
+    ...core.scenarioRuntime.monsterTurn,
+    resolvedStartMonsterIds: completedMonsterIds,
+    skippedMonsterIdsThisTurn: completedMonsterIds,
+    attackedMonsterIdsThisTurn: completedMonsterIds,
+    movedMonsterIdsThisTurn: completedMonsterIds,
+    movementRollsByGroupId: {},
+    moveRemainingById: Object.fromEntries(
+      completedMonsterIds.map((monsterId) => [monsterId, 0]),
+    ),
+  };
 
   return applyTutorialDiscoveryOrder(core);
 }
@@ -1003,8 +972,6 @@ export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore 
   ]);
   placeFixtureExplorerInRoom(core, deadHeroId, mummyRoomId);
   core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId];
-  setFixtureExplorerTraitToMax(core, heroTargetId, "speed");
-  setFixtureExplorerTraitToMax(core, heroTargetId, "might");
 
   core = focusCoreOnExplorer(core, traitorId);
   core.monsters = core.monsters.map((monster) =>

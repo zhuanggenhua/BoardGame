@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
+import { executePipeline } from '../../../engine/pipeline';
+import { INTERACTION_COMMANDS, createCompareRollChoice } from '../../../engine/systems/InteractionSystem';
 import { buildDiceThroneAiLegalActions } from '../ai';
+import { DiceThroneDomain } from '../domain';
 import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import { reduce } from '../domain/reducer';
 import { createDiceThroneEventSystem } from '../domain/systems';
 import { TOKEN_IDS } from '../domain/ids';
-import { createHeroMatchup, createQueuedRandom, respondToPrompt } from './test-utils';
+import { createHeroMatchup, createQueuedRandom, respondToPrompt, testSystems } from './test-utils';
 
 const extractNextEvents = (
     state: { core: DiceThroneCore; sys: Record<string, unknown> },
@@ -720,6 +723,84 @@ describe('DiceThrone choice handler anchor contract', () => {
             && event.payload.damageScope === 'direct'
             && event.payload.unblockable === true
         ))).toBe(true);
+    });
+
+    it('gunslinger duel 输掉后的无按钮确认应关闭 compare 弹层并结算 1 点不可防御伤害', () => {
+        const state = createHeroMatchup('monk', 'gunslinger')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'defensiveRoll';
+        setChoiceAnchor(state.core, 'duel');
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'fist',
+            defenseAbilityId: 'duel',
+            isDefendable: true,
+            damage: 6,
+            defenseResolved: true,
+            settlementStage: 'afterDefense',
+        };
+        state.sys.interaction.current = createCompareRollChoice(
+            'compare-roll-duel-loss-confirm',
+            '1',
+            {
+                title: 'compareRoll.gunslingerDuel.title',
+                sourceId: 'duel',
+                contestants: [
+                    {
+                        playerId: '1',
+                        labelKey: 'compareRoll.gunslingerDuel.defender',
+                        roll: 1,
+                        face: 'bullet',
+                        characterId: 'gunslinger',
+                    },
+                    {
+                        playerId: '0',
+                        labelKey: 'compareRoll.gunslingerDuel.attacker',
+                        roll: 6,
+                        face: 'sabre',
+                        characterId: 'monk',
+                    },
+                ],
+                resultTextKey: 'compareRoll.gunslingerDuel.lose',
+                resultTone: 'danger',
+                confirmValue: { value: 1, customId: 'gunslinger-duel-lose' },
+            },
+        );
+
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            {
+                type: INTERACTION_COMMANDS.CONFIRM,
+                playerId: '1',
+                payload: { interactionId: 'compare-roll-duel-loss-confirm' },
+                timestamp: 204,
+            },
+            createQueuedRandom([1]),
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.events).toContainEqual(expect.objectContaining({ type: 'SYS_INTERACTION_RESOLVED' }));
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: 'CHOICE_RESOLVED',
+            payload: expect.objectContaining({
+                playerId: '1',
+                customId: 'gunslinger-duel-lose',
+                sourceAbilityId: 'duel',
+            }),
+        }));
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({
+                targetId: '0',
+                amount: 1,
+                damageScope: 'direct',
+                unblockable: true,
+            }),
+        }));
+        expect((result.state as MatchState<DiceThroneCore>).sys.interaction.current).toBeUndefined();
+        expect((result.state as MatchState<DiceThroneCore>).core.currentChoiceSourceAbilityId).toBeUndefined();
     });
 
     it('gunslinger duel prevent-half followup 应拒绝 source 正确但没有当前 choice 锚点的 SYS_INTERACTION_RESOLVED', () => {

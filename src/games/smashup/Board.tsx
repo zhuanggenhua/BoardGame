@@ -2784,87 +2784,136 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     playerId: pid,
                     playerName: playerNames[pid] ?? `P${Number(pid) + 1}`,
                     card,
-                }));
+            }));
         });
     }, [core.players, playerDisplayOrder, playerNames]);
 
-    const backtimersStasisZone = backtimersStasisCards.length > 0 ? (
+    const [isBacktimersStasisOpen, setBacktimersStasisOpen] = useState(false);
+    useEffect(() => {
+        if (backtimersStasisCards.length === 0 && isBacktimersStasisOpen) {
+            setBacktimersStasisOpen(false);
+        }
+    }, [backtimersStasisCards.length, isBacktimersStasisOpen]);
+
+    const backtimersStasisDock = backtimersStasisCards.length > 0 ? (
         <div
-            data-testid="su-backtimers-stasis-zone"
+            className="relative pointer-events-auto"
+            data-testid="su-backtimers-stasis-dock"
             data-stasis-card-count={backtimersStasisCards.length}
-            className={`absolute z-40 pointer-events-auto ${isMobileViewport ? 'left-2 right-2 top-[5.5rem]' : 'left-[2vw] top-[7.25rem] max-w-[min(34vw,36rem)]'}`}
         >
-            <div className="rounded-lg border-2 border-amber-900/55 bg-[#f4e4bd]/95 p-3 text-slate-900 shadow-[0_12px_28px_rgba(31,20,10,0.35)] backdrop-blur-sm">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-black uppercase tracking-[0.04em] text-amber-950">
-                        {t('ui.backtimers_stasis_zone_title')}
-                    </div>
-                    <div className="rounded-full border border-amber-900/30 bg-white/65 px-2 py-0.5 text-[11px] font-black text-amber-950">
-                        {t('ui.card_count_short', { count: backtimersStasisCards.length })}
-                    </div>
-                </div>
-                <div className={isMobileViewport
-                    ? 'mt-2 flex max-w-full gap-2 overflow-x-auto pb-1'
-                    : 'mt-2 flex max-h-[22rem] max-w-full flex-wrap gap-2 overflow-y-auto pr-1'
-                }>
-                    {backtimersStasisCards.map(({ playerId: ownerPlayerId, playerName, card }) => {
-                        const def = getCardDef(card.defId);
-                        const cardName = resolveCardName(def, t) || card.defId;
-                        const counters = Math.max(0, card.counters ?? 0);
-                        const statusLabel = counters > 0
-                            ? t('ui.backtimers_stasis_counters', { count: counters })
-                            : t('ui.backtimers_stasis_ready');
-                        const previewRef = getSmashUpRendererPreviewRef(card.defId, {
-                            cardUid: card.uid,
-                            disableHoverOverlay: true,
-                        });
-                        const magnifyType: CardMagnifyTarget['type'] = def?.type === 'minion' ? 'minion' : 'action';
-                        return (
-                            <button
-                                key={`${ownerPlayerId}-${card.uid}`}
-                                type="button"
-                                data-testid={`su-backtimers-stasis-card-${card.uid}`}
-                                data-stasis-card-uid={card.uid}
-                                data-stasis-owner-id={ownerPlayerId}
-                                data-stasis-counters={counters}
-                                data-stasis-ready={counters <= 0 ? 'true' : 'false'}
-                                className="group/stasis relative w-[4.75rem] shrink-0 rounded-md border border-amber-950/30 bg-white/75 p-1 text-left shadow-[0_5px_12px_rgba(67,43,20,0.24)] transition-transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(67,43,20,0.28)]"
-                                title={`${playerName} · ${cardName} · ${statusLabel}`}
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    setViewingCard({ defId: card.defId, type: magnifyType });
-                                }}
-                            >
-                                <div className="relative aspect-[0.714] overflow-hidden rounded-sm bg-slate-900">
-                                    {previewRef ? (
-                                        <CardPreview
-                                            previewRef={previewRef}
-                                            className="h-full w-full"
-                                            title={cardName}
-                                        />
-                                    ) : (
-                                        <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] font-black text-white">
-                                            {cardName}
+            <button
+                type="button"
+                data-testid="su-backtimers-stasis-entry"
+                data-stasis-card-count={backtimersStasisCards.length}
+                aria-expanded={isBacktimersStasisOpen}
+                className={`flex items-center gap-2 rounded-full border-2 border-amber-900/60 bg-[#f4e4bd]/95 px-3 py-1.5 text-amber-950 shadow-[0_8px_18px_rgba(31,20,10,0.32)] transition hover:-translate-y-0.5 hover:bg-[#ffe2a4] ${isBacktimersStasisOpen ? 'ring-2 ring-amber-300' : ''}`}
+                title={t('ui.backtimers_stasis_zone_title')}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    setBacktimersStasisOpen(prev => !prev);
+                }}
+            >
+                <span className="text-xs font-black uppercase tracking-[0.04em]">{t('ui.backtimers_stasis_zone_title')}</span>
+                <span className="rounded-full bg-amber-950 px-2 py-0.5 text-[11px] font-black text-amber-50">
+                    {t('ui.card_count_short', { count: backtimersStasisCards.length })}
+                </span>
+            </button>
+            {isBacktimersStasisOpen && (
+                <div
+                    data-testid="su-backtimers-stasis-zone"
+                    data-stasis-card-count={backtimersStasisCards.length}
+                    data-stasis-anchor="top-left-hud"
+                    className={`absolute top-[calc(100%+0.55rem)] z-50 w-max min-w-[8.5rem] max-w-[min(92vw,36rem)] pointer-events-auto ${isMobileViewport ? 'left-0' : 'left-0'}`}
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <div className="rounded-lg border-2 border-amber-900/55 bg-[#f4e4bd]/95 p-3 text-slate-900 shadow-[0_12px_28px_rgba(31,20,10,0.42)] backdrop-blur-sm">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="text-sm font-black uppercase tracking-[0.04em] text-amber-950">
+                                {t('ui.backtimers_stasis_zone_title')}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="rounded-full border border-amber-900/30 bg-white/65 px-2 py-0.5 text-[11px] font-black text-amber-950">
+                                    {t('ui.card_count_short', { count: backtimersStasisCards.length })}
+                                </div>
+                                <button
+                                    type="button"
+                                    data-testid="su-backtimers-stasis-close"
+                                    className="rounded-full border border-amber-900/35 bg-white/80 px-2 py-0.5 text-[11px] font-black text-amber-950 hover:bg-amber-100"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        setBacktimersStasisOpen(false);
+                                    }}
+                                >
+                                    {t('ui.close')}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="mt-2 flex max-w-full gap-2 overflow-x-auto overflow-y-hidden pb-1 pr-1">
+                            {backtimersStasisCards.map(({ playerId: ownerPlayerId, playerName, card }) => {
+                                const def = getCardDef(card.defId);
+                                const cardName = resolveCardName(def, t) || card.defId;
+                                const counters = Math.max(0, card.counters ?? 0);
+                                const statusLabel = counters > 0
+                                    ? t('ui.backtimers_stasis_counters', { count: counters })
+                                    : t('ui.backtimers_stasis_ready');
+                                const previewRef = getSmashUpRendererPreviewRef(card.defId, {
+                                    cardUid: card.uid,
+                                    disableHoverOverlay: true,
+                                });
+                                const magnifyType: CardMagnifyTarget['type'] = def?.type === 'minion' ? 'minion' : 'action';
+                                return (
+                                    <button
+                                        key={`${ownerPlayerId}-${card.uid}`}
+                                        type="button"
+                                        data-testid={`su-backtimers-stasis-card-${card.uid}`}
+                                        data-stasis-card-uid={card.uid}
+                                        data-stasis-owner-id={ownerPlayerId}
+                                        data-stasis-counters={counters}
+                                        data-stasis-ready={counters <= 0 ? 'true' : 'false'}
+                                        className={`${isMobileViewport ? 'w-[4.75rem]' : 'w-[4.45rem]'} group/stasis relative shrink-0 rounded-md border border-amber-950/30 bg-white/75 p-1 text-left shadow-[0_5px_12px_rgba(67,43,20,0.24)] transition-transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(67,43,20,0.28)]`}
+                                        title={`${playerName} · ${cardName} · ${statusLabel}`}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            setViewingCard({ defId: card.defId, type: magnifyType });
+                                        }}
+                                    >
+                                        <div className="relative aspect-[0.714] overflow-hidden rounded-sm bg-slate-900">
+                                            {previewRef ? (
+                                                <CardPreview
+                                                    previewRef={previewRef}
+                                                    className="h-full w-full"
+                                                    title={cardName}
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] font-black text-white">
+                                                    {cardName}
+                                                </div>
+                                            )}
+                                            <div
+                                                data-testid={`su-backtimers-stasis-badge-${card.uid}`}
+                                                className={`absolute left-1 top-1 rounded px-1.5 py-0.5 text-[9px] font-black shadow ${counters > 0 ? 'bg-violet-700 text-white' : 'bg-emerald-500 text-emerald-950'}`}
+                                            >
+                                                {counters > 0 ? t('ui.backtimers_stasis_overlay') : t('ui.backtimers_stasis_ready_short')}
+                                            </div>
+                                            <div
+                                                data-testid={`su-backtimers-stasis-counter-${card.uid}`}
+                                                className={`absolute right-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-black shadow ${counters > 0 ? 'bg-slate-950 text-white' : 'bg-emerald-500 text-emerald-950'}`}
+                                            >
+                                                {counters > 0 ? counters : t('ui.backtimers_stasis_ready_short')}
+                                            </div>
+                                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/45 to-transparent px-1 pb-1 pt-4">
+                                                <div className="truncate text-center text-[9px] font-black text-white drop-shadow">
+                                                    {playerName}
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className={`absolute right-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-black shadow ${counters > 0 ? 'bg-violet-700 text-white' : 'bg-emerald-500 text-emerald-950'}`}>
-                                        {counters > 0 ? counters : t('ui.backtimers_stasis_ready_short')}
-                                    </div>
-                                </div>
-                                <div className="mt-1 truncate text-[10px] font-black text-slate-900">
-                                    {cardName}
-                                </div>
-                                <div className="truncate text-[9px] font-bold text-amber-900/80">
-                                    {playerName}
-                                </div>
-                                <div className={`mt-1 rounded px-1 py-0.5 text-center text-[9px] font-black ${counters > 0 ? 'bg-violet-100 text-violet-900' : 'bg-emerald-100 text-emerald-900'}`}>
-                                    {statusLabel}
-                                </div>
-                            </button>
-                        );
-                    })}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     ) : null;
 
@@ -4096,49 +4145,50 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
                 )}
 
-                {backtimersStasisZone}
-
                 {/* --- TOP HUD: "Sticky Notes" Style --- */}
                 <div className="relative z-20 flex justify-between items-start pt-6 px-[2vw] pointer-events-none">
 
-                    {/* Left: Turn Tracker (Yellow Notepad) */}
-                    {isNonEssentialUiHidden ? (
-                        <div
-                            aria-hidden="true"
-                            className="min-w-[140px] pointer-events-none"
-                            style={turnTrackerStyle}
-                        />
-                    ) : (
-                        <div
-                            className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
-                            data-testid="su-turn-tracker"
-                            data-tutorial-id="su-turn-tracker"
-                            style={turnTrackerStyle}
-                        >
-                            <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
-                            <motion.div
-                                key={`turn-${core.turnNumber}`}
-                                initial={{ scale: 0.9, rotate: -3 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                                className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
+                    <div className="flex flex-col items-start gap-2 pointer-events-none">
+                        {/* Left: Turn Tracker (Yellow Notepad) */}
+                        {isNonEssentialUiHidden ? (
+                            <div
+                                aria-hidden="true"
+                                className="min-w-[140px] pointer-events-none"
+                                style={turnTrackerStyle}
+                            />
+                        ) : (
+                            <div
+                                className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                                data-testid="su-turn-tracker"
+                                data-tutorial-id="su-turn-tracker"
+                                style={turnTrackerStyle}
                             >
-                                {t('ui.turn')} {core.turnNumber}
-                            </motion.div>
-                            <div className="flex justify-between items-center text-sm font-bold font-mono">
-                                <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
-                                <motion.span
-                                    key={phase}
-                                    initial={{ scale: 0.7, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                                    className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                                <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
+                                <motion.div
+                                    key={`turn-${core.turnNumber}`}
+                                    initial={{ scale: 0.9, rotate: -3 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                                    className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
                                 >
-                                    {t(getPhaseNameKey(phase))}
-                                </motion.span>
+                                    {t('ui.turn')} {core.turnNumber}
+                                </motion.div>
+                                <div className="flex justify-between items-center text-sm font-bold font-mono">
+                                    <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
+                                    <motion.span
+                                        key={phase}
+                                        initial={{ scale: 0.7, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                        className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                                    >
+                                        {t(getPhaseNameKey(phase))}
+                                    </motion.span>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                        {backtimersStasisDock}
+                    </div>
 
                     {/* Right: Score Sheet + Player Info */}
                     <div
@@ -5009,7 +5059,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     testId="su-battlefield-viewport"
                 >
                     <div
-                        className="absolute inset-0 flex justify-center overflow-x-auto overflow-y-hidden no-scrollbar"
+                        className={`absolute inset-0 flex ${playerDisplayOrder.length >= 4 ? 'justify-start' : 'justify-center'} overflow-x-auto overflow-y-hidden no-scrollbar`}
                         data-tutorial-id="su-base-area"
                         style={{
                             alignItems: 'safe center',

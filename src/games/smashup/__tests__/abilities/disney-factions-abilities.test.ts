@@ -1509,6 +1509,183 @@ describe('迪士尼四派系代表性玩法行为', () => {
         }));
     });
 
+    it('魔法物品从手牌弃掉后必须进入额外打出选择，不能自动打到第一个基地', () => {
+        const fillerHand = Array.from({ length: 10 }, (_, index) =>
+            makeCard(`enchanted-filler-${index}`, 'aladdin_wish', 'action', '0'));
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('enchanted-object', 'beauty_and_the_beast_enchanted_objects', 'minion', '0'),
+                        ...fillerHand,
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_enchanted_castle', [
+                    makeMinion('existing-minion', 'beauty_and_the_beast_belle', '0', 3),
+                ]),
+                makeBase('base_gastons_tavern'),
+            ],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'draw';
+
+        const discarded = runCommand(matchState, {
+            type: SU_COMMANDS.DISCARD_TO_LIMIT,
+            playerId: '0',
+            payload: { cardUids: ['enchanted-object'] },
+        }, FIXED_RANDOM);
+        expect(discarded.success, discarded.error).toBe(true);
+
+        const reactionPrompt = getReactionPrompt(discarded.finalState);
+        const enchantedOption = getReactionPromptOptionBySourceDefId(
+            discarded.finalState,
+            reactionPrompt,
+            'beauty_and_the_beast_enchanted_objects',
+        );
+        const openedExtraPrompt = respondToPrompt(discarded.finalState, enchantedOption.id, '0', FIXED_RANDOM);
+        const cardPrompt = getSimpleChoicePrompt(openedExtraPrompt.finalState, 'smashup_immediate_extra_minion');
+        expect(getPromptOptions(cardPrompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined))).toEqual([
+            'enchanted-object',
+            'skip',
+        ]);
+
+        const choseCard = respondToPromptOption(
+            openedExtraPrompt.finalState,
+            option => option.value?.cardUid === 'enchanted-object',
+            '魔法物品选择弃牌堆自身',
+            '0',
+            FIXED_RANDOM,
+        );
+        const basePrompt = getSimpleChoicePrompt(choseCard.finalState, 'smashup_immediate_extra_minion_base');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+
+        const playedOnSecondBase = respondToPromptOption(
+            choseCard.finalState,
+            option => option.value?.baseIndex === 1,
+            '魔法物品选择第二个基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(playedOnSecondBase.success, playedOnSecondBase.error).toBe(true);
+        expect(playedOnSecondBase.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['existing-minion']);
+        expect(playedOnSecondBase.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['enchanted-object']);
+    });
+
+    it('图书馆从手牌弃掉后必须能从弃牌堆作为特殊额外打出', () => {
+        const fillerHand = Array.from({ length: 10 }, (_, index) =>
+            makeCard(`library-filler-${index}`, 'aladdin_wish', 'action', '0'));
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('library', 'beauty_and_the_beast_discover_the_library', 'action', '0'),
+                        ...fillerHand,
+                    ],
+                    deck: [
+                        makeCard('draw-a', 'aladdin_wish', 'action', '0'),
+                        makeCard('draw-b', 'aladdin_wish', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_gastons_tavern')],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'draw';
+
+        const discarded = runCommand(matchState, {
+            type: SU_COMMANDS.DISCARD_TO_LIMIT,
+            playerId: '0',
+            payload: { cardUids: ['library'] },
+        }, FIXED_RANDOM);
+        expect(discarded.success, discarded.error).toBe(true);
+
+        const reactionPrompt = getReactionPrompt(discarded.finalState);
+        const libraryOption = getReactionPromptOptionBySourceDefId(
+            discarded.finalState,
+            reactionPrompt,
+            'beauty_and_the_beast_discover_the_library',
+        );
+        const openedExtraPrompt = respondToPrompt(discarded.finalState, libraryOption.id, '0', FIXED_RANDOM);
+        const actionPrompt = getSimpleChoicePrompt(openedExtraPrompt.finalState, 'smashup_immediate_extra_action');
+        expect(actionPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(actionPrompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined))).toEqual([
+            'library',
+            'skip',
+        ]);
+
+        const played = respondToPromptOption(
+            openedExtraPrompt.finalState,
+            option => option.value?.cardUid === 'library',
+            '图书馆选择弃牌堆自身',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(played.success, played.error).toBe(true);
+        expect(played.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: expect.objectContaining({
+                cardUid: 'library',
+                fromDiscard: true,
+                isExtraAction: true,
+                consumesNormalLimit: false,
+            }),
+        }));
+        const discardPrompt = getSimpleChoicePrompt(played.finalState, 'beauty_and_the_beast_discard_hand');
+        expect(discardPrompt.autoResolveIfSingle).toBe(false);
+
+        const resolvedDiscard = respondToPromptOption(
+            played.finalState,
+            option => option.value?.cardUid === 'library-filler-0',
+            '图书馆打出后选择弃 1 张手牌',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolvedDiscard.success, resolvedDiscard.error).toBe(true);
+        expect(resolvedDiscard.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
+            ...fillerHand.slice(1).map(card => card.uid),
+            'draw-a',
+            'draw-b',
+        ]);
+        expect(resolvedDiscard.finalState.core.players['0'].discard.filter(card => card.uid === 'library')).toHaveLength(1);
+    });
+
+    it('电源插排移动角色时必须保留跳过和目标选择，不自动移动到第一个基地', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [
+                makeBase('base_the_power_strip', [
+                    makeMinion('first-minion', 'wreck_it_ralph_sugar_rush_racer', '0', 2),
+                ]),
+                makeBase('base_the_dump'),
+            ],
+        });
+
+        const result = triggerActiveBaseAbility('base_the_power_strip', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_the_power_strip',
+            random: FIXED_RANDOM,
+            now: 84,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_the_power_strip');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.minionUid ?? (option.value?.skip ? 'skip' : undefined))).toEqual([
+            'first-minion',
+            'skip',
+        ]);
+    });
+
     it('阿修进场从弃牌堆拿基地修正牌时必须等待玩家选择，不自动拿第一张', () => {
         const core = makeState({
             players: {

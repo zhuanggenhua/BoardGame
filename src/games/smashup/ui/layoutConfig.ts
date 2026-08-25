@@ -102,14 +102,14 @@ export function getLayoutConfig(
                 endTurnHudScale: isMobileViewport ? 0.84 : 1,
             };
         case 4:
-            // 四人局：紧凑布局，无间距
+            // 四人局：按 Smash Up 的“玩家数 + 1”基地合同，桌面需要同时容纳 5 座基地。
             return {
-                baseCardWidth: 11,
+                baseCardWidth: isMobileViewport ? 11 : 10.2,
                 baseGap: 0,
-                minionCardWidth: 5,
-                minionStackOffset: -5,
+                minionCardWidth: isMobileViewport ? 5 : 4.05,
+                minionStackOffset: isMobileViewport ? -5 : -4.05,
                 playerColumnGap: 0,
-                ongoingCardWidth: 3,
+                ongoingCardWidth: isMobileViewport ? 3 : 2.7,
                 ongoingTopOffset: 5,
                 useRuntimeInlineUnit: isMobileViewport,
                 handAreaHeight: isMobileViewport ? 176 : 180,

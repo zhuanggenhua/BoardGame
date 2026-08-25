@@ -22,9 +22,10 @@
 
 - 回合开始生命周期：进入回合开始时对返时者停滞牌移除 1 个指示物，归零时生成即时额外随从/战术打出窗口。
 - 触发牌释放：疯狂博士和将就一下移除最后一个停滞指示物时，也开放即时额外打出窗口。
-- UI 展示：主牌桌增加公开的返时者停滞区，显示牌面、归属玩家、停滞指示物数量，归零后显示“可打出”。
+- UI 展示：主牌桌左上回合牌下方增加公开的“停滞区”入口，默认只显示入口和数量；玩家点击后向下展开停滞区面板，卡牌正面是主体，牌面左上用短“停滞 / 可”覆盖标记，右上用数字角标显示停滞指示物数量，归属玩家只保留在牌面底部一行。入口不再借用牌库 / 抽牌堆槽位；疯狂牌 / 怪物 / 宝藏供应行仍留在牌库上方，二者互不重叠。
 - 视角遮罩：对手手牌、牌库和普通私密暂存牌仍隐藏；返时者停滞牌按公开信息保留真实牌面和指示物数量。
-- i18n：补充中文和英文停滞区标题、指示物和可打出状态文案。
+- i18n：补充中文和英文停滞区标题、短状态覆盖、指示物和可打出状态文案。
+- UI 规范回代：项目 UI 门禁已新增“机制详情默认收纳”和“卡牌状态贴本体”规则，禁止机制详情 UI 常驻挤压核心牌桌，也禁止把卡牌状态做成卡外长说明段；此类信息默认进可点击入口，展开态必须可关闭，卡牌状态优先贴在牌面上用短标签和角标表达。
 
 ## 验证
 
@@ -91,17 +92,17 @@ $env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-single.mjs defa
 
 截图：
 
-1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者停滞区显示指示物并在回合开始归零后提示额外打出\返时者停滞区显示1个指示物.jpg`
-   - 画面左上可见“停滞区”，显示 1 张牌。
-   - 牌面是返时者“古怪教授”，右上角和状态条均显示 1 个停滞指示物。
+1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者停滞区显示指示物并在回合开始归零后提示额外打出\返时者停滞入口展开后显示1个指示物.jpg`
+   - 玩家先看到左上回合牌下方“停滞区 1张”公开入口；默认不显示常驻大面板，也不借用抽牌堆槽位。
+   - 点击入口后展开停滞区面板，面板随单张卡牌收缩，不再留下大说明框；牌面是返时者“古怪教授”，左上只显示短“停滞”覆盖，右上角显示 1 个停滞指示物。
 2. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者停滞区显示指示物并在回合开始归零后提示额外打出\返时者回合开始归零后额外打出提示.jpg`
-   - 回合开始后，停滞区仍可见同一张牌，状态变为“可打出”。
-   - 中央提示显示“立刻打出一个额外随从，或放弃这次机会”，并展示古怪教授可选牌面。
+   - 回合开始后，中央提示显示“立刻打出一个额外随从，或放弃这次机会”，并展示古怪教授可选牌面。
+   - 该图证明归零后的真实玩家动作入口存在，不再依赖旧常驻停滞面板。
 3. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者停滞区显示指示物并在回合开始归零后提示额外打出\返时者额外打出后停滞区清空.jpg`
    - 古怪教授已打到基地“另类现在”下方。
-   - 停滞区不再显示该牌，右侧仍可继续正常出牌/结束回合。
+   - 停滞入口不再显示该牌，右侧仍可继续正常出牌/结束回合。
 
-AI 图面审计结论：PASS。本轮三项玩家可见要求都能从原图直接确认；截图未出现空白牌、错误路由、遮挡关键决策或停滞区缺失。
+AI 图面审计结论：PASS。本轮三项玩家可见要求都能从原图直接确认；截图未出现空白牌、错误路由、关键决策缺失、停滞区入口缺失或卡外长说明文本。
 
 ### 四人真实页面 E2E
 
@@ -113,35 +114,48 @@ AI 图面审计结论：PASS。本轮三项玩家可见要求都能从原图直�
 $env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-excellent-movies-teens-five-factions.e2e.ts "返时者四人多停滞"
 ```
 
-结果：通过。1 passed。
+最终结果：通过。1 passed。
 
-首跑记录：第一次四人 E2E 从 P4 的出牌阶段起跑，只能证明停滞区初始展示，不能触发下一名玩家回合开始的停滞移除和额外打出队列；该失败截图不能作为验收图。用例已改为从 P4 的回合结束阶段起跑，并在测试内先断言当前是真四人、P4、endTurn，再推进到 P1 回合开始。
+作废记录：
+
+- 第一次四人 E2E 从 P4 的出牌阶段起跑，只能证明停滞区初始展示，不能触发下一名玩家回合开始的停滞移除和额外打出队列；该失败截图不能作为验收图。
+- 第二次四人 E2E 虽然座位是 4 人，但测试构造把公共基地错误注入到 `extra.core.bases`，实际页面只剩 1 座基地；这组旧图和旧 PASS 清单作废，不能证明四人真实局面。
+- 当前仓内 Smash Up 初始化合同是 `baseCount = playerIds.length + 1`，所以四人局应显示 5 座基地。本轮最终用例把 5 座基地放入 `setupScene` 顶层 `bases`，并额外构造 30 张疯狂牌供应行。新增状态断言、页面断言和几何断言：`core.bases.length === 5`、`madnessDeck.length === 30`、`base-zone-0..4` 可见、5 个基地本体与计分圆不被视口裁切、疯狂牌供应行可见且显示 `x 30`、停滞入口默认可见且常驻面板不存在、停滞入口不与疯狂牌供应行重叠、点击入口后面板可见且不被视口裁切、第一张额外打出的随从不被视口裁切。
 
 截图：
 
-1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人多停滞初始区.jpg`
+1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人五基地停滞入口初始态.jpg`
    - 画面是四人局记分板，当前 P4 回合结束阶段。
-   - 停滞区显示 7 张牌：P1 有 4 张，P2/P3/P4 各 1 张；P1 的一张“闪电击”显示 2 个停滞指示物，其余显示 1 个。
-2. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人回合开始只归零玩家0.jpg`
+   - 画面中 5 座基地完整可见，符合当前仓内“玩家数 + 1”初始化合同。
+   - 左上回合牌下方只显示“停滞区 7张”公开入口，没有常驻大面板挤压或覆盖 5 座基地。
+   - 疯狂牌供应行显示 `x 30`，仍在牌库上方；停滞入口在左上中性 HUD 区，二者没有重叠。
+2. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人五基地停滞面板展开.jpg`
+   - 点击左上公开入口后展开停滞区面板，显示 7 张牌：P1 有 4 张，P2/P3/P4 各 1 张；每张牌都以卡牌正面为主体，左上只显示短“停滞”覆盖，右上角显示停滞指示物数量。P1 的一张“闪电击”显示 2，其余显示 1。
+   - 展开面板带“关闭”按钮，属于临时查看层；5 座基地仍完整可见。
+   - 疯狂牌供应行仍保留在牌库上方，未被左上停滞入口或展开面板压住。
+3. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人五基地回合开始只归零玩家0.jpg`
    - 进入回合 9 后变为 P1 回合开始，停滞区仍显示 7 张。
    - 只处理 P1 的牌：P1 三张牌变为“可打出”，P1 的“闪电击”从 2 变 1；P2/P3/P4 的停滞牌仍各为 1。
    - 中央出现“立刻打出一个额外随从，或放弃这次机会”的第一张随从提示。
-3. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人第一张打出后第二张仍提示.jpg`
+4. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人五基地第一张打出后第二张仍提示.jpg`
    - 第一张 P1 归零随从已进入基地，停滞区数量从 7 变 6。
    - 第二张 P1 归零随从仍显示“可打出”，中央继续出现独立额外随从提示，证明前一张额外打出没有吞掉后续机会。
-4. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人行动牌独立提示且其他玩家未处理.jpg`
+   - 第一张已打出的随从完整在屏内，不再被左侧视口裁切。
+5. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-excellent-movies-teens-five-factions.e2e\返时者四人多停滞只处理当前玩家并保留多个额外打出提示\返时者四人五基地行动牌独立提示且其他玩家未处理.jpg`
    - 放弃第二个额外随从机会后，中央继续出现“立刻打出一张额外战术，或放弃这次机会”的行动牌提示。
    - 停滞区里 P2/P3/P4 的牌仍显示 1 个停滞指示物，未被 P1 回合开始提前处理。
+   - 5 座基地仍完整可见，提示遮罩没有掩盖基地数量证据。
 
-AI 图面审计结论：PASS。四张原图直接覆盖“四人局、多张停滞、只处理当前玩家、多个归零提示队列、其他玩家停滞不变”。截图不是单牌旧图，也不是低层单测替代。
+AI 图面审计结论：PASS。五张最终原图直接覆盖“四人局、5 座基地、左上公开停滞入口、疯狂牌供应行、点击展开面板、卡牌正面 + 短停滞覆盖、多张停滞、只处理当前玩家、多个归零提示队列、其他玩家停滞不变、关键对象不被视口裁切”。旧的一基地截图、旧顶部横向条截图、旧卡外长文本截图、旧牌库上方入口截图和旧 PASS 清单已作废，不能再作为验收材料。
 
 ### 静态检查
 
 命令：
 
 ```powershell
-npx eslint src/games/smashup/Board.tsx e2e/smashup/smashup-excellent-movies-teens-five-factions.e2e.ts
+npx eslint src/games/smashup/Board.tsx src/games/smashup/ui/DeckDiscardZone.tsx src/games/smashup/ui/layoutConfig.ts e2e/smashup/smashup-excellent-movies-teens-five-factions.e2e.ts
 npm run typecheck -- --pretty false
+npm run spec:lint
 npm run audit:evidence:selfcheck -- evidence/smashup/2026-08-23-backtimers-stasis-fix.md
 ```
 
@@ -149,6 +163,7 @@ npm run audit:evidence:selfcheck -- evidence/smashup/2026-08-23-backtimers-stasi
 
 - ESLint：0 errors，25 warnings。警告为当前文件内既有未用变量、hook dependency、React purity warning 和测试 `any`，未阻断。
 - Typecheck：通过。
+- Spec lint：通过。
 - Evidence 自检：OK。
 
 ## 同类扩审记录

@@ -1,0 +1,80 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "教程必须重写为一个玩家可见入口，不能再用五个平级机制章节作为完成口径。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 只有 mage-wars-basic 对玩家可见，墙体、守卫、治疗、复原术为 hidden continuation",
+        "src/games/mage-wars/__tests__/tutorial.test.ts 断言 visible catalog entries 只有 mage-wars-basic",
+        "test-results/evidence-screenshots/mage-wars/tutorial/00-intro-board-and-win.png"
+      ]
+    },
+    {
+      "requirement": "基础教程必须教玩家读懂首局基础数据：生命、伤害、法力、聚魔、行动、快速施法、隐藏计划和公开弃牌。",
+      "status": "PASS",
+      "evidence": [
+        "public/locales/zh-CN/game-mage-wars.json tutorial.steps.selfHud / opponentHud / discardReading",
+        "test-results/evidence-screenshots/mage-wars/tutorial/01-read-mage-hud-life-mana-channeling.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial/06-opponent-discard-reading.png"
+      ]
+    },
+    {
+      "requirement": "核心机制必须按玩家流程覆盖操作和结果：计划、召唤、唤醒、移动、墙体、守卫、治疗、生命眼睛、燃烧与复原术。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 用例通过：1 passed (54.4s)",
+        "test-results/evidence-screenshots/mage-wars/tutorial/03-plan-spells.png 到 20-restore-burn-removed.png"
+      ]
+    },
+    {
+      "requirement": "可选择目标不得自动代选；墙体、召唤、治疗和复原术都必须有来源选择、合法目标高亮、玩家点击和结算结果。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial/04-summon-target-zone-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial/09-wall-edge-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial/15-healing-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial/19-restore-burn-target-highlight.png"
+      ]
+    },
+    {
+      "requirement": "最终截图组必须按玩家流程顺序展示当前 21 张有效图，旧目录图和旧五章节截图不得作为本轮展示物。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars-tutorial/e2e-test.md 截图清单 00-20",
+        "test-results/evidence-screenshots/mage-wars/tutorial/_labeled-for-pureref/00-sequence-index.png 到 21-labeled-20-restore-burn-removed.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\01-labeled-00-intro-board-and-win.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\02-labeled-01-read-mage-hud-life-mana-channeling.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\03-labeled-02-channel-result-mana-increased.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\04-labeled-03-plan-spells.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\05-labeled-04-summon-target-zone-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\06-labeled-05-roused-wolf-ready.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\07-labeled-06-opponent-discard-reading.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\08-labeled-07-wolf-moved-to-a2.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\09-labeled-08-wall-prepared.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\10-labeled-09-wall-edge-target-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\11-labeled-10-wall-card-on-edge.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\12-labeled-11-wall-line-of-sight-and-passage.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\13-labeled-12-guard-source-and-token-action.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\14-labeled-13-guard-token-result.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\15-labeled-14-healing-light-action-dock.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\16-labeled-15-healing-target-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\17-labeled-16-healing-result-life-readout.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\18-labeled-17-life-toggle-all-readouts.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\19-labeled-18-restore-action-dock.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\20-labeled-19-restore-burn-target-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial\\_labeled-for-pureref\\21-labeled-20-restore-burn-removed.png"
+  ]
+}

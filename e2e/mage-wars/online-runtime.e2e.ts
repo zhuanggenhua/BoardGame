@@ -4149,8 +4149,12 @@ test.describe('Mage Wars formal online runtime', () => {
                         timeout: 5_000,
                     }).toBe(true);
                     await expect(targetWallEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 3_000 });
+                    const targetWallCardPreview = targetWallEdge.getByTestId('mage-wars-wall-card-preview');
+                    await expect(targetWallCardPreview).toBeVisible({ timeout: 3_000 });
+                    await expect(targetWallCardPreview).toHaveAttribute('data-source-card-id', String(wallSpellCardId));
+                    await expect(targetWallCardPreview).toHaveAttribute('data-wall-visual', 'spell-card');
                     await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体施放完成截图前');
-                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A3-B3边界墙体可见');
+                    await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A3-B3边界墙牌可见');
 
                     await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
                     continue;
@@ -4588,8 +4592,12 @@ test.describe('Mage Wars formal online runtime', () => {
                 timeout: 5_000,
             }).toBe(true);
             await expect(targetEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 3_000 });
+            const wallCardPreview = targetEdge.getByTestId('mage-wars-wall-card-preview');
+            await expect(wallCardPreview).toBeVisible({ timeout: 3_000 });
+            await expect(wallCardPreview).toHaveAttribute('data-source-card-id', String(wallSpellCardId));
+            await expect(wallCardPreview).toHaveAttribute('data-wall-visual', 'spell-card');
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '墙体施放完成截图前');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '20-墙体施放后-A3-B3边界墙体可见');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '20-荆棘之墙施放后-A3-B3边界墙牌可见');
 
             await clickFieldObject(match.hostPage, archer, '墙后皇家箭手远程攻击检查选择来源');
             await expect(archer).toHaveAttribute('data-field-card-role', 'source', { timeout: 3_000 });

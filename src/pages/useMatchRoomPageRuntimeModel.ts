@@ -212,6 +212,25 @@ function buildMatchRoomTutorialStageAdapter(args: {
     };
 }
 
+export function resolveMatchRoomTutorialProgressNumPlayers(args: {
+    searchParams: URLSearchParams;
+    tutorialId?: string;
+    runtimeAdapter?: GameRuntimeAdapter | null;
+    resolvedTutorialManifest: TutorialManifest | null;
+    engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
+}): number {
+    const runtimeLocalSetup = args.runtimeAdapter?.resolveLocalSetup?.({
+        searchParams: args.searchParams,
+        tutorialId: args.tutorialId,
+        tutorialMode: true,
+    }) ?? null;
+
+    return runtimeLocalSetup?.numPlayers
+        ?? args.resolvedTutorialManifest?.numPlayers
+        ?? args.engineConfig?.minPlayers
+        ?? 2;
+}
+
 function buildMatchRoomOnlineConnectionStageAdapter(args: {
     runtimeSetup: MatchRoomPageRuntimeSetupModel;
     stageControllers: MatchRoomPageStageControllersModel;
@@ -464,9 +483,13 @@ export function useMatchRoomPageRuntimeModel(args: {
         isGameNamespaceReady: runtimeSetup.isGameNamespaceReady,
         gameImplReady: runtimeSetup.gameImplReady,
         resolvedTutorialManifest: runtimeSetup.resolvedTutorialManifest,
-        tutorialProgressNumPlayers: runtimeSetup.resolvedTutorialManifest?.numPlayers
-            ?? runtimeSetup.engineConfig?.minPlayers
-            ?? 2,
+        tutorialProgressNumPlayers: resolveMatchRoomTutorialProgressNumPlayers({
+            searchParams,
+            tutorialId,
+            runtimeAdapter: runtimeSetup.runtimeAdapter,
+            resolvedTutorialManifest: runtimeSetup.resolvedTutorialManifest,
+            engineConfig: runtimeSetup.engineConfig,
+        }),
         setPlayerID,
         navigate,
         openModal,

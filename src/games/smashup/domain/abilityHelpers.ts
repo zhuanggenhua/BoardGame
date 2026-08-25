@@ -1849,6 +1849,7 @@ export function grantExtraMinion(
         powerMax?: number;
         excludedMinionDefIds?: string[];
         playTiming?: 'banked' | 'immediate';
+        allowFromDiscard?: boolean;
         consumePendingMinionPlayEffectOnSkip?: boolean;
     },
 ): LimitModifiedEvent {
@@ -1863,6 +1864,7 @@ export function grantExtraMinion(
             ...(options?.sameNameOnly ? { sameNameOnly: true } : {}),
             ...(options?.sameNameDefId ? { sameNameDefId: options.sameNameDefId } : {}),
             ...(options?.specificCardUid ? { specificCardUid: options.specificCardUid } : {}),
+            ...(options?.allowFromDiscard ? { allowFromDiscard: true } : {}),
             ...(options?.consumePendingMinionPlayEffectOnSkip ? { consumePendingMinionPlayEffectOnSkip: true } : {}),
         },
         timestamp: now,
@@ -1883,6 +1885,7 @@ export function grantExtraAction(
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
         restrictToBaseModifier?: boolean;
+        allowFromDiscard?: boolean;
     },
 ): LimitModifiedEvent {
     return {
@@ -1899,6 +1902,7 @@ export function grantExtraAction(
             ...(options?.restrictToCardUid ? { restrictToCardUid: options.restrictToCardUid } : {}),
             ...(options?.restrictToCardDefId ? { restrictToCardDefId: options.restrictToCardDefId } : {}),
             ...(options?.restrictToBaseModifier ? { restrictToBaseModifier: true } : {}),
+            ...(options?.allowFromDiscard ? { allowFromDiscard: true } : {}),
         },
         timestamp: now,
     };
@@ -1986,7 +1990,7 @@ export function grantContextualExtraMinion(
     ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
     reason: string,
     restrictToBase?: number,
-    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; specificCardUid?: string; excludedMinionDefIds?: string[] },
+    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; specificCardUid?: string; excludedMinionDefIds?: string[]; allowFromDiscard?: boolean },
 ): LimitModifiedEvent {
     return grantExtraMinion(
         ctx.playerId,
@@ -2010,6 +2014,7 @@ export function grantContextualExtraAction(
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
         restrictToBaseModifier?: boolean;
+        allowFromDiscard?: boolean;
     },
 ): LimitModifiedEvent {
     return grantExtraAction(ctx.playerId, reason, ctx.now, {
@@ -2019,6 +2024,7 @@ export function grantContextualExtraAction(
         restrictToCardUid: options?.restrictToCardUid,
         restrictToCardDefId: options?.restrictToCardDefId,
         restrictToBaseModifier: options?.restrictToBaseModifier,
+        allowFromDiscard: options?.allowFromDiscard,
     });
 }
 

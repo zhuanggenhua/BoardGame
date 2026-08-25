@@ -10,12 +10,32 @@ import {
 } from '../helpers/common';
 
 const SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial';
-const INTRO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/01-intro.png`;
-const PLAN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-plan-wolf-and-rouse.png`;
-const WOLF_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-roused-wolf-ready.png`;
-const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-opponent-discard-reading.png`;
-const MOVE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-wolf-moved-to-a2.png`;
-const FINISH_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-finish.png`;
+const INTRO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00-intro-board-and-win.png`;
+const HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/01-read-mage-hud-life-mana-channeling.png`;
+const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-channel-result-mana-increased.png`;
+const PLAN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-plan-spells.png`;
+const SUMMON_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-summon-target-zone-highlight.png`;
+const WOLF_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-roused-wolf-ready.png`;
+const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-opponent-discard-reading.png`;
+const MOVE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-wolf-moved-to-a2.png`;
+const WALL_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-wall-prepared.png`;
+const WALL_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-wall-edge-target-highlight.png`;
+const WALL_CARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-wall-card-on-edge.png`;
+const WALL_LOS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-wall-line-of-sight-and-passage.png`;
+const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-guard-source-and-token-action.png`;
+const GUARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-guard-token-result.png`;
+const HEALING_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-healing-light-action-dock.png`;
+const HEALING_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-healing-target-highlight.png`;
+const HEALING_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-healing-result-life-readout.png`;
+const LIFE_TOGGLE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-life-toggle-all-readouts.png`;
+const RESTORE_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-restore-action-dock.png`;
+const RESTORE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-restore-burn-target-highlight.png`;
+const RESTORE_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-restore-burn-removed.png`;
+
+const GUARD_CLERIC_OBJECT_ID = 'mw-tutorial-guard-cleric';
+const HEALING_CLERIC_OBJECT_ID = 'mw-tutorial-healing-cleric';
+const WOUNDED_BOBCAT_OBJECT_ID = 'mw-tutorial-wounded-bobcat';
+const BURNING_CLERIC_OBJECT_ID = 'mw-tutorial-burning-cleric';
 
 type MageWarsTutorialState = {
     sys?: {
@@ -36,7 +56,9 @@ type MageWarsTutorialState = {
             ownerId?: string;
             zoneId?: string;
             actionReady?: boolean;
+            guarding?: boolean;
             damage?: number;
+            statusTokens?: Record<string, number>;
         }>;
         players?: Record<string, {
             mana?: number;
@@ -46,7 +68,7 @@ type MageWarsTutorialState = {
     };
 };
 
-async function openMageWarsTutorial(context: BrowserContext, page: Page) {
+async function prepareMageWarsTutorialContext(context: BrowserContext, page: Page) {
     await initContext(context, {
         storageKey: 'mage-wars-tutorial',
         skipTutorial: false,
@@ -54,7 +76,11 @@ async function openMageWarsTutorial(context: BrowserContext, page: Page) {
         skipImageGate: false,
         blockCdnAssets: false,
     });
-    const diagnostics = attachPageDiagnostics(page);
+    return attachPageDiagnostics(page);
+}
+
+async function openMageWarsTutorial(context: BrowserContext, page: Page) {
+    const diagnostics = await prepareMageWarsTutorialContext(context, page);
 
     await page.goto('/play/mage-wars/tutorial', { waitUntil: 'domcontentloaded' });
     await waitForFrontendAssets(page, 45_000);
@@ -102,6 +128,7 @@ async function waitForTutorialStateStep(page: Page, stepId: string, timeout = 30
         stepId,
         aiActionCount: 0,
     });
+    await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
 }
 
 async function clickTutorialNext(page: Page) {
@@ -110,8 +137,20 @@ async function clickTutorialNext(page: Page) {
     await button.click({ timeout: 5_000 });
 }
 
+async function finishSegmentAndWaitFor(page: Page, nextStepId: string) {
+    await clickTutorialNext(page);
+    await waitForTutorialStateStep(page, nextStepId, 60_000);
+}
+
 async function clickTutorialTarget(page: Page, tutorialId: string) {
     const target = page.locator(`[data-tutorial-id="${tutorialId}"]`).first();
+    await expect(target).toBeVisible({ timeout: 15_000 });
+    await expect(target).toBeEnabled({ timeout: 10_000 });
+    await target.click({ timeout: 5_000 });
+}
+
+async function clickTutorialObject(page: Page, objectId: string) {
+    const target = page.locator(`[data-tutorial-object-id="mw-arena-object-${objectId}"]`).first();
     await expect(target).toBeVisible({ timeout: 15_000 });
     await expect(target).toBeEnabled({ timeout: 10_000 });
     await target.click({ timeout: 5_000 });
@@ -150,18 +189,25 @@ async function assertAllVisibleImagesLoaded(page: Page) {
 }
 
 test.describe('Mage Wars tutorial', () => {
-    test('兽王学徒基础教程可从聚魔走到唤醒灰狼并移动压位', async ({ context, page }) => {
-        test.setTimeout(180_000);
+    test('单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术', async ({ context, page }) => {
+        test.setTimeout(240_000);
         const diagnostics = await openMageWarsTutorial(context, page);
 
         await waitForTutorialStep(page, 'intro', 60_000);
-        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('击败对方法师');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('屹立不倒的法师');
         await expect(page.getByTestId('mage-wars-board')).toContainText('正式竞技场');
         await assertAllVisibleImagesLoaded(page);
         await screenshot(page, INTRO_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
-        for (const stepId of ['self-hud', 'stage']) {
+        await waitForTutorialStep(page, 'self-hud');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('生命');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('法力');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('聚魔');
+        await screenshot(page, HUD_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        for (const stepId of ['opponent-hud', 'stage']) {
             await waitForTutorialStep(page, stepId);
             await clickTutorialNext(page);
         }
@@ -170,6 +216,7 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialTarget(page, 'mw-turn-end');
         await waitForTutorialStep(page, 'channel-result');
         await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
+        await screenshot(page, CHANNEL_RESULT_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'advance-upkeep');
@@ -197,6 +244,7 @@ test.describe('Mage Wars tutorial', () => {
         await waitForTutorialStep(page, 'deploy-wolf');
         await clickTutorialTarget(page, 'mw-prepared-card-2819');
         await expect(page.locator('[data-tutorial-id="mw-zone-a3"][data-legal-target-zone="true"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, SUMMON_TARGET_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-zone-a3');
         await waitForTutorialStep(page, 'rouse-wolf');
         await expect.poll(async () => {
@@ -268,8 +316,91 @@ test.describe('Mage Wars tutorial', () => {
             return { zoneId: wolf?.zoneId ?? null, actionReady: wolf?.actionReady ?? null };
         }, { timeout: 15_000 }).toEqual({ zoneId: 'a2', actionReady: false });
         await screenshot(page, MOVE_SCREENSHOT_PATH);
-        await screenshot(page, FINISH_SCREENSHOT_PATH);
+        await finishSegmentAndWaitFor(page, 'wall-purpose');
 
-        await assertNoFatalFrontendErrors([{ label: 'mage-wars-tutorial', diagnostics }]);
+        await expect(page.locator('[data-tutorial-id="mw-prepared-card-25700"]')).toBeVisible({ timeout: 15_000 });
+        await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.preparedSpellCardIds)
+            .toEqual([25700]);
+        await screenshot(page, WALL_READY_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'cast-thorns-wall');
+        await clickTutorialTarget(page, 'mw-prepared-card-25700');
+        const wallEdge = page.locator('[data-tutorial-id="mw-wall-edge-a3-b3"]');
+        await expect(wallEdge).toBeVisible({ timeout: 10_000 });
+        await expect(wallEdge).toHaveAttribute('data-legal-target-wall-edge', 'true', { timeout: 10_000 });
+        await screenshot(page, WALL_TARGET_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-wall-edge-a3-b3');
+
+        await waitForTutorialStep(page, 'wall-card-on-edge');
+        const wallCard = page.locator('[data-tutorial-id="mw-wall-card-25700"]');
+        await expect(wallCard).toBeVisible({ timeout: 15_000 });
+        await expect(wallCard).toHaveAttribute('data-source-card-id', '25700');
+        await expect(wallCard).toHaveAttribute('data-wall-visual', 'spell-card');
+        await expect(wallEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 10_000 });
+        await screenshot(page, WALL_CARD_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'line-of-sight-and-passage');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('阻挡');
+        await screenshot(page, WALL_LOS_SCREENSHOT_PATH);
+        await finishSegmentAndWaitFor(page, 'guard-rule');
+
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'guard-cleric');
+        await clickTutorialObject(page, GUARD_CLERIC_OBJECT_ID);
+        await expect(page.locator('[data-tutorial-id="mw-selected-unit-guard"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, GUARD_SOURCE_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-selected-unit-guard');
+        await waitForTutorialStep(page, 'guard-token-result');
+        await expect.poll(async () => (
+            (await readMageWarsState(page)).core?.objects?.[GUARD_CLERIC_OBJECT_ID]?.guarding ?? false
+        ), { timeout: 15_000 }).toBe(true);
+        await screenshot(page, GUARD_RESULT_SCREENSHOT_PATH);
+        await finishSegmentAndWaitFor(page, 'healing-rule');
+
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'heal-wounded-bobcat');
+        const bobcatDamageBefore = await readMageWarsState(page)
+            .then((state) => state.core?.objects?.[WOUNDED_BOBCAT_OBJECT_ID]?.damage ?? 0);
+        await clickTutorialObject(page, HEALING_CLERIC_OBJECT_ID);
+        await expect(page.locator('[data-tutorial-id="mw-ability-action-dock"]')).toBeVisible({ timeout: 10_000 });
+        await expect(page.locator('[data-tutorial-id="mw-ability-healing-light"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, HEALING_BUTTON_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-ability-healing-light');
+        const woundedBobcat = page.locator(`[data-tutorial-object-id="mw-arena-object-${WOUNDED_BOBCAT_OBJECT_ID}"]`).first();
+        await expect(woundedBobcat.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, HEALING_TARGET_SCREENSHOT_PATH);
+        await clickTutorialObject(page, WOUNDED_BOBCAT_OBJECT_ID);
+        await waitForTutorialStep(page, 'healing-result-and-life-readout');
+        await expect.poll(async () => (
+            (await readMageWarsState(page)).core?.objects?.[WOUNDED_BOBCAT_OBJECT_ID]?.damage ?? 999
+        ), { timeout: 15_000 }).toBeLessThan(bobcatDamageBefore);
+        await screenshot(page, HEALING_RESULT_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'life-toggle');
+        await clickTutorialTarget(page, 'mw-life-toggle');
+        await expect(page.locator('[data-tutorial-id="mw-life-toggle"]')).toHaveAttribute('data-life-visible', 'true');
+        await screenshot(page, LIFE_TOGGLE_SCREENSHOT_PATH);
+        await finishSegmentAndWaitFor(page, 'burn-rule');
+
+        await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'restore-burning-cleric');
+        await clickTutorialTarget(page, 'mw-mage-entity-0');
+        await expect(page.locator('[data-tutorial-id="mw-ability-restore"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, RESTORE_BUTTON_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-ability-restore');
+        const burningCleric = page.locator(`[data-tutorial-object-id="mw-arena-object-${BURNING_CLERIC_OBJECT_ID}"]`).first();
+        await expect(burningCleric.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, RESTORE_TARGET_SCREENSHOT_PATH);
+        await clickTutorialObject(page, BURNING_CLERIC_OBJECT_ID);
+        await waitForTutorialStep(page, 'restore-result');
+        await expect.poll(async () => (
+            (await readMageWarsState(page)).core?.objects?.[BURNING_CLERIC_OBJECT_ID]?.statusTokens?.burn ?? 0
+        ), { timeout: 15_000 }).toBe(0);
+        await screenshot(page, RESTORE_RESULT_SCREENSHOT_PATH);
+
+        await assertNoFatalFrontendErrors([{ label: 'mage-wars-tutorial-natural-flow', diagnostics }]);
     });
 });

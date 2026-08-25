@@ -93,6 +93,28 @@ describe('CompareRollOverlay', () => {
         expect(latestConfirm).toHaveBeenCalledTimes(1);
     });
 
+    it('无选项时应保留手动确认按钮，避免自动确认未触发时卡住', () => {
+        const onConfirm = vi.fn();
+        const compareRollWithoutOptions = {
+            ...compareRoll,
+            options: [],
+        };
+        render(
+            <CompareRollOverlay
+                compareRoll={compareRollWithoutOptions}
+                isVisible={true}
+                canResolve={true}
+                onResolveOption={vi.fn()}
+                onConfirm={onConfirm}
+            />,
+        );
+
+        const button = screen.getByRole('button', { name: 'compareRoll.confirm' });
+        expect(button).toBeTruthy();
+        button.click();
+        expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
+
     it('非拥有者应看到等待文案而不是可点击按钮', () => {
         render(
             <CompareRollOverlay
@@ -108,6 +130,21 @@ describe('CompareRollOverlay', () => {
         expect(screen.getByTestId('compare-roll-overlay')).toHaveAttribute('data-placement', 'main-result-layer');
         expect(screen.getByTestId('compare-roll-waiting').textContent).toBe('compareRoll.waitingForOwnerChoice');
         expect(screen.queryByRole('button', { name: 'choices.gunslingerDuel.deal3' })).toBeNull();
+    });
+
+    it('非拥有者看到无选项结果时也应等待主人确认，而不是显示确认中', () => {
+        render(
+            <CompareRollOverlay
+                compareRoll={{ ...compareRoll, options: [] }}
+                isVisible={true}
+                canResolve={false}
+                onResolveOption={vi.fn()}
+                onConfirm={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByTestId('compare-roll-waiting').textContent).toBe('compareRoll.waitingForOwnerChoice');
+        expect(screen.queryByRole('button', { name: 'compareRoll.confirm' })).toBeNull();
     });
 
     it('结果选择层应离开右侧骰盘，且不渲染中间骰子特写', () => {

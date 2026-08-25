@@ -149,6 +149,22 @@ const waitForTutorialStepIn = async (
     return stepId;
 };
 
+const finishPlaySixDiceModifyIfNeeded = async (page: Parameters<typeof test>[0]['page']) => {
+    await page.waitForFunction(() => {
+        const stepId = document.querySelector('[data-tutorial-step]')?.getAttribute('data-tutorial-step');
+        const interactionConfirm = document.querySelector<HTMLButtonElement>('[data-testid="dice-interaction-confirm-button"]');
+        return stepId === 'dice-confirm' || Boolean(interactionConfirm && !interactionConfirm.disabled);
+    }, { timeout: 10000 });
+
+    const interactionConfirm = page.getByTestId('dice-interaction-confirm-button');
+    if (await interactionConfirm.isVisible().catch(() => false)) {
+        await expect(interactionConfirm).toBeEnabled({ timeout: 5000 });
+        await interactionConfirm.click();
+    }
+
+    await waitForTutorialStep(page, 'dice-confirm', 10000);
+};
+
 const dragHandCardToDiscard = async (
     page: Parameters<typeof test>[0]['page'],
     cardId: string,
@@ -529,11 +545,7 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         await waitForTutorialStep(page, 'play-six-modify', 10000);
         await captureAlignedStep(15, 'play-six-modify', 'dice-tray');
         await page.locator('[data-testid="die-button-0"]').click();
-        const interactionConfirm = page.getByTestId('dice-interaction-confirm-button');
-        await expect(interactionConfirm).toBeEnabled({ timeout: 10000 });
-        await interactionConfirm.click();
-
-        await waitForTutorialStep(page, 'dice-confirm', 10000);
+        await finishPlaySixDiceModifyIfNeeded(page);
         await captureAlignedStep(16, 'dice-confirm', 'dice-confirm-button');
         await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
 
@@ -650,6 +662,7 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
         if ((await getTutorialStepId()) === 'play-six') {
             await dispatchLocalCommand(page, 'PLAY_CARD', { cardId: 'card-play-six' });
             await dispatchLocalCommand(page, 'MODIFY_DIE', { dieId: 0, newValue: 6 });
+            await dispatchLocalCommand(page, 'SYS_INTERACTION_CONFIRM', {});
             await waitForTutorialStep(page, 'dice-confirm', 10000);
         }
 

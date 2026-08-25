@@ -16,6 +16,7 @@ import { SW_COMMANDS, SW_EVENTS } from './domain';
 import { FLOW_COMMANDS, FLOW_EVENTS } from '../../engine/systems/FlowSystem';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { SPRITE_INDEX } from './config/factions/necromancer';
+import { getCardPoolByFaction } from './config/cardRegistry';
 
 // 事件匹配器
 const MATCH_PHASE_MOVE = { type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'move' } };
@@ -23,6 +24,14 @@ const MATCH_PHASE_BUILD = { type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'build
 const MATCH_PHASE_ATTACK = { type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'attack' } };
 const MATCH_PHASE_MAGIC = { type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'magic' } };
 const MATCH_PHASE_DRAW = { type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'draw' } };
+
+const TUTORIAL_UNDEAD_WARRIOR_DISCARD = (() => {
+  const card = getCardPoolByFaction('necromancer').find((candidate) => candidate.id === 'necro-undead-warrior');
+  if (!card || card.cardType !== 'unit') {
+    throw new Error('召唤师战争教程缺少用于复活死灵的亡灵战士卡牌');
+  }
+  return { ...card, id: 'necro-undead-warrior-0-99' };
+})();
 
 const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
   id: 'summonerwars-basic',
@@ -52,7 +61,18 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
         { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.COMMON_HELLFIRE_CULTIST } },
         { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.COMMON_PLAGUE_ZOMBIE } },
         { commandType: CHEAT_COMMANDS.DEAL_CARD_BY_ATLAS_INDEX, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.EVENT_HELLFIRE_BLADE } },
-        { commandType: CHEAT_COMMANDS.DEAL_CARD_TO_DISCARD, payload: { playerId: '0', atlasIndex: SPRITE_INDEX.COMMON_UNDEAD_WARRIOR } },
+        {
+          commandType: CHEAT_COMMANDS.MERGE_STATE,
+          payload: {
+            fields: {
+              players: {
+                '0': {
+                  discard: [TUTORIAL_UNDEAD_WARRIOR_DISCARD],
+                },
+              },
+            },
+          },
+        },
       ],
     },
 

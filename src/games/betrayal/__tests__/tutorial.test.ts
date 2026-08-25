@@ -253,6 +253,11 @@ describe('Betrayal 教程配置', () => {
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
             ['ACKNOWLEDGE_CARD_RESOLUTION'],
         ]);
+        expect(actionSteps[0]?.aiActions).toEqual([
+            { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1' },
+            { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '2' },
+        ]);
+        expect(actionSteps[0]?.autoAdvanceAfterAi).toBe(false);
         expect(actionSteps[0]?.advanceOnEvents).toEqual([
             { type: 'CARD_RESOLUTION_ACKNOWLEDGED', match: { playerId: '0', remainingCount: 0 } },
         ]);
@@ -440,6 +445,7 @@ describe('Betrayal 教程配置', () => {
         const traitorId = core.scenarioRuntime.traitorPlayerId;
         const mummy = core.scenarioRuntime.mummy;
         const mummyMonster = core.monsters.find((monster) => monster.id === mummy?.mummyMonsterId);
+        const completedMonsterIds = core.monsters.map((monster) => monster.id);
 
         expect(core.scenarioRuntime.hauntScenarioCardId).toBe('mummy-rampage');
         expect(core.scenarioRuntime.hauntScenarioCardTitle).toBe('木乃伊横行');
@@ -451,6 +457,14 @@ describe('Betrayal 教程配置', () => {
         expect(mummy?.girlHeldByMummy).toBe(false);
         expect(mummy?.mummyCarriedOmenIds).toEqual([]);
         expect(mummyMonster?.roomId).toBe(core.currentExplorer.roomId);
+        expect(core.scenarioRuntime.monsterTurn.resolvedStartMonsterIds).toEqual(completedMonsterIds);
+        expect(core.scenarioRuntime.monsterTurn.skippedMonsterIdsThisTurn).toEqual(completedMonsterIds);
+        expect(core.scenarioRuntime.monsterTurn.attackedMonsterIdsThisTurn).toEqual(completedMonsterIds);
+        expect(core.scenarioRuntime.monsterTurn.movedMonsterIdsThisTurn).toEqual(completedMonsterIds);
+        expect(core.scenarioRuntime.monsterTurn.movementRollsByGroupId).toEqual({});
+        expect(core.scenarioRuntime.monsterTurn.moveRemainingById).toEqual(
+            Object.fromEntries(completedMonsterIds.map((monsterId) => [monsterId, 0])),
+        );
         expect(core.recentRoll).toBeNull();
     });
 
@@ -562,6 +576,7 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('未探索走廊');
         expect(zhCNLocale.tutorial.basicSetup.steps.confirmRoomPlacement).toContain('确认放置');
         expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('兔脚');
+        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('继续结算');
         expect(zhCNLocale.tutorial.omenConfirmation.title).toContain('预兆');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('5+');
@@ -573,7 +588,9 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.omenConfirmation.steps.review).toContain('结果低于 5+');
         expect(zhCNLocale.tutorial.omenConfirmation.steps.review).toContain('你获得这张预兆');
         expect(zhCNLocale.tutorial.tradeAndAgreement.title).toContain('交易');
-        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('双方同意');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('同一房间');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).not.toContain('同一板块');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('双方都要同意');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeItem).toContain('兔脚');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeTarget).toContain('同房间队友');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.sendTradeRequest).toContain('提出交易');
@@ -618,6 +635,8 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('结果为 0 或 1');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('已发现房间');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('可以持有女孩');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupAttack).toContain('同房攻击');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupAttack).toContain('木乃伊攻击英雄');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackForced).toContain('必须先攻击英雄');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackTarget).toContain('叛徒和已死亡探险者不是攻击目标');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('选择造成伤害或偷窃');

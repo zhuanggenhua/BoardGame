@@ -769,6 +769,68 @@ test.describe('Smash Up Tutorial E2E', () => {
         await captureCowboysDuelFlow(page, testInfo, '10-cowboys-returned-to-faction-select');
     });
 
+    test('牛仔决斗子教程佩科斯弃牌窗口可从手牌本体弃牌并继续', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await setEnglishLocale(page);
+        await disableAudio(page);
+
+        await navigateToTutorial(page, '/play/smashup/tutorial/cowboys-duel');
+        await waitForTutorialStep(page, 'duelIntro', 40000);
+        await clickNext(page);
+
+        await waitForTutorialStep(page, 'playGunfighter', 10000);
+        await clickHandCard(page, page.locator('[data-testid="su-hand-area"] [data-card-uid="gun-1"]'));
+        await page.locator('[data-base-index="0"]').click({ force: true });
+        await clickLocatorCenter(page, page.locator('[data-minion-uid="enemy-1"]'));
+
+        await waitForTutorialStep(page, 'pecosBillWindow', 10000);
+        await waitForInteractionSource(game, 'titan_pecos_bill_duel_start');
+        await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid="deputy-1"]')).toBeVisible({ timeout: 10000 });
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'pecos-discard-hand-card-ready', {
+                filename: 'pecos-discard-hand-card-ready.png',
+            }),
+            fullPage: false,
+        });
+
+        await clickHandCard(page, page.locator('[data-testid="su-hand-area"] [data-card-uid="deputy-1"]'));
+
+        await expect.poll(async () => {
+            const state = await game.getState() as {
+                core: {
+                    titans?: Array<{ defId: string; controllerId?: string; location?: { zone?: string; baseIndex?: number } }>;
+                    players: Record<string, {
+                        hand: Array<{ uid: string }>;
+                        discard: Array<{ uid: string }>;
+                    }>;
+                };
+            };
+            return {
+                deputyStillInHand: state.core.players['0'].hand.some((card) => card.uid === 'deputy-1'),
+                deputyDiscarded: state.core.players['0'].discard.some((card) => card.uid === 'deputy-1'),
+                pecosOnBase: state.core.titans?.some((titan) =>
+                    titan.defId === 'pecos_bill'
+                    && titan.controllerId === '0'
+                    && titan.location?.zone === 'base'
+                    && titan.location?.baseIndex === 0
+                ) ?? false,
+            };
+        }, { timeout: 10000 }).toEqual({
+            deputyStillInHand: false,
+            deputyDiscarded: true,
+            pecosOnBase: true,
+        });
+        await waitForTutorialStep(page, 'pinkertonCounter', 10000);
+        await waitForInteractionSource(game, 'smashup_duel_pinkerton');
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'pecos-discard-hand-card-resolved', {
+                filename: 'pecos-discard-hand-card-resolved.png',
+            }),
+            fullPage: false,
+        });
+    });
+
     test('教程高亮目标与关键 UI 元素一一对应', async ({ page }) => {
         test.setTimeout(60000);
         await setEnglishLocale(page);

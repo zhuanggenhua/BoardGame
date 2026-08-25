@@ -19,6 +19,7 @@ import {
   setChineseLocale,
   disableAudio,
 } from '../../helpers/common';
+import { clickBoardElement } from '../../helpers/summonerwars';
 
 const MOBILE_LANDSCAPE_VIEWPORT = { width: 936, height: 432 } as const;
 const EVIDENCE_DIR = join(process.cwd(), 'test-results', 'evidence-screenshots', 'summonerwars', 'summonerwars-tutorial-e2e-2026-05-10');
@@ -227,18 +228,8 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     const summonCells = page.locator('[data-valid-summon="true"]');
     await expect(summonCells.first()).toBeVisible({ timeout: 5000 });
     await summonCells.first().click({ force: true });
-    await page.waitForTimeout(500);
-
-    const stillOnSummon = await page.locator('[data-tutorial-step="summon-action"]')
-      .isVisible({ timeout: 2000 }).catch(() => false);
-    if (stillOnSummon) {
-      await playableUnits.first().click({ force: true });
-      await page.waitForTimeout(500);
-      const summonCells2 = page.locator('[data-valid-summon="true"]');
-      if (await summonCells2.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-        await summonCells2.first().dispatchEvent('click');
-      }
-    }
+    await waitForTutorialStep(page, 'ability-explain', 15000);
+    await expect(page.locator('[data-valid-summon="true"]')).toHaveCount(0);
 
     // Step 12: ability-explain — 高亮己方召唤师
     await waitForTutorialStep(page, 'ability-explain', 15000);
@@ -249,10 +240,9 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await waitForActionPrompt(page);
 
     // 点击己方召唤师 → 在召唤阶段直接进入复活死灵的卡牌选择模式（无中间按钮）
-    const summoner = page.locator('[data-testid^="sw-unit-"][data-unit-class="summoner"][data-owner="0"]');
-    await expect(summoner.first()).toBeVisible({ timeout: 5000 });
-    await summoner.first().click({ force: true });
-    await page.waitForTimeout(800);
+    const summoner = page.locator('[data-tutorial-id="sw-my-summoner"]');
+    await expect(summoner).toBeVisible({ timeout: 5000 });
+    await clickBoardElement(page, '[data-tutorial-id="sw-my-summoner"]');
 
     // 弃牌堆卡牌选择浮层应自动弹出
     const cardSelectorOverlay = page.locator('[data-testid="sw-card-selector-overlay"]');

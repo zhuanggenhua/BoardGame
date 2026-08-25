@@ -312,7 +312,12 @@ function executeCommand(
                     fromStored: fromStored || undefined,
                     ...(fromDiscard ? (() => {
                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
-                        return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
+                        return info
+                            ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit }
+                            : {
+                                ...(command.payload.discardPlaySourceId ? { discardPlaySourceId: command.payload.discardPlaySourceId } : {}),
+                                ...(command.payload.consumesNormalLimit === false ? { consumesNormalLimit: false } : {}),
+                            };
                     })() : {}),
                     ...(fromDeck || fromStored ? { consumesNormalLimit: false } : {}),
                     // meFirst 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
@@ -416,11 +421,11 @@ function executeCommand(
                 ownerId: card.owner,
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
-                isExtraAction: fromStored || discardActionPlay?.consumesNormalLimit === false || undefined,
+                isExtraAction: fromStored || discardActionPlay?.consumesNormalLimit === false || command.payload.consumesNormalLimit === false || undefined,
                 fromDiscard,
                 fromStored,
-                discardPlaySourceId: discardActionPlay?.sourceId,
-                consumesNormalLimit: discardActionPlay?.consumesNormalLimit,
+                discardPlaySourceId: discardActionPlay?.sourceId ?? command.payload.discardPlaySourceId,
+                consumesNormalLimit: discardActionPlay?.consumesNormalLimit ?? command.payload.consumesNormalLimit,
                 sourceCommandType: command.type,
                 timestamp: now,
             });

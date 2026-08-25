@@ -8,6 +8,8 @@ import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import SUMMONER_WARS_TUTORIAL from '../tutorial';
 import { SW_COMMANDS } from '../domain';
+import { isUndeadCard } from '../domain/ids';
+import { CHEAT_COMMANDS } from '../../../engine/systems/CheatSystem';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -79,6 +81,52 @@ describe('Property 2.1: Interactive event tutorial steps allow interaction reque
         expect(step).toBeDefined();
         expect(step?.allowedCommands).toContain(SW_COMMANDS.REQUEST_EVENT_INTERACTION);
         expect(step?.allowedCommands).toContain(SW_COMMANDS.PLAY_EVENT);
+    });
+});
+
+describe('Property 2.2: Revive undead tutorial setup is deterministic', () => {
+    it('复活死灵步骤的弃牌堆亡灵不能依赖剩余牌库抽取', () => {
+        const setupStep = SUMMONER_WARS_TUTORIAL.steps.find((item) => item.id === 'setup');
+
+        expect(setupStep).toBeDefined();
+        expect(setupStep?.aiActions?.some((action) => action.commandType === CHEAT_COMMANDS.DEAL_CARD_TO_DISCARD)).toBe(false);
+
+        const discardCards = (setupStep?.aiActions ?? [])
+            .filter((action) => action.commandType === CHEAT_COMMANDS.MERGE_STATE)
+            .flatMap((action) => {
+                const payload = action.payload as
+                    | { fields?: { players?: Record<string, { discard?: unknown[] }> } }
+                    | undefined;
+                return payload?.fields?.players?.['0']?.discard ?? [];
+            })
+            .filter((card): card is { id: string; name: string; cardType: string; faction?: string } => {
+                if (!card || typeof card !== 'object') return false;
+                const record = card as Record<string, unknown>;
+                return typeof record.id === 'string'
+                    && typeof record.name === 'string'
+                    && typeof record.cardType === 'string';
+            });
+
+        expect(discardCards).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'necro-undead-warrior-0-99',
+                    cardType: 'unit',
+                }),
+            ]),
+        );
+        expect(discardCards.some((card) => isUndeadCard(card))).toBe(true);
+    });
+});
+
+describe('Property 2.3: Tutorial phase steps stay player-driven', () => {
+    it('教程活跃时 Summoner Wars 不应自动跳过阶段', () => {
+        const boardSrc = readFileSync(resolve(__dirname, '../Board.tsx'), 'utf-8');
+        const interactionSrc = readFileSync(resolve(__dirname, '../ui/useCellInteraction.ts'), 'utf-8');
+
+        expect(boardSrc).toContain('isTutorialActive,');
+        expect(interactionSrc).toContain('isTutorialActive?: boolean');
+        expect(interactionSrc).toContain('&& !isTutorialActive');
     });
 });
 

@@ -62,6 +62,11 @@ function isStringArray(value: unknown): value is string[] {
     return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
 }
 
+function hasSameOrderedPlayerIds(playerIds: string[], expectedPlayerIds: string[]): boolean {
+    return playerIds.length === expectedPlayerIds.length
+        && playerIds.every((playerId, index) => playerId === expectedPlayerIds[index]);
+}
+
 export function isPersistedLocalStateCompatible(args: {
     state: MatchState<unknown>;
     expectedPlayerIds: string[];
@@ -78,27 +83,33 @@ export function isPersistedLocalStateCompatible(args: {
     }
 
     const corePlayerIds = core.playerIds;
+    let hasCompatiblePlayerIdentity = false;
     if (corePlayerIds !== undefined) {
         if (!isStringArray(corePlayerIds)) {
             return false;
         }
-        if (corePlayerIds.length !== expectedPlayerIds.length) {
+        if (!hasSameOrderedPlayerIds(corePlayerIds, expectedPlayerIds)) {
             return false;
         }
-        if (corePlayerIds.some((playerId, index) => playerId !== expectedPlayerIds[index])) {
-            return false;
-        }
+        hasCompatiblePlayerIdentity = true;
     }
 
     const playersRecord = core.players;
-    if (!playersRecord || typeof playersRecord !== 'object' || Array.isArray(playersRecord)) {
-        return false;
+    if (playersRecord !== undefined) {
+        if (!playersRecord || typeof playersRecord !== 'object' || Array.isArray(playersRecord)) {
+            return false;
+        }
+        const persistedPlayerIds = Object.keys(playersRecord);
+        if (persistedPlayerIds.length !== expectedPlayerIds.length) {
+            return false;
+        }
+        if (expectedPlayerIds.some((playerId) => !persistedPlayerIds.includes(playerId))) {
+            return false;
+        }
+        hasCompatiblePlayerIdentity = true;
     }
-    const persistedPlayerIds = Object.keys(playersRecord);
-    if (persistedPlayerIds.length !== expectedPlayerIds.length) {
-        return false;
-    }
-    if (expectedPlayerIds.some((playerId) => !persistedPlayerIds.includes(playerId))) {
+
+    if (!hasCompatiblePlayerIdentity) {
         return false;
     }
 
@@ -107,21 +118,23 @@ export function isPersistedLocalStateCompatible(args: {
     }
 
     const turnOrder = sys.turnOrder;
-    if (!isStringArray(turnOrder)) {
-        return false;
-    }
-    if (turnOrder.length !== expectedPlayerIds.length) {
-        return false;
-    }
-    if (turnOrder.some((playerId, index) => playerId !== expectedPlayerIds[index])) {
-        return false;
+    if (turnOrder !== undefined) {
+        if (!isStringArray(turnOrder)) {
+            return false;
+        }
+        if (!hasSameOrderedPlayerIds(turnOrder, expectedPlayerIds)) {
+            return false;
+        }
     }
 
     const currentPlayerIndex = sys.currentPlayerIndex;
-    return typeof currentPlayerIndex === 'number'
-        && Number.isInteger(currentPlayerIndex)
-        && currentPlayerIndex >= 0
-        && currentPlayerIndex < expectedPlayerIds.length;
+    return currentPlayerIndex === undefined
+        || (
+            typeof currentPlayerIndex === 'number'
+            && Number.isInteger(currentPlayerIndex)
+            && currentPlayerIndex >= 0
+            && currentPlayerIndex < expectedPlayerIds.length
+        );
 }
 
 export function normalizeReceivedStateForGame(

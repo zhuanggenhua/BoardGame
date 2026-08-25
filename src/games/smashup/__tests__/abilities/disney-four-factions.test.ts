@@ -6,7 +6,7 @@ import { FROZEN_CARDS } from '../../data/factions/frozen';
 import { LION_KING_CARDS } from '../../data/factions/lion_king';
 import { MULAN_CARDS } from '../../data/factions/mulan';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
-import { getModifiedBaseVp, isMinionProtected } from '../../domain/ongoingEffects';
+import { fireTriggers, getModifiedBaseVp, isMinionProtected } from '../../domain/ongoingEffects';
 import type { AbilityTag } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { runCommand } from '../testRunner';
@@ -767,6 +767,79 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-cub', 'too-strong']);
     });
 
+    it('狮子王：沙祖作为每回合天赋使用，木法沙在弃牌堆时仍必须让玩家二选一', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('draw-card', 'lion_king_lion_cub', 'minion', '0')],
+                    discard: [makeCard('mufasa-discard', 'lion_king_mufasa', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_pride_rock', [
+                makeMinion('zazu', 'lion_king_zazu', '0', 3),
+                makeMinion('ally', 'lion_king_nala', '0', 4),
+            ])],
+        });
+
+        const result = invokeRegisteredAbilityContract('lion_king_zazu', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'zazu',
+            defId: 'lion_king_zazu',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 34,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.mode)).toEqual(['add_temp_power_here_2', 'draw_card']);
+
+        const chosePower = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.mode === 'add_temp_power_here_2',
+            '沙祖选择第一个效果',
+            '0',
+            FIXED_RANDOM,
+        );
+        const targetPrompt = getSimpleChoicePrompt(chosePower.finalState, 'disney_four_factions_prompt');
+        expect(getPromptOptions(targetPrompt).map(option => option.value?.minionUid)).toEqual(['ally']);
+        const powered = respondToPromptOption(
+            chosePower.finalState,
+            option => option.value?.minionUid === 'ally',
+            '沙祖选择另一个角色',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(powered.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'ally', amount: 2, reason: 'lion_king_zazu' }),
+        }));
+        expect(powered.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+
+        const drawBranch = invokeRegisteredAbilityContract('lion_king_zazu', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'zazu',
+            defId: 'lion_king_zazu',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 35,
+        });
+        const drawn = respondToPromptOption(
+            drawBranch.matchState!,
+            option => option.value?.mode === 'draw_card',
+            '沙祖选择抽牌',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(drawn.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-card']);
+    });
+
     it('狮子王：哈库那玛塔塔先抽两张，再让玩家选择是否回收丁满和彭彭', () => {
         const core = makeState({
             players: {
@@ -876,6 +949,92 @@ describe('迪士尼四派系代表性玩法行为', () => {
         }));
         expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'first-ally')).toBe(true);
         expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'chosen-ally')).toBe(true);
+    });
+
+    it('狮子王：鬣狗巢穴天赋必须能选择这里的己方角色并给本回合 +2', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [makeBase({
+                defId: 'base_pride_rock',
+                minions: [
+                    makeMinion('first-ally', 'lion_king_zazu', '0', 2),
+                    makeMinion('chosen-ally', 'lion_king_nala', '0', 4),
+                    makeMinion('enemy', 'frozen_snowgie', '1', 2),
+                ],
+                ongoingActions: [{ uid: 'hyenas-den', defId: 'lion_king_hyenas_den', ownerId: '0' }],
+            })],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'hyenas-den', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(talent.success, talent.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(talent.finalState, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.minionUid)).toEqual(['first-ally', 'chosen-ally']);
+
+        const powered = respondToPromptOption(
+            talent.finalState,
+            option => option.value?.minionUid === 'chosen-ally',
+            '鬣狗巢穴天赋选择目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(powered.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'chosen-ally', amount: 2, reason: 'lion_king_hyenas_den_talent' }),
+        }));
+        expect(powered.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'enemy' }),
+        }));
+    });
+
+    it('狮子王：角色打到丛林乐园后必须触发选择一个己方角色放 +1', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [makeBase('base_jungle_paradise', [
+                makeMinion('played-minion', 'lion_king_zazu', '0', 3),
+                makeMinion('chosen-ally', 'lion_king_nala', '0', 4),
+                makeMinion('enemy', 'frozen_snowgie', '1', 2),
+            ])],
+        });
+
+        const result = fireTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinion: core.bases[0].minions[0],
+            triggerMinionUid: 'played-minion',
+            triggerMinionDefId: 'lion_king_zazu',
+            triggerMinionPower: 3,
+            random: FIXED_RANDOM,
+            now: 36,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(prompt).map(option => option.value?.minionUid ?? (option.value?.skip ? 'skip' : undefined))).toEqual([
+            'played-minion',
+            'chosen-ally',
+            'skip',
+        ]);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            '丛林乐园选择己方角色',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'chosen-ally')?.powerCounters).toBe(1);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.powerCounters ?? 0).toBe(0);
     });
 
     it('狮子王：牛羚踩踏必须选择要摧毁的己方角色，再选择牌库角色', () => {

@@ -38,10 +38,13 @@ type ImmediateExtraLimitPayload = LimitModifiedEvent['payload'] & { playTiming: 
 type ImmediateExtraMinionPayload = ImmediateExtraLimitPayload & { limitType: 'minion' };
 type ImmediateExtraActionPayload = ImmediateExtraLimitPayload & { limitType: 'action' };
 
+type ImmediateMinionCardSource = 'hand' | 'deck' | 'stored' | 'discard';
+type ImmediateActionCardSource = 'hand' | 'stored' | 'discard';
+
 type ImmediateMinionCardChoice =
-    | { cardUid: string; defId: string; source?: 'hand' | 'deck' | 'stored' }
+    | { cardUid: string; defId: string; source?: ImmediateMinionCardSource }
     | { titanUid: string; defId: string; playKind: 'minion' };
-type ImmediateActionCardChoice = { cardUid: string; defId: string; source?: 'hand' | 'stored' };
+type ImmediateActionCardChoice = { cardUid: string; defId: string; source?: ImmediateActionCardSource };
 type ImmediateBaseChoice = { baseIndex: number };
 type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
@@ -116,8 +119,50 @@ function buildImmediateExtraValidateOptions(
                 ...(extra.sameNameOnly ? { sameNameOnly: true } : {}),
                 ...(extra.sameNameDefId ? { sameNameDefId: extra.sameNameDefId } : {}),
                 ...(extra.specificCardUid ? { specificCardUid: extra.specificCardUid } : {}),
+                ...(extra.allowFromDiscard ? { allowFromDiscard: true } : {}),
             },
         },
+    };
+}
+
+function buildImmediateMinionPlayPayload(
+    choice: Exclude<ImmediateMinionCardChoice, { titanUid: string }>,
+    baseIndex: number,
+    extra: ImmediateExtraMinionPayload,
+) {
+    return {
+        cardUid: choice.cardUid,
+        baseIndex,
+        ...(choice.source === 'deck' ? { fromDeck: true } : {}),
+        ...(choice.source === 'stored' ? { fromStored: true } : {}),
+        ...(choice.source === 'discard'
+            ? {
+                fromDiscard: true,
+                discardPlaySourceId: extra.reason,
+                consumesNormalLimit: false,
+            }
+            : {}),
+    };
+}
+
+function buildImmediateActionPlayPayload(
+    choice: ImmediateActionCardChoice,
+    extra: ImmediateExtraActionPayload,
+    targetBaseIndex?: number,
+    targetMinionUid?: string,
+) {
+    return {
+        cardUid: choice.cardUid,
+        targetBaseIndex,
+        targetMinionUid,
+        ...(choice.source === 'stored' ? { fromStored: true } : {}),
+        ...(choice.source === 'discard'
+            ? {
+                fromDiscard: true,
+                discardPlaySourceId: extra.reason,
+                consumesNormalLimit: false,
+            }
+            : {}),
     };
 }
 
@@ -131,7 +176,7 @@ function buildImmediateExtraMinionCardOptions(
 
     const buildCardOptions = (
         cards: typeof player.hand,
-        source: 'hand' | 'deck' | 'stored',
+        source: ImmediateMinionCardSource,
         idPrefix: string,
     ) => cards
         .filter(card => isCardMinionLike(card))
@@ -146,12 +191,7 @@ function buildImmediateExtraMinionCardOptions(
                 .filter(baseIndex => validate(state, {
                     type: SU_COMMANDS.PLAY_MINION,
                     playerId: extra.playerId,
-                    payload: {
-                        cardUid: card.uid,
-                        baseIndex,
-                        ...(source === 'deck' ? { fromDeck: true } : {}),
-                        ...(source === 'stored' ? { fromStored: true } : {}),
-                    },
+                    payload: buildImmediateMinionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, baseIndex, extra),
                 }, validateOptions).valid);
 
             if (validBaseIndices.length === 0) return [];
@@ -168,6 +208,9 @@ function buildImmediateExtraMinionCardOptions(
     const handOptions = buildCardOptions(player.hand, 'hand', 'card');
     const deckOptions = buildCardOptions(player.deck, 'deck', 'deck-card');
     const storedOptions = buildCardOptions(player.storedCards ?? [], 'stored', 'stored-card');
+    const discardOptions = extra.allowFromDiscard
+        ? buildCardOptions(player.discard, 'discard', 'discard-card')
+        : [];
 
     const titanOptions = extra.specificCardUid ? [] : getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
         .filter(titan => !extra.sameNameDefId || isSameNameDefId(titan.defId, extra.sameNameDefId))
@@ -198,7 +241,7 @@ function buildImmediateExtraMinionCardOptions(
             }];
         });
 
-    return [...handOptions, ...deckOptions, ...storedOptions, ...titanOptions, createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
+    return [...handOptions, ...deckOptions, ...storedOptions, ...discardOptions, ...titanOptions, createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
 }
 
 function buildImmediateExtraMinionBaseOptions(
@@ -232,12 +275,7 @@ function buildImmediateExtraMinionBaseOptions(
         .filter(candidate => validate(state, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: extra.playerId,
-            payload: {
-                cardUid: choice.cardUid,
-                baseIndex: candidate.baseIndex,
-                ...(choice.source === 'deck' ? { fromDeck: true } : {}),
-                ...(choice.source === 'stored' ? { fromStored: true } : {}),
-            },
+            payload: buildImmediateMinionPlayPayload(choice, candidate.baseIndex, extra),
         }, validateOptions).valid);
 
     return buildBaseTargetOptions(candidates, state.core);
@@ -253,7 +291,7 @@ function buildImmediateExtraActionCardOptions(
 
     const buildActionOptions = (
         cards: typeof player.hand,
-        source: 'hand' | 'stored',
+        source: ImmediateActionCardSource,
         idPrefix: string,
     ) => cards
         .filter(card => isCardActionLike(card))
@@ -272,7 +310,7 @@ function buildImmediateExtraActionCardOptions(
                     return validate(state, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
-                        payload: { cardUid: card.uid, ...(source === 'stored' ? { fromStored: true } : {}) },
+                        payload: buildImmediateActionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, extra),
                     }, validateOptions).valid;
                 }
                 if (targetMode === 'base') {
@@ -289,7 +327,7 @@ function buildImmediateExtraActionCardOptions(
                             ? validate(state, {
                                 type: SU_COMMANDS.PLAY_ACTION,
                                 playerId: extra.playerId,
-                                payload: { cardUid: card.uid, targetBaseIndex: baseIndex, ...(source === 'stored' ? { fromStored: true } : {}) },
+                                payload: buildImmediateActionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, extra, baseIndex),
                             }, validateOptions)
                             : { valid: false, error: blockedByBaseRestriction ? 'restricted_to_other_base' : 'restricted_by_window' };
                         return {
@@ -310,7 +348,7 @@ function buildImmediateExtraActionCardOptions(
                     return base.minions.some(minion => validate(state, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
-                        payload: { cardUid: card.uid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid, ...(source === 'stored' ? { fromStored: true } : {}) },
+                        payload: buildImmediateActionPlayPayload({ cardUid: card.uid, defId: card.defId, source }, extra, baseIndex, minion.uid),
                     }, validateOptions).valid);
                 });
             })();
@@ -328,6 +366,7 @@ function buildImmediateExtraActionCardOptions(
     const options = [
         ...buildActionOptions(player.hand, 'hand', 'card'),
         ...buildActionOptions(player.storedCards ?? [], 'stored', 'stored-card'),
+        ...(extra.allowFromDiscard ? buildActionOptions(player.discard, 'discard', 'discard-card') : []),
     ];
 
     return [...options, createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
@@ -348,7 +387,7 @@ function buildImmediateExtraActionBaseOptions(
         .filter(candidate => validate(state, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: extra.playerId,
-            payload: { cardUid: choice.cardUid, targetBaseIndex: candidate.baseIndex, ...(choice.source === 'stored' ? { fromStored: true } : {}) },
+            payload: buildImmediateActionPlayPayload(choice, extra, candidate.baseIndex),
         }, validateOptions).valid);
 
     return buildBaseTargetOptions(candidates, state.core);
@@ -374,7 +413,7 @@ function buildImmediateExtraActionMinionOptions(
             if (!validate(state, {
                 type: SU_COMMANDS.PLAY_ACTION,
                 playerId: extra.playerId,
-                payload: { cardUid: choice.cardUid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid, ...(choice.source === 'stored' ? { fromStored: true } : {}) },
+                payload: buildImmediateActionPlayPayload(choice, extra, baseIndex, minion.uid),
             }, validateOptions).valid) {
                 continue;
             }
@@ -415,12 +454,7 @@ function executeImmediateExtraMinionPlay(
         : validate(state, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: extra.playerId,
-            payload: {
-                cardUid: choice.cardUid,
-                baseIndex,
-                ...(choice.source === 'deck' ? { fromDeck: true } : {}),
-                ...(choice.source === 'stored' ? { fromStored: true } : {}),
-            },
+            payload: buildImmediateMinionPlayPayload(choice, baseIndex, extra),
         }, validateOptions);
     if (!validation.valid) {
         return { matchState: state, events: [] };
@@ -437,12 +471,7 @@ function executeImmediateExtraMinionPlay(
         : execute(execState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: extra.playerId,
-            payload: {
-                cardUid: choice.cardUid,
-                baseIndex,
-                ...(choice.source === 'deck' ? { fromDeck: true } : {}),
-                ...(choice.source === 'stored' ? { fromStored: true } : {}),
-            },
+            payload: buildImmediateMinionPlayPayload(choice, baseIndex, extra),
             timestamp,
     }, random);
     const needsBankedExtra = 'titanUid' in choice || choice.source === undefined || choice.source === 'hand';
@@ -499,7 +528,7 @@ function executeImmediateExtraActionPlay(
     const validation = validate(state, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId: extra.playerId,
-        payload: { cardUid: choice.cardUid, targetBaseIndex, targetMinionUid, ...(choice.source === 'stored' ? { fromStored: true } : {}) },
+        payload: buildImmediateActionPlayPayload(choice, extra, targetBaseIndex, targetMinionUid),
     }, validateOptions);
     if (!validation.valid) {
         return { matchState: state, events: [] };
@@ -509,10 +538,10 @@ function executeImmediateExtraActionPlay(
     const events = execute(execState, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId: extra.playerId,
-        payload: { cardUid: choice.cardUid, targetBaseIndex, targetMinionUid, ...(choice.source === 'stored' ? { fromStored: true } : {}) },
+        payload: buildImmediateActionPlayPayload(choice, extra, targetBaseIndex, targetMinionUid),
         timestamp,
     }, random);
-    const needsBankedExtra = choice.source !== 'stored';
+    const needsBankedExtra = choice.source !== 'stored' && choice.source !== 'discard';
     return {
         matchState: execState,
         events: [...(needsBankedExtra ? [grantExtraAction(extra.playerId, extra.reason, timestamp)] : []), ...events],

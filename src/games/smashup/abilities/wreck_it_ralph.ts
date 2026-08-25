@@ -75,6 +75,7 @@ type PowerStripMoveChoice = {
     minionDefId?: string;
     fromBaseIndex?: number;
     toBaseIndex?: number;
+    skip?: true;
 };
 
 type PowerStripPromptContext = {
@@ -1266,12 +1267,22 @@ const powerStripPromptProgram = createPromptProgram<PowerStripPromptContext, Sma
         `${BASE_THE_POWER_STRIP}_${context.now}_${context.baseIndex}`,
         context.playerId,
         '电源插排：选择一个己方角色移入或移出此基地',
-        collectPowerStripMoveOptions(context.matchState.core, context.playerId, context.baseIndex),
+        [
+            ...collectPowerStripMoveOptions(context.matchState.core, context.playerId, context.baseIndex),
+            {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'ui.common.skip',
+                value: { skip: true },
+                displayMode: 'button',
+            },
+        ],
         {
             titleKey: 'ui.base_the_power_strip_title',
             sourceId: BASE_THE_POWER_STRIP,
             targetType: 'minion',
             responseValidationMode: 'live',
+            autoResolveIfSingle: false,
         },
     ),
     onResolve: ({ state, playerId, value, context, timestamp }) => {

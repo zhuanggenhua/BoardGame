@@ -1,5 +1,6 @@
 import {
     createBaseSystems,
+    createCheatSystem,
     createFlowSystem,
     createGameEngine,
     createTimingOpportunitySystem,
@@ -27,6 +28,7 @@ const systems = [
             snapshotCommandAllowlist: UNDO_ALLOWLIST,
         },
     }),
+    createCheatSystem<MageWarsCore>(),
     createTimingOpportunitySystem(MageWarsDomain, createMageWarsTimingOpportunitySystemConfig()),
     createMageWarsInteractionSystem(),
 ];

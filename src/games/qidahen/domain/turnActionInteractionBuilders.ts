@@ -70,7 +70,7 @@ function buildQidahenHandLimitDiscardInteraction(
         .filter((card) => optionIds.has(card.id))
         .map((card) => ({
             id: card.id,
-            label: card.id,
+            label: card.label,
             value: { cardId: card.id },
             displayMode: 'card' as const,
         }));
@@ -85,6 +85,7 @@ function buildQidahenHandLimitDiscardInteraction(
         multi: {
             min: selection.requiredDiscardCount,
             max: selection.requiredDiscardCount,
+            ordered: true,
         },
         subtitle: `手牌 ${selection.handCount}/${selection.handLimit} · 需弃 ${selection.requiredDiscardCount} 张`,
     }) as QidahenHandLimitDiscardInteraction;

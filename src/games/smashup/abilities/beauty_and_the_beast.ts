@@ -46,6 +46,7 @@ const PETALS_OF_THE_ROSE = 'beauty_and_the_beast_petals_of_the_rose';
 const GASTON = 'beauty_and_the_beast_gaston';
 const BASE_ENCHANTED_CASTLE = 'base_enchanted_castle';
 const BASE_GASTONS_TAVERN = 'base_gastons_tavern';
+const DISCARDED_ACTION_SPECIALS = [BREAK_THE_CURSE, DISCOVER_THE_LIBRARY, EVER_A_SURPRISE] as const;
 
 type BelleTalentChoice =
     | { mode: 'draw' }
@@ -678,33 +679,38 @@ function playDiscardedEnchantedObject(ctx: TriggerContext): SmashUpEvent[] {
     if (!wasHandDiscard(ctx) || !ctx.sourceCardUid || ctx.sourceControllerId !== ctx.playerId) return [];
     if (ctx.state.players[ctx.playerId]?.usedDiscardPlayAbilities?.includes(ENCHANTED_OBJECTS_USAGE)) return [];
     if (!(ctx.discardedCards ?? []).some(card => card.uid === ctx.sourceCardUid && card.defId === ENCHANTED_OBJECTS)) return [];
-    const baseIndex = ctx.state.bases.findIndex(base => base.minions.some(minion => minion.controller === ctx.playerId));
-    const targetBaseIndex = baseIndex >= 0 ? baseIndex : 0;
-    const def = getCardDef(ENCHANTED_OBJECTS);
-    return [{
-        type: SU_EVENTS.MINION_PLAYED,
-        payload: {
-            playerId: ctx.playerId,
-            cardUid: ctx.sourceCardUid,
-            defId: ENCHANTED_OBJECTS,
-            baseIndex: targetBaseIndex,
-            ownerId: ctx.sourceOwnerPlayerId ?? ctx.playerId,
-            baseDefId: ctx.state.bases[targetBaseIndex]?.defId,
-            power: def?.type === 'minion' ? def.power ?? 0 : 0,
-            fromDiscard: true,
-            consumesNormalLimit: false,
-            discardPlaySourceId: ENCHANTED_OBJECTS_USAGE,
-        },
-        timestamp: ctx.now,
-    } as SmashUpEvent];
+    return [
+        grantContextualExtraMinion(
+            { playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState },
+            ENCHANTED_OBJECTS_USAGE,
+            undefined,
+            { specificCardUid: ctx.sourceCardUid, allowFromDiscard: true },
+        ),
+    ];
 }
 
 function discardedActionSpecial(ctx: AbilityContext): AbilityResult {
     return {
         events: [
-            grantContextualExtraAction(ctx, ctx.defId, { restrictToCardUid: ctx.cardUid }),
+            grantContextualExtraAction(ctx, ctx.defId, { restrictToCardUid: ctx.cardUid, allowFromDiscard: true }),
         ],
     };
+}
+
+function playDiscardedActionSpecial(ctx: TriggerContext): SmashUpEvent[] {
+    if (!wasHandDiscard(ctx) || !ctx.sourceCardUid || ctx.sourceControllerId !== ctx.playerId) return [];
+    const discarded = ctx.discardedCards?.find(card =>
+        card.uid === ctx.sourceCardUid
+        && DISCARDED_ACTION_SPECIALS.includes(card.defId as typeof DISCARDED_ACTION_SPECIALS[number]),
+    );
+    if (!discarded) return [];
+    return [
+        grantContextualExtraAction(
+            { playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState },
+            discarded.defId,
+            { restrictToCardUid: discarded.uid, allowFromDiscard: true },
+        ),
+    ];
 }
 
 const petalsPromptProgram = createPromptProgram<PetalsContext, SmashUpCore, SmashUpEvent>({
@@ -859,6 +865,20 @@ export function registerBeautyAndTheBeastAbilities(): void {
     registerAbilityProgram(EVER_A_SURPRISE, 'onPlay', { program: createEffectProgram(everASurprise) });
     registerAbilityProgram(EVER_A_SURPRISE, 'special', { program: createEffectProgram(discardedActionSpecial) });
     registerAbilityProgram('beauty_and_the_beast_this_provincial_town', 'onPlay', { program: createEffectProgram(thisProvincialTown) });
+
+    for (const defId of DISCARDED_ACTION_SPECIALS) {
+        registerTrigger(defId, 'onCardsDiscarded', playDiscardedActionSpecial, {
+            global: true,
+            globalZones: ['hand', 'discard'],
+            optional: true,
+            playerContext: 'sourceController',
+            baseScoped: false,
+            canTrigger: ctx => wasHandDiscard(ctx)
+                && ctx.playerId === ctx.sourceControllerId
+                && !!ctx.sourceCardUid
+                && (ctx.discardedCards ?? []).some(card => card.uid === ctx.sourceCardUid && card.defId === defId),
+        });
+    }
 
     registerInteractionHandler(BASE_ENCHANTED_CASTLE, (state, playerId, value, data, _random, timestamp) => {
         const choice = value as EnchantedCastleChoice | undefined;

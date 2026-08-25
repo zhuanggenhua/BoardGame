@@ -63,7 +63,6 @@ export const buildInitialHandCards = (
             return {
                 ...ordinaryHandCard,
                 id: cardId,
-                label: `${factions[factionId].name} 手牌 ${index + 1}`,
                 faction: factionId,
                 accent: factionId,
                 status: index < factions[factionId].handCount ? 'payable' as const : 'idle' as const,
@@ -92,7 +91,6 @@ export const buildDrawnHandCards = (
         return {
             ...ordinaryHandCard,
             id: `hand-${currentMaxIndex + index + 1}`,
-            label: `${state.factions[factionId].name} 手牌 ${factionCardCount + index + 1}`,
             faction: factionId,
             accent: factionId,
             status: 'payable' as const,

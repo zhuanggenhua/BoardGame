@@ -104,14 +104,29 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                         );
                     })}
                 </div>
+            ) : !hasOptions && canResolve ? (
+                <div className="mt-[0.7vw] space-y-[0.45vw]">
+                    <GameButton
+                        onClick={onConfirm}
+                        variant="primary"
+                        size="sm"
+                        className="!h-[2.25vw] !min-h-0 !rounded-[0.5vw] !px-[0.75vw] !py-0 !text-[0.72vw]"
+                    >
+                        {t('compareRoll.confirm')}
+                    </GameButton>
+                    <div
+                        className="text-[0.7vw] font-semibold leading-tight text-white/55"
+                        data-testid="compare-roll-autoconfirm"
+                    >
+                        {t('compareRoll.confirming')}
+                    </div>
+                </div>
             ) : (
                 <div
                     className="mt-[0.55vw] text-[0.75vw] font-semibold leading-tight text-white/65"
-                    data-testid={hasOptions ? 'compare-roll-waiting' : 'compare-roll-autoconfirm'}
+                    data-testid="compare-roll-waiting"
                 >
-                    {hasOptions && !canResolve
-                        ? t('compareRoll.waitingForOwnerChoice')
-                        : t('compareRoll.confirming')}
+                    {t('compareRoll.waitingForOwnerChoice')}
                 </div>
             )}
         </motion.div>

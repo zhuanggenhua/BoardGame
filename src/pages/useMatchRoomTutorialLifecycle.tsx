@@ -264,9 +264,10 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const currentTutorialRouteKey = isTutorialRoute && currentManifestId
         ? `${tutorialId ?? currentManifestId}:${currentManifestId}`
         : null;
-    const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, tutorialId);
+    const effectiveTutorialId = tutorialId ?? currentManifestId ?? undefined;
+    const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, effectiveTutorialId);
     const nextTutorialId = currentTutorialEntry?.nextTutorialId;
-    const completedTutorialCatalogId = resolveCompletedTutorialCatalogId(tutorialCatalog, tutorialId);
+    const completedTutorialCatalogId = resolveCompletedTutorialCatalogId(tutorialCatalog, effectiveTutorialId);
     const restorableTutorialProgress = readRestorableTutorialProgress({
         gameId,
         tutorialId,

@@ -484,7 +484,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
             <div className="flex items-end gap-3 pointer-events-auto">
                 {/* 牌库 - 左侧 */}
                 <div
-                    className={`flex flex-col items-center group ${(hasPlayableFromDeck || (deckQueryEnabled && aggregatedDeckCards.length > 0)) ? 'cursor-pointer' : ''}`}
+                    className={`relative flex flex-col items-center group ${(hasPlayableFromDeck || (deckQueryEnabled && aggregatedDeckCards.length > 0)) ? 'cursor-pointer' : ''}`}
                     data-testid="su-deck-stack"
                     data-tutorial-id="su-deck-stack"
                     data-deck-toggle

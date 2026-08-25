@@ -192,6 +192,17 @@ const BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK: TutorialManifest = {
             position: 'right',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION],
+            aiActions: [
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '1',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '2',
+                },
+            ],
+            autoAdvanceAfterAi: false,
             advanceOnEvents: [{ type: 'CARD_RESOLUTION_ACKNOWLEDGED', match: { playerId: '0', remainingCount: 0 } }],
             viewAs: '0',
         },

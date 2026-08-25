@@ -204,25 +204,82 @@
     }
   },
   "tutorial": {
+    "chapters": {
+      "basic": {
+        "title": "First Game Flow: Read, Prepare, Resolve",
+        "description": "Start with the win condition, mage readouts, channeling, and planning, then continue through summoning, movement, walls, guard, healing, and status removal."
+      },
+      "wallAndLineOfSight": {
+        "title": "Continuation: Walls, Line of Sight, Passage",
+        "description": "Walls are placed on zone borders; blocked line of sight prevents choosing that object or zone as a target."
+      },
+      "guard": {
+        "title": "Continuation: Guard",
+        "description": "A creature may choose to take a quick action to guard, protecting its zone and gaining Counterstrike."
+      },
+      "healing": {
+        "title": "Continuation: Healing",
+        "description": "Healing removes damage from living creatures and conjurations."
+      },
+      "restoreAndBurn": {
+        "title": "Continuation: Burn And Restore",
+        "description": "The removal cost for a Burn marker is 2; Restore may pay removal costs to remove status markers."
+      }
+    },
+    "wallAndLineOfSight": {
+      "steps": {
+        "setup": "During Deployment, continue with a wall. A wall is placed on a zone border, the line between two zones.",
+        "wallPurpose": "A wall is a subtype of conjuration spell. Walls are always placed on zone borders.",
+        "castThornsWall": "Choose “Wall of Thorns” in your prepared spells, then click the edge between Left Rear and Center-Left Rear. The highlighted target is the legal wall edge, not a whole zone.",
+        "wallCardOnEdge": "After the wall resolves, the edge shows the Wall of Thorns card face. That border has a wall.",
+        "lineOfSightAndPassage": "If line of sight to an object or zone is blocked, you cannot choose it as a target. Every creature that passes through this wall is automatically attacked by the wall; the attack happens before the creature moves."
+      }
+    },
+    "guard": {
+      "steps": {
+        "setup": "During the Action Stage, continue with Guard. A creature may choose to take a quick action to guard, protecting its zone and gaining Counterstrike.",
+        "guardRule": "When making a melee attack, if there is an enemy guard in your zone, you must attack the enemy guard. A melee attack removes the Guard marker from the guarding creature.",
+        "guardCleric": "Click the Asyran Cleric on the right, then click the Guard token directly below its card.",
+        "guardTokenResult": "The Asyran Cleric gains a Guard marker. The Guard marker is directly below the unit card."
+      }
+    },
+    "healing": {
+      "steps": {
+        "setup": "During the Action Stage, continue with Healing. Healing removes damage from living creatures and conjurations.",
+        "healingRule": "Asyran Cleric: Healing Light is a full action ability at range 0-1, targets a living creature, and heals damage equal to the die result.",
+        "healWoundedBobcat": "Click the Asyran Cleric in the same zone, click “Healing Light”, then click the wounded Wild Bobcat.",
+        "healingResultAndLifeReadout": "Healing removes damage from living creatures and conjurations. The Wild Bobcat has less damage; the life readout shows current remaining life.",
+        "lifeToggle": "Click the eye button to show all life readouts; click it again to turn always-visible readouts off."
+      }
+    },
+    "restoreAndBurn": {
+      "steps": {
+        "setup": "For status handling, continue with Burn and Restore. The removal cost for a Burn marker is 2.",
+        "burnRule": "Burn means the object is on fire and is a flame condition. During each Upkeep Phase, roll one attack die for each Burn marker on each object and deal direct damage. On a 0, remove that Burn marker.",
+        "restoreBurningCleric": "Click the Priestess mage body, click “Restore”, then click the Asyran Cleric with the Burn token. Restore targets a creature within 1 zone and pays the removal cost to remove one status type.",
+        "restoreResult": "The Burn marker is removed. After status removal, the Burn token is gone from the target card, and the mage mana and action marker have changed."
+      }
+    },
     "steps": {
-      "intro": "Defeat the opposing mage to win. The Beastmaster builds mana, prepares spells, summons creatures, then uses position and attacks to pressure the enemy.",
-      "selfHud": "The Beastmaster has 24 life, 10 channeling, and a mana pool. Mana pays for summons and incantations; damage up to your life total means defeat.",
-      "stage": "The phase track shows where the round is. Preparation phases advance after both players confirm; action phases resolve in player order.",
-      "advanceChannel": "Click “End Turn” to finish reset. Once both players confirm, channeling gives the Beastmaster this round's mana income.",
-      "channelResult": "Channeling adds 10 mana. This round you can summon Jungle Wolf and still keep an incantation ready so it can act at once.",
-      "advanceUpkeep": "Upkeep resolves ongoing effects and status. There is no upkeep cost in this position, so click “End Turn” to continue into planning.",
-      "advancePlanning": "During planning, secretly prepare up to two spellbook cards. Click “End Turn” to open this round's spell choice.",
-      "planWolf": "Choose the Creature category, go to the next page, and select “Jungle Wolf”; then switch to Incantation, go to the next page, select “Rouse the Beast”, and click “Prepare 2”. This pair turns a summon into immediate pressure.",
-      "preparedAndHidden": "Your two prepared spells are below; the opponent also has hidden prepared spells. A spell moves to discard after it is cast and revealed.",
-      "deployWolf": "Choose “Jungle Wolf” in your prepared spells, then click the Beastmaster's zone to summon it. A newly summoned creature enters play with its action marker spent.",
-      "rouseWolf": "Choose “Rouse the Beast” in your prepared spells, then click Jungle Wolf in the arena. The incantation readies a living creature summoned this round.",
-      "passYourDeployment": "Jungle Wolf is ready to act. After your deployment ends, the opponent will reveal prepared spells of their own.",
-      "opponentDeploy": "The opponent summons Asyran Cleric. Revealed enemy creatures stay in the arena, where you can read life, armor, and damage.",
-      "opponentAttackSpell": "The opponent casts Pillar of Light at the cleric. Spell attacks show dice, damage, and any status that appears.",
-      "discardReading": "The discard pile records spells that were revealed and resolved. Seeing Pillar of Light there tells you one attack spell is gone.",
-      "skipToCreatureAction": "After both quickcast windows are passed, the round enters creature actions. The roused Jungle Wolf can still move.",
-      "moveWolf": "Click Jungle Wolf, then click an adjacent zone to move it. After moving, the wolf is closer to the center line and threatens more targets.",
-      "finish": "You have completed a basic round: channel mana, prepare spells, summon, rouse, read public information, and move a creature into a stronger position."
+      "intro": "Mage Wars lasts several rounds, until one mage has taken enough damage to be destroyed. The last mage standing wins the game.",
+      "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; damage equal to life destroys the mage.",
+      "opponentHud": "The opponent panel shows the same readouts. Opponent prepared spells use card backs and a count, so card names stay hidden until revealed.",
+      "stage": "Each game round has two stages: the Ready Stage and the Action Stage. The Action Stage begins after the Ready Stage is complete.",
+      "advanceChannel": "Click “End Turn” to finish the Reset Phase. During the Channel Phase, each mage adds mana equal to its channeling value to its mana supply.",
+      "channelResult": "The Beastmaster currently has Channeling 10; after channeling, the mana supply gains 10 mana.",
+      "advanceUpkeep": "Some spells have upkeep costs; some spells and conditions take effect during Upkeep. There is no upkeep cost in this position, so click “End Turn”.",
+      "advancePlanning": "Planning Phase: each mage chooses up to 2 spells from their spellbook for this round. Click “End Turn” to open the spellbook.",
+      "planWolf": "Choose Creature, go to the next page, and select “Jungle Wolf”; then choose Incantation, go to the next page, select “Rouse the Beast”, and click “Prepare 2”. Rouse the Beast: choose a creature summoned this round and turn its action marker active side up.",
+      "preparedAndHidden": "Both players choose their own spells at the same time. Your chosen spells are kept hidden from the opponent so they cannot know your plan.",
+      "deployWolf": "Choose “Jungle Wolf” in your prepared spells, then click the Beastmaster's zone. Summoning: when you cast a creature spell, it is also called summoning a creature.",
+      "rouseWolf": "Choose “Rouse the Beast” in your prepared spells, then click Jungle Wolf in the arena. Turn the target creature's action marker active side up.",
+      "passYourDeployment": "Deployment begins with the starting player. Click “End Turn” to let the opponent deploy.",
+      "opponentDeploy": "The opponent casts Asyran Cleric. Asyran Cleric: Creature / Cleric, Life 6, Armor 1, Staff quick melee 2 dice.",
+      "opponentAttackSpell": "Pillar of Light: Attack / Light, range 0-2, target creature or conjuration, 2 attack dice; effect die 4-10 Daze, 11+ Stun.",
+      "discardReading": "Each player has their own discard pile. All destroyed objects and spells discarded after casting are placed in the discard pile.",
+      "skipToCreatureAction": "Action Stage: starting with the starting player, players take turns using their creatures to take action phases until all creatures have acted.",
+      "moveWolf": "Click Jungle Wolf, then click an adjacent zone to move it. During a creature's action phase, it can take a move action to move from one zone to another.",
+      "finish": "You have now read the board, channeled, planned, summoned, roused a creature, checked public discard, and moved. Continue to walls, guard, healing, and status removal."
     }
   },
   "actionLog": {

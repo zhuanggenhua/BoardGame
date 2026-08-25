@@ -5714,6 +5714,7 @@
   },
   "compareRoll": {
     "confirming": "Confirming...",
+    "confirm": "Continue",
     "waitingForOwnerChoice": "Waiting for the other player to choose...",
     "rolled": "Rolled {{value}}",
     "gunslingerDuel": {

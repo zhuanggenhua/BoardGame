@@ -894,6 +894,24 @@ function resolveMode(
                 nextProgram: disneyPromptProgram,
             };
         }
+        case 'add_temp_power_here_2': {
+            const baseIndex = context.targetBaseIndex ?? 0;
+            const sourceUid = context.targetMinion?.minionUid;
+            const targets = collectMinions(state.core, (minion, minionBaseIndex) =>
+                minionBaseIndex === baseIndex && minion.uid !== sourceUid,
+            );
+            return {
+                events: [],
+                context: {
+                    ...context,
+                    kind: 'addTempPower',
+                    title: '选择这里另一个角色',
+                    minions: targets,
+                    amount: 2,
+                },
+                nextProgram: disneyPromptProgram,
+            };
+        }
         case 'draw_card':
             return { events: buildStandardDrawEvents(state, context.playerId, 1, random, timestamp) };
         case 'draw_two':
@@ -1515,7 +1533,18 @@ function timonAndPumbaa(ctx: AbilityContext): AbilityResult {
 
 function zazu(ctx: AbilityContext): AbilityResult {
     if (hasMufasaInDiscard(ctx.state, ctx.playerId)) {
-        return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
+        return promptMinion(ctx, {
+            sourceId: 'lion_king_zazu',
+            title: '沙祖：选择效果',
+            kind: 'mode',
+            targetBaseIndex: ctx.baseIndex,
+            targetMinion: { minionUid: ctx.cardUid, minionDefId: ctx.defId, baseIndex: ctx.baseIndex },
+            modes: [
+                { mode: 'add_temp_power_here_2', label: '这里另一个角色本回合 +2 力量' },
+                { mode: 'draw_card', label: '抽 1 张牌' },
+            ],
+            reason: 'lion_king_zazu',
+        });
     }
     return promptMinion(ctx, {
         sourceId: 'lion_king_zazu',
@@ -1822,6 +1851,36 @@ function jungleParadiseAfterMinionDiscarded(ctx: TriggerContext): AbilityResult 
     });
 }
 
+function jungleParadiseAfterMinionPlayed(ctx: TriggerContext): AbilityResult {
+    const baseIndex = ctx.baseIndex;
+    const playerId = ctx.triggerMinion?.controller ?? ctx.playerId;
+    if (baseIndex === undefined || !ctx.triggerMinion || !ctx.matchState) return { events: [] };
+    if (ctx.state.bases[baseIndex]?.defId !== 'base_jungle_paradise') return { events: [] };
+    if (ctx.triggerMinion.controller !== playerId) return { events: [] };
+    const targets = collectMinions(ctx.state, (minion, minionBaseIndex) =>
+        minionBaseIndex === baseIndex && minion.controller === playerId,
+    );
+    if (targets.length === 0) return { events: [] };
+    return promptMinion({
+        state: ctx.state,
+        matchState: ctx.matchState,
+        playerId,
+        cardUid: ctx.triggerMinionUid ?? '',
+        defId: 'base_jungle_paradise',
+        baseIndex,
+        random: ctx.random,
+        now: ctx.now,
+    }, {
+        sourceId: 'base_jungle_paradise',
+        title: '丛林乐园：选择放置 +1 力量标记的角色',
+        kind: 'addCounters',
+        minions: targets,
+        amount: 1,
+        optional: true,
+        reason: 'base_jungle_paradise',
+    });
+}
+
 function validateMulanTalent(ctx: AbilityContext): string | null {
     const source = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
     if (!source || source.defId !== 'mulan_mulan') return '木兰不在这个基地';
@@ -1921,7 +1980,7 @@ export function registerDisneyFourFactionsAbilities(): void {
 
     registerSimpleAbility('lion_king_rafiki', 'onPlay', rafiki);
     registerSimpleAbility('lion_king_timon_and_pumbaa', 'onPlay', timonAndPumbaa);
-    registerSimpleAbility('lion_king_zazu', 'onPlay', zazu);
+    registerSimpleAbility('lion_king_zazu', 'talent', zazu);
     registerSimpleAbility('lion_king_nala', 'onPlay', nala);
     registerSimpleAbility('lion_king_simba', 'onPlay', simba);
     registerSimpleAbility('lion_king_hakuna_matata', 'onPlay', hakunaMatata);
@@ -1958,6 +2017,19 @@ export function registerDisneyFourFactionsAbilities(): void {
             reason: 'lion_king_hyenas_den',
         });
     });
+    registerSimpleAbility('lion_king_hyenas_den', 'talent', (ctx) => {
+        const targets = collectMinions(ctx.state, (minion, baseIndex) =>
+            baseIndex === ctx.baseIndex && minion.controller === ctx.playerId,
+        );
+        return promptMinion(ctx, {
+            sourceId: 'lion_king_hyenas_den_talent',
+            title: '鬣狗巢穴：选择这里一个己方角色',
+            kind: 'addTempPower',
+            minions: targets,
+            amount: 2,
+            reason: 'lion_king_hyenas_den_talent',
+        });
+    });
 
     registerSimpleAbility('mulan_cri_kee', 'onPlay', criKee);
     registerSimpleAbility('mulan_mushu', 'onPlay', mushu);
@@ -1992,6 +2064,14 @@ export function registerDisneyFourFactionsAbilities(): void {
         playerContext: 'eventPlayer',
         canTrigger: ctx => (ctx.sourceBaseIndex ?? ctx.baseIndex) !== undefined
             && ctx.state.bases[ctx.sourceBaseIndex ?? ctx.baseIndex!]?.defId === 'base_jungle_paradise'
+            && ctx.triggerMinion?.controller === ctx.playerId,
+    });
+    registerTrigger('base_jungle_paradise', 'onMinionPlayed', jungleParadiseAfterMinionPlayed, {
+        optional: true,
+        sourceScope: 'triggerBase',
+        playerContext: 'eventPlayer',
+        canTrigger: ctx => ctx.baseIndex !== undefined
+            && ctx.state.bases[ctx.baseIndex]?.defId === 'base_jungle_paradise'
             && ctx.triggerMinion?.controller === ctx.playerId,
     });
 

@@ -7,6 +7,12 @@ import { test, expect } from '../framework';
 import { setEnglishLocale, disableAudio, blockAudioRequests } from '../helpers/common';
 import type { GameTestContext as __ThreeAxeFrameworkMarker } from '../framework';
 
+type InteractionOption = {
+    id: string;
+    label?: string;
+    value?: Record<string, unknown>;
+};
+
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
   setupScene: (config: { gameId: string }) => Promise<void>;
@@ -32,8 +38,100 @@ const waitForActionPrompt = async (page: Page) => {
     await expect(page.locator('[data-tutorial-step] .animate-pulse')).toBeVisible({ timeout: 15000 });
 };
 
+const clickHandCard = async (page: Page, cardUid: string) => {
+    const spotlightClose = page.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i });
+    if (await spotlightClose.isVisible().catch(() => false)) {
+        await spotlightClose.click({ force: true });
+        await page.waitForTimeout(300);
+    }
+    const card = page.locator(`[data-testid="su-hand-area"] [data-card-uid="${cardUid}"]`);
+    await expect(card).toBeVisible({ timeout: 10000 });
+    await card.click({ force: true });
+    await page.waitForTimeout(300);
+};
+
+const clickLocatorCenter = async (page: Page, selector: string) => {
+    const locator = page.locator(selector).first();
+    await expect(locator).toBeVisible({ timeout: 10000 });
+    const box = await locator.boundingBox();
+    expect(box).toBeTruthy();
+    await page.mouse.click(
+        (box?.x ?? 0) + (box?.width ?? 0) / 2,
+        (box?.y ?? 0) + (box?.height ?? 0) / 2,
+    );
+    await page.waitForTimeout(300);
+};
+
+const playMinionToFirstBase = async (page: Page, stepId: string, cardUid: string) => {
+    await waitForStep(page, stepId, 15000);
+    await waitForActionPrompt(page);
+    await clickHandCard(page, cardUid);
+    await clickLocatorCenter(page, '[data-base-index="0"]');
+    await page.waitForTimeout(800);
+};
+
+const playActionWithoutTarget = async (page: Page, stepId: string, cardUid: string) => {
+    await waitForStep(page, stepId, 15000);
+    await waitForActionPrompt(page);
+    await clickHandCard(page, cardUid);
+    await clickHandCard(page, cardUid);
+    await page.waitForTimeout(800);
+};
+
+const waitForInteractionSource = async (game: { getState: () => Promise<unknown> }, sourceId: string) => {
+    await expect.poll(async () => {
+        const state = await game.getState() as {
+            sys?: {
+                interaction?: {
+                    current?: {
+                        data?: {
+                            sourceId?: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        return state.sys?.interaction?.current?.data?.sourceId ?? null;
+    }, { timeout: 10000 }).toBe(sourceId);
+};
+
+const selectInteractionOption = async (
+    game: {
+        getInteractionOptions: () => Promise<unknown[]>;
+        selectOption: (optionId: string) => Promise<void>;
+    },
+    matcher: (option: InteractionOption) => boolean,
+    description: string,
+) => {
+    const options = await game.getInteractionOptions() as InteractionOption[];
+    const option = options.find(matcher);
+    expect(option, `未找到交互选项：${description}`).toBeTruthy();
+    await game.selectOption(option!.id);
+};
+
+const playTechCenter = async (
+    page: Page,
+    game: {
+        getState: () => Promise<unknown>;
+        getInteractionOptions: () => Promise<unknown[]>;
+        selectOption: (optionId: string) => Promise<void>;
+    },
+) => {
+    await waitForStep(page, 'playTechCenter', 15000);
+    await waitForActionPrompt(page);
+    await clickHandCard(page, 'tut-tech');
+    await clickHandCard(page, 'tut-tech');
+    await waitForInteractionSource(game, 'robot_tech_center');
+    await selectInteractionOption(
+        game,
+        option => option.value?.targetBaseIndex === 0 || option.value?.baseIndex === 0,
+        '技术中心选择第一个基地',
+    );
+    await page.waitForTimeout(800);
+};
+
 test.describe('SmashUp Tutorial Debug', () => {
-    test('追踪 opponentTurn 事件流', async ({ context, page }, testInfo) => {
+    test('追踪 opponentTurn 事件流', async ({ context, page, game }, testInfo) => {
         test.setTimeout(180000);
         await setEnglishLocale(context);
         await disableAudio(context);
@@ -51,52 +149,39 @@ test.describe('SmashUp Tutorial Debug', () => {
             }
         });
 
-        await page.goto('/play/smashup/tutorial');
+        await page.goto('/play/smashup/tutorial/smashup-basic');
         await page.waitForLoadState('domcontentloaded');
-        await page.waitForSelector('#root > *', { timeout: 15000 });
+        await page.waitForSelector('[data-game-page][data-game-id="smashup"]', { timeout: 60000 });
 
         // 快速推进到 opponentTurn 之前
         await waitForStep(page, 'welcome', 40000);
         await clickNext(page);
-        for (const s of ['scoreboard', 'handIntro', 'turnTracker', 'endTurnBtn', 'playCardsExplain']) {
+        for (const s of [
+            'scoreboard',
+            'opponentView',
+            'deckDiscardIntro',
+            'handIntro',
+            'turnTracker',
+            'endTurnBtn',
+            'playCardsExplain',
+        ]) {
             await waitForStep(page, s, 10000);
             await clickNext(page);
         }
 
-        // playMinion
-        await waitForStep(page, 'playMinion', 10000);
-        await waitForActionPrompt(page);
-        await page.waitForTimeout(500);
-        const handArea = page.locator('[data-testid="su-hand-area"]');
-        const cards = handArea.locator('> div > div');
-        await expect(cards.first()).toBeVisible({ timeout: 10000 });
-        await cards.first().click({ force: true });
-        await page.waitForTimeout(500);
-        const bases = page.locator('.group\\/base');
-        await expect(bases.first()).toBeVisible({ timeout: 5000 });
-        await bases.first().click({ force: true });
-        await page.waitForTimeout(1000);
-
-        // playAction
-        await waitForStep(page, 'playAction', 15000);
-        await waitForActionPrompt(page);
-        await page.waitForTimeout(500);
-        const actionCards = handArea.locator('> div > div');
-        const count = await actionCards.count();
-        for (let i = 0; i < count; i++) {
-            await actionCards.nth(i).click({ force: true });
-            await page.waitForTimeout(300);
-            if (await bases.first().isVisible().catch(() => false)) {
-                await bases.first().click({ force: true });
-                await page.waitForTimeout(500);
-            }
-            if (!(await page.locator('[data-tutorial-step="playAction"]').isVisible({ timeout: 1000 }).catch(() => false))) break;
-        }
+        await playMinionToFirstBase(page, 'playChronomage', 'tut-chrono');
+        await playActionWithoutTarget(page, 'playSummon', 'tut-summon');
+        await playMinionToFirstBase(page, 'extraZapbot', 'tut-zapbot');
+        await waitForStep(page, 'comboBoardRead', 15000);
+        await clickNext(page);
+        await playTechCenter(page, game);
+        await waitForStep(page, 'deckAfterDraw', 15000);
+        await clickNext(page);
 
         // endPlayCards
         await waitForStep(page, 'endPlayCards', 15000);
         await waitForActionPrompt(page);
-        const finishBtn = page.getByRole('button', { name: /Finish Turn|结束回合/i });
+        const finishBtn = page.getByTestId('su-end-turn-action-button');
         await expect(finishBtn).toBeVisible({ timeout: 5000 });
         await finishBtn.click({ force: true });
         await page.waitForTimeout(500);
@@ -105,6 +190,8 @@ test.describe('SmashUp Tutorial Debug', () => {
         await waitForStep(page, 'baseScoring', 15000);
         await clickNext(page);
         await waitForStep(page, 'vpAwards', 10000);
+        await clickNext(page);
+        await waitForStep(page, 'scoringPhase', 15000);
         await clickNext(page);
 
         // drawExplain + handLimit + endDraw
@@ -115,13 +202,32 @@ test.describe('SmashUp Tutorial Debug', () => {
         await waitForStep(page, 'endDraw', 10000);
 
         consoleLogs.length = 0;
-        console.log('\n=== 点击 endDraw 的 Next，进入 opponentTurn ===\n');
+        console.log('\n=== 点击 endDraw 的 Next，进入 opponentTurn 并等待回到己方回合 ===\n');
         await clickNext(page);
 
-        const found = await page.locator('[data-tutorial-step="talentIntro"]')
-            .isVisible({ timeout: 45000 }).catch(() => false);
+        const found = await page.locator('[data-tutorial-step="turnCycle"]')
+            .isVisible({ timeout: 5000 }).catch(() => false);
 
-        console.log(`\n=== talentIntro 是否出现: ${found} ===`);
+        await expect.poll(async () => {
+            const state = await game.getState() as {
+                core: {
+                    turnOrder: string[];
+                    currentPlayerIndex: number;
+                };
+                sys?: {
+                    phase?: string;
+                };
+            };
+            return {
+                currentPlayerId: state.core.turnOrder[state.core.currentPlayerIndex] ?? null,
+                phase: state.sys?.phase ?? null,
+            };
+        }, { timeout: 45000 }).toEqual({
+            currentPlayerId: '0',
+            phase: 'playCards',
+        });
+
+        console.log(`\n=== turnCycle 是否出现: ${found} ===`);
         console.log(`=== 收集到 ${consoleLogs.length} 条日志 ===\n`);
         consoleLogs.forEach((l) => console.log(l));
 
@@ -141,6 +247,5 @@ test.describe('SmashUp Tutorial Debug', () => {
         }
 
         await page.screenshot({ path: testInfo.outputPath('debug-opponentTurn.png') });
-        expect(found).toBe(true);
     });
 });

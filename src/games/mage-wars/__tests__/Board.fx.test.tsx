@@ -2912,5 +2912,9 @@ describe('MageWarsBoard wall targeting', () => {
         expect(wallEdge.getAttribute('data-wall-object')).toBe('true');
         expect(wallEdge.getAttribute('data-wall-spell-card-id')).toBe('25700');
         expect(screen.queryByTestId('mage-wars-wall-object')).not.toBeNull();
+        const wallCardPreview = screen.getByTestId('mage-wars-wall-card-preview');
+        expect(wallCardPreview.getAttribute('data-source-card-id')).toBe('25700');
+        expect(wallCardPreview.getAttribute('data-wall-visual')).toBe('spell-card');
+        expect(wallCardPreview.textContent).toContain('荆棘之墙');
     });
 });
