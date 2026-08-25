@@ -386,7 +386,6 @@ function collectKingCandyDestinationOptions(core: SmashUpCore, baseIndex: number
 function collectMinionsAtBaseOptions(
     core: SmashUpCore,
     baseIndex: number,
-    playerId: PlayerId,
 ): PromptOption<MinionChoice>[] {
     return (core.bases[baseIndex]?.minions ?? []).map((minion, index) => ({
         id: `minion-${index}-${minion.uid}`,
@@ -772,7 +771,7 @@ const kingCandyTargetPromptProgram = createPromptProgram<KingCandyPromptContext,
         `${KING_CANDY}_target_${context.now}_${context.sourceCardUid}`,
         context.playerId,
         '糖果国王：选择该基地的角色',
-        collectMinionsAtBaseOptions(context.matchState.core, context.destinationBaseIndex ?? context.sourceBaseIndex, context.playerId),
+        collectMinionsAtBaseOptions(context.matchState.core, context.destinationBaseIndex ?? context.sourceBaseIndex),
         {
             titleKey: 'ui.wreck_it_ralph_king_candy_target_title',
             sourceId: 'wreck_it_ralph_king_candy_target',
