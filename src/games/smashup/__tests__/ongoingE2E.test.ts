@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * ongoing 能力端到端集成测试
  *
@@ -618,18 +619,15 @@ describe('E2E: 海盗 POD 关键交互链路', () => {
         });
 
         const ms = makeMatchState(state);
-        const destroyedEvt: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'bucc1',
-                minionDefId: 'pirate_buccaneer_pod',
-                fromBaseIndex: 0,
-                ownerId: '0',
-                destroyerId: '1',
-                reason: 'e2e_destroy',
-            },
+        const destroyedEvt: SmashUpEvent = makeMinionDestroyedEvent({
+            minionUid: 'bucc1',
+            minionDefId: 'pirate_buccaneer_pod',
+            fromBaseIndex: 0,
+            ownerId: '0',
+            destroyerId: '1',
+            reason: 'e2e_destroy',
             timestamp: 3000,
-        } as any;
+        }) as any;
 
         const post = postProcessSystemEvents(state, [destroyedEvt], defaultRandom, ms);
         const interaction = (post.matchState?.sys as any)?.interaction?.current;
@@ -662,6 +660,21 @@ describe('E2E: 海盗 POD 关键交互链路', () => {
         const scored = scoreBaseViaFlow(state, 0, [...state.baseDeck], '0', 4000, defaultRandom, ms);
         const interaction = (scored.matchState?.sys as any)?.interaction?.current;
         expect(interaction).toBeDefined();
-        expect(getPromptSourceId(interaction)).toBe('pirate_first_mate_choose_base');
+        expect(getPromptSourceId(interaction)).toBe('smashup_reaction_choose');
+
+        const triggerOption = getPromptOption(
+            interaction,
+            (option: any) => option.value?.kind === 'trigger',
+            'first mate pod afterScoring trigger option',
+        );
+        const chosen = createCustomRunner(scored.matchState!).run({
+            name: 'first mate pod afterScoring trigger choice',
+            commands: [respondCommand(triggerOption.id, '0')],
+        });
+
+        expect(chosen.steps[0]?.success).toBe(true);
+        const followup = (chosen.finalState.sys as any)?.interaction?.current;
+        expect(followup).toBeDefined();
+        expect(getPromptSourceId(followup)).toBe('pirate_first_mate_choose_base');
     });
 });

@@ -9,7 +9,7 @@ import { postProcessSystemEvents } from '../domain';
 import { reduce } from '../domain/reduce';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { defaultTestRandom, runCommand } from './testRunner';
-import { getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
+import { getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makeMinionDestroyedEvent, makePlayer, makeState } from './helpers';
 import { clearOngoingEffectRegistry, collectTriggers, registerTrigger } from '../domain/ongoingEffects';
 import { processAffectTriggers, processDestroyTriggers, processReturnToHandTriggers } from '../domain/reducer';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
@@ -3209,7 +3209,7 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             playerId: '1',
             baseIndex: 0,
             buriedCardUid: 'buried-minion-2',
-            buriedCardDefId: 'robot_microbot_beta',
+            buriedCardDefId: 'robot_microbot_guard',
             sourceCardUid: 'gravestones-1',
             sourceBaseIndex: 0,
             sourceControllerId: '0',
@@ -3387,18 +3387,21 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('pirate_king_move');
+        const moveOption = prompt?.data?.options?.find((option: any) => option.value?.move === true);
+        expect(moveOption).toBeDefined();
 
         const prompted = runCommand(
             resolved!.state,
             {
                 type: 'SYS_INTERACTION_RESPOND' as any,
                 playerId: '0',
-                payload: { optionId: 'yes' },
+                payload: { optionId: moveOption.id },
             } as any,
             defaultTestRandom,
         );
         const promptAfterResolve = getInteractionsFromMS(prompted.finalState)[0] as any;
         expect(promptAfterResolve).toBeUndefined();
+        expect(prompted.finalState.core.bases[1].minions.some(minion => minion.uid === 'king-0')).toBe(true);
     });
 
     it('queued beforeScoring trigger 处理 pirate_king 时，不应把计分基地上的 resident king 当成 representative source', () => {
@@ -3604,7 +3607,25 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             defaultTestRandom,
             5,
         );
-        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        const reactionChoice = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionChoice?.playerId).toBe('0');
+        expect(reactionChoice?.data?.sourceId).toBe('smashup_reaction_choose');
+        const triggerOption = reactionChoice?.data?.options?.find(
+            (option: any) => option.value?.triggerId === queued.payload.triggers[0].id,
+        );
+        expect(triggerOption).toBeDefined();
+
+        const accepted = runCommand(
+            resolved!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '0',
+                payload: { optionId: triggerOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(accepted.finalState)[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('pirate_first_mate_choose_base');
     });
@@ -3650,7 +3671,25 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             defaultTestRandom,
             5.1,
         );
-        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        const reactionChoice = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionChoice?.playerId).toBe('0');
+        expect(reactionChoice?.data?.sourceId).toBe('smashup_reaction_choose');
+        const triggerOption = reactionChoice?.data?.options?.find(
+            (option: any) => option.value?.triggerId === queued.payload.triggers[0].id,
+        );
+        expect(triggerOption).toBeDefined();
+
+        const accepted = runCommand(
+            resolved!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '0',
+                payload: { optionId: triggerOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(accepted.finalState)[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('pirate_first_mate_choose_base');
     });
@@ -4755,7 +4794,7 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         expect(getInteractionsFromMS(resolved?.state ?? makeMatchState(core))).toHaveLength(0);
     });
 
-    it('queued afterScoring global trigger 在对手计分时仍应把 pirates_the_kraken 的替换基地进场 prompt 交给拥有者并保留 titan source context', () => {
+    it('queued afterScoring global trigger 在对手计分时仍应把 pirates_the_kraken 的替换基地进场 prompt 交给控制者并保留 titan source context', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
@@ -4798,7 +4837,7 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         }) as any;
 
         expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('pirates_the_kraken');
-        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('1');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
         expect(queued?.payload?.triggers?.[0]?.sourceCardUid).toBe('t-kraken-setaside');
         expect(queued?.payload?.triggers?.[0]?.sourceControllerId).toBe('0');
         expect(queued?.payload?.triggers?.[0]?.sourceBaseIndex).toBeUndefined();
@@ -4812,7 +4851,25 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             defaultTestRandom,
             9,
         );
-        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        const reactionChoice = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionChoice?.playerId).toBe('0');
+        expect(reactionChoice?.data?.sourceId).toBe('smashup_reaction_choose');
+        const triggerOption = reactionChoice?.data?.options?.find(
+            (option: any) => option.value?.triggerId === queued.payload.triggers[0].id,
+        );
+        expect(triggerOption).toBeDefined();
+
+        const accepted = runCommand(
+            resolved!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '0',
+                payload: { optionId: triggerOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(accepted.finalState)[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('titan_pirates_the_kraken_play_replacement');
         expect(prompt?.data?.continuationContext?.titanUid).toBe('t-kraken-setaside');
@@ -4864,6 +4921,8 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('pirates_the_kraken');
         expect(queued?.payload?.triggers?.[0]?.sourceCardUid).toBe('t-kraken-borrowed-setaside');
         expect(queued?.payload?.triggers?.[0]?.sourceControllerId).toBe('0');
+        expect(queued?.payload?.triggers?.[0]?.sourceOwnerPlayerId).toBe('1');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
 
         const resolved = maybeResolveReactionQueue(
             makeMatchState({
@@ -4873,7 +4932,25 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             defaultTestRandom,
             11,
         );
-        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        const reactionChoice = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionChoice?.playerId).toBe('0');
+        expect(reactionChoice?.data?.sourceId).toBe('smashup_reaction_choose');
+        const triggerOption = reactionChoice?.data?.options?.find(
+            (option: any) => option.value?.triggerId === queued.payload.triggers[0].id,
+        );
+        expect(triggerOption).toBeDefined();
+
+        const accepted = runCommand(
+            resolved!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '0',
+                payload: { optionId: triggerOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(accepted.finalState)[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('titan_pirates_the_kraken_play_replacement');
         expect(prompt?.data?.continuationContext?.titanUid).toBe('t-kraken-borrowed-setaside');
@@ -4948,19 +5025,37 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             11.1,
         );
 
-        const firstPrompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        const reactionChoice = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionChoice?.playerId).toBe('1');
+        expect(reactionChoice?.data?.sourceId).toBe('smashup_reaction_choose');
+        const triggerOption = reactionChoice?.data?.options?.find(
+            (option: any) => option.value?.triggerId === queued.payload.triggers[0].id,
+        );
+        expect(triggerOption).toBeDefined();
+
+        const accepted = runCommand(
+            resolved!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '1',
+                payload: { optionId: triggerOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const firstPrompt = getInteractionsFromMS(accepted.finalState)[0] as any;
         expect(firstPrompt?.playerId).toBe('1');
         expect(firstPrompt?.data?.sourceId).toBe('titan_pirates_the_kraken_choose_minion');
         expect(firstPrompt?.id).toContain('t-kraken-opponent-live');
-        expect(firstPrompt?.data?.options?.some((entry: any) => entry.value?.minionUid === 'kraken-save-opponent')).toBe(true);
-        expect(firstPrompt?.data?.options?.some((entry: any) => entry.value?.minionUid === 'kraken-save-borrowed')).toBe(false);
+        expect(firstPrompt?.data?.options?.some((entry: any) => entry.value?.targetMinionUid === 'kraken-save-opponent')).toBe(true);
+        expect(firstPrompt?.data?.options?.some((entry: any) => entry.value?.targetMinionUid === 'kraken-save-borrowed')).toBe(false);
 
         const chooseOpponentMinionOption = firstPrompt.data.options.find((entry: any) =>
-            entry.value?.minionUid === 'kraken-save-opponent');
+            entry.value?.targetMinionUid === 'kraken-save-opponent');
         expect(chooseOpponentMinionOption).toBeDefined();
 
         const choseOpponentMinion = runCommand(
-            resolved!.state,
+            accepted.finalState,
             {
                 type: 'SYS_INTERACTION_RESPOND' as any,
                 playerId: '1',
@@ -4990,8 +5085,8 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         expect(secondPrompt?.playerId).toBe('0');
         expect(secondPrompt?.data?.sourceId).toBe('titan_pirates_the_kraken_choose_minion');
         expect(secondPrompt?.id).toContain('t-kraken-borrowed-live');
-        expect(secondPrompt?.data?.options?.some((entry: any) => entry.value?.minionUid === 'kraken-save-borrowed')).toBe(true);
-        expect(secondPrompt?.data?.options?.some((entry: any) => entry.value?.minionUid === 'kraken-save-opponent')).toBe(false);
+        expect(secondPrompt?.data?.options?.some((entry: any) => entry.value?.targetMinionUid === 'kraken-save-borrowed')).toBe(true);
+        expect(secondPrompt?.data?.options?.some((entry: any) => entry.value?.targetMinionUid === 'kraken-save-opponent')).toBe(false);
     });
 
     it('queued afterScoring global trigger 在对手计分时仍应把 itty_critters_rainboroc 的替换基地进场 prompt 交给赢家本人并保留 setaside titan source context', () => {
@@ -5511,13 +5606,15 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         expect(prompt?.data?.continuationContext?.fromBaseIndex).toBe(1);
         expect(prompt?.data?.continuationContext?.scoringBaseIndex).toBe(0);
         expect(prompt?.data?.continuationContext?.scoringBaseDefId).toBe('base_a');
+        const moveOption = prompt?.data?.options?.find((option: any) => option.value?.move === true);
+        expect(moveOption).toBeDefined();
 
         const responded = runCommand(
             resolved?.state ?? makeMatchState(core),
             {
                 type: 'SYS_INTERACTION_RESPOND' as any,
                 playerId: '0',
-                payload: { optionId: 'move' },
+                payload: { optionId: moveOption.id },
             } as any,
             defaultTestRandom,
         );
@@ -5980,18 +6077,15 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             ],
         });
 
-        const processed = processDestroyTriggers([{
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'borrowed-jumper',
-                minionDefId: 'time_travelers_jumper',
-                fromBaseIndex: 0,
-                ownerId: '1',
-                destroyerId: '0',
-                reason: 'test_borrowed_jumper_discard_owner_fallback',
-            },
+        const processed = processDestroyTriggers([makeMinionDestroyedEvent({
+            minionUid: 'borrowed-jumper',
+            minionDefId: 'time_travelers_jumper',
+            fromBaseIndex: 0,
+            ownerId: '1',
+            destroyerId: '0',
+            reason: 'test_borrowed_jumper_discard_owner_fallback',
             timestamp: 17,
-        } as any], makeMatchState(core, 'playCards', '0'), '0', defaultTestRandom, 17);
+        }) as any], makeMatchState(core, 'playCards', '0'), '0', defaultTestRandom, 17);
 
         const queued = processed.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
         expect(queued).toBeDefined();

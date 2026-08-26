@@ -599,6 +599,72 @@ describe('AbilityOverlays', () => {
         }
     });
 
+    it('女猎手 v2 玩家板物理槽应逐格匹配原图标题，避免点猛击之力结算成别的技能', () => {
+        const cases = [
+            { slotId: 'fist', abilityId: 'wild-force' },
+            { slotId: 'chi', abilityId: 'savage-force' },
+            { slotId: 'sky', abilityId: 'life-revival' },
+            { slotId: 'lotus', abilityId: 'beast-instinct' },
+            { slotId: 'combo', abilityId: 'brutal-strike' },
+            { slotId: 'lightning', abilityId: 'beast-force' },
+            { slotId: 'calm', abilityId: 'hunt-ambush' },
+            { slotId: 'meditate', abilityId: 'kindred-bond' },
+            { slotId: 'ultimate', abilityId: 'jungle-fury' },
+        ];
+
+        for (const entry of cases) {
+            expect(getSlotAbilityId('lieren', entry.slotId)).toBe(entry.abilityId);
+            expect(getAbilitySlotIdForCharacter('lieren', entry.abilityId)).toBe(entry.slotId);
+        }
+    });
+
+    it('女猎手非顺子但可生命复苏时，不应点亮图上猛击之力槽', () => {
+        const onSelectAbility = vi.fn();
+        const { container } = renderAbilityOverlays({
+            characterId: 'lieren',
+            availableAbilityIds: ['life-revival'],
+            canSelect: true,
+            onSelectAbility,
+            abilityLevels: {},
+        });
+
+        const skySlot = container.querySelector('[data-ability-slot="sky"]');
+        const comboSlot = container.querySelector('[data-ability-slot="combo"]');
+
+        expect(skySlot).toHaveAttribute('data-base-ability-id', 'life-revival');
+        expect(skySlot).toHaveAttribute('data-resolved-ability-id', 'life-revival');
+        expect(skySlot).toHaveAttribute('data-can-click', 'true');
+        expect(comboSlot).toHaveAttribute('data-base-ability-id', 'brutal-strike');
+        expect(comboSlot).toHaveAttribute('data-resolved-ability-id', '');
+        expect(comboSlot).toHaveAttribute('data-can-click', 'false');
+
+        fireEvent.click(comboSlot!);
+        expect(onSelectAbility).not.toHaveBeenCalled();
+    });
+
+    it('女猎手投出顺子时，图上猛击之力槽应提交猛击之力具体分支', () => {
+        const onSelectAbility = vi.fn();
+        const { container } = renderAbilityOverlays({
+            characterId: 'lieren',
+            availableAbilityIds: ['brutal-strike-small'],
+            canSelect: true,
+            onSelectAbility,
+            abilityLevels: {},
+        });
+
+        const comboSlot = container.querySelector('[data-ability-slot="combo"]');
+        const skySlot = container.querySelector('[data-ability-slot="sky"]');
+
+        expect(comboSlot).toHaveAttribute('data-base-ability-id', 'brutal-strike');
+        expect(comboSlot).toHaveAttribute('data-resolved-ability-id', 'brutal-strike-small');
+        expect(comboSlot).toHaveAttribute('data-can-click', 'true');
+        expect(skySlot).toHaveAttribute('data-base-ability-id', 'life-revival');
+        expect(skySlot).toHaveAttribute('data-resolved-ability-id', '');
+
+        fireEvent.click(comboSlot!);
+        expect(onSelectAbility).toHaveBeenCalledWith('brutal-strike-small');
+    });
+
     it('旧英雄和新英雄槽位查找应与面板覆盖层使用同一物理槽位', () => {
         const cases = [
             { characterId: 'monk', abilityId: 'fist-technique', slotId: 'fist' },

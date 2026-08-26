@@ -496,6 +496,12 @@ function buildAlienMinionReturnEvent(
     })[0];
 }
 
+function canTriggerAlienScoutAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid) return false;
+    const scout = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    return !!scout && (scout.defId === 'alien_scout' || scout.defId === 'alien_scout_pod');
+}
+
 /** 注册外星人派系所有能力 */
 export function registerAlienAbilities(): void {
     // --- 随从 ---
@@ -514,6 +520,7 @@ export function registerAlienAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerAlienScoutAfterScoring,
     });
     // POD 版本会通过 registerPodOngoingAliases() 自动映射，无需手动注册
     // --- 行动卡 ---

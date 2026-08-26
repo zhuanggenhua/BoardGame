@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 /**
  * 大杀四方 - 核心属性测试
  *
@@ -625,14 +626,8 @@ describe('Property 12: 随从离场时附着行动清理', () => {
             bases: [makeBase('b', { minions: [minion] })],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const event = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm-1', minionDefId: 'test',
-                fromBaseIndex: 0, ownerId: '0', reason: 'test',
-            },
-            timestamp: Date.now(),
-        };
+        const event = makeMinionDestroyedEvent({minionUid: 'm-1', minionDefId: 'test',
+                fromBaseIndex: 0, ownerId: '0', reason: 'test', timestamp: Date.now() });
         const s = reduce(state, event as any);
         // 随从从基地移除
         expect(s.bases[0].minions.find(m => m.uid === 'm-1')).toBeUndefined();

@@ -139,14 +139,16 @@ const loadCriticalImageResolver6 = async () => {
 };
 
 const loadRuntime8 = async (): Promise<GameClientRuntimeModule> => {
-    const [gameModule, boardModule] = await Promise.all([
+    const [gameModule, boardModule, runtimeAdapterModule] = await Promise.all([
         import('./mage-wars/game'),
         import('./mage-wars/Board'),
+        import('./mage-wars/runtimeAdapter'),
     ]);
     return {
         engineConfig: gameModule.engineConfig,
         board: requireLazyModuleExport(boardModule, 'default', './mage-wars/Board'),
         audioConfig: gameModule.audioConfig,
+        runtimeAdapter: runtimeAdapterModule.mageWarsGameRuntimeAdapter,
     };
 };
 

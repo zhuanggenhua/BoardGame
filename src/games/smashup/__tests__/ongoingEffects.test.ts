@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 持续效果拦截框架测试
  *
@@ -410,17 +411,11 @@ describe('持续效果拦截框架', () => {
                 for (const base of ctx.state.bases) {
                     for (const ongoing of base.ongoingActions) {
                         if (ongoing.defId === 'trickster_flame_trap' && ongoing.ownerId !== ctx.playerId) {
-                            return [{
-                                type: SU_EVENTS.MINION_DESTROYED,
-                                payload: {
-                                    minionUid: ctx.triggerMinionUid,
+                            return [makeMinionDestroyedEvent({minionUid: ctx.triggerMinionUid,
                                     minionDefId: ctx.triggerMinionDefId,
                                     fromBaseIndex: ctx.baseIndex ?? 0,
                                     ownerId: ctx.playerId,
-                                    reason: 'trickster_flame_trap',
-                                },
-                                timestamp: ctx.now,
-                            }];
+                                    reason: 'trickster_flame_trap', timestamp: ctx.now })];
                         }
                     }
                 }
@@ -447,11 +442,7 @@ describe('持续效果拦截框架', () => {
         });
 
         test('场上无触发来源时不产生事件', () => {
-            registerTrigger('trickster_flame_trap', 'onMinionPlayed', () => [{
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: { minionUid: 'x', minionDefId: 'x', fromBaseIndex: 0, ownerId: '1', reason: 'test' },
-                timestamp: 0,
-            }], {});
+            registerTrigger('trickster_flame_trap', 'onMinionPlayed', () => [makeMinionDestroyedEvent({minionUid: 'x', minionDefId: 'x', fromBaseIndex: 0, ownerId: '1', reason: 'test', timestamp: 0 })], {});
 
             const base = makeBase(); // 无 ongoing
             const state = makeState([base]);

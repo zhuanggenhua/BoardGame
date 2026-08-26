@@ -1215,6 +1215,14 @@ function leatherfaceCounterTrigger(ctx: TriggerContext): TriggerResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function canTriggerLeatherfaceCounter(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return false;
+    if (ctx.triggerMinionUid !== ctx.sourceCardUid || ctx.counterChangeKind !== 'added' || (ctx.counterDelta ?? 0) <= 0) return false;
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!source || Number(source.metadata?.diyKillersLeatherfaceUsedTurn ?? -1) === ctx.state.turnNumber) return false;
+    return minionsOnBaseAtOrBelowPower(ctx.state, ctx.sourceBaseIndex, 3, ctx.sourceCardUid).length > 0;
+}
+
 const leatherfaceDestroyHandler: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
     const context = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
     const events: SmashUpEvent[] = [];
@@ -1270,6 +1278,14 @@ function jasonMoveTrigger(ctx: TriggerContext): TriggerResult {
         sourceBaseIndex: ctx.moveToBaseIndex,
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerJasonMove(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || !ctx.sourceControllerId || ctx.moveToBaseIndex === undefined) return false;
+    if (ctx.triggerMinionUid !== ctx.sourceCardUid) return false;
+    const source = ctx.state.bases[ctx.moveToBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!source || Number(source.metadata?.diyKillersJasonUsedTurn ?? -1) === ctx.state.turnNumber) return false;
+    return minionsOnBaseAtOrBelowPower(ctx.state, ctx.moveToBaseIndex, 3, ctx.sourceCardUid).length > 0;
 }
 
 const jasonDestroyHandler: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
@@ -1374,6 +1390,16 @@ function chainsawDestroyTrigger(ctx: TriggerContext): TriggerResult {
         { sourceId: 'diy_killers_chainsaw_move', targetType: 'base', titleKey: 'ui.diy_killers_chainsaw_move_title' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerChainsawDestroy(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || !ctx.sourceControllerId || ctx.baseIndex === undefined) return false;
+    if (!ctx.state.bases[ctx.baseIndex]) return false;
+    const host = findHostByAttachedCardUid(ctx.state, ctx.sourceCardUid);
+    if (!host || ctx.state.bases.length <= 1) return false;
+    return host.baseIndex === ctx.baseIndex
+        ? ctx.state.bases.some((_base, baseIndex) => baseIndex !== host.baseIndex)
+        : true;
 }
 
 const chainsawMoveHandler: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
@@ -1517,6 +1543,12 @@ function michaelMyersBeforeScoring(ctx: TriggerContext): TriggerResult {
         sourceBaseIndex: ctx.sourceBaseIndex,
     };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerMichaelMyersBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return false;
+    return (ctx.state.bases[ctx.sourceBaseIndex]?.minions ?? [])
+        .some(minion => minion.basePower <= 3);
 }
 
 const michaelMyersHandler: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
@@ -1740,17 +1772,20 @@ export function registerDiyKillersAbilities(): void {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerLeatherfaceCounter,
     });
     registerTrigger('diy_killers_jason', 'onMinionMoved', jasonMoveTrigger, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerJasonMove,
     });
     registerTrigger('diy_killers_michael_myers', 'beforeScoring', michaelMyersBeforeScoring, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerMichaelMyersBeforeScoring,
     });
     registerTrigger('diy_killers_oh_no', 'onMinionDestroyed', diyKillersOhNoSpecialTrigger, {
         optional: true,
@@ -1772,6 +1807,7 @@ export function registerDiyKillersAbilities(): void {
     registerTrigger('diy_killers_chainsaw', 'onMinionDestroyed', chainsawDestroyTrigger, {
         optional: true,
         perInstance: true,
+        canTrigger: canTriggerChainsawDestroy,
     });
     registerTrigger('diy_killers_clawed_glove', 'onMinionDestroyed', clawedGloveDestroyTrigger, {
         perInstance: true,

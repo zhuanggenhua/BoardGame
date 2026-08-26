@@ -4236,7 +4236,7 @@ function postProcessSystemEvents(
     const hasUnreducedTriggerConsumption = !inputEventsAlreadyReduced
         && finalEvents.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED);
     if (!options?.skipReactionQueueResolution && !hasUnreducedTriggerConsumption) {
-        const rq = maybeResolveReactionQueue(msForQueue, random, now);
+        const rq = maybeResolveReactionQueue(msForQueue, random, now, { materializeDomainEvents: false });
         if (rq) {
             finalEvents = [...finalEvents, ...rq.events];
             ms = rq.state;

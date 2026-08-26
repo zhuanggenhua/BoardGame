@@ -20,7 +20,7 @@ import {
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
 import { SU_EVENTS } from '../domain/types';
 import type { BaseAbilityUsedEvent, SmashUpCore, SmashUpEvent, BuriedCardOnBase } from '../domain/types';
-import { registerTrigger } from '../domain/ongoingEffects';
+import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { resolveLiveBaseIndex } from '../domain/utils';
 import {
@@ -101,24 +101,28 @@ export function registerAncientEgyptiansAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerAncientEgyptiansMummyAfterScoring,
     });
     registerTrigger('ancient_egyptians_mummy_pod', 'afterScoring', ancientEgyptiansMummyAfterScoring, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerAncientEgyptiansMummyAfterScoring,
     });
     registerTrigger('ancient_egyptians_pharaoh', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerAncientEgyptiansPharaohBeforeScoring,
     });
     registerTrigger('ancient_egyptians_pharaoh_pod', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerAncientEgyptiansPharaohBeforeScoring,
     });
     registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ancientEgyptiansPharaohOnUncover, {
         perInstance: true,
@@ -127,6 +131,7 @@ export function registerAncientEgyptiansAbilities(): void {
     registerTrigger('base_star_portal', 'onCardBuried', ancientEgyptiansStarPortalOnBuried, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        canTrigger: ctx => !!ctx.buriedCardControllerId,
     });
 
     registerActiveBaseAbility('base_pyramids', ancientEgyptiansPyramidsDuringTurn, {
@@ -182,6 +187,13 @@ function ancientEgyptiansMummyAfterScoring(ctx: any): AbilityResult {
     );
 }
 
+function canTriggerAncientEgyptiansMummyAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceControllerId === undefined || ctx.sourceBaseIndex === undefined) {
+        return false;
+    }
+    return ctx.state.bases.some((_base, baseIndex) => baseIndex !== ctx.sourceBaseIndex);
+}
+
 function ancientEgyptiansPharaohOnUncover(ctx: any): SmashUpEvent[] {
     const pharaohController = ctx.sourceControllerId as PlayerId | undefined;
     if (!pharaohController) return [];
@@ -195,6 +207,14 @@ function ancientEgyptiansPharaohBeforeScoring(ctx: any): AbilityResult {
             ctx,
         ),
     );
+}
+
+function canTriggerAncientEgyptiansPharaohBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid || ctx.sourceControllerId === undefined) return false;
+    const source = findMinionOnBases(ctx.state, ctx.sourceCardUid);
+    if (!source || source.minion.controller !== ctx.sourceControllerId) return false;
+    const base = ctx.state.bases[ctx.baseIndex];
+    return !!base && buildBuriedCardOptions(ctx.state, ctx.sourceControllerId, base.buriedCards ?? [], true).length > 0;
 }
 
 function ancientEgyptiansStarPortalOnBuried(ctx: any): SmashUpEvent[] {

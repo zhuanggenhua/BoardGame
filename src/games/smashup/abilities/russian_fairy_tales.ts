@@ -1205,6 +1205,12 @@ function bewitchedTransferOnLeave(ctx: TriggerContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function canTriggerBewitchedTransferOnLeave(ctx: TriggerContext): boolean {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return false;
+    if (!ctx.matchState || !ctx.sourceCardUid || !ctx.sourceControllerId || !ctx.triggerMinionUid) return false;
+    return collectAllMinions(ctx.state).some(minion => minion.minionUid !== ctx.triggerMinionUid);
+}
+
 function findOngoingOwner(core: SmashUpCore, cardUid: string): PlayerId | undefined {
     for (const base of core.bases) {
         const baseOngoing = base.ongoingActions.find(action => action.uid === cardUid);
@@ -1338,6 +1344,7 @@ export function registerRussianFairyTalesAbilities(): void {
             perInstance: true,
             playerContext: 'sourceController',
             baseScoped: false,
+            canTrigger: canTriggerBewitchedTransferOnLeave,
         });
     }
 }

@@ -1,0 +1,122 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "主黄金链 E2E 通过：从开局牌桌推进到叛徒终局，覆盖事件、物品、预兆、作祟读本、跳过事件、木乃伊移动、攻击奖励和胜负收口",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:ci:file -- --file e2e/betrayal/mummy-rampage-monster-actions.e2e.ts --case 主黄金链：开局、三类发现、作祟、木乃伊行动、叛徒终局",
+        "D:\\gongzuo\\webgame\\BoardGame\\e2e\\betrayal\\mummy-rampage-monster-actions.e2e.ts",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-01-开局牌桌-探索入口可见.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-37-偷走圣符后-叛徒终局朗读.jpg"
+      ]
+    },
+    {
+      "requirement": "最终展示图组是本次重跑后的 37 张过程截图加 1 张顺序索引，按玩家动作顺序标注；不是单张结果图",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\00-sequence-index.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\01-labeled-65-主黄金链过程-01-开局牌桌-探索入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\02-labeled-65-主黄金链过程-02-事件房探索目标高亮-点击前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\03-labeled-65-主黄金链过程-03-事件牌结算结果-知识检定后.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\04-labeled-65-主黄金链过程-04-物品段开局牌桌-探索入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\05-labeled-65-主黄金链过程-05-物品房探索目标高亮-点击前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\06-labeled-65-主黄金链过程-06-物品牌获得结果-急救包进入持有区.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\07-labeled-65-主黄金链过程-07-急救包使用前-持有区可选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\08-labeled-65-主黄金链过程-08-急救包已选中-等待选择治疗目标.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\09-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\10-labeled-65-主黄金链过程-10-急救包确认使用按钮可用.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\11-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\12-labeled-65-主黄金链过程-12-预兆段开局牌桌-探索入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\13-labeled-65-主黄金链过程-13-预兆房探索目标高亮-点击前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\14-labeled-65-主黄金链过程-14-预兆书本翻出-作祟检定已触发.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\15-labeled-65-主黄金链过程-15-作祟后英雄剧本开场-继续前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\16-labeled-65-主黄金链过程-16-英雄目标读本正文-段落标题可读.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\17-labeled-65-主黄金链过程-17-作祟后叛徒剧本开场-继续前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\18-labeled-65-主黄金链过程-18-叛徒读本正文-敌方情报可读.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\19-labeled-65-主黄金链过程-19-作祟后事件符号-探索入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\20-labeled-65-主黄金链过程-20-事件房探索目标高亮-点击前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\21-labeled-65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\22-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\23-labeled-65-主黄金链过程-23-点击木乃伊-详情显示属性头像与驱逐胜利方式.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\24-labeled-65-主黄金链过程-24-叛徒回合-木乃伊开回合入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\25-labeled-65-主黄金链过程-25-木乃伊开回合后-移动骰入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\26-labeled-65-主黄金链过程-26-木乃伊移动骰结果-三点停稳.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\27-labeled-65-主黄金链过程-27-木乃伊普通移动第一步-目标房间高亮.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\28-labeled-65-主黄金链过程-28-木乃伊普通移动第一步后-剩余两点.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\29-labeled-65-主黄金链过程-29-木乃伊普通移动第二步-石棺目标高亮.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\30-labeled-65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\31-labeled-65-主黄金链过程-31-攻击前-切换观察目标英雄后圣符可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\32-labeled-65-主黄金链过程-32-同房后-木乃伊攻击入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\33-labeled-65-主黄金链过程-33-木乃伊攻击-选择木乃伊攻击者.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\34-labeled-65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\35-labeled-65-主黄金链过程-35-木乃伊攻击骰结果-可选择伤害或偷取.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\36-labeled-65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\37-labeled-65-主黄金链过程-37-偷走圣符后-叛徒终局朗读.png"
+      ]
+    },
+    {
+      "requirement": "本轮素材选择为木乃伊 G、女孩 A；betrayal 定向资源 manifest 校验通过",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\betrayal\\tokens\\monsters\\mummy.svg",
+        "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\betrayal\\tokens\\haunts\\mummy-girl.svg",
+        "node scripts/assets/generate_asset_manifests.js --validate --root public/assets/i18n/zh-CN --id betrayal"
+      ]
+    },
+    {
+      "requirement": "项目 AI 规范结构校验通过",
+      "status": "PASS",
+      "evidence": [
+        "npm run spec:lint"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\01-labeled-65-主黄金链过程-01-开局牌桌-探索入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\02-labeled-65-主黄金链过程-02-事件房探索目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\03-labeled-65-主黄金链过程-03-事件牌结算结果-知识检定后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\04-labeled-65-主黄金链过程-04-物品段开局牌桌-探索入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\05-labeled-65-主黄金链过程-05-物品房探索目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\06-labeled-65-主黄金链过程-06-物品牌获得结果-急救包进入持有区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\07-labeled-65-主黄金链过程-07-急救包使用前-持有区可选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\08-labeled-65-主黄金链过程-08-急救包已选中-等待选择治疗目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\09-labeled-65-主黄金链过程-09-急救包治疗目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\10-labeled-65-主黄金链过程-10-急救包确认使用按钮可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\11-labeled-65-主黄金链过程-11-急救包使用后-治疗反馈与移除.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\12-labeled-65-主黄金链过程-12-预兆段开局牌桌-探索入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\13-labeled-65-主黄金链过程-13-预兆房探索目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\14-labeled-65-主黄金链过程-14-预兆书本翻出-作祟检定已触发.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\15-labeled-65-主黄金链过程-15-作祟后英雄剧本开场-继续前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\16-labeled-65-主黄金链过程-16-英雄目标读本正文-段落标题可读.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\17-labeled-65-主黄金链过程-17-作祟后叛徒剧本开场-继续前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\18-labeled-65-主黄金链过程-18-叛徒读本正文-敌方情报可读.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\19-labeled-65-主黄金链过程-19-作祟后事件符号-探索入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\20-labeled-65-主黄金链过程-20-事件房探索目标高亮-点击前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\21-labeled-65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\22-labeled-65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\23-labeled-65-主黄金链过程-23-点击木乃伊-详情显示属性头像与驱逐胜利方式.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\24-labeled-65-主黄金链过程-24-叛徒回合-木乃伊开回合入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\25-labeled-65-主黄金链过程-25-木乃伊开回合后-移动骰入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\26-labeled-65-主黄金链过程-26-木乃伊移动骰结果-三点停稳.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\27-labeled-65-主黄金链过程-27-木乃伊普通移动第一步-目标房间高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\28-labeled-65-主黄金链过程-28-木乃伊普通移动第一步后-剩余两点.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\29-labeled-65-主黄金链过程-29-木乃伊普通移动第二步-石棺目标高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\30-labeled-65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\31-labeled-65-主黄金链过程-31-攻击前-切换观察目标英雄后圣符可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\32-labeled-65-主黄金链过程-32-同房后-木乃伊攻击入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\33-labeled-65-主黄金链过程-33-木乃伊攻击-选择木乃伊攻击者.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\34-labeled-65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\35-labeled-65-主黄金链过程-35-木乃伊攻击骰结果-可选择伤害或偷取.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\36-labeled-65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-golden-flow-g-mummy-a-girl-rerun-20260825-2022\\37-labeled-65-主黄金链过程-37-偷走圣符后-叛徒终局朗读.png"
+  ]
+}

@@ -588,6 +588,13 @@ function rockStarsHotVenueTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
 }
 
+function canTriggerRockStarsHotVenueTurnEnd(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return false;
+    const player = ctx.state.players[ctx.sourceControllerId];
+    if (!player || (player.minionsPlayedPerBase?.[ctx.sourceBaseIndex] ?? 0) <= 0) return false;
+    return getEffectiveBreakpoint(ctx.state, ctx.sourceBaseIndex) >= 21;
+}
+
 function lakeMinnetonkaOnMinionPlayed(ctx: BaseAbilityContext): BaseAbilityResult {
     if (!ctx.minionUid) return { events: [] };
     return {
@@ -2602,6 +2609,16 @@ function explorersForgottenHorrorsTrigger(ctx: TriggerContext): TriggerResult {
     };
 }
 
+function canTriggerExplorersForgottenHorrors(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId) return false;
+    const targetBaseIndex = ctx.timing === 'onMinionMoved' ? ctx.moveToBaseIndex : ctx.baseIndex;
+    if (targetBaseIndex !== ctx.sourceBaseIndex) return false;
+    const movedOrPlayed = ctx.state.bases[targetBaseIndex]?.minions.find(minion => minion.uid === ctx.triggerMinionUid);
+    if (!movedOrPlayed || movedOrPlayed.controller !== ctx.sourceControllerId) return false;
+    if (ctx.playerId !== ctx.sourceControllerId) return false;
+    return !!ctx.state.bases[ctx.sourceBaseIndex]?.ongoingActions.find(candidate => candidate.uid === ctx.sourceCardUid);
+}
+
 function handleExplorersForgottenHorrorsPrompt(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -2657,6 +2674,11 @@ function explorersCryptLooterTrigger(ctx: TriggerContext): SmashUpEvent[] {
         ctx.baseIndex,
         { specificCardUid: ctx.sourceCardUid },
     )];
+}
+
+function canTriggerExplorersCryptLooter(ctx: TriggerContext): boolean {
+    if (ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId) return false;
+    return ctx.state.players[ctx.sourceControllerId]?.hand.some(card => card.uid === ctx.sourceCardUid) === true;
 }
 
 function baseAncientTempleOnTurnStart(ctx: BaseAbilityContext): BaseAbilityResult {
@@ -2738,6 +2760,7 @@ export function registerWhatWereWeThinkingAbilities(): void {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerRockStarsHotVenueTurnEnd,
     });
 
     registerBaseAbility('base_lake_minnetonka', 'onMinionPlayed', lakeMinnetonkaOnMinionPlayed);
@@ -2799,17 +2822,20 @@ export function registerWhatWereWeThinkingAbilities(): void {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerExplorersForgottenHorrors,
     });
     registerTrigger('explorers_forgotten_horrors', 'onMinionMoved', explorersForgottenHorrorsTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerExplorersForgottenHorrors,
     });
     registerTrigger('explorers_crypt_looter', 'onBaseRevealed', explorersCryptLooterTrigger, {
         optional: true,
         global: true,
         globalZones: ['hand'],
         playerContext: 'sourceController',
+        canTrigger: canTriggerExplorersCryptLooter,
     });
     registerBaseAbility('base_ancient_temple', 'onTurnStart', baseAncientTempleOnTurnStart, {
         canTrigger: ctx => (ctx.state.bases[ctx.baseIndex]?.minions ?? [])

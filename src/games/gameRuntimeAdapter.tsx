@@ -35,6 +35,13 @@ export type GameRuntimeLocalSetupResult = {
     setupData?: Record<string, unknown>;
 };
 
+export type GameRuntimeLocalSetupGateProps = {
+    mode: 'local';
+    searchParams: URLSearchParams;
+    initialSetup: GameRuntimeLocalSetupResult;
+    onConfirm: (setup: GameRuntimeLocalSetupResult) => void;
+};
+
 export type GameRuntimeAdapter = {
     PageProvider?: ComponentType<GameRuntimePageProviderProps>;
     dismissTransientUi?: () => boolean;
@@ -42,6 +49,7 @@ export type GameRuntimeAdapter = {
     HudSettingsSection?: ComponentType<GameRuntimeSettingsSectionProps>;
     seatSwap?: GameRuntimeSeatSwapConfig;
     resolveLocalSetup?: (context: GameRuntimeLocalSetupContext) => GameRuntimeLocalSetupResult | null;
+    LocalSetupGate?: ComponentType<GameRuntimeLocalSetupGateProps>;
 };
 
 function DefaultGamePageRuntimeProvider({ children }: GameRuntimePageProviderProps) {

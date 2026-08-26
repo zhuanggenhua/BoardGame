@@ -13,6 +13,7 @@ import {
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
+    makeMinionDestroyedEvent,
     makeMatchState,
     makeMinion,
     makePlayer,
@@ -76,17 +77,14 @@ describe('dino_tooth_and_claw 保护', () => {
             attachedActions: [{ uid: 'tc-1', defId: 'dino_tooth_and_claw', ownerId: '0' }],
         });
         const state = makeState({ bases: [makeBase({ minions: [minion] })] });
-        const destroyEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
-                minionDefId: 'test_minion',
-                fromBaseIndex: 0,
-                ownerId: '1',
-                reason: 'test',
-            },
+        const destroyEvent = makeMinionDestroyedEvent({
+            minionUid: 'm1',
+            minionDefId: 'test_minion',
+            fromBaseIndex: 0,
+            ownerId: '1',
+            reason: 'test',
             timestamp: 0,
-        };
+        });
 
         const result = interceptEvent(state, destroyEvent);
 
@@ -390,6 +388,111 @@ describe('恐龙派系行动能力', () => {
         const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
         getSimpleChoicePrompt(matchState, 'dino_natural_selection_choose_mine');
+    });
+
+    it('dino_natural_selection: 敌方随从被负数力量指示物压到0时仍可选择并消灭', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_natural_selection', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 5),
+                        makeMinion('m1', 'test', '1', 3, { powerCounters: -5 }),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1', 0);
+        const sourcePrompt = getSimpleChoicePrompt(matchState, 'dino_natural_selection_choose_mine');
+        expect(getPromptOptions(sourcePrompt).some(option => option.value?.minionUid === 'm0')).toBe(true);
+
+        const targetStep = respondToPromptOption(
+            matchState,
+            option => option.value?.minionUid === 'm0',
+            'choose natural selection source',
+            '0',
+        );
+        const targetPrompt = getSimpleChoicePrompt(targetStep.finalState, 'dino_natural_selection_choose_target');
+        const targetOptions = getPromptOptions(targetPrompt);
+        expect(targetOptions.map(option => option.value?.minionUid)).toContain('m1');
+        expect(targetOptions.find(option => option.value?.minionUid === 'm1')?.label).toContain('力量 0');
+
+        const resolved = respondToPromptOption(
+            targetStep.finalState,
+            option => option.value?.minionUid === 'm1',
+            'choose natural selection target',
+            '0',
+        );
+
+        expect(resolved.events.some(
+            event => event.type === SU_EVENTS.MINION_DESTROYED && (event as any).payload?.minionUid === 'm1',
+        )).toBe(true);
+    });
+
+    it('dino_natural_selection: 不能被消灭的己方随从仍可作为参照', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_natural_selection', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'robot_warbot', '0', 4),
+                        makeMinion('m1', 'test', '1', 3),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1', 0);
+        const sourcePrompt = getSimpleChoicePrompt(matchState, 'dino_natural_selection_choose_mine');
+
+        expect(getPromptOptions(sourcePrompt).map(option => option.value?.minionUid)).toContain('m0');
+    });
+
+    it('dino_natural_selection: 受其他玩家行动牌保护的低力量目标不可选择', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_natural_selection', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 5),
+                        makeMinion('m1', 'test', '1', 3, {
+                            attachedActions: [{ uid: 'smoke-1', defId: 'ninja_smoke_bomb', ownerId: '1' }],
+                        }),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1', 0);
+        const sourcePrompt = getSimpleChoicePrompt(matchState, 'dino_natural_selection_choose_mine');
+        const targetStep = respondToPromptOption(
+            matchState,
+            option => option.value?.minionUid === 'm0',
+            'choose natural selection source',
+            '0',
+        );
+
+        expect(getPromptOptions(sourcePrompt).map(option => option.value?.minionUid)).toContain('m0');
+        expectNoPrompt(targetStep.finalState);
     });
 
     it('dino_natural_selection: 无合法目标时无事件', () => {

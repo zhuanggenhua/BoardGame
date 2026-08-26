@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useReducer, useRef, type CSSProperties, type ReactNode } from 'react';
+import { createElement, useState, useEffect, useMemo, useReducer, useRef, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     getPreloadedImageElement,
@@ -343,8 +343,7 @@ export function CardPreview({
 
     const renderer = getCardPreviewRenderer(previewRef.rendererId);
     if (!renderer) return null;
-    const Renderer = renderer;
-    return <Renderer previewRef={previewRef} locale={effectiveLocale} className={className} style={style} />;
+    return createElement(renderer, { previewRef, locale: effectiveLocale, className, style });
 }
 
 // ============================================================================
@@ -590,6 +589,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             data-card-atlas-frame="true"
             data-card-atlas-id={atlasId}
             data-card-atlas-index={index}
+            data-card-atlas-aspect-ratio={atlasStyle.aspectRatio}
             className={`${effectiveLoaded ? '' : 'atlas-shimmer'} ${className ?? ''}`}
             title={title}
             style={{

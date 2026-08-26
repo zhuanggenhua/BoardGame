@@ -1473,7 +1473,7 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(getPromptTargetType(current)).toBe('base');
         });
 
-        test('唯一候选基地时直接移动，不创建 interaction', () => {
+        test('唯一候选基地时也创建确认 interaction，响应后移动', () => {
             const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
             const state = makeState([
                 makeBase({ minions: [captain] }),
@@ -1488,8 +1488,16 @@ describe('蒸汽朋克 ongoing 能力', () => {
             } as any, defaultTestRandom);
 
             expect(result.success, result.error).toBe(true);
-            expectNoPrompt(result.finalState);
-            const moved = result.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
+            const prompt = getSimpleChoicePrompt(result.finalState, 'steampunk_captain_ahab');
+            const resolved = respondToPromptOption(
+                result.finalState,
+                option => option.value?.baseIndex === 1,
+                'captain ahab only destination base',
+                '0',
+                dummyRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const moved = resolved.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
             expect(moved).toBeDefined();
             expect(moved.payload.fromBaseIndex).toBe(0);
             expect(moved.payload.toBaseIndex).toBe(1);
@@ -1659,8 +1667,17 @@ describe('蒸汽朋克 ongoing 能力', () => {
             );
             expect(resolved.success, resolved.error).toBe(true);
 
-            expect(getOptionalSimpleChoicePrompt(resolved.finalState, 'steampunk_zeppelin_choose_base')).toBeUndefined();
-            expect(resolved.events.some(event => (
+            const chooseBasePrompt = getSimpleChoicePrompt(resolved.finalState, 'steampunk_zeppelin_choose_base');
+            expect(getPromptOptions(chooseBasePrompt).map((option: any) => option.value.baseIndex)).toEqual([0]);
+            const moved = respondToPromptOption(
+                resolved.finalState,
+                option => option.value?.baseIndex === 0,
+                'zeppelin home base option',
+                '0',
+                dummyRandom,
+            );
+            expect(moved.success, moved.error).toBe(true);
+            expect(moved.events.some(event => (
                 event.type === SU_EVENTS.MINION_MOVED
                 && event.payload?.minionUid === 'away-minion'
                 && event.payload?.fromBaseIndex === 1

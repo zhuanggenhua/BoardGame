@@ -38,6 +38,11 @@ function toSmashUpMatchState(state: { core: unknown; sys: unknown }): MatchState
     return state as MatchState<SmashUpCore>;
 }
 
+function getCurrentInteractionSourceId(state: MatchState<SmashUpCore>): string | undefined {
+    const sourceId = (state.sys.interaction?.current?.data as { sourceId?: unknown } | undefined)?.sourceId;
+    return typeof sourceId === 'string' ? sourceId : undefined;
+}
+
 export function buildSmashUpTimingOpportunityChoiceRequestOptions(
     opportunity: Opportunity<ReactionChoiceValue>,
 ): CreateSimpleChoiceFromChoiceRequestOptions<ReactionChoiceValue> | null {
@@ -69,6 +74,10 @@ export function discoverSmashUpTimingOpportunities(
 ): TimingOpportunityDiscoveryResult<ReactionChoiceValue> {
     const session = getSmashUpReactionSession(args.state);
     if (!session) {
+        return { opportunities: [] };
+    }
+    const currentInteractionSourceId = getCurrentInteractionSourceId(args.state);
+    if (args.state.sys.interaction?.current && currentInteractionSourceId !== SMASHUP_REACTION_CHOOSE_SOURCE_ID) {
         return { opportunities: [] };
     }
 

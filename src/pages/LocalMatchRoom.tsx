@@ -26,6 +26,7 @@ import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../games/useGameImplementationReady';
 import { createLocalMatchSeed, ensureLocalMatchSeedSearchParams } from '../engine/transport/localSession';
 import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
+import type { GameRuntimeLocalSetupResult } from '../games/gameRuntimeAdapter';
 import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
 import { resolveManifestLocalSetup, resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 
@@ -99,11 +100,28 @@ export const LocalMatchRoom = () => {
         () => runtimeAdapter?.resolveLocalSetup?.({ searchParams }) ?? null,
         [runtimeAdapter, searchParams],
     );
-    const localPlayerCount = runtimeLocalSetup?.numPlayers ?? defaultLocalSetup.numPlayers;
+    const localSetupSearchKey = searchParams.toString();
+    const localSetupGateResetKey = `${gameId ?? ''}:${gameSeed}:${localSetupSearchKey}`;
+    const [confirmedLocalSetupState, setConfirmedLocalSetupState] = useState<{
+        resetKey: string;
+        setup: GameRuntimeLocalSetupResult;
+    } | null>(null);
+    const confirmedLocalSetup = confirmedLocalSetupState?.resetKey === localSetupGateResetKey
+        ? confirmedLocalSetupState.setup
+        : null;
+    const handleConfirmLocalSetup = useCallback((setup: GameRuntimeLocalSetupResult) => {
+        setConfirmedLocalSetupState({ resetKey: localSetupGateResetKey, setup });
+    }, [localSetupGateResetKey]);
+
+    const LocalSetupGate = runtimeAdapter?.LocalSetupGate;
+    const initialLocalSetup: GameRuntimeLocalSetupResult = runtimeLocalSetup ?? defaultLocalSetup;
+    const activeLocalSetup = confirmedLocalSetup ?? initialLocalSetup;
+    const localPlayerCount = activeLocalSetup.numPlayers;
     const localSetupData = useMemo(
-        () => resolveRuntimeLocalSetupData(runtimeLocalSetup) ?? defaultLocalSetup.setupData,
-        [defaultLocalSetup.setupData, runtimeLocalSetup],
+        () => resolveRuntimeLocalSetupData(activeLocalSetup) ?? defaultLocalSetup.setupData,
+        [activeLocalSetup, defaultLocalSetup.setupData],
     );
+    const localSetupKey = JSON.stringify(localSetupData ?? {});
     const localSeatControllers = useMemo(
         () => resolveSeatControllersFromSearchParams({
             numPlayers: localPlayerCount,
@@ -228,32 +246,43 @@ export const LocalMatchRoom = () => {
                             <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
                                 {engineConfig && WrappedBoard ? (
                                     <>
-                                        <Suspense fallback={null}>
-                                            <LocalGameHUD
+                                        {LocalSetupGate && !confirmedLocalSetup ? (
+                                            <LocalSetupGate
                                                 mode="local"
-                                                gameId={gameId}
-                                                localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
-                                                {...gameHudRuntimeProps}
+                                                searchParams={searchParams}
+                                                initialSetup={initialLocalSetup}
+                                                onConfirm={handleConfirmLocalSetup}
                                             />
-                                        </Suspense>
-                                        <LocalGameProvider
-                                            key={`local:${gameId ?? 'unknown'}:${gameSeed}:${localPlayerCount}`}
-                                            config={engineConfig}
-                                            numPlayers={localPlayerCount}
-                                            seed={gameSeed}
-                                            setupData={localSetupData}
-                                            onCommandRejected={handleCommandRejected}
-                                            seatControllers={localSeatControllers}
-                                            followCurrentTurnPlayer
-                                            persistSession
-                                        >
-                                            <BoardBridge
-                                                board={WrappedBoard}
-                                                renderer={WrappedBoardRenderer}
-                                                remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
-                                                loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
-                                            />
-                                        </LocalGameProvider>
+                                        ) : (
+                                            <>
+                                                <Suspense fallback={null}>
+                                                    <LocalGameHUD
+                                                        mode="local"
+                                                        gameId={gameId}
+                                                        localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
+                                                        {...gameHudRuntimeProps}
+                                                    />
+                                                </Suspense>
+                                                <LocalGameProvider
+                                                    key={`local:${gameId ?? 'unknown'}:${gameSeed}:${localPlayerCount}:${localSetupKey}`}
+                                                    config={engineConfig}
+                                                    numPlayers={localPlayerCount}
+                                                    seed={gameSeed}
+                                                    setupData={localSetupData}
+                                                    onCommandRejected={handleCommandRejected}
+                                                    seatControllers={localSeatControllers}
+                                                    followCurrentTurnPlayer
+                                                    persistSession
+                                                >
+                                                    <BoardBridge
+                                                        board={WrappedBoard}
+                                                        renderer={WrappedBoardRenderer}
+                                                        remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
+                                                        loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
+                                                    />
+                                                </LocalGameProvider>
+                                            </>
+                                        )}
                                     </>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-white/50">

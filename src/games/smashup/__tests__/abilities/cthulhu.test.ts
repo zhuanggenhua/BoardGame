@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { refreshInteractionOptions } from '../../../../engine/systems/InteractionSystem';
@@ -221,11 +222,7 @@ describe('cthulhu_furthering_the_cause 触发', () => {
     it('reducer: MINION_DESTROYED 会追踪到 turnDestroyedMinions', () => {
         const minion = makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 });
         const state = makeState({ bases: [makeBase({ minions: [minion] })] });
-        const event: MinionDestroyedEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm1', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '1', reason: 'test' },
-            timestamp: 0,
-        };
+        const event: MinionDestroyedEvent = makeMinionDestroyedEvent({minionUid: 'm1', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '1', reason: 'test', timestamp: 0 });
 
         const next = reduce(state, event);
 
@@ -245,17 +242,11 @@ describe('cthulhu_furthering_the_cause 触发', () => {
             bases: [makeBase({ minions: [minion] }), makeBase()],
         });
 
-        const destroyed = reduce(state, {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
+        const destroyed = reduce(state, makeMinionDestroyedEvent({minionUid: 'm1',
                 minionDefId: 'test_minion',
                 fromBaseIndex: 0,
                 ownerId: '1',
-                reason: 'bear_cavalry_cub_scout',
-            },
-            timestamp: 0,
-        } as MinionDestroyedEvent);
+                reason: 'bear_cavalry_cub_scout', timestamp: 0 }) as MinionDestroyedEvent);
 
         const moved = reduce(destroyed, {
             type: SU_EVENTS.MINION_MOVED,

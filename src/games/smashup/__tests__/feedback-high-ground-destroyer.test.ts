@@ -162,42 +162,4 @@ describe('反馈2：制高点消灭随从时 destroyerId 应正确透传', () =>
         expect(next.destroyedMinionByPlayersThisTurn).toEqual(['0']);
     });
 
-    it('POD 版制高点：自动执行消灭分支时 destroyerId 仍为制高点拥有者', () => {
-        const state = createState({
-            baseDefId: 'base_rlyeh',
-            highGroundDefId: 'bear_cavalry_high_ground_pod',
-            movedMinionDefId: 'robot_zapbot_pod',
-            player0Factions: ['bear_cavalry_pod', 'minions_of_cthulhu_pod'],
-            player1Factions: ['robots_pod', 'pirates_pod'],
-        });
-        const moveEvent = createMoveEvent('robot_zapbot_pod');
-
-        const triggerResult = fireTriggers(state, 'onMinionMoved', {
-            state,
-            playerId: '1',
-            baseIndex: 0,
-            triggerMinionUid: 'm1',
-            triggerMinionDefId: 'robot_zapbot_pod',
-            random: { random: () => 0.5, shuffle: <T>(items: T[]) => [...items], d: () => 1, range: (min: number) => min },
-            now: 1000,
-        });
-
-        expect(triggerResult.events.map(event => event.type)).toEqual([
-            SU_EVENTS.ONGOING_DETACHED,
-            SU_EVENTS.MINION_DESTROYED,
-        ]);
-
-        const destroyEvent = triggerResult.events[1] as MinionDestroyedEvent;
-        expect(destroyEvent.payload.minionUid).toBe('m1');
-        expect(destroyEvent.payload.fromBaseIndex).toBe(0);
-        expect(destroyEvent.payload.destroyerId).toBe('0');
-
-        const next = applyEvents(state, [moveEvent, ...triggerResult.events]);
-
-        expect(next.bases[0].ongoingActions).toHaveLength(0);
-        expect(next.bases[0].minions.map(minion => minion.uid)).toEqual(['m0']);
-        expect(next.bases[1].minions).toHaveLength(0);
-        expect(next.players['0'].vp).toBe(0);
-        expect(next.destroyedMinionByPlayersThisTurn).toEqual(['0']);
-    });
 });

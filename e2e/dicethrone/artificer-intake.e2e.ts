@@ -10,7 +10,7 @@ import { mkdir } from 'node:fs/promises';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { getGameServerBaseURL } from '../helpers/common';
-import { cleanupDTMatch, closeDebugPanelIfOpen, readyAndStartGame, selectCharacter, setupOnlineMatch, waitForDiceThroneHarness, waitForGameBoard } from '../helpers/dicethrone';
+import { cleanupDTMatch, closeDebugPanelIfOpen, maybePassResponse, readyAndStartGame, selectCharacter, setupOnlineMatch, waitForDiceThroneHarness, waitForGameBoard } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import '../../src/games/dicethrone/domain';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
@@ -151,7 +151,12 @@ const injectArtificerNanobotUpkeep = async (matchId: string, page: Page) => {
     await injectMatchState(matchId, next as never, page);
 };
 
-const injectArtificerShockBotPreDamageChoice = async (matchId: string, page: Page) => {
+const injectArtificerShockBotPreDamageChoice = async (
+    matchId: string,
+    page: Page,
+    options: { includeChoice?: boolean } = {},
+) => {
+    const includeChoice = options.includeChoice ?? true;
     const current = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(current.G ?? current);
     const core = asRecord(root.core);
@@ -172,7 +177,7 @@ const injectArtificerShockBotPreDamageChoice = async (matchId: string, page: Pag
         ...core,
         phase: 'offensiveRoll',
         activePlayerId: '0',
-        currentChoiceSourceAbilityId: 'shock-bot',
+        currentChoiceSourceAbilityId: includeChoice ? 'shock-bot' : undefined,
         turnOrder,
         players: {
             ...players,
@@ -239,41 +244,46 @@ const injectArtificerShockBotPreDamageChoice = async (matchId: string, page: Pag
         phase: 'offensiveRoll',
         turnOrder,
         currentPlayerIndex: 0,
-        interaction: {
-            ...asRecord(sys.interaction),
-            current: {
-                id: 'artificer-online-shock-bot-pre-damage-choice',
-                kind: 'simple-choice',
-                playerId: '0',
-                data: {
-                    sourceId: 'shock-bot',
-                    title: 'choices.artificerBotActivation.titleSingle',
-                    titleKey: 'choices.artificerBotActivation.titleSingle',
-                    options: [
-                        {
-                            id: 'activate-shock-bot',
-                            label: 'choices.artificerBotActivation.activateShockBotFree',
-                            labelKey: 'choices.artificerBotActivation.activateShockBotFree',
-                            value: {
-                                customId: 'artificer-activate-bot-resolve',
-                                sourceAbilityId: 'shock-bot',
-                                value: 202,
+        interaction: includeChoice
+            ? {
+                ...asRecord(sys.interaction),
+                current: {
+                    id: 'artificer-online-shock-bot-pre-damage-choice',
+                    kind: 'simple-choice',
+                    playerId: '0',
+                    data: {
+                        sourceId: 'shock-bot',
+                        title: 'choices.artificerBotActivation.titleSingle',
+                        titleKey: 'choices.artificerBotActivation.titleSingle',
+                        options: [
+                            {
+                                id: 'activate-shock-bot',
+                                label: 'choices.artificerBotActivation.activateShockBotFree',
+                                labelKey: 'choices.artificerBotActivation.activateShockBotFree',
+                                value: {
+                                    customId: 'artificer-activate-bot-resolve',
+                                    sourceAbilityId: 'shock-bot',
+                                    value: 202,
+                                },
                             },
-                        },
-                        {
-                            id: 'skip-bot-activation',
-                            label: 'choices.artificerBotActivation.skip',
-                            labelKey: 'choices.artificerBotActivation.skip',
-                            value: {
-                                customId: 'artificer-activate-bot-resolve',
-                                sourceAbilityId: 'shock-bot',
-                                value: 0,
+                            {
+                                id: 'skip-bot-activation',
+                                label: 'choices.artificerBotActivation.skip',
+                                labelKey: 'choices.artificerBotActivation.skip',
+                                value: {
+                                    customId: 'artificer-activate-bot-resolve',
+                                    sourceAbilityId: 'shock-bot',
+                                    value: 0,
+                                },
                             },
-                        },
-                    ],
+                        ],
+                    },
                 },
+            }
+            : {
+                ...asRecord(sys.interaction),
+                current: null,
             },
-        },
     };
 
     await injectMatchState(matchId, next as never, page);
@@ -400,6 +410,31 @@ test.describe('DiceThrone 工匠真实入口', () => {
         const match = await setupArtificerMatch(browser, baseURL);
 
         try {
+            await injectArtificerShockBotPreDamageChoice(match.matchId, match.hostPage, { includeChoice: false });
+
+            const baseDamageBadge = match.hostPage.getByTestId('current-total-damage-badge');
+            await expect(baseDamageBadge).toBeVisible({ timeout: 10000 });
+            await expect(baseDamageBadge).toHaveAttribute('data-current-damage', '9');
+            await expect(baseDamageBadge).toHaveAttribute('data-original-damage', '9');
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const core = asRecord(root.core);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: asRecord(root.sys).phase ?? null,
+                    sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
+                    bonusDamage: Number(pendingAttack.bonusDamage ?? -1),
+                    currentInteraction: asRecord(asRecord(root.sys).interaction).current ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                phase: 'offensiveRoll',
+                sourceAbilityId: 'shock-bot',
+                bonusDamage: 0,
+                currentInteraction: null,
+            });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-选择机器人前基础九点伤害');
+
             await injectArtificerShockBotPreDamageChoice(match.matchId, match.hostPage);
 
             const choiceModal = match.hostPage.locator('#modal-root');
@@ -409,7 +444,7 @@ test.describe('DiceThrone 工匠真实入口', () => {
             const activateShockBotButton = choiceModal.getByRole('button', { name: /免费激活电能机器人|Activate Shock Bot for free/i });
             await expect(activateShockBotButton).toBeVisible({ timeout: 10000 });
 
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-电能机器人激活前');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-选择免费激活电能机器人');
 
             await activateShockBotButton.click();
             await match.hostPage.waitForTimeout(1200);
@@ -444,7 +479,138 @@ test.describe('DiceThrone 工匠真实入口', () => {
                 interactionKind: null,
             });
 
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-电能机器人激活后');
+            const boostedDamageBadge = match.hostPage.getByTestId('current-total-damage-badge');
+            await expect(boostedDamageBadge).toBeVisible({ timeout: 10000 });
+            await expect(boostedDamageBadge).toHaveAttribute('data-current-damage', '12');
+            await expect(boostedDamageBadge).toHaveAttribute('data-original-damage', '9');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-电能机器人激活后总伤害十二');
+
+            const advanceButton = match.hostPage.locator('[data-tutorial-id="advance-phase-button"]');
+            await expect(advanceButton).toBeVisible({ timeout: 10000 });
+            await expect(advanceButton).toBeEnabled({ timeout: 10000 });
+            await advanceButton.click();
+
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? null,
+                    sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                    bonusDamage: Number(pendingAttack.bonusDamage ?? -1),
+                    guestHp: Number(asRecord(asRecord(asRecordMap(core.players)['1']).resources)[RESOURCE_IDS.HP] ?? -1),
+                };
+            }, { timeout: 15000 }).toEqual({
+                phase: 'defensiveRoll',
+                sourceAbilityId: 'shock-bot',
+                defenseAbilityId: 'meditation',
+                bonusDamage: 3,
+                guestHp: 50,
+            });
+
+            const startDefenseButton = match.guestPage.getByRole('button', { name: /开始防御|Start Defense/i }).first();
+            if (await startDefenseButton.isVisible({ timeout: 1500 }).catch(() => false)) {
+                await startDefenseButton.click();
+                await expect(startDefenseButton).toBeHidden({ timeout: 5000 }).catch(() => {});
+            }
+
+            const defenseRollButton = match.guestPage.locator('[data-tutorial-id="dice-roll-button"]').first();
+            await expect(defenseRollButton).toBeVisible({ timeout: 10000 });
+            await expect(defenseRollButton).toBeEnabled({ timeout: 10000 });
+            await defenseRollButton.click();
+
+            const defenseConfirmButton = match.guestPage.locator('[data-tutorial-id="dice-confirm-button"]').first();
+            await expect(defenseConfirmButton).toBeVisible({ timeout: 10000 });
+            await expect(defenseConfirmButton).toBeEnabled({ timeout: 10000 });
+            await defenseConfirmButton.click();
+
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const core = asRecord(root.core);
+                return {
+                    phase: asRecord(root.sys).phase ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    rollCount: core.rollCount ?? null,
+                    diceCount: Array.isArray(core.dice) ? core.dice.slice(0, 4).length : 0,
+                };
+            }, { timeout: 15000 }).toEqual({
+                phase: 'defensiveRoll',
+                rollConfirmed: true,
+                rollCount: 1,
+                diceCount: 4,
+            });
+
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '07-防御方正式防御掷骰后');
+
+            const skippedDefenseResponse = await maybePassResponse(match.guestPage, 3000);
+            if (skippedDefenseResponse) {
+                await expect.poll(async () => {
+                    const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                    const root = asRecord(latest.G ?? latest);
+                    return asRecord(asRecord(root.sys).interaction).current ?? null;
+                }, { timeout: 10000 }).toBeNull();
+            }
+
+            const endDefenseButton = match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').first();
+            await expect(endDefenseButton).toBeVisible({ timeout: 10000 });
+            await expect(endDefenseButton).toBeEnabled({ timeout: 10000 });
+            await endDefenseButton.click();
+
+            let pendingDamageId: string | null = null;
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const pendingDamage = asRecord(core.pendingDamage);
+                pendingDamageId = typeof pendingDamage.id === 'string' ? pendingDamage.id : null;
+                return {
+                    currentDamage: Number(pendingDamage.currentDamage ?? -1),
+                    responderId: pendingDamage.responderId ?? null,
+                    interactionKind: asRecord(asRecord(sys.interaction).current).kind ?? null,
+                };
+            }, { timeout: 15000 }).toEqual({
+                currentDamage: 12,
+                responderId: '1',
+                interactionKind: 'dt:token-response',
+            });
+
+            expect(pendingDamageId).toBeTruthy();
+            await expect(match.guestPage.getByTestId('dicethrone-response-window-hint')).toBeVisible({ timeout: 10000 });
+            await expect(match.guestPage.getByTestId('dicethrone-response-window-hint')).toHaveAttribute('data-response-kind', 'token');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '08-电能机器人进入十二点伤害响应');
+
+            const passed = await maybePassResponse(match.guestPage, 10000);
+            expect(passed).toBe(true);
+
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                return {
+                    phase: sys.phase ?? null,
+                    guestHp: Number(asRecord(guest.resources)[RESOURCE_IDS.HP] ?? -1),
+                    pendingAttack: core.pendingAttack ?? null,
+                    pendingDamage: core.pendingDamage ?? null,
+                    interactionKind: asRecord(asRecord(sys.interaction).current).kind ?? null,
+                };
+            }, { timeout: 15000 }).toEqual({
+                phase: 'main2',
+                guestHp: 38,
+                pendingAttack: null,
+                pendingDamage: null,
+                interactionKind: null,
+            });
+
+            await expect(match.hostPage.getByTestId('dt-top-header-1-hp-value')).toHaveText('38', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '09-防御方正式跳过响应后生命值三十八');
         } finally {
             await cleanupDTMatch(match);
         }

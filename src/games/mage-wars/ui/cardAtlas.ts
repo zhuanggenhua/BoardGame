@@ -154,6 +154,11 @@ export function getMageWarsSpellCardAspectRatio(cardId: string | number): number
     return (atlas.width / atlas.cols) / (atlas.height / atlas.rows);
 }
 
+export function getMageWarsMagePreviewAspectRatio(): number {
+    return (mageAtlasConfig.atlas.width / mageAtlasConfig.atlas.cols)
+        / (mageAtlasConfig.atlas.height / mageAtlasConfig.atlas.rows);
+}
+
 export function getMageWarsCardPreviewRef(cardId: string): CardPreviewRef | null {
     return getMageWarsSpellCardPreviewRef(cardId);
 }

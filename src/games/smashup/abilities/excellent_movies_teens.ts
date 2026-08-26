@@ -547,6 +547,14 @@ function actionHeroesKickboxbroTurnEnd(ctx: TriggerContext): TriggerResult {
         ),
     };
 }
+
+function canTriggerActionHeroesKickboxbroTurnEnd(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId || !ctx.matchState) {
+        return false;
+    }
+    return (ctx.state.players[ctx.sourceControllerId]?.hand.length ?? 0) > 0;
+}
+
 function actionHeroesCommandbroTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return [];
     if (!isOnlyOwnMinionHere(ctx.state, ctx.sourceBaseIndex, ctx.sourceControllerId, ctx.sourceCardUid)) return [];
@@ -1581,6 +1589,12 @@ function backtimersZanyProfTurnStart(ctx: TriggerContext): TriggerResult {
     };
 }
 
+function canTriggerBacktimersZanyProfTurnStart(ctx: TriggerContext): boolean {
+    return !!ctx.sourceControllerId
+        && !!ctx.matchState
+        && getBacktimersStasisCards(ctx.state, ctx.sourceControllerId).length > 0;
+}
+
 function registerBacktimersInteractionHandlers(): void {
     const registerStoreHandler = (sourceId: string) => {
         registerInteractionHandler(sourceId, (state, playerId, value, _data, _random, timestamp) => {
@@ -2078,6 +2092,7 @@ function registerBacktimers(): void {
     registerTrigger('backtimers_zany_prof', 'onTurnStart', backtimersZanyProfTurnStart, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerBacktimersZanyProfTurnStart,
     });
     registerBacktimersInteractionHandlers();
 }
@@ -5210,7 +5225,12 @@ function registerWraithrustlers(): void {
     registerTrigger('wraithrustlers_ellen', 'onCardDestroyed', ctx => {
         if (!ctx.sourceControllerId || !ctx.triggerCardDefId || !isWraith(ctx.triggerCardDefId)) return [];
         return [grantContextualExtraAction({ playerId: ctx.sourceControllerId, now: ctx.now, matchState: ctx.matchState }, 'wraithrustlers_ellen')];
-    }, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
+    }, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+        canTrigger: ctx => !!ctx.sourceControllerId && !!ctx.triggerCardDefId && isWraith(ctx.triggerCardDefId),
+    });
     registerTrigger('wraithrustlers_funkman', 'onCardDestroyed', ctx => {
         if (!ctx.sourceControllerId || ctx.baseIndex === undefined || !ctx.triggerCardDefId || getCardDef(ctx.triggerCardDefId)?.type !== 'action') return [];
         const base = ctx.state.bases[ctx.baseIndex];
@@ -5267,6 +5287,7 @@ export function registerExcellentMoviesTeensAbilities(): void {
     registerTrigger('action_heroes_kickboxbro', 'onTurnEnd', actionHeroesKickboxbroTurnEnd, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerActionHeroesKickboxbroTurnEnd,
     });
 
     registerProtection('action_heroes_slo_mo_attack', 'affect', actionHeroesSloMoProtection);

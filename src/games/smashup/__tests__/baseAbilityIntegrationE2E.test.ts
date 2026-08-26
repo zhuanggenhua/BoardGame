@@ -635,8 +635,10 @@ describe('集成: base_tortuga 托尔图加 (afterScoring)', () => {
             players: { '0': makePlayer('0'), '1': makePlayer('1') },
         });
         const ms = makeScoreBasesMS(core);
-        callOnPhaseExitScoreBases(ms);
-        expect(hasInteraction(ms, 'base_tortuga')).toBe(true);
+        const { events } = callOnPhaseExitScoreBases(ms);
+        expect(events.some(e => e.type === SU_EVENTS.BASE_SCORED)).toBe(true);
+        const resolved = resolveReactionQueueTriggerForSourceDefId(ms, 'base_tortuga', 13);
+        expect(hasInteraction(resolved, 'base_tortuga')).toBe(true);
     });
 });
 

@@ -99,6 +99,32 @@ function createBearCavalryPromptContext<TExtra extends Record<string, unknown> =
     };
 }
 
+function canTriggerBearCavalryCubScoutPod(ctx: TriggerContext): boolean {
+    const destBaseIndex = ctx.baseIndex;
+    if (destBaseIndex === undefined || !ctx.triggerMinionUid || !ctx.matchState) return false;
+    if (ctx.moveToBaseIndex !== undefined && destBaseIndex !== ctx.moveToBaseIndex) return false;
+
+    const destBase = ctx.state.bases[destBaseIndex];
+    if (!destBase) return false;
+
+    let movedMinion: MinionOnBase | undefined;
+    for (const base of ctx.state.bases) {
+        const found = base.minions.find(minion => minion.uid === ctx.triggerMinionUid);
+        if (found) {
+            movedMinion = found;
+            break;
+        }
+    }
+    if (!movedMinion) return false;
+
+    return destBase.minions.some(scout => {
+        if (ctx.sourceCardUid && scout.uid !== ctx.sourceCardUid) return false;
+        if (scout.defId !== 'bear_cavalry_cub_scout_pod') return false;
+        if (scout.controller === movedMinion.controller) return false;
+        return getMinionPower(ctx.state, movedMinion, destBaseIndex) < getMinionPower(ctx.state, scout, destBaseIndex);
+    });
+}
+
 /** 注册黑熊骑兵派系所有能力 */
 export function registerBearCavalryAbilities(): void {
     // 黑熊擒抱（行动卡）：每位对手消灭自己最弱的随从
@@ -139,6 +165,7 @@ export function registerBearCavalryAbilities(): void {
     // 伊万将军 POD：保护 + 响应式加成
     registerProtection('bear_cavalry_general_ivan_pod', 'destroy', bearCavalryGeneralIvanPodProtection);
     registerTrigger('bear_cavalry_general_ivan_pod', 'onMinionMoved', bearCavalryGeneralIvanPodTrigger, {
+        canTrigger: canTriggerBearCavalryGeneralIvanPod,
     });
     // 极地突击队员 POD：天赋放置指示物
     registerAbility('bear_cavalry_polar_commando_pod', 'talent', bearCavalryPolarCommandoPodTalent);
@@ -148,6 +175,7 @@ export function registerBearCavalryAbilities(): void {
     registerTrigger('bear_cavalry_cub_scout_pod', 'onMinionMoved', bearCavalryCubScoutPodTrigger, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerBearCavalryCubScoutPod,
     });
     // 黑熊擒抱 POD：全局最弱消灭（与原版相同，已在上方注册）
     // 你们已经完蛋 POD：降低临界点并提供 +2 力量
@@ -185,6 +213,7 @@ export function registerBearCavalryAbilities(): void {
     // 制高点 POD：响应式消灭并抽牌
     registerTrigger('bear_cavalry_high_ground_pod', 'onMinionMoved', bearCavalryHighGroundPodTrigger, {
         playerContext: 'sourceController',
+        canTrigger: canTriggerBearCavalryHighGroundPod,
     });
 }
 
@@ -657,6 +686,47 @@ function bearCavalryGeneralIvanPodProtection(ctx: ProtectionCheckContext): boole
 
 
 /** 伊万将军 POD 触发器：其他玩家随从移动后可选择给己方随从 +1 力量（每回合限一次） */
+function findBearCavalryMovedMinion(ctx: TriggerContext): { minion: MinionOnBase; baseIndex: number } | undefined {
+    if (!ctx.triggerMinionUid) return undefined;
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
+        const minion = ctx.state.bases[baseIndex].minions.find(candidate => candidate.uid === ctx.triggerMinionUid);
+        if (minion) return { minion, baseIndex };
+    }
+    return undefined;
+}
+
+function hasQueuedBearCavalryInteraction(ctx: TriggerContext, sourceId: string, predicate: (data: any) => boolean): boolean {
+    if (!ctx.matchState) return false;
+    const current = ctx.matchState.sys.interaction.current;
+    const queued = ctx.matchState.sys.interaction.queue;
+    return (current ? [current, ...queued] : queued).some((interaction: any) =>
+        interaction.data?.sourceId === sourceId && predicate(interaction.data),
+    );
+}
+
+function canTriggerBearCavalryGeneralIvanPod(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    const moved = findBearCavalryMovedMinion(ctx);
+    if (!moved) return false;
+    const movedToBase = ctx.state.bases[moved.baseIndex];
+    if (!movedToBase) return false;
+    const ivans = ctx.state.bases.flatMap(base => base.minions)
+        .filter(minion =>
+            minion.defId === 'bear_cavalry_general_ivan_pod'
+            && (!ctx.sourceCardUid || minion.uid === ctx.sourceCardUid),
+        );
+    return ivans.some(ivan => {
+        if (moved.minion.controller === ivan.controller) return false;
+        if (!movedToBase.minions.some(minion => minion.controller === ivan.controller)) return false;
+        const limitKey = `bear_cavalry_general_ivan_pod_${ivan.controller}`;
+        if (ctx.state.specialLimitUsed?.[limitKey]?.length) return false;
+        return !hasQueuedBearCavalryInteraction(ctx, 'bear_cavalry_general_ivan_pod_trigger', data =>
+            data?.ivanController === ivan.controller
+            && data?.turnNumber === ctx.state.turnNumber,
+        );
+    });
+}
+
 function bearCavalryGeneralIvanPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: any } {
     const events: SmashUpEvent[] = [];
     
@@ -1024,6 +1094,28 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
 
 
 /** 制高点 POD 触发器：移动后消灭，或摸牌并打出战术 */
+function canTriggerBearCavalryHighGroundPod(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    const destBaseIndex = ctx.baseIndex;
+    if (destBaseIndex === undefined || (ctx.moveToBaseIndex !== undefined && destBaseIndex !== ctx.moveToBaseIndex)) {
+        return false;
+    }
+    const destBase = ctx.state.bases[destBaseIndex];
+    const moved = findBearCavalryMovedMinion(ctx);
+    if (!destBase || !moved) return false;
+    return destBase.ongoingActions.some(ongoing => {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) return false;
+        if (ongoing.defId !== 'bear_cavalry_high_ground_pod') return false;
+        const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+        if (ongoingControllerId === moved.minion.controller) return false;
+        if (!destBase.minions.some(minion => minion.controller === ongoingControllerId)) return false;
+        return !hasQueuedBearCavalryInteraction(ctx, 'bear_cavalry_high_ground_pod_trigger', data =>
+            data?.ongoingUid === ongoing.uid
+            && data?.minionUid === moved.minion.uid,
+        );
+    });
+}
+
 function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: any } {
     const events: SmashUpEvent[] = [];
     const destBaseIndex = ctx.baseIndex;

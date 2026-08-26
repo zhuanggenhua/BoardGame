@@ -1,0 +1,37 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "本轮交付女孩 token 候选，不替换正式女孩资源或代码",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\girl-token-candidates-20260825\\candidate-source-table.md"
+      ]
+    },
+    {
+      "requirement": "候选图包含当前资源与外部可追溯来源，并标注来源/许可口径",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\girl-token-candidates-20260825\\download-results.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\girl-token-candidates-20260825\\candidate-source-table.md"
+      ]
+    },
+    {
+      "requirement": "候选图按大 token 与地图小尺寸两种尺寸展示，方便判断棋盘可读性",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\girl-token-candidates-20260825\\girl-token-candidates-small-map-preview.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\girl-token-candidates-20260825\\girl-token-candidates-small-map-preview.png"
+  ]
+}

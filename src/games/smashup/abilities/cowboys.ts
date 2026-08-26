@@ -231,6 +231,7 @@ export function registerCowboysAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerCowboysSheriffBeforeScoring,
     });
     registerTrigger('cowboys_gold_strike', 'onMinionPlayed', cowboysGoldStrikeOnMinionPlayed, {
         perInstance: true,
@@ -494,6 +495,15 @@ function cowboysSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
         }),
     );
     return { events: result.events, matchState: result.matchState };
+}
+
+function canTriggerCowboysSheriffBeforeScoring(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && ctx.baseIndex !== undefined
+        && !!ctx.sourceCardUid
+        && !!ctx.sourceControllerId
+        && canStartDuel(ctx.state)
+        && buildEnemyMinionOptions(ctx.state, ctx.baseIndex, ctx.sourceControllerId).length > 0;
 }
 
 function cowboysGoldStrikeOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {

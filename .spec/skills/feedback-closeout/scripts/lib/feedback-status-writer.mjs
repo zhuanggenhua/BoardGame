@@ -215,6 +215,7 @@ print(JSON.stringify({
   modifiedCount: results.reduce((sum, item) => sum + item.modifiedCount, 0),
   results
 }));
+quit(0);
 `;
 }
 

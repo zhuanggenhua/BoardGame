@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * Igor onDestroy 幂等性与重入测试
  *
@@ -47,18 +48,12 @@ describe("Igor onDestroy 幂等性与重入测试", () => {
     const ms = makeMatchState(core);
 
     // 创建一个 MINION_DESTROYED 事件
-    const destroyEvent: SmashUpEvent = {
-      type: SU_EVENTS.MINION_DESTROYED,
-      payload: {
-        minionUid: "igor1",
+    const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: "igor1",
         minionDefId: "frankenstein_igor",
         fromBaseIndex: 0,
         ownerId: "0",
         destroyerId: "0",
-        reason: "test",
-      },
-      timestamp: 1000,
-    };
+        reason: "test", timestamp: 1000 });
 
     const result = resolveDestroyedMinions(
       ms,
@@ -96,18 +91,12 @@ describe("Igor onDestroy 幂等性与重入测试", () => {
 
     const ms = makeMatchState(core);
 
-    const destroyEvent: SmashUpEvent = {
-      type: SU_EVENTS.MINION_DESTROYED,
-      payload: {
-        minionUid: "igor1",
+    const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: "igor1",
         minionDefId: "frankenstein_igor",
         fromBaseIndex: 0,
         ownerId: "0",
         destroyerId: "0",
-        reason: "test",
-      },
-      timestamp: 1000,
-    };
+        reason: "test", timestamp: 1000 });
 
     // 第一次调用
     const result1 = resolveDestroyedMinions(
@@ -163,30 +152,18 @@ describe("Igor onDestroy 幂等性与重入测试", () => {
 
     // 创建多个 MINION_DESTROYED 事件（Igor + 其他随从）
     const destroyEvents: SmashUpEvent[] = [
-      {
-        type: SU_EVENTS.MINION_DESTROYED,
-        payload: {
-          minionUid: "igor1",
+      makeMinionDestroyedEvent({minionUid: "igor1",
           minionDefId: "frankenstein_igor",
           fromBaseIndex: 0,
           ownerId: "0",
           destroyerId: "0",
-          reason: "test",
-        },
-        timestamp: 1000,
-      },
-      {
-        type: SU_EVENTS.MINION_DESTROYED,
-        payload: {
-          minionUid: "monster1",
+          reason: "test", timestamp: 1000 }),
+      makeMinionDestroyedEvent({minionUid: "monster1",
           minionDefId: "frankenstein_the_monster",
           fromBaseIndex: 0,
           ownerId: "0",
           destroyerId: "0",
-          reason: "test",
-        },
-        timestamp: 1001,
-      },
+          reason: "test", timestamp: 1001 }),
     ];
 
     const result = resolveDestroyedMinions(
@@ -223,18 +200,12 @@ describe("Igor onDestroy 幂等性与重入测试", () => {
 
     const ms = makeMatchState(core);
 
-    const destroyEvent: SmashUpEvent = {
-      type: SU_EVENTS.MINION_DESTROYED,
-      payload: {
-        minionUid: "igor1",
+    const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: "igor1",
         minionDefId: "frankenstein_igor",
         fromBaseIndex: 1,
         ownerId: "0",
         destroyerId: "1", // 对手消灭
-        reason: "action",
-      },
-      timestamp: 1000,
-    };
+        reason: "action", timestamp: 1000 });
     const result = resolveDestroyedMinions(
       ms,
       "0",

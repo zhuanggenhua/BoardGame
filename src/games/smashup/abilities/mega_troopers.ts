@@ -1313,6 +1313,22 @@ function powerPosePodBeforeScoring(ctx: TriggerContext): SmashUpEvent[] {
     return buildStandardDrawEvents(ctx.matchState, controllerId, 2, ctx.random, ctx.now);
 }
 
+function canTriggerPowerPosePodBeforeScoring(ctx: TriggerContext): boolean {
+    const sourceBaseIndex = ctx.sourceBaseIndex;
+    const controllerId = ctx.sourceControllerId;
+    if (
+        sourceBaseIndex === undefined
+        || controllerId === undefined
+        || ctx.baseIndex !== sourceBaseIndex
+        || !ctx.matchState
+        || playerIsFirstAtBase(ctx.state, controllerId, sourceBaseIndex)
+    ) {
+        return false;
+    }
+    const player = ctx.state.players[controllerId];
+    return !!player && (player.deck.length > 0 || player.discard.length > 0);
+}
+
 function powerPosePodAfterScoring(ctx: TriggerContext): AbilityResult {
     const sourceBaseIndex = ctx.sourceBaseIndex;
     const controllerId = ctx.sourceControllerId;
@@ -1368,6 +1384,28 @@ function powerPosePodAfterScoring(ctx: TriggerContext): AbilityResult {
         events: [],
         matchState: queueInteraction(ctx.matchState, interaction, { urgent: true }),
     };
+}
+
+function canTriggerPowerPosePodAfterScoring(ctx: TriggerContext): boolean {
+    const sourceBaseIndex = ctx.sourceBaseIndex;
+    const controllerId = ctx.sourceControllerId;
+    if (
+        sourceBaseIndex === undefined
+        || controllerId === undefined
+        || ctx.baseIndex !== sourceBaseIndex
+        || !ctx.matchState
+        || !ctx.rankings?.some(
+            ranking =>
+                ranking.playerId === controllerId
+                && ranking.power === Math.max(...ctx.rankings!.map(candidate => candidate.power)),
+        )
+    ) {
+        return false;
+    }
+    return (ctx.state.players[controllerId]?.hand ?? []).some(card => {
+        const def = getCardDef(card.defId);
+        return def?.type === 'minion' && def.power <= 3;
+    });
 }
 
 function blackTrooperSpecialInterceptor(state: SmashUpCore, event: SmashUpEvent): SmashUpEvent | SmashUpEvent[] | null | undefined {
@@ -1489,6 +1527,7 @@ export function registerMegaTroopersAbilities(): void {
         {
             playerContext: 'sourceController',
             sourceScope: 'triggerBase',
+            canTrigger: canTriggerPowerPosePodBeforeScoring,
         },
     );
     registerTrigger(
@@ -1498,6 +1537,7 @@ export function registerMegaTroopersAbilities(): void {
         {
             playerContext: 'sourceController',
             sourceScope: 'triggerBase',
+            canTrigger: canTriggerPowerPosePodAfterScoring,
         },
     );
     registerBreakpointModifier('mega_troopers_omega_protocol_pod', (ctx) => {

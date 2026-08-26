@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "敌对单位使用红色描边，英雄合法目标仍使用绿色描边。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.jpg",
+        "E2E 断言 data-highlight-color=red 且 data-entity-relation=enemy"
+      ]
+    },
+    {
+      "requirement": "阵营关系进入引擎级原语，不在山屋 UI 按对象名硬编码敌对颜色。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\src\\engine\\primitives\\factionRelations.ts",
+        "D:\\gongzuo\\webgame\\BoardGame\\.spec\\knowledge\\standards\\engine-systems.md"
+      ]
+    },
+    {
+      "requirement": "木乃伊和小女孩使用网上 SVG 运行时资源，不再使用简单几何占位。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\betrayal\\tokens\\monsters\\mummy.svg",
+        "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\betrayal\\tokens\\haunts\\mummy-girl.svg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg"
+      ]
+    },
+    {
+      "requirement": "黄金链覆盖从木乃伊行动到偷取奖励和叛徒终局的完整流程。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\64-主黄金链-叛徒终局.jpg",
+        "E2E 主黄金链通过"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-mummy-svg\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-mummy-svg\\01-labeled-65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-mummy-svg\\02-labeled-65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-mummy-svg\\03-labeled-65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260825-mummy-svg\\04-labeled-64-主黄金链-叛徒终局.png"
+  ]
+}

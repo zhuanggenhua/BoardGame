@@ -286,6 +286,29 @@ function kittyCatsHangInThereOnDestroyed(ctx: TriggerContext): TriggerResult | S
     return { events: [], matchState: queueInteraction(ctx.matchState, prompt) };
 }
 
+function canTriggerKittyCatsHangInThereOnDestroyed(ctx: TriggerContext): boolean {
+    if (ctx.reason === 'kitty_cats_hang_in_there') return false;
+    if (
+        !ctx.matchState
+        || !ctx.sourceCardUid
+        || ctx.baseIndex === undefined
+        || !ctx.triggerMinionUid
+        || !ctx.triggerMinionDefId
+    ) {
+        return false;
+    }
+    const sourceOwnerId = ctx.sourceControllerId ?? findAttachedActionOwner(ctx.state, ctx.sourceCardUid);
+    if (sourceOwnerId === undefined) return false;
+    const triggerMinion = ctx.triggerMinion
+        ?? ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.triggerMinionUid);
+    if (!triggerMinion || triggerMinion.controller !== sourceOwnerId) return false;
+    return buildBaseOptions(
+        ctx.state,
+        baseIndex => baseIndex !== ctx.baseIndex,
+        baseIndex => ({ baseIndex }),
+    ).length > 0;
+}
+
 function queueTemporaryControlChoice(
     ctx: AbilityContext,
     sourceId: string,
@@ -720,6 +743,7 @@ export function registerKittyCatsAbilities(): void {
     registerTrigger('kitty_cats_hang_in_there', 'onMinionDestroyed', kittyCatsHangInThereOnDestroyed, {
         phase: 'replacement',
         perInstance: true,
+        canTrigger: canTriggerKittyCatsHangInThereOnDestroyed,
     });
 
     registerInteractionHandler('kitty_cats_mr_grumpers', (state, playerId, value, data, random, timestamp) =>

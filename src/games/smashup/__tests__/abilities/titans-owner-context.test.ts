@@ -5,14 +5,16 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { defaultTestRandom } from '../testRunner';
+import { defaultTestRandom, runCommand } from '../testRunner';
 import {
+    getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
     makeBase,
     makeMatchState,
     makeMinion,
     makePlayer,
     makeState,
+    respondCommand,
 } from '../helpers';
 
 beforeAll(() => {
@@ -183,6 +185,21 @@ describe('Titans queued source-controller runtime context', () => {
             5103,
         );
         expect(queuedState).toBeDefined();
-        expect(getSimpleChoicePrompt(queuedState!.state, 'titan_pirates_the_kraken_choose_minion')?.playerId).toBe('1');
+        const reactionPrompt = getSimpleChoicePrompt(queuedState!.state, 'smashup_reaction_choose');
+        expect(reactionPrompt.playerId).toBe('1');
+
+        const krakenOption = getReactionPromptOptionBySourceDefId(
+            queuedState!.state,
+            reactionPrompt,
+            'pirates_the_kraken',
+        );
+        const afterChooseKraken = runCommand(
+            queuedState!.state,
+            respondCommand(krakenOption.id, '1'),
+            defaultTestRandom,
+        );
+        expect(afterChooseKraken.success, afterChooseKraken.error).toBe(true);
+
+        expect(getSimpleChoicePrompt(afterChooseKraken.finalState, 'titan_pirates_the_kraken_choose_minion')?.playerId).toBe('1');
     });
 });

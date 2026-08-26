@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { FxBus } from '../../../engine/fx';
@@ -62,18 +63,12 @@ describe('useGameEvents triggered FX', () => {
       current: new Map<number, HTMLElement>([[0, baseEl]]),
     };
 
-    const destroyedEntry = createEntry(1, {
-      type: SU_EVENTS.MINION_DESTROYED,
-      payload: {
-        minionUid: 'enemy-minion',
+    const destroyedEntry = createEntry(1, makeMinionDestroyedEvent({minionUid: 'enemy-minion',
         minionDefId: 'pirate_first_mate',
         fromBaseIndex: 0,
         ownerId: '1',
         controllerId: '1',
-        reason: 'trickster_leprechaun',
-      },
-      timestamp: 1000,
-    });
+        reason: 'trickster_leprechaun', timestamp: 1000 }));
 
     const { rerender } = renderHook(
       ({ G }: { G: MatchState<SmashUpCore> }) => useGameEvents({

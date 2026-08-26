@@ -772,7 +772,7 @@ describe('cross hero battles', () => {
             expect(eventTypes.indexOf('CP_CHANGED')).toBeLessThan(eventTypes.indexOf('ATTACK_DEFENSE_RESOLVED'));
         });
 
-        it('showdown uses compare-roll-choice and confirms into bonus damage', () => {
+        it('showdown 无真实选择时应自动写入加伤且不创建 compare 弹层', () => {
             const playerIds: PlayerId[] = ['0', '1'];
             let state = createInitializedStateWithCharacters(
                 playerIds,
@@ -863,38 +863,6 @@ describe('cross hero battles', () => {
             );
             expect(compareConfirmResult.success).toBe(true);
             state = compareConfirmResult.state as MatchState<DiceThroneCore>;
-
-            const compareRollPrompt = getCompareRollChoicePrompt(state, 'showdown');
-            expect(compareRollPrompt).toMatchObject({
-                contestants: [
-                    expect.objectContaining({ playerId: '0', roll: 6 }),
-                    expect.objectContaining({ playerId: '1', roll: 1 }),
-                ],
-                confirmValue: {
-                    customId: 'gunslinger-showdown-apply-bonus',
-                    value: 2,
-                },
-            });
-            expect(state.core.pendingAttack?.bonusDamage).toBe(0);
-
-            const compareRollInteractionId = compareRollPrompt.id;
-            expect(compareRollInteractionId).toBeTruthy();
-
-            const confirmResult = executePipeline(
-                pipelineConfig,
-                state,
-                {
-                    type: 'SYS_INTERACTION_CONFIRM',
-                    playerId: '0',
-                    payload: { interactionId: compareRollInteractionId },
-                    timestamp: Date.now() + 1,
-                } as DiceThroneCommand,
-                random,
-                playerIds,
-            );
-
-            expect(confirmResult.success).toBe(true);
-            state = confirmResult.state as MatchState<DiceThroneCore>;
 
             expect(state.sys.interaction.current).toBeUndefined();
             expect(state.core.pendingAttack?.bonusDamage).toBe(2);

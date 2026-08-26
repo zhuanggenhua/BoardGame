@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * destroy trigger prompt 并存合同
  *
@@ -46,18 +47,12 @@ describe('destroy trigger prompt 并存', () => {
         const ms = makeMatchState(core);
         
         // 创建一个 MINION_DESTROYED 事件（模拟消灭 Igor）
-        const destroyEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'igor1',
+        const destroyEvent = makeMinionDestroyedEvent({minionUid: 'igor1',
                 minionDefId: 'frankenstein_igor',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 destroyerId: '0',
-                reason: 'test',
-            },
-            timestamp: 1000,
-        };
+                reason: 'test', timestamp: 1000 });
         
         const result = resolveDestroyedMinions(ms, '0', [destroyEvent], defaultTestRandom, 1000);
         

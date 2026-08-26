@@ -1484,6 +1484,12 @@ function supremeIntelligenceTrigger(ctx: TriggerContext) {
     });
 }
 
+function canTriggerSupremeIntelligence(ctx: TriggerContext): boolean {
+    return ctx.playerId === ctx.sourceControllerId
+        && !!ctx.sourceControllerId
+        && !!ctx.matchState;
+}
+
 function mastersBaronZemoAfterScoring(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return [];
     if (ctx.baseIndex !== ctx.sourceBaseIndex) return [];
@@ -1522,6 +1528,14 @@ function mastersWorldDominationAfterScoring(ctx: TriggerContext) {
     });
 }
 
+function canTriggerMastersWorldDominationAfterScoring(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && !!ctx.sourceCardUid
+        && ctx.sourceBaseIndex !== undefined
+        && !!ctx.sourceControllerId
+        && ctx.baseIndex === ctx.sourceBaseIndex;
+}
+
 function sinisterDoctorOctopusStartTurn(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.sourceBaseIndex === undefined || ctx.playerId !== ctx.sourceControllerId) return [];
     return [modifyBreakpoint(ctx.sourceBaseIndex, -4, 'sinister_six_doctor_octopus', ctx.now)];
@@ -1539,6 +1553,14 @@ function sinisterCoverExitsAfterScoring(ctx: TriggerContext) {
         sourceCardUid: ctx.sourceCardUid,
         sourceBaseIndex: ctx.sourceBaseIndex,
     });
+}
+
+function canTriggerSinisterCoverExitsAfterScoring(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && ctx.sourceBaseIndex !== undefined
+        && !!ctx.sourceControllerId
+        && ctx.baseIndex === ctx.sourceBaseIndex
+        && breakpointAtOrBelow(ctx.state, ctx.sourceBaseIndex, 19);
 }
 
 function sinisterIncitePanicRestriction(ctx: RestrictionCheckContext): boolean {
@@ -1585,6 +1607,7 @@ export function registerMarvelVillainsAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        canTrigger: canTriggerSupremeIntelligence,
     });
 
     registerSimpleAbility('masters_of_evil_ulysses_klaw', 'onPlay', ctx => ({
@@ -1607,6 +1630,7 @@ export function registerMarvelVillainsAbilities(): void {
     registerTrigger('masters_of_evil_world_domination', 'afterScoring', mastersWorldDominationAfterScoring, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerMastersWorldDominationAfterScoring,
     });
 
     registerSimpleAbility('sinister_six_mysterio', 'talent', ctx => prompt({
@@ -1656,6 +1680,7 @@ export function registerMarvelVillainsAbilities(): void {
     registerTrigger('sinister_six_cover_the_exits', 'afterScoring', sinisterCoverExitsAfterScoring, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSinisterCoverExitsAfterScoring,
     });
 
     registerOngoingPowerModifiers([

@@ -2056,7 +2056,7 @@ export function registerDisneyFourFactionsAbilities(): void {
     registerTrigger('lion_king_circle_of_life', 'onMinionDiscardedFromBase', (ctx) => {
         if (ctx.sourceCardUid === undefined) return [];
         return [grantContextualExtraMinion({ playerId: ctx.sourceControllerId ?? ctx.playerId, now: ctx.now, matchState: ctx.matchState }, 'lion_king_circle_of_life', undefined, { powerMax: 3 })];
-    }, { optional: true, playerContext: 'sourceController' });
+    }, { optional: true, playerContext: 'sourceController', canTrigger: ctx => ctx.sourceCardUid !== undefined });
 
     registerTrigger('base_jungle_paradise', 'onMinionDiscardedFromBase', jungleParadiseAfterMinionDiscarded, {
         optional: true,

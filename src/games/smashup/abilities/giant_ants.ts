@@ -2258,6 +2258,18 @@ function giantAntWorkerPodReplayTrigger(
     ), ctx.matchState);
 }
 
+function canTriggerGiantAntWorkerPodReplay(ctx: TriggerContext): boolean {
+    const { state, playerId, triggerMinionUid, triggerMinionDefId, baseIndex } = ctx;
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return false;
+    if (triggerMinionDefId !== 'giant_ant_worker_pod') return false;
+    if (!triggerMinionUid || baseIndex === undefined || !ctx.matchState) return false;
+    if (state.bases.length < 2) return false;
+    const minion = ctx.triggerMinion
+        ?? state.bases[baseIndex]?.minions.find(candidate => candidate.uid === triggerMinionUid);
+    if (!minion || minion.controller !== playerId || minion.powerCounters > 0) return false;
+    return state.bases.some((_base, index) => index !== baseIndex);
+}
+
 function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
     return typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:');
 }
@@ -2291,11 +2303,13 @@ function registerGiantAntProtections(): void {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerGiantAntWeAreTheChampionsAfterScoring,
     });
     registerTrigger('giant_ant_we_are_the_champions_pod', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerGiantAntWeAreTheChampionsAfterScoring,
     });
     registerTrigger('giant_ant_drone', 'onMinionDestroyed', giantAntDronePreventTrigger, {
         phase: 'replacement',
@@ -2305,22 +2319,33 @@ function registerGiantAntProtections(): void {
     }); // POD 版本复用基础版触发器
     // Worker POD：离场进入弃牌堆（消灭 / 基地计分弃置）且当时无指示物时，可从弃牌堆额外打出到另一基地
     registerTrigger('giant_ant_worker_pod', 'onMinionDestroyed', giantAntWorkerPodReplayTrigger, {
+        canTrigger: canTriggerGiantAntWorkerPodReplay,
     });
     registerTrigger('giant_ant_worker_pod', 'onMinionDiscardedFromBase', giantAntWorkerPodReplayTrigger, {
+        canTrigger: canTriggerGiantAntWorkerPodReplay,
     });
+}
+
+function findGiantAntWeAreTheChampionsArmedEntry(ctx: TriggerContext) {
+    if (ctx.baseIndex === undefined || !ctx.sourceCardUid) return undefined;
+    return (ctx.state.pendingAfterScoringSpecials ?? []).find(
+        entry => (entry.sourceDefId === 'giant_ant_we_are_the_champions' || entry.sourceDefId === 'giant_ant_we_are_the_champions_pod')
+            && entry.baseIndex === ctx.baseIndex
+            && entry.cardUid === ctx.sourceCardUid,
+    );
+}
+
+function canTriggerGiantAntWeAreTheChampionsAfterScoring(ctx: TriggerContext): boolean {
+    return !!findGiantAntWeAreTheChampionsArmedEntry(ctx);
 }
 
 function giantAntWeAreTheChampionsAfterScoring(
     ctx: TriggerContext,
 ): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
-    const { state, baseIndex, now, sourceCardUid } = ctx;
+    const { state, baseIndex, now } = ctx;
     if (baseIndex === undefined) return [];
 
-    const armedEntry = (state.pendingAfterScoringSpecials ?? []).find(
-        s => (s.sourceDefId === 'giant_ant_we_are_the_champions' || s.sourceDefId === 'giant_ant_we_are_the_champions_pod')
-            && s.baseIndex === baseIndex
-            && s.cardUid === sourceCardUid,
-    );
+    const armedEntry = findGiantAntWeAreTheChampionsArmedEntry(ctx);
     if (!armedEntry) return [];
 
     const events: SmashUpEvent[] = [{

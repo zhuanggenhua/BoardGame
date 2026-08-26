@@ -2559,6 +2559,87 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         });
 
         await game.screenshot('artificer-pre-damage-shock-bot-after-choice', testInfo);
+
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+        const pendingDamageId = await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            return {
+                pendingDamageId: state?.core?.pendingDamage?.id ?? null,
+                currentDamage: state?.core?.pendingDamage?.currentDamage ?? null,
+                responderId: state?.core?.pendingDamage?.responderId ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            currentDamage: 12,
+            responderId: '1',
+            interactionKind: 'dt:token-response',
+        }).then(async () => {
+            const state = await game.getState() as JsonRecord;
+            return state?.core?.pendingDamage?.id as string;
+        });
+
+        await dispatchHarnessCommand(page, 'SKIP_TOKEN_RESPONSE', '1', { pendingDamageId });
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            return {
+                phase: state?.sys?.phase ?? null,
+                defenderHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+                pendingDamage: state?.core?.pendingDamage ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'main2',
+            defenderHp: 38,
+            pendingAttack: null,
+            pendingDamage: null,
+            interactionKind: null,
+        });
+
+        await expect(page.getByTestId('dt-top-header-1')).toHaveAttribute('data-player-id', '1', { timeout: 10000 });
+        await page.waitForFunction(() => {
+            const state = (window as Window & {
+                __BG_TEST_HARNESS__?: {
+                    state?: {
+                        get?: () => JsonRecord;
+                    };
+                };
+            }).__BG_TEST_HARNESS__?.state?.get?.();
+            const uiOpponentHp = document.querySelector('[data-testid="dt-top-header-1-hp-value"]')?.textContent?.trim();
+            const coreOpponentHp = state?.core?.players?.['1']?.resources?.hp
+                ?? state?.core?.players?.['1']?.resources?.HP;
+            const isVisible = (element: Element): boolean => {
+                const node = element as HTMLElement;
+                const rect = node.getBoundingClientRect();
+                const style = window.getComputedStyle(node);
+                return rect.width > 0
+                    && rect.height > 0
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && style.opacity !== '0';
+            };
+            const hasDamageFloat = Array.from(document.querySelectorAll('[data-floating-text-preset="impact-damage"]'))
+                .some(isVisible);
+            const hasDamageFlashNumber = Array.from(document.querySelectorAll('[data-testid="damage-number-float"]'))
+                .some(isVisible);
+            const hasNotYourTurnToast = Array.from(document.querySelectorAll('[role="alert"], [aria-live]'))
+                .some((element) => isVisible(element) && /不是你的回合|not your turn/i.test(element.textContent ?? ''));
+
+            return state?.sys?.phase === 'main2'
+                && coreOpponentHp === 38
+                && uiOpponentHp === '38'
+                && !state?.core?.pendingAttack
+                && !state?.core?.pendingDamage
+                && !state?.sys?.interaction?.current
+                && !hasDamageFloat
+                && !hasDamageFlashNumber
+                && !hasNotYourTurnToast;
+        }, undefined, { timeout: 15000, polling: 100 });
+        await expect(page.getByTestId('dt-top-header-1-hp-value')).toHaveText('38', { timeout: 5000 });
+
+        await game.screenshot('artificer-pre-damage-shock-bot-final-hp-38-clear', testInfo);
     });
 
     test('伤害前机器人选择链应可免费选择治疗机器人并继续当前攻击', async ({ page, game }, testInfo) => {

@@ -753,6 +753,14 @@ function sharksMegalodonBeforeScoring(ctx: TriggerContext) {
     }), ctx.matchState);
 }
 
+function canTriggerSharksMegalodonBeforeScoring(ctx: TriggerContext): boolean {
+    const baseIndex = ctx.baseIndex;
+    if (baseIndex === undefined || !ctx.matchState || !ctx.sourceCardUid) return false;
+    const source = ctx.state.bases[baseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!source) return false;
+    return collectPowerTargets(ctx.state, 3, baseIndex, ctx.sourceCardUid).length > 0;
+}
+
 function baseSharkReef(ctx: BaseAbilityContext) {
     const destroyerId = ctx.destroyerId;
     if (!destroyerId || !ctx.matchState) return { events: [] };
@@ -861,6 +869,7 @@ export function registerSharksAbilities(): void {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerSharksMegalodonBeforeScoring,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerExtended('base_shark_reef', 'onMinionDestroyed', baseSharkReef, { effectContract: SHAYU_TRIGGER_CONTRACT });

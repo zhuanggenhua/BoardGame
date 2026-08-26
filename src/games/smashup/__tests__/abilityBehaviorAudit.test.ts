@@ -921,24 +921,19 @@ describe('SmashUp 能力行为审计', () => {
             expect(violations).toEqual([]);
         });
 
-        it('描述含"随从被消灭后"触发效果的持续随从必须有 onDestroy 能力注册', () => {
-            // 以下随从的"随从被消灭后"指的是其他随从被消灭（通过 onMinionDestroyed trigger），而非自身 onDestroy
-            const triggerBasedWhitelist = new Set([
-                'vampire_the_count', // onMinionDestroyed 触发放指示物（对手随从被消灭）
-                'vampire_the_count_pod', // 同上，POD 版是持续触发而非自身 onDestroy
-            ]);
+        it('描述含"随从被消灭后"触发效果的持续随从必须有 onDestroy 或 onMinionDestroyed 注册', () => {
             const entities = buildEntities();
             const abilityKeys = getRegisteredAbilityKeys();
+            const { triggerIds } = getRegisteredOngoingEffectIds();
             const violations: string[] = [];
             for (const e of entities) {
                 if (!e.descriptionText.includes('持续')) continue;
                 if (e.entityType !== 'minion') continue;
                 if (!/随从被消灭后|在.*随从被消灭后|在本随从被消灭后/.test(e.descriptionText)) continue;
-                if (triggerBasedWhitelist.has(e.id)) continue;
-                // onDestroy 能力注册在 abilityRegistry 中，不在 ongoingEffects 触发器中
-                const key = `${e.id}::onDestroy`;
-                if (!abilityKeys.has(key)) {
-                    violations.push(`[${e.id}]（${e.name}）缺少 onDestroy 能力注册`);
+                const hasSelfDestroyHandler = abilityKeys.has(`${e.id}::onDestroy`);
+                const hasDestroyedEventTrigger = triggerIds.get(e.id)?.includes('onMinionDestroyed') ?? false;
+                if (!hasSelfDestroyHandler && !hasDestroyedEventTrigger) {
+                    violations.push(`[${e.id}]（${e.name}）缺少 onDestroy 或 onMinionDestroyed 注册`);
                 }
             }
             expect(violations).toEqual([]);

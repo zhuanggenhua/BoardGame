@@ -43,6 +43,19 @@
 
 本轮主目标属于 `总账收口 + 规则/数据录入审计`。截图只作为真实入口和 UI 消费证据，不反向替代素材、规则或卡牌录入合同。
 
+## 结论等级
+
+结论等级：`当前范围已收口`。
+
+判定理由：女猎手当前锁定范围内的资源、角色注册、规则对象、共享流程判等、真实双玩家入口和服务器资源回查均有证据；没有复现功能实现阻塞、语义不一致或当前范围必要验证缺口。本文不宣称每张专属卡都单独跑过真实页面 E2E，也不宣称全仓发布门禁清零。
+
+## 权威来源
+
+- 主真相源：`src/games/dicethrone/rule/女猎手真相源表.md`、`src/games/dicethrone/rule/女猎手录入核对.md`、`src/games/dicethrone/rule/女猎手卡牌录入核对.md`。
+- 实现来源：`src/games/dicethrone/heroes/lieren/`、`src/games/dicethrone/domain/customActions/lieren.ts`、DiceThrone 共享 effect / command / reducer 链。
+- 验证来源：`src/games/dicethrone/__tests__/lieren-intake.test.ts`、`src/games/dicethrone/__tests__/lieren-rule-matrix.test.ts`、`e2e/dicethrone/lieren-intake.e2e.ts`、共享链路测试和公开资源 HEAD 回查。
+- 图片合同来源：源图文件 SHA256 见本文“文件 hash”表；角色板、提示卡和卡牌裁图清单保留在 `temp/dicethrone-intake/lieren/`；正式运行时卡牌图集合同见 `ability-cards-lieren.atlas.json`。
+
 ### 缺口分类与范围裁定
 
 | 条目 | 分类 | 是否阻塞当前规则实现 | 是否阻塞当前全量收口口径 | 当前范围裁定 | 后续入口 |
@@ -52,11 +65,18 @@
 | 旧口径把“所有专属卡/升级分支没有逐卡真实入口 E2E”当作全面审计残余 | 审计口径误判，2026-08-19 已修订 | 否 | 否；逐卡 E2E 不是配置型对象默认门槛 | 当前范围不能再仅因缺逐卡 E2E 降级；只有对象新增交互、代表链不等价或最终状态缺证据时才补直测 | 若后续重做全卡审计，按“对象全集 + 代表链判等 + 新交互直测”重列矩阵 |
 | 其它 DiceThrone 老英雄资源 / 旧测试失败 | 非阻塞扩展 | 否 | 否 | 当前范围外；PR #137 冲突证据已单列 | 对应旧英雄专项 |
 
-### 全面审计自检表
+## 审计自检表
 
 | 自检项 | 状态 | 证据 |
 |---|---|---|
 | 对象全集 | `passed` | 本节列出女猎手素材、9 个玩家板技能、6 张专属行动牌、9 张升级牌、2 个状态 / 伙伴入口；公共卡只审女猎手 atlas 绑定 |
+| 对象范围 | `passed` | 当前只审 `lieren`、妮拉、妮拉之系、流血、专属行动牌、升级牌、资源链和真实双玩家入口；不扩到其它 DiceThrone 英雄 |
+| 真相源状态 | `passed` | 主真相源、图片合同、实现来源和验证来源见“权威来源” |
+| 原子语义断言 | `passed` | 逐对象引用判等表和对象级审计矩阵逐行拆到触发、主体、目标、数值、最终状态和负向路径 |
+| 实现消费链 | `passed` | 共享流程表写明 `effects.ts`、`executeTokens.ts`、`commandValidation.ts`、custom action、reducer、UI / E2E 消费入口 |
+| 最终权威结果 | `passed` | 规则矩阵断言 HP、token、companion HP、状态层数、奖励骰结算、伤害响应待处理态清理和流程收口无残留 |
+| 交互真实入口 | `passed` | `lieren-intake.e2e.ts` 与 2026-08-18 妮拉响应弹窗证据覆盖女猎手选角、开局、妮拉、伤害分配和状态图标 |
+| 共享影响与代表链依据 | `passed` | 共享流程表和逐对象引用判等表列出 `sharedFlowId`、触发时机、候选生成、权限判断、payload、执行入口、最终权威状态、清理语义、判等依据和差异范围 |
 | 规则子句表 | `passed` | 规则合同见 `女猎手录入核对.md` 与 `女猎手卡牌录入核对.md`；实现入口见下方对象矩阵 |
 | 完整技能流程矩阵 | `passed` | 行为层覆盖流血、妮拉之系、妮拉承伤、奖励骰、升级壳、状态图集和代表技能；配置型技能通过共享 ability/effect resolver 代表链复用，不要求逐技能真实入口 E2E |
 | L0-L4 证据层级 | `passed` | L0/L1/L2 以规则合同、结构测试和规则矩阵为主；L3 覆盖真实选角、玩家板、手牌、妮拉面板、流血图标和伤害分配；配置型对象不要求逐对象 L3 |
@@ -69,6 +89,10 @@
 | 残余范围声明 | `passed` | 逐卡真实入口 L3/L4 不是当前残余；后续残余只来自新交互未直测、代表链判等不足或最终状态证据缺失 |
 | 旧 evidence / 旧结论对账回写 | `passed` | 本节修正“缺逐卡 E2E = 不全面”的误判；规则文档同步更新资源发布状态 |
 
+## 逐项结论 / 原子语义与实现消费
+
+原子语义断言、实现消费点、最终权威状态和真实入口证据分两层记录：共享流程见“2026-08-19 共享流程审计资产”，逐对象结论见“逐对象引用判等表”和“2026-08-17 对象级审计矩阵”。共享流程引用必须同时满足触发时机、候选生成、权限判断、payload、执行入口、最终权威状态、清理语义和玩家入口判等；只剩数值、slot、费用、文案或目标基础技能这类配置差异时，才允许不逐张补真实页面 E2E。
+
 ## 2026-08-19 共享流程审计资产
 
 本节补的是“对象全集 + 共享流程判等”证据，不是把每张专属卡 / 每张升级牌机械扩成单独真实入口 E2E。下面的 `sharedFlowId` 只代表流程侧已审；每个引用对象仍在后续判等表里逐项确认语义、入口、payload、最终状态和剩余差异。
@@ -76,18 +100,18 @@
 | sharedFlowId | 流程职责 | 一次性审计证据 | 流程不变量 | 允许配置差异 | 失效影响面 |
 |---|---|---|---|---|---|
 | `dt-replace-ability-upgrade-v1` | 普通升级牌通过 `replaceAbility` 替换玩家板基础技能，不自动结算新技能效果 | `effects.ts` 生成 `ABILITY_REPLACED`；`card-cross-audit.test.ts` 审普通升级只命中基础技能且只执行升级壳；`AbilityOverlays.test.tsx` 审全英雄替换型升级槽位；`lieren-intake.test.ts` 审女猎手 9 张升级牌逐张目标技能 | 触发时机为打出升级牌；候选来自手牌升级牌；权限 / CP / 阶段仍走通用出牌校验；payload 为 `targetAbilityId + newAbilityDef + newAbilityLevel`；最终权威状态为能力等级 / 定义替换；不会执行被替换技能效果 | `cpCost`、卡图 slot、目标基础技能、替换后的能力定义、等级、文案 / 音效 | 流程 bug 重审所有普通替换型升级牌；女猎手语义 bug 只重审对应升级牌和目标技能 |
-| `dt-roll-die-direct-v1` | 行动牌投女猎手骰，按最终骰面直接产生治疗、抽牌或施加流血 | `cards.ts` 的 `primitiveRoarRoll` / `savageClawRoll` / `bloodlineRoll`；`effects.ts` 生成 `BONUS_DIE_ROLLED` 与待结算奖励骰；`executeTokens.ts` 的 `buildBonusDiceSettlementEvents` 结算 follow-up；`lieren-rule-matrix.test.ts` 审原始咆哮、野蛮爪击、血脉相承最终状态 | 触发时机为卡牌即时效果；奖励骰无重掷费用；payload 带 `conditionalEffects/defaultEffect/effectKey`；handler 由最终骰面产生 `COMPANION_HEALTH_CHANGED` / `STATUS_APPLIED` / 抽牌事件；结算后 pending bonus dice 清理 | 骰子数量、目标 self/opponent、骰面分支、状态层数、治疗量、是否有默认分支、文案 / 卡费 | 流程 bug 重审所有直接奖励骰行动牌；单卡语义 bug 只重审该卡 |
+| `dt-roll-die-direct-v1` | 行动牌投女猎手骰，按最终骰面直接产生治疗、抽牌或施加流血 | `cards.ts` 的 `primitiveRoarRoll` / `savageClawRoll` / `bloodlineRoll`；`effects.ts` 生成 `BONUS_DIE_ROLLED` 与待结算奖励骰；`executeTokens.ts` 的 `buildBonusDiceSettlementEvents` 结算 follow-up；`lieren-rule-matrix.test.ts` 审原始咆哮、野蛮爪击、血脉相承最终状态 | 触发时机为卡牌即时效果；奖励骰无重掷费用；payload 带 `conditionalEffects/defaultEffect/effectKey`；handler 由最终骰面产生 `COMPANION_HEALTH_CHANGED` / `STATUS_APPLIED` / 抽牌事件；结算后奖励骰待处理态清理 | 骰子数量、目标 self/opponent、骰面分支、状态层数、治疗量、是否有默认分支、文案 / 卡费 | 流程 bug 重审所有直接奖励骰行动牌；单卡语义 bug 只重审该卡 |
 | `dt-roll-die-attack-bonus-v1` | 攻击修正或攻击技能投奖励骰，按最终骰面追加加攻、妮拉治疗、妮拉之系或流血 | `abilities.ts` 的 `savageForceRoll`；`cards.ts` 的 `opportunisticStrikeRoll` / `pounceRoll`；`effects.ts` 生成奖励骰 settlement；`executeTokens.ts` 在 `attackBonus` 模式产出 `BONUS_DAMAGE_ADDED` 和 follow-up；`lieren-rule-matrix.test.ts` 审伺机待发四面、蛮荒之力四面、飞扑多骰累计 | 触发时机为攻击修正或 postDamage；权限归攻击方；payload 为奖励骰 settlement + `rollDieResolution`；最终状态是攻击加伤、目标状态、自己 token 或妮拉生命；清理由奖励骰结算完成 | 骰子数量、sourceCardId / sourceAbilityId、各骰面数值、是否多骰累计、文案 / 卡费 | 流程 bug 重审蛮荒之力、伺机待发、飞扑；语义 bug 只重审对应对象 |
 | `dt-grant-status-damage-v1` | 规则定义中的普通伤害、不可防御伤害和流血状态授予落到权威 HP / 状态层数 | `abilities.ts` 的 `damage()` / `grantBleed()`；`effects.ts` 的 `damage` / `grantStatus` 消费；`reducer.ts` 的 `STATUS_APPLIED` / `STATUS_REMOVED` / 伤害处理；`lieren-rule-matrix.test.ts` 审流血 upkeep、妮拉激活加伤、飞扑 / 野蛮爪击 / 蛮荒之力状态分支 | 触发时机来自技能或卡牌效果；目标为对手或持有者；payload 明确 `targetId/statusId/stacks/amount/unblockable`；最终权威状态为 HP、状态层数和攻击加伤；状态上限由 token definition 限制 | 伤害数值、流血层数、普通 / 不可防御、触发骰面 / trigger、sourceAbilityId | 流程 bug 重审所有女猎手伤害 / 流血消费者；数值语义 bug 只重审对应技能或卡牌 |
 | `dt-lieren-nyra-effect-v1` | 女猎手专属 `lieren-nyra-effect` 统一授予妮拉之系和治疗妮拉 | `abilities.ts` / `cards.ts` 的 `nyraEffect(...)`；`customActions/lieren.ts` 产出 `TOKEN_GRANTED` 与 `COMPANION_HEALTH_CHANGED`；`lieren-rule-matrix.test.ts` 审重整旗鼓、巨兽之力、妮拉治疗 token；`customaction-category-consistency.test.ts` 审 categories | 目标固定为自己；必须存在妮拉 companion；payload 为 `effect + amount`；授予妮拉之系上限为 1；治疗只改 companion HP，不改女猎手 HP；最终状态由 reducer 写入 token / companion HP | `effect` 类型、治疗量、触发时机 immediate / preDefense、来源技能 / 卡牌、文案 / 卡费 | 流程 bug 重审所有妮拉治疗 / 获得妮拉之系对象；语义 bug 只重审对应对象 |
-| `dt-lieren-damage-allocation-v1` | 妮拉承伤与妮拉之系分配伤害在同一伤害响应窗口里修改女猎手 / 妮拉生命并关闭 pending damage | `commandValidation.ts` 审权限、终极禁止和分配量；`executeTokens.ts` 执行 `NYRA_REDIRECT` / `NYRAS_BOND` pendingDamage 分支；`lieren-rule-matrix.test.ts` 审承伤、终极拒绝和羁绊分配；2026-08-18 单确认弹窗 E2E 审真实 UI 入口 | 只能由 pendingDamage.responder 操作；终极攻击不可用；妮拉需存活；羁绊分配消耗 1 层妮拉之系；最终状态为 companion HP、女猎手 HP、token 数量和 `pendingDamage` 清空 | 分配伤害数、妮拉剩余生命、是否消耗妮拉之系、按钮 / 弹窗文案 | 流程 bug 重审妮拉承伤与羁绊分配；UI bug 重审 2026-08-18 单确认弹窗链路 |
+| `dt-lieren-damage-allocation-v1` | 妮拉承伤与妮拉之系分配伤害在同一伤害响应窗口里修改女猎手 / 妮拉生命并关闭伤害待处理状态 | `commandValidation.ts` 审权限、终极禁止和分配量；`executeTokens.ts` 执行 `NYRA_REDIRECT` / `NYRAS_BOND` 伤害分配分支；`lieren-rule-matrix.test.ts` 审承伤、终极拒绝和羁绊分配；2026-08-18 单确认弹窗 E2E 审真实 UI 入口 | 只能由伤害响应者操作；终极攻击不可用；妮拉需存活；羁绊分配消耗 1 层妮拉之系；最终状态为 companion HP、女猎手 HP、token 数量和伤害响应状态清空 | 分配伤害数、妮拉剩余生命、是否消耗妮拉之系、按钮 / 弹窗文案 | 流程 bug 重审妮拉承伤与羁绊分配；UI bug 重审 2026-08-18 单确认弹窗链路 |
 | `dt-lieren-kindred-bond-defense-v1` | 情同骨肉防御骰按长矛 / 利爪 / 魂之羁绊 / 剑齿虎结算反击和妮拉治疗 | `abilities.ts` 的 `kindredBondEffect`；`customActions/lieren.ts` 的 `handleKindredBond`；`lieren-intake.test.ts` 审 custom action 注册与 categories；`customaction-category-consistency.test.ts` 审 damage/resource 输出；`lieren-rule-matrix.test.ts` 2026-08-19 新增最终状态断言，审 base 与 III 剑齿虎差异 | 触发时机为防御技能 `withDamage`；候选来自防御骰；payload 为 `includeSabertooth` 可选参数；最终状态为对手直接伤害和妮拉治疗；无妮拉不生效 | 防御骰数量 3/4、是否计入剑齿虎、骰面数量、升级卡来源 / 文案 | 流程 bug 重审情同骨肉 / II / III；升级壳问题另回 `dt-replace-ability-upgrade-v1` |
 
 ### 逐对象引用判等表
 
 | 本对象 | 独立语义结论 | sharedFlowId | 一致性核对 | 剩余差异 | 是否需要直测 | 结论 |
 |---|---|---|---|---|---|---|
-| `wild-force` | 长矛 3/4/5 分别造成 3/4/5 伤害，语义已对照玩家板 | `dt-grant-status-damage-v1` | 触发=进攻骰集合；无额外候选 / 权限 / UI；payload 为 `damage(opponent,value)`；最终状态为对手 HP；清理无 pending | 仅触发阈值和伤害数值 | 否：只剩配置差异，普通伤害链已审 | `passed（共享流程引用）` |
+| `wild-force` | 长矛 3/4/5 分别造成 3/4/5 伤害，语义已对照玩家板 | `dt-grant-status-damage-v1` | 触发=进攻骰集合；无额外候选 / 权限 / UI；payload 为 `damage(opponent,value)`；最终状态为对手 HP；清理无待处理态 | 仅触发阈值和伤害数值 | 否：只剩配置差异，普通伤害链已审 | `passed（共享流程引用）` |
 | `savage-force` | 造成 4 伤害后投 1 奖励骰，长矛 +1、利爪 +2、魂之羁绊给 token、剑齿虎给流血 | `dt-roll-die-attack-bonus-v1` | 触发=攻击技能 postDamage；攻击方权限；payload 为 1 颗奖励骰四分支；最终状态为加攻 / token / 流血；结算后无待结算奖励骰 | 基础伤害 4、sourceAbilityId | 是：2026-08-19 `lieren-rule-matrix.test.ts` 四分支已直测 | `passed` |
 | `brutal-strike` | 小顺 / 大顺施加流血并造成伤害 | `dt-grant-status-damage-v1` | 触发=顺子能力；无候选 / 权限差异；payload 为 `grantStatus + damage`；最终状态为对手流血层数和 HP | 小顺 / 大顺数值不同 | 否：状态 / 伤害链已直测，分支只差 trigger 和数值 | `passed（共享流程引用）` |
 | `beast-force` | 治疗妮拉 1，并造成不可防御伤害 | `dt-lieren-nyra-effect-v1`; `dt-grant-status-damage-v1` | 触发=四剑齿虎；payload 为 `nyraEffect(heal,1)` + unblockable damage；最终状态为 companion HP 与对手 HP | 不可防御标记、伤害数值 | 是：`lieren-rule-matrix.test.ts` 直接断言妮拉治疗；伤害链共享 | `passed` |
@@ -112,8 +136,8 @@
 | `upgrade-lieren-savage-force-2` | 替换蛮荒之力到 II / 狩猎分支 | `dt-replace-ability-upgrade-v1`; `dt-roll-die-attack-bonus-v1`; `dt-grant-status-damage-v1` | targetAbilityId=`savage-force`；主分支仍为奖励骰 attackBonus；狩猎分支为流血 + 伤害；最终状态为技能替换 + 加攻 / token / 状态 / HP | CP 2、slot 30、基础伤害 5、狩猎分支 trigger | 否：升级壳目标直测；奖励骰四分支已直测，狩猎只差状态 / 伤害配置 | `passed（共享流程引用）` |
 | `upgrade-lieren-wild-force-2` | 替换野性之力到 II，四同点以上追加流血 | `dt-replace-ability-upgrade-v1`; `dt-grant-status-damage-v1` | targetAbilityId=`wild-force`；新定义仍为 damage + grantStatus；最终状态为技能替换 + HP / 状态 | CP 2、slot 31、伤害和流血阈值 | 否：升级壳目标直测；状态 / 伤害链只差 trigger / 数值 | `passed（共享流程引用）` |
 | `bleed` | 持有者 upkeep 1-4 受 1 伤害，5-6 移除 1 层 | `dt-grant-status-damage-v1` | 触发=持有者 upkeep；payload 为奖励骰 + damage 或 status removed；最终状态为持有者 HP / 流血层数 | 骰面区间与层数上限 | 是：`lieren-rule-matrix.test.ts` 两分支直测 | `passed` |
-| `nyras_bond` 治疗 | 消耗 1 层妮拉之系只治疗妮拉，不治疗女猎手 | `dt-lieren-nyra-effect-v1`; `dt-lieren-damage-allocation-v1` | 无 pendingDamage 时 target=self；权限为持有者；最终状态为 token 消耗、companion HP 增加、女猎手 HP 不变 | 治疗量固定 2，满血不可用 | 是：`lieren-rule-matrix.test.ts` 直测 | `passed` |
-| `nyra_redirect` / `nyras_bond` 伤害响应 | 妮拉全额承伤或羁绊分配伤害，终极攻击禁止 | `dt-lieren-damage-allocation-v1` | 触发=pendingDamage.beforeDamageReceived；权限=responder；payload amount；最终状态为 companion HP、hero HP、pendingDamage 清空或命令拒绝 | 是否消耗妮拉之系、分配量、终极禁止 | 是：`lieren-rule-matrix.test.ts` + 2026-08-18 E2E 直测 | `passed` |
+| `nyras_bond` 治疗 | 消耗 1 层妮拉之系只治疗妮拉，不治疗女猎手 | `dt-lieren-nyra-effect-v1`; `dt-lieren-damage-allocation-v1` | 无伤害响应状态时 target=self；权限为持有者；最终状态为 token 消耗、companion HP 增加、女猎手 HP 不变 | 治疗量固定 2，满血不可用 | 是：`lieren-rule-matrix.test.ts` 直测 | `passed` |
+| `nyra_redirect` / `nyras_bond` 伤害响应 | 妮拉全额承伤或羁绊分配伤害，终极攻击禁止 | `dt-lieren-damage-allocation-v1` | 触发=受伤前响应窗口；权限=responder；payload amount；最终状态为 companion HP、hero HP、伤害响应状态清空或命令拒绝 | 是否消耗妮拉之系、分配量、终极禁止 | 是：`lieren-rule-matrix.test.ts` + 2026-08-18 E2E 直测 | `passed` |
 | 妮拉激活加伤 | 妮拉存活时女猎手一次进攻伤害 +2，倒下不加 | `dt-grant-status-damage-v1` | 触发=女猎手 withDamage 攻击；无玩家入口；最终状态为单次攻击伤害增加 | 妮拉 HP > 0 条件 | 是：`lieren-rule-matrix.test.ts` 直测存活 / 倒下 | `passed` |
 
 ## 2026-08-17 对象级审计矩阵
@@ -160,8 +184,8 @@
 | 对象 | 承接语义 | 触发时机 | 效果宿主 | 作用范围 | 触发后清理 | 不应发生什么 | 结论 |
 |---|---|---|---|---|---|---|---|
 | 流血 | 负面状态自动维护 | 持有者 upkeep | 持有者本人 | 1-4 受 1 点直接伤害；5-6 移除 1 层 | 伤害分支不移除；移除分支不伤害 | 不应在非持有者 upkeep 触发；不应超过上限 2 | 通过 |
-| 妮拉之系 | 可消耗正面 token | 任意时机治疗；受伤响应时分配伤害 | 女猎手自己持有，作用到妮拉/女猎手 | 治疗妮拉 2，或在妮拉与女猎手间分配当前伤害 | 消耗 1 层并关闭 pendingDamage | 不应治疗女猎手；无妮拉/无 token 不应可用 | 通过 |
-| 妮拉承伤 | 伙伴代替承受本次伤害 | beforeDamageReceived | 女猎手的妮拉伙伴 | 非终极攻击伤害响应 | 只扣伙伴生命并清 pendingDamage | 终极攻击不应转移；不应扣女猎手生命 | 通过 |
+| 妮拉之系 | 可消耗正面 token | 任意时机治疗；受伤响应时分配伤害 | 女猎手自己持有，作用到妮拉/女猎手 | 治疗妮拉 2，或在妮拉与女猎手间分配当前伤害 | 消耗 1 层并关闭伤害响应状态 | 不应治疗女猎手；无妮拉/无 token 不应可用 | 通过 |
+| 妮拉承伤 | 伙伴代替承受本次伤害 | beforeDamageReceived | 女猎手的妮拉伙伴 | 非终极攻击伤害响应 | 只扣伙伴生命并清空伤害响应状态 | 终极攻击不应转移；不应扣女猎手生命 | 通过 |
 | 妮拉激活加伤 | 被动攻击加伤 | 女猎手自己的 withDamage 攻击伤害 | 女猎手攻击者 | 妮拉 hp > 0 时一次攻击 +2 | 单次攻击只加一次 | 妮拉倒下不应加伤；防御语境不应加伤 | 通过 |
 | 情同骨肉 | 防御骰反击 / 治疗 | defensiveRoll 结算 | 女猎手防御方 | 长矛/剑齿虎伤害、魂之羁绊治疗、利爪按妮拉激活加伤 | 防御结算后进入普通伤害流程 | 不应借 `lieren-nyra-effect` 误分类；无妮拉不应生效 | 通过 |
 
@@ -169,10 +193,10 @@
 
 | 对象 | 玩家看到的入口/提示 | 真实结算窗口 | 来源归属 | 共享消费者 | 易混淆对象 | 负向断言 | 结论 |
 |---|---|---|---|---|---|---|---|
-| 妮拉紧凑面板 | 历史左侧伙伴面板、治疗按钮、伤害转移/分配按钮 | 普通牌桌 / pendingDamage 响应 | 女猎手自己的伙伴和 token | `USE_TOKEN`、`pendingDamage`、`TOKEN_RESPONSE_CLOSED` | 旧 `token-response-modal` | 2026-08-18 已被“玩家板图片左上空白徽章 + 居中响应弹窗”取代；本行仅保留历史语义 | 历史归档 |
-| 妮拉之系治疗 | “消耗羁绊治疗妮拉”按钮 | 无 pendingDamage 时的 token 使用 | 女猎手自己持有 | `commandValidation` + `executeTokens` | 普通防御 token | 满血或无 token 时按钮/命令不应成立 | 通过 |
+| 妮拉紧凑面板 | 历史左侧伙伴面板、治疗按钮、伤害转移/分配按钮 | 普通牌桌 / 伤害响应 | 女猎手自己的伙伴和 token | `USE_TOKEN`、伤害响应状态、`TOKEN_RESPONSE_CLOSED` | 旧 `token-response-modal` | 2026-08-18 已被“玩家板图片左上空白徽章 + 居中响应弹窗”取代；本行仅保留历史语义 | 历史归档 |
+| 妮拉之系治疗 | “消耗羁绊治疗妮拉”按钮 | 无伤害响应状态时的 token 使用 | 女猎手自己持有 | `commandValidation` + `executeTokens` | 普通防御 token | 满血或无 token 时按钮/命令不应成立 | 通过 |
 | 妮拉之系伤害分配 | 滑杆 + 确认分配 | beforeDamageReceived | 女猎手自己持有，分配给妮拉与女猎手 | `executeTokens` 分别写伙伴 HP 与英雄 HP | 妮拉全额承伤 | 分配量不能超过当前伤害或妮拉生命 | 通过 |
-| 妮拉承伤 | “转移伤害”按钮 | beforeDamageReceived | 妮拉伙伴生命 | `executeTokens` 清理 pendingDamage | 妮拉之系分配 | 终极攻击不应允许 `nyra_redirect` | 通过 |
+| 妮拉承伤 | “转移伤害”按钮 | beforeDamageReceived | 妮拉伙伴生命 | `executeTokens` 清理伤害响应状态 | 妮拉之系分配 | 终极攻击不应允许 `nyra_redirect` | 通过 |
 | 女猎手状态图标 | 血条上方状态区 | 常驻 UI 消费 | `bleed` / `nyras_bond` 定义和 atlas frame | VisualResolver / 状态容器 | 纯色 fallback | E2E 看到流血状态；合同测试验证 frame key | 通过 |
 
 ## 2026-08-17 测试语义对账
@@ -206,7 +230,7 @@ Open Design 环境已于 2026-08-08 重新接入：`node D:\codex-home\tools\ope
 - 2026-08-10 再次尝试服务器上传：`node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/dicethrone/images/lieren` 仍枚举同一批 6 个对象，并在 `StrictHostKeyChecking=yes` 下失败，错误仍为 `No ED25519 host key is known for 8.148.71.102`；当前阻塞未变化。
 - 2026-08-11 发布链路补救：本机 Git credential 可读性检查会超时，且当前仓库没有只发布素材的 GitHub Actions workflow；已新增 `.github/workflows/asset-server-upload.yml`，让远端 runner 复用仓库 `ASSET_SERVER_SSH_PRIVATE_KEY` / `ASSET_SERVER_SSH_KNOWN_HOSTS` secrets 执行 `node scripts/assets/upload-to-server.js --asset-prefix ...`，并支持发布后公开 URL HEAD 回查。该 workflow 已通过项目 `yaml` 包解析：`WORKFLOW_YAML_OK steps=8`。
 - 公开 URL HEAD 回查（2026-08-10）：`ability-cards.webp`、`bleed.webp`、`dice.webp`、`nyras-bond.webp`、`player-board.webp`、`status-icons-atlas.webp` 在 `https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/lieren/compressed/` 下均返回 `404`，证明服务器主源当前未收口，不能把本地截图或本地 manifest 误判为线上资源完成。
-- 2026-08-11 公开 URL HEAD 回查：上述 6 个女猎手远端 URL 仍全部返回 `404`，证明新增 CI 上传入口尚未在远端执行成功，服务器素材发布仍未收口。
+- 2026-08-11 公开 URL HEAD 回查：上述 6 个女猎手远端 URL 仍全部返回 `404`，证明新增 CI 上传入口当时未在远端执行成功，服务器素材发布在该历史节点失败。
 - 2026-08-14 HTTP 素材上传：先以 `ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED=1 ASSET_SERVER_UPLOAD_URL=https://assets-upload.easyboardgame.top/asset-publish npm run assets:check -- --asset-prefix i18n/zh-CN/dicethrone/images/lieren --asset-prefix atlas-configs/dicethrone/ability-cards-lieren.atlas --skip-android-package-publish` 确认仅 6 个 `compressed/*.webp` 待发布，随后执行同参数 `npm run assets:upload` 成功；发布批次 `20260814130445100`，`serverPrimaryObjects=6`，`serverPrimaryIndexObjects=13238`，`assetBackupQueue=disabled`。
 - 2026-08-14 公开 URL HEAD 回查：上述 6 个女猎手远端 URL 均返回 `200`，`Content-Length` 分别为 `2246590`、`7298`、`36856`、`13284`、`2076750`、`30164`，且 `X-Asset-Source: server`；`tip.webp` 仍未生成、未上传。
 - 2026-08-14 合并冲突收口后复核：`ASSET_SERVER_UPLOAD_ALLOW_UNAUTHENTICATED=1 ASSET_SERVER_UPLOAD_URL=https://assets-upload.easyboardgame.top/asset-publish npm run assets:check -- --asset-prefix i18n/zh-CN/dicethrone/images/lieren/compressed` 成功取得服务器清单 `13242` 个 official 对象，并发现本地 6 个对象均已与远端一致；脚本按路径过滤 0 待发布防呆规则退出 `1`，随后用公开 URL HEAD 逐项复核 6 个对象均为 `200` / `X-Asset-Source: server`。
@@ -231,11 +255,55 @@ Open Design 环境已于 2026-08-08 重新接入：`node D:\codex-home\tools\ope
   - 伤害响应图：在妮拉紧凑面板内可见“由妮拉承受”、当前伤害值、羁绊滑杆、确认分配与转移伤害入口；旧 `token-response-modal` 未出现，选择伤害承受没有被拆成割裂界面。
   - 对手视角图：武僧角色板、手牌和其提示卡仍正常显示，证明女猎手的无提示卡分支没有改坏最近邻角色。
 
+## 2026-08-25 续审计复核与猛击之力槽位修复
+
+本轮用户原始症状：女猎手玩家面板图上“猛击之力”要求顺子，但玩家没投出顺子也能选择；选择后实际结算也不是“猛击之力”。复核范围锁定在 `lieren` 玩家板九个物理槽、技能可选列表、点击后提交的 abilityId、猛击之力顺子合法性和真实双玩家入口；不扩展到其它 DiceThrone 英雄或全仓发布门禁。
+
+### 本轮命中事实
+
+| 断言 | 当前证据 | 结论 |
+|---|---|---|
+| 玩家点的是图面“猛击之力” | `temp/dicethrone-debug/lieren-brutal-strike/v2-slot-contact-sheet.png` 显示 `combo` 物理槽是“猛击之力”，`sky` 物理槽是“生命复苏” | 用户描述的现实对象已锁定 |
+| 旧实现为什么会没顺子也能点 | 旧 `abilitySlotMapping.ts` 写成 `sky=brutal-strike`、`combo=life-revival`；非顺子但有 2 个魂之羁绊时，`life-revival` 合法，UI 却把它点亮到图面“猛击之力”位置 | 根本机制是玩家板物理槽录反，不是猛击之力触发规则本身允许非顺子 |
+| 为什么结算不是猛击之力 | 玩家点击图面“猛击之力”位置时，运行时提交的是 `life-revival`；生命复苏会获得妮拉之系并治疗妮拉，不会造成猛击之力的流血 + 伤害 | 原始症状两段都由同一槽位错录解释 |
+| 修复动作 | `abilitySlotMapping.ts`、`lieren-intake.test.ts`、`lieren-intake.e2e.ts`、女猎手录入合同改为 `sky=life-revival`、`lotus=beast-instinct`、`combo=brutal-strike`、`lightning=beast-force` | 修复直接作用于玩家面板点击 / 高亮 / 真实入口断言 |
+
+### 当前树验证结果
+
+| 命令 / 检查 | 结果 | 证明了什么 | 没有证明什么 |
+|---|---|---|---|
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/ui/__tests__/AbilityOverlays.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=dot` | 首跑红测 `3 failed`；修复后 `1 file / 22 tests passed` | 旧实现会把女猎手“猛击之力”物理槽识别成生命复苏；修复后非顺子生命复苏只点亮生命复苏槽，顺子时猛击之力槽提交 `brutal-strike-small` | 组件测试不证明整条在线房间链 |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/lieren-intake.test.ts src/games/dicethrone/__tests__/lieren-rule-matrix.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=dot` | `2 files / 24 tests passed` | 女猎手槽位合同、资源合同、卡牌/升级牌目标、猛击之力顺子合法性、流血、奖励骰分支、妮拉治疗/承伤/羁绊分配、情同骨肉和妮拉激活加伤在当前树通过 | 不逐张证明配置型升级分支的真实页面出牌链 |
+| `npm run test:e2e:file -- e2e/dicethrone/lieren-intake.e2e.ts` | `1 passed` | 真实在线双玩家入口中，女猎手玩家板九个物理槽的 `data-base-ability-id` 与修正后图面合同一致，且选角、开局、手牌、妮拉、伤害分配和流血状态图标可见 | 不证明每张专属卡都有独立 E2E |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/ability-reselection-prevention.test.ts src/games/dicethrone/__tests__/customaction-category-consistency.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=dot` | `2 files / 14 tests passed` | 技能选择/父技能拒绝链和女猎手 custom action 分类未被槽位修复误伤 | stderr 中有预期的非法父技能拒绝日志，不代表测试失败 |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/card-cross-audit.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=dot` | `1 file / 21 tests passed` | 普通升级壳、行动牌/升级牌职责边界和跨卡审计规则仍通过 | 不替代真实入口 E2E |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/entity-chain-integrity.test.ts src/games/dicethrone/ui/__tests__/portraitAtlasContract.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=dot` | `2 files / 68 tests passed` | 女猎手状态图集、角色头像图集和实体链完整性仍通过 | 不证明全 DiceThrone 玩法都无缺口 |
+| `npx eslint src/games/dicethrone/ui/abilitySlotMapping.ts src/games/dicethrone/ui/__tests__/AbilityOverlays.test.tsx src/games/dicethrone/__tests__/lieren-intake.test.ts src/games/dicethrone/__tests__/lieren-rule-matrix.test.ts` | `0 errors` | 本轮修改的槽位映射、UI 回归测试和女猎手规则/录入测试无 ESLint 错误 | 不检查全仓脏改 |
+| 公开资源 HEAD：6 个 `https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/lieren/compressed/*.webp` | 全部 `200`，`X-Asset-Source: server`；bytes 分别为 `2246590`、`7298`、`36856`、`13284`、`2076750`、`30164` | 女猎手服务器运行时媒体仍可公开读取 | 不证明全仓资源 manifest 处于可发布状态 |
+| 本地文件存在性检查 | 6 个压缩媒体、`status-icons-atlas.json`、`ability-cards-lieren.atlas.json` 均存在；DiceThrone manifest 中命中 13 个 `images/lieren` 条目 | 本地女猎手资源链和 manifest 仍完整 | 不证明公共音频 manifest 无漂移 |
+| `npm run audit:evidence:selfcheck -- evidence/dicethrone/dicethrone-lieren-intake-audit-2026-08-08.md` | `OK` | 本 evidence 结构自检通过 | 自检只证明 evidence 结构，不替代规则审计 |
+
+### 当前树范围外门禁
+
+| 条目 | 分类 | 是否阻塞当前女猎手审计 | 当前裁定 | 最小补救 |
+|---|---|---:|---|---|
+| `npm run i18n:check` 出现 3 条新告警，位置在 `src/games/mage-wars/Board.tsx` 与 `src/games/mage-wars/ui/MageSelectionGate.tsx` | 当前范围外全局门禁 | 否 | 与女猎手对象、DiceThrone 资源和本轮验证入口无直接关系；女猎手中英文关键 key 已由 `lieren-intake.test.ts` 覆盖 | Mage Wars 任务中把可见文案和动态 key 改回 i18n 规范 |
+| `npm run assets:validate` 在 `common/audio/phrase-mappings.zh-CN.json` 与 `common/audio/registry.json` hash / bytes 不一致处停止 | 当前范围外全局门禁 | 否 | 该失败发生在公共音频 manifest，未命中女猎手资源；本轮已用本地文件、DiceThrone manifest 和公开 HEAD 回查替代证明女猎手资源链 | 由音频 / 资源任务重生成或同步公共音频 manifest |
+| `node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/dicethrone/images/lieren --asset-prefix atlas-configs/dicethrone/ability-cards-lieren.atlas --skip-android-package-publish` 返回 0 个待发布对象并按脚本防呆退出 `1` | 非阻塞扩展 | 否 | 脚本已找到 8 个本地目标并拿到服务器清单；退出原因是路径过滤下没有待发布增量。公开 HEAD 已证明 6 个运行时媒体在线可读 | 若要发布新资源，先产生真实 hash / bytes 变化，再重跑上传检查 |
+
+### 续审计结论
+
+- 女猎手“猛击之力没顺子也能选且结算成别的效果”是 `玩家板物理槽录入 / 消费错误`，不是猛击之力规则定义允许非顺子；本轮已修正物理槽映射并补回归测试。
+- 女猎手当前锁定范围内恢复 `当前范围已收口` 口径：没有复现功能实现阻塞、语义不一致或当前范围必要验证缺口。
+- 本轮不把 Mage Wars i18n 告警、公共音频 manifest 漂移或全仓其它 DiceThrone 脏改动计入女猎手审计失败；它们是当前工作树的范围外发布门禁。
+- 仍禁止把本结论扩大成“每张女猎手专属卡都单独跑过真实页面 E2E”或“全 DiceThrone / 全仓发布门禁已清零”。
+
 ## 当前结论
 
 - 服务器上传和 URL HEAD 验证已完成：6 个女猎手运行时媒体对象已发布到服务器主源并公开可读；`tip.webp` 仍按用户要求不生成、不上传。
 - 真实选角、开局配置、无提示卡、玩家板、手牌、流血状态、妮拉面板、伤害响应/羁绊分配和双玩家对局 E2E 已通过；本轮不再把“没有逐卡 E2E”作为配置型对象残余。
 - 当前锁定范围内，女猎手基础技能、专属行动牌、升级牌、流血、妮拉之系、妮拉承伤和妮拉激活加伤都已逐对象列明，并通过直接测试或 `sharedFlowId` 判等收口；没有功能实现阻塞、语义不一致或必要验证缺口。
+- 2026-08-25 已修复玩家板 `sky/lotus/combo/lightning` 物理槽错录：图面“猛击之力”现在绑定 `brutal-strike`，非顺子生命复苏不会再点亮该槽；顺子时点击该槽会提交猛击之力分支。
 - 当前可表述为“女猎手本地运行时、对象级玩法矩阵、代表链复用和服务器运行时媒体发布已验证”。禁止把这句话改写成“每张专属卡都单独跑过真实入口 E2E”。
 
 ## 修订 / 失效记录
@@ -246,3 +314,4 @@ Open Design 环境已于 2026-08-08 重新接入：`node D:\codex-home\tools\ope
 | 旧规则文档写“资源上传/HEAD 尚未收口” | 2026-08-14 和 PR #137 冲突收口后均已完成服务器发布与公开回查 | 本文“资源边界”“当前验证”与 PR #137 evidence | 资源发布状态更新为 `passed` |
 | 旧 evidence 把没有逐卡 E2E 当作残余 | 2026-08-19 审计规范已明确：全量审计要求全对象覆盖和代表链判等，不要求配置型对象逐张 E2E | 2026-08-19 本文“缺口分类”和“全面审计自检表”修订 | 允许说“对象级玩法矩阵和代表链复用已验证”；不允许说“每张专属卡都单独跑过真实入口 E2E” |
 | 旧 evidence 写“左侧紧凑妮拉面板 / 控件在妮拉面板中” | 2026-08-18 用户锁定当前 UI 目标为“中间女猎手玩家板图片本身左上角空白带”和“居中承伤 / 羁绊分配弹窗” | `evidence/dicethrone/dicethrone-lieren-nyra-panel-damage-bond-e2e-2026-08-18.md`、`evidence/dicethrone/nyra-player-board-badge-center-modal-pass-manifest-2026-08-18.json` | 旧左侧面板口径只保留为历史归档，不再作为当前实现、测试或开图依据 |
+| 旧玩家板槽位合同写 `sky=brutal-strike`、`combo=life-revival` | 2026-08-25 重新裁图确认图面 `sky=生命复苏`、`combo=猛击之力`；旧合同会让玩家点图面猛击之力时实际提交生命复苏 | `temp/dicethrone-debug/lieren-brutal-strike/v2-slot-contact-sheet.png`、`AbilityOverlays.test.tsx` 红测和修复后绿测、`lieren-intake.e2e.ts` | 旧槽位合同作废；当前以 `src/games/dicethrone/rule/女猎手真相源表.md` 的 2026-08-25 槽位表为准 |

@@ -30,6 +30,25 @@
     "warlock_apprentice": "Apprentice Warlock",
     "wizard_apprentice": "Apprentice Wizard"
   },
+  "setup": {
+    "seat0Mage": {
+      "label": "P1 Mage"
+    },
+    "seat1Mage": {
+      "label": "P2 Mage"
+    },
+    "mageSelection": {
+      "eyebrow": "Standard starting spellbooks",
+      "title": "Choose apprentice mages",
+      "description": "Choose one mage for each seat. After confirmation, the game initializes from the selected mage identities, standard starting spellbooks, and arena mage bodies.",
+      "confirm": "Confirm Mages And Start",
+      "seats": "Seats",
+      "mageGrid": "Available mages",
+      "summary": "Starting summary",
+      "spellbookCount": "Spellbook {{count}}",
+      "summaryLine": "Spellbook {{spellbook}} cards"
+    }
+  },
   "stats": {
     "life": "Life",
     "mana": "Mana",
@@ -134,7 +153,7 @@
     "move": "Move mage",
     "moveCreature": "Move creature",
     "guard": "Guard",
-    "guardCreature": "Creature guard",
+    "guardCreature": "Guard",
     "attack": "Basic attack",
     "attackCreature": "Creature attack",
     "endTurn": "End Turn"
@@ -193,7 +212,9 @@
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "pageSummary": "{{page}} / {{total}}",
-    "planSelected": "Prepare {{count}}",
+    "planSelected": "Confirm prep ({{count}})",
+    "selected": "Selected",
+    "selectedCount": "Selected {{count}}",
     "categories": {
       "all": "All",
       "attack": "Attack",
@@ -239,7 +260,7 @@
       "steps": {
         "setup": "During the Action Stage, continue with Guard. A creature may choose to take a quick action to guard, protecting its zone and gaining Counterstrike.",
         "guardRule": "When making a melee attack, if there is an enemy guard in your zone, you must attack the enemy guard. A melee attack removes the Guard marker from the guarding creature.",
-        "guardCleric": "Click the Asyran Cleric on the right, then click the Guard token directly below its card.",
+        "guardCleric": "Click the Asyran Cleric on the right, then click “Guard” in the lower action dock. The Guard marker is the result after the action resolves, not a skill or target you click first.",
         "guardTokenResult": "The Asyran Cleric gains a Guard marker. The Guard marker is directly below the unit card."
       }
     },
@@ -262,7 +283,7 @@
     },
     "steps": {
       "intro": "Mage Wars lasts several rounds, until one mage has taken enough damage to be destroyed. The last mage standing wins the game.",
-      "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; damage equal to life destroys the mage.",
+      "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; your goal is to deal enough damage to defeat the opposing mage.",
       "opponentHud": "The opponent panel shows the same readouts. Opponent prepared spells use card backs and a count, so card names stay hidden until revealed.",
       "stage": "Each game round has two stages: the Ready Stage and the Action Stage. The Action Stage begins after the Ready Stage is complete.",
       "advanceChannel": "Click “End Turn” to finish the Reset Phase. During the Channel Phase, each mage adds mana equal to its channeling value to its mana supply.",

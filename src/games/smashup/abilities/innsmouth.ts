@@ -83,6 +83,7 @@ export function registerInnsmouthAbilities(): void {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
+        canTrigger: canTriggerInnsmouthReturnToTheSeaAfterScoring,
     });
     // 深潜者的秘密（行动卡）：3+同名随从时抽牌，可选额外抽牌并获得疯狂卡牌
     registerAbilityProgram('innsmouth_mysteries_of_the_deep', 'onPlay', { program: innsmouthMysteriesOfTheDeepProgram });
@@ -492,6 +493,16 @@ function innsmouthReturnToTheSeaAfterScoring(ctx: TriggerContext): SmashUpEvent[
         events: [consumedEvent, ...abilityResult.events],
         matchState: abilityResult.matchState,
     };
+}
+
+function canTriggerInnsmouthReturnToTheSeaAfterScoring(ctx: TriggerContext): boolean {
+    const { state, baseIndex, sourceCardUid } = ctx;
+    if (!ctx.matchState || baseIndex === undefined || !sourceCardUid) return false;
+    return (state.pendingAfterScoringSpecials ?? []).some(
+        special => matchesDefId(special.sourceDefId, 'innsmouth_return_to_the_sea')
+            && special.baseIndex === baseIndex
+            && special.cardUid === sourceCardUid,
+    );
 }
 
 /**

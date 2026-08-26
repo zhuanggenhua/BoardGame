@@ -621,7 +621,12 @@ describe('mage-wars domain flow', () => {
             expect.objectContaining({ type: 'card', cardId: String(spellIds[1]) }),
         ]));
 
+        const duplicateWall = runCommand(state, planCommand([25700, 25700]));
+        expect(duplicateWall.success).toBe(true);
+        expect(duplicateWall.state.core.players['0'].preparedSpellCardIds).toEqual([25700, 25700]);
+
         expect(validateCommand(state, planCommand(spellIds.slice(0, 3)))).toBe('tooManyPreparedSpells');
+        expect(validateCommand(state, planCommand([3725, 3725]))).toBe('tooManyPreparedSpellCopies');
         expect(validateCommand(state, planCommand([999999]))).toBe('spellNotInPresetSpellbook');
         expect(validateCommand(state, {
             type: MAGE_WARS_COMMANDS.PLAN_SPELLS,

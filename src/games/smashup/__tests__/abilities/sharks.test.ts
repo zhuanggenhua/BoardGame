@@ -578,8 +578,16 @@ describe('鲨鱼代表性玩法行为', () => {
         } as any);
 
         expect(talent.success).toBe(true);
-        const resolved = resolveInteractionChain(talent.finalState, (prompt) =>
-            chooseOptionBySource(prompt, 'sharks_great_white', option => option.value?.baseIndex === 1));
+        const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
+            const sourceId = getPromptSourceId(prompt);
+            if (sourceId === 'sharks_great_white') {
+                return chooseOptionBySource(prompt, 'sharks_great_white', option => option.value?.baseIndex === 1);
+            }
+            if (sourceId === 'sharks_great_white_destroy') {
+                return chooseOptionBySource(prompt, 'sharks_great_white_destroy', option => option.value?.minionUid === 'low-target');
+            }
+            throw new Error(`unexpected prompt source: ${String(sourceId)}`);
+        });
 
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'great-white')).toBe(false);
         const targetBaseMinions = resolved.finalState.core.bases[1].minions.map(minion => minion.uid);
@@ -625,7 +633,12 @@ describe('鲨鱼代表性玩法行为', () => {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
             }
             if (sourceId === 'smashup_reaction_choose') {
-                expect(getReactionPromptSourceDefIds(state, prompt)).toContain('sharks_mako');
+                const sourceDefIds = getReactionPromptSourceDefIds(state, prompt);
+                if (sourceDefIds.includes('base_shark_reef')) {
+                    const reactionOption = getReactionPromptOptionBySourceDefId(state, prompt, 'base_shark_reef');
+                    return { optionId: reactionOption.id };
+                }
+                expect(sourceDefIds).toContain('sharks_mako');
                 const reactionOption = getReactionPromptOptionBySourceDefId(state, prompt, 'sharks_mako');
                 return { optionId: reactionOption.id };
             }
@@ -764,7 +777,12 @@ describe('鲨鱼代表性玩法行为', () => {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
             }
             if (sourceId === 'smashup_reaction_choose') {
-                expect(getReactionPromptSourceDefIds(state, prompt)).toContain('sharks_blood_in_the_water');
+                const sourceDefIds = getReactionPromptSourceDefIds(state, prompt);
+                if (sourceDefIds.includes('base_shark_reef')) {
+                    const reactionOption = getReactionPromptOptionBySourceDefId(state, prompt, 'base_shark_reef');
+                    return { optionId: reactionOption.id };
+                }
+                expect(sourceDefIds).toContain('sharks_blood_in_the_water');
                 const reactionOption = getReactionPromptOptionBySourceDefId(state, prompt, 'sharks_blood_in_the_water');
                 return { optionId: reactionOption.id };
             }

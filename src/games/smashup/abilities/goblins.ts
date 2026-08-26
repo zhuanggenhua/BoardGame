@@ -1298,6 +1298,12 @@ function magicHelmetBeforeScoring(ctx: TriggerContext): TriggerResult {
     });
 }
 
+function canTriggerMagicHelmetBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || !ctx.sourceControllerId) return false;
+    const host = findMinionByAttachedCard(ctx.state, ctx.sourceCardUid);
+    return !!host && host.baseIndex === ctx.baseIndex;
+}
+
 function goblinTownOnMinionPlayed(ctx: BaseAbilityContext) {
     if (!ctx.minionUid || ctx.baseDefId !== 'base_goblin_town') return { events: [] };
     const minion = ctx.state.bases[ctx.baseIndex]?.minions.find(candidate => candidate.uid === ctx.minionUid);
@@ -1343,6 +1349,7 @@ export function registerGoblinAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerMagicHelmetBeforeScoring,
     });
     registerBaseAbility('base_goblin_town', 'onMinionPlayed', goblinTownOnMinionPlayed);
     registerBaseAbility('base_goblin_caves', 'afterScoring', goblinCavesAfterScoring, {

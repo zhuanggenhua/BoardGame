@@ -112,28 +112,25 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
         const reactionOption = getPromptOption(
             reactionPrompt,
             option => (queued as any).payload.triggers.some((trigger: any) =>
-                trigger.id === option.value?.triggerId && trigger.sourceDefId === 'ancient_egyptians_pharaoh'),
-            'pharaoh reaction trigger option',
+                trigger.id === option.value?.triggerId && trigger.sourceDefId === 'ancient_egyptians_mummy'),
+            'mummy reaction trigger option',
         );
         const sourceStep = respondToPrompt(queuedState!.state, reactionOption.id, '1', defaultTestRandom);
-        const sourcePrompt = getSimpleChoicePrompt(sourceStep.finalState, 'ancient_egyptians_pharaoh_before_scoring_choose_source');
-        expect(getPromptTargetType(sourcePrompt)).toBe('field-source-action');
+        const sourcePrompt = getSimpleChoicePrompt(sourceStep.finalState, 'ancient_egyptians_mummy_after_scoring');
+        expect(sourcePrompt?.playerId).toBe('1');
+        expect(getPromptTargetType(sourcePrompt)).toBe('field-source-target');
 
         const sourceOption = getPromptOption(
             sourcePrompt,
-            option => option.value?.fieldInteractionType === 'source-action'
-                && option.value?.minionUid === 'pharaoh-1',
-            'pharaoh source action option',
+            option => option.value?.fieldInteractionType === 'source-target'
+                && option.value?.sourceUid === 'mummy-1'
+                && option.value?.targetBaseIndex === 1,
+            'mummy bury target base option',
         );
         const buriedStep = respondToPrompt(sourceStep.finalState, sourceOption.id, '1', defaultTestRandom);
-        const buriedPrompt = getSimpleChoicePrompt(buriedStep.finalState, 'ancient_egyptians_pharaoh_before_scoring');
-        expect(getPromptTargetType(buriedPrompt)).toBe('generic');
-        expect(buriedPrompt?.data?.genericIntent).toBe('buried-card');
-        expect(getPromptOption(
-            buriedPrompt,
-            option => option.value?.cardUid === 'buried-1',
-            'pharaoh buried card option',
-        )).toBeDefined();
+        expect(buriedStep.success, buriedStep.error).toBe(true);
+        expect(buriedStep.finalState.core.bases[0].minions.some(minion => minion.uid === 'mummy-1')).toBe(false);
+        expect(buriedStep.finalState.core.bases[1].buriedCards?.some(card => card.uid === 'mummy-1')).toBe(true);
     });
 
     it('ancient_egyptians_mummy_pod 在对手计分时仍应把 queued afterScoring 选择权交给随从控制者', () => {

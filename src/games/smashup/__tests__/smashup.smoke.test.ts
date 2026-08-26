@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 (Smash Up) - 冒烟测试
  *
@@ -4206,6 +4207,110 @@ describe('smashup', () => {
         });
     });
 
+    it('titan_dinosaurs_fort_titanosaurus_ongoing 的目标随从若在响应前不再由你控制，不应沿旧 prompt 放置指示物或写 metadata', () => {
+        const initial = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('action-stale-owner', 'dino_augmentation_pod', 'action', '0')],
+                    factions: [SMASHUP_FACTION_IDS.DINOSAURS_POD, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_the_jungle',
+                minions: [
+                    makeMinion('dino-stale-owner-target', 'dino_war_raptor_pod', '0', 2),
+                ],
+                ongoingActions: [],
+            })],
+            titans: [{
+                uid: 't-fort-stale-owner',
+                defId: 'dinosaurs_fort_titanosaurus',
+                faction: SMASHUP_FACTION_IDS.DINOSAURS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 3,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        }));
+
+        const played = runCommand(initial, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'action-stale-owner', targetBaseIndex: 0 },
+            timestamp: 51.5,
+        } as any, FIXED_RANDOM);
+
+        expect(played.success).toBe(true);
+        const chooseActionResult = respondToPromptOption(
+            played.finalState,
+            entry => entry?.value?.minionUid === 'dino-stale-owner-target',
+            'Fort Titanosaurus stale ownership dino augmentation target',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        let ongoingState = chooseActionResult.finalState;
+        const reactionChoicePrompt = getOptionalSimpleChoicePrompt(ongoingState, 'smashup_reaction_choose');
+        if (reactionChoicePrompt) {
+            const fortOption = getReactionPromptOptionBySourceDefId(
+                ongoingState,
+                reactionChoicePrompt,
+                'dinosaurs_fort_titanosaurus',
+            );
+            const afterChoose = runCommand(
+                ongoingState,
+                respondCommand(fortOption.id, '0'),
+                FIXED_RANDOM,
+            );
+            ongoingState = afterChoose.finalState;
+        }
+
+        const prompt = getSimpleChoicePrompt(ongoingState, 'titan_dinosaurs_fort_titanosaurus_ongoing');
+        expect(getPromptOption(prompt, entry =>
+            entry?.value?.mode === 'both'
+            && entry?.value?.targetMinionUid === 'dino-stale-owner-target',
+        )).toBeDefined();
+
+        const staleCore: SmashUpCore = {
+            ...ongoingState.core,
+            bases: ongoingState.core.bases.map((base, baseIndex) => baseIndex !== 0
+                ? base
+                : {
+                    ...base,
+                    minions: base.minions.map(minion => minion.uid !== 'dino-stale-owner-target'
+                        ? minion
+                        : { ...minion, controller: '1' }),
+                }),
+        };
+
+        const resolved = respondToPromptOption(
+            { ...ongoingState, core: staleCore },
+            entry => entry?.value?.mode === 'both'
+                && entry?.value?.targetMinionUid === 'dino-stale-owner-target',
+            'Fort Titanosaurus stale opponent-controlled ongoing target',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toEqual(expect.not.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.TITAN_METADATA_UPDATED }),
+            expect.objectContaining({ type: SU_EVENTS.TITAN_POWER_COUNTER_ADDED }),
+            expect.objectContaining({ type: SU_EVENTS.POWER_COUNTER_ADDED }),
+        ]));
+
+        const finalTarget = resolved.finalState.core.bases[0].minions
+            .find(minion => minion.uid === 'dino-stale-owner-target');
+        const finalTitan = (resolved.finalState.core.titans ?? [])
+            .find(titan => titan.uid === 't-fort-stale-owner');
+        expect(finalTarget?.controller).toBe('1');
+        expect(finalTarget?.powerCounters ?? 0).toBe(0);
+        expect(finalTitan?.powerCounters).toBe(3);
+        expect(finalTitan?.metadata?.fortTitanosaurusTriggeredTurn).toBeUndefined();
+    });
+
     it('克苏鲁在场时你抽疯狂卡后按抽取数量获得力量标记', () => {
         const core = makeState({
             players: {
@@ -4715,17 +4820,11 @@ describe('smashup', () => {
             } satisfies TitanState],
         });
 
-        const destroyEvent: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'victim',
+        const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'victim',
                 minionDefId: 'giant_ant_worker',
                 fromBaseIndex: 0,
                 ownerId: '0',
-                reason: 'test_destroy',
-            },
-            timestamp: 51,
-        };
+                reason: 'test_destroy', timestamp: 51 });
 
         const matchState = makeMatchState(core, 'playCards', '0');
         const victim = core.bases[0]?.minions.find(minion => minion.uid === 'victim');
@@ -6744,50 +6843,32 @@ describe('smashup', () => {
         });
 
         const enemyDestroy = filterProtectedDestroyEvents([
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'castle-ally',
+            makeMinionDestroyedEvent({minionUid: 'castle-ally',
                     minionDefId: 'ghosts_spectre',
                     fromBaseIndex: 0,
                     ownerId: '0',
                     destroyerId: '1',
-                    reason: 'magical_girls_enemy_spell',
-                },
-                timestamp: 99,
-            } as SmashUpEvent,
+                    reason: 'magical_girls_enemy_spell', timestamp: 99 }) as SmashUpEvent,
         ], core, '1');
         expect(enemyDestroy).toEqual([]);
 
         const selfDestroy = filterProtectedDestroyEvents([
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'castle-ally',
+            makeMinionDestroyedEvent({minionUid: 'castle-ally',
                     minionDefId: 'ghosts_spectre',
                     fromBaseIndex: 0,
                     ownerId: '0',
                     destroyerId: '0',
-                    reason: 'magical_girls_self_effect',
-                },
-                timestamp: 100,
-            } as SmashUpEvent,
+                    reason: 'magical_girls_self_effect', timestamp: 100 }) as SmashUpEvent,
         ], core, '0');
         expect(selfDestroy.map(event => event.type)).toEqual([SU_EVENTS.MINION_DESTROYED]);
 
         const baseDestroy = filterProtectedDestroyEvents([
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'castle-ally',
+            makeMinionDestroyedEvent({minionUid: 'castle-ally',
                     minionDefId: 'ghosts_spectre',
                     fromBaseIndex: 0,
                     ownerId: '0',
                     destroyerId: '1',
-                    reason: 'base_rlyeh',
-                },
-                timestamp: 101,
-            } as SmashUpEvent,
+                    reason: 'base_rlyeh', timestamp: 101 }) as SmashUpEvent,
         ], core, '1');
         expect(baseDestroy.map(event => event.type)).toEqual([SU_EVENTS.MINION_DESTROYED]);
     });
@@ -6822,18 +6903,12 @@ describe('smashup', () => {
         });
 
         const matchState = makeMatchState(core, 'playCards', '0');
-        const destroyEvent: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'enemy-victim',
+        const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'enemy-victim',
                 minionDefId: 'pirate_first_mate',
                 fromBaseIndex: 1,
                 ownerId: '1',
                 destroyerId: '0',
-                reason: 'invisible_ninja_smoke_destroy',
-            },
-            timestamp: 102,
-        };
+                reason: 'invisible_ninja_smoke_destroy', timestamp: 102 });
 
         const processed = resolveDestroyedMinions(matchState, '0', [destroyEvent], FIXED_RANDOM, 102);
         let reactionState = processed.matchState ?? matchState;
@@ -6905,18 +6980,12 @@ describe('smashup', () => {
         });
 
         const matchState = makeMatchState(promptCore, 'playCards', '0');
-        const destroyEvent: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'enemy-victim',
+        const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'enemy-victim',
                 minionDefId: 'pirate_first_mate',
                 fromBaseIndex: 1,
                 ownerId: '1',
                 destroyerId: '0',
-                reason: 'invisible_ninja_stale_destroy',
-            },
-            timestamp: 103,
-        };
+                reason: 'invisible_ninja_stale_destroy', timestamp: 103 });
 
         const processed = resolveDestroyedMinions(matchState, '0', [destroyEvent], FIXED_RANDOM, 103);
         let reactionState = processed.matchState ?? matchState;
@@ -8569,18 +8638,12 @@ describe('smashup', () => {
         });
 
         const matchState = makeMatchState(core);
-        const destroyEvent: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'heli-victim',
+        const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'heli-victim',
                 minionDefId: 'pirate_first_mate',
                 fromBaseIndex: 0,
                 ownerId: '1',
                 destroyerId: '1',
-                reason: 'helicoprion_reward_smoke_destroy',
-            },
-            timestamp: 124,
-        };
+                reason: 'helicoprion_reward_smoke_destroy', timestamp: 124 });
         const processed = resolveDestroyedMinions(matchState, '1', [destroyEvent], FIXED_RANDOM, 124);
         let reactionState = processed.matchState ?? matchState;
 
@@ -8690,18 +8753,12 @@ describe('smashup', () => {
             error: '额外出牌只能打出力量≤2的随从',
         });
 
-        const filteredDestroy = filterProtectedDestroyEvents([{
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'glove-protected',
+        const filteredDestroy = filterProtectedDestroyEvents([makeMinionDestroyedEvent({minionUid: 'glove-protected',
                 minionDefId: 'robot_microbot_guard',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 destroyerId: '1',
-                reason: 'enemy_superpower',
-            },
-            timestamp: 129,
-        } as SmashUpEvent], talentResult.finalState.core, '1');
+                reason: 'enemy_superpower', timestamp: 129 }) as SmashUpEvent], talentResult.finalState.core, '1');
         expect(filteredDestroy).toEqual([]);
     });
 

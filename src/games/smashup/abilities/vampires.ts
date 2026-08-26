@@ -226,6 +226,28 @@ function registerVampirePodOngoingEffects(): void {
     const sourceIsDestroyer = (ctx: TriggerContext) =>
         ctx.destroyerId !== undefined && ctx.sourceControllerId === ctx.destroyerId;
 
+    const canTriggerVampireTheCountPod = (ctx: TriggerContext): boolean => {
+        const { state, baseIndex } = ctx;
+        if (baseIndex === undefined || !ctx.matchState) return false;
+        const base = state.bases[baseIndex];
+        if (!base || base.minions.length === 0) return false;
+
+        if (ctx.sourceCardUid) {
+            if (!ctx.sourceControllerId) return false;
+            return state.bases.some(candidateBase =>
+                candidateBase.minions.some(minion =>
+                    minion.uid === ctx.sourceCardUid
+                    && minion.controller === ctx.sourceControllerId
+                    && matchesDefId(minion.defId, 'vampire_the_count_pod'),
+                ),
+            );
+        }
+
+        return state.bases.some(candidateBase =>
+            candidateBase.minions.some(minion => matchesDefId(minion.defId, 'vampire_the_count_pod')),
+        );
+    };
+
     // The Count POD: after any minion destroyed, you may place a +1 counter on a minion at its base.
     registerTrigger('vampire_the_count_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
         const { state, baseIndex, now } = ctx;
@@ -267,6 +289,7 @@ function registerVampirePodOngoingEffects(): void {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerVampireTheCountPod,
     });
 
     const getProjectedDinnerDateHostPower = (

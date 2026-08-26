@@ -874,6 +874,14 @@ function explorersVeryLargeBoulderOnMinionMoved(ctx: TriggerContext): TriggerRes
     };
 }
 
+function canTriggerExplorersVeryLargeBoulderOnMinionMoved(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    if (ctx.moveFromBaseIndex === undefined || ctx.moveToBaseIndex === undefined) return false;
+    if (ctx.moveFromBaseIndex === ctx.moveToBaseIndex) return false;
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    return !!getVeryLargeBoulderOnBase(ctx.state, titanControllerId, ctx.moveFromBaseIndex);
+}
+
 function explorersVeryLargeBoulderOnTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     const titan = ctx.sourceCardUid
         ? getTitanByUid(ctx.state, ctx.sourceCardUid)
@@ -1127,6 +1135,23 @@ function ignoblesTheHillThatStrollsOnMinionAffected(ctx: TriggerContext): Trigge
     };
 }
 
+function canTriggerIgnoblesTheHillThatStrollsOnMinionAffected(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.affectType !== 'control_change' || !ctx.triggerMinion || ctx.baseIndex === undefined) {
+        return false;
+    }
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.triggerMinion.owner !== titanControllerId || ctx.triggerMinion.controller === titanControllerId) {
+        return false;
+    }
+    const titan = ctx.sourceCardUid
+        ? getTitanByUid(ctx.state, ctx.sourceCardUid)
+        : getControlledTitanOnBase(ctx.state, 'ignobles_the_hill_that_strolls', titanControllerId);
+    return !!titan
+        && titan.defId === 'ignobles_the_hill_that_strolls'
+        && titan.location.zone === 'base'
+        && titan.controllerId === titanControllerId;
+}
+
 function ignoblesTheHillThatStrollsTalent(ctx: AbilityContext): AbilityResult {
     const titan = getTitanByUid(ctx.state, ctx.cardUid);
     if (!titan || titan.location.zone !== 'base' || titan.controllerId !== ctx.playerId) {
@@ -1233,6 +1258,16 @@ function megaTroopersMegabotBeforeScoring(ctx: TriggerContext): TriggerResult | 
         events: [],
         matchState: queueInteraction(ctx.matchState, interaction),
     };
+}
+
+function canTriggerMegaTroopersMegabotBeforeScoring(ctx: TriggerContext): boolean {
+    const scoringBaseIndex = ctx.baseIndex;
+    if (!ctx.matchState || scoringBaseIndex === undefined || !ctx.state.bases[scoringBaseIndex]) return false;
+    return (ctx.state.titans ?? []).some(titan =>
+        titan.defId === 'mega_troopers_megabot'
+        && titan.location.zone === 'base'
+        && titan.location.baseIndex !== scoringBaseIndex,
+    );
 }
 
 function getCreampuffPlayableActions(
@@ -1777,6 +1812,17 @@ function timeTravelersTimeBoxOnCardReturnedToHand(ctx: TriggerContext) {
     return buildTimeBoxCounterProgress(ctx, 'time_travelers_time_box_on_card_returned_to_hand');
 }
 
+function canTriggerTimeTravelersTimeBoxCounterProgress(ctx: TriggerContext): boolean {
+    if (ctx.sourceCardUid) {
+        const titan = getTitanByUid(ctx.state, ctx.sourceCardUid);
+        return !!titan
+            && titan.defId === 'time_travelers_time_box'
+            && titan.location.zone === 'setaside'
+            && (ctx.sourceControllerId === undefined || titan.controllerId === ctx.sourceControllerId);
+    }
+    return !!getQueuedSetAsideTitanForSourceController(ctx, 'time_travelers_time_box');
+}
+
 function timeTravelersTimeBoxSpecial(ctx: AbilityContext): AbilityResult {
     const titan = getTitanByUid(ctx.state, ctx.cardUid);
     if (!titan || titan.location.zone !== 'setaside' || titan.controllerId !== ctx.playerId) {
@@ -2130,6 +2176,18 @@ function tornadosCategory5OnMinionMoved(ctx: TriggerContext): TriggerResult | Sm
     };
 }
 
+function canTriggerTornadosCategory5OnMinionMoved(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.state.turnOrder[ctx.state.currentPlayerIndex] !== controllerId) return false;
+    if ((ctx.state.minionMovesThisTurnByPlayer?.[controllerId] ?? 0) < 2) return false;
+    if (getTitanByController(ctx.state, controllerId)) return false;
+    const titan = getQueuedSetAsideTitanForSourceController(ctx, 'tornados_category_5');
+    if (!titan || !canControllerPlayTitan(ctx.state, controllerId, titan.uid)) return false;
+    if (hasPendingInteractionSource(ctx.matchState, 'titan_tornados_category_5_play')) return false;
+    return ctx.state.bases.length > 0;
+}
+
 function tornadosCategory5BeforeScoring(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     const scoringBaseIndex = ctx.baseIndex;
     if (scoringBaseIndex === undefined) return [];
@@ -2173,6 +2231,16 @@ function tornadosCategory5BeforeScoring(ctx: TriggerContext): TriggerResult | Sm
         events: [],
         matchState: queueInteraction(ctx.matchState, interaction),
     };
+}
+
+function canTriggerTornadosCategory5BeforeScoring(ctx: TriggerContext): boolean {
+    const scoringBaseIndex = ctx.baseIndex;
+    if (!ctx.matchState || scoringBaseIndex === undefined || !ctx.state.bases[scoringBaseIndex]) return false;
+    return (ctx.state.titans ?? []).some(titan =>
+        titan.defId === 'tornados_category_5'
+        && titan.location.zone === 'base'
+        && titan.location.baseIndex !== scoringBaseIndex,
+    );
 }
 
 function pecosBillOnDuelStarted(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
@@ -2219,6 +2287,15 @@ function pecosBillOnDuelStarted(ctx: TriggerContext): TriggerResult | SmashUpEve
         events: [],
         matchState: queueInteraction(ctx.matchState, interaction),
     };
+}
+
+function canTriggerPecosBillOnDuelStarted(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.duel) return false;
+    const challengerPlayerId = ctx.duel.challengerPlayerId;
+    if (getTitanByController(ctx.state, challengerPlayerId)) return false;
+    const titan = getControlledSetAsideTitan(ctx.state, challengerPlayerId, 'pecos_bill');
+    const player = ctx.state.players[challengerPlayerId];
+    return !!titan && !!player && player.hand.length > 0;
 }
 
 function pecosBillMoveProtectionChecker(ctx: ProtectionCheckContext): boolean {
@@ -2286,6 +2363,13 @@ function sphinxOnTurnStart(ctx: TriggerContext) {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function canTriggerSphinxOnTurnStart(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    if (getTitanByController(ctx.state, ctx.playerId)) return false;
+    if (!getQueuedSetAsideTitanForSourceController(ctx, 'sphinx')) return false;
+    return getOwnedBuriedCardChoices(ctx.state, ctx.playerId).length > 0;
+}
+
 function sphinxAfterScoring(ctx: {
     state: AbilityContext['state'];
     matchState?: AbilityContext['matchState'];
@@ -2330,6 +2414,16 @@ function sphinxAfterScoring(ctx: {
     return nextMatchState === ctx.matchState
         ? []
         : { events: [], matchState: nextMatchState };
+}
+
+function canTriggerSphinxAfterScoring(ctx: TriggerContext): boolean {
+    if (ctx.baseIndex === undefined || !ctx.matchState) return false;
+    return (ctx.state.titans ?? []).some(titan =>
+        titan.defId === 'sphinx'
+        && titan.location.zone === 'base'
+        && titan.location.baseIndex === ctx.baseIndex
+        && getOwnedBuriedCardChoices(ctx.state, titan.controllerId, ctx.baseIndex).length > 0,
+    );
 }
 
 function sphinxTalent(ctx: AbilityContext): AbilityResult {
@@ -2404,6 +2498,17 @@ function superSpiesMoonZeroThreeOnDeckInspected(ctx: TriggerContext): TriggerRes
         events: [addTitanPowerCounter(titan.uid, 1, 'super_spies_moon_zero_three_on_deck_inspected', ctx.now)],
         ...(nextMatchState ? { matchState: nextMatchState } : {}),
     };
+}
+
+function canTriggerSuperSpiesMoonZeroThreeOnDeckInspected(ctx: TriggerContext): boolean {
+    const titan = ctx.sourceCardUid
+        ? getTitanByUid(ctx.state, ctx.sourceCardUid)
+        : getControlledTitanOnBase(ctx.state, 'super_spies_moon_zero_three', ctx.playerId);
+    if (!titan) return false;
+    if (titan.defId !== 'super_spies_moon_zero_three' || titan.location.zone !== 'base' || titan.controllerId !== ctx.playerId) {
+        return false;
+    }
+    return (ctx.state.moonZeroThreeTriggeredTurnByTitan ?? {})[titan.uid] !== ctx.state.turnNumber;
 }
 
 function superSpiesMoonZeroThreeTalent(ctx: AbilityContext): AbilityResult {
@@ -2482,6 +2587,13 @@ function penguinsEmperorPenguinOnTurnStart(ctx: TriggerContext) {
     };
 
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerPenguinsEmperorPenguinOnTurnStart(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    if (getTitanByController(ctx.state, ctx.playerId)) return false;
+    if (!getQueuedSetAsideTitanForSourceController(ctx, 'penguins_emperor_penguin')) return false;
+    return getEmperorPenguinEligibleBases(ctx.state, ctx.playerId).length > 0;
 }
 
 function penguinsEmperorPenguinOngoingActivation(ctx: AbilityContext): AbilityResult {
@@ -2603,6 +2715,13 @@ function changerbotsMergaconOnTurnStart(ctx: TriggerContext) {
     };
 
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerChangerbotsMergaconOnTurnStart(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    if (getTitanByController(ctx.state, ctx.playerId)) return false;
+    if (!getQueuedSetAsideTitanForSourceController(ctx, 'changerbots_mergacon')) return false;
+    return getMergaconEligibleBases(ctx.state, ctx.playerId).length > 0;
 }
 
 type CthulhuTitanTalentChoiceValue = { choice: 'draw' | 'give' };
@@ -2937,6 +3056,37 @@ function werewolvesGreatWolfSpiritOnTurnStart(ctx: TriggerContext): TriggerResul
     };
 }
 
+function canTriggerWerewolvesGreatWolfSpiritOnTurnStart(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const sourceTitan = ctx.sourceCardUid ? getTitanByUid(ctx.state, ctx.sourceCardUid) : undefined;
+    const titan = (
+        sourceTitan?.defId === 'werewolves_great_wolf_spirit'
+        && sourceTitan.controllerId === titanControllerId
+        && sourceTitan.location.zone === 'base'
+    )
+        ? sourceTitan
+        : (ctx.state.titans ?? [])
+            .filter(candidate =>
+                candidate.defId === 'werewolves_great_wolf_spirit'
+                && candidate.controllerId === titanControllerId
+                && candidate.location.zone === 'base',
+            )
+            .find(candidate =>
+                ctx.sourceBaseIndex !== undefined
+                && candidate.location.zone === 'base'
+                && candidate.location.baseIndex === ctx.sourceBaseIndex,
+            )
+            ?? (ctx.state.titans ?? []).find(candidate =>
+                candidate.defId === 'werewolves_great_wolf_spirit'
+                && candidate.controllerId === titanControllerId
+                && candidate.location.zone === 'base',
+            );
+    return !!titan
+        && titan.location.zone === 'base'
+        && getGreatWolfSpiritMoveOptions(ctx.state, titanControllerId, titan.location.baseIndex).length > 0;
+}
+
 function changerbotsMergaconTalent(ctx: AbilityContext): AbilityResult {
     const titan = getTitanByUid(ctx.state, ctx.cardUid);
     if (!titan || titan.location.zone !== 'base' || titan.controllerId !== ctx.playerId) {
@@ -3113,6 +3263,26 @@ function trickstersBigFunnyGiantPodOnTurnEnd(ctx: TriggerContext): TriggerResult
     }
 
     return { events: [], matchState: nextMatchState };
+}
+
+function canTriggerTrickstersBigFunnyGiantPodOnTurnEnd(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    const titans = ctx.sourceCardUid
+        ? (ctx.state.titans ?? []).filter(candidate =>
+            candidate.uid === ctx.sourceCardUid
+            && candidate.defId === 'tricksters_big_funny_giant_pod'
+            && candidate.location.zone === 'base'
+            && candidate.controllerId !== ctx.playerId,
+        )
+        : (ctx.state.titans ?? []).filter(candidate =>
+            candidate.defId === 'tricksters_big_funny_giant_pod'
+            && candidate.location.zone === 'base'
+            && candidate.controllerId !== ctx.playerId,
+        );
+    return titans.some(titan => {
+        const base = ctx.state.bases[titan.location.baseIndex];
+        return !!base && !base.minions.some(minion => minion.controller === ctx.playerId);
+    });
 }
 
 function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResult | SmashUpEvent[] {
@@ -3312,6 +3482,22 @@ function ittyCrittersRainborocAfterScoring(ctx: {
     return nextMatchState === ctx.matchState
         ? []
         : { events: [], matchState: nextMatchState };
+}
+
+function canTriggerIttyCrittersRainborocAfterScoring(ctx: TriggerContext): boolean {
+    if (ctx.baseIndex === undefined || !ctx.matchState || !ctx.rankings || ctx.rankings.length === 0) return false;
+    const highestPower = Math.max(...ctx.rankings.map(entry => entry.power));
+    const winnerIds = new Set(
+        ctx.rankings
+            .filter(entry => entry.power === highestPower)
+            .map(entry => entry.playerId),
+    );
+    if (winnerIds.size === 0) return false;
+    return (ctx.state.titans ?? []).some(candidate =>
+        candidate.defId === 'itty_critters_rainboroc'
+        && candidate.location.zone === 'setaside'
+        && winnerIds.has(candidate.controllerId),
+    );
 }
 
 function findEligibleRainborocTitanForMinionPlayed(ctx: {
@@ -3533,6 +3719,23 @@ function piratesTheKrakenAfterScoring(ctx: {
         : { events: [], matchState: nextMatchState };
 }
 
+function canTriggerPiratesTheKrakenAfterScoring(ctx: TriggerContext): boolean {
+    if (ctx.baseIndex === undefined || !ctx.matchState) return false;
+    const triggerBaseControllersAtTrigger = (ctx as TriggerContext & {
+        triggerBaseControllersAtTrigger?: string[];
+    }).triggerBaseControllersAtTrigger;
+    if (getEligibleKrakenSetAsideTitans(ctx.state, ctx.baseIndex, triggerBaseControllersAtTrigger).length > 0) {
+        return true;
+    }
+    return (ctx.state.titans ?? []).some(titan =>
+        titan.defId === 'pirates_the_kraken'
+        && titan.location.zone === 'base'
+        && titan.location.baseIndex === ctx.baseIndex
+        && getKrakenRescueMinionTargets(ctx.state, titan.controllerId, ctx.baseIndex!).length > 0
+        && getOtherBaseOptions(ctx.state, ctx.baseIndex!).length > 0,
+    );
+}
+
 function piratesTheKrakenTalent(ctx: AbilityContext): AbilityResult {
     const titan = getTitanByUid(ctx.state, ctx.cardUid);
     if (!titan || titan.location.zone !== 'base' || titan.controllerId !== ctx.playerId) {
@@ -3725,6 +3928,26 @@ function bearCavalryMajorUrsaOnTitanMoved(ctx: TriggerContext): TriggerResult | 
     };
 }
 
+function canTriggerBearCavalryMajorUrsaOnTitanMoved(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined) return false;
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const titan = ctx.sourceCardUid
+        ? (ctx.state.titans ?? []).find(candidate =>
+            candidate.uid === ctx.sourceCardUid
+            && candidate.defId === 'bear_cavalry_major_ursa'
+            && candidate.location.zone === 'base'
+            && candidate.location.baseIndex === ctx.baseIndex
+            && candidate.controllerId === titanControllerId,
+        )
+        : (ctx.state.titans ?? []).find(candidate =>
+            candidate.defId === 'bear_cavalry_major_ursa'
+            && candidate.location.zone === 'base'
+            && candidate.location.baseIndex === ctx.baseIndex
+            && candidate.controllerId === titanControllerId,
+        );
+    return !!titan && getMajorUrsaEnemyMinionTargets(ctx.state, titanControllerId, ctx.baseIndex).length > 0;
+}
+
 function bearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
     if (
@@ -3761,6 +3984,38 @@ function bearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): TriggerResult |
     }
 
     return [addTitanPowerCounter(titan.uid, 1, 'bear_cavalry_major_ursa', ctx.now)];
+}
+
+function canTriggerBearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): boolean {
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (
+        !ctx.triggerMinionUid
+        || ctx.baseIndex === undefined
+        || ctx.moveToBaseIndex === undefined
+        || ctx.baseIndex !== ctx.moveToBaseIndex
+    ) {
+        return false;
+    }
+
+    const titan = ctx.sourceCardUid
+        ? (ctx.state.titans ?? []).find(candidate =>
+            candidate.uid === ctx.sourceCardUid
+            && candidate.defId === 'bear_cavalry_major_ursa'
+            && candidate.location.zone === 'base'
+            && candidate.location.baseIndex === ctx.baseIndex
+            && candidate.controllerId === titanControllerId,
+        )
+        : (ctx.state.titans ?? []).find(candidate =>
+            candidate.defId === 'bear_cavalry_major_ursa'
+            && candidate.location.zone === 'base'
+            && candidate.location.baseIndex === ctx.baseIndex
+            && candidate.controllerId === titanControllerId,
+        );
+    if (!titan) return false;
+
+    const movedMinion = ctx.state.bases[ctx.moveToBaseIndex]?.minions
+        .find(minion => minion.uid === ctx.triggerMinionUid);
+    return !!movedMinion && movedMinion.controller !== titanControllerId;
 }
 
 function vampireAncientLordTalent(ctx: AbilityContext): AbilityResult {
@@ -3916,6 +4171,22 @@ function vampireAncientLordOnPowerCounterChanged(ctx: TriggerContext): TriggerRe
         ctx.now,
     );
     return nextState ? { events: [], matchState: nextState } : [];
+}
+
+function canTriggerVampireAncientLordOnPowerCounterChanged(ctx: TriggerContext): boolean {
+    if (
+        !ctx.matchState
+        || ctx.affectType !== 'power_change'
+        || ctx.counterChangeKind !== 'added'
+        || (ctx.counterDelta ?? 0) <= 0
+    ) {
+        return false;
+    }
+    const controllerId = ctx.triggerMinion?.controller;
+    if (!controllerId || !ctx.triggerMinion || ctx.baseIndex === undefined) return false;
+    if (ctx.reason?.startsWith('vampires_ancient_lord_special')) return false;
+    return !!getSetAsideControlledTitan(ctx.state, 'vampires_ancient_lord', controllerId)
+        && !!ctx.state.bases[ctx.baseIndex];
 }
 
 function buildAncientLordBonusCounterEvents(state: AbilityContext['state'], event: SmashUpEvent): SmashUpEvent[] | undefined {
@@ -4167,6 +4438,30 @@ function fortTitanosaurusOnActionPlayed(ctx: TriggerContext): TriggerResult | Sm
     return { events: [], matchState: nextMatchState };
 }
 
+function canTriggerFortTitanosaurusOnActionPlayed(ctx: TriggerContext): boolean {
+    const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.playerId !== controllerId) return false;
+    if (ctx.actionTargetType !== 'minion' || !ctx.actionTargetMinionUid) return false;
+
+    const titan = ctx.sourceCardUid
+        ? getTitanByUid(ctx.state, ctx.sourceCardUid)
+        : getFortTitanosaurus(ctx.state, controllerId);
+    if (
+        !titan
+        || titan.defId !== 'dinosaurs_fort_titanosaurus'
+        || titan.location.zone !== 'base'
+        || titan.controllerId !== controllerId
+    ) {
+        return false;
+    }
+    if (Number(titan.metadata?.fortTitanosaurusTriggeredTurn ?? -1) === ctx.state.turnNumber) {
+        return false;
+    }
+
+    const target = findMinionOnBases(ctx.state, ctx.actionTargetMinionUid);
+    return target?.minion.controller === controllerId;
+}
+
 export function queueFortTitanosaurusOngoingChoice(
     matchState: MatchState<SmashUpCore> | undefined,
     playerId: string,
@@ -4183,7 +4478,8 @@ export function queueFortTitanosaurusOngoingChoice(
 
     const targets = Array.from(new Set(targetMinionUids))
         .map((targetMinionUid) => findMinionOnBases(matchState.core, targetMinionUid))
-        .filter((target): target is NonNullable<typeof target> => !!target);
+        .filter((target): target is NonNullable<typeof target> =>
+            !!target && target.minion.controller === playerId);
     if (targets.length === 0) return undefined;
 
     const options = targets.flatMap((target, index) => {
@@ -4347,6 +4643,15 @@ function invisibleNinjaOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUp
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function canTriggerInvisibleNinjaOnTurnStart(ctx: TriggerContext): boolean {
+    const titan = ctx.sourceCardUid
+        ? getTitanByUid(ctx.state, ctx.sourceCardUid)
+        : (ctx.state.titans ?? []).find(candidate =>
+            candidate.defId === 'ninjas_invisible_ninja' && candidate.controllerId === ctx.playerId,
+        );
+    return !!titan && titan.defId === 'ninjas_invisible_ninja';
+}
+
 function invisibleNinjaSpecial(ctx: AbilityContext): AbilityResult {
     const titan = getTitanByUid(ctx.state, ctx.cardUid);
     const player = ctx.state.players[ctx.playerId];
@@ -4447,8 +4752,36 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
     return { events: peek.events, matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+const INVISIBLE_NINJA_ONGOING_TIMINGS = new Set(['onMinionDestroyed', 'onCardDestroyed', 'onCardReturnedToHand']);
+
+function hasPendingInvisibleNinjaOngoingTrigger(ctx: TriggerContext, titanUid: string): boolean {
+    return (ctx.state.triggerQueue ?? []).some(trigger =>
+        trigger.sourceDefId === 'ninjas_invisible_ninja'
+        && trigger.sourceCardUid === titanUid
+        && INVISIBLE_NINJA_ONGOING_TIMINGS.has(trigger.timing)
+    );
+}
+
 function canTriggerInvisibleNinjaTriggered(ctx: TriggerContext): boolean {
     const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const titan = ctx.sourceCardUid
+        ? getTitanByUid(ctx.state, ctx.sourceCardUid)
+        : getControlledTitanOnBase(ctx.state, 'ninjas_invisible_ninja', controllerId);
+    if (
+        !titan
+        || titan.defId !== 'ninjas_invisible_ninja'
+        || titan.location.zone !== 'base'
+        || titan.controllerId !== controllerId
+    ) {
+        return false;
+    }
+    if (Number(titan.metadata?.invisibleNinjaTriggeredTurn ?? -1) === ctx.state.turnNumber) {
+        return false;
+    }
+    if (hasPendingInvisibleNinjaOngoingTrigger(ctx, titan.uid)) {
+        return false;
+    }
+
     if (ctx.timing === 'onMinionDestroyed' || ctx.timing === 'onCardDestroyed') {
         const destroyedControllerId = ctx.triggerMinion?.controller
             ?? ctx.triggerCardOwnerId
@@ -4559,6 +4892,15 @@ function killerKudzuOnTitanRemovedFromPlay(ctx: TriggerContext): TriggerResult |
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerKillerKudzuOnTitanRemovedFromPlay(ctx: TriggerContext): boolean {
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return false;
+    const discardOptions = buildKillerKudzuDiscardMinionOptions(ctx.state, ctx.playerId);
+    const canDraw = ((player.deck.length ?? 0) + (player.discard.length ?? 0)) > 0;
+    if (discardOptions.length === 0) return canDraw;
+    return !!ctx.matchState;
 }
 
 function killerKudzuTalent(ctx: AbilityContext): AbilityResult {
@@ -4999,6 +5341,14 @@ function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[
     );
 }
 
+function canTriggerTheBrideOnTurnStart(ctx: TriggerContext): boolean {
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (!ctx.matchState || getTitanByController(ctx.state, titanControllerId)) return false;
+    const titan = getQueuedSetAsideTitanForSourceController(ctx, 'frankenstein_the_bride');
+    if (!titan) return false;
+    return buildTheBrideStartBranchOptions(ctx.state, titanControllerId, []).length > 0;
+}
+
 function theBrideOnPowerCounterChanged(ctx: TriggerContext): SmashUpEvent[] {
     if (
         ctx.affectType !== 'power_change'
@@ -5224,6 +5574,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('dinosaurs_fort_titanosaurus', 'onActionPlayed', fortTitanosaurusOnActionPlayed, {
         optional: true,
         baseScoped: false,
+        canTrigger: canTriggerFortTitanosaurusOnActionPlayed,
         playerContext: 'sourceController',
     });
 
@@ -5245,6 +5596,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('ninjas_invisible_ninja', 'onTurnStart', invisibleNinjaOnTurnStart, {
         global: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerInvisibleNinjaOnTurnStart,
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
         optional: true,
@@ -5305,6 +5657,7 @@ export function registerTitanAbilities(): void {
         optional: true,
         global: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerKillerKudzuOnTitanRemovedFromPlay,
     });
 
     registerAbility('frankenstein_the_bride', 'talent', theBrideTalent);
@@ -5320,6 +5673,7 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerTheBrideOnTurnStart,
     });
     registerTrigger('frankenstein_the_bride', 'onMinionAffected', theBrideOnPowerCounterChanged, {
         baseScoped: false,
@@ -5343,6 +5697,7 @@ export function registerTitanAbilities(): void {
             : '没有可查看的牌库';
     });
     registerTrigger('super_spies_moon_zero_three', 'onDeckInspected', superSpiesMoonZeroThreeOnDeckInspected, {
+        canTrigger: canTriggerSuperSpiesMoonZeroThreeOnDeckInspected,
     });
 
     registerTitanSpecialValidator('penguins_emperor_penguin', () =>
@@ -5371,6 +5726,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('penguins_emperor_penguin', 'onTurnStart', penguinsEmperorPenguinOnTurnStart, {
         global: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerPenguinsEmperorPenguinOnTurnStart,
     });
 
     registerTitanSpecialValidator('changerbots_mergacon', () =>
@@ -5385,6 +5741,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('changerbots_mergacon', 'onTurnStart', changerbotsMergaconOnTurnStart, {
         global: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerChangerbotsMergaconOnTurnStart,
     });
     registerTitanPowerModifier('changerbots_mergacon', ({ state, titan }) =>
         (state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid) ? 0 : 3);
@@ -5406,6 +5763,7 @@ export function registerTitanAbilities(): void {
         now: ctx.now,
     }), {
         global: true,
+        canTrigger: canTriggerIttyCrittersRainborocAfterScoring,
     });
     registerTrigger('itty_critters_rainboroc', 'onMinionPlayed', ittyCrittersRainborocOnMinionPlayed, {
         canTrigger: (ctx) => !!findEligibleRainborocTitanForMinionPlayed(ctx),
@@ -5442,6 +5800,7 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('explorers_very_large_boulder', 'onMinionMoved', explorersVeryLargeBoulderOnMinionMoved, {
         playerContext: 'sourceController',
+        canTrigger: canTriggerExplorersVeryLargeBoulderOnMinionMoved,
     });
     registerTrigger('explorers_very_large_boulder', 'onTurnEnd', explorersVeryLargeBoulderOnTurnEnd, {
         playerContext: 'sourceController',
@@ -5465,6 +5824,7 @@ export function registerTitanAbilities(): void {
         optional: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        canTrigger: canTriggerIgnoblesTheHillThatStrollsOnMinionAffected,
     });
 
     registerAbility('time_travelers_time_box', 'special', {
@@ -5484,15 +5844,18 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerTimeTravelersTimeBoxCounterProgress,
     });
     registerTrigger('time_travelers_time_box', 'onCardReturnedToHand', timeTravelersTimeBoxOnCardReturnedToHand, {
         global: true,
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerTimeTravelersTimeBoxCounterProgress,
     });
 
     registerTrigger('pecos_bill', 'onDuelStarted', pecosBillOnDuelStarted, {
         global: true,
+        canTrigger: canTriggerPecosBillOnDuelStarted,
     });
     registerTrigger('pecos_bill', 'onDuelResolved', pecosBillOnDuelResolved, {
     });
@@ -5508,6 +5871,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('sphinx', 'onTurnStart', sphinxOnTurnStart, {
         global: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSphinxOnTurnStart,
     });
     registerTrigger('sphinx', 'afterScoring', (ctx) => sphinxAfterScoring({
         state: ctx.state,
@@ -5517,6 +5881,7 @@ export function registerTitanAbilities(): void {
     }), {
         global: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSphinxAfterScoring,
     });
 
     registerAbility('magical_girls_walking_castle', 'special', magicalGirlsWalkingCastleSpecial);
@@ -5542,6 +5907,7 @@ export function registerTitanAbilities(): void {
             : '你只能将超级佐德打出到有你至少 3 个随从的基地');
     registerTrigger('mega_troopers_megabot', 'beforeScoring', megaTroopersMegabotBeforeScoring, {
         playerContext: 'sourceController',
+        canTrigger: canTriggerMegaTroopersMegabotBeforeScoring,
     });
     registerTitanPowerModifier('mega_troopers_megabot', ({ state, baseIndex, playerId }) =>
         getOwnMinionCountOnBase(state, baseIndex, playerId));
@@ -5606,9 +5972,11 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerTornadosCategory5OnMinionMoved,
     });
     registerTrigger('tornados_category_5', 'beforeScoring', tornadosCategory5BeforeScoring, {
         playerContext: 'sourceController',
+        canTrigger: canTriggerTornadosCategory5BeforeScoring,
     });
     registerTitanPowerModifier('tornados_category_5', ({ state, baseIndex }) =>
         state.minionMoveEventsByBaseThisTurn?.[baseIndex] ?? 0);
@@ -5708,6 +6076,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('bear_cavalry_major_ursa', 'onTitanMoved', bearCavalryMajorUrsaOnTitanMoved, {
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerBearCavalryMajorUrsaOnTitanMoved,
     });
     registerTitanTalentValidator('bear_cavalry_major_ursa', ({ state, titan }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
@@ -5717,6 +6086,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('bear_cavalry_major_ursa', 'onMinionMoved', bearCavalryMajorUrsaOnMinionMoved, {
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerBearCavalryMajorUrsaOnMinionMoved,
     });
 
     registerAbility('vampires_ancient_lord', 'special', vampireAncientLordSpecial);
@@ -5738,6 +6108,7 @@ export function registerTitanAbilities(): void {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
+        canTrigger: canTriggerVampireAncientLordOnPowerCounterChanged,
     });
 
     registerAbility('werewolves_great_wolf_spirit', 'special', werewolvesGreatWolfSpiritSpecial);
@@ -5753,6 +6124,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
         optional: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerWerewolvesGreatWolfSpiritOnTurnStart,
     });
     registerTitanTalentValidator('werewolves_great_wolf_spirit', ({ state, titan, playerId }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
@@ -5805,6 +6177,7 @@ export function registerTitanAbilities(): void {
         playerContext: 'sourceController',
     });
     registerTrigger('tricksters_big_funny_giant_pod', 'onTurnEnd', trickstersBigFunnyGiantPodOnTurnEnd, {
+        canTrigger: canTriggerTrickstersBigFunnyGiantPodOnTurnEnd,
     });
     for (const defId of ['tricksters_big_funny_giant', 'tricksters_big_funny_giant_pod']) {
         registerTrigger(defId, 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
@@ -5832,6 +6205,7 @@ export function registerTitanAbilities(): void {
         global: true,
         playerContext: 'sourceController',
         optional: true,
+        canTrigger: canTriggerPiratesTheKrakenAfterScoring,
     });
 }
 
@@ -5898,12 +6272,13 @@ export function registerTitanInteractionHandlers(): void {
         ];
 
         if (selected.mode === 'minion' || selected.mode === 'both') {
-            const found = selected.targetMinionUid
+            const target = selected.targetMinionUid
                 ? findMinionOnBases(state.core, selected.targetMinionUid)
                 : undefined;
-            if (found) {
-                events.push(addPowerCounter(found.minion.uid, found.baseIndex, 1, 'dinosaurs_fort_titanosaurus_ongoing', timestamp));
+            if (!target || target.minion.controller !== playerId) {
+                return { state, events: [] };
             }
+            events.push(addPowerCounter(target.minion.uid, target.baseIndex, 1, 'dinosaurs_fort_titanosaurus_ongoing', timestamp));
         }
         if (selected.mode === 'titan' || selected.mode === 'both') {
             events.push(addTitanPowerCounter(titan.uid, 1, 'dinosaurs_fort_titanosaurus_ongoing', timestamp));
@@ -6049,6 +6424,12 @@ export function registerTitanInteractionHandlers(): void {
 
         const remainingShown = shownCards.filter(card => card.uid !== chosenCard.uid);
         const events: SmashUpEvent[] = [
+            buildTitanMetadataUpdateEvent(
+                titan.uid,
+                { invisibleNinjaTriggeredTurn: state.core.turnNumber },
+                'ninjas_invisible_ninja_ongoing',
+                timestamp,
+            ),
             {
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: {

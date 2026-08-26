@@ -819,6 +819,10 @@ function dragonsBringDownTheWallsTrigger(ctx: TriggerContext): SmashUpEvent[] {
     ];
 }
 
+function canTriggerDragonsBringDownTheWalls(ctx: TriggerContext): boolean {
+    return ctx.baseIndex !== undefined && !!ctx.sourceControllerId;
+}
+
 export function registerDragonAbilities(): void {
     registerAbilityProgram('dragons_burn_it_down', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(dragonsBurnItDownOnPlay),
@@ -869,6 +873,7 @@ export function registerDragonAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerDragonsBringDownTheWalls,
     });
 
     registerBaseAbilitySuppression('dragons_raze', (state, baseIndex) =>

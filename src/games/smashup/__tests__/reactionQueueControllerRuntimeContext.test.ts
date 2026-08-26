@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 import { SU_EVENTS } from '../domain/types';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { clearOngoingEffectRegistry, collectTriggers, registerTrigger } from '../domain/ongoingEffects';
@@ -135,19 +136,16 @@ describe('reaction queue: preserves controller runtime context', () => {
             ],
         });
 
-        const destroyed = processDestroyTriggers([{
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'victim-borrowed',
+        const destroyed = processDestroyTriggers([makeMinionDestroyedEvent({
+            minionUid: 'victim-borrowed',
                 minionDefId: 'victim_card',
                 fromBaseIndex: 0,
                 ownerId: '1',
                 controllerId: '0',
                 destroyerId: '1',
-                reason: 'process_destroy_runtime',
-            },
+            reason: 'process_destroy_runtime',
             timestamp: 11,
-        } as any], makeMatchState(core), '1', defaultTestRandom, 11);
+        }) as any], makeMatchState(core), '1', defaultTestRandom, 11);
 
         const queuedEvent = destroyed.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
         const queuedTrigger = queuedEvent?.payload?.triggers?.find((trigger: any) =>
@@ -384,6 +382,23 @@ describe('reaction queue: preserves controller runtime context', () => {
             const prompt = state.sys.interaction.current as any;
             if (prompt?.data?.sourceId === 'smashup_reaction_choose') {
                 const chosen = (prompt.data.options ?? []).find((option: any) => option?.value?.kind === 'trigger');
+                expect(chosen).toBeDefined();
+                const responded = runCommand(
+                    state,
+                    {
+                        type: 'SYS_INTERACTION_RESPOND',
+                        playerId: prompt.playerId,
+                        payload: { optionId: chosen.id },
+                    } as any,
+                    defaultTestRandom,
+                );
+                allEvents.push(...responded.events);
+                state = responded.finalState;
+                continue;
+            }
+            if (prompt?.data?.sourceId === 'killer_plant_sprout_search') {
+                const chosen = (prompt.data.options ?? []).find((option: any) => option?.value?.cardUid === 'wl-1')
+                    ?? (prompt.data.options ?? []).find((option: any) => option?.id === 'skip');
                 expect(chosen).toBeDefined();
                 const responded = runCommand(
                     state,

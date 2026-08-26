@@ -325,6 +325,15 @@ function zeroAfterScoring(ctx: TriggerContext): SmashUpEvent[] {
     });
 }
 
+function canTriggerZeroAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return false;
+    return ctx.state.bases[ctx.sourceBaseIndex]?.minions.some(minion =>
+        minion.uid === ctx.sourceCardUid
+        && minion.defId === ZERO
+        && minion.controller === ctx.sourceControllerId,
+    ) ?? false;
+}
+
 function halloweenTownFolks(ctx: AbilityContext): AbilityResult {
     return {
         events: revealTopAndDrawMatches({
@@ -469,6 +478,17 @@ function sandyClawsAfterScoring(ctx: TriggerContext): SmashUpEvent[] {
             expectedLocation: 'bases',
         }).filter((event): event is CardToDeckBottomEvent => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM),
     ];
+}
+
+function canTriggerSandyClawsAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return false;
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    return base?.minions.some(minion =>
+        minion.attachedActions.some(action =>
+            action.uid === ctx.sourceCardUid
+            && action.defId === SANDY_CLAWS_COSTUME,
+        ),
+    ) ?? false;
 }
 
 function halloweenTownAfterScoring(ctx: BaseAbilityContext): AbilityResult {
@@ -848,12 +868,14 @@ export function registerNightmareBeforeChristmasAbilities(): void {
         optional: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerZeroAfterScoring,
     });
     registerTrigger(SANDY_CLAWS_COSTUME, 'afterScoring', sandyClawsAfterScoring, {
         perInstance: true,
         optional: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerSandyClawsAfterScoring,
     });
     registerCardAbilitySuppression(OOGIE_BOOGIE, (state) => collectCharacterModifiers(state)
         .filter(entry => entry.action.defId === OOGIE_BOOGIE)

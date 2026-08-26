@@ -187,9 +187,14 @@ describe('功夫斗士首批能力实现', () => {
         );
 
         expect(used.success).toBe(true);
-        expect(used.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(used.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(used.finalState, 'kung_fu_fighters_lady_whirlwind');
+        const target = getPromptOption(prompt, option => option.value?.minionUid === 'enemy-low', 'Lady Whirlwind destroy target');
+        const resolved = respondToPrompt(used.finalState, target.id, '0', defaultTestRandom);
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
 
-        const base = used.finalState.core.bases[0];
+        const base = resolved.finalState.core.bases[0];
         expect(base.minions.some(minion => minion.uid === 'enemy-low')).toBe(false);
         expect(base.minions.find(minion => minion.uid === 'lady-1')?.powerCounters).toBe(1);
     });

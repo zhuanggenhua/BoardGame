@@ -35,6 +35,19 @@ afterEach(() => {
         });
     });
 
+    it('本地化 SVG 候选保持直接 SVG 路径，不拼 compressed webp', () => {
+        setLocalizedImageIndexForTesting({
+            'i18n/zh-CN/betrayal/tokens/monsters/mummy': 1,
+        });
+
+        const candidates = getLocalizedImageCandidateUrls('betrayal/tokens/monsters/mummy.svg', 'zh-CN');
+
+        expect(candidates).toEqual([
+            '/assets/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg',
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg',
+        ]);
+    });
+
     it('位图资源统一生成 webp 路径', () => {
         const urls = getOptimizedImageUrls('dicethrone/thumbnails/fengm.png');
         expect(urls.avif).toBe('/assets/dicethrone/thumbnails/compressed/fengm.webp');

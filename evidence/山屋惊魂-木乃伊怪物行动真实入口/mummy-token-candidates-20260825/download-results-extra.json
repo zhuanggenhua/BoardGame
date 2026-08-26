@@ -1,0 +1,34 @@
+[
+  {
+    "id": "H-svgrepo-outline-cc0",
+    "url": "https://www.svgrepo.com/download/17286/mummy-halloween-typical-character-bandaged-outline.svg",
+    "file": "H-svgrepo-outline-cc0.svg",
+    "bytes": 0,
+    "firstLine": "",
+    "status": "failed: Response status code does not indicate success: 429 (Too Many Requests)."
+  },
+  {
+    "id": "I-svgrepo-alt-cc0",
+    "url": "https://www.svgrepo.com/download/383446/mummy.svg",
+    "file": "I-svgrepo-alt-cc0.svg",
+    "bytes": 1060,
+    "firstLine": "<?xml version=\"1.0\" encoding=\"utf-8\"?>",
+    "status": "downloaded"
+  },
+  {
+    "id": "J-openclipart-cartoon",
+    "url": "https://openclipart.org/download/85687",
+    "file": "J-openclipart-cartoon.svg",
+    "bytes": 149941,
+    "firstLine": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>",
+    "status": "downloaded"
+  },
+  {
+    "id": "K-openclipart-back",
+    "url": "https://openclipart.org/download/316159",
+    "file": "K-openclipart-back.svg",
+    "bytes": 313439,
+    "firstLine": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>",
+    "status": "downloaded"
+  }
+]

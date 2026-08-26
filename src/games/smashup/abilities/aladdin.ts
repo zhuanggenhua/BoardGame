@@ -189,12 +189,12 @@ function buildHandActionCostOptions(context: AladdinDiscardActionCostContext) {
 
 function hasLiveAladdinSource(
     state: SmashUpCore,
-    context: Pick<AladdinDiscardActionCostContext, 'playerId' | 'cardUid' | 'baseIndex'>,
+    context: Pick<AladdinDiscardActionCostContext, 'playerId' | 'cardUid' | 'baseIndex' | 'defId'>,
     defId: string,
 ): boolean {
     return state.bases[context.baseIndex]?.minions.some(minion =>
         minion.uid === context.cardUid
-        && minion.defId === defId
+        && (minion.defId === defId || context.defId === defId)
         && minion.controller === context.playerId,
     ) ?? false;
 }

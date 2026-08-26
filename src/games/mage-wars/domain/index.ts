@@ -1,11 +1,11 @@
 import type { DomainCore, PlayerId, RandomFn } from '../../../engine/types';
 import {
     MAGE_WARS_GAME_ID,
+    type MageId,
     type ArenaZoneId,
 } from './ids';
 import {
     getFormalArenaZonesFromConfig,
-    getFormalStartingMageIdFromConfig,
     getFormalStartingZoneIdFromConfig,
     getPresetMageSetupFromConfig,
     getPresetSpellbookCountFromConfig,
@@ -15,13 +15,17 @@ import { reduceEvent } from './reducer';
 import { validateCommand } from './validate';
 import type { MageWarsCore, MageWarsCommand, MageWarsEvent, MageWarsPlayerState } from './types';
 import { discoverMageWarsTimingOpportunities } from './timingOpportunities';
+import { resolveMageWarsSelectedMageIdForSeat } from '../roomSetup';
 
 function normalizePlayerIds(playerIds: PlayerId[]): PlayerId[] {
     return playerIds.length >= 2 ? playerIds.slice(0, 2) : ['0', '1'];
 }
 
-function createPlayerState(playerId: PlayerId, seatIndex: number, mageZoneId: ArenaZoneId): MageWarsPlayerState {
-    const mageId = getFormalStartingMageIdFromConfig(seatIndex);
+function createPlayerState(
+    playerId: PlayerId,
+    mageId: MageId,
+    mageZoneId: ArenaZoneId,
+): MageWarsPlayerState {
     const setup = getPresetMageSetupFromConfig(mageId);
 
     return {
@@ -79,13 +83,16 @@ function createMageWarsPlayerView(core: MageWarsCore, playerId: PlayerId): Parti
 export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsEvent> = {
     gameId: MAGE_WARS_GAME_ID,
 
-    setup: (playerIds: PlayerId[], _random: RandomFn): MageWarsCore => {
+    setup: (playerIds: PlayerId[], _random: RandomFn, setupData?: unknown): MageWarsCore => {
         const normalizedPlayerIds = normalizePlayerIds(playerIds);
         const players = Object.fromEntries(
-            normalizedPlayerIds.map((playerId, index) => [
-                playerId,
-                createPlayerState(playerId, index, resolveStartingZoneId(index)),
-            ]),
+            normalizedPlayerIds.map((playerId, index) => {
+                const mageId = resolveMageWarsSelectedMageIdForSeat(setupData, index);
+                return [
+                    playerId,
+                    createPlayerState(playerId, mageId, resolveStartingZoneId(index)),
+                ];
+            }),
         ) as Record<PlayerId, MageWarsPlayerState>;
 
         return {

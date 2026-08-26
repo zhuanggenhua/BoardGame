@@ -161,7 +161,7 @@
       "scenarioNoParticipants": "先选探索者",
       "scenarioConfirmationCount": "剧本确认 {{confirmed}}/{{total}}",
       "confirmScenarioCard": "确认此剧本卡",
-      "waitScenarioConfirmations": "等待其他玩家确认",
+      "waitScenarioConfirmations": "已确认",
       "cannotStartPendingScenario": "这个剧本现在不能开始",
       "viewScenarioDetails": "阅读完整剧本",
       "hideScenarioDetails": "合上档案",
@@ -958,9 +958,9 @@
       "rollModifierTag": "改骰",
       "confirmCard": "确认",
       "confirmWithProgress": "确认 {{confirmed}}/{{total}}",
+      "confirmedWithProgress": "已确认 {{confirmed}}/{{total}}",
       "nextSearchCard": "下一张",
       "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
-      "waitingForAll": "等待其他玩家 {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "已翻出带事件符号的房间；现在选择跳过事件，或抽取事件牌。"
     },
     "roll": {

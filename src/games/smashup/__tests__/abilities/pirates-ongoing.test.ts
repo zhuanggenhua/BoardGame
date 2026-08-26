@@ -194,7 +194,30 @@ describe('pirate_king beforeScoring', () => {
 });
 
 describe('pirate_first_mate afterScoring', () => {
-    it('计分后将大副移动到其他基地', () => {
+    function triggerFirstMateMove(state: SmashUpCore, playerId = '0') {
+        const matchState = makeMatchState(state);
+        const triggerResult = fireTriggers(state, 'afterScoring', {
+            state,
+            matchState,
+            playerId,
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 0,
+        });
+        expect(triggerResult.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(triggerResult.matchState!, 'pirate_first_mate_choose_base');
+        const resolved = respondToPromptOption(
+            triggerResult.matchState!,
+            option => option.value?.baseIndex === 1,
+            'First Mate target base',
+            playerId,
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        return resolved.events;
+    }
+
+    it('计分后可选择将大副移动到其他基地', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('mate', 'pirate_first_mate', '0', 2, { powerModifier: 0 })] }),
@@ -202,13 +225,7 @@ describe('pirate_first_mate afterScoring', () => {
             ],
         });
 
-        const { events } = fireTriggers(state, 'afterScoring', {
-            state,
-            playerId: '0',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        });
+        const events = triggerFirstMateMove(state);
 
         expect(events).toContainEqual(
             expect.objectContaining({
@@ -218,7 +235,7 @@ describe('pirate_first_mate afterScoring', () => {
         );
     });
 
-    it('POD 版计分后也会移动自身到其他基地', () => {
+    it('POD 版计分后也可选择移动自身到其他基地', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('mate-pod', 'pirate_first_mate_pod', '0', 2, { powerModifier: 0 })] }),
@@ -226,13 +243,7 @@ describe('pirate_first_mate afterScoring', () => {
             ],
         });
 
-        const { events } = fireTriggers(state, 'afterScoring', {
-            state,
-            playerId: '0',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        });
+        const events = triggerFirstMateMove(state);
 
         expect(events).toContainEqual(
             expect.objectContaining({
@@ -376,7 +387,32 @@ describe('pirate_first_mate afterScoring', () => {
 });
 
 describe('pirate_buccaneer onMinionDestroyed', () => {
-    it('两个基地时自动移动', () => {
+    function triggerBuccaneerMove(state: SmashUpCore, minionUid: string, minionDefId: string) {
+        const matchState = makeMatchState(state);
+        const triggerResult = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            matchState,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: minionUid,
+            triggerMinionDefId: minionDefId,
+            random: dummyRandom,
+            now: 0,
+        });
+        expect(triggerResult.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(triggerResult.matchState!, 'pirate_buccaneer_move');
+        const resolved = respondToPromptOption(
+            triggerResult.matchState!,
+            option => option.value?.toBaseIndex === 1,
+            'Buccaneer move destination',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        return resolved.events;
+    }
+
+    it('两个基地时创建移动选择并可移动', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 })] }),
@@ -384,15 +420,7 @@ describe('pirate_buccaneer onMinionDestroyed', () => {
             ],
         });
 
-        const { events } = fireTriggers(state, 'onMinionDestroyed', {
-            state,
-            playerId: '0',
-            baseIndex: 0,
-            triggerMinionUid: 'buc-1',
-            triggerMinionDefId: 'pirate_buccaneer',
-            random: dummyRandom,
-            now: 0,
-        });
+        const events = triggerBuccaneerMove(state, 'buc-1', 'pirate_buccaneer');
 
         expect(events).toContainEqual(
             expect.objectContaining({
@@ -402,7 +430,7 @@ describe('pirate_buccaneer onMinionDestroyed', () => {
         );
     });
 
-    it('POD 版两个基地时也会自动移动', () => {
+    it('POD 版两个基地时也创建移动选择并可移动', () => {
         const state = makeState({
             bases: [
                 makeBase({ minions: [makeMinion('buc-pod-1', 'pirate_buccaneer_pod', '0', 4, { powerModifier: 0 })] }),
@@ -410,15 +438,7 @@ describe('pirate_buccaneer onMinionDestroyed', () => {
             ],
         });
 
-        const { events } = fireTriggers(state, 'onMinionDestroyed', {
-            state,
-            playerId: '0',
-            baseIndex: 0,
-            triggerMinionUid: 'buc-pod-1',
-            triggerMinionDefId: 'pirate_buccaneer_pod',
-            random: dummyRandom,
-            now: 0,
-        });
+        const events = triggerBuccaneerMove(state, 'buc-pod-1', 'pirate_buccaneer_pod');
 
         expect(events).toContainEqual(
             expect.objectContaining({

@@ -267,6 +267,7 @@ export const OnlineManualSetupSelectionBridge = ({
     return (
         <GameClientOverrideProvider
             state={manualSetupDraftState}
+            playerId={shouldInterceptManualSetupSelection ? manualSetupPlayerId : undefined}
             dispatch={shouldInterceptManualSetupSelection ? manualDispatch : undefined}
         >
             {children}

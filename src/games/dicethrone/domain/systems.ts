@@ -3,7 +3,7 @@
  * 处理领域事件到系统状态的映射
  */
 
-import type { GameEvent, MatchState } from '../../../engine/types';
+import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import type { ChoiceRequest, ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createSimpleChoiceFromChoiceRequest } from '../../../engine/systems/ChoiceRequestSimpleChoiceAdapter';
@@ -48,6 +48,7 @@ type EmergencySkipContext = {
 };
 
 type DiceThroneChoiceOptionValue = ChoiceRequestedEvent['payload']['options'][number];
+type DiceThroneCompareRollConfirmValue = NonNullable<NonNullable<ChoiceRequestedEvent['payload']['compareRoll']>['confirmValue']>;
 
 const sanitizeInteractionIdPart = (value: unknown, fallback: string): string => {
     if (typeof value !== 'string' || value.length === 0) return fallback;
@@ -72,6 +73,51 @@ const buildChoiceInteractionId = (
         String(decisionEpoch),
         String(queueOrdinal),
     ].join('-');
+};
+
+const buildAutoResolvedCompareRollEvent = (
+    payload: ChoiceRequestedEvent['payload'],
+    confirmValue: DiceThroneCompareRollConfirmValue,
+    timestamp: number,
+): ChoiceResolvedEvent => ({
+    type: 'CHOICE_RESOLVED',
+    payload: {
+        playerId: payload.playerId,
+        statusId: confirmValue.statusId,
+        tokenId: confirmValue.tokenId,
+        value: confirmValue.value,
+        customId: confirmValue.customId,
+        sourceAbilityId: payload.sourceAbilityId,
+    },
+    sourceCommandType: 'COMPARE_ROLL_AUTO_RESOLVE',
+    timestamp,
+});
+
+const pushChoiceResolvedFollowups = (
+    nextEvents: GameEvent[],
+    state: MatchState<DiceThroneCore>,
+    resolvedEvent: ChoiceResolvedEvent,
+    random: RandomFn,
+): void => {
+    const customId = resolvedEvent.payload.customId;
+    if (!customId) {
+        return;
+    }
+    const followupHandler = getChoiceResolvedEventHandler(customId);
+    const hasChoiceAnchor = hasCurrentChoiceAnchor(state.core, resolvedEvent.payload.sourceAbilityId)
+        || resolvedEvent.payload.interactionBacked === true;
+    if (!followupHandler || !hasChoiceAnchor) {
+        return;
+    }
+    nextEvents.push(...followupHandler({
+        state: state.core,
+        playerId: resolvedEvent.payload.playerId,
+        customId,
+        sourceAbilityId: resolvedEvent.payload.sourceAbilityId,
+        value: resolvedEvent.payload.value,
+        timestamp: resolvedEvent.timestamp,
+        random,
+    }));
 };
 
 function extractChoiceCustomIds(interactionData: unknown): string[] {
@@ -800,7 +846,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'CHOICE_REQUESTED') {
                     const payload = (dtEvent as ChoiceRequestedEvent).payload;
 
-                    // compare-roll-choice：对掷结果 + 分支选择 / 自动确认；骰面本体仍由右侧骰盘承接。
+                    // compare-roll-choice：只有真实分支选择才进入主舞台交互；无选项结果直接结算，避免伪确认弹层。
                     if (payload.compareRoll?.contestants?.length === 2) {
                         const compareOptions: PromptOption<{
                             statusId?: string;
@@ -824,6 +870,18 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 labelParams: opt.labelParams,
                             };
                         });
+
+                        if (compareOptions.length === 0) {
+                            const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
+                            const resolvedEvent = buildAutoResolvedCompareRollEvent(
+                                payload,
+                                payload.compareRoll.confirmValue ?? { value: 0 },
+                                eventTimestamp + 1,
+                            );
+                            nextEvents.push(resolvedEvent);
+                            pushChoiceResolvedFollowups(nextEvents, newState, resolvedEvent, random);
+                            continue;
+                        }
 
                         const compareRollInteraction = createCompareRollChoice(
                             buildChoiceInteractionId(newState, 'compare-roll', payload.sourceAbilityId, payload.playerId),

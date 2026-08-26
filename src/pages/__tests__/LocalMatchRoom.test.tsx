@@ -1,9 +1,9 @@
 /* @vitest-environment happy-dom */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameRuntimeAdapter } from '../../games/gameRuntimeAdapter';
+import type { GameRuntimeAdapter, GameRuntimeLocalSetupGateProps } from '../../games/gameRuntimeAdapter';
 
 let mockSearchParams = new URLSearchParams();
 let mockRuntimeAdapter: GameRuntimeAdapter | null = null;
@@ -283,5 +283,69 @@ describe('LocalMatchRoom', () => {
             setupSelections: { scenario: 'adapter-owned' },
         });
         expect(Object.keys(latestCall.seatControllers as Record<string, unknown>)).toEqual(['0', '1', '2', '3']);
+    });
+
+    it('游戏运行时 adapter 提供本地 setup gate 时，应先等待玩家确认，再用确认后的 setupData 开局', async () => {
+        mockSearchParams = new URLSearchParams('seed=mage-selection-gate');
+        const resolveLocalSetup = vi.fn(() => ({
+            numPlayers: 2,
+            setupData: {
+                mageWarsSeat0MageId: 'beastmaster_apprentice',
+                mageWarsSeat1MageId: 'priestess_apprentice',
+                setupSelections: {
+                    mageWarsSeat0MageId: 'beastmaster_apprentice',
+                    mageWarsSeat1MageId: 'priestess_apprentice',
+                },
+            },
+        }));
+        const LocalSetupGate = ({ onConfirm }: GameRuntimeLocalSetupGateProps) => (
+            <button
+                type="button"
+                data-testid="local-setup-gate-confirm"
+                onClick={() => onConfirm({
+                    numPlayers: 2,
+                    setupData: {
+                        mageWarsSeat0MageId: 'warlock_apprentice',
+                        mageWarsSeat1MageId: 'wizard_apprentice',
+                        setupSelections: {
+                            mageWarsSeat0MageId: 'warlock_apprentice',
+                            mageWarsSeat1MageId: 'wizard_apprentice',
+                        },
+                    },
+                })}
+            >
+                confirm setup
+            </button>
+        );
+        mockRuntimeAdapter = {
+            resolveLocalSetup,
+            LocalSetupGate,
+        };
+        const { LocalMatchRoom } = await import('../LocalMatchRoom');
+
+        render(<LocalMatchRoom />);
+
+        expect(screen.getByTestId('local-setup-gate-confirm')).toBeInTheDocument();
+        expect(screen.queryByTestId('local-game-provider-probe')).not.toBeInTheDocument();
+        expect(localGameProviderSpy).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByTestId('local-setup-gate-confirm'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        expect(resolveLocalSetup).toHaveBeenCalledWith({ searchParams: mockSearchParams });
+        const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        expect(latestCall.numPlayers).toBe(2);
+        expect(latestCall.setupData).toEqual({
+            mageWarsSeat0MageId: 'warlock_apprentice',
+            mageWarsSeat1MageId: 'wizard_apprentice',
+            setupSelections: {
+                mageWarsSeat0MageId: 'warlock_apprentice',
+                mageWarsSeat1MageId: 'wizard_apprentice',
+            },
+        });
+        expect(Object.keys(latestCall.seatControllers as Record<string, unknown>)).toEqual(['0', '1']);
     });
 });

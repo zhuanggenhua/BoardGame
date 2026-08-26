@@ -28,10 +28,12 @@ import {
     getPromptSourceId,
     getPromptsBySourceId,
     getSimpleChoicePrompt,
+    makeMinionDestroyedEvent,
     makeMatchState,
     resolveInteractionChain,
     respondCommand,
     triggerBaseAbilityWithMS,
+    type DestroyedMinionInput,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 
@@ -48,6 +50,7 @@ export {
     getPromptSourceId,
     getPromptsBySourceId,
     getSimpleChoicePrompt,
+    makeMinionDestroyedEvent,
     initAllAbilities,
     makeMatchState,
     maybeResolveReactionQueue,
@@ -75,31 +78,6 @@ export type {
 
 export const dummyRandom: RandomFn = defaultTestRandom;
 
-export interface DestroyedMinionInput {
-    minionUid: string;
-    minionDefId: string;
-    fromBaseIndex?: number;
-    ownerId: string;
-    destroyerId?: string;
-    reason?: string;
-    timestamp?: number;
-}
-
-export function makeMinionDestroyedEvent(input: DestroyedMinionInput): MinionDestroyedEvent {
-    return {
-        type: SU_EVENTS.MINION_DESTROYED,
-        payload: {
-            minionUid: input.minionUid,
-            minionDefId: input.minionDefId,
-            fromBaseIndex: input.fromBaseIndex ?? 0,
-            ownerId: input.ownerId,
-            destroyerId: input.destroyerId,
-            reason: input.reason ?? 'test_destroy',
-        },
-        timestamp: input.timestamp ?? 1000,
-    };
-}
-
 export function resolveDestroyedMinions(args: {
     state: MatchState<SmashUpCore>;
     currentPlayerId: string;
@@ -109,7 +87,7 @@ export function resolveDestroyedMinions(args: {
     options?: { skipDestroyEventKeys?: Set<string> };
 }) {
     return processDestroyTriggers(
-        args.destroyed.map(makeMinionDestroyedEvent),
+        args.destroyed.map(entry => makeMinionDestroyedEvent(entry, args.state)),
         args.state,
         args.currentPlayerId,
         args.random ?? dummyRandom,

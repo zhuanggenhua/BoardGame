@@ -752,6 +752,35 @@ describe('Frankenstein abilities', () => {
 });
 
 describe('frankenstein_igor 基地结算弃置触发', () => {
+    function triggerIgorDiscardAndChooseTarget(
+        core: ReturnType<typeof makeState>,
+        triggerMinionUid: string,
+        triggerMinionDefId: string,
+        targetMinionUid: string,
+    ) {
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid,
+            triggerMinionDefId,
+            random: defaultTestRandom,
+            now: 100,
+        });
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === targetMinionUid,
+            `Igor counter target ${targetMinionUid}`,
+            '0',
+            defaultTestRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        return resolved.events;
+    }
+
     it('非 Igor 随从被弃时不触发', () => {
         const core = makeState({
             bases: [
@@ -784,7 +813,7 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
         expect(result.events).toEqual([]);
     });
 
-    it('Igor 自身被弃时自动在其他基地己方唯一随从上放指示物', () => {
+    it('Igor 自身被弃时可选择在其他基地己方唯一随从上放指示物', () => {
         const core = makeState({
             bases: [
                 {
@@ -800,22 +829,14 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
             ],
         });
 
-        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
-            state: core,
-            playerId: '0',
-            baseIndex: 0,
-            triggerMinionUid: 'igor1',
-            triggerMinionDefId: 'frankenstein_igor',
-            random: defaultTestRandom,
-            now: 100,
-        });
+        const events = triggerIgorDiscardAndChooseTarget(core, 'igor1', 'frankenstein_igor', 't1');
 
-        expect(result.events).toEqual([
+        expect(events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.POWER_COUNTER_ADDED,
                 payload: expect.objectContaining({ minionUid: 't1', baseIndex: 1 }),
             }),
-        ]);
+        );
     });
 
     it('POD 版 Igor 自身被弃时也会触发放置指示物', () => {
@@ -834,17 +855,9 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
             ],
         });
 
-        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
-            state: core,
-            playerId: '0',
-            baseIndex: 0,
-            triggerMinionUid: 'igor-pod-1',
-            triggerMinionDefId: 'frankenstein_igor_pod',
-            random: defaultTestRandom,
-            now: 100,
-        });
+        const events = triggerIgorDiscardAndChooseTarget(core, 'igor-pod-1', 'frankenstein_igor_pod', 't1');
 
-        expect(result.events).toEqual([
+        expect(events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.POWER_COUNTER_ADDED,
                 payload: expect.objectContaining({
@@ -853,7 +866,7 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
                     reason: 'frankenstein_igor_pod',
                 }),
             }),
-        ]);
+        );
     });
 
     it('其他基地有多个己方随从时创建选择 prompt', () => {
@@ -1022,22 +1035,14 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
             ],
         });
 
-        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
-            state: core,
-            playerId: '0',
-            baseIndex: 0,
-            triggerMinionUid: 'igor1',
-            triggerMinionDefId: 'frankenstein_igor',
-            random: defaultTestRandom,
-            now: 100,
-        });
+        const events = triggerIgorDiscardAndChooseTarget(core, 'igor1', 'frankenstein_igor', 'ally1');
 
-        expect(result.events).toEqual([
+        expect(events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.POWER_COUNTER_ADDED,
                 payload: expect.objectContaining({ minionUid: 'ally1', baseIndex: 0 }),
             }),
-        ]);
+        );
     });
 
     it('giant_ant_drone 不会被 onMinionDiscardedFromBase 触发', () => {

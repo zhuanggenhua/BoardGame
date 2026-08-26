@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
+import ts from 'typescript';
+import { getCardDef } from '../data/cards';
 
 const ABILITIES_DIR = resolve(__dirname, '../abilities');
 const DOMAIN_DIR = resolve(__dirname, '../domain');
+const TESTS_DIR = resolve(__dirname);
 
 const APPROVED_DIRECT_PROTECTION_IMPORTS: Record<string, string> = {};
 
@@ -61,6 +64,15 @@ function getTypeScriptFiles(dir: string): string[] {
         .map((file) => join(dir, file));
 }
 
+function getTypeScriptFilesRecursive(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const filePath = join(dir, entry.name);
+        if (entry.isDirectory()) return getTypeScriptFilesRecursive(filePath);
+        if (entry.isFile() && entry.name.endsWith('.ts')) return [filePath];
+        return [];
+    });
+}
+
 function getAbilityFiles(): string[] {
     return getTypeScriptFiles(ABILITIES_DIR);
 }
@@ -69,7 +81,95 @@ function getDomainFiles(): string[] {
     return getTypeScriptFiles(DOMAIN_DIR);
 }
 
+function getTestFiles(): string[] {
+    return getTypeScriptFilesRecursive(TESTS_DIR);
+}
+
+function getPropertyNameText(name: ts.PropertyName): string | undefined {
+    if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+        return name.text;
+    }
+    return undefined;
+}
+
+function objectLiteralHasProperty(objectLiteral: ts.ObjectLiteralExpression, propertyName: string): boolean {
+    return objectLiteral.properties.some(property => {
+        if (ts.isShorthandPropertyAssignment(property)) {
+            return property.name.text === propertyName;
+        }
+        if (!ts.isPropertyAssignment(property)) {
+            return false;
+        }
+        return getPropertyNameText(property.name) === propertyName;
+    });
+}
+
+function collectStringLiteralPropertyAssignments(
+    content: string,
+    fileName: string,
+    propertyName: string,
+): Array<{ value: string; line: number }> {
+    const sourceFile = ts.createSourceFile(fileName, content, ts.ScriptTarget.Latest, true);
+    const matches: Array<{ value: string; line: number }> = [];
+
+    const scan = (node: ts.Node): void => {
+        if (
+            ts.isPropertyAssignment(node)
+            && getPropertyNameText(node.name) === propertyName
+            && (ts.isStringLiteral(node.initializer) || ts.isNoSubstitutionTemplateLiteral(node.initializer))
+        ) {
+            const position = sourceFile.getLineAndCharacterOfPosition(node.initializer.getStart(sourceFile));
+            matches.push({ value: node.initializer.text, line: position.line + 1 });
+        }
+        ts.forEachChild(node, scan);
+    };
+
+    scan(sourceFile);
+    return matches;
+}
+
+function countCallsMissingObjectProperty(content: string, fileName: string, calleeName: string, propertyName: string): number {
+    const sourceFile = ts.createSourceFile(fileName, content, ts.ScriptTarget.Latest, true);
+    let count = 0;
+
+    const scan = (node: ts.Node): void => {
+        if (
+            ts.isCallExpression(node)
+            && ts.isIdentifier(node.expression)
+            && node.expression.text === calleeName
+        ) {
+            const paramsArg = node.arguments[1];
+            if (!paramsArg || !ts.isObjectLiteralExpression(paramsArg) || !objectLiteralHasProperty(paramsArg, propertyName)) {
+                count += 1;
+            }
+        }
+        ts.forEachChild(node, scan);
+    };
+
+    scan(sourceFile);
+    return count;
+}
+
 describe('SmashUp effect semantics 审计', () => {
+    it('测试里的 buriedCardDefId 字面量必须来自正式卡牌定义，不能用不存在的假牌绕过规则前置条件', () => {
+        const offenders: string[] = [];
+
+        for (const filePath of getTestFiles()) {
+            const fileName = filePath.split(/[/\\]__tests__[/\\]/).pop() ?? filePath;
+            const content = readFileSync(filePath, 'utf-8');
+            for (const literal of collectStringLiteralPropertyAssignments(content, fileName, 'buriedCardDefId')) {
+                if (!getCardDef(literal.value)) {
+                    offenders.push(`${fileName}:${literal.line} buriedCardDefId='${literal.value}' 未命中正式卡牌定义`);
+                }
+            }
+        }
+
+        expect(
+            offenders,
+            `发现测试手写了不存在的埋葬牌定义，可能让 onBuriedCardUncovered / canTrigger 误判：\n${offenders.join('\n')}`,
+        ).toEqual([]);
+    });
+
     it('业务能力文件不得静默新增直连保护 API 的绕路入口', () => {
         const offenders: string[] = [];
 
@@ -362,9 +462,12 @@ describe('SmashUp effect semantics 审计', () => {
         for (const filePath of targetFiles) {
             const fileName = filePath.split(/[/\\]/).pop() ?? filePath;
             const content = readFileSync(filePath, 'utf-8');
-            const legacyFallbackCount = [...content.matchAll(/buildValidatedReturnEvents\([^)]*?\{([\s\S]*?)\}\s*\)/g)]
-                .filter(([, block]) => !/sourcePlayerId\s*:/.test(block))
-                .length;
+            const legacyFallbackCount = countCallsMissingObjectProperty(
+                content,
+                fileName,
+                'buildValidatedReturnEvents',
+                'sourcePlayerId',
+            );
 
             if (legacyFallbackCount === 0) {
                 if (fileName in APPROVED_LEGACY_RETURN_GATEWAY_CALL_SITES) {
@@ -397,9 +500,12 @@ describe('SmashUp effect semantics 审计', () => {
         for (const filePath of targetFiles) {
             const fileName = filePath.split(/[/\\]/).pop() ?? filePath;
             const content = readFileSync(filePath, 'utf-8');
-            const legacyFallbackCount = [...content.matchAll(/buildValidatedMoveEvents\([^)]*?\{([\s\S]*?)\}\s*\)/g)]
-                .filter(([, block]) => !/sourcePlayerId\s*:/.test(block))
-                .length;
+            const legacyFallbackCount = countCallsMissingObjectProperty(
+                content,
+                fileName,
+                'buildValidatedMoveEvents',
+                'sourcePlayerId',
+            );
 
             if (legacyFallbackCount === 0) {
                 if (fileName in APPROVED_LEGACY_MOVE_GATEWAY_CALL_SITES) {
@@ -432,9 +538,12 @@ describe('SmashUp effect semantics 审计', () => {
         for (const filePath of targetFiles) {
             const fileName = filePath.split(/[/\\]/).pop() ?? filePath;
             const content = readFileSync(filePath, 'utf-8');
-            const legacyFallbackCount = [...content.matchAll(/buildValidatedDestroyEvents\([^)]*?\{([\s\S]*?)\}\s*\)/g)]
-                .filter(([, block]) => !/sourcePlayerId\s*:/.test(block))
-                .length;
+            const legacyFallbackCount = countCallsMissingObjectProperty(
+                content,
+                fileName,
+                'buildValidatedDestroyEvents',
+                'sourcePlayerId',
+            );
 
             if (legacyFallbackCount === 0) {
                 if (fileName in APPROVED_LEGACY_DESTROY_GATEWAY_CALL_SITES) {
@@ -467,9 +576,12 @@ describe('SmashUp effect semantics 审计', () => {
         for (const filePath of targetFiles) {
             const fileName = filePath.split(/[/\\]/).pop() ?? filePath;
             const content = readFileSync(filePath, 'utf-8');
-            const legacyFallbackCount = [...content.matchAll(/buildValidatedCardToDeckBottomEvents\([^)]*?\{([\s\S]*?)\}\s*\)/g)]
-                .filter(([, block]) => !/sourcePlayerId\s*:/.test(block))
-                .length;
+            const legacyFallbackCount = countCallsMissingObjectProperty(
+                content,
+                fileName,
+                'buildValidatedCardToDeckBottomEvents',
+                'sourcePlayerId',
+            );
 
             if (legacyFallbackCount === 0) {
                 if (fileName in APPROVED_LEGACY_DECK_BOTTOM_GATEWAY_CALL_SITES) {

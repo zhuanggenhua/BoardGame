@@ -836,6 +836,15 @@ function tornadosDustDevilBeforeScoring(ctx: TriggerContext) {
     }));
 }
 
+function canTriggerTornadosDustDevilBeforeScoring(ctx: TriggerContext): boolean {
+    const scoringBaseIndex = ctx.baseIndex;
+    return scoringBaseIndex !== undefined
+        && !!ctx.sourceCardUid
+        && ctx.sourceBaseIndex !== undefined
+        && ctx.sourceBaseIndex !== scoringBaseIndex
+        && !!ctx.matchState;
+}
+
 const dustDevilPromptProgram = createPromptProgram<DustDevilContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'tornados_dust_devil',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -973,6 +982,7 @@ export function registerTornadosAbilities(): void {
     registerTrigger('tornados_dust_devil', 'beforeScoring', tornadosDustDevilBeforeScoring, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerTornadosDustDevilBeforeScoring,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerExtended('base_trailer_park', 'onMinionMoved', baseTrailerPark, { effectContract: SHAYU_TRIGGER_CONTRACT });

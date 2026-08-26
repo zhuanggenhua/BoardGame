@@ -1661,6 +1661,13 @@ function footOfTheKing(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     return { events: result.events, matchState: result.matchState };
 }
 
+function canTriggerFootOfTheKing(ctx: TriggerContext): boolean {
+    const playerId = ctx.sourceControllerId as PlayerId | undefined;
+    return !!ctx.matchState
+        && !!playerId
+        && getOwnedControlCandidates(ctx.state, playerId).length > 0;
+}
+
 function starReturn(ctx: AbilityContext, sourceId: StarReturnSourceId, extraMinionAfterReturn = false): AbilityResult {
     const reactionWindow = ctx.matchState ? getSmashUpReactionWindowContext(ctx.matchState) : undefined;
     const restrictToBaseIndex = sourceId === 'star_roamers_port_me_up' && reactionWindow?.windowType === 'afterScoring'
@@ -2642,6 +2649,7 @@ export function registerCeaseAndDesistAbilities(): void {
     registerTrigger('ignobles_foot_of_the_king', 'onTurnEnd', footOfTheKing, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerFootOfTheKing,
     });
     registerTrigger('star_roamers_medical_officer', 'onCardReturnedToHand', medicalOfficerOnReturn, {
         perInstance: true,

@@ -13,6 +13,7 @@ import { buildDiceThroneAiLegalActions } from '../ai';
 import { engineConfig } from '../game';
 import { canAdvancePhase, checkPlayCard } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
+import { TOKEN_IDS } from '../domain/ids';
 import type { DiceThroneCommand, DiceThroneCore } from '../domain/types';
 import { cmd, createHeroMatchup, createQueuedRandom, createRunner, createSetupWithHand, fixedRandom, getCardById, testSystems } from './test-utils';
 
@@ -341,6 +342,88 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
             payload: { pendingDamageId: 'online-ai-before-damage-received' },
             timestamp: 0,
         } as never)).toEqual({ valid: true });
+    });
+
+    it('线上反馈：工匠电能机器人加伤后，AI 让过响应应把 12 点伤害扣到生命值', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.sys.flowHalted = true;
+        state.core.activePlayerId = '0';
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.players['0'].tokens[TOKEN_IDS.SHOCK_BOT] = 1;
+        state.core.players['0'].artificerBotState = {
+            ...(state.core.players['0'].artificerBotState ?? {}),
+            [TOKEN_IDS.SHOCK_BOT]: {
+                built: true,
+                upgraded: false,
+                activationsUsedThisTurn: 1,
+            },
+        };
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shock-bot',
+            defenseAbilityId: 'meditation',
+            isDefendable: true,
+            defenseResolved: true,
+            preDefenseResolved: true,
+            damageResolved: false,
+            bonusDamage: 3,
+            settlementStage: 'afterDefense',
+        };
+        state.core.pendingDamage = {
+            id: 'artificer-shock-bot-before-damage-received',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 12,
+            currentDamage: 12,
+            responseType: 'beforeDamageReceived',
+            responderId: '1',
+            sourceAbilityId: 'shock-bot',
+            damageScope: 'attack',
+            modifiers: [{
+                type: 'token',
+                value: 3,
+                sourceId: TOKEN_IDS.SHOCK_BOT,
+            }],
+        };
+        injectRawBlockingInteraction(state, {
+            id: 'dt-token-response-artificer-shock-bot-before-damage-received',
+            kind: 'dt:token-response',
+            playerId: '1',
+            data: {},
+        });
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'skip-token-response',
+            commands: [{
+                type: 'SKIP_TOKEN_RESPONSE',
+                payload: { pendingDamageId: 'artificer-shock-bot-before-damage-received' },
+            }],
+        }));
+
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '1',
+                payload: { pendingDamageId: 'artificer-shock-bot-before-damage-received' },
+                timestamp: 0,
+            } as DiceThroneCommand,
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect((result.state as MatchState<DiceThroneCore>).core.players['1'].resources[RESOURCE_IDS.HP]).toBe(38);
+        expect((result.state as MatchState<DiceThroneCore>).core.pendingDamage ?? null).toBeNull();
+        expect((result.state as MatchState<DiceThroneCore>).core.pendingAttack).toMatchObject({
+            damageResolved: true,
+            resolvedDamage: 12,
+            settlementStage: 'postDamagePending',
+        });
     });
 
     it('线上反馈：已不属于当前骰盘的展示型奖励骰残留不应永久阻塞防御阶段推进', () => {

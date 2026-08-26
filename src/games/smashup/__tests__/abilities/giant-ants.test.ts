@@ -955,11 +955,7 @@ describe('巨蚁派系能力', () => {
             ],
         });
         const ms = makeMatchState(core);
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'igor', minionDefId: 'frankenstein_igor', fromBaseIndex: 0, ownerId: '0', reason: 'test' },
-            timestamp: 100,
-        };
+        const destroyEvt = { minionUid: 'igor', reason: 'test', timestamp: 100 };
         const result = resolveDestroyedMinions(ms, '0', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 雄蜂创建了防止消灭交互 → pendingSave
@@ -971,17 +967,20 @@ describe('巨蚁派系能力', () => {
         expect(result.events.filter((e: any) => e.type === SU_EVENTS.POWER_COUNTER_ADDED).length).toBe(0);
     });
 
-    it('雄蜂+Igor：reason=drone_skip 时 onDestroy 正常触发且不重复（消灭事件管线）', () => {
+    it('雄蜂+Igor：真实跳过防止消灭后，Igor onDestroy 正常触发且不重复', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
-                '1': makePlayer('1'),
+                '1': makePlayer('1', {
+                    hand: [makeCard('big-gulp', 'vampire_big_gulp', 'action', '1')],
+                }),
             },
+            currentPlayerIndex: 1,
             bases: [
                 {
                     defId: 'base_a',
                     minions: [
-                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerModifier: 2 }),
+                        makeMinion('d1', 'giant_ant_drone', '0', 3, { powerCounters: 1 }),
                         makeMinion('igor', 'frankenstein_igor', '0', 1, { powerModifier: 0 }),
                     ],
                     ongoingActions: [],
@@ -989,22 +988,60 @@ describe('巨蚁派系能力', () => {
             ],
         });
         const ms = makeMatchState(core);
-        // 模拟用户选择“不防止”后 handler 产生的事件
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'igor', minionDefId: 'frankenstein_igor', fromBaseIndex: 0, ownerId: '0', reason: 'giant_ant_drone_skip' },
-            timestamp: 100,
-        };
-        const result = resolveDestroyedMinions(ms, '0', [destroyEvt] as any, defaultTestRandom, 100);
+        ms.sys.phase = 'playCards';
 
-        // 雄蜂 trigger 跳过（reason check）→ 无 pendingSave
-        // MINION_DESTROYED 应保留
-        expect(result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED).length).toBe(1);
-        // Igor 的 onDestroy 应触发一次：POWER_COUNTER_ADDED 给雄蜂
-        const pcaEvents = result.events.filter((e: any) => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
+        const playResult = runCommand(
+            ms,
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '1', payload: { cardUid: 'big-gulp' } },
+            defaultTestRandom,
+        );
+        expect(playResult.success, playResult.error).toBe(true);
+
+        const bigGulpPrompt = getSimpleChoicePrompt(playResult.finalState, 'vampire_big_gulp');
+        const chooseIgor = getPromptOption(
+            bigGulpPrompt,
+            option => option.value?.minionUid === 'igor',
+            'Big Gulp target Igor option',
+        );
+        const afterChooseIgor = respondToPrompt(
+            playResult.finalState,
+            chooseIgor.id,
+            '1',
+            defaultTestRandom,
+        );
+        expect(afterChooseIgor.success, afterChooseIgor.error).toBe(true);
+
+        const dronePrompt = getSimpleChoicePrompt(afterChooseIgor.finalState, 'giant_ant_drone_prevent_destroy');
+        const skip = getPromptOption(dronePrompt, option => option.value?.skip === true, 'Drone skip option');
+        const afterSkip = respondToPrompt(
+            afterChooseIgor.finalState,
+            skip.id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(afterSkip.success, afterSkip.error).toBe(true);
+        expect(afterSkip.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED).length).toBe(1);
+        expect(getPromptCountBySourceId(afterSkip.finalState, 'giant_ant_drone_prevent_destroy')).toBe(0);
+        expect(getPromptCountBySourceId(afterSkip.finalState, 'frankenstein_igor')).toBe(1);
+
+        const igorPrompt = getSimpleChoicePrompt(afterSkip.finalState, 'frankenstein_igor');
+        const chooseDrone = getPromptOption(
+            igorPrompt,
+            option => option.value?.minionUid === 'd1',
+            'Igor target Drone option',
+        );
+        const afterIgor = respondToPrompt(
+            afterSkip.finalState,
+            chooseDrone.id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(afterIgor.success, afterIgor.error).toBe(true);
+        const pcaEvents = afterIgor.events.filter((e: any) => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
         expect(pcaEvents.length).toBe(1);
-        // 不应产生新的防止消灭交互
-        if (result.matchState) expectNoPrompt(result.matchState);
+        expect(pcaEvents[0]?.payload?.minionUid).toBe('d1');
+        expect(getPromptCountBySourceId(afterIgor.finalState, 'frankenstein_igor')).toBe(0);
     });
 
     it('雄蜂：跨玩家场景 — 对手回合消灭己方随从时，交互属于随从所有者', () => {
@@ -1029,11 +1066,7 @@ describe('巨蚁派系能力', () => {
         const ms = makeMatchState(core);
 
         // 模拟玩家1消灭玩家0的随从
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', destroyerId: '1', reason: 'opponent_action' },
-            timestamp: 100,
-        };
+        const destroyEvt = { minionUid: 'm1', destroyerId: '1', reason: 'opponent_action', timestamp: 100 };
         const triggerResult = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 交互应属于玩家0（随从所有者），不是玩家1（消灭者）
@@ -1071,7 +1104,7 @@ describe('巨蚁派系能力', () => {
         const ms = makeMatchState(core);
 
         const destroyEvents = [
-            { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'd1', minionDefId: 'giant_ant_drone', fromBaseIndex: 0, ownerId: '0', reason: 'action' }, timestamp: 100 },
+            { minionUid: 'd1', reason: 'action', timestamp: 100 },
         ];
         const result = resolveDestroyedMinions(ms, '0', destroyEvents as any, defaultTestRandom, 100);
 
@@ -1116,7 +1149,7 @@ describe('巨蚁派系能力', () => {
         });
         // 预创建交互状态（模拟某个 afterScoring/onPhaseEnter 基地能力消灭了 m1）
         const destroyEvents = [
-            { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'action' }, timestamp: 100 },
+            { minionUid: 'm1', reason: 'action', timestamp: 100 },
         ];
         const ms = makeMatchState(core);
         ms.sys.phase = 'scoreBases';
@@ -1157,8 +1190,8 @@ describe('巨蚁派系能力', () => {
 
         // 同时消灭 m1 和 m2（不消灭雄蜂自身）
         const destroyEvents = [
-            { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'scoring' }, timestamp: 100 },
-            { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'm2', minionDefId: 'cthulhu_minion', fromBaseIndex: 0, ownerId: '0', reason: 'scoring' }, timestamp: 100 },
+            { minionUid: 'm1', reason: 'scoring', timestamp: 100 },
+            { minionUid: 'm2', reason: 'scoring', timestamp: 100 },
         ];
         const triggerResult = resolveDestroyedMinions(ms, '0', destroyEvents as any, defaultTestRandom, 100);
 
@@ -1219,11 +1252,7 @@ describe('巨蚁派系能力', () => {
             ],
         });
         const ms = makeMatchState(core);
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
-            timestamp: 100,
-        };
+        const destroyEvt = { minionUid: 'm1', reason: 'action', timestamp: 100 };
         const result = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 雄蜂创建了防止消灭交互 → pendingSave
@@ -1262,11 +1291,7 @@ describe('巨蚁派系能力', () => {
             ],
         });
         const ms = makeMatchState(core);
-        const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
-            timestamp: 100,
-        };
+        const destroyEvt = { minionUid: 'm1', reason: 'action', timestamp: 100 };
         const result = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // pendingSave
@@ -1298,9 +1323,12 @@ describe('巨蚁派系能力', () => {
         });
         const ms = makeMatchState(core);
         const destroyEvt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'giant_ant_drone_skip' },
+            minionUid: 'm1',
+            reason: 'giant_ant_drone_skip',
             timestamp: 100,
+            sourcePlayerId: '0',
+            sourceControllerId: '0',
+            sourceKind: 'nonAction',
         };
         const result = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
@@ -1441,17 +1469,7 @@ describe('巨蚁 POD 行为', () => {
         const triggerResult = resolveDestroyedMinions(
             makeMatchState(core),
             '0',
-            [{
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'm1',
-                    minionDefId: 'test_minion',
-                    fromBaseIndex: 0,
-                    ownerId: '0',
-                    reason: 'test_destroy',
-                },
-                timestamp: 1000,
-            }] as any,
+            [{ minionUid: 'm1', reason: 'test_destroy', timestamp: 1000 }] as any,
             defaultTestRandom,
             1000,
         );

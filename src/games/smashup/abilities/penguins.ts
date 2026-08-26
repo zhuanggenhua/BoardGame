@@ -643,6 +643,17 @@ function leapingAboardAfterScoring(ctx: TriggerContext): AbilityResult {
     };
 }
 
+function canTriggerLeapingAboardAfterScoring(ctx: TriggerContext): boolean {
+    const sourceBaseIndex = ctx.sourceBaseIndex ?? ctx.baseIndex;
+    if (sourceBaseIndex === undefined || !ctx.matchState) return false;
+    const playerId = ctx.sourceControllerId ?? ctx.playerId;
+    const player = ctx.state.players[playerId];
+    if (!player || !isMinionCard(player.deck[0])) return false;
+    const targetBaseDefId = getDeferredReplacementBaseDefId(ctx.matchState)
+        ?? ctx.state.bases[sourceBaseIndex]?.defId;
+    return !!targetBaseDefId;
+}
+
 function pebbleGiftTrigger(ctx: TriggerContext): AbilityResult {
     if (!canTriggerPebbleGift(ctx)) return { events: [] };
     const playerId = ctx.sourceControllerId ?? ctx.playerId;
@@ -727,6 +738,7 @@ export function registerPenguinAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerLeapingAboardAfterScoring,
     });
     registerTrigger('penguins_pebble_gift', 'onMinionPlayed', pebbleGiftTrigger, {
         mandatory: true,

@@ -31,6 +31,7 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpTestSystems } from './testRunner';
 import { createScoringBaseRef, createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
 import { getSmashUpReactionSession } from '../domain/reactionSession';
+import { destroyMinion as buildDomainMinionDestroyedEvent } from '../domain/abilityHelpers';
 
 // ============================================================================
 // 随从工厂
@@ -288,33 +289,110 @@ export function scoreBaseViaFlow(
 
 export interface DestroyedMinionInput {
     minionUid: string;
-    minionDefId: string;
+    minionDefId?: string;
     fromBaseIndex?: number;
-    ownerId: string;
+    ownerId?: string;
+    controllerId?: string;
     destroyerId?: string;
     reason?: string;
     timestamp?: number;
+    sourcePlayerId?: string;
+    sourceCardUid?: string;
+    sourceDefId?: string;
+    sourceControllerId?: string;
+    sourceBaseIndex?: number;
+    sourceKind?: 'action' | 'nonAction';
 }
 
 type DestroyedMinionLike = DestroyedMinionInput | MinionDestroyedEvent;
 
-export function makeMinionDestroyedEvent(input: DestroyedMinionLike): MinionDestroyedEvent {
+function getCoreForDestroyedEvent(state?: SmashUpCore | MatchState<SmashUpCore>): SmashUpCore | undefined {
+    if (!state) return undefined;
+    return 'core' in state ? state.core : state;
+}
+
+function findDestroyedMinionInputSource(
+    core: SmashUpCore | undefined,
+    minionUid: string,
+): { minion: MinionOnBase; baseIndex: number } | undefined {
+    if (!core) return undefined;
+    for (const [baseIndex, base] of core.bases.entries()) {
+        const minion = base.minions.find(candidate => candidate.uid === minionUid);
+        if (minion) return { minion, baseIndex };
+    }
+    return undefined;
+}
+
+export function makeMinionDestroyedEvent(
+    input: DestroyedMinionLike,
+    state?: SmashUpCore | MatchState<SmashUpCore>,
+): MinionDestroyedEvent {
     if ('payload' in input) {
-        return input;
+        return makeMinionDestroyedEvent({
+            minionUid: input.payload.minionUid,
+            minionDefId: input.payload.minionDefId,
+            fromBaseIndex: input.payload.fromBaseIndex,
+            ownerId: input.payload.ownerId,
+            controllerId: input.payload.controllerId,
+            destroyerId: input.payload.destroyerId,
+            reason: input.payload.reason,
+            timestamp: input.timestamp,
+            sourcePlayerId: input.payload.sourcePlayerId,
+            sourceCardUid: input.payload.sourceCardUid,
+            sourceDefId: input.payload.sourceDefId,
+            sourceControllerId: input.payload.sourceControllerId,
+            sourceBaseIndex: input.payload.sourceBaseIndex,
+            sourceKind: input.payload.sourceKind,
+        }, state);
     }
 
-    return {
-        type: 'su:minion_destroyed',
-        payload: {
-            minionUid: input.minionUid,
-            minionDefId: input.minionDefId,
-            fromBaseIndex: input.fromBaseIndex ?? 0,
-            ownerId: input.ownerId,
-            destroyerId: input.destroyerId,
-            reason: input.reason ?? 'test_destroy',
-        },
-        timestamp: input.timestamp ?? 1000,
-    } as MinionDestroyedEvent;
+    const located = findDestroyedMinionInputSource(getCoreForDestroyedEvent(state), input.minionUid);
+    if (located) {
+        if (input.minionDefId && input.minionDefId !== located.minion.defId) {
+            throw new Error(`makeMinionDestroyedEvent got stale minionDefId for "${input.minionUid}": ${input.minionDefId} !== ${located.minion.defId}.`);
+        }
+        if (input.fromBaseIndex !== undefined && input.fromBaseIndex !== located.baseIndex) {
+            throw new Error(`makeMinionDestroyedEvent got stale fromBaseIndex for "${input.minionUid}": ${input.fromBaseIndex} !== ${located.baseIndex}.`);
+        }
+        if (input.ownerId && input.ownerId !== located.minion.owner) {
+            throw new Error(`makeMinionDestroyedEvent got stale ownerId for "${input.minionUid}": ${input.ownerId} !== ${located.minion.owner}.`);
+        }
+        if (input.controllerId && input.controllerId !== located.minion.controller) {
+            throw new Error(`makeMinionDestroyedEvent got stale controllerId for "${input.minionUid}": ${input.controllerId} !== ${located.minion.controller}.`);
+        }
+    }
+    const minionDefId = input.minionDefId ?? located?.minion.defId;
+    const fromBaseIndex = input.fromBaseIndex ?? located?.baseIndex;
+    const ownerId = input.ownerId ?? located?.minion.owner;
+    const controllerId = input.controllerId ?? located?.minion.controller;
+    if (!minionDefId || fromBaseIndex === undefined || !ownerId) {
+        throw new Error(`makeMinionDestroyedEvent could not derive minion event fields for "${input.minionUid}". Pass a state containing the minion, or provide minionDefId/fromBaseIndex/ownerId explicitly.`);
+    }
+
+    return buildDomainMinionDestroyedEvent(
+        input.minionUid,
+        minionDefId,
+        fromBaseIndex,
+        ownerId,
+        input.destroyerId,
+        input.reason ?? 'test_destroy',
+        input.timestamp ?? 1000,
+        input.sourceKind,
+        controllerId,
+        input.sourcePlayerId !== undefined
+            || input.sourceCardUid !== undefined
+            || input.sourceDefId !== undefined
+            || input.sourceControllerId !== undefined
+            || input.sourceBaseIndex !== undefined
+            ? {
+                ...(input.sourcePlayerId !== undefined ? { sourcePlayerId: input.sourcePlayerId } : {}),
+                ...(input.sourceCardUid !== undefined ? { sourceCardUid: input.sourceCardUid } : {}),
+                ...(input.sourceDefId !== undefined ? { sourceDefId: input.sourceDefId } : {}),
+                ...(input.sourceControllerId !== undefined ? { sourceControllerId: input.sourceControllerId } : {}),
+                ...(input.sourceBaseIndex !== undefined ? { sourceBaseIndex: input.sourceBaseIndex } : {}),
+            }
+            : undefined,
+    );
 }
 
 export function resolveDestroyedMinions(
@@ -326,7 +404,7 @@ export function resolveDestroyedMinions(
     options?: { skipDestroyEventKeys?: Set<string> },
 ) {
     return processDestroyTriggers(
-        destroyed.map(makeMinionDestroyedEvent),
+        destroyed.map(entry => makeMinionDestroyedEvent(entry, state)),
         state,
         currentPlayerId,
         random,

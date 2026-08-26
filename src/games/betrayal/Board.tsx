@@ -1,4 +1,5 @@
 import React from "react";
+import { flushSync } from "react-dom";
 import { useInRouterContext } from "react-router-dom";
 import {
   BookOpen,
@@ -52,6 +53,10 @@ import { GameDebugPanel } from "../../components/game/framework/widgets/GameDebu
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import type { GameBoardProps } from "../../engine/transport/protocol";
+import {
+  getEntityRelationHighlightTone,
+  type EntityRelation,
+} from "../../engine/primitives";
 import type {
   BetrayalCommandMap,
   BetrayalBloodFromStonePeekabooOption,
@@ -124,6 +129,7 @@ import {
   resolveRoomTileAdjustmentOptions,
   resolveMagicCameraPhantomAttackTargets,
   resolveInventoryEffectId,
+  resolveBetrayalMonsterRelationToExplorer,
   resolveUseEffect,
 } from "./game";
 import {
@@ -1174,9 +1180,15 @@ function cloneRecentRollForDiscoveryDisplay(
   recentRoll: BetrayalRecentRollState | null,
 ): BetrayalRecentRollState | null {
   return recentRoll
-    ? {
+      ? {
         ...recentRoll,
         dice: [...recentRoll.dice],
+        requiredPlayerIds: recentRoll.requiredPlayerIds
+          ? [...recentRoll.requiredPlayerIds]
+          : undefined,
+        acknowledgedPlayerIds: recentRoll.acknowledgedPlayerIds
+          ? [...recentRoll.acknowledgedPlayerIds]
+          : undefined,
         consumedRabbitFootCardIds: [
           ...recentRoll.consumedRabbitFootCardIds,
         ],
@@ -1566,6 +1578,7 @@ function MonsterBoardToken({
   testIdPrefix = "betrayal-monster-board-token",
   targetHighlight = false,
   targetHighlightRole = "target",
+  targetHighlightRelation,
   targetHighlightTestId,
 }: {
   monster: BetrayalMonsterSummary;
@@ -1576,13 +1589,23 @@ function MonsterBoardToken({
   testIdPrefix?: string;
   targetHighlight?: boolean;
   targetHighlightRole?: "target" | "source";
+  targetHighlightRelation?: EntityRelation;
   targetHighlightTestId?: string;
 }) {
   const tokenAsset = monster.tokenAsset ?? monster.portraitAsset;
   const hasOfficialToken = Boolean(monster.tokenAsset);
+  const isMummyToken = isMummyMonsterSummary(monster);
   const isStunned = status === "stunned";
+  const tokenFrameSize = isMummyToken ? 48 : 52;
+  const tokenSurfaceSize = isMummyToken ? 40 : 42;
+  const tokenBackingSize = isMummyToken ? 44 : 46;
+  const tokenRadius = isMummyToken ? tokenSurfaceSize / 2 : 6;
+  const tokenBackingRadius = isMummyToken ? tokenBackingSize / 2 : 7;
+  const highlightTone = getEntityRelationHighlightTone(targetHighlightRelation);
+  const isHostileHighlight =
+    targetHighlight && highlightTone === "hostile";
   const outlineColor = targetHighlight
-    ? targetHighlightRole === "source"
+    ? isHostileHighlight
       ? "rgba(218,74,57,0.98)"
       : "rgba(34,197,94,0.98)"
     : quietFrame
@@ -1600,34 +1623,38 @@ function MonsterBoardToken({
 
   return (
     <span
-      className={`relative inline-flex h-[52px] w-[52px] items-center justify-center transition ${
+      className={`relative inline-flex items-center justify-center transition ${
         isStunned ? "-rotate-12 opacity-80 grayscale" : ""
       }`}
+      style={{ width: tokenFrameSize, height: tokenFrameSize }}
       data-testid={`${testIdPrefix}-${monster.id}`}
       data-monster-status={status}
       data-target-highlight={targetHighlight ? "true" : undefined}
+      data-token-role={isMummyToken ? "mummy-map-token" : "monster-map-token"}
     >
       {targetHighlight ? (
         <svg
-          className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[42px] w-[42px] -translate-x-1/2 -translate-y-1/2 overflow-visible"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 overflow-visible"
+          style={{ width: tokenSurfaceSize, height: tokenSurfaceSize }}
           data-testid={
             targetHighlightTestId ?? `${testIdPrefix}-outline-${monster.id}`
           }
           data-highlight-shape="token"
-          data-highlight-color={targetHighlightRole === "source" ? "red" : "green"}
+          data-highlight-color={isHostileHighlight ? "red" : "green"}
           data-highlight-role={targetHighlightRole}
+          data-entity-relation={targetHighlightRelation ?? undefined}
           data-highlight-layer-count="1"
           data-highlight-style="solid"
           data-highlight-anchor="token-surface"
           aria-hidden="true"
-          viewBox="0 0 42 42"
+          viewBox={`0 0 ${tokenSurfaceSize} ${tokenSurfaceSize}`}
         >
           <rect
             x="0"
             y="0"
-            width="42"
-            height="42"
-            rx="6"
+            width={tokenSurfaceSize}
+            height={tokenSurfaceSize}
+            rx={tokenRadius}
             fill="none"
             stroke={outlineColor}
             strokeWidth="4"
@@ -1636,17 +1663,26 @@ function MonsterBoardToken({
         </svg>
       ) : (
         <span
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[46px] w-[46px] -translate-x-1/2 -translate-y-1/2 rounded-[7px]"
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           data-testid={`${testIdPrefix}-outline-${monster.id}`}
           style={{
+            width: tokenBackingSize,
+            height: tokenBackingSize,
+            borderRadius: tokenBackingRadius,
             backgroundColor: outlineColor,
             filter: outlineShadow,
           }}
         />
       )}
       <span
-        className="relative z-10 flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[6px] bg-transparent"
+        className="relative z-10 flex items-center justify-center overflow-hidden bg-[rgba(16,11,8,0.28)]"
+        style={{
+          width: tokenSurfaceSize,
+          height: tokenSurfaceSize,
+          borderRadius: tokenRadius,
+        }}
         data-testid={`${testIdPrefix}-surface-${monster.id}`}
+        data-token-surface-size={String(tokenSurfaceSize)}
       >
         <OptimizedImage
           src={tokenAsset}
@@ -1654,7 +1690,9 @@ function MonsterBoardToken({
           alt={monster.name}
           className={
             hasOfficialToken
-              ? "h-full w-full scale-[1.18] object-cover brightness-110 saturate-110"
+              ? isMummyToken
+                ? "h-full w-full scale-[1.08] object-contain brightness-125 contrast-125 saturate-110"
+                : "h-full w-full scale-[1.18] object-cover brightness-110 saturate-110"
               : "h-full w-full scale-[1.08] object-cover brightness-125 saturate-125"
           }
           draggable={false}
@@ -1881,7 +1919,10 @@ function GirlBoardToken({
   onClick?: () => void;
   testIdPrefix?: string;
 }) {
+  const { i18n } = useTranslation("game-betrayal");
   const status = token.status ?? "placed";
+  const tokenAsset = token.asset;
+  const effectiveLocale = i18n.language || "zh-CN";
   const ownerLabel =
     status === "held-by-mummy"
       ? t("board.hauntTokens.girlHeldByMummy")
@@ -1891,22 +1932,39 @@ function GirlBoardToken({
           })
         : t("board.hauntTokens.girlPlaced");
   const label = `${t("board.hauntTokens.girl")}，${ownerLabel}`;
+  const unitTestId =
+    testIdPrefix === "betrayal-room-haunt-token"
+      ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`
+      : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`;
+  const isMummyAttachment = attachedTo === "mummy";
+  const tokenSizePx =
+    attachedTo === "room" ? 68 : isMummyAttachment ? 25 : 60;
   const unit = (
-    <svg
-      viewBox="0 0 48 48"
-      className={`block drop-shadow-[0_0_8px_rgba(255,139,209,0.56)] ${
-        attachedTo === "room" ? "h-12 w-12" : "h-9 w-9"
-      }`}
-      data-testid={
-        testIdPrefix === "betrayal-room-haunt-token"
-          ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`
-          : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`
-      }
+    <span
+      className={`block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[2px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_8px_rgba(255,216,154,0.38)]" : "p-[5px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
+      style={{ width: tokenSizePx, height: tokenSizePx }}
+      data-testid={unitTestId}
       data-token-attachment={attachedTo}
+      data-token-asset={tokenAsset ?? undefined}
+      data-token-visual-size={String(tokenSizePx)}
+      data-token-visual-tone="parchment-figure"
       aria-hidden="true"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
     >
+      {tokenAsset ? (
+        <OptimizedImage
+          src={tokenAsset}
+          locale={effectiveLocale}
+          alt=""
+          draggable={false}
+          className="h-full w-full scale-[1.34] object-contain brightness-0 contrast-150"
+        />
+      ) : (
+        <svg
+          viewBox="0 0 48 48"
+          className="h-full w-full"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <path
             d="M14 18.5c0-6.2 4.3-10.5 10-10.5s10 4.3 10 10.5c0 2.4-.7 4.7-2.1 6.5H16.1A11.5 11.5 0 0 1 14 18.5Z"
             fill="#4a122f"
@@ -1925,7 +1983,9 @@ function GirlBoardToken({
           <circle cx="21.8" cy="19.7" r="0.8" fill="#4a122f" />
           <circle cx="26.2" cy="19.7" r="0.8" fill="#4a122f" />
           <path d="M22 23.2c1.2.8 2.8.8 4 0" stroke="#a73570" strokeWidth="1" strokeLinecap="round" />
-    </svg>
+        </svg>
+      )}
+    </span>
   );
 
   if (interactive) {
@@ -2050,6 +2110,9 @@ function BetrayalVisualTransitionLayer({
   onComplete: (transitionId: string) => void;
 }) {
   const { t } = useTranslation("game-betrayal");
+  const [isAnimationTokenHidden, setIsAnimationTokenHidden] =
+    React.useState(false);
+  const completeTimerRef = React.useRef<number | null>(null);
   const targetRect = transition.targetRect;
   const sourceCenter = {
     x: transition.sourceRect.left + transition.sourceRect.width / 2,
@@ -2061,8 +2124,10 @@ function BetrayalVisualTransitionLayer({
         y: targetRect.top + targetRect.height / 2,
       }
     : sourceCenter;
+  const isMoveTransition =
+    transition.kind === "explorer-move" || transition.kind === "monster-move";
   const finalScale =
-    transition.kind === "possession-gain" ? 0.36 : 0.9;
+    transition.kind === "possession-gain" ? 0.36 : isMoveTransition ? 1 : 0.9;
   const transitionWidth =
     transition.kind === "possession-gain"
       ? Math.min(transition.sourceRect.width, 220)
@@ -2105,6 +2170,30 @@ function BetrayalVisualTransitionLayer({
     </div>
   ) : null;
 
+  React.useEffect(() => {
+    setIsAnimationTokenHidden(false);
+    return () => {
+      if (completeTimerRef.current !== null) {
+        window.clearTimeout(completeTimerRef.current);
+        completeTimerRef.current = null;
+      }
+    };
+  }, [transition.id]);
+
+  const handleAnimationComplete = React.useCallback(() => {
+    if (!isMoveTransition) {
+      onComplete(transition.id);
+      return;
+    }
+    flushSync(() => {
+      setIsAnimationTokenHidden(true);
+    });
+    completeTimerRef.current = window.setTimeout(() => {
+      completeTimerRef.current = null;
+      onComplete(transition.id);
+    }, 0);
+  }, [isMoveTransition, onComplete, transition.id]);
+
   return (
     <HudPortal>
       <div
@@ -2120,7 +2209,12 @@ function BetrayalVisualTransitionLayer({
           <motion.div
             data-testid={`betrayal-visual-transition-${transition.id}`}
             data-transition-kind={transition.kind}
-            data-transition-phase="moving"
+            data-transition-phase={
+              isAnimationTokenHidden ? "finished" : "moving"
+            }
+            data-transition-token-visible={
+              isAnimationTokenHidden ? "false" : "true"
+            }
             aria-hidden="true"
             className="pointer-events-none absolute flex items-center justify-center"
             style={{
@@ -2129,23 +2223,28 @@ function BetrayalVisualTransitionLayer({
               width: transitionWidth,
               height: transitionHeight,
               transformOrigin: "center center",
+              visibility: isAnimationTokenHidden ? "hidden" : "visible",
             }}
-            initial={{ scale: 1.06, opacity: 1, x: 0, y: 0 }}
+            initial={{ scale: isMoveTransition ? 1 : 1.06, opacity: 1, x: 0, y: 0 }}
             animate={{
               scale: finalScale,
-              opacity: [1, 1, 0],
+              opacity: isMoveTransition ? 1 : [1, 1, 0],
               x: targetCenter.x - sourceCenter.x,
               y: targetCenter.y - sourceCenter.y,
             }}
             transition={{
               duration: BETRAYAL_VISUAL_TRANSITION_DURATION_MS / 1000,
               ease: [0.22, 0.8, 0.24, 1],
-              opacity: {
-                duration: BETRAYAL_VISUAL_TRANSITION_DURATION_MS / 1000,
-                times: [0, 0.78, 1],
-              },
+              ...(isMoveTransition
+                ? {}
+                : {
+                    opacity: {
+                      duration: BETRAYAL_VISUAL_TRANSITION_DURATION_MS / 1000,
+                      times: [0, 0.78, 1],
+                    },
+                  }),
             }}
-            onAnimationComplete={() => onComplete(transition.id)}
+            onAnimationComplete={handleAnimationComplete}
           >
             {content}
           </motion.div>
@@ -3414,7 +3513,7 @@ function CharacterSelectScreen({
     : !scenarioCardConfirmed
       ? t("board.characterSelect.confirmScenarioCard")
       : !scenarioAllParticipantsConfirmed
-        ? t("board.characterSelect.waitScenarioConfirmations")
+        ? t("board.characterSelect.scenarioConfirmed")
       : proposedScenarioIsPlayable
         ? t("board.characterSelect.startScenario")
         : t("board.characterSelect.cannotStartPendingScenario");
@@ -4873,6 +4972,34 @@ function ExplorerTraitTrackRail({
   );
 }
 
+function resolveRecentRollRequiredPlayerIdsForDisplay(
+  core: BetrayalCore,
+  recentRoll: BetrayalRecentRollState | null | undefined,
+): string[] {
+  if (!recentRoll) {
+    return [];
+  }
+  const configuredPlayerIds =
+    recentRoll.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ??
+    [];
+  if (configuredPlayerIds.length > 0) {
+    return configuredPlayerIds;
+  }
+  return core.playerIds.length > 0 ? [...core.playerIds] : [recentRoll.playerId];
+}
+
+function resolveRecentRollAcknowledgedPlayerIdsForDisplay(
+  recentRoll: BetrayalRecentRollState | null | undefined,
+): string[] {
+  return Array.from(
+    new Set(
+      recentRoll?.acknowledgedPlayerIds?.filter(
+        (playerId) => playerId.length > 0,
+      ) ?? [],
+    ),
+  );
+}
+
 type TraitOutcomePreviewMode = "damage" | "heal";
 
 function ExplorerTraitOutcomePreview({
@@ -5821,9 +5948,36 @@ function BetrayalHouseDice3DGroup({
     [rollDice],
   );
   const rerollingDieIndex = roll.lastRabbitFootRerollDieIndex ?? null;
-  const rerollingDiceIds = React.useMemo(
-    () => (rerollingDieIndex !== null ? [rerollingDieIndex + 1] : undefined),
-    [rerollingDieIndex],
+  const rollMotionId = buildRecentRollDisplayKey(roll) ?? roll.id;
+  const consumedRabbitFootSignature = roll.consumedRabbitFootCardIds.join(",");
+  const diceMotion = React.useMemo(
+    () => {
+      if (rerollingDieIndex !== null) {
+        return {
+          type: "reroll" as const,
+          id: [
+            roll.id,
+            "rabbit-foot",
+            rerollingDieIndex,
+            consumedRabbitFootSignature,
+            diceSignature,
+          ].join("::"),
+          dieIds: [rerollingDieIndex + 1],
+        };
+      }
+      if (animateInitialRoll) {
+        return { type: "roll" as const, id: rollMotionId };
+      }
+      return { type: "settled" as const };
+    },
+    [
+      animateInitialRoll,
+      consumedRabbitFootSignature,
+      diceSignature,
+      rerollingDieIndex,
+      roll.id,
+      rollMotionId,
+    ],
   );
   const [hasPhysicsState, setHasPhysicsState] = React.useState(false);
   const [physicsStates, setPhysicsStates] = React.useState<DicePhysicsState[]>(
@@ -5963,8 +6117,7 @@ function BetrayalHouseDice3DGroup({
       />
       <DiceBoxPhysicsSource
         dice={diceInputs}
-        isRolling={animateInitialRoll && rerollingDieIndex === null}
-        rerollingDiceIds={rerollingDiceIds}
+        motion={diceMotion}
         styleProfile={styleProfile}
         dieSkins={dieSkins}
         testId="betrayal-house-dice-physics-source"
@@ -8717,7 +8870,11 @@ export default function BetrayalBoard({
         ? t("board.status.damageKindGeneral")
         : t("board.status.damageKindPhysical");
   const pendingDamageReductionAmount = pendingDamageAllocation
-    ? Math.max(0, pendingDamageAllocation.originalAmount - pendingDamageAllocation.amount)
+    ? (pendingDamageAllocation.damageReductionAmount ??
+        Math.max(
+          0,
+          pendingDamageAllocation.originalAmount - pendingDamageAllocation.amount,
+        ))
     : 0;
   const pendingDamageReductionCardNames = resolveDamageReductionCardNames(
     pendingDamageExplorer,
@@ -9244,13 +9401,6 @@ export default function BetrayalBoard({
   const selectedTradeGiveText = selectedTradeGiveCardNames;
   const selectedTradeReturnText = selectedTradeReturnCardNames;
   const tradeReturnSelectorLabel = t("board.status.tradeReturnLabel");
-  const isTradeOrLootTargetSelectionActive =
-    core.recommendedAction === "trade" ||
-    previewState.tradeSelectionTouched ||
-    Boolean(selectedInventoryCard) ||
-    selectedTradeGiveCardIds.length > 0 ||
-    selectedDogTradeCardIds.length > 0 ||
-    selectedTradeReturnCardIds.length > 0;
   const attackWeaponCardStatuses = React.useMemo(
     () => resolveAttackWeaponCardStatuses(core),
     [core],
@@ -9715,6 +9865,25 @@ export default function BetrayalBoard({
     selectedDogTradeCardIds.length > 0 ||
     selectedTradeReturnCardIds.length > 0 ||
     Boolean(selectedCorpseLootTarget);
+  const isTradeDraftActive = Boolean(
+    !pendingTradeAgreement &&
+      !pendingSicknessExchange &&
+      !mummyPendingReward &&
+      !helpingHandsPendingReward &&
+      !isDustSicknessExchangeMode &&
+      !selectedCorpseLootTarget &&
+      !hasUsedTradeThisTurn &&
+      (core.recommendedAction === "trade" ||
+        previewState.tradeSelectionTouched ||
+        Boolean(selectedTradeTarget) ||
+        selectedTradeGiveCardIds.length > 0 ||
+        selectedDogTradeCardIds.length > 0 ||
+        selectedTradeReturnCardIds.length > 0),
+  );
+  const isTradeOrLootTargetSelectionActive =
+    isTradeDraftActive ||
+    previewState.tradeSelectionTouched ||
+    Boolean(selectedCorpseLootTarget);
   const shouldStartDustSicknessExchange =
     isDustSicknessExchangeAvailable && !hasTradeDraftSelection;
   const shouldShowInlineTradeConfirm = Boolean(
@@ -9723,7 +9892,7 @@ export default function BetrayalBoard({
     !mummyPendingReward &&
     !helpingHandsPendingReward &&
     !isDustSicknessExchangeMode &&
-    core.recommendedAction === "trade" &&
+    isTradeDraftActive &&
     !hasUsedTradeThisTurn &&
     tradeSelectionReady,
   );
@@ -10105,12 +10274,12 @@ export default function BetrayalBoard({
       ? t("board.status.cardUsedThisTurn")
       : t("board.status.noSelectedCard");
   const selectedInventoryDisplayText =
-    core.recommendedAction === "trade" && selectedTradeGiveText
+    isTradeDraftActive && selectedTradeGiveText
       ? selectedTradeGiveText
       : (selectedInventoryCard?.name ?? t("board.status.noSelectedCard"));
   const hasSelectedInventoryDisplay =
     Boolean(selectedInventoryCard) ||
-    (core.recommendedAction === "trade" && selectedTradeGiveText.length > 0);
+    (isTradeDraftActive && selectedTradeGiveText.length > 0);
   const magicCameraPhotoTargets = React.useMemo(
     () =>
       core.phase === "haunt"
@@ -10258,6 +10427,32 @@ export default function BetrayalBoard({
     core.scenarioRuntime.deadExplorerPlayerIds.includes(core.currentPlayer) &&
     core.scenarioRuntime.jackSpiritReleased &&
     Boolean(core.scenarioRuntime.jackSpiritRoomId);
+  const controlledMoveMonsterId = React.useMemo(() => {
+    if (
+      isDeadTraitorJackSpiritControlTurn &&
+      core.monsters.some((monster) => monster.id === "jack-spirit")
+    ) {
+      return "jack-spirit";
+    }
+    const feverishMonsterId = `feverish-${core.currentExplorer.playerId}`;
+    const controlsFeverish =
+      core.phase === "haunt" &&
+      core.scenarioRuntime.deadExplorerPlayerIds.includes(
+        core.currentExplorer.playerId,
+      ) &&
+      (core.scenarioRuntime.dust?.feverishPlayerIds ?? []).includes(
+        core.currentExplorer.playerId,
+      ) &&
+      core.monsters.some((monster) => monster.id === feverishMonsterId);
+    return controlsFeverish ? feverishMonsterId : null;
+  }, [
+    core.currentExplorer.playerId,
+    core.monsters,
+    core.phase,
+    core.scenarioRuntime.deadExplorerPlayerIds,
+    core.scenarioRuntime.dust?.feverishPlayerIds,
+    isDeadTraitorJackSpiritControlTurn,
+  ]);
   const monsterTurnStartActionSlot =
     monsterActionPanel.slots.find(
       (slot) => slot.kind === "turn-start" && slot.enabled && slot.monsterId,
@@ -11253,7 +11448,7 @@ export default function BetrayalBoard({
       !helpingHandsPendingReward &&
       !isDustSicknessExchangeMode &&
       !activeHauntTargetGuide &&
-      (pendingTradeAgreement || core.recommendedAction === "trade"),
+      (pendingTradeAgreement || isTradeDraftActive),
   );
   const tradeAgreementState = pendingTradeAgreement
     ? isPendingTradeForViewer
@@ -11775,6 +11970,35 @@ export default function BetrayalBoard({
       </button>
     </div>
   ) : null;
+  const recentRollDecisionPlayerIds = new Set(
+    [core.currentPlayer, core.activePlayerId].filter(
+      (playerId): playerId is string => Boolean(playerId),
+    ),
+  );
+  const hasAcknowledgeableRecentRoll = Boolean(
+    core.recentRoll &&
+      isAcknowledgeableRecentRollDisplay(core.recentRoll) &&
+      recentRollDecisionPlayerIds.has(core.recentRoll.playerId),
+  );
+  const recentRollRequiredPlayerIds =
+    hasAcknowledgeableRecentRoll && core.recentRoll
+      ? resolveRecentRollRequiredPlayerIdsForDisplay(core, core.recentRoll)
+      : [];
+  const recentRollAcknowledgedPlayerIds =
+    hasAcknowledgeableRecentRoll && core.recentRoll
+      ? resolveRecentRollAcknowledgedPlayerIdsForDisplay(core.recentRoll)
+      : [];
+  const recentRollConfirmedCount = recentRollRequiredPlayerIds.filter(
+    (playerId) => recentRollAcknowledgedPlayerIds.includes(playerId),
+  ).length;
+  const recentRollTotalCount = recentRollRequiredPlayerIds.length;
+  const hasCurrentViewerAcknowledgedRecentRoll =
+    recentRollAcknowledgedPlayerIds.includes(viewerPlayerId);
+  const canCurrentViewerAcknowledgeRecentRoll = Boolean(
+    hasAcknowledgeableRecentRoll &&
+      recentRollRequiredPlayerIds.includes(viewerPlayerId) &&
+      !hasCurrentViewerAcknowledgedRecentRoll,
+  );
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
   const hasLatestDiscoveryPendingCardResolution = Boolean(
@@ -11791,7 +12015,7 @@ export default function BetrayalBoard({
     mummyPendingReward || helpingHandsPendingReward,
   );
   const canDismissRecentRollByBackdrop =
-    !hasRecentRollModifier && !hasPendingAttackReward;
+    !hasRecentRollModifier && !hasPendingAttackReward && !hasAcknowledgeableRecentRoll;
   const shouldShowBlockingRecentRollOverlay = Boolean(
     core.recentRoll &&
     !isRecentRollDismissed &&
@@ -12000,7 +12224,7 @@ export default function BetrayalBoard({
   const latestDiscoveryContinueLabel = (() => {
     if (pendingLatestDiscoveryEventRoll) {
       if (hasCurrentViewerConfirmedLatestDiscoveryEventRoll) {
-        return t("board.discovery.waitingForAll", {
+        return t("board.discovery.confirmedWithProgress", {
           confirmed: pendingLatestDiscoveryEventRollConfirmedCount,
           total: pendingLatestDiscoveryEventRollTotalCount,
         });
@@ -12014,7 +12238,7 @@ export default function BetrayalBoard({
       return t("board.roll.backToBoard");
     }
     if (latestDiscoveryViewerHasAcknowledgedCardResolution) {
-      return t("board.discovery.waitingForAll", {
+      return t("board.discovery.confirmedWithProgress", {
         confirmed: latestDiscoveryCardResolutionConfirmedCount,
         total: latestDiscoveryCardResolutionTotalCount,
       });
@@ -12338,18 +12562,51 @@ export default function BetrayalBoard({
       core.recentRoll.deathPrevention?.nextPlayerId
     ) {
       dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, {});
-    } else if (isAcknowledgeableRecentRollDisplay(core.recentRoll)) {
-      dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, {});
+    } else if (hasAcknowledgeableRecentRoll) {
+      if (canCurrentViewerAcknowledgeRecentRoll) {
+        dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, {});
+      }
+      return;
     }
     setPreviewState((previousState) => ({
       ...previousState,
       dismissedRecentRollId:
         coreRecentRollDisplayKey ?? previousState.dismissedRecentRollId,
     }));
-  }, [core.recentRoll, coreRecentRollDisplayKey, dispatchCommand]);
+  }, [
+    canCurrentViewerAcknowledgeRecentRoll,
+    core.recentRoll,
+    coreRecentRollDisplayKey,
+    dispatchCommand,
+    hasAcknowledgeableRecentRoll,
+  ]);
   const handleConfirmExorciseRollReview = React.useCallback(() => {
     setConfirmedExorciseRollId(core.recentRoll?.id ?? null);
   }, [core.recentRoll?.id]);
+  const recentRollAcknowledgeLabel = !hasAcknowledgeableRecentRoll
+    ? t("board.roll.backToBoard")
+    : canCurrentViewerAcknowledgeRecentRoll
+      ? t("board.discovery.confirmWithProgress", {
+          confirmed: recentRollConfirmedCount,
+          total: recentRollTotalCount,
+        })
+      : t("board.discovery.confirmedWithProgress", {
+          confirmed: recentRollConfirmedCount,
+          total: recentRollTotalCount,
+        });
+  const recentRollAcknowledgeActionSlot = hasAcknowledgeableRecentRoll ? (
+    <button
+      type="button"
+      data-testid="betrayal-roll-continue"
+      data-recent-roll-confirmed-count={String(recentRollConfirmedCount)}
+      data-recent-roll-required-count={String(recentRollTotalCount)}
+      className={`pointer-events-auto min-w-[168px] shrink-0 px-5 text-[14px] shadow-[0_10px_22px_rgba(0,0,0,0.34)] ${diceConfirmButtonClass}`}
+      disabled={!canCurrentViewerAcknowledgeRecentRoll}
+      onClick={handleDismissRecentRoll}
+    >
+      {recentRollAcknowledgeLabel}
+    </button>
+  ) : null;
   const turnHintText =
     previewState.interactionMode === "helpingHandsTrollMove" &&
     selectedHelpingHandsTrollHandMoveEntry
@@ -12424,7 +12681,7 @@ export default function BetrayalBoard({
   const shouldShowRoomFocusTargetLabel =
     Boolean(roomFocusState) && !isMummyGirlRoomFocusAction;
   const tradeStatusCueState = (() => {
-    if (core.recommendedAction === "trade") {
+    if (isTradeDraftActive) {
       return null;
     }
     if (
@@ -12508,7 +12765,7 @@ export default function BetrayalBoard({
       }
       return t("board.status.actionCueBloodFromStoneSetupPlacementConfirm");
     }
-    if (core.recommendedAction === "trade" && !hasUsedTradeThisTurn) {
+    if (isTradeDraftActive && !hasUsedTradeThisTurn) {
       if (tradeSelectionReady) {
         return t("board.status.actionCueTradeRequest");
       }
@@ -12527,7 +12784,7 @@ export default function BetrayalBoard({
           ),
         });
       }
-      return t("board.status.actionCueTrade");
+      return t("board.status.actionCueTradeTarget");
     }
     if (selectedInventoryCard && !selectedCardUsedThisTurn) {
       return t("board.status.actionCueUseCard", {
@@ -12736,14 +12993,13 @@ export default function BetrayalBoard({
           roomId,
           ...(useSkeletonKey ? { useSkeletonKey: true } : {}),
         });
-      const finishMove = () => {
-        move();
-        focusRoomOnMap(roomId);
-      };
-      if (!startExplorerMoveVisual(roomId, finishMove)) {
-        move();
-        focusRoomOnMap(roomId);
+      if (controlledMoveMonsterId) {
+        startMonsterMoveVisual(controlledMoveMonsterId, roomId, () => {});
+      } else {
+        startExplorerMoveVisual(roomId, () => {});
       }
+      move();
+      focusRoomOnMap(roomId);
       setPreviewState((previousState) => ({
         ...previousState,
         interactionMode: useSkeletonKey ? "default" : "move",
@@ -12751,10 +13007,12 @@ export default function BetrayalBoard({
     },
     [
       dispatch,
+      controlledMoveMonsterId,
       focusRoomOnMap,
       isVisualBusy,
       skeletonKeyMoveTargetRoomIds,
       startExplorerMoveVisual,
+      startMonsterMoveVisual,
     ],
   );
 
@@ -13841,9 +14099,8 @@ export default function BetrayalBoard({
         monsterId,
         roomId,
       });
-    if (!startMonsterMoveVisual(monsterId, roomId, move)) {
-      move();
-    }
+    startMonsterMoveVisual(monsterId, roomId, () => {});
+    move();
     setInventoryPreviewCardId(null);
     setPreviewState((previousState) => ({
       ...previousState,
@@ -13959,14 +14216,9 @@ export default function BetrayalBoard({
         monsterId,
         roomId,
       });
-    const finishMove = () => {
-      move();
-      focusRoomOnMap(roomId);
-    };
-    if (!startMonsterMoveVisual(monsterId, roomId, finishMove)) {
-      move();
-      focusRoomOnMap(roomId);
-    }
+    startMonsterMoveVisual(monsterId, roomId, () => {});
+    move();
+    focusRoomOnMap(roomId);
     setInventoryPreviewCardId(null);
     setPreviewState((previousState) => ({
       ...previousState,
@@ -14890,7 +15142,7 @@ export default function BetrayalBoard({
         ? null
         : (options.tradeStatus ??
           (!isDustSicknessExchangeMode &&
-      core.recommendedAction === "trade" &&
+      isTradeDraftActive &&
       !pendingTradeAgreement
         ? resolveBetrayalTradeCardStatus(core, item.id, {
             ownerPlayerId: core.currentExplorer.playerId,
@@ -14905,7 +15157,7 @@ export default function BetrayalBoard({
     const isSelected =
       !isReadOnly &&
       (options.selected ??
-        (core.recommendedAction === "trade" &&
+        (isTradeDraftActive &&
       !isDustSicknessExchangeMode &&
       selectedTradeGiveCardIds.includes(item.id)
         ? true
@@ -14931,7 +15183,7 @@ export default function BetrayalBoard({
     const canModifyRecentRoll =
       !isReadOnly && !isPreview && rollModifierCardIds.has(item.id);
     const isTradeCompact =
-      isCompact && Boolean(frontVisual) && core.recommendedAction === "trade";
+      isCompact && Boolean(frontVisual) && isTradeDraftActive;
     const isDenseNoFrontCompact =
       isCompact && !frontVisual && Boolean(options.compactDenseNoFront);
     const isCompactDenseOmen = isDenseNoFrontCompact && item.kind === "omen";
@@ -14987,10 +15239,7 @@ export default function BetrayalBoard({
               options.onSelect();
               return;
             }
-            if (
-              core.recommendedAction === "trade" &&
-              !isDustSicknessExchangeMode
-            ) {
+            if (isTradeDraftActive && !isDustSicknessExchangeMode) {
               handleToggleTradeGiveCard(item.id);
               return;
             }
@@ -15002,7 +15251,10 @@ export default function BetrayalBoard({
               selectedInventoryReplacementRollTotal: null,
               selectedMaskTargetRoomIdsByTokenId: {},
               activeMaskTargetTokenId: null,
-              tradeSelectionTouched: true,
+              selectedTradeGiveCardIds: [],
+              selectedDogTradeCardIds: [],
+              selectedTradeReturnCardIds: [],
+              tradeSelectionTouched: false,
             }));
           }}
           data-testid={options.testId}
@@ -16672,18 +16924,16 @@ export default function BetrayalBoard({
                         resultStageClassName="w-full max-w-[520px] justify-self-center"
                         compactRowsClassName="grid-rows-[minmax(150px,1fr)_auto]"
                         actionSlot={
-                          isExorciseRollReview ? (
+                          isEndgameExorciseRollReview ? (
                             <button
                               type="button"
                               data-testid="betrayal-exorcise-roll-continue"
                               className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
                               onClick={handleConfirmExorciseRollReview}
                             >
-                              {isEndgameExorciseRollReview
-                                ? t("board.endgame.enterEndgame")
-                                : t("board.roll.backToBoard")}
+                              {t("board.endgame.enterEndgame")}
                             </button>
-                          ) : (
+                          ) : recentRollAcknowledgeActionSlot ?? (
                             <button
                               type="button"
                               data-testid="betrayal-roll-continue"
@@ -16706,7 +16956,7 @@ export default function BetrayalBoard({
                     onDismiss={handleDismissRecentRoll}
                     effectiveLocale={effectiveLocale}
                     rerollSelection={recentRollRerollSelection}
-                    actionSlot={rollModifierActionSlot}
+                    actionSlot={rollModifierActionSlot ?? recentRollAcknowledgeActionSlot}
                     actorLabel={resolveRecentRollActorLabel(core.recentRoll)}
                   />
                 )
@@ -17380,7 +17630,7 @@ export default function BetrayalBoard({
 
               {!shouldHideTableChromeForBlockingOverlay &&
               (shouldShowRoomFocusTargetLabel ||
-                (tradeStatusCueState && core.recommendedAction !== "trade") ||
+                (tradeStatusCueState && !isTradeDraftActive) ||
                 useDogTrade ||
                 selectedCorpseLootTarget ||
                 Boolean(dustHauntTraitSelector) ||
@@ -17431,7 +17681,7 @@ export default function BetrayalBoard({
                       {roomFocusState?.label}
                     </span>
                   ) : null}
-                  {tradeStatusCueState && core.recommendedAction !== "trade" ? (
+                  {tradeStatusCueState && !isTradeDraftActive ? (
                     <span
                       data-testid="betrayal-room-trade-status-cue"
                       data-role="status"
@@ -18471,8 +18721,9 @@ export default function BetrayalBoard({
                           {(() => {
                             const hasPlayers = occupants.length > 0;
                             const hasMonsters = monsters.length > 0;
+                            const hasCrowdedEntityRoom = hasPlayers && hasMonsters;
                             const tokenClusterClass =
-                              hasPlayers && hasMonsters ? "gap-1.5" : "gap-0";
+                              hasCrowdedEntityRoom ? "gap-2" : "gap-0";
                             const playerContainerClass = hasMonsters
                               ? "items-center"
                               : "items-center";
@@ -18482,6 +18733,11 @@ export default function BetrayalBoard({
                             return (
                               <div
                                 className={`pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${tokenClusterClass}`}
+                                data-room-token-layout={
+                                  hasCrowdedEntityRoom
+                                    ? "stable-entity-lanes"
+                                    : "single-entity-cluster"
+                                }
                               >
                                 {hasPlayers ? (
                                   <div
@@ -18594,7 +18850,7 @@ export default function BetrayalBoard({
                                           occupant.playerId;
                                       const tokenContent = (
                                         <>
-                                          <span className="relative z-10 inline-flex items-end gap-1">
+                                          <span className="relative z-10 inline-flex items-end gap-1.5">
                                             {renderAttackImpactSurface(
                                               occupant.playerId,
                                               "map",
@@ -18808,9 +19064,42 @@ export default function BetrayalBoard({
                                         isMonsterAttackMode &&
                                         selectedMonsterAttackSourceId ===
                                           monster.id;
+                                      const selectedMonsterAttackTargetPlayerId =
+                                        isSelectedMonsterAttackSource &&
+                                        selectedMonsterAttackEntry
+                                          ? Array.from(
+                                              selectedMonsterAttackEntry.targetPlayerIds,
+                                            )[0] ?? null
+                                          : null;
+                                      const monsterHighlightRelation =
+                                        selectedMonsterAttackTargetPlayerId
+                                          ? resolveBetrayalMonsterRelationToExplorer(
+                                              core,
+                                              monster.id,
+                                              selectedMonsterAttackTargetPlayerId,
+                                            )
+                                          : canSelectMonsterAttackMonster ||
+                                            canSelectPeekabooMonsterTarget
+                                            ? resolveBetrayalMonsterRelationToExplorer(
+                                                core,
+                                                monster.id,
+                                                core.currentExplorer.playerId,
+                                              )
+                                            : undefined;
                                       const monsterContent = (
                                         <>
-                                          <span className="relative z-10 inline-flex items-end gap-1">
+                                          <span
+                                            className={
+                                              monsterCarriesGirl
+                                                ? "relative z-10 inline-flex h-[78px] w-[52px] items-start justify-center"
+                                                : "relative z-10 inline-flex items-end gap-1.5"
+                                            }
+                                            data-monster-token-cluster={
+                                              monsterCarriesGirl
+                                                ? "mummy-carrying-girl"
+                                                : undefined
+                                            }
+                                          >
                                             <MonsterBoardToken
                                               monster={monster}
                                               locale={effectiveLocale}
@@ -18831,6 +19120,9 @@ export default function BetrayalBoard({
                                                   ? "source"
                                                   : "target"
                                               }
+                                              targetHighlightRelation={
+                                                monsterHighlightRelation
+                                              }
                                               targetHighlightTestId={
                                                 (canSelectMonsterTarget ||
                                                   canSelectHelpingHandsTrollMoveMonster ||
@@ -18843,11 +19135,13 @@ export default function BetrayalBoard({
                                             />
                                             {monsterCarriesGirl &&
                                             visibleGirlToken ? (
-                                              <GirlBoardToken
-                                                token={visibleGirlToken}
-                                                t={t}
-                                                attachedTo="mummy"
-                                              />
+                                              <span className="pointer-events-none absolute left-1/2 top-[57px] z-30 inline-flex -translate-x-1/2">
+                                                <GirlBoardToken
+                                                  token={visibleGirlToken}
+                                                  t={t}
+                                                  attachedTo="mummy"
+                                                />
+                                              </span>
                                             ) : null}
                                           </span>
                                           {isHauntGuideMonsterTarget ? (
@@ -19895,7 +20189,7 @@ export default function BetrayalBoard({
                   !helpingHandsPendingReward &&
                   !isDustSicknessExchangeMode &&
                   !activeHauntTargetGuide &&
-                  core.recommendedAction === "trade" &&
+                  isTradeDraftActive &&
                   canUseDogTrade &&
                   dogTradeTargets.length > 0 ? (
                     <div
@@ -19939,7 +20233,7 @@ export default function BetrayalBoard({
                   !helpingHandsPendingReward &&
                   !isDustSicknessExchangeMode &&
                   !activeHauntTargetGuide &&
-                  core.recommendedAction === "trade" &&
+                  isTradeDraftActive &&
                   selectedTradeTarget &&
                   !selectedCorpseLootTarget &&
                   selectedTradeTarget.inventory.length > 0 ? (
@@ -21177,7 +21471,7 @@ export default function BetrayalBoard({
         </MagnifyOverlay>
 
         {(!activeHauntTargetGuide &&
-          core.recommendedAction === "trade" &&
+          isTradeDraftActive &&
           !pendingTradeAgreement &&
           !pendingSicknessExchange &&
           !mummyPendingReward &&

@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { triggerBaseAbility } from '../../domain/baseAbilities';
@@ -179,18 +180,12 @@ describe('Kaiju 代表性玩法行为', () => {
                 }),
             ],
         });
-        const actionDestroy = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'protected',
+        const actionDestroy = makeMinionDestroyedEvent({minionUid: 'protected',
                 minionDefId: 'kaiju_kaijookey',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 destroyerId: '1',
-                reason: 'itty_critters_super_effective',
-            },
-            timestamp: 90,
-        } as any;
+                reason: 'itty_critters_super_effective', timestamp: 90 }) as any;
         const nonActionDestroy = {
             ...actionDestroy,
             payload: {

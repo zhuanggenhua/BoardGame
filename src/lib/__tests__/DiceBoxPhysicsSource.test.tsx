@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiceBoxPhysicsSource } from '../dice-physics/DiceBoxPhysicsSource';
 
 const createEngineMock = vi.fn();
+const settledMotion = { type: 'settled' } as const;
+const rollMotion = (id: string) => ({ type: 'roll', id }) as const;
+const rerollMotion = (id: string, dieIds: number[]) => ({ type: 'reroll', id, dieIds }) as const;
 
 vi.mock('../dice-box-threejs/engine', () => ({
     DiceBoxThreeEngine: {
@@ -74,7 +77,7 @@ describe('DiceBoxPhysicsSource', () => {
             render(
                 <DiceBoxPhysicsSource
                     dice={[{ id: 7, value: 6, isKept: false }]}
-                    isRolling={true}
+                    motion={rollMotion('layout-roll')}
                 />,
             );
 
@@ -127,7 +130,7 @@ describe('DiceBoxPhysicsSource', () => {
         const view = render(
             <DiceBoxPhysicsSource
                 dice={[{ id: 7, value: 6, isKept: false }]}
-                isRolling={false}
+                motion={settledMotion}
                 onPhysicsStatesChange={vi.fn()}
             />,
         );
@@ -139,7 +142,7 @@ describe('DiceBoxPhysicsSource', () => {
         view.rerender(
             <DiceBoxPhysicsSource
                 dice={[{ id: 7, value: 6, isKept: false }]}
-                isRolling={false}
+                motion={settledMotion}
                 onPhysicsStatesChange={vi.fn()}
             />,
         );
@@ -147,6 +150,61 @@ describe('DiceBoxPhysicsSource', () => {
         await act(async () => {});
         expect(createEngineMock).toHaveBeenCalledTimes(1);
         expect(engineMock.destroy).not.toHaveBeenCalled();
+    });
+
+    it('同一个投骰动画 key 的确认进度重渲染不会重新滚动骰子', async () => {
+        const engineMock = {
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            setCanvasDiagnostics: vi.fn(),
+            setDieSkins: vi.fn(),
+            getPhysicsState: vi.fn(),
+            hasDice: vi.fn().mockReturnValue(true),
+            rollToValues: vi.fn().mockResolvedValue(undefined),
+            rerollToValues: vi.fn().mockResolvedValue(undefined),
+            syncSettledValues: vi.fn(),
+            previewValues: vi.fn(),
+            clear: vi.fn(),
+            removeDice: vi.fn(),
+            restoreValues: vi.fn().mockResolvedValue(undefined),
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+
+        const view = render(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                motion={rollMotion('attack-roll-1')}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(engineMock.rerollToValues).toHaveBeenCalledTimes(1);
+        });
+        await waitFor(() => {
+            expect(view.getByTestId('dice-box-physics-source')).toHaveAttribute('data-dice-settled', 'true');
+        });
+
+        view.rerender(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                motion={rollMotion('attack-roll-1')}
+            />,
+        );
+
+        await act(async () => {});
+        expect(engineMock.rerollToValues).toHaveBeenCalledTimes(1);
+        expect(engineMock.syncSettledValues).toHaveBeenCalledWith([6]);
+
+        view.rerender(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                motion={rollMotion('attack-roll-2')}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(engineMock.rerollToValues).toHaveBeenCalledTimes(2);
+        });
     });
 
     it('运行期渲染失败时会清空物理状态并停用 3D 物理源', async () => {
@@ -171,7 +229,7 @@ describe('DiceBoxPhysicsSource', () => {
         render(
             <DiceBoxPhysicsSource
                 dice={[{ id: 7, value: 6, isKept: false }]}
-                isRolling={false}
+                motion={settledMotion}
                 onPhysicsStatesChange={onPhysicsStatesChange}
             />,
         );
@@ -210,9 +268,7 @@ describe('DiceBoxPhysicsSource', () => {
         const view = render(
             <DiceBoxPhysicsSource
                 dice={dice}
-                isRolling={false}
-                rerollingDiceIds={[7]}
-                rerollAnimationSeq={1}
+                motion={rerollMotion('reroll-1', [7])}
             />,
         );
 
@@ -224,9 +280,7 @@ describe('DiceBoxPhysicsSource', () => {
             view.rerender(
                 <DiceBoxPhysicsSource
                     dice={[{ id: 7, value: 6, isKept: false }]}
-                    isRolling={false}
-                    rerollingDiceIds={[7]}
-                    rerollAnimationSeq={2}
+                    motion={rerollMotion('reroll-2', [7])}
                 />,
             );
         });
@@ -275,7 +329,7 @@ describe('DiceBoxPhysicsSource', () => {
             render(
                 <DiceBoxPhysicsSource
                     dice={[{ id: 7, value: 6, isKept: false }]}
-                    isRolling={true}
+                    motion={rollMotion('active-roll')}
                 />,
             );
 

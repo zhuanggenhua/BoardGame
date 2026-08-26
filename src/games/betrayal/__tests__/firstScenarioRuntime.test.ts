@@ -158,6 +158,22 @@ function confirmScenarioCardForAllPlayers(core: BetrayalCore): BetrayalCore {
     );
 }
 
+function acknowledgeRecentRollForAllPlayers(core: BetrayalCore): BetrayalCore {
+    expect(core.recentRoll).toBeTruthy();
+    const recentRoll = core.recentRoll!;
+    const requiredPlayerIds = recentRoll.requiredPlayerIds?.length
+        ? recentRoll.requiredPlayerIds
+        : core.playerIds.length > 0
+            ? core.playerIds
+            : [recentRoll.playerId];
+    return requiredPlayerIds.reduce((draft, playerId) => {
+        if (!draft.recentRoll || draft.recentRoll.acknowledgedPlayerIds?.includes(playerId)) {
+            return draft;
+        }
+        return applyBetrayalCommand(draft, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, playerId, {});
+    }, core);
+}
+
 function startFirstScenarioFromCharacterSelect(core: BetrayalCore): BetrayalCore {
     let next = selectDefaultOpeningExplorers(core);
     next = confirmScenarioCardForAllPlayers(next);
@@ -5080,6 +5096,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(mummyTokens.find((token) => token.id === 'mummy-girl-token')).toMatchObject({
             kind: 'haunt-resource',
             label: '女孩',
+            asset: 'betrayal/tokens/haunts/mummy-girl.svg',
             visibility: 'public',
             source: 'haunt-contract',
             representativeOnly: true,
@@ -5172,6 +5189,9 @@ describe('Betrayal first scenario runtime', () => {
             label: '女孩',
             roomId: mummyRuntime?.girlRoomId,
             visibility: 'public',
+        });
+        expect(core.rooms.find((room) => room.id === mummyRuntime?.girlRoomId)).toMatchObject({
+            state: 'discovered',
         });
         expect(knowledgeTrack).toMatchObject({
             value: 0,
@@ -5791,10 +5811,11 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
-    it('木乃伊攻击奖励阶段由木乃伊控制者确认攻击骰盘，即使当前回合玩家不同', () => {
+    it('木乃伊攻击奖励阶段的攻击骰盘必须由本局玩家各确认一次，不能由一人代替全员确认', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
         const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const remainingPlayerIds = core.playerIds.filter((playerId) => playerId !== traitorId);
         const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
         const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)!.roomId;
         activateTestExplorer(core, traitorId);
@@ -5831,9 +5852,29 @@ describe('Betrayal first scenario runtime', () => {
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, heroId, {}),
-        )).toMatchObject({ valid: false });
+        )).toMatchObject({ valid: true });
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
+
+        expect(core.recentRoll).toMatchObject({
+            kind: 'attackRoll',
+            requiredPlayerIds: core.playerIds,
+            acknowledgedPlayerIds: [traitorId],
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {}),
+        )).toMatchObject({
+            valid: false,
+            error: '你已经确认过当前投骰结果。',
+        });
+        for (const playerId of remainingPlayerIds) {
+            expect(BetrayalDomain.validate(
+                { core, sys: {} as never },
+                createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, playerId, {}),
+            )).toMatchObject({ valid: true });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, playerId, {});
+        }
 
         expect(core.recentRoll).toBeNull();
         expect(resolveMummyPendingAttackReward(core)).toMatchObject({
@@ -21776,7 +21817,7 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {}),
         ).valid).toBe(false);
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        core = acknowledgeRecentRollForAllPlayers(core);
         expect(core.recentRoll).toBeNull();
 
         const secondUse = BetrayalDomain.validate(

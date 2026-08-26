@@ -829,8 +829,25 @@ describe('Me First! 响应窗口', () => {
         });
         expect(r5.steps[0]?.success).toBe(true);
         expect(r5.steps[0]?.events).toContain(SU_EVENTS.ACTION_PLAYED);
-        expect(r5.steps[0]?.events).toContain(SU_EVENTS.MINION_DESTROYED);
-        expect(r5.finalState.core.bases[0].minions.some(minion => minion.uid === 'strong-target')).toBe(false);
+        const doorstepPrompt = getSimpleChoicePrompt(r5.finalState, 'miskatonic_thing_on_the_doorstep');
+        const doorstepTarget = getPromptOption(
+            doorstepPrompt,
+            option => option.value?.minionUid === 'strong-target',
+            'Thing on the Doorstep chain target minion option',
+        );
+
+        const r6 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r5.finalState,
+        }).run({
+            name: 'miskatonic chain 1: 选老詹金斯目标',
+            commands: [respondCommand(doorstepTarget.id, '0')] as any[],
+        });
+        expect(r6.steps[0]?.success).toBe(true);
+        expect(r6.steps[0]?.events).toContain(SU_EVENTS.MINION_DESTROYED);
+        expect(r6.finalState.core.bases[0].minions.some(minion => minion.uid === 'strong-target')).toBe(false);
     });
 
     it('Me First! 窗口内大学派系先打《老詹金斯!?》后，窗口里仍可继续打出《最好不知道的事》', () => {
@@ -937,9 +954,26 @@ describe('Me First! 响应窗口', () => {
         });
         expect(r2.steps[0]?.success).toBe(true);
         expect(r2.steps[0]?.events).toContain(SU_EVENTS.ACTION_PLAYED);
-        expect(r2.steps[0]?.events).toContain(SU_EVENTS.MINION_DESTROYED);
+        const doorstepPrompt = getSimpleChoicePrompt(r2.finalState, 'miskatonic_thing_on_the_doorstep');
+        const doorstepTarget = getPromptOption(
+            doorstepPrompt,
+            option => option.value?.minionUid === 'reverse-strong-target',
+            'Thing on the Doorstep reverse target minion option',
+        );
 
-        const resumedChoice = getSimpleChoicePrompt(r2.finalState, 'smashup_reaction_choose');
+        const r2b = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r2.finalState,
+        }).run({
+            name: 'miskatonic chain 2: 选老詹金斯目标',
+            commands: [respondCommand(doorstepTarget.id, '0')] as any[],
+        });
+        expect(r2b.steps[0]?.success).toBe(true);
+        expect(r2b.steps[0]?.events).toContain(SU_EVENTS.MINION_DESTROYED);
+
+        const resumedChoice = getSimpleChoicePrompt(r2b.finalState, 'smashup_reaction_choose');
         const mandatoryOption = getPromptOption(
             resumedChoice,
             option => option.value?.kind === 'play_action' && option.value?.cardUid === 'mandatory-reverse',
@@ -952,7 +986,7 @@ describe('Me First! 响应窗口', () => {
             domain: SmashUpDomain,
             systems,
             playerIds: PLAYER_IDS,
-            setup: () => r2.finalState,
+            setup: () => r2b.finalState,
         }).run({
             name: 'miskatonic chain 2: 再打最好不知道的事',
             commands: [respondCommand(mandatoryOption.id, '0')] as any[],

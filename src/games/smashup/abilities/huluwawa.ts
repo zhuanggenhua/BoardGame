@@ -802,6 +802,15 @@ function huluwawaLiuWaBeforeScoring(ctx: TriggerContext): TriggerResult | SmashU
     };
 }
 
+function canTriggerHuluwawaLiuWaBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid) return false;
+    const source = findMinionOnBases(ctx.state, ctx.sourceCardUid);
+    if (!source || source.baseIndex !== ctx.baseIndex) return false;
+    return (ctx.state.timedPowerModifiers ?? []).some(modifier =>
+        modifier.minionUid === ctx.sourceCardUid && modifier.reason === 'huluwawa_liu_wa_talent',
+    );
+}
+
 function huluwawaQiWaTurnEnd(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (!ctx.sourceCardUid) return [];
     const source = findMinionOnBases(ctx.state, ctx.sourceCardUid);
@@ -919,6 +928,18 @@ function huluwawaLittleKingKongOnTalentUsed(ctx: TriggerContext): TriggerResult 
         events: [],
         matchState: queueOrSetCurrentInteraction(ctx.matchState, interaction),
     };
+}
+
+function canTriggerHuluwawaLittleKingKongOnTalentUsed(ctx: TriggerContext): boolean {
+    const titanUid = ctx.sourceCardUid;
+    if (!titanUid || !ctx.triggerMinionUid || !ctx.matchState) return false;
+    if (ctx.sourceControllerId !== ctx.playerId) return false;
+    if (hasLittleKingKongCopiedThisTurn(ctx.state, titanUid)) return false;
+
+    const titan = getTitanByUid(ctx.state, titanUid);
+    if (!titan || titan.defId !== 'huluwawa_little_king_kong' || titan.location.zone !== 'base') return false;
+
+    return getLittleKingKongCopyTalentCandidates(ctx.state, ctx.playerId, ctx.triggerMinionUid).length > 0;
 }
 
 const huluwawaDestroyForCounterProgram = createPromptProgram<
@@ -2076,6 +2097,7 @@ export function registerHuluwawaAbilities(): void {
     registerTrigger('huluwawa_liu_wa', 'beforeScoring', huluwawaLiuWaBeforeScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerHuluwawaLiuWaBeforeScoring,
     });
     registerTrigger('huluwawa_qi_wa', 'onTurnEnd', huluwawaQiWaTurnEnd, {
         perInstance: true,
@@ -2105,6 +2127,7 @@ export function registerHuluwawaAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        canTrigger: canTriggerHuluwawaLittleKingKongOnTalentUsed,
     });
 
     registerProtection('huluwawa_san_wa', 'destroy', huluwawaSanWaProtection);

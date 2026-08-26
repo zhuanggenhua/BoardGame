@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import {
@@ -4979,23 +4980,20 @@ describe('yuanhou 四派系代表性玩法行为', () => {
                 },
                 timestamp: 1000,
             } as any,
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'host',
-                    fromBaseIndex: 0,
-                    ownerId: '0',
-                    controllerId: '0',
-                    destroyerId: '1',
-                    reason: 'sharks_blood_in_the_water',
-                    sourcePlayerId: '1',
-                    sourceCardUid: 'blood-a',
-                    sourceDefId: 'sharks_blood_in_the_water',
-                    sourceControllerId: '1',
-                    sourceBaseIndex: 0,
-                },
+            makeMinionDestroyedEvent({
+                minionUid: 'host',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: 'sharks_blood_in_the_water',
+                sourcePlayerId: '1',
+                sourceCardUid: 'blood-a',
+                sourceDefId: 'sharks_blood_in_the_water',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
                 timestamp: 1001,
-            } as any,
+            }, core as any) as any,
         ], core as any, '1');
 
         expect(filtered.map(event => event.type)).toEqual([

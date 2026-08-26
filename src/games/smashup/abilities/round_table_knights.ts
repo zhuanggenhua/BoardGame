@@ -578,6 +578,15 @@ function goodDeedOnMove(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     return [];
 }
 
+function canTriggerGoodDeedOnMove(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return false;
+    if (ctx.moveToBaseIndex !== ctx.sourceBaseIndex || ctx.triggerMinion?.controller !== ctx.sourceControllerId) return false;
+    const action = ownBaseActionByUid(ctx.state, ctx.sourceControllerId, ctx.sourceBaseIndex, ctx.sourceCardUid);
+    if (!action) return false;
+    if (Number(action.metadata?.roundTableGoodDeedUsedTurn ?? -1) === ctx.state.turnNumber) return false;
+    return firstOtherBaseIndex(ctx.state, ctx.sourceBaseIndex) === undefined || !!ctx.matchState;
+}
+
 function buildMerlinsLibraryOptions(ctx: AbilityContext) {
     const moveOptions = allMinions(ctx.state, (minion, baseIndex) =>
         minion.controller === ctx.playerId && baseIndex !== ctx.baseIndex,
@@ -924,6 +933,12 @@ function questingBeastOnMove(ctx: TriggerContext): SmashUpEvent[] | TriggerResul
     return [
         addPowerCounter(ctx.triggerMinion.uid, ctx.sourceBaseIndex, 1, 'round_table_knights_the_questing_beast', ctx.now),
     ];
+}
+
+function canTriggerQuestingBeastOnMove(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId || !ctx.triggerMinion) return false;
+    return ctx.moveToBaseIndex === ctx.sourceBaseIndex
+        && ctx.triggerMinion.controller === ctx.sourceControllerId;
 }
 
 function excaliburAfterScoring(ctx: TriggerContext): SmashUpEvent[] {
@@ -1354,11 +1369,11 @@ export function registerRoundTableKnightAbilities(): void {
     }
 
     registerTrigger(LANCELOT, 'onMinionMoved', lancelotMoved, { perInstance: true, playerContext: 'sourceController', baseScoped: false });
-    registerTrigger(GOOD_DEED, 'onMinionMoved', goodDeedOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
+    registerTrigger(GOOD_DEED, 'onMinionMoved', goodDeedOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase', canTrigger: canTriggerGoodDeedOnMove });
     registerTrigger(THE_FISHER_KING, 'onMinionMoved', fisherKingOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
     registerTrigger(THE_GRAIL, 'onMinionMoved', grailOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
     registerTrigger(THE_GREEN_KNIGHT, 'onMinionMoved', greenKnightOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
-    registerTrigger(THE_QUESTING_BEAST, 'onMinionMoved', questingBeastOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
+    registerTrigger(THE_QUESTING_BEAST, 'onMinionMoved', questingBeastOnMove, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase', canTrigger: canTriggerQuestingBeastOnMove });
     registerTrigger(EXCALIBUR, 'afterScoring', excaliburAfterScoring, { perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
 
     registerProtection(EXCALIBUR, 'destroy', excaliburProtection);

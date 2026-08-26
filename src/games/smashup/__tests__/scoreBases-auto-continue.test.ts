@@ -12,6 +12,7 @@ import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
 import { postProcessSystemEvents } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
+import { createSmashUpEventSystem } from '../domain/systems';
 import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
 import type { MatchState } from '../../../core/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase } from '../types';
@@ -442,6 +443,82 @@ describe('scoreBases 阶段自动推进', () => {
         
         // 应该返回 undefined（不自动推进，因为 live ReactionSession 仍打开）
         expect(result).toBeUndefined();
+    });
+
+    it('线上反馈：score-after 空响应轮在后续恢复轮应自动收口', () => {
+        const basePlayer: PlayerState = {
+            id: '0',
+            factionIds: ['robot'],
+            hand: [],
+            deck: [],
+            discard: [],
+            vp: 0,
+            minionsPlayed: 0,
+            minionLimit: 1,
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const core = makeMinimalCore({
+            currentPlayerIndex: 2,
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': basePlayer,
+                '1': { ...basePlayer, id: '1', factionIds: ['pirate'] },
+                '2': { ...basePlayer, id: '2', factionIds: ['wizard'] },
+            },
+            bases: [makeBase('base_pirate_cove', [
+                makeMinion('2', 'robot_hoverbot', 5),
+            ])],
+            scoringEligibleBaseIndices: [0],
+        });
+        const baseState: MatchState<SmashUpCore> = {
+            core,
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: { current: undefined },
+            } as any,
+        };
+        const scoringState = setScoringSession(baseState, {
+            ...createScoringSession(core, [0]),
+            currentBaseRef: createScoringBaseRef(core, 0),
+            currentStep: 'awaiting-response-window',
+        });
+        const stalledState = startSmashUpReactionSession(scoringState, {
+            frameId: 'score-after:0:0',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '2',
+            consecutivePasses: 1,
+            passedPlayerIds: ['2'],
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        expect(buildSmashUpAiLegalActions({
+            playerId: '2',
+            state: stalledState as any,
+        })).toEqual([]);
+
+        const system = createSmashUpEventSystem();
+        const result = system.afterEvents?.({
+            state: stalledState,
+            events: [],
+            random: defaultTestRandom,
+            command: { type: 'ADVANCE_PHASE', playerId: '2', payload: {}, timestamp: 1 } as any,
+            playerIds: ['0', '1', '2'],
+            afterEventsRound: 0,
+            pendingAfterEventsToReduceCount: 0,
+            eventCommitEvidence: [],
+        } as any);
+
+        expect(result?.state).toBeDefined();
+        expect(getSmashUpReactionSession(result!.state!)).toBeUndefined();
+        expect(buildSmashUpAiLegalActions({
+            playerId: '2',
+            state: result!.state! as any,
+        }).some(action => action.kind === 'advance-phase')).toBe(true);
     });
     
     it('有交互时不应该自动推进', () => {

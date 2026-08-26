@@ -13,7 +13,16 @@ import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import type { SmashUpCore } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
-import { makeCard, makeMatchState, makeMinion, makePlayer, makeState } from '../helpers';
+import {
+    getPromptOption,
+    getSimpleChoicePrompt,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from '../helpers';
 import { runCommand } from '../testRunner';
 
 beforeAll(() => {
@@ -34,6 +43,30 @@ function runAction(core: SmashUpCore, command: { type: string; playerId: string;
     const result = runCommand(makeMatchState(core), command as any, defaultRandom);
     expect(result.success, result.error).toBe(true);
     return result.events;
+}
+
+function playBearNecessitiesAndDestroyMinion(core: SmashUpCore, minionUid: string, playerId = '0') {
+    const playResult = runCommand(
+        makeMatchState(core),
+        {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId,
+            payload: { cardUid: 'c1' },
+        } as any,
+        defaultRandom,
+    );
+    expect(playResult.success, playResult.error).toBe(true);
+    expect(playResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+
+    const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+    const option = getPromptOption(
+        prompt,
+        entry => entry?.value?.type === 'minion' && entry?.value?.uid === minionUid,
+        `bear necessities target option for ${minionUid}`,
+    );
+    const respondResult = respondToPrompt(playResult.finalState, option.id, playerId, defaultRandom);
+    expect(respondResult.success, respondResult.error).toBe(true);
+    return [...playResult.events, ...respondResult.events];
 }
 
 describe('onDestroy 基础设施', () => {
@@ -93,11 +126,7 @@ describe('onDestroy 基础设施', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'm1');
 
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.ACTION_PLAYED);
@@ -129,11 +158,7 @@ describe('onDestroy 基础设施', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'gremlin');
 
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.MINION_DESTROYED);

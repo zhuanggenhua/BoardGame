@@ -2448,6 +2448,7 @@ export function buildMinionTargetOptions(
         if (!minion) return false;
         return isMinionTargetAllowed(state, minion, c.baseIndex, {
             sourcePlayerId,
+            sourceDefId,
             sourceKind: effectSourceKind,
             effectType: semanticEffectType ?? 'destroy',
             respectActionProtection,

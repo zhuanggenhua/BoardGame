@@ -644,8 +644,8 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             resultTextParams?: Record<string, string | number>;
             resultTone?: 'neutral' | 'success' | 'warning' | 'danger';
             /**
-             * 无选项时的自动确认值。
-             * 由 compare-roll-choice 的 confirm 命令回传，并在领域层转为 CHOICE_RESOLVED。
+             * 无选项时的自动结算值。
+             * 没有真实规则选择时不创建 compare-roll-choice 弹层；事件系统直接转为 CHOICE_RESOLVED。
              */
             confirmValue?: {
                 statusId?: string;

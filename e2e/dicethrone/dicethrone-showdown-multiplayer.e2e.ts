@@ -95,55 +95,6 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     return path;
 };
 
-const saveLocatorScreenshot = async (
-    page: Page,
-    testInfo: TestInfo,
-    name: string,
-    testId: string,
-) => {
-    const path = getEvidenceScreenshotPath(testInfo, name);
-    await mkdir(dirname(path), { recursive: true });
-    const locator = page.getByTestId(testId);
-    const box = await locator.boundingBox();
-    if (!box) {
-        throw new Error(`Unable to resolve bounding box for ${testId}`);
-    }
-    await page.screenshot({
-        path,
-        clip: {
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height,
-        },
-    });
-    return path;
-};
-
-const expectCompareRollMainResultLayer = async (page: Page, timeout = 8000): Promise<void> => {
-    const panel = page.getByTestId('compare-roll-overlay');
-    await expect(panel).toBeVisible({ timeout });
-    await expect(panel).toHaveAttribute('data-placement', 'main-result-layer');
-    await expect(panel.locator('xpath=ancestor::*[@data-player-seat-anchor][1]')).toHaveCount(0);
-    await expect(panel.locator('[data-testid="dice-2d"]')).toHaveCount(0);
-    await expect(page.getByTestId('roll-spotlight-dice-content')).toHaveCount(0);
-    const layout = await page.evaluate(() => {
-        const panelNode = document.querySelector<HTMLElement>('[data-testid="compare-roll-overlay"]');
-        const panelRect = panelNode?.getBoundingClientRect();
-        if (!panelRect) return null;
-
-        return {
-            centerOffsetX: Math.abs(panelRect.left + panelRect.width / 2 - window.innerWidth / 2),
-            centerOffsetY: Math.abs(panelRect.top + panelRect.height / 2 - window.innerHeight / 2),
-            centerToleranceX: Math.max(24, window.innerWidth * 0.02),
-            centerToleranceY: Math.max(24, window.innerHeight * 0.02),
-        };
-    });
-    expect(layout).not.toBeNull();
-    expect(layout!.centerOffsetX).toBeLessThanOrEqual(layout!.centerToleranceX);
-    expect(layout!.centerOffsetY).toBeLessThanOrEqual(layout!.centerToleranceY);
-};
-
 const getRightDiceRail = (page: Page) => {
     const diceTray = page.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
     return {
@@ -404,74 +355,33 @@ test.describe('DiceThrone Showdown 双端右侧对掷面板', () => {
                 return {
                     interactionKind: interaction?.kind ?? null,
                     interactionPlayerId: interaction?.playerId ?? null,
-                    rollContextKind: context?.kind ?? null,
-                    rollContextStatus: context?.status ?? null,
-                    rollContextReplayOnly: context?.display?.replayOnly ?? null,
-                    dice: Array.isArray(context?.dice)
-                        ? context.dice.map((die) => die.value ?? null)
-                        : [],
-                };
-            }, {
-                timeout: 10000,
-                message: '等待 Showdown 普通确认后生成主结果层',
-            }).toMatchObject({
-                interactionKind: 'compare-roll-choice',
-                interactionPlayerId: '0',
-                rollContextKind: 'compare',
-                rollContextStatus: 'settled',
-                rollContextReplayOnly: true,
-                dice: compareDiceValues,
-            });
-
-            const hostOverlay = hostPage.getByTestId('compare-roll-overlay');
-            const guestOverlay = guestPage.getByTestId('compare-roll-overlay');
-
-            await expectCompareRollMainResultLayer(hostPage);
-            await expectCompareRollMainResultLayer(guestPage);
-            await expect(hostPage.getByText('枪战决斗')).toBeVisible();
-            await expect(guestPage.getByText('枪战决斗')).toBeVisible();
-            await expect(hostPage.getByTestId('compare-roll-participant-0')).toHaveCount(0);
-            await expect(hostPage.getByTestId('compare-roll-participant-1')).toHaveCount(0);
-            await expect(guestPage.getByTestId('compare-roll-participant-0')).toHaveCount(0);
-            await expect(guestPage.getByTestId('compare-roll-participant-1')).toHaveCount(0);
-            await expect(hostPage.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
-            await expect(guestPage.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
-
-            const hostResultText = (await hostPage.getByTestId('compare-roll-result').textContent())?.trim() ?? '';
-            const guestResultText = (await guestPage.getByTestId('compare-roll-result').textContent())?.trim() ?? '';
-            expect(hostResultText.length).toBeGreaterThan(0);
-            expect(guestResultText).toBe(hostResultText);
-            if (expectedBonusDamage === 2) {
-                expect(hostResultText).toContain('+2');
-            } else {
-                expect(hostResultText).not.toContain('+2');
-            }
-
-            const hostOpenPath = await saveLocatorScreenshot(hostPage, testInfo, 'showdown-host-open', 'compare-roll-overlay');
-            const guestOpenPath = await saveLocatorScreenshot(guestPage, testInfo, 'showdown-guest-open', 'compare-roll-overlay');
-            testInfo.annotations.push({ type: 'showdown-host-open', description: hostOpenPath });
-            testInfo.annotations.push({ type: 'showdown-guest-open', description: guestOpenPath });
-
-            await expect.poll(async () => {
-                const state = await getMatchState(matchId, hostPage) as OnlineMatchState;
-                return {
-                    interactionKind: state.sys?.interaction?.current?.kind ?? null,
                     phase: state.sys?.phase ?? null,
                     bonusDamage: state.core?.pendingAttack?.bonusDamage ?? null,
                     sourceAbilityId: state.core?.pendingAttack?.sourceAbilityId ?? null,
+                    rollContextKind: context?.kind ?? null,
+                    rollContextStatus: context?.status ?? null,
                 };
             }, {
                 timeout: 10000,
-                message: '等待 Showdown compare-roll 自动确认并写入加伤',
+                message: '等待 Showdown 普通确认后自动写入加伤且不生成主结果层',
             }).toMatchObject({
                 interactionKind: null,
+                interactionPlayerId: null,
                 phase: 'offensiveRoll',
                 bonusDamage: expectedBonusDamage,
                 sourceAbilityId: 'showdown',
             });
 
+            const hostOverlay = hostPage.getByTestId('compare-roll-overlay');
+            const guestOverlay = guestPage.getByTestId('compare-roll-overlay');
+
             await expect(hostOverlay).toBeHidden({ timeout: 5000 });
             await expect(guestOverlay).toBeHidden({ timeout: 5000 });
+
+            const hostResolvedPath = await saveEvidenceScreenshot(hostPage, testInfo, 'showdown-host-auto-resolved-without-overlay');
+            const guestResolvedPath = await saveEvidenceScreenshot(guestPage, testInfo, 'showdown-guest-auto-resolved-without-overlay');
+            testInfo.annotations.push({ type: 'showdown-host-auto-resolved-without-overlay', description: hostResolvedPath });
+            testInfo.annotations.push({ type: 'showdown-guest-auto-resolved-without-overlay', description: guestResolvedPath });
 
             await dispatchHarnessCommand(hostPage, 'ADVANCE_PHASE', '0');
             await expect.poll(async () => {

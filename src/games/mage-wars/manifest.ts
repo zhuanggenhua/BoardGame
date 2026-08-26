@@ -1,4 +1,5 @@
 import type { GameManifestEntry } from '../manifest.types';
+import { buildMageWarsSetupOptions } from './roomSetup';
 
 const entry: GameManifestEntry = {
     id: 'mage-wars',
@@ -13,6 +14,7 @@ const entry: GameManifestEntry = {
     icon: 'MW',
     allowLocalMode: false,
     playerOptions: [2],
+    setupOptions: buildMageWarsSetupOptions(),
     tags: ['tactical', 'card_driven', 'spellcasting'],
     bestPlayers: [2],
     ai: {

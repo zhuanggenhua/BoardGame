@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 /**
  * 大杀四方 - 武士派系能力测试
  *
@@ -1084,18 +1085,12 @@ describe('Samurai abilities', () => {
             }],
         });
         const state = makeMatchState(core);
-        const destroyEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'bushi-1',
+        const destroyEvent = makeMinionDestroyedEvent({minionUid: 'bushi-1',
                 minionDefId: 'samurai_bushi',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 destroyerId: '1',
-                reason: 'test_destroy',
-            },
-            timestamp: 1010,
-        } as any;
+                reason: 'test_destroy', timestamp: 1010 }) as any;
 
         const processed = resolveDestroyedMinions(state, '1', [destroyEvent], defaultTestRandom, 1010);
         const queuedEvent = processed.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;

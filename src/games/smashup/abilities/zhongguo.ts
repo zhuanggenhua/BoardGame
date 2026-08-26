@@ -4827,6 +4827,16 @@ function discoIWillSurviveAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Tr
     };
 }
 
+function canTriggerDiscoIWillSurviveAfterScoring(ctx: TriggerContext): boolean {
+    const { state, baseIndex, sourceCardUid } = ctx;
+    if (baseIndex === undefined || !sourceCardUid) return false;
+    return (state.pendingAfterScoringSpecials ?? []).some(
+        special => special.sourceDefId === 'disco_dancers_i_will_survive'
+            && special.baseIndex === baseIndex
+            && special.cardUid === sourceCardUid,
+    );
+}
+
 function attachedActionProtection(sourceDefId: string): (ctx: ProtectionCheckContext) => boolean {
     return (ctx) => ctx.targetMinion.attachedActions.some(action => action.defId === sourceDefId);
 }
@@ -4890,6 +4900,22 @@ function vigilantesDeathWisherTrigger(ctx: TriggerContext): SmashUpEvent[] | Tri
     );
 }
 
+function canTriggerVigilantesDeathWisherTrigger(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId || !ctx.destroyerId) {
+        return false;
+    }
+    if (ctx.destroyerId === ctx.sourceControllerId) return false;
+    const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId;
+    if (!destroyedControllerId || destroyedControllerId === ctx.destroyerId) return false;
+
+    const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!self || self.controller !== ctx.sourceControllerId) return false;
+    const usedTurn = Number(self.metadata?.[VIGILANTES_DEATH_WISHER_TRIGGERED_TURN_META] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return false;
+
+    return collectMinionsMatching(ctx.state, minion => minion.controller === ctx.destroyerId).length > 0;
+}
+
 function vigilantesTheRevengeAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid) return [];
     const armedEntry = (ctx.state.pendingAfterScoringSpecials ?? []).find(special =>
@@ -4930,6 +4956,15 @@ function vigilantesTheRevengeAfterScoring(ctx: TriggerContext): SmashUpEvent[] |
     };
 }
 
+function canTriggerVigilantesTheRevengeAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid) return false;
+    return (ctx.state.pendingAfterScoringSpecials ?? []).some(special =>
+        special.sourceDefId === 'vigilantes_the_revenge'
+        && special.baseIndex === ctx.baseIndex
+        && special.cardUid === ctx.sourceCardUid,
+    );
+}
+
 function vigilantesBrojakTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return [];
     if (ctx.moveToBaseIndex === undefined || ctx.moveToBaseIndex === ctx.sourceBaseIndex) return [];
@@ -4949,6 +4984,16 @@ function vigilantesBrojakTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerR
         ),
         ctx.matchState,
     );
+}
+
+function canTriggerVigilantesBrojakTrigger(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return false;
+    if (ctx.moveToBaseIndex === undefined || ctx.moveToBaseIndex === ctx.sourceBaseIndex) return false;
+    if (!ctx.triggerMinionUid || ctx.triggerMinionUid === ctx.sourceCardUid) return false;
+    if (!ctx.state.bases[ctx.moveToBaseIndex]) return false;
+
+    const self = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    return !!self && self.controller === ctx.sourceControllerId;
 }
 
 function letsFinishThisTrigger(ctx: TriggerContext): SmashUpEvent[] {
@@ -5009,6 +5054,26 @@ function feelingLuckyTrigger(ctx: TriggerContext): SmashUpEvent[] {
         sourceBaseIndex: host.baseIndex,
         sourceKind: 'nonAction',
     });
+}
+
+function canTriggerFeelingLucky(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || !ctx.sourceControllerId) return false;
+    const host = findAttachedActionHost(ctx.state, ctx.sourceCardUid);
+    if (!host || ctx.playerId !== host.minion.controller) return false;
+    return buildValidatedDestroyEvents(ctx.matchState, {
+        minionUid: host.minion.uid,
+        minionDefId: host.minion.defId,
+        fromBaseIndex: host.baseIndex,
+        destroyerId: ctx.sourceControllerId,
+        reason: 'vigilantes_feeling_lucky',
+        now: ctx.now,
+        sourcePlayerId: ctx.sourceControllerId,
+        sourceCardUid: ctx.sourceCardUid,
+        sourceDefId: 'vigilantes_feeling_lucky',
+        sourceControllerId: ctx.sourceControllerId,
+        sourceBaseIndex: host.baseIndex,
+        sourceKind: 'nonAction',
+    }).length > 0;
 }
 
 function discoDivaTrigger(ctx: TriggerContext): SmashUpEvent[] {
@@ -5132,6 +5197,37 @@ function discoDancingKingTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerR
             }),
         ),
         ctx.matchState,
+    );
+}
+
+function canTriggerDiscoDancingKingTrigger(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.affectEvent) return false;
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isStandardActionDefId(actionDefId)) return false;
+
+    const sourceMinion = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion) return false;
+    if (ctx.sourceControllerId !== undefined && sourceMinion.controller !== ctx.sourceControllerId) return false;
+    const usedTurn = Number(sourceMinion.metadata?.[DISCO_DANCERS_DANCING_KING_TRIGGERED_TURN_META] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return false;
+
+    const affectedMinionUid = ctx.triggerMinionUid ?? ctx.triggerMinion?.uid;
+    if (!affectedMinionUid) return false;
+    const candidates = (ctx.state.bases[ctx.sourceBaseIndex]?.minions ?? []).filter(minion => minion.uid !== affectedMinionUid);
+    return candidates.some(candidate =>
+        buildDiscoMirrorEvents(
+            ctx.state,
+            ctx.affectEvent!,
+            {
+                uid: candidate.uid,
+                defId: candidate.defId,
+                baseIndex: ctx.sourceBaseIndex!,
+                ownerId: candidate.owner,
+                controllerId: candidate.controller,
+            },
+            'disco_dancers_dancing_king',
+            ctx.now,
+        ).length > 0,
     );
 }
 
@@ -5421,16 +5517,19 @@ export function registerZhongguoAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerVigilantesDeathWisherTrigger,
     });
     registerTrigger('vigilantes_the_revenge', 'afterScoring', vigilantesTheRevengeAfterScoring, {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerVigilantesTheRevengeAfterScoring,
     });
     registerTrigger('vigilantes_brojak', 'onMinionMoved', vigilantesBrojakTrigger, {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        canTrigger: canTriggerVigilantesBrojakTrigger,
     });
     registerTrigger('vigilantes_jacky_bill', 'onActionPlayed', jackyBillTrigger, {
         perInstance: true,
@@ -5446,6 +5545,7 @@ export function registerZhongguoAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerFeelingLucky,
     });
     registerTrigger('disco_dancers_diva', 'onMinionAffected', discoDivaTrigger, {
         perInstance: true,
@@ -5461,6 +5561,7 @@ export function registerZhongguoAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerDiscoDancingKingTrigger,
     });
     registerTrigger('disco_dancers_roller', 'onMinionAffected', discoRollerTrigger, {
         perInstance: true,
@@ -5471,5 +5572,6 @@ export function registerZhongguoAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerDiscoIWillSurviveAfterScoring,
     });
 }

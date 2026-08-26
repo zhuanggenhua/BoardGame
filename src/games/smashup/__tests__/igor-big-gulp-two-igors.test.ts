@@ -88,16 +88,21 @@ describe('Igor + Big Gulp: 一个 Igor 被消灭', () => {
         const igorInDiscard = player0.discard.some(c => c.uid === 'igor1');
         expect(igorInDiscard).toBe(true);
 
-        // 验证 howler 的 powerCounters
-        const howler = base.minions.find(m => m.uid === 'howler');
-
-        // Igor onDestroy 只触发一次
-        expect(howler?.powerCounters).toBe(2);
-
-        // 应该没有 Igor 的交互（因为只有一个候选，自动执行了）
+        // Igor onDestroy 只应创建一次目标选择交互
         const igorInteractions = getPromptsBySourceId(result2.finalState, 'frankenstein_igor');
+        expect(igorInteractions.length).toBe(1);
 
-        // 因为只有一个候选，Igor onDestroy 自动执行了（没有创建交互）
-        expect(igorInteractions.length).toBe(0);
+        const igorPrompt = getSimpleChoicePrompt(result2.finalState, 'frankenstein_igor');
+        const howlerOption = getPromptOption(
+            igorPrompt,
+            (o: any) => o.value?.minionUid === 'howler',
+            'Igor target option for Howler',
+        );
+        const result3 = respondToPrompt(result2.finalState, howlerOption.id, '0');
+        expect(result3.success).toBe(true);
+
+        const howler = result3.finalState.core.bases[0].minions.find(m => m.uid === 'howler');
+        expect(howler?.powerCounters).toBe(2);
+        expect(getPromptsBySourceId(result3.finalState, 'frankenstein_igor').length).toBe(0);
     });
 });

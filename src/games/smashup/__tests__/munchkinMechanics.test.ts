@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -2666,17 +2667,12 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             ],
         });
 
-        const result = reduce(state, {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'host-1',
+        const result = reduce(state, makeMinionDestroyedEvent({minionUid: 'host-1',
                 minionDefId: 'munchkin_warriors_big_hero',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 controllerId: '0',
-                reason: 'test_dwarf_king',
-            },
-        } as any);
+                reason: 'test_dwarf_king', timestamp: 1000 }) as any);
 
         expect(result.bases[0].minions.map(minion => minion.uid)).toEqual(['king-1']);
         expect(result.players['0'].hand.map(card => card.uid)).toContain('spiky-1');
@@ -3109,7 +3105,17 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         );
 
         expect(copied.success).toBe(true);
-        expect(copied.events).toContainEqual(expect.objectContaining({
+        const costPrompt = getSimpleChoicePrompt(copied.finalState, 'aladdin_discard_action_cost');
+        const paid = respondToPromptOption(
+            copied.finalState,
+            option => option.value?.cardUid === 'action-cost-1',
+            '复制药水复制拉贾后的弃行动牌成本',
+            '0',
+            fixedRandom,
+        );
+
+        expect(paid.success).toBe(true);
+        expect(paid.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.TEMP_POWER_ADDED,
             payload: expect.objectContaining({
                 minionUid: 'host-1',
@@ -3119,13 +3125,14 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
                 sourceDefId: 'aladdin_rajah',
             }),
         }));
-        expect(copied.finalState.core.players['0'].hand).toEqual([]);
-        expect(copied.finalState.core.players['0'].discard).toContainEqual(expect.objectContaining({
+        expect(costPrompt).toBeDefined();
+        expect(paid.finalState.core.players['0'].hand).toEqual([]);
+        expect(paid.finalState.core.players['0'].discard).toContainEqual(expect.objectContaining({
             uid: 'action-cost-1',
             defId: 'alien_probe',
         }));
-        expect(getEffectivePower(copied.finalState.core, copied.finalState.core.bases[0].minions[0], 0)).toBe(7);
-        expect(copied.finalState.core.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
+        expect(getEffectivePower(paid.finalState.core, paid.finalState.core.bases[0].minions[0], 0)).toBe(7);
+        expect(paid.finalState.core.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
             uid: 'duplication-1',
             defId: 'munchkin_treasure_potion_of_duplication',
             talentUsed: true,
@@ -4348,18 +4355,12 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             }),
         }));
 
-        const destroyed = reduce(state, {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'host-1',
+        const destroyed = reduce(state, makeMinionDestroyedEvent({minionUid: 'host-1',
                 minionDefId: 'alien_invader',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 controllerId: '0',
-                reason: 'test_small_but_tough',
-            },
-            timestamp: 170,
-        } as any);
+                reason: 'test_small_but_tough', timestamp: 170 }) as any);
         const final = triggered.events.reduce((core, event) => reduce(core, event as any), destroyed);
 
         expect(final.bases[0].minions).toEqual([]);

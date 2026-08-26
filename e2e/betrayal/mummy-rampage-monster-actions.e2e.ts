@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import sharp from 'sharp';
 import {
     BETRAYAL_COMMANDS,
@@ -19,6 +20,7 @@ import {
 } from '../helpers/common';
 import {
     createFirstScenarioHauntRuntimeCore,
+    createExchangeReadyRuntimeCore,
     createMedicalKitUseReadyRuntimeCore,
     createRuntimeCore,
     dispatchHarnessCommand,
@@ -36,6 +38,7 @@ const EVIDENCE_DIR = 'evidence/山屋惊魂-木乃伊怪物行动真实入口';
 const MOVE_READY_SCREENSHOT = `${EVIDENCE_DIR}/01-木乃伊怪物回合开始前.jpg`;
 const MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/02-木乃伊移动骰0点.jpg`;
 const MOVE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/03-木乃伊瞬移女孩房间目标高亮.jpg`;
+const MOVE_ANIMATING_SCREENSHOT = `${EVIDENCE_DIR}/04a-木乃伊瞬移动画中-本体隐藏.jpg`;
 const MOVE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/04-木乃伊瞬移后女孩由木乃伊持有.jpg`;
 const MOVE_ONE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/11-木乃伊移动骰1点.jpg`;
 const MOVE_ONE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/12-木乃伊1点瞬移女孩房间目标高亮.jpg`;
@@ -92,13 +95,25 @@ const GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT = `${EVIDENCE_DIR}/62-主黄�
 const GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/63-主黄金链-木乃伊攻击英雄后奖励偷圣符.jpg`;
 const GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/64-主黄金链-叛徒终局.jpg`;
 const GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/66-主黄金链-点击木乃伊详情属性与驱逐方式.jpg`;
+const GOLDEN_FLOW_PROCESS_PREFIX = '65-主黄金链过程-';
 const goldenFlowProcessScreenshot = (step: number, label: string) =>
-    `${EVIDENCE_DIR}/65-主黄金链过程-${String(step).padStart(2, '0')}-${label}.jpg`;
+    `${EVIDENCE_DIR}/${GOLDEN_FLOW_PROCESS_PREFIX}${String(step).padStart(2, '0')}-${label}.jpg`;
 const humanTestUrlForPlayer = (playerId: string) =>
     `/play/betrayal?players=3&playerID=${playerId}&seat0=human&seat1=human&seat2=human`;
 const HUMAN_HOTSEAT_TEST_URL = '/play/betrayal?players=3&seat0=human&seat1=human&seat2=human';
 const HUMAN_TRAITOR_TEST_URL = humanTestUrlForPlayer('2');
 const MUMMY_MONSTER_ID = 'mummy';
+
+const clearGoldenFlowProcessScreenshots = (): void => {
+    if (!existsSync(EVIDENCE_DIR)) {
+        return;
+    }
+    for (const entry of readdirSync(EVIDENCE_DIR)) {
+        if (entry.startsWith(GOLDEN_FLOW_PROCESS_PREFIX) && entry.endsWith('.jpg')) {
+            unlinkSync(`${EVIDENCE_DIR}/${entry}`);
+        }
+    }
+};
 
 const expectBetrayalGreenDominantHighlightPixels = async (locator: Locator, label: string): Promise<void> => {
     const screenshot = await locator.screenshot({ animations: 'disabled' });
@@ -186,6 +201,115 @@ const expectPrimaryTargetBoundaryFits = async (
     expect(Math.abs(outlineBox!.height - targetBox!.height), `${label} 主边界高度不能明显偏离目标本体`).toBeLessThanOrEqual(maxSizeDelta);
 };
 
+const expectBoardTokenReadableSize = async (
+    token: Locator,
+    label: string,
+    minSize: number,
+): Promise<void> => {
+    await expect(token, `${label} 必须在地图上可见`).toBeVisible();
+    const box = await token.boundingBox();
+    expect(box, `${label} 缺少地图 token bbox`).toBeTruthy();
+    expect(Math.min(box!.width, box!.height), `${label} 不能小到只能靠标注才能找见`).toBeGreaterThanOrEqual(minSize);
+};
+
+const expectBoardTokenCircular = async (
+    token: Locator,
+    label: string,
+): Promise<void> => {
+    await expect(token, `${label} 必须在地图上可见`).toBeVisible();
+    const metrics = await token.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        const radii = [
+            style.borderTopLeftRadius,
+            style.borderTopRightRadius,
+            style.borderBottomRightRadius,
+            style.borderBottomLeftRadius,
+        ].map((value) => Number.parseFloat(value) || 0);
+        return {
+            width: rect.width,
+            height: rect.height,
+            minRadius: Math.min(...radii),
+        };
+    });
+    expect(Math.abs(metrics.width - metrics.height), `${label} 必须是正圆承载面，不是拉伸矩形`).toBeLessThanOrEqual(1);
+    expect(metrics.minRadius, `${label} 圆角半径必须形成圆形 token，不是圆角方块`).toBeGreaterThanOrEqual(
+        Math.min(metrics.width, metrics.height) / 2 - 1,
+    );
+};
+
+const expectBoardTokensVerticallyStacked = async (
+    upper: Locator,
+    lower: Locator,
+    label: string,
+): Promise<void> => {
+    const [upperBox, lowerBox] = await Promise.all([
+        upper.boundingBox(),
+        lower.boundingBox(),
+    ]);
+    expect(upperBox, `${label} 缺少上方 token bbox`).toBeTruthy();
+    expect(lowerBox, `${label} 缺少下方 token bbox`).toBeTruthy();
+    const upperCenterX = upperBox!.x + upperBox!.width / 2;
+    const lowerCenterX = lowerBox!.x + lowerBox!.width / 2;
+    const upperCenterY = upperBox!.y + upperBox!.height / 2;
+    const lowerCenterY = lowerBox!.y + lowerBox!.height / 2;
+    expect(Math.abs(upperCenterX - lowerCenterX), `${label} 必须竖排贴同一列，不能横向抢玩家位置`).toBeLessThanOrEqual(8);
+    expect(lowerCenterY, `${label} 女孩必须在木乃伊下方形成竖排携带态`).toBeGreaterThan(upperCenterY);
+};
+
+const expectMummyCarryClusterComparableToExplorer = async (
+    mummyRoot: Locator,
+    girlToken: Locator,
+    explorerToken: Locator,
+    label: string,
+): Promise<void> => {
+    const [mummyBox, girlBox, explorerBox] = await Promise.all([
+        mummyRoot.boundingBox(),
+        girlToken.boundingBox(),
+        explorerToken.boundingBox(),
+    ]);
+    expect(mummyBox, `${label} 缺少木乃伊 bbox`).toBeTruthy();
+    expect(girlBox, `${label} 缺少女孩 bbox`).toBeTruthy();
+    expect(explorerBox, `${label} 缺少玩家 token bbox`).toBeTruthy();
+    const clusterLeft = Math.min(mummyBox!.x, girlBox!.x);
+    const clusterTop = Math.min(mummyBox!.y, girlBox!.y);
+    const clusterRight = Math.max(mummyBox!.x + mummyBox!.width, girlBox!.x + girlBox!.width);
+    const clusterBottom = Math.max(mummyBox!.y + mummyBox!.height, girlBox!.y + girlBox!.height);
+    const clusterWidth = clusterRight - clusterLeft;
+    const clusterHeight = clusterBottom - clusterTop;
+    expect(clusterWidth, `${label} 组合宽度不能明显大过玩家 token`).toBeLessThanOrEqual(explorerBox!.width * 1.25);
+    expect(clusterHeight, `${label} 组合高度要和玩家 token 差不多，不能变成两倍高的塔`).toBeLessThanOrEqual(explorerBox!.height * 1.45);
+    expect(mummyBox!.width, `${label} 木乃伊本体宽度必须接近玩家 token`).toBeLessThanOrEqual(explorerBox!.width * 1.15);
+    expect(mummyBox!.height, `${label} 木乃伊本体高度必须接近玩家 token`).toBeLessThanOrEqual(explorerBox!.height * 1.15);
+};
+
+const expectBoardTokensDoNotOverlap = async (
+    primary: Locator,
+    secondary: Locator,
+    label: string,
+): Promise<void> => {
+    const [primaryBox, secondaryBox] = await Promise.all([
+        primary.boundingBox(),
+        secondary.boundingBox(),
+    ]);
+    expect(primaryBox, `${label} 缺少主 token bbox`).toBeTruthy();
+    expect(secondaryBox, `${label} 缺少附属 token bbox`).toBeTruthy();
+    const overlapX = Math.max(
+        0,
+        Math.min(primaryBox!.x + primaryBox!.width, secondaryBox!.x + secondaryBox!.width) -
+            Math.max(primaryBox!.x, secondaryBox!.x),
+    );
+    const overlapY = Math.max(
+        0,
+        Math.min(primaryBox!.y + primaryBox!.height, secondaryBox!.y + secondaryBox!.height) -
+            Math.max(primaryBox!.y, secondaryBox!.y),
+    );
+    expect(
+        overlapX * overlapY,
+        `${label} 不能发生视觉重叠；primary=${JSON.stringify(primaryBox)} secondary=${JSON.stringify(secondaryBox)}`,
+    ).toBeLessThanOrEqual(1);
+};
+
 const expectEventChoiceControlsInDecisionZone = async (page: Page, panel: Locator): Promise<void> => {
     const [panelBox, confirmBox, declineBox, summaryBox] = await Promise.all([
         panel.boundingBox(),
@@ -212,6 +336,13 @@ const expectRollContinueButtonUsable = async (page: Page) => {
     await expect(continueButton).toBeVisible();
     const metrics = await continueButton.evaluate((button) => {
         const rect = button.getBoundingClientRect();
+        const style = window.getComputedStyle(button);
+        const borderRadii = [
+            style.borderTopLeftRadius,
+            style.borderTopRightRadius,
+            style.borderBottomLeftRadius,
+            style.borderBottomRightRadius,
+        ].map((value) => Number.parseFloat(value) || 0);
         const samplePoints = [
             { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
             { x: rect.left + rect.width / 2, y: rect.bottom - 4 },
@@ -225,6 +356,8 @@ const expectRollContinueButtonUsable = async (page: Page) => {
             bottom: rect.bottom,
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
+            className: button.className,
+            maxBorderRadius: Math.max(...borderRadii),
             hitTestPasses: samplePoints.map((point) => {
                 const target = document.elementFromPoint(point.x, point.y);
                 return target === button || button.contains(target);
@@ -235,7 +368,106 @@ const expectRollContinueButtonUsable = async (page: Page) => {
     expect(metrics.height).toBeGreaterThanOrEqual(42);
     expect(metrics.top).toBeGreaterThanOrEqual(0);
     expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight);
+    expect(metrics.className).toContain('bg-[#d6b56d]');
+    expect(metrics.className).toContain('border-[#d6b56d]');
+    expect(metrics.className).not.toContain('rounded');
+    expect(metrics.maxBorderRadius).toBeLessThanOrEqual(2);
     expect(metrics.hitTestPasses.every(Boolean)).toBe(true);
+};
+
+type PendingRecentRollAcknowledgement = {
+    kind: string | null;
+    requiredPlayerIds: string[];
+    acknowledgedPlayerIds: string[];
+};
+
+const readPendingRecentRollAcknowledgement = async (
+    page: Page,
+): Promise<PendingRecentRollAcknowledgement | null> =>
+    page.evaluate(() => {
+        const core = (window as typeof window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => {
+                        core?: {
+                            playerIds?: string[];
+                            recentRoll?: {
+                                kind?: string;
+                                playerId?: string;
+                                requiredPlayerIds?: string[];
+                                acknowledgedPlayerIds?: string[];
+                            } | null;
+                        };
+                    };
+                };
+            };
+        }).__BG_TEST_HARNESS__?.state?.get?.().core;
+        const recentRoll = core?.recentRoll;
+        if (!recentRoll) {
+            return null;
+        }
+        const requiredPlayerIds = recentRoll.requiredPlayerIds?.length
+            ? [...recentRoll.requiredPlayerIds]
+            : core?.playerIds?.length
+                ? [...core.playerIds]
+                : recentRoll.playerId
+                    ? [recentRoll.playerId]
+                    : [];
+        return {
+            kind: recentRoll.kind ?? null,
+            requiredPlayerIds,
+            acknowledgedPlayerIds: [...(recentRoll.acknowledgedPlayerIds ?? [])],
+        };
+    });
+
+const acknowledgeRecentRollForAllPlayers = async (page: Page): Promise<void> => {
+    const pendingBefore = await readPendingRecentRollAcknowledgement(page);
+    if (!pendingBefore) {
+        throw new Error('当前没有待全员确认的投骰结果');
+    }
+
+    const continueButton = page.getByTestId('betrayal-roll-continue');
+    await expect(continueButton).toBeVisible();
+    if (await continueButton.isEnabled()) {
+        const acknowledgedBefore = new Set(pendingBefore.acknowledgedPlayerIds).size;
+        await continueButton.click();
+        await expect.poll(async () => {
+            const pending = await readPendingRecentRollAcknowledgement(page);
+            return pending
+                ? new Set(pending.acknowledgedPlayerIds).size
+                : pendingBefore.requiredPlayerIds.length;
+        }).toBeGreaterThan(acknowledgedBefore);
+    }
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+        const pending = await readPendingRecentRollAcknowledgement(page);
+        if (!pending) {
+            await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+            return;
+        }
+        const acknowledgedPlayerIds = new Set(pending.acknowledgedPlayerIds);
+        const nextPlayerId = pending.requiredPlayerIds.find(
+            (playerId) => !acknowledgedPlayerIds.has(playerId),
+        );
+        if (!nextPlayerId) {
+            await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+            return;
+        }
+        await dispatchHarnessCommand(
+            page,
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
+            nextPlayerId,
+            {},
+        );
+        await expect.poll(async () => {
+            const nextPending = await readPendingRecentRollAcknowledgement(page);
+            return nextPending
+                ? nextPending.acknowledgedPlayerIds.includes(nextPlayerId)
+                : true;
+        }).toBe(true);
+    }
+
+    throw new Error('全员确认投骰结果超过安全上限');
 };
 
 type RoomFloor = BetrayalCore['rooms'][number]['floor'];
@@ -1318,6 +1550,7 @@ type MummyActionState = {
     pendingDamageSourceTitle?: string | null;
     pendingDamageAmount?: number | null;
     pendingDamageOriginalAmount?: number | null;
+    pendingDamageReductionAmount?: number | null;
     pendingDamageKind?: string | null;
     pendingDamageAllowedTraits?: string[];
     pendingDamageForcedTraits?: string[];
@@ -1433,6 +1666,7 @@ const readMummyActionState = async (page: Page, heroTargetId?: string): Promise<
             pendingDamageSourceTitle: core?.pendingDamageAllocation?.sourceTitle ?? null,
             pendingDamageAmount: core?.pendingDamageAllocation?.amount ?? null,
             pendingDamageOriginalAmount: core?.pendingDamageAllocation?.originalAmount ?? null,
+            pendingDamageReductionAmount: core?.pendingDamageAllocation?.damageReductionAmount ?? null,
             pendingDamageKind: core?.pendingDamageAllocation?.damageKind ?? null,
             pendingDamageAllowedTraits: core?.pendingDamageAllocation?.allowedTraits ?? [],
             pendingDamageForcedTraits: core?.pendingDamageAllocation?.forcedTraitSequence ?? [],
@@ -1787,6 +2021,89 @@ const exerciseMummyGoldenMedicalKitUse = async (
     }
 };
 
+const exerciseMummyGoldenManualTrade = async (
+    page: Page,
+    screenshots: {
+        entryReady?: string;
+        targetReady?: string;
+        targetSelected?: string;
+        selectionReady?: string;
+        requestSent?: string;
+        settled?: string;
+    } = {},
+): Promise<void> => {
+    const tradeCore = createExchangeReadyRuntimeCore();
+    tradeCore.recommendedAction = 'move';
+    await injectCore(page, tradeCore);
+    await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-room-occupant-target-outline-hallway-1')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-action-trade')).toBeEnabled();
+    if (screenshots.entryReady) {
+        await saveScreenshot(page, screenshots.entryReady);
+    }
+
+    await page.getByTestId('betrayal-action-trade').click();
+    await expect(page.getByTestId('betrayal-trade-flow-banner')).toBeVisible();
+    await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('交易：选择持有物和同房间玩家');
+    const teammateTarget = page.getByTestId('betrayal-room-occupant-hallway-1');
+    await expect(teammateTarget).toHaveAttribute('data-direct-target', 'true');
+    await expect(page.getByTestId('betrayal-room-occupant-target-outline-hallway-1')).toHaveAttribute('data-highlight-color', 'green');
+    if (screenshots.targetReady) {
+        await saveScreenshot(page, screenshots.targetReady);
+    }
+
+    await teammateTarget.click();
+    await expect(page.getByTestId('betrayal-trade-status')).toContainText('可交易给');
+    await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText(/选择自己或对方持有物|选择/);
+    await expect(page.getByTestId('betrayal-trade-return-selector')).toBeVisible();
+    await expect(page.getByTestId('betrayal-trade-return-card-map')).toBeVisible();
+    if (screenshots.targetSelected) {
+        await saveScreenshot(page, screenshots.targetSelected);
+    }
+
+    await page.getByTestId('betrayal-inventory-rope').click();
+    await page.getByTestId('betrayal-trade-return-card-map').click();
+    await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText(/你给出.*兔脚.*对方给出.*地图/);
+    await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('提出交易');
+    await expect(page.getByTestId('betrayal-action-trade')).toBeEnabled();
+    if (screenshots.selectionReady) {
+        await saveScreenshot(page, screenshots.selectionReady);
+    }
+
+    await page.getByTestId('betrayal-action-trade').click();
+    await expect(page.getByTestId('betrayal-trade-agreement-panel')).toBeVisible();
+    await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意|交易请求|兔脚|地图/);
+    if (screenshots.requestSent) {
+        await saveScreenshot(page, screenshots.requestSent);
+    }
+
+    await page.getByTestId('betrayal-trade-agreement-accept').click();
+    await expect.poll(async () => {
+        const core = await readInjectedCore(page);
+        return {
+            currentInventory: core.currentExplorer.inventory.map((card) => card.name),
+            teammateInventory: core.otherExplorers.find((explorer) => explorer.playerId === '1')?.inventory.map((card) => card.name) ?? [],
+            pendingTradeAgreement: core.pendingTradeAgreement,
+            tradeUsedThisTurnPlayerIds: core.tradeUsedThisTurnPlayerIds,
+            latestLog: core.activityLog[0]?.text ?? '',
+        };
+    }, {
+        message: '主黄金链交易段同意后必须转移双方持有物并清空交易请求',
+        timeout: 10000,
+    }).toMatchObject({
+        currentInventory: expect.arrayContaining(['地图']),
+        teammateInventory: expect.arrayContaining(['兔脚']),
+        pendingTradeAgreement: null,
+        tradeUsedThisTurnPlayerIds: expect.arrayContaining(['0']),
+        latestLog: expect.stringMatching(/同意交易|兔脚|地图/),
+    });
+    await expect(page.getByTestId('betrayal-trade-return-selector')).toHaveCount(0);
+    if (screenshots.settled) {
+        await saveScreenshot(page, screenshots.settled);
+    }
+};
+
 const moveMummyThroughRealRoomTarget = async (
     page: Page,
     source: { roomId: string; floor: RoomFloor },
@@ -1818,11 +2135,28 @@ const moveMummyThroughRealRoomTarget = async (
         await saveScreenshot(page, screenshots.targetReady);
     }
     await page.getByTestId(`betrayal-room-${target.roomId}`).click({ position: { x: 12, y: 12 } });
+    const transitionBlocker = page.getByTestId('betrayal-visual-transition-blocker');
+    const transitionKind = await transitionBlocker
+        .getAttribute('data-transition-kind', { timeout: 250 })
+        .catch(() => null);
+    if (transitionKind !== null) {
+        expect(transitionKind).toBe('monster-move');
+        await expect(transitionBlocker).toHaveAttribute('data-transition-target-testid', `betrayal-room-${target.roomId}`);
+    }
+    await expect.poll(() => readMummyActionState(page)).toMatchObject({
+        mummyRoomId: target.roomId,
+    });
+    if (transitionKind !== null) {
+        await expect(transitionBlocker).toHaveCount(0);
+    }
+    await expect(page.getByTestId(`betrayal-room-monster-${source.roomId}-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
+    await expect(page.getByTestId(`betrayal-room-monster-${target.roomId}-${MUMMY_MONSTER_ID}`)).toBeVisible();
 };
 
 test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
     test('主黄金链：开局、三类发现、作祟、木乃伊行动、叛徒终局', async ({ page, context }) => {
         test.setTimeout(300000);
+        clearGoldenFlowProcessScreenshots();
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-mummy-rampage-full-golden-flow');
 
@@ -1895,14 +2229,23 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
         await saveScreenshot(page, GOLDEN_FLOW_ITEM_USE_SCREENSHOT);
 
+        await exerciseMummyGoldenManualTrade(page, {
+            entryReady: goldenFlowProcessScreenshot(12, '主动交易前-交易入口可见但目标未高亮'),
+            targetReady: goldenFlowProcessScreenshot(13, '主动点交易后-同房目标绿色高亮'),
+            targetSelected: goldenFlowProcessScreenshot(14, '点同房目标后-交易提示和对方持有物'),
+            selectionReady: goldenFlowProcessScreenshot(15, '选择双方持有物后-提出交易可用'),
+            requestSent: goldenFlowProcessScreenshot(16, '提出交易后-等待接收方同意'),
+            settled: goldenFlowProcessScreenshot(17, '同意交易后-双方持有物结算'),
+        });
+
         const omenFixture = createMummyGoldenPreHauntDiscoveryCore('omen');
         await injectCore(page, omenFixture.core);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(12, '预兆段开局牌桌-探索入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(18, '预兆段开局牌桌-探索入口可见'));
         await exploreMummyGoldenDiscoveryRoom(page, omenFixture, {
-            targetReady: goldenFlowProcessScreenshot(13, '预兆房探索目标高亮-点击前'),
+            targetReady: goldenFlowProcessScreenshot(19, '预兆房探索目标高亮-点击前'),
         });
         const omenDiscoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
@@ -1924,7 +2267,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingCardResolutionCount: 1,
             recentRollKind: 'hauntRoll',
         });
-        await saveScreenshot(page, goldenFlowProcessScreenshot(14, '预兆书本翻出-作祟检定已触发'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(20, '预兆书本翻出-作祟检定已触发'));
         await saveScreenshot(page, GOLDEN_FLOW_OMEN_DISCOVERY_SCREENSHOT);
 
         await omenDiscoveryPanel.getByTestId('betrayal-discovery-continue').click();
@@ -1960,7 +2303,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         ).toContainText('英雄剧本书');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-traitor')).toHaveCount(0);
         if (await heroReader.getByTestId('betrayal-scenario-opening-stage').isVisible({ timeout: 1000 }).catch(() => false)) {
-            await saveScreenshot(page, goldenFlowProcessScreenshot(15, '作祟后英雄剧本开场-继续前'));
+            await saveScreenshot(page, goldenFlowProcessScreenshot(21, '作祟后英雄剧本开场-继续前'));
             await heroReader.getByTestId('betrayal-scenario-reader-next-zone').click();
         }
         await expect(heroReader.getByTestId('betrayal-scenario-book')).toBeVisible({ timeout: 30000 });
@@ -1968,7 +2311,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-title-heroes')).toContainText('敌方情报 / 胜利条件');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-heroes')).toContainText('将木乃伊驱逐回亡者之国');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-traitor')).toHaveCount(0);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(16, '英雄目标读本正文-段落标题可读'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(22, '英雄目标读本正文-段落标题可读'));
         await saveScreenshot(page, GOLDEN_FLOW_HERO_READER_SCREENSHOT);
 
         await closeScenarioReaderIfPresent(page);
@@ -1988,7 +2331,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             traitorReader.getByTestId('betrayal-scenario-reader-role'),
         ).toContainText('你是叛徒：叛徒剧本书');
         if (await traitorReader.getByTestId('betrayal-scenario-opening-stage').isVisible({ timeout: 1000 }).catch(() => false)) {
-            await saveScreenshot(page, goldenFlowProcessScreenshot(17, '作祟后叛徒剧本开场-继续前'));
+            await saveScreenshot(page, goldenFlowProcessScreenshot(23, '作祟后叛徒剧本开场-继续前'));
             await traitorReader.getByTestId('betrayal-scenario-reader-next-zone').click();
         }
         await expect(traitorReader.getByTestId('betrayal-scenario-book')).toBeVisible({ timeout: 30000 });
@@ -1997,7 +2340,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-traitor')).toContainText('敌方情报 / 胜利条件');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-traitor')).toContainText('他们妄图将木乃伊驱逐回亡者之国');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-heroes')).toHaveCount(0);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(18, '叛徒读本正文-敌方情报可读'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(24, '叛徒读本正文-敌方情报可读'));
         await saveScreenshot(page, GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT);
         await closeScenarioReaderIfPresent(page);
         await dismissHauntRevealIfPresent(page);
@@ -2023,10 +2366,10 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             targetRoomId: fixture.eventTargetRoomId,
             targetRoomFloor: fixture.eventTargetRoomFloor,
         }, {
-            exploreReady: goldenFlowProcessScreenshot(19, '作祟后事件符号-探索入口可见'),
-            targetReady: goldenFlowProcessScreenshot(20, '事件房探索目标高亮-点击前'),
-            choiceReady: goldenFlowProcessScreenshot(21, '翻出事件符号后-是否跳过事件弹窗'),
-            settled: goldenFlowProcessScreenshot(22, '跳过事件后回到牌桌-无结果面板'),
+            exploreReady: goldenFlowProcessScreenshot(25, '作祟后事件符号-探索入口可见'),
+            targetReady: goldenFlowProcessScreenshot(26, '事件房探索目标高亮-点击前'),
+            choiceReady: goldenFlowProcessScreenshot(27, '翻出事件符号后-是否跳过事件弹窗'),
+            settled: goldenFlowProcessScreenshot(28, '跳过事件后回到牌桌-无结果面板'),
         });
         await saveScreenshot(page, GOLDEN_FLOW_SKIP_EVENT_SCREENSHOT);
         await advanceByRealEndTurnsUntilActivePlayer(page, fixture.traitorId, fixture.heroTargetId);
@@ -2052,19 +2395,19 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('攻击本会造成 2 点或以上损伤');
         await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('物品、预兆或女孩');
         await expect(monsterDetail.getByTestId('betrayal-monster-detail-rules')).toContainText('木乃伊战败就被驱逐');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(23, '点击木乃伊-详情显示属性头像与驱逐胜利方式'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(29, '点击木乃伊-详情显示属性头像与驱逐胜利方式'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT);
         await page.getByTestId('betrayal-monster-detail-close').click();
         await expect(monsterDetail).toHaveCount(0);
         const monsterTurnStartAction = page.getByTestId('betrayal-action-monsterTurnStart');
         await expect(monsterTurnStartAction).toBeVisible();
         await expect(monsterTurnStartAction).toContainText('木乃伊开回合');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(24, '叛徒回合-木乃伊开回合入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(30, '叛徒回合-木乃伊开回合入口可见'));
         await monsterTurnStartAction.click();
         const movementRollAction = page.getByTestId('betrayal-action-monsterMovementRoll');
         await expect(movementRollAction).toBeVisible();
         await expect(movementRollAction).toContainText('木乃伊移动骰');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(25, '木乃伊开回合后-移动骰入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(31, '木乃伊开回合后-移动骰入口可见'));
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5]);
         await movementRollAction.click();
         const movementRollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -2072,10 +2415,9 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(movementRollPanel).toContainText('可移动 3 间');
         await expectVisiblePhysicalDiceBox(movementRollPanel);
         await waitForPhysicalDiceSettled(movementRollPanel);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(26, '木乃伊移动骰结果-三点停稳'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(32, '木乃伊移动骰结果-三点停稳'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT);
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             moveRemaining: 3,
             mummyRoomId: fixture.mummyStartRoomId,
@@ -2085,7 +2427,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             page,
             { roomId: fixture.mummyStartRoomId, floor: fixture.mummyStartRoomFloor },
             { roomId: fixture.firstMoveRoomId, floor: fixture.firstMoveRoomFloor },
-            { targetReady: goldenFlowProcessScreenshot(27, '木乃伊普通移动第一步-目标房间高亮') },
+            { targetReady: goldenFlowProcessScreenshot(33, '木乃伊普通移动第一步-目标房间高亮') },
         );
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('消耗 1 点移动');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('瞬移');
@@ -2095,13 +2437,13 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             girlHeldByMummy: false,
         });
         await expect(page.getByTestId('betrayal-action-monsterMove')).toBeVisible();
-        await saveScreenshot(page, goldenFlowProcessScreenshot(28, '木乃伊普通移动第一步后-剩余两点'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(34, '木乃伊普通移动第一步后-剩余两点'));
 
         await moveMummyThroughRealRoomTarget(
             page,
             { roomId: fixture.firstMoveRoomId, floor: fixture.firstMoveRoomFloor },
             { roomId: fixture.sarcophagusRoomId, floor: fixture.sarcophagusRoomFloor },
-            { targetReady: goldenFlowProcessScreenshot(29, '木乃伊普通移动第二步-石棺目标高亮') },
+            { targetReady: goldenFlowProcessScreenshot(35, '木乃伊普通移动第二步-石棺目标高亮') },
         );
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('消耗 1 点移动');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('木乃伊拾起女孩');
@@ -2114,7 +2456,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
         await expect(page.getByTestId('betrayal-action-monsterMove')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-monsterAttack')).toBeVisible();
-        await saveScreenshot(page, goldenFlowProcessScreenshot(30, '木乃伊普通移动第二步后-拾起女孩并可攻击'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(36, '木乃伊普通移动第二步后-拾起女孩并可攻击'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT);
 
         await switchRoomMapToFloor(page, fixture.sarcophagusRoomFloor);
@@ -2138,30 +2480,36 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectVisibleTraitTracksStayOnOfficialSlots(page, 9);
         await saveScreenshot(
             page,
-            goldenFlowProcessScreenshot(31, '攻击前-切换观察目标英雄后圣符可见'),
+            goldenFlowProcessScreenshot(37, '攻击前-切换观察目标英雄后圣符可见'),
         );
         await saveScreenshot(
             page,
-            goldenFlowProcessScreenshot(32, '同房后-木乃伊攻击入口可见'),
+            goldenFlowProcessScreenshot(38, '同房后-木乃伊攻击入口可见'),
         );
         await monsterAttackAction.click();
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
         await expect(
             page.getByTestId(`betrayal-room-occupant-target-outline-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`),
         ).toHaveCount(0);
-        await saveScreenshot(page, goldenFlowProcessScreenshot(33, '木乃伊攻击-选择木乃伊攻击者'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(39, '木乃伊攻击-选择木乃伊攻击者'));
         await mummyToken.click();
         await expect(
             page.getByTestId(`betrayal-room-monster-target-outline-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
         ).toHaveAttribute('data-highlight-role', 'source');
         await expect(
             page.getByTestId(`betrayal-room-monster-target-outline-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
+        ).toHaveAttribute('data-entity-relation', 'enemy');
+        await expect(
+            page.getByTestId(`betrayal-room-monster-target-outline-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
         ).toHaveAttribute('data-highlight-color', 'red');
+        await expect(
+            page.getByTestId(`betrayal-room-monster-${fixture.sarcophagusRoomId}-${MUMMY_MONSTER_ID}`),
+        ).toHaveAttribute('data-token-asset', 'betrayal/tokens/monsters/mummy.svg');
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
         await expect(
             page.getByTestId(`betrayal-room-occupant-target-outline-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`),
         ).toHaveAttribute('data-highlight-color', 'green');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(34, '木乃伊攻击-同房英雄目标高亮'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(40, '木乃伊攻击-同房英雄目标高亮'));
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
             0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
@@ -2171,15 +2519,15 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('伤害或偷取');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(35, '木乃伊攻击骰结果-可选择伤害或偷取'));
-        await page.getByTestId('betrayal-roll-continue').click();
+        await saveScreenshot(page, goldenFlowProcessScreenshot(41, '木乃伊攻击骰结果-可选择伤害或偷取'));
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             rewardPending: true,
             pendingRewardStealableCardIds: expect.arrayContaining(['holy-symbol']),
         });
-        await saveScreenshot(page, goldenFlowProcessScreenshot(36, '木乃伊攻击英雄后奖励-偷圣符入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(42, '木乃伊攻击英雄后奖励-偷圣符入口可见'));
         await saveScreenshot(page, GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT);
         await page.getByTestId('betrayal-mummy-reward-steal-holy-symbol').click();
 
@@ -2194,7 +2542,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             endgameOutcome: 'traitor',
         });
         await expect(endgame.getByTestId('betrayal-endgame-ending-narration')).toContainText('小女孩');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(37, '偷走圣符后-叛徒终局朗读'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(43, '偷走圣符后-叛徒终局朗读'));
         await saveScreenshot(page, GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-mummy-rampage-golden-traitor-flow', diagnostics }]);
@@ -2290,7 +2638,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectVisiblePhysicalDiceBox(movementRollPanel);
         await waitForPhysicalDiceSettled(movementRollPanel);
         await saveScreenshot(page, BRIDGED_CANDIDATE_MUMMY_MOVE_ROLL_SCREENSHOT);
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 3 });
         await moveMummyThroughRealRoomTarget(
             page,
@@ -2336,7 +2684,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('伤害或偷取');
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-map')).toContainText('偷走地图');
         await saveScreenshot(page, BRIDGED_CANDIDATE_ATTACK_REWARD_SCREENSHOT);
@@ -2486,8 +2834,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectVisiblePhysicalDiceBox(rollPanel);
         await waitForPhysicalDiceSettled(rollPanel);
         await saveScreenshot(page, CURRENT_SCOPE_CANDIDATE_NORMAL_MOVE_ROLL_SCREENSHOT);
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 3 });
 
         await moveMummyThroughRealRoomTarget(
@@ -2565,8 +2912,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectRollContinueButtonUsable(page);
         await saveScreenshot(page, MOVE_ROLL_SCREENSHOT);
 
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
         await expect(monsterMoveAction).toBeVisible();
         await expect(monsterMoveAction).toContainText('移动木乃伊');
@@ -2584,6 +2930,17 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await saveScreenshot(page, MOVE_TARGET_SCREENSHOT);
 
         await page.getByTestId(`betrayal-room-${fixture.girlRoomId}`).click();
+        const transitionBlocker = page.getByTestId('betrayal-visual-transition-blocker');
+        await expect(transitionBlocker).toBeVisible();
+        await expect(transitionBlocker).toHaveAttribute('data-transition-kind', 'monster-move');
+        await expect(transitionBlocker).toHaveAttribute('data-transition-target-testid', `betrayal-room-${fixture.girlRoomId}`);
+        await expect(page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
+        await expect(page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
+        await expect.poll(() => readMummyActionState(page)).toMatchObject({
+            mummyRoomId: fixture.girlRoomId,
+        });
+        await saveScreenshot(page, MOVE_ANIMATING_SCREENSHOT);
+        await expect(transitionBlocker).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(
             new RegExp(`木乃伊.*${fixture.girlRoomName}`),
         );
@@ -2591,6 +2948,35 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(page.getByTestId(`betrayal-room-haunt-token-${fixture.girlRoomId}-mummy-girl-token`)).toHaveAttribute(
             'data-token-status',
             'held-by-mummy',
+        );
+        await expect(page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`)).toHaveAttribute(
+            'data-token-asset',
+            'betrayal/tokens/haunts/mummy-girl.svg',
+        );
+        const movedMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`);
+        await expectBoardTokenReadableSize(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '瞬移后木乃伊本体',
+            32,
+        );
+        await expectBoardTokenCircular(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '瞬移后木乃伊本体',
+        );
+        await expectBoardTokenReadableSize(
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
+            '瞬移后女孩 token',
+            20,
+        );
+        await expectBoardTokensVerticallyStacked(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
+            '瞬移后木乃伊与女孩',
+        );
+        await expectBoardTokensDoNotOverlap(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
+            '瞬移后木乃伊与女孩',
         );
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
             mummyRoomId: fixture.girlRoomId,
@@ -2643,8 +3029,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectRollContinueButtonUsable(page);
         await saveScreenshot(page, MOVE_ONE_ROLL_SCREENSHOT);
 
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 1 });
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
         await expect(monsterMoveAction).toBeVisible();
@@ -2670,6 +3055,35 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(page.getByTestId(`betrayal-room-haunt-token-${fixture.girlRoomId}-mummy-girl-token`)).toHaveAttribute(
             'data-token-status',
             'held-by-mummy',
+        );
+        await expect(page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`)).toHaveAttribute(
+            'data-token-asset',
+            'betrayal/tokens/haunts/mummy-girl.svg',
+        );
+        const movedMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`);
+        await expectBoardTokenReadableSize(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '1点瞬移后木乃伊本体',
+            32,
+        );
+        await expectBoardTokenCircular(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '1点瞬移后木乃伊本体',
+        );
+        await expectBoardTokenReadableSize(
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
+            '1点瞬移后女孩 token',
+            20,
+        );
+        await expectBoardTokensVerticallyStacked(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
+            '1点瞬移后木乃伊与女孩',
+        );
+        await expectBoardTokensDoNotOverlap(
+            movedMummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.girlRoomId}`),
+            '1点瞬移后木乃伊与女孩',
         );
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
             mummyRoomId: fixture.girlRoomId,
@@ -2713,8 +3127,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(rollPanel).toBeVisible();
         await expect(rollPanel).toContainText('木乃伊移动');
         await expect(rollPanel).toContainText('可移动 1 间');
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({ moveRemaining: 1 });
 
         const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
@@ -2817,8 +3230,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['map']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-map')).toContainText('偷走地图');
         await saveScreenshot(page, ATTACK_REWARD_SCREENSHOT);
@@ -2864,6 +3276,11 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(mummyToken).toHaveAttribute('data-direct-target', 'true');
         await mummyToken.click();
         await expect(heroToken).toHaveAttribute('data-direct-target', 'true');
+        await expectBoardTokenReadableSize(
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '同房攻击选择态木乃伊本体',
+            54,
+        );
 
         await setHarnessRandomQueue(page, [
             0.5, 0.5, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
@@ -2880,7 +3297,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['holy-symbol']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
 
@@ -2943,7 +3360,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['ring']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-ring')).toContainText('偷走指环');
 
@@ -3009,7 +3426,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['mummy-girl-token']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-mummy-girl-token')).toContainText('偷走女孩');
 
@@ -3019,6 +3436,50 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(page.getByTestId(`betrayal-room-haunt-token-${fixture.mummyRoomId}-mummy-girl-token`)).toHaveAttribute(
             'data-token-status',
             'held-by-mummy',
+        );
+        await expect(page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`)).toHaveAttribute(
+            'data-token-asset',
+            'betrayal/tokens/haunts/mummy-girl.svg',
+        );
+        await expectBoardTokenReadableSize(
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '偷走女孩后木乃伊本体',
+            32,
+        );
+        await expectBoardTokenCircular(
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '偷走女孩后木乃伊本体',
+        );
+        await expectBoardTokenReadableSize(
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`),
+            '偷走女孩后女孩 token',
+            20,
+        );
+        await expectBoardTokensVerticallyStacked(
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`),
+            '偷走女孩后木乃伊与女孩',
+        );
+        await expectBoardTokensDoNotOverlap(
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`),
+            '偷走女孩后木乃伊与女孩',
+        );
+        await expectBoardTokensDoNotOverlap(
+            heroToken,
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
+            '偷走女孩后英雄与木乃伊',
+        );
+        await expectBoardTokensDoNotOverlap(
+            heroToken,
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`),
+            '偷走女孩后英雄与女孩',
+        );
+        await expectMummyCarryClusterComparableToExplorer(
+            mummyToken.getByTestId(`betrayal-monster-board-token-${MUMMY_MONSTER_ID}`),
+            page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`),
+            heroToken.getByTestId(`betrayal-explorer-figure-token-${fixture.heroTargetId}`),
+            '偷走女孩后木乃伊携带组合与玩家',
         );
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             girlHolderPlayerId: null,
@@ -3070,7 +3531,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
         await expect(attackRollPanel).toContainText('伤害或偷取');
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await page.getByTestId('betrayal-mummy-reward-steal-map').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('夺走地图');
@@ -3145,7 +3606,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['armor']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3165,7 +3626,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const originalDamageAmount = afterDamageChoice.pendingDamageOriginalAmount ?? 0;
         const reducedDamageAmount = afterDamageChoice.pendingDamageAmount ?? 0;
         expect(originalDamageAmount).toBeGreaterThan(0);
-        expect(reducedDamageAmount).toBe(originalDamageAmount - 1);
+        expect(afterDamageChoice.pendingDamageReductionAmount).toBe(1);
+        expect(reducedDamageAmount).toBeLessThanOrEqual(originalDamageAmount - 1);
         expect(afterDamageChoice.pendingDamageForcedTraits ?? []).toHaveLength(reducedDamageAmount);
 
         const coreAfterDamageChoice = await readInjectedCore(page);
@@ -3253,7 +3715,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['brooch']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3366,7 +3828,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['skull']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3484,7 +3946,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['skull']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3602,7 +4064,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['skull']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
@@ -3748,8 +4210,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             pendingRewardStealableCardIds: expect.arrayContaining(['map']),
         });
 
-        await page.getByTestId('betrayal-roll-continue').click();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
+        await acknowledgeRecentRollForAllPlayers(page);
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
         await expect(page.getByTestId('betrayal-mummy-reward-damage')).toContainText('造成');
 

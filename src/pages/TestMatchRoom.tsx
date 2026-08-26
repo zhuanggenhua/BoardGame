@@ -39,6 +39,7 @@ import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import {
     resolveSeatControllersFromSearchParams,
 } from '../engine/ai';
+import type { GameRuntimeLocalSetupResult } from '../games/gameRuntimeAdapter';
 import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
 import { resolveManifestLocalSetup, resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 
@@ -71,6 +72,10 @@ export const TestMatchRoom: React.FC = () => {
     const [engineConfig, setEngineConfig] = useState<GameImplementation['engineConfig'] | null>(null);
     const [runtimeAdapter, setRuntimeAdapter] = useState<GameImplementation['runtimeAdapter'] | null>(null);
     const [WrappedBoard, setWrappedBoard] = useState<React.ComponentType<GameBoardProps<unknown>> | null>(null);
+    const [confirmedLocalSetupState, setConfirmedLocalSetupState] = useState<{
+        resetKey: string;
+        setup: GameRuntimeLocalSetupResult;
+    } | null>(null);
     const [loading, setLoading] = useState(true);
     const { t, i18n } = useTranslation('lobby');
     const toast = useToast();
@@ -96,6 +101,15 @@ export const TestMatchRoom: React.FC = () => {
     );
 
     useEffect(() => syncGamePageDocumentAttributes(gamePageDataAttributes), [gamePageDataAttributes]);
+
+    const localSetupSearchKey = searchParams.toString();
+    const localSetupGateResetKey = `${gameId ?? ''}:${localSetupSearchKey}`;
+    const confirmedLocalSetup = confirmedLocalSetupState?.resetKey === localSetupGateResetKey
+        ? confirmedLocalSetupState.setup
+        : null;
+    const handleConfirmLocalSetup = useCallback((setup: GameRuntimeLocalSetupResult) => {
+        setConfirmedLocalSetupState({ resetKey: localSetupGateResetKey, setup });
+    }, [localSetupGateResetKey]);
 
     const handleCommandRejected = useCallback((commandType: string, error: string) => {
         if (!gameId || TUTORIAL_SILENT_ERRORS.has(error)) return;
@@ -132,14 +146,16 @@ export const TestMatchRoom: React.FC = () => {
             searchParams,
             tutorialId: searchParams.get('tutorialSetup') ?? undefined,
         }) ?? null;
-        const resolvedNumPlayers = runtimeLocalSetup?.numPlayers ?? manifestLocalSetup.numPlayers;
+        const initialLocalSetup = runtimeLocalSetup ?? manifestLocalSetup;
+        const activeLocalSetup = confirmedLocalSetup ?? initialLocalSetup;
+        const resolvedNumPlayers = activeLocalSetup.numPlayers;
         const seatControllers = resolveSeatControllersFromSearchParams({
             numPlayers: resolvedNumPlayers,
             searchParams,
             aiSupport: gameConfig?.ai,
         });
         const playerNames = resolveTestPlayerNames(searchParams, resolvedNumPlayers);
-        const setupData = resolveRuntimeLocalSetupData(runtimeLocalSetup)
+        const setupData = resolveRuntimeLocalSetupData(activeLocalSetup)
             ?? manifestLocalSetup.setupData;
         
         return {
@@ -153,9 +169,10 @@ export const TestMatchRoom: React.FC = () => {
             seatControllers,
             playerNames,
             setupData,
+            initialLocalSetup,
             disableLocalAiAutomation,
         };
-    }, [gameConfig, runtimeAdapter, searchParams]);
+    }, [confirmedLocalSetup, gameConfig, runtimeAdapter, searchParams]);
 
     useEffect(() => {
         if (!gameId) return;
@@ -269,6 +286,11 @@ export const TestMatchRoom: React.FC = () => {
         );
     }
 
+    const LocalSetupGate = runtimeAdapter?.LocalSetupGate;
+    const shouldShowLocalSetupGate = searchParams.get('setupGate') === 'true'
+        && Boolean(LocalSetupGate)
+        && !confirmedLocalSetup;
+
     return (
         <>
             <SEO
@@ -288,6 +310,14 @@ export const TestMatchRoom: React.FC = () => {
                         <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
                             <MobileBoardShell>
                                 {engineConfig && WrappedBoard ? (
+                                    shouldShowLocalSetupGate && LocalSetupGate ? (
+                                        <LocalSetupGate
+                                            mode="local"
+                                            searchParams={searchParams}
+                                            initialSetup={testConfig.initialLocalSetup}
+                                            onConfirm={handleConfirmLocalSetup}
+                                        />
+                                    ) : (
                                     <LocalGameProvider
                                         config={engineConfig}
                                         numPlayers={testConfig.numPlayers}
@@ -314,6 +344,7 @@ export const TestMatchRoom: React.FC = () => {
                                             )}
                                         />
                                     </LocalGameProvider>
+                                    )
                                 ) : (
                                     <LoadingScreen
                                         anchor="container"

@@ -275,7 +275,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
 
         const state = makeFullMatchState(core);
 
-        // Step 1: 打出 → 直接跳到选随从（只有1个基地有己方随从）
+        // Step 1: 打出 → 先确认基地（即使只有1个有己方随从的基地）
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'disguise1' },
@@ -283,24 +283,32 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
 
         expect(r1.steps[0]?.success).toBe(true);
         const choice1 = getSimpleChoicePrompt(r1.finalState);
-        expect(choice1.sourceId).toBe('ninja_disguise_choose_minions');
+        expect(choice1.sourceId).toBe('ninja_disguise_choose_base');
 
-        // Step 2: 选 old-m1 → 选手牌随从
-        const mOpt = findOption(choice1, (o: any) => o.value?.minionUid === 'old-m1');
-        const r2 = respond(r1.finalState, '0', mOpt, 'disguise single-base step2');
+        // Step 2: 选基地 → 选 old-m1
+        const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 0);
+        const r2 = respond(r1.finalState, '0', baseOpt, 'disguise single-base step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
         const choice2 = getSimpleChoicePrompt(r2.finalState);
-        expect(choice2.sourceId).toBe('ninja_disguise_choose_play1');
+        expect(choice2.sourceId).toBe('ninja_disguise_choose_minions');
 
-        // Step 3: 选手牌随从 → 链路结束
-        const handOpt = findOption(choice2, (o: any) => o.value?.cardUid === 'hand-m1');
-        const r3 = respond(r2.finalState, '0', handOpt, 'disguise single-base step3');
+        // Step 3: 选 old-m1 → 选手牌随从
+        const mOpt = findOption(choice2, (o: any) => o.value?.minionUid === 'old-m1');
+        const r3 = respond(r2.finalState, '0', mOpt, 'disguise single-base step3: 选随从');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expectNoPrompt(r3.finalState);
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
+        expect(choice3.sourceId).toBe('ninja_disguise_choose_play1');
 
-        const fc = r3.finalState.core;
+        // Step 4: 选手牌随从 → 链路结束
+        const handOpt = findOption(choice3, (o: any) => o.value?.cardUid === 'hand-m1');
+        const r4 = respond(r3.finalState, '0', handOpt, 'disguise single-base step4: 选手牌');
+
+        expect(r4.steps[0]?.success).toBe(true);
+        expectNoPrompt(r4.finalState);
+
+        const fc = r4.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'old-m1')).toBeUndefined();
         expect(fc.bases[0].minions.some(m => m.defId === 'pirate_first_mate')).toBe(true);
         expect(fc.players['0'].hand.some(c => c.defId === 'ninja_acolyte')).toBe(true);
@@ -2116,7 +2124,7 @@ describe('P3: alien_probe（探测）手牌选择链', () => {
 
         const state = makeFullMatchState(core);
 
-        // Step 1: 打出 probe → 单对手自动选择 → 直接到对手手牌选择
+        // Step 1: 打出 probe → 选择要查看手牌的玩家
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'probe1' },
@@ -2124,19 +2132,27 @@ describe('P3: alien_probe（探测）手牌选择链', () => {
 
         expect(r1.steps[0]?.success).toBe(true);
         const choice1 = getSimpleChoicePrompt(r1.finalState);
-        expect(choice1.sourceId).toBe('alien_probe');
+        expect(choice1.sourceId).toBe('alien_probe_choose_target');
 
-        // Step 2: 选择对手手牌中的随从
-        const minionOpt = getPromptOption(choice1, (o: any) => o.value?.cardUid === 'hand-m1');
-        const actionOpt = getPromptOption(choice1, (o: any) => o.value?.cardUid === 'hand-a1');
-        expect(actionOpt.disabled).toBe(true);
-        const r2 = respond(r1.finalState, '0', minionOpt.id, 'probe step2: 选择随从');
+        // Step 2: 选择对手 → 选择对手手牌中的随从
+        const playerOpt = getPromptOption(choice1, (o: any) => o.value?.targetPlayerId === '1');
+        const r2 = respond(r1.finalState, '0', playerOpt.id, 'probe step2: 选择对手');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expectNoPrompt(r2.finalState);
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
+        expect(choice2.sourceId).toBe('alien_probe');
+
+        // Step 3: 选择对手手牌中的随从
+        const minionOpt = getPromptOption(choice2, (o: any) => o.value?.cardUid === 'hand-m1');
+        const actionOpt = getPromptOption(choice2, (o: any) => o.value?.cardUid === 'hand-a1');
+        expect(actionOpt.disabled).toBe(true);
+        const r3 = respond(r2.finalState, '0', minionOpt.id, 'probe step3: 选择随从');
+
+        expect(r3.steps[0]?.success).toBe(true);
+        expectNoPrompt(r3.finalState);
 
         // 验证：被选随从进入对手弃牌堆，行动卡仍留在手牌
-        const fc = r2.finalState.core;
+        const fc = r3.finalState.core;
         expect(fc.players['1'].hand.some(card => card.uid === 'hand-m1')).toBe(false);
         expect(fc.players['1'].discard.some(card => card.uid === 'hand-m1')).toBe(true);
         expect(fc.players['1'].hand.some(card => card.uid === 'hand-a1')).toBe(true);
@@ -2631,7 +2647,7 @@ describe('P3: elder_thing_unfathomable_goals（深不可测的目的）循环链
         expect(fc.bases[0].minions.some(m => m.uid === 'p1-m2')).toBe(true);
     });
 
-    it('对手只有1个随从时自动消灭（无需交互）', () => {
+    it('对手只有1个随从时仍需确认消灭目标', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -2651,18 +2667,22 @@ describe('P3: elder_thing_unfathomable_goals（深不可测的目的）循环链
 
         const state = makeFullMatchState(core);
 
-        // 打出 → P1 只有1个随从 → 自动消灭，无交互
+        // 打出 → P1 只有1个随从，但仍需玩家确认
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'ug1' },
         }, 'unfathomable auto-destroy');
 
         expect(r1.steps[0]?.success).toBe(true);
-        // 无交互（自动消灭）
-        expectNoPrompt(r1.finalState);
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'elder_thing_unfathomable_goals');
+        const m1Opt = findOption(choice1, (o: any) => o.value?.minionUid === 'p1-m1');
+        const r2 = respond(r1.finalState, '1', m1Opt, 'unfathomable single-target: P1确认消灭');
+
+        expect(r2.steps[0]?.success).toBe(true);
+        expectNoPrompt(r2.finalState);
 
         // 验证：p1-m1 被消灭
-        const fc = r1.finalState.core;
+        const fc = r2.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'p1-m1')).toBeUndefined();
     });
 });

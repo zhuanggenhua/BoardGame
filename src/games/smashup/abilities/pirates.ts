@@ -139,6 +139,7 @@ export function registerPirateAbilities(): void {
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
         mandatory: false,
+        canTrigger: canTriggerPirateFirstMateAfterScoring,
     });
     // 海盗（海盗）：被消灭时移动到其他基地而非进入弃牌堆
     registerTrigger('pirate_buccaneer', 'onMinionDestroyed', buccaneerOnDestroyed, {
@@ -150,6 +151,35 @@ function canTriggerPirateKingBeforeScoring(ctx: TriggerContext): boolean {
     return ctx.baseIndex !== undefined
         && ctx.sourceBaseIndex !== undefined
         && ctx.sourceBaseIndex !== ctx.baseIndex;
+}
+
+function canTriggerPirateFirstMateAfterScoring(ctx: TriggerContext): boolean {
+    const scoringBaseIndex = ctx.baseIndex;
+    if (scoringBaseIndex === undefined || !ctx.matchState) return false;
+
+    const snapshotMate = ctx.triggerMinion;
+    const mateUid = ctx.sourceCardUid ?? ctx.triggerMinionUid ?? snapshotMate?.uid;
+    const locatedMate = mateUid
+        ? findMinionOnBases(ctx.state, mateUid)
+        : undefined;
+    const ownerIdForZoneCheck = snapshotMate?.owner ?? ctx.sourceOwnerPlayerId ?? ctx.sourceControllerId;
+    const ownerZones = ownerIdForZoneCheck ? ctx.state.players[ownerIdForZoneCheck] : undefined;
+    const sourceAlreadyInHandOrDeck = Boolean(
+        mateUid
+        && ownerZones
+        && (ownerZones.hand.some(card => card.uid === mateUid) || ownerZones.deck.some(card => card.uid === mateUid)),
+    );
+    const wasDeckedByRitualSite = Boolean(
+        mateUid && ctx.state.afterScoringRitualSiteDeckedMinionUids?.includes(mateUid),
+    );
+    if (!locatedMate && sourceAlreadyInHandOrDeck && !wasDeckedByRitualSite) return false;
+
+    const mate = locatedMate?.minion ?? snapshotMate;
+    const mateDefId = mate?.defId ?? ctx.triggerMinionDefId ?? ctx.sourceDefId;
+    const mateBaseIndex = locatedMate?.baseIndex ?? ctx.sourceBaseIndex;
+    if (!mateUid || !mateDefId || mateBaseIndex === undefined) return false;
+
+    return ctx.state.bases.some((_base, baseIndex) => baseIndex !== mateBaseIndex);
 }
 
 /** 粗鲁少妇 onPlay：消灭本基地一个力量≤2的随从*/
@@ -641,7 +671,7 @@ const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroad
                     minionUid: minion.uid,
                     minionDefId: minion.defId,
                     fromBaseIndex: baseIndex,
-                    destroyerId: targetPlayerId,
+                    destroyerId: playerId,
                     reason: 'pirate_broadside',
                     now: timestamp,
                     sourcePlayerId: playerId,

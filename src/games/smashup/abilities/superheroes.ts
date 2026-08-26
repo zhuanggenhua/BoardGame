@@ -865,6 +865,14 @@ function superheroesMildManneredCitizenTrigger(ctx: TriggerContext): AbilityResu
     };
 }
 
+function canTriggerSuperheroesMildManneredCitizen(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    if (!ctx.sourceCardUid || !ctx.sourceDefId || ctx.sourceBaseIndex === undefined) return false;
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    const minion = base?.minions.find((candidate) => candidate.uid === ctx.sourceCardUid);
+    return !!minion && minion.controller === ctx.playerId;
+}
+
 function superheroesTheBurstTrigger(ctx: TriggerContext): AbilityResult {
     if (!ctx.matchState) return { events: [] };
     if (!ctx.sourceCardUid || !ctx.sourceDefId) return { events: [] };
@@ -1002,6 +1010,7 @@ export function registerSuperheroesAbilities(): void {
     registerTrigger('superheroes_mild_mannered_citizen', 'onTurnStart', superheroesMildManneredCitizenTrigger, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSuperheroesMildManneredCitizen,
     });
 
     registerProtection('superheroes_awesome_guy', 'destroy', superheroesAwesomeGuyProtection);

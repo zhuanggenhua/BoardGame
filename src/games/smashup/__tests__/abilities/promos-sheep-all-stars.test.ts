@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
@@ -238,10 +239,7 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
                 makeMinion('ally', 'sheep_flock', '0', 2),
             ])],
         });
-        const destroyedByOpponentAction = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'ally',
+        const destroyedByOpponentAction = makeMinionDestroyedEvent({minionUid: 'ally',
                 minionDefId: 'sheep_flock',
                 fromBaseIndex: 0,
                 ownerId: '0',
@@ -250,10 +248,7 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
                 sourcePlayerId: '1',
                 sourceDefId: 'all_stars_square_deal',
                 sourceKind: 'action',
-                reason: 'test_opponent_action',
-            },
-            timestamp: 31,
-        } as any;
+                reason: 'test_opponent_action', timestamp: 31 }) as any;
 
         const prompted = resolveAffectedMinions(
             makeMatchState(core),
@@ -333,10 +328,7 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
                 makeMinion('ally', 'sheep_flock', '0', 2),
             ])],
         });
-        const ownActionDestroy = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'ally',
+        const ownActionDestroy = makeMinionDestroyedEvent({minionUid: 'ally',
                 minionDefId: 'sheep_flock',
                 fromBaseIndex: 0,
                 ownerId: '0',
@@ -345,10 +337,7 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
                 sourcePlayerId: '0',
                 sourceDefId: 'all_stars_square_deal',
                 sourceKind: 'action',
-                reason: 'test_own_action',
-            },
-            timestamp: 33,
-        } as any;
+                reason: 'test_own_action', timestamp: 33 }) as any;
         const nonActionDestroy = {
             ...ownActionDestroy,
             payload: {

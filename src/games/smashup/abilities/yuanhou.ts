@@ -550,6 +550,15 @@ function shapeshiftersDoppelganger(ctx: TriggerContext): SmashUpEvent[] | Trigge
     return search.matchState ? search : search.events;
 }
 
+function canTriggerShapeshiftersDoppelganger(ctx: TriggerContext): boolean {
+    if (ctx.triggerMinionDefId !== 'shapeshifters_doppelganger') return false;
+    if (ctx.baseIndex === undefined || !ctx.matchState) return false;
+    return buildDeckMinionSearchOptions(ctx.state, ctx.playerId, {
+        baseIndex: ctx.baseIndex,
+        reason: 'shapeshifters_doppelganger',
+    }).length > 0;
+}
+
 function shapeshiftersCopycat(ctx: AbilityContext): AbilityResult {
     const candidates = allMinions(ctx.state).filter(located => located.minion.controller !== ctx.playerId);
     const direct = locateMinion(ctx.state, ctx.targetMinionUid);
@@ -899,6 +908,22 @@ function cyborgApesFlyingMonkeyAfterScoring(ctx: TriggerContext): TriggerResult 
     return { events: [] };
 }
 
+function canTriggerCyborgApesFlyingMonkeyAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined) return false;
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return false;
+    const sourceHost = ctx.sourceCardUid
+        ? base.minions.find(minion => minion.attachedActions.some(attached => attached.uid === ctx.sourceCardUid))
+        : undefined;
+    const sourceAction = sourceHost?.attachedActions.find(attached => attached.uid === ctx.sourceCardUid);
+    const hasSourceCandidate = sourceHost && sourceAction
+        ? true
+        : base.minions.some(minion =>
+            minion.attachedActions.some(attached => attached.defId === 'cyborg_apes_flying_monkey'),
+        );
+    return hasSourceCandidate && ctx.state.bases.some((_candidate, index) => index !== ctx.baseIndex);
+}
+
 function cellularBondingCopiesAttachedAction(
     minion: MinionOnBase,
     copiedDefId: string,
@@ -953,6 +978,15 @@ function shapeshiftersCellularBondingFlyingMonkey(ctx: TriggerContext): TriggerR
         reason: 'shapeshifters_cellular_bonding_flying_monkey',
         interactionIdPrefix: 'shapeshifters_cellular_bonding_flying_monkey_move',
     });
+}
+
+function canTriggerShapeshiftersCellularBondingFlyingMonkey(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined) return false;
+    const host = locateAttachedActionHost(ctx.state, ctx.sourceCardUid);
+    if (!host || host.baseIndex !== ctx.baseIndex) return false;
+    if (getCellularBondingCopiedDefId(host.minion, ctx.sourceCardUid) !== 'cyborg_apes_flying_monkey') return false;
+    const bondingAction = host.minion.attachedActions.find(action => action.uid === ctx.sourceCardUid);
+    return !!bondingAction && ctx.state.bases.some((_candidate, index) => index !== ctx.baseIndex);
 }
 
 function superSpiesSpy(ctx: AbilityContext): AbilityResult {
@@ -1334,6 +1368,19 @@ function superSpiesSecretAgent(ctx: TriggerContext): SmashUpEvent[] | TriggerRes
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
     return [];
+}
+
+function canTriggerSuperSpiesSecretAgent(ctx: TriggerContext): boolean {
+    const actionPlayerId = ctx.playerId;
+    if (!actionPlayerId || !ctx.matchState || !ctx.sourceCardUid || !ctx.sourceControllerId) return false;
+    if (ctx.sourceControllerId === actionPlayerId) return false;
+    const source = allMinions(ctx.state).some(({ minion }) =>
+        minion.uid === ctx.sourceCardUid
+        && minion.defId === 'super_spies_secret_agent'
+        && minion.controller === ctx.sourceControllerId,
+    );
+    if (!source) return false;
+    return (ctx.state.players[actionPlayerId]?.hand.length ?? 0) > 0;
 }
 
 function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
@@ -2798,6 +2845,7 @@ export function registerYuanhouAbilities(): void {
         global: true,
         globalZones: ['discard'],
         playerContext: 'eventPlayer',
+        canTrigger: canTriggerShapeshiftersDoppelganger,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerTrigger('shapeshifters_copycat', 'onMinionDiscardedFromBase', shapeshiftersCopycatCopiedJumper, {
@@ -2830,6 +2878,7 @@ export function registerYuanhouAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerShapeshiftersCellularBondingFlyingMonkey,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
 
@@ -2852,6 +2901,7 @@ export function registerYuanhouAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerCyborgApesFlyingMonkeyAfterScoring,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerDiscardActionPlayProvider({
@@ -2914,6 +2964,7 @@ export function registerYuanhouAbilities(): void {
     registerTrigger('super_spies_secret_agent', 'onActionPlayed', superSpiesSecretAgent, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSuperSpiesSecretAgent,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerRestriction('super_spies_mindraker', 'play_action', ctx => {

@@ -314,6 +314,7 @@ export function registerCthulhuAbilities(): void {
     registerTrigger('cthulhu_chosen', 'beforeScoring', cthulhuChosenBeforeScoringPerInstance, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerCthulhuChosenBeforeScoring,
     });
     // 完成仪式：回合开始时清场并换基地
     registerTrigger('cthulhu_complete_the_ritual', 'onTurnStart', cthulhuCompleteTheRitualTrigger, {
@@ -894,6 +895,21 @@ function cthulhuChosenBeforeScoringPerInstance(ctx: TriggerContext): TriggerResu
             remaining: [],
         } satisfies CthulhuChosenPromptContext,
     ), ctx.matchState);
+}
+
+function canTriggerCthulhuChosenBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState) return false;
+    if (ctx.sourceCardUid) {
+        return ctx.state.bases.some(base =>
+            base.minions.some(minion =>
+                minion.uid === ctx.sourceCardUid
+                && matchesDefId(minion.defId, 'cthulhu_chosen'),
+            ),
+        );
+    }
+    return ctx.state.bases.some(base =>
+        base.minions.some(minion => matchesDefId(minion.defId, 'cthulhu_chosen')),
+    );
 }
 
 // ============================================================================

@@ -24,7 +24,6 @@ import {
     resolveAbilityRuntimePrompt,
     resumeAbilityRuntimeContinuationEvent,
 } from './abilityRuntime';
-import { addPowerCounter } from './abilityHelpers';
 import { resumePendingBranchingChoiceFrames } from './branchingChoice';
 import { SU_EVENT_TYPES } from './events';
 import { maybeResolveReactionQueue } from './reactionQueue';
@@ -68,6 +67,27 @@ const isCardToDeckTopEvent = (event: GameEvent): event is CardToDeckTopEvent => 
     event.type === SU_EVENT_TYPES.CARD_TO_DECK_TOP
 );
 
+function getInteractionSourceId(interaction: unknown): string | undefined {
+    const sourceId = (interaction as { data?: { sourceId?: unknown } } | undefined)?.data?.sourceId;
+    return typeof sourceId === 'string' ? sourceId : undefined;
+}
+
+function promoteQueuedSourceContinuationBeforeReactionChoice(
+    state: MatchState<SmashUpCore>,
+    resolvedSourceId: string | undefined,
+    queuedInteractionIdsBefore: ReadonlySet<string>,
+): MatchState<SmashUpCore> {
+    if (!resolvedSourceId || resolvedSourceId === 'smashup_reaction_choose') return state;
+    if (getInteractionSourceId(state.sys.interaction?.current) !== 'smashup_reaction_choose') return state;
+
+    const queuedFollowup = state.sys.interaction?.queue?.[0];
+    const queuedFollowupSourceId = getInteractionSourceId(queuedFollowup);
+    if (!queuedFollowupSourceId || queuedFollowupSourceId === 'smashup_reaction_choose') return state;
+    if (queuedFollowup?.id && queuedInteractionIdsBefore.has(queuedFollowup.id)) return state;
+
+    return resolveInteraction(state);
+}
+
 function resolveReactionSessionPass(args: {
     state: MatchState<SmashUpCore>;
     random: RandomFn;
@@ -91,7 +111,9 @@ function shouldHoldExplicitOptionalPassSession(
     state: MatchState<SmashUpCore>,
     random: RandomFn,
     timestamp: number,
+    afterEventsRound: number | undefined,
 ): boolean {
+    if ((afterEventsRound ?? 0) === 0) return false;
     const session = getSmashUpReactionSession(state);
     if (!session || session.phase !== 'optional') return false;
     if ((session.passedPlayerIds?.length ?? 0) === 0) return false;
@@ -252,7 +274,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
             };
         },
 
-        afterEvents: ({ state, events, random }): HookResult<SmashUpCore> | void => {
+        afterEvents: ({ state, events, random, afterEventsRound }): HookResult<SmashUpCore> | void => {
             let newState = state;
             const nextEvents: GameEvent[] = [];
             let latestTimestamp = 0;
@@ -399,6 +421,9 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             if (result) {
                                 // 记录 handler 前的交互快照，用于判断“当前交互是否需要弹出”
                                 const currentInteractionIdBefore = newState.sys.interaction?.current?.id;
+                                const queuedInteractionIdsBefore = new Set(
+                                    (newState.sys.interaction?.queue ?? []).map(interaction => interaction.id),
+                                );
                                 const coreBeforeHandler = newState.core;
 
                                 const emittedEvents = [...result.events] as SmashUpEvent[];
@@ -421,6 +446,12 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 if (shouldResolveCurrentInteraction) {
                                     newState = resolveInteraction(newState);
                                 }
+
+                                newState = promoteQueuedSourceContinuationBeforeReactionChoice(
+                                    newState as MatchState<SmashUpCore>,
+                                    payload.sourceId,
+                                    queuedInteractionIdsBefore,
+                                );
 
                                 const replacementBaseDefId = getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents(emittedEvents);
                                 if (replacementBaseDefId) {
@@ -493,12 +524,13 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                 !hasPendingDomainEvents
                 && !reactionChoiceResolved
                 && !newState.sys.interaction?.current
-                && !shouldHoldExplicitOptionalPassSession(newState as MatchState<SmashUpCore>, random, latestTimestamp)
+                && !shouldHoldExplicitOptionalPassSession(newState as MatchState<SmashUpCore>, random, latestTimestamp, afterEventsRound)
             ) {
                 const reactionQueueResult = maybeResolveReactionQueue(
                     newState as MatchState<SmashUpCore>,
                     random,
                     latestTimestamp,
+                    { materializeDomainEvents: false },
                 );
                 if (reactionQueueResult) {
                     newState = reactionQueueResult.state;

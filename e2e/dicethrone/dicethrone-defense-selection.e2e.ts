@@ -1480,6 +1480,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
 
             await expectCompareRollMainResultLayer(page);
             await expect(page.getByTestId('compare-roll-result')).toContainText('你赢得了对决');
+            await expect(page.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
             await expect(page.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
             await game.screenshot('gunslinger-duel-harmony-compare-roll-first-open', testInfo);
 
@@ -1524,25 +1525,13 @@ test.describe('DiceThrone - 防御技能选择', () => {
         }
     });
 
-    test('枪手 Duel 输掉后的无选项确认应能手动继续并结算 1 点不可防御伤害', async ({ page, game }, testInfo) => {
+    test('枪手 Duel 输掉后无真实选择应自动结算且不弹确认窗', async ({ page, game }, testInfo) => {
         await setupGunslingerDuelAgainstHarmonyScene(game);
         await installDuelAuditProbe(page);
         let auditPath = '';
 
         try {
             await openGunslingerDuelCompareRollChoice(page, game, { defenderValue: 1, attackerValue: 6 });
-
-            await expectCompareRollMainResultLayer(page);
-            const panel = page.getByTestId('compare-roll-overlay');
-            await expect(panel.getByTestId('compare-roll-result')).toContainText('你输掉了对决');
-            await expect(panel.getByRole('button', { name: '确认继续' })).toBeVisible({ timeout: 5000 });
-            await expect(panel.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
-            await expect(panel.getByRole('button', { name: '造成 3 点不可防御伤害' })).toHaveCount(0);
-            await expect(panel.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toHaveCount(0);
-            await game.screenshot('gunslinger-duel-lose-confirm-before-click', testInfo);
-
-            await recordDuelAuditMarker(page, 'ui:click-duel-loss-confirm');
-            await panel.getByRole('button', { name: '确认继续' }).click();
 
             await expect.poll(async () => {
                 const state = await game.getState();
@@ -1559,6 +1548,8 @@ test.describe('DiceThrone - 防御技能选择', () => {
                 attackerHp: 49,
             });
             await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 5000 });
+            await recordDuelAuditMarker(page, 'auto:duel-loss-resolved-without-overlay');
+            await game.screenshot('gunslinger-duel-lose-auto-resolved-before-advance', testInfo);
 
             await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
             await expect.poll(async () => {
@@ -1584,10 +1575,10 @@ test.describe('DiceThrone - 防御技能选择', () => {
                     && event.amount === 1
                 );
             }, { timeout: 5000 }).toBe(true);
-            await game.screenshot('gunslinger-duel-lose-confirm-closed-and-advanced', testInfo);
+            await game.screenshot('gunslinger-duel-lose-auto-resolved-and-advanced', testInfo);
         } finally {
             const audit = await readDuelAuditProbe(page);
-            auditPath = await saveDuelAuditLog(testInfo, 'gunslinger-duel-loss-confirm-audit.json', audit);
+            auditPath = await saveDuelAuditLog(testInfo, 'gunslinger-duel-loss-auto-resolve-audit.json', audit);
             testInfo.annotations.push({ type: 'duel-audit-json', description: auditPath });
         }
     });
@@ -1601,6 +1592,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
             await openGunslingerDuelCompareRollChoice(page, game);
 
             await expectCompareRollMainResultLayer(page);
+            await expect(page.getByRole('button', { name: '造成 3 点不可防御伤害' })).toBeVisible({ timeout: 5000 });
             await expect(page.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
             await game.screenshot('gunslinger-duel-harmony-before-prevent-half', testInfo);
 
@@ -1650,7 +1642,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
         }
     });
 
-    test('枪手 Showdown 应展示双方对掷 UI，并在自动确认后写入加伤', async ({ page, game }, testInfo) => {
+    test('枪手 Showdown 无真实选择时应自动写入加伤且不弹确认窗', async ({ page, game }, testInfo) => {
         await setupGunslingerShowdownScene(game);
 
         await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
@@ -1669,13 +1661,6 @@ test.describe('DiceThrone - 防御技能选择', () => {
 
         await dispatchHarnessCommand(page, 'CONFIRM_COMPARE_ROLL', '0');
 
-        await expectCompareRollMainResultLayer(page);
-        await expect(page.getByTestId('compare-roll-participant-0')).toHaveCount(0);
-        await expect(page.getByTestId('compare-roll-participant-1')).toHaveCount(0);
-        await expect(page.getByTestId('compare-roll-result')).toContainText('本次攻击伤害 +2');
-        await expect(page.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
-        await game.screenshot('gunslinger-showdown-compare-roll-open', testInfo);
-
         await expect.poll(async () => {
             const state = await game.getState();
             return {
@@ -1692,6 +1677,6 @@ test.describe('DiceThrone - 防御技能选择', () => {
         });
 
         await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
-        await game.screenshot('gunslinger-showdown-compare-roll-closed', testInfo);
+        await game.screenshot('gunslinger-showdown-auto-resolved-without-overlay', testInfo);
     });
 });

@@ -14,9 +14,9 @@ import {
     addPowerCounter,
     addTitanPowerCounter,
     addTempPower,
+    buildValidatedDestroyEvents,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
-    destroyMinion,
     findMinionByAttachedCard,
     findMinionOnBases,
     getMinionPower,
@@ -692,15 +692,19 @@ function handleSeraphimDestroy(state: MatchState<SmashUpCore>, playerId: PlayerI
     if (getMinionPower(state.core, found.minion, found.baseIndex) > 4) return { state, events: [] };
     return {
         state,
-        events: [destroyMinion(
-            found.minion.uid,
-            found.minion.defId,
-            found.baseIndex,
-            found.minion.owner,
-            playerId,
-            'paladins_seraphim',
-            timestamp,
-        )],
+        events: buildValidatedDestroyEvents(state, {
+            minionUid: found.minion.uid,
+            minionDefId: found.minion.defId,
+            fromBaseIndex: found.baseIndex,
+            destroyerId: playerId,
+            reason: 'paladins_seraphim',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'paladins_seraphim',
+            sourceControllerId: playerId,
+            sourceBaseIndex: found.baseIndex,
+            sourceKind: 'nonAction',
+        }),
     };
 }
 

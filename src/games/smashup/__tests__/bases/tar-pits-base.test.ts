@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
     initAllAbilities,
@@ -24,11 +25,7 @@ describe('base_tar_pits: 被消灭随从放入牌库底', () => {
             } as any,
         });
 
-        const evt = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm1', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '0', reason: 'test' },
-            timestamp: 1000,
-        };
+        const evt = makeMinionDestroyedEvent({minionUid: 'm1', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '0', reason: 'test', timestamp: 1000 });
 
         const next = reduce(state, evt);
         expect(next.players['0'].discard.length).toBe(0);

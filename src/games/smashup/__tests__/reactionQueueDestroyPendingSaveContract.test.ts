@@ -49,6 +49,10 @@ function readProjectEngineSystemsGuide(): string {
   return readFileSync(join(SMASHUP_ROOT, '..', '..', '..', '.spec', 'knowledge', 'standards', 'engine-systems.md'), 'utf8');
 }
 
+function readSmashUpEngineGuide(): string {
+  return readSmashUpFile('rule/ENGINE_GUIDE.md');
+}
+
 describe('destroy pendingSave replacement contract', () => {
   it('交互式 onMinionDestroyed replacement sourceId 必须全部进入 pending-save 白名单', () => {
     const whitelist = extractPreventDestroyWhitelist();
@@ -72,13 +76,16 @@ describe('destroy pendingSave replacement contract', () => {
     expect(extractEngineGuidePreventDestroyIds().sort()).toEqual(extractPreventDestroyWhitelist().sort());
   });
 
-  it('项目总规范必须显式承认 SmashUp 当前 pendingSave 白名单合同，避免误导删除 PREVENT_DESTROY_SOURCE_IDS', () => {
+  it('项目总规范只保留路由，SmashUp pendingSave 白名单合同必须落在游戏文档', () => {
     const engineSystemsGuide = readProjectEngineSystemsGuide();
-    expect(engineSystemsGuide).toContain('SmashUp 当前 runtime 例外');
-    expect(engineSystemsGuide).toContain('PREVENT_DESTROY_SOURCE_IDS');
+    expect(engineSystemsGuide).toContain('具体游戏 runtime 例外');
+    expect(engineSystemsGuide).toContain('docs/games/<gameId>/');
+
+    const smashUpEngineGuide = readSmashUpEngineGuide();
+    expect(smashUpEngineGuide).toContain('PREVENT_DESTROY_SOURCE_IDS');
 
     for (const { sourceId } of INTERACTIVE_REPLACEMENT_SOURCES) {
-      expect(engineSystemsGuide, `.spec/knowledge/standards/engine-systems.md 应点名 ${sourceId} 所属合同`).toContain(sourceId);
+      expect(smashUpEngineGuide, `SmashUp ENGINE_GUIDE 应点名 ${sourceId} 所属合同`).toContain(sourceId);
     }
   });
 });

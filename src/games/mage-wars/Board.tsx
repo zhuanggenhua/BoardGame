@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
@@ -40,7 +40,7 @@ import {
 import type { MageWarsWallState } from './domain/types';
 import {
     getPresetMageSetupFromConfig,
-    getPresetSpellbookCardIdsFromConfig,
+    getPresetSpellbookEntriesFromConfig,
     getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
 } from './data/configPackage';
@@ -391,42 +391,6 @@ function EntityStatusTokenRail({
                 </span>
             ))}
         </div>
-    );
-}
-
-function MageWarsGuardTokenAction({
-    onGuard,
-    compact = false,
-}: {
-    onGuard: () => void;
-    compact?: boolean;
-}) {
-    const { t } = useTranslation('game-mage-wars');
-
-    return (
-        <button
-            type="button"
-            className={cx(
-                'pointer-events-auto absolute left-1/2 top-full z-40 -translate-x-1/2 rounded-full bg-transparent p-0 transition-[filter,transform] hover:scale-105 hover:drop-shadow-[0_0_12px_rgba(110,231,183,0.78)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-100',
-                compact ? 'mt-0.5 h-7 w-7' : 'mt-1 h-9 w-9',
-            )}
-            aria-label={t('actions.guard')}
-            title={t('actions.guard')}
-            data-testid="mage-wars-selected-unit-guard"
-            data-tutorial-id="mw-selected-unit-guard"
-            data-mage-wars-guard-action-placement="bottom-center"
-            style={{
-                left: '50%',
-                top: '100%',
-                transform: 'translateX(-50%)',
-            }}
-            onClick={(event) => {
-                event.stopPropagation();
-                onGuard();
-            }}
-        >
-            <TokenImage src={TOKEN_IMAGES.guard} alt={t('tokens.guard')} className={compact ? 'h-7 w-7' : 'h-8 w-8'} />
-        </button>
     );
 }
 
@@ -983,6 +947,8 @@ function PreparedSpellCard({
     testId,
     preparedScope,
     selected = false,
+    selectedCount = 0,
+    copyCount,
     disabled = false,
     onClick,
     tutorialId,
@@ -995,10 +961,13 @@ function PreparedSpellCard({
     testId?: string;
     preparedScope?: 'self' | 'opponent';
     selected?: boolean;
+    selectedCount?: number;
+    copyCount?: number;
     disabled?: boolean;
     onClick?: () => void;
     tutorialId?: string;
 }) {
+    const { t } = useTranslation('game-mage-wars');
     const previewRef = cardId == null || hidden ? null : getMageWarsSpellCardPreviewRef(cardId);
     const title = cardId == null ? label : getMageWarsSpellCardName(cardId) ?? label;
     const showLabel = hidden || cardId == null;
@@ -1042,6 +1011,25 @@ function PreparedSpellCard({
                     data-testid="mage-wars-selected-card-frame"
                 />
             ) : null}
+            {copyCount && copyCount > 1 ? (
+                <span
+                    className="pointer-events-none absolute bottom-0 z-30 rounded-full border border-stone-950/60 bg-stone-950/90 px-2.5 py-1 text-[0.82rem] font-black leading-none text-amber-100 shadow-[0_6px_14px_rgba(0,0,0,0.54)]"
+                    data-testid="mage-wars-spellbook-copy-count"
+                    style={{ left: '50%', transform: 'translate(-50%, 50%)' }}
+                >
+                    x{copyCount}
+                </span>
+            ) : null}
+            {selectedCount > 0 ? (
+                <span
+                    className="pointer-events-none absolute left-1 top-1 z-30 rounded-full border border-amber-900/50 bg-amber-200 px-1.5 py-0.5 text-[0.62rem] font-black leading-none text-stone-950 shadow-[0_4px_10px_rgba(0,0,0,0.38)]"
+                    data-testid="mage-wars-spellbook-selected-count"
+                >
+                    {selectedCount > 1
+                        ? t('spellbook.selectedCount', { count: selectedCount })
+                        : t('spellbook.selected')}
+                </span>
+            ) : null}
             {role === 'source' ? (
                 <span
                     className="pointer-events-none absolute inset-0 z-10 rounded-[0.18rem] border border-amber-200/70 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.18),0_0_14px_rgba(251,191,36,0.32)]"
@@ -1065,6 +1053,8 @@ function PreparedSpellCard({
                 data-tutorial-id={tutorialId}
                 data-mage-wars-prepared-card={preparedScope}
                 data-source-card-id={cardId ?? undefined}
+                data-copy-count={copyCount ?? undefined}
+                data-selected-count={selectedCount > 0 ? selectedCount : undefined}
                 data-selected={selected ? 'true' : undefined}
                 disabled={disabled}
                 onClick={onClick}
@@ -1083,6 +1073,8 @@ function PreparedSpellCard({
             data-tutorial-id={tutorialId}
             data-mage-wars-prepared-card={preparedScope}
             data-source-card-id={cardId ?? undefined}
+            data-copy-count={copyCount ?? undefined}
+            data-selected-count={selectedCount > 0 ? selectedCount : undefined}
             data-selected={selected ? 'true' : undefined}
         >
             {content}
@@ -1456,18 +1448,19 @@ function SpellbookShelf({
     phase,
     canAct,
     canPlan,
-    dispatch,
+    selectedCardIds,
+    onSelectedCardIdsChange,
 }: {
     player: MageWarsPlayerState;
     phase: string;
     canAct: boolean;
     canPlan: boolean;
-    dispatch: Props['dispatch'];
+    selectedCardIds: number[];
+    onSelectedCardIdsChange: Dispatch<SetStateAction<number[]>>;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const [category, setCategory] = useState<SpellbookCategoryId>('all');
     const [page, setPage] = useState(0);
-    const [selectedCardIds, setSelectedCardIds] = useState<number[]>([]);
     const planning = phase === 'planning' && canAct && canPlan;
     const categories: Array<{ id: SpellbookCategoryId; label: string }> = [
         { id: 'all', label: t('spellbook.categories.all') },
@@ -1477,10 +1470,11 @@ function SpellbookShelf({
         { id: 'incantation', label: t('spellbook.categories.incantation') },
         { id: 'equipment', label: t('spellbook.categories.equipment') },
     ];
-    const spellbookIds = useMemo(() => (
-        [...new Set(getPresetSpellbookCardIdsFromConfig(player.mageId))]
+    const spellbookEntries = useMemo(() => (
+        getPresetSpellbookEntriesFromConfig(player.mageId)
     ), [player.mageId]);
-    const filteredIds = useMemo(() => spellbookIds.filter((cardId) => {
+    const filteredEntries = useMemo(() => spellbookEntries.filter((entry) => {
+        const cardId = entry.spellCardId;
         if (category === 'all') return true;
         const spellType = getMageWarsSpellCardFromConfig(cardId)?.spellType;
         if (category === 'creature') return spellType === '生物' || spellType === '魔物';
@@ -1488,22 +1482,26 @@ function SpellbookShelf({
         if (category === 'attack') return spellType === '攻击';
         if (category === 'incantation') return spellType === '咒语';
         return spellType === '装备';
-    }), [category, spellbookIds]);
-    const pageCount = Math.max(1, Math.ceil(filteredIds.length / 6));
+    }), [category, spellbookEntries]);
+    const selectedCountsByCardId = useMemo(() => (
+        selectedCardIds.reduce((counts, cardId) => {
+            counts.set(cardId, (counts.get(cardId) ?? 0) + 1);
+            return counts;
+        }, new Map<number, number>())
+    ), [selectedCardIds]);
+    const pageCount = Math.max(1, Math.ceil(filteredEntries.length / 6));
     const currentPage = Math.min(page, pageCount - 1);
-    const previewIds = filteredIds.slice(currentPage * 6, currentPage * 6 + 6);
-    const togglePlannedCard = (cardId: number) => {
+    const previewEntries = filteredEntries.slice(currentPage * 6, currentPage * 6 + 6);
+    const togglePlannedCard = (cardId: number, copyCount: number) => {
         if (!planning) return;
-        setSelectedCardIds((current) => {
-            if (current.includes(cardId)) return current.filter((id) => id !== cardId);
+        onSelectedCardIdsChange((current) => {
+            const selectedCount = current.filter((id) => id === cardId).length;
+            if (selectedCount > 0 && (selectedCount >= Math.min(copyCount, 2) || current.length >= 2)) {
+                return current.filter((id) => id !== cardId);
+            }
             if (current.length >= 2) return current;
             return [...current, cardId];
         });
-    };
-    const planSelectedSpells = () => {
-        if (!planning || selectedCardIds.length === 0) return;
-        dispatch(MAGE_WARS_COMMANDS.PLAN_SPELLS, { spellCardIds: selectedCardIds });
-        setSelectedCardIds([]);
     };
 
     return (
@@ -1540,35 +1538,20 @@ function SpellbookShelf({
                         {label}
                     </button>
                 ))}
-                {planning ? (
-                    <button
-                        type="button"
-                        className={cx(
-                            'min-h-[1.55rem] rounded-[0.22rem] px-1.5 text-[0.66rem] font-black transition',
-                            selectedCardIds.length > 0
-                                ? 'bg-emerald-300 text-emerald-950 hover:bg-emerald-200'
-                                : 'bg-black/18 text-stone-500',
-                        )}
-                        disabled={selectedCardIds.length === 0}
-                        onClick={planSelectedSpells}
-                        data-testid="mage-wars-plan-spells"
-                        data-tutorial-id="mw-plan-spells"
-                    >
-                        {t('spellbook.planSelected', { count: selectedCardIds.length })}
-                    </button>
-                ) : null}
             </div>
-            <div className="relative z-10 flex min-w-0 flex-1 items-end gap-[0.875rem] overflow-hidden">
-                {previewIds.map((cardId) => (
+            <div className="relative z-10 flex min-w-0 flex-1 items-end gap-[0.875rem] overflow-visible">
+                {previewEntries.map((entry) => (
                     <PreparedSpellCard
-                        key={`${player.id}-spellbook-desktop-${cardId}`}
-                        cardId={cardId}
-                        label={getMageWarsSpellCardName(cardId) ?? t('privateZones.spell')}
+                        key={`${player.id}-spellbook-desktop-${entry.spellCardId}`}
+                        cardId={entry.spellCardId}
+                        label={getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell')}
                         testId="mage-wars-desktop-spellbook-card"
-                        tutorialId={`mw-spellbook-card-${cardId}`}
-                        selected={selectedCardIds.includes(cardId)}
+                        tutorialId={`mw-spellbook-card-${entry.spellCardId}`}
+                        selected={(selectedCountsByCardId.get(entry.spellCardId) ?? 0) > 0}
+                        selectedCount={selectedCountsByCardId.get(entry.spellCardId) ?? 0}
+                        copyCount={entry.count}
                         disabled={!planning}
-                        onClick={planning ? () => togglePlannedCard(cardId) : undefined}
+                        onClick={planning ? () => togglePlannedCard(entry.spellCardId, entry.count) : undefined}
                     />
                 ))}
             </div>
@@ -1662,12 +1645,23 @@ function TurnStatusDock({
     dispatch,
     disabled,
     compact = false,
+    planSpellCount = 0,
+    onPlanSpells,
 }: {
     dispatch: Props['dispatch'];
     disabled?: boolean;
     compact?: boolean;
+    planSpellCount?: number;
+    onPlanSpells?: () => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
+    const planningActionActive = Boolean(onPlanSpells && planSpellCount > 0);
+    const actionDisabled = planningActionActive ? false : disabled;
+    const buttonTestId = planningActionActive ? 'mage-wars-plan-spells' : 'mage-wars-turn-end';
+    const tutorialId = planningActionActive ? 'mw-plan-spells' : 'mw-turn-end';
+    const actionLabel = planningActionActive
+        ? t('spellbook.planSelected', { count: planSpellCount })
+        : t('actions.endTurn');
 
     return (
         <section className="pointer-events-auto" data-testid="mage-wars-turn-end-dock">
@@ -1676,14 +1670,25 @@ function TurnStatusDock({
                 className={cx(
                     'grid place-items-center rounded-[0.32rem] border border-amber-200/24 font-black text-amber-50 shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition',
                     compact ? 'h-11 w-28 px-3 text-base' : 'h-[3.25rem] w-[10.5rem] px-5 text-xl',
-                    disabled ? 'cursor-not-allowed bg-black/20 text-stone-500' : 'bg-amber-950/36 hover:bg-amber-900/42',
+                    actionDisabled
+                        ? 'cursor-not-allowed bg-black/20 text-stone-500'
+                        : planningActionActive
+                            ? 'bg-emerald-300 text-emerald-950 hover:bg-emerald-200'
+                            : 'bg-amber-950/36 hover:bg-amber-900/42',
                 )}
-                disabled={disabled}
-                onClick={() => dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {})}
-                data-testid="mage-wars-turn-end"
-                data-tutorial-id="mw-turn-end"
+                disabled={actionDisabled}
+                onClick={() => {
+                    if (planningActionActive) {
+                        onPlanSpells?.();
+                        return;
+                    }
+                    dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
+                }}
+                data-testid={buttonTestId}
+                data-tutorial-id={tutorialId}
+                data-main-action-mode={planningActionActive ? 'plan-spells' : 'advance-phase'}
             >
-                {t('actions.endTurn')}
+                {actionLabel}
             </button>
         </section>
     );
@@ -1827,7 +1832,6 @@ function ArenaStage({
     onActorObjectSelect,
     onPlayerSelect,
     onActorPlayerSelect,
-    onGuard,
     fxBus,
     onFxImpact,
     onFxComplete,
@@ -1870,7 +1874,6 @@ function ArenaStage({
     onActorObjectSelect?: (objectId: string) => void;
     onPlayerSelect?: (playerId: PlayerId) => void;
     onActorPlayerSelect?: (playerId: PlayerId) => void;
-    onGuard?: () => void;
     fxBus: FxBus;
     onFxImpact?: (id: string, cue: string) => void;
     onFxComplete?: (id: string, cue: string) => void;
@@ -1991,11 +1994,6 @@ function ArenaStage({
             )
             || selectedSpellCastTargetPlayerIds?.has(player.id)
         ),
-    );
-    const canGuardSelectedActor = Boolean(
-        !hasPendingAbilityTarget
-        && hasSelectedActor
-        && (selectedObject ? selectedObject.actionReady : selectedMageCanAct),
     );
     const targeting = Boolean(selectedSpell) || hasSelectedActor || hasPendingAbilityTarget;
     const legalMoveZoneIds = new Set(
@@ -2243,12 +2241,6 @@ function ArenaStage({
                                         entityRef: object.id,
                                     })}
                                 />
-                                {object.id === selectedObjectId && canGuardSelectedActor && onGuard ? (
-                                    <MageWarsGuardTokenAction
-                                        onGuard={onGuard}
-                                        compact={density === 'dense' || density === 'packed'}
-                                    />
-                                ) : null}
                             </div>
                             <ArenaAttachmentStrip
                                 objects={objectAttachments}
@@ -2312,12 +2304,6 @@ function ArenaStage({
                                             ? () => onActorPlayerSelect?.(occupant.id)
                                             : undefined}
                                 />
-                                {occupant.id === selectedMageId && canGuardSelectedActor && onGuard ? (
-                                    <MageWarsGuardTokenAction
-                                        onGuard={onGuard}
-                                        compact={density === 'dense' || density === 'packed'}
-                                    />
-                                ) : null}
                             </div>
                             <ArenaAttachmentStrip
                                 objects={mageAttachments}
@@ -2655,6 +2641,8 @@ function MageWarsSelectedAbilityActionDock({
     objectAbilities,
     magePlayerId,
     mageAbility,
+    canGuard,
+    onGuard,
     onObjectAbilitySelect,
     onMageAbilitySelect,
 }: {
@@ -2663,10 +2651,13 @@ function MageWarsSelectedAbilityActionDock({
     objectAbilities: readonly { id: MageWarsObjectAbilityId; name: string }[];
     magePlayerId?: PlayerId;
     mageAbility?: { abilityId: MageWarsMageAbilityId; name: string };
+    canGuard: boolean;
+    onGuard: () => void;
     onObjectAbilitySelect: (sourceObjectId: string, abilityId: MageWarsObjectAbilityId) => void;
     onMageAbilitySelect: (playerId: PlayerId, abilityId: MageWarsMageAbilityId) => void;
 }) {
-    if (objectAbilities.length === 0 && !mageAbility) return null;
+    const { t } = useTranslation('game-mage-wars');
+    if (objectAbilities.length === 0 && !mageAbility && !canGuard) return null;
 
     return (
         <aside
@@ -2685,6 +2676,22 @@ function MageWarsSelectedAbilityActionDock({
                     </div>
                 ) : null}
                 <div className="flex flex-wrap items-center justify-center gap-2">
+                    {canGuard ? (
+                        <button
+                            type="button"
+                            className="min-h-9 rounded-[0.25rem] border border-emerald-100/30 bg-emerald-200 px-3 py-1.5 text-xs font-black text-stone-950 shadow-[0_8px_18px_rgba(0,0,0,0.36)] transition hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-100"
+                            aria-label={t('actions.guardCreature')}
+                            title={t('actions.guardCreature')}
+                            data-testid="mage-wars-selected-unit-guard"
+                            data-tutorial-id="mw-selected-unit-guard"
+                            data-action-kind="guard"
+                            data-action-visual="text-action"
+                            data-action-placement="middle-lower-action-dock"
+                            onClick={onGuard}
+                        >
+                            {t('actions.guardCreature')}
+                        </button>
+                    ) : null}
                     {objectId ? objectAbilities.map((ability) => (
                         <button
                             key={ability.id}
@@ -2935,6 +2942,7 @@ function MageWarsInteractionDock({
 export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData, isMultiplayer }: Props) {
     const { t } = useTranslation('game-mage-wars');
     const [selectedSpellCardId, setSelectedSpellCardId] = useState<number | null>(null);
+    const [selectedPlanningSpellCardIds, setSelectedPlanningSpellCardIds] = useState<number[]>([]);
     const [pendingSpellCastSelection, setPendingSpellCastSelection] = useState<PendingSpellCastSelection | null>(null);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
     const [selectedMageId, setSelectedMageId] = useState<PlayerId | null>(null);
@@ -2990,6 +2998,16 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const canAct = isPlayerId(playerID)
         && !readyPlayerIds.includes(playerID)
         && (phase === 'planning' || playerID === phaseActorId);
+    const canPlanSpells = isCommandAllowed(MAGE_WARS_COMMANDS.PLAN_SPELLS);
+    const canSubmitSelectedPlanningSpells = phase === 'planning'
+        && canAct
+        && canPlanSpells
+        && selectedPlanningSpellCardIds.length > 0;
+    const planSelectedSpells = () => {
+        if (!canSubmitSelectedPlanningSpells) return;
+        dispatch(MAGE_WARS_COMMANDS.PLAN_SPELLS, { spellCardIds: selectedPlanningSpellCardIds });
+        setSelectedPlanningSpellCardIds([]);
+    };
     const availableObjectAbilityIdsByObjectId = new Map<string, MageWarsObjectAbilityId[]>();
     if (canAct && activePlayer && isCommandAllowed(MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY)) {
         for (const object of Object.values(core.objects)) {
@@ -3207,13 +3225,27 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         : undefined;
     const selectedAbilitySourceName = selectedObject?.name
         ?? (selectedMage ? getMageDisplayLabel(selectedMage) : undefined);
+    const canGuardSelectedActor = Boolean(
+        canAct
+        && isCreatureActionPhase(phase)
+        && isCommandAllowed(MAGE_WARS_COMMANDS.GUARD)
+        && !selectedSpell
+        && !pendingSpellCastSelection
+        && !pendingObjectAbility
+        && !pendingMageAbility
+        && !G.sys.interaction?.current
+        && (
+            (selectedObject?.ownerId === activePlayer?.id && selectedObject.actionReady)
+            || (selectedMage?.id === activePlayer?.id && selectedMage.actionReady)
+        ),
+    );
     const shouldShowSelectedAbilityActionDock = Boolean(
         !selectedSpell
         && !pendingSpellCastSelection
         && !pendingObjectAbility
         && !pendingMageAbility
         && !G.sys.interaction?.current
-        && (selectedObjectAvailableAbilities.length > 0 || selectedMageRestoreAbility),
+        && (selectedObjectAvailableAbilities.length > 0 || selectedMageRestoreAbility || canGuardSelectedActor),
     );
     const spellNeedsWallEdgeTarget = selectedSpellCastTargetWallEdgeIds !== undefined;
     const spellNeedsZoneTarget = selectedSpellCastTargetZoneIds !== undefined;
@@ -3825,7 +3857,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onActorObjectSelect={handleActorObjectSelect}
                 onPlayerSelect={handlePlayerSelect}
                 onActorPlayerSelect={handleActorMageSelect}
-                onGuard={handleGuard}
                 fxBus={fxBus}
                 onFxImpact={mageWarsEvents.onEffectImpact}
                 onFxComplete={mageWarsEvents.onEffectComplete}
@@ -3881,6 +3912,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     objectAbilities={selectedObjectAvailableAbilities}
                     magePlayerId={selectedMage?.id}
                     mageAbility={selectedMageRestoreAbility}
+                    canGuard={canGuardSelectedActor}
+                    onGuard={handleGuard}
                     onObjectAbilitySelect={handleObjectAbilitySelect}
                     onMageAbilitySelect={handleMageAbilitySelect}
                 />
@@ -3943,7 +3976,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             ) : null}
             <aside className="pointer-events-none absolute bottom-4 right-12 z-30">
                 <div className="pointer-events-auto">
-                    <TurnStatusDock dispatch={dispatch} disabled={!canAdvance} />
+                    <TurnStatusDock
+                        dispatch={dispatch}
+                        disabled={!canAdvance}
+                        planSpellCount={selectedPlanningSpellCardIds.length}
+                        onPlanSpells={canSubmitSelectedPlanningSpells ? planSelectedSpells : undefined}
+                    />
                 </div>
             </aside>
             {viewingPlayer ? (
@@ -3957,8 +3995,9 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         player={viewingPlayer}
                         phase={phase}
                         canAct={canAct}
-                        canPlan={isCommandAllowed(MAGE_WARS_COMMANDS.PLAN_SPELLS)}
-                        dispatch={dispatch}
+                        canPlan={canPlanSpells}
+                        selectedCardIds={selectedPlanningSpellCardIds}
+                        onSelectedCardIdsChange={setSelectedPlanningSpellCardIds}
                     />
                 </aside>
             ) : null}

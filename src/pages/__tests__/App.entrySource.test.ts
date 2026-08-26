@@ -14,7 +14,7 @@ describe('App 首页入口源码守卫', () => {
         const source = readFileSync(resolve(__dirname, '../../App.tsx'), 'utf8');
 
         expect(source).toContain("import { GlobalHUD } from './components/system/GlobalHUD';");
-        expect(source).toContain('{!isPlayRoute ? <GlobalHUD /> : null}');
+        expect(source).toContain('{!isPlayRoute ? <GlobalHUD feedbackGameOptions={feedbackGameOptions} /> : null}');
         expect(source).not.toContain("const LazyGlobalHUD = React.lazy(() => import('./components/system/GlobalHUD')");
     });
 

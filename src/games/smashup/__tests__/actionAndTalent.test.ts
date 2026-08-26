@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 - 行动卡与天赋测试
  *
@@ -127,19 +128,13 @@ describe('Property 8: 标准行动卡生命周期', () => {
             expect.objectContaining({ owner: '1', controller: '0' }),
         );
 
-        const afterDestroy = reduce(played.finalState.core, {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'borrowed-minion',
+        const afterDestroy = reduce(played.finalState.core, makeMinionDestroyedEvent({minionUid: 'borrowed-minion',
                 minionDefId: 'pirate_first_mate',
                 fromBaseIndex: 0,
                 ownerId: '1',
                 controllerId: '0',
                 destroyerId: '0',
-                reason: 'test_transfer_owner_provenance',
-            },
-            timestamp: 1001,
-        } as any);
+                reason: 'test_transfer_owner_provenance', timestamp: 1001 }) as any);
 
         expect(afterDestroy.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
         expect(afterDestroy.players['2'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);

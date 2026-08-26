@@ -752,8 +752,20 @@
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/large-monster-front.png",
     "sourceFile": "temporary-generated-placeholder",
-    "meaning": "地图怪物 token：木乃伊怪物标记(大)；用户批准先占位，正式源图仍缺失，不得作为正式素材完成。",
-    "status": "temporary-runtime-placeholder"
+    "meaning": "旧运行时占位：曾用于木乃伊怪物标记(大)；当前木乃伊地图 token 已改用 Openclipart SVG，本占位不得再作为木乃伊运行时完成证据。",
+    "status": "legacy-placeholder-not-current-runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+    "sourceFile": "https://openclipart.org/download/324162",
+    "meaning": "地图怪物 token：木乃伊；Openclipart 324162 SVG，公开素材源，按用户候选 G 裁定替换旧大怪物简单占位和旧 250344 候选。",
+    "status": "runtime-svg-public-domain-user-selected-g"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg",
+    "sourceFile": "https://openclipart.org/detail/5285/a-little-girl-by-johnny_automatic",
+    "meaning": "作祟公开 token：女孩；Openclipart SVG，公开素材源，用于替换旧内联程序化几何 SVG。",
+    "status": "runtime-svg-public-domain"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/monsters/mummy.png",

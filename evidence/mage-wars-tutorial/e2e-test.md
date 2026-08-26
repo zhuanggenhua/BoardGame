@@ -26,7 +26,7 @@ node scripts/infra/run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial
 - TypeScript 静态检查通过，输出为空。
 - Mage Wars 教程 / Board FX 窄单测通过：`2 files / 49 tests passed`。React `act(...)` warning 为既有测试告警，不阻断本轮结论。
 - 教程生命周期共享测试通过：`1 file / 16 tests passed`，覆盖默认入口与隐藏续段生命周期。
-- 浏览器 E2E 独立 runtime 通过：`1 passed (54.4s)`，生成 21 张当前有效原图。
+- 浏览器 E2E 独立 runtime 通过：`1 passed (53.9s)`，生成 21 张当前有效原图。
 
 ## 覆盖矩阵
 
@@ -41,7 +41,7 @@ node scripts/infra/run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial
 | 生物行动阶段移动到相邻区域 | `move-wolf` | 场上丛林灰狼、A2 合法移动格 | `07-wolf-moved-to-a2.png`；E2E 断言灰狼移动到 A2 且行动已用 | 已覆盖 |
 | 墙体来源是准备牌，目标是区域边界，结算后边界显示源墙牌 | `wall-purpose`、`cast-thorns-wall`、`wall-card-on-edge` | `25700` 荆棘之墙准备牌、A3-B3 边界、边界墙牌 | `08-wall-prepared.png`、`09-wall-edge-target-highlight.png`、`10-wall-card-on-edge.png`；E2E 断言 `data-wall-visual="spell-card"` | 已覆盖 |
 | 墙体影响视线和通行伤害的规则读法 | `line-of-sight-and-passage` | 边界墙牌、教程说明 | `11-wall-line-of-sight-and-passage.png`；墙体局部玩法链另见 `evidence/mage-wars-wall-mechanics/e2e-test.md` | 已覆盖 |
-| 守卫使用单位下方 token，并由玩家点来源单位再点守卫 token | `guard-rule`、`guard-cleric`、`guard-token-result` | 阿希拉牧师、`mw-selected-unit-guard`、守卫 token rail | `12-guard-source-and-token-action.png`、`13-guard-token-result.png`；E2E 断言守卫状态为 true | 已覆盖 |
+| 守卫是生物快速行动；玩家点来源单位，再点中下行动条“进行守卫”，结算后才获得守卫 token | `guard-rule`、`guard-cleric`、`guard-token-result` | 阿希拉牧师、`mw-selected-unit-guard` 文本行动按钮、守卫 token rail | `12-guard-action-dock.png`、`13-guard-token-result.png`；E2E 断言守卫按钮在中下 action dock、是文本行动、无 img/svg，并断言守卫状态为 true | 已覆盖 |
 | 治疗之光必须选来源、点中下动作按钮、再点合法目标 | `healing-rule`、`heal-wounded-bobcat` | 阿希拉牧师、`mw-ability-action-dock`、治疗之光按钮、野性山猫目标框 | `14-healing-light-action-dock.png`、`15-healing-target-highlight.png`、`16-healing-result-life-readout.png`；E2E 断言伤害降低 | 已覆盖 |
 | 伤害 / 生命读数由眼睛控制常显 | `life-toggle` | `mw-life-toggle`、对象生命读数 | `17-life-toggle-all-readouts.png`；E2E 断言 `data-life-visible="true"` | 已覆盖 |
 | 复原术必须选女祭司法师、点能力、再点燃烧目标 | `burn-rule`、`restore-burning-cleric`、`restore-result` | 女祭司法师实体、复原术按钮、燃烧牧师目标框 | `18-restore-action-dock.png`、`19-restore-burn-target-highlight.png`、`20-restore-burn-removed.png`；E2E 断言燃烧 token 被移除 | 已覆盖 |
@@ -65,7 +65,7 @@ node scripts/infra/run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial
 | 09 | `09-wall-edge-target-highlight.png` | 合法目标高亮在 A3-B3 边界带上，玩家点击边界而不是整格。 |
 | 10 | `10-wall-card-on-edge.png` | A3-B3 边界出现荆棘之墙正式牌面，墙体不是泛化色条。 |
 | 11 | `11-wall-line-of-sight-and-passage.png` | 墙牌仍贴在边界上，说明承接视线和通行伤害。 |
-| 12 | `12-guard-source-and-token-action.png` | 守卫动作使用真实守卫 token，位于选中单位正下方，没有小卡片按钮。 |
+| 12 | `12-guard-action-dock.png` | 阿希拉牧师被选中后，中下行动条显示文本按钮“进行守卫”；此时守卫 token 还不是点击目标。 |
 | 13 | `13-guard-token-result.png` | 守卫 token 停在单位正下方，不遮挡角色牌面。 |
 | 14 | `14-healing-light-action-dock.png` | 治疗之光按钮位于屏幕中下 action dock，顶部只保留说明提示。 |
 | 15 | `15-healing-target-highlight.png` | 野性山猫合法目标用贴卡本体边框表达，玩家点击目标后才结算。 |
@@ -97,7 +97,7 @@ target_requirements:
     evidence: 04、09、15、19 均为玩家点击目标前的合法目标图，E2E 后续真实点击目标
   - requirement: 守卫用 token，伤害用受伤遮罩 + 生命读数，并有眼睛控制
     status: PASS
-    evidence: 12-13 守卫 token；16-17 生命读数
+    evidence: 12 是守卫行动按钮，13 是结算后的守卫 token；16-17 生命读数
 hard_failures: []
 negative_impact_checks:
   - 法术书、准备区、对手计划、弃牌堆、法师 HUD、主棋盘和能力 action dock 仍可见，没有被新增教程承载替换。

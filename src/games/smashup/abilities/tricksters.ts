@@ -1366,6 +1366,15 @@ function canTriggerTricksterBaseOngoingAgainstOtherPlayer(
     });
 }
 
+function canTriggerTricksterFlameTrapPodOnTurnStart(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.sourceBaseIndex === undefined || !ctx.sourceCardUid) return false;
+    const trap = ctx.state.bases[ctx.sourceBaseIndex]?.ongoingActions.find(ongoing =>
+        ongoing.uid === ctx.sourceCardUid && ongoing.defId === 'trickster_flame_trap_pod',
+    );
+    const controllerId = trap ? (trap.metadata?.sourceControllerId ?? trap.ownerId) : undefined;
+    return !!trap && controllerId === ctx.playerId;
+}
+
 function canTriggerTricksterLeprechaun(ctx: TriggerContext, sourceDefId: string, options?: { exactDefId?: boolean }): boolean {
     if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return false;
     const base = ctx.state.bases[ctx.baseIndex];
@@ -1832,6 +1841,7 @@ function registerTricksterPodOngoingEffects(): void {
     }, {
         playerContext: 'sourceController',
         perInstance: true,
+        canTrigger: canTriggerTricksterFlameTrapPodOnTurnStart,
     });
 
     // Pay the Piper POD：对手在此基地打出随从后，该玩家弃 1 张牌（先按随机实现，后续可升级为选择弃牌）

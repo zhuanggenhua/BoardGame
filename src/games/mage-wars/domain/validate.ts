@@ -2,6 +2,7 @@ import type { MatchState, ValidationResult } from '../../../engine/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import {
     getMageWarsSpellCardFromConfig,
+    getPresetSpellbookEntriesFromConfig,
     hasPresetSpellbookCardInConfig,
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
@@ -117,6 +118,24 @@ const MAGE_WARS_PUSH_ZONE_TARGET_FAMILIES = new Set<MageWarsSpellCastChoiceFamil
 
 function hasSpellbookCard(player: MageWarsPlayerState, spellCardId: number): boolean {
     return hasPresetSpellbookCardInConfig(player.mageId, spellCardId);
+}
+
+function getSpellbookCardCopyCount(player: MageWarsPlayerState, spellCardId: number): number {
+    return getPresetSpellbookEntriesFromConfig(player.mageId)
+        .find((entry) => entry.spellCardId === spellCardId)
+        ?.count ?? 0;
+}
+
+function exceedsSpellbookCopyCount(player: MageWarsPlayerState, spellCardIds: readonly number[]): boolean {
+    const selectedCounts = new Map<number, number>();
+    for (const spellCardId of spellCardIds) {
+        const selectedCount = (selectedCounts.get(spellCardId) ?? 0) + 1;
+        selectedCounts.set(spellCardId, selectedCount);
+        if (selectedCount > getSpellbookCardCopyCount(player, spellCardId)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function resolveMageWarsElementalStaffBoundSpell(
@@ -868,10 +887,10 @@ export function validateCommand(
             const spellCardIds = command.payload.spellCardIds;
             if (phase !== 'planning') return invalid('wrongPhase');
             if (spellCardIds.length > 2) return invalid('tooManyPreparedSpells');
-            if (new Set(spellCardIds).size !== spellCardIds.length) return invalid('duplicatePreparedSpell');
             if (!spellCardIds.every((spellCardId) => hasSpellbookCard(player, spellCardId))) {
                 return invalid('spellNotInPresetSpellbook');
             }
+            if (exceedsSpellbookCopyCount(player, spellCardIds)) return invalid('tooManyPreparedSpellCopies');
             return { valid: true };
         }
 

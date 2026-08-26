@@ -2736,7 +2736,7 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
                     definitionId: 'mummy',
                     name: '木乃伊',
                     portraitAsset: 'betrayal/monsters/mummy',
-                    tokenAsset: 'betrayal/tokens/monsters/large-monster-front',
+                    tokenAsset: 'betrayal/tokens/monsters/mummy.svg',
                     roomId: 'upper-landing',
                     might: 8,
                     speed: 3,

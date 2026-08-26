@@ -408,6 +408,21 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
     return { events, matchState };
 }
 
+function canTriggerKillerPlantSprout(ctx: TriggerContext): boolean {
+    const triggerUid = ctx.triggerMinionUid ?? ctx.sourceCardUid;
+    if (!triggerUid) return false;
+    const baseIndices = ctx.sourceBaseIndex !== undefined
+        ? [ctx.sourceBaseIndex]
+        : ctx.state.bases.map((_base, index) => index);
+    return baseIndices.some(baseIndex =>
+        ctx.state.bases[baseIndex]?.minions.some(minion =>
+            minion.uid === triggerUid
+            && minion.controller === ctx.playerId
+            && minion.defId.startsWith('killer_plant_sprout'),
+        ) ?? false,
+    );
+}
+
 
 /**
  * choking_vines 触发：回合开始时消灭附着了?choking_vines 的随从
@@ -785,10 +800,12 @@ export function registerKillerPlantAbilities(): void {
     registerTrigger('killer_plant_sprout', 'onTurnStart', killerPlantSproutTrigger, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerKillerPlantSprout,
     });
     registerTrigger('killer_plant_sprout_pod', 'onTurnStart', killerPlantSproutTrigger, {
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerKillerPlantSprout,
     });
     // choking_vines: 回合开始时消灭此基地上力量最低的随从
     registerTrigger('killer_plant_choking_vines', 'onTurnStart', killerPlantChokingVinesTrigger, {

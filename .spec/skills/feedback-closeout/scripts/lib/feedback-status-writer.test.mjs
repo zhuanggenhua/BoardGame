@@ -90,6 +90,7 @@ test('线上无 token 时直接通过 SSH/Mongo 回写状态', async () => {
     assert.equal(spawnCalls.length, 1);
     assert.equal(spawnCalls[0].command, 'ssh');
     assert.match(spawnCalls[0].input, /db\.feedbacks\.updateOne/);
+    assert.match(spawnCalls[0].input, /quit\(0\);/);
 });
 
 test('线上无 token 时批量状态回写只启动一次 SSH/Mongo', async () => {
@@ -155,6 +156,7 @@ test('线上无 token 时批量状态回写只启动一次 SSH/Mongo', async () 
     assert.equal(spawnCalls.length, 1);
     assert.match(spawnCalls[0].input, /const inputs = /);
     assert.match(spawnCalls[0].input, new RegExp(FEEDBACK_ID_2));
+    assert.match(spawnCalls[0].input, /quit\(0\);/);
 });
 
 test('生产 Mongo 输出带 mongosh 提示符时仍能解析最终回写 JSON', async () => {

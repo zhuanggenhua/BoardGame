@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 - 具体基地能力集成测试
  *
@@ -318,7 +319,7 @@ describe('base_the_factory: 冠军每5力量1VP', () => {
 // ============================================================================
 
 describe('base_castle_blood: 打出随从放指示物', () => {
-    it('对手力量比自己大时，在打出的随从上放 +1 指示物', () => {
+    it('对手力量比自己大时，创建可选放 +1 指示物交互', () => {
         const ctx: BaseAbilityContext = {
             state: {
                 bases: [{
@@ -346,10 +347,16 @@ describe('base_castle_blood: 打出随从放指示物', () => {
             now: 1000,
         };
 
-        const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
-        expect(events.length).toBe(1);
-        expect(events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
-        expect((events[0] as any).payload.minionUid).toBe('m_me');
+        const result = triggerBaseAbilityWithMS('base_castle_blood', 'onMinionPlayed', ctx);
+        expect(result.events.length).toBe(0);
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions.length).toBe(1);
+        expect((interactions[0]?.data as any)?.sourceId).toBe('base_castle_blood');
+        expect(getPromptOption(interactions[0], option => option.id === 'apply')?.value).toMatchObject({
+            apply: true,
+            minionUid: 'm_me',
+            baseIndex: 0,
+        });
     });
 
     it('对手力量不比自己大时，不放指示物', () => {
@@ -922,11 +929,7 @@ describe('POD 基地专项行为', () => {
             }],
         } as unknown as SmashUpCore;
 
-        const next = reduce(state, {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm4', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '0', reason: 'test' },
-            timestamp: 3001,
-        } as any);
+        const next = reduce(state, makeMinionDestroyedEvent({minionUid: 'm4', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '0', reason: 'test', timestamp: 3001 }) as any);
 
         expect(next.players['0'].discard).toHaveLength(0);
         expect(next.players['0'].deck.map((c: any) => c.uid)).toEqual(['m4']);
@@ -949,11 +952,7 @@ describe('POD 基地专项行为', () => {
                 ongoingActions: [],
             }],
         } as unknown as SmashUpCore;
-        const next = reduce(state, {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: { minionUid: 'm5', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '0', reason: 'test' },
-            timestamp: 3002,
-        } as any);
+        const next = reduce(state, makeMinionDestroyedEvent({minionUid: 'm5', minionDefId: 'test_minion', fromBaseIndex: 0, ownerId: '0', reason: 'test', timestamp: 3002 }) as any);
         expect(next.players['0'].deck).toHaveLength(0);
         expect(next.players['0'].discard.map((c: any) => c.uid)).toEqual(['m5']);
     });

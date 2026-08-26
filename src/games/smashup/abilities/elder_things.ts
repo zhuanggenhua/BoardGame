@@ -799,6 +799,7 @@ export function registerElderThingAbilities(): void {
         mandatory: true,
         perInstance: true,
         playerContext: 'sourceHostController',
+        canTrigger: canTriggerElderThingDunwichHorrorPodBeforeScoring,
     });
     // POD 版不会“回合结束自动消灭”，这里显式注册 no-op，阻止 alias 继承原版 onTurnEnd 触发。
     registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnEnd', elderThingDunwichHorrorPodOnTurnEndNoop, {
@@ -1988,6 +1989,20 @@ function elderThingDunwichHorrorPodBeforeScoring(ctx: TriggerContext): SmashUpEv
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
     };
+}
+
+function canTriggerElderThingDunwichHorrorPodBeforeScoring(ctx: TriggerContext): boolean {
+    if (ctx.baseIndex === undefined || !ctx.matchState) return false;
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return false;
+    if (ctx.sourceCardUid) {
+        return base.minions.some(minion => minion.attachedActions.some(action =>
+            action.uid === ctx.sourceCardUid && action.defId === 'elder_thing_dunwich_horror_pod',
+        ));
+    }
+    return base.minions.some(minion =>
+        minion.attachedActions.some(action => action.defId === 'elder_thing_dunwich_horror_pod'),
+    );
 }
 
 const elderThingDunwichHorrorPodChoicePromptProgram = createPromptProgram<ElderThingDunwichHorrorPodChoicePromptContext, SmashUpCore, SmashUpEvent>({

@@ -5789,7 +5789,6 @@
   },
   "compareRoll": {
     "confirming": "确认中…",
-    "confirm": "确认继续",
     "waitingForOwnerChoice": "等待对方选择…",
     "rolled": "掷出 {{value}}",
     "gunslingerDuel": {

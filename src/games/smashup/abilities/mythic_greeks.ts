@@ -725,6 +725,12 @@ function odysseusActionTrigger(ctx: TriggerContext) {
     }), abilityCtx.matchState);
 }
 
+function canTriggerOdysseusAction(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && ctx.sourceControllerId === ctx.playerId
+        && ownMinionTargets(ctx.state, ctx.playerId).length > 0;
+}
+
 function spartanActionTrigger(ctx: TriggerContext) {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return [];
     const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
@@ -746,6 +752,12 @@ function spartanActionTrigger(ctx: TriggerContext) {
     ];
 }
 
+function canTriggerSpartanAction(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return false;
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    return !!source && Number(source.metadata?.mythicGreeksSpartanTriggeredTurn ?? -1) !== ctx.state.turnNumber;
+}
+
 function jasonActionTrigger(ctx: TriggerContext) {
     if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return { events: [] };
     const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
@@ -761,6 +773,13 @@ function jasonActionTrigger(ctx: TriggerContext) {
         sourceDefId: 'mythic_greeks_jason',
         bases,
     }), ctx.matchState);
+}
+
+function canTriggerJasonAction(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return false;
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!source || Number(source.metadata?.mythicGreeksJasonTriggeredTurn ?? -1) === ctx.state.turnNumber) return false;
+    return collectBaseTargets(ctx.state, baseIndex => ctx.state.bases[baseIndex].minions.some(minion => minion.controller === ctx.playerId)).length > 0;
 }
 
 function argonautOnPlay(ctx: AbilityContext): AbilityResult {
@@ -908,14 +927,14 @@ export function registerMythicGreeksAbilities(): void {
     registerSimpleAbility('mythic_greeks_favor_of_poseidon_pod', 'onPlay', favorOfPoseidon);
     registerSimpleAbility('mythic_greeks_favor_of_zeus', 'onPlay', favorOfZeus);
     registerSimpleAbility('mythic_greeks_favor_of_zeus_pod', 'onPlay', favorOfZeus);
-    registerTrigger('mythic_greeks_odysseus', 'onActionPlayed', odysseusActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
-    registerTrigger('mythic_greeks_odysseus_pod', 'onActionPlayed', odysseusActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_odysseus', 'onActionPlayed', odysseusActionTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerOdysseusAction, effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_odysseus_pod', 'onActionPlayed', odysseusActionTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerOdysseusAction, effectContract: SHAYU_TRIGGER_CONTRACT });
     registerTrigger('mythic_greeks_heracles', 'onActionPlayed', heraclesActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
     registerTrigger('mythic_greeks_heracles_pod', 'onActionPlayed', heraclesActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
-    registerTrigger('mythic_greeks_spartan', 'onActionPlayed', spartanActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
-    registerTrigger('mythic_greeks_spartan_pod', 'onActionPlayed', spartanActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
-    registerTrigger('mythic_greeks_jason', 'onActionPlayed', jasonActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
-    registerTrigger('mythic_greeks_jason_pod', 'onActionPlayed', jasonActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_spartan', 'onActionPlayed', spartanActionTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerSpartanAction, effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_spartan_pod', 'onActionPlayed', spartanActionTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerSpartanAction, effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_jason', 'onActionPlayed', jasonActionTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerJasonAction, effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_jason_pod', 'onActionPlayed', jasonActionTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerJasonAction, effectContract: SHAYU_TRIGGER_CONTRACT });
     registerBaseAbility('base_oracle_at_delphi', 'onMinionPlayed', oracleAtDelphi, { effectContract: SHAYU_TRIGGER_CONTRACT });
     registerBaseAbility('base_wooden_horse', 'onActionPlayed', woodenHorse, { effectContract: SHAYU_TRIGGER_CONTRACT });
 }

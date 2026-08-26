@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 - 基地记分测试
  *
@@ -2059,14 +2060,8 @@ describe('基地记分与力量计算', () => {
                 nextUid: 10,
             };
 
-            const event: SmashUpEvent = {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'm1', minionDefId: 'd1',
-                    fromBaseIndex: 0, ownerId: '0', reason: '测试消灭',
-                },
-                timestamp: 1000,
-            } as any;
+            const event: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'm1', minionDefId: 'd1',
+                    fromBaseIndex: 0, ownerId: '0', reason: '测试消灭', timestamp: 1000 }) as any;
 
             const newState = reduce(state, event);
 

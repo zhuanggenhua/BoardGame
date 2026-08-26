@@ -365,29 +365,30 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         const liveController = controllerRef.current ?? controller;
                         liveController.dispatchCommand(action.commandType, actionPayload);
                         if (shouldYieldBetweenAiActions) {
-                            await new Promise<void>((resolve) => {
+                            const didObserveBoardSync = await new Promise<boolean>((resolve) => {
                                 const startedAt = Date.now();
                                 const poll = () => {
                                     if (aiExecutionGenerationRef.current !== executionGeneration) {
-                                        resolve();
+                                        resolve(false);
                                         return;
                                     }
                                     if (boardSyncVersionRef.current > beforeBoardSyncVersion) {
-                                        resolve();
+                                        resolve(true);
                                         return;
                                     }
                                     if (Date.now() - startedAt > 1000) {
-                                        console.warn('[TutorialContext] AI 命令后未观察到教程签名同步，继续推进', {
+                                        console.warn('[TutorialContext] AI 命令后未观察到教程签名同步，暂停后续 AI 动作', {
                                             stepId,
                                             commandType: action.commandType,
                                         });
-                                        resolve();
+                                        resolve(false);
                                         return;
                                     }
                                     window.setTimeout(poll, 16);
                                 };
                                 window.setTimeout(poll, 0);
                             });
+                            if (!didObserveBoardSync) return;
                         }
                     }
                     completed = true;

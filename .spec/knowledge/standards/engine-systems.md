@@ -56,6 +56,7 @@ metadata:
 | `engine/primitives/ability.ts` | 能力定义、执行器注册表和 `AbilityDef -> Opportunity` 生命周期投影 | 见 [`engine-ability-framework`](engine-ability-framework.md) |
 | `engine/primitives/abilityConstraints.ts` | 行动、资源、状态、次数等通用约束 | 见 [`engine-ability-framework`](engine-ability-framework.md) |
 | `engine/primitives/damageCalculation.ts` | 伤害计算、修正收集、breakdown | 见 [`engine-damage-pipeline`](engine-damage-pipeline.md) |
+| `engine/primitives/factionRelations.ts` | 实体阵营关系、敌我 / 中立 / 未知判定和 UI 高亮语义投影 | 游戏层只负责把玩家、怪物、单位映射到通用 side；UI 不能按单游戏对象名硬编码敌对颜色 |
 | `engine/primitives/spriteAtlas.ts` | 精灵图集注册、裁切、查询 | 本文件下方保留最小规则 |
 | `engine/primitives/uiHints.ts` | 可交互实体派生查询 | 不写入 core |
 | `engine/fx/` | FxBus、FxRegistry、FxLayer、FeedbackPack、Shader | 见 [`animation-effects`](animation-effects.md) |

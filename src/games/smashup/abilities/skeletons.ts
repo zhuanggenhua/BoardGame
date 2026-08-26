@@ -336,6 +336,17 @@ function skeletonsReturnedOneAfterUncover(ctx: TriggerContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function canTriggerSkeletonsReturnedOneAfterUncover(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return false;
+    if (!ctx.triggerMinion || ctx.triggerMinionUid !== ctx.sourceCardUid || ctx.baseIndex !== ctx.sourceBaseIndex) return false;
+    if (ctx.triggerMinion.defId !== 'skeletons_returned_one') return false;
+    if (ctx.triggerMinion.metadata?.playedFrom !== 'buried') return false;
+    return buildOwnedBuriedOptions(ctx.state, ctx.triggerMinion.controller, {
+        baseIndex: ctx.sourceBaseIndex,
+        excludeUid: ctx.sourceCardUid,
+    }).length > 0;
+}
+
 function skeletonsPlaceEmDownOnPlay(ctx: AbilityContext): AbilityResult {
     if (getDiscardMinions(ctx.state, ctx.playerId).length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
     const interaction = createSimpleChoice(`skeletons_place_em_down_base_${ctx.now}`, ctx.playerId, '往下埋：选择要埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_place_em_down_base', targetType: 'base', titleKey: 'ui.skeletons_place_em_down_base_title' });
@@ -447,6 +458,17 @@ function skeletonsLordOfBonesOnUncovered(ctx: TriggerContext): AbilityResult {
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
+function canTriggerSkeletonsLordOfBonesOnUncovered(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && !!ctx.sourceCardUid
+        && ctx.sourceBaseIndex !== undefined
+        && ctx.baseIndex !== undefined
+        && !!ctx.buriedCardUid
+        && !!ctx.buriedCardDefId
+        && isMinionDefId(ctx.buriedCardDefId)
+        && ctx.buriedCardUid !== ctx.sourceCardUid;
+}
+
 function skeletonsGravestonesOnUncovered(ctx: TriggerContext): AbilityResult {
     if (!ctx.matchState || ctx.baseIndex === undefined || ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return { events: [] };
     if (!ctx.buriedCardUid || !ctx.buriedCardDefId || !isMinionDefId(ctx.buriedCardDefId)) return { events: [] };
@@ -463,6 +485,16 @@ function skeletonsGravestonesOnUncovered(ctx: TriggerContext): AbilityResult {
     );
     (interaction.data as any).continuationContext = { targetMinionUid: ctx.buriedCardUid, targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerSkeletonsGravestonesOnUncovered(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && ctx.baseIndex !== undefined
+        && ctx.sourceBaseIndex !== undefined
+        && ctx.baseIndex === ctx.sourceBaseIndex
+        && !!ctx.buriedCardUid
+        && !!ctx.buriedCardDefId
+        && isMinionDefId(ctx.buriedCardDefId);
 }
 
 function skeletonsGravestonesAfterScoring(ctx: TriggerContext): AbilityResult {
@@ -485,6 +517,14 @@ function skeletonsGravestonesAfterScoring(ctx: TriggerContext): AbilityResult {
     );
     (interaction.data as any).continuationContext = { sourceBaseIndex: ctx.sourceBaseIndex, sourceCardUid: ctx.sourceCardUid };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerSkeletonsGravestonesAfterScoring(ctx: TriggerContext): boolean {
+    return !!ctx.matchState
+        && ctx.sourceBaseIndex !== undefined
+        && !!ctx.sourceControllerId
+        && !!ctx.sourceCardUid
+        && getBaseOptions(ctx.state).some(base => base.baseIndex !== ctx.sourceBaseIndex);
 }
 
 function skeletonsGravetenderTriggered(ctx: TriggerContext): AbilityResult {
@@ -590,23 +630,27 @@ export function registerSkeletonAbilities(): void {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSkeletonsReturnedOneAfterUncover,
     });
     registerTrigger('skeletons_lord_of_bones', 'onBuriedCardUncovered', skeletonsLordOfBonesOnUncovered, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSkeletonsLordOfBonesOnUncovered,
     });
     registerTrigger('skeletons_gravestones', 'onBuriedCardUncovered', skeletonsGravestonesOnUncovered, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerSkeletonsGravestonesOnUncovered,
     });
     registerTrigger('skeletons_gravestones', 'afterScoring', skeletonsGravestonesAfterScoring, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerSkeletonsGravestonesAfterScoring,
     });
 }
 

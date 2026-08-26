@@ -190,6 +190,13 @@ function faeFighterTrigger(ctx: TriggerContext): SmashUpEvent[] | { events: Smas
     };
 }
 
+function canTriggerFaeFighter(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceControllerId || !ctx.triggerMinionUid) return false;
+    const playedController = ctx.triggerMinion?.controller ?? ctx.controllerId;
+    if (playedController === undefined || playedController === ctx.sourceControllerId) return false;
+    return minionOptionsAtBase(ctx.state, ctx.baseIndex, ctx.sourceControllerId, ctx.sourceControllerId, FAE_FIGHTER).length > 0;
+}
+
 function lordTalent(ctx: AbilityContext): AbilityResult {
     const options = otherPlayerOptions(ctx.state, ctx.playerId);
     if (!ctx.matchState || options.length === 0) return { events: [] };
@@ -447,16 +454,32 @@ export function registerMunchkinElvesAbilities(): void {
     registerAbility(TRADE, 'onPlay', tradeOnPlay);
     registerAbility(TRAVELING_ELF, 'talent', travelingElfTalent);
 
-    registerTrigger(FAE_FIGHTER, 'onMinionPlayed', faeFighterTrigger, { optional: true, perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase' });
+    registerTrigger(FAE_FIGHTER, 'onMinionPlayed', faeFighterTrigger, { optional: true, perInstance: true, playerContext: 'sourceController', sourceScope: 'triggerBase', canTrigger: canTriggerFaeFighter });
     registerTrigger(FLOWER_CHILD, 'onMinionDestroyed', flowerChildLeaveTrigger, { perInstance: true, playerContext: 'sourceController' });
     registerTrigger(FLOWER_CHILD, 'onMinionDiscardedFromBase', flowerChildLeaveTrigger, { perInstance: true, playerContext: 'sourceController' });
-    registerTrigger(HELPING_HANDS, 'afterScoring', helpingHandsAfterScoring, { playerContext: 'sourceController' });
+    registerTrigger(HELPING_HANDS, 'afterScoring', helpingHandsAfterScoring, { playerContext: 'sourceController', canTrigger: canTriggerHelpingHandsAfterScoring });
+}
+
+function findHelpingHandsAfterScoringEntry(ctx: TriggerContext) {
+    if (ctx.baseIndex === undefined) return undefined;
+    return (ctx.state.pendingAfterScoringSpecials ?? []).find(entry =>
+        entry.sourceDefId === HELPING_HANDS
+        && entry.baseIndex === ctx.baseIndex
+        && (!ctx.sourceCardUid || entry.cardUid === ctx.sourceCardUid),
+    );
+}
+
+function canTriggerHelpingHandsAfterScoring(ctx: TriggerContext): boolean {
+    const entry = findHelpingHandsAfterScoringEntry(ctx);
+    return !!ctx.matchState
+        && !!ctx.rankings
+        && !!entry
+        && typeof entry.metadata?.targetPlayerId === 'string';
 }
 
 function helpingHandsAfterScoring(ctx: TriggerContext): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     if (ctx.baseIndex === undefined || !ctx.rankings || !ctx.matchState) return [];
-    const armed = (ctx.state.pendingAfterScoringSpecials ?? []).filter(entry => entry.sourceDefId === HELPING_HANDS && entry.baseIndex === ctx.baseIndex);
-    const entry = armed[0];
+    const entry = findHelpingHandsAfterScoringEntry(ctx);
     const targetPlayerId = entry?.metadata?.targetPlayerId;
     if (!entry || typeof targetPlayerId !== 'string') return [];
     const events: SmashUpEvent[] = [{ type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED, payload: { sourceDefId: entry.sourceDefId, playerId: entry.playerId, baseIndex: entry.baseIndex, cardUid: entry.cardUid }, timestamp: ctx.now } as SmashUpEvent];

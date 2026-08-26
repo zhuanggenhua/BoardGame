@@ -364,6 +364,7 @@ async function main() {
     console.log(`路径过滤：${assetPrefixes.join(', ')}`);
   }
 
+  const listExplicitCheckMatches = checkOnly && assetPrefixes.length > 0;
   const uploadPlan = [];
   let skippedUnchanged = 0;
   for (const file of files) {
@@ -374,6 +375,7 @@ async function main() {
     const remoteObject = remoteInventory?.get(serverKey);
     if (
       !forceUpload
+      && !listExplicitCheckMatches
       && remoteObject
       && remoteObject.size === fileContent.length
       && remoteObject.sha256 === sha256

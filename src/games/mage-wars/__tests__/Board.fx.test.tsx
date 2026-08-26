@@ -2694,6 +2694,58 @@ describe('MageWarsBoard mage ability status choices', () => {
     });
 });
 
+describe('MageWarsBoard spellbook planning UI', () => {
+    it('shows spellbook copy counts and lets one visible card select multiple owned copies', () => {
+        const dispatch = vi.fn();
+        const { container } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(undefined, '0', { phase: 'planning' })}
+                dispatch={dispatch}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('mage-wars-spellbook-next-page'));
+        const initialMainAction = screen.getByTestId('mage-wars-turn-end');
+        expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(initialMainAction);
+        expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
+        expect(screen.queryByTestId('mage-wars-plan-spells')).toBeNull();
+
+        const tanglevine = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2224"]',
+        );
+        expect(tanglevine).not.toBeNull();
+        expect(tanglevine?.getAttribute('data-copy-count')).toBe('3');
+        const copyCountBadge = tanglevine?.querySelector<HTMLElement>('[data-testid="mage-wars-spellbook-copy-count"]');
+        expect(copyCountBadge?.textContent).toBe('x3');
+        expect(copyCountBadge?.className).toContain('bottom-0');
+        expect(copyCountBadge?.className).toContain('text-[0.82rem]');
+        expect(copyCountBadge?.className).toContain('px-2.5');
+        expect(copyCountBadge?.className).not.toContain('right-1');
+        expect(copyCountBadge?.className).not.toContain('top-1');
+        expect(copyCountBadge?.style.left).toBe('50%');
+        expect(copyCountBadge?.style.transform).toBe('translate(-50%, 50%)');
+
+        fireEvent.click(tanglevine!);
+        expect(tanglevine?.getAttribute('data-selected-count')).toBe('1');
+        expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')?.textContent).toBe('已选');
+
+        fireEvent.click(tanglevine!);
+        expect(tanglevine?.getAttribute('data-selected-count')).toBe('2');
+        expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')?.textContent).toBe('选 2');
+
+        const planButton = screen.getByTestId('mage-wars-plan-spells');
+        expect(planButton.getAttribute('data-main-action-mode')).toBe('plan-spells');
+        expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(planButton);
+        expect(screen.getByTestId('mage-wars-desktop-spellbook-shelf')).not.toContainElement(planButton);
+        expect(screen.queryByTestId('mage-wars-turn-end')).toBeNull();
+
+        fireEvent.click(planButton);
+        expect(dispatch).toHaveBeenCalledWith(MAGE_WARS_COMMANDS.PLAN_SPELLS, {
+            spellCardIds: [2224, 2224],
+        });
+    });
+});
+
 describe('MageWarsBoard token placement', () => {
     function createGuardTokenPlacementCore(): MageWarsCore {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
@@ -2782,13 +2834,15 @@ describe('MageWarsBoard token placement', () => {
         fireEvent.click(guardedCat!);
 
         const guardAction = screen.getByTestId('mage-wars-selected-unit-guard');
-        expect(guardAction.getAttribute('data-mage-wars-guard-action-placement')).toBe('bottom-center');
-        expect(guardAction.className).toContain('top-full');
-        expect(guardAction.className).toContain('left-1/2');
-        expect(guardAction.className).toContain('bg-transparent');
+        expect(guardAction.getAttribute('data-action-kind')).toBe('guard');
+        expect(guardAction.getAttribute('data-action-visual')).toBe('text-action');
+        expect(guardAction.getAttribute('data-action-placement')).toBe('middle-lower-action-dock');
+        expect(guardAction.className).toContain('bg-emerald-200');
+        expect(guardAction.textContent).toContain('actions.guardCreature');
         expect(guardAction.className).not.toContain('rounded-[0.22rem]');
         expect(guardAction.className).not.toContain('bg-emerald-950');
-        expect(guardAction.querySelector('img[alt="tokens.guard"]')).not.toBeNull();
+        expect(guardAction.querySelector('img[alt="tokens.guard"]')).toBeNull();
+        expect(guardAction.querySelector('svg')).toBeNull();
     });
 
     it('renders wounded state as a Summoner Wars style life readout instead of generic badges or damage token images', () => {

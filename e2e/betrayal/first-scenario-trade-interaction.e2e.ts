@@ -53,7 +53,13 @@ const DOG_TRADE_REQUEST_SENT_SCREENSHOT = `${DOG_TRADE_EVIDENCE_DIR}/05-发送�
 const DOG_TRADE_AGREEMENT_INCOMING_SCREENSHOT = `${DOG_TRADE_EVIDENCE_DIR}/06-狗交易接收方同意前.jpg`;
 const DOG_TRADE_SETTLED_SCREENSHOT = `${DOG_TRADE_EVIDENCE_DIR}/07-狗交易结算结果可见.jpg`;
 const DOG_TRADE_RETURNED_SCREENSHOT = `${DOG_TRADE_EVIDENCE_DIR}/08-狗交易后回牌桌状态清空.jpg`;
-const TRADE_TARGET_NAME_PATTERN = /丽贝卡·艾伦博士|AI 2 号位|玩家 2|2 号位/;
+const MANUAL_TRADE_EVIDENCE_DIR = 'evidence/山屋惊魂-主动交易过程链路';
+const MANUAL_TRADE_ENTRY_SCREENSHOT = `${MANUAL_TRADE_EVIDENCE_DIR}/01-主动点交易后同房目标高亮.jpg`;
+const MANUAL_TRADE_TARGET_SCREENSHOT = `${MANUAL_TRADE_EVIDENCE_DIR}/02-点同房目标后出现交易提示和对方持有物.jpg`;
+const MANUAL_TRADE_SELECTION_SCREENSHOT = `${MANUAL_TRADE_EVIDENCE_DIR}/03-选择双方持有物后可提出交易.jpg`;
+const MANUAL_TRADE_REQUEST_SCREENSHOT = `${MANUAL_TRADE_EVIDENCE_DIR}/04-提出交易后等待同意.jpg`;
+const MANUAL_TRADE_SETTLED_SCREENSHOT = `${MANUAL_TRADE_EVIDENCE_DIR}/05-同意交易后物品归属变化.jpg`;
+const TRADE_TARGET_NAME_PATTERN = /安妮塔·赫南德兹|丽贝卡·艾伦博士|AI 2 号位|玩家 2|2 号位/;
 
 async function waitForTradeInventoryAtlas(page: Page) {
     await expect.poll(async () => page.evaluate(() => {
@@ -703,6 +709,94 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await saveScreenshot(page, TRADE_TURN_LIMIT_NEXT_TURN_SCREENSHOT);
 
         await assertNoFatalFrontendErrors([{ label: 'betrayal-trade-interaction', diagnostics }]);
+    });
+
+    test('正常回合主动点击交易后，同房目标点击必须有下一步提示', async ({ page, context }) => {
+        test.setTimeout(180000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-manual-trade-interaction');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal?players=3&seat0=human&seat1=human&seat2=human', { waitUntil: 'commit', timeout: 30000 });
+        await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => undefined);
+        await waitForBetrayalPageReady(page);
+        const manualTradeCore = createExchangeReadyRuntimeCore();
+        manualTradeCore.recommendedAction = 'move';
+        await injectCore(page, manualTradeCore);
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-hallway-1')).toHaveCount(0);
+        await waitForTradeInventoryAtlas(page);
+
+        await page.getByTestId('betrayal-action-trade').click();
+        await expect(page.getByTestId('betrayal-trade-flow-banner'), '主动点交易后必须出现交易流程提示').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('交易：选择持有物和同房间玩家');
+        await assertTradeTargetUsesMapToken(page);
+        await saveScreenshot(page, MANUAL_TRADE_ENTRY_SCREENSHOT);
+
+        await page.getByTestId('betrayal-room-occupant-hallway-1').click();
+        await expect(page.getByTestId('betrayal-trade-status'), '点目标后状态必须写明可交易给谁').toContainText('可交易给');
+        await expect(page.getByTestId('betrayal-trade-status')).toContainText(TRADE_TARGET_NAME_PATTERN);
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '点目标后必须提示继续选择自己或对方持有物').toContainText(/选择自己或对方持有物|选择/);
+        await expect(page.getByTestId('betrayal-trade-return-selector'), '点目标后必须显示对方可交易持有物区').toBeVisible();
+        await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
+        await saveScreenshot(page, MANUAL_TRADE_TARGET_SCREENSHOT);
+
+        await page.getByTestId('betrayal-inventory-rope').click();
+        await page.getByTestId('betrayal-trade-return-card-map').click();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '选择双方持有物后交易摘要必须写清双方给出物').toContainText(/你给出.*兔脚.*对方给出.*地图/);
+        await expect(page.getByTestId('betrayal-action-trade'), '选择双方持有物后必须能提出交易').toBeEnabled();
+        await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('提出交易');
+        await saveScreenshot(page, MANUAL_TRADE_SELECTION_SCREENSHOT);
+
+        await page.getByTestId('betrayal-action-trade').click();
+        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '提出交易后必须等待接收方同意').toBeVisible();
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意|交易请求|兔脚|地图/);
+        await saveScreenshot(page, MANUAL_TRADE_REQUEST_SCREENSHOT);
+
+        await page.getByTestId('betrayal-trade-agreement-accept').click();
+        await expect.poll(async () => page.evaluate(() => {
+            const holder = window as unknown as {
+                __BG_TEST_HARNESS__?: {
+                    state?: {
+                        get?: () => {
+                            core?: {
+                                pendingTradeAgreement?: unknown | null;
+                                tradeUsedThisTurnPlayerIds?: string[];
+                                currentExplorer?: { inventory?: Array<{ name: string }> };
+                                otherExplorers?: Array<{ playerId: string; inventory?: Array<{ name: string }> }>;
+                                activityLog?: Array<{ text: string }>;
+                            };
+                        };
+                    };
+                };
+                __BG_LAST_COMMAND_REJECTED__?: { error: string; commandType: string };
+            };
+            const state = holder.__BG_TEST_HARNESS__?.state?.get?.();
+            return {
+                currentInventory: state?.core?.currentExplorer?.inventory?.map((item) => item.name) ?? [],
+                teammateInventory: state?.core?.otherExplorers?.find((explorer) => explorer.playerId === '1')?.inventory?.map((item) => item.name) ?? [],
+                pendingTradeAgreement: state?.core?.pendingTradeAgreement ?? null,
+                tradeUsedThisTurnPlayerIds: state?.core?.tradeUsedThisTurnPlayerIds ?? [],
+                latestLog: state?.core?.activityLog?.[0]?.text ?? null,
+                rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
+            };
+        }), {
+            message: '接收方同意后双方物品应按交易请求转移',
+            timeout: 10000,
+        }).toMatchObject({
+            currentInventory: expect.arrayContaining(['地图']),
+            teammateInventory: expect.arrayContaining(['兔脚']),
+            pendingTradeAgreement: null,
+            tradeUsedThisTurnPlayerIds: expect.arrayContaining(['0']),
+            latestLog: expect.stringMatching(/同意交易|兔脚|地图/),
+            rejected: null,
+        });
+        await expect(page.getByTestId('betrayal-trade-return-selector'), '交易结算后对方持有物选择器必须退场').toHaveCount(0);
+        await saveScreenshot(page, MANUAL_TRADE_SETTLED_SCREENSHOT);
+
+        await assertNoFatalFrontendErrors([{ label: 'betrayal-manual-trade-interaction', diagnostics }]);
     });
 
     test('真实页面只选择己方物品时一个确认按钮即可提出交易', async ({ page, context }) => {

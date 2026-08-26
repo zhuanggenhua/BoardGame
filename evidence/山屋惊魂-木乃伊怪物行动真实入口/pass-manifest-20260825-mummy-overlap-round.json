@@ -1,0 +1,37 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "木乃伊地图 token 必须是圆形，不是方形或圆角方块。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 真实入口已通过 expectBoardTokenCircular：木乃伊移动骰为 0 时拾起女孩。",
+        "E2E 真实入口已通过 expectBoardTokenCircular：木乃伊攻击奖励偷走女孩。",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/04-木乃伊瞬移后女孩由木乃伊持有.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/17-木乃伊偷走女孩后反馈.jpg"
+      ]
+    },
+    {
+      "requirement": "木乃伊携带女孩时，木乃伊和女孩必须分开显示且不能视觉重叠。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 真实入口已通过 expectBoardTokensDoNotOverlap：木乃伊移动骰为 0 时拾起女孩。",
+        "E2E 真实入口已通过 expectBoardTokensDoNotOverlap：木乃伊攻击奖励偷走女孩。",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/04-木乃伊瞬移后女孩由木乃伊持有.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/17-木乃伊偷走女孩后反馈.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref-20260825-mummy-overlap-round/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref-20260825-mummy-overlap-round/01-labeled-04-木乃伊瞬移后女孩由木乃伊持有.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref-20260825-mummy-overlap-round/02-labeled-17-木乃伊偷走女孩后反馈.png"
+  ]
+}

@@ -474,17 +474,11 @@ test.describe('DiceThrone - 防御技能选择', () => {
         await game.screenshot('gunslinger-duel-compare-roll-settled', testInfo);
     });
 
-    test('枪手 Showdown 应展示双方对掷 UI，并在自动确认后继续结算链路', async ({ page, game }, testInfo) => {
+    test('枪手 Showdown 无真实选择时应自动写入加伤且不弹确认窗', async ({ page, game }, testInfo) => {
         await setupGunslingerShowdownCompareRollScene(page, game);
 
         const overlay = page.getByTestId('compare-roll-overlay');
-        await expect(overlay).toBeVisible({ timeout: 5000 });
-        await expect(page.getByTestId('compare-roll-participant-0')).toHaveCount(0);
-        await expect(page.getByTestId('compare-roll-participant-1')).toHaveCount(0);
-        await expect(page.getByTestId('compare-roll-result')).toContainText('本次攻击伤害 +2');
-        await expect(page.getByTestId('compare-roll-autoconfirm')).toContainText('确认中');
-
-        await game.screenshot('gunslinger-showdown-compare-roll-auto-confirm', testInfo);
+        await expect(overlay).toHaveCount(0, { timeout: 5000 });
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -501,6 +495,7 @@ test.describe('DiceThrone - 防御技能选择', () => {
             sourceAbilityId: 'showdown',
         });
 
-        await expect(overlay).toBeHidden();
+        await expect(overlay).toHaveCount(0);
+        await game.screenshot('gunslinger-showdown-auto-resolved-without-overlay', testInfo);
     });
 });

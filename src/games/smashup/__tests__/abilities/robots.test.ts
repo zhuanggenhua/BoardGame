@@ -84,6 +84,30 @@ function runAction(core: SmashUpCore, command: { type: string; playerId: string;
     return result.events as SmashUpEvent[];
 }
 
+function playBearNecessitiesAndDestroyMinion(core: SmashUpCore, minionUid: string, playerId = '0') {
+    const playResult = runCommand(
+        makeMatchState(core),
+        {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId,
+            payload: { cardUid: 'c1' },
+        } as any,
+        defaultRandom,
+    );
+    expect(playResult.success, playResult.error).toBe(true);
+    expect(playResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+
+    const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+    const option = getPromptOption(
+        prompt,
+        entry => entry?.value?.type === 'minion' && entry?.value?.uid === minionUid,
+        `bear necessities target option for ${minionUid}`,
+    );
+    const respondResult = respondToPrompt(playResult.finalState, option.id, playerId, defaultRandom);
+    expect(respondResult.success, respondResult.error).toBe(true);
+    return [...playResult.events, ...respondResult.events] as SmashUpEvent[];
+}
+
 describe('机器人派系能力', () => {
     it('robot_zapbot: 打出后直接获得额外随从额度（力量≤2限制）', () => {
         const state = makeState({
@@ -574,11 +598,7 @@ describe('robot_nukebot（核弹机器人 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'nukebot');
 
         const nukebotDestroy = events.find(
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.minionUid === 'nukebot'
@@ -609,11 +629,7 @@ describe('robot_nukebot（核弹机器人 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'nukebot');
 
         const nukebotDestroy = events.find(
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.minionUid === 'nukebot'
@@ -643,11 +659,7 @@ describe('robot_nukebot（核弹机器人 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'nukebot');
 
         const nukebotDestroy = events.find(
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.minionUid === 'nukebot'
@@ -679,11 +691,7 @@ describe('robot_nukebot（核弹机器人 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'nukebot');
 
         const destroyedByNukebot = events.filter(
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'

@@ -290,6 +290,22 @@ function princessesWoodlandHelpersPod(ctx: TriggerContext): TriggerResult | Smas
     };
 }
 
+function canTriggerPrincessesWoodlandHelpers(ctx: TriggerContext, standardOnly = false): boolean {
+    const helperControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.playerId !== helperControllerId || !ctx.matchState) return false;
+    const cardUid = parseActionCardUid(ctx.sourceEventId);
+    if (!cardUid) return false;
+
+    const discardOwnerEntry = Object.entries(ctx.state.players).find(([, player]) =>
+        player.discard.some(entry => entry.uid === cardUid && entry.type === 'action'),
+    );
+    const card = discardOwnerEntry?.[1].discard.find(entry => entry.uid === cardUid);
+    if (!card || card.type !== 'action') return false;
+    if (!standardOnly) return true;
+    const cardDef = getCardDef(card.defId);
+    return cardDef?.type === 'action' && cardDef.subtype === 'standard';
+}
+
 function princessesSleepingBeautyOnDestroyed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (ctx.triggerMinion?.uid !== ctx.sourceCardUid || !ctx.triggerMinionDefId || ctx.baseIndex === undefined) {
         return [];
@@ -465,11 +481,13 @@ export function registerPrincessesAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        canTrigger: canTriggerPrincessesWoodlandHelpers,
     });
     registerTrigger('princesses_woodland_helpers_pod', 'onActionPlayed', princessesWoodlandHelpersPod, {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        canTrigger: ctx => canTriggerPrincessesWoodlandHelpers(ctx, true),
     });
     registerTrigger('princesses_sleeping_beauty', 'onMinionDestroyed', princessesSleepingBeautyOnDestroyed, {
         phase: 'replacement',

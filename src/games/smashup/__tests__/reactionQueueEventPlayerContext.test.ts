@@ -3107,7 +3107,71 @@ describe('reaction queue: preserves event player context', () => {
         expect(sheriffPrompt?.data?.sourceId).toBe('world_champs_sheriff_before_scoring');
     });
 
-    it('sourceController queued onActionPlayed trigger 仍应把 Fort Titanosaurus 的选择权交给泰坦控制者', () => {
+    it('sourceController queued onActionPlayed trigger 仍应在 Fort Titanosaurus 控制者打战术时交给泰坦控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.DINOSAURS, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.GHOSTS],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('ally-1', 'dino_war_raptor_pod', '0', 2),
+                    ],
+                    ongoingActions: [],
+                }),
+            ],
+            titans: [{
+                uid: 'fort-1',
+                defId: 'dinosaurs_fort_titanosaurus',
+                faction: SMASHUP_FACTION_IDS.DINOSAURS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const queued = collectTriggers(core, 'onActionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            actionTargetType: 'minion',
+            actionTargetMinionUid: 'ally-1',
+            triggerCardUid: 'own-action-1',
+            triggerCardDefId: 'dino_augmentation_pod',
+            triggerCardOwnerId: '0',
+            random: defaultTestRandom,
+            now: 4,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('dinosaurs_fort_titanosaurus');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            4,
+        );
+
+        const reactionPrompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionPrompt?.playerId).toBe('0');
+        expect(reactionPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
+    });
+
+    it('Fort Titanosaurus 不应在别人打战术影响你的随从时入队', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
@@ -3147,27 +3211,14 @@ describe('reaction queue: preserves event player context', () => {
             baseIndex: 0,
             actionTargetType: 'minion',
             actionTargetMinionUid: 'ally-1',
-            sourceCardUid: 'opp-action-1',
-            sourceControllerId: '0',
+            triggerCardUid: 'opp-action-1',
+            triggerCardDefId: 'wizard_summon',
+            triggerCardOwnerId: '1',
             random: defaultTestRandom,
-            now: 4,
-        }) as any;
+            now: 4.5,
+        });
 
-        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('dinosaurs_fort_titanosaurus');
-        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
-
-        const resolved = maybeResolveReactionQueue(
-            makeMatchState({
-                ...core,
-                triggerQueue: queued.payload.triggers,
-            }),
-            defaultTestRandom,
-            4,
-        );
-
-        const reactionPrompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
-        expect(reactionPrompt?.playerId).toBe('0');
-        expect(reactionPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(queued).toBeUndefined();
     });
 
     it('sourceController queued onActionPlayed trigger 不应让对手打战术触发 Gorgodzolla 抽牌提示', () => {

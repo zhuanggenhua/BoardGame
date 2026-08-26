@@ -1,0 +1,190 @@
+{
+  "title": "山屋惊魂木乃伊横行主黄金链过程截图",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-01-开局牌桌-探索入口可见.jpg",
+      "label": "开局牌桌：探索入口可见",
+      "transition": "起点：作祟前，玩家可以从牌桌探索"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-02-事件房探索目标高亮-点击前.jpg",
+      "label": "事件房：探索目标高亮",
+      "transition": "从开局选择探索，事件房目标在地图上可见"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-03-事件牌结算结果-知识检定后.jpg",
+      "label": "事件牌：外星几何结算",
+      "transition": "翻出事件房后，事件牌与知识检定结果完成"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-04-物品段开局牌桌-探索入口可见.jpg",
+      "label": "物品段：探索入口可见",
+      "transition": "进入物品代表段，回到可探索牌桌"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-05-物品房探索目标高亮-点击前.jpg",
+      "label": "物品房：探索目标高亮",
+      "transition": "选择物品房探索目标"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-06-物品牌获得结果-急救包进入持有区.jpg",
+      "label": "物品牌：急救包进入持有区",
+      "transition": "翻出物品牌，急救包落到持有区"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-07-急救包使用前-持有区可选.jpg",
+      "label": "急救包：使用前可选",
+      "transition": "物品进入持有区后，玩家可选中使用"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-08-急救包已选中-等待选择治疗目标.jpg",
+      "label": "急救包：已选中等待目标",
+      "transition": "选中急救包后进入目标选择"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-09-急救包治疗目标高亮-点击前.jpg",
+      "label": "急救包：治疗目标高亮",
+      "transition": "可治疗目标在地图上高亮"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-10-急救包确认使用按钮可用.jpg",
+      "label": "急救包：确认使用可用",
+      "transition": "选中目标后确认使用入口可用"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-11-急救包使用后-治疗反馈与移除.jpg",
+      "label": "急救包：治疗反馈与移除",
+      "transition": "使用后出现治疗反馈，物品从持有区移除"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-12-预兆段开局牌桌-探索入口可见.jpg",
+      "label": "预兆段：探索入口可见",
+      "transition": "进入预兆代表段，回到可探索牌桌"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-13-预兆房探索目标高亮-点击前.jpg",
+      "label": "预兆房：探索目标高亮",
+      "transition": "选择预兆房探索目标"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-14-预兆书本翻出-作祟检定已触发.jpg",
+      "label": "预兆牌：书本触发作祟检定",
+      "transition": "翻出书本预兆并触发作祟检定"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-15-作祟后英雄剧本开场-继续前.jpg",
+      "label": "英雄视角：剧本开场",
+      "transition": "作祟后切到英雄视角，先显示开场"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-16-英雄目标读本正文-段落标题可读.jpg",
+      "label": "英雄视角：英雄目标读本",
+      "transition": "继续后只显示英雄侧目标正文"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-17-作祟后叛徒剧本开场-继续前.jpg",
+      "label": "叛徒视角：剧本开场",
+      "transition": "切到叛徒视角，显示叛徒开场"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-18-叛徒读本正文-敌方情报可读.jpg",
+      "label": "叛徒视角：敌方情报读本",
+      "transition": "继续后显示叛徒侧敌方情报和胜利条件"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-19-作祟后事件符号-探索入口可见.jpg",
+      "label": "作祟后事件房：探索入口可见",
+      "transition": "进入作祟后事件跳过段"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-20-事件房探索目标高亮-点击前.jpg",
+      "label": "作祟后事件房：目标高亮",
+      "transition": "事件房目标在点击前可见"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-21-翻出事件符号后-是否跳过事件弹窗.jpg",
+      "label": "事件跳过：翻出后选择",
+      "transition": "翻出事件符号后，玩家再选择是否跳过"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-22-跳过事件后回到牌桌-无结果面板.jpg",
+      "label": "事件跳过：回到牌桌",
+      "transition": "跳过后没有事件结果面板，回到可操作牌桌"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-23-点击木乃伊-详情显示属性头像与驱逐胜利方式.jpg",
+      "label": "木乃伊详情：属性与驱逐方式",
+      "transition": "点击木乃伊，查看速度/力量/神志和驱逐规则"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-24-叛徒回合-木乃伊开回合入口可见.jpg",
+      "label": "怪物回合：木乃伊开回合入口",
+      "transition": "进入叛徒怪物行动，木乃伊开回合可见"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-25-木乃伊开回合后-移动骰入口可见.jpg",
+      "label": "怪物回合：移动骰入口",
+      "transition": "开回合后出现木乃伊移动骰"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-26-木乃伊移动骰结果-三点停稳.jpg",
+      "label": "木乃伊移动骰：3 点结果",
+      "transition": "移动骰停稳，结果为可移动 3 间"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-27-木乃伊普通移动第一步-目标房间高亮.jpg",
+      "label": "木乃伊移动：第一步目标高亮",
+      "transition": "选择第一步普通移动目标"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-28-木乃伊普通移动第一步后-剩余两点.jpg",
+      "label": "木乃伊移动：第一步后剩余 2 点",
+      "transition": "移动后反馈消耗 1 点，仍可继续移动"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-29-木乃伊普通移动第二步-石棺目标高亮.jpg",
+      "label": "木乃伊移动：第二步石棺目标",
+      "transition": "选择第二步移动到石棺/女孩房"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg",
+      "label": "木乃伊移动：拾起女孩并可攻击",
+      "transition": "第二步后木乃伊拾起女孩，并进入同房攻击机会"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-31-攻击前-切换观察目标英雄后圣符可见.jpg",
+      "label": "观察目标英雄：圣符可见",
+      "transition": "攻击前切换到目标英雄视角，确认圣符在其持有区"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-32-同房后-木乃伊攻击入口可见.jpg",
+      "label": "同房后：木乃伊攻击入口",
+      "transition": "木乃伊与英雄同房，攻击入口可见"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-33-木乃伊攻击-选择木乃伊攻击者.jpg",
+      "label": "攻击选择：选择木乃伊攻击者",
+      "transition": "点击攻击后先选择木乃伊作为攻击者"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.jpg",
+      "label": "攻击选择：英雄目标高亮",
+      "transition": "木乃伊红色源高亮，英雄绿色目标高亮"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-35-木乃伊攻击骰结果-可选择伤害或偷取.jpg",
+      "label": "攻击骰：可选择伤害或偷取",
+      "transition": "攻击结算后达到奖励阈值，出现伤害或偷取选择"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-36-木乃伊攻击英雄后奖励-偷圣符入口可见.jpg",
+      "label": "攻击奖励：偷圣符入口",
+      "transition": "奖励区出现偷走圣符入口"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-37-偷走圣符后-叛徒终局朗读.jpg",
+      "label": "叛徒终局：偷圣符后胜利朗读",
+      "transition": "偷走圣符后木乃伊带齐条件，进入叛徒终局"
+    }
+  ]
+}

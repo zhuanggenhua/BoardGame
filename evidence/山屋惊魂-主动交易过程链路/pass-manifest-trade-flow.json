@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "主动点交易后必须进入可见交易模式，不让玩家猜下一步",
+      "status": "PASS",
+      "evidence": [
+        "主黄金链过程 12-14 显示入口、点击交易后的绿色目标高亮、点击目标后的交易提示和对方持有物"
+      ]
+    },
+    {
+      "requirement": "可用目标才显示绿色高亮，交易入口前不提前高亮不可用目标",
+      "status": "PASS",
+      "evidence": [
+        "主黄金链过程 12 无同房目标高亮，过程 13 点击交易后同房目标绿色高亮"
+      ]
+    },
+    {
+      "requirement": "交易必须覆盖选择双方持有物、提出交易、等待同意和结算落位",
+      "status": "PASS",
+      "evidence": [
+        "主黄金链过程 15-17 覆盖选择双方持有物、提出交易等待同意、同意后物品归属更新"
+      ]
+    },
+    {
+      "requirement": "黄金链必须给过程截图，不只给结果图",
+      "status": "PASS",
+      "evidence": [
+        "主黄金链过程图已清理旧图后重跑，共 43 张；交易段为 12-17 六张连续过程图"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\01-labeled-65-主黄金链过程-12-主动交易前-交易入口可见但目标未高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\02-labeled-65-主黄金链过程-13-主动点交易后-同房目标绿色高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\03-labeled-65-主黄金链过程-14-点同房目标后-交易提示和对方持有物.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\04-labeled-65-主黄金链过程-15-选择双方持有物后-提出交易可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\05-labeled-65-主黄金链过程-16-提出交易后-等待接收方同意.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-主动交易过程链路\\_labeled-for-pureref\\06-labeled-65-主黄金链过程-17-同意交易后-双方持有物结算.png"
+  ]
+}

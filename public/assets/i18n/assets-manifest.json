@@ -5683,6 +5683,15 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/haunts/mummy-girl": {
+      "variants": {
+        "svg": {
+          "sha256": "da1569bfb4e90c5ba07819f3ca5f168f05d2acc639cd3494f35d43d989cb3b86",
+          "bytes": 48623,
+          "mime": "image/svg+xml"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/monsters/bakeneko": {
       "variants": {
         "png": {
@@ -6301,6 +6310,15 @@
           "sha256": "48154dc5133290d8e2d134af67616b3795456a5f8cf3a3095a40ebd041424ac9",
           "bytes": 23677,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/mummy": {
+      "variants": {
+        "svg": {
+          "sha256": "dd738f964ee7a04ab4bcab7e949d7bbc15e993d0eabfec619a812785674837be",
+          "bytes": 158915,
+          "mime": "image/svg+xml"
         }
       }
     },

@@ -735,7 +735,17 @@ function prepareForBattle(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function sproutTurnStart(ctx: import('../domain/ongoingEffects').TriggerContext) {
+function canTriggerSproutTurnStart(ctx: TriggerContext): boolean {
+    const sourcePlayerId = ctx.sourceControllerId ?? ctx.sourceOwnerPlayerId;
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !sourcePlayerId) return false;
+    return ctx.state.bases[ctx.sourceBaseIndex]?.minions.some(minion =>
+        minion.uid === ctx.sourceCardUid
+        && minion.controller === sourcePlayerId
+        && (minion.defId === 'all_stars_sprout' || minion.defId === 'all_stars_sprout_pod'),
+    ) ?? false;
+}
+
+function sproutTurnStart(ctx: TriggerContext) {
     const sourcePlayerId = ctx.sourceControllerId ?? ctx.sourceOwnerPlayerId;
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !sourcePlayerId) return [];
     const candidates = (ctx.state.players[sourcePlayerId]?.deck ?? []).filter(card => {
@@ -983,11 +993,13 @@ function registerAllStarsTriggers(): void {
         perInstance: true,
         mandatory: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSproutTurnStart,
     });
     registerTrigger('all_stars_sprout_pod', 'onTurnStart', sproutTurnStart, {
         perInstance: true,
         mandatory: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerSproutTurnStart,
     });
     registerTrigger('all_stars_imperial_dragon_pod', 'onMinionPlayed', allStarsPodImperialDragonTrigger, {
         perInstance: true,

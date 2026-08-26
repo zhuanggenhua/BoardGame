@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 - Prompt 端到端测试
  *
@@ -435,17 +436,11 @@ describe('Prompt E2E: 状态变更验证', () => {
             ],
         });
 
-        const event: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
+        const event: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'm1',
                 minionDefId: 'test',
                 fromBaseIndex: 0,  // 正确的字段名
                 ownerId: '0',
-                reason: 'test',
-            },
-            timestamp: Date.now(),
-        } as any;
+                reason: 'test', timestamp: Date.now() }) as any;
 
         const newState = reduce(state, event);
         expect(newState.bases[0].minions.length).toBe(1);

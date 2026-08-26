@@ -30,9 +30,9 @@ const ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR = resolve(process.cwd(), 'evidenc
 const ARMORY_PLACEMENT_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/01-器械库-确认房间朝向.jpg`;
 const ARMORY_DISCOVERY_BURIED_CARD_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/02-器械库-展示急救包.jpg`;
 const ARMORY_DISCOVERY_WEAPON_READY_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03-器械库-展示砍刀并确认.jpg`;
-const ARMORY_DISCOVERY_SELF_CONFIRMED_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03a-器械库-本人确认后等待其他玩家.jpg`;
+const ARMORY_DISCOVERY_SELF_CONFIRMED_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03a-器械库-本人确认后显示已确认进度.jpg`;
 const ARMORY_PLAYER_ONE_CONFIRM_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03b-器械库-玩家一确认砍刀.jpg`;
-const ARMORY_DISCOVERY_TWO_CONFIRMED_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03c-器械库-两人确认后等待其他玩家.jpg`;
+const ARMORY_DISCOVERY_TWO_CONFIRMED_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03c-器械库-两人确认后显示已确认进度.jpg`;
 const ARMORY_PLAYER_TWO_CONFIRM_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03d-器械库-玩家二确认砍刀.jpg`;
 const ARMORY_DISCOVERY_GAIN_ANIMATION_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03e-器械库-最终确认飞入持有区动画.jpg`;
 const ARMORY_INVENTORY_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/04-器械库-全员确认完毕回牌桌持有区.jpg`;
@@ -235,7 +235,7 @@ const expectPendingResolutionConfirmationCount = async (
         await expect(continueButton).toContainText('确认');
         await expect(continueButton).not.toBeDisabled();
     } else {
-        await expect(continueButton).toContainText(`等待其他玩家 ${confirmed}/${total}`);
+        await expect(continueButton).toContainText(`已确认 ${confirmed}/${total}`);
         await expect(continueButton).toBeDisabled();
     }
 };

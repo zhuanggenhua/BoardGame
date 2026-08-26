@@ -12,6 +12,11 @@ import type {
 } from '../../engine/types';
 import { createCheatSystem } from '../../engine/systems';
 import {
+    resolveEntityRelation,
+    type EntityRelation,
+    type EntitySideId,
+} from '../../engine/primitives';
+import {
     BETRAYAL_ACTION_LOG_ALLOWLIST,
     BETRAYAL_UNDO_ALLOWLIST,
     formatBetrayalActionEntry,
@@ -724,6 +729,8 @@ export interface BetrayalRecentRollState {
     rollLabel?: string;
     dice: number[];
     passiveBonus: number;
+    requiredPlayerIds?: string[];
+    acknowledgedPlayerIds?: string[];
     branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
     latestLabel: string;
     eventEffectSnapshot?: {
@@ -930,6 +937,7 @@ export interface BetrayalPendingDamageAllocationState {
     damageKind: 'physical' | 'mental' | 'general';
     amount: number;
     originalAmount: number;
+    damageReductionAmount?: number;
     allowedTraits: BetrayalTraitKey[];
     damageReplacement?: {
         kind: 'brooch-general-damage';
@@ -1986,7 +1994,16 @@ type BetrayalEvent =
     | GameEvent<typeof EVENTS.POSSESSION_TRADE_DECLINED, { playerId: string; targetPlayerId: string; cardIds: string[]; targetCardIds?: string[]; logText: string }>
     | GameEvent<typeof EVENTS.CORPSE_LOOTED, { playerId: string; sourcePlayerId: string; cardId: string; logText: string }>
     | GameEvent<typeof EVENTS.TURN_ENDED, BetrayalTurnEndedPayload>
-    | GameEvent<typeof EVENTS.RECENT_ROLL_ACKNOWLEDGED, { playerId: string; rollId: string; sourceTitle: string; logText: string }>
+    | GameEvent<typeof EVENTS.RECENT_ROLL_ACKNOWLEDGED, {
+        playerId: string;
+        rollId: string;
+        sourceTitle: string;
+        requiredPlayerIds: string[];
+        acknowledgedPlayerIds: string[];
+        remainingAcknowledgementCount: number;
+        isFullyAcknowledged: boolean;
+        logText: string;
+    }>
     | GameEvent<typeof EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
         previousPlayerId: string;
         nextPlayerId: string;
@@ -2987,6 +3004,34 @@ function isPendingEventRollResolutionFullyAcknowledged(
     acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(resolution),
 ): boolean {
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution);
+    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
+}
+
+function resolveRecentRollRequiredPlayerIds(
+    core: Pick<BetrayalCore, 'playerIds'>,
+    recentRoll: BetrayalRecentRollState,
+): string[] {
+    const configuredPlayerIds = recentRoll.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    if (configuredPlayerIds.length > 0) {
+        return configuredPlayerIds;
+    }
+    return core.playerIds.length > 0 ? [...core.playerIds] : [recentRoll.playerId];
+}
+
+function resolveRecentRollAcknowledgedPlayerIds(
+    recentRoll: BetrayalRecentRollState,
+): string[] {
+    return Array.from(new Set(
+        recentRoll.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
+    ));
+}
+
+function isRecentRollFullyAcknowledged(
+    core: Pick<BetrayalCore, 'playerIds'>,
+    recentRoll: BetrayalRecentRollState,
+    acknowledgedPlayerIds = resolveRecentRollAcknowledgedPlayerIds(recentRoll),
+): boolean {
+    const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
     return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
@@ -4226,6 +4271,12 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
             ? {
                 ...core.recentRoll,
                 dice: [...core.recentRoll.dice],
+                requiredPlayerIds: core.recentRoll.requiredPlayerIds
+                    ? [...core.recentRoll.requiredPlayerIds]
+                    : undefined,
+                acknowledgedPlayerIds: core.recentRoll.acknowledgedPlayerIds
+                    ? [...core.recentRoll.acknowledgedPlayerIds]
+                    : undefined,
                 branchThresholds: core.recentRoll.branchThresholds?.map((branch) => ({
                     ...branch,
                     effect: { ...branch.effect },
@@ -10574,6 +10625,7 @@ function createPendingDamageAllocation(params: {
 }): BetrayalPendingDamageAllocationState | null {
     const allowedTraits = resolveDamageAllocationAllowedTraits(params.damageKind);
     const reducedAmount = resolveReducedDamageAmount(params.explorer, params.damageKind, params.amount);
+    const damageReductionAmount = Math.max(0, params.amount - reducedAmount);
     const assignableAmount = resolveAssignableDamageAmount(
         params.explorer,
         allowedTraits,
@@ -10590,6 +10642,7 @@ function createPendingDamageAllocation(params: {
         damageKind: params.damageKind,
         amount: assignableAmount,
         originalAmount: params.amount,
+        damageReductionAmount,
         allowedTraits,
         damageReplacement: resolveBroochDamageReplacement(params.explorer, params.damageKind),
         forcedTraitSequence: params.forcedTraitSequence
@@ -12992,6 +13045,13 @@ function isHauntRuntimeStarted(core: BetrayalCore): boolean {
 }
 
 type BetrayalExplorerSide = 'traitor' | 'hero' | `free-for-all:${string}` | null;
+export type BetrayalEntityRelation = EntityRelation;
+export type BetrayalEntitySideId = EntitySideId;
+
+export type BetrayalEntityRef =
+    | { kind: 'explorer'; playerId: string }
+    | { kind: 'monster'; monsterId: string }
+    | { kind: 'side'; sideId: BetrayalEntitySideId | null | undefined };
 
 function resolveExplorerSide(core: BetrayalCore, playerId: string): BetrayalExplorerSide {
     const teamModel = core.scenarioRuntime.hauntTraitorResolution?.teamModel;
@@ -13009,6 +13069,93 @@ function resolveExplorerSide(core: BetrayalCore, playerId: string): BetrayalExpl
         return null;
     }
     return core.scenarioRuntime.traitorPlayerId === playerId ? 'traitor' : 'hero';
+}
+
+function toBetrayalEntitySideId(side: BetrayalExplorerSide): BetrayalEntitySideId | null {
+    if (side === 'hero') {
+        return 'heroes';
+    }
+    return side;
+}
+
+export function resolveBetrayalExplorerSideId(
+    core: BetrayalCore,
+    playerId: string,
+): BetrayalEntitySideId | null {
+    return toBetrayalEntitySideId(resolveExplorerSide(core, playerId));
+}
+
+export function resolveBetrayalMonsterSideId(
+    core: BetrayalCore,
+    monsterId: string,
+): BetrayalEntitySideId | null {
+    if (!isHauntRuntimeStarted(core)) {
+        return null;
+    }
+    const monster = core.monsters.find((item) => item.id === monsterId);
+    if (!monster) {
+        return null;
+    }
+    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
+    if (traitorPlayerId && resolveExplorerSide(core, traitorPlayerId) === 'traitor') {
+        return 'traitor';
+    }
+    return 'monsters';
+}
+
+export function resolveBetrayalEntitySideId(
+    core: BetrayalCore,
+    entity: BetrayalEntityRef,
+): BetrayalEntitySideId | null {
+    switch (entity.kind) {
+        case 'explorer':
+            return resolveBetrayalExplorerSideId(core, entity.playerId);
+        case 'monster':
+            return resolveBetrayalMonsterSideId(core, entity.monsterId);
+        case 'side':
+            return entity.sideId ?? null;
+        default:
+            return null;
+    }
+}
+
+function getBetrayalEntityId(entity: BetrayalEntityRef): string | null {
+    switch (entity.kind) {
+        case 'explorer':
+            return `explorer:${entity.playerId}`;
+        case 'monster':
+            return `monster:${entity.monsterId}`;
+        case 'side':
+            return entity.sideId ? `side:${entity.sideId}` : null;
+        default:
+            return null;
+    }
+}
+
+export function resolveBetrayalEntityRelation(
+    core: BetrayalCore,
+    actor: BetrayalEntityRef,
+    target: BetrayalEntityRef,
+): BetrayalEntityRelation {
+    return resolveEntityRelation({
+        actorEntityId: getBetrayalEntityId(actor),
+        actorSideId: resolveBetrayalEntitySideId(core, actor),
+        targetEntityId: getBetrayalEntityId(target),
+        targetSideId: resolveBetrayalEntitySideId(core, target),
+        defaultRelation: 'enemy',
+    });
+}
+
+export function resolveBetrayalMonsterRelationToExplorer(
+    core: BetrayalCore,
+    monsterId: string,
+    explorerPlayerId: string,
+): BetrayalEntityRelation {
+    return resolveBetrayalEntityRelation(
+        core,
+        { kind: 'monster', monsterId },
+        { kind: 'explorer', playerId: explorerPlayerId },
+    );
 }
 
 function hasEnemyExplorerObstacle(core: BetrayalCore, roomId: string, playerId: string): boolean {
@@ -13448,11 +13595,11 @@ export function resolveBetrayalHauntTokenInstances(core: BetrayalCore): Betrayal
                 visibility: 'public',
                 value: null,
                 valueHidden: false,
-                asset: null,
+                asset: 'betrayal/tokens/haunts/mummy-girl.svg',
                 status: mummy.girlHeldByMummy ? 'held-by-mummy' : girlHolder ? 'held-by-player' : 'placed',
                 source: 'haunt-contract',
                 representativeOnly: true,
-                ruleNotes: ['1 号作祟「木乃伊横行」：女孩预兆旁置后由公开品红标记代表；被探索者或木乃伊持有时仍公开追踪。'],
+                ruleNotes: ['1 号作祟「木乃伊横行」：女孩预兆旁置后由公开 SVG token 代表；被探索者或木乃伊持有时仍公开追踪。'],
             }));
         }
     }
@@ -14380,6 +14527,18 @@ function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRol
     return recentRoll;
 }
 
+function canPlayerAcknowledgeRecentRoll(core: BetrayalCore, playerId: string): boolean {
+    const recentRoll = resolveAcknowledgeableRecentRoll(core);
+    if (!recentRoll) {
+        return false;
+    }
+    const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
+    if (!requiredPlayerIds.includes(playerId)) {
+        return false;
+    }
+    return !resolveRecentRollAcknowledgedPlayerIds(recentRoll).includes(playerId);
+}
+
 function validateTurnEndRollAcknowledgement(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
     const pendingRoll = resolvePendingTurnEndRoll(core);
     if (!pendingRoll) {
@@ -14760,7 +14919,14 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     if (pendingTurnEndRollValidation) {
         return pendingTurnEndRollValidation;
     }
-    if (!isPlayersTurn(core, command.playerId)) {
+    const pendingRecentRollAcknowledgement = command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+        ? resolveAcknowledgeableRecentRoll(core)
+        : null;
+    const isRecentRollAcknowledgementParticipant = Boolean(
+        pendingRecentRollAcknowledgement
+        && resolveRecentRollRequiredPlayerIds(core, pendingRecentRollAcknowledgement).includes(command.playerId),
+    );
+    if (!isPlayersTurn(core, command.playerId) && !isRecentRollAcknowledgementParticipant) {
         return { valid: false, error: '还没有轮到该玩家。' };
     }
     if (
@@ -14770,6 +14936,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         && command.type !== BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION
+        && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
     ) {
         return { valid: false, error: '探索新房间后回合已经结束。' };
     }
@@ -15030,9 +15197,14 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (!recentRoll) {
                 return { valid: false, error: '当前没有待确认的投骰结果。' };
             }
-            return command.playerId === recentRoll.playerId
-                ? { valid: true }
-                : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+            const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
+            if (!requiredPlayerIds.includes(command.playerId)) {
+                return { valid: false, error: '只有本局玩家可以确认当前投骰结果。' };
+            }
+            if (!canPlayerAcknowledgeRecentRoll(core, command.playerId)) {
+                return { valid: false, error: '你已经确认过当前投骰结果。' };
+            }
+            return { valid: true };
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
@@ -15194,14 +15366,18 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (!bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand) {
         return { valid: false, error: '石像小天使怪物回合尚未开始。' };
     }
+    const pendingRecentRollAcknowledgement = command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+        ? resolveAcknowledgeableRecentRoll(core)
+        : null;
+    const isRecentRollAcknowledgementParticipant = Boolean(
+        pendingRecentRollAcknowledgement
+        && resolveRecentRollRequiredPlayerIds(core, pendingRecentRollAcknowledgement).includes(command.playerId),
+    );
     if (
         !isPlayersTurn(core, command.playerId)
         && !(helpingHandsMonsterTurnStatus.active && isHelpingHandsMonsterCommand)
         && !(bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand)
-        && !(
-            command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
-            && resolveAcknowledgeableRecentRoll(core)?.playerId === command.playerId
-        )
+        && !isRecentRollAcknowledgementParticipant
     ) {
         return { valid: false, error: '还没有轮到该玩家。' };
     }
@@ -15310,9 +15486,14 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             if (!recentRoll) {
                 return { valid: false, error: '当前没有待确认的投骰结果。' };
             }
-            return command.playerId === recentRoll.playerId
-                ? { valid: true }
-                : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+            const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
+            if (!requiredPlayerIds.includes(command.playerId)) {
+                return { valid: false, error: '只有本局玩家可以确认当前投骰结果。' };
+            }
+            if (!canPlayerAcknowledgeRecentRoll(core, command.playerId)) {
+                return { valid: false, error: '你已经确认过当前投骰结果。' };
+            }
+            return { valid: true };
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
@@ -16805,11 +16986,25 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [];
             }
             const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
+            const acknowledgedPlayerIds = Array.from(new Set([
+                ...resolveRecentRollAcknowledgedPlayerIds(recentRoll),
+                command.playerId,
+            ]));
+            const isFullyAcknowledged = isRecentRollFullyAcknowledged(
+                core,
+                recentRoll,
+                acknowledgedPlayerIds,
+            );
             return [nowEvent(EVENTS.RECENT_ROLL_ACKNOWLEDGED, {
                 playerId: command.playerId,
                 rollId: recentRoll.id,
                 sourceTitle: recentRoll.sourceTitle,
-                logText: `${actor.displayName}确认${recentRoll.sourceTitle}投骰结果`,
+                requiredPlayerIds,
+                acknowledgedPlayerIds,
+                remainingAcknowledgementCount: Math.max(0, requiredPlayerIds.length - acknowledgedPlayerIds.length),
+                isFullyAcknowledged,
+                logText: `${actor.displayName}确认${recentRoll.sourceTitle}投骰结果（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL: {
@@ -21827,7 +22022,13 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (core.recentRoll?.id !== event.payload.rollId) {
                 return core;
             }
-            core.recentRoll = null;
+            core.recentRoll = event.payload.isFullyAcknowledged
+                ? null
+                : {
+                    ...core.recentRoll,
+                    requiredPlayerIds: [...event.payload.requiredPlayerIds],
+                    acknowledgedPlayerIds: [...event.payload.acknowledgedPlayerIds],
+                };
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,

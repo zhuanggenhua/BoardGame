@@ -285,7 +285,10 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(startScenarioOpeningStage).toBeVisible({ timeout: 30000 });
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-cinematic"),
-    ).toContainText("木乃伊横行");
+    ).toContainText("公开揭示");
+    await expect(
+      page.getByTestId("betrayal-start-scenario-opening-cinematic"),
+    ).toContainText("木乃伊醒来");
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-source-status"),
     ).toHaveCount(0);

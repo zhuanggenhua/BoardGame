@@ -23,6 +23,7 @@
 | 计划牌大小和法术书一致 | 已计划法术被弱化成角落挂件 | `mage-wars-ui-design-memory` 法术书 / 已计划裁决 | 两张已计划法术与法术书当前页卡面同尺寸，并有独立计划槽 | covered |
 | 已计划和已选法术不要重复 | 同一规则对象被画成两个实体 | `ui-design-pipeline` 规则对象实体锚点守恒；设计 README v49 / v50 裁定 | 当前来源只能引用已计划法术实体，不再额外画同名“已选法术”大卡 | covered |
 | 卡面已有名字和费用，不要外部复写 | 用 UI chip 重写卡面字段，浪费空间且重复 | `ui-design-pipeline` 卡面字段不复写；`ui-ux.md` 正式素材已含信息不得复读 | 名称、费用、射程、目标、骰数默认由可读卡面承担；外部只补运行态 | covered |
+| 生命 / 法力 / 聚魔这类全员相同基础属性不要在选角页重复 | Mage Wars 学徒法师选角页把 24 / 10 / 10 这种所有候选一致的信息重复写在席位、候选卡和摘要上，玩家无法从中做选择 | `ui-change-gates.md` 无差异信息不重复展示、重复 UI 要代码验收；`mage-wars-ui-design-memory` 用户原话反思表 | 选角 / setup gate 只展示法师身份和会影响选择的差异项；生命24、初始法力10、聚魔10 不出现在额外 UI 文本 / chip / 摘要中，且有代码检索、DOM 文本扫描或 E2E 断言防复发 | covered-by-runtime-e2e |
 | 不要常驻确认 / 执行 / 取消 | 规则没有授权时伪造二次确认，占空间 | `ui-design-pipeline` 确认控件授权；`step1-runtime-board-saturated-ui-design.md` 统一动作规则 | 选中来源后高亮合法目标，目标本体点击推进；没有常驻确认按钮 | covered |
 | 开放式设计 / 场地直选优先 | 用代理面板、问号块、目标摘要替代真实对象 | `ui-design-pipeline` 开放式直选裁决；`ui-change-gates.md` 0.0 / 0.0D | 合法目标在棋盘格 / 场上卡 / token 本体高亮，代理 UI 仅在有规则理由时出现 | covered |
 | 玩家提示挂角色头像，不挂场地 | 把“选择目标 / 行动中”做成卡在地图顶部或中央的提示条，会让玩家误以为竞技场本体是提示载体 | `mage-wars-ui-design-memory` 用户原话反思表；`ui-design-pipeline` 开放式直选裁决 | 当前玩家提示在法师头像 / 角色 HUD；竞技场只承接区域语义、来源 / 合法目标高亮、骰子、token 和结果反馈 | covered |
@@ -71,6 +72,7 @@
 - [ ] 已建立规则对象覆盖矩阵；foundation 最低对象行都有 `visible`、`collapsed-with-visible-entry`、`hidden-by-rule`、`out-of-scope`、`blocked` 或 `approved-programmatic` 结论。
 - [ ] Open Design artifact 路线确认，未调用 media 生图链。
 - [ ] `法术书 / 已计划法术 / 弃牌堆 / 隐性结界` 牌区命名无“手牌”。
+- [ ] 选角 / setup gate 没有把所有候选一致的生命24、初始法力10、聚魔10 等基础属性重复写进席位、候选卡、摘要或 chip；若展示差异项，必须有代码检索、DOM 文本扫描或 E2E 断言防复发。
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。

@@ -13,11 +13,14 @@ export interface DicePhysicsDieInput {
     isKept?: boolean;
 }
 
+export type DiceBoxPhysicsMotion =
+    | { type: 'settled' }
+    | { type: 'roll'; id: string }
+    | { type: 'reroll'; id: string; dieIds: number[] };
+
 export interface DiceBoxPhysicsSourceProps {
     dice: DicePhysicsDieInput[];
-    isRolling: boolean;
-    rerollingDiceIds?: number[];
-    rerollAnimationSeq?: number;
+    motion: DiceBoxPhysicsMotion;
     styleProfile?: DiceBoxStyleProfile;
     dieSkins?: Array<DiceBoxDieSkin | null>;
     requireDieSkins?: boolean;
@@ -33,9 +36,7 @@ export interface DiceBoxPhysicsSourceProps {
 
 export function DiceBoxPhysicsSource({
     dice,
-    isRolling,
-    rerollingDiceIds,
-    rerollAnimationSeq = 0,
+    motion,
     styleProfile,
     dieSkins,
     requireDieSkins = false,
@@ -54,6 +55,8 @@ export function DiceBoxPhysicsSource({
     const onSettledChangeRef = React.useRef(onSettledChange);
     const previousDiceIdsRef = React.useRef<number[]>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
+    const completedRollMotionKeyRef = React.useRef<string | null>(null);
+    const completedRerollMotionKeyRef = React.useRef<string | null>(null);
     const pendingRerollMotionRef = React.useRef<{ key: string; indices: number[]; values: number[]; lockedIndices: number[] } | null>(null);
     const settledRef = React.useRef(dice.length === 0);
     const lastPhysicsSnapshotRef = React.useRef('');
@@ -77,6 +80,8 @@ export function DiceBoxPhysicsSource({
         engineRef.current = null;
         previousDiceIdsRef.current = [];
         activeMotionRef.current = null;
+        completedRollMotionKeyRef.current = null;
+        completedRerollMotionKeyRef.current = null;
         pendingRerollMotionRef.current = null;
         const nextSettled = dice.length === 0;
         settledRef.current = nextSettled;
@@ -107,20 +112,27 @@ export function DiceBoxPhysicsSource({
             .filter((index) => index >= 0),
         [dice],
     );
+    const motionType = motion.type;
+    const rollMotionId = motion.type === 'roll' ? motion.id : '';
+    const rerollMotionId = motion.type === 'reroll' ? motion.id : '';
+    const rerollMotionDieIds = React.useMemo(
+        () => (motion.type === 'reroll' ? [...motion.dieIds] : []),
+        [motion],
+    );
     const rollingKey = React.useMemo(
-        () => `${valuesKey}|${rollingIndices.join(',')}`,
-        [rollingIndices, valuesKey],
+        () => `${rollMotionId}|${valuesKey}|${rollingIndices.join(',')}`,
+        [rollMotionId, rollingIndices, valuesKey],
     );
     const rerollIds = React.useMemo(
-        () => [...(rerollingDiceIds ?? [])]
+        () => [...rerollMotionDieIds]
             .filter((dieId) => !dice.find((die) => die.id === dieId)?.isKept)
             .sort((left, right) => left - right),
-        [dice, rerollingDiceIds],
+        [dice, rerollMotionDieIds],
     );
     const rerollKey = React.useMemo(() => rerollIds.join(','), [rerollIds]);
     const rerollMotionKey = React.useMemo(
-        () => (rerollIds.length > 0 ? `${rerollAnimationSeq}:${rerollKey}` : ''),
-        [rerollAnimationSeq, rerollIds.length, rerollKey],
+        () => (rerollIds.length > 0 ? `${rerollMotionId}|${rerollKey}|${valuesKey}` : ''),
+        [rerollIds.length, rerollKey, rerollMotionId, valuesKey],
     );
     const requiredDieSkinsReady = React.useMemo(
         () => !requireDieSkins
@@ -317,11 +329,19 @@ export function DiceBoxPhysicsSource({
                 } else {
                     engine.clear();
                 }
+                completedRollMotionKeyRef.current = null;
+                completedRerollMotionKeyRef.current = null;
                 setSettledState(true);
                 return;
             }
 
-            if (isRolling) {
+            if (motionType === 'roll') {
+                if (completedRollMotionKeyRef.current === rollingKey && engine.hasDice(dice.length)) {
+                    engine.syncSettledValues(values);
+                    previousDiceIdsRef.current = dice.map((die) => die.id);
+                    setSettledState(true);
+                    return;
+                }
                 if (engine.hasDice(dice.length) && rollingIndices.length === 0) {
                     engine.syncSettledValues(values);
                     previousDiceIdsRef.current = dice.map((die) => die.id);
@@ -346,6 +366,8 @@ export function DiceBoxPhysicsSource({
                         if (activeMotionRef.current?.type === 'roll' && activeMotionRef.current.key === rollingKey) {
                             activeMotionRef.current = null;
                         }
+                        completedRollMotionKeyRef.current = rollingKey;
+                        completedRerollMotionKeyRef.current = null;
                         previousDiceIdsRef.current = dice.map((die) => die.id);
                         setSettledState(true);
                     }
@@ -369,6 +391,7 @@ export function DiceBoxPhysicsSource({
                     if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === key) {
                         activeMotionRef.current = null;
                     }
+                    completedRerollMotionKeyRef.current = key;
                     previousDiceIdsRef.current = dice.map((die) => die.id);
                     setSettledState(true);
                     const pending = pendingRerollMotionRef.current;
@@ -380,11 +403,17 @@ export function DiceBoxPhysicsSource({
                 }
             };
 
-            if (rerollIds.length > 0) {
+            if (motionType === 'reroll' && rerollIds.length > 0) {
                 const rerollIndices = rerollIds
                     .map((dieId) => dice.findIndex((die) => die.id === dieId))
                     .filter((index) => index >= 0);
                 if (rerollIndices.length > 0) {
+                    if (completedRerollMotionKeyRef.current === rerollMotionKey && engine.hasDice(dice.length)) {
+                        engine.syncSettledValues(values);
+                        previousDiceIdsRef.current = dice.map((die) => die.id);
+                        setSettledState(true);
+                        return;
+                    }
                     setSettledState(false);
                     if (activeMotionRef.current?.type === 'reroll') {
                         if (activeMotionRef.current.key !== rerollMotionKey) {
@@ -435,7 +464,7 @@ export function DiceBoxPhysicsSource({
         void run().catch((error) => {
             failEngine(error);
         });
-    }, [dice, emitPhysicsStates, engineReady, failEngine, finalizeVisibleSettledDice, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, restoreVisibleSettledDice, rollingIndices, rollingKey, setSettledState, values]);
+    }, [dice, emitPhysicsStates, engineReady, failEngine, finalizeVisibleSettledDice, lockedIndices, motionType, rerollIds, rerollMotionKey, requiredDieSkinsReady, restoreVisibleSettledDice, rollingIndices, rollingKey, setSettledState, values]);
 
     return (
         <div
@@ -450,6 +479,8 @@ export function DiceBoxPhysicsSource({
             data-dice-engine-failure={engineFailureMessage || undefined}
             data-dice-skins-ready={requiredDieSkinsReady ? 'true' : 'false'}
             data-dice-container-size-ready={containerSizeReady ? 'true' : 'false'}
+            data-dice-motion-type={motion.type}
+            data-dice-motion-id={motion.type === 'settled' ? undefined : motion.id}
             {...dataAttributes}
         />
     );

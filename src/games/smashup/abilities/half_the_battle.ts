@@ -3227,6 +3227,13 @@ function topazTrigger(ctx: TriggerContext) {
     }), ctx.matchState);
 }
 
+function canTriggerTopaz(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return false;
+    if (ctx.triggerMinion?.controller === ctx.sourceControllerId) return false;
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    return !!source && Number(source.metadata?.halfTheBattleTopazUsedTurn ?? -1) !== ctx.state.turnNumber;
+}
+
 function shesGotThePowerTrigger(ctx: TriggerContext) {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.triggerMinion?.controller === ctx.sourceControllerId) return [];
     const host = findAttachedHost(ctx.state, ctx.sourceCardUid);
@@ -3254,6 +3261,13 @@ function viscountTrigger(ctx: TriggerContext) {
         sourceMinionDefId: source.defId,
         sourceBaseIndex: ctx.sourceBaseIndex,
     }), ctx.matchState);
+}
+
+function canTriggerViscount(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return false;
+    if (ctx.triggerCardDefId === undefined || getCardDef(ctx.triggerCardDefId)?.type !== 'fusion') return false;
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    return !!source && Number(source.metadata?.halfTheBattleViscountUsedTurn ?? -1) !== ctx.state.turnNumber;
 }
 
 function powerCastle(ctx: BaseAbilityContext): BaseAbilityResult {
@@ -3443,7 +3457,7 @@ export function registerHalfTheBattleAbilities(): void {
     registerSimpleAbility('gi_gerald_shellback', 'onPlay', giGeraldShellback);
     registerSimpleAbility('gi_gerald_dice_ninja', 'onPlay', giGeraldDiceNinja);
     registerSimpleAbility('gi_gerald_rosie', 'onPlay', giGeraldRosie);
-    registerTrigger('gi_gerald_viscount', 'onActionPlayed', viscountTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('gi_gerald_viscount', 'onActionPlayed', viscountTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerViscount, effectContract: SHAYU_TRIGGER_CONTRACT });
 
     registerSimpleAbility('rulers_cosmos_frogga', 'onPlay', rulersFrogga);
     registerSimpleAbility('rulers_cosmos_andko', 'talent', rulersAndkoTalent);
@@ -3475,7 +3489,7 @@ export function registerHalfTheBattleAbilities(): void {
     registerSimpleAbility('pearl_images_truly_outstanding', 'onPlay', pearlTrulyOutstanding);
     registerSimpleAbility('pearl_images_were_up_youre_down', 'onPlay', pearlWereUpYoureDown);
     registerSimpleAbility('pearl_images_were_up_youre_down', 'special', pearlWereUpYoureDown);
-    registerTrigger('pearl_images_topaz', 'onMinionAffected', topazTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('pearl_images_topaz', 'onMinionAffected', topazTrigger, { perInstance: true, playerContext: 'sourceController', canTrigger: canTriggerTopaz, effectContract: SHAYU_TRIGGER_CONTRACT });
     registerTrigger('pearl_images_shes_got_the_power', 'onMinionAffected', shesGotThePowerTrigger, { perInstance: true, playerContext: 'sourceHostController', effectContract: SHAYU_TRIGGER_CONTRACT });
 
     registerBaseAbility('base_sewer_hideout', 'onActionPlayed', sewerHideout, { effectContract: SHAYU_TRIGGER_CONTRACT });

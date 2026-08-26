@@ -1645,6 +1645,9 @@ const toLocalizedCompressedRelativePath = (src: string, locale: string): string 
     const localized = relative.startsWith(`i18n/${locale}/`)
         ? relative
         : `i18n/${locale}/${relative}`;
+    if (/\.svg$/i.test(localized)) {
+        return localized;
+    }
     const base = localized.replace(/\.(webp|png|jpe?g)$/i, '');
     const lastSlash = base.lastIndexOf('/');
     const dir = lastSlash >= 0 ? base.slice(0, lastSlash) : '';

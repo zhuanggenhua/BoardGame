@@ -22,7 +22,7 @@ const WALL_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-wall-prepared.png`;
 const WALL_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-wall-edge-target-highlight.png`;
 const WALL_CARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-wall-card-on-edge.png`;
 const WALL_LOS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-wall-line-of-sight-and-passage.png`;
-const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-guard-source-and-token-action.png`;
+const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-guard-action-dock.png`;
 const GUARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-guard-token-result.png`;
 const HEALING_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-healing-light-action-dock.png`;
 const HEALING_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-healing-target-highlight.png`;
@@ -349,7 +349,16 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialNext(page);
         await waitForTutorialStep(page, 'guard-cleric');
         await clickTutorialObject(page, GUARD_CLERIC_OBJECT_ID);
-        await expect(page.locator('[data-tutorial-id="mw-selected-unit-guard"]')).toBeVisible({ timeout: 10_000 });
+        const guardActionButton = page.locator('[data-tutorial-id="mw-selected-unit-guard"]');
+        await expect(guardActionButton).toBeVisible({ timeout: 10_000 });
+        await expect(guardActionButton).toHaveAttribute('data-action-kind', 'guard');
+        await expect(guardActionButton).toHaveAttribute('data-action-visual', 'text-action');
+        await expect(guardActionButton).toHaveAttribute('data-action-placement', 'middle-lower-action-dock');
+        await expect(guardActionButton).toContainText(/进行守卫|guard/i);
+        await expect(guardActionButton.locator('img')).toHaveCount(0);
+        await expect(guardActionButton.locator('svg')).toHaveCount(0);
+        await expect(page.locator('[data-tutorial-id="mw-ability-action-dock"]').locator('[data-tutorial-id="mw-selected-unit-guard"]'))
+            .toBeVisible();
         await screenshot(page, GUARD_SOURCE_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-selected-unit-guard');
         await waitForTutorialStep(page, 'guard-token-result');

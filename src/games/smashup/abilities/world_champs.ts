@@ -1232,6 +1232,20 @@ function worldChampsAramisOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] 
     ];
 }
 
+function canTriggerWorldChampsAramisOnMinionAffected(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return false;
+    if (ctx.triggerMinionUid !== ctx.sourceCardUid) return false;
+    const aramisControllerId = ctx.sourceControllerId;
+    const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+    if (currentPlayerId !== aramisControllerId) return false;
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isActionDefId(actionDefId)) return false;
+
+    const sourceMinion = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion) return false;
+    return Number(sourceMinion.metadata?.[WORLD_CHAMPS_ARAMIS_TRIGGERED_TURN_META] ?? -1) !== ctx.state.turnNumber;
+}
+
 function worldChampsDivaOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return [];
     if (!ctx.affectEvent) return [];
@@ -1267,6 +1281,31 @@ function worldChampsDivaOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
         ),
         ...mirroredEvent,
     ];
+}
+
+function canTriggerWorldChampsDivaOnMinionAffected(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return false;
+    if (!ctx.affectEvent) return false;
+    if (ctx.triggerMinionUid === ctx.sourceCardUid) return false;
+
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isStandardActionDefId(actionDefId)) return false;
+
+    const sourceMinion = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion || sourceMinion.controller !== ctx.sourceControllerId) return false;
+    const usedTurn = Number(sourceMinion.metadata?.[WORLD_CHAMPS_DIVA_TRIGGERED_TURN_META] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return false;
+
+    return buildDivaMirroredEvent(
+        ctx.state,
+        ctx.affectEvent,
+        sourceMinion.uid,
+        sourceMinion.defId,
+        ctx.sourceBaseIndex,
+        sourceMinion.owner,
+        ctx.sourceControllerId,
+        ctx.now,
+    ).length > 0;
 }
 
 function canTriggerWorldChampsSmartSetUp(ctx: TriggerContext): boolean {
@@ -1517,6 +1556,18 @@ function worldChampsSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
     );
 }
 
+function canTriggerWorldChampsSheriffBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid || ctx.sourceControllerId === undefined) {
+        return false;
+    }
+    if (!canStartDuel(ctx.state)) return false;
+    const sourceBase = ctx.state.bases[ctx.baseIndex];
+    const sourceMinion = sourceBase?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion || sourceMinion.controller !== ctx.sourceControllerId) return false;
+    const sourceDefId = ctx.sourceDefId ?? sourceMinion.defId ?? 'world_champs_sheriff';
+    return buildEnemyMinionFieldTargets(ctx.state, ctx.baseIndex, ctx.sourceControllerId, sourceDefId).length > 0;
+}
+
 function canQueueWorldChampsBewitchedLeaveTrigger(ctx: TriggerContext): boolean {
     return !(ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx));
 }
@@ -1552,6 +1603,16 @@ function worldChampsMummyAfterScoring(ctx: TriggerContext): AbilityResult {
             sourceControllerId: ctx.sourceControllerId,
         } satisfies MummyContinuation & { sourceBaseIndex: number; sourceControllerId: PlayerId }),
     );
+}
+
+function canTriggerWorldChampsMummyAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceControllerId === undefined || ctx.sourceBaseIndex === undefined) {
+        return false;
+    }
+    const sourceBase = ctx.state.bases[ctx.sourceBaseIndex];
+    const sourceMinion = sourceBase?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion || sourceMinion.controller !== ctx.sourceControllerId) return false;
+    return ctx.state.bases.some((_base, baseIndex) => baseIndex !== ctx.sourceBaseIndex);
 }
 
 function worldChampsSharkTattooTurnStart(ctx: TriggerContext): SmashUpEvent[] {
@@ -1618,17 +1679,20 @@ export function registerWorldChampsAbilities(): void {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerWorldChampsAramisOnMinionAffected,
     });
     registerTrigger('world_champs_diva', 'onMinionAffected', worldChampsDivaOnMinionAffected, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        canTrigger: canTriggerWorldChampsDivaOnMinionAffected,
     });
     registerTrigger('world_champs_sheriff', 'beforeScoring', worldChampsSheriffBeforeScoring, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerWorldChampsSheriffBeforeScoring,
     });
     registerTrigger('world_champs_bewitched', 'onMinionDestroyed', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
@@ -1658,6 +1722,7 @@ export function registerWorldChampsAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerWorldChampsMummyAfterScoring,
     });
     registerTrigger('world_champs_shark_tattoo', 'onTurnStart', worldChampsSharkTattooTurnStart, {
         perInstance: true,

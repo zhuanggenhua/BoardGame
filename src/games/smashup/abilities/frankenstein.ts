@@ -856,6 +856,27 @@ function frankensteinItsAlive(ctx: AbilityContext): AbilityResult {
     };
 }
 
+function canTriggerFrankensteinIgorOnDiscardedFromBase(ctx: TriggerContext): boolean {
+    const isIgor = ctx.triggerMinionDefId === 'frankenstein_igor' || ctx.triggerMinionDefId === 'frankenstein_igor_pod';
+    if (!isIgor || ctx.baseIndex === undefined || !ctx.triggerMinionUid || !ctx.matchState) return false;
+    if (typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:')) {
+        return false;
+    }
+
+    const base = ctx.state.bases[ctx.baseIndex];
+    const controllerId = ctx.triggerMinion?.controller
+        ?? base?.minions.find((minion) => minion.uid === ctx.triggerMinionUid)?.controller;
+    if (!controllerId) return false;
+    return buildCounterTargetOptions(
+        ctx.state,
+        controllerId,
+        ctx.triggerMinionUid,
+        typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('base-clear-discard:')
+            ? (_minion, targetBaseIndex) => targetBaseIndex !== ctx.baseIndex
+            : undefined,
+    ).length > 0;
+}
+
 function registerFrankensteinOngoingEffects(): void {
     registerTrigger('frankenstein_igor', 'onMinionDiscardedFromBase', (ctx: TriggerContext) => {
         const isIgor = ctx.triggerMinionDefId === 'frankenstein_igor' || ctx.triggerMinionDefId === 'frankenstein_igor_pod';
@@ -899,6 +920,7 @@ function registerFrankensteinOngoingEffects(): void {
             ctx.matchState,
         );
     }, {
+        canTrigger: canTriggerFrankensteinIgorOnDiscardedFromBase,
     });
 
     registerTrigger('frankenstein_german_engineering', 'onMinionPlayed', (ctx: TriggerContext) =>

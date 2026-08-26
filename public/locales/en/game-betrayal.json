@@ -161,7 +161,7 @@
       "scenarioNoParticipants": "Choose explorers first",
       "scenarioConfirmationCount": "Scenario confirmations {{confirmed}}/{{total}}",
       "confirmScenarioCard": "Confirm This Card",
-      "waitScenarioConfirmations": "Waiting for other players",
+      "waitScenarioConfirmations": "Confirmed",
       "cannotStartPendingScenario": "This scenario cannot start yet",
       "viewScenarioDetails": "Read Full Scenario",
       "hideScenarioDetails": "Close File",
@@ -957,9 +957,9 @@
       "rollModifierTag": "Modify Dice",
       "confirmCard": "Confirm",
       "confirmWithProgress": "Confirm {{confirmed}}/{{total}}",
+      "confirmedWithProgress": "Confirmed {{confirmed}}/{{total}}",
       "nextSearchCard": "Next card",
       "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
-      "waitingForAll": "Waiting for other players ({{confirmed}}/{{total}})",
       "eventSymbolSkipPrompt": "A room with an event symbol has been revealed; choose to skip the event or draw an event card."
     },
     "roll": {

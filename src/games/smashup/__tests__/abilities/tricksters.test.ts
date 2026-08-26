@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../../engine/types';
 import { SMASHUP_FACTION_IDS } from '../../domain/ids';
@@ -89,6 +90,30 @@ function runAction(core: SmashUpCore, command: { type: string; playerId: string;
     );
     expect(result.success, result.error).toBe(true);
     return result.events as SmashUpEvent[];
+}
+
+function playBearNecessitiesAndDestroyMinion(core: SmashUpCore, minionUid: string, playerId = '0') {
+    const playResult = runCommand(
+        makeMatchState(core),
+        {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId,
+            payload: { cardUid: 'c1' },
+        } as any,
+        defaultTestRandom,
+    );
+    expect(playResult.success, playResult.error).toBe(true);
+    expect(playResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+
+    const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+    const option = getPromptOption(
+        prompt,
+        entry => entry?.value?.type === 'minion' && entry?.value?.uid === minionUid,
+        `bear necessities target option for ${minionUid}`,
+    );
+    const respondResult = runCommand(playResult.finalState, respondCommand(option.id, playerId), defaultTestRandom);
+    expect(respondResult.success, respondResult.error).toBe(true);
+    return [...playResult.events, ...respondResult.events] as SmashUpEvent[];
 }
 
 function useOngoingTalent(state: SmashUpCore, playerId: string, ongoingCardUid: string, baseIndex: number) {
@@ -437,11 +462,7 @@ describe('trickster_gremlin_pod onDestroy', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'gremlin');
 
         const drawEvents = events.filter(
             e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '1'
@@ -478,11 +499,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'gremlin');
 
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.MINION_DESTROYED);
@@ -520,11 +537,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'gremlin');
 
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
 
@@ -556,11 +569,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'gremlin');
 
         const drawEvents = events.filter(
             e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '1'
@@ -595,11 +604,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             }],
         });
 
-        const events = runAction(core, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'c1' },
-        });
+        const events = playBearNecessitiesAndDestroyMinion(core, 'gremlin');
 
         const drawEvents = events.filter(
             e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '1'
@@ -644,30 +649,18 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         });
 
         const destroyEvents = [
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'g1',
+            makeMinionDestroyedEvent({minionUid: 'g1',
                     minionDefId: 'trickster_gremlin',
                     fromBaseIndex: 0,
                     ownerId: '1',
                     destroyerId: '0',
-                    reason: 'elder_thing_elder_thing',
-                },
-                timestamp: 1000,
-            },
-            {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
-                    minionUid: 'g2',
+                    reason: 'elder_thing_elder_thing', timestamp: 1000 }),
+            makeMinionDestroyedEvent({minionUid: 'g2',
                     minionDefId: 'trickster_gremlin',
                     fromBaseIndex: 0,
                     ownerId: '1',
                     destroyerId: '0',
-                    reason: 'elder_thing_elder_thing',
-                },
-                timestamp: 1000,
-            },
+                    reason: 'elder_thing_elder_thing', timestamp: 1000 }),
         ] as any;
 
         const processed = resolveDestroyedMinions(makeMatchState(core), '0', destroyEvents, defaultTestRandom, 1000);

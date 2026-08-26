@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent } from '../domain/types';
@@ -44,18 +45,12 @@ describe('onMinionDestroyed: prevented destroy should not queue reaction trigger
         } as any;
 
         const ms: MatchState<SmashUpCore> = makeMatchState(core as any);
-        const destroyEvent: SmashUpEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm-victim',
+        const destroyEvent: SmashUpEvent = makeMinionDestroyedEvent({minionUid: 'm-victim',
                 minionDefId: 'test_victim',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 destroyerId: '0',
-                reason: 'test_destroy',
-            },
-            timestamp: 10,
-        } as any;
+                reason: 'test_destroy', timestamp: 10 }) as any;
 
         const result = resolveDestroyedMinions(ms, '0', [destroyEvent], defaultTestRandom, 10);
 

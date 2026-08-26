@@ -57,7 +57,7 @@
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式联机入口真实移动、攻击并切换回合 | 场地对象直选、移动、攻击与伤害、阶段推进、PC 基线与移动横屏桌面镜像 | 本轮重跑证据；截图存在，时间为 `2026-08-16 11:04`；命令结果 `1 passed (1.2m)`；图面审计为 `PASS / mobile-landscape-desktop-mirror` |
 | `e2e/mage-wars/online-runtime.e2e.ts` | Mage Wars 当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局 | 生物、装备 / 结界目标选择、墙体边界施放 / 落位、咒语、攻击、魔物、守卫、对象能力、能力入口视觉、治疗反馈、法师能力、状态移除和近终局的两派系当前范围代表链 | 当前目录生成 27 张原图；新增 `10F-荆棘之墙施放前-A3-B3边界可选.jpg` 与 `10G-荆棘之墙施放后-A3-B3边界墙牌可见.jpg`；最新重跑 `1 passed (2.3m)` |
 | `e2e/mage-wars/online-runtime.e2e.ts` | 正式页面墙体法术可选择边界并在穿越时触发通行伤害 | 荆棘之墙边界目标、墙体状态、源墙法术牌面可见、施法事件边界记录、墙前 / 墙后远程视线阻挡对照、穿墙通行伤害和伤害事件 | 2026-08-24 重跑通过；截图 `18-墙前远程视线未阻挡-B3目标可选.jpg`、`19-荆棘之墙施放前-A3-B3边界可选.jpg`、`20-荆棘之墙施放后-A3-B3边界墙牌可见.jpg`、`21-墙后远程视线阻挡-B3目标不可选.jpg`、`22-穿越荆棘之墙后-通行伤害结算可见.jpg`；证据见 [`mage-wars-wall-mechanics/e2e-test.md`](../../../evidence/mage-wars-wall-mechanics/e2e-test.md) |
-| `e2e/mage-wars/mage-wars-tutorial.e2e.ts` | 单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术 | 桌面教程首局流程、基础 HUD 读数、墙体来源 / 边界 / 墙牌、守卫 token、治疗目标选择、生命眼睛、复原术目标选择和状态移除 | 2026-08-25 isolated runtime 重跑 `1 passed (54.4s)`；21 张当前有效原图位于 `test-results/evidence-screenshots/mage-wars/tutorial/`；证据见 [`mage-wars-tutorial/e2e-test.md`](../../../evidence/mage-wars-tutorial/e2e-test.md) |
+| `e2e/mage-wars/mage-wars-tutorial.e2e.ts` | 单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术 | 桌面教程首局流程、基础 HUD 读数、墙体来源 / 边界 / 墙牌、守卫中下行动按钮、守卫 token 结果、治疗目标选择、生命眼睛、复原术目标选择和状态移除 | 2026-08-25 isolated runtime 重跑 `1 passed (53.9s)`；21 张当前有效原图位于 `test-results/evidence-screenshots/mage-wars/tutorial/`；证据见 [`mage-wars-tutorial/e2e-test.md`](../../../evidence/mage-wars-tutorial/e2e-test.md) |
 | `e2e/mage-wars/foundation-board-runtime.e2e.ts` | 真实入口加载正式牌桌素材并落桌面验收截图 | 标准竞技场、基础牌桌、桌面布局、攻击结算视觉 | 已有覆盖；截图存在，时间为 `2026-08-14 22:01-22:02`，不替代正式联机玩法链 |
 | `e2e/mage-wars/foundation-board-runtime.e2e.ts` | 移动横屏真实入口加载正式牌桌素材并落验收截图 | 基础牌桌移动横屏、素材加载、board 尺寸与横向溢出约束 | 已有覆盖；截图存在，时间为 `2026-08-14 22:02`，不替代正式联机玩法链 |
 
@@ -88,7 +88,7 @@ $env:PW_E2E_SERVICE_REUSE='isolated'
 node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial.e2e.ts
 ```
 
-结果：当前范围候选链定向验证最新重跑 `1 passed (2.3m)`，当前目录 27 张原图落盘并包含 `10F` / `10G` 墙体主候选链图；部署召唤定向验证 `1 passed (53.5s)`；标准强化法术结果链已用 `3417` 荒野呼唤重跑通过，命令结果 `1 passed (39.9s)`；墙体局部链重跑通过，命令结果 `1 passed`；桌面教程链最新 isolated runtime 重跑 `1 passed (54.4s)`，生成 21 张当前有效原图。旧强化法术结果链曾 `1 passed (55.5s)`，但该证据使用 `3407` 冲锋陷阵，当前标准书范围下已经作废。这些命令使用项目 E2E runtime 和本地完整素材包；通过结果只证明对应真实页面链路和截图落盘通过，不表示全量实体版 Mage Wars、全卡表、主黄金链或自然整局重新跑过。
+结果：当前范围候选链定向验证最新重跑 `1 passed (2.3m)`，当前目录 27 张原图落盘并包含 `10F` / `10G` 墙体主候选链图；部署召唤定向验证 `1 passed (53.5s)`；标准强化法术结果链已用 `3417` 荒野呼唤重跑通过，命令结果 `1 passed (39.9s)`；墙体局部链重跑通过，命令结果 `1 passed`；桌面教程链最新 isolated runtime 重跑 `1 passed (53.9s)`，生成 21 张当前有效原图。旧强化法术结果链曾 `1 passed (55.5s)`，但该证据使用 `3407` 冲锋陷阵，当前标准书范围下已经作废。这些命令使用项目 E2E runtime 和本地完整素材包；通过结果只证明对应真实页面链路和截图落盘通过，不表示全量实体版 Mage Wars、全卡表、主黄金链或自然整局重新跑过。
 
 覆盖关系：
 
@@ -115,7 +115,7 @@ node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial
 
 用户可见展示口径：当前范围候选链需要按完整流程展示时，打开 `test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/` 下的 27 张原图。第一张必须是 `01-双方计划后-对手计划仍隐藏.jpg`；`10A`-`10D` 是附件目标选择过程图，`10E` 是最终附着图，`10F` / `10G` 是墙体边界选择和边界墙牌落位图，`15A-阿希拉牧师治疗之光入口-中下动作按钮可见.jpg` 是能力入口视觉图，必须能看出按钮在屏幕中下统一动作 dock，而不是守卫 token 附近、格子角落或顶部描述横幅；`15-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.jpg` 是治疗反馈图。单张 `17-近终局基础攻击后-胜负遮罩可见.jpg` 只证明终局收口，不能代表整条流程图组。
 
-用户可见展示口径：桌面教程链需要展示时，打开当前 21 张有效截图的完整标记图组。顺序必须是索引图、`00` 开场目标 / 正式牌桌、`01` 己方法师 HUD 读数、`02` 聚魔后法力增加、`03` 计划法术、`04` 召唤区域高亮、`05` 部署并唤醒灰狼、`06` 公开弃牌阅读、`07` 移动压位、`08` 墙体来源牌、`09` 边界目标高亮、`10` 边界墙牌、`11` 视线 / 通行说明、`12` 守卫 token 动作、`13` 守卫 token 结果、`14` 治疗之光中下按钮、`15` 治疗目标高亮、`16` 治疗反馈 / 生命读数、`17` 生命眼睛常显、`18` 复原术中下按钮、`19` 燃烧目标高亮、`20` 燃烧移除；不得只打开基础 6 张、历史目录图或旧五章节标记图代表当前教程全流程。
+用户可见展示口径：桌面教程链需要展示时，打开当前 21 张有效截图的完整标记图组。顺序必须是索引图、`00` 开场目标 / 正式牌桌、`01` 己方法师 HUD 读数、`02` 聚魔后法力增加、`03` 计划法术、`04` 召唤区域高亮、`05` 部署并唤醒灰狼、`06` 公开弃牌阅读、`07` 移动压位、`08` 墙体来源牌、`09` 边界目标高亮、`10` 边界墙牌、`11` 视线 / 通行说明、`12` 守卫中下行动按钮、`13` 守卫 token 结果、`14` 治疗之光中下按钮、`15` 治疗目标高亮、`16` 治疗反馈 / 生命读数、`17` 生命眼睛常显、`18` 复原术中下按钮、`19` 燃烧目标高亮、`20` 燃烧移除；不得只打开基础 6 张、历史目录图或旧五章节标记图代表当前教程全流程。
 
 ## 当前已核验过程帧清单
 
@@ -253,7 +253,7 @@ node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial
 | 标准强化法术结果链 E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts\infra\run-e2e-command.mjs isolated e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实施放标准强化法术"` | 最新命令 `1 passed (39.9s)`；代表牌为 `3417` 荒野呼唤；1 张截图落盘；断言旧泛化施法大特效不存在 |
 | 移动横屏移动 / 攻击 / 阶段推进 E2E | `node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/online-runtime.e2e.ts --grep "正式联机入口真实移动、攻击并切换回合"` | 最新命令 `1 passed (1.2m)`；截图时间 `2026-08-16 11:04`；断言 PC 基线截图存在，移动横屏使用桌面镜像层并保留桌面同源 HUD，且移动专用己方法术轨 / 对手法术轨 / 紧凑计划镜像不存在 |
 | 墙体局部链 E2E | `node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/online-runtime.e2e.ts "正式页面墙体法术可选择边界并在穿越时触发通行伤害"` | 最新命令 `1 passed (19.0s)`；5 张截图落盘；`20-荆棘之墙施放后-A3-B3边界墙牌可见.jpg` 经原图核验为 `PASS / wall-card-on-edge-visible` |
-| 桌面教程链 E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts/infra/run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial.e2e.ts` | 最新命令 `1 passed (54.4s)`；21 张当前有效原图落盘；证据见 `evidence/mage-wars-tutorial/e2e-test.md` |
+| 桌面教程链 E2E | `PW_E2E_SERVICE_REUSE=isolated; node scripts/infra/run-e2e-command.mjs isolated e2e/mage-wars/mage-wars-tutorial.e2e.ts` | 最新命令 `1 passed (53.9s)`；21 张当前有效原图落盘；证据见 `evidence/mage-wars-tutorial/e2e-test.md` |
 | OpenSpec | `openspec validate add-mage-wars-runtime-gameplay-closeout --strict --no-interactive` | valid |
 | 主 spec | `openspec validate mage-wars --strict --no-interactive` | valid |
 

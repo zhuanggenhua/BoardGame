@@ -2743,7 +2743,7 @@ async function selectNamedSpellbookCards(page: Page, names: string[]) {
 
 async function planNamedSpells(page: Page, names: string[]) {
     await selectNamedSpellbookCards(page, names);
-    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`计划 ${names.length} 张`);
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`确认计划（${names.length}张）`);
     await page.getByTestId('mage-wars-plan-spells').click({ timeout: 3_000, noWaitAfter: true });
 }
 
@@ -3597,8 +3597,8 @@ test.describe('Mage Wars formal online runtime', () => {
 
         try {
             await advanceBothPlayersToPlanning(match);
-            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toBeVisible();
-            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toBeVisible();
+            await expect(match.hostPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase');
+            await expect(match.guestPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase');
             await match.hostPage.getByRole('button', { name: '生物', exact: true }).click();
             const hostCreatureName = await selectFirstVisibleSpellbookCard(match.hostPage);
             await match.hostPage.getByTestId('mage-wars-plan-spells').click();
@@ -3660,7 +3660,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await match.hostPage.getByRole('button', { name: '全部', exact: true }).click();
             await selectNamedSpellbookCard(match.hostPage, '丛林灰狼');
             await selectNamedSpellbookCard(match.hostPage, '荒野呼唤');
-            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveText('计划 2 张');
+            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划（2张）');
             await match.hostPage.getByTestId('mage-wars-plan-spells').click();
 
             await match.guestPage.getByRole('button', { name: '全部', exact: true }).click();
@@ -3738,7 +3738,7 @@ test.describe('Mage Wars formal online runtime', () => {
             ]);
             await match.guestPage.getByRole('button', { name: '全部', exact: true }).click();
             await selectNamedSpellbookCard(match.guestPage, '圣光之柱');
-            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveText('计划 1 张');
+            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划（1张）');
             await match.guestPage.getByTestId('mage-wars-plan-spells').click();
             await advanceToReadyFieldObjectAction(match, '0', 'a3', 2819, '丛林灰狼', [
                 { label: 'host', diagnostics: hostDiagnostics },
@@ -4221,8 +4221,8 @@ test.describe('Mage Wars formal online runtime', () => {
             }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见');
             await advanceUntilBothPlayersReachPlanningPhase(match, diagnostics);
-            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toBeVisible({ timeout: 5_000 });
-            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toBeVisible({ timeout: 5_000 });
+            await expect(match.hostPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase', { timeout: 5_000 });
+            await expect(match.guestPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase', { timeout: 5_000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '12-候选链收口-回到下一轮计划阶段');
 
             const guardBobcat = {

@@ -1229,6 +1229,13 @@ function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
     );
 }
 
+function canTriggerMermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || !ctx.sourceControllerId || ctx.sourceBaseIndex === undefined || !ctx.matchState) {
+        return false;
+    }
+    return getOtherBases(ctx.state, ctx.sourceBaseIndex).length > 0;
+}
+
 function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || !ctx.sourceControllerId) return [];
     if (ctx.playerId !== ctx.sourceControllerId) return [];
@@ -1277,12 +1284,14 @@ export function registerMermaidsAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerMermaidsShipwreckCoveAfterScoring,
     });
     registerTrigger('mermaids_shipwreck_cove_pod', 'afterScoring', mermaidsShipwreckCoveAfterScoring, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerMermaidsShipwreckCoveAfterScoring,
     });
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
         perInstance: true,

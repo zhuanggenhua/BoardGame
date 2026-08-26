@@ -61,7 +61,7 @@ export const BETRAYAL_MONSTER_DEFINITIONS: Record<BetrayalMonsterDefinitionId, B
         hauntNumber: 1,
         sourcePath: 'docs/games/betrayal/haunts/01-mummy-rampage.md',
         portraitAsset: 'betrayal/monsters/mummy',
-        tokenAsset: 'betrayal/tokens/monsters/large-monster-front',
+        tokenAsset: 'betrayal/tokens/monsters/mummy.svg',
         traits: { might: 8, speed: 3, sanity: 5 },
         damage: 1,
         defaultAttackTrait: 'might',

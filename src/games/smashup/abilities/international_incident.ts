@@ -1953,6 +1953,15 @@ function musketeersAramisTrigger(ctx: TriggerContext): SmashUpEvent[] {
     ];
 }
 
+function canTriggerMusketeersAramis(ctx: TriggerContext): boolean {
+    if (!ctx.sourceControllerId || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !musketeerActionAffectsThisMinion(ctx)) return false;
+    const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+    if (currentPlayerId !== ctx.sourceControllerId) return false;
+    const sourceMinion = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion) return false;
+    return Number(sourceMinion.metadata?.[MUSKETEER_ACTION_TRIGGERED_TURN_META] ?? -1) !== ctx.state.turnNumber;
+}
+
 function mountiesWhenCallsTheBadge(ctx: AbilityContext): AbilityResult {
     const baseCandidates = ctx.state.bases
         .map((_base, baseIndex) => ({ baseIndex, label: getBaseLabel(ctx.state, baseIndex) }))
@@ -3014,6 +3023,18 @@ function luchadorsCapaRojaBeforeScoring(ctx: TriggerContext) {
     }));
 }
 
+function canTriggerLuchadorsCapaRojaBeforeScoring(ctx: TriggerContext): boolean {
+    if (!ctx.sourceControllerId || ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return false;
+    if (!ctx.matchState) return false;
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    if (!base) return false;
+    const sourceBaseIndex = ctx.sourceBaseIndex;
+    return base.minions.some(minion =>
+        minion.controller !== ctx.sourceControllerId
+        && getPrintedPower(ctx.state, minion, sourceBaseIndex) <= 3,
+    );
+}
+
 function baseHeyaTrainingStableTurnStart(ctx: TriggerContext) {
     if (ctx.sourceBaseIndex === undefined) return [];
     if (!ctx.matchState) return [];
@@ -3023,6 +3044,13 @@ function baseHeyaTrainingStableTurnStart(ctx: TriggerContext) {
     return executeAbilityProgram(heyaTrainingStablePrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceBaseIndex: ctx.sourceBaseIndex,
     }));
+}
+
+function canTriggerBaseHeyaTrainingStableTurnStart(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || !ctx.matchState) return false;
+    const hasCardToDiscard = (ctx.state.players[ctx.playerId]?.hand.length ?? 0) > 0;
+    const hasTarget = collectOwnMinionsOnBase(ctx.state, ctx.playerId, ctx.sourceBaseIndex).length > 0;
+    return hasCardToDiscard && hasTarget;
 }
 
 function baseTheDohyoMinionPlayed(ctx: TriggerContext) {
@@ -3050,6 +3078,14 @@ function baseTheDohyoMinionPlayed(ctx: TriggerContext) {
     }));
 }
 
+function canTriggerBaseTheDohyoMinionPlayed(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.matchState) return false;
+    const playedCount = ctx.state.players[ctx.playerId]?.minionsPlayedPerBase?.[ctx.sourceBaseIndex] ?? 1;
+    if (playedCount !== 1) return false;
+    const hasDestination = ctx.state.bases.some((_base, baseIndex) => baseIndex !== ctx.sourceBaseIndex);
+    return hasDestination && collectOtherPlayersMinionsOnBase(ctx.state, ctx.playerId, ctx.sourceBaseIndex).length > 0;
+}
+
 function baseBastionSaintGervaisMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.affectEvent) return [];
     const actingPlayerId = resolveSourcePlayerIdFromEvent(ctx.affectEvent) ?? ctx.playerId;
@@ -3062,6 +3098,16 @@ function baseBastionSaintGervaisMinionAffected(ctx: TriggerContext): SmashUpEven
         buildBaseMetadataUpdatedEvent(ctx.sourceBaseIndex, { [key]: ctx.state.turnNumber }, 'base_bastion_saint_gervais', ctx.now),
         grantContextualExtraAction({ playerId: actingPlayerId, now: ctx.now, matchState: ctx.matchState }, 'base_bastion_saint_gervais'),
     ];
+}
+
+function canTriggerBaseBastionSaintGervaisMinionAffected(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.affectEvent) return false;
+    const actingPlayerId = resolveSourcePlayerIdFromEvent(ctx.affectEvent) ?? ctx.playerId;
+    if (ctx.triggerMinion?.controller !== actingPlayerId) return false;
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isActionThatDirectlyAffectsMinion(actionDefId)) return false;
+    const key = `${BASE_BASTION_USED_TURN_META}_${actingPlayerId}`;
+    return ctx.state.bases[ctx.sourceBaseIndex]?.metadata?.[key] !== ctx.state.turnNumber;
 }
 
 function baseTheGoldenLilyTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
@@ -3094,6 +3140,14 @@ function baseStrategicSyrupReserveMinionPlayed(ctx: TriggerContext) {
     }));
 }
 
+function canTriggerBaseStrategicSyrupReserveMinionPlayed(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.matchState) return false;
+    return ctx.state.bases
+        .map((_base, baseIndex) => baseIndex)
+        .filter(baseIndex => baseIndex !== ctx.sourceBaseIndex && canSeeOwnMinionOnBase(ctx.state, ctx.playerId, baseIndex))
+        .some(baseIndex => ctx.state.bases[baseIndex].minions.some(minion => minion.controller !== ctx.playerId));
+}
+
 function baseGreatWhiteNorthBeforeScoring(ctx: TriggerContext) {
     if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return [];
     if (!ctx.matchState) return [];
@@ -3107,6 +3161,14 @@ function baseGreatWhiteNorthBeforeScoring(ctx: TriggerContext) {
         sourceBaseIndex: ctx.sourceBaseIndex,
         remainingPlayerIds,
     }));
+}
+
+function canTriggerBaseGreatWhiteNorthBeforeScoring(ctx: TriggerContext): boolean {
+    if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.matchState) return false;
+    if (!hasOtherBaseTarget(ctx.state, ctx.sourceBaseIndex)) return false;
+    return ctx.state.turnOrder.some(playerId =>
+        collectOwnMinionsOnBase(ctx.state, playerId, ctx.sourceBaseIndex!).length > 0,
+    );
 }
 
 function baseTheSquaredCircleMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
@@ -3134,14 +3196,17 @@ function registerBaseSkeletonAbilities(): void {
     registerTrigger('base_heya_training_stable', 'onTurnStart', baseHeyaTrainingStableTurnStart, {
         perInstance: false,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerBaseHeyaTrainingStableTurnStart,
     });
     registerTrigger('base_the_dohyo', 'onMinionPlayed', baseTheDohyoMinionPlayed, {
         perInstance: false,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerBaseTheDohyoMinionPlayed,
     });
     registerTrigger('base_bastion_saint_gervais', 'onMinionAffected', baseBastionSaintGervaisMinionAffected, {
         perInstance: false,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerBaseBastionSaintGervaisMinionAffected,
     });
     registerTrigger('base_the_golden_lily', 'onTurnEnd', baseTheGoldenLilyTurnEnd, {
         perInstance: false,
@@ -3150,10 +3215,12 @@ function registerBaseSkeletonAbilities(): void {
     registerTrigger('base_strategic_syrup_reserve', 'onMinionPlayed', baseStrategicSyrupReserveMinionPlayed, {
         perInstance: false,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerBaseStrategicSyrupReserveMinionPlayed,
     });
     registerTrigger('base_great_white_north_eh', 'beforeScoring', baseGreatWhiteNorthBeforeScoring, {
         perInstance: false,
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerBaseGreatWhiteNorthBeforeScoring,
     });
     registerTrigger('base_ringside', 'onMinionAffected', baseRingsideTrigger, {
         perInstance: false,
@@ -3252,6 +3319,7 @@ export function registerInternationalIncidentAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerMusketeersAramis,
     });
     registerTrigger('musketeers_all_for_one', 'onMinionAffected', musketeersAllForOneTrigger, {
         perInstance: true,
@@ -3367,6 +3435,7 @@ export function registerInternationalIncidentAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerLuchadorsCapaRojaBeforeScoring,
     });
     registerCardAbilitySuppression('luchadors_pin', pinSuppression);
 

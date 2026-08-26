@@ -108,6 +108,7 @@ function filterProtectedDestroyTargets(
     playerId: PlayerId,
     sourceDefId: string,
     targets: DinoMinionTarget[],
+    sourceKind: 'action' | 'nonAction' = 'nonAction',
 ): DinoMinionTarget[] {
     if (targets.length === 0) return targets;
     if (!matchState) return [];
@@ -116,7 +117,7 @@ function filterProtectedDestroyTargets(
             state: matchState.core,
             sourcePlayerId: playerId,
             sourceDefId,
-            sourceKind: 'nonAction',
+            sourceKind,
             effectType: 'destroy',
         }).map((option) => `${option.value.minionUid}:${option.value.baseIndex}`),
     );
@@ -325,14 +326,15 @@ function createDinoNaturalSelectionTargetContext(
                 label: `${name} (力量 ${power})`,
             };
         });
-    if (targets.length === 0) return undefined;
+    const allowedTargets = filterProtectedDestroyTargets(matchState, playerId, 'dino_natural_selection', targets, 'action');
+    if (allowedTargets.length === 0) return undefined;
     return {
         matchState,
         playerId,
         now,
         sourceMinionUid,
         baseIndex,
-        targets,
+        targets: allowedTargets,
     };
 }
 
@@ -665,6 +667,8 @@ const dinoNaturalSelectionTargetPromptProgram = createPromptProgram<
         buildMinionTargetOptions(context.targets, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
+            sourceDefId: 'dino_natural_selection',
+            sourceKind: 'action',
             effectType: 'destroy',
         }),
         {
@@ -718,6 +722,9 @@ const dinoNaturalSelectionProgram = createBranchProgram<
             buildMinionTargetOptions(context.candidates, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
+                sourceDefId: 'dino_natural_selection',
+                sourceKind: 'action',
+                semanticRole: 'reference',
             }),
             {
                 sourceId: 'dino_natural_selection_choose_mine',

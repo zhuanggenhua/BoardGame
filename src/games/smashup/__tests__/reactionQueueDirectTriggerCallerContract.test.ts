@@ -331,7 +331,7 @@ describe('direct trigger caller contract', () => {
     const aiPath = join(SMASHUP_ROOT, 'ai.ts');
     const text = readFileSync(aiPath, 'utf8');
 
-    expect(text).toContain("import { getSmashUpReactionSession } from './domain/reactionSession'");
+    expect(text).toMatch(/import\s*\{[\s\S]*getSmashUpReactionSession[\s\S]*\}\s*from\s*['"]\.\/domain\/reactionSession['"]/);
 
     const canAdvanceStart = text.indexOf('const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {');
     expect(canAdvanceStart).toBeGreaterThanOrEqual(0);

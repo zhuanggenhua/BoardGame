@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
@@ -138,19 +139,13 @@ describe('超级英雄派系隐藏实现批', () => {
         expect(suppressed.map((entry) => entry.cardUid)).toEqual(['captain-1']);
         expect(resolved.finalState.core.bases[0].minions.find((minion) => minion.uid === 'mind-1')?.talentUsed).toBe(true);
 
-        const destroyedMindLady = applyEvents(resolved.finalState.core, [{
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'mind-1',
+        const destroyedMindLady = applyEvents(resolved.finalState.core, [makeMinionDestroyedEvent({minionUid: 'mind-1',
                 minionDefId: 'superheroes_mind_lady',
                 fromBaseIndex: 0,
                 ownerId: '0',
                 controllerId: '0',
                 destroyerId: '1',
-                reason: 'test',
-            },
-            timestamp: 1000,
-        } as any]);
+                reason: 'test', timestamp: 1000 }) as any]);
 
         const opponentTurnState = makeMatchState({
             ...destroyedMindLady,

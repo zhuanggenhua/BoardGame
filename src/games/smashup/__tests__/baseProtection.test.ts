@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 - 被动保护类基地测试
  *
@@ -273,17 +274,11 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             sys: { interaction: { queue: [] } } as any,
         };
 
-        const destroyEvent: MinionDestroyedEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
+        const destroyEvent: MinionDestroyedEvent = makeMinionDestroyedEvent({minionUid: 'm1',
                 minionDefId: 'd1',
                 fromBaseIndex: 1,
                 ownerId: '0',
-                reason: '被消灭',
-            },
-            timestamp: 1000,
-        };
+                reason: '被消灭', timestamp: 1000 });
 
         const result = resolveDestroyedMinions(ms, '1', [destroyEvent], dummyRandom, 1000);
         // MINION_DESTROYED 应被暂缓（pendingSaveMinionUids）
@@ -304,17 +299,11 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             sys: { interaction: { queue: [] } } as any,
         };
 
-        const destroyEvent: MinionDestroyedEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
+        const destroyEvent: MinionDestroyedEvent = makeMinionDestroyedEvent({minionUid: 'm1',
                 minionDefId: 'd1',
                 fromBaseIndex: 0,
                 ownerId: '0',
-                reason: '被消灭',
-            },
-            timestamp: 1000,
-        };
+                reason: '被消灭', timestamp: 1000 });
 
         const result = resolveDestroyedMinions(ms, '1', [destroyEvent], dummyRandom, 1000);
         const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
@@ -331,17 +320,11 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             sys: { interaction: { queue: [] } } as any,
         };
 
-        const destroyEvent: MinionDestroyedEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'm1',
+        const destroyEvent: MinionDestroyedEvent = makeMinionDestroyedEvent({minionUid: 'm1',
                 minionDefId: 'd1',
                 fromBaseIndex: 0,
                 ownerId: '0',
-                reason: '被消灭',
-            },
-            timestamp: 1000,
-        };
+                reason: '被消灭', timestamp: 1000 });
 
         const result = resolveDestroyedMinions(ms, '1', [destroyEvent], dummyRandom, 1000);
         const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
@@ -468,19 +451,13 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             sys: { interaction: { queue: [] } } as any,
         };
 
-        const destroyEvent: MinionDestroyedEvent = {
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'borrowed-m1',
+        const destroyEvent: MinionDestroyedEvent = makeMinionDestroyedEvent({minionUid: 'borrowed-m1',
                 minionDefId: 'd1',
                 fromBaseIndex: 1,
                 ownerId: '1',
                 controllerId: '0',
                 destroyerId: '1',
-                reason: 'borrowed-destroy',
-            },
-            timestamp: 1001,
-        };
+                reason: 'borrowed-destroy', timestamp: 1001 });
 
         const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1001);
         const interaction = result.matchState?.sys.interaction.current as any;

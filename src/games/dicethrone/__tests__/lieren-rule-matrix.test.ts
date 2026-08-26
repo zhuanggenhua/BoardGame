@@ -6,6 +6,7 @@ import { resolveEffectsToEvents, type EffectContext } from '../domain/effects';
 import { execute } from '../domain/execute';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
 import { reduce } from '../domain/reducer';
+import { getAvailableAbilityIds } from '../domain/rules';
 import { LIEREN_DICE_FACE_IDS as FACE, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { AbilityEffect, EffectTiming } from '../domain/combat';
 import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
@@ -104,7 +105,60 @@ const getCard = (cardId: string) => {
     return card;
 };
 
+const getLierenFaceByValue = (value: number) => {
+    if (value <= 2) return FACE.SPEAR;
+    if (value <= 4) return FACE.CLAW;
+    if (value === 5) return FACE.NYRAS_BOND;
+    return FACE.SABERTOOTH;
+};
+
+const setOffensiveDice = (core: DiceThroneCore, values: number[]) => {
+    core.activePlayerId = '0';
+    core.rollDiceCount = values.length;
+    core.rollCount = 1;
+    core.rollConfirmed = true;
+    core.dice = values.map((value, index) => {
+        const face = getLierenFaceByValue(value);
+        return {
+            id: index,
+            value,
+            symbol: face,
+            symbols: [face],
+            definitionId: 'lieren-dice',
+            isKept: false,
+            ownerId: '0',
+        };
+    });
+};
+
 describe('DiceThrone 女猎手规则矩阵', () => {
+    it('猛击之力只在顺子骰面可选，非顺子有生命复苏时不能混到猛击之力槽', () => {
+        const nonStraight = createLierenState();
+        setOffensiveDice(nonStraight.core, [5, 5, 1, 3, 6]);
+        const nonStraightAvailable = getAvailableAbilityIds(nonStraight.core, '0', 'offensiveRoll');
+        expect(nonStraightAvailable).toContain('life-revival');
+        expect(nonStraightAvailable).not.toContain('brutal-strike');
+        expect(nonStraightAvailable).not.toContain('brutal-strike-small');
+        expect(nonStraightAvailable).not.toContain('brutal-strike-large');
+
+        const smallStraight = createLierenState();
+        setOffensiveDice(smallStraight.core, [1, 2, 3, 4, 6]);
+        const smallStraightAvailable = getAvailableAbilityIds(smallStraight.core, '0', 'offensiveRoll');
+        expect(smallStraightAvailable).toContain('brutal-strike-small');
+        expect(smallStraightAvailable).not.toContain('brutal-strike');
+
+        const largeStraight = createLierenState();
+        setOffensiveDice(largeStraight.core, [1, 2, 3, 4, 5]);
+        const largeStraightAvailable = getAvailableAbilityIds(largeStraight.core, '0', 'offensiveRoll');
+        expect(largeStraightAvailable).toEqual(expect.arrayContaining([
+            'brutal-strike-large',
+            'brutal-strike-small',
+        ]));
+        expect(largeStraightAvailable.indexOf('brutal-strike-large')).toBeLessThan(
+            largeStraightAvailable.indexOf('brutal-strike-small'),
+        );
+    });
+
     it('流血在持有者维护阶段 1-4 造成 1 点直接伤害，且不移除层数', () => {
         const state = createLierenState();
         state.core.activePlayerId = '0';

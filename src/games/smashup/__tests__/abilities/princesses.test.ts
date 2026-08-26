@@ -1,3 +1,4 @@
+import { makeMinionDestroyedEvent } from '../helpers';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
@@ -563,17 +564,11 @@ describe('Princesses abilities', () => {
         });
         const ms = makeMatchState(core);
 
-        const triggerResult = resolveDestroyedMinions(ms, '1', [{
-            type: SU_EVENTS.MINION_DESTROYED,
-            payload: {
-                minionUid: 'sleep-1',
+        const triggerResult = resolveDestroyedMinions(ms, '1', [makeMinionDestroyedEvent({minionUid: 'sleep-1',
                 minionDefId: 'princesses_sleeping_beauty',
                 fromBaseIndex: 0,
                 ownerId: '0',
-                reason: 'test_destroy',
-            },
-            timestamp: 1000,
-        } as any], defaultTestRandom, 1000);
+                reason: 'test_destroy', timestamp: 1000 }) as any], defaultTestRandom, 1000);
 
         expect(triggerResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
         const finalCore = triggerResult.events.reduce((current, event) => reduce(current, event as any), core);

@@ -720,7 +720,12 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(queued?.type).toBe(SU_EVENTS.TRIGGER_QUEUED);
 
         const queuedCore = reduce(core, queued as any);
-        const resolved = maybeResolveReactionQueue(makeMatchState(queuedCore, 'startTurn', '0'), defaultTestRandom, 1001);
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState(queuedCore, 'startTurn', '0'),
+            defaultTestRandom,
+            1001,
+            { materializeDomainEvents: false },
+        );
 
         expect(resolved).toBeDefined();
         expect(resolved!.events.some(event =>

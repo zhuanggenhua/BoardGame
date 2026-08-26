@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "木乃伊地图 token 不用红圈也能在同房截图里被第一眼看见。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.jpg"
+      ]
+    },
+    {
+      "requirement": "女孩地图 token 不用红圈也能在木乃伊携带态被看见，并且不被木乃伊吞掉。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg",
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.jpg"
+      ]
+    },
+    {
+      "requirement": "攻击目标高亮态下，木乃伊、女孩和英雄目标高亮能分开识别。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref-20260825-mummy-token-visibility/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref-20260825-mummy-token-visibility/01-labeled-65-主黄金链过程-30-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-木乃伊怪物行动真实入口/_labeled-for-pureref-20260825-mummy-token-visibility/02-labeled-65-主黄金链过程-34-木乃伊攻击-同房英雄目标高亮.png"
+  ]
+}
