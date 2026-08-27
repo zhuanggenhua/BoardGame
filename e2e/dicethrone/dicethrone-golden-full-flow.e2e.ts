@@ -1017,11 +1017,16 @@ async function readPlayedCardAndBonusState(page: Page, cardId: string, playerId:
     }, { expectedCardId: cardId, expectedPlayerId: playerId });
 }
 
-async function waitForAttackModifierBonusDiceReady(page: Page, cardId: string, playerId: string): Promise<void> {
+async function waitForAttackModifierBonusDiceReady(
+    page: Page,
+    cardId: string,
+    playerId: string,
+    responderId: string,
+): Promise<void> {
     await expect.poll(
         () => readPlayedCardAndBonusState(page, cardId, playerId),
         {
-            message: `${cardId} 必须真实打出：手牌移除、进弃牌堆、事件流记录 CARD_PLAYED，并创建右侧奖励骰骰盘`,
+            message: `${cardId} 必须真实打出：手牌移除、进弃牌堆、事件流记录 CARD_PLAYED，并为奖励骰打开对手响应窗口`,
             timeout: 15000,
         },
     ).toMatchObject({
@@ -1031,7 +1036,8 @@ async function waitForAttackModifierBonusDiceReady(page: Page, cardId: string, p
         sourceAbilityId: cardId,
         customResolutionId: 'moon-elf-volley',
         bonusDiceCount: 5,
-        windowType: null,
+        windowType: 'afterRollConfirmed',
+        currentResponderId: responderId,
     });
 }
 
@@ -1209,7 +1215,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
 
             await setDiceThroneBonusDiceValues(hostPage, [1, 2, 3, 4, 5]);
             await dragHandCardToPlay(hostPage, 'volley');
-            await waitForAttackModifierBonusDiceReady(hostPage, 'volley', '0');
+            await waitForAttackModifierBonusDiceReady(hostPage, 'volley', '0', '1');
             await dismissAttackShowcaseIfVisible(hostPage);
             await dismissAttackShowcaseIfVisible(guestPage);
 
@@ -1217,9 +1223,10 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
                 sourceAbilityId: 'volley',
                 customResolutionId: 'moon-elf-volley',
                 allowDiceModification: true,
-                windowType: null,
+                windowType: 'afterRollConfirmed',
+                currentResponderId: '1',
             });
-            await expectRightTrayBonusDiceConfirmation(hostPage, () => readHarnessState(hostPage), {
+            await expectRightTrayBonusDiceInterferenceView(guestPage, () => readHarnessState(guestPage), {
                 sourceAbilityId: 'volley',
             });
             await normalizePendingBonusDice(matchId, hostPage, [1, 2, 3, 4, 5]);
@@ -1230,7 +1237,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await expectRightTrayBonusDiceInterferenceView(guestPage, () => readHarnessState(guestPage), {
                 sourceAbilityId: 'volley',
             });
-            await screenshotStep(guestPage, testInfo, '13-攻击修正牌万箭齐发已打出-右侧奖励骰盘可被防御方介入');
+            await screenshotStep(guestPage, testInfo, '13-攻击修正牌万箭齐发已打出-奖励骰响应窗口可介入');
 
             const volleyBeforeSnapshot = await readVisibleBonusSnapshot(guestPage);
             const volleyChoice = chooseVolleyBoundaryDie(volleyBeforeSnapshot);

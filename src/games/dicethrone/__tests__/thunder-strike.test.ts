@@ -9,6 +9,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import {
+    getCurrentInteractionData,
+    getCurrentInteractionSummary,
+} from '../../../engine/testing/interactionTestFacade';
 import { DiceThroneDomain } from '../domain';
 import { diceThroneSystemsForTest } from '../game';
 import { createQueuedRandom, getCardById } from './test-utils';
@@ -40,6 +44,15 @@ function createMonkState(playerIds: PlayerId[], random: RandomFn): MatchState<Di
     state.core.selectedCharacters['1'] = 'monk';
     state.core.players['1'] = initHeroState('1', 'monk', random);
     return state;
+}
+
+function requirePendingDamageId(core: DiceThroneCore): string {
+    const pendingDamageId = core.pendingDamage?.id;
+    expect(pendingDamageId).toBeDefined();
+    if (!pendingDamageId) {
+        throw new Error('测试缺少当前待处理伤害编号');
+    }
+    return pendingDamageId;
 }
 
 describe('雷霆万钧技能', () => {
@@ -125,7 +138,7 @@ describe('雷霆万钧技能', () => {
         });
 
         const opened = runner.run({
-            name: '雷霆万钧奖励骰停在右侧骰盘且对手可打弹一手改骰',
+            name: '雷霆万钧奖励骰先给对手响应再由骰主确认',
             commands: [
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
                 { type: 'ROLL_DICE', playerId: '0', payload: {} },
@@ -151,11 +164,12 @@ describe('雷霆万钧技能', () => {
         });
         const openedDiceValues = opened.finalState.core.pendingBonusDiceSettlement?.dice.map(die => die.value) ?? [];
         expect(openedDiceValues).toHaveLength(3);
-        expect(opened.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(opened.finalState.sys.interaction.current).toMatchObject({
-            kind: 'dt:bonus-dice',
-            playerId: '0',
+        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+            currentResponderIndex: 0,
         });
+        expect(getCurrentInteractionSummary(opened.finalState).id).toBeUndefined();
         const targetDieIndex = 2;
         const targetDieValue = openedDiceValues[targetDieIndex] ?? 1;
         const modifiedDieValue = targetDieValue < 6 ? targetDieValue + 1 : targetDieValue - 1;
@@ -166,19 +180,19 @@ describe('雷霆万钧技能', () => {
         runner.setState(opened.finalState);
         const playedFlick = runner.dispatch('PLAY_CARD', { playerId: '1', cardId: 'card-flick' });
         expect(playedFlick.success).toBe(true);
-        expect(playedFlick.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(playedFlick.finalState.sys.interaction.current).toMatchObject({
+        expect(playedFlick.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+            currentResponderIndex: 0,
+            pendingInteractionId: expect.any(String),
+        });
+        expect(getCurrentInteractionSummary(playedFlick.finalState)).toMatchObject({
             kind: 'multistep-choice',
             playerId: '1',
-            data: {
-                minSteps: 1,
-                maxSteps: undefined,
-            },
         });
-        expect(playedFlick.finalState.sys.interaction.queue?.[0]).toMatchObject({
-            kind: 'dt:bonus-dice',
-            playerId: '0',
-        });
+        const flickInteractionData = getCurrentInteractionData<{ minSteps?: number; maxSteps?: number }>(playedFlick.finalState);
+        expect(flickInteractionData).toMatchObject({ minSteps: 1 });
+        expect(flickInteractionData?.maxSteps).toBeUndefined();
 
         const modified = runner.dispatch('MODIFY_DIE', { playerId: '1', dieId: targetDieIndex, newValue: modifiedDieValue });
         expect(modified.success).toBe(true);
@@ -189,7 +203,7 @@ describe('雷霆万钧技能', () => {
         const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '1' });
         expect(confirmedCard.success).toBe(true);
         expect(confirmedCard.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(confirmedCard.finalState.sys.interaction.current).toMatchObject({
+        expect(getCurrentInteractionSummary(confirmedCard.finalState)).toMatchObject({
             kind: 'dt:bonus-dice',
             playerId: '0',
         });
@@ -231,7 +245,7 @@ describe('雷霆万钧技能', () => {
             silent: true,
         });
 
-        const result = runner.run({
+        const beforeToken = runner.run({
             name: '雷霆万钧奖励骰伤害可用气增伤',
             commands: [
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
@@ -244,11 +258,25 @@ describe('雷霆万钧技能', () => {
                 { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: {} },
                 { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} },
-                { type: 'USE_TOKEN', playerId: '0', payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1 } },
             ],
         });
+        expect(beforeToken.actualErrors).toEqual([]);
+        const pendingDamageId = requirePendingDamageId(beforeToken.finalState.core);
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: diceThroneSystemsForTest },
+            beforeToken.finalState,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId },
+                timestamp: 999,
+            } as DiceThroneCommand,
+            queuedRandom,
+            ['0', '1'],
+        );
+        expect(result.success).toBe(true);
 
-        expect(result.finalState.core.pendingDamage).toMatchObject({
+        expect(result.state.core.pendingDamage).toMatchObject({
             responseType: 'beforeDamageDealt',
             responderId: '0',
             sourcePlayerId: '0',
@@ -258,7 +286,7 @@ describe('雷霆万钧技能', () => {
             currentDamage: 19,
             damageScope: 'attack',
         });
-        expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(1);
+        expect(result.state.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(1);
     });
 
     it('风暴突袭 II 奖励骰伤害结算前应该允许攻击方使用气增伤', () => {
@@ -283,7 +311,7 @@ describe('雷霆万钧技能', () => {
             silent: true,
         });
 
-        const result = runner.run({
+        const beforeToken = runner.run({
             name: '风暴突袭 II 奖励骰伤害可用气增伤',
             commands: [
                 { type: 'PLAY_UPGRADE_CARD', playerId: '0', payload: { cardId: 'card-storm-assault-2', targetAbilityId: 'thunder-strike' } },
@@ -297,11 +325,25 @@ describe('雷霆万钧技能', () => {
                 { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: {} },
                 { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} },
-                { type: 'USE_TOKEN', playerId: '0', payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1 } },
             ],
         });
+        expect(beforeToken.actualErrors).toEqual([]);
+        const pendingDamageId = requirePendingDamageId(beforeToken.finalState.core);
+        const result = executePipeline(
+            { domain: DiceThroneDomain, systems: diceThroneSystemsForTest },
+            beforeToken.finalState,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1, pendingDamageId },
+                timestamp: 999,
+            } as DiceThroneCommand,
+            queuedRandom,
+            ['0', '1'],
+        );
+        expect(result.success).toBe(true);
 
-        expect(result.finalState.core.pendingDamage).toMatchObject({
+        expect(result.state.core.pendingDamage).toMatchObject({
             responseType: 'beforeDamageDealt',
             responderId: '0',
             sourcePlayerId: '0',
@@ -311,7 +353,7 @@ describe('雷霆万钧技能', () => {
             currentDamage: 19,
             damageScope: 'attack',
         });
-        expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(0);
+        expect(result.state.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(0);
     });
 
     it('风暴突袭 II 只能花费 1 个太极重掷 1 颗奖励骰', () => {
