@@ -11,7 +11,10 @@ import {
 import type { MatchState } from '../../../engine/types';
 import { DiceThroneDomain, TOKEN_IDS } from '../domain';
 import { createDiceThroneEventSystem } from '../domain/systems';
-import { createDiceThroneTimingOpportunitySystemConfig } from '../domain/timingOpportunities';
+import {
+    buildDiceThroneTokenResponseChoiceCandidates,
+    createDiceThroneTimingOpportunitySystemConfig,
+} from '../domain/timingOpportunities';
 import type { DiceThroneCore, PendingDamage } from '../domain/types';
 import { fixedRandom } from './test-utils';
 import { diceThroneSystemsForTest } from '../game';
@@ -436,6 +439,105 @@ describe('DiceThrone timing opportunities', () => {
             ],
         });
         expect(result?.state.core.currentChoiceSourceAbilityId).toBeUndefined();
+    });
+
+    it('女猎手被攻击时 ChoiceRequest 合同包含妮拉全承伤和羁绊分配命令', () => {
+        const pendingDamage = makePendingDamage({
+            originalDamage: 8,
+            currentDamage: 8,
+            targetPlayerId: '1',
+            responderId: '1',
+            responseType: 'beforeDamageReceived',
+        });
+        const state = makeState(pendingDamage);
+        state.core.players['1'] = {
+            ...state.core.players['1'],
+            characterId: 'lieren',
+            companion: { id: 'nyra', hp: 5, maxHp: 7 },
+            tokens: {
+                ...state.core.players['1'].tokens,
+                [TOKEN_IDS.NYRAS_BOND]: 1,
+            },
+        };
+
+        const candidates = buildDiceThroneTokenResponseChoiceCandidates(state.core, pendingDamage);
+        expect(candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: `use-token:${TOKEN_IDS.NYRA_REDIRECT}:8`,
+                commands: [{
+                    type: 'USE_TOKEN',
+                    payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 8, pendingDamageId: 'damage-test-1' },
+                }],
+            }),
+            expect.objectContaining({
+                id: `use-token:${TOKEN_IDS.NYRAS_BOND}:1`,
+                commands: [{
+                    type: 'USE_TOKEN',
+                    payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 1, pendingDamageId: 'damage-test-1' },
+                }],
+            }),
+            expect.objectContaining({
+                id: `use-token:${TOKEN_IDS.NYRAS_BOND}:2`,
+                commands: [{
+                    type: 'USE_TOKEN',
+                    payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 2, pendingDamageId: 'damage-test-1' },
+                }],
+            }),
+            expect.objectContaining({
+                id: `use-token:${TOKEN_IDS.NYRAS_BOND}:5`,
+                commands: [{
+                    type: 'USE_TOKEN',
+                    payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 5, pendingDamageId: 'damage-test-1' },
+                }],
+            }),
+            expect.objectContaining({
+                id: `use-token:${TOKEN_IDS.NYRAS_BOND}:7`,
+                commands: [{
+                    type: 'USE_TOKEN',
+                    payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 7, pendingDamageId: 'damage-test-1' },
+                }],
+            }),
+        ]));
+        expect(candidates.some(candidate => candidate.id === `use-token:${TOKEN_IDS.NYRAS_BOND}:8`)).toBe(false);
+
+        const choiceRequestContract = {
+            requestId: 'dicethrone:token-response:damage-test-1:beforeDamageReceived:1',
+            playerId: '1',
+            kind: 'choose-option',
+            candidates,
+            selection: { min: 1, max: 1 },
+            resolution: { type: 'candidate-commands' },
+            metadata: { pendingDamageId: 'damage-test-1' },
+        };
+        state.sys.phase = 'defensiveRoll';
+        state.sys.interaction = {
+            current: {
+                id: 'dt-token-response-damage-test-1',
+                kind: 'dt:token-response',
+                playerId: '1',
+                data: { choiceRequestContract },
+            },
+            queue: [],
+        };
+
+        expect(DiceThroneDomain.validate(state, {
+            type: 'USE_TOKEN',
+            playerId: '1',
+            payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 8, pendingDamageId: 'damage-test-1' },
+            timestamp: 1,
+        })).toEqual({ valid: true });
+        expect(DiceThroneDomain.validate(state, {
+            type: 'USE_TOKEN',
+            playerId: '1',
+            payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 7, pendingDamageId: 'damage-test-1' },
+            timestamp: 1,
+        })).toEqual({ valid: true });
+        expect(DiceThroneDomain.validate(state, {
+            type: 'USE_TOKEN',
+            playerId: '1',
+            payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 5 },
+            timestamp: 1,
+        })).toEqual({ valid: false, error: 'choice_contract_mismatch' });
     });
 
     it('当前 dt:token-response 存在时，TimingOpportunitySystem 原地替换而不是追加第二个窗口', () => {

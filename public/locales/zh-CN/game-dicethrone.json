@@ -119,7 +119,8 @@
       },
       "cardType": {
         "action": "行动牌",
-        "upgrade": "升级牌"
+        "upgrade": "升级牌",
+        "responseUpgrade": "响应型升级牌"
       },
       "timing": {
         "main": "主要阶段",
@@ -918,6 +919,8 @@
     "evasionFailed": "失败",
     "evaded": "已闪避",
     "noTokens": "没有可用标记",
+    "nyraRedirect": "妮拉承受全部伤害",
+    "nyrasBond": "魂之羁绊",
     "confirm": "确认",
     "skip": "跳过",
     "skipResponse": "跳过标记响应",

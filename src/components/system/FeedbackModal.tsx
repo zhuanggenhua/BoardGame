@@ -11,6 +11,11 @@ import { FEEDBACK_API_URL as API_URL, IS_DEV_API_DISABLED } from '../../config/s
 import { UI_Z_INDEX } from '../../core';
 import { buildFeedbackClientContext } from '../../lib/feedback/clientFeedbackContext';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
+import {
+    buildGameFeedbackActionLog,
+    buildGameFeedbackStateSnapshot,
+} from '../../lib/feedback/gameFeedbackDiagnostics';
+import { getCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackContext';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
@@ -247,6 +252,17 @@ export const FeedbackModal = ({
 
     const isInGame = location.pathname.startsWith('/play/');
     const autoGameId = isInGame ? (location.pathname.split('/')[2] || '') : '';
+    const currentGameFeedbackContext = isInGame ? getCurrentGameFeedbackContext() : null;
+    const fallbackActionLogText = useMemo(() => {
+        if (!currentGameFeedbackContext?.state) return undefined;
+        return buildGameFeedbackActionLog(currentGameFeedbackContext.state);
+    }, [currentGameFeedbackContext?.state]);
+    const fallbackStateSnapshot = useMemo(() => {
+        if (!currentGameFeedbackContext?.state) return undefined;
+        return buildGameFeedbackStateSnapshot(currentGameFeedbackContext.state);
+    }, [currentGameFeedbackContext?.state]);
+    const resolvedActionLogText = actionLogText?.trim() ? actionLogText : fallbackActionLogText;
+    const resolvedStateSnapshot = stateSnapshot?.trim() ? stateSnapshot : fallbackStateSnapshot;
     const baseDraftStorageKey = useMemo(() => buildFeedbackDraftStorageKey({
         gameId: (runtimeContext?.gameId ?? autoGameId) || undefined,
         matchId: runtimeContext?.matchId,
@@ -287,8 +303,8 @@ export const FeedbackModal = ({
     const [contactInfo, setContactInfo] = useState(() => initialDraft?.contactInfo ?? '');
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(() => initialDraft?.pastedImage ?? null);
-    const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!actionLogText);
-    const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!stateSnapshot);
+    const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!resolvedActionLogText);
+    const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!resolvedStateSnapshot);
     const [isCompactLandscape, setIsCompactLandscape] = useState(false);
     const [gameName, setGameName] = useState(() => initialDraft?.gameName ?? runtimeContext?.gameId ?? autoGameId);
     const shouldShowGameSelector = !runtimeContext?.gameId;
@@ -435,9 +451,11 @@ export const FeedbackModal = ({
                 ? ((window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__)
                 : undefined);
             const clientContext = buildFeedbackClientContext({
-                mode: runtimeContext?.mode ?? (fallbackMode as 'online' | 'local' | 'tutorial' | undefined),
+                mode: runtimeContext?.mode
+                    ?? (currentGameFeedbackContext?.isLocalMode ? 'local' : undefined)
+                    ?? (fallbackMode as 'online' | 'local' | 'tutorial' | undefined),
                 matchId: runtimeContext?.matchId,
-                playerId: runtimeContext?.playerId ?? undefined,
+                playerId: runtimeContext?.playerId ?? currentGameFeedbackContext?.playerId ?? undefined,
                 gameId: (runtimeContext?.gameId ?? gameName) || undefined,
             });
 
@@ -471,8 +489,8 @@ export const FeedbackModal = ({
                 gameName: gameName || undefined,
                 source: hasConfigProposal ? 'config-review' : undefined,
                 contactInfo: contactInfo || undefined,
-                actionLog: (attachLog && actionLogText) ? actionLogText : undefined,
-                stateSnapshot: (attachState && stateSnapshot) ? stateSnapshot : undefined,
+                actionLog: (attachLog && resolvedActionLogText) ? resolvedActionLogText : undefined,
+                stateSnapshot: (attachState && resolvedStateSnapshot) ? resolvedStateSnapshot : undefined,
                 clientContext,
                 errorContext,
                 configProposal: normalizedConfigProposal,
@@ -781,7 +799,7 @@ export const FeedbackModal = ({
                     </AnimatePresence>
 
                     {/* 附带操作日志 */}
-                    {actionLogText && (
+                    {resolvedActionLogText && (
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"
@@ -796,7 +814,7 @@ export const FeedbackModal = ({
                     )}
 
                     {/* 附带状态快照 */}
-                    {stateSnapshot && (
+                    {resolvedStateSnapshot && (
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"

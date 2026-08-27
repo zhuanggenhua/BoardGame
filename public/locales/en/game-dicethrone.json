@@ -119,7 +119,8 @@
       },
       "cardType": {
         "action": "Action",
-        "upgrade": "Upgrade"
+        "upgrade": "Upgrade",
+        "responseUpgrade": "Response Upgrade"
       },
       "timing": {
         "main": "Main",
@@ -835,6 +836,8 @@
     "evasionFailed": "Failed",
     "evaded": "Evaded",
     "noTokens": "No tokens available",
+    "nyraRedirect": "Nyra redirect",
+    "nyrasBond": "Nyra's Bond",
     "confirm": "Confirm",
     "skip": "Skip",
     "skipResponse": "Skip token response",

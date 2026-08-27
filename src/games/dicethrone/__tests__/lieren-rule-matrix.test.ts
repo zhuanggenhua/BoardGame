@@ -514,8 +514,8 @@ describe('DiceThrone 女猎手规则矩阵', () => {
             id: 'nyra-redirect-test',
             sourcePlayerId: '1',
             targetPlayerId: '0',
-            originalDamage: 4,
-            currentDamage: 4,
+            originalDamage: 8,
+            currentDamage: 8,
             sourceAbilityId: 'test-hit',
             responseType: 'beforeDamageReceived',
             responderId: '0',
@@ -524,18 +524,18 @@ describe('DiceThrone 女猎手规则矩阵', () => {
         const heroHp = state.core.players['0'].resources.hp;
         const redirectEvents = execute(state, {
             ...command('USE_TOKEN'),
-            payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 4 },
+            payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 8 },
         });
         const redirected = applyEvents(state.core, redirectEvents);
 
-        expect(redirected.players['0'].companion?.hp).toBe(3);
+        expect(redirected.players['0'].companion?.hp).toBe(0);
         expect(redirected.players['0'].resources.hp).toBe(heroHp);
         expect(redirected.pendingDamage).toBeUndefined();
 
         state.core.pendingAttack = { isUltimate: true } as DiceThroneCore['pendingAttack'];
         const ultimateEvents = execute(state, {
             ...command('USE_TOKEN'),
-            payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 4 },
+            payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 8 },
         });
         expect(ultimateEvents).toEqual([]);
     });
@@ -548,8 +548,8 @@ describe('DiceThrone 女猎手规则矩阵', () => {
             id: 'nyra-bond-split-test',
             sourcePlayerId: '1',
             targetPlayerId: '0',
-            originalDamage: 4,
-            currentDamage: 4,
+            originalDamage: 8,
+            currentDamage: 8,
             sourceAbilityId: 'test-hit',
             responseType: 'beforeDamageReceived',
             responderId: '0',
@@ -559,11 +559,11 @@ describe('DiceThrone 女猎手规则矩阵', () => {
 
         const events = execute(state, {
             ...command('USE_TOKEN'),
-            payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 2 },
+            payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 6 },
         });
         const next = applyEvents(state.core, events);
 
-        expect(next.players['0'].companion?.hp).toBe(3);
+        expect(next.players['0'].companion?.hp).toBe(0);
         expect(next.players['0'].resources.hp).toBe(heroHp - 2);
         expect(next.players['0'].tokens[TOKEN_IDS.NYRAS_BOND]).toBe(0);
         expect(next.pendingDamage).toBeUndefined();

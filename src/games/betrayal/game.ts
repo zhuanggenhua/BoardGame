@@ -720,6 +720,13 @@ interface BetrayalRoomEnterEffectResult {
     destinationFloor: BetrayalRoomFloor;
 }
 
+interface BetrayalRolledDamageResult {
+    damageKind: 'physical' | 'mental';
+    rolls: number[];
+    total: number;
+    appliedAmount: number;
+}
+
 export interface BetrayalRecentRollState {
     id: string;
     kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
@@ -733,6 +740,7 @@ export interface BetrayalRecentRollState {
     acknowledgedPlayerIds?: string[];
     branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
     latestLabel: string;
+    eventDamagePreviewResults?: BetrayalRolledDamageResult[];
     eventEffectSnapshot?: {
         traitsBeforeEffect: BetrayalExplorerSummary['traits'];
         traitTracksBeforeEffect: BetrayalTraitTrackMap;
@@ -741,6 +749,7 @@ export interface BetrayalRecentRollState {
         currentExplorerInventoryBeforeEffect: BetrayalInventoryCard[];
         deckCountsBeforeEffect: Record<BetrayalDeckKind, number>;
         damageRolls: number[];
+        rolledDamageResults: BetrayalRolledDamageResult[];
         drawnCards: BetrayalInventoryCard[];
     };
     roomId?: string;
@@ -2432,6 +2441,16 @@ type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 
 type EventTemplate = BetrayalEventSeed;
 type EventEffectSnapshot = NonNullable<BetrayalRecentRollState['eventEffectSnapshot']>;
+
+type RolledDamageAllocationDeferral = {
+    sourceTitle: string;
+    timestamp: number;
+    allocations: BetrayalPendingDamageAllocationState[];
+};
+
+type ApplyEventEffectOptions = {
+    deferRolledDamageAllocation?: RolledDamageAllocationDeferral;
+};
 
 interface BetrayalHauntRollResult {
     dice: number[];
@@ -4281,6 +4300,10 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                     ...branch,
                     effect: { ...branch.effect },
                 })),
+                eventDamagePreviewResults: core.recentRoll.eventDamagePreviewResults?.map((damage) => ({
+                    ...damage,
+                    rolls: [...damage.rolls],
+                })),
                 eventEffectSnapshot: core.recentRoll.eventEffectSnapshot
                     ? {
                         ...core.recentRoll.eventEffectSnapshot,
@@ -4289,6 +4312,10 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                         possessionOrderByKindBeforeEffect: clonePossessionOrderByKind(core.recentRoll.eventEffectSnapshot.possessionOrderByKindBeforeEffect),
                         deckCountsBeforeEffect: { ...core.recentRoll.eventEffectSnapshot.deckCountsBeforeEffect },
                         damageRolls: [...core.recentRoll.eventEffectSnapshot.damageRolls],
+                        rolledDamageResults: (core.recentRoll.eventEffectSnapshot.rolledDamageResults ?? []).map((damage) => ({
+                            ...damage,
+                            rolls: [...damage.rolls],
+                        })),
                         drawnCards: core.recentRoll.eventEffectSnapshot.drawnCards.map(cloneInventoryCard),
                     }
                     : undefined,
@@ -10426,6 +10453,7 @@ function createEventEffectSnapshot(core: BetrayalCore): EventEffectSnapshot {
         currentExplorerInventoryBeforeEffect: core.currentExplorer.inventory.map(cloneInventoryCard),
         deckCountsBeforeEffect: { ...core.deckCounts },
         damageRolls: [],
+        rolledDamageResults: [],
         drawnCards: [],
     };
 }
@@ -10608,6 +10636,38 @@ function resolveAssignableDamageAmount(
     return Math.min(Math.max(0, amount), assignableSteps);
 }
 
+function collectRolledDamageResultsFromEffect(
+    effect: UseEffectProfile | undefined,
+    explorer: BetrayalExplorerSummary,
+    core: BetrayalCore,
+): BetrayalRolledDamageResult[] {
+    if (!effect) {
+        return [];
+    }
+    if (effect.mode === 'compound') {
+        return effect.effects.flatMap((childEffect) => (
+            collectRolledDamageResultsFromEffect(childEffect, explorer, core)
+        ));
+    }
+    if (effect.mode !== 'rolledDamage' || !effect.rolls?.length) {
+        return [];
+    }
+    const total = effect.rolls.reduce((sum, pip) => sum + pip, 0);
+    const reducedAmount = resolveReducedDamageAmount(explorer, effect.damageKind, total);
+    const appliedAmount = resolveAssignableDamageAmount(
+        explorer,
+        resolveDamageAllocationAllowedTraits(effect.damageKind),
+        reducedAmount,
+        { allowSkull: core.phase === 'haunt' },
+    );
+    return [{
+        damageKind: effect.damageKind,
+        rolls: [...effect.rolls],
+        total,
+        appliedAmount,
+    }];
+}
+
 function createPendingDamageAllocation(params: {
     id: string;
     explorer: BetrayalExplorerSummary;
@@ -10784,8 +10844,8 @@ function applyMentalDamage(
     explorer: BetrayalExplorerSummary,
     amount: number,
     options: { allowSkull?: boolean } = {},
-): void {
-    applyTraitLoss(explorer, ['knowledge', 'sanity'], Math.max(0, amount - resolveMentalDamageReduction(explorer)), options);
+): number {
+    return applyTraitLoss(explorer, ['knowledge', 'sanity'], Math.max(0, amount - resolveMentalDamageReduction(explorer)), options);
 }
 
 function applyStrangeAmuletPhysicalDamageBonus(explorer: BetrayalExplorerSummary): void {
@@ -11003,6 +11063,7 @@ function applyEventEffect(
     effect: UseEffectProfile,
     random?: RandomFn,
     snapshot?: EventEffectSnapshot,
+    options?: ApplyEventEffectOptions,
 ): EventEffectSnapshot | undefined {
     if (effect.mode === 'none') {
         return snapshot;
@@ -11010,7 +11071,7 @@ function applyEventEffect(
     const nextSnapshot = snapshotEventEffect(core, snapshot);
     if (effect.mode === 'compound') {
         for (const childEffect of effect.effects) {
-            applyEventEffect(core, childEffect, random, nextSnapshot);
+            applyEventEffect(core, childEffect, random, nextSnapshot, options);
         }
         return nextSnapshot;
     }
@@ -11094,9 +11155,9 @@ function applyEventEffect(
             if (effect.consumeAction === 'bury') {
                 restorePossessionCardToBottom(core, selectedCard.kind, selectedCard);
             }
-            applyEventEffect(core, effect.acceptEffect, random, nextSnapshot);
+            applyEventEffect(core, effect.acceptEffect, random, nextSnapshot, options);
         } else {
-            applyEventEffect(core, effect.declineEffect, random, nextSnapshot);
+            applyEventEffect(core, effect.declineEffect, random, nextSnapshot, options);
         }
         return nextSnapshot;
     }
@@ -11110,7 +11171,7 @@ function applyEventEffect(
             applyTraitLoss(core.currentExplorer, [trait], effect.failAmount, { allowSkull: core.phase === 'haunt' });
         }
         if (failedTraits.length === 0 && !effectHasUnresolvedTraitChoice(effect.allPassEffect)) {
-            applyEventEffect(core, effect.allPassEffect, random, nextSnapshot);
+            applyEventEffect(core, effect.allPassEffect, random, nextSnapshot, options);
         }
         core.recentAllTraitCheck = {
             sourceTitle: effect.name,
@@ -11126,11 +11187,31 @@ function applyEventEffect(
         const damageRolls = effect.rolls ?? rollDicePips(random!, effect.dice);
         nextSnapshot.damageRolls.push(...damageRolls);
         const amount = damageRolls.reduce((sum, pip) => sum + pip, 0);
-        if (effect.damageKind === 'physical') {
-            applyPhysicalDamage(core.currentExplorer, amount, { allowSkull: core.phase === 'haunt' });
-        } else {
-            applyMentalDamage(core.currentExplorer, amount, { allowSkull: core.phase === 'haunt' });
+        const deferred = options?.deferRolledDamageAllocation;
+        const pendingAllocation = deferred
+            ? createPendingDamageAllocation({
+                id: `event-rolled-damage-${core.currentExplorer.playerId}-${deferred.timestamp}-${deferred.allocations.length}`,
+                explorer: core.currentExplorer,
+                sourceTitle: deferred.sourceTitle,
+                damageKind: effect.damageKind,
+                amount,
+                allowSkull: core.phase === 'haunt',
+            })
+            : null;
+        if (pendingAllocation) {
+            deferred!.allocations.push(pendingAllocation);
         }
+        const appliedAmount = deferred
+            ? pendingAllocation?.amount ?? 0
+            : effect.damageKind === 'physical'
+                ? applyPhysicalDamage(core.currentExplorer, amount, { allowSkull: core.phase === 'haunt' })
+                : applyMentalDamage(core.currentExplorer, amount, { allowSkull: core.phase === 'haunt' });
+        nextSnapshot.rolledDamageResults.push({
+            damageKind: effect.damageKind,
+            rolls: [...damageRolls],
+            total: amount,
+            appliedAmount,
+        });
         return nextSnapshot;
     }
     if (effect.mode === 'drawPossession') {
@@ -14283,7 +14364,7 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
         return '放置祝福标志物';
     }
     if (effect.mode === 'rolledDamage') {
-        return `受到 ${effect.dice} 颗骰子的${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
+        return `重新投掷 ${effect.dice} 颗骰子，按合计值分配${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
     }
     if (effect.mode === 'fixedDamage') {
         return `受到 ${effect.amount} 点${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
@@ -20007,6 +20088,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         effect: { ...branch.effect },
                     })),
                     latestLabel: event.payload.eventRoll.label,
+                    eventDamagePreviewResults: collectRolledDamageResultsFromEffect(
+                        event.payload.eventEffect,
+                        core.currentExplorer,
+                        core,
+                    ),
                     consumedRabbitFootCardIds: [],
                 };
             } else if (event.payload.hauntRoll?.dice.length) {
@@ -20358,6 +20444,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         effect: cloneUseEffect(branch.effect),
                     })),
                     latestLabel: event.payload.eventRoll.label,
+                    eventDamagePreviewResults: collectRolledDamageResultsFromEffect(
+                        event.payload.eventEffect,
+                        core.currentExplorer,
+                        core,
+                    ),
                     consumedRabbitFootCardIds: [],
                 }
                 : carriedRecentRoll;
@@ -20906,8 +20997,20 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
                 ? core.monsters.map(cloneMonster)
                 : [];
-            applyEventEffect(core, event.payload.effect);
-            if (event.payload.deathPrevention?.dice.length) {
+            const rolledDamageAllocations: BetrayalPendingDamageAllocationState[] = [];
+            const eventEffectSnapshot = applyEventEffect(core, event.payload.effect, undefined, undefined, {
+                deferRolledDamageAllocation: {
+                    sourceTitle: event.payload.sourceTitle,
+                    timestamp: event.timestamp,
+                    allocations: rolledDamageAllocations,
+                },
+            });
+            const pendingRolledDamageAllocation = chainPendingDamageAllocations(rolledDamageAllocations);
+            if (pendingRolledDamageAllocation) {
+                core.pendingDamageAllocation = pendingRolledDamageAllocation;
+                core.activePlayerId = pendingRolledDamageAllocation.playerId;
+            }
+            if (!pendingRolledDamageAllocation && event.payload.deathPrevention?.dice.length) {
                 core.recentRoll = {
                     id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
                     kind: 'deathPrevention',
@@ -20930,13 +21033,19 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     consumedRabbitFootCardIds: [],
                 };
             }
-            if (event.payload.deathPrevention?.prevented) {
+            if (!pendingRolledDamageAllocation && event.payload.deathPrevention?.prevented) {
                 const explorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
                 if (explorer) {
                     setExplorerTraitsToDeathsDoor(explorer);
                 }
-            } else {
+            } else if (!pendingRolledDamageAllocation) {
                 applyDustEventEffectDeathIfNeeded(core);
+            }
+            if (
+                core.recentRoll
+                && (core.recentRoll.kind === 'eventTraitCheck' || core.recentRoll.kind === 'eventDiceRoll')
+            ) {
+                core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
             }
             core.pendingEventRollResolution = null;
             core.pendingCardResolutionQueue = [];
@@ -20944,7 +21053,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const synced = syncCurrentExplorerProjection(core);
             let nextCore = {
                 ...synced,
-                recommendedAction: resolveRecommendedAction(synced),
+                recommendedAction: pendingRolledDamageAllocation ? 'endTurn' : resolveRecommendedAction(synced),
+                activePlayerId: pendingRolledDamageAllocation?.playerId ?? synced.activePlayerId,
                 activityLog: appendActivity(synced, event.payload.logText, 'accent'),
             };
             if (event.payload.hauntTriggered) {
@@ -21924,6 +22034,12 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     nextDamageAllocations: pending.nextDamageAllocations.slice(1).map(clonePendingDamageAllocation),
                 }
                 : null;
+            if (nextQueuedDamageAllocation) {
+                const nextQueuedTarget = findExplorerByPlayerId(core, nextQueuedDamageAllocation.playerId);
+                if (nextQueuedTarget) {
+                    nextQueuedDamageAllocation.traitsBeforeDamage = { ...nextQueuedTarget.traits };
+                }
+            }
             core.pendingDamageAllocation = null;
             if (targetDefeated) {
                 const bloodFromStoneCompleted = completeBloodFromStoneHauntVictoryIfNeeded(core, event.timestamp);

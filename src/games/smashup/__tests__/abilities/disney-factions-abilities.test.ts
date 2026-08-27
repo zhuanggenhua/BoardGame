@@ -1729,6 +1729,84 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-modifier']);
     });
 
+    it('赛博虫灾变发动后应让每名玩家移动自己在该基地的牌，并正常替换基地', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            turnOrder: ['0', '1'],
+            bases: [
+                makeBase({
+                    defId: 'base_the_dump',
+                    ongoingActions: [
+                        { uid: 'cy-bug', defId: 'wreck_it_ralph_cy_bug_infestation', ownerId: '0' },
+                        { uid: 'own-modifier', defId: 'wreck_it_ralph_king_candy', ownerId: '0' },
+                        { uid: 'enemy-modifier', defId: 'wreck_it_ralph_research_lab_beacon', ownerId: '1' },
+                    ],
+                    minions: [
+                        makeMinion('own-minion', 'wreck_it_ralph_sugar_rush_racer', '0', 2),
+                        makeMinion('enemy-minion', 'pirate_first_mate', '1', 2),
+                    ],
+                }),
+                makeBase('base_the_power_strip'),
+                makeBase('base_monkey_lab'),
+            ],
+            baseDeck: ['base_faceless_city'],
+            baseDiscard: ['base_the_vats'],
+        });
+
+        const activated = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'cy-bug', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(activated.success, activated.error).toBe(true);
+        expect(activated.finalState.core.players['0'].discard.map(card => card.uid)).toContain('cy-bug');
+        expect(activated.finalState.core.bases[0].ongoingActions.map(action => action.uid)).not.toContain('cy-bug');
+        const firstPrompt = getSimpleChoicePrompt(activated.finalState, 'wreck_it_ralph_cy_bug_infestation');
+        expect(firstPrompt.playerId).toBe('1');
+        expect(firstPrompt.autoResolveIfSingle).toBe(false);
+
+        const enemyMoved = respondToPromptOption(
+            activated.finalState,
+            option => option.value?.baseIndex === 1,
+            '赛博虫灾变让 1 号玩家选择第二个基地',
+            '1',
+            FIXED_RANDOM,
+        );
+        expect(enemyMoved.success, enemyMoved.error).toBe(true);
+        expect(enemyMoved.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('enemy-minion');
+        expect(enemyMoved.finalState.core.bases[1].ongoingActions.map(action => action.uid)).toContain('enemy-modifier');
+        const secondPrompt = getSimpleChoicePrompt(enemyMoved.finalState, 'wreck_it_ralph_cy_bug_infestation');
+        expect(secondPrompt.playerId).toBe('0');
+
+        const ownMoved = respondToPromptOption(
+            enemyMoved.finalState,
+            option => option.value?.baseIndex === 2,
+            '赛博虫灾变让发动者选择第三个基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(ownMoved.success, ownMoved.error).toBe(true);
+        expect(ownMoved.finalState.core.bases[0]).toMatchObject({
+            defId: 'base_faceless_city',
+            minions: [],
+            ongoingActions: [],
+        });
+        expect(ownMoved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['enemy-minion']);
+        expect(ownMoved.finalState.core.bases[1].ongoingActions.map(action => action.uid)).toEqual(['enemy-modifier']);
+        expect(ownMoved.finalState.core.bases[2].minions.map(minion => minion.uid)).toEqual(['own-minion']);
+        expect(ownMoved.finalState.core.bases[2].ongoingActions.map(action => action.uid)).toEqual(['own-modifier']);
+        expect(ownMoved.finalState.core.baseDeck).toEqual([]);
+        expect(ownMoved.finalState.core.baseDiscard).toEqual(['base_the_vats', 'base_the_dump']);
+        expect(ownMoved.events.map(event => event.type)).toEqual(expect.arrayContaining([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+            SU_EVENTS.MINION_MOVED,
+            SU_EVENTS.ONGOING_ATTACHED,
+        ]));
+    });
+
     it('薄荷喷发从基地弃牌堆交换基地时必须由玩家选择，不自动换第一张', () => {
         const core = makeState({
             players: { '0': makePlayer('0'), '1': makePlayer('1') },

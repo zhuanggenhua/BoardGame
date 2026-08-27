@@ -81,7 +81,10 @@ export const NyraCompanionPanel = ({
             style={{ zIndex: UI_Z_INDEX.overlayRaised + 20 }}
             data-testid="nyra-damage-response-dock"
             data-board-magnify-ignore="true"
+            draggable={false}
             onClick={(event) => event.stopPropagation()}
+            onDragStart={(event) => event.preventDefault()}
+            onPointerDown={(event) => event.stopPropagation()}
         >
             <div className="mb-2 grid grid-cols-[3.15rem_minmax(0,1fr)_4.25rem] items-center gap-2.5">
                 <div
@@ -119,11 +122,15 @@ export const NyraCompanionPanel = ({
                 <input
                     aria-label={t('companion.nyra.damageAllocationSlider')}
                     className="h-6 w-full accent-cyan-300"
+                    style={{ touchAction: 'none' }}
                     type="range"
                     min={0}
                     max={currentDamage}
                     value={selectedDamage}
+                    draggable={false}
                     onChange={(event) => setDamageAllocation(Number(event.target.value))}
+                    onDragStart={(event) => event.preventDefault()}
+                    onPointerDown={(event) => event.stopPropagation()}
                 />
                 <div className={canConfirmSelection ? 'mt-1 text-[12px] font-semibold text-cyan-50/85' : 'mt-1 text-[12px] font-semibold text-amber-200'}>
                     {allocationSummary}

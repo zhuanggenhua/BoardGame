@@ -43,7 +43,9 @@
     "en": "English"
   },
   "toast": {
-    "close": "Close"
+    "close": "Close",
+    "commandWaitingForPreviousStep": "Waiting for the previous action to finish.",
+    "commandQueuedAfterPreviousStep": "Waiting for the previous action; the next step is queued."
   },
   "socketCompatibility": {
     "title": "Real-time connection looks unstable",

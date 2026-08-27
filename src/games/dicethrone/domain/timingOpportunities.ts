@@ -10,6 +10,7 @@ import type {
 import type { MatchState } from '../../../engine/types';
 import { getTokenUseOptions } from './tokenTypes';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './tokenResponse';
+import { TOKEN_IDS } from './ids';
 import {
     buildDiceThroneDamageShieldPreventionOpportunityId,
     buildDiceThroneTokenResponseFrameIdFromPendingDamageId,
@@ -144,6 +145,80 @@ function buildSkipCandidate(
     };
 }
 
+function buildNyraDamageResponseCandidate(
+    pendingDamage: PendingDamage,
+    tokenId: string,
+    amount: number,
+): ChoiceRequestCandidate<DiceThroneTokenResponseChoiceValue> {
+    return {
+        id: `use-token:${tokenId}:${amount}`,
+        label: tokenId === TOKEN_IDS.NYRA_REDIRECT ? 'Nyra redirect' : 'Nyras Bond',
+        labelKey: tokenId === TOKEN_IDS.NYRA_REDIRECT
+            ? 'tokenResponse.nyraRedirect'
+            : 'tokenResponse.nyrasBond',
+        value: {
+            kind: 'use-token',
+            tokenId,
+            amount,
+        },
+        displayMode: 'button',
+        commands: [{
+            type: 'USE_TOKEN',
+            payload: { tokenId, amount, pendingDamageId: pendingDamage.id },
+        }],
+        actionKind: 'token-response',
+        actionKeyParts: [
+            'dicethrone-token-response',
+            pendingDamage.id,
+            pendingDamage.responseType,
+            pendingDamage.responderId,
+            tokenId,
+            amount,
+        ],
+        metadata: {
+            pendingDamageId: pendingDamage.id,
+            responseType: pendingDamage.responseType,
+            responderId: pendingDamage.responderId,
+            currentDamage: pendingDamage.currentDamage,
+            originalDamage: pendingDamage.originalDamage,
+            tokenId,
+            amount,
+            nyraDamageResponse: true,
+        },
+    };
+}
+
+function buildNyraDamageResponseCandidates(
+    state: DiceThroneCore,
+    pendingDamage: PendingDamage,
+): ChoiceRequestCandidate<DiceThroneTokenResponseChoiceValue>[] {
+    const player = state.players[pendingDamage.responderId];
+    const companionHp = player?.companion?.hp ?? 0;
+    const currentDamage = Math.max(0, pendingDamage.currentDamage);
+    if (
+        pendingDamage.responseType !== 'beforeDamageReceived'
+        || player?.characterId !== 'lieren'
+        || player.companion?.id !== 'nyra'
+        || companionHp <= 0
+        || state.pendingAttack?.isUltimate
+        || currentDamage <= 0
+    ) {
+        return [];
+    }
+
+    const candidates = [
+        buildNyraDamageResponseCandidate(pendingDamage, TOKEN_IDS.NYRA_REDIRECT, currentDamage),
+    ];
+    const maxBondDamage = Math.max(0, currentDamage - 1);
+    if ((player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) > 0 && maxBondDamage > 0) {
+        for (let amount = 1; amount <= maxBondDamage; amount += 1) {
+            candidates.push(buildNyraDamageResponseCandidate(pendingDamage, TOKEN_IDS.NYRAS_BOND, amount));
+        }
+    }
+
+    return candidates;
+}
+
 export function buildDiceThroneTokenResponseChoiceCandidates(
     state: DiceThroneCore,
     pendingDamage: PendingDamage,
@@ -178,6 +253,7 @@ export function buildDiceThroneTokenResponseChoiceCandidates(
     });
 
     return [
+        ...buildNyraDamageResponseCandidates(state, pendingDamage),
         ...tokenCandidates,
         buildSkipCandidate(pendingDamage),
     ];

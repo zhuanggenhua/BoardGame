@@ -5,7 +5,7 @@ import { useModalStack } from '../../contexts/ModalStackContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
-import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw } from 'lucide-react';
+import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw, Moon, Sun } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
@@ -24,6 +24,13 @@ import { toggleDocumentFullscreen } from '../../lib/webFullscreen';
 import { isConfigReviewPath } from '../../config/gameConfigReviewRoutes';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import { UI_Z_INDEX } from '../../core';
+import {
+    applySystemDisplayThemeToDocument,
+    persistSystemDisplayThemePreference,
+    readSystemDisplayThemePreference,
+    subscribeSystemDisplayThemeChange,
+    type SystemDisplayTheme,
+} from './systemDisplayTheme';
 
 const HUD_MODAL_NS = 'hud';
 export const GLOBAL_HUD_FAB_Z_INDEX = UI_Z_INDEX.globalHudFab;
@@ -64,6 +71,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     const navigate = useNavigate();
     const toast = useToast();
     const [homeStyleRevision, setHomeStyleRevision] = useState(0);
+    const [displayTheme, setDisplayTheme] = useState<SystemDisplayTheme>(() => readSystemDisplayThemePreference());
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
@@ -74,7 +82,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         : resolveHomeEntryStyle(location.search);
     void homeStyleRevision;
 
-    const isDark = false;
+    const isDark = displayTheme === 'night';
 
     const totalBadge = unreadTotal + requests.length;
 
@@ -83,6 +91,12 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
     const [socialModalId, setSocialModalId] = useState<string | null>(null);
     const [otaActivityState, setOtaActivityState] = useState<AndroidLiveUpdateActivityState>(IDLE_OTA_ACTIVITY_STATE);
+
+    const toggleDisplayTheme = () => {
+        const nextTheme = displayTheme === 'night' ? 'light' : 'night';
+        persistSystemDisplayThemePreference(nextTheme);
+        setDisplayTheme(nextTheme);
+    };
 
     const applyHomeEntryStyle = (nextStyle: HomeEntryStyle, closePanel?: () => void) => {
         persistHomeEntryStyle(nextStyle);
@@ -210,6 +224,16 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         });
     }, []);
 
+    useEffect(() => {
+        applySystemDisplayThemeToDocument(displayTheme);
+    }, [displayTheme]);
+
+    useEffect(() => {
+        return subscribeSystemDisplayThemeChange((nextTheme) => {
+            setDisplayTheme(nextTheme);
+        });
+    }, []);
+
     // 从游戏页返回大厅/主页时，清理 HUD 自己打开的弹窗，避免遗留。
     useEffect(() => {
         if (isGamePage) return;
@@ -273,7 +297,16 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         )
     });
 
-    // 1. 全屏
+    // 1. 夜间模式
+    items.push({
+        id: 'display-theme',
+        icon: isDark ? <Sun size={20} /> : <Moon size={20} />,
+        label: isDark ? t('hud.actions.lightMode') : t('hud.actions.nightMode'),
+        active: isDark,
+        onClick: toggleDisplayTheme,
+    });
+
+    // 2. 全屏
     items.push({
         id: 'fullscreen',
         icon: isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />,
@@ -281,7 +314,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         onClick: toggleFullscreen
     });
 
-    // 2. 网页端下载 App
+    // 3. 网页端下载 App
     if (!isNativeAndroid) {
         items.push({
             id: 'download-app',
@@ -300,7 +333,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         });
     }
 
-    // 3. 关于
+    // 4. 关于
     items.push({
         id: 'about',
         icon: <Info size={20} />,
@@ -308,7 +341,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         onClick: () => setShowAbout((prev) => !prev)
     });
 
-    // 4. 反馈
+    // 5. 反馈
     items.push({
         id: 'feedback',
         icon: <MessageSquareWarning size={20} />,
@@ -316,7 +349,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
         onClick: () => setShowFeedback((prev) => !prev)
     });
 
-    // 5. 社交（仅登录用户）
+    // 6. 社交（仅登录用户）
     if (user) {
         items.push({
             id: 'social',

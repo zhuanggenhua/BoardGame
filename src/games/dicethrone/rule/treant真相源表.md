@@ -3,6 +3,8 @@
 > 本轮主真相源：用户放入的本地中文图片素材。对照源：本轮代码定义、DiceThrone 旧英雄共享合同（尤其 Gunslinger/Samurai 的 v2 面板与复合升级模式）。日期：2026-05-10。工作树：`.worktrees/dicethrone-treant-ninja`。
 >
 > 2026-06-05 当前有效口径：本文只保留树精素材、图面合同与图集合同的真相源清单，不代表树精整英雄、树精升级技能批次或四位新英雄整批当前完成态。当前若要判断树精对象级残余、升级技能 `L3/L4`、或批次级治理尾项，应以 `src/games/dicethrone/rule/treant录入核对.md`、`src/games/dicethrone/rule/treant卡牌录入核对.md`、`evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准。
+>
+> 2026-08-26 玩家板槽位复核：以 `temp/dicethrone-intake/audit/player-board-slot-review-sheets/treant-player-board-slots.png` 和 `evidence/dicethrone/升级牌槽位全量回图审计-2026-07-04.md` 为准，树精 `wild-roar` 已锁定在 `calm` 物理槽，`nature-touch` 已锁定在 `lightning` 物理槽；旧“临时同时放行 / 待后续确认 / calm 空槽”口径失效。
 
 ## 素材与用途
 
@@ -23,9 +25,9 @@
 | `sky` | 左下紫色独立槽，不属于普通技能列 | `quiet-cultivation` | passive / 非普通技能候选 | 旧共享语义误把它混入普通技能槽，现已纠正 |
 | `lotus` | 下排普通技能槽 | `wild-growth` | offensive | 与 Treant v2 图面一致 |
 | `combo` | 中排普通技能槽 | `vengeful-vines` | offensive | 与 Treant v2 图面一致 |
-| `lightning` | 上排普通技能槽 | `nature-touch`；2026-07-03 代码侧临时同时放行 `wild-roar` 以承接大顺子升级卡反馈 | offensive | 当前完整玩家板槽位合同仍只锁到 `nature-touch`；`wild-roar` 的完整玩家板槽位归属需后续用玩家板清晰裁图补证，不得用本行当最终图面合同 |
+| `lightning` | 上排普通技能槽 | `nature-touch` | offensive | 2026-07-04 回图与 2026-08-26 扩审确认：`wild-roar` 不再放行到本槽 |
+| `calm` | 右下左侧普通技能槽，大顺子技能 | `wild-roar` | offensive | 2026-07-04 回图确认，基础版和升级版 `野性怒吼` 均归属本槽 |
 | `meditate` | 右下独立防御槽 | `rooted` | defensive | 真实防御位，不是旧 `calm` 语义 |
-| `calm` | Treant 图面不承载 `rooted` | 空 / 不命中 `rooted` | empty / 非 `rooted` | 不能再让运行时自动补成“最像的旧防御槽” |
 
 ## 图集合同
 
@@ -41,6 +43,7 @@
 | 卡图规格 | 5x8 窄图 | 旧公共 atlas 为宽图 | 新增专属 atlas，禁止复用旧公共合同 |
 | 复合升级语义 | 升级卡替换基础技能 | Samurai/Gunslinger 等旧实现同样走 `targetAbilityId` | 复用共享升级合同，不拆成多张手牌 |
 | Token 机制 | 提示板定义树灵/生命源泉/刺藤 | 代码已实现并有 L2 测试 | 继续用 L2/L3 分层记录，不再保留旧债务结论 |
+| `野性怒吼` 玩家板槽位 | `calm -> wild-roar` | 旧记录曾写成 `lightning` 临时放行，且把 `calm` 记为空槽 | 旧记录失效；当前以回图审计、运行时代码和 `treant-ability-card-contract.test.ts` 为准 |
 
 ## 当前阅读门禁
 

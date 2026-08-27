@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { ToastContext } from './toastContextValue';
 import { generateUUID } from '../lib/uuid';
 
 export type ToastTone = 'success' | 'info' | 'warning' | 'error';
@@ -38,7 +39,7 @@ type ToastInput = Omit<Toast, 'id' | 'createdAt' | 'actions'> & {
 
 type ToastOptions = Partial<Omit<ToastInput, 'tone' | 'message' | 'title'>>;
 
-interface ToastContextType {
+export interface ToastContextType {
     toasts: Toast[];
     show: (toast: ToastInput) => string;
     success: (message: string | ToastContent, title?: string | ToastContent, options?: ToastOptions) => string;
@@ -48,8 +49,6 @@ interface ToastContextType {
     dismiss: (id: string) => void;
     clear: () => void;
 }
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 const DEFAULT_TTL: Record<ToastTone, number> = {
     success: 3000,

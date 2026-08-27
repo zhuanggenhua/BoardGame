@@ -281,6 +281,7 @@ describe('GameHUD', () => {
 
         expect(screen.getByTestId('fab-menu-stub')).toBeInTheDocument();
         expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-display-theme')).toBeInTheDocument();
 
         rerender(
             <MemoryRouter>
@@ -296,6 +297,7 @@ describe('GameHUD', () => {
 
         expect(screen.getByTestId('fab-menu-stub')).toBeInTheDocument();
         expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-display-theme')).toBeInTheDocument();
     });
 
     it('设置面板渲染调用方注入的游戏运行时设置', () => {

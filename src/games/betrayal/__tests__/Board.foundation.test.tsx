@@ -2916,10 +2916,10 @@ describe('Betrayal Board foundation', () => {
             'data-token-asset',
             'betrayal/tokens/monsters/mummy.svg',
         );
-            expect(screen.getByTestId(`betrayal-monster-board-token-surface-${mummyMonsterId}`)).toHaveAttribute(
-                'data-token-surface-size',
-                '40',
-            );
+        expect(screen.getByTestId(`betrayal-monster-board-token-surface-${mummyMonsterId}`)).toHaveAttribute(
+            'data-token-surface-size',
+            '42',
+        );
         expect(screen.getByTestId(`betrayal-room-monster-move-target-${girlRoomId}`)).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('只限已发现房间');
         expect(screen.getByTestId('betrayal-turn-hint')).toHaveTextContent('不能探索新房间');

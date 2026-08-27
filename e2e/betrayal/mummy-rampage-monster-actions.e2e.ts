@@ -258,19 +258,22 @@ const expectBoardTokensVerticallyStacked = async (
 };
 
 const expectMummyCarryClusterComparableToExplorer = async (
-    mummyRoot: Locator,
+    mummySurface: Locator,
     girlToken: Locator,
-    explorerToken: Locator,
+    explorerRoot: Locator,
     label: string,
 ): Promise<void> => {
-    const [mummyBox, girlBox, explorerBox] = await Promise.all([
-        mummyRoot.boundingBox(),
+    const explorerSurface = explorerRoot.locator('[data-testid^="betrayal-explorer-figure-token-surface-"]');
+    const [mummyBox, girlBox, explorerBox, explorerSurfaceBox] = await Promise.all([
+        mummySurface.boundingBox(),
         girlToken.boundingBox(),
-        explorerToken.boundingBox(),
+        explorerRoot.boundingBox(),
+        explorerSurface.boundingBox(),
     ]);
     expect(mummyBox, `${label} 缺少木乃伊 bbox`).toBeTruthy();
     expect(girlBox, `${label} 缺少女孩 bbox`).toBeTruthy();
     expect(explorerBox, `${label} 缺少玩家 token bbox`).toBeTruthy();
+    expect(explorerSurfaceBox, `${label} 缺少玩家本体 surface bbox`).toBeTruthy();
     const clusterLeft = Math.min(mummyBox!.x, girlBox!.x);
     const clusterTop = Math.min(mummyBox!.y, girlBox!.y);
     const clusterRight = Math.max(mummyBox!.x + mummyBox!.width, girlBox!.x + girlBox!.width);
@@ -279,8 +282,12 @@ const expectMummyCarryClusterComparableToExplorer = async (
     const clusterHeight = clusterBottom - clusterTop;
     expect(clusterWidth, `${label} 组合宽度不能明显大过玩家 token`).toBeLessThanOrEqual(explorerBox!.width * 1.25);
     expect(clusterHeight, `${label} 组合高度要和玩家 token 差不多，不能变成两倍高的塔`).toBeLessThanOrEqual(explorerBox!.height * 1.45);
-    expect(mummyBox!.width, `${label} 木乃伊本体宽度必须接近玩家 token`).toBeLessThanOrEqual(explorerBox!.width * 1.15);
-    expect(mummyBox!.height, `${label} 木乃伊本体高度必须接近玩家 token`).toBeLessThanOrEqual(explorerBox!.height * 1.15);
+    const widthRatio = mummyBox!.width / explorerSurfaceBox!.width;
+    const heightRatio = mummyBox!.height / explorerSurfaceBox!.height;
+    expect(widthRatio, `${label} 木乃伊本体宽度必须接近玩家本体，不能明显偏小`).toBeGreaterThanOrEqual(0.96);
+    expect(widthRatio, `${label} 木乃伊本体宽度必须接近玩家本体，不能明显偏大`).toBeLessThanOrEqual(1.04);
+    expect(heightRatio, `${label} 木乃伊本体高度必须接近玩家本体，不能明显偏小`).toBeGreaterThanOrEqual(0.94);
+    expect(heightRatio, `${label} 木乃伊本体高度必须接近玩家本体，不能明显偏大`).toBeLessThanOrEqual(1.02);
 };
 
 const expectBoardTokensDoNotOverlap = async (
@@ -2466,6 +2473,43 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const heroToken = page.getByTestId(
             `betrayal-room-occupant-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`,
         );
+        const carriedGirlToken = page.getByTestId(`betrayal-girl-svg-token-${fixture.sarcophagusRoomId}`);
+        const mummySurface = mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`);
+        await expectBoardTokenReadableSize(
+            mummySurface,
+            '主黄金链拾起女孩后木乃伊本体',
+            32,
+        );
+        await expectBoardTokenCircular(
+            mummySurface,
+            '主黄金链拾起女孩后木乃伊本体',
+        );
+        await expectBoardTokensVerticallyStacked(
+            mummySurface,
+            carriedGirlToken,
+            '主黄金链拾起女孩后木乃伊与女孩',
+        );
+        await expectBoardTokensDoNotOverlap(
+            mummySurface,
+            carriedGirlToken,
+            '主黄金链拾起女孩后木乃伊与女孩',
+        );
+        await expectBoardTokensDoNotOverlap(
+            heroToken,
+            mummySurface,
+            '主黄金链拾起女孩后英雄与木乃伊',
+        );
+        await expectBoardTokensDoNotOverlap(
+            heroToken,
+            carriedGirlToken,
+            '主黄金链拾起女孩后英雄与女孩',
+        );
+        await expectMummyCarryClusterComparableToExplorer(
+            mummySurface,
+            carriedGirlToken,
+            heroToken.getByTestId(`betrayal-explorer-figure-token-${fixture.heroTargetId}`),
+            '主黄金链拾起女孩后木乃伊携带组合与玩家',
+        );
         const monsterAttackAction = page.getByTestId('betrayal-action-monsterAttack');
         await expect(monsterAttackAction).toContainText('木乃伊攻击');
         await page.getByTestId(`betrayal-bottom-teammate-${fixture.heroTargetId}`).click();
@@ -3279,7 +3323,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expectBoardTokenReadableSize(
             mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
             '同房攻击选择态木乃伊本体',
-            54,
+            32,
         );
 
         await setHarnessRandomQueue(page, [
@@ -3476,7 +3520,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             '偷走女孩后英雄与女孩',
         );
         await expectMummyCarryClusterComparableToExplorer(
-            mummyToken.getByTestId(`betrayal-monster-board-token-${MUMMY_MONSTER_ID}`),
+            mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`),
             page.getByTestId(`betrayal-girl-svg-token-${fixture.mummyRoomId}`),
             heroToken.getByTestId(`betrayal-explorer-figure-token-${fixture.heroTargetId}`),
             '偷走女孩后木乃伊携带组合与玩家',

@@ -19,7 +19,10 @@ import {
   type DiceThroneConfigReviewType,
 } from '../games/dicethrone/config/configReviewAdapter';
 import { initDiceThroneCardAtlases } from '../games/dicethrone/ui/cardAtlas';
-import { formatDiceThroneConfigReviewDiceFaceName } from './diceThroneConfigReviewDisplay';
+import {
+  formatDiceThroneConfigReviewCardType,
+  formatDiceThroneConfigReviewDiceFaceName,
+} from './diceThroneConfigReviewDisplay';
 import phraseMappingsData from '../assets/audio/phrase-mappings.zh-CN.json';
 
 const TYPE_FILTERS: Array<'all' | DiceThroneConfigReviewType> = ['all', 'character', 'diceFace', 'ability', 'card', 'token'];
@@ -150,7 +153,7 @@ function formatCellDisplayValue(row: DiceThroneConfigReviewRow, fieldKey: DiceTh
     case 'name': return row.objectType === 'diceFace' && value === row.name ? formatDiceThroneConfigReviewDiceFaceName(row, translate) : formatLocalizedKey(value, translate);
     case 'description': return formatLocalizedKey(value, translate);
     case 'character': return tr(translate, `characters.${String(value)}`, String(value));
-    case 'cardType':
+    case 'cardType': return formatDiceThroneConfigReviewCardType(row, value, translate);
     case 'timing':
     case 'abilityType':
     case 'tokenCategory': return tr(translate, `configReview.values.${fieldKey}.${String(value)}`, String(value));

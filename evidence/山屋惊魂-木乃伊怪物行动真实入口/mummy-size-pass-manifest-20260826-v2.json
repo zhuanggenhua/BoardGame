@@ -1,0 +1,43 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "木乃伊地图 token 本体必须和玩家本体视觉同级，不能明显偏小或偏大",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/Board.tsx 将木乃伊 surface 调为 42px、取消额外放大，与玩家 surface 同级",
+        "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts 黄金链断言木乃伊/玩家本体宽高比例上下限",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-36-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg"
+      ]
+    },
+    {
+      "requirement": "木乃伊携带女孩时竖排、不重叠、不抢同房玩家位置",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/Board.tsx 将携带女孩容器改为 86px 高、女孩挂点 top 62px",
+        "窄链和主黄金链均断言竖排、无重叠、组合宽度不明显大过玩家",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-36-木乃伊普通移动第二步后-拾起女孩并可攻击.jpg"
+      ]
+    },
+    {
+      "requirement": "攻击选择态仍能区分敌对木乃伊红色描边和可选英雄绿色描边",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts 黄金链断言木乃伊高亮 red、英雄目标高亮 green",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\65-主黄金链过程-40-木乃伊攻击-同房英雄目标高亮.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260826-mummy-size-pass-v2\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260826-mummy-size-pass-v2\\01-labeled-65-主黄金链过程-36-木乃伊普通移动第二步后-拾起女孩并可攻击.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\_labeled-for-pureref-20260826-mummy-size-pass-v2\\02-labeled-65-主黄金链过程-40-木乃伊攻击-同房英雄目标高亮.png"
+  ]
+}

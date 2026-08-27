@@ -1,6 +1,8 @@
 # DiceThrone Treant 槽位审计 2026-05-16
 
 > 2026-06-05 当前有效口径：本文只保留 Treant 玩家板槽位/可视合同专项审计结论，不代表 Treant 整英雄或 Treant/Ninja 整批当前完成态。当前若要判断 Treant 对象级残余、兄弟能力补审范围或整批口径，应以 `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/treant录入核对.md` 为准。
+>
+> 2026-08-26 槽位覆盖说明：本文里“`calm` 为空”的断言只代表 2026-05-16 当轮为排除 `rooted` 错挂而记录的历史中间态，不再是当前玩家板合同。当前合同已由 `evidence/dicethrone/升级牌槽位全量回图审计-2026-07-04.md` 与 `src/games/dicethrone/rule/treant真相源表.md` 覆盖为：`calm -> wild-roar`，`lightning -> nature-touch`，`meditate -> rooted`。
 
 ## 范围
 
@@ -42,6 +44,13 @@
 - 2026-05-16 当轮曾继续怀疑：Treant 的卡图 / 面板录入可能还存在更深一层的 intake 缺口，包括“面板右下左侧仍有基础技能位未完整接线”“专属卡区仍有对象未完整回写到 `cards.ts` / locale”。
 - 这些表述现在只能保留为**当轮怀疑与后续排查入口**，不能直接当作 2026-06-05 当前实现状态。后续补审已经把 Treant 多个基础对象、升级对象和 15 张专属卡推进到对象级 `L3`，当前若还有未完成项，也应统一落到批次级 `L4` 判等、旧文档统一回写与最终发布口径统一，而不是继续直接引用本节把它们表述成“当前仍未接线”。
 
+## 同类扩审记录
+
+- 搜索范围：2026-08-26 横向核对 `treant真相源表.md`、`treant录入核对.md`、`升级牌槽位全量回图审计-2026-07-04.md`、`AbilityOverlays.test.tsx` 与 `treant-ability-card-contract.test.ts` 中的 `calm / lightning / wild-roar / nature-touch / rooted` 槽位描述。
+- 命中项：本文的 `calm` 空槽断言是历史中间态；`treant真相源表.md` 的旧“临时同时放行 / 待后续确认”口径已同步改为当前合同。
+- 当前结论：树精当前玩家板槽位以 `calm -> wild-roar`、`lightning -> nature-touch`、`meditate -> rooted` 为准；本文保留为历史漏审复盘，不再作为当前槽位真相源。
+- 漏审归因：旧审计证据停在“排除 rooted 错挂”的中间态，没有把右下左侧普通技能槽继续锁成 `wild-roar`，属于证据停在中间态和审计对象没建全集。
+
 ## 验证证据
 
 - Vitest：
@@ -55,7 +64,7 @@
   - 肉眼观察：
     - 左下紫色被动槽位于 Treant 玩家板独立被动位，不再混入普通技能区。
     - 右下槽位显示 `扎根`，位于真实防御位；原先错误高亮到倒数第二个技能的问题未再出现。
-    - 测试同时断言了 `sky/combo/calm/meditate` 的 `data-base-ability-id` / `data-resolved-ability-id` 合同，其中 `calm` 为空，`meditate` 命中 `rooted`。
+    - 当轮测试同时断言了 `sky/combo/calm/meditate` 的 `data-base-ability-id` / `data-resolved-ability-id` 合同，其中 `calm` 为空，`meditate` 命中 `rooted`。该 `calm` 空槽断言已被 2026-07-04 全量回图审计覆盖，当前只作为历史中间态保留。
 
 ## 基建备注
 

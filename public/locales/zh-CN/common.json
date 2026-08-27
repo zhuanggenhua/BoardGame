@@ -43,7 +43,9 @@
     "en": "英文"
   },
   "toast": {
-    "close": "关闭"
+    "close": "关闭",
+    "commandWaitingForPreviousStep": "正在同步上一步操作，请稍等。",
+    "commandQueuedAfterPreviousStep": "正在同步上一步操作，下一步已排队。"
   },
   "socketCompatibility": {
     "title": "实时连接看起来不稳定",

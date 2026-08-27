@@ -217,3 +217,46 @@
 | 晦暗暴风夜知识检定 / 神志提升 / 精神伤害 UI 缺口修订 | 旧结论“UI/日志未闭合”已被 `Board.foundation.test.tsx:6571` 细化：当前事件房间翻出晦暗暴风夜后可见知识检定骰盘，总点数 8 时显示“获得 1 点神志”和“神志 +1”，总点数 0 时显示“受到 1 点精神伤害”。新结论降级为 Board 组件代表链已补成功神志提升和失败精神伤害反馈，仍不外推神志上限、精神伤害减免 / 死亡保护、重掷组合、真实入口 E2E 或截图。 |
 | 技术难点楼层起始点 / 地下室精神伤害 UI 缺口修订 | 旧结论“楼层起始点 UI、地下室/未发现楼层边界、精神伤害组合未闭合”已被 `Board.foundation.test.tsx:6643` 细化：当前从地面层事件房间翻出技术难点后会显示“放置到下一楼层起始点”并把探索者放到地下室起始点；从地下室事件房间翻出后会把探索者放到上层起始点，并在发现详情与确认步骤显示“受到 1 点精神伤害”。新结论降级为 Board 组件代表链已补确定性放置与地下室 fallback 伤害反馈，仍不外推更多楼层边界、精神伤害减免 / 死亡保护组合、真实入口 E2E 或截图。 |
 | 当前状态 | `event-effect-matrix-indexed / broad-domain-and-board-representative-verified / downstream-open`，P0 实现消费候选已降级；不是完成。 |
+
+## 2026-08-27 掷伤害骰机制族重审回写
+
+本节只回写 `rolledDamage` 机制族；不改变本文对 43 张事件整体仍为 `downstream-open` 的结论。
+
+### 旧证据降级
+
+| 旧结论位置 | 旧证据实际证明 | 降级原因 | 新证据入口 | 当前裁定 |
+| --- | --- | --- | --- | --- |
+| 无线电广播行与 `Board.foundation.test.tsx:6746` 代表链 | 只能证明主事件骰总点数、0-2 分支文字“受到一颗骰子的精神伤害”和旧式“受到 1 颗骰子的精神伤害”确认步骤可见。 | 这没有证明“那一颗伤害骰”实际重新投出几点，也没有证明合计值、实际承受伤害、最终精神属性扣减、真实玩家名日志和撤回截图证据。旧口径把骰子数量误当成了可见伤害结果，属于证据停在中间态。 | `src/games/betrayal/game.ts:11261-11355` 物化派生伤害骰；`src/games/betrayal/game.ts:11172-11188` 结算并记录 `rolledDamageResults`；`src/games/betrayal/Board.tsx:6383-6400` 展示伤害骰、合计和承受伤害；`src/games/betrayal/actionLog.ts:192-218` 写真实玩家的伤害骰日志；`e2e/betrayal/action-log-undo-screenshots.e2e.ts:422-545` 覆盖无线电广播低点数全流程。 | 旧无线电广播 UI 代表链降级为“只证明分支文案与旧确认步骤”；派生伤害骰结果必须另按共享流程 `event-rolled-damage-resolution` 审计。 |
+
+### 共享流程审计表
+
+| sharedFlowId | 流程职责 | 一次性审计证据 | 流程不变量 | 允许配置差异 | 失效影响面 |
+| --- | --- | --- | --- | --- | --- |
+| `event-rolled-damage-resolution` | 事件结果内出现“掷若干颗伤害骰”时，先独立物化伤害骰，再向玩家显示骰点 / 合计 / 承受伤害，确认后写入最终权威属性轨，并在操作日志记录真实玩家、事件名、伤害骰、合计和实际承受伤害。 | 静态全集脚本从 `BETRAYAL_DISCOVERY_POOLS.events` 扫出 13 个 `rolledDamage` 子句；`materializeEventEffect` 对 `rolledDamage` 调 `rollDicePips(random, effect.dice)`；`applyEventEffect` 把 `rolls`、`total`、`appliedAmount` 写入 `rolledDamageResults`；`EVENT_ROLL_FINALIZED` 将 snapshot 写回 `recentRoll`；`RecentRollPanel` 展示 `board.roll.eventDamageResult`；`buildEventRolledDamageEntries` 生成 `actionLog.eventRolledPhysicalDamageResult` / `actionLog.eventRolledMentalDamageResult`。 | 触发时机：事件分支效果确定后生成派生伤害骰；候选生成：没有新的玩家目标候选，只消费已选事件分支；权限判断：沿用当前事件确认玩家，日志归属使用触发探险者；payload / command 结构：`EVENT_ROLL_FINALIZED.effect` 携带已物化的 `rolledDamage.rolls`；执行入口：`applyEventEffect`；最终权威状态：物理 / 精神属性轨扣除实际可承受步数；清理语义：`pendingEventRollResolution` 清空，`recentRoll.eventEffectSnapshot` 保留可见结果，流程收口后不留下待处理事件骰。 | 事件名、分支门槛、骰子数量、伤害类型、复合效果内的位置、推荐下一步文案。 | 下表 13 个 `rolledDamage` 子句。任一共享流程不变量失效时，全部 13 个子句都要重审；单个事件文案或骰子数量错误时，只重审该对象和同配置语义族。 |
+
+### `rolledDamage` 全量对象清单
+
+| 对象 | 规则子句 | 覆盖方式 | 一致性核对 | 剩余差异 | 当前裁定 |
+| --- | --- | --- | --- | --- | --- |
+| 电话铃声 | `roll.branches[2]`：受到一颗骰子的精神伤害。 | 共享流程引用 | 触发时机、payload、执行入口、最终权威状态、清理语义与 `event-rolled-damage-resolution` 一致。 | 事件名、1 颗骰、精神伤害。 | 机制族重审通过。 |
+| 电话铃声 | `roll.branches[3]`：受到两颗骰子的物理伤害。 | 共享流程引用 | 同上，差异只在骰子数量和物理伤害类型。 | 事件名、2 颗骰、物理伤害。 | 机制族重审通过。 |
+| 小机器人 | `roll.branches[1]`：受到一颗骰子的物理伤害。 | 共享流程引用 | 同上。 | 事件名、1 颗骰、物理伤害。 | 机制族重审通过。 |
+| 肉质苔癣 | `effect.roll.branches[1].effect`：可选分支投骰失败后受到一颗骰子的精神伤害。 | 共享流程引用 | 分支外壳来自可选事件，但进入 `rolledDamage` 后共享流程不变量一致。 | 事件名、可选外壳、1 颗骰、精神伤害。 | 机制族重审通过。 |
+| 一抹鲜红 | `effect.skippedOrStartedEffect`：跳过 / 开始效果后的物理伤害骰。 | 共享流程引用 | 进入 `rolledDamage` 后触发时机、payload、执行入口和最终权威状态一致。 | 事件名、外层效果入口、1 颗骰、物理伤害。 | 机制族重审通过。 |
+| 最深的壁橱 | `roll.branches[2].effect.effects[0]`：先承受一颗物理伤害骰，再放置到地下室起始点。 | 共享流程引用 | 复合效果内的伤害子效果使用同一 `rolledDamage` 执行入口；移动子效果是额外差异，不改变伤害骰不变量。 | 事件名、复合效果位置、1 颗骰、物理伤害、后续移动。 | 机制族重审通过。 |
+| 不可能的房间 | `roll.branches[1]`：受到一颗骰子的精神伤害。 | 共享流程引用 | 同共享流程不变量。 | 事件名、1 颗骰、精神伤害。 | 机制族重审通过。 |
+| 禁忌知识 | `roll.branches[2]`：受到两颗骰子的精神伤害。 | 共享流程引用 | 同共享流程不变量，差异只在骰子数量。 | 事件名、2 颗骰、精神伤害。 | 机制族重审通过。 |
+| 轮到约拿了 | `effect.declineEffect`：拒绝弃置物品后受到一颗骰子的精神伤害。 | 共享流程引用 | 外层拒绝选择只决定是否进入 `rolledDamage`；伤害骰生成、显示、结算和日志仍一致。 | 事件名、拒绝外壳、1 颗骰、精神伤害。 | 机制族重审通过。 |
+| 无线电广播 | `roll.branches[1]`：0-2 分支受到一颗骰子的精神伤害。 | 直接验证 + 共享流程引用 | E2E 证明事件骰为 0/0 后独立伤害骰为 2；UI 显示伤害骰 2、合计 2、承受 2 点精神伤害；确认后精神属性轨扣 2；日志显示真实玩家名和伤害骰结果。 | 事件名、1 颗骰、精神伤害。 | 机制族重审通过。 |
+| 摇曳灯光 | `effect.branches[1].effect`：失败后受到一颗骰子的物理伤害。 | 共享流程引用 | 进入 `rolledDamage` 后共享流程不变量一致。 | 事件名、外层属性二选一、1 颗骰、物理伤害。 | 机制族重审通过。 |
+| 着火的人 | `roll.branches[2].effect.effects[0]`：受到一颗骰子的物理伤害。 | 共享流程引用 | 复合效果第一段伤害使用同一流程；第二段精神伤害是同一复合分支内的另一个 `rolledDamage` 子句。 | 事件名、复合效果位置、1 颗骰、物理伤害。 | 机制族重审通过。 |
+| 着火的人 | `roll.branches[2].effect.effects[1]`：受到一颗骰子的精神伤害。 | 共享流程引用 | 复合效果第二段伤害使用同一流程；物理伤害段不改变该子句判等。 | 事件名、复合效果位置、1 颗骰、精神伤害。 | 机制族重审通过。 |
+
+### 漏审归因
+
+| 层级 | 本次结论 |
+| --- | --- |
+| 现实故障现象 | 玩家在事件结果里看不到派生伤害骰实际掷出了几点，操作日志也没有完整记录真实玩家、伤害骰、合计和实际承受伤害。 |
+| 直接检测缺口 | 旧 evidence 只证明主事件骰和分支文本，没有把分支内的派生伤害骰拆成独立原子语义。 |
+| 修复动作为什么有效 | 现在 `rolledDamage` 在事件效果物化阶段就消耗独立随机数，确认后统一写入权威属性轨、最近投骰快照和操作日志，Board 面板统一显示骰点 / 合计 / 承受伤害。 |
+| 根本机制 | 审计主规则以前没有明确要求“分支内二次随机必须单独追到玩家可见结果、最终权威状态和日志记录”，导致代表链把“受到一颗骰子”的文字误判为完整结果证据。对应规则已回写到 `.spec/knowledge/standards/description-to-implementation-audit.md`。 |

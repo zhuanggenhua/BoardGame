@@ -153,6 +153,41 @@ export interface DiceThroneConfigReviewTable {
   rows: DiceThroneConfigReviewRow[];
 }
 
+function parseConfigReviewJson(value: string | undefined): unknown {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}
+
+export function isDiceThroneResponseOnlyUpgradeRow(
+  row: Pick<DiceThroneConfigReviewRow, 'objectType' | 'cardType' | 'playCondition' | 'effects'>,
+): boolean {
+  if (row.objectType !== 'card' || row.cardType !== 'upgrade') return false;
+
+  const playCondition = parseConfigReviewJson(row.playCondition);
+  const effects = parseConfigReviewJson(row.effects);
+  const hasPendingDamageCondition = (
+    !!playCondition
+    && typeof playCondition === 'object'
+    && 'pendingDamage' in playCondition
+  );
+  const hasReplaceAbilityEffect = Array.isArray(effects)
+    && effects.some((effect) => (
+      !!effect
+      && typeof effect === 'object'
+      && 'action' in effect
+      && !!effect.action
+      && typeof effect.action === 'object'
+      && 'type' in effect.action
+      && effect.action.type === 'replaceAbility'
+    ));
+
+  return hasPendingDamageCondition && !hasReplaceAbilityEffect;
+}
+
 const DUMMY_RANDOM: RandomFn = {
   random: () => 0.5,
   d: (_max: number) => 1,

@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import * as AuthContextModule from '../../../contexts/AuthContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
+import { setCurrentGameFeedbackContext } from '../../../lib/feedback/gameFeedbackContext';
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -24,6 +25,8 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 describe('FeedbackModal', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        setCurrentGameFeedbackContext(null);
+        window.history.pushState({}, '', '/');
         window.localStorage.clear();
         (global.fetch as any).mockResolvedValue({
             ok: true,
@@ -157,6 +160,86 @@ describe('FeedbackModal', () => {
                 })
             );
         });
+    });
+
+    it('游戏页全局反馈没有显式传参时仍附带当前游戏诊断', async () => {
+        window.history.pushState({}, '', '/play/betrayal/match/tIB30DkkiVZ?playerID=0');
+        setCurrentGameFeedbackContext({
+            playerId: '0',
+            isGameOver: false,
+            isLocalMode: false,
+            state: {
+                sys: {
+                    phase: 'playerTurn',
+                    turnNumber: 7,
+                    actionLog: {
+                        entries: [
+                            {
+                                text: '玩家 0 结算事件：小机器人',
+                                event: { type: 'resolveEvent' },
+                                timestamp: 123,
+                            },
+                        ],
+                    },
+                    eventStream: {
+                        entries: [
+                            {
+                                type: 'damage-pending',
+                                timestamp: 124,
+                                payload: { title: '小机器人', damageKind: 'physical' },
+                            },
+                        ],
+                    },
+                    undo: {
+                        snapshots: [
+                            {
+                                sys: { phase: 'playerTurn', turnNumber: 6 },
+                                core: { latestDiscovery: { title: '小机器人' } },
+                            },
+                        ],
+                    },
+                    interaction: { current: null },
+                    responseWindow: { current: null },
+                },
+                core: {
+                    pendingDamageAllocation: {
+                        playerId: '0',
+                        amount: 2,
+                        damageKind: 'physical',
+                    },
+                },
+            } as any,
+        });
+
+        render(
+            <TestWrapper>
+                <FeedbackModal onClose={mockOnClose} />
+            </TestWrapper>
+        );
+
+        expect(screen.getByLabelText(/附带操作日志/i)).toBeChecked();
+        expect(screen.getByLabelText(/附带状态快照/i)).toBeChecked();
+
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '刚刚的事件应该造成物理伤害' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交/i }));
+
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+
+        const callArgs = (global.fetch as any).mock.calls[0];
+        const body = JSON.parse(callArgs[1].body);
+        expect(body.gameName).toBe('betrayal');
+        expect(body.clientContext).toMatchObject({
+            matchId: 'tIB30DkkiVZ',
+            playerId: '0',
+            gameId: 'betrayal',
+        });
+        expect(body.actionLog).toContain('user-feedback-diagnostic');
+        expect(body.actionLog).toContain('玩家 0 结算事件：小机器人');
+        expect(body.actionLog).toContain('damage-pending');
+        expect(body.stateSnapshot).toContain('pendingDamageAllocation');
+        expect(body.stateSnapshot).toContain('physical');
     });
 
     it('应该在取消勾选后不包含 actionLog', async () => {

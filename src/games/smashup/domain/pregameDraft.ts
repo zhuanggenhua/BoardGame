@@ -241,9 +241,13 @@ export function getSmashUpNextDraftPlayerIndex(
     }
 
     const selectedCount = counts.reduce((sum, count) => sum + count, 0);
-    const nextPlayerId = sequence[selectedCount];
-    const nextIndex = nextPlayerId === undefined ? -1 : turnOrder.indexOf(nextPlayerId);
-    if (nextIndex >= 0) return nextIndex;
+    for (let cursor = selectedCount; cursor < sequence.length; cursor += 1) {
+        const nextPlayerId = sequence[cursor];
+        const nextIndex = nextPlayerId === undefined ? -1 : turnOrder.indexOf(nextPlayerId);
+        if (nextIndex >= 0 && counts[nextIndex] < factionsPerPlayer) {
+            return nextIndex;
+        }
+    }
 
     for (let offset = 0; offset < turnOrder.length; offset += 1) {
         const index = (fallbackIndex + offset + turnOrder.length) % turnOrder.length;

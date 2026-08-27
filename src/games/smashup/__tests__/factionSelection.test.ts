@@ -16,6 +16,8 @@ import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types'
 import { SU_COMMANDS, STARTING_HAND_SIZE } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
+import { buildSmashUpAiLegalActions } from '../ai';
+import { getSmashUpNextDraftPlayerIndex } from '../domain/pregameDraft';
 import smashUpEnglishMap from '../data/englishAtlasMap.json';
 import {
     getAllBaseDefs,
@@ -207,6 +209,74 @@ describe('派系选择系统', () => {
             });
             expect(result.steps[0]?.success).toBe(true);
             expect(result.steps[1]?.success).toBe(false);
+        });
+
+        it('蛇形选秀残态会跳过已选满玩家，交回未选满玩家', () => {
+            const turnOrder = ['0', '1', '2'];
+
+            expect(getSmashUpNextDraftPlayerIndex(
+                turnOrder,
+                {
+                    '0': [],
+                    '1': [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.AVENGERS],
+                    '2': [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.SPIDER_VERSE_POD],
+                },
+                1,
+                'snakeDraft',
+                2,
+            )).toBe(0);
+        });
+
+        it('线上残留的选派系选择权会在重载时修回未选满玩家', () => {
+            const runner = createRunner(['0', '1', '2']);
+            const initial = runner.run({
+                name: '三人初始选种族状态',
+                commands: [],
+            }).finalState;
+
+            const stuckState: MatchState<SmashUpCore> = {
+                ...initial,
+                sys: {
+                    ...initial.sys,
+                    phase: 'factionSelect',
+                },
+                core: {
+                    ...initial.core,
+                    currentPlayerIndex: 1,
+                    factionSelection: {
+                        ...initial.core.factionSelection!,
+                        mode: 'snakeDraft',
+                        phase: 'selecting',
+                        factionsPerPlayer: 2,
+                        draftTurnOrder: ['0', '1', '2'],
+                        sharedCandidatePool: [],
+                        playerSelections: {
+                            '0': [],
+                            '1': [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.AVENGERS],
+                            '2': [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.SPIDER_VERSE_POD],
+                        },
+                        takenFactions: [
+                            SMASHUP_FACTION_IDS.FRANKENSTEIN,
+                            SMASHUP_FACTION_IDS.AVENGERS,
+                            SMASHUP_FACTION_IDS.WEREWOLVES,
+                            SMASHUP_FACTION_IDS.SPIDER_VERSE_POD,
+                        ],
+                        completedPlayers: ['1', '2'],
+                    },
+                },
+            };
+
+            const normalized = SmashUpDomain.normalizeRuntimeState(stuckState);
+
+            expect(normalized.core.currentPlayerIndex).toBe(0);
+            expect(SmashUpDomain.validate(normalized, {
+                type: SU_COMMANDS.SELECT_FACTION,
+                playerId: '0',
+                payload: { factionId: SMASHUP_FACTION_IDS.ALIENS },
+            }).valid).toBe(true);
+
+            const legalActions = buildSmashUpAiLegalActions({ playerId: '0', state: normalized });
+            expect(legalActions.some(action => action.kind === 'select-faction')).toBe(true);
         });
 
         it('已选满两个派系的玩家不能再选', () => {

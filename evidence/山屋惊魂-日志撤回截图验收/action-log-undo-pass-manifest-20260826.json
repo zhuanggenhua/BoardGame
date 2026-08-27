@@ -1,0 +1,34 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "操作日志截图必须能看到玩家移动、探索厨房、触发事件无线电广播，以及事件结果总点数 4 / 获得 1 点知识。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言通过：最终操作日志面板至少包含移动、探索、事件触发和事件结果记录。",
+        "E2E 断言通过：最终日志面板可见文本包含移动到门厅、探索到厨房、触发事件：无线电广播、无线电广播结果、总点数 4、获得 1 点知识。",
+        "原图路径：D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\action-log-undo-screenshots\\05-山屋惊魂-操作日志含事件触发与结果.png"
+      ]
+    },
+    {
+      "requirement": "撤回截图必须能看到撤回说明和申请撤回按钮。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言通过：fab-panel-undo-request 面板可见，按钮文案匹配申请撤回。",
+        "原图路径：D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\action-log-undo-screenshots\\02-山屋惊魂-撤回请求面板.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\action-log-undo-screenshots\\_labeled-log-fix-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\action-log-undo-screenshots\\_labeled-log-fix-for-pureref\\01-labeled-05-山屋惊魂-操作日志含事件触发与结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\action-log-undo-screenshots\\_labeled-log-fix-for-pureref\\02-labeled-02-山屋惊魂-撤回请求面板.png"
+  ]
+}

@@ -25,6 +25,7 @@ import {
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useTutorial, useTutorialBridge } from "../../contexts/TutorialContext";
+import { UndoProvider } from "../../contexts/UndoContext";
 import { HudPortal, UI_Z_INDEX } from "../../core";
 import type { ActionBarAction } from "../../core/ui/types";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
@@ -1596,9 +1597,9 @@ function MonsterBoardToken({
   const hasOfficialToken = Boolean(monster.tokenAsset);
   const isMummyToken = isMummyMonsterSummary(monster);
   const isStunned = status === "stunned";
-  const tokenFrameSize = isMummyToken ? 48 : 52;
-  const tokenSurfaceSize = isMummyToken ? 40 : 42;
-  const tokenBackingSize = isMummyToken ? 44 : 46;
+  const tokenFrameSize = isMummyToken ? 50 : 52;
+  const tokenSurfaceSize = 42;
+  const tokenBackingSize = 46;
   const tokenRadius = isMummyToken ? tokenSurfaceSize / 2 : 6;
   const tokenBackingRadius = isMummyToken ? tokenBackingSize / 2 : 7;
   const highlightTone = getEntityRelationHighlightTone(targetHighlightRelation);
@@ -1691,7 +1692,7 @@ function MonsterBoardToken({
           className={
             hasOfficialToken
               ? isMummyToken
-                ? "h-full w-full scale-[1.08] object-contain brightness-125 contrast-125 saturate-110"
+                ? "h-full w-full scale-100 object-contain brightness-125 contrast-125 saturate-110"
                 : "h-full w-full scale-[1.18] object-cover brightness-110 saturate-110"
               : "h-full w-full scale-[1.08] object-cover brightness-125 saturate-125"
           }
@@ -6379,6 +6380,27 @@ function RecentRollPanel({
         },
       )
     : null;
+  const eventDamageResults =
+    roll.eventEffectSnapshot?.rolledDamageResults?.length
+      ? roll.eventEffectSnapshot.rolledDamageResults
+      : roll.eventDamagePreviewResults ?? [];
+  const eventDamageSummaries = eventDamageResults.map((damage) => {
+    const damageKindLabel =
+      damage.damageKind === "physical"
+        ? t("board.status.damageKindPhysical")
+        : t("board.status.damageKindMental");
+    return {
+      ...damage,
+      rollsLabel: damage.rolls.join(" / "),
+      label: t("board.roll.eventDamageResult", {
+        diceCount: damage.rolls.length,
+        rolls: damage.rolls.join(" / "),
+        total: damage.total,
+        applied: damage.appliedAmount,
+        kind: damageKindLabel,
+      }),
+    };
+  });
   const canvasTestId = React.useMemo(() => {
     const safeRollId =
       roll.id
@@ -6552,6 +6574,30 @@ function RecentRollPanel({
             {attackComparisonText}
           </div>
         ) : null}
+        {showOutcome && eventDamageSummaries.length > 0 ? (
+          <div
+            data-testid="betrayal-recent-roll-effect-damage"
+            className={`mt-1 grid max-w-full gap-0.5 font-semibold text-[#f0d99a] ${
+              denseResult
+                ? "text-[11px] leading-[15px]"
+                : "text-[12px] leading-[16px]"
+            }`}
+          >
+            {eventDamageSummaries.map((damage, index) => (
+              <span
+                key={`${damage.damageKind}-${index}-${damage.rollsLabel}`}
+                data-testid="betrayal-recent-roll-damage-dice"
+                data-damage-kind={damage.damageKind}
+                data-damage-rolls={damage.rollsLabel}
+                data-damage-total={damage.total}
+                data-applied-damage={damage.appliedAmount}
+                className="whitespace-normal break-words"
+              >
+                {damage.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
       ) : null}
       <div
@@ -6592,6 +6638,11 @@ function RecentRollPanel({
       ) : null}
       <span>{bonusText}</span>
       {attackComparisonText ? <span>{attackComparisonText}</span> : null}
+      {eventDamageSummaries.map((damage, index) => (
+        <span key={`${damage.damageKind}-${index}-${damage.rollsLabel}`}>
+          {damage.label}
+        </span>
+      ))}
       <span>{totalLabel}</span>
       {showOutcome ? <span>{roll.latestLabel}</span> : null}
     </div>
@@ -7417,6 +7468,7 @@ export default function BetrayalBoard({
   dispatch,
   playerID,
   matchData,
+  isMultiplayer,
   locale,
 }: Props) {
   const { t } = useTranslation(["game-betrayal", "common"]);
@@ -7426,6 +7478,10 @@ export default function BetrayalBoard({
     nextStep,
   } = useTutorial();
   const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
+  const runtimeDispatch = dispatch as unknown as (
+    type: string,
+    payload?: unknown,
+  ) => void;
   useTutorialBridge(
     G?.sys?.tutorial,
     dispatch as (type: string, payload?: unknown) => void,
@@ -7492,6 +7548,16 @@ export default function BetrayalBoard({
       : { ...baseCore, ...playerViewCore };
   }, [baseCore, viewerPlayerId]);
   const isGameOver = Boolean(G?.sys?.gameover) || baseCore.phase === "endgame";
+  const undoProviderValue = React.useMemo(
+    () => ({
+      G,
+      dispatch: runtimeDispatch,
+      playerID,
+      isGameOver,
+      isLocalMode: !isMultiplayer,
+    }),
+    [G, isGameOver, isMultiplayer, playerID, runtimeDispatch],
+  );
   useGameAudio({
     config: BETRAYAL_AUDIO_CONFIG,
     gameId: BETRAYAL_MANIFEST.id,
@@ -15576,7 +15642,7 @@ export default function BetrayalBoard({
 
   if (baseCore.phase === "characterSelect") {
     return (
-      <>
+      <UndoProvider value={undoProviderValue}>
         <CharacterSelectScreen
           core={baseCore}
           matchData={matchData}
@@ -15591,7 +15657,7 @@ export default function BetrayalBoard({
           onStartScenario={handleStartScenario}
         />
         <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
-      </>
+      </UndoProvider>
     );
   }
 
@@ -15608,24 +15674,25 @@ export default function BetrayalBoard({
     "";
 
   return (
-    <div
-      data-testid="betrayal-board"
-      data-betrayal-visual-busy={isVisualBusy ? "true" : "false"}
-      className="relative h-full min-h-full overflow-hidden bg-[#0c1512] text-[#f1e8d4]"
-      style={{
-        backgroundImage: [
-          "radial-gradient(circle at top, rgba(146, 116, 58, 0.18), transparent 30%)",
-          "linear-gradient(180deg, rgba(11, 22, 18, 0.98) 0%, rgba(8, 15, 13, 1) 100%)",
-        ].join(","),
-        ...(isPhoneLandscapeLayout
-          ? {
-              height: "100dvh",
-              minHeight: "100dvh",
-              maxHeight: "100dvh",
-            }
-          : {}),
-      }}
-    >
+    <UndoProvider value={undoProviderValue}>
+      <div
+        data-testid="betrayal-board"
+        data-betrayal-visual-busy={isVisualBusy ? "true" : "false"}
+        className="relative h-full min-h-full overflow-hidden bg-[#0c1512] text-[#f1e8d4]"
+        style={{
+          backgroundImage: [
+            "radial-gradient(circle at top, rgba(146, 116, 58, 0.18), transparent 30%)",
+            "linear-gradient(180deg, rgba(11, 22, 18, 0.98) 0%, rgba(8, 15, 13, 1) 100%)",
+          ].join(","),
+          ...(isPhoneLandscapeLayout
+            ? {
+                height: "100dvh",
+                minHeight: "100dvh",
+                maxHeight: "100dvh",
+              }
+            : {}),
+        }}
+      >
       {!isHauntTargetingMode && !isPhoneLandscapeLayout ? (
         <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
       ) : null}
@@ -19091,7 +19158,7 @@ export default function BetrayalBoard({
                                           <span
                                             className={
                                               monsterCarriesGirl
-                                                ? "relative z-10 inline-flex h-[78px] w-[52px] items-start justify-center"
+                                                ? "relative z-10 inline-flex h-[86px] w-[50px] items-start justify-center"
                                                 : "relative z-10 inline-flex items-end gap-1.5"
                                             }
                                             data-monster-token-cluster={
@@ -19135,7 +19202,7 @@ export default function BetrayalBoard({
                                             />
                                             {monsterCarriesGirl &&
                                             visibleGirlToken ? (
-                                              <span className="pointer-events-none absolute left-1/2 top-[57px] z-30 inline-flex -translate-x-1/2">
+                                              <span className="pointer-events-none absolute left-1/2 top-[62px] z-30 inline-flex -translate-x-1/2">
                                                 <GirlBoardToken
                                                   token={visibleGirlToken}
                                                   t={t}
@@ -22028,6 +22095,7 @@ export default function BetrayalBoard({
           effectiveLocale={effectiveLocale}
         />
       ) : null}
-    </div>
+      </div>
+    </UndoProvider>
   );
 }

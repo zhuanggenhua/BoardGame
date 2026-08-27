@@ -19,6 +19,8 @@ import {
     ListOrdered,
     ArrowLeftRight,
     SmilePlus,
+    Moon,
+    Sun,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
@@ -52,6 +54,13 @@ import {
     buildGameFeedbackStateSnapshot,
 } from '../../../../lib/feedback/gameFeedbackDiagnostics';
 import { toggleDocumentFullscreen } from '../../../../lib/webFullscreen';
+import {
+    applySystemDisplayThemeToDocument,
+    persistSystemDisplayThemePreference,
+    readSystemDisplayThemePreference,
+    subscribeSystemDisplayThemeChange,
+    type SystemDisplayTheme,
+} from '../../../system/systemDisplayTheme';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -198,6 +207,8 @@ export const GameHUD = ({
     const [copied, setCopied] = useState(false);
     const [isForceEndingAiPhase, setIsForceEndingAiPhase] = useState(false);
     const [isForceDismissingPopup, setIsForceDismissingPopup] = useState(false);
+    const [displayTheme, setDisplayTheme] = useState<SystemDisplayTheme>(() => readSystemDisplayThemePreference());
+    const isNightDisplayTheme = displayTheme === 'night';
 
     // 撤回状态
     const undoState = useUndo();
@@ -459,6 +470,12 @@ export const GameHUD = ({
     // 全屏状态
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
+    const toggleDisplayTheme = () => {
+        const nextTheme = displayTheme === 'night' ? 'light' : 'night';
+        persistSystemDisplayThemePreference(nextTheme);
+        setDisplayTheme(nextTheme);
+    };
+
     const toggleFullscreen = async () => {
         const result = await toggleDocumentFullscreen({
             preferredOrientation: preferredFullscreenOrientation,
@@ -488,6 +505,16 @@ export const GameHUD = ({
         const handleFS = () => setIsFullscreen(!!document.fullscreenElement);
         document.addEventListener('fullscreenchange', handleFS);
         return () => document.removeEventListener('fullscreenchange', handleFS);
+    }, []);
+
+    useEffect(() => {
+        applySystemDisplayThemeToDocument(displayTheme);
+    }, [displayTheme]);
+
+    useEffect(() => {
+        return subscribeSystemDisplayThemeChange((nextTheme) => {
+            setDisplayTheme(nextTheme);
+        });
     }, []);
 
     const copyRoomId = () => {
@@ -970,6 +997,15 @@ export const GameHUD = ({
             onClick: toggleFullscreen,
         });
     }
+
+    // 4.5 夜间模式
+    items.push({
+        id: 'display-theme',
+        icon: isNightDisplayTheme ? <Sun size={20} /> : <Moon size={20} />,
+        label: isNightDisplayTheme ? t('hud.actions.lightMode') : t('hud.actions.nightMode'),
+        active: isNightDisplayTheme,
+        onClick: toggleDisplayTheme,
+    });
 
     // 5. 撤回：setup/选角阶段不展示，避免移动端 FAB 轨道挤占选角与换位入口。
     if (!isSpectator && !isSetupPhase) {

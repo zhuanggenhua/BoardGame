@@ -22,8 +22,10 @@ import {
     waitForGameBoard,
 } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
-import { STATUS_IDS } from '../../src/games/dicethrone/domain/ids';
+import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import type { DiceThroneCore, PendingDamage } from '../../src/games/dicethrone/domain/types';
+import { buildDiceThroneTokenResponseChoiceCandidates } from '../../src/games/dicethrone/domain/timingOpportunities';
 
 type JsonRecord = Record<string, unknown>;
 type MatchSetup = NonNullable<Awaited<ReturnType<typeof setupOnlineMatch>>>;
@@ -78,16 +80,25 @@ const boxesOverlap = (
 );
 
 const NYRA_DAMAGE_SLIDER_NAME = '妮拉承伤';
+const NYRA_E2E_DAMAGE = 8;
+const NYRA_E2E_COMPANION_HP = 5;
+const NYRA_E2E_BOND_ALLOCATION = 6;
 
 const setNyraDamageAllocation = async (page: Page, amount: number): Promise<void> => {
     const slider = page.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME });
-    await slider.evaluate((node, nextValue) => {
-        const input = node as HTMLInputElement;
-        const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        valueSetter?.call(input, String(nextValue));
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }, amount);
+    const sliderBox = await slider.boundingBox();
+    expect(sliderBox, '妮拉承伤滑块必须有真实可拖动区域').not.toBeNull();
+    const maxValue = Number(await slider.getAttribute('max'));
+    expect(maxValue, '妮拉承伤滑块必须声明最大伤害值').toBeGreaterThan(0);
+    const targetRatio = Math.max(0, Math.min(1, amount / maxValue));
+    const startX = sliderBox!.x + 2;
+    const targetX = sliderBox!.x + Math.max(2, Math.min(sliderBox!.width - 2, sliderBox!.width * targetRatio));
+    const centerY = sliderBox!.y + sliderBox!.height / 2;
+
+    await page.mouse.move(startX, centerY);
+    await page.mouse.down();
+    await page.mouse.move(targetX, centerY, { steps: 12 });
+    await page.mouse.up();
     await expect(slider).toHaveValue(String(amount));
 };
 
@@ -104,6 +115,35 @@ const expectHostHp = async (matchId: string, page: Page, expectedHp: number): Pr
         const host = await getHostPlayer(matchId, page);
         return Number(asRecord(host.resources)[RESOURCE_IDS.HP] ?? Number.NaN);
     }, { timeout: 10000 }).toBe(expectedHp);
+};
+
+const expectNyraDamageChoiceContract = async (matchId: string, page: Page): Promise<void> => {
+    const current = await getMatchState(matchId, page) as JsonRecord;
+    const root = asRecord(current.G ?? current);
+    const sys = asRecord(root.sys);
+    const interaction = asRecord(asRecord(sys.interaction).current);
+    const contract = asRecord(asRecord(interaction.data).choiceRequestContract);
+    const candidates = Array.isArray(contract.candidates) ? contract.candidates : [];
+    const commandPayloads = candidates
+        .flatMap(candidate => {
+            const commands = asRecord(candidate).commands;
+            return Array.isArray(commands) ? commands : [];
+        })
+        .filter(command => asRecord(command).type === 'USE_TOKEN')
+        .map(command => asRecord(asRecord(command).payload));
+
+    expect(interaction.kind).toBe('dt:token-response');
+    expect(contract.requestId).toBe('dicethrone:token-response:e2e-nyra-damage-response:beforeDamageReceived:0');
+    expect(commandPayloads).toEqual(expect.arrayContaining([
+        expect.objectContaining({ tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: NYRA_E2E_DAMAGE, pendingDamageId: 'e2e-nyra-damage-response' }),
+        expect.objectContaining({ tokenId: TOKEN_IDS.NYRAS_BOND, amount: 1, pendingDamageId: 'e2e-nyra-damage-response' }),
+        expect.objectContaining({ tokenId: TOKEN_IDS.NYRAS_BOND, amount: NYRA_E2E_BOND_ALLOCATION, pendingDamageId: 'e2e-nyra-damage-response' }),
+        expect.objectContaining({ tokenId: TOKEN_IDS.NYRAS_BOND, amount: NYRA_E2E_DAMAGE - 1, pendingDamageId: 'e2e-nyra-damage-response' }),
+    ]));
+    expect(commandPayloads.some(payload => (
+        payload.tokenId === TOKEN_IDS.NYRAS_BOND
+        && payload.amount === NYRA_E2E_DAMAGE
+    ))).toBe(false);
 };
 
 const expectUsableNyraControl = async (page: Page): Promise<void> => {
@@ -377,14 +417,26 @@ const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<vo
     const next = structuredClone(current) as JsonRecord;
     const nextRoot = asRecord(next.G ?? next);
 
-    nextRoot.core = {
+    const pendingDamage: PendingDamage = {
+        id: 'e2e-nyra-damage-response',
+        sourcePlayerId: '1',
+        targetPlayerId: '0',
+        originalDamage: NYRA_E2E_DAMAGE,
+        currentDamage: NYRA_E2E_DAMAGE,
+        sourceAbilityId: 'e2e-nyra-hit',
+        responseType: 'beforeDamageReceived',
+        responderId: '0',
+        isFullyEvaded: false,
+    };
+    const nextCore = {
         ...core,
         players: {
             ...players,
             '0': {
                 ...host,
-                companion: { ...companion, hp: 5, maxHp: 7 },
-                tokens: { ...asRecord(host.tokens), nyras_bond: 1 },
+                companion: { ...companion, hp: NYRA_E2E_COMPANION_HP, maxHp: 7 },
+                resources: { ...asRecord(host.resources), [RESOURCE_IDS.HP]: 50 },
+                tokens: { ...asRecord(host.tokens), [TOKEN_IDS.NYRAS_BOND]: 1 },
             },
         },
         pendingAttack: {
@@ -392,7 +444,7 @@ const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<vo
             defenderId: '0',
             sourceAbilityId: 'e2e-nyra-hit',
             isDefendable: true,
-            damage: 4,
+            damage: NYRA_E2E_DAMAGE,
             bonusDamage: 0,
             attackModifierBonusDamage: 0,
             damageResolved: false,
@@ -400,27 +452,42 @@ const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<vo
             preDefenseResolved: true,
             offensiveRollEndTokenResolved: true,
         },
-        pendingDamage: {
-            id: 'e2e-nyra-damage-response',
-            sourcePlayerId: '1',
-            targetPlayerId: '0',
-            originalDamage: 4,
-            currentDamage: 4,
-            sourceAbilityId: 'e2e-nyra-hit',
-            responseType: 'beforeDamageReceived',
-            responderId: '0',
-            isFullyEvaded: false,
+        pendingDamage,
+    } as unknown as DiceThroneCore;
+    const resolutionFrameId = `dicethrone:token-response-frame:${pendingDamage.id}`;
+    const choiceRequestContract = {
+        requestId: `dicethrone:token-response:${pendingDamage.id}:${pendingDamage.responseType}:${pendingDamage.responderId}`,
+        playerId: pendingDamage.responderId,
+        kind: 'choose-option',
+        sourceId: 'dicethrone_token_response',
+        candidates: buildDiceThroneTokenResponseChoiceCandidates(nextCore, pendingDamage),
+        selection: { min: 1, max: 1 },
+        resolution: { type: 'candidate-commands' },
+        metadata: {
+            pendingDamageId: pendingDamage.id,
+            resolutionFrameId,
+            sourcePlayerId: pendingDamage.sourcePlayerId,
+            targetPlayerId: pendingDamage.targetPlayerId,
+            responderId: pendingDamage.responderId,
+            responseType: pendingDamage.responseType,
+            sourceAbilityId: pendingDamage.sourceAbilityId,
+            originalDamage: pendingDamage.originalDamage,
+            currentDamage: pendingDamage.currentDamage,
+            priority: 70,
         },
     };
+
+    nextRoot.core = nextCore;
     nextRoot.sys = {
         ...sys,
         interaction: {
             ...asRecord(sys.interaction),
             current: {
-                id: 'e2e-nyra-damage-response',
+                id: `dt-token-response-${pendingDamage.id}`,
                 kind: 'dt:token-response',
-                playerId: '0',
-                data: null,
+                playerId: pendingDamage.responderId,
+                resolutionFrameId,
+                data: { choiceRequestContract },
             },
             queue: [],
         },
@@ -477,53 +544,59 @@ test.describe('DiceThrone 女猎手真实入口', () => {
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-妮拉在玩家板图片左上空白');
             await injectNyraDamageResponse(match.matchId, match.hostPage);
+            await expectNyraDamageChoiceContract(match.matchId, match.hostPage);
+            await expectHostHp(match.matchId, match.hostPage, 50);
             await expect(match.hostPage.getByTestId('token-response-modal')).toHaveCount(0);
             await expect(nyraPanel).toBeVisible({ timeout: 10000 });
-            await expect(nyraPanel).toContainText('4');
+            await expect(nyraPanel).toContainText(String(NYRA_E2E_DAMAGE));
             await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveValue('0');
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible();
             await expect(match.hostPage.getByRole('button', { name: '转移伤害' })).toHaveCount(0);
-            await expect(match.hostPage.getByText('不分派：女猎手承受 4 点伤害。')).toBeVisible();
+            await expect(match.hostPage.getByText('不分派：女猎手承受 8 点伤害。')).toBeVisible();
             await expectNyraInsidePlayerBoardImage(match.hostPage);
             await expectUsableNyraControl(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-伤害响应-默认0不分派-单确认弹窗');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-8点伤害响应-默认0不分派-单确认弹窗');
 
             await match.hostPage.getByRole('button', { name: '确认分配' }).click();
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toHaveCount(0);
             await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
             await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('1/1');
-            await expectHostHp(match.matchId, match.hostPage, 46);
+            await expectHostHp(match.matchId, match.hostPage, 42);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
             await waitForDamageFxToSettle(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-默认0确认后-女猎手承受全部伤害');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-8点默认0确认后-女猎手承受全部伤害');
 
             await injectNyraDamageResponse(match.matchId, match.hostPage);
+            await expectNyraDamageChoiceContract(match.matchId, match.hostPage);
+            await expectHostHp(match.matchId, match.hostPage, 50);
             await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible({ timeout: 10000 });
-            await setNyraDamageAllocation(match.hostPage, 4);
-            await expect(match.hostPage.getByText('全转移：妮拉承受 4 点伤害，不消耗羁绊。')).toBeVisible();
+            await setNyraDamageAllocation(match.hostPage, NYRA_E2E_DAMAGE);
+            await expect(match.hostPage.getByText('全转移：妮拉承受 8 点伤害，不消耗羁绊。')).toBeVisible();
             await match.hostPage.getByRole('button', { name: '确认分配' }).click();
             await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0, { timeout: 10000 });
-            await expect(nyraPanel).toContainText('1/7', { timeout: 10000 });
+            await expect(nyraPanel).toContainText('0/7', { timeout: 10000 });
             await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('1/1');
-            await expectHostHp(match.matchId, match.hostPage, 46);
+            await expectHostHp(match.matchId, match.hostPage, 50);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
             await waitForDamageFxToSettle(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-拉满确认后-妮拉承受全部伤害不耗羁绊');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-8点拉满确认后-妮拉承受全部伤害不耗羁绊');
 
             await injectNyraDamageResponse(match.matchId, match.hostPage);
+            await expectNyraDamageChoiceContract(match.matchId, match.hostPage);
+            await expectHostHp(match.matchId, match.hostPage, 50);
             await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible({ timeout: 10000 });
-            await setNyraDamageAllocation(match.hostPage, 2);
-            await expect(match.hostPage.getByText('消耗 1 个羁绊：妮拉承受 2 点，女猎手承受 2 点。')).toBeVisible();
+            await setNyraDamageAllocation(match.hostPage, NYRA_E2E_BOND_ALLOCATION);
+            await expect(match.hostPage.getByText('消耗 1 个羁绊：妮拉承受 6 点，女猎手承受 2 点。')).toBeVisible();
             await match.hostPage.getByRole('button', { name: '确认分配' }).click();
             await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0, { timeout: 10000 });
-            await expect(nyraPanel).toContainText('3/7', { timeout: 10000 });
+            await expect(nyraPanel).toContainText('0/7', { timeout: 10000 });
             await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('0/1');
-            await expectHostHp(match.matchId, match.hostPage, 44);
+            await expectHostHp(match.matchId, match.hostPage, 48);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
             await waitForDamageFxToSettle(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-中间值2点确认后-消耗羁绊并分配伤害');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-8点羁绊分配6点确认后-女猎手承受2点');
 
             await expect(match.guestPage.getByTestId('player-board-surface'))
                 .toHaveAttribute('data-character-id', 'monk', { timeout: 10000 });

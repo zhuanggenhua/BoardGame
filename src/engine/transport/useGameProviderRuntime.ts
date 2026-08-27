@@ -33,11 +33,13 @@ import { createCommandBatcher, type CommandBatcher } from './latency/commandBatc
 import { onAppVisible } from '../../lib/mobile/appVisibility';
 import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
 import type { GameClientContextValue } from './reactContext';
+import { useOptionalToast } from '../../contexts/useOptionalToast';
 
 const SERIALIZED_COMMAND_TYPES = new Set(['ADVANCE_PHASE']);
 const PENDING_COMPANION_COMMAND_TYPES = new Set<string>([
     INTERACTION_COMMANDS.CONFIRM,
 ]);
+const COMMAND_PENDING_TOAST_DEDUPE_KEY = 'game-provider:command-pending';
 
 function shouldSerializeCommand(type: string): boolean {
     return SERIALIZED_COMMAND_TYPES.has(type);
@@ -46,6 +48,15 @@ function shouldSerializeCommand(type: string): boolean {
 function canSendWhileOptimisticPending(type: string): boolean {
     return PENDING_COMPANION_COMMAND_TYPES.has(type);
 }
+
+function canDeferCommandWaitingForPreviousStep(type: string): boolean {
+    return shouldSerializeCommand(type);
+}
+
+type DeferredCommand = {
+    type: string;
+    payload: unknown;
+};
 
 export function useGameProviderRuntime(args: {
     server: string;
@@ -82,6 +93,8 @@ export function useGameProviderRuntime(args: {
     const lastConfirmedStateIDRef = useRef<number | null>(null);
     const commandDispatchBlockedUntilSyncRef = useRef(false);
     const inFlightSerializedCommandTypeRef = useRef<string | null>(null);
+    const deferredSerializedCommandRef = useRef<DeferredCommand | null>(null);
+    const dispatchRef = useRef<((type: string, payload: unknown) => void) | null>(null);
     const engineConfigRef = useRef(engineConfig);
     const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
         watermark: null,
@@ -92,6 +105,50 @@ export function useGameProviderRuntime(args: {
     const onConnectionChangeRef = useRef(onConnectionChange);
     const onStateReadyRef = useRef(onStateReady);
     const hasReportedStateReadyRef = useRef(false);
+    const toast = useOptionalToast();
+
+    const notifyCommandWaitingForPreviousStep = useCallback((queued = false) => {
+        toast?.info(
+            {
+                kind: 'i18n',
+                ns: 'common',
+                key: queued
+                    ? 'toast.commandQueuedAfterPreviousStep'
+                    : 'toast.commandWaitingForPreviousStep',
+            },
+            undefined,
+            { dedupeKey: COMMAND_PENDING_TOAST_DEDUPE_KEY, ttlMs: 2500 },
+        );
+    }, [toast]);
+
+    const deferCommandWaitingForPreviousStep = useCallback((type: string, payload: unknown): boolean => {
+        const shouldDefer = canDeferCommandWaitingForPreviousStep(type);
+        if (shouldDefer && !deferredSerializedCommandRef.current) {
+            deferredSerializedCommandRef.current = { type, payload };
+        }
+        notifyCommandWaitingForPreviousStep(shouldDefer);
+        return shouldDefer;
+    }, [notifyCommandWaitingForPreviousStep]);
+
+    const clearDeferredSerializedCommand = useCallback(() => {
+        deferredSerializedCommandRef.current = null;
+    }, []);
+
+    const flushDeferredSerializedCommand = useCallback(() => {
+        const command = deferredSerializedCommandRef.current;
+        if (!command) {
+            return;
+        }
+        if (optimisticEngineRef.current?.hasPendingCommands()) {
+            return;
+        }
+        const dispatchCurrent = dispatchRef.current;
+        if (!dispatchCurrent) {
+            return;
+        }
+        deferredSerializedCommandRef.current = null;
+        dispatchCurrent(command.type, command.payload);
+    }, []);
 
     const resetOptimisticProviderRuntime = useCallback((): boolean => {
         optimisticEngineRef.current?.reset();
@@ -114,6 +171,7 @@ export function useGameProviderRuntime(args: {
     const rollbackOptimisticRenderAndResync = useCallback(() => {
         commandDispatchBlockedUntilSyncRef.current = true;
         inFlightSerializedCommandTypeRef.current = null;
+        clearDeferredSerializedCommand();
         resetOptimisticProviderRuntime();
         const latestState = clientRef.current?.latestState;
         if (latestState) {
@@ -124,7 +182,7 @@ export function useGameProviderRuntime(args: {
             setState(refreshInteractionOptions(normalizedLatestState));
         }
         requestProviderResync(true);
-    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+    }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
     const recoverFromRejectedCommand = useCallback((reason: string) => {
         if (!shouldRecoverFromRejectedCommandError(reason)) {
@@ -132,9 +190,10 @@ export function useGameProviderRuntime(args: {
         }
         commandDispatchBlockedUntilSyncRef.current = true;
         inFlightSerializedCommandTypeRef.current = null;
+        clearDeferredSerializedCommand();
         resetOptimisticProviderRuntime();
         requestProviderResync();
-    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+    }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
     useEffect(() => {
         onErrorRef.current = onError;
@@ -275,6 +334,7 @@ export function useGameProviderRuntime(args: {
                 const refreshedState = refreshInteractionOptions(finalState);
                 setState(refreshedState);
                 setMatchPlayers(players);
+                flushDeferredSerializedCommand();
             },
             onConnectionChange: (connected) => {
                 setIsConnected(connected);
@@ -285,6 +345,7 @@ export function useGameProviderRuntime(args: {
                 if (!connected) {
                     commandDispatchBlockedUntilSyncRef.current = false;
                     inFlightSerializedCommandTypeRef.current = null;
+                    clearDeferredSerializedCommand();
                     lastConfirmedStateIDRef.current = null;
                 }
             },
@@ -316,26 +377,30 @@ export function useGameProviderRuntime(args: {
             client.disconnect();
             clientRef.current = null;
         };
-    }, [server, matchId, playerId, credentials, recoverFromRejectedCommand, resetOptimisticProviderRuntime]);
+    }, [clearDeferredSerializedCommand, credentials, flushDeferredSerializedCommand, matchId, playerId, recoverFromRejectedCommand, resetOptimisticProviderRuntime, server]);
 
     useEffect(() => {
         return onAppVisible(() => {
             const client = clientRef.current;
             if (!client) return;
+            clearDeferredSerializedCommand();
             resetOptimisticProviderRuntime();
             requestProviderResync(true);
         });
-    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+    }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
         if (commandDispatchBlockedUntilSyncRef.current) {
+            notifyCommandWaitingForPreviousStep();
             return;
         }
         if (inFlightSerializedCommandTypeRef.current === type) {
+            deferCommandWaitingForPreviousStep(type, payload);
             return;
         }
         const client = clientRef.current;
         if (!client?.canSendCommand()) {
+            notifyCommandWaitingForPreviousStep();
             return;
         }
         if (type === TRANSPORT_BATCH_COMMAND) {
@@ -345,6 +410,7 @@ export function useGameProviderRuntime(args: {
             }
             const engine = optimisticEngineRef.current;
             if (engine?.hasPendingCommands()) {
+                notifyCommandWaitingForPreviousStep();
                 return;
             }
             const batcher = batcherRef.current;
@@ -369,6 +435,7 @@ export function useGameProviderRuntime(args: {
         const engine = optimisticEngineRef.current;
         const sendWithoutPrediction = Boolean(engine?.hasPendingCommands() && canSendWhileOptimisticPending(type));
         if (engine?.hasPendingCommands() && !sendWithoutPrediction) {
+            deferCommandWaitingForPreviousStep(type, payload);
             return;
         }
         let shouldSend = true;
@@ -397,7 +464,11 @@ export function useGameProviderRuntime(args: {
         if (sent && shouldSerializeCommand(type)) {
             inFlightSerializedCommandTypeRef.current = type;
         }
-    }, [playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+    }, [deferCommandWaitingForPreviousStep, notifyCommandWaitingForPreviousStep, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+
+    useEffect(() => {
+        dispatchRef.current = dispatch;
+    }, [dispatch]);
 
     const requestManualSetupSelection = useCallback((
         request: ManualSetupSelectionRequest,

@@ -41,7 +41,8 @@ type LeaderboardStats = {
 type MatchPlayerContext = {
     key: string;
     player: LeaderboardRecordPlayer;
-    stats: LeaderboardStats;
+    stats: LeaderboardStats | null;
+    isHuman: boolean;
 };
 
 const INITIAL_RATING = 0;
@@ -51,9 +52,21 @@ const EARLY_MATCH_K_FACTOR = 60;
 const STANDARD_K_FACTOR = 40;
 const FIRST_RATED_MATCH_AWARD = 1;
 const MAX_LEADERBOARD_ENTRIES = 50;
+const AI_OPPONENT_RATING_WEIGHT = 1 / 3;
 
 function resolveLeaderboardPlayerKey(player: LeaderboardRecordPlayer): string | null {
     return player.ownerKey || (player.id !== '0' && player.id !== '1' ? player.id : null) || player.name || null;
+}
+
+function resolveLeaderboardContextKey(player: LeaderboardRecordPlayer, isHuman: boolean): string | null {
+    const playerKey = resolveLeaderboardPlayerKey(player);
+    if (playerKey) {
+        return `${isHuman ? 'human' : 'ai'}:${playerKey}`;
+    }
+    if (!isHuman && player.id) {
+        return `ai:${player.id}`;
+    }
+    return null;
 }
 
 function isLegacyAiLeaderboardPlayer(player: LeaderboardRecordPlayer): boolean {
@@ -151,6 +164,10 @@ function resolveExpectedScore(leftRating: number, rightRating: number): number {
     return 1 / (1 + 10 ** ((rightRating - leftRating) / 400));
 }
 
+function resolveOpponentRatingWeight(left: MatchPlayerContext, right: MatchPlayerContext): number {
+    return left.isHuman && right.isHuman ? 1 : AI_OPPONENT_RATING_WEIGHT;
+}
+
 function resolvePlayerKFactor(matchesBeforeRecord: number): number {
     return matchesBeforeRecord < PROVISIONAL_MATCHES ? EARLY_MATCH_K_FACTOR : STANDARD_K_FACTOR;
 }
@@ -211,14 +228,14 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
         .map(({ record }) => record);
 
     chronologicalRecords.forEach((record) => {
-        const humanPlayers = record.players.filter(isLeaderboardHumanPlayer);
         const seenKeys = new Set<string>();
-        const keyedPlayers = humanPlayers
+        const keyedPlayers = record.players
             .map((player) => {
-                const key = resolveLeaderboardPlayerKey(player);
-                return key ? { key, player } : null;
+                const isHuman = isLeaderboardHumanPlayer(player);
+                const key = resolveLeaderboardContextKey(player, isHuman);
+                return key ? { key, player, isHuman } : null;
             })
-            .filter((value): value is { key: string; player: LeaderboardRecordPlayer } => Boolean(value))
+            .filter((value): value is { key: string; player: LeaderboardRecordPlayer; isHuman: boolean } => Boolean(value))
             .filter(({ key }) => {
                 if (seenKeys.has(key)) {
                     return false;
@@ -227,25 +244,27 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
                 return true;
             });
 
-        if (keyedPlayers.length < 2) {
+        if (keyedPlayers.length < 2 || !keyedPlayers.some(({ isHuman }) => isHuman)) {
             return;
         }
 
-        const contexts = keyedPlayers.map(({ key, player }) => {
-            if (!stats[key]) {
-                stats[key] = createEmptyStats(player, key);
+        const contexts = keyedPlayers.map(({ key, player, isHuman }) => {
+            const statsKey = key.replace(/^human:/, '');
+            const playerStats = isHuman ? (stats[statsKey] ?? createEmptyStats(player, statsKey)) : null;
+            if (isHuman && playerStats) {
+                stats[statsKey] = playerStats;
             }
-            if (player.name) {
-                stats[key].name = player.name;
+            if (player.name && playerStats) {
+                playerStats.name = player.name;
             }
-            return { key, player, stats: stats[key] };
+            return { key, player, stats: playerStats, isHuman };
         });
 
         const ranks = resolvePlayerRank(record, contexts);
         const lowestRank = Math.min(...Array.from(ranks.values()));
         const highestRank = Math.max(...Array.from(ranks.values()));
-        const previousRatings = new Map(contexts.map(({ key, stats: playerStats }) => [key, playerStats.rating]));
-        const previousMatches = new Map(contexts.map(({ key, stats: playerStats }) => [key, playerStats.matches]));
+        const previousRatings = new Map(contexts.map(({ key, stats: playerStats }) => [key, playerStats?.rating ?? INITIAL_RATING]));
+        const previousMatches = new Map(contexts.map(({ key, stats: playerStats }) => [key, playerStats?.matches ?? 0]));
         const deltas = new Map(contexts.map(({ key }) => [key, 0]));
         const opponentCount = contexts.length - 1;
         const playerCountFactor = contexts.length / 2;
@@ -264,11 +283,15 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
                 const rightRating = previousRatings.get(right.key) ?? INITIAL_RATING;
                 const actual = resolveActualScore(leftRank, rightRank);
                 const expected = resolveExpectedScore(leftRating, rightRating);
-                deltas.set(left.key, (deltas.get(left.key) ?? 0) + kFactor * (actual - expected));
+                const opponentWeight = resolveOpponentRatingWeight(left, right);
+                deltas.set(left.key, (deltas.get(left.key) ?? 0) + kFactor * opponentWeight * (actual - expected));
             }
         }
 
         contexts.forEach(({ key, stats: playerStats }) => {
+            if (!playerStats) {
+                return;
+            }
             const rank = ranks.get(key) ?? 0;
             if (lowestRank === highestRank) {
                 playerStats.draws += 1;

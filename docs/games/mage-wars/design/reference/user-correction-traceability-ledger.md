@@ -23,6 +23,18 @@
 | 计划牌大小和法术书一致 | 已计划法术被弱化成角落挂件 | `mage-wars-ui-design-memory` 法术书 / 已计划裁决 | 两张已计划法术与法术书当前页卡面同尺寸，并有独立计划槽 | covered |
 | 已计划和已选法术不要重复 | 同一规则对象被画成两个实体 | `ui-design-pipeline` 规则对象实体锚点守恒；设计 README v49 / v50 裁定 | 当前来源只能引用已计划法术实体，不再额外画同名“已选法术”大卡 | covered |
 | 卡面已有名字和费用，不要外部复写 | 用 UI chip 重写卡面字段，浪费空间且重复 | `ui-design-pipeline` 卡面字段不复写；`ui-ux.md` 正式素材已含信息不得复读 | 名称、费用、射程、目标、骰数默认由可读卡面承担；外部只补运行态 | covered |
+| UI 和卡牌内容不要重复的规范不够硬 | 组牌 / 法术书编辑器仍在卡牌下方、已选列表和校验文案重复卡名、类型、费用或卡面字段，说明旧规则没有明确“卡池编辑器也适用”且缺文本扫描门槛 | `game-ui-design/references/layout-interaction-patterns.md` 卡池 / 组牌 / 法术书编辑器硬门禁；`mage-wars-ui-design-memory` 用户原话反思表 | 法术书构筑稿中，卡外可见 UI 只显示构筑法术点、合法 / 非法原因、当前状态、操作控件和一处唯一数量 owner；不得在卡牌下方或已选区重复法术名、类型、法力费用、射程、目标、骰数和正文。送验前做 DOM 文本扫描并人工复看。 | covered-by-current-design-audit |
+| 编辑法术书不应出现席位 / P1 / P2 | 把对局玩家位置放进法术书编辑器主栏，会让玩家误以为法术书编辑在控制先后手或座位，而不是编辑“这本书绑定哪个法师” | `game-ui-design/references/layout-interaction-patterns.md` 玩家位置 / 席位只属于对局设置、所有权归属、先后手或棋盘 lane；`mage-wars-ui-design-memory` 用户原话反思表 | Mage Wars 组书设计稿左栏只显示法术书身份、绑定法师和来源入口；不常驻 P1/P2、玩家一 / 玩家二或席位。若需要应用给某位玩家，只在对局 setup 或提交摘要处理。 | covered-by-current-design-audit |
+| 搜索框不应抢主视觉 | 搜索框使用长示例词、占据主栏宽度或被筛选行拉伸成高面板，都会压低卡池主体，违反“卡牌候选可读优先” | `game-ui-design/references/layout-interaction-patterns.md` 搜索 / 筛选是工具，不是主对象；`mage-wars-ui-design-memory` 用户原话反思表 | 搜索框默认紧凑，只显示短 placeholder；筛选按钮和卡牌池承担主操作，搜索不得用长词撑大、不得被拉伸成高面板、不得压缩卡牌可读面积；送验前量宽度和高度。 | covered-by-current-design-audit |
+| 组书页状态标签不能写废话 | `排斥成本`、`下一张到上限`、`再加一张`、`排斥示例`、`上限看能力牌` 这类文案只是在命名规则类别，没有告诉玩家具体成本、余量、冲突和下一步，导致玩家仍要猜 | `game-ui-design/references/layout-interaction-patterns.md` 卡池 / 组牌状态标签可行动信息门禁；`mage-wars-ui-design-memory` 用户原话反思表 | 法术池、选中详情、右侧法术书和校验区不得出现空泛类别标签；必须改成 `需 9 点；火焰排斥 x3`、`5/6；再加 1 张封顶`、`4/4；先移除 1 张`、`限定邪术师；当前兽王不可用` 这类可行动信息。送验前文本扫描禁止废话词命中。 | covered-by-current-design-audit |
+| 组书页必须有多级筛选 | 只按攻击 / 结界 / 生物 / 魔物 / 装备 / 咒语过滤，无法区分自然、火焰、圣光、黑暗、超魔、原力、治疗等学派 / 系，也无法定位冲突、等级或当前书内对象 | `game-ui-design/references/layout-interaction-patterns.md` 多级筛选门禁；配置包 `schoolLine` / `typeLine` 数据分布 | 卡池筛选必须分层展示类型、学派 / 系、等级 / 成本、合法性 / 冲突、当前书内 / 未加入；搜索框仍保持紧凑工具，不得替代结构化筛选。 | covered-by-current-design-audit |
+| 当前法术书不能用四格样本冒充完整书 | 兽王标准起始书是 50 个条目 / 67 张，右侧只显示四个格子会把大集合误画成少量样例，无法浏览、定位和修正几十张卡 | `docs/games/mage-wars/rule/standard-starting-spellbooks.md` 标准书数量；`game-ui-design/references/layout-interaction-patterns.md` 大集合承载门禁 | 当前法术书必须显示总张数、条目数、当前显示范围，并用可滚动 deck list 承载几十张；每行显示法术点、名称、`当前 / 上限` 和成本 / 限制状态。四张冲突卡只能作为“需处理项”，不能作为整本书列表。 | covered-by-current-design-audit |
+| xN 是什么鬼，不是已经有 x/y 了吗 | 卡图和清单同时显示数量，或给每张卡下方常驻同权重操作按钮，都会制造多套 owner 和按钮网格，画面比成熟组牌界面更乱 | `game-ui-design/references/layout-interaction-patterns.md` 计数唯一 owner 与卡牌本体点击；`mage-wars-ui-design-memory` 用户原话反思表；Hearthstone 类组牌范式 | 若右侧清单已显示 `当前 / 上限`，卡池卡图、已选缩略图和问题队列不得再显示 `xN`、数量角标、每卡常驻按钮或第二套数量文案；审计必须检查设计稿正文没有 `xN`、`count-badge`，截图中卡池主视觉不是按钮网格。 | covered-by-current-design-audit |
+| 卡组限制不止总牌数 | 只显示 `67 / 67 张` 会误导玩家以为组书合法性只看张数，漏掉法师能力牌法术点上限、训练成本、相斥成本、每卡数量上限、限定 / 史诗 / 初级例外 | 规则书第 37 页“法术点上限 / 受训”；第 38 页“同名法术上限 / 法术特性”；`game-ui-design/references/layout-interaction-patterns.md` 构筑合法性门禁；`mage-wars-ui-design-memory` 用户原话反思表 | 顶部容量必须显示法术点 `当前 / 上限`，总张数 / 条目数只能做次级读数；右侧每条必须显示数量 `当前 / 上限` 和本条法术点占用。 | covered-by-current-design-audit |
+| 组书页必须能切换当前法师 | 当前法师决定训练 / 相斥成本和职业 / 学派限制；没有法师切换入口，自组时无法判断同一张法术对不同法师是否合法 | 规则书第 37 页“能力牌限制”；`game-ui-design/references/layout-interaction-patterns.md` 玩家位置 / 席位边界；`mage-wars-ui-design-memory` 用户原话反思表 | 设计稿必须有“当前法师”切换入口，切换对象是法师而不是席位；不得出现 P1 / P2 / 席位主控。 | covered-by-current-design-audit |
+| 当前法师身份不能多处重复 | v13 同时显示左上法师主缩略图、`当前法师：兽王`、active 法师选项和 `兽王标准书` tab，导致当前法师、构筑来源和预设名称抢同一个身份 owner | `game-ui-design/references/layout-interaction-patterns.md` 当前身份唯一 owner；`mage-wars-ui-design-memory` 用户原话反思表 | 顶部必须保留法师切换能力，但当前法师只在一个紧凑切换器中可见；来源 tab 不复写法师名；文本 / DOM 审计确认无可见 `当前法师：兽王`、无 `兽王标准书`。 | covered-by-current-design-audit-v14 |
+| 右侧清单不能用圆球 / 简单几何替代卡图 | 右侧 deck list 行代表具体法术牌，蓝色圆球或首字类型标无法让玩家识别卡牌，也把低质程序化几何当成正式素材 | `game-ui-design/references/layout-interaction-patterns.md` 当前清单卡牌身份 owner 门禁；`mage-wars-ui-design-memory` 用户原话反思表；正式卡图裁片 manifest | 当前法术书每行左侧必须用真实卡图缩略或正式卡背；类型 / 学派只能作辅助信息。截图和 DOM 扫描不得出现 `.cost` 圆形类型标、普通 icon 或无来源几何身份标。 | covered-by-current-design-audit |
+| 图面第一眼仍明显有问题 | 自动审计只检查元素存在，会漏掉错误参考图、筛选区过高、卡池被推到下半屏、设计说明抢主视觉、首屏卡池稀疏、横向墙牌被塞进竖牌壳等玩家一眼可见的问题 | `game-ui-design/SKILL.md` 外部参考必须是实际操作态；`game-ui-design/references/layout-interaction-patterns.md` 成熟组牌主视觉与素材比例门禁；`mage-wars-ui-design-memory` 用户原话反思表 | Mage Wars 组书截图送验前必须同时检查：外部参考图不是导入 / 选英雄入口，顶部说明退场，筛选区是工具栏不是筛选墙，法术牌库当前视口完整可见行由真实卡面连续填满，墙体牌按官方横向比例显示且无黑边 / 拉伸。 | covered-by-current-design-audit |
 | 生命 / 法力 / 聚魔这类全员相同基础属性不要在选角页重复 | Mage Wars 学徒法师选角页把 24 / 10 / 10 这种所有候选一致的信息重复写在席位、候选卡和摘要上，玩家无法从中做选择 | `ui-change-gates.md` 无差异信息不重复展示、重复 UI 要代码验收；`mage-wars-ui-design-memory` 用户原话反思表 | 选角 / setup gate 只展示法师身份和会影响选择的差异项；生命24、初始法力10、聚魔10 不出现在额外 UI 文本 / chip / 摘要中，且有代码检索、DOM 文本扫描或 E2E 断言防复发 | covered-by-runtime-e2e |
 | 不要常驻确认 / 执行 / 取消 | 规则没有授权时伪造二次确认，占空间 | `ui-design-pipeline` 确认控件授权；`step1-runtime-board-saturated-ui-design.md` 统一动作规则 | 选中来源后高亮合法目标，目标本体点击推进；没有常驻确认按钮 | covered |
 | 开放式设计 / 场地直选优先 | 用代理面板、问号块、目标摘要替代真实对象 | `ui-design-pipeline` 开放式直选裁决；`ui-change-gates.md` 0.0 / 0.0D | 合法目标在棋盘格 / 场上卡 / token 本体高亮，代理 UI 仅在有规则理由时出现 | covered |
@@ -73,6 +85,13 @@
 - [ ] Open Design artifact 路线确认，未调用 media 生图链。
 - [ ] `法术书 / 已计划法术 / 弃牌堆 / 隐性结界` 牌区命名无“手牌”。
 - [ ] 选角 / setup gate 没有把所有候选一致的生命24、初始法力10、聚魔10 等基础属性重复写进席位、候选卡、摘要或 chip；若展示差异项，必须有代码检索、DOM 文本扫描或 E2E 断言防复发。
+- [ ] 组书 / 法术书编辑器没有 `排斥成本`、`下一张到上限`、`再加一张`、`排斥示例`、`上限看能力牌` 等废话标签；状态文案必须给出具体成本、倍率、余量、冲突对象或下一步。
+- [ ] 组书 / 法术书编辑器有类型、学派 / 系、等级 / 成本、合法性 / 冲突、当前书内 / 未加入等多级筛选；不同系法术不能只靠搜索框或单层类型按钮区分。
+- [ ] 当前法术书若有几十张卡，必须用分组 / 滚动 / 分页承载，并显示总张数、条目数和当前显示范围；少量问题卡只能作为“需处理项”，不能冒充整本书。
+- [ ] 组书 / 法术书编辑器顶部必须显示法术点或等价构筑资源 `当前 / 上限`；总张数 / 条目数只能作为次级读数，不能单独冒充合法性。
+- [ ] 组书 / 法术书编辑器必须能切换当前法师；切换入口只绑定法师 / 训练规则 / 构筑合法性，不出现 P1 / P2 / 席位主控。
+- [ ] 当前法术书右侧清单每行必须用真实卡图缩略或正式卡背承载卡牌身份；不得用圆球、首字、普通 icon、类型色块或简单几何替代。
+- [ ] 组书 / 法术书编辑器截图第一眼像成熟组牌页：外部参考图不是导入 / 选英雄入口，筛选区不压低卡池、当前视口完整可见卡池行由真实卡面连续填满且不是空白样例区、卡池主视觉不是每卡常驻按钮网格、横向墙牌按横向比例显示且没有黑边 / 拉伸。
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。

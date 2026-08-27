@@ -162,6 +162,34 @@
     }
 }
 
+html[data-system-display-theme="night"],
+body[data-system-display-theme="night"] {
+    --color-parchment-base-bg: #0d1118;
+    --color-parchment-base-text: #f1e7d2;
+    --color-parchment-light-text: #b9a884;
+    --color-parchment-brown: #d0a45b;
+    --color-parchment-cream: #1a2230;
+    --color-parchment-gold: #d9b75f;
+    --color-parchment-green: #9fbd72;
+    --color-parchment-wax: #ff7f7f;
+    --color-parchment-card-bg: #141a24;
+    --color-parchment-card-border: #6f614b;
+    --shadow-parchment-card: 0 2px 10px rgba(0, 0, 0, 0.38);
+    --shadow-parchment-card-hover: 0 6px 22px rgba(0, 0, 0, 0.46);
+}
+
+body[data-system-display-theme="night"] {
+    background:
+        radial-gradient(circle at 22% 0%, rgba(120, 84, 48, 0.18), transparent 18rem),
+        radial-gradient(circle at 86% 12%, rgba(62, 88, 124, 0.18), transparent 20rem),
+        #0d1118;
+    color: var(--color-parchment-base-text);
+}
+
+body[data-system-display-theme="night"] :is(input, textarea, select) {
+    color-scheme: dark;
+}
+
 @keyframes seat-emote-pop {
     0% {
         opacity: 0;

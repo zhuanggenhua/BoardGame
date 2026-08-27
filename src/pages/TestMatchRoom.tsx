@@ -22,7 +22,7 @@ import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { GameCursorProvider } from '../core/cursor/GameCursorProvider';
 import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
 import { shouldKeepBoardMountedOnPlayerViewChange } from '../games/pageShell';
-import { LocalGameProvider, BoardBridge } from '../engine/transport/react';
+import { LocalGameProvider, BoardBridge, useGameClient } from '../engine/transport/react';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
@@ -65,6 +65,22 @@ function resolveTestPlayerNames(searchParams: URLSearchParams, numPlayers: numbe
     }
     return names;
 }
+
+const TestGameHUD: React.FC<{
+    gameId: string;
+    runtimeProps: ReturnType<typeof buildGameHudRuntimeProps>;
+}> = ({ gameId, runtimeProps }) => {
+    const client = useGameClient();
+    return (
+        <GameHUD
+            gameId={gameId}
+            mode="test"
+            myPlayerId={client.playerId}
+            players={client.matchPlayers}
+            {...runtimeProps}
+        />
+    );
+};
 
 export const TestMatchRoom: React.FC = () => {
     const { gameId } = useParams<{ gameId: string }>();
@@ -330,7 +346,7 @@ export const TestMatchRoom: React.FC = () => {
                                         followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
                                         disableLocalAiAutomation={testConfig.disableLocalAiAutomation}
                                     >
-                                        <GameHUD gameId={gameId} mode="test" {...gameHudRuntimeProps} />
+                                        <TestGameHUD gameId={gameId} runtimeProps={gameHudRuntimeProps} />
                                         <BoardBridge
                                             board={WrappedBoard}
                                             remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}

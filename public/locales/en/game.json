@@ -130,6 +130,8 @@
       "about": "About",
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit Fullscreen",
+      "nightMode": "Night Mode",
+      "lightMode": "Day Mode",
       "settings": "Settings",
       "audio": "Audio",
       "chat": "Chat",

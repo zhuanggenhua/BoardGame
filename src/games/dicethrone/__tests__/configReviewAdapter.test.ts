@@ -6,6 +6,7 @@ import {
   DICETHRONE_CONFIG_REVIEW_TABLE_ID,
   DICETHRONE_CONFIG_REVIEW_VERSION,
   getDiceThroneConfigReviewCellValue,
+  isDiceThroneResponseOnlyUpgradeRow,
   isDiceThroneConfigReviewFieldApplicable,
 } from '../config/configReviewAdapter';
 import { IMPLEMENTED_DICETHRONE_CHARACTER_IDS } from '../domain/types';
@@ -74,6 +75,27 @@ describe('DiceThrone configReviewAdapter', () => {
       materialStatus: 'ready',
     });
     expect(innerPeace?.fieldPaths.cpCost).toBe('legacy.dicethrone.cards.monk.card-inner-peace.cpCost');
+  });
+
+  it('工匠 0CP 电弧盾在配置表中识别为响应型升级牌，不当作普通免费技能升级', () => {
+    const table = buildDiceThroneConfigReviewTable();
+    const zeroCostUpgrades = table.rows.filter((row) => (
+      row.objectType === 'card'
+      && row.cardType === 'upgrade'
+      && row.cpCost === 0
+    ));
+    const arcShield = zeroCostUpgrades.find((row) => row.objectId === 'upgrade-artificer-shock-bot-2');
+
+    expect(zeroCostUpgrades.map((row) => row.objectId)).toEqual(['upgrade-artificer-shock-bot-2']);
+    expect(arcShield).toMatchObject({
+      characterId: 'artificer',
+      cardType: 'upgrade',
+      cpCost: 0,
+      timing: 'instant',
+      playCondition: expect.stringContaining('pendingDamage'),
+    });
+    expect(arcShield && isDiceThroneResponseOnlyUpgradeRow(arcShield)).toBe(true);
+    expect(getDiceThroneConfigReviewCellValue(arcShield!, 'cardType')).toBe('upgrade');
   });
 
   it('主表只显示玩家需要录入或修正的静态字段，不暴露内部调试和素材索引', () => {

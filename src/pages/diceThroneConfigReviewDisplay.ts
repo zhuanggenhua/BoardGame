@@ -1,4 +1,7 @@
-import type { DiceThroneConfigReviewRow } from '../games/dicethrone/config/configReviewAdapter';
+import {
+  isDiceThroneResponseOnlyUpgradeRow,
+  type DiceThroneConfigReviewRow,
+} from '../games/dicethrone/config/configReviewAdapter';
 
 export type DiceThroneConfigReviewTranslateFn = (key: string, options?: Record<string, unknown>) => string;
 
@@ -24,4 +27,15 @@ export function formatDiceThroneConfigReviewDiceFaceName(
   return symbols
     ? `${characterName}骰面 ${diceValue}（${symbols}）`
     : `${characterName}骰面 ${diceValue}`;
+}
+
+export function formatDiceThroneConfigReviewCardType(
+  row: DiceThroneConfigReviewRow,
+  value: unknown,
+  translate: DiceThroneConfigReviewTranslateFn,
+): string {
+  if (isDiceThroneResponseOnlyUpgradeRow(row)) {
+    return tr(translate, 'configReview.values.cardType.responseUpgrade', '响应型升级牌');
+  }
+  return tr(translate, `configReview.values.cardType.${String(value)}`, String(value));
 }

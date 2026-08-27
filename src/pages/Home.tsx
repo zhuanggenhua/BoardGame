@@ -62,11 +62,11 @@ const HomeGridLogo = () => (
     <svg
         viewBox="0 0 24 24"
         aria-hidden="true"
-        className="w-8 md:w-10 opacity-90"
+        className="w-8 text-parchment-base-text opacity-90 md:w-10"
         xmlns="http://www.w3.org/2000/svg"
     >
         <path
-            fill="#433422"
+            fill="currentColor"
             d="M4 4h16v16H4V4zm2 2v4h4V6H6zm6 0v4h4V6h-4zm6 0v4h4V6h-4zM6 12v4h4v-4H6zm6 0v4h4v-4h-4zm6 0v4h4v-4h-4zM6 18v4h4v-4H6zm6 0v4h4v-4h-4zm6 0v4h4v-4h-4z"
         />
     </svg>

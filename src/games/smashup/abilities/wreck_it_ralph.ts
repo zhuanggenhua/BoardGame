@@ -30,7 +30,10 @@ import {
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import type {
+    BaseClearedEvent,
+    BaseDeckShuffledEvent,
     BaseReplacedEvent,
+    CardInstance,
     CardSuppressedEvent,
     MinionMetadataUpdatedEvent,
     MinionOnBase,
@@ -144,6 +147,13 @@ type MovePromptContext = WreckPromptContext & {
 
 type KingCandyPromptContext = WreckPromptContext & {
     destinationBaseIndex?: number;
+};
+
+type CyBugInfestationContext = WreckPromptContext & {
+    playerOrder: PlayerId[];
+    playerCursor: number;
+    originalBaseDefId: string;
+    originalBaseInstanceId?: string;
 };
 
 type WreckSourceContext = Pick<WreckPromptContext, 'playerId' | 'sourceCardUid' | 'sourceDefId' | 'sourceBaseIndex' | 'now'>;
@@ -419,6 +429,218 @@ function collectFactionOptions(core: SmashUpCore): PromptOption<FactionChoice>[]
             displayMode: 'button' as const,
         }));
 }
+
+function getPlayersStartingLeftOf(core: SmashUpCore, playerId: PlayerId): PlayerId[] {
+    const order = core.turnOrder?.length > 0
+        ? core.turnOrder
+        : Object.keys(core.players);
+    const startIndex = order.indexOf(playerId);
+    if (startIndex < 0) return order;
+    return [
+        ...order.slice(startIndex + 1),
+        ...order.slice(0, startIndex + 1),
+    ];
+}
+
+function playerHasCardsOnBase(core: SmashUpCore, playerId: PlayerId, baseIndex: number): boolean {
+    const base = core.bases[baseIndex];
+    if (!base) return false;
+    return base.minions.some(minion => minion.controller === playerId)
+        || base.ongoingActions.some(action => getActionControllerId(action) === playerId);
+}
+
+function advanceCyBugCursor(context: CyBugInfestationContext, core: SmashUpCore, fromCursor: number): number {
+    let cursor = fromCursor;
+    while (cursor < context.playerOrder.length) {
+        if (playerHasCardsOnBase(core, context.playerOrder[cursor], context.sourceBaseIndex)) {
+            return cursor;
+        }
+        cursor += 1;
+    }
+    return cursor;
+}
+
+function buildCyBugReplacementEvents(
+    core: SmashUpCore,
+    context: CyBugInfestationContext,
+    timestamp: number,
+): SmashUpEvent[] {
+    const sourceBase = core.bases[context.sourceBaseIndex];
+    if (!sourceBase || sourceBase.defId !== context.originalBaseDefId) return [];
+    let newBaseDeck = [...(core.baseDeck ?? [])];
+    const events: SmashUpEvent[] = [{
+        type: SU_EVENTS.BASE_CLEARED,
+        payload: {
+            baseIndex: context.sourceBaseIndex,
+            baseDefId: context.originalBaseDefId,
+            ...(context.originalBaseInstanceId ? { baseInstanceId: context.originalBaseInstanceId } : {}),
+        },
+        timestamp,
+    } as BaseClearedEvent];
+
+    if (newBaseDeck.length === 0) {
+        const rebuiltDeck = [...(core.baseDiscard ?? []), context.originalBaseDefId];
+        events.push({
+            type: SU_EVENTS.BASE_DECK_SHUFFLED,
+            payload: {
+                newBaseDeckDefIds: rebuiltDeck,
+                reason: 'base_deck_empty_reshuffle_discard',
+                clearBaseDiscard: true,
+            },
+            timestamp,
+        } as BaseDeckShuffledEvent);
+        newBaseDeck = rebuiltDeck;
+    }
+
+    const newBaseDefId = newBaseDeck[0];
+    if (newBaseDefId) {
+        events.push({
+            type: SU_EVENTS.BASE_REPLACED,
+            payload: {
+                baseIndex: context.sourceBaseIndex,
+                oldBaseDefId: context.originalBaseDefId,
+                newBaseDefId,
+                allowMissingFromBaseDeck: true,
+                ...(context.originalBaseInstanceId ? { oldBaseInstanceId: context.originalBaseInstanceId } : {}),
+            },
+            timestamp,
+        } as BaseReplacedEvent);
+    }
+
+    return events;
+}
+
+function applyCyBugSetupEvents(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
+    let nextBases = core.bases;
+    let nextPlayers = core.players;
+    for (const event of events) {
+        if (event.type !== SU_EVENTS.ONGOING_DETACHED) continue;
+        const payload = event.payload as {
+            cardUid: string;
+            defId: string;
+            ownerId: PlayerId;
+            destination?: 'discard' | 'hand';
+        };
+        let removed = false;
+        nextBases = nextBases.map((base) => {
+            const ongoingActions = base.ongoingActions.filter((action) => action.uid !== payload.cardUid);
+            const minions = base.minions.map((minion) => {
+                const attachedActions = minion.attachedActions.filter((action) => action.uid !== payload.cardUid);
+                if (attachedActions.length !== minion.attachedActions.length) removed = true;
+                return attachedActions.length === minion.attachedActions.length ? minion : { ...minion, attachedActions };
+            });
+            if (ongoingActions.length !== base.ongoingActions.length) removed = true;
+            return ongoingActions.length === base.ongoingActions.length && minions === base.minions
+                ? base
+                : { ...base, ongoingActions, minions };
+        });
+        const owner = nextPlayers[payload.ownerId];
+        if (!owner || !removed) continue;
+        const detachedCard: CardInstance = {
+            uid: payload.cardUid,
+            defId: payload.defId,
+            type: 'action',
+            owner: payload.ownerId,
+        };
+        nextPlayers = {
+            ...nextPlayers,
+            [payload.ownerId]: payload.destination === 'hand'
+                ? { ...owner, hand: [...owner.hand, detachedCard] }
+                : { ...owner, discard: [...owner.discard, detachedCard] },
+        };
+    }
+    return nextBases === core.bases && nextPlayers === core.players
+        ? core
+        : { ...core, bases: nextBases, players: nextPlayers };
+}
+
+function buildCyBugMoveEventsForPlayer(
+    state: MatchState<SmashUpCore>,
+    context: CyBugInfestationContext,
+    playerId: PlayerId,
+    toBaseIndex: number,
+    timestamp: number,
+): SmashUpEvent[] {
+    if (toBaseIndex === context.sourceBaseIndex || !state.core.bases[toBaseIndex]) return [];
+    const sourceBase = state.core.bases[context.sourceBaseIndex];
+    if (!sourceBase) return [];
+    const events: SmashUpEvent[] = [];
+    for (const minion of sourceBase.minions.filter(candidate => candidate.controller === playerId)) {
+        events.push(...moveMinionToBase(
+            state,
+            minion,
+            context.sourceBaseIndex,
+            toBaseIndex,
+            context.playerId,
+            CY_BUG_INFESTATION,
+            timestamp,
+        ));
+    }
+    for (const action of sourceBase.ongoingActions.filter(candidate => getActionControllerId(candidate) === playerId)) {
+        events.push({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: action.uid,
+                defId: action.defId,
+                ownerId: action.ownerId,
+                sourcePlayerId: playerId,
+                targetType: 'base',
+                targetBaseIndex: toBaseIndex,
+                ...(action.metadata ? { metadata: action.metadata } : {}),
+                talentUsed: action.talentUsed,
+            },
+            timestamp,
+        } as OngoingAttachedEvent);
+    }
+    return events;
+}
+
+const cyBugInfestationPromptProgram = createPromptProgram<CyBugInfestationContext, SmashUpCore, SmashUpEvent>({
+    sourceId: CY_BUG_INFESTATION,
+    buildInteraction: (context) => {
+        const choosingPlayerId = context.playerOrder[context.playerCursor] ?? context.playerId;
+        return createAbilityRuntimeSimpleChoice(
+            `${CY_BUG_INFESTATION}_${context.now}_${context.sourceCardUid}_${choosingPlayerId}`,
+            choosingPlayerId,
+            '赛博虫灾变：选择要移动这些牌到的基地',
+            collectOtherBaseOptions(context.matchState.core, context.sourceBaseIndex),
+            {
+                titleKey: 'ui.wreck_it_ralph_cy_bug_infestation_title',
+                sourceId: CY_BUG_INFESTATION,
+                targetType: 'base',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseChoice | undefined;
+        const choosingPlayerId = context.playerOrder[context.playerCursor] ?? context.playerId;
+        const events = typeof choice?.baseIndex === 'number'
+            ? buildCyBugMoveEventsForPlayer(state, context, choosingPlayerId, choice.baseIndex, timestamp)
+            : [];
+        const nextCursor = advanceCyBugCursor(context, state.core, context.playerCursor + 1);
+        if (nextCursor < context.playerOrder.length) {
+            return {
+                events,
+                context: {
+                    ...context,
+                    matchState: state,
+                    now: timestamp,
+                    playerCursor: nextCursor,
+                },
+                nextProgram: cyBugInfestationPromptProgram,
+            };
+        }
+
+        return {
+            events: [
+                ...events,
+                ...buildCyBugReplacementEvents(state.core, context, timestamp),
+            ],
+        };
+    },
+});
 
 const ralphPromptProgram = createPromptProgram<WreckPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: RALPH,
@@ -1015,6 +1237,52 @@ function cyBugInfestationTalent(ctx: AbilityContext): AbilityResult {
     const baseModifier = collectBaseModifiers(ctx.state, ctx.baseIndex)
         .find(entry => entry.action.uid === ctx.cardUid);
     if (!baseModifier) return { events: [] };
+    if (ctx.matchState) {
+        const playerOrder = getPlayersStartingLeftOf(ctx.state, ctx.playerId);
+        const detachEvents = buildValidatedOngoingDetachEvents(ctx.state, {
+            cardUid: ctx.cardUid,
+            defId: ctx.defId,
+            ownerId: baseModifier.action.ownerId,
+            reason: CY_BUG_INFESTATION,
+            now: ctx.now,
+            expectedLocation: 'base',
+            sourcePlayerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceControllerId: ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        });
+        const setupCore = applyCyBugSetupEvents(ctx.state, detachEvents);
+        const baseContext: CyBugInfestationContext = {
+            matchState: { ...ctx.matchState, core: setupCore },
+            playerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
+            now: ctx.now,
+            playerOrder,
+            playerCursor: 0,
+            originalBaseDefId: ctx.state.bases[ctx.baseIndex]?.defId ?? '',
+            originalBaseInstanceId: ctx.state.bases[ctx.baseIndex]?.instanceId,
+        };
+        const firstCursor = advanceCyBugCursor(baseContext, setupCore, 0);
+        if (firstCursor >= playerOrder.length) {
+            return {
+                events: [
+                    ...detachEvents,
+                    ...buildCyBugReplacementEvents(setupCore, { ...baseContext, playerCursor: firstCursor }, ctx.now),
+                ],
+            };
+        }
+        const promptResult = executeAbilityProgram(cyBugInfestationPromptProgram, {
+            ...baseContext,
+            playerCursor: firstCursor,
+        });
+        return {
+            events: [...detachEvents, ...promptResult.events],
+            ...(promptResult.matchState ? { matchState: promptResult.matchState } : {}),
+        };
+    }
     return {
         events: buildValidatedOngoingDetachEvents(ctx.state, {
             cardUid: ctx.cardUid,

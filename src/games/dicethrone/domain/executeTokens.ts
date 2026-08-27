@@ -341,7 +341,7 @@ export function executeTokenCommand(
                     && (player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) >= 1
                     && Number.isInteger(amount)
                     && amount >= 1
-                    && amount <= Math.min(pendingDamage.currentDamage, player.companion.hp);
+                    && amount <= Math.max(0, pendingDamage.currentDamage - 1);
                 if (!canAssignDamage) break;
 
                 const heroDamage = pendingDamage.currentDamage - amount;

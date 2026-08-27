@@ -763,7 +763,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const directTokenResponseIds = React.useMemo(() => {
         if (!isTokenResponseInteraction || !pendingDamage || !isTokenResponder) return [];
         if (tokenResponseChoiceProjection) {
-            return Array.from(new Set(tokenResponseChoiceProjection.tokenOptions.map(option => option.tokenId)));
+            return Array.from(new Set(tokenResponseChoiceProjection.tokenOptions
+                .map(option => option.tokenId)
+                .filter(tokenId => (
+                    !isSelfNyraDamageResponse
+                    || (tokenId !== TOKEN_IDS.NYRA_REDIRECT && tokenId !== TOKEN_IDS.NYRAS_BOND)
+                ))));
         }
 
         return usableTokens
@@ -777,7 +782,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 return getTokenUseOptions(tokenDef, available).length > 0;
             })
             .map((tokenDef) => tokenDef.id);
-    }, [G, isTokenResponder, isTokenResponseInteraction, pendingDamage, tokenResponseChoiceProjection, usableTokens]);
+    }, [G, isSelfNyraDamageResponse, isTokenResponder, isTokenResponseInteraction, pendingDamage, tokenResponseChoiceProjection, usableTokens]);
 
     const directTokenChoiceOptions = React.useMemo(() => {
         if (!canResolveChoice || !choice.hasChoice || choice.options.length === 0) return [];
@@ -900,7 +905,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return undefined;
         }
 
-        const maxAssignableDamage = Math.min(Math.max(0, currentDamage - 1), companion.hp);
+        const maxAssignableDamage = Math.max(0, currentDamage - 1);
         const pendingDamageId = tokenResponseChoiceProjection?.pendingDamageId ?? pendingDamage.id;
         const dispatchTokenFromContractOrFallback = (tokenId: string, amount: number) => {
             const contractOption = tokenResponseChoiceProjection?.tokenOptions.find(option => (

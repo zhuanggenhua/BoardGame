@@ -2,7 +2,34 @@ import { describe, expect, it } from 'vitest';
 import { buildLeaderboardEntries, isLeaderboardHumanPlayer } from '../leaderboard';
 
 describe('leaderboard', () => {
-    it('只统计真人玩家，忽略显式标记的 AI 座位', () => {
+    it('AI 对战给真人低权重等级分，但 AI 座位不进入排行榜', () => {
+        const entries = buildLeaderboardEntries([
+            {
+                players: [
+                    { id: 'guest:host-1', ownerKey: 'guest:host-1', name: '房主' },
+                    { id: 'AI-1', name: 'AI-1', isAi: true },
+                ],
+                winnerID: 'guest:host-1',
+                endedAt: 1,
+            },
+        ]);
+
+        expect(entries).toEqual([
+            {
+                name: '房主',
+                rating: 10,
+                wins: 1,
+                losses: 0,
+                draws: 0,
+                matches: 1,
+                winRate: 1,
+                provisional: true,
+                tier: 'apprentice',
+            },
+        ]);
+    });
+
+    it('输给 AI 会记录真人负场和最低等级分，但仍不显示 AI', () => {
         const entries = buildLeaderboardEntries([
             {
                 players: [
@@ -12,30 +39,11 @@ describe('leaderboard', () => {
                 winnerID: 'AI-1',
                 endedAt: 1,
             },
-            {
-                players: [
-                    { id: 'guest:host-1', ownerKey: 'guest:host-1', name: '房主' },
-                    { id: 'guest:guest-2', ownerKey: 'guest:guest-2', name: '访客' },
-                ],
-                winnerID: 'guest:host-1',
-                endedAt: 2,
-            },
         ]);
 
         expect(entries).toEqual([
-            {
+            expect.objectContaining({
                 name: '房主',
-                rating: 30,
-                wins: 1,
-                losses: 0,
-                draws: 0,
-                matches: 1,
-                winRate: 1,
-                provisional: true,
-                tier: 'apprentice',
-            },
-            {
-                name: '访客',
                 rating: 1,
                 wins: 0,
                 losses: 1,
@@ -44,11 +52,29 @@ describe('leaderboard', () => {
                 winRate: 0,
                 provisional: true,
                 tier: 'apprentice',
-            },
+            }),
         ]);
     });
 
-    it('兼容旧归档数据，过滤没有 ownerKey 的 AI 名称', () => {
+    it('真人对战仍使用完整等级分权重', () => {
+        const entries = buildLeaderboardEntries([
+            {
+                players: [
+                    { id: 'guest:host-1', ownerKey: 'guest:host-1', name: '房主' },
+                    { id: 'guest:guest-2', ownerKey: 'guest:guest-2', name: '访客' },
+                ],
+                winnerID: 'guest:host-1',
+                endedAt: 1,
+            },
+        ]);
+
+        expect(entries).toEqual([
+            expect.objectContaining({ name: '房主', rating: 30, wins: 1, losses: 0, matches: 1 }),
+            expect.objectContaining({ name: '访客', rating: 1, wins: 0, losses: 1, matches: 1 }),
+        ]);
+    });
+
+    it('兼容旧归档数据，把没有 ownerKey 的 AI 名称当成隐藏 AI 对手', () => {
         const entries = buildLeaderboardEntries([
             {
                 players: [
@@ -73,10 +99,10 @@ describe('leaderboard', () => {
                 name: 'Alice',
                 rating: 30,
                 wins: 1,
-                losses: 0,
+                losses: 1,
                 draws: 0,
-                matches: 1,
-                winRate: 1,
+                matches: 2,
+                winRate: 0.5,
                 provisional: true,
                 tier: 'apprentice',
             },

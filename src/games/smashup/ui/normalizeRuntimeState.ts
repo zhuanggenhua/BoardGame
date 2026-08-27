@@ -9,6 +9,12 @@ import type {
     SmashUpCore,
     TitanState,
 } from '../domain/types';
+import {
+    getSmashUpDraftTurnOrder,
+    getSmashUpFactionsPerPlayer,
+    getSmashUpNextDraftPlayerIndex,
+    isSmashUpBanSelectionPhase,
+} from '../domain/pregameDraft';
 
 export interface SmashUpRuntimeStateAnomaly {
     path: string;
@@ -47,7 +53,7 @@ function ensureFactionSelectionState(
     phase: string | undefined,
 ): SmashUpCore {
     if (phase !== 'factionSelect' || core.factionSelection || isFactionDraftReadyToStart(core)) {
-        return core;
+        return normalizeFactionSelectionCurrentPlayer(core, phase);
     }
 
     const playerSelections = Object.fromEntries(
@@ -61,6 +67,49 @@ function ensureFactionSelectionState(
             playerSelections,
             completedPlayers: [],
         },
+    };
+}
+
+function normalizeFactionSelectionCurrentPlayer(
+    core: SmashUpCore,
+    phase: string | undefined,
+): SmashUpCore {
+    const selection = core.factionSelection;
+    if (
+        phase !== 'factionSelect'
+        || !selection
+        || isSmashUpBanSelectionPhase(selection)
+        || selection.phase === 'ready'
+    ) {
+        return core;
+    }
+
+    const draftTurnOrder = getSmashUpDraftTurnOrder(core);
+    if (draftTurnOrder.length === 0) return core;
+
+    const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
+    const hasIncompletePlayer = draftTurnOrder.some((playerId) => (
+        (selection.playerSelections[playerId] ?? []).length < factionsPerPlayer
+    ));
+    if (!hasIncompletePlayer) return core;
+
+    const currentPlayerId = draftTurnOrder[core.currentPlayerIndex] ?? draftTurnOrder[0];
+    if ((selection.playerSelections[currentPlayerId] ?? []).length < factionsPerPlayer) {
+        return core;
+    }
+
+    const nextPlayerIndex = getSmashUpNextDraftPlayerIndex(
+        draftTurnOrder,
+        selection.playerSelections,
+        core.currentPlayerIndex,
+        selection.mode ?? core.factionSelectionMode ?? 'snakeDraft',
+        factionsPerPlayer,
+    );
+    if (nextPlayerIndex === core.currentPlayerIndex) return core;
+
+    return {
+        ...core,
+        currentPlayerIndex: nextPlayerIndex,
     };
 }
 
