@@ -3,7 +3,7 @@
 ## 基本信息
 
 - 对象：山屋惊魂操作日志、撤回入口、无线电广播低点数分支的事件结果、派生重新投骰与伤害分配。
-- 日期：2026-08-27；最新复验：2026-08-28 18:50 +08:00。
+- 日期：2026-08-27；最新复验：2026-08-28 19:05 +08:00。
 - 文档类型：`closeout`。
 - 关联 evidence：`evidence/betrayal/full-audit/event-effect-implementation-audit-2026-07-29.md` 的事件伤害分配机制族重审回写。
 
@@ -60,7 +60,7 @@
 | `npm run typecheck` | passed | 类型层证明本轮 TypeScript 改动没有类型错误。 | 不证明 i18n 全项目门禁；该门禁当前被 Mage Wars 无关脏改里的 68 条可见文案告警阻断。 |
 | `npm run spec:lint` | OK | 项目 AI 规范结构、索引和链接未被本轮 evidence / 规范回写破坏。 | 不证明游戏运行行为。 |
 | `npm run audit:evidence:selfcheck -- evidence/betrayal/full-audit/event-effect-implementation-audit-2026-07-29.md "evidence/山屋惊魂-日志撤回截图验收/action-log-undo-radio-damage-closeout-20260827.md"` | OK | 两份审计 evidence 满足完整性自检。 | 不证明真实浏览器截图。 |
-| `test-results/evidence-screenshots/betrayal/action-log-undo-radio-final/pass-manifest-separated-damage-roll-event-20260828.json` | PASS | 最终展示图组使用 2026-08-28 18:50 后的 UI 去重清单重新标记为用户可见交付图；第 9 张重新投骰图明确要求标题为“无线电广播”、可见骰盘只有 1 颗伤害骰、主合计为“伤害骰合计 2”、下一步提示只保留“待分配 2 点精神伤害”、不显示重复明细和伤害分配面板；第 10 张才显示精神伤害分配，并要求分配面板不二次可见复写“无线电广播”、按钮显示“承担 1 点”而不是 `×1`。 | 不证明范围外事件和组合。 |
+| `test-results/evidence-screenshots/betrayal/action-log-undo-radio-final/pass-manifest-separated-damage-roll-event-20260828.json` | PASS | 最终展示图组使用 2026-08-28 19:04 后的 UI 去重清单重新标记为用户可见交付图；第 9 张重新投骰图明确要求标题为“无线电广播”、可见骰盘只有 1 颗伤害骰、主合计为“伤害骰合计 2”、下一步提示只保留“待分配 2 点精神伤害”、不显示重复明细和伤害分配面板；第 10 张才显示精神伤害分配，并要求分配面板不二次可见复写“无线电广播”、按钮显示“承担 1 点”而不是 `×1`。 | 不证明范围外事件和组合。 |
 
 ## 截图索引
 

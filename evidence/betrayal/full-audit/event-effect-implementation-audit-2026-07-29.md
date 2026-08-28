@@ -222,7 +222,7 @@
 
 本节回写事件效果中的 `rolledDamage`、`fixedDamage` 和 `generalDamageChoice` 伤害分配机制族；不改变本文对 43 张事件整体仍为 `downstream-open` 的结论。2026-08-27 静态扫描 `BETRAYAL_DISCOVERY_POOLS.events`，当前事件伤害子句共 31 个：重新投骰伤害 13 个、固定物理 / 精神伤害 13 个、通用伤害选择 5 个。
 
-2026-08-28 18:50 +08:00 复验补充：`npm run typecheck`、`actionLogUndo.test.ts`、`firstScenarioRuntime.test.ts`、`Board.foundation.test.tsx` 的无线电广播代表链、`action-log-undo-screenshots.e2e.ts` 和 `event-choice-coverage.e2e.ts 电话铃声` 均通过。其中 `firstScenarioRuntime.test.ts` 本轮复跑为 695 passed，覆盖事件伤害机制族的领域层待分配与属性扣减链，并证明派生伤害骰必须先独立确认，不能跳到分配。兔脚重掷小机器人旧测试的错误随机口径也已修正：兔脚重掷命令只消费主事件的一颗骰，后续伤害骰必须在最终确认事件结果时用独立随机源生成。最终用户可见截图清单为 `test-results/evidence-screenshots/betrayal/action-log-undo-radio-final/pass-manifest-separated-damage-roll-event-20260828.json`；标记图组使用 2026-08-28 18:50 后的 UI 去重 PASS 清单，覆盖操作日志真实玩家名、撤回面板、事件触发、事件结果、独立重新投一颗伤害骰、伤害骰主界面不重复复写重新投骰 / 合计 / 加值 0、09 阶段无分配面板、确认伤害骰后进入精神伤害知识 / 神志分配、分配面板不重复可见事件名、承伤按钮不显示内部 `×1`、属性扣减和最终日志。
+2026-08-28 19:05 +08:00 复验补充：`npm run typecheck`、`actionLogUndo.test.ts`、`firstScenarioRuntime.test.ts`、`Board.foundation.test.tsx` 的无线电广播代表链、`action-log-undo-screenshots.e2e.ts` 和 `event-choice-coverage.e2e.ts 电话铃声` 均通过。其中 `firstScenarioRuntime.test.ts` 本轮复跑为 695 passed，覆盖事件伤害机制族的领域层待分配与属性扣减链，并证明派生伤害骰必须先独立确认，不能跳到分配。兔脚重掷小机器人旧测试的错误随机口径也已修正：兔脚重掷命令只消费主事件的一颗骰，后续伤害骰必须在最终确认事件结果时用独立随机源生成。最终用户可见截图清单为 `test-results/evidence-screenshots/betrayal/action-log-undo-radio-final/pass-manifest-separated-damage-roll-event-20260828.json`；标记图组使用 2026-08-28 19:04 后的 UI 去重 PASS 清单，覆盖操作日志真实玩家名、撤回面板、事件触发、事件结果、独立重新投一颗伤害骰、伤害骰主界面不重复复写重新投骰 / 合计 / 加值 0、09 阶段无分配面板、确认伤害骰后进入精神伤害知识 / 神志分配、分配面板不重复可见事件名、承伤按钮不显示内部 `×1`、属性扣减和最终日志。
 
 ### 旧证据降级
 
