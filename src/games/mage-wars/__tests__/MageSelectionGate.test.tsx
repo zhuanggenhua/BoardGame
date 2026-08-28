@@ -61,7 +61,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.searchAria': '搜索法术',
                 'spellbookBuilder.typeFilterAria': '类型筛选',
                 'spellbookBuilder.schoolFilterAria': '学派筛选',
-                'spellbookBuilder.schoolAll': '学派 / 系：全部',
+                'spellbookBuilder.schoolAll': '学派 / 元素：全部',
                 'spellbookBuilder.levelFilterAria': '等级筛选',
                 'spellbookBuilder.statusFilterAria': '状态筛选',
                 'spellbookBuilder.cardStatusRestricted': '不可加入',
@@ -192,6 +192,11 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(countText(builder, /法术点/g)).toBe(1);
         expect(countText(builder, /120\s*\/\s*120/g)).toBe(1);
         expect(countText(builder, /兽王/g)).toBeLessThanOrEqual(1);
+        const schoolOptions = Array.from(
+            within(builder).getByTestId('mage-wars-spellbook-builder-filter-school').querySelectorAll('option'),
+        ).map((option) => option.textContent ?? '');
+        expect(schoolOptions).toEqual(expect.arrayContaining(['自然', '火焰', '圣光', '黑暗']));
+        expect(schoolOptions).not.toEqual(expect.arrayContaining(['蝙蝠', '手套', '靴子', '传送门', '胸甲']));
         expect(builder.querySelectorAll('.mage-context[data-mage-detail-open]').length).toBe(1);
         expect(builder.querySelectorAll('[data-testid^="mage-wars-spellbook-builder-mage-option-"]').length).toBe(0);
         expect(builder.querySelector('.mage-detail-trigger')).toBeNull();

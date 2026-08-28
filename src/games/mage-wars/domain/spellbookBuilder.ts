@@ -61,7 +61,13 @@ const SCHOOL_ALIASES: Record<string, string> = {
     心灵: '精神',
     精神: '精神',
     治疗: '治疗',
+    闪电: '闪电',
+    雷电: '闪电',
+    毒素: '毒素',
+    酸性: '酸性',
+    霜冻: '霜冻',
     律令: '律令',
+    战争图标: '战争',
     多元素: '多元素',
 };
 
@@ -115,7 +121,7 @@ function normalizeSchoolToken(token: string): string | undefined {
         .replace(/[`"'“”‘’()（）[\]【】]/g, '')
         .trim();
     if (!cleaned || NON_SCHOOL_TOKENS.has(cleaned)) return undefined;
-    return SCHOOL_ALIASES[cleaned] ?? cleaned;
+    return SCHOOL_ALIASES[cleaned];
 }
 
 function extractSchoolsFromLine(line: string | undefined): string[] {

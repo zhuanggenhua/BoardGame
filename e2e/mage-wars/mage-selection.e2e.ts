@@ -314,6 +314,11 @@ test('Mage Wars 组书编辑器：先选法师后从标准起始书保存命名�
     expect(builderVisibleText).not.toMatch(/标准起始书和命名副本同级|真实缩略、数量上限|滚动查看整本书|数量：1级|成本：受训/u);
     expect(Array.from(builderVisibleText.matchAll(/法术点/g))).toHaveLength(1);
     expect(Array.from(builderVisibleText.matchAll(/120\s*\/\s*120/g))).toHaveLength(1);
+    const schoolOptions = await builder.getByTestId('mage-wars-spellbook-builder-filter-school').locator('option').evaluateAll((options) => (
+        options.map((option) => option.textContent ?? '')
+    ));
+    expect(schoolOptions).toEqual(expect.arrayContaining(['自然', '火焰', '圣光', '黑暗']));
+    expect(schoolOptions).not.toEqual(expect.arrayContaining(['蝙蝠', '手套', '靴子', '传送门', '胸甲']));
     await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-row')).toHaveCount(50);
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveCount(0);
     await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();

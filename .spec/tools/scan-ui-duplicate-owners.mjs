@@ -94,6 +94,13 @@ const CONTRACTS = {
         includeHidden: true,
         patterns: [/法术点\s*120/g, /120\s*点上限/g, /120\s*\/\s*120/g],
       },
+      {
+        id: 'school-filter-no-subtype-leak',
+        label: '学派筛选不得混入生物 / 装备子类型',
+        selector: '[data-testid="mage-wars-spellbook-builder-filter-school"]',
+        includeHidden: true,
+        patterns: [/蝙蝠/g, /手套/g, /靴子/g, /传送门/g, /胸甲/g],
+      },
     ],
   },
 };

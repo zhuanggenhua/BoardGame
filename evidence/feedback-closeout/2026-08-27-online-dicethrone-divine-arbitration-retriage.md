@@ -59,3 +59,4 @@
 - 修后截图 04：`04-三次选择后-眩光在自己-飞行净化在对手.jpg`，最终眩光在炽天使，飞行和净化在月精灵，证明落点没有反。
 - 规范回代：玩家目标显示名规则已沉淀到 [`../../.spec/knowledge/standards/rule-driven-interaction-design.md`](../../.spec/knowledge/standards/rule-driven-interaction-design.md) 的 Choice Request 最小字段。该文档是本规则的项目 canonical-source；本 evidence 只记录本次修复证据。
 - 误判 UI 边界：此前未锁定前提就改 HUD / 座位样式的方向应视为误判，不继续扩大；本次只收口目标候选 / 选择弹窗显示名。
+- 线上状态回写：`.spec/skills/feedback-closeout/scripts/update-feedback-status.mjs` 通过生产 Mongo 写入口把反馈 `6a8f2efa03143df8b7955657` 回写为 `resolved`，结果 `matchedCount=1 / modifiedCount=1`；随后生产 Mongo 回查显示状态为 `resolved`，本地状态镜像 `temp/feedback-closeout/status-board.json` 通过 `node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json`。
