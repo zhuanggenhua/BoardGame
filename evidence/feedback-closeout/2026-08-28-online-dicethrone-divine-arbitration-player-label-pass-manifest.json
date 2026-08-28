@@ -1,0 +1,65 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "端到端回到玩家 1 视角的神圣裁决目标选择场景。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone/dicethrone-divine-arbitration-feedback.e2e.ts -> 1 passed",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/神圣裁决目标选择轨迹.json"
+      ]
+    },
+    {
+      "requirement": "选择候选按钮显示 Dice Throne 角色名，不能再显示玩家 0 / 玩家 1。",
+      "status": "PASS",
+      "evidence": [
+        "截图 01 显示候选按钮为月精灵和炽天使。",
+        "轨迹文件中三段选择的 labelParams.player 分别为 characters.moon_elf / characters.tianshi。"
+      ]
+    },
+    {
+      "requirement": "点击炽天使后，眩光落到玩家 1 / 炽天使自己。",
+      "status": "PASS",
+      "evidence": [
+        "截图 02 标注眩光落点为炽天使自己。",
+        "端到端断言 player1Dazzle 为 1。"
+      ]
+    },
+    {
+      "requirement": "点击月精灵后，飞行和净化落到玩家 0 / 月精灵。",
+      "status": "PASS",
+      "evidence": [
+        "截图 03 显示飞行目标选择仍为角色名。",
+        "截图 04 和端到端断言显示 player0Flight 为 2、player0Purify 为 1。"
+      ]
+    },
+    {
+      "requirement": "轨迹证明提交目标没有选反，显示名只改变玩家可读文案。",
+      "status": "PASS",
+      "evidence": [
+        "轨迹文件显示 option-0 仍提交 targetPlayerId 0，option-1 仍提交 targetPlayerId 1。",
+        "修后仅把按钮文案改为角色名，payload 的稳定目标 ID 未改变。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/_labeled-for-pureref/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/_labeled-for-pureref/01-labeled-01-玩家1视角-神圣裁决眩光选择-按钮显示月精灵和炽天使.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/_labeled-for-pureref/02-labeled-02-选择炽天使后-眩光落到自己-飞行仍显示角色名.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/_labeled-for-pureref/03-labeled-03-选择月精灵后-飞行落到对手-净化仍显示角色名.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/_labeled-for-pureref/04-labeled-04-三次选择后-眩光在自己-飞行净化在对手.png"
+  ],
+  "originalImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/01-玩家1视角-神圣裁决眩光选择-按钮显示月精灵和炽天使.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/02-选择炽天使后-眩光落到自己-飞行仍显示角色名.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/03-选择月精灵后-飞行落到对手-净化仍显示角色名.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/04-三次选择后-眩光在自己-飞行净化在对手.jpg"
+  ]
+}

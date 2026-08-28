@@ -42,3 +42,20 @@
 - 截图 04：`04-三次选择后-眩光在自己-飞行净化在对手.jpg`。按反馈轨迹选择后，最终状态是玩家 `1` 有眩光，玩家 `0` 有 2 个飞行和 1 个净化。
 - 诊断结论：当前证据没有显示规则目标映射写反；按钮编号和实际目标一致。更符合反馈形状的是玩家 `1` 视角里选择弹窗只显示抽象编号，没有写“自己 / 对手 / 游客名 / 角色”，玩家容易把 `玩家 0` / `玩家 1` 的含义看反。
 - 收口边界：这是诊断 E2E 和截图取证，不是业务修复，也没有回写线上正式反馈状态。
+
+## 2026-08-28 修后验证：玩家目标改用可区分身份名
+
+- 原反馈保持不改写：`玩家0玩家1分不清啊 标记上反了`。
+- 现实症状：玩家 `1` 在自己的视角执行“神圣裁决！”时，目标候选原来只显示 `玩家 0 / 玩家 1`，玩家无法直接判断按钮对应月精灵还是炽天使。
+- 直接触发效果：神圣裁决三段选择分别是眩光、飞行、净化。修前诊断已经证明 `option-0 -> targetPlayerId 0`、`option-1 -> targetPlayerId 1`，目标提交没有反；问题在按钮文案用抽象编号承载现实身份。
+- 修复口径：Dice Throne 的玩家目标候选显示角色名；大杀四方的玩家目标候选默认显示真实玩家名，没有真实名且只有一个派系时显示派系名，多个派系时保留玩家名 / 座位兜底。稳定目标 ID 仍保留在提交数据里，不能用显示名反推目标。
+- 当前修后 E2E：`node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone/dicethrone-divine-arbitration-feedback.e2e.ts`，结果 `1 passed`。
+- 补充真实入口 E2E：`node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone/tianshi-ability-card-real-entry.e2e.ts --grep "神圣净化应从真实技能槽位打开玩家目标选择"`，结果 `1 passed`，覆盖“炽天使 / 武僧”按钮显示。
+- 修后截图目录：`test-results/evidence-screenshots/dicethrone/dicethrone-divine-arbitration-feedback.e2e/玩家-1-视角应显示月精灵-炽天使按钮并验证目标落点/`。
+- 修后轨迹文件：`神圣裁决目标选择轨迹.json`。轨迹显示三段候选的显示参数是 `characters.moon_elf / characters.tianshi`，同时提交目标仍是 `targetPlayerId 0 / 1`。
+- 修后截图 01：`01-玩家1视角-神圣裁决眩光选择-按钮显示月精灵和炽天使.jpg`，玩家看到的是 `月精灵 / 炽天使`，不再是 `玩家 0 / 玩家 1`。
+- 修后截图 02：`02-选择炽天使后-眩光落到自己-飞行仍显示角色名.jpg`，点击 `炽天使` 后眩光落到玩家 `1` 自己。
+- 修后截图 03：`03-选择月精灵后-飞行落到对手-净化仍显示角色名.jpg`，点击 `月精灵` 后飞行目标选择仍显示角色名。
+- 修后截图 04：`04-三次选择后-眩光在自己-飞行净化在对手.jpg`，最终眩光在炽天使，飞行和净化在月精灵，证明落点没有反。
+- 规范回代：玩家目标显示名规则已沉淀到 [`../../.spec/knowledge/standards/rule-driven-interaction-design.md`](../../.spec/knowledge/standards/rule-driven-interaction-design.md) 的 Choice Request 最小字段。该文档是本规则的项目 canonical-source；本 evidence 只记录本次修复证据。
+- 误判 UI 边界：此前未锁定前提就改 HUD / 座位样式的方向应视为误判，不继续扩大；本次只收口目标候选 / 选择弹窗显示名。
