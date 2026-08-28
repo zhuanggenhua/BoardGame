@@ -23401,7 +23401,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { cardId: 'rope', dieIndex: 0 },
             100,
-            createBetrayalScriptedRandom(1, 3),
+            createBetrayalScriptedRandom(1),
             false,
         );
 
@@ -23414,7 +23414,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.speed).toBe(4);
 
-        core = finalizePendingEventRollForTest(core);
+        core = finalizePendingEventRollForTest(core, createBetrayalScriptedRandom(3));
         expect(core.pendingEventRollResolution).toBeNull();
         expectPendingDamageForTest(core, {
             sourceTitle: '小机器人',

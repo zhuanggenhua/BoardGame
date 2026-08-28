@@ -11823,8 +11823,8 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await page.getByRole('button', { name: '玩家 0' }).click();
-    await page.getByRole('button', { name: '玩家 1' }).click();
+    await page.getByRole('button', { name: '超级间谍' }).click();
+    await page.getByRole('button', { name: '时间旅行者' }).click();
     await game.screenshot('yuanhou-operative-player-choice-both-selected', testInfo);
     await page.getByRole('button', { name: /确认/ }).click();
 
@@ -11936,8 +11936,8 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await expect(page.getByRole('button', { name: '玩家 0' })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: '超级间谍' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: '时间旅行者' })).toBeVisible({ timeout: 15000 });
     await game.screenshot('yuanhou-operative-empty-player-choice-prompt', testInfo);
     await page.getByRole('button', { name: /确认/ }).click();
 
@@ -12027,8 +12027,8 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await page.getByRole('button', { name: '玩家 0' }).click();
-    await page.getByRole('button', { name: '玩家 1' }).click();
+    await page.getByRole('button', { name: '超级间谍' }).click();
+    await page.getByRole('button', { name: '时间旅行者' }).click();
     await page.getByRole('button', { name: /确认/ }).click();
 
     await expect.poll(async () => {

@@ -17236,10 +17236,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.playCard('munchkin_elves_flower_child', { targetBaseIndex: 0 });
         await game.waitForInteraction('munchkin_elves_flower_child_choose_player', 10000);
         await waitForSmashUpFxToSettle(page);
-        await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '木精灵' })).toBeVisible({ timeout: 15000 });
         await game.screenshot('木精灵-花之子-手动选择玩家', testInfo);
 
-        await page.getByRole('button', { name: '玩家 1' }).click({ force: true });
+        await page.getByRole('button', { name: '木精灵' }).click({ force: true });
         await game.waitForInteraction('munchkin_elves_flower_child_choose_minion', 10000);
         await waitForSmashUpFxToSettle(page);
         await expectManualMinionChoiceVisible(
@@ -17282,9 +17282,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
 
             await game.waitForInteraction('munchkin_elves_pumping_iron_choose_player', 10000);
             await waitForSmashUpFxToSettle(page);
-            await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+            await expect(page.getByRole('button', { name: '木精灵' })).toBeVisible({ timeout: 15000 });
             await game.screenshot('木精灵-力量训练-手动选择玩家', testInfo);
-            await page.getByRole('button', { name: '玩家 1' }).click({ force: true });
+            await page.getByRole('button', { name: '木精灵' }).click({ force: true });
 
             const otherPlayerState = await game.getState();
             await mirrorSmashUpHarnessState(targetPage, otherPlayerState);
@@ -17346,10 +17346,10 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             await game.playCard('munchkin_elves_trade');
             await game.waitForInteraction('munchkin_elves_trade_choose_player', 10000);
             await waitForSmashUpFxToSettle(page);
-            await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+            await expect(page.getByRole('button', { name: '木精灵' })).toBeVisible({ timeout: 15000 });
             await game.screenshot('木精灵-贸易-手动选择目标玩家', testInfo);
 
-            await page.getByRole('button', { name: '玩家 1' }).click({ force: true });
+            await page.getByRole('button', { name: '木精灵' }).click({ force: true });
             await game.waitForNoInteraction(10000);
             await waitForSmashUpFxToSettle(page);
 
@@ -17387,9 +17387,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await lord.click({ force: true });
         await game.waitForInteraction('munchkin_elves_lord_of_the_prance_choose_player', 10000);
         await waitForSmashUpFxToSettle(page);
-        await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '木精灵' })).toBeVisible({ timeout: 15000 });
         await game.screenshot('木精灵-优雅贵族-手动选择另一位玩家', testInfo);
-        await page.getByRole('button', { name: '玩家 1' }).click({ force: true });
+        await page.getByRole('button', { name: '木精灵' }).click({ force: true });
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
 
@@ -17634,9 +17634,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         );
         await game.waitForInteraction('munchkin_elves_helping_hands_choose_player', 10000);
         await waitForSmashUpFxToSettle(page);
-        await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '木精灵' })).toBeVisible({ timeout: 15000 });
         await game.screenshot('木精灵-援手-手动选择目标玩家', testInfo);
-        await page.getByRole('button', { name: '玩家 1' }).click({ force: true });
+        await page.getByRole('button', { name: '木精灵' }).click({ force: true });
         await game.waitForInteraction('munchkin_elves_helping_hands_choose_minion', 10000);
         await waitForSmashUpFxToSettle(page);
         await expectManualMinionChoiceVisible(
@@ -17835,9 +17835,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             await page.getByRole('button', { name: '树屋' }).click({ force: true });
             await game.waitForInteraction('base_treehouse_choose_player', 10000);
             await waitForSmashUpFxToSettle(page);
-            await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
+            await expect(page.getByRole('button', { name: '木精灵' })).toBeVisible({ timeout: 15000 });
             await game.screenshot('木精灵-树屋-手动选择另一位玩家', testInfo);
-            await page.getByRole('button', { name: '玩家 1' }).click({ force: true });
+            await page.getByRole('button', { name: '木精灵' }).click({ force: true });
 
             const targetPlayerState = await game.getState();
             await mirrorSmashUpHarnessState(targetPage, targetPlayerState);

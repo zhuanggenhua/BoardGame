@@ -39,6 +39,7 @@
 | 法术点 / 构筑容量只能有一个总体 owner，必须脚本扫描防复发 | v15 顶部容量、右侧清单标题和详情层同时显示 `法术点` 或 `120 / 120`，玩家会看到三套同一容量读数，说明仅靠人工自审没有卡住重复 UI | `game-ui-design/references/layout-interaction-patterns.md` 总体容量 owner 与机械检查规则；`mage-wars-ui-design-memory` 用户原话反思表；`.spec/tools/scan-ui-duplicate-owners.mjs` | 顶部容量区是总体法术点 `当前 / 上限` 唯一 owner；右侧标题只显示当前可见范围 / 条目数，详情层只说明训练和计点依据，不复写 `法术点 120 / 120`。送验前运行重复 owner 扫描，默认态 `法术点` 和 `120 / 120` 均只能出现一次。 | covered-by-current-design-audit-v16 |
 | 右侧清单不能用圆球 / 简单几何替代卡图 | 右侧 deck list 行代表具体法术牌，蓝色圆球或首字类型标无法让玩家识别卡牌，也把低质程序化几何当成正式素材 | `game-ui-design/references/layout-interaction-patterns.md` 已选清单卡牌身份 owner 门禁；`mage-wars-ui-design-memory` 用户原话反思表；正式卡图裁片 manifest | 法术书清单每行左侧必须用真实卡图缩略或正式卡背；类型 / 学派只能作辅助信息。截图和 DOM 扫描不得出现 `.cost` 圆形类型标、普通 icon 或无来源几何身份标。 | covered-by-current-design-audit |
 | 图面第一眼仍明显有问题 | 自动审计只检查元素存在，会漏掉错误参考图、筛选区过高、卡池被推到下半屏、设计说明抢主视觉、首屏卡池稀疏、横向墙牌被塞进竖牌壳等玩家一眼可见的问题 | `game-ui-design/SKILL.md` 外部参考必须是实际操作态；`game-ui-design/references/layout-interaction-patterns.md` 成熟组牌主视觉与素材比例门禁；`mage-wars-ui-design-memory` 用户原话反思表 | Mage Wars 组书截图送验前必须同时检查：外部参考图不是导入 / 选英雄入口，顶部说明退场，筛选区是工具栏不是筛选墙，法术牌库当前视口完整可见行由真实卡面连续填满，墙体牌按官方横向比例显示且无黑边 / 拉伸。 | covered-by-current-design-audit |
+| 炉石参考必须逐项正反对照 | 只写“参考炉石”会继续保留炉石没有的大管理栏、规则说明块和重复完成区，也可能漏掉炉石已有的卡池主视觉、右侧 deck list、紧凑筛选和已选 deck / hero owner | `game-ui-design/references/layout-interaction-patterns.md` 点名成熟参考正反对照门禁；`mage-wars-ui-design-memory` 用户原话反思表；`hearthstone-deckbuilder-comparison.md` | 送验前必须列出 `炉石有 / Mage Wars 没有 / 为什么没有` 与 `Mage Wars 有 / 炉石没有 / 为什么保留`；没有 Mage Wars 规则、素材比例、保存模型或玩家任务理由的目标独有 UI 必须删除、折叠或降权。默认组书页不得出现大管理栏、说明文案、第二完成区或默认展开法术书库。 | covered-by-current-implementation-v17 |
 | 生命 / 法力 / 聚魔这类全员相同基础属性不要在选角页重复 | Mage Wars 学徒法师选角页把 24 / 10 / 10 这种所有候选一致的信息重复写在席位、候选卡和摘要上，玩家无法从中做选择 | `ui-change-gates.md` 无差异信息不重复展示、重复 UI 要代码验收；`mage-wars-ui-design-memory` 用户原话反思表 | 选角 / setup gate 只展示法师身份和会影响选择的差异项；生命24、初始法力10、聚魔10 不出现在额外 UI 文本 / chip / 摘要中，且有代码检索、DOM 文本扫描或 E2E 断言防复发 | covered-by-runtime-e2e |
 | 不要常驻确认 / 执行 / 取消 | 规则没有授权时伪造二次确认，占空间 | `ui-design-pipeline` 确认控件授权；`step1-runtime-board-saturated-ui-design.md` 统一动作规则 | 选中来源后高亮合法目标，目标本体点击推进；没有常驻确认按钮 | covered |
 | 开放式设计 / 场地直选优先 | 用代理面板、问号块、目标摘要替代真实对象 | `ui-design-pipeline` 开放式直选裁决；`ui-change-gates.md` 0.0 / 0.0D | 合法目标在棋盘格 / 场上卡 / token 本体高亮，代理 UI 仅在有规则理由时出现 | covered |
@@ -99,6 +100,7 @@
 - [ ] 组书 / 法术书编辑器送验前必须运行重复 owner 扫描或等价 DOM / E2E 断言，覆盖 `法术点`、`120 / 120`、所选法师身份、`当前法术书`、`当前法师法术书库`、`编辑当前书`、`更新当前副本`、`给当前书取名`、`新书从当前书`、`当前书内`、`xN`、`席位`、`P1`、`P2`、`兽王标准书`、独立 `详情` 入口、`DIY 法术书`、`空白自组` 等回归词。
 - [ ] 法术书右侧清单每行必须用真实卡图缩略或正式卡背承载卡牌身份；不得用圆球、首字、普通 icon、类型色块或简单几何替代。
 - [ ] 组书 / 法术书编辑器截图第一眼像成熟组牌页：外部参考图不是导入 / 选英雄入口，筛选区不压低卡池、当前视口完整可见卡池行由真实卡面连续填满且不是空白样例区、卡池主视觉不是每卡常驻按钮网格、横向墙牌按横向比例显示且没有黑边 / 拉伸。
+- [ ] 点名 Hearthstone 或其它成熟组牌参考后，送验前必须附正反对照：参考有而 Mage Wars 没有的逐项说明缺失理由；Mage Wars 有而参考没有的逐项说明保留理由；解释不了的 UI 已删除、折叠或降权。
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。

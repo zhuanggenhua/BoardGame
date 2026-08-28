@@ -42,6 +42,15 @@ const assetPublishAssetsRoot = process.env.BG_ASSET_PUBLISH_ASSETS_ROOT || '/hom
 const assetPublishIndexFile = '.boardgame-asset-index.json';
 const assetPublishHost = process.env.BG_ASSET_PUBLISH_HOST || host;
 const assetPublishPort = Number.parseInt(process.env.BG_ASSET_PUBLISH_PORT || '', 10);
+const assetPublishRequiredFiles = [
+    { id: 'apply-server-asset-publish', relativePath: 'scripts/assets/apply-server-asset-publish.mjs' },
+    { id: 'publish-primary-assets', relativePath: 'scripts/assets/publish-primary-assets.mjs' },
+    { id: 'active-server-assets', relativePath: 'scripts/assets/active-server-assets.mjs' },
+    { id: 'asset-publish-ownership', relativePath: 'scripts/assets/asset-publish-ownership.mjs' },
+    { id: 'release-retention', relativePath: 'scripts/assets/release-retention.mjs' },
+    { id: 'server-android-package-refresh', relativePath: 'scripts/assets/server-android-package-refresh.mjs' },
+    { id: 'android-assets-base-url', relativePath: 'scripts/mobile/android-assets-base-url.mjs' },
+];
 const jobs = new Map();
 const assetPublishSessions = new Map();
 const assetPublishSourceUsage = new Map();
@@ -62,11 +71,7 @@ const server = createServer(async (req, res) => {
                 activeJobId,
                 scriptReady: deployScriptReady(),
                 release: mobileReleaseStatus(),
-                assetPublish: {
-                    script: assetPublishScriptReady(),
-                    assetsRoot: assetPublishAssetsRoot,
-                    maxUploadBytes: assetPublishMaxUploadBytes,
-                },
+                assetPublish: assetPublishStatus(),
             });
             return;
         }
@@ -302,11 +307,7 @@ if (
                 sendJson(res, 200, {
                     ok: true,
                     activeJobId,
-                    assetPublish: {
-                        script: assetPublishScriptReady(),
-                        assetsRoot: assetPublishAssetsRoot,
-                        maxUploadBytes: assetPublishMaxUploadBytes,
-                    },
+                    assetPublish: assetPublishStatus(),
                 });
                 return;
             }
@@ -451,8 +452,9 @@ async function handleAssetPublishInventoryRequest(req, res) {
         sendJson(res, 401, { ok: false, error: 'Unauthorized' });
         return;
     }
-    if (!assetPublishScriptReady()) {
-        sendJson(res, 503, { ok: false, error: 'Asset publish script not found' });
+    const publishStatus = assetPublishStatus();
+    if (!publishStatus.ready) {
+        sendAssetPublishNotReady(res, publishStatus);
         return;
     }
     const inventory = await loadAssetPublishInventory();
@@ -503,8 +505,9 @@ async function handleAssetPublishRequest(req, res) {
         sendJson(res, 401, { ok: false, error: 'Unauthorized' });
         return;
     }
-    if (!assetPublishScriptReady()) {
-        sendJson(res, 503, { ok: false, error: 'Asset publish script not found' });
+    const publishStatus = assetPublishStatus();
+    if (!publishStatus.ready) {
+        sendAssetPublishNotReady(res, publishStatus);
         return;
     }
     if (activeJobId) {
@@ -547,6 +550,11 @@ async function handleAssetPublishRequest(req, res) {
 async function handleAssetPublishChunkRequest(req, res) {
     if (!authorizeAssetPublish(req)) {
         sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+        return;
+    }
+    const publishStatus = assetPublishStatus();
+    if (!publishStatus.ready) {
+        sendAssetPublishNotReady(res, publishStatus);
         return;
     }
 
@@ -620,6 +628,11 @@ async function handleAssetPublishChunkRequest(req, res) {
 async function handleAssetPublishCompleteRequest(req, res) {
     if (!authorizeAssetPublish(req)) {
         sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+        return;
+    }
+    const publishStatus = assetPublishStatus();
+    if (!publishStatus.ready) {
+        sendAssetPublishNotReady(res, publishStatus);
         return;
     }
 
@@ -1182,7 +1195,7 @@ function mobileReleaseStatus() {
         packageScript: existsSync(path.join(rootDir, 'scripts/mobile/publish-android-game-packages.mjs')),
         dist: existsSync(path.join(rootDir, 'dist/android-build-meta.json')),
         releaseApk: existsSync(path.join(rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
-        serverAssetsReady: existsSync(path.join(rootDir, 'scripts/assets/apply-server-asset-publish.mjs')),
+        serverAssetsReady: assetPublishStatus().ready,
     };
 }
 
@@ -1190,8 +1203,34 @@ function assetPublishScriptPath() {
     return path.join(rootDir, 'scripts/assets/apply-server-asset-publish.mjs');
 }
 
-function assetPublishScriptReady() {
-    return existsSync(assetPublishScriptPath());
+function assetPublishStatus() {
+    const files = assetPublishRequiredFiles.map((entry) => ({
+        ...entry,
+        exists: existsSync(path.join(rootDir, entry.relativePath)),
+    }));
+    const missing = files
+        .filter((entry) => !entry.exists)
+        .map((entry) => entry.relativePath);
+
+    return {
+        script: files.find((entry) => entry.id === 'apply-server-asset-publish')?.exists ?? false,
+        ready: missing.length === 0,
+        files,
+        missing,
+        assetsRoot: assetPublishAssetsRoot,
+        maxUploadBytes: assetPublishMaxUploadBytes,
+    };
+}
+
+function sendAssetPublishNotReady(res, publishStatus) {
+    const suffix = publishStatus.missing.length > 0
+        ? `: ${publishStatus.missing.join(', ')}`
+        : '';
+    sendJson(res, 503, {
+        ok: false,
+        error: `Asset publish dependencies missing${suffix}`,
+        assetPublish: publishStatus,
+    });
 }
 
 function validateMobileReleaseArgs(body) {

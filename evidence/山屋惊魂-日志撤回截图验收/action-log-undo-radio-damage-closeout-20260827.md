@@ -3,7 +3,7 @@
 ## 基本信息
 
 - 对象：山屋惊魂操作日志、撤回入口、无线电广播低点数分支的事件结果、派生重新投骰与伤害分配。
-- 日期：2026-08-27；最新复验：2026-08-28 00:49 +08:00。
+- 日期：2026-08-27；最新复验：2026-08-28 09:40 +08:00。
 - 文档类型：`closeout`。
 - 关联 evidence：`evidence/betrayal/full-audit/event-effect-implementation-audit-2026-07-29.md` 的事件伤害分配机制族重审回写。
 
@@ -25,7 +25,7 @@
 | 类型 | 来源 | 证明内容 |
 | --- | --- | --- |
 | 规则配置 | `src/games/betrayal/scenarioConfig.ts` 的无线电广播配置 | 主事件投 2 颗骰子；0-2 分支是 `rolledDamage`，`dice: 1`，`damageKind: mental`。 |
-| 领域结算 | `src/games/betrayal/game.ts` | 事件分支确定后物化伤害骰；确认事件后把 `rolls`、`total`、`appliedAmount` 写入最近投骰快照并生成待分配精神伤害；玩家分配后才扣最终属性。 |
+| 领域结算 | `src/games/betrayal/game.ts` | 主事件骰先只确定分支；最后一票确认事件结果时才物化派生伤害骰，并把 `rolls`、`total`、`appliedAmount` 写入最近投骰快照并生成待分配精神伤害；玩家分配后才扣最终属性。 |
 | 玩家可见结果 | `src/games/betrayal/Board.tsx` | 最近投骰面板显示重新投掷、合计和待分配伤害；伤害分配面板只给精神伤害展示知识 / 神志。 |
 | 操作日志 | `src/games/betrayal/actionLog.ts` | 日志用真实触发玩家写入事件结果、重新投骰结果和伤害分配结果。 |
 | 截图与 E2E | `e2e/betrayal/action-log-undo-screenshots.e2e.ts` | 真实浏览器完整覆盖日志、撤回、事件触发、事件结果、重新投骰、精神伤害分配、属性扣减和日志记录。 |
@@ -37,7 +37,7 @@
 | 操作日志玩家名 | 玩家执行移动、探索和事件结算后，日志必须显示真实玩家名，不能显示“玩家 1”占位。 | `actionLog.ts` 通过 `playerId` 参数交给 HUD 玩家映射。 | 日志记录归属到触发玩家“薇薇安”。 | E2E 断言日志包含“薇薇安”且不包含“玩家 1 / 玩家1”。 | 无 | PASS |
 | 撤回入口 | 移动后必须生成可撤回操作，并能打开撤回请求面板。 | `TestMatchRoom.tsx` 的测试 HUD 接入 `GameHUD`；撤回 FAB 打开 `fab-panel-undo-request`。 | 撤回请求面板可见，保留操作记录快照。 | 截图 `02-山屋惊魂-撤回请求面板.png`；E2E 断言面板和申请按钮可见。 | 无 | PASS |
 | 无线电广播事件触发 | 探索事件房间后，玩家应看到事件牌“无线电广播”、主事件骰总点数和低点数分支文案。 | `game.ts` 生成 `recentRoll`；`Board.tsx` 的发现面板与最近投骰面板展示事件。 | 事件仍处于待确认事件结果，尚未正式扣伤害；事件总点数 0 只用于选择 0-2 分支。 | 截图 `02-无线电广播-低点数受伤分支.png`、`03-无线电广播-事件骰结果.png`；E2E 断言事件牌、总点数 0 和分支文案。 | 无 | PASS |
-| 派生伤害骰 | “受到一颗骰子的精神伤害”必须重新投一颗伤害骰，不是固定 1 点伤害，也不能复用主事件骰点数；重新投骰画面不能继续显示主事件的两颗大骰子，也不能把规则描述当作主标题。 | `materializeEventEffect` 对 `rolledDamage` 独立调用 `rollDicePips`；随机队列 `[0, 0, 0.99]` 使主事件骰为 0 / 0，派生伤害骰为 2。`Board.tsx` 在派生伤害结果阶段把可见骰盘切到 `event-rolled-damage`。 | 最近投骰快照记录 `rolledDamageResults: [{ rolls: [2], total: 2, appliedAmount: 2 }]`；重新投骰画面主标题为“无线电广播”，显示“重新投掷的伤害骰（1 颗）”，可见骰盘 `data-dice-count=1`、`data-dice-rule-subtotal=2`，主合计为“伤害骰合计 2”，并显示“重新投掷 1 颗骰子 / 合计 2 / 待分配 2 点精神伤害”。 | 截图 `04-无线电广播-重新投掷一颗骰子.png`；E2E 断言 `betrayal-recent-roll-outcome=无线电广播`、不把“受到一颗骰子的精神伤害”作为主标题、`betrayal-recent-roll-total=伤害骰合计 2`、不显示“事件总点数 0”作为伤害骰主合计，且 `data-visible-dice-source=event-rolled-damage`、`data-dice-count=1`、`data-dice-rule-subtotal=2`、`data-damage-rolls=2`。 | 无 | PASS |
+| 派生伤害骰 | “受到一颗骰子的精神伤害”必须重新投一颗伤害骰，不是固定 1 点伤害，也不能复用主事件骰点数；重新投骰画面不能继续显示主事件的两颗大骰子，也不能把规则描述当作主标题。 | 主事件命令前只设置 `[0, 0]`，使主事件骰为 0 / 0；最后一名玩家确认 `FINALIZE_EVENT_ROLL` 前重新设置 `[0.99]`，由派生结算独立调用 `rollDicePips` 得到伤害骰 2。`Board.tsx` 在派生伤害结果阶段把可见骰盘切到 `event-rolled-damage`。 | 最近投骰快照记录 `rolledDamageResults: [{ rolls: [2], total: 2, appliedAmount: 2 }]`；重新投骰画面主标题为“无线电广播”，显示“重新投掷的伤害骰（1 颗）”，可见骰盘 `data-dice-count=1`、`data-dice-rule-subtotal=2`，主合计为“伤害骰合计 2”，并显示“重新投掷 1 颗骰子 / 合计 2 / 待分配 2 点精神伤害”。 | 截图 `04-无线电广播-重新投掷一颗骰子.png`；E2E 断言 `betrayal-recent-roll-outcome=无线电广播`、不把“受到一颗骰子的精神伤害”作为主标题、`betrayal-recent-roll-total=伤害骰合计 2`、不显示“事件总点数 0”作为伤害骰主合计，且 `data-visible-dice-source=event-rolled-damage`、`data-dice-count=1`、`data-dice-rule-subtotal=2`、`data-damage-rolls=2`。 | 无 | PASS |
 | 精神伤害分配 | 精神伤害必须由玩家在知识 / 神志之间分配，不能默认扣某一项，也不能出现力量 / 速度选项。 | `EVENT_ROLL_FINALIZED` 后激活 `pendingDamageAllocation`；`Board.tsx` 按 `allowedTraits: ["knowledge", "sanity"]` 渲染分配面板。 | 事件确认后属性仍是知识 4 / 神志 4；分配面板显示“2 点精神伤害”，只允许知识 / 神志。 | 截图 `05-无线电广播-精神伤害分配面板.png`；E2E 断言待分配状态、合法属性和非法物理属性不出现。 | 无 | PASS |
 | 分配后伤害结算 | 玩家选择知识和神志各承担 1 点后，才扣最终精神属性。 | `RESOLVE_DAMAGE_ALLOCATION` 触发 `DAMAGE_ALLOCATION_RESOLVED`，`applyGeneralDamage` 按玩家选择扣属性并清空 pending。 | 精神总值从 8 降到 6，知识 4→3，神志 4→3；分配面板关闭。 | 截图 `06-无线电广播-分配后属性结果.png`；E2E 断言 pending 清空和属性轨结果。 | 无 | PASS |
 | 重新投骰与分配日志 | 日志必须记录无线电广播结果、重新投骰点数、合计、待分配伤害和玩家最终分配到哪些属性。 | `buildEventRolledDamageEntries` 优先读取独立伤害骰事件的 `recentRoll.eventRolledDamageResults`，`buildDamageAllocationEntry` 读取分配事件。 | 操作日志包含真实玩家名“薇薇安”、“重新投掷 1 颗骰子”、“待分配 2 点精神伤害”和“将无线电广播的 2 点精神伤害分配到知识、神志”。 | 截图 `07-无线电广播-日志记录重新投骰与分配.png`；E2E 断言完整日志文本且不含“玩家 1 / 玩家1”。 | 无 | PASS |
@@ -46,15 +46,15 @@
 
 | 本对象 | 独立语义结论 | sharedFlowId | 一致性核对 | 剩余差异 | 是否需要直测 | 结论 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 无线电广播低点数分支 | 主事件骰低点数后进入一颗精神伤害骰，再由玩家分配精神伤害。 | `event-rolled-damage-resolution` | 触发时机：事件分支确定后；候选生成：无额外目标候选，但生成知识 / 神志伤害分配候选；权限判断：沿用事件确认并由受伤玩家分配；交互入口：最近投骰面板 + 伤害分配面板；payload / command 结构：`EVENT_ROLL_FINALIZED.effect` + `RESOLVE_DAMAGE_ALLOCATION.traits`；执行入口：`applyEventEffectWithDeferredRolledDamage` / `DAMAGE_ALLOCATION_RESOLVED`；最终权威状态：分配后精神属性轨扣减；清理语义：待确认事件骰和待分配伤害均清空；AI 或自动推进：不引入新合法动作。 | 事件名、1 颗骰、精神伤害。 | 否：本对象已经直测；其他 `rolledDamage` 子句按同流程判等，`fixedDamage` 与 `generalDamageChoice` 使用各自共享流程在事件效果 evidence 中回写。 | PASS |
+| 无线电广播低点数分支 | 主事件骰低点数后进入一颗精神伤害骰，再由玩家分配精神伤害。 | `event-rolled-damage-resolution` | 触发时机：主事件骰分支确定后先等待事件结果确认，最后一票 `FINALIZE_EVENT_ROLL` 才独立生成派生伤害骰；候选生成：无额外目标候选，但生成知识 / 神志伤害分配候选；权限判断：沿用事件确认并由受伤玩家分配；交互入口：最近投骰面板 + 伤害分配面板；payload / command 结构：`EVENT_ROLL_FINALIZED.effect` + `RESOLVE_DAMAGE_ALLOCATION.traits`；执行入口：`applyEventEffectWithDeferredRolledDamage` / `DAMAGE_ALLOCATION_RESOLVED`；最终权威状态：分配后精神属性轨扣减；清理语义：待确认事件骰和待分配伤害均清空；AI 或自动推进：不引入新合法动作。 | 事件名、1 颗骰、精神伤害。 | 否：本对象已经直测；其他 `rolledDamage` 子句按同流程判等，`fixedDamage` 与 `generalDamageChoice` 使用各自共享流程在事件效果 evidence 中回写。 | PASS |
 
 ## 验证证据
 
 | 命令 / 证据 | 结果 | 证明了什么 | 没有证明什么 |
 | --- | --- | --- | --- |
-| `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/actionLogUndo.test.ts --configLoader native --reporter=json --outputFile=temp/betrayal-actionLogUndo-report-rerun.json` | JSON success true / 6 passed | 单元层证明操作日志、撤回相关记录、无线电广播低点数重新投骰、待分配精神伤害、玩家分配知识 / 神志和日志条目结构正确。 | 不证明真实浏览器截图。 |
-| `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --reporter=json --outputFile=temp/betrayal-board-radio-report-rerun.json -t "无线电广播会在真实页面承接固定 2 骰、知识提升和精神伤害结果"` | JSON success true / 1 passed / 188 skipped | Board 代表链证明成功分支仍显示主事件 2 骰；低点数分支会把重新投骰阶段可见骰盘切为 1 颗伤害骰，主标题显示“无线电广播”，主合计显示“伤害骰合计 2”。 | 不证明真实浏览器截图或全部事件逐张覆盖。 |
-| `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts --configLoader native --reporter=json --outputFile=temp/betrayal-firstScenarioRuntime-damage-report-rerun.json` | JSON success true / 695 passed | 领域层覆盖事件伤害机制族：重新投骰伤害、固定物理 / 精神伤害、通用伤害选择均会先进入待分配，再由玩家选择属性并扣最终权威属性轨。 | 不证明真实浏览器截图。 |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/actionLogUndo.test.ts --configLoader native --reporter=json --outputFile=temp/betrayal-actionLogUndo-independent-roll-report.json` | JSON success true / 6 passed | 单元层证明操作日志、撤回相关记录、无线电广播低点数重新投骰、待分配精神伤害、玩家分配知识 / 神志和日志条目结构正确。 | 不证明真实浏览器截图。 |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --reporter=json --outputFile=temp/betrayal-board-radio-independent-roll-report.json -t "无线电广播会在真实页面承接固定 2 骰、知识提升和精神伤害结果"` | JSON success true / 1 passed / 188 skipped | Board 代表链证明成功分支仍显示主事件 2 骰；低点数分支会把重新投骰阶段可见骰盘切为 1 颗伤害骰，主标题显示“无线电广播”，主合计显示“伤害骰合计 2”。 | 不证明真实浏览器截图或全部事件逐张覆盖。 |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts --configLoader native --reporter=json --outputFile=temp/betrayal-firstScenarioRuntime-full-20260828-report.json` | JSON success true / 695 passed | 领域层覆盖事件伤害机制族，并修正兔脚重掷小机器人旧测试：重掷命令只消费主事件的一颗骰，后续伤害骰在最终确认时用独立随机源生成。 | 不证明真实浏览器截图。 |
 | `npm run test:e2e:file -- e2e/betrayal/action-log-undo-screenshots.e2e.ts` | 2 passed | 浏览器入口证明日志、撤回、事件触发、事件结果、重新投骰、伤害分配面板、属性扣减和日志记录均可见。 | 不证明 43 张事件逐张截图或死亡保护 / 减伤组合。 |
 | `npm run test:e2e:file -- e2e/betrayal/event-choice-coverage.e2e.ts 电话铃声` | 3 passed | 同类链证明电话铃声也会把主事件骰和后续伤害骰拆成两个独立事件；盔甲 / 头戴耳机链覆盖物理与精神减伤后的分配流程。 | 不证明事件全牌库逐张浏览器截图。 |
 | `npm run typecheck` | passed | 类型层证明本轮 TypeScript 改动没有类型错误。 | 不证明 i18n 全项目门禁；该门禁当前被 Mage Wars 无关脏改里的 68 条可见文案告警阻断。 |

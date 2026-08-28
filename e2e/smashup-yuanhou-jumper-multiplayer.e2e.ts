@@ -1893,14 +1893,14 @@ test.describe('SmashUp yuanhou 多客户端真实链路', () => {
         timeout: 20000,
       }).toBe(true);
 
-      await expect(hostPage.getByRole('button', { name: '玩家 0' })).toBeVisible({ timeout: 15000 });
-      await expect(hostPage.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
-      await expect(guestPage.getByRole('button', { name: '玩家 0' })).toHaveCount(0);
-      await expect(guestPage.getByRole('button', { name: '玩家 1' })).toHaveCount(0);
+      await expect(hostPage.getByRole('button', { name: 'Host-SU-E2E' })).toBeVisible({ timeout: 15000 });
+      await expect(hostPage.getByRole('button', { name: 'Guest-SU-E2E' })).toBeVisible({ timeout: 15000 });
+      await expect(guestPage.getByRole('button', { name: 'Host-SU-E2E' })).toHaveCount(0);
+      await expect(guestPage.getByRole('button', { name: 'Guest-SU-E2E' })).toHaveCount(0);
       await screenshotViewport(hostPage, 'yuanhou-operative-multiplayer-player-choice-host', testInfo);
       await screenshotViewport(guestPage, 'yuanhou-operative-multiplayer-no-player-choice-guest', testInfo);
 
-      await hostPage.getByRole('button', { name: '玩家 1' }).click();
+      await hostPage.getByRole('button', { name: 'Guest-SU-E2E' }).click();
       await hostPage.getByRole('button', { name: /确认/ }).click();
 
       await expect.poll(async () => {
@@ -2106,10 +2106,10 @@ test.describe('SmashUp yuanhou 多客户端真实链路', () => {
         timeout: 20000,
       }).toBe(true);
 
-      await expect(hostPage.getByRole('button', { name: '玩家 0' })).toBeVisible({ timeout: 15000 });
-      await expect(hostPage.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 15000 });
-      await expect(guestPage.getByRole('button', { name: '玩家 0' })).toHaveCount(0);
-      await expect(guestPage.getByRole('button', { name: '玩家 1' })).toHaveCount(0);
+      await expect(hostPage.getByRole('button', { name: 'Host-SU-E2E' })).toBeVisible({ timeout: 15000 });
+      await expect(hostPage.getByRole('button', { name: 'Guest-SU-E2E' })).toBeVisible({ timeout: 15000 });
+      await expect(guestPage.getByRole('button', { name: 'Host-SU-E2E' })).toHaveCount(0);
+      await expect(guestPage.getByRole('button', { name: 'Guest-SU-E2E' })).toHaveCount(0);
       await expectOwnedOverlayPromptChromeSuppressed(hostPage);
       await hostPage.mouse.move(24, 24);
       await guestPage.mouse.move(24, 24);
@@ -2117,7 +2117,7 @@ test.describe('SmashUp yuanhou 多客户端真实链路', () => {
       await screenshotViewport(hostPage, 'yuanhou-operative-manual-resync-player-choice-host', testInfo);
       await screenshotViewport(guestPage, 'yuanhou-operative-manual-resync-no-player-choice-guest', testInfo);
 
-      await hostPage.getByRole('button', { name: '玩家 1' }).click();
+      await hostPage.getByRole('button', { name: 'Guest-SU-E2E' }).click();
       await hostPage.getByRole('button', { name: /确认/ }).click();
 
       await expect.poll(async () => {

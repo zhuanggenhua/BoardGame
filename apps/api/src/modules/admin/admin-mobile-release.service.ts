@@ -101,6 +101,15 @@ const ANDROID_OTA_WORKFLOW_ID = 'android-ota-publish.yml';
 const ANDROID_OTA_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android OTA 发布禁止跳过 latest.json。手机端依赖 latest.json 发现更新，跳过会导致无法更新。';
 const ANDROID_NATIVE_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android 原生更新发布禁止跳过 latest.json。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。';
 const DEFAULT_ANDROID_CONTROL_ASSETS_BASE_URL = 'https://assets.easyboardgame.top/official';
+const ASSET_PUBLISH_REQUIRED_FILES = [
+    'scripts/assets/apply-server-asset-publish.mjs',
+    'scripts/assets/publish-primary-assets.mjs',
+    'scripts/assets/active-server-assets.mjs',
+    'scripts/assets/asset-publish-ownership.mjs',
+    'scripts/assets/release-retention.mjs',
+    'scripts/assets/server-android-package-refresh.mjs',
+    'scripts/mobile/android-assets-base-url.mjs',
+];
 
 @Injectable()
 export class AdminMobileReleaseService {
@@ -125,7 +134,7 @@ export class AdminMobileReleaseService {
             deployScript: existsSync(path.join(this.rootDir, 'scripts/deploy/deploy-image.sh')),
             dist: existsSync(path.join(this.rootDir, 'dist/android-build-meta.json')),
             releaseApk: existsSync(path.join(this.rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
-            serverAssetsReady: existsSync(path.join(this.rootDir, 'scripts/assets/apply-server-asset-publish.mjs')),
+            serverAssetsReady: this.isAssetPublishReady(),
         };
         const deployRunnerReady = Boolean(deployRunnerHealth?.ok);
         const deployScriptReady = hasRunnerConfig
@@ -842,6 +851,12 @@ export class AdminMobileReleaseService {
         } catch {
             return null;
         }
+    }
+
+    private isAssetPublishReady(): boolean {
+        return ASSET_PUBLISH_REQUIRED_FILES.every((relativePath) => (
+            existsSync(path.join(this.rootDir, relativePath))
+        ));
     }
 
     private async resolveDeployRollbackTarget(dto: DeployRollbackPreviewDto): Promise<DeployRollbackTarget> {
