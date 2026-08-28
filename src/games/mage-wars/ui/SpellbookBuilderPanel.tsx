@@ -54,12 +54,7 @@ const TYPE_FILTER_LABEL_KEYS: Record<Exclude<TypeFilter, 'all'>, string> = {
     '咒语': 'spellbookBuilder.type.incantation',
     '装备': 'spellbookBuilder.type.equipment',
 };
-const SCOPE_FILTER_OPTIONS = [
-    ['all', 'spellbookBuilder.scope.all'],
-    ['inBook', 'spellbookBuilder.scope.inBook'],
-    ['addable', 'spellbookBuilder.scope.addable'],
-    ['wall', 'spellbookBuilder.scope.wall'],
-] as const satisfies readonly Array<readonly [ScopeFilter, string]>;
+const SCOPE_FILTERS = ['all', 'inBook', 'addable', 'wall'] as const satisfies readonly ScopeFilter[];
 
 const SPELL_CARD_BACK_PATH = 'mage-wars/cards/backs/spell-card-back';
 const WALL_CARD_BACK_PATH = 'mage-wars/cards/backs/wall-card-back';
@@ -197,6 +192,7 @@ export function MageWarsSpellbookBuilderPanel({
     const [legalityFilter, setLegalityFilter] = useState<LegalityFilter>('all');
     const [scopeFilter, setScopeFilter] = useState<ScopeFilter>('all');
     const [detailOpen, setDetailOpen] = useState(false);
+    const [libraryOpen, setLibraryOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
     const [importText, setImportText] = useState('');
     const [saveName, setSaveName] = useState('');
@@ -266,6 +262,7 @@ export function MageWarsSpellbookBuilderPanel({
         setEditingSavedSpellbookId(activeSavedSpellbook?.id ?? null);
         setSaveName(activeSavedSpellbook?.name ?? '');
         setDetailOpen(false);
+        setLibraryOpen(false);
         setImportOpen(false);
     }, [activeSavedSpellbookId, mageId]);
 
@@ -292,6 +289,7 @@ export function MageWarsSpellbookBuilderPanel({
         setEditingSavedSpellbookId(null);
         setSaveName('');
         setImportOpen(false);
+        setLibraryOpen(false);
         setSaveStatus(t('spellbookBuilder.status.loadedStandard'));
         onSavedSpellbookChange?.(null);
     };
@@ -300,6 +298,7 @@ export function MageWarsSpellbookBuilderPanel({
         applyEntries(parseImportedEntries(importText));
         setEditingSavedSpellbookId(null);
         setImportOpen(false);
+        setLibraryOpen(false);
         onSavedSpellbookChange?.(null);
     };
 
@@ -314,6 +313,7 @@ export function MageWarsSpellbookBuilderPanel({
             onSavedLibraryChange?.();
             setEditingSavedSpellbookId(saved.id);
             setSaveName(saved.name);
+            setLibraryOpen(false);
             setSaveStatus(t('spellbookBuilder.status.saved', { name: saved.name }));
             onSavedSpellbookChange?.(saved);
         } catch (error) {
@@ -333,6 +333,7 @@ export function MageWarsSpellbookBuilderPanel({
             refreshSavedSpellbooks();
             onSavedLibraryChange?.();
             setSaveName(saved.name);
+            setLibraryOpen(false);
             setSaveStatus(t('spellbookBuilder.status.updated', { name: saved.name }));
             onSavedSpellbookChange?.(saved);
         } catch (error) {
@@ -345,6 +346,7 @@ export function MageWarsSpellbookBuilderPanel({
         setEditingSavedSpellbookId(saved.id);
         setSaveName(saved.name);
         setImportOpen(false);
+        setLibraryOpen(false);
         setSaveStatus(t('spellbookBuilder.status.loadedSaved', { name: saved.name }));
         onSavedSpellbookChange?.(saved);
     };
@@ -365,6 +367,10 @@ export function MageWarsSpellbookBuilderPanel({
     const budgetRatio = Math.min(1, Math.max(0, summary.pointsUsed / summary.pointLimit));
     const canSaveAsNew = saveName.trim().length > 0 && entries.length > 0;
     const canUpdateSaved = Boolean(editingSavedSpellbookId) && canSaveAsNew;
+    const editingSavedSpellbook = editingSavedSpellbookId
+        ? savedSpellbooks.find((saved) => saved.id === editingSavedSpellbookId) ?? null
+        : null;
+    const selectedBookLabel = editingSavedSpellbook?.name ?? t('spellbookBuilder.standardSpellbook');
 
     return (
         <div
@@ -534,27 +540,6 @@ export function MageWarsSpellbookBuilderPanel({
                         aria-label={t('spellbookBuilder.savedListAria')}
                     >
                         <div className="grid max-h-[18rem] gap-2 overflow-auto pr-1 scrollbar-thin">
-                            <button
-                                type="button"
-                                className={cx(
-                                    'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border px-2.5 py-2 text-left hover:border-amber-200/45',
-                                    editingSavedSpellbookId === null ? 'border-amber-200/70 bg-amber-300/12' : 'border-white/15 bg-white/[0.045]',
-                                )}
-                                data-testid="mage-wars-spellbook-builder-standard"
-                                data-library-kind="standard"
-                                data-active={String(editingSavedSpellbookId === null)}
-                                onClick={resetToStandard}
-                            >
-                                <strong className="block truncate text-sm font-black leading-none text-stone-50">
-                                    {t('spellbookBuilder.libraryTitle')}
-                                </strong>
-                                <span className="text-xs font-black text-stone-200/70">
-                                    {t('spellbookBuilder.standardPresetSummary', {
-                                        count: getMageWarsDefaultSpellbookEntries(mageId)
-                                            .reduce((total, entry) => total + entry.count, 0),
-                                    })}
-                                </span>
-                            </button>
                             <button
                                 type="button"
                                 className={cx(
@@ -748,23 +733,32 @@ export function MageWarsSpellbookBuilderPanel({
                                 <option value="restricted">{t('spellbookBuilder.legality.restricted')}</option>
                             </select>
                             <div className="flex min-w-0 gap-1.5 overflow-hidden" data-testid="mage-wars-spellbook-builder-scope-filters">
-                                {SCOPE_FILTER_OPTIONS.map(([value, labelKey]) => (
-                                    <button
-                                        key={value}
-                                        type="button"
-                                        className={cx(
-                                            'h-7 min-w-[3.9rem] border px-2 text-[0.6rem] font-black leading-none',
-                                            scopeFilter === value
-                                                ? 'border-amber-200/70 bg-amber-300/15 text-stone-50'
-                                                : 'border-white/15 bg-white/[0.045] text-stone-200/75',
-                                        )}
-                                        data-testid={`mage-wars-spellbook-builder-scope-${value}`}
-                                        aria-pressed={scopeFilter === value}
-                                        onClick={() => setScopeFilter(value)}
-                                    >
-                                        {t(labelKey)}
-                                    </button>
-                                ))}
+                                {SCOPE_FILTERS.map((value) => {
+                                    const label = value === 'all'
+                                        ? t('spellbookBuilder.scope.all')
+                                        : value === 'inBook'
+                                            ? t('spellbookBuilder.scope.inBook')
+                                            : value === 'addable'
+                                                ? t('spellbookBuilder.scope.addable')
+                                                : t('spellbookBuilder.scope.wall');
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            className={cx(
+                                                'h-7 min-w-[3.9rem] border px-2 text-[0.6rem] font-black leading-none',
+                                                scopeFilter === value
+                                                    ? 'border-amber-200/70 bg-amber-300/15 text-stone-50'
+                                                    : 'border-white/15 bg-white/[0.045] text-stone-200/75',
+                                            )}
+                                            data-testid={`mage-wars-spellbook-builder-scope-${value}`}
+                                            aria-pressed={scopeFilter === value}
+                                            onClick={() => setScopeFilter(value)}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -830,7 +824,7 @@ export function MageWarsSpellbookBuilderPanel({
                     </section>
 
                     <aside
-                        className="grid min-h-0 grid-rows-[2.55rem_minmax(0,1fr)_3.25rem] border border-stone-100/15 bg-black/24 shadow-[0_18px_44px_rgba(0,0,0,0.32)]"
+                        className="grid min-h-0 grid-rows-[2.55rem_minmax(0,1fr)] border border-stone-100/15 bg-black/24 shadow-[0_18px_44px_rgba(0,0,0,0.32)]"
                         aria-label={t('spellbookBuilder.currentListAria')}
                         data-testid="mage-wars-spellbook-builder-current-list"
                     >
@@ -910,25 +904,6 @@ export function MageWarsSpellbookBuilderPanel({
                                 );
                             })}
                         </div>
-                        <footer className="grid border-t border-stone-100/15 bg-black/20 p-2.5">
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    type="button"
-                                    className="border border-white/15 bg-white/[0.05] px-4 py-2 text-xs font-bold"
-                                    onClick={onClose}
-                                >
-                                    {t('spellbookBuilder.back')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="border border-amber-200/60 bg-amber-300 px-5 py-2 text-xs font-black text-stone-950 shadow-[0_10px_22px_rgba(0,0,0,0.36)]"
-                                    data-testid="mage-wars-spellbook-builder-confirm"
-                                    onClick={onClose}
-                                >
-                                    {t('spellbookBuilder.confirm')}
-                                </button>
-                            </div>
-                        </footer>
                     </aside>
                 </section>
             </div>
@@ -965,17 +940,6 @@ export function MageWarsSpellbookBuilderPanel({
                                         {t('spellbookBuilder.opposedDirection')}
                                     </span>
                                     <strong>{trainingProfile.opposedSchools.join(' / ') || t('spellbookBuilder.none')}</strong>
-                                </div>
-                                <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] border border-white/12 bg-white/[0.045] p-2 text-sm">
-                                    <span className="font-black text-stone-100/70">
-                                        {t('spellbookBuilder.currentListLabel')}
-                                    </span>
-                                    <strong>
-                                        {t('spellbookBuilder.currentComposition', {
-                                            cards: summary.cardCount,
-                                            entries: summary.entryCount,
-                                        })}
-                                    </strong>
                                 </div>
                             </div>
                             <button

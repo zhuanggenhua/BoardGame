@@ -311,12 +311,16 @@ test('Mage Wars 组书编辑器：先选法师后从标准起始书保存命名�
 
     const builderVisibleText = await builder.evaluate((element) => element.textContent ?? '');
     expect(builderVisibleText).not.toMatch(/席位|\bP1\b|\bP2\b|xN|兽王标准书|当前法师：|当前法术书|当前法师法术书库|编辑当前书|更新当前副本|给当前书取名|新书从当前书|当前书内|详情|缺图|DIY 法术书|空白自组|还没有 DIY/u);
+    expect(builderVisibleText).not.toMatch(/标准起始书和命名副本同级|真实缩略、数量上限|滚动查看整本书|数量：1级|成本：受训/u);
     expect(Array.from(builderVisibleText.matchAll(/法术点/g))).toHaveLength(1);
     expect(Array.from(builderVisibleText.matchAll(/120\s*\/\s*120/g))).toHaveLength(1);
     await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-row')).toHaveCount(50);
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveCount(0);
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-list')).toContainText('标准起始书');
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-list')).toContainText('暂无命名副本');
     await expect(builder.getByTestId('mage-wars-spellbook-builder-standard')).toHaveAttribute('data-active', 'true');
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-blank')).toHaveCount(0);
     await expectAtlasFrameAspectRatioPreserved(
         builder.locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="2906"] [data-card-atlas-frame="true"]'),
@@ -350,6 +354,7 @@ test('Mage Wars 组书编辑器：先选法师后从标准起始书保存命名�
     await builder.getByTestId('mage-wars-spellbook-builder-save-name').fill('兽王标准命名书');
     await builder.getByTestId('mage-wars-spellbook-builder-save-new').click();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-save-status')).toContainText('已保存 兽王标准命名书');
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-spellbook')).toContainText('兽王标准命名书');
     await expect.poll(async () => page.evaluate(() => {
         const raw = localStorage.getItem('mage-wars:saved-spellbooks:v1');

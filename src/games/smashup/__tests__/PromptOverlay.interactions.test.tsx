@@ -571,6 +571,62 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         expect(screen.queryByRole('button', { name: 'Bob' })).not.toBeInTheDocument();
     });
 
+    it('玩家目标复合文案不应把数量数字误替换成玩家名', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'composite-player-target-count',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择目标玩家',
+                sourceId: 'composite_player_target_count',
+                targetType: 'player',
+                options: [
+                    { id: 'target-discard-1', label: '令玩家 1 选择弃掉 1 张牌', value: { targetPlayerId: '1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({
+            interaction,
+            dispatch: vi.fn(),
+            playerID: '0',
+            playerNames: { '1': 'Bob' },
+            core: promptCore({ '1': { factions: ['pirates', 'vikings'] } }),
+        });
+
+        expect(screen.getByRole('button', { name: '令Bob 选择弃掉 1 张牌' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '令Bob 选择弃掉 Bob 张牌' })).not.toBeInTheDocument();
+    });
+
+    it('带玩家编号参数的标题应显示同一玩家身份名', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'player-title-target',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '印斯茅斯基地：从玩家{{playerNumber}}的弃牌堆选择一张卡',
+                titleKey: 'ui.base_innsmouth_choose_card_other_title',
+                titleParams: { playerNumber: 2 },
+                sourceId: 'player_title_target',
+                targetType: 'generic',
+                options: [
+                    { id: 'confirm', label: '选择这张卡', value: { cardUid: 'c1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({
+            interaction,
+            dispatch: vi.fn(),
+            playerID: '0',
+            playerNames: { '1': 'Bob' },
+            core: promptCore({ '1': { factions: ['pirates', 'vikings'] } }),
+        });
+
+        expect(screen.getByText('印斯茅斯基地：从Bob的弃牌堆选择一张卡')).toBeInTheDocument();
+        expect(screen.queryByText('印斯茅斯基地：从玩家2的弃牌堆选择一张卡')).not.toBeInTheDocument();
+    });
+
     it('非 owner 只有拿到可见 current prompt 时才会出现中央 waiting_for_player 文案', () => {
         const dispatch = vi.fn();
         const visiblePrompt: InteractionDescriptor<SimpleChoiceData> = {

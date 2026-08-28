@@ -319,9 +319,49 @@ function replaceFallbackPlayerLabel(label: string, playerId: PlayerId, identity:
     if (label.trim() === String(playerId)) return identity;
     if (isFallbackPlayerName(label, playerId)) return identity;
 
+    const isAlphaNumericLabel = (value: string): boolean => /^[A-Za-z0-9]+$/.test(value);
+    const replaceIdentityToken = (current: string, fallback: string): string => {
+        if (fallback === String(playerId)) return current;
+        if (!isAlphaNumericLabel(fallback)) return current.split(fallback).join(identity);
+
+        const parts = current.split(fallback);
+        if (parts.length === 1) return current;
+        return parts.reduce((joined, part, index) => {
+            if (index === 0) return part;
+            const previous = joined.charAt(joined.length - 1);
+            const next = part.charAt(0);
+            const embedded =
+                (previous ? /[A-Za-z0-9]/.test(previous) : false)
+                || (next ? /[A-Za-z0-9]/.test(next) : false);
+            return `${joined}${embedded ? fallback : identity}${part}`;
+        }, '');
+    };
+
     return getFallbackPlayerLabels(playerId)
         .sort((a, b) => b.length - a.length)
-        .reduce((current, fallback) => current.split(fallback).join(identity), label);
+        .reduce(replaceIdentityToken, label);
+}
+
+function resolveSmashUpPlayerReferenceText(
+    label: string,
+    playerId: PlayerId,
+    core: SmashUpCore | undefined,
+    playerNames: Record<string, string> | undefined,
+    t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+    const identity = resolveSmashUpPlayerIdentity(playerId, core, playerNames, t);
+    return replaceFallbackPlayerLabel(label, playerId, identity);
+}
+
+function extractPlayerIdFromNumberParam(params: Record<string, string | number> | undefined): PlayerId | undefined {
+    const rawPlayerNumber = params?.playerNumber;
+    const playerNumber = typeof rawPlayerNumber === 'number'
+        ? rawPlayerNumber
+        : typeof rawPlayerNumber === 'string'
+            ? Number.parseInt(rawPlayerNumber, 10)
+            : Number.NaN;
+    if (!Number.isFinite(playerNumber)) return undefined;
+    return String(playerNumber - 1);
 }
 
 function resolveSmashUpPlayerChoiceLabel(
@@ -334,8 +374,7 @@ function resolveSmashUpPlayerChoiceLabel(
     if (prompt?.targetType !== 'player') return option.label;
     const targetPlayerId = extractPlayerTargetId(option);
     if (!targetPlayerId) return option.label;
-    const identity = resolveSmashUpPlayerIdentity(targetPlayerId, core, playerNames, t);
-    return replaceFallbackPlayerLabel(option.label, targetPlayerId, identity);
+    return resolveSmashUpPlayerReferenceText(option.label, targetPlayerId, core, playerNames, t);
 }
 
 interface PromptSliderConfig {
@@ -597,14 +636,18 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 解析标题中的 i18n key（使用 useMemo 确保响应式更新）
     const title = useMemo(() => {
         if (!prompt) return '';
-        return resolvePromptText(
+        const resolvedTitle = resolvePromptText(
             prompt.title,
             promptTitleKey,
             promptTitleParams,
             t,
             i18n,
         );
-    }, [promptRenderKey, t, i18n]);
+        const titlePlayerId = extractPlayerIdFromNumberParam(promptTitleParams);
+        return titlePlayerId
+            ? resolveSmashUpPlayerReferenceText(resolvedTitle, titlePlayerId, core, playerNames, t)
+            : resolvedTitle;
+    }, [promptRenderKey, t, i18n, promptTitleParams, core, playerNames]);
 
     // 解析所有选项 label 中的 i18n key
     const resolvedOptions = useMemo(() => {

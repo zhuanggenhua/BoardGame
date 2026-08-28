@@ -5721,7 +5721,7 @@ const playPowderKegUpkeepTransfer = async (
 
     await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.before);
 
-    const transferTargetButton = match.hostPage.getByRole('button', { name: /转交给 P2|P2|对手|Opponent/i }).first();
+    const transferTargetButton = match.hostPage.getByRole('button', { name: /转交给 咒缚海盗|咒缚海盗|Opponent/i }).first();
     await expect(transferTargetButton).toBeVisible({ timeout: 10000 });
     await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.choice);
 
@@ -6289,7 +6289,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(match.guestPage.locator('#modal-root').getByText(/至多三名对手|powder keg/i)).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '09-guest-go-fish-powder-keg-choice');
 
-            await match.guestPage.locator('#modal-root').getByRole('button', { name: /P1|对手|Opponent/i }).first().click();
+            await match.guestPage.locator('#modal-root').getByRole('button', { name: /战术家|Opponent/i }).first().click();
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.POWDER_KEG, 1);
             await saveEvidenceScreenshot(match.guestPage, testInfo, '10-guest-go-fish-powder-keg-applied');
 
@@ -6335,7 +6335,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 playerId: '1',
                 payload: { cardId: GO_FISH_CARD_ID },
             });
-            const goFishApplyOpponentButton = goFishSkipModal.getByRole('button', { name: /^施加给 P1$/ });
+            const goFishApplyOpponentButton = goFishSkipModal.getByRole('button', { name: /^施加给 战术家$/ });
             const goFishSkipButton = goFishSkipModal.getByRole('button', { name: /^不施加火药桶$/ });
             await expect(goFishSkipModal).toContainText('选择至多三名对手获得火药桶', { timeout: 10000 });
             await expect(goFishApplyOpponentButton).toBeVisible({ timeout: 10000 });
@@ -10934,16 +10934,16 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await defenderCaptainPage.getByTestId('dt-defender-choice-option-1').click();
 
             const mercilessCurseModal = hostPage.locator('#modal-root');
-            const applyPlayer2Button = mercilessCurseModal.getByRole('button', { name: /^施加给 P2$/ });
-            const applyPlayer4Button = mercilessCurseModal.getByRole('button', { name: /^施加给 P4$/ });
-            const applyBothOpponentsButton = mercilessCurseModal.getByRole('button', { name: /^施加给 P2, P4$/ });
+            const applyPlayer2Button = mercilessCurseModal.getByRole('button', { name: /^施加给 战术家$/ });
+            const applyPlayer4Button = mercilessCurseModal.getByRole('button', { name: /^施加给 树精$/ });
+            const applyBothOpponentsButton = mercilessCurseModal.getByRole('button', { name: /^施加给 战术家, 树精$/ });
             const skipPowderKegButton = mercilessCurseModal.getByRole('button', { name: /^不施加火药桶$/ });
             await expect(mercilessCurseModal).toContainText('选择至多两名对手获得火药桶', { timeout: 10000 });
             await expect(applyPlayer2Button).toBeVisible({ timeout: 10000 });
             await expect(applyPlayer4Button).toBeVisible({ timeout: 10000 });
             await expect(applyBothOpponentsButton).toBeVisible({ timeout: 10000 });
             await expect(skipPowderKegButton).toBeVisible({ timeout: 10000 });
-            await expect(mercilessCurseModal).not.toContainText('P3');
+            await expect(mercilessCurseModal).not.toContainText('武僧');
             await saveEvidenceScreenshot(hostPage, testInfo, '44-four-player-merciless-curse-powder-keg-choice');
 
             await expect(applyBothOpponentsButton).toBeEnabled({ timeout: 10000 });

@@ -253,6 +253,8 @@
     "noNamedCopies": "暂无命名副本",
     "loadSavedAria": "载入 {{name}}",
     "savedCopySummary": "{{count}}张 · 命名副本",
+    "selectedBookStatus": "已选中",
+    "selectBookStatus": "选择",
     "deleteSavedAria": "删除 {{name}}",
     "saveNameLabel": "法术书名称",
     "saveNamePlaceholder": "命名副本名称",

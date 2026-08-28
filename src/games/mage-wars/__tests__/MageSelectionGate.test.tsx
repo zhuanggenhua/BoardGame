@@ -44,6 +44,8 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.savedListAria': '法术书库列表',
                 'spellbookBuilder.standardSpellbook': '标准起始书',
                 'spellbookBuilder.noNamedCopies': '暂无命名副本',
+                'spellbookBuilder.selectedBookStatus': '已选中',
+                'spellbookBuilder.selectBookStatus': '选择',
                 'spellbookBuilder.saveNameLabel': '法术书名称',
                 'spellbookBuilder.saveNamePlaceholder': '命名副本名称',
                 'spellbookBuilder.saveAsNew': '保存命名副本',
@@ -196,6 +198,9 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(builder.querySelector('[data-testid="mage-wars-spellbook-builder-blank"]')).toBeNull();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-save-name')).toBeInTheDocument();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-save-new')).toBeInTheDocument();
+        expect(within(builder).queryByTestId('mage-wars-spellbook-builder-saved-list')).toBeNull();
+        expect(builder.textContent).not.toMatch(/标准起始书和命名副本同级|真实缩略、数量上限|滚动查看整本书|数量：1级|成本：受训/u);
+        fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-library-toggle'));
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveTextContent('标准起始书');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveTextContent('暂无命名副本');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-standard')).toHaveAttribute('data-active', 'true');
@@ -246,12 +251,14 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(stored[0].entries.reduce((total: number, entry: { count: number }) => total + entry.count, 0)).toBe(67);
         expect(stored[0].entries).toContainEqual({ spellCardId: 2906, count: 2 });
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-save-status')).toHaveTextContent('已保存 兽王标准命名书');
+        fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-library-toggle'));
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveTextContent('标准起始书');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-spellbook')).toHaveTextContent('兽王标准命名书');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-update-saved')).toBeEnabled();
 
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-standard'));
         expect(within(builder).getAllByTestId('mage-wars-spellbook-builder-deck-row').length).toBeGreaterThan(20);
+        fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-library-toggle'));
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-spellbook'));
         const deckRows = within(builder).getAllByTestId('mage-wars-spellbook-builder-deck-row');
         expect(deckRows).toHaveLength(standardEntries.length);
@@ -290,6 +297,7 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         builder = screen.getByTestId('mage-wars-spellbook-builder');
 
         expect(builder).toHaveAttribute('data-mage-id', 'priestess_apprentice');
+        fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-library-toggle'));
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveTextContent('标准起始书');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).not.toHaveTextContent('兽王标准副本');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveTextContent('暂无命名副本');

@@ -253,6 +253,8 @@
     "noNamedCopies": "No named copies",
     "loadSavedAria": "Load {{name}}",
     "savedCopySummary": "{{count}} cards · named copy",
+    "selectedBookStatus": "Selected",
+    "selectBookStatus": "Select",
     "deleteSavedAria": "Delete {{name}}",
     "saveNameLabel": "Spellbook name",
     "saveNamePlaceholder": "Named copy name",

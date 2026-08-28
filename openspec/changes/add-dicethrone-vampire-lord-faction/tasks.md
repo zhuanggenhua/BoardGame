@@ -15,5 +15,5 @@
 - [x] 3.1 增加吸血鬼领主 intake / registry / critical image / portrait 合同测试。
 - [x] 3.2 运行定向 Vitest、i18n 校验、manifest/asset 校验和 OpenSpec strict validate。
   - note：`npm run i18n:check` 已执行；吸血鬼领主相关 key 未出现缺失，命令仍因 Mage Wars 现有 83 个可见中文文案检查失败，非本轮吸血鬼改动导致。
-- [ ] 3.3 执行 `xixuegui` 资源上传预检、上传和公开 URL 回查。
-  - blocked：发布预检已确认 6 个 `xixuegui` 对象待发布；真实上传在服务器应用发布时失败，原因是远端 `/home/admin/BoardGame/scripts/assets/apply-server-asset-publish.mjs` 需要导入但找不到 `/home/admin/BoardGame/scripts/assets/server-android-package-refresh.mjs`。公开 URL 回查仍为 404，不能标记为已上传完成。
+- [x] 3.3 执行 `xixuegui` 资源上传预检、上传和公开 URL 回查。
+  - note：先同步远端发布入口缺失脚本 `scripts/assets/server-android-package-refresh.mjs` 与 `scripts/mobile/android-assets-base-url.mjs`；随后上传成功，服务器发布批次 `20260828011337846`，6 个 `xixuegui` 对象发布完成，并自动刷新 DiceThrone Android 素材索引 `edge,stable`。公开 URL 回查 6 个对象均返回 `200` 且 `x-asset-source=server`。

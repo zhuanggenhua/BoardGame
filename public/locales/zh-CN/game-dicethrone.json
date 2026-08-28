@@ -749,7 +749,7 @@
     "bonusDiceResponseRequiresManual": "开启手动响应后才能响应奖励骰"
   },
   "hero": {
-    "monk": "僧侣",
+    "monk": "武僧",
     "barbarian": "狂战士",
     "pyromancer": "烈火术士",
     "shadow_thief": "暗影刺客",
@@ -762,7 +762,7 @@
     "vampire_lord": "吸血鬼领主"
   },
   "characters": {
-    "monk": "僧侣",
+    "monk": "武僧",
     "barbarian": "狂战士",
     "pyromancer": "烈火术士",
     "shadow_thief": "暗影刺客",
@@ -809,7 +809,7 @@
         "name": "烈火术士骰子"
       },
       "monk": {
-        "name": "僧侣骰子"
+        "name": "武僧骰子"
       },
       "moonElf": {
         "name": "月精灵骰子"

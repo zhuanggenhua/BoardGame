@@ -42,6 +42,12 @@ const createTreantTeamMatchup = () => {
     return state;
 };
 
+const TREANT_CHOICE_LABEL = 'characters.treant';
+const NINJA_CHOICE_LABEL = 'characters.ninja';
+const harvestTargetMask = (value: number): number => Math.floor(value / 1000);
+const tendCareLifeSapTargetIndex = (value: number): number => Math.floor(value / 1000) % 10 - 1;
+const tendCareThornTargetIndex = (value: number): number => Math.floor(value / 10000) % 10 - 1;
+
 describe('DiceThrone Treant 能力与卡牌合同', () => {
     const command = (type: string, playerId: string, payload: Record<string, unknown> = {}) => ({
         type,
@@ -1542,8 +1548,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             option.labelParams?.seedling === 0
             && option.labelParams?.sapling === 2
             && option.labelParams?.divine === 0
-            && option.labelParams?.lifeSapTarget === 'P2'
-            && option.labelParams?.thornTarget === 'P2'
+            && option.labelParams?.lifeSapTarget === NINJA_CHOICE_LABEL
+            && option.labelParams?.thornTarget === NINJA_CHOICE_LABEL
         );
         expect(selectedOption).toBeDefined();
 
@@ -1592,8 +1598,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             option.labelParams?.seedling === 2
             && option.labelParams?.sapling === 1
             && option.labelParams?.divine === 0
-            && option.labelParams?.lifeSapTarget === 'P1'
-            && option.labelParams?.thornTarget === 'P2'
+            && option.labelParams?.lifeSapTarget === TREANT_CHOICE_LABEL
+            && option.labelParams?.thornTarget === NINJA_CHOICE_LABEL
         );
         expect(selectedOption).toBeDefined();
 
@@ -1736,10 +1742,12 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const choiceEvent = preDefenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         const options = (choiceEvent as any).payload.options as Array<{ labelParams?: Record<string, unknown>; customId: string; value: number }>;
-        expect(options.some(option => option.labelParams?.thornTarget === 'P3')).toBe(false);
+        expect(options.some(option => option.labelParams?.thornTarget === TREANT_CHOICE_LABEL)).toBe(false);
         const selectedOption = options.find(option =>
-            option.labelParams?.lifeSapTarget === 'P3'
-            && option.labelParams?.thornTarget === 'P4'
+            option.labelParams?.lifeSapTarget === TREANT_CHOICE_LABEL
+            && option.labelParams?.thornTarget === NINJA_CHOICE_LABEL
+            && tendCareLifeSapTargetIndex(option.value) === 2
+            && tendCareThornTargetIndex(option.value) === 1
         );
         expect(selectedOption).toBeDefined();
         const expectedSeedling = Number(selectedOption?.labelParams?.seedling ?? 0);
@@ -1793,8 +1801,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             option.labelParams?.seedling === 2
             && option.labelParams?.sapling === 1
             && option.labelParams?.divine === 0
-            && option.labelParams?.lifeSapTarget === 'P1'
-            && option.labelParams?.thornTarget === 'P2'
+            && option.labelParams?.lifeSapTarget === TREANT_CHOICE_LABEL
+            && option.labelParams?.thornTarget === NINJA_CHOICE_LABEL
         );
         expect(selectedOption).toBeDefined();
 
@@ -2548,7 +2556,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         );
         let choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
         let selectedOption = (choiceEvent as any).payload.options.find((option: { labelParams?: Record<string, unknown> }) =>
-            option.labelParams?.player === 'P2'
+            option.labelParams?.player === NINJA_CHOICE_LABEL
         );
         expect(selectedOption).toBeDefined();
         let next = applyEvents(state.core, events);
@@ -2572,7 +2580,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         selectedOption = (choiceEvent as any).payload.options.find((option: { labelParams?: Record<string, unknown> }) =>
             option.labelParams?.seedling === 2
             && option.labelParams?.cp === 2
-            && option.labelParams?.targets === 'P1, P2'
+            && option.labelParams?.targets === `${TREANT_CHOICE_LABEL}, ${NINJA_CHOICE_LABEL}`
         );
         expect(selectedOption).toBeDefined();
         next = applyEvents(next, events);
@@ -3156,8 +3164,9 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         );
         const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
-        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelParams?: Record<string, unknown> }) =>
-            option.labelParams?.player === 'P3'
+        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelParams?: Record<string, unknown>; value: number }) =>
+            option.labelParams?.player === TREANT_CHOICE_LABEL
+            && option.value === 2
         );
         expect(selectedOption).toBeDefined();
 
@@ -3224,7 +3233,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             && option.labelParams?.sapling === 0
             && option.labelParams?.divine === 0
             && option.labelParams?.cp === 2
-            && option.labelParams?.targets === 'P3, P4'
+            && option.labelParams?.targets === `${TREANT_CHOICE_LABEL}, ${NINJA_CHOICE_LABEL}`
+            && harvestTargetMask(option.value) === 12
         );
         expect(selectedOption).toBeDefined();
         next = applyEvents(state.core, events);
@@ -3263,9 +3273,17 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         let choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         let options = (choiceEvent as any).payload.options as Array<{ labelParams?: Record<string, unknown>; customId: string; value: number }>;
-        expect(options.map(option => option.labelParams?.player)).toEqual(['P1', 'P2', 'P3', 'P4']);
+        expect(options.map(option => option.labelParams?.player)).toEqual([
+            TREANT_CHOICE_LABEL,
+            NINJA_CHOICE_LABEL,
+            TREANT_CHOICE_LABEL,
+            NINJA_CHOICE_LABEL,
+        ]);
 
-        let selectedOption = options.find(option => option.labelParams?.player === 'P3');
+        let selectedOption = options.find(option =>
+            option.labelParams?.player === TREANT_CHOICE_LABEL
+            && option.value === 2
+        );
         expect(selectedOption).toBeDefined();
         let next = applyEvents(state.core, events);
         next = reduce(next, {
@@ -3297,7 +3315,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             && option.labelParams?.sapling === 1
             && option.labelParams?.divine === 1
             && option.labelParams?.cp === 3
-            && option.labelParams?.targets === 'P1, P4'
+            && option.labelParams?.targets === `${TREANT_CHOICE_LABEL}, ${NINJA_CHOICE_LABEL}`
+            && harvestTargetMask(option.value) === 9
         );
         expect(selectedOption).toBeDefined();
         next = applyEvents(next, events);
@@ -3469,7 +3488,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             && option.labelParams?.sapling === 0
             && option.labelParams?.divine === 0
             && option.labelParams?.cp === 3
-            && option.labelParams?.targets === 'P1, P2'
+            && option.labelParams?.targets === `${TREANT_CHOICE_LABEL}, ${NINJA_CHOICE_LABEL}`
+            && harvestTargetMask(option.value) === 3
         );
         expect(selectedOption).toBeDefined();
 

@@ -256,7 +256,7 @@ describe('炽天使规则分支矩阵', () => {
 
         const events = resolve(state, card.id, card.effects, 'immediate', [1]);
         const choice = events.find(event => event.type === 'CHOICE_REQUESTED');
-        expect(choice?.payload.options.map(option => option.labelParams?.player)).toEqual(['0', '1']);
+        expect(choice?.payload.options.map(option => option.labelParams?.player)).toEqual(['characters.tianshi', 'characters.monk']);
         expect(choice?.payload.options[0]?.customId).toBe('tianshi-divine-arbitration-dazzle');
     });
 });
