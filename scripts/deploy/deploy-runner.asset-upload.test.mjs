@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -40,6 +40,61 @@ const stopRunner = async (child) => {
     child.kill('SIGTERM');
     await new Promise((resolve) => child.once('exit', resolve));
 };
+
+test('健康检查会把素材发布依赖缺失报告为未就绪', async () => {
+    const port = await reservePort();
+    const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'boardgame-asset-health-'));
+    mkdirSync(path.join(fixtureRoot, 'scripts', 'deploy'), { recursive: true });
+    mkdirSync(path.join(fixtureRoot, 'scripts', 'assets'), { recursive: true });
+    copyFileSync(
+        path.join(rootDir, 'scripts', 'deploy', 'deploy-runner.mjs'),
+        path.join(fixtureRoot, 'scripts', 'deploy', 'deploy-runner.mjs'),
+    );
+    writeFileSync(path.join(fixtureRoot, 'scripts', 'deploy', 'deploy-image.sh'), '#!/usr/bin/env bash\n');
+    writeFileSync(path.join(fixtureRoot, 'scripts', 'assets', 'apply-server-asset-publish.mjs'), 'console.log("stub");\n');
+
+    const baseUrl = `http://127.0.0.1:${port}`;
+    const child = spawn(process.execPath, ['scripts/deploy/deploy-runner.mjs'], {
+        cwd: fixtureRoot,
+        env: {
+            ...process.env,
+            BG_DEPLOY_RUNNER_HOST: '127.0.0.1',
+            BG_DEPLOY_RUNNER_PORT: String(port),
+            BG_DEPLOY_RUNNER_TOKEN: 'deploy-runner-test-token',
+            BG_ASSET_PUBLISH_TOKEN: token,
+            BG_ASSET_PUBLISH_PORT: '',
+        },
+        stdio: 'ignore',
+    });
+
+    try {
+        await waitForReady(baseUrl, child);
+        const healthResponse = await fetch(`${baseUrl}/health`);
+        assert.equal(healthResponse.status, 200);
+        const health = await healthResponse.json();
+        assert.equal(health.assetPublish.script, true);
+        assert.equal(health.assetPublish.ready, false);
+        assert.equal(health.release.serverAssetsReady, false);
+        assert.match(
+            health.assetPublish.missing.join('\n'),
+            /scripts\/assets\/server-android-package-refresh\.mjs/,
+        );
+        assert.match(
+            health.assetPublish.missing.join('\n'),
+            /scripts\/mobile\/android-assets-base-url\.mjs/,
+        );
+
+        const inventory = await fetch(`${baseUrl}/asset-publish`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        assert.equal(inventory.status, 503);
+        const inventoryResult = await inventory.json();
+        assert.match(inventoryResult.error, /Asset publish dependencies missing/);
+    } finally {
+        await stopRunner(child);
+        rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+});
 
 test('分块上传要求专用令牌，并在完成时交给归档校验', async () => {
     const port = await reservePort();
