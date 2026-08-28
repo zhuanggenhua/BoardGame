@@ -7,10 +7,28 @@
  * 3. ActionLog 能正确渲染
  */
 
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import type { DamageDealtEvent } from '../types';
 import { TOKEN_IDS } from '../ids';
+
+const collectProductionTsFiles = (entryPath: string): string[] => {
+  if (!existsSync(entryPath)) return [];
+
+  const stat = statSync(entryPath);
+  if (stat.isDirectory()) {
+    return readdirSync(entryPath, { withFileTypes: true }).flatMap(entry => {
+      const fullPath = join(entryPath, entry.name);
+      if (entry.name === '__tests__') return [];
+      if (entry.isDirectory()) return collectProductionTsFiles(fullPath);
+      return entry.isFile() && /\.(ts|tsx)$/.test(entry.name) ? [fullPath] : [];
+    });
+  }
+
+  return /\.(ts|tsx)$/.test(entryPath) ? [entryPath] : [];
+};
 
 describe('伤害计算管线迁移', () => {
   describe('Fiery Combo 迁移验证', () => {
@@ -273,6 +291,27 @@ describe('伤害计算管线迁移', () => {
       expect(oldFormatEvent.payload.modifiers).toBeDefined();
       expect(oldFormatEvent.payload.breakdown).toBeUndefined();
       expect(oldFormatEvent.payload.amount).toBe(8);
+    });
+  });
+
+  describe('正式事件输出合同', () => {
+    it('DiceThrone 生产伤害路径不得裸调用 toEvents 丢失副作用事件', () => {
+      const roots = [
+        'src/games/dicethrone/domain',
+        'src/games/dicethrone/hooks',
+        'src/games/dicethrone/game.ts',
+      ];
+      const violations = roots
+        .flatMap(root => collectProductionTsFiles(join(process.cwd(), root)))
+        .flatMap(file => {
+          const source = readFileSync(file, 'utf8');
+          return [...source.matchAll(/\.toEvents\s*\(\s*\)/g)].map(match => {
+            const line = source.slice(0, match.index).split(/\r?\n/).length;
+            return `${relative(process.cwd(), file)}:${line}`;
+          });
+        });
+
+      expect(violations).toEqual([]);
     });
   });
 });

@@ -137,7 +137,7 @@ function handleStandTall({ targetId, ctx, sourceAbilityId, state, timestamp }: C
             state,
             timestamp: timestamp + 10,
         });
-        const damageEvents = damageCalc.toEvents();
+        const damageEvents = damageCalc.toEvents({ includeSideEffects: true });
         damageEvents.forEach((event) => {
             if (event.type === 'DAMAGE_DEALT') {
                 (event as DamageDealtEvent).payload.unblockable = true;
@@ -353,7 +353,7 @@ export function registerSamuraiCustomActions(): void {
                     baseDamage: damage,
                     state,
                     timestamp,
-                }).toEvents()
+                }).toEvents({ includeSideEffects: true })
                 : [],
         };
     });

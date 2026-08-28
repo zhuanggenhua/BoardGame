@@ -82,6 +82,29 @@ const previewLive = (source: DamageSummarySource): DamageSummaryValueContract =>
     source,
 });
 
+const isPendingDamageBonusSettlement = (
+    state: DiceThroneCore,
+    settlement: PendingBonusDiceSettlement | undefined,
+): settlement is PendingBonusDiceSettlement => (
+    !!state.pendingDamage
+    && !!settlement
+    && settlement.displayOnly === true
+    && settlement.continuation?.kind === 'complete'
+    && settlement.attackerId === state.pendingDamage.responderId
+    && settlement.attackerId === state.pendingDamage.sourcePlayerId
+    && settlement.targetId === state.pendingDamage.targetPlayerId
+    && settlement.dice.length > 0
+    && settlement.dice.every(die => die.effectKey === 'bonusDie.effect.sneakAttack')
+);
+
+const getPendingDamageBonusSettlementPreviewAmount = (
+    state: DiceThroneCore,
+): number | undefined => {
+    const settlement = state.pendingBonusDiceSettlement;
+    if (!isPendingDamageBonusSettlement(state, settlement)) return undefined;
+    return sumBonusDiceValues(settlement);
+};
+
 export function getPendingBonusDiceSettlementDamagePreview(
     state: DiceThroneCore,
 ): BonusSettlementDamagePreview | undefined {
@@ -125,10 +148,13 @@ export function getCurrentDamageSummaryDetails(state: DiceThroneCore): CurrentDa
     const pendingDamage = state.pendingDamage;
     if (pendingDamage) {
         const currentDamage = toDamageValue(pendingDamage.currentDamage) ?? 0;
+        const pendingDamageBonusPreview = getPendingDamageBonusSettlementPreviewAmount(state) ?? 0;
         return {
-            currentDamage,
+            currentDamage: currentDamage + pendingDamageBonusPreview,
             originalDamage: toDamageValue(pendingDamage.originalDamage) ?? currentDamage,
-            current: formalLive('pendingDamage'),
+            current: pendingDamageBonusPreview > 0
+                ? previewLive('pendingBonusDiceSettlement')
+                : formalLive('pendingDamage'),
             original: formalSnapshot('pendingDamage'),
         };
     }

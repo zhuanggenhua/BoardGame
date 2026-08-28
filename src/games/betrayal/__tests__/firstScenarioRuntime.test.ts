@@ -598,17 +598,22 @@ function resolvePendingDamageForTest(
     timestamp = 100,
     deathPreventionRandoms: number[] = [],
 ): BetrayalCore {
-    const pending = core.pendingDamageAllocation;
+    let acknowledgedCore = core;
+    if (acknowledgedCore.recentRoll?.kind === 'eventRolledDamage') {
+        acknowledgedCore = acknowledgeAnyPendingCardResolutions(acknowledgedCore);
+        acknowledgedCore = acknowledgeRecentRollForAllPlayers(acknowledgedCore);
+    }
+    const pending = acknowledgedCore.pendingDamageAllocation;
     expect(pending).toBeTruthy();
     if (!pending) {
-        return core;
+        return acknowledgedCore;
     }
     expect(BetrayalDomain.validate(
-        { core, sys: {} as never },
+        { core: acknowledgedCore, sys: {} as never },
         createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, pending.playerId, { traits }),
     ).valid).toBe(true);
     return applyBetrayalCommand(
-        core,
+        acknowledgedCore,
         BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
         pending.playerId,
         { traits },

@@ -13,7 +13,6 @@ import { STATUS_IDS, MOON_ELF_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import type {
     DiceThroneEvent,
-    DamageDealtEvent,
     DamageShieldGrantedEvent,
     InteractionRequestedEvent,
     PendingInteraction,
@@ -69,7 +68,7 @@ function dealDamage(
     amount: number,
     sourceAbilityId: string,
     timestamp: number
-): DamageDealtEvent {
+): DiceThroneEvent[] {
     // 浣跨敤鏂颁激瀹宠绠楃绾?
     const damageScope = ctx.ctx.isDefensiveContext ? 'direct' : 'attack';
     const attackDamageContext = damageScope === 'attack'
@@ -94,8 +93,7 @@ function dealDamage(
         autoCollectShields: false,
     });
     
-    const events = damageCalc.toEvents();
-    return events[0] as DamageDealtEvent;
+    return damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[];
 }
 
 interface MoonElfFiveDiceRollResult {
@@ -316,7 +314,7 @@ function resolveExplodingArrowMultiDie(
     );
 
     if (damageAmount > 0) {
-        events.push(dealDamage(context, opponentId, damageAmount, sourceAbilityId, timestamp + 6));
+        events.push(...dealDamage(context, opponentId, damageAmount, sourceAbilityId, timestamp + 6));
     }
 
     if (moonCount > 0) {
@@ -373,7 +371,7 @@ function handleElusiveStepResolve1(context: CustomActionContext): DiceThroneEven
     // Missed Me: for every 2 Bow, deal 1 damage.
     const reflectedDamage = Math.floor(bowCount / 2);
     if (reflectedDamage > 0) {
-        events.push(dealDamage(context, opponentId, reflectedDamage, sourceAbilityId, timestamp));
+        events.push(...dealDamage(context, opponentId, reflectedDamage, sourceAbilityId, timestamp));
     }
 
     // 瓒抽潰鈮?鏃讹紝鎺堜簣 50% 鍑忎激鎶ょ浘
@@ -414,7 +412,7 @@ function handleElusiveStepResolve2(context: CustomActionContext): DiceThroneEven
     // Missed Me II follows the same reflect rule: every 2 Bow deals 1 damage.
     const reflectedDamage = Math.floor(bowCount / 2);
     if (reflectedDamage > 0) {
-        events.push(dealDamage(context, opponentId, reflectedDamage, sourceAbilityId, timestamp));
+        events.push(...dealDamage(context, opponentId, reflectedDamage, sourceAbilityId, timestamp));
     }
 
     // 瓒抽潰鈮?鏃讹紝鎺堜簣 50% 鍑忎激鎶ょ浘

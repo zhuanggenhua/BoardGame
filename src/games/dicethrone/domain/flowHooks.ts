@@ -916,7 +916,7 @@ function resolveBleedUpkeepEvents(
             timestamp: timestamp + 0.001,
             autoCollectShields: false,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     } else {
         events.push({
             type: 'STATUS_REMOVED',
@@ -2527,7 +2527,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         state: phaseEnterCore,
                         timestamp,
                     });
-                    const damageEvents = damageCalc.toEvents();
+                    const damageEvents = damageCalc.toEvents({ includeSideEffects: true });
                     events.push(...damageEvents);
                     // 持续效果：合法的 1 个燃烧不自动移除；旧存档/旧测试注入的非法多层燃烧归一到 1。
                     if (burnStacks > 1) {
@@ -2555,7 +2555,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         state: phaseEnterCore,
                         timestamp,
                     });
-                    const damageEvents = damageCalc.toEvents();
+                    const damageEvents = damageCalc.toEvents({ includeSideEffects: true });
                     events.push(...damageEvents);
                     // 持续效果：毒液层数不自动减少，只能通过净化等手段移除
                 }
@@ -2571,7 +2571,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         state: phaseEnterCore,
                         timestamp,
                     });
-                    events.push(...damageCalc.toEvents());
+                    events.push(...damageCalc.toEvents({ includeSideEffects: true }));
                 }
 
                 // 4. 炸药桶 (powder_keg) — 维持阶段投 1 骰，1-2 爆炸，6 可转交。

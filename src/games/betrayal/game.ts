@@ -10503,6 +10503,8 @@ function setEventRolledDamageRecentRollFromSnapshot(
         rollLabel: '重新投掷的伤害骰',
         dice,
         passiveBonus: 0,
+        requiredPlayerIds: [playerId],
+        acknowledgedPlayerIds: [],
         latestLabel: sourceTitle,
         eventRolledDamageResults: damageResults,
         sourceEventRoll: sourceEventRoll ? cloneSourceEventRoll(sourceEventRoll) : undefined,
@@ -14798,6 +14800,7 @@ function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRol
         return null;
     }
     const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
+        'eventRolledDamage',
         'mysticElevator',
         'attackRoll',
         'hauntActionTraitCheck',
@@ -14842,6 +14845,21 @@ function validateDamageAllocationResolution(core: BetrayalCore, command: Betraya
         return command.type === BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION
             ? { valid: false, error: '当前没有待分配的伤害。' }
             : null;
+    }
+    const pendingEventRolledDamageAcknowledgement = core.recentRoll?.kind === 'eventRolledDamage'
+        ? resolveAcknowledgeableRecentRoll(core)
+        : null;
+    if (
+        pendingEventRolledDamageAcknowledgement
+        && !isRecentRollFullyAcknowledged(core, pendingEventRolledDamageAcknowledgement)
+    ) {
+        if (
+            command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+            || command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION
+        ) {
+            return null;
+        }
+        return { valid: false, error: '请先确认当前伤害骰结果。' };
     }
     if (command.type !== BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION) {
         return { valid: false, error: '请先分配当前伤害。' };

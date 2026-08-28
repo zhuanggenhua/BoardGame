@@ -109,7 +109,7 @@ const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
             autoCollectStatus: false,
             autoCollectShields: false,
         });
-        events.push(...markUnblockableDamage(damageCalc.toEvents(), 'direct'));
+        events.push(...markUnblockableDamage(damageCalc.toEvents({ includeSideEffects: true }), 'direct'));
     }
     return events;
 };
@@ -160,7 +160,7 @@ const resolveFieryCombo = (ctx: CustomActionContext): DiceThroneEvent[] => {
         autoCollectTokens: false, // 手动处理 FM 修正：FM 刚授予但 state 未更新，自动收集会用旧值导致数值错误
     });
     
-    events.push(...damageCalc.toEvents());
+    events.push(...damageCalc.toEvents({ includeSideEffects: true }));
 
     return events;
 };
@@ -196,7 +196,7 @@ const resolveFieryCombo2 = (ctx: CustomActionContext): DiceThroneEvent[] => {
         autoCollectTokens: false, // 手动处理 FM 修正：FM 可能未在 tokenDefinitions 中定义 damageBonus，需手动添加
     });
     
-    return damageCalc.toEvents();
+    return damageCalc.toEvents({ includeSideEffects: true });
 };
 
 /**
@@ -234,7 +234,7 @@ const resolveMeteor = (ctx: CustomActionContext): DiceThroneEvent[] => {
             state: ctx.state,
             timestamp: timestamp + 0.1,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
     return events;
 };
@@ -280,7 +280,7 @@ const resolveBurnDown = (ctx: CustomActionContext, dmgPerToken: number, limit: n
             state: ctx.state,
             timestamp: timestamp + 0.2,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
 
     return events;
@@ -330,7 +330,7 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
         autoCollectTokens: false, // 手动处理 FM 修正：使用乘法系数（2x FM），自动收集只支持 1x，需手动计算
     });
     
-    events.push(...damageCalc.toEvents());
+    events.push(...damageCalc.toEvents({ includeSideEffects: true }));
 
     return events;
 };
@@ -455,7 +455,7 @@ const resolveMagmaArmor = (ctx: CustomActionContext, opts: { dmgPerFire?: number
             timestamp: ctx.timestamp + 0.1,
         });
 
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
 
     return events;
@@ -513,7 +513,7 @@ const resolveMagmaArmor3 = (ctx: CustomActionContext): DiceThroneEvent[] => {
             state: ctx.state,
             timestamp: ctx.timestamp + 0.1,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
 
     return events;

@@ -114,6 +114,7 @@ export function buildBonusDiceSettlementEvents({
     events.push({
         type: 'BONUS_DICE_SETTLED',
         payload: {
+            settlementId: settlement.id,
             finalDice: settlementDice,
             totalDamage,
             thresholdTriggered,

@@ -18,7 +18,7 @@ import {
 import type { MageWarsPlayerSpellbookEntry } from '../domain/spellbook';
 import {
     deleteMageWarsSavedSpellbook,
-    listMageWarsSavedSpellbooksForMage,
+    loadMageWarsSavedSpellbooks,
     type MageWarsSavedSpellbook,
 } from '../domain/savedSpellbooks';
 import {
@@ -30,6 +30,13 @@ import { MageWarsSpellbookBuilderPanel } from './SpellbookBuilderPanel';
 type SeatId = '0' | '1';
 
 const SEAT_IDS = ['0', '1'] as const satisfies readonly SeatId[];
+
+type StandardSpellbookOption = {
+    kind: 'standard';
+    mageId: MageId;
+    displayName: string;
+    spellbookCount: number;
+};
 
 function cx(...classes: Array<string | false | null | undefined>): string {
     return classes.filter(Boolean).join(' ');
@@ -65,22 +72,24 @@ function MageWarsMageSelectionGateContent({
     const [builderOpen, setBuilderOpen] = useState(false);
     const [savedLibraryRevision, setSavedLibraryRevision] = useState(0);
 
-    const mageCards = useMemo(() => getMageWarsSelectableMageIds().map((mageId) => ({
-        mageId,
-        setup: getPresetMageSetupFromConfig(mageId),
-        spellbookCount: getPresetSpellbookCountFromConfig(mageId),
-    })), []);
+    const standardSpellbookOptions = useMemo<StandardSpellbookOption[]>(() => getMageWarsSelectableMageIds()
+        .map((mageId) => ({
+            kind: 'standard',
+            mageId,
+            displayName: getPresetMageSetupFromConfig(mageId).displayName,
+            spellbookCount: getPresetSpellbookCountFromConfig(mageId),
+        })), []);
 
     const activeSeatIndex = activeSeatId === '0' ? 0 : 1;
     const activeMageId = seatMageIds[activeSeatIndex];
     const magePreviewAspectRatio = getMageWarsMagePreviewAspectRatio();
-    const activeSavedSpellbooks = useMemo(() => {
+    const savedSpellbooks = useMemo(() => {
         void savedLibraryRevision;
-        return listMageWarsSavedSpellbooksForMage(activeMageId);
-    }, [activeMageId, savedLibraryRevision]);
+        return loadMageWarsSavedSpellbooks();
+    }, [savedLibraryRevision]);
     const activeSavedSpellbookId = seatSavedSpellbookIds[activeSeatIndex];
 
-    const updateActiveSeatMage = (mageId: MageId) => {
+    const applyStandardSpellbookToActiveSeat = (mageId: MageId) => {
         setSeatMageIds((current) => {
             const next: [MageId, MageId] = [...current];
             next[activeSeatIndex] = mageId;
@@ -101,6 +110,27 @@ function MageWarsMageSelectionGateContent({
         });
     };
 
+    const applySavedSpellbookToActiveSeat = (saved: MageWarsSavedSpellbook) => {
+        setSeatMageIds((current) => {
+            const next: [MageId, MageId] = [...current];
+            next[activeSeatIndex] = saved.mageId;
+            return next;
+        });
+        setSeatSpellbookEntries((current) => {
+            const next: [MageWarsPlayerSpellbookEntry[], MageWarsPlayerSpellbookEntry[]] = [
+                [...current[0]],
+                [...current[1]],
+            ];
+            next[activeSeatIndex] = saved.entries.map((entry) => ({ ...entry }));
+            return next;
+        });
+        setSeatSavedSpellbookIds((current) => {
+            const next: [string | null, string | null] = [...current];
+            next[activeSeatIndex] = saved.id;
+            return next;
+        });
+    };
+
     const updateActiveSpellbookEntries = (entries: readonly MageWarsPlayerSpellbookEntry[]) => {
         setSeatSpellbookEntries((current) => {
             const next: [MageWarsPlayerSpellbookEntry[], MageWarsPlayerSpellbookEntry[]] = [
@@ -113,6 +143,13 @@ function MageWarsMageSelectionGateContent({
     };
 
     const updateActiveSavedSpellbook = (saved: MageWarsSavedSpellbook | null) => {
+        if (saved) {
+            setSeatMageIds((current) => {
+                const next: [MageId, MageId] = [...current];
+                next[activeSeatIndex] = saved.mageId;
+                return next;
+            });
+        }
         setSeatSavedSpellbookIds((current) => {
             const next: [string | null, string | null] = [...current];
             next[activeSeatIndex] = saved?.id ?? null;
@@ -128,16 +165,21 @@ function MageWarsMageSelectionGateContent({
     };
 
     const selectSavedSpellbook = (saved: MageWarsSavedSpellbook) => {
-        updateActiveSavedSpellbook(saved);
+        applySavedSpellbookToActiveSeat(saved);
     };
 
-    const selectStandardSpellbook = () => {
+    const selectStandardSpellbook = (mageId: MageId = activeMageId) => {
+        setSeatMageIds((current) => {
+            const next: [MageId, MageId] = [...current];
+            next[activeSeatIndex] = mageId;
+            return next;
+        });
         setSeatSpellbookEntries((current) => {
             const next: [MageWarsPlayerSpellbookEntry[], MageWarsPlayerSpellbookEntry[]] = [
                 [...current[0]],
                 [...current[1]],
             ];
-            next[activeSeatIndex] = getMageWarsDefaultSpellbookEntries(activeMageId);
+            next[activeSeatIndex] = getMageWarsDefaultSpellbookEntries(mageId);
             return next;
         });
         setSeatSavedSpellbookIds((current) => {
@@ -147,23 +189,33 @@ function MageWarsMageSelectionGateContent({
         });
     };
 
-    const editStandardSpellbook = () => {
-        selectStandardSpellbook();
-        setBuilderOpen(true);
-    };
-
     const editSavedSpellbook = (saved: MageWarsSavedSpellbook) => {
-        updateActiveSavedSpellbook(saved);
+        applySavedSpellbookToActiveSeat(saved);
         setBuilderOpen(true);
     };
 
     const removeSavedSpellbook = (saved: MageWarsSavedSpellbook) => {
         deleteMageWarsSavedSpellbook(saved.id);
         refreshSavedLibrary();
-        if (activeSavedSpellbookId === saved.id) {
+        const affectedSeatIndexes = seatSavedSpellbookIds
+            .map((savedSpellbookId, index) => savedSpellbookId === saved.id ? index : -1)
+            .filter((index) => index >= 0);
+        if (affectedSeatIndexes.length > 0) {
+            setSeatSpellbookEntries((current) => {
+                const next: [MageWarsPlayerSpellbookEntry[], MageWarsPlayerSpellbookEntry[]] = [
+                    [...current[0]],
+                    [...current[1]],
+                ];
+                affectedSeatIndexes.forEach((seatIndex) => {
+                    next[seatIndex] = getMageWarsDefaultSpellbookEntries(saved.mageId);
+                });
+                return next;
+            });
             setSeatSavedSpellbookIds((current) => {
                 const next: [string | null, string | null] = [...current];
-                next[activeSeatIndex] = null;
+                affectedSeatIndexes.forEach((seatIndex) => {
+                    next[seatIndex] = null;
+                });
                 return next;
             });
         }
@@ -208,7 +260,7 @@ function MageWarsMageSelectionGateContent({
                     </button>
                 </header>
 
-                <main className="mt-8 grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)_22rem] gap-8">
+                <main className="mt-8 grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)_20rem] gap-6">
                     <section
                         className="min-h-0 rounded-[0.55rem] border border-amber-100/10 bg-black/40 p-4 shadow-[0_18px_44px_rgba(0,0,0,0.34)]"
                         aria-label={t('setup.mageSelection.seats')}
@@ -221,6 +273,9 @@ function MageWarsMageSelectionGateContent({
                                 const seatIndex = seatId === '0' ? 0 : 1;
                                 const mageId = seatMageIds[seatIndex];
                                 const mageSetup = getPresetMageSetupFromConfig(mageId);
+                                const selectedSavedSpellbook = seatSavedSpellbookIds[seatIndex]
+                                    ? savedSpellbooks.find((saved) => saved.id === seatSavedSpellbookIds[seatIndex]) ?? null
+                                    : null;
                                 const active = activeSeatId === seatId;
                                 return (
                                     <button
@@ -254,6 +309,9 @@ function MageWarsMageSelectionGateContent({
                                                 <span className="block truncate text-xs font-semibold text-amber-100/75">
                                                     {mageSetup.displayName}
                                                 </span>
+                                                <span className="mt-1 block truncate text-[0.68rem] font-semibold text-stone-200/62">
+                                                    {selectedSavedSpellbook?.name ?? t('setup.mageSelection.standardSpellbook')}
+                                                </span>
                                             </span>
                                         </div>
                                     </button>
@@ -263,276 +321,269 @@ function MageWarsMageSelectionGateContent({
                     </section>
 
                     <section
-                        className="grid min-h-0 content-start items-start grid-cols-4 gap-5"
-                        aria-label={t('setup.mageSelection.mageGrid')}
+                        className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] rounded-[0.55rem] border border-amber-100/10 bg-black/30 p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)]"
+                        aria-label={t('setup.mageSelection.spellbookLibrary')}
+                        data-testid="mage-wars-mage-selection-spellbook-library"
                     >
-                        {mageCards.map(({ mageId, setup, spellbookCount }) => {
-                            const selectedForActiveSeat = mageId === activeMageId;
-                            const selectedSeatIndexes = seatMageIds
-                                .map((selectedMageId, index) => selectedMageId === mageId ? index : -1)
-                                .filter((index) => index >= 0);
-                            return (
-                                <button
-                                    key={mageId}
-                                    type="button"
-                                    className={cx(
-                                        'group relative flex h-auto flex-col rounded-[0.5rem] border bg-black/40 p-3 text-left shadow-[0_18px_42px_rgba(0,0,0,0.38)] transition',
-                                        selectedForActiveSeat
-                                            ? 'border-amber-300 shadow-[0_0_28px_rgba(245,158,11,0.34)]'
-                                            : 'border-white/10 hover:border-amber-200/50 hover:bg-black/50',
-                                    )}
-                                    data-testid={`mage-wars-mage-selection-card-${mageId}`}
-                                    data-mage-id={mageId}
-                                    aria-pressed={selectedForActiveSeat}
-                                    onClick={() => updateActiveSeatMage(mageId)}
-                                >
-                                    <div
-                                        className="relative mx-auto w-full max-w-[15.25rem] overflow-hidden rounded-[0.28rem] bg-black/50"
-                                        data-testid={`mage-wars-mage-selection-card-${mageId}-preview`}
-                                        style={{ aspectRatio: magePreviewAspectRatio }}
-                                    >
-                                        <CardPreview
-                                            previewRef={getMageWarsMagePreviewRef(mageId, 'portrait')}
-                                            className="h-full w-full rounded-[0.28rem] transition duration-200 group-hover:scale-[1.025]"
-                                            title={setup.displayName}
-                                            alt={setup.displayName}
-                                        />
-                                        {selectedSeatIndexes.length > 0 ? (
-                                            <div className="absolute left-2 top-2 flex gap-1">
-                                                {selectedSeatIndexes.map((seatIndex) => (
-                                                    <span
-                                                        key={seatIndex}
-                                                        className={cx(
-                                                            'rounded-full px-2 py-1 text-[0.65rem] font-black leading-none text-white shadow-[0_4px_10px_rgba(0,0,0,0.46)]',
-                                                            seatIndex === 0 ? 'bg-rose-500' : 'bg-sky-500',
-                                                        )}
-                                                    >
-                                                        P{seatIndex + 1}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        ) : null}
-                                    </div>
-                                    <div className="mt-3">
-                                        <div className="truncate text-lg font-black leading-none text-amber-100">
-                                            {setup.displayName}
-                                        </div>
-                                        <div className="mt-2 text-[0.72rem] font-bold text-stone-200/80">
-                                            <span>{t('setup.mageSelection.spellbookCount', { count: spellbookCount })}</span>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </section>
-
-                    <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] rounded-[0.55rem] border border-amber-100/10 bg-black/40 p-5 shadow-[0_18px_44px_rgba(0,0,0,0.34)]">
-                        <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/60">
-                            {t('setup.mageSelection.spellbookLibrary')}
-                        </div>
-                        <div className="mt-5 grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4">
-                            <div className="space-y-3">
-                                {SEAT_IDS.map((seatId) => {
-                                    const seatIndex = seatId === '0' ? 0 : 1;
-                                    const mageId = seatMageIds[seatIndex];
-                                    const setup = getPresetMageSetupFromConfig(mageId);
-                                    const spellbookCount = seatSpellbookEntries[seatIndex]
-                                        .reduce((total, entry) => total + entry.count, 0);
-                                    return (
-                                        <div
-                                            key={seatId}
-                                            className={cx(
-                                                'grid grid-cols-[4.4rem_minmax(0,1fr)] gap-3 rounded-[0.45rem] border bg-white/[0.06] p-3',
-                                                activeSeatId === seatId ? 'border-amber-200/55' : 'border-white/10',
-                                            )}
-                                            data-testid={`mage-wars-mage-selection-summary-${seatId}`}
-                                            data-mage-id={mageId}
-                                            data-saved-spellbook-id={seatSavedSpellbookIds[seatIndex] ?? ''}
-                                        >
-                                            <div
-                                                className="w-[4.4rem] overflow-hidden rounded-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.42)]"
-                                                data-testid={`mage-wars-mage-selection-summary-${seatId}-preview`}
-                                                style={{ aspectRatio: magePreviewAspectRatio }}
-                                            >
-                                                <CardPreview
-                                                    previewRef={getMageWarsMagePreviewRef(mageId, 'card')}
-                                                    className="h-full w-full rounded-[0.18rem]"
-                                                    title={setup.displayName}
-                                                    alt={setup.displayName}
-                                                />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="text-xs font-black text-stone-300">
-                                                    {seatIndex === 0
-                                                        ? t('setup.seat0Mage.label')
-                                                        : t('setup.seat1Mage.label')}
-                                                </div>
-                                                <div className="mt-1 truncate text-lg font-black text-white">
-                                                    {setup.displayName}
-                                                </div>
-                                                <div className="mt-2 text-xs font-semibold leading-relaxed text-stone-200/75">
-                                                    {t('setup.mageSelection.summaryLine', {
-                                                        spellbook: spellbookCount,
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <section
-                                className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-2 border-t border-white/10 pt-3"
-                                aria-label={t('setup.mageSelection.activeSpellbookAria')}
-                                data-testid="mage-wars-mage-selection-spellbook-library"
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-100/60">
-                                            {t('setup.mageSelection.activeSpellbookTitle')}
-                                        </div>
-                                        <div className="mt-1 truncate text-sm font-black text-stone-50">
-                                            {getPresetMageSetupFromConfig(activeMageId).displayName}
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="rounded-[0.35rem] border border-amber-200/60 bg-amber-300 px-3 py-2 text-xs font-black text-stone-950 shadow-[0_10px_20px_rgba(0,0,0,0.32)] transition hover:bg-amber-200"
-                                        data-testid="mage-wars-open-spellbook-builder"
-                                        onClick={() => setBuilderOpen(true)}
-                                    >
-                                        {t('setup.mageSelection.editCurrentSpellbook')}
-                                    </button>
+                        <div className="flex min-h-0 items-end justify-between gap-4 border-b border-white/10 pb-3">
+                            <div>
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/60">
+                                    {t('setup.mageSelection.spellbookLibrary')}
                                 </div>
-
-                                <div className="text-[0.68rem] font-semibold leading-relaxed text-stone-200/62">
+                                <div className="mt-1 text-sm font-semibold text-stone-200/70">
                                     {t('setup.mageSelection.spellbookLibraryHelp')}
                                 </div>
+                            </div>
+                        </div>
 
-                                <div
-                                    className="grid min-h-0 content-start gap-2 overflow-auto pr-1 scrollbar-thin"
-                                    data-testid="mage-wars-mage-selection-saved-spellbook-list"
-                                >
+                        <div
+                            className="grid min-h-0 grid-cols-[repeat(auto-fill,minmax(13.5rem,1fr))] content-start gap-4 overflow-auto pt-4 pr-1 scrollbar-thin"
+                            data-testid="mage-wars-mage-selection-saved-spellbook-list"
+                        >
+                            {standardSpellbookOptions.map((option) => {
+                                const selectedForActiveSeat = activeSavedSpellbookId === null && activeMageId === option.mageId;
+                                const selectedSeatIndexes = seatMageIds
+                                    .map((selectedMageId, index) => (
+                                        selectedMageId === option.mageId && seatSavedSpellbookIds[index] === null ? index : -1
+                                    ))
+                                    .filter((index) => index >= 0);
+                                return (
                                     <article
+                                        key={`standard-${option.mageId}`}
                                         className={cx(
-                                            'grid grid-cols-[3.1rem_minmax(0,1fr)] gap-2 rounded-[0.35rem] border bg-white/[0.045] p-2',
-                                            activeSavedSpellbookId === null ? 'border-amber-200/70 bg-amber-300/12' : 'border-white/10',
+                                            'min-h-0 rounded-[0.5rem] border bg-black/40 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.32)] transition',
+                                            selectedForActiveSeat
+                                                ? 'border-amber-300 shadow-[0_0_28px_rgba(245,158,11,0.28)]'
+                                                : 'border-white/10 hover:border-amber-200/50',
                                         )}
                                         data-testid="mage-wars-mage-selection-standard-spellbook"
                                         data-library-kind="standard"
-                                        data-mage-id={activeMageId}
-                                        data-active={String(activeSavedSpellbookId === null)}
+                                        data-mage-id={option.mageId}
+                                        data-active={String(selectedForActiveSeat)}
                                     >
-                                        <div className="overflow-hidden bg-black/35" style={{ aspectRatio: magePreviewAspectRatio }}>
-                                            <CardPreview
-                                                previewRef={getMageWarsMagePreviewRef(activeMageId, 'portrait')}
-                                                className="h-full w-full object-contain"
-                                                title={getPresetMageSetupFromConfig(activeMageId).displayName}
-                                                alt={getPresetMageSetupFromConfig(activeMageId).displayName}
-                                            />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <button
-                                                type="button"
-                                                className="block w-full text-left"
-                                                data-testid="mage-wars-mage-selection-use-standard-spellbook"
-                                                onClick={selectStandardSpellbook}
+                                        <button
+                                            type="button"
+                                            className="group block min-h-0 w-full text-left"
+                                            data-testid={`mage-wars-mage-selection-standard-spellbook-${option.mageId}`}
+                                            aria-pressed={selectedForActiveSeat}
+                                            onClick={() => selectStandardSpellbook(option.mageId)}
+                                        >
+                                            <div
+                                                className="relative mx-auto w-full max-w-[12.5rem] overflow-hidden rounded-[0.28rem] bg-black/50"
+                                                data-testid={`mage-wars-mage-selection-standard-spellbook-${option.mageId}-preview`}
+                                                style={{ aspectRatio: magePreviewAspectRatio }}
                                             >
-                                                <strong className="block truncate text-sm font-black text-stone-50">
+                                                <CardPreview
+                                                    previewRef={getMageWarsMagePreviewRef(option.mageId, 'portrait')}
+                                                    className="h-full w-full rounded-[0.28rem] object-contain transition duration-200 group-hover:scale-[1.025]"
+                                                    title={option.displayName}
+                                                    alt={option.displayName}
+                                                />
+                                                {selectedSeatIndexes.length > 0 ? (
+                                                    <div className="absolute left-2 top-2 flex gap-1">
+                                                        {selectedSeatIndexes.map((seatIndex) => (
+                                                            <span
+                                                                key={seatIndex}
+                                                                className={cx(
+                                                                    'rounded-full px-2 py-1 text-[0.65rem] font-black leading-none text-white shadow-[0_4px_10px_rgba(0,0,0,0.46)]',
+                                                                    seatIndex === 0 ? 'bg-rose-500' : 'bg-sky-500',
+                                                                )}
+                                                            >
+                                                                P{seatIndex + 1}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <div className="mt-3">
+                                                <strong className="block truncate text-base font-black leading-tight text-amber-100">
                                                     {t('setup.mageSelection.standardSpellbook')}
                                                 </strong>
-                                                <span className="mt-1 block text-[0.68rem] font-semibold text-stone-200/62">
+                                                <span className="mt-1 block truncate text-sm font-black text-stone-50">
+                                                    {option.displayName}
+                                                </span>
+                                                <span className="mt-2 block text-[0.72rem] font-semibold text-stone-200/70">
                                                     {t('setup.mageSelection.spellbookCardSummary', {
-                                                        count: getMageWarsDefaultSpellbookEntries(activeMageId)
-                                                            .reduce((total, entry) => total + entry.count, 0),
-                                                        status: activeSavedSpellbookId === null
-                                                            ? t('setup.mageSelection.activeSpellbookStatus')
-                                                            : t('setup.mageSelection.inactiveSpellbookStatus'),
+                                                        count: option.spellbookCount,
                                                     })}
                                                 </span>
+                                            </div>
+                                        </button>
+                                    </article>
+                                );
+                            })}
+
+                            {savedSpellbooks.length === 0 ? (
+                                <div className="rounded-[0.45rem] border border-dashed border-white/10 bg-black/24 px-4 py-5 text-sm font-semibold text-stone-200/58">
+                                    {t('setup.mageSelection.noNamedCopies')}
+                                </div>
+                            ) : savedSpellbooks.map((saved) => {
+                                const setup = getPresetMageSetupFromConfig(saved.mageId);
+                                const cardCount = saved.entries.reduce((total, entry) => total + entry.count, 0);
+                                const selected = activeSavedSpellbookId === saved.id;
+                                const selectedSeatIndexes = seatSavedSpellbookIds
+                                    .map((savedSpellbookId, index) => savedSpellbookId === saved.id ? index : -1)
+                                    .filter((index) => index >= 0);
+                                return (
+                                    <article
+                                        key={saved.id}
+                                        className={cx(
+                                            'grid min-h-0 grid-rows-[minmax(0,1fr)_auto] rounded-[0.5rem] border bg-black/40 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.32)] transition',
+                                            selected
+                                                ? 'border-amber-300 shadow-[0_0_28px_rgba(245,158,11,0.28)]'
+                                                : 'border-white/10 hover:border-amber-200/50',
+                                        )}
+                                        data-testid="mage-wars-mage-selection-saved-spellbook"
+                                        data-library-kind="saved"
+                                        data-saved-spellbook-id={saved.id}
+                                        data-mage-id={saved.mageId}
+                                        data-active={String(selected)}
+                                    >
+                                        <button
+                                            type="button"
+                                            className="group block min-h-0 w-full text-left"
+                                            data-testid="mage-wars-mage-selection-use-saved-spellbook"
+                                            aria-pressed={selected}
+                                            onClick={() => selectSavedSpellbook(saved)}
+                                        >
+                                            <div
+                                                className="relative mx-auto w-full max-w-[12.5rem] overflow-hidden rounded-[0.28rem] bg-black/50"
+                                                data-testid="mage-wars-mage-selection-saved-spellbook-preview"
+                                                style={{ aspectRatio: magePreviewAspectRatio }}
+                                            >
+                                                <CardPreview
+                                                    previewRef={getMageWarsMagePreviewRef(saved.mageId, 'portrait')}
+                                                    className="h-full w-full rounded-[0.28rem] object-contain transition duration-200 group-hover:scale-[1.025]"
+                                                    title={setup.displayName}
+                                                    alt={setup.displayName}
+                                                />
+                                                <span
+                                                    className="absolute right-2 top-2 border border-fuchsia-300/40 bg-fuchsia-400/22 px-2 py-1 text-[0.65rem] font-black uppercase leading-none tracking-[0.12em] text-fuchsia-100 shadow-[0_4px_10px_rgba(0,0,0,0.46)]"
+                                                    data-testid="mage-wars-mage-selection-saved-spellbook-diy-badge"
+                                                >
+                                                    {t('setup.mageSelection.diyBadge')}
+                                                </span>
+                                                {selectedSeatIndexes.length > 0 ? (
+                                                    <div className="absolute left-2 top-2 flex gap-1">
+                                                        {selectedSeatIndexes.map((seatIndex) => (
+                                                            <span
+                                                                key={seatIndex}
+                                                                className={cx(
+                                                                    'rounded-full px-2 py-1 text-[0.65rem] font-black leading-none text-white shadow-[0_4px_10px_rgba(0,0,0,0.46)]',
+                                                                    seatIndex === 0 ? 'bg-rose-500' : 'bg-sky-500',
+                                                                )}
+                                                            >
+                                                                P{seatIndex + 1}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <div className="mt-3">
+                                                <strong className="block truncate text-base font-black leading-tight text-amber-100">
+                                                    {saved.name}
+                                                </strong>
+                                                <span className="mt-1 block truncate text-sm font-black text-stone-50">
+                                                    {setup.displayName}
+                                                </span>
+                                                <span className="mt-2 block text-[0.72rem] font-semibold text-stone-200/70">
+                                                    {t('setup.mageSelection.spellbookCardSummary', {
+                                                        count: cardCount,
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </button>
+                                        <div className="mt-3 grid grid-cols-2 gap-1.5">
+                                            <button
+                                                type="button"
+                                                className="rounded-[0.25rem] border border-white/15 bg-black/24 px-2 py-1.5 text-[0.68rem] font-black text-stone-100 hover:border-amber-200/55"
+                                                data-testid="mage-wars-mage-selection-edit-saved-spellbook"
+                                                onClick={() => editSavedSpellbook(saved)}
+                                            >
+                                                {t('setup.mageSelection.edit')}
                                             </button>
                                             <button
                                                 type="button"
-                                                className="mt-2 w-full border border-white/15 bg-black/24 px-2 py-1 text-[0.64rem] font-black text-stone-100 hover:border-amber-200/55"
-                                                data-testid="mage-wars-mage-selection-edit-standard-spellbook"
-                                                onClick={editStandardSpellbook}
+                                                className="rounded-[0.25rem] border border-white/15 bg-black/24 px-2 py-1.5 text-[0.68rem] font-black text-stone-100 hover:border-red-200/55 hover:text-red-200"
+                                                data-testid="mage-wars-mage-selection-delete-saved-spellbook"
+                                                onClick={() => removeSavedSpellbook(saved)}
                                             >
-                                                {t('setup.mageSelection.editAndSaveCopy')}
+                                                {t('setup.mageSelection.delete')}
                                             </button>
                                         </div>
                                     </article>
-
-                                    {activeSavedSpellbooks.length === 0 ? (
-                                        <div className="border border-dashed border-white/10 bg-black/24 px-3 py-3 text-xs font-semibold text-stone-200/58">
-                                            {t('setup.mageSelection.noNamedCopies')}
-                                        </div>
-                                    ) : activeSavedSpellbooks.map((saved) => {
-                                        const cardCount = saved.entries.reduce((total, entry) => total + entry.count, 0);
-                                        const selected = activeSavedSpellbookId === saved.id;
-                                        return (
-                                            <article
-                                                key={saved.id}
-                                                className={cx(
-                                                    'grid grid-cols-[3.1rem_minmax(0,1fr)] gap-2 rounded-[0.35rem] border bg-white/[0.045] p-2',
-                                                    selected ? 'border-amber-200/70 bg-amber-300/12' : 'border-white/10',
-                                                )}
-                                                data-testid="mage-wars-mage-selection-saved-spellbook"
-                                                data-library-kind="saved"
-                                                data-saved-spellbook-id={saved.id}
-                                                data-mage-id={saved.mageId}
-                                            >
-                                                <div className="overflow-hidden bg-black/35" style={{ aspectRatio: magePreviewAspectRatio }}>
-                                                    <CardPreview
-                                                        previewRef={getMageWarsMagePreviewRef(saved.mageId, 'portrait')}
-                                                        className="h-full w-full object-contain"
-                                                        title={getPresetMageSetupFromConfig(saved.mageId).displayName}
-                                                        alt={getPresetMageSetupFromConfig(saved.mageId).displayName}
-                                                    />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <button
-                                                        type="button"
-                                                        className="block w-full text-left"
-                                                        data-testid="mage-wars-mage-selection-use-saved-spellbook"
-                                                        onClick={() => selectSavedSpellbook(saved)}
-                                                    >
-                                                        <strong className="block truncate text-sm font-black text-stone-50">
-                                                            {saved.name}
-                                                        </strong>
-                                                        <span className="mt-1 block text-[0.68rem] font-semibold text-stone-200/62">
-                                                            {t('setup.mageSelection.spellbookCardSummary', {
-                                                                count: cardCount,
-                                                                status: selected
-                                                                    ? t('setup.mageSelection.activeSpellbookStatus')
-                                                                    : t('setup.mageSelection.inactiveSpellbookStatus'),
-                                                            })}
-                                                        </span>
-                                                    </button>
-                                                    <div className="mt-2 grid grid-cols-2 gap-1.5">
-                                                        <button
-                                                            type="button"
-                                                            className="border border-white/15 bg-black/24 px-2 py-1 text-[0.64rem] font-black text-stone-100 hover:border-amber-200/55"
-                                                            data-testid="mage-wars-mage-selection-edit-saved-spellbook"
-                                                            onClick={() => editSavedSpellbook(saved)}
-                                                        >
-                                                            {t('setup.mageSelection.edit')}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="border border-white/15 bg-black/24 px-2 py-1 text-[0.64rem] font-black text-stone-100 hover:border-red-200/55 hover:text-red-200"
-                                                            data-testid="mage-wars-mage-selection-delete-saved-spellbook"
-                                                            onClick={() => removeSavedSpellbook(saved)}
-                                                        >
-                                                            {t('setup.mageSelection.delete')}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </article>
-                                        );
-                                    })}
-                                </div>
-                            </section>
+                                );
+                            })}
                         </div>
+                    </section>
+
+                    <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] rounded-[0.55rem] border border-amber-100/10 bg-black/40 p-5 shadow-[0_18px_44px_rgba(0,0,0,0.34)]">
+                        <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/60">
+                            {t('setup.mageSelection.summary')}
+                        </div>
+                        <div className="mt-5 min-h-0 space-y-3 overflow-auto pr-1 scrollbar-thin">
+                            {SEAT_IDS.map((seatId) => {
+                                const seatIndex = seatId === '0' ? 0 : 1;
+                                const mageId = seatMageIds[seatIndex];
+                                const setup = getPresetMageSetupFromConfig(mageId);
+                                const selectedSavedSpellbook = seatSavedSpellbookIds[seatIndex]
+                                    ? savedSpellbooks.find((saved) => saved.id === seatSavedSpellbookIds[seatIndex]) ?? null
+                                    : null;
+                                const spellbookCount = seatSpellbookEntries[seatIndex]
+                                    .reduce((total, entry) => total + entry.count, 0);
+                                return (
+                                    <div
+                                        key={seatId}
+                                        className={cx(
+                                            'grid grid-cols-[4.4rem_minmax(0,1fr)] gap-3 rounded-[0.45rem] border bg-white/[0.06] p-3',
+                                            activeSeatId === seatId ? 'border-amber-200/55' : 'border-white/10',
+                                        )}
+                                        data-testid={`mage-wars-mage-selection-summary-${seatId}`}
+                                        data-mage-id={mageId}
+                                        data-saved-spellbook-id={seatSavedSpellbookIds[seatIndex] ?? ''}
+                                    >
+                                        <div
+                                            className="w-[4.4rem] overflow-hidden rounded-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.42)]"
+                                            data-testid={`mage-wars-mage-selection-summary-${seatId}-preview`}
+                                            style={{ aspectRatio: magePreviewAspectRatio }}
+                                        >
+                                            <CardPreview
+                                                previewRef={getMageWarsMagePreviewRef(mageId, 'card')}
+                                                className="h-full w-full rounded-[0.18rem]"
+                                                title={setup.displayName}
+                                                alt={setup.displayName}
+                                            />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-black text-stone-300">
+                                                {seatIndex === 0
+                                                    ? t('setup.seat0Mage.label')
+                                                    : t('setup.seat1Mage.label')}
+                                            </div>
+                                            <div className="mt-1 truncate text-lg font-black text-white">
+                                                {selectedSavedSpellbook?.name ?? t('setup.mageSelection.standardSpellbook')}
+                                            </div>
+                                            <div className="mt-1 truncate text-xs font-black text-amber-100/75">
+                                                {setup.displayName}
+                                            </div>
+                                            <div className="mt-2 text-xs font-semibold leading-relaxed text-stone-200/75">
+                                                {t('setup.mageSelection.summaryLine', {
+                                                    spellbook: spellbookCount,
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <button
+                            type="button"
+                            className="mt-5 rounded-[0.35rem] border border-amber-200/60 bg-amber-300 px-3 py-2.5 text-sm font-black text-stone-950 shadow-[0_10px_20px_rgba(0,0,0,0.32)] transition hover:bg-amber-200"
+                            data-testid="mage-wars-open-spellbook-builder"
+                            onClick={() => setBuilderOpen(true)}
+                        >
+                            {t('setup.mageSelection.editCurrentSpellbook')}
+                        </button>
                     </aside>
                 </main>
             </div>

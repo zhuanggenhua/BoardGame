@@ -295,15 +295,17 @@ function handleNanobotDetonate({ state, attackerId, sourceAbilityId, timestamp }
             autoCollectShields: false,
             timestamp,
         });
-        events.push(...calc.toEvents().map(event => ({
-            ...event,
-            payload: {
-                ...event.payload,
-                sourceAbilityId: 'artificer-nanobot-detonate',
-                damageScope: 'direct',
-                unblockable: true,
-            },
-        } as DiceThroneEvent)));
+        events.push(...calc.toEvents({ includeSideEffects: true }).map(event => (event.type === 'DAMAGE_DEALT'
+            ? {
+                ...event,
+                payload: {
+                    ...event.payload,
+                    sourceAbilityId: 'artificer-nanobot-detonate',
+                    damageScope: 'direct',
+                    unblockable: true,
+                },
+            } as DiceThroneEvent
+            : event)));
         events.push({
             type: 'STATUS_REMOVED',
             payload: {
@@ -825,7 +827,7 @@ function handleMechanicalArmy({ attackerId, targetId, sourceAbilityId, state, ti
         timestamp,
     });
 
-    return calc.toEvents().map(event => (event.type === 'DAMAGE_DEALT'
+    return calc.toEvents({ includeSideEffects: true }).map(event => (event.type === 'DAMAGE_DEALT'
         ? {
             ...event,
             payload: {
@@ -917,7 +919,7 @@ function handleTinker2Defense({ attackerId, ctx, sourceAbilityId, state, timesta
             state,
             timestamp: nextTimestamp,
         });
-        events.push(...calc.toEvents().map(event => (event.type === 'DAMAGE_DEALT'
+        events.push(...calc.toEvents({ includeSideEffects: true }).map(event => (event.type === 'DAMAGE_DEALT'
             ? {
                 ...event,
                 payload: {

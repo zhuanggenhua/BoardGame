@@ -143,7 +143,7 @@ function createUnblockableDamageEvents(
         state,
         timestamp,
     });
-    const damageEvents = damageCalc.toEvents();
+    const damageEvents = damageCalc.toEvents({ includeSideEffects: true });
     damageEvents.forEach((event) => {
         if (event.type === 'DAMAGE_DEALT') {
             const payload = (event as DamageDealtEvent).payload;

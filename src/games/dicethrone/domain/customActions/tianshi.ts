@@ -190,7 +190,7 @@ function attackDamageEvents(
         attackDamageContext,
         state: ctx.state,
         timestamp,
-    }).toEvents();
+    }).toEvents({ includeSideEffects: true });
     return events.map(event => event.type === 'DAMAGE_DEALT' && unblockable
         ? {
             ...event,
@@ -542,7 +542,7 @@ function handleDivineArrivalUpkeep({ state, attackerId, targetId, sourceAbilityI
         damageScope: 'direct',
         state,
         timestamp,
-    }).toEvents();
+    }).toEvents({ includeSideEffects: true });
 }
 
 function handleDazzleRoll(): DiceThroneEvent[] {

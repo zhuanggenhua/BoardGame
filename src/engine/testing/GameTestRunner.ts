@@ -32,9 +32,24 @@ export interface StateExpectation {
     expectError?: { command?: string; error: string };
 }
 
+export interface TestCaseCommand<TState = unknown> {
+    type: string;
+    playerId: string;
+    payload: unknown;
+    /**
+     * Optional test-only hook for commands whose payload must be derived from
+     * the live state at execution time.
+     */
+    __resolvePayload?: (
+        state: MatchState<TState>,
+        command: { type: string; playerId: string; payload: unknown },
+        step: number,
+    ) => unknown;
+}
+
 export interface TestCase<TExpect extends StateExpectation = StateExpectation> {
     name: string;
-    commands: Array<{ type: string; playerId: string; payload: unknown }>;
+    commands: Array<TestCaseCommand>;
     expect?: TExpect;
     /** 单测自定义初始化（优先级高于全局 setup） */
     setup?: (playerIds: PlayerId[], random: RandomFn) => MatchState<unknown>;
@@ -169,11 +184,15 @@ export class GameTestRunner<
         for (let i = 0; i < testCase.commands.length; i++) {
             const cmd = testCase.commands[i];
             const stepNum = i + 1;
+            const payloadResolver = (cmd as TestCaseCommand<TState>).__resolvePayload;
+            const payload = payloadResolver
+                ? payloadResolver(state, cmd, stepNum)
+                : cmd.payload;
 
             const command = {
                 type: cmd.type,
                 playerId: cmd.playerId,
-                payload: cmd.payload,
+                payload,
                 timestamp: stepNum,
             } as TCommand;
 
@@ -187,7 +206,7 @@ export class GameTestRunner<
 
             const stepLog: StepLog = {
                 step: stepNum,
-                command: `${cmd.type}(${JSON.stringify(cmd.payload)})`,
+                command: `${cmd.type}(${JSON.stringify(payload)})`,
                 commandType: cmd.type,
                 playerId: cmd.playerId,
                 success: result.success,

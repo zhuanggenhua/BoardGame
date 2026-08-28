@@ -667,6 +667,55 @@ describe('DamageCalculation', () => {
           },
         });
       });
+
+      it('toEvents 默认不带副作用，显式 includeSideEffects 时带上副作用', () => {
+        const state = makePassiveTriggerState({
+          targetTokens: { ward: 2 },
+          tokenDefs: [{
+            id: 'ward',
+            name: '护符',
+            category: 'token',
+            passiveTrigger: {
+              timing: 'onDamageReceived',
+              consumeOnTrigger: true,
+              actions: [
+                { type: 'modifyStat', value: -1 },
+              ],
+            },
+          }],
+        });
+
+        const defaultEvents = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        }).toEvents();
+        expect(defaultEvents.map(event => event.type)).toEqual(['DAMAGE_DEALT']);
+        expect(defaultEvents[0].payload.amount).toBe(3);
+
+        const eventsWithSideEffects = createDamageCalculation({
+          source: { playerId: '0', abilityId: 'test' },
+          target: { playerId: '1' },
+          baseDamage: 5,
+          state,
+          autoCollectTokens: false,
+          autoCollectShields: false,
+        }).toEvents({ includeSideEffects: true });
+        expect(eventsWithSideEffects.map(event => event.type)).toEqual(['TOKEN_CONSUMED', 'DAMAGE_DEALT']);
+        expect(eventsWithSideEffects[0]).toMatchObject({
+          type: 'TOKEN_CONSUMED',
+          payload: {
+            playerId: '1',
+            tokenId: 'ward',
+            amount: 2,
+            newTotal: 0,
+          },
+        });
+        expect(eventsWithSideEffects[1].payload.amount).toBe(3);
+      });
     });
 
     describe('custom 动作', () => {

@@ -88,6 +88,46 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
         });
     });
 
+    it('Token 响应期间确认奖励骰只释放奖励骰交互，不关闭当前 Token 响应窗口', () => {
+        const state = createHeroMatchup('shadow_thief', 'monk')(['0', '1'], createQueuedRandom([1]));
+        state.sys.interaction.current = {
+            id: 'dt-token-response-dmg-1',
+            kind: 'dt:token-response',
+            playerId: '0',
+            data: null,
+            diagnosticMetadata: { pendingDamageId: 'dmg-1' },
+        } as any;
+        state.sys.interaction.queue = [{
+            id: 'dt-bonus-dice-shadow-thief-sneak-attack-display-11',
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+            data: null,
+        } as any];
+
+        const result = runBonusDiceSystem(state, [{
+            type: 'BONUS_DICE_SETTLED',
+            payload: {
+                settlementId: 'shadow-thief-sneak-attack-display-11',
+                finalDice: [{ index: 0, value: 5, face: 'shadow', effectParams: { value: 5 } }],
+                totalDamage: 0,
+                thresholdTriggered: false,
+                attackerId: '0',
+                targetId: '1',
+                sourceAbilityId: 'sneak_attack',
+                displayOnly: true,
+                allowDiceModification: true,
+            },
+            sourceCommandType: 'SKIP_BONUS_DICE_REROLL',
+            timestamp: 101,
+        } as DiceThroneEvent]);
+
+        expect(result?.state?.sys.interaction.current).toMatchObject({
+            kind: 'dt:token-response',
+            playerId: '0',
+        });
+        expect(result?.state?.sys.interaction.queue).toHaveLength(0);
+    });
+
     it('达到奖励骰重投上限后仍等待骰主点击右侧骰盘普通确认', () => {
         const settlement = {
             ...bonusSettlement(),
@@ -193,6 +233,7 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
         expect(confirmed.success).toBe(true);
         expect(confirmed.events).toContainEqual(expect.objectContaining({
             type: 'BONUS_DICE_SETTLED',
+            payload: expect.objectContaining({ settlementId: settlement.id }),
         }));
         expect(confirmed.events).toEqual(expect.arrayContaining([
             expect.objectContaining({

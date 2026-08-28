@@ -911,7 +911,7 @@ export function registerGunslingerCustomActions(): void {
             damageScope: 'direct',
             timestamp,
         });
-        return damageCalc.toEvents().map(event => event.type === 'DAMAGE_DEALT'
+        return damageCalc.toEvents({ includeSideEffects: true }).map(event => event.type === 'DAMAGE_DEALT'
             ? {
                 ...event,
                 payload: {
@@ -935,7 +935,7 @@ export function registerGunslingerCustomActions(): void {
             damageScope: 'direct',
             timestamp,
         });
-        return damageCalc.toEvents().map(event => event.type === 'DAMAGE_DEALT'
+        return damageCalc.toEvents({ includeSideEffects: true }).map(event => event.type === 'DAMAGE_DEALT'
             ? {
                 ...event,
                 payload: {

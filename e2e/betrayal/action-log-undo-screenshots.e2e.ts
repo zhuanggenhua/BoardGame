@@ -277,6 +277,19 @@ async function finalizePendingEventRollForAllPlayers(
     .toBeNull();
 }
 
+async function acknowledgeVisibleDamageRoll(page: Page) {
+  await expect(page.getByTestId("betrayal-damage-allocation-panel")).toHaveCount(0);
+  const confirmButton = page.getByTestId("betrayal-roll-continue");
+  await expect(confirmButton).toBeVisible();
+  await expect(confirmButton).toContainText(/确认/);
+  await confirmButton.click();
+  await expect
+    .poll(async () => (await readCurrentCore(page)).recentRoll ?? null, {
+      message: "确认伤害骰后才进入伤害分配",
+    })
+    .toBeNull();
+}
+
 async function closeDiscoveryPanel(page: Page) {
   const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
   if (!(await discoveryPanel.isVisible().catch(() => false))) {
@@ -555,13 +568,24 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
       "事件总点数 0",
     );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      /骰面合计|加值/,
+    );
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(1);
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveAttribute(
       "data-damage-rolls",
       "2",
     );
-    await expect(damageRollPanel).toContainText("合计 2");
-    await expect(damageRollPanel).toContainText("待分配 2 点精神伤害");
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage")).toHaveText(
+      "待分配 2 点精神伤害",
+    );
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage"),
+    ).not.toContainText("重新投掷 1 颗骰子");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage"),
+    ).not.toContainText("合计 2");
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toHaveCount(0);
     await expect(damageRollPanel).toHaveAttribute("data-visible-dice-source", "event-rolled-damage");
     await expect(damageRollPanel).toContainText("重新投掷的伤害骰（1 颗）");
     await expect(
@@ -577,6 +601,7 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
       minNormalizedCenterDistance: 0,
       minNormalizedCenterSpan: 0,
     });
+    await expect(page.getByTestId("betrayal-damage-allocation-panel")).toHaveCount(0);
     await saveScreenshot(page, RADIO_DAMAGE_REROLL_SCREENSHOT);
     expect(afterFinalizeCore.pendingDamageAllocation).toMatchObject({
       sourceTitle: "无线电广播",
@@ -590,11 +615,19 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     expect(afterFinalizeCore.currentExplorer.traits.knowledge).toBe(4);
     expect(afterFinalizeCore.currentExplorer.traits.sanity).toBe(4);
 
+    await acknowledgeVisibleDamageRoll(page);
+
     const allocationPanel = page.getByTestId("betrayal-damage-allocation-panel");
     await expect(allocationPanel).toBeVisible();
     await expect(allocationPanel.getByTestId("betrayal-damage-allocation-source")).toContainText(
       "无线电广播",
     );
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-source"),
+    ).toHaveAttribute("data-visible-source-owner", "discovery-card");
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-source"),
+    ).toHaveClass(/sr-only/);
     await expect(allocationPanel.getByTestId("betrayal-damage-allocation-player")).toContainText(
       "薇薇安",
     );
@@ -620,8 +653,17 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
       allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
     ).toHaveAttribute("data-damage-selected-count", "1");
     await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
+    ).toHaveText("知识 承担 1 点");
+    await expect(
       allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
     ).toHaveAttribute("data-damage-selected-count", "1");
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
+    ).toHaveText("神志 承担 1 点");
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-traits")).not.toContainText(
+      /×\d/,
+    );
     await expect(allocationPanel.getByTestId("betrayal-damage-allocation-confirm")).toBeEnabled();
     await saveScreenshot(page, RADIO_DAMAGE_ALLOCATION_SCREENSHOT);
 

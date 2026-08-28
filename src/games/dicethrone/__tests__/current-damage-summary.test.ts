@@ -43,13 +43,13 @@ describe('DiceThrone 当前总伤害摘要', () => {
     it('Token 响应改伤害后读取 pendingDamage 的当前账本', () => {
         expect(getCurrentDamageSummary(baseCore({
             pendingDamage: {
-                source: { playerId: '0', abilityId: 'test-attack' },
-                target: { playerId: '1' },
+                id: 'pd-token-response',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
                 originalDamage: 5,
                 currentDamage: 4,
-                timing: 'beforeDamageDealt',
-                resolved: false,
-                usedTokens: [],
+                responseType: 'beforeDamageDealt',
+                responderId: '0',
             } as DiceThroneCore['pendingDamage'],
         }))).toEqual({
             currentDamage: 4,
@@ -60,13 +60,13 @@ describe('DiceThrone 当前总伤害摘要', () => {
     it('Token 响应伤害摘要声明当前值实时读正式伤害账本，原始值使用创建时快照', () => {
         expect(getCurrentDamageSummaryDetails(baseCore({
             pendingDamage: {
-                source: { playerId: '0', abilityId: 'test-attack' },
-                target: { playerId: '1' },
+                id: 'pd-token-response',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
                 originalDamage: 5,
                 currentDamage: 4,
-                timing: 'beforeDamageDealt',
-                resolved: false,
-                usedTokens: [],
+                responseType: 'beforeDamageDealt',
+                responderId: '0',
             } as DiceThroneCore['pendingDamage'],
         }))).toEqual({
             currentDamage: 4,
@@ -81,6 +81,34 @@ describe('DiceThrone 当前总伤害摘要', () => {
                 authority: 'formal-rule-state',
                 source: 'pendingDamage',
             },
+        });
+    });
+
+    it('伏击奖励骰打开但未确认时，总伤害摘要应在当前待伤害上预览加伤', () => {
+        expect(getCurrentDamageSummary(baseCore({
+            pendingDamage: {
+                id: 'pd-sneak-attack',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                originalDamage: 12,
+                currentDamage: 12,
+                sourceAbilityId: 'shadow-shank',
+                responseType: 'beforeDamageDealt',
+                responderId: '0',
+            } as DiceThroneCore['pendingDamage'],
+            pendingBonusDiceSettlement: attackSettlement({
+                sourceAbilityId: 'shadow-thief-sneak-attack',
+                attackerId: '0',
+                targetId: '1',
+                dice: [{ index: 0, value: 3, face: 'shadow', effectKey: 'bonusDie.effect.sneakAttack' }],
+                displayOnly: true,
+                showTotal: false,
+                customResolutionId: 'shadow-thief-sneak-attack',
+                continuation: { kind: 'complete' },
+            }),
+        }))).toEqual({
+            currentDamage: 15,
+            originalDamage: 12,
         });
     });
 

@@ -188,6 +188,10 @@ export interface DamageResult {
   sideEffectEvents: GameEvent[];
 }
 
+export interface DamageCalculationToEventsOptions {
+  includeSideEffects?: boolean;
+}
+
 interface PendingOnDamageReceivedCustomAction {
   def: any;
   action: any;
@@ -748,10 +752,10 @@ export class DamageCalculation {
   /**
    * 生成 DAMAGE_DEALT 事件
    */
-  public toEvents(): GameEvent[] {
+  public toEvents(options: DamageCalculationToEventsOptions = {}): GameEvent[] {
     const result = this.resolve();
-    
-    return [{
+
+    const damageEvent: GameEvent = {
       type: 'DAMAGE_DEALT',
       payload: {
         targetId: this.config.target.playerId,
@@ -769,7 +773,11 @@ export class DamageCalculation {
       },
       sourceCommandType: 'ABILITY_EFFECT',
       timestamp: this.config.timestamp || Date.now(),
-    }];
+    };
+
+    return options.includeSideEffects
+      ? [...result.sideEffectEvents, damageEvent]
+      : [damageEvent];
   }
   
   // ========================================================================

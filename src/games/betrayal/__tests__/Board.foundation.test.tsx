@@ -8860,6 +8860,31 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '1');
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rule-subtotal', '2');
         expect(screen.getByTestId('betrayal-recent-roll-damage-dice')).toHaveAttribute('data-damage-rolls', '2');
+        expect(screen.getByTestId('betrayal-recent-roll-effect-damage')).toHaveTextContent('待分配 2 点精神伤害');
+        expect(screen.getByTestId('betrayal-recent-roll-effect-damage')).not.toHaveTextContent('重新投掷 1 颗骰子');
+        expect(screen.getByTestId('betrayal-recent-roll-effect-damage')).not.toHaveTextContent('合计 2');
+        expect(screen.queryByTestId('betrayal-recent-roll-breakdown')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-roll-continue')).toHaveTextContent('确认 0/1');
+
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-damage-allocation-amount')).toHaveTextContent('分配 2 点精神伤害');
+        expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveTextContent('无线电广播');
+        expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveAttribute(
+            'data-visible-source-owner',
+            'discovery-card',
+        );
+        expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveClass('sr-only');
+
+        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-knowledge'));
+        fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-sanity'));
+
+        expect(screen.getByTestId('betrayal-damage-allocation-trait-knowledge')).toHaveTextContent('知识 承担 1 点');
+        expect(screen.getByTestId('betrayal-damage-allocation-trait-sanity')).toHaveTextContent('神志 承担 1 点');
+        expect(screen.getByTestId('betrayal-damage-allocation-traits')).not.toHaveTextContent(/×\d/);
     });
 
     it('一罐器官会在真实页面承接神志检定、抽物品和力量降低结果', () => {

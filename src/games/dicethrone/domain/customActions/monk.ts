@@ -99,7 +99,7 @@ function handleMeditationDamage({ ctx, targetId, sourceAbilityId, state, timesta
         timestamp,
     });
 
-    return damageCalc.toEvents() as DiceThroneEvent[];
+    return damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[];
 }
 
 /** 一掷千金：投掷1骰子，获得½数值的CP（向上取整） */
@@ -278,7 +278,7 @@ function resolveThunderStrikeSettlement({
             baseDamage: totalDamage,
             state,
             timestamp,
-        }).toEvents() as DiceThroneEvent[]);
+        }).toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
 
         if (settlement.threshold !== undefined && totalDamage >= settlement.threshold && settlement.thresholdEffect === 'knockdown') {
             const target = state.players[settlement.targetId];

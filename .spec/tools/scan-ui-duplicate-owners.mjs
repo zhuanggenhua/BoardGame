@@ -4,6 +4,7 @@
  *
  * 用法：
  *   node .spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-builder <html-file>
+ *   node .spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-selection <html-file>
  *
  * 目的：
  *   对用户已反复指出的“同一身份 / 数值 / 容量 / 数量被多个 UI 同时复写”做机械门禁。
@@ -14,6 +15,43 @@ import { basename, resolve } from 'node:path';
 import { JSDOM } from 'jsdom';
 
 const CONTRACTS = {
+  'mage-wars-spellbook-selection': {
+    visibleMax: [],
+    visibleForbidden: [
+      { id: 'standard-card-edit-save-copy', label: '标准书卡常驻编辑并另存', pattern: /编辑并另存|Edit and save copy/g },
+      { id: 'clickability-as-visible-state', label: '可点击性被写成可见状态', pattern: /点击使用|点击选择|点此加入|Click to use|Tap to select/g },
+      { id: 'selected-state-duplicated-as-copy', label: '选中态被额外文字复写', pattern: /已使用|In use/g },
+      { id: 'old-mage-card-selector', label: '旧法师卡主选择器文案', pattern: /选择双方学徒法师|Choose apprentice mages/g },
+    ],
+    forbiddenSelectors: [
+      {
+        id: 'standard-card-edit-button',
+        label: '标准书卡旧编辑另存按钮',
+        selector: '[data-testid^="mage-wars-mage-selection-edit-standard-spellbook-"]',
+      },
+      {
+        id: 'old-mage-card-selector',
+        label: '旧法师卡主选择器',
+        selector: '[data-testid^="mage-wars-mage-selection-card-"]',
+      },
+    ],
+    requiredSelectors: [
+      { id: 'spellbook-selection-gate', label: '法术书选择页', selector: '[data-testid="mage-wars-mage-selection-gate"]' },
+      { id: 'spellbook-library', label: '主对象法术书库', selector: '[data-testid="mage-wars-mage-selection-spellbook-library"]' },
+      { id: 'standard-spellbooks', label: '标准起始书卡', selector: '[data-testid="mage-wars-mage-selection-standard-spellbook"]' },
+      { id: 'single-edit-selected-entry', label: '统一编辑选中书入口', selector: '[data-testid="mage-wars-open-spellbook-builder"]' },
+    ],
+    perItemRequiredSelectors: [
+      {
+        id: 'saved-spellbook-diy-badge',
+        label: '命名副本卡必须显示 DIY 身份标记',
+        parentSelector: '[data-testid="mage-wars-mage-selection-saved-spellbook"]',
+        childSelector: '[data-testid="mage-wars-mage-selection-saved-spellbook-diy-badge"]',
+      },
+    ],
+    numericAttributes: [],
+    selectorForbidden: [],
+  },
   'mage-wars-spellbook-builder': {
     visibleMax: [
       {
@@ -45,6 +83,7 @@ const CONTRACTS = {
       { id: 'current-mage-colon', label: '当前法师冒号身份复写', pattern: /当前法师：兽王/g },
       { id: 'beastmaster-standard-tab', label: '来源 tab 复写兽王身份', pattern: /兽王标准书/g },
       { id: 'count-badge-xn', label: '卡图数量角标 xN', pattern: /xN/g },
+      { id: 'click-view-ability-card-copy', label: '法师详情入口不得复述点击动作', pattern: /点击查看能力牌|Click to view ability card/g },
       { id: 'hidden-diy-library-copy', label: '角落 DIY 法术书文案', pattern: /DIY\s*法术书/g },
       { id: 'blank-builder-primary-entry', label: '空白自组主入口', pattern: /空白自组/g },
       { id: 'old-diy-empty-state', label: '旧 DIY 空态', pattern: /还没有\s*DIY\s*法术书/g },
@@ -75,6 +114,7 @@ const CONTRACTS = {
     requiredSelectors: [
       { id: 'hearthstone-comparison-topbar', label: '成熟组牌式紧凑顶栏', selector: '.builder-topbar[data-hearthstone-comparison="card-pool-deck-list"]' },
       { id: 'selected-mage-context-opens-detail', label: '已选法师主控打开规则卡', selector: '.mage-context[data-mage-detail-open]' },
+      { id: 'selected-mage-context-visible-cue', label: '已选法师主控有详情视觉入口', selector: '[data-testid="mage-wars-spellbook-builder-mage-detail-cue"]' },
       { id: 'saved-spellbook-library', label: '同法师已保存法术书库', selector: '[data-testid="mage-wars-spellbook-builder-saved-library"]' },
       { id: 'saved-spellbook-library-toggle', label: '法术书库按需展开入口', selector: '[data-testid="mage-wars-spellbook-builder-saved-library-toggle"]' },
       { id: 'spellpoint-capacity-owner', label: '顶部容量区总体法术点 owner', selector: '.capacity' },
@@ -103,6 +143,128 @@ const CONTRACTS = {
         selector: '[data-testid="mage-wars-spellbook-builder-filter-school"]',
         includeHidden: true,
         patterns: [/蝙蝠/g, /手套/g, /靴子/g, /传送门/g, /胸甲/g],
+      },
+    ],
+    perItemRequiredSelectors: [
+      {
+        id: 'builder-saved-spellbook-diy-badge',
+        label: '组书库命名副本必须显示 DIY 身份标记',
+        parentSelector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook"]',
+        childSelector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook-diy-badge"]',
+      },
+    ],
+    numericAttributes: [
+      {
+        id: 'card-pool-min-card-width',
+        label: '卡池普通法术卡最小网格宽度',
+        selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]',
+        attribute: 'data-min-card-width-rem',
+        min: 10.5,
+      },
+    ],
+  },
+  'mage-wars-spellbook-builder-with-saved': {
+    visibleMax: [
+      {
+        id: 'spellpoint-visible-owner',
+        label: '展开态法术点总体容量 owner',
+        pattern: /法术点/g,
+        max: 1,
+      },
+      {
+        id: 'spellpoint-ratio-visible-owner',
+        label: '展开态 120 / 120 总体容量读数',
+        pattern: /120\s*\/\s*120/g,
+        max: 1,
+      },
+      {
+        id: 'standalone-detail-visible-entry',
+        label: '展开态独立详情入口',
+        pattern: /详情/g,
+        max: 0,
+      },
+    ],
+    visibleForbidden: [
+      { id: 'current-mage-colon', label: '当前法师冒号身份复写', pattern: /当前法师：兽王/g },
+      { id: 'beastmaster-standard-tab', label: '来源 tab 复写兽王身份', pattern: /兽王标准书/g },
+      { id: 'count-badge-xn', label: '卡图数量角标 xN', pattern: /xN/g },
+      { id: 'click-view-ability-card-copy', label: '法师详情入口不得复述点击动作', pattern: /点击查看能力牌|Click to view ability card/g },
+      { id: 'hidden-diy-library-copy', label: '角落 DIY 法术书文案', pattern: /DIY\s*法术书/g },
+      { id: 'blank-builder-primary-entry', label: '空白自组主入口', pattern: /空白自组/g },
+      { id: 'old-diy-empty-state', label: '旧 DIY 空态', pattern: /还没有\s*DIY\s*法术书/g },
+      { id: 'redundant-current-spellbook-title', label: '选中态被复写为当前法术书', pattern: /当前法术书/g },
+      { id: 'redundant-current-mage-library-title', label: '选中法师库被复写为当前法师法术书库', pattern: /当前法师法术书库/g },
+      { id: 'redundant-edit-current-book', label: '编辑按钮复写当前书', pattern: /编辑当前书/g },
+      { id: 'redundant-update-current-copy', label: '更新按钮复写当前副本', pattern: /更新当前副本/g },
+      { id: 'redundant-name-current-book', label: '命名输入复写当前书', pattern: /给当前书取名/g },
+      { id: 'redundant-save-from-current-book', label: '保存说明复写当前书', pattern: /新书从当前书/g },
+      { id: 'redundant-current-book-filter', label: '筛选项复写当前书内', pattern: /当前书内/g },
+      { id: 'seat-owner', label: '组书页席位主控', pattern: /席位/g },
+      { id: 'p1-owner', label: '组书页 P1 主控', pattern: /\bP1\b/g },
+      { id: 'p2-owner', label: '组书页 P2 主控', pattern: /\bP2\b/g },
+      { id: 'missing-art', label: '缺图占位', pattern: /缺图/g },
+      { id: 'default-management-helper-copy', label: '默认态不显示管理说明文案', pattern: /标准起始书和命名副本同级/g },
+      { id: 'default-list-helper-copy', label: '默认态不显示右侧清单解释文案', pattern: /真实缩略、数量上限/g },
+      { id: 'default-scroll-helper-copy', label: '默认态不显示滚动说明文案', pattern: /滚动查看整本书/g },
+      { id: 'default-count-rule-copy', label: '默认态不显示数量规则说明块', pattern: /数量：1级/g },
+      { id: 'default-cost-rule-copy', label: '默认态不显示成本规则说明块', pattern: /成本：受训/g },
+      { id: 'redundant-scope-all-button', label: '默认态不得出现第二套全部卡牌范围按钮', pattern: /全部卡牌/g },
+    ],
+    forbiddenSelectors: [
+      { id: 'standalone-detail-button', label: '独立详情按钮', selector: '.mage-detail-trigger' },
+      { id: 'builder-mage-switcher', label: '组书页内部法师切换器', selector: '[data-testid^="mage-wars-spellbook-builder-mage-option-"], .mage-option' },
+      { id: 'redundant-scope-filter-row', label: '默认态不得出现第二套范围按钮组', selector: '[data-testid="mage-wars-spellbook-builder-scope-filters"]' },
+    ],
+    requiredSelectors: [
+      { id: 'hearthstone-comparison-topbar', label: '成熟组牌式紧凑顶栏', selector: '.builder-topbar[data-hearthstone-comparison="card-pool-deck-list"]' },
+      { id: 'selected-mage-context-opens-detail', label: '已选法师主控打开规则卡', selector: '.mage-context[data-mage-detail-open]' },
+      { id: 'selected-mage-context-visible-cue', label: '已选法师主控有详情视觉入口', selector: '[data-testid="mage-wars-spellbook-builder-mage-detail-cue"]' },
+      { id: 'expanded-saved-list', label: '已展开法术书库列表', selector: '[data-testid="mage-wars-spellbook-builder-saved-list"]' },
+      { id: 'saved-spellbook-row', label: '命名副本库项', selector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook"]' },
+      { id: 'saved-spellbook-diy-badge', label: '命名副本 DIY 标记', selector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook-diy-badge"]' },
+      { id: 'spellpoint-capacity-owner', label: '顶部容量区总体法术点 owner', selector: '.capacity' },
+      { id: 'mana-cost-filter', label: '法力费用筛选', selector: '[data-testid="mage-wars-spellbook-builder-filter-mana"]' },
+      { id: 'card-pool-grid', label: '主视觉卡池网格', selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]' },
+      { id: 'right-deck-list', label: '右侧法术书清单', selector: '[data-testid="mage-wars-spellbook-builder-current-list"]' },
+    ],
+    selectorForbidden: [
+      {
+        id: 'deck-headline-no-total-budget',
+        label: '右侧清单标题不得复写总体容量',
+        selector: '.deck-headline',
+        includeHidden: true,
+        patterns: [/法术点/g, /120\s*\/\s*120/g],
+      },
+      {
+        id: 'detail-layer-no-total-budget-number',
+        label: '详情层不得复写总体容量数值',
+        selector: '.mage-detail-layer',
+        includeHidden: true,
+        patterns: [/法术点\s*120/g, /120\s*点上限/g, /120\s*\/\s*120/g],
+      },
+      {
+        id: 'school-filter-no-subtype-leak',
+        label: '学派筛选不得混入生物 / 装备子类型',
+        selector: '[data-testid="mage-wars-spellbook-builder-filter-school"]',
+        includeHidden: true,
+        patterns: [/蝙蝠/g, /手套/g, /靴子/g, /传送门/g, /胸甲/g],
+      },
+    ],
+    perItemRequiredSelectors: [
+      {
+        id: 'builder-saved-spellbook-diy-badge',
+        label: '组书库命名副本必须显示 DIY 身份标记',
+        parentSelector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook"]',
+        childSelector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook-diy-badge"]',
+      },
+    ],
+    numericAttributes: [
+      {
+        id: 'card-pool-min-card-width',
+        label: '卡池普通法术卡最小网格宽度',
+        selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]',
+        attribute: 'data-min-card-width-rem',
+        min: 10.5,
       },
     ],
   },
@@ -251,6 +413,39 @@ function runContract(file, contractName) {
         ok,
       });
       if (!ok) violations.push(`${rule.label}: ${rule.selector} 命中 ${pattern.source} ${count} 次`);
+    }
+  }
+
+  for (const rule of contract.perItemRequiredSelectors || []) {
+    const parents = Array.from(document.querySelectorAll(rule.parentSelector));
+    const missing = parents.filter((element) => !element.querySelector(rule.childSelector));
+    const ok = missing.length === 0;
+    checks.push({
+      id: rule.id,
+      label: `${rule.label}: parents=${parents.length}`,
+      count: missing.length,
+      max: 0,
+      ok,
+    });
+    if (!ok) {
+      violations.push(`${rule.label}: ${missing.length}/${parents.length} 个对象缺少 ${rule.childSelector}`);
+    }
+  }
+
+  for (const rule of contract.numericAttributes || []) {
+    const elements = Array.from(document.querySelectorAll(rule.selector));
+    const values = elements.map((element) => Number(element.getAttribute(rule.attribute)));
+    const invalid = values.filter((value) => !Number.isFinite(value) || value < rule.min);
+    const ok = elements.length > 0 && invalid.length === 0;
+    checks.push({
+      id: rule.id,
+      label: `${rule.label}: ${rule.attribute}>=${rule.min}`,
+      count: elements.length - invalid.length,
+      min: elements.length,
+      ok,
+    });
+    if (!ok) {
+      violations.push(`${rule.label}: ${rule.selector} 的 ${rule.attribute} 缺失或低于 ${rule.min}`);
     }
   }
 

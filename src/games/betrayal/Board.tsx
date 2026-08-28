@@ -1239,6 +1239,7 @@ function isAcknowledgeableRecentRollDisplay(
     return false;
   }
   return (
+    recentRoll.kind === "eventRolledDamage" ||
     recentRoll.kind === "mysticElevator" ||
     recentRoll.kind === "attackRoll" ||
     recentRoll.kind === "hauntActionTraitCheck" ||
@@ -6377,23 +6378,6 @@ function RecentRollPanel({
     roll.kind === "eventRolledDamage"
       ? roll.eventRolledDamageResults ?? []
       : roll.eventEffectSnapshot?.rolledDamageResults ?? [];
-  const eventDamageSummaries = eventDamageResults.map((damage) => {
-    const damageKindLabel =
-      damage.damageKind === "physical"
-        ? t("board.status.damageKindPhysical")
-        : t("board.status.damageKindMental");
-    return {
-      ...damage,
-      rollsLabel: damage.rolls.join(" / "),
-      label: t("board.roll.eventDamageResult", {
-        diceCount: damage.rolls.length,
-        rolls: damage.rolls.join(" / "),
-        total: damage.total,
-        applied: damage.appliedAmount,
-        kind: damageKindLabel,
-      }),
-    };
-  });
   const eventDamageDiceForStage = eventDamageResults.flatMap(
     (damage) => damage.rolls,
   );
@@ -6404,6 +6388,36 @@ function RecentRollPanel({
   const eventDamageDiceSignature = eventDamageDiceForStage.join(",");
   const showEventDamageDiceStage =
     eventDamageDiceForStage.length > 0 && !rerollSelection;
+  const eventDamageSummaries = eventDamageResults.map((damage) => {
+    const damageKindLabel =
+      damage.damageKind === "physical"
+        ? t("board.status.damageKindPhysical")
+        : t("board.status.damageKindMental");
+    const rollsLabel = damage.rolls.join(" / ");
+    return {
+      ...damage,
+      rollsLabel,
+      visibleLabel: showEventDamageDiceStage
+        ? t("board.roll.eventDamagePendingAllocation", {
+            applied: damage.appliedAmount,
+            kind: damageKindLabel,
+          })
+        : t("board.roll.eventDamageResult", {
+            diceCount: damage.rolls.length,
+            rolls: rollsLabel,
+            total: damage.total,
+            applied: damage.appliedAmount,
+            kind: damageKindLabel,
+          }),
+      srLabel: t("board.roll.eventDamageResult", {
+        diceCount: damage.rolls.length,
+        rolls: rollsLabel,
+        total: damage.total,
+        applied: damage.appliedAmount,
+        kind: damageKindLabel,
+      }),
+    };
+  });
   const visibleDiceSubtotal = showEventDamageDiceStage
     ? eventDamageDiceSubtotal
     : diceSubtotal;
@@ -6522,7 +6536,9 @@ function RecentRollPanel({
       : actionSlot
         ? "grid-cols-[auto_auto]"
         : "grid-cols-[auto]";
-  const breakdownStage = showBreakdown ? (
+  const shouldShowVisibleBreakdown =
+    showBreakdown && !(showEventDamageDiceStage && visiblePassiveBonus === 0);
+  const breakdownStage = shouldShowVisibleBreakdown ? (
     <div
       data-testid="betrayal-recent-roll-breakdown"
       data-result-role="total-breakdown"
@@ -6556,9 +6572,7 @@ function RecentRollPanel({
         {bonusText}
       </span>
     </div>
-  ) : (
-    <span className="sr-only">{rollDetailText}</span>
-  );
+  ) : null;
   const resultStage = (
     <div
       data-testid="betrayal-recent-roll-result-stage"
@@ -6656,7 +6670,7 @@ function RecentRollPanel({
                 data-applied-damage={damage.appliedAmount}
                 className="whitespace-normal break-words"
               >
-                {damage.label}
+                {damage.visibleLabel}
               </span>
             ))}
           </div>
@@ -6698,14 +6712,17 @@ function RecentRollPanel({
       {showSource ? <span>{roll.sourceTitle}</span> : null}
       {showRollLabel ? (
         <span>{roll.rollLabel ?? t("board.roll.fallbackLabel")}</span>
+      ) : roll.rollLabel ? (
+        <span>{roll.rollLabel}</span>
       ) : null}
       <span>{bonusText}</span>
       {attackComparisonText ? <span>{attackComparisonText}</span> : null}
       {eventDamageSummaries.map((damage, index) => (
         <span key={`${damage.damageKind}-${index}-${damage.rollsLabel}`}>
-          {damage.label}
+          {damage.srLabel}
         </span>
       ))}
+      <span>{rollDetailText}</span>
       <span>{totalLabel}</span>
       {showOutcome ? <span>{primaryOutcomeLabel}</span> : null}
     </div>
@@ -12151,6 +12168,12 @@ export default function BetrayalBoard({
   );
   const canDismissRecentRollByBackdrop =
     !hasRecentRollModifier && !hasPendingAttackReward && !hasAcknowledgeableRecentRoll;
+  const shouldGateDamageAllocationBehindRecentRoll = Boolean(
+    pendingDamageAllocation &&
+      core.recentRoll?.kind === "eventRolledDamage" &&
+      hasAcknowledgeableRecentRoll &&
+      !isRecentRollDismissed,
+  );
   const shouldShowBlockingRecentRollOverlay = Boolean(
     core.recentRoll &&
     !isRecentRollDismissed &&
@@ -13092,6 +13115,11 @@ export default function BetrayalBoard({
       : latestDiscoveryKindLabel;
   const latestDiscoveryDisplayedTitle =
     latestDiscoveryPendingPossessionCard?.name ?? latestDiscovery?.title ?? "";
+  const damageAllocationSourceHasVisibleOwner = Boolean(
+    pendingDamageAllocation?.sourceTitle &&
+      shouldShowLatestDiscovery &&
+      latestDiscoveryDisplayedTitle === pendingDamageAllocation.sourceTitle,
+  );
 
   const scrollToSection = React.useCallback((sectionId: string) => {
     if (typeof document === "undefined") {
@@ -17098,7 +17126,9 @@ export default function BetrayalBoard({
                 )
               ) : null}
 
-              {pendingDamageAllocation && pendingDamageExplorer ? (
+              {pendingDamageAllocation &&
+              pendingDamageExplorer &&
+              !shouldGateDamageAllocationBehindRecentRoll ? (
                 <ConditionalHudPortal enabled={true}>
                   <div
                     data-testid="betrayal-damage-allocation-backdrop"
@@ -17122,11 +17152,35 @@ export default function BetrayalBoard({
                             {t("board.status.damageAllocationTitle")}
                           </span>
                           <span
-                            data-testid="betrayal-damage-allocation-source"
+                            data-testid="betrayal-damage-allocation-amount"
                             className="text-[22px] font-black leading-tight text-[#fff4c7]"
                           >
-                            {pendingDamageAllocation.sourceTitle}
+                            {t("board.status.damageAllocationHeading", {
+                              amount: pendingDamageAllocation.amount,
+                              kind: pendingDamageKindLabel,
+                            })}
                           </span>
+                          {pendingDamageAllocation.sourceTitle ? (
+                            <span
+                              data-testid="betrayal-damage-allocation-source"
+                              data-visible-source-owner={
+                                damageAllocationSourceHasVisibleOwner
+                                  ? "discovery-card"
+                                  : "panel"
+                              }
+                              className={
+                                damageAllocationSourceHasVisibleOwner
+                                  ? "sr-only"
+                                  : "text-[12px] font-semibold leading-snug text-[#d6c498]"
+                              }
+                            >
+                              {damageAllocationSourceHasVisibleOwner
+                                ? pendingDamageAllocation.sourceTitle
+                                : t("board.status.damageAllocationSource", {
+                                    source: pendingDamageAllocation.sourceTitle,
+                                  })}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="grid gap-1 text-right">
                           <span
@@ -17134,15 +17188,6 @@ export default function BetrayalBoard({
                             className="text-[12px] font-semibold text-[#d6c498]"
                           >
                             {pendingDamageExplorerName}
-                          </span>
-                          <span
-                            data-testid="betrayal-damage-allocation-amount"
-                            className="text-[16px] font-black text-[#ffccb8]"
-                          >
-                            {t("board.status.damageAllocationAmount", {
-                              amount: pendingDamageAllocation.amount,
-                              kind: pendingDamageKindLabel,
-                            })}
                           </span>
                         </div>
                       </div>
@@ -17231,6 +17276,13 @@ export default function BetrayalBoard({
                               (maxDamageTraitCount <= 0 ||
                                 selectedDamageAllocationTraits.length >=
                                   pendingDamageAllocation.amount));
+                          const damageTraitButtonLabel =
+                            selectedDamageTraitCount > 0
+                              ? t("board.status.damageAllocationTraitAssigned", {
+                                  trait: TRAIT_LABEL_LOCAL[trait],
+                                  count: selectedDamageTraitCount,
+                                })
+                              : TRAIT_LABEL_LOCAL[trait];
                           return (
                             <BetrayalSelectionChip
                               key={trait}
@@ -17253,11 +17305,10 @@ export default function BetrayalBoard({
                               idleClassName={
                                 TRAIT_CHOICE_TONE_CLASS[trait].idle
                               }
+                              className="min-h-[64px] min-w-[184px] px-5 py-3 text-[18px] tracking-[0.04em]"
+                              aria-label={damageTraitButtonLabel}
                             >
-                              {TRAIT_LABEL_LOCAL[trait]}
-                              {selectedDamageTraitCount > 0
-                                ? ` ×${selectedDamageTraitCount}`
-                                : ""}
+                              {damageTraitButtonLabel}
                             </BetrayalSelectionChip>
                           );
                         })}

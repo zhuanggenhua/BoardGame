@@ -335,7 +335,7 @@ export function registerBarbarianCustomActions(): void {
             baseDamage: total,
             state,
             timestamp,
-        }).toEvents();
+        }).toEvents({ includeSideEffects: true });
         if (total <= threshold) return events;
 
         const target = state.players[settlement.targetId];

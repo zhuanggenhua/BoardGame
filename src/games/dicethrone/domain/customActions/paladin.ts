@@ -50,7 +50,7 @@ function handleHolyDefenseRoll({ targetId, attackerId: _attackerId, sourceAbilit
             state,
             timestamp: timestamp + 50,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
 
     // 2. 防止伤害 (Helm + 2*Heart) → 授予临时护盾（攻击结算后清理）

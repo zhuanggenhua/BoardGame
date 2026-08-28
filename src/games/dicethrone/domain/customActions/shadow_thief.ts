@@ -117,7 +117,7 @@ function handleDamageHalfCp({ attackerId, targetId, sourceAbilityId, state, time
         timestamp,
     });
 
-    return damageCalc.toEvents();
+    return damageCalc.toEvents({ includeSideEffects: true });
 }
 
 /** 偷窃：获得CP (若有Shadow则偷取) */
@@ -220,7 +220,7 @@ function handleDamageFullCp({ attackerId, targetId, sourceAbilityId, state, time
         timestamp,
     });
 
-    return damageCalc.toEvents();
+    return damageCalc.toEvents({ includeSideEffects: true });
 }
 
 /** 暗影之舞：投掷1骰造成一半伤害 【已迁移到新伤害计算管线】 */
@@ -296,16 +296,25 @@ function handleShadowShankDamage({ attackerId, targetId, sourceAbilityId, state,
     const _bonusCp = (params?.bonusCp as number) || 0;
     // 伤害计算：CP + 5
     const damageAmt = currentCp + 5;
+    const pending = state.pendingAttack;
+    const attackDamageContext = pending
+        && pending.attackerId === attackerId
+        && pending.defenderId === targetId
+        && pending.sourceAbilityId === sourceAbilityId
+        ? { attackerId, defenderId: targetId, isUltimate: pending.isUltimate }
+        : undefined;
 
     const damageCalc = createDamageCalculation({
         source: { playerId: attackerId, abilityId: sourceAbilityId },
         target: { playerId: targetId },
         baseDamage: damageAmt,
+        damageScope: 'attack',
+        attackDamageContext,
         state,
         timestamp,
     });
 
-    return damageCalc.toEvents();
+    return damageCalc.toEvents({ includeSideEffects: true });
 }
 
 
@@ -545,7 +554,7 @@ function handleFearlessRiposte({ sourceAbilityId, state, timestamp, ctx }: Custo
             state,
             timestamp,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
 
     // 若有匕首+暗影：造成毒液
@@ -582,7 +591,7 @@ function handleFearlessRiposte2({ sourceAbilityId, state, timestamp, ctx }: Cust
             state,
             timestamp,
         });
-        events.push(...damageCalc.toEvents());
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
     }
 
     // If Dagger + Shadow: Poison
@@ -724,7 +733,7 @@ export function registerShadowThiefCustomActions(): void {
                     baseDamage: damage,
                     state,
                     timestamp,
-                }).toEvents()
+                }).toEvents({ includeSideEffects: true })
                 : [],
         };
     });
@@ -738,7 +747,7 @@ export function registerShadowThiefCustomActions(): void {
                 baseDamage: damage,
                 state,
                 timestamp,
-            }).toEvents()
+            }).toEvents({ includeSideEffects: true })
             : [];
         for (const tokenId of [TOKEN_IDS.SNEAK, TOKEN_IDS.SNEAK_ATTACK]) {
             const current = state.players[settlement.attackerId]?.tokens[tokenId] ?? 0;

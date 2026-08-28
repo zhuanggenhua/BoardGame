@@ -13,30 +13,28 @@ vi.mock('react-i18next', () => ({
         t: (key: string, params?: Record<string, string | number>) => {
             const labels: Record<string, string> = {
                 'setup.mageSelection.eyebrow': '标准起始法术书',
-                'setup.mageSelection.title': '选择双方学徒法师',
-                'setup.mageSelection.description': '每个席位选择一名法师。确认后初始化开局。',
-                'setup.mageSelection.confirm': '确认角色并开始',
-                'setup.mageSelection.seats': '席位',
-                'setup.mageSelection.mageGrid': '可选法师',
-                'setup.mageSelection.summary': '开局摘要',
+                'setup.mageSelection.title': '选择双方法术书',
+                'setup.mageSelection.description': '为双方各直接选择一本法术书；每本法术书已绑定法师，确认后按所选书初始化开局。',
+                'setup.mageSelection.confirm': '确认法术书并开始',
+                'setup.mageSelection.seats': '双方用书',
+                'setup.mageSelection.mageGrid': '可选法术书',
+                'setup.mageSelection.summary': '选书摘要',
                 'setup.mageSelection.spellbookLibrary': '法术书库',
-                'setup.mageSelection.activeSpellbookAria': '所选法师的法术书库',
-                'setup.mageSelection.activeSpellbookTitle': '所选法师法术书',
+                'setup.mageSelection.activeSpellbookAria': '可选法术书库',
+                'setup.mageSelection.activeSpellbookTitle': '选中法术书',
                 'setup.mageSelection.editCurrentSpellbook': '编辑选中书',
-                'setup.mageSelection.spellbookLibraryHelp': '标准起始书和命名副本在同一库里；新书从选中书另存命名副本。',
+                'setup.mageSelection.spellbookLibraryHelp': '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。',
                 'setup.mageSelection.standardSpellbook': '标准起始书',
-                'setup.mageSelection.activeSpellbookStatus': '已使用',
-                'setup.mageSelection.inactiveSpellbookStatus': '点击使用',
-                'setup.mageSelection.editAndSaveCopy': '编辑并另存',
                 'setup.mageSelection.noNamedCopies': '暂无命名副本',
+                'setup.mageSelection.diyBadge': 'DIY',
                 'setup.mageSelection.edit': '编辑',
                 'setup.mageSelection.delete': '删除',
-                'setup.seat0Mage.label': 'P1 法师',
-                'setup.seat1Mage.label': 'P2 法师',
+                'setup.seat0Mage.label': 'P1 法术书',
+                'setup.seat1Mage.label': 'P2 法术书',
                 'spellbookBuilder.eyebrow': '法师战争 / 法术书构筑器',
                 'spellbookBuilder.title': '法术书构筑',
                 'spellbookBuilder.mageContextAria': '{{mage}}，查看法师规则卡',
-                'spellbookBuilder.viewMageAbilityCard': '点击查看能力牌',
+                'spellbookBuilder.viewMageAbilityCard': '能力牌',
                 'spellbookBuilder.libraryAria': '法术书库',
                 'spellbookBuilder.libraryTitle': '法术书库',
                 'spellbookBuilder.libraryDescription': '标准起始书和命名副本同级；新书从选中书保存命名副本',
@@ -44,6 +42,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.savedListAria': '法术书库列表',
                 'spellbookBuilder.standardSpellbook': '标准起始书',
                 'spellbookBuilder.noNamedCopies': '暂无命名副本',
+                'spellbookBuilder.diyBadge': 'DIY',
                 'spellbookBuilder.selectedBookStatus': '已选中',
                 'spellbookBuilder.selectBookStatus': '选择',
                 'spellbookBuilder.saveNameLabel': '法术书名称',
@@ -76,7 +75,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.back': '返回',
                 'spellbookBuilder.confirm': '确认法术书',
                 'spellbookBuilder.mageDetailAria': '法师规则卡',
-                'spellbookBuilder.mageDetailDescription': '这份构筑按这张法师能力牌的训练方向计算。需要更换法师时，返回选角页先选择法师。',
+                'spellbookBuilder.mageDetailDescription': '这份构筑按这张法师能力牌的训练方向计算。需要更换法师时，返回选书页选择另一本绑定对应法师的法术书。',
                 'spellbookBuilder.trainedDirection': '受训方向',
                 'spellbookBuilder.opposedDirection': '相斥方向',
                 'spellbookBuilder.currentListLabel': '法术书清单',
@@ -101,7 +100,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.training.untrained': '未受训',
                 'spellbookBuilder.training.opposed': '相斥',
             };
-            if (key === 'setup.mageSelection.spellbookCardSummary') return `${params?.count} 张 · ${params?.status}`;
+            if (key === 'setup.mageSelection.spellbookCardSummary') return `${params?.count} 张`;
             if (key === 'setup.mageSelection.spellbookCount') return `法术书 ${params?.count}`;
             if (key === 'setup.mageSelection.summaryLine') return `法术书 ${params?.spellbook} 张`;
             if (key === 'spellbookBuilder.standardPresetSummary') return `${params?.count}张 · 规则书预设`;
@@ -196,6 +195,21 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         window.localStorage.clear();
     });
 
+    it('shows spellbooks as the primary selection objects instead of separate mage cards', () => {
+        renderGate();
+
+        const library = screen.getByTestId('mage-wars-mage-selection-saved-spellbook-list');
+        expect(screen.getByRole('heading', { name: '选择双方法术书' })).toBeInTheDocument();
+        expect(screen.queryByTestId('mage-wars-mage-selection-card-beastmaster_apprentice')).toBeNull();
+        expect(screen.queryByTestId('mage-wars-mage-selection-card-priestess_apprentice')).toBeNull();
+        expect(within(library).getAllByTestId('mage-wars-mage-selection-standard-spellbook')).toHaveLength(4);
+        expect(within(library).getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice')).toHaveTextContent('标准起始书');
+        expect(within(library).getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice')).toHaveTextContent('兽王');
+        expect(library.querySelector('[data-testid^="mage-wars-mage-selection-edit-standard-spellbook-"]')).toBeNull();
+        expect(screen.queryByText('编辑并另存')).toBeNull();
+        expect(library.textContent).not.toMatch(/点击使用|已使用/u);
+    });
+
     it('opens a standard-based spellbook library without seat, detail, xN, blank, or duplicate overall capacity owners', () => {
         renderGate();
 
@@ -230,11 +244,15 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(schoolOptions).not.toEqual(expect.arrayContaining(['蝙蝠', '手套', '靴子', '传送门', '胸甲']));
         expect(builder.querySelector('[data-testid="mage-wars-spellbook-builder-scope-filters"]')).toBeNull();
         expect(builder.querySelectorAll('.mage-context[data-mage-detail-open]').length).toBe(1);
+        expect(within(builder).getByTestId('mage-wars-spellbook-builder-mage-detail-cue')).toBeInTheDocument();
+        expect(builder.textContent).not.toMatch(/点击查看能力牌/u);
         expect(builder.querySelectorAll('[data-testid^="mage-wars-spellbook-builder-mage-option-"]').length).toBe(0);
         expect(builder.querySelector('.mage-detail-trigger')).toBeNull();
         expect(builder.querySelector('[data-testid="mage-wars-spellbook-builder-blank"]')).toBeNull();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-save-name')).toBeInTheDocument();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-save-new')).toBeInTheDocument();
+        expect(within(builder).getByTestId('mage-wars-spellbook-builder-card-pool-grid'))
+            .toHaveAttribute('data-min-card-width-rem', '10.5');
         expect(within(builder).queryByTestId('mage-wars-spellbook-builder-saved-list')).toBeNull();
         expect(builder.textContent).not.toMatch(/标准起始书和命名副本同级|真实缩略、数量上限|滚动查看整本书|数量：1级|成本：受训/u);
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-library-toggle'));
@@ -291,6 +309,8 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-saved-library-toggle'));
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-list')).toHaveTextContent('标准起始书');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-spellbook')).toHaveTextContent('兽王标准命名书');
+        expect(within(builder).getByTestId('mage-wars-spellbook-builder-saved-spellbook-diy-badge'))
+            .toHaveTextContent('DIY');
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-update-saved')).toBeEnabled();
 
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-standard'));
@@ -306,6 +326,9 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-confirm'));
         expect(screen.getByTestId('mage-wars-mage-selection-saved-spellbook-list')).toHaveTextContent('标准起始书');
         expect(screen.getByTestId('mage-wars-mage-selection-saved-spellbook-list')).toHaveTextContent('兽王标准命名书');
+        expect(within(screen.getByTestId('mage-wars-mage-selection-saved-spellbook'))
+            .getByTestId('mage-wars-mage-selection-saved-spellbook-diy-badge'))
+            .toHaveTextContent('DIY');
         expect(screen.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute(
             'data-saved-spellbook-id',
             stored[0].id,
@@ -329,7 +352,7 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         fireEvent.click(within(builder).getByTestId('mage-wars-spellbook-builder-save-new'));
         fireEvent.click(within(builder).getByText('返回'));
 
-        fireEvent.click(screen.getByTestId('mage-wars-mage-selection-card-priestess_apprentice'));
+        fireEvent.click(screen.getByTestId('mage-wars-mage-selection-standard-spellbook-priestess_apprentice'));
         fireEvent.click(screen.getByTestId('mage-wars-open-spellbook-builder'));
         builder = screen.getByTestId('mage-wars-spellbook-builder');
 
@@ -356,12 +379,16 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         const savedList = screen.getByTestId('mage-wars-mage-selection-saved-spellbook-list');
         expect(savedList).toHaveTextContent('标准起始书');
         expect(savedList).toHaveTextContent('兽王命名副本');
+        expect(within(savedList).getByTestId('mage-wars-mage-selection-saved-spellbook-diy-badge'))
+            .toHaveTextContent('DIY');
         expect(screen.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute('data-saved-spellbook-id', savedId);
 
-        fireEvent.click(screen.getByTestId('mage-wars-mage-selection-card-priestess_apprentice'));
-        fireEvent.click(screen.getByTestId('mage-wars-mage-selection-card-beastmaster_apprentice'));
+        fireEvent.click(screen.getByTestId('mage-wars-mage-selection-standard-spellbook-priestess_apprentice'));
+        fireEvent.click(screen.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice'));
         expect(screen.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute('data-saved-spellbook-id', '');
-        expect(screen.getByTestId('mage-wars-mage-selection-standard-spellbook')).toHaveAttribute('data-active', 'true');
+        expect(screen.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice')
+            .closest('[data-testid="mage-wars-mage-selection-standard-spellbook"]'))
+            .toHaveAttribute('data-active', 'true');
         fireEvent.click(within(savedList).getByTestId('mage-wars-mage-selection-use-saved-spellbook'));
         expect(screen.getByTestId('mage-wars-mage-selection-summary-0')).toHaveTextContent('法术书 67 张');
         expect(screen.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute('data-saved-spellbook-id', savedId);

@@ -428,6 +428,56 @@ function syncCurrentChoiceAnchorWithInteraction(
     };
 }
 
+function isBonusDiceInteractionForSettlement(
+    interaction: EngineInteractionDescriptor | undefined,
+    settlementId: string,
+): boolean {
+    return interaction?.kind === 'dt:bonus-dice'
+        && interaction.id === `dt-bonus-dice-${settlementId}`;
+}
+
+function releaseSettledBonusDiceInteraction(
+    state: MatchState<DiceThroneCore>,
+    event: Extract<DiceThroneEvent, { type: 'BONUS_DICE_SETTLED' }>,
+): MatchState<DiceThroneCore> {
+    const settlementId = event.payload.settlementId;
+    if (!settlementId) {
+        return syncCurrentChoiceAnchorWithInteraction(resolveInteraction(state));
+    }
+
+    const current = state.sys.interaction.current as EngineInteractionDescriptor | undefined;
+    const queue = state.sys.interaction.queue as EngineInteractionDescriptor[];
+    const filteredQueue = queue.filter((interaction) => !isBonusDiceInteractionForSettlement(interaction, settlementId));
+
+    if (isBonusDiceInteractionForSettlement(current, settlementId)) {
+        return syncCurrentChoiceAnchorWithInteraction(resolveInteraction({
+            ...state,
+            sys: {
+                ...state.sys,
+                interaction: {
+                    ...state.sys.interaction,
+                    queue: filteredQueue,
+                },
+            },
+        }));
+    }
+
+    if (filteredQueue.length === queue.length) {
+        return state;
+    }
+
+    return syncCurrentChoiceAnchorWithInteraction({
+        ...state,
+        sys: {
+            ...state.sys,
+            interaction: {
+                ...state.sys.interaction,
+                queue: filteredQueue,
+            },
+        },
+    });
+}
+
 function assertTokenResponseCloseMatchesInteraction(
     interaction: EngineInteractionDescriptor | undefined,
     event: Extract<DiceThroneEvent, { type: 'TOKEN_RESPONSE_CLOSED' }>,
@@ -1248,7 +1298,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 // ---- BONUS_DICE_SETTLED → resolve ----
                 // 临时骰确认后必须释放交互；后续骰盘展示由 settlement continuation 决定。
                 if (dtEvent.type === 'BONUS_DICE_SETTLED') {
-                    newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
+                    newState = releaseSettledBonusDiceInteraction(newState, dtEvent);
                 }
 
                 // ---- SYS_INTERACTION_CANCELLED → 生成领域 INTERACTION_CANCELLED 事件（返还卡牌） ----

@@ -479,6 +479,33 @@ describe('小黑屋操作日志与撤回', () => {
             }),
         ]));
 
+        expect(engineConfig.domain.validate(state, {
+            type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            playerId: '0',
+            payload: { traits: ['knowledge', 'sanity'] },
+            timestamp: 39,
+        })).toMatchObject({
+            valid: false,
+            error: '请先确认当前伤害骰结果。',
+        });
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
+            playerId: '0',
+            payload: {},
+            timestamp: 39,
+        });
+
+        expect(state.core.recentRoll).toBeNull();
+        expect(state.core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '无线电广播',
+            playerId: '0',
+            damageKind: 'mental',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+
         state = runCommand(state, {
             type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
             playerId: '0',

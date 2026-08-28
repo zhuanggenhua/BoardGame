@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ZoomIn } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { MageWarsConfigSpellCard } from '../data/configPackage';
@@ -398,13 +399,13 @@ export function MageWarsSpellbookBuilderPanel({
                     <section className="border border-stone-100/15 bg-black/25 px-2.5 py-2 shadow-[0_18px_44px_rgba(0,0,0,0.32)]">
                         <button
                             type="button"
-                            className="mage-context grid h-full w-full min-w-0 grid-cols-[2.3rem_minmax(0,1fr)] items-center gap-2 border border-amber-200/55 bg-amber-300/12 p-1.5 text-left shadow-[0_0_0_2px_rgba(232,187,102,0.1)] transition hover:border-amber-200/85"
+                            className="mage-context group grid h-full w-full min-w-0 grid-cols-[2.55rem_minmax(0,1fr)_1.55rem] items-center gap-2 border border-amber-200/55 bg-amber-300/12 p-1.5 text-left shadow-[0_0_0_2px_rgba(232,187,102,0.1)] transition hover:border-amber-200/85"
                             data-testid="mage-wars-spellbook-builder-mage-context"
                             data-mage-detail-open="true"
                             aria-label={t('spellbookBuilder.mageContextAria', { mage: currentSetup.displayName })}
                             onClick={() => setDetailOpen(true)}
                         >
-                            <span className="block w-9 overflow-hidden bg-black/35" style={{ aspectRatio: 744 / 1040 }}>
+                            <span className="block w-10 overflow-hidden bg-black/35" style={{ aspectRatio: 744 / 1040 }}>
                                 <CardPreview
                                     previewRef={getMageWarsMagePreviewRef(mageId, 'portrait')}
                                     className="h-full w-full object-contain"
@@ -422,6 +423,13 @@ export function MageWarsSpellbookBuilderPanel({
                                 <span className="mt-1 block truncate text-[0.61rem] font-semibold leading-none text-stone-200/65">
                                     {t('spellbookBuilder.viewMageAbilityCard')}
                                 </span>
+                            </span>
+                            <span
+                                className="grid h-6 w-6 place-items-center border border-amber-100/40 bg-black/30 text-amber-100/78 transition group-hover:border-amber-100/80 group-hover:text-amber-50"
+                                data-testid="mage-wars-spellbook-builder-mage-detail-cue"
+                                aria-hidden="true"
+                            >
+                                <ZoomIn size={14} strokeWidth={2.2} />
                             </span>
                         </button>
                     </section>
@@ -585,13 +593,14 @@ export function MageWarsSpellbookBuilderPanel({
                                         role="button"
                                         tabIndex={0}
                                         className={cx(
-                                            'grid min-h-10 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border bg-white/[0.045] px-2.5 py-2 text-left hover:border-amber-200/45',
+                                            'grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border bg-white/[0.045] px-2.5 py-2 text-left hover:border-amber-200/45',
                                             active ? 'border-amber-200/70 bg-amber-300/12' : 'border-white/15',
                                         )}
                                         data-testid="mage-wars-spellbook-builder-saved-spellbook"
                                         data-library-kind="saved"
                                         data-saved-spellbook-id={saved.id}
                                         data-mage-id={saved.mageId}
+                                        aria-current={active ? 'true' : undefined}
                                         aria-label={t('spellbookBuilder.loadSavedAria', { name: saved.name })}
                                         onClick={() => loadSavedSpellbook(saved)}
                                         onKeyDown={(event) => {
@@ -602,15 +611,18 @@ export function MageWarsSpellbookBuilderPanel({
                                         }}
                                     >
                                         <span className="min-w-0">
-                                            <strong className="block truncate text-sm font-black leading-none text-stone-50">
-                                                {saved.name}
+                                            <strong className="flex min-w-0 items-center gap-1.5 text-sm font-black leading-none text-stone-50">
+                                                <span className="truncate">{saved.name}</span>
+                                                <span
+                                                    className="shrink-0 border border-fuchsia-300/40 bg-fuchsia-400/18 px-1.5 py-0.5 text-[0.56rem] font-black uppercase leading-none tracking-[0.12em] text-fuchsia-100"
+                                                    data-testid="mage-wars-spellbook-builder-saved-spellbook-diy-badge"
+                                                >
+                                                    {t('spellbookBuilder.diyBadge')}
+                                                </span>
                                             </strong>
                                             <span className="mt-1 block truncate text-[0.62rem] font-semibold leading-none text-stone-200/62">
                                                 {t('spellbookBuilder.savedCopySummary', { count: savedCardCount })}
                                             </span>
-                                        </span>
-                                        <span className="text-[0.62rem] font-black text-amber-100/70">
-                                            {active ? t('spellbookBuilder.selectedBookStatus') : t('spellbookBuilder.selectBookStatus')}
                                         </span>
                                         <button
                                             type="button"
@@ -663,7 +675,7 @@ export function MageWarsSpellbookBuilderPanel({
                     </section>
                 ) : null}
 
-                <section className="grid min-h-0 grid-cols-[minmax(0,1fr)_24rem] gap-3">
+                <section className="grid min-h-0 grid-cols-[minmax(0,1fr)_22.5rem] gap-3">
                     <section className="grid min-h-0 grid-rows-[2.55rem_2.55rem_minmax(0,1fr)] border border-stone-100/15 bg-black/24 shadow-[0_18px_44px_rgba(0,0,0,0.32)]" aria-label={t('spellbookBuilder.poolAria')}>
                         <div className="flex min-h-0 items-center justify-between gap-3 border-b border-stone-100/15 bg-black/20 px-3">
                             <div>
@@ -763,7 +775,11 @@ export function MageWarsSpellbookBuilderPanel({
                         </div>
 
                         <div className="min-h-0 overflow-auto p-2 scrollbar-thin" data-testid="mage-wars-spellbook-builder-card-pool">
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(7.75rem,1fr))] items-start gap-2" data-testid="mage-wars-spellbook-builder-card-pool-grid">
+                            <div
+                                className="grid grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] items-start gap-2"
+                                data-testid="mage-wars-spellbook-builder-card-pool-grid"
+                                data-min-card-width-rem="10.5"
+                            >
                                 {filteredCards.map((spell) => {
                                     const cost = getMageWarsSpellbookCardCost(mageId, spell.spellCardId);
                                     const currentCount = getEntryCount(entries, spell.spellCardId);
@@ -788,7 +804,7 @@ export function MageWarsSpellbookBuilderPanel({
                                             key={spell.spellCardId}
                                             type="button"
                                             className={cx(
-                                                'group relative min-w-0 border bg-black/20 p-1 transition',
+                                                'group relative min-w-0 border bg-black/20 p-1.5 transition',
                                                 currentCount > 0 ? 'border-amber-200/80 shadow-[0_0_0_2px_rgba(232,187,102,0.14)]' : 'border-white/15 hover:border-amber-200/65',
                                                 restricted && 'opacity-55 saturate-50',
                                                 isWallSpell(spell) && 'col-span-2',

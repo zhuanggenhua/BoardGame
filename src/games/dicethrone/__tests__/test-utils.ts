@@ -76,13 +76,57 @@ export type CommandInput = {
     type: string;
     playerId: PlayerId;
     payload: Record<string, unknown>;
+    __resolvePayload?: (
+        state: MatchState<DiceThroneCore>,
+        command: { type: string; playerId: string; payload: unknown },
+        step: number,
+    ) => unknown;
 };
 
-export const cmd = (type: string, playerId: PlayerId, payload: Record<string, unknown> = {}): CommandInput => ({
-    type,
-    playerId,
-    payload,
-});
+const TOKEN_RESPONSE_COMMANDS_REQUIRING_DAMAGE_ID = new Set([
+    'USE_TOKEN',
+    'SKIP_TOKEN_RESPONSE',
+]);
+
+const hasOwn = (value: Record<string, unknown>, key: string): boolean => (
+    Object.prototype.hasOwnProperty.call(value, key)
+);
+
+function withLivePendingDamageId(input: CommandInput): CommandInput {
+    Object.defineProperty(input, '__resolvePayload', {
+        enumerable: false,
+        value: (state: MatchState<DiceThroneCore>) => {
+            if (hasOwn(input.payload, 'pendingDamageId')) {
+                return input.payload;
+            }
+
+            const pendingDamageId = state.core.pendingDamage?.id;
+            if (typeof pendingDamageId !== 'string' || pendingDamageId.length === 0) {
+                return input.payload;
+            }
+
+            return {
+                ...input.payload,
+                pendingDamageId,
+            };
+        },
+    });
+    return input;
+}
+
+export const cmd = (type: string, playerId: PlayerId, payload: Record<string, unknown> = {}): CommandInput => {
+    const input: CommandInput = {
+        type,
+        playerId,
+        payload,
+    };
+
+    if (TOKEN_RESPONSE_COMMANDS_REQUIRING_DAMAGE_ID.has(type) && !hasOwn(payload, 'pendingDamageId')) {
+        return withLivePendingDamageId(input);
+    }
+
+    return input;
+};
 
 export const interactionRespondCommandType = INTERACTION_COMMANDS.RESPOND;
 export const interactionCancelCommandType = INTERACTION_COMMANDS.CANCEL;

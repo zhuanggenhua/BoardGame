@@ -993,6 +993,8 @@ export interface BonusDieRerolledEvent extends GameEvent<'BONUS_DIE_REROLLED'> {
 /** 奖励骰结算事件（重掷交互结束，执行伤害结算） */
 export interface BonusDiceSettledEvent extends GameEvent<'BONUS_DICE_SETTLED'> {
     payload: {
+        /** 对应的奖励骰结算 ID，用于系统层精确释放右侧骰盘确认交互 */
+        settlementId?: string;
         /** 最终骰子结果 */
         finalDice: BonusDieInfo[];
         /** 总伤害 */
