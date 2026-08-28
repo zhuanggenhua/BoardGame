@@ -170,6 +170,17 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         meditate: ['kindred-bond'],
         ultimate: ['jungle-fury'],
     },
+    vampire_lord: {
+        fist: ['bloodthirsty-claws'],
+        chi: ['mesmerize-power'],
+        sky: ['blood-feast'],
+        lotus: ['rend-claws'],
+        combo: ['blood-possessed'],
+        lightning: ['blood-thirst'],
+        calm: ['blood-magic'],
+        meditate: ['undying'],
+        ultimate: ['bloody-slaughter'],
+    },
 };
 
 const CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES: Record<string, string[]> = {

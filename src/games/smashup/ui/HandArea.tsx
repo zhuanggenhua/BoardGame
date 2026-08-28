@@ -336,7 +336,7 @@ const HandCard: React.FC<HandCardProps> = ({
                     : ''}
             `}>
                 {/* Card Asset Preview */}
-                <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">
+                <div className="smashup-card-inner w-full h-full rounded-md overflow-hidden border shadow-inner relative">
                     <CardPreview
                         previewRef={isOpponentView 
                             ? SMASHUP_CARD_BACK

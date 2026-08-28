@@ -9,10 +9,6 @@
 
 import { describe, expect, it } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
-import {
-    getCurrentInteractionData,
-    getCurrentInteractionSummary,
-} from '../../../engine/testing/interactionTestFacade';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { DiceThroneDomain } from '../domain';
@@ -101,7 +97,7 @@ function createVolleyCopyState(playerIds: PlayerId[], random: RandomFn): MatchSt
 }
 
 describe('Volley 5 Dice Display', () => {
-    it('应发出 5 个独立奖励骰事件、1 个汇总事件，并为可改骰的 displayOnly settlement 打开响应窗口', () => {
+    it('应发出 5 个独立奖励骰事件、1 个汇总事件，并创建右侧骰盘确认的 displayOnly settlement', () => {
         const queuedRandom = createQueuedRandom([1, 2, 3, 4, 5]);
 
         const runner = new GameTestRunner({
@@ -154,12 +150,11 @@ describe('Volley 5 Dice Display', () => {
             customResolutionId: 'moon-elf-volley',
             allowDiceModification: true,
         });
-        expect(result.finalState.sys.responseWindow?.current).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['1'],
-            currentResponderIndex: 0,
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(result.finalState.sys.interaction.current).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
         });
-        expect(getCurrentInteractionSummary(result.finalState).id).toBeUndefined();
         expect(result.finalState.core.pendingAttack?.bonusDamage).toBe(0);
         expect(result.finalState.core.pendingAttack?.attackModifierBonusDamage ?? 0).toBe(0);
     });
@@ -182,7 +177,7 @@ describe('Volley 5 Dice Display', () => {
         });
 
         const opened = runner.run({
-            name: 'Volley bonus dice opens response window before right tray confirmation',
+            name: 'Volley bonus dice opens right tray confirmation',
             commands: [
                 cmd('PLAY_CARD', '0', { cardId: 'volley' }),
             ],
@@ -191,29 +186,28 @@ describe('Volley 5 Dice Display', () => {
         expect(opened.assertionErrors).toEqual([]);
         expect(opened.finalState.core.pendingBonusDiceSettlement?.dice.map(die => die.value)).toEqual([1, 2, 3, 4, 5]);
         expect(opened.finalState.core.pendingBonusDiceSettlement?.dice.filter(die => die.face === 'bow')).toHaveLength(3);
-        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['1'],
-            currentResponderIndex: 0,
+        expect(opened.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(opened.finalState.sys.interaction.current).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
         });
-        expect(getCurrentInteractionSummary(opened.finalState).id).toBeUndefined();
 
         runner.setState(opened.finalState);
         const playedFlick = runner.dispatch('PLAY_CARD', { playerId: '1', cardId: 'card-flick' });
         expect(playedFlick.success).toBe(true);
-        expect(playedFlick.finalState.sys.responseWindow?.current).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['1'],
-            currentResponderIndex: 0,
-            pendingInteractionId: expect.any(String),
-        });
-        expect(getCurrentInteractionSummary(playedFlick.finalState)).toMatchObject({
+        expect(playedFlick.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(playedFlick.finalState.sys.interaction.current).toMatchObject({
             kind: 'multistep-choice',
             playerId: '1',
+            data: {
+                minSteps: 1,
+                maxSteps: undefined,
+            },
         });
-        const flickInteractionData = getCurrentInteractionData<{ minSteps?: number; maxSteps?: number }>(playedFlick.finalState);
-        expect(flickInteractionData).toMatchObject({ minSteps: 1 });
-        expect(flickInteractionData?.maxSteps).toBeUndefined();
+        expect(playedFlick.finalState.sys.interaction.queue?.[0]).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
 
         const modified = runner.dispatch('MODIFY_DIE', { playerId: '1', dieId: 2, newValue: 4 });
         expect(modified.success).toBe(true);
@@ -225,7 +219,7 @@ describe('Volley 5 Dice Display', () => {
         const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '1' });
         expect(confirmedCard.success).toBe(true);
         expect(confirmedCard.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(getCurrentInteractionSummary(confirmedCard.finalState)).toMatchObject({
+        expect(confirmedCard.finalState.sys.interaction.current).toMatchObject({
             kind: 'dt:bonus-dice',
             playerId: '0',
         });

@@ -1950,6 +1950,8 @@ export interface AllFactionsSelectedEvent extends GameEvent<'su:all_factions_sel
             deck: CardInstance[];
             hand: CardInstance[];
         }>;
+        /** 开局时实际用于组牌的最终派系列表；兼容旧事件，缺省时回读 factionSelection。 */
+        selectedFactionsByPlayer?: Record<PlayerId, string[]>;
         nextUid: number;
         /** 按派系筛选后的场上基地 */
         bases?: BaseInPlay[];

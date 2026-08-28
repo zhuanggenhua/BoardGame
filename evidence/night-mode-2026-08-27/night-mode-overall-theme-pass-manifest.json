@@ -1,0 +1,79 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-08-27T05:01:03.805334+00:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "夜间模式不是只替换白色，而是主页和大杀四方的整体语义配色切换。",
+      "status": "PASS",
+      "evidence": [
+        "主页截图均值亮度从 0.836 降到 0.129，背景、文字和卡片色系同时变化。",
+        "大杀四方选派系截图均值亮度从 0.554 降到 0.252，桌面、便签、详情面板、侧栏、卡框和文字均切换。",
+        "大杀四方局内截图均值亮度从 0.236 降到 0.165，桌面、计分板、卡内底色和文字均切换。",
+        "computed style 报告显示 .smashup-table-surface、.smashup-note-surface、faction-detail-panel、.smashup-paper-panel、.smashup-card-inner 等主视觉区域都有日夜差异。"
+      ]
+    },
+    {
+      "requirement": "当前专门接入范围只覆盖主页 classic 和大杀四方，不把其他本来偏暗的游戏强行重皮。",
+      "status": "PASS",
+      "evidence": [
+        "全局语义变量位于 src/index.css，主页在 data-system-display-theme=\"night\" 下切换。",
+        "大杀四方专用语义色板位于 src/games/smashup/ui/smashupTheme.css，并限定 data-game-id=\"smashup\"。",
+        "其他游戏没有新增专用夜间主题覆盖，避免把本轮范围扩大到非明亮风格游戏。"
+      ]
+    },
+    {
+      "requirement": "悬浮球不限制在主页，游戏内也能随时显示夜间模式切换入口。",
+      "status": "PASS",
+      "evidence": [
+        "主页悬浮球和 GameHUD 游戏内悬浮球均包含 display-theme 动作。",
+        "截图脚本真实点击 button[data-fab-id=\"display-theme\"] 后，html/body[data-system-display-theme] 均为 night。",
+        "截图 09 显示大杀四方局内切换后游戏界面进入夜间模式。"
+      ]
+    },
+    {
+      "requirement": "最终截图图组能让用户直接对照主页、大杀四方选派系和局内的日夜变化。",
+      "status": "PASS",
+      "evidence": [
+        "已生成 6 张当前真实入口截图的中文序号标记副本。",
+        "图组包含主页日/夜、大杀四方选派系日/夜、大杀四方局内日/夜。"
+      ]
+    }
+  ],
+  "visualAudit": {
+    "score": 93,
+    "verdict": "PASS",
+    "method": "真实截图 + computed style + 像素亮度统计，未使用过程图作为最终展示图。",
+    "hardFailures": [],
+    "notes": [
+      "保留派系色、正式卡面素材色和已有偏暗浮层色；这些不是夜间模式应强行改写的背景语义色。",
+      "截图用于证明本轮主题系统范围，不代表其他游戏已经做专用夜间重皮。"
+    ]
+  },
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\01-labeled-04-home-classic-light.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\02-labeled-05-home-classic-night.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\03-labeled-06-smashup-selection-light.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\04-labeled-07-smashup-selection-night.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\05-labeled-08-smashup-board-light.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\_labeled-for-pureref\\06-labeled-09-smashup-board-night.png"
+  ],
+  "originalImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\04-home-classic-light.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\05-home-classic-night.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\06-smashup-selection-light.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\07-smashup-selection-night.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\08-smashup-board-light.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\09-smashup-board-night.png"
+  ],
+  "supportingReports": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-2026-08-27\\night-mode-capture-report.json"
+  ]
+}

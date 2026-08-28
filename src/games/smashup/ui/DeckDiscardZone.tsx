@@ -602,9 +602,9 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     )}
                     {discard.length > 0 ? (
                         <>
-                            <div className="absolute inset-0 bg-white rounded-sm border border-slate-300 shadow-sm -translate-x-1 -translate-y-1 -rotate-1" />
+                            <div className="smashup-card-frame absolute inset-0 rounded-sm border shadow-sm -translate-x-1 -translate-y-1 -rotate-1" />
                             <div
-                                className={`absolute inset-0 bg-white rounded-sm shadow-xl transition-transform group-hover:-translate-y-2 group-hover:rotate-1 border overflow-hidden z-10 ${hasPlayableFromDiscard ? 'border-green-400 border-2' : 'border-slate-200'}`}
+                                className={`smashup-card-frame absolute inset-0 rounded-sm shadow-xl transition-transform group-hover:-translate-y-2 group-hover:rotate-1 border overflow-hidden z-10 ${hasPlayableFromDiscard ? 'border-green-400 border-2' : 'border-slate-200'}`}
                                 {...(topCard ? getDiscardTouchInspectProps(topCard.uid, topCard) : {})}
                             >
                                 <CardPreview

@@ -13,7 +13,7 @@ const sha256 = (path: string) => createHash('sha256').update(readFileSync(path))
 
 describe('DiceThrone portrait atlas contract', () => {
     it('老角色继续使用 character-portraits，新角色使用 characterhead2', () => {
-        for (const characterId of ['monk', 'barbarian', 'pyromancer', 'paladin', 'artificer'] as const) {
+        for (const characterId of ['monk', 'barbarian', 'pyromancer', 'paladin', 'artificer', 'vampire_lord'] as const) {
             const style = getPortraitStyle(characterId, 'zh-CN');
             expect(style.backgroundImage).toContain('character-portraits');
             expect(style.backgroundImage).not.toContain('characterhead2');
@@ -33,12 +33,15 @@ describe('DiceThrone portrait atlas contract', () => {
             .not.toBe(getPortraitStyle('tianshi', 'zh-CN').backgroundPosition);
         expect(getPortraitStyle('lieren', 'zh-CN').backgroundPosition)
             .toBe('0.0000% 33.3269%');
+        expect(getPortraitStyle('vampire_lord', 'zh-CN').backgroundPosition)
+            .toBe('11.0611% 14.7660%');
     });
 
     it('角色头像绑定必须明确图集和格位，且不允许静默共用格位', () => {
         expect(CHARACTER_PORTRAIT_BINDINGS.artificer).toEqual({ atlasId: 'legacy', row: 1, col: 2 });
         expect(CHARACTER_PORTRAIT_BINDINGS.tianshi).toEqual({ atlasId: 'new', row: 1, col: 1 });
         expect(CHARACTER_PORTRAIT_BINDINGS.lieren).toEqual({ atlasId: 'new', row: 2, col: 0 });
+        expect(CHARACTER_PORTRAIT_BINDINGS.vampire_lord).toEqual({ atlasId: 'legacy', row: 1, col: 1 });
 
         const cells = Object.entries(CHARACTER_PORTRAIT_BINDINGS).map(([characterId, binding]) => (
             `${binding.atlasId}:${binding.row}:${binding.col}:${characterId}`

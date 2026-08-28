@@ -31,6 +31,7 @@ initSmashUpAtlases();
 import { SMASH_UP_MANIFEST } from './manifest';
 import { getLayoutConfig, layoutInlineSize } from './ui/layoutConfig';
 import './cursor';
+import './ui/smashupTheme.css';
 import { HandArea, type HandAreaDragPreview, type HandAreaDropTarget } from './ui/HandArea';
 
 const END_TURN_THROTTLE_MS = 800;
@@ -2308,7 +2309,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             <div
                 data-testid="smashup-action-spotlight-card"
                 data-card-def-id={defId}
-                className="relative aspect-[0.714/1] w-[min(18vw,18rem)] overflow-hidden rounded-lg border-2 border-slate-300 bg-white shadow-2xl"
+                className="smashup-card-frame relative aspect-[0.714/1] w-[min(18vw,18rem)] overflow-hidden rounded-lg border-2 shadow-2xl"
             >
                 {previewRef ? (
                     <CardPreview
@@ -2317,9 +2318,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         title={resolvedName}
                     />
                 ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#f3f0e8] p-4">
-                        <div className="mb-2 text-center text-[1.2vw] font-black uppercase text-slate-800">{resolvedName}</div>
-                        <div className="text-center font-mono text-[0.7vw] text-slate-600">{resolvedText}</div>
+                    <div className="smashup-paper-muted absolute inset-0 flex flex-col items-center justify-center p-4">
+                        <div className="smashup-text-main mb-2 text-center text-[1.2vw] font-black uppercase">{resolvedName}</div>
+                        <div className="smashup-text-muted text-center font-mono text-[0.7vw]">{resolvedText}</div>
                     </div>
                 )}
                 <div className="absolute right-2 top-2 rounded bg-red-500 px-2 py-0.5 text-[0.7vw] font-black text-white shadow-md">
@@ -2806,7 +2807,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 data-testid="su-backtimers-stasis-entry"
                 data-stasis-card-count={backtimersStasisCards.length}
                 aria-expanded={isBacktimersStasisOpen}
-                className={`flex items-center gap-2 rounded-full border-2 border-amber-900/60 bg-[#f4e4bd]/95 px-3 py-1.5 text-amber-950 shadow-[0_8px_18px_rgba(31,20,10,0.32)] transition hover:-translate-y-0.5 hover:bg-[#ffe2a4] ${isBacktimersStasisOpen ? 'ring-2 ring-amber-300' : ''}`}
+                className={`smashup-note-surface flex items-center gap-2 rounded-full border-2 px-3 py-1.5 shadow-[0_8px_18px_rgba(31,20,10,0.32)] transition hover:-translate-y-0.5 ${isBacktimersStasisOpen ? 'ring-2 ring-amber-300' : ''}`}
                 title={t('ui.backtimers_stasis_zone_title')}
                 onClick={(event) => {
                     event.stopPropagation();
@@ -2814,7 +2815,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 }}
             >
                 <span className="text-xs font-black uppercase tracking-[0.04em]">{t('ui.backtimers_stasis_zone_title')}</span>
-                <span className="rounded-full bg-amber-950 px-2 py-0.5 text-[11px] font-black text-amber-50">
+                <span className="smashup-chip-inverse rounded-full px-2 py-0.5 text-[11px] font-black">
                     {t('ui.card_count_short', { count: backtimersStasisCards.length })}
                 </span>
             </button>
@@ -2826,19 +2827,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     className={`absolute top-[calc(100%+0.55rem)] z-50 w-max min-w-[8.5rem] max-w-[min(92vw,36rem)] pointer-events-auto ${isMobileViewport ? 'left-0' : 'left-0'}`}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <div className="rounded-lg border-2 border-amber-900/55 bg-[#f4e4bd]/95 p-3 text-slate-900 shadow-[0_12px_28px_rgba(31,20,10,0.42)] backdrop-blur-sm">
+                    <div className="smashup-paper-panel rounded-lg border-2 p-3 shadow-[0_12px_28px_rgba(31,20,10,0.42)] backdrop-blur-sm">
                         <div className="flex items-center justify-between gap-3">
-                            <div className="text-sm font-black uppercase tracking-[0.04em] text-amber-950">
+                            <div className="smashup-text-main text-sm font-black uppercase tracking-[0.04em]">
                                 {t('ui.backtimers_stasis_zone_title')}
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="rounded-full border border-amber-900/30 bg-white/65 px-2 py-0.5 text-[11px] font-black text-amber-950">
+                                <div className="smashup-chip rounded-full border px-2 py-0.5 text-[11px] font-black">
                                     {t('ui.card_count_short', { count: backtimersStasisCards.length })}
                                 </div>
                                 <button
                                     type="button"
                                     data-testid="su-backtimers-stasis-close"
-                                    className="rounded-full border border-amber-900/35 bg-white/80 px-2 py-0.5 text-[11px] font-black text-amber-950 hover:bg-amber-100"
+                                    className="smashup-chip rounded-full border px-2 py-0.5 text-[11px] font-black"
                                     onClick={(event) => {
                                         event.stopPropagation();
                                         setBacktimersStasisOpen(false);
@@ -2870,14 +2871,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         data-stasis-owner-id={ownerPlayerId}
                                         data-stasis-counters={counters}
                                         data-stasis-ready={counters <= 0 ? 'true' : 'false'}
-                                        className={`${isMobileViewport ? 'w-[4.75rem]' : 'w-[4.45rem]'} group/stasis relative shrink-0 rounded-md border border-amber-950/30 bg-white/75 p-1 text-left shadow-[0_5px_12px_rgba(67,43,20,0.24)] transition-transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(67,43,20,0.28)]`}
+                                        className={`smashup-card-frame ${isMobileViewport ? 'w-[4.75rem]' : 'w-[4.45rem]'} group/stasis relative shrink-0 rounded-md border p-1 text-left shadow-[0_5px_12px_rgba(67,43,20,0.24)] transition-transform hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(67,43,20,0.28)]`}
                                         title={`${playerName} · ${cardName} · ${statusLabel}`}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             setViewingCard({ defId: card.defId, type: magnifyType });
                                         }}
                                     >
-                                        <div className="relative aspect-[0.714] overflow-hidden rounded-sm bg-slate-900">
+                                        <div className="smashup-card-inner relative aspect-[0.714] overflow-hidden rounded-sm">
                                             {previewRef ? (
                                                 <CardPreview
                                                     previewRef={previewRef}
@@ -4089,7 +4090,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 <LoadingScreen
                     anchor="container"
                     description={t('ui.loading')}
-                    className="bg-[#3e2723]"
+                    className="smashup-table-surface"
                 />
             </UndoProvider>
         );
@@ -4102,11 +4103,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 <TutorialSelectionGate
                     isTutorialMode={isTutorialMode}
                     isTutorialActive={isTutorialActive}
-                    containerClassName="bg-[#3e2723]"
+                    containerClassName="smashup-table-surface"
                     textClassName="text-lg"
                 >
-                    <div className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none">
-                        <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply">
+                    <div className="smashup-table-surface relative w-full h-full overflow-hidden font-sans select-none">
+                        <div className="smashup-table-texture absolute inset-0 z-0 pointer-events-none">
                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                         </div>
                         <FactionSelection
@@ -4134,15 +4135,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     return (
         <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             {/* BACKGROUND: A warm, dark wooden table texture. */}
-            <div className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none">
+            <div className="smashup-table-surface relative w-full h-full overflow-hidden font-sans select-none">
 
                 {/* Table Texture Layer */}
-                <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply">
+                <div className="smashup-table-texture absolute inset-0 z-0 pointer-events-none">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                 </div>
                 {/* Vignette for focus: keep desktop mood, but do not add a translucent cover on mobile battlefield baseline. */}
                 {!isMobileViewport && (
-                    <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
+                    <div className="smashup-table-vignette absolute inset-0 z-0 pointer-events-none" />
                 )}
 
                 {/* --- TOP HUD: "Sticky Notes" Style --- */}
@@ -4158,7 +4159,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             />
                         ) : (
                             <div
-                                className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                                className={`smashup-note-surface p-3 pt-4 -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
                                 data-testid="su-turn-tracker"
                                 data-tutorial-id="su-turn-tracker"
                                 style={turnTrackerStyle}
@@ -4169,7 +4170,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     initial={{ scale: 0.9, rotate: -3 }}
                                     animate={{ scale: 1, rotate: 0 }}
                                     transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                                    className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
+                                    className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 pb-1"
+                                    style={{ borderColor: 'var(--smashup-note-rule)' }}
                                 >
                                     {t('ui.turn')} {core.turnNumber}
                                 </motion.div>
@@ -4180,7 +4182,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         initial={{ scale: 0.7, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                                        className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                                        className="smashup-info-note-surface px-1 rounded transform rotate-2 inline-block"
                                     >
                                         {t(getPhaseNameKey(phase))}
                                     </motion.span>
@@ -4205,15 +4207,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     animate={{ opacity: 1, y: 0, rotate: 1 }}
                                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                                     transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-                                    className="relative bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] max-w-[500px] rounded-sm"
+                                    className="smashup-paper-panel relative p-4 max-w-[500px] rounded-sm"
                                 >
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
+                                    <div className="smashup-text-faint smashup-rule-border text-xs font-bold uppercase tracking-widest text-center mb-2 border-b">{t('ui.score_sheet')}</div>
                                     {isTeamMode && teamScores && (
                                         <div className="mb-2 flex flex-wrap justify-center gap-2 text-[10px] font-black uppercase tracking-wide">
                                             {SMASHUP_TEAM_IDS.map((teamId) => (
                                                 <div
                                                     key={teamId}
-                                                    className="rounded-full border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700"
+                                                    className="smashup-chip rounded-full border px-2 py-1"
                                                 >
                                                     {t(teamId === 'team_13' ? 'ui.team_13' : 'ui.team_24')}
                                                     {' · '}
@@ -5237,7 +5239,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         </svg>
                         {dragGuideHint && (
                             <div
-                                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f3e1bc]/95 px-3 py-[5px] text-[11px] font-bold tracking-[0.04em] text-[#6d4c2f] shadow-[0_8px_18px_rgba(62,39,24,0.18)]"
+                                className="smashup-chip-soft absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-3 py-[5px] text-[11px] font-bold tracking-[0.04em] shadow-[0_8px_18px_rgba(62,39,24,0.18)]"
                                 style={{
                                     left: `${dragGuideHint.x}px`,
                                     top: `${dragGuideHint.y}px`,
@@ -5314,16 +5316,16 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 >
                                     <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
                                     <motion.div
-                                        className="relative w-[92vw] max-w-[520px] rounded-lg border-2 border-amber-300/60 bg-[#f3f0e8] shadow-2xl p-4 pointer-events-auto"
+                                        className="smashup-paper-panel relative w-[92vw] max-w-[520px] rounded-lg border-2 p-4 pointer-events-auto"
                                         initial={{ y: 16, scale: 0.98 }}
                                         animate={{ y: 0, scale: 1 }}
                                         exit={{ y: 10, scale: 0.98 }}
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <div className="font-black text-slate-900 text-lg mb-3">
+                                        <div className="smashup-text-main font-black text-lg mb-3">
                                             {t('ui.fusion_choose_playas')}
                                         </div>
-                                        <div className="text-slate-700 text-sm mb-4">
+                                        <div className="smashup-text-muted text-sm mb-4">
                                             {t('ui.fusion_choose_playas_desc')}
                                         </div>
                                         <div className="flex gap-3">
@@ -5443,7 +5445,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             transition={{ duration: 0.3 }}
                         >
                             <motion.div
-                                className="bg-[#fef3c7] text-slate-900 px-5 py-2.5 shadow-xl border-4 border-dashed border-slate-800/30"
+                                className="smashup-note-surface px-5 py-2.5 shadow-xl border-4 border-dashed"
                                 initial={{ scale: 0.86, y: -10, rotate: -6 }}
                                 animate={{ scale: 1, y: 0, rotate: 1.5 }}
                                 exit={{ scale: 0.92, y: -8, opacity: 0 }}
@@ -5507,6 +5509,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             dispatch={dispatch}
                             playerID={playerID}
                             playerNames={playerNames}
+                            core={core}
                         />
                     ) : null;
                 })()}

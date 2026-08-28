@@ -1,5 +1,6 @@
 import type { GameOverResult, PlayerId } from '../../../engine/types';
 import type { ArenaZoneId, MageId, MageWarsWallEdgeId, StatusTokenId } from './ids';
+import type { MageWarsPlayerSpellbookEntry } from './spellbook';
 
 export type MageWarsArenaObjectKind = 'creature' | 'conjuration' | 'equipment' | 'enchantment';
 
@@ -53,6 +54,7 @@ export interface MageWarsPlayerState {
     statusTokens: Partial<Record<StatusTokenId, number>>;
     mageZoneId: ArenaZoneId;
     spellbookCount: number;
+    spellbookEntries?: readonly MageWarsPlayerSpellbookEntry[];
     preparedSpellSlots: number;
     preparedSpellCardIds: number[];
     discardSpellCardIds: number[];

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { RandomFn } from '../../../engine/types';
 import {
     acknowledgePendingCardResolutions,
     acknowledgePendingEventRollResolution,
@@ -121,10 +122,27 @@ function findTestExplorer(core: BetrayalCore, playerId: string) {
     return explorer;
 }
 
-function finalizePendingEventRollForTest(core: BetrayalCore): BetrayalCore {
+function finalizePendingEventRollForTest(
+    core: BetrayalCore,
+    random: RandomFn = BETRAYAL_FIXED_RANDOM,
+): BetrayalCore {
     const pending = core.pendingEventRollResolution;
     expect(pending).toBeTruthy();
-    return acknowledgePendingEventRollResolution(core);
+    return acknowledgePendingEventRollResolution(core, 100, random);
+}
+
+function declinePendingEventSymbolSkipForTest(core: BetrayalCore): BetrayalCore {
+    if (core.pendingEventChoice?.sourceKind !== 'event-symbol-skip') {
+        return core;
+    }
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        core.pendingEventChoice.playerId,
+        { accept: false },
+        100,
+        createBetrayalScriptedRandom(1, 2, 2),
+    );
 }
 
 function markRecentEventRollPendingFinalizationForTest(
@@ -565,6 +583,58 @@ function repeatTraitsForPendingDamage(
         throw new Error(`山屋测试夹具无法为 ${pending.sourceTitle} 分配 ${pending.amount} 点伤害`);
     }
     return assignedTraits;
+}
+
+function expectPendingDamageForTest(
+    core: BetrayalCore,
+    expected: Partial<NonNullable<BetrayalCore['pendingDamageAllocation']>>,
+): void {
+    expect(core.pendingDamageAllocation).toMatchObject(expected);
+}
+
+function resolvePendingDamageForTest(
+    core: BetrayalCore,
+    traits: BetrayalTraitKey[],
+    timestamp = 100,
+    deathPreventionRandoms: number[] = [],
+): BetrayalCore {
+    const pending = core.pendingDamageAllocation;
+    expect(pending).toBeTruthy();
+    if (!pending) {
+        return core;
+    }
+    expect(BetrayalDomain.validate(
+        { core, sys: {} as never },
+        createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, pending.playerId, { traits }),
+    ).valid).toBe(true);
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+        pending.playerId,
+        { traits },
+        timestamp,
+        deathPreventionRandoms.length > 0
+            ? createBetrayalScriptedRandom(...deathPreventionRandoms)
+            : BETRAYAL_FIXED_RANDOM,
+    );
+}
+
+function resolveCurrentPendingDamageForTest(
+    core: BetrayalCore,
+    timestamp = 100,
+    deathPreventionRandoms: number[] = [],
+): BetrayalCore {
+    const pending = core.pendingDamageAllocation;
+    expect(pending).toBeTruthy();
+    if (!pending) {
+        return core;
+    }
+    return resolvePendingDamageForTest(
+        core,
+        repeatTraitsForPendingDamage(core, pending.allowedTraits),
+        timestamp,
+        deathPreventionRandoms,
+    );
 }
 
 function acknowledgeSingleEventEffectResolution(
@@ -3941,8 +4011,18 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('力量检定 0');
         expect(core.latestDiscovery?.detail).toContain('受到 1 点物理伤害');
         expect(core.latestDiscovery?.detail).toContain('放置障碍物');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '标本剥制',
+            damageKind: 'physical',
+            originalAmount: 1,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.currentExplorer.traits.might).toBe(4);
+        expect(core.currentExplorer.traits.speed).toBe(4);
+        core = resolvePendingDamageForTest(core, ['might']);
         expect(core.currentExplorer.traits.might).toBe(3);
         expect(core.currentExplorer.traits.speed).toBe(4);
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('obstacle');
     });
 
@@ -4118,7 +4198,16 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('神志检定 0');
         expect(core.latestDiscovery?.detail).toContain('受到 2 点精神伤害');
         expect(core.latestDiscovery?.tone).toBe('warning');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '小丑房间',
+            damageKind: 'mental',
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(core.currentExplorer.traits.knowledge + core.currentExplorer.traits.sanity).toBe(8);
+        core = resolvePendingDamageForTest(core, ['knowledge', 'sanity']);
         expect(core.currentExplorer.traits.knowledge + core.currentExplorer.traits.sanity).toBe(6);
+        expect(core.pendingDamageAllocation).toBeNull();
     });
 
     it('书本使用后会让事件非战斗检定用知识骰数并消费状态', () => {
@@ -4353,7 +4442,7 @@ describe('Betrayal first scenario runtime', () => {
         core.currentExplorer.traits.sanity = 4;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         setTestTraitTrack(core, '0', 'knowledge', [2, 3, 4, 5, 6], 2, 2);
-        const knowledgePositionBeforeMentalDamage = traitTrackPosition(core, '0', 'knowledge');
+        setTestTraitTrack(core, '0', 'sanity', [2, 3, 4, 5, 6], 2, 2);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(
@@ -4379,6 +4468,10 @@ describe('Betrayal first scenario runtime', () => {
         core.currentExplorer.traits.knowledge = 4;
         core.currentExplorer.traits.sanity = 4;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        setTestTraitTrack(core, '0', 'knowledge', [2, 3, 4, 5, 6], 2, 2);
+        setTestTraitTrack(core, '0', 'sanity', [2, 3, 4, 5, 6], 2, 2);
+        const knowledgePositionBeforeMentalDamage = traitTrackPosition(core, '0', 'knowledge');
+        const sanityPositionBeforeMentalDamage = traitTrackPosition(core, '0', 'sanity');
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(
@@ -4391,10 +4484,21 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 2');
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的精神伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '电话铃声',
+            damageKind: 'mental',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeMentalDamage);
+        expect(core.currentExplorer.traitTracks.sanity.position).toBe(sanityPositionBeforeMentalDamage);
+        core = resolvePendingDamageForTest(core, ['knowledge', 'sanity']);
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeMentalDamage - 1);
+        expect(core.currentExplorer.traitTracks.sanity.position).toBe(sanityPositionBeforeMentalDamage - 1);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
-        expect(core.currentExplorer.traits.sanity).toBe(4);
+        expect(core.currentExplorer.traits.sanity).toBe(3);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -4421,7 +4525,17 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 0');
-        expect(core.latestDiscovery?.detail).toContain('受到两颗骰子的物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 2 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '电话铃声',
+            damageKind: 'physical',
+            amount: 4,
+            originalAmount: 4,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforePhysicalDamage);
+        expect(core.currentExplorer.traitTracks.speed.position).toBe(speedPositionBeforePhysicalDamage);
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['might', 'speed']));
         expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforePhysicalDamage - 3);
         expect(core.currentExplorer.traitTracks.speed.position).toBe(speedPositionBeforePhysicalDamage - 1);
         expect(core.currentExplorer.traits.might).toBe(1);
@@ -4478,7 +4592,16 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.latestDiscovery?.title).toBe('小机器人');
         expect(core.latestDiscovery?.detail).toContain('知识检定 2');
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '小机器人',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotDamage);
+        core = resolvePendingDamageForTest(core, ['might', 'might']);
         expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotDamage - 2);
         expect(core.currentExplorer.traits.might).toBe(2);
         expect(core.currentExplorer.traits.speed).toBe(4);
@@ -4623,7 +4746,16 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 0');
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的精神伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '肉质苔癣',
+            damageKind: 'mental',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeMossDamage);
+        core = resolvePendingDamageForTest(core, ['knowledge', 'knowledge']);
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeMossDamage - 2);
         expect(core.currentExplorer.traits.knowledge).toBe(2);
         expect(core.currentExplorer.traits.sanity).toBe(4);
@@ -4852,7 +4984,16 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.summary).toBe('跳过作祟检定');
-        expect(core.latestDiscovery?.detail).toContain('受到 1 颗骰子的物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '一抹鲜红',
+            damageKind: 'physical',
+            amount: 1,
+            originalAmount: 1,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.currentExplorer.traits.might + core.currentExplorer.traits.speed).toBe(mightBeforeSkip + speedBeforeSkip);
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['might', 'speed']));
         expect(core.currentExplorer.traits.might + core.currentExplorer.traits.speed).toBe(mightBeforeSkip + speedBeforeSkip - 1);
         expect(core.turnEndedByDiscovery).toBe(true);
         core = acknowledgeSingleEventEffectResolution(core, '一抹鲜红', '物理伤害');
@@ -12363,7 +12504,7 @@ describe('Betrayal first scenario runtime', () => {
         core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '标本剥制')!];
         core.deckCounts.event = core.eventOrder.length;
         core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
-        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1', '2'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
         setTestTraitTrack(core, '1', 'might', [1], 0, 0);
         setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -12385,18 +12526,24 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect(core.latestDiscovery?.detail).toContain('受到 1 点物理伤害');
         expect(core.latestDiscovery?.detail).toContain('放置障碍物');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '标本剥制',
+            damageKind: 'physical',
+            originalAmount: 1,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['might', 'speed']));
         expect(core.phase).toBe('endgame');
-        expect(core.endgameResult).toMatchObject({
-            hauntId: 'the-dust',
-            outcome: 'traitor',
-            winners: ['2'],
-        });
+        expect(core.endgameResult?.hauntId).toBe('the-dust');
+        expect(core.endgameResult?.outcome).toBe('traitor');
+        expect(core.endgameResult?.winners).toEqual(['2']);
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
-        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
-        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
-            name: '狂热病患',
-            roomId: targetRoomId,
-        });
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
         expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
     });
 
@@ -12439,6 +12586,19 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置障碍物');
         expect(core.phase).toBe('haunt');
         expect(core.endgameResult).toBeNull();
+        expectPendingDamageForTest(core, {
+            sourceTitle: '标本剥制',
+            damageKind: 'physical',
+            originalAmount: 1,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.recentRoll?.kind).toBe('eventTraitCheck');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['0']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+
+        core = resolvePendingDamageForTest(core, ['might'], 101, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
@@ -12446,15 +12606,15 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 2 }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
         ).valid).toBe(true);
 
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
             '1',
-            { cardId: 'rope', dieIndex: 2 },
-            101,
+            { cardId: 'rope', dieIndex: 0 },
+            102,
             createBetrayalScriptedRandom(3),
         );
 
@@ -12501,6 +12661,19 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.phase).toBe('haunt');
         expect(core.endgameResult).toBeNull();
+        expectPendingDamageForTest(core, {
+            sourceTitle: '标本剥制',
+            damageKind: 'physical',
+            originalAmount: 1,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.recentRoll?.kind).toBe('eventTraitCheck');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['0']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+
+        core = resolvePendingDamageForTest(core, ['might'], 101, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
@@ -12516,7 +12689,7 @@ describe('Betrayal first scenario runtime', () => {
             BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
             '1',
             { cardId: 'rope', dieIndex: 2 },
-            101,
+            102,
             createBetrayalScriptedRandom(1),
         );
 
@@ -12730,6 +12903,7 @@ describe('Betrayal first scenario runtime', () => {
                 createBetrayalScriptedRandom(1, 2, 2),
             );
 
+            core = declinePendingEventSymbolSkipForTest(core);
             expect(core.recentRoll?.kind, cardName).toBe('deathPrevention');
             expect(core.recentRoll?.latestLabel, cardName).toBe('正常死亡');
             expect(core.scenarioRuntime.deadExplorerPlayerIds, cardName).toContain('1');
@@ -13355,13 +13529,30 @@ describe('Betrayal first scenario runtime', () => {
             title: eventName,
         });
         expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        const expectedDeathDamageKind = core.pendingDamageAllocation?.damageKind ?? 'general';
+        const expectedDeathDamageTraits = core.pendingDamageAllocation
+            ? repeatTraitsForPendingDamage(core, expectedDamageTraits)
+            : expectedDamageTraits;
+        const expectedDeathDamageAmount = core.pendingDamageAllocation?.amount ?? expectedDamageAmount;
+        if (core.pendingDamageAllocation) {
+            expectPendingDamageForTest(core, {
+                sourceTitle: eventName,
+                originalAmount: expectedDamageAmount,
+                allowedTraits: expectedDamageTraits,
+            });
+            expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+            expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+            expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+            expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+            core = resolvePendingDamageForTest(core, expectedDeathDamageTraits, 102, [1, 2, 2]);
+        }
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
-            damageKind: 'general',
-            damageAmount: expectedDamageAmount,
-            damageTraits: expectedDamageTraits,
+            damageKind: expectedDeathDamageKind,
+            damageAmount: expectedDeathDamageAmount,
+            damageTraits: expectedDeathDamageTraits,
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
@@ -13382,7 +13573,7 @@ describe('Betrayal first scenario runtime', () => {
             exploreRandoms: [2, 1, 3, 2, 2, 2],
             choicePayload: undefined,
             choiceRandoms: [] as const,
-            expectedDetail: '受到一颗骰子的精神伤害',
+            expectedDetail: '重新投掷 1 颗骰子',
             expectedDamageKind: 'mental' as const,
             expectedDamageAmount: 2,
         },
@@ -13396,7 +13587,7 @@ describe('Betrayal first scenario runtime', () => {
             exploreRandoms: [1, 1, 3, 3, 2, 2, 2],
             choicePayload: undefined,
             choiceRandoms: [] as const,
-            expectedDetail: '受到两颗骰子的物理伤害',
+            expectedDetail: '重新投掷 2 颗骰子',
             expectedDamageKind: 'physical' as const,
             expectedDamageAmount: 4,
         },
@@ -13411,7 +13602,7 @@ describe('Betrayal first scenario runtime', () => {
             exploreRandoms: [1, 3, 2, 2, 2],
             choicePayload: undefined,
             choiceRandoms: [] as const,
-            expectedDetail: '受到一颗骰子的物理伤害',
+            expectedDetail: '重新投掷 1 颗骰子',
             expectedDamageKind: 'physical' as const,
             expectedDamageAmount: 2,
         },
@@ -13425,7 +13616,7 @@ describe('Betrayal first scenario runtime', () => {
             exploreRandoms: [1, 3, 2, 2, 2],
             choicePayload: undefined,
             choiceRandoms: [] as const,
-            expectedDetail: '受到一颗骰子的物理伤害',
+            expectedDetail: '重新投掷 1 颗骰子',
             expectedDamageKind: 'physical' as const,
             expectedDamageAmount: 2,
         },
@@ -13439,7 +13630,7 @@ describe('Betrayal first scenario runtime', () => {
             exploreRandoms: [] as const,
             choicePayload: { accept: true },
             choiceRandoms: [1, 1, 3, 2, 2, 2],
-            expectedDetail: '受到一颗骰子的精神伤害',
+            expectedDetail: '重新投掷 1 颗骰子',
             expectedDamageKind: 'mental' as const,
             expectedDamageAmount: 2,
         },
@@ -13453,7 +13644,7 @@ describe('Betrayal first scenario runtime', () => {
             exploreRandoms: [] as const,
             choicePayload: { accept: false },
             choiceRandoms: [3, 2, 2, 2],
-            expectedDetail: '受到 1 颗骰子的物理伤害',
+            expectedDetail: '重新投掷 1 颗骰子',
             expectedDamageKind: 'physical' as const,
             expectedDamageAmount: 2,
         },
@@ -13509,13 +13700,30 @@ describe('Betrayal first scenario runtime', () => {
         }
 
         expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        expectPendingDamageForTest(core, {
+            sourceTitle: eventName,
+            damageKind: expectedDamageKind,
+            originalAmount: expectedDamageAmount,
+            allowedTraits: expectedDamageKind === 'mental' ? ['knowledge', 'sanity'] : ['might', 'speed'],
+        });
+        expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+
+        const damageTraits = repeatTraitsForPendingDamage(
+            core,
+            expectedDamageKind === 'mental' ? ['knowledge', 'sanity'] : ['might', 'speed'],
+        );
+        core = resolvePendingDamageForTest(core, damageTraits, 102, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
             damageKind: expectedDamageKind,
-            damageAmount: expectedDamageAmount,
-            damageTraits: [],
+            damageAmount: damageTraits.length,
+            damageTraits,
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
@@ -13635,13 +13843,30 @@ describe('Betrayal first scenario runtime', () => {
         }
 
         expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        const expectedDeathDamageKind = core.pendingDamageAllocation?.damageKind ?? 'general';
+        const expectedDeathDamageTraits = core.pendingDamageAllocation
+            ? repeatTraitsForPendingDamage(core, expectedDamageTraits)
+            : expectedDamageTraits;
+        const expectedDeathDamageAmount = core.pendingDamageAllocation?.amount ?? expectedDamageAmount;
+        if (core.pendingDamageAllocation) {
+            expectPendingDamageForTest(core, {
+                sourceTitle: eventName,
+                originalAmount: expectedDamageAmount,
+                allowedTraits: expectedDamageTraits,
+            });
+            expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+            expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+            expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+            expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+            core = resolvePendingDamageForTest(core, expectedDeathDamageTraits, 102, [1, 2, 2]);
+        }
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
-            damageKind: 'general',
-            damageAmount: expectedDamageAmount,
-            damageTraits: expectedDamageTraits,
+            damageKind: expectedDeathDamageKind,
+            damageAmount: expectedDeathDamageAmount,
+            damageTraits: expectedDeathDamageTraits,
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
@@ -13854,13 +14079,28 @@ describe('Betrayal first scenario runtime', () => {
             kind: 'event',
             title: '掷骰灰尘伤害',
         });
+        expectPendingDamageForTest(core, {
+            sourceTitle: '掷骰灰尘伤害',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        const damageTraits = repeatTraitsForPendingDamage(core, ['might', 'speed']);
+        core = resolvePendingDamageForTest(core, damageTraits, 101, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
             damageKind: 'physical',
+            damageAmount: damageTraits.length,
+            damageTraits,
         });
-        expect(core.recentRoll?.deathPrevention?.damageAmount).toBeGreaterThanOrEqual(1);
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
         expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
@@ -13905,6 +14145,16 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 2, 2, 2),
         );
+
+        expectPendingDamageForTest(core, {
+            sourceTitle: '掷骰灰尘伤害',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        const damageTraits = repeatTraitsForPendingDamage(core, ['might', 'speed']);
+        core = resolvePendingDamageForTest(core, damageTraits, 101, [1, 2, 2]);
 
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
@@ -13970,13 +14220,28 @@ describe('Betrayal first scenario runtime', () => {
             kind: 'event',
             title: '掷骰灰尘精神伤害',
         });
+        expectPendingDamageForTest(core, {
+            sourceTitle: '掷骰灰尘精神伤害',
+            damageKind: 'mental',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        const damageTraits = repeatTraitsForPendingDamage(core, ['knowledge', 'sanity']);
+        core = resolvePendingDamageForTest(core, damageTraits, 101, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
             damageKind: 'mental',
+            damageAmount: damageTraits.length,
+            damageTraits,
         });
-        expect(core.recentRoll?.deathPrevention?.damageAmount).toBeGreaterThanOrEqual(1);
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
         expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
@@ -14021,6 +14286,16 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 2, 2, 2),
         );
+
+        expectPendingDamageForTest(core, {
+            sourceTitle: '掷骰灰尘精神伤害',
+            damageKind: 'mental',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        const damageTraits = repeatTraitsForPendingDamage(core, ['knowledge', 'sanity']);
+        core = resolvePendingDamageForTest(core, damageTraits, 101, [1, 2, 2]);
 
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
@@ -14239,6 +14514,7 @@ describe('Betrayal first scenario runtime', () => {
                 createBetrayalScriptedRandom(1, 2, 2),
             );
 
+            core = declinePendingEventSymbolSkipForTest(core);
             expect(core.recentRoll?.kind, cardName).toBe('deathPrevention');
             expect(core.recentRoll?.latestLabel, cardName).toBe('正常死亡');
             expect(core.scenarioRuntime.deadExplorerPlayerIds, cardName).toContain('1');
@@ -14412,6 +14688,7 @@ describe('Betrayal first scenario runtime', () => {
                 createBetrayalScriptedRandom(1, 2, 2),
             );
 
+            core = declinePendingEventSymbolSkipForTest(core);
             expect(core.recentRoll?.kind, cardName).toBe('deathPrevention');
             expect(core.recentRoll?.latestLabel, cardName).toBe('正常死亡');
             expect(core.scenarioRuntime.deadExplorerPlayerIds, cardName).toContain('1');
@@ -14647,14 +14924,26 @@ describe('Betrayal first scenario runtime', () => {
             kind: 'event',
             title: '小机器人',
         });
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '小机器人',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        core = resolvePendingDamageForTest(core, ['might', 'speed'], 101, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
             damageKind: 'physical',
             damageAmount: 2,
-            damageTraits: [],
+            damageTraits: ['might', 'speed'],
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
@@ -14705,7 +14994,7 @@ describe('Betrayal first scenario runtime', () => {
                 cardId: 'skull',
                 damageKind: 'physical',
                 damageAmount: 2,
-                damageTraits: [],
+                damageTraits: ['might', 'speed'],
             },
         },
     ])('当前运行持有牌全集在$label头骨失败且兔脚成功后都不掩埋', ({
@@ -14764,9 +15053,28 @@ describe('Betrayal first scenario runtime', () => {
                 kind: 'event',
                 title: label,
             });
+            let expectedDeathPreventionForCore = expectedDeathPrevention;
+            if (eventEffect.mode === 'rolledDamage') {
+                expectPendingDamageForTest(core, {
+                    sourceTitle: label,
+                    damageKind: 'physical',
+                    originalAmount: 2,
+                    allowedTraits: ['might', 'speed'],
+                });
+                expect(core.recentRoll?.kind, `${label}:${card.name}`).not.toBe('deathPrevention');
+                expect(core.scenarioRuntime.deadExplorerPlayerIds, `${label}:${card.name}`).not.toContain('1');
+                expect(core.scenarioRuntime.dust?.feverishPlayerIds, `${label}:${card.name}`).not.toContain('1');
+                const damageTraits = repeatTraitsForPendingDamage(core, ['might', 'speed']);
+                expectedDeathPreventionForCore = {
+                    ...expectedDeathPrevention,
+                    damageAmount: damageTraits.length,
+                    damageTraits,
+                };
+                core = resolvePendingDamageForTest(core, damageTraits, 101, [1, 2, 2]);
+            }
             expect(core.recentRoll?.kind, `${label}:${card.name}`).toBe('deathPrevention');
             expect(core.recentRoll?.latestLabel, `${label}:${card.name}`).toBe('正常死亡');
-            expect(core.recentRoll?.deathPrevention, `${label}:${card.name}`).toMatchObject(expectedDeathPrevention);
+            expect(core.recentRoll?.deathPrevention, `${label}:${card.name}`).toMatchObject(expectedDeathPreventionForCore);
             expect(core.scenarioRuntime.deadExplorerPlayerIds, `${label}:${card.name}`).toContain('1');
             expect(core.scenarioRuntime.dust?.feverishPlayerIds, `${label}:${card.name}`).toContain('1');
 
@@ -14822,7 +15130,7 @@ describe('Betrayal first scenario runtime', () => {
                 cardId: 'skull',
                 damageKind: 'physical',
                 damageAmount: 2,
-                damageTraits: [],
+                damageTraits: ['might', 'speed'],
             },
         },
     ])('当前运行持有牌全集在$label头骨失败且兔脚仍失败后都会掩埋并不可搜尸', ({
@@ -14881,9 +15189,28 @@ describe('Betrayal first scenario runtime', () => {
                 kind: 'event',
                 title: label,
             });
+            let expectedDeathPreventionForCore = expectedDeathPrevention;
+            if (eventEffect.mode === 'rolledDamage') {
+                expectPendingDamageForTest(core, {
+                    sourceTitle: label,
+                    damageKind: 'physical',
+                    originalAmount: 2,
+                    allowedTraits: ['might', 'speed'],
+                });
+                expect(core.recentRoll?.kind, `${label}:${card.name}`).not.toBe('deathPrevention');
+                expect(core.scenarioRuntime.deadExplorerPlayerIds, `${label}:${card.name}`).not.toContain('1');
+                expect(core.scenarioRuntime.dust?.feverishPlayerIds, `${label}:${card.name}`).not.toContain('1');
+                const damageTraits = repeatTraitsForPendingDamage(core, ['might', 'speed']);
+                expectedDeathPreventionForCore = {
+                    ...expectedDeathPrevention,
+                    damageAmount: damageTraits.length,
+                    damageTraits,
+                };
+                core = resolvePendingDamageForTest(core, damageTraits, 101, [1, 2, 2]);
+            }
             expect(core.recentRoll?.kind, `${label}:${card.name}`).toBe('deathPrevention');
             expect(core.recentRoll?.latestLabel, `${label}:${card.name}`).toBe('正常死亡');
-            expect(core.recentRoll?.deathPrevention, `${label}:${card.name}`).toMatchObject(expectedDeathPrevention);
+            expect(core.recentRoll?.deathPrevention, `${label}:${card.name}`).toMatchObject(expectedDeathPreventionForCore);
             expect(core.scenarioRuntime.deadExplorerPlayerIds, `${label}:${card.name}`).toContain('1');
             expect(core.scenarioRuntime.dust?.feverishPlayerIds, `${label}:${card.name}`).toContain('1');
 
@@ -14962,14 +15289,26 @@ describe('Betrayal first scenario runtime', () => {
             kind: 'event',
             title: '小机器人',
         });
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '小机器人',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.recentRoll?.kind).not.toBe('deathPrevention');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        core = resolvePendingDamageForTest(core, ['might', 'speed'], 101, [1, 2, 2]);
+
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');
         expect(core.recentRoll?.deathPrevention).toMatchObject({
             cardId: 'skull',
             damageKind: 'physical',
             damageAmount: 2,
-            damageTraits: [],
+            damageTraits: ['might', 'speed'],
         });
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
         expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
@@ -17501,6 +17840,7 @@ describe('Betrayal first scenario runtime', () => {
 
     it('怪物动作槽读模型会把击晕翻正跳过和 UI 翻面缺口暴露给界面', () => {
         const core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
         const stunnedMonsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
         core.scenarioRuntime.magicCamera = {
             ...core.scenarioRuntime.magicCamera!,
@@ -17575,6 +17915,7 @@ describe('Betrayal first scenario runtime', () => {
     it('普通怪物正式攻击命令只允许同房存活英雄目标', () => {
         const core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        activateTestExplorer(core, traitorId);
         const [aliveHeroId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
         expect(aliveHeroId).toBeDefined();
         expect(deadHeroId).toBeDefined();
@@ -17599,21 +17940,21 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, traitorId, {
                 monsterId,
                 targetPlayerId: aliveHeroId,
             }),
         )).toMatchObject({ valid: true });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, traitorId, {
                 monsterId,
                 targetPlayerId: traitorId,
             }),
         )).toMatchObject({ valid: false });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, traitorId, {
                 monsterId,
                 targetPlayerId: deadHeroId,
             }),
@@ -17622,7 +17963,7 @@ describe('Betrayal first scenario runtime', () => {
         findTestExplorer(core, aliveHeroId!).roomId = 'hallway';
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, traitorId, {
                 monsterId,
                 targetPlayerId: aliveHeroId,
             }),
@@ -17632,6 +17973,7 @@ describe('Betrayal first scenario runtime', () => {
     it('普通怪物正式攻击会进入攻击骰盘、待分配伤害并关闭该怪物攻击槽', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        activateTestExplorer(core, traitorId);
         const targetHeroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
         const monsterId = 'test-normal-monster';
         const roomId = 'entrance-hall';
@@ -17654,7 +17996,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
-            core.currentPlayer,
+            traitorId,
             { monsterId, targetPlayerId: targetHeroId },
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1),
@@ -17663,7 +18005,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recentRoll).toMatchObject({
             kind: 'attackRoll',
             sourceTitle: '测试怪物攻击',
-            playerId: core.currentPlayer,
+            playerId: traitorId,
             attack: {
                 target: 'hero',
                 defenderPlayerId: targetHeroId,
@@ -17859,8 +18201,18 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.latestDiscovery?.detail).toContain('速度检定 1');
         expect(core.latestDiscovery?.detail).toContain('受到 1 点精神伤害');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '最深的壁橱',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.currentExplorer.traits.sanity).toBe(4);
+        core = resolvePendingDamageForTest(core, ['knowledge']);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.currentExplorer.traits.sanity).toBe(4);
+        expect(core.pendingDamageAllocation).toBeNull();
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -17892,9 +18244,18 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置到地下室起始点');
         expect(core.currentExplorer.roomId).toBe('basement-landing');
         expect(core.activeRoomId).toBe('basement-landing');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '最深的壁橱',
+            damageKind: 'physical',
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeClosetDamage);
+        core = resolvePendingDamageForTest(core, ['might', 'might']);
         expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeClosetDamage - 2);
         expect(core.currentExplorer.traits.might).toBe(2);
         expect(core.currentExplorer.traits.speed).toBe(2);
+        expect(core.pendingDamageAllocation).toBeNull();
     });
 
     it('嘎吱的木门按官方锁定文本执行知识检定和楼层起始点放置', () => {
@@ -18380,8 +18741,18 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置到任意地下室板块，并受到 1 点精神伤害');
         expect(core.latestDiscovery?.detail).toContain('放置到地下室起始点');
         expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '上古旧宅',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.currentExplorer.traits.sanity).toBe(4);
+        core = resolvePendingDamageForTest(core, ['knowledge']);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.currentExplorer.traits.sanity).toBe(4);
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(core.turnEndedByDiscovery).toBe(true);
         core = acknowledgeSingleEventEffectResolution(core, '上古旧宅', '精神伤害');
     });
@@ -18832,6 +19203,14 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: true });
         expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.inventory).toHaveLength(brokenHandInventoryBefore + 1);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '断手',
+            damageKind: 'physical',
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(brokenHandPhysicalBefore);
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['might', 'speed']));
         expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(brokenHandPhysicalBefore - 2);
         expect(core.latestDiscovery?.detail).toContain('抽取一张物品卡');
         core = acknowledgeSingleEventEffectResolution(core, '断手', '抽取一张物品卡');
@@ -19075,6 +19454,7 @@ describe('Betrayal first scenario runtime', () => {
 
     it('镜中怪物普通攻击按神志结算精神伤害', () => {
         let core = triggerUponReflectionHaunt();
+        const revealerPlayerId = core.scenarioRuntime.uponReflection!.revealerPlayerId;
         const mirrorBeing = core.monsters.find((monster) => monster.definitionId === 'upon-reflection-mirror-being');
         expect(mirrorBeing).toBeDefined();
         const targetHeroId = '1';
@@ -19093,7 +19473,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
-            core.currentPlayer,
+            revealerPlayerId,
             { monsterId: mirrorBeing!.id, targetPlayerId: targetHeroId },
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1, 1, 1),
@@ -19160,6 +19540,7 @@ describe('Betrayal first scenario runtime', () => {
 
     it('镜中怪物最近距离平手时允许作祟揭秘者选择任一等距路径', () => {
         let core = triggerUponReflectionHaunt();
+        const revealerPlayerId = core.scenarioRuntime.uponReflection!.revealerPlayerId;
         const mirrorBeing = core.monsters.find((monster) => monster.definitionId === 'upon-reflection-mirror-being');
         expect(mirrorBeing).toBeDefined();
         discoverTestRoom(core, 'ground-east', '东侧测试房间');
@@ -19179,13 +19560,13 @@ describe('Betrayal first scenario runtime', () => {
             .toEqual(['ground-east', 'hallway']);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, core.currentPlayer, {
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, revealerPlayerId, {
                 monsterId: mirrorBeing!.id,
                 roomId: 'ground-east',
             }),
         )).toMatchObject({ valid: true });
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, core.currentPlayer, {
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, revealerPlayerId, {
             monsterId: mirrorBeing!.id,
             roomId: 'ground-east',
         });
@@ -19675,9 +20056,19 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(1, 3),
         );
         expect(core.pendingEventChoice).toBeNull();
-        expect(core.recentRoll?.trait).toBe('might');
-        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(flickerPhysicalBefore - 2);
+        expect(core.recentRoll?.kind).toBe('eventRolledDamage');
+        expect(core.recentRoll?.sourceEventRoll?.trait).toBe('might');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '摇曳灯光',
+            damageKind: 'physical',
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(flickerPhysicalBefore);
         expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['might', 'speed']));
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(flickerPhysicalBefore - 2);
+        expect(core.pendingDamageAllocation).toBeNull();
     });
 
     it('新增配置事件的自动分支会写入属性、移动或抽牌状态', () => {
@@ -19749,8 +20140,17 @@ describe('Betrayal first scenario runtime', () => {
             technicalMentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
         expect(core.currentExplorer.roomId).toBe('upper-landing');
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(technicalMentalBefore - 1);
+        expectPendingDamageForTest(core, {
+            sourceTitle: '技术难点',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(technicalMentalBefore);
         expect(core.latestDiscovery?.detail).toContain('放置到下一楼层起始点');
+        core = resolvePendingDamageForTest(core, ['sanity']);
+        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(technicalMentalBefore - 1);
+        expect(core.pendingDamageAllocation).toBeNull();
 
         core = exploreConfiguredEventByName('着火的人', [2, 2, 1, 1]);
         expect(core.currentExplorer.roomId).toBe('entrance-hall');
@@ -19780,55 +20180,129 @@ describe('Betrayal first scenario runtime', () => {
     });
 
     it('新增配置事件的失败伤害分支会写入物理或精神伤害状态', () => {
+        const expectAndResolveDeferredDamage = (
+            targetCore: BetrayalCore,
+            expected: {
+                sourceTitle: string;
+                damageKind: 'physical' | 'mental';
+                originalAmount: number;
+                allowedTraits: BetrayalTraitKey[];
+                beforeTotal: number;
+                detailText: string;
+            },
+        ): BetrayalCore => {
+            expect(targetCore.latestDiscovery?.detail).toContain(expected.detailText);
+            expectPendingDamageForTest(targetCore, {
+                sourceTitle: expected.sourceTitle,
+                damageKind: expected.damageKind,
+                originalAmount: expected.originalAmount,
+                allowedTraits: expected.allowedTraits,
+            });
+            expect(traitTrackPositionTotal(targetCore, '0', expected.allowedTraits)).toBe(expected.beforeTotal);
+            const appliedAmount = targetCore.pendingDamageAllocation?.amount ?? 0;
+            expect(appliedAmount).toBeGreaterThan(0);
+            const resolvedCore = resolvePendingDamageForTest(
+                targetCore,
+                repeatTraitsForPendingDamage(targetCore, expected.allowedTraits),
+            );
+            expect(traitTrackPositionTotal(resolvedCore, '0', expected.allowedTraits)).toBe(
+                expected.beforeTotal - appliedAmount,
+            );
+            expect(resolvedCore.pendingDamageAllocation).toBeNull();
+            return resolvedCore;
+        };
+
         let mentalBefore = 0;
         let core = exploreConfiguredEventByName('不可能的房间', [1, 3, 3], (draft) => {
             setTestTraitTrack(draft, '0', 'sanity', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 2);
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的精神伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '不可能的房间',
+            damageKind: 'mental',
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+            beforeTotal: mentalBefore,
+            detailText: '重新投掷 1 颗骰子',
+        });
 
         let physicalBefore = 0;
         core = exploreConfiguredEventByName('地狱蝙蝠', [1, 1, 1], (draft) => {
             setTestTraitTrack(draft, '0', 'speed', [1, 1, 1, 1, 1], 3, 3);
             physicalBefore = traitTrackPositionTotal(draft, '0', ['might', 'speed']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(physicalBefore - 1);
-        expect(core.latestDiscovery?.detail).toContain('受到 1 点物理伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '地狱蝙蝠',
+            damageKind: 'physical',
+            originalAmount: 1,
+            allowedTraits: ['might', 'speed'],
+            beforeTotal: physicalBefore,
+            detailText: '受到 1 点物理伤害',
+        });
 
         core = exploreConfiguredEventByName('晦暗暴风夜', [1, 1, 1], (draft) => {
             setTestTraitTrack(draft, '0', 'knowledge', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 1);
-        expect(core.latestDiscovery?.detail).toContain('受到 1 点精神伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '晦暗暴风夜',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+            beforeTotal: mentalBefore,
+            detailText: '受到 1 点精神伤害',
+        });
 
         core = exploreConfiguredEventByName('禁忌知识', [1, 2, 2], (draft) => {
             setTestTraitTrack(draft, '0', 'sanity', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 2);
-        expect(core.latestDiscovery?.detail).toContain('受到两颗骰子的精神伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '禁忌知识',
+            damageKind: 'mental',
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+            beforeTotal: mentalBefore,
+            detailText: '重新投掷 2 颗骰子',
+        });
 
         core = exploreConfiguredEventByName('可怜的尤里克', [1, 1, 1], (draft) => {
             setTestTraitTrack(draft, '0', 'sanity', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 1);
-        expect(core.latestDiscovery?.detail).toContain('受到 1 点精神伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '可怜的尤里克',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+            beforeTotal: mentalBefore,
+            detailText: '受到 1 点精神伤害',
+        });
 
         core = exploreConfiguredEventByName('无线电广播', [1, 1, 3], (draft) => {
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 2);
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的精神伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '无线电广播',
+            damageKind: 'mental',
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+            beforeTotal: mentalBefore,
+            detailText: '重新投掷 1 颗骰子',
+        });
 
         core = exploreConfiguredEventByName('一声呼救', [1, 1, 1], (draft) => {
             setTestTraitTrack(draft, '0', 'knowledge', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 1);
-        expect(core.latestDiscovery?.detail).toContain('受到 1 点精神伤害');
+        core = expectAndResolveDeferredDamage(core, {
+            sourceTitle: '一声呼救',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+            beforeTotal: mentalBefore,
+            detailText: '受到 1 点精神伤害',
+        });
 
         let burningPhysicalBefore = 0;
         let burningMentalBefore = 0;
@@ -19837,9 +20311,32 @@ describe('Betrayal first scenario runtime', () => {
             burningPhysicalBefore = traitTrackPositionTotal(draft, '0', ['might', 'speed']);
             burningMentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
-        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(burningPhysicalBefore - 2);
-        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(burningMentalBefore - 1);
-        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害和一颗骰子的精神伤害');
+        expect(core.latestDiscovery?.detail).toContain('重新投掷 1 颗骰子');
+        expectPendingDamageForTest(core, {
+            sourceTitle: '着火的人',
+            damageKind: 'physical',
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(burningPhysicalBefore);
+        const burningPhysicalDamage = core.pendingDamageAllocation?.amount ?? 0;
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['might', 'speed']));
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(
+            burningPhysicalBefore - burningPhysicalDamage,
+        );
+        expectPendingDamageForTest(core, {
+            sourceTitle: '着火的人',
+            damageKind: 'mental',
+            originalAmount: 1,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(burningMentalBefore);
+        const burningMentalDamage = core.pendingDamageAllocation?.amount ?? 0;
+        core = resolvePendingDamageForTest(core, repeatTraitsForPendingDamage(core, ['knowledge', 'sanity']));
+        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(
+            burningMentalBefore - burningMentalDamage,
+        );
+        expect(core.pendingDamageAllocation).toBeNull();
     });
 
     it('轮到约拿了、片刻希望和游魂完成物品选择与祝福骰结算', () => {
@@ -19922,8 +20419,9 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(0, 0, 0),
         );
         expect(core.pendingEventChoice).toBeNull();
-        expect(core.recentRoll?.dice).toHaveLength(3);
-        expect(core.recentRoll?.passiveBonus).toBe(0);
+        expect(core.recentRoll?.kind).toBe('eventRolledDamage');
+        expect(core.recentRoll?.sourceEventRoll?.dice).toHaveLength(3);
+        expect(core.recentRoll?.sourceEventRoll?.passiveBonus).toBe(0);
         core = acknowledgeSingleEventEffectResolution(core, '摇曳灯光', '速度检定');
 
         core = exploreConfiguredEventByName('游魂', [], (draft) => {
@@ -22918,9 +23416,17 @@ describe('Betrayal first scenario runtime', () => {
 
         core = finalizePendingEventRollForTest(core);
         expect(core.pendingEventRollResolution).toBeNull();
+        expectPendingDamageForTest(core, {
+            sourceTitle: '小机器人',
+            damageKind: 'physical',
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+        });
         expect(core.currentExplorer.inventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
         expect(core.currentExplorerInventory).toEqual([{ id: 'rope', name: '兔脚', kind: 'item' }]);
         expect(core.deckCounts.item).toBe(itemDeckBefore);
+        expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotReroll);
+        core = resolvePendingDamageForTest(core, ['might', 'might']);
         expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotReroll - 2);
         expect(core.currentExplorer.traits.might).toBe(2);
         expect(core.currentExplorer.traits.speed).toBe(4);

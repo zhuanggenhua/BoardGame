@@ -33,6 +33,7 @@ import {
     getTeamId,
     isTeamMode,
 } from './rollContextPolicy';
+import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 
 import { getGameMode } from './utils';
 
@@ -456,7 +457,7 @@ export const getTargetingRollChoiceOptions = (
             customId: `select-target:${pid}`,
             value: 1,
             labelKey: 'interaction.targetingRollPlayerOption',
-            labelParams: { playerNumber: Number(pid) + 1 },
+            labelParams: { player: getDiceThronePlayerChoiceLabel(state, pid) },
         }));
 };
 

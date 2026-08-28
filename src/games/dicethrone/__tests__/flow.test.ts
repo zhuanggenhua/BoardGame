@@ -2981,12 +2981,12 @@ describe('王权骰铸流程测试', () => {
         it.each([
             { attackerId: '0' as PlayerId, responderId: '1' as PlayerId },
             { attackerId: '1' as PlayerId, responderId: '0' as PlayerId },
-        ])('一掷千金奖励骰结算前先给对手改骰响应窗口，窗口收口后才由骰主确认', ({ attackerId, responderId }) => {
+        ])('一掷千金奖励骰结算前不打开响应窗口，对手可直接改骰并由骰主确认', ({ attackerId, responderId }) => {
             const runner = createRunner(createQueuedRandom([6]));
             const attackerStartingCp = 5;
             const responderStartingCp = 10;
             const rolled = runner.run({
-                name: '一掷千金奖励骰先开放改骰响应窗口',
+                name: '一掷千金奖励骰右侧骰盘直接介入',
                 setup: createSetupWithHand(['card-one-throw-fortune'], {
                     playerId: attackerId,
                     cp: attackerStartingCp,
@@ -3015,27 +3015,24 @@ describe('王权骰铸流程测试', () => {
                 allowDiceModification: true,
             });
             expect(rolled.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
-            expect(rolled.finalState.sys.responseWindow?.current).toMatchObject({
-                windowType: 'afterRollConfirmed',
-                responderQueue: [responderId],
-                currentResponderIndex: 0,
+            expect(rolled.finalState.sys.responseWindow?.current).toBeUndefined();
+            expect(getCurrentInteractionSummary(rolled.finalState)).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: attackerId,
             });
-            expect(getCurrentInteractionSummary(rolled.finalState).id).toBeUndefined();
 
             runner.setState(rolled.finalState);
             const playedModifier = runner.dispatch('PLAY_CARD', { playerId: responderId, cardId: 'card-surprise' });
             expect(playedModifier.success).toBe(true);
-            expect(playedModifier.finalState.sys.responseWindow?.current).toMatchObject({
-                windowType: 'afterRollConfirmed',
-                responderQueue: [responderId],
-                currentResponderIndex: 0,
-                pendingInteractionId: expect.any(String),
-            });
+            expect(playedModifier.finalState.sys.responseWindow?.current).toBeUndefined();
             expect(getCurrentInteractionSummary(playedModifier.finalState)).toMatchObject({
                 kind: 'multistep-choice',
                 playerId: responderId,
             });
-            expect(playedModifier.finalState.sys.interaction.queue ?? []).toEqual([]);
+            expect(playedModifier.finalState.sys.interaction.queue?.[0]).toMatchObject({
+                kind: 'dt:bonus-dice',
+                playerId: attackerId,
+            });
 
             runner.setState(playedModifier.finalState);
             const modified = runner.dispatch('MODIFY_DIE', { playerId: responderId, dieId: 0, newValue: 4 });

@@ -146,6 +146,11 @@ export const TOKEN_IDS = {
     NYRAS_BOND: 'nyras_bond',
     /** 仅用于伤害响应命令，不是可展示或可堆叠的 Token。 */
     NYRA_REDIRECT: 'nyra_redirect',
+
+    /** 吸血鬼领主：鲜血之力 */
+    BLOOD_POWER: 'blood_power',
+    /** 吸血鬼领主：催眠 / 凝视 */
+    MESMERIZE: 'mesmerize',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -310,6 +315,21 @@ export const LIEREN_DICE_FACE_IDS = {
 export type LierenDiceFaceId = (typeof LIEREN_DICE_FACE_IDS)[keyof typeof LIEREN_DICE_FACE_IDS];
 
 // ============================================================================
+// 骰面 ID（吸血鬼领主）
+// ============================================================================
+
+export const VAMPIRE_LORD_DICE_FACE_IDS = {
+    /** 利爪：骰子 1、2、3 */
+    CLAW: 'claw',
+    /** 催眠 / 凝视：骰子 4、5 */
+    MESMERIZE: 'mesmerize',
+    /** 血滴：骰子 6 */
+    BLOOD_DROP: 'blood_drop',
+} as const;
+
+export type VampireLordDiceFaceId = (typeof VAMPIRE_LORD_DICE_FACE_IDS)[keyof typeof VAMPIRE_LORD_DICE_FACE_IDS];
+
+// ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================
 
@@ -381,6 +401,7 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     ARTIFICER: 'dicethrone:artificer-cards',
     TIANSHI: 'dicethrone:tianshi-cards',
     LIEREN: 'dicethrone:lieren-cards',
+    VAMPIRE_LORD: 'dicethrone:vampire_lord-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -404,4 +425,5 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     ARTIFICER: 'dicethrone:artificer-status',
     TIANSHI: 'dicethrone:tianshi-status',
     LIEREN: 'dicethrone:lieren-status',
+    VAMPIRE_LORD: 'dicethrone:vampire_lord-status',
 } as const;

@@ -1,11 +1,13 @@
 package top.easyboardgame.app;
 
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebView;
@@ -44,6 +46,7 @@ public class MainActivity extends BridgeActivity {
     private static final String CAPGO_NEXT_VERSION_PREF = "nextVersion";
     private static final String CAPGO_FALLBACK_VERSION_PREF = "pastVersion";
     private static final String CAPGO_BUILTIN_BUNDLE_ID = "builtin";
+    private static final long[] WINDOW_MODE_REAPPLY_DELAYS_MS = new long[] { 80L, 240L, 600L };
     private static final String APP_HIDDEN_EVENT_SCRIPT =
         "(function(){try{" +
         "window.dispatchEvent(new CustomEvent('bg-shell-app-hidden'));" +
@@ -60,6 +63,12 @@ public class MainActivity extends BridgeActivity {
 
     private final Handler orientationHandler = new Handler(Looper.getMainLooper());
     private final Map<String, String> gameOrientations = new HashMap<>();
+    private final Runnable windowModeReapply = new Runnable() {
+        @Override
+        public void run() {
+            applyWindowMode(lastNeedsImmersiveWindow);
+        }
+    };
     private final Runnable orientationPoller = new Runnable() {
         @Override
         public void run() {
@@ -79,7 +88,7 @@ public class MainActivity extends BridgeActivity {
         // App 启动阶段还拿不到 WebView 真实路由；默认先保持横屏，避免 /play/:gameId/tutorial
         // 这类游戏教程页在原生壳里先闪到竖屏。路由上报后仍由 game-orientation-map 决定最终方向。
         lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
-        lastNeedsImmersiveWindow = false;
+        lastNeedsImmersiveWindow = true;
         setRequestedOrientation(lastRequestedOrientation);
         gameOrientations.putAll(loadOrientationMap());
         forceBuiltinBundleByBuild = loadForceBuiltinBundleFlag();
@@ -108,6 +117,7 @@ public class MainActivity extends BridgeActivity {
         );
         super.onCreate(savedInstanceState);
         applyWindowMode(true);
+        scheduleWindowModeReapply();
     }
 
     @Override
@@ -115,12 +125,14 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         startOrientationPolling();
         syncOrientationFromWebView();
+        scheduleWindowModeReapply();
         dispatchLifecycleScript(APP_VISIBLE_EVENT_SCRIPT);
     }
 
     @Override
     public void onPause() {
         stopOrientationPolling();
+        clearScheduledWindowModeReapply();
         dispatchLifecycleScript(APP_HIDDEN_EVENT_SCRIPT);
         super.onPause();
     }
@@ -128,7 +140,15 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onDestroy() {
         stopOrientationPolling();
+        clearScheduledWindowModeReapply();
         super.onDestroy();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applyWindowMode(lastNeedsImmersiveWindow);
+        scheduleWindowModeReapply();
     }
 
     @Override
@@ -136,6 +156,7 @@ public class MainActivity extends BridgeActivity {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             applyWindowMode(lastNeedsImmersiveWindow);
+            scheduleWindowModeReapply();
         }
     }
 
@@ -179,6 +200,7 @@ public class MainActivity extends BridgeActivity {
         runOnUiThread(() -> {
             setRequestedOrientation(requestedOrientation);
             applyWindowMode(needsImmersiveWindow);
+            scheduleWindowModeReapply();
         });
     }
 
@@ -346,11 +368,27 @@ public class MainActivity extends BridgeActivity {
         return builder.toString();
     }
 
+    private void scheduleWindowModeReapply() {
+        clearScheduledWindowModeReapply();
+        if (!lastNeedsImmersiveWindow) {
+            return;
+        }
+        for (long delayMs : WINDOW_MODE_REAPPLY_DELAYS_MS) {
+            orientationHandler.postDelayed(windowModeReapply, delayMs);
+        }
+    }
+
+    private void clearScheduledWindowModeReapply() {
+        orientationHandler.removeCallbacks(windowModeReapply);
+    }
+
     private void applyWindowMode(boolean isGamePage) {
         Window window = getWindow();
         if (window == null) {
             return;
         }
+
+        hideActionBarIfPresent();
 
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
         if (controller == null) {
@@ -358,6 +396,7 @@ public class MainActivity extends BridgeActivity {
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, !isGamePage);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
         window.setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED
                 | (isGamePage
@@ -369,12 +408,29 @@ public class MainActivity extends BridgeActivity {
             // 之前只隐藏了 status bar，底部 navigation/gesture bar 仍会占用 inset，
             // WebView 读到的 viewport 高度被压缩，safe-area-bottom 也会继续生效，
             // 最终表现为页面底部被“系统条”往上挤。
+            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            window.getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
             controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             controller.hide(WindowInsetsCompat.Type.systemBars());
             return;
         }
 
+        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         controller.show(WindowInsetsCompat.Type.systemBars());
+    }
+
+    private void hideActionBarIfPresent() {
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
     }
 
     private void dispatchLifecycleScript(String script) {

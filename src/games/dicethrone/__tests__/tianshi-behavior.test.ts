@@ -1904,8 +1904,8 @@ describe('炽天使领域行为', () => {
         if (!firstChoice) return;
 
         // 第一段允许选择任意玩家；这里选对手 1，单独验证自选资格由选项集合保留。
-        expect(firstChoice.payload.options[0]?.labelParams).toMatchObject({ player: '0' });
-        expect(firstChoice.payload.options[1]?.labelParams).toMatchObject({ player: '1' });
+        expect(firstChoice.payload.options[0]?.labelParams).toMatchObject({ player: 'characters.tianshi' });
+        expect(firstChoice.payload.options[1]?.labelParams).toMatchObject({ player: 'characters.monk' });
 
         const resolveFirstChoice = getChoiceResolvedEventHandler(firstChoice.payload.options[0]?.customId ?? '');
         expect(resolveFirstChoice).toBeDefined();
@@ -2002,7 +2002,7 @@ describe('炽天使领域行为', () => {
         const dazzlePrompt = getSimpleChoicePrompt(state, card.id);
         const enemyDazzleOption = dazzlePrompt.options.find((option) => {
             return option.value?.customId === 'tianshi-divine-arbitration-dazzle'
-                && option.value?.labelParams?.player === '1';
+                && option.value?.labelParams?.player === 'characters.monk';
         });
         expect(enemyDazzleOption).toBeDefined();
         if (!enemyDazzleOption) return;
@@ -2015,11 +2015,11 @@ describe('炽天使领域行为', () => {
         const flightPrompt = getSimpleChoicePrompt(state, card.id);
         const selfFlightOption = flightPrompt.options.find((option) => {
             return option.value?.customId === 'tianshi-divine-arbitration-flight'
-                && option.value?.labelParams?.player === '0';
+                && option.value?.labelParams?.player === 'characters.tianshi';
         });
         const enemyFlightOption = flightPrompt.options.find((option) => {
             return option.value?.customId === 'tianshi-divine-arbitration-flight'
-                && option.value?.labelParams?.player === '1';
+                && option.value?.labelParams?.player === 'characters.monk';
         });
         expect(selfFlightOption).toBeDefined();
         expect(enemyFlightOption).toBeDefined();

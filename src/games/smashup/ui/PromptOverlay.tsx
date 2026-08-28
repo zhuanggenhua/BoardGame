@@ -26,6 +26,8 @@ import type { CardPreviewRef } from '../../../core';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
 import { useToast } from '../../../contexts/ToastContext';
 import { isSmashUpPromptOwnedByPlayer } from './interactionMode';
+import type { SmashUpCore } from '../domain/types';
+import { getFactionMeta } from './factionMeta';
 
 type DisplayCardItem = { uid: string; defId: string; count?: number };
 type DeckReorderCardItem = { uid: string; defId: string };
@@ -71,6 +73,7 @@ interface Props {
     dispatch: (type: string, payload?: unknown) => void;
     playerID: PlayerId | null;
     playerNames?: Record<string, string>;
+    core?: SmashUpCore;
     /** 通用卡牌展示模式（弃牌堆查看等）：展示卡牌列表 + 关闭按钮 */
     displayCards?: DisplayCardsConfig;
 }
@@ -234,6 +237,107 @@ export function resolvePromptText(
     return resolveI18nKeys(text, t);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object';
+}
+
+function extractPlayerTargetId(option: unknown): PlayerId | undefined {
+    if (!isRecord(option)) return undefined;
+    const containers = [option.value, option].filter(isRecord);
+    for (const container of containers) {
+        for (const key of ['targetPlayerId', 'playerId', 'pid']) {
+            const value = container[key];
+            if (typeof value === 'string' || typeof value === 'number') {
+                return String(value);
+            }
+        }
+    }
+    return undefined;
+}
+
+function getFallbackPlayerLabels(playerId: PlayerId): string[] {
+    const index = Number.parseInt(String(playerId), 10);
+    const oneBased = Number.isFinite(index) ? index + 1 : undefined;
+    const chineseLabels = ['一', '二', '三', '四'];
+    const chineseIndex = Number.isFinite(index) ? chineseLabels[index] : undefined;
+    return [
+        String(playerId),
+        oneBased !== undefined ? `P${oneBased}` : undefined,
+        oneBased !== undefined ? `Player ${oneBased}` : undefined,
+        oneBased !== undefined ? `Player${oneBased}` : undefined,
+        oneBased !== undefined ? `玩家 ${oneBased}` : undefined,
+        oneBased !== undefined ? `玩家${oneBased}` : undefined,
+        Number.isFinite(index) ? `玩家 ${index}` : undefined,
+        Number.isFinite(index) ? `玩家${index}` : undefined,
+        chineseIndex ? `玩家${chineseIndex}` : undefined,
+        chineseIndex ? `玩家 ${chineseIndex}` : undefined,
+    ].filter((label): label is string => typeof label === 'string' && label.length > 0);
+}
+
+function isFallbackPlayerName(name: string | undefined, playerId: PlayerId): boolean {
+    const trimmed = name?.trim();
+    if (!trimmed) return false;
+    return getFallbackPlayerLabels(playerId).some(label => label.toLowerCase() === trimmed.toLowerCase());
+}
+
+function formatSmashUpSeatFallback(playerId: PlayerId): string {
+    const index = Number.parseInt(String(playerId), 10);
+    return Number.isFinite(index) ? `P${index + 1}` : String(playerId);
+}
+
+function resolveSingleFactionName(
+    core: SmashUpCore | undefined,
+    playerId: PlayerId,
+    t: (key: string, opts?: Record<string, unknown>) => string,
+): string | undefined {
+    const factions = core?.players?.[playerId]?.factions
+        ?.filter((factionId): factionId is string => typeof factionId === 'string' && factionId.length > 0);
+    if (!factions) return undefined;
+    const uniqueFactions = Array.from(new Set(factions));
+    if (uniqueFactions.length !== 1) return undefined;
+    const nameKey = getFactionMeta(uniqueFactions[0])?.nameKey;
+    if (!nameKey) return uniqueFactions[0];
+    return translateRuntimeKey(t, nameKey, { defaultValue: uniqueFactions[0] });
+}
+
+function resolveSmashUpPlayerIdentity(
+    playerId: PlayerId,
+    core: SmashUpCore | undefined,
+    playerNames: Record<string, string> | undefined,
+    t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+    const playerName = playerNames?.[playerId]?.trim();
+    if (playerName && !isFallbackPlayerName(playerName, playerId)) {
+        return playerName;
+    }
+    return resolveSingleFactionName(core, playerId, t)
+        ?? playerName
+        ?? formatSmashUpSeatFallback(playerId);
+}
+
+function replaceFallbackPlayerLabel(label: string, playerId: PlayerId, identity: string): string {
+    if (label.trim() === String(playerId)) return identity;
+    if (isFallbackPlayerName(label, playerId)) return identity;
+
+    return getFallbackPlayerLabels(playerId)
+        .sort((a, b) => b.length - a.length)
+        .reduce((current, fallback) => current.split(fallback).join(identity), label);
+}
+
+function resolveSmashUpPlayerChoiceLabel(
+    option: { label: string; value?: unknown },
+    prompt: { targetType?: unknown } | undefined,
+    core: SmashUpCore | undefined,
+    playerNames: Record<string, string> | undefined,
+    t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+    if (prompt?.targetType !== 'player') return option.label;
+    const targetPlayerId = extractPlayerTargetId(option);
+    if (!targetPlayerId) return option.label;
+    const identity = resolveSmashUpPlayerIdentity(targetPlayerId, core, playerNames, t);
+    return replaceFallbackPlayerLabel(option.label, targetPlayerId, identity);
+}
+
 interface PromptSliderConfig {
     min: number;
     max: number;
@@ -356,7 +460,7 @@ function extractDeckReorderCards(prompt: unknown): DeckReorderCardItem[] {
 
 /** 鼠标滚轮转水平滚动 */
 
-export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, playerNames, displayCards }) => {
+export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, playerNames, core, displayCards }) => {
     const prompt = asSimpleChoice(interaction);
     const { t, i18n } = useTranslation('game-smashup');
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
@@ -505,16 +609,19 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 解析所有选项 label 中的 i18n key
     const resolvedOptions = useMemo(() => {
         if (!prompt?.options) return [];
-        return prompt.options.map(opt => ({
-            ...opt,
-            label: typeof (opt as { labelKey?: unknown }).labelKey === 'string'
+        return prompt.options.map(opt => {
+            const label = typeof (opt as { labelKey?: unknown }).labelKey === 'string'
                 ? t((opt as { labelKey: string }).labelKey, {
                     ...(resolveI18nParams((opt as { labelParams?: Record<string, string | number> }).labelParams, t) ?? {}),
                     defaultValue: resolveI18nKeys(opt.label, t),
                 })
-                : resolveI18nKeys(opt.label, t),
-        }));
-    }, [promptRenderKey, t]);
+                : resolveI18nKeys(opt.label, t);
+            return {
+                ...opt,
+                label: resolveSmashUpPlayerChoiceLabel({ ...opt, label }, prompt, core, playerNames, t),
+            };
+        });
+    }, [promptRenderKey, t, core, playerNames]);
 
     // 通用跳过选项检测：自动分离 id === 'skip' 的选项，渲染为独立按钮
     const skipOption = useMemo(() => resolvedOptions.find(opt => opt.id === 'skip'), [resolvedOptions]);

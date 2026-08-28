@@ -250,23 +250,146 @@ async function readCurrentCore(page: Page): Promise<BetrayalCore> {
   });
 }
 
-function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
+async function finalizePendingEventRollForAllPlayers(
+  page: Page,
+  message = "事件骰确认后必须进入正式事件结果",
+  finalRollRandomQueue: number[] = [],
+) {
+  const pending = await page.evaluate(() => {
+    const snapshot = (
+      window as BetrayalStateReaderWindow
+    ).__BG_TEST_HARNESS__?.state?.get?.();
+    const resolution = snapshot?.core?.pendingEventRollResolution;
+    if (!resolution) {
+      return null;
+    }
+    return {
+      rollId: resolution.rollId,
+      requiredPlayerIds: resolution.requiredPlayerIds ?? snapshot?.core?.playerIds ?? [],
+      acknowledgedPlayerIds: resolution.acknowledgedPlayerIds ?? [],
+    };
+  });
+  if (!pending) {
+    throw new Error("事件骰没有待确认状态，不能进入二次伤害骰流程");
+  }
+
+  const acknowledged = new Set(pending.acknowledgedPlayerIds);
+  const unacknowledgedPlayerIds = pending.requiredPlayerIds.filter(
+    (playerId) => !acknowledged.has(playerId),
+  );
+  if (finalRollRandomQueue.length > 0) {
+    await setHarnessRandomQueue(page, finalRollRandomQueue);
+  }
+  for (const playerId of unacknowledgedPlayerIds) {
+    await dispatchHarnessCommand(
+      page,
+      BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+      playerId,
+      { rollId: pending.rollId },
+    );
+  }
+  await expect
+    .poll(async () => (await readCurrentCore(page)).pendingEventRollResolution ?? null, {
+      message,
+    })
+    .toBeNull();
+}
+
+async function resolveVisibleDamageAllocation(
+  page: Page,
+  traits: BetrayalTraitKey[],
+  screenshotPath?: string,
+) {
+  const allocationPanel = page.getByTestId("betrayal-damage-allocation-panel");
+  await expect(allocationPanel).toBeVisible();
+  const selectedCounts = new Map<BetrayalTraitKey, number>();
+  for (const trait of traits) {
+    const traitButton = allocationPanel.getByTestId(
+      `betrayal-damage-allocation-trait-${trait}`,
+    );
+    await expect(traitButton).toBeEnabled();
+    await traitButton.click();
+    const nextCount = (selectedCounts.get(trait) ?? 0) + 1;
+    selectedCounts.set(trait, nextCount);
+    await expect(traitButton).toHaveAttribute(
+      "data-damage-selected-count",
+      String(nextCount),
+    );
+  }
+  await expect(
+    allocationPanel.getByTestId("betrayal-damage-allocation-confirm"),
+  ).toBeEnabled();
+  if (screenshotPath) {
+    await saveScreenshot(page, screenshotPath);
+  }
+  await allocationPanel.getByTestId("betrayal-damage-allocation-confirm").click();
+  await expect(page.getByTestId("betrayal-damage-allocation-panel")).toHaveCount(0);
+}
+
+function buildVisibleTraitTrack(
+  trait: BetrayalTraitKey,
+  value: number,
+): BetrayalCore["currentExplorer"]["traitTracks"][BetrayalTraitKey] {
+  const values = [1, 2, 3, 4, 5];
+  const position = values.indexOf(value);
+  if (position < 0) {
+    throw new Error(`山屋 E2E 属性轨不支持 ${trait}=${value}`);
+  }
+  return {
+    trackId: `event-choice-e2e-${trait}`,
+    values,
+    position,
+    startPosition: position,
+    criticalPosition: 0,
+    skullPosition: -1,
+    maxPosition: values.length - 1,
+  };
+}
+
+function setCurrentExplorerVisibleTrait(
+  core: BetrayalCore,
+  trait: BetrayalTraitKey,
+  value: number,
+): void {
+  core.currentExplorer.traitTracks = {
+    ...core.currentExplorer.traitTracks,
+    [trait]: buildVisibleTraitTrack(trait, value),
+  };
+  core.currentExplorer.traits = {
+    ...core.currentExplorer.traits,
+    [trait]: value,
+  };
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+}
+
+function findE2eExplorer(
+  core: BetrayalCore,
+  playerId: string,
+): BetrayalCore["currentExplorer"] {
   const explorer = [core.currentExplorer, ...core.otherExplorers].find(
     (candidate) => candidate.playerId === playerId,
   );
   if (!explorer) {
     throw new Error(`山屋 E2E 无法找到玩家 ${playerId} 的探险者`);
   }
+  return explorer;
+}
+
+function traitTrackPosition(
+  core: BetrayalCore,
+  playerId: string,
+  trait: BetrayalTraitKey,
+): number {
+  return findE2eExplorer(core, playerId).traitTracks[trait].position;
+}
+
+function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
+  const explorer = findE2eExplorer(core, playerId);
   return explorer.traits.might + explorer.traits.speed;
 }
 
 function mentalTraitTotal(core: BetrayalCore, playerId: string): number {
-  const explorer = [core.currentExplorer, ...core.otherExplorers].find(
-    (candidate) => candidate.playerId === playerId,
-  );
-  if (!explorer) {
-    throw new Error(`山屋 E2E 无法找到玩家 ${playerId} 的探险者`);
-  }
+  const explorer = findE2eExplorer(core, playerId);
   return explorer.traits.knowledge + explorer.traits.sanity;
 }
 
@@ -2334,6 +2457,17 @@ type DirectRollEventFullChainCase = {
   expectedDetailTexts: string[];
   expectedDiceCount: string;
   expectedSubtotal: string;
+  expectedEventRolledDamage?: {
+    sourceEventDice: number[];
+    sourceEventTotal: number;
+    sourceEventLabel: string;
+    damageRandomQueue: number[];
+    damageKind: "physical" | "mental";
+    damageDice: number[];
+    pendingOriginalAmount: number;
+    pendingAmount: number;
+    allocationTraits: BetrayalTraitKey[];
+  };
   setupCore?: (core: BetrayalCore) => void;
   assertClosed?: (page: Page) => Promise<void>;
 };
@@ -2430,12 +2564,127 @@ async function runDirectRollEventFullChain(
   await expectPhysicalDiceSeparated(rollPanel, {
     minDiceCount: Number(eventCase.expectedDiceCount),
   });
-  await saveScreenshot(page, `${screenshotBase}-04-骰盘停稳直接结算.jpg`);
+  await saveScreenshot(
+    page,
+    eventCase.expectedEventRolledDamage
+      ? `${screenshotBase}-04-事件骰停稳等待确认.jpg`
+      : `${screenshotBase}-04-骰盘停稳直接结算.jpg`,
+  );
 
   for (const expectedText of eventCase.expectedDetailTexts) {
     await expect(discoveryDetail).toContainText(expectedText);
   }
   await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
+  if (eventCase.expectedEventRolledDamage) {
+    const expectedDamage = eventCase.expectedEventRolledDamage;
+    const beforeFinalizeCore = await readCurrentCore(page);
+    expect(beforeFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventDiceRoll",
+      sourceTitle: eventCase.eventName,
+      dice: expectedDamage.sourceEventDice,
+      latestLabel: expectedDamage.sourceEventLabel,
+    });
+    expect(beforeFinalizeCore.pendingEventRollResolution).toMatchObject({
+      sourceTitle: eventCase.eventName,
+    });
+
+    await finalizePendingEventRollForAllPlayers(
+      page,
+      `${eventCase.eventName}事件骰确认后必须切换到独立伤害骰`,
+      expectedDamage.damageRandomQueue,
+    );
+    const afterFinalizeCore = await readCurrentCore(page);
+    expect(afterFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventRolledDamage",
+      sourceTitle: eventCase.eventName,
+      rollLabel: "重新投掷的伤害骰",
+      dice: expectedDamage.damageDice,
+      passiveBonus: 0,
+      latestLabel: eventCase.eventName,
+      sourceEventRoll: {
+        kind: "eventDiceRoll",
+        sourceTitle: eventCase.eventName,
+        dice: expectedDamage.sourceEventDice,
+        total: expectedDamage.sourceEventTotal,
+        latestLabel: expectedDamage.sourceEventLabel,
+      },
+    });
+    expect(afterFinalizeCore.recentRoll?.eventEffectSnapshot).toBeUndefined();
+    expect(afterFinalizeCore.recentRoll?.eventRolledDamageResults).toEqual([{
+      damageKind: expectedDamage.damageKind,
+      rolls: expectedDamage.damageDice,
+      total: expectedDamage.pendingOriginalAmount,
+      appliedAmount: expectedDamage.pendingAmount,
+    }]);
+    expect(afterFinalizeCore.pendingDamageAllocation).toMatchObject({
+      sourceTitle: eventCase.eventName,
+      damageKind: expectedDamage.damageKind,
+      originalAmount: expectedDamage.pendingOriginalAmount,
+      amount: expectedDamage.pendingAmount,
+    });
+
+    const damageRollPanel = page.getByTestId("betrayal-recent-roll-panel");
+    const damageDiceTotal = expectedDamage.damageDice.reduce(
+      (sum, value) => sum + value,
+      0,
+    );
+    await expect(damageRollPanel).toHaveAttribute(
+      "data-visible-dice-source",
+      "event-rolled-damage",
+    );
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-outcome"),
+    ).toHaveText(eventCase.eventName);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-total"),
+    ).toContainText(`伤害骰合计 ${damageDiceTotal}`);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice"),
+    ).toHaveAttribute("data-damage-rolls", expectedDamage.damageDice.join(" / "));
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", String(expectedDamage.damageDice.length));
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", String(damageDiceTotal));
+    await expectVisiblePhysicalDiceBox(damageRollPanel);
+    await waitForPhysicalDiceSettled(damageRollPanel);
+    await expectPhysicalDiceSeparated(damageRollPanel, {
+      minDiceCount: expectedDamage.damageDice.length,
+      minNormalizedCenterDistance: expectedDamage.damageDice.length > 1 ? undefined : 0,
+      minNormalizedCenterSpan: expectedDamage.damageDice.length > 1 ? undefined : 0,
+    });
+    await saveScreenshot(page, `${screenshotBase}-05-重新投掷伤害骰.jpg`);
+
+    const allocationPanel = page.getByTestId("betrayal-damage-allocation-panel");
+    await expect(allocationPanel).toBeVisible();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-source"),
+    ).toContainText(eventCase.eventName);
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-amount"),
+    ).toContainText(`${expectedDamage.pendingAmount} 点`);
+    await resolveVisibleDamageAllocation(
+      page,
+      expectedDamage.allocationTraits,
+      `${screenshotBase}-06-伤害分配面板.jpg`,
+    );
+    const afterAllocationCore = await readCurrentCore(page);
+    expect(afterAllocationCore.pendingDamageAllocation).toBeNull();
+    await saveScreenshot(page, `${screenshotBase}-07-结算结果可见.jpg`);
+
+    await dismissDiscoveryPanel(page);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible();
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(0);
+    await eventCase.assertClosed?.(page);
+    await saveScreenshot(page, `${screenshotBase}-08-关闭后.jpg`);
+
+    assertNoFatalFrontendErrors([
+      { label: `betrayal-event-choice-${eventCase.screenshotSlug}`, diagnostics },
+    ]);
+    return;
+  }
   await saveScreenshot(page, `${screenshotBase}-05-结算结果可见.jpg`);
 
   await dismissDiscoveryPanel(page);
@@ -2490,14 +2739,26 @@ const directRollFullChainCases: DirectRollEventFullChainCase[] = [
     expectedSubtotal: "2",
   },
   {
-    title: "电话铃声伤害直接结算",
+    title: "电话铃声伤害分支确认后重新投骰",
     eventName: "电话铃声",
     screenshotSlug: "电话铃声-完整链路",
-    randomQueue: [0, 0, 0.99, 0.99],
-    expectedRollTexts: ["投 2 颗骰子", "总点数 0"],
-    expectedDetailTexts: ["受到两颗骰子的物理伤害", "受到 2 颗骰子的物理伤害"],
+    randomQueue: [0, 0],
+    expectedRollTexts: ["总点数 0"],
+    expectedDiscoveryRollTexts: ["投 2 颗骰子"],
+    expectedDetailTexts: ["受到两颗骰子的物理伤害"],
     expectedDiceCount: "2",
     expectedSubtotal: "0",
+    expectedEventRolledDamage: {
+      sourceEventDice: [0, 0],
+      sourceEventTotal: 0,
+      sourceEventLabel: "受到两颗骰子的物理伤害",
+      damageRandomQueue: [0.99, 0.99],
+      damageKind: "physical",
+      damageDice: [2, 2],
+      pendingOriginalAmount: 4,
+      pendingAmount: 3,
+      allocationTraits: ["might", "speed", "speed"],
+    },
     assertClosed: async (page) => {
       await expect(
         page.getByTestId("betrayal-room-occupant-ground-north-0"),
@@ -5611,18 +5872,16 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [phoneCall];
+    core.deckCounts.event = core.eventOrder.length;
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
-      traits: {
-        ...core.currentExplorer.traits,
-        might: 4,
-        speed: 4,
-        knowledge: 4,
-        sanity: 4,
-      },
       inventory: [{ ...armorCard }],
     };
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    setCurrentExplorerVisibleTrait(core, "might", 4);
+    setCurrentExplorerVisibleTrait(core, "speed", 4);
+    setCurrentExplorerVisibleTrait(core, "knowledge", 4);
+    setCurrentExplorerVisibleTrait(core, "sanity", 4);
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.turnStartInventoryCardIds = ["armor"];
 
@@ -5638,6 +5897,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
     const beforeCore = await readCurrentCore(page);
     const physicalBefore = physicalTraitTotal(beforeCore, "0");
+    const mightPositionBefore = traitTrackPosition(beforeCore, "0", "might");
+    const speedPositionBefore = traitTrackPosition(beforeCore, "0", "speed");
     expect(physicalBefore).toBe(8);
     await saveScreenshot(page, `${screenshotBase}/01-盔甲减伤前牌桌可操作.jpg`);
 
@@ -5656,7 +5917,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}/02-选择未知房间前.jpg`);
 
-    await setHarnessRandomQueue(page, [0, 0, 0.99, 0.99]);
+    await setHarnessRandomQueue(page, [0, 0]);
     await confirmGroundNorthRoomPlacement(page);
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
       0,
@@ -5680,36 +5941,168 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
-    await expect(rollPanel).toContainText("投 2 颗骰子");
-    await expect(rollPanel).toContainText("总点数 0");
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
+      "受到两颗骰子的物理伤害",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
+      "总点数 0",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      "伤害骰合计",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(0);
+    await expect(rollPanel).toHaveAttribute("data-visible-dice-source", "recent-roll");
     await expect(
-      page.getByTestId("betrayal-house-dice-3d-group"),
+      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-count", "2");
     await expect(
-      page.getByTestId("betrayal-house-dice-3d-group"),
+      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-subtotal", "0");
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
     await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
-    await saveScreenshot(page, `${screenshotBase}/04-物理伤害骰盘停稳.jpg`);
+    await saveScreenshot(page, `${screenshotBase}/04-物理事件骰停稳等待确认.jpg`);
 
+    const beforeFinalizeCore = await readCurrentCore(page);
+    expect(beforeFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventDiceRoll",
+      sourceTitle: "电话铃声",
+      dice: [0, 0],
+      latestLabel: "受到两颗骰子的物理伤害",
+    });
+    expect(beforeFinalizeCore.recentRoll?.eventRolledDamageResults).toBeUndefined();
+    expect(beforeFinalizeCore.pendingEventRollResolution).toMatchObject({
+      sourceTitle: "电话铃声",
+    });
+    expect(physicalTraitTotal(beforeFinalizeCore, "0")).toBe(physicalBefore);
+    expect(traitTrackPosition(beforeFinalizeCore, "0", "might")).toBe(
+      mightPositionBefore,
+    );
+    expect(traitTrackPosition(beforeFinalizeCore, "0", "speed")).toBe(
+      speedPositionBefore,
+    );
+
+    await finalizePendingEventRollForAllPlayers(
+      page,
+      "电话铃声物理伤害分支确认后必须重新投掷两颗伤害骰",
+      [0.99, 0.99],
+    );
+    const afterFinalizeCore = await readCurrentCore(page);
+    expect(afterFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventRolledDamage",
+      sourceTitle: "电话铃声",
+      rollLabel: "重新投掷的伤害骰",
+      dice: [2, 2],
+      passiveBonus: 0,
+      latestLabel: "电话铃声",
+      sourceEventRoll: {
+        kind: "eventDiceRoll",
+        sourceTitle: "电话铃声",
+        dice: [0, 0],
+        total: 0,
+        latestLabel: "受到两颗骰子的物理伤害",
+      },
+    });
+    expect(afterFinalizeCore.recentRoll?.eventEffectSnapshot).toBeUndefined();
+    expect(afterFinalizeCore.recentRoll?.eventRolledDamageResults).toEqual([{
+      damageKind: "physical",
+      rolls: [2, 2],
+      total: 4,
+      appliedAmount: 3,
+    }]);
+    expect(afterFinalizeCore.pendingDamageAllocation).toMatchObject({
+      sourceTitle: "电话铃声",
+      playerId: "0",
+      damageKind: "physical",
+      amount: 3,
+      originalAmount: 4,
+      allowedTraits: ["might", "speed"],
+    });
+    expect(physicalTraitTotal(afterFinalizeCore, "0")).toBe(physicalBefore);
+    expect(traitTrackPosition(afterFinalizeCore, "0", "might")).toBe(
+      mightPositionBefore,
+    );
+    expect(traitTrackPosition(afterFinalizeCore, "0", "speed")).toBe(
+      speedPositionBefore,
+    );
+
+    const damageRollPanel = page.getByTestId("betrayal-recent-roll-panel");
+    await expect(damageRollPanel).toHaveAttribute(
+      "data-visible-dice-source",
+      "event-rolled-damage",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
+      "电话铃声",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
+      "伤害骰合计 4",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      "事件总点数 0",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveAttribute(
+      "data-damage-rolls",
+      "2 / 2",
+    );
+    await expect(damageRollPanel).toContainText("重新投掷的伤害骰（2 颗）");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", "2");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", "4");
+    await expectVisiblePhysicalDiceBox(damageRollPanel);
+    await waitForPhysicalDiceSettled(damageRollPanel);
+    await expectPhysicalDiceSeparated(damageRollPanel, { minDiceCount: 2 });
+    await expect(damageRollPanel).toContainText("待分配 3 点物理伤害");
+    await saveScreenshot(page, `${screenshotBase}/05-重新投掷两颗物理伤害骰.jpg`);
+
+    const allocationPanel = page.getByTestId("betrayal-damage-allocation-panel");
+    await expect(allocationPanel).toBeVisible();
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-source")).toContainText(
+      "电话铃声",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-player")).toContainText(
+      "伊莎·瓦伦西亚",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-amount")).toContainText(
+      "3 点物理伤害",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-reduction")).toContainText(
+      "盔甲",
+    );
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-might"),
+    ).toBeEnabled();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-speed"),
+    ).toBeEnabled();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
+    ).toHaveCount(0);
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
+    ).toHaveCount(0);
+
+    await resolveVisibleDamageAllocation(
+      page,
+      ["might", "might", "speed"],
+      `${screenshotBase}/06-盔甲减伤后物理伤害分配面板.jpg`,
+    );
     const afterSettleCore = await readCurrentCore(page);
-    expect(
-      afterSettleCore.recentRoll?.eventEffectSnapshot?.damageRolls,
-    ).toEqual([2, 2]);
-    expect(physicalTraitTotal(afterSettleCore, "0")).toBe(physicalBefore - 3);
-    const armoredExplorer = [
-      afterSettleCore.currentExplorer,
-      ...afterSettleCore.otherExplorers,
-    ].find((explorer) => explorer.playerId === "0");
-    expect(armoredExplorer?.traits.might).toBe(1);
-    expect(armoredExplorer?.traits.speed).toBe(4);
-    await expect(discoveryDetail).toContainText("受到 2 颗骰子的物理伤害");
+    expect(afterSettleCore.pendingDamageAllocation).toBeNull();
+    const armoredExplorer = findE2eExplorer(afterSettleCore, "0");
+    expect(armoredExplorer.traitTracks.might.position).toBe(
+      mightPositionBefore - 2,
+    );
+    expect(armoredExplorer.traitTracks.speed.position).toBe(
+      speedPositionBefore - 1,
+    );
     await expect(armorShell).toHaveAttribute(
       "data-rules-summary",
       /受到物理伤害 -1/,
     );
-    await saveScreenshot(page, `${screenshotBase}/05-盔甲减伤结算结果可见.jpg`);
+    await saveScreenshot(page, `${screenshotBase}/07-盔甲减伤结算结果可见.jpg`);
 
     await dismissDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
@@ -5718,13 +6111,18 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       0,
     );
     const closedCore = await readCurrentCore(page);
-    expect(physicalTraitTotal(closedCore, "0")).toBe(physicalBefore - 3);
+    expect(traitTrackPosition(closedCore, "0", "might")).toBe(
+      mightPositionBefore - 2,
+    );
+    expect(traitTrackPosition(closedCore, "0", "speed")).toBe(
+      speedPositionBefore - 1,
+    );
     await expect(
       page.getByTestId("betrayal-room-occupant-ground-north-0"),
     ).toBeVisible();
     await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}/06-关闭后回牌桌状态清空.jpg`);
+    await saveScreenshot(page, `${screenshotBase}/08-关闭后回牌桌状态清空.jpg`);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-盔甲物理减伤完整链路", diagnostics },
@@ -5750,18 +6148,16 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [phoneCall];
+    core.deckCounts.event = core.eventOrder.length;
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
-      traits: {
-        ...core.currentExplorer.traits,
-        might: 4,
-        speed: 4,
-        knowledge: 4,
-        sanity: 4,
-      },
       inventory: [{ ...radioCard }],
     };
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    setCurrentExplorerVisibleTrait(core, "might", 4);
+    setCurrentExplorerVisibleTrait(core, "speed", 4);
+    setCurrentExplorerVisibleTrait(core, "knowledge", 4);
+    setCurrentExplorerVisibleTrait(core, "sanity", 4);
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.turnStartInventoryCardIds = ["radio"];
 
@@ -5777,6 +6173,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
     const beforeCore = await readCurrentCore(page);
     const mentalBefore = mentalTraitTotal(beforeCore, "0");
+    const knowledgePositionBefore = traitTrackPosition(beforeCore, "0", "knowledge");
+    const sanityPositionBefore = traitTrackPosition(beforeCore, "0", "sanity");
     expect(mentalBefore).toBe(8);
     await saveScreenshot(
       page,
@@ -5798,7 +6196,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}/02-选择未知房间前.jpg`);
 
-    await setHarnessRandomQueue(page, [0.5, 0.5, 0.99]);
+    await setHarnessRandomQueue(page, [0.5, 0.5]);
     await confirmGroundNorthRoomPlacement(page);
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
       0,
@@ -5822,38 +6220,160 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
-    await expect(rollPanel).toContainText("投 2 颗骰子");
-    await expect(rollPanel).toContainText("总点数 2");
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
+      "受到一颗骰子的精神伤害",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
+      "总点数 2",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      "伤害骰合计",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(0);
+    await expect(rollPanel).toHaveAttribute("data-visible-dice-source", "recent-roll");
     await expect(
-      page.getByTestId("betrayal-house-dice-3d-group"),
+      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-count", "2");
     await expect(
-      page.getByTestId("betrayal-house-dice-3d-group"),
+      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-subtotal", "2");
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
     await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
-    await saveScreenshot(page, `${screenshotBase}/04-精神伤害骰盘停稳.jpg`);
+    await saveScreenshot(page, `${screenshotBase}/04-精神事件骰停稳等待确认.jpg`);
 
+    const beforeFinalizeCore = await readCurrentCore(page);
+    expect(beforeFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventDiceRoll",
+      sourceTitle: "电话铃声",
+      dice: [1, 1],
+      latestLabel: "受到一颗骰子的精神伤害",
+    });
+    expect(beforeFinalizeCore.recentRoll?.eventRolledDamageResults).toBeUndefined();
+    expect(beforeFinalizeCore.pendingEventRollResolution).toMatchObject({
+      sourceTitle: "电话铃声",
+    });
+    expect(mentalTraitTotal(beforeFinalizeCore, "0")).toBe(mentalBefore);
+
+    await finalizePendingEventRollForAllPlayers(
+      page,
+      "电话铃声精神伤害分支确认后必须重新投掷一颗伤害骰",
+      [0.99],
+    );
+    const afterFinalizeCore = await readCurrentCore(page);
+    expect(afterFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventRolledDamage",
+      sourceTitle: "电话铃声",
+      rollLabel: "重新投掷的伤害骰",
+      dice: [2],
+      passiveBonus: 0,
+      latestLabel: "电话铃声",
+      sourceEventRoll: {
+        kind: "eventDiceRoll",
+        sourceTitle: "电话铃声",
+        dice: [1, 1],
+        total: 2,
+        latestLabel: "受到一颗骰子的精神伤害",
+      },
+    });
+    expect(afterFinalizeCore.recentRoll?.eventEffectSnapshot).toBeUndefined();
+    expect(afterFinalizeCore.recentRoll?.eventRolledDamageResults).toEqual([{
+      damageKind: "mental",
+      rolls: [2],
+      total: 2,
+      appliedAmount: 1,
+    }]);
+    expect(afterFinalizeCore.pendingDamageAllocation).toMatchObject({
+      sourceTitle: "电话铃声",
+      playerId: "0",
+      damageKind: "mental",
+      amount: 1,
+      originalAmount: 2,
+      allowedTraits: ["knowledge", "sanity"],
+    });
+    expect(mentalTraitTotal(afterFinalizeCore, "0")).toBe(mentalBefore);
+
+    const damageRollPanel = page.getByTestId("betrayal-recent-roll-panel");
+    await expect(damageRollPanel).toHaveAttribute(
+      "data-visible-dice-source",
+      "event-rolled-damage",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
+      "电话铃声",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
+      "伤害骰合计 2",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      "事件总点数 2",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveAttribute(
+      "data-damage-rolls",
+      "2",
+    );
+    await expect(damageRollPanel).toContainText("重新投掷的伤害骰（1 颗）");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", "1");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", "2");
+    await expectVisiblePhysicalDiceBox(damageRollPanel);
+    await waitForPhysicalDiceSettled(damageRollPanel);
+    await expectPhysicalDiceSeparated(damageRollPanel, {
+      minDiceCount: 1,
+      minNormalizedCenterDistance: 0,
+      minNormalizedCenterSpan: 0,
+    });
+    await expect(damageRollPanel).toContainText("待分配 1 点精神伤害");
+    await saveScreenshot(page, `${screenshotBase}/05-重新投掷一颗精神伤害骰.jpg`);
+
+    const allocationPanel = page.getByTestId("betrayal-damage-allocation-panel");
+    await expect(allocationPanel).toBeVisible();
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-source")).toContainText(
+      "电话铃声",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-amount")).toContainText(
+      "1 点精神伤害",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-reduction")).toContainText(
+      "头戴耳机",
+    );
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
+    ).toBeEnabled();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
+    ).toBeEnabled();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-might"),
+    ).toHaveCount(0);
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-speed"),
+    ).toHaveCount(0);
+
+    await resolveVisibleDamageAllocation(
+      page,
+      ["knowledge"],
+      `${screenshotBase}/06-头戴耳机减伤后精神伤害分配面板.jpg`,
+    );
     const afterSettleCore = await readCurrentCore(page);
-    expect(
-      afterSettleCore.recentRoll?.eventEffectSnapshot?.damageRolls,
-    ).toEqual([2]);
+    expect(afterSettleCore.pendingDamageAllocation).toBeNull();
     expect(mentalTraitTotal(afterSettleCore, "0")).toBe(mentalBefore - 1);
-    const protectedExplorer = [
-      afterSettleCore.currentExplorer,
-      ...afterSettleCore.otherExplorers,
-    ].find((explorer) => explorer.playerId === "0");
-    expect(protectedExplorer?.traits.knowledge).toBe(3);
-    expect(protectedExplorer?.traits.sanity).toBe(4);
-    await expect(discoveryDetail).toContainText("受到 1 颗骰子的精神伤害");
+    const protectedExplorer = findE2eExplorer(afterSettleCore, "0");
+    expect(protectedExplorer.traitTracks.knowledge.position).toBe(
+      knowledgePositionBefore - 1,
+    );
+    expect(protectedExplorer.traitTracks.sanity.position).toBe(
+      sanityPositionBefore,
+    );
     await expect(radioShell).toHaveAttribute(
       "data-rules-summary",
       /受到精神伤害 -1/,
     );
     await saveScreenshot(
       page,
-      `${screenshotBase}/05-头戴耳机减伤结算结果可见.jpg`,
+      `${screenshotBase}/07-头戴耳机减伤结算结果可见.jpg`,
     );
 
     await dismissDiscoveryPanel(page);
@@ -5864,12 +6384,18 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
     const closedCore = await readCurrentCore(page);
     expect(mentalTraitTotal(closedCore, "0")).toBe(mentalBefore - 1);
+    expect(traitTrackPosition(closedCore, "0", "knowledge")).toBe(
+      knowledgePositionBefore - 1,
+    );
+    expect(traitTrackPosition(closedCore, "0", "sanity")).toBe(
+      sanityPositionBefore,
+    );
     await expect(
       page.getByTestId("betrayal-room-occupant-ground-north-0"),
     ).toBeVisible();
     await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}/06-关闭后回牌桌状态清空.jpg`);
+    await saveScreenshot(page, `${screenshotBase}/08-关闭后回牌桌状态清空.jpg`);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-头戴耳机精神减伤完整链路", diagnostics },

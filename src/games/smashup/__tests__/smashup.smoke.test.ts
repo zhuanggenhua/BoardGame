@@ -253,6 +253,53 @@ describe('smashup', () => {
         expect(core.players['1'].factions).toEqual([SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS]);
     });
 
+    it('回归：异常状态只要求 1 个派系时，开局收口会随机补齐第二派系', () => {
+        const playerIds = ['0', '1'];
+        const runner = createRunner(playerIds);
+        const result = runner.run({
+            name: '异常每人 1 派系开局保护',
+            setup: (ids, random) => {
+                const systems = [
+                    createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+                    ...createBaseSystems<SmashUpCore>(),
+                ];
+                const core = SmashUpDomain.setup(ids, random);
+                return {
+                    core: {
+                        ...core,
+                        factionSelection: {
+                            ...core.factionSelection!,
+                            factionsPerPlayer: 1,
+                        },
+                    },
+                    sys: createInitialSystemState(ids, systems, undefined),
+                };
+            },
+            commands: [
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+            ],
+        });
+
+        expect(result.steps.every((step) => step.success)).toBe(true);
+        expect(result.finalState.sys.phase).toBe('playCards');
+        expect(result.finalState.core.factionSelection).toBeUndefined();
+        expect(result.finalState.core.players['0'].factions[0]).toBe(SMASHUP_FACTION_IDS.ALIENS);
+        expect(result.finalState.core.players['1'].factions[0]).toBe(SMASHUP_FACTION_IDS.PIRATES);
+
+        const finalFactionIds = Object.values(result.finalState.core.players)
+            .flatMap((player) => player.factions)
+            .filter(Boolean);
+        expect(finalFactionIds).toHaveLength(4);
+        expect(finalFactionIds).not.toContain(SMASHUP_FACTION_IDS.MADNESS);
+        expect(finalFactionIds.filter((factionId) => isSmashUpFactionImplementationInProgress(factionId))).toEqual([]);
+
+        for (const player of Object.values(result.finalState.core.players)) {
+            expect(player.hand.length).toBe(5);
+            expect(player.deck.length).toBe(35);
+        }
+    });
+
     it('选择带泰坦的派系后会初始化 set-aside 泰坦', () => {
         const titanDraft: SmashUpCommand[] = [
             { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS } },
@@ -2706,6 +2753,64 @@ describe('smashup', () => {
         expect(currentPlayerActions.length).toBeGreaterThan(10);
         expect(currentPlayerActions.every((action) => action.kind === 'select-faction')).toBe(true);
         expect(waitingPlayerActions).toHaveLength(0);
+    });
+
+    it('回归：房主首选后 3 个 AI 会连续选满两派系并把选秀权交还房主', async () => {
+        const playerIds = ['0', '1', '2', '3'];
+        const runner = createRunner(playerIds);
+        let state = runner.run({
+            name: '四人 AI 选派系连续执行前态',
+            commands: [
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+            ],
+        }).finalState;
+        const seatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+            '2': { type: 'local-ai', policyId: 'baseline' },
+            '3': { type: 'local-ai', policyId: 'baseline' },
+        } as const;
+        const executedAiPlayerIds: string[] = [];
+
+        for (let step = 0; step < 8 && getCurrentPlayerId(state.core) !== '0'; step += 1) {
+            const resolution = await resolveNextLocalAiAction({
+                engineConfig,
+                state,
+                matchId: 'smashup-ai-faction-select-regression',
+                seatControllers,
+                decisionBudgetMs: 250,
+            });
+
+            expect(resolution).not.toBeNull();
+            if (!resolution) break;
+
+            executedAiPlayerIds.push(resolution.playerId);
+            for (const command of resolution.action.commands) {
+                const result = executePipeline(
+                    engineConfig,
+                    state,
+                    {
+                        type: command.type,
+                        playerId: resolution.playerId,
+                        payload: command.payload,
+                        timestamp: executedAiPlayerIds.length,
+                    } as SmashUpCommand,
+                    FIXED_RANDOM,
+                    playerIds,
+                );
+                expect(result.success, result.error).toBe(true);
+                state = result.state;
+            }
+        }
+
+        expect(executedAiPlayerIds).toEqual(['1', '2', '3', '3', '2', '1']);
+        expect(state.sys.phase).toBe('factionSelect');
+        expect(getCurrentPlayerId(state.core)).toBe('0');
+        expect(state.core.factionSelection?.playerSelections['0']).toHaveLength(1);
+        for (const playerId of ['1', '2', '3']) {
+            expect(state.core.factionSelection?.playerSelections[playerId]).toHaveLength(2);
+            expect(state.core.players[playerId].factions).toEqual(['', '']);
+        }
     });
 
     it('Smash Up AI 自动选派系不应列出仍未正式接入的派系', () => {
@@ -10160,6 +10265,98 @@ describe('smashup', () => {
         });
 
         expect(getPromptsBySourceId(triggerResult.matchState!, 'titan_pirates_the_kraken_play_replacement')).toHaveLength(1);
+    });
+
+    it('海怪克拉肯不在场时，计分基地上其他派系己方随从也会创建进替换基地交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.WIZARDS_POD],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_homeworld',
+                    minions: [makeMinion('wizard-on-score', 'wizard_neophyte_pod', '0', 2)],
+                }),
+                makeBase('base_the_mothership'),
+            ],
+            titans: [{
+                uid: 't-kraken-setaside',
+                defId: 'pirates_the_kraken',
+                faction: SMASHUP_FACTION_IDS.PIRATES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } satisfies TitanState],
+        });
+
+        const triggerResult = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', rank: 1, points: 3 }],
+            random: FIXED_RANDOM,
+            now: 74,
+        });
+
+        expect(getPromptsBySourceId(triggerResult.matchState!, 'titan_pirates_the_kraken_play_replacement')).toHaveLength(1);
+    });
+
+    it('同一玩家已有任意泰坦在场时，其他派系随从计分后不会再创建海怪克拉肯进场交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.WIZARDS_POD],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_homeworld',
+                    minions: [makeMinion('wizard-on-score', 'wizard_neophyte_pod', '0', 2)],
+                }),
+                makeBase('base_the_mothership'),
+            ],
+            titans: [
+                {
+                    uid: 'arcane-live',
+                    defId: 'wizards_arcane_protector',
+                    faction: SMASHUP_FACTION_IDS.WIZARDS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+                } satisfies TitanState,
+                {
+                    uid: 't-kraken-setaside',
+                    defId: 'pirates_the_kraken',
+                    faction: SMASHUP_FACTION_IDS.PIRATES,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'setaside' },
+                } satisfies TitanState,
+            ],
+        });
+
+        const triggerResult = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', rank: 1, points: 3 }],
+            random: FIXED_RANDOM,
+            now: 75,
+        });
+
+        expect(getPromptsBySourceId(triggerResult.matchState!, 'titan_pirates_the_kraken_play_replacement')).toHaveLength(0);
     });
 
     it('海怪克拉肯在本基地计分后会创建救出己方随从的交互', () => {

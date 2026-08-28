@@ -5,10 +5,28 @@ import { ACTION_HEROES_CARDS } from '../data/factions/excellent_movies_teens';
 import { ACTION_HEROES_POD_CARDS } from '../data/factions/action_heroes_pod';
 import { getRegisteredAbilityKeys } from '../domain/abilityRegistry';
 import { getSmashUpAtlasImageById, SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
-import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import {
+    getSmashUpFactionImplementationStatus,
+    isSmashUpFactionSelectionIdentityImplementationInProgress,
+    SMASHUP_ATLAS_IDS,
+    SMASHUP_FACTION_IDS,
+} from '../domain/ids';
+import { getEffectiveBreakpoint } from '../domain/ongoingModifiers';
+import { fireTriggers, isMinionProtected } from '../domain/ongoingEffects';
 import { getSmashUpVariantSurfaceRelation, type SmashUpVariantSurface } from '../domain/variantBindings';
 import { smashUpCriticalImageResolver } from '../criticalImageResolver';
 import { FACTION_METADATA } from '../ui/factionMeta';
+import {
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondToPromptOption,
+} from './helpers';
 
 const sharedSurfaces: SmashUpVariantSurface[] = [
     'ability',
@@ -19,6 +37,13 @@ const sharedSurfaces: SmashUpVariantSurface[] = [
 ];
 
 let abilityInitError: Error | null = null;
+
+const FIXED_RANDOM = {
+    random: () => 0,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(items: T[]) => [...items],
+};
 
 beforeAll(() => {
     try {
@@ -143,5 +168,99 @@ describe('动作英雄 POD 接入', () => {
         const byId = new Map(FACTION_METADATA.map(meta => [meta.id, meta]));
         expect(byId.get(SMASHUP_FACTION_IDS.ACTION_HEROES)?.locales).toEqual(['zh-CN']);
         expect(byId.get(SMASHUP_FACTION_IDS.ACTION_HEROES_POD)?.locales).toBeUndefined();
+    });
+
+    it('POD 玩法审计收口后不再标记为实施中', () => {
+        expect(getSmashUpFactionImplementationStatus(SMASHUP_FACTION_IDS.ACTION_HEROES_POD)).toBeUndefined();
+        expect(isSmashUpFactionSelectionIdentityImplementationInProgress(SMASHUP_FACTION_IDS.ACTION_HEROES_POD)).toBe(false);
+    });
+
+    it('POD 踢拳兄弟回合结束选择手牌后储存在 POD 牌下', () => {
+        if (abilityInitError) throw abilityInitError;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('stored-action', 'action_heroes_collateral_damage_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_jungle_camp_pod', [
+                makeMinion('kickboxbro-pod', 'action_heroes_kickboxbro_pod', '0', 5),
+            ])],
+        });
+
+        const result = fireTriggers(core, 'onTurnEnd', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 10,
+        });
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'action_heroes_kickboxbro_store');
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.cardUid === 'stored-action',
+            'stored POD hand action option',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(getPromptOptions(prompt).map((option: any) => option.id)).toEqual(['skip', 'store-0']);
+        expect(resolved.finalState.core.players['0'].hand).toEqual([]);
+        expect(resolved.finalState.core.players['0'].storedCards).toEqual([
+            expect.objectContaining({
+                uid: 'stored-action',
+                defId: 'action_heroes_collateral_damage_pod',
+                storedUnderUid: 'kickboxbro-pod',
+                storedUnderDefId: 'action_heroes_kickboxbro_pod',
+            }),
+        ]);
+    });
+
+    it('POD 隆布罗在控制者自己回合且该基地仅有其一个己方随从时降低临界点', () => {
+        if (abilityInitError) throw abilityInitError;
+        const baseline = getEffectiveBreakpoint(makeState({
+            bases: [makeBase('base_jungle_camp_pod')],
+        }), 0);
+        const activeSolo = makeState({
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_jungle_camp_pod', [
+                makeMinion('rumbro-pod', 'action_heroes_rumbro_pod', '0', 5),
+            ])],
+        });
+        const notOwnerTurn = makeState({
+            currentPlayerIndex: 1,
+            bases: [makeBase('base_jungle_camp_pod', [
+                makeMinion('rumbro-pod', 'action_heroes_rumbro_pod', '0', 5),
+            ])],
+        });
+        const withAlly = makeState({
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_jungle_camp_pod', [
+                makeMinion('rumbro-pod', 'action_heroes_rumbro_pod', '0', 5),
+                makeMinion('ally', 'pirate_first_mate', '0', 2),
+            ])],
+        });
+
+        expect(getEffectiveBreakpoint(activeSolo, 0)).toBe(baseline - 4);
+        expect(getEffectiveBreakpoint(notOwnerTurn, 0)).toBe(baseline);
+        expect(getEffectiveBreakpoint(withAlly, 0)).toBe(baseline);
+    });
+
+    it('POD 慢动作攻击保护己方随从免受其他玩家行动影响', () => {
+        if (abilityInitError) throw abilityInitError;
+        const core = makeState({
+            bases: [makeBase({
+                defId: 'base_jungle_camp_pod',
+                minions: [makeMinion('hero-pod', 'action_heroes_commandbro_pod', '0', 5)],
+                ongoingActions: [{ uid: 'slo-mo-pod', defId: 'action_heroes_slo_mo_attack_pod', ownerId: '0' }],
+            })],
+        });
+        const target = core.bases[0].minions[0];
+
+        expect(isMinionProtected(core, target, 0, '1', 'affect', { sourceKind: 'action' })).toBe(true);
+        expect(isMinionProtected(core, target, 0, '1', 'affect', { sourceKind: 'nonAction' })).toBe(false);
+        expect(isMinionProtected(core, target, 0, '0', 'affect', { sourceKind: 'action' })).toBe(false);
     });
 });

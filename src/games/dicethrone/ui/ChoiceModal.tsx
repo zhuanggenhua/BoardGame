@@ -55,7 +55,7 @@ const translateInterpolatedParam = (
     if (typeof value !== 'string') return value;
     const separator = ', ';
     return value.split(separator).map(part => {
-        if (!part.startsWith('cards.')) return part;
+        if (!part.startsWith('cards.') && !part.startsWith('characters.')) return part;
         return translateRuntimeKey(t, part, { defaultValue: part });
     }).join(separator);
 };

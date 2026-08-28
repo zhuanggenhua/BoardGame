@@ -9983,6 +9983,173 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/xixuegui/催眠": {
+      "variants": {
+        "png": {
+          "sha256": "d893d8264ca9e8ae7308f49425f366c4a530eb995f13bfe75f89f690dc02e856",
+          "bytes": 36231,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/规则qa": {
+      "variants": {
+        "jpg": {
+          "sha256": "c17d65d9aa5ae46a11cd56e3eba8bb902584d104239747970e0c0697bb98ffa7",
+          "bytes": 1210474,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/流血": {
+      "variants": {
+        "png": {
+          "sha256": "7842163861532481c0f09a406a950638250198fb65736fe10e19d54c35a63632",
+          "bytes": 34260,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/骰子": {
+      "variants": {
+        "png": {
+          "sha256": "d2902fec2997528762aad309b1a10db2b85613149d9cec7a8792d32927885934",
+          "bytes": 43175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "b5a14951ab5ffd52b974bfa6f8b2bfab0e0664072e3007a1b0cbfa6ea094e4e5",
+          "bytes": 10012700,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/玩家提示卡": {
+      "variants": {
+        "jpg": {
+          "sha256": "ee612b30442c32024dd464ba5728b2e393ec6e74ea79dad808df415848f32f65",
+          "bytes": 1296222,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/鲜血之力": {
+      "variants": {
+        "png": {
+          "sha256": "569ea0fae2591b1731859885b43dce5ae88b53b41b26a3e046ca828d7d13982b",
+          "bytes": 65893,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "8225fe0e2782018127a3f13b1ca2535aa22c92d0e38271f10db8add11b7277d4",
+          "bytes": 10526055,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/cardss": {
+      "variants": {
+        "png": {
+          "sha256": "8225fe0e2782018127a3f13b1ca2535aa22c92d0e38271f10db8add11b7277d4",
+          "bytes": 10526055,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "a04720fbb035bf0f4dc3132e3e467619c8f41dd9f3be409ff076a806c44ce317",
+          "bytes": 2094998,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "194406afd6d39d9abed62aa171348a43444b330afd3bb33de5018606915a5aaf",
+          "bytes": 33522,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "ce72e4a67d6b89c41c0fb5cd4ef92de94b65cbf7716cbd69849d03d6d71fb124",
+          "bytes": 1515796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "6cb04562e1af267c755ac40884af1a8b2b5274f85e9f3d35fe32aa58fdf576ff",
+          "bytes": 43058,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "f3ca4dc84684a85ca4a8c560fe9cfcd0033cf79365e39c7fa678c77c3ca22510",
+          "bytes": 1588778,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/dice": {
+      "variants": {
+        "png": {
+          "sha256": "d2902fec2997528762aad309b1a10db2b85613149d9cec7a8792d32927885934",
+          "bytes": 43175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "b5a14951ab5ffd52b974bfa6f8b2bfab0e0664072e3007a1b0cbfa6ea094e4e5",
+          "bytes": 10012700,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "5d1e7db203b740b8e62ac38b0bec831aa7fe490396bf96c60e3d9964eb10a171",
+          "bytes": 690,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "35c78486104a978df31c70e387d0253182bfeb8b3f4c7eeacec0337fd9d2e715",
+          "bytes": 179406,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/xixuegui/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "ee612b30442c32024dd464ba5728b2e393ec6e74ea79dad808df415848f32f65",
+          "bytes": 1296222,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/zhanshujia/手牌": {
       "variants": {
         "png": {

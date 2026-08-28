@@ -1,0 +1,596 @@
+html[data-game-id="smashup"],
+body[data-game-id="smashup"] {
+  --smashup-table-bg: #3e2723;
+  --smashup-table-texture-opacity: 0.4;
+  --smashup-table-texture-blend: multiply;
+  --smashup-table-vignette: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+
+  --smashup-paper-bg: #ffffff;
+  --smashup-paper-bg-soft: rgba(255, 255, 255, 0.8);
+  --smashup-paper-bg-muted: #f3f0e8;
+  --smashup-paper-bg-subtle: rgba(255, 255, 255, 0.7);
+  --smashup-paper-text: #0f172a;
+  --smashup-paper-muted-text: #475569;
+  --smashup-paper-faint-text: #94a3b8;
+  --smashup-paper-border: #cbd5e1;
+  --smashup-paper-border-soft: #e2e8f0;
+  --smashup-paper-ruled-bg: repeating-linear-gradient(0deg, transparent, transparent 18px, #f1f5f9 18px, #f1f5f9 19px);
+  --smashup-paper-shadow: 3px 4px 10px rgba(0, 0, 0, 0.3);
+
+  --smashup-note-bg: #fef3c7;
+  --smashup-note-text: #1f2937;
+  --smashup-note-border: rgba(30, 41, 59, 0.2);
+  --smashup-note-rule: rgba(30, 41, 59, 0.2);
+  --smashup-note-shadow: 2px 3px 5px rgba(0, 0, 0, 0.2);
+
+  --smashup-info-note-bg: #e0f2fe;
+  --smashup-info-note-text: #1f2937;
+  --smashup-info-note-border: #60a5fa;
+
+  --smashup-close-bg: #ffffff;
+  --smashup-close-text: #0f172a;
+  --smashup-close-border: #0f172a;
+
+  --smashup-card-frame-bg: #ffffff;
+  --smashup-card-frame-border: #e2e8f0;
+  --smashup-card-frame-border-strong: #1e293b;
+  --smashup-card-frame-stripes: repeating-linear-gradient(45deg, #fff 0px, #fff 2px, #fdfdfd 2px, #fdfdfd 4px);
+  --smashup-card-inner-bg: #e2e8f0;
+  --smashup-card-inner-border: #cbd5e1;
+  --smashup-card-text-bg: rgba(255, 255, 255, 0.9);
+  --smashup-card-text-color: #0f172a;
+  --smashup-card-title-bg: rgba(15, 23, 42, 0.82);
+  --smashup-card-title-color: #ffffff;
+  --smashup-card-overlay-bg: rgba(15, 23, 42, 0.6);
+
+  --smashup-panel-bg: rgba(253, 253, 253, 0.98);
+  --smashup-panel-sidebar-bg: rgba(255, 255, 255, 0.8);
+  --smashup-panel-content-bg: rgba(255, 255, 255, 0.5);
+  --smashup-panel-border: #1e293b;
+  --smashup-panel-dashed-border: #cbd5e1;
+  --smashup-panel-tape-bg: rgba(255, 255, 255, 0.6);
+  --smashup-detail-footer-bg: linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0.95) 58%, transparent 100%);
+
+  --smashup-chip-bg: #f1f5f9;
+  --smashup-chip-bg-soft: rgba(255, 255, 255, 0.75);
+  --smashup-chip-text: #334155;
+  --smashup-chip-border: #e2e8f0;
+  --smashup-chip-active-bg: #0f172a;
+  --smashup-chip-active-text: #ffffff;
+  --smashup-chip-active-border: #0f172a;
+  --smashup-chip-hover-bg: #fff7d6;
+  --smashup-chip-inverse-bg: #0f172a;
+  --smashup-chip-inverse-text: #ffffff;
+  --smashup-chip-success-bg: #dcfce7;
+  --smashup-chip-success-text: #15803d;
+  --smashup-chip-success-border: #22c55e;
+  --smashup-chip-disabled-bg: #e2e8f0;
+  --smashup-chip-disabled-text: #64748b;
+
+  --smashup-score-track-bg: #f1f5f9;
+  --smashup-score-grid: #e2e8f0;
+  --smashup-winner-bg: #fffbeb;
+  --smashup-winner-text: #92400e;
+  --smashup-winner-border: #fcd34d;
+
+  --smashup-empty-bg: rgba(248, 250, 252, 0.8);
+  --smashup-empty-text: #64748b;
+  --smashup-empty-border: #cbd5e1;
+  --smashup-scrollbar-track: rgba(15, 23, 42, 0.1);
+  --smashup-scrollbar-thumb: rgba(100, 116, 139, 0.32);
+  --smashup-scrollbar-thumb-hover: rgba(100, 116, 139, 0.46);
+}
+
+html[data-system-display-theme="night"][data-game-id="smashup"],
+body[data-system-display-theme="night"][data-game-id="smashup"] {
+  --smashup-table-bg: #111722;
+  --smashup-table-texture-opacity: 0.28;
+  --smashup-table-texture-blend: soft-light;
+  --smashup-table-vignette: radial-gradient(circle at center, rgba(234, 179, 8, 0.08) 0%, rgba(2, 6, 23, 0.78) 100%);
+
+  --smashup-paper-bg: #151d2a;
+  --smashup-paper-bg-soft: rgba(22, 29, 42, 0.86);
+  --smashup-paper-bg-muted: #111827;
+  --smashup-paper-bg-subtle: rgba(25, 34, 49, 0.74);
+  --smashup-paper-text: #f8ecd7;
+  --smashup-paper-muted-text: #c7b99f;
+  --smashup-paper-faint-text: #8f816c;
+  --smashup-paper-border: rgba(217, 183, 95, 0.34);
+  --smashup-paper-border-soft: rgba(217, 183, 95, 0.22);
+  --smashup-paper-ruled-bg: repeating-linear-gradient(0deg, transparent, transparent 18px, rgba(217, 183, 95, 0.08) 18px, rgba(217, 183, 95, 0.08) 19px);
+  --smashup-paper-shadow: 0 16px 34px rgba(0, 0, 0, 0.46);
+
+  --smashup-note-bg: #6f4c24;
+  --smashup-note-text: #fff2cf;
+  --smashup-note-border: rgba(250, 204, 21, 0.28);
+  --smashup-note-rule: rgba(255, 242, 207, 0.2);
+  --smashup-note-shadow: 2px 4px 14px rgba(0, 0, 0, 0.45);
+
+  --smashup-info-note-bg: #16344a;
+  --smashup-info-note-text: #dff4ff;
+  --smashup-info-note-border: #38bdf8;
+
+  --smashup-close-bg: #151d2a;
+  --smashup-close-text: #fff2cf;
+  --smashup-close-border: rgba(250, 204, 21, 0.56);
+
+  --smashup-card-frame-bg: #182130;
+  --smashup-card-frame-border: rgba(217, 183, 95, 0.28);
+  --smashup-card-frame-border-strong: rgba(250, 204, 21, 0.48);
+  --smashup-card-frame-stripes: repeating-linear-gradient(45deg, #182130 0px, #182130 2px, #202b3c 2px, #202b3c 4px);
+  --smashup-card-inner-bg: #0f172a;
+  --smashup-card-inner-border: rgba(217, 183, 95, 0.2);
+  --smashup-card-text-bg: rgba(15, 23, 42, 0.88);
+  --smashup-card-text-color: #f8ecd7;
+  --smashup-card-title-bg: rgba(217, 183, 95, 0.88);
+  --smashup-card-title-color: #111827;
+  --smashup-card-overlay-bg: rgba(2, 6, 23, 0.72);
+
+  --smashup-panel-bg: rgba(16, 23, 34, 0.96);
+  --smashup-panel-sidebar-bg: rgba(24, 33, 48, 0.88);
+  --smashup-panel-content-bg: rgba(12, 18, 28, 0.54);
+  --smashup-panel-border: rgba(250, 204, 21, 0.5);
+  --smashup-panel-dashed-border: rgba(217, 183, 95, 0.34);
+  --smashup-panel-tape-bg: rgba(217, 183, 95, 0.18);
+  --smashup-detail-footer-bg: linear-gradient(to top, #101722 0%, rgba(16, 23, 34, 0.92) 58%, transparent 100%);
+
+  --smashup-chip-bg: rgba(31, 41, 55, 0.86);
+  --smashup-chip-bg-soft: rgba(29, 40, 58, 0.78);
+  --smashup-chip-text: #e8dcc7;
+  --smashup-chip-border: rgba(217, 183, 95, 0.28);
+  --smashup-chip-active-bg: #d9b75f;
+  --smashup-chip-active-text: #111827;
+  --smashup-chip-active-border: #facc15;
+  --smashup-chip-hover-bg: rgba(111, 76, 36, 0.86);
+  --smashup-chip-inverse-bg: #d9b75f;
+  --smashup-chip-inverse-text: #111827;
+  --smashup-chip-success-bg: rgba(20, 83, 45, 0.58);
+  --smashup-chip-success-text: #bbf7d0;
+  --smashup-chip-success-border: rgba(74, 222, 128, 0.7);
+  --smashup-chip-disabled-bg: rgba(31, 41, 55, 0.8);
+  --smashup-chip-disabled-text: #9ca3af;
+
+  --smashup-score-track-bg: #0f172a;
+  --smashup-score-grid: rgba(217, 183, 95, 0.2);
+  --smashup-winner-bg: rgba(146, 64, 14, 0.38);
+  --smashup-winner-text: #fde68a;
+  --smashup-winner-border: rgba(250, 204, 21, 0.58);
+
+  --smashup-empty-bg: rgba(15, 23, 42, 0.72);
+  --smashup-empty-text: #b7aa92;
+  --smashup-empty-border: rgba(217, 183, 95, 0.3);
+  --smashup-scrollbar-track: rgba(2, 6, 23, 0.4);
+  --smashup-scrollbar-thumb: rgba(217, 183, 95, 0.36);
+  --smashup-scrollbar-thumb-hover: rgba(250, 204, 21, 0.52);
+}
+
+.smashup-table-surface {
+  background-color: var(--smashup-table-bg);
+  color: var(--smashup-paper-text);
+}
+
+.smashup-table-texture {
+  opacity: var(--smashup-table-texture-opacity);
+  mix-blend-mode: var(--smashup-table-texture-blend);
+}
+
+.smashup-table-vignette {
+  background: var(--smashup-table-vignette);
+}
+
+.smashup-paper-panel {
+  background: var(--smashup-paper-bg);
+  color: var(--smashup-paper-text);
+  border-color: var(--smashup-paper-border);
+  box-shadow: var(--smashup-paper-shadow);
+}
+
+.smashup-paper-soft-panel {
+  background: var(--smashup-paper-bg-soft);
+  color: var(--smashup-paper-text);
+  border-color: var(--smashup-paper-border);
+}
+
+.smashup-paper-subtle-panel {
+  background: var(--smashup-paper-bg-subtle);
+  color: var(--smashup-paper-text);
+  border-color: var(--smashup-paper-border-soft);
+}
+
+.smashup-note-surface {
+  background: var(--smashup-note-bg);
+  color: var(--smashup-note-text);
+  box-shadow: var(--smashup-note-shadow);
+}
+
+.smashup-info-note-surface {
+  background: var(--smashup-info-note-bg);
+  color: var(--smashup-info-note-text);
+  border-color: var(--smashup-info-note-border);
+  box-shadow: var(--smashup-note-shadow);
+}
+
+.smashup-close-button {
+  background: var(--smashup-close-bg);
+  color: var(--smashup-close-text);
+  border-color: var(--smashup-close-border);
+}
+
+.smashup-card-frame {
+  background: var(--smashup-card-frame-bg);
+  border-color: var(--smashup-card-frame-border);
+}
+
+.smashup-card-frame-strong {
+  background: var(--smashup-card-frame-bg);
+  border-color: var(--smashup-card-frame-border-strong);
+}
+
+.smashup-card-inner {
+  background: var(--smashup-card-inner-bg);
+  border-color: var(--smashup-card-inner-border);
+}
+
+.smashup-card-frame-striped {
+  background: var(--smashup-card-frame-stripes);
+  border-color: var(--smashup-card-frame-border);
+}
+
+.smashup-card-title-overlay {
+  background: var(--smashup-card-title-bg);
+  color: var(--smashup-card-title-color);
+}
+
+.smashup-card-text-panel {
+  background: var(--smashup-card-text-bg);
+  color: var(--smashup-card-text-color);
+}
+
+.smashup-card-hover-overlay {
+  background: var(--smashup-card-overlay-bg);
+}
+
+.smashup-paper-muted {
+  background: var(--smashup-paper-bg-muted);
+  color: var(--smashup-paper-text);
+}
+
+.smashup-text-main {
+  color: var(--smashup-paper-text);
+}
+
+.smashup-text-muted {
+  color: var(--smashup-paper-muted-text);
+}
+
+.smashup-text-faint {
+  color: var(--smashup-paper-faint-text);
+}
+
+.smashup-rule-border {
+  border-color: var(--smashup-paper-border-soft);
+}
+
+.smashup-chip {
+  background: var(--smashup-chip-bg);
+  color: var(--smashup-chip-text);
+  border-color: var(--smashup-chip-border);
+}
+
+.smashup-chip-soft {
+  background: var(--smashup-chip-bg-soft);
+  color: var(--smashup-chip-text);
+  border-color: var(--smashup-chip-border);
+}
+
+.smashup-chip-active {
+  background: var(--smashup-chip-active-bg);
+  color: var(--smashup-chip-active-text);
+  border-color: var(--smashup-chip-active-border);
+}
+
+.smashup-chip:hover {
+  background: var(--smashup-chip-hover-bg);
+}
+
+.smashup-chip-inverse {
+  background: var(--smashup-chip-inverse-bg);
+  color: var(--smashup-chip-inverse-text);
+}
+
+.smashup-chip-success {
+  background: var(--smashup-chip-success-bg);
+  color: var(--smashup-chip-success-text);
+  border-color: var(--smashup-chip-success-border);
+}
+
+.smashup-chip-disabled {
+  background: var(--smashup-chip-disabled-bg);
+  color: var(--smashup-chip-disabled-text);
+}
+
+.smashup-score-track {
+  background: var(--smashup-score-track-bg);
+  border-color: var(--smashup-score-grid);
+}
+
+.smashup-score-grid-line {
+  border-color: var(--smashup-score-grid);
+}
+
+.smashup-winner-chip {
+  background: var(--smashup-winner-bg);
+  color: var(--smashup-winner-text);
+  border-color: var(--smashup-winner-border);
+}
+
+.smashup-empty-panel {
+  background: var(--smashup-empty-bg);
+  color: var(--smashup-empty-text);
+  border-color: var(--smashup-empty-border);
+}
+
+.smashup-faction-detail-panel {
+  background: var(--smashup-panel-bg);
+  background-image: var(--smashup-paper-ruled-bg);
+  border-color: var(--smashup-panel-border);
+  color: var(--smashup-paper-text);
+}
+
+.smashup-faction-detail-sidebar {
+  background: var(--smashup-panel-sidebar-bg);
+  border-color: var(--smashup-panel-dashed-border);
+}
+
+.smashup-faction-detail-content {
+  background: var(--smashup-panel-content-bg);
+}
+
+.smashup-faction-detail-tape {
+  background: var(--smashup-panel-tape-bg);
+}
+
+.smashup-faction-detail-footer {
+  background: var(--smashup-detail-footer-bg);
+}
+
+.smashup-themed-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.smashup-themed-scrollbar::-webkit-scrollbar-track {
+  background: var(--smashup-scrollbar-track);
+}
+
+.smashup-themed-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--smashup-scrollbar-thumb);
+  border: 1px solid var(--smashup-paper-border-soft);
+  border-radius: 0;
+}
+
+.smashup-themed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--smashup-scrollbar-thumb-hover);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-paper-panel {
+  background: var(--smashup-paper-bg);
+  color: var(--smashup-paper-text);
+  border-color: var(--smashup-paper-border);
+  box-shadow: var(--smashup-paper-shadow);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-paper-soft-panel {
+  background: var(--smashup-paper-bg-soft);
+  color: var(--smashup-paper-text);
+  border-color: var(--smashup-paper-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-paper-subtle-panel {
+  background: var(--smashup-paper-bg-subtle);
+  color: var(--smashup-paper-text);
+  border-color: var(--smashup-paper-border-soft);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-note-surface {
+  background: var(--smashup-note-bg);
+  color: var(--smashup-note-text);
+  box-shadow: var(--smashup-note-shadow);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-info-note-surface {
+  background: var(--smashup-info-note-bg);
+  color: var(--smashup-info-note-text);
+  border-color: var(--smashup-info-note-border);
+  box-shadow: var(--smashup-note-shadow);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-frame,
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-frame-strong {
+  background: var(--smashup-card-frame-bg);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-frame {
+  border-color: var(--smashup-card-frame-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-frame-strong {
+  border-color: var(--smashup-card-frame-border-strong);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-frame-striped {
+  background: var(--smashup-card-frame-stripes);
+  border-color: var(--smashup-card-frame-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-inner {
+  background: var(--smashup-card-inner-bg);
+  border-color: var(--smashup-card-inner-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-paper-muted {
+  background: var(--smashup-paper-bg-muted);
+  color: var(--smashup-paper-text);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-chip {
+  background: var(--smashup-chip-bg);
+  color: var(--smashup-chip-text);
+  border-color: var(--smashup-chip-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-chip-soft {
+  background: var(--smashup-chip-bg-soft);
+  color: var(--smashup-chip-text);
+  border-color: var(--smashup-chip-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-chip-active {
+  background: var(--smashup-chip-active-bg);
+  color: var(--smashup-chip-active-text);
+  border-color: var(--smashup-chip-active-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-chip-inverse {
+  background: var(--smashup-chip-inverse-bg);
+  color: var(--smashup-chip-inverse-text);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-chip-success {
+  background: var(--smashup-chip-success-bg);
+  color: var(--smashup-chip-success-text);
+  border-color: var(--smashup-chip-success-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-chip-disabled {
+  background: var(--smashup-chip-disabled-bg);
+  color: var(--smashup-chip-disabled-text);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-score-track {
+  background: var(--smashup-score-track-bg);
+  border-color: var(--smashup-score-grid);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-score-grid-line {
+  border-color: var(--smashup-score-grid);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-winner-chip {
+  background: var(--smashup-winner-bg);
+  color: var(--smashup-winner-text);
+  border-color: var(--smashup-winner-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-empty-panel {
+  background: var(--smashup-empty-bg);
+  color: var(--smashup-empty-text);
+  border-color: var(--smashup-empty-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-faction-detail-panel {
+  background: var(--smashup-panel-bg);
+  background-image: var(--smashup-paper-ruled-bg);
+  border-color: var(--smashup-panel-border);
+  color: var(--smashup-paper-text);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-faction-detail-sidebar {
+  background: var(--smashup-panel-sidebar-bg);
+  border-color: var(--smashup-panel-dashed-border);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-faction-detail-content {
+  background: var(--smashup-panel-content-bg);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-faction-detail-tape {
+  background: var(--smashup-panel-tape-bg);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-faction-detail-footer {
+  background: var(--smashup-detail-footer-bg);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-title-overlay {
+  background: var(--smashup-card-title-bg);
+  color: var(--smashup-card-title-color);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-text-panel {
+  background: var(--smashup-card-text-bg);
+  color: var(--smashup-card-text-color);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-card-hover-overlay {
+  background: var(--smashup-card-overlay-bg);
+}
+
+:is(html[data-game-id="smashup"], body[data-game-id="smashup"]) .smashup-close-button {
+  background: var(--smashup-close-bg);
+  color: var(--smashup-close-text);
+  border-color: var(--smashup-close-border);
+}
+
+html[data-game-id="smashup"] .smashup-table-surface,
+body[data-game-id="smashup"] .smashup-table-surface {
+  background-color: var(--smashup-table-bg);
+  color: var(--smashup-paper-text);
+}
+
+html[data-game-id="smashup"] .smashup-paper-panel,
+body[data-game-id="smashup"] .smashup-paper-panel,
+html[data-game-id="smashup"] .smashup-paper-soft-panel,
+body[data-game-id="smashup"] .smashup-paper-soft-panel,
+html[data-game-id="smashup"] .smashup-paper-subtle-panel,
+body[data-game-id="smashup"] .smashup-paper-subtle-panel,
+html[data-game-id="smashup"] .smashup-note-surface,
+body[data-game-id="smashup"] .smashup-note-surface,
+html[data-game-id="smashup"] .smashup-info-note-surface,
+body[data-game-id="smashup"] .smashup-info-note-surface,
+html[data-game-id="smashup"] .smashup-card-frame,
+body[data-game-id="smashup"] .smashup-card-frame,
+html[data-game-id="smashup"] .smashup-card-frame-strong,
+body[data-game-id="smashup"] .smashup-card-frame-strong,
+html[data-game-id="smashup"] .smashup-card-inner,
+body[data-game-id="smashup"] .smashup-card-inner,
+html[data-game-id="smashup"] .smashup-card-frame-striped,
+body[data-game-id="smashup"] .smashup-card-frame-striped,
+html[data-game-id="smashup"] .smashup-chip,
+body[data-game-id="smashup"] .smashup-chip,
+html[data-game-id="smashup"] .smashup-chip-soft,
+body[data-game-id="smashup"] .smashup-chip-soft,
+html[data-game-id="smashup"] .smashup-chip-active,
+body[data-game-id="smashup"] .smashup-chip-active,
+html[data-game-id="smashup"] .smashup-chip-inverse,
+body[data-game-id="smashup"] .smashup-chip-inverse,
+html[data-game-id="smashup"] .smashup-chip-success,
+body[data-game-id="smashup"] .smashup-chip-success,
+html[data-game-id="smashup"] .smashup-chip-disabled,
+body[data-game-id="smashup"] .smashup-chip-disabled,
+html[data-game-id="smashup"] .smashup-score-track,
+body[data-game-id="smashup"] .smashup-score-track,
+html[data-game-id="smashup"] .smashup-winner-chip,
+body[data-game-id="smashup"] .smashup-winner-chip,
+html[data-game-id="smashup"] .smashup-empty-panel,
+body[data-game-id="smashup"] .smashup-empty-panel,
+html[data-game-id="smashup"] .smashup-faction-detail-panel,
+body[data-game-id="smashup"] .smashup-faction-detail-panel,
+html[data-game-id="smashup"] .smashup-faction-detail-sidebar,
+body[data-game-id="smashup"] .smashup-faction-detail-sidebar,
+html[data-game-id="smashup"] .smashup-faction-detail-content,
+body[data-game-id="smashup"] .smashup-faction-detail-content,
+html[data-game-id="smashup"] .smashup-faction-detail-tape,
+body[data-game-id="smashup"] .smashup-faction-detail-tape,
+html[data-game-id="smashup"] .smashup-faction-detail-footer,
+body[data-game-id="smashup"] .smashup-faction-detail-footer,
+html[data-game-id="smashup"] .smashup-card-title-overlay,
+body[data-game-id="smashup"] .smashup-card-title-overlay,
+html[data-game-id="smashup"] .smashup-card-text-panel,
+body[data-game-id="smashup"] .smashup-card-text-panel,
+html[data-game-id="smashup"] .smashup-card-hover-overlay,
+body[data-game-id="smashup"] .smashup-card-hover-overlay,
+html[data-game-id="smashup"] .smashup-close-button,
+body[data-game-id="smashup"] .smashup-close-button {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}

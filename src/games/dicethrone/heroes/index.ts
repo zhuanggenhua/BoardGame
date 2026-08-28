@@ -28,6 +28,8 @@ import { TIANSHI_CARDS, getTianshiStartingDeck } from './tianshi/cards';
 import { TIANSHI_ABILITIES } from './tianshi/abilities';
 import { LIEREN_CARDS, getLierenStartingDeck } from './lieren/cards';
 import { LIEREN_ABILITIES } from './lieren/abilities';
+import { VAMPIRE_LORD_CARDS, getVampireLordStartingDeck } from './vampire_lord/cards';
+import { VAMPIRE_LORD_ABILITIES } from './vampire_lord/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
 import type { HeroState } from '../domain/types';
@@ -116,6 +118,11 @@ export const HEROES_DATA: Record<string, HeroData> = {
         cards: LIEREN_CARDS,
         abilities: LIEREN_ABILITIES,
         getStartingDeck: getLierenStartingDeck,
+    },
+    vampire_lord: {
+        cards: VAMPIRE_LORD_CARDS,
+        abilities: VAMPIRE_LORD_ABILITIES,
+        getStartingDeck: getVampireLordStartingDeck,
     },
 };
 

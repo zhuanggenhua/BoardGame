@@ -7,7 +7,6 @@ import { createTimingPoint, type Opportunity } from '../../../engine/TimingOppor
 import type { MatchState } from '../../../engine/types';
 import {
     getMageWarsSpellCardFromConfig,
-    getPresetSpellbookCardIdsFromConfig,
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS, type MageWarsCastSpellCommand } from './commands';
@@ -49,6 +48,7 @@ import type {
 } from './types';
 import { areAdjacentZones } from './utils';
 import { validateCommand } from './validate';
+import { getMageWarsPlayerSpellbookCardIds } from './spellbook';
 
 type MageWarsSpellCastTrigger = 'spell:cast';
 type MageWarsSpellCastTargetMode =
@@ -465,7 +465,7 @@ function buildMageWarsSpellCastCandidates(args: {
         }
         if (args.family === 'elemental-staff-binding') {
             const manaCost = args.spell.manaCost ?? resolveMageWarsSpellRawCostTotal(args.spell) ?? 0;
-            const bindableSpellCardIds = Array.from(new Set(getPresetSpellbookCardIdsFromConfig(args.player.mageId)))
+            const bindableSpellCardIds = Array.from(new Set(getMageWarsPlayerSpellbookCardIds(args.player)))
                 .sort((left, right) => left - right)
                 .filter((spellCardId) => {
                     const bindableSpell = getMageWarsSpellCardFromConfig(spellCardId);

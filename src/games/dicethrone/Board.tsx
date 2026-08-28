@@ -1348,15 +1348,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const pendingBonusDiceRoutedToRightTray = shouldUseRightTrayForPendingBonusDice(currentPendingBonusDiceSettlement);
     const isCurrentBonusDiceContext = G.currentRollContext?.kind === 'bonus';
-    const suppressCardSpotlightForBonusDiceSurface = Boolean(isCurrentBonusDiceContext || G.pendingBonusDiceSettlement);
-    React.useEffect(() => {
-        if (!suppressCardSpotlightForBonusDiceSurface || cardSpotlightQueue.length === 0) {
-            return;
-        }
-        for (const item of cardSpotlightQueue) {
-            handleCardSpotlightClose(item.id);
-        }
-    }, [cardSpotlightQueue, handleCardSpotlightClose, suppressCardSpotlightForBonusDiceSurface]);
     const bonusDiceTrayDice = React.useMemo(() => {
         // 普通确认结算会清掉 pending settlement，但当前 bonus 上下文仍负责右侧只读回看。
         // 这里必须按当前骰上下文路由，不能把 pending 是否存在当成显示资格。
@@ -2444,7 +2435,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     viewPlayerBoardFace={viewPlayer.playerBoardFace}
 
                     // 卡牌特写
-                    cardSpotlightQueue={suppressCardSpotlightForBonusDiceSurface ? [] : cardSpotlightQueue}
+                    cardSpotlightQueue={cardSpotlightQueue}
                     onCardSpotlightClose={handleCardSpotlightClose}
                     opponentHeaderRef={opponentHeaderRef}
 

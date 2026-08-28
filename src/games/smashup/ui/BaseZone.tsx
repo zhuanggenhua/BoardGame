@@ -178,8 +178,8 @@ export const BaseZone: React.FC<{
         ? 'absolute -top-[1.05vw] -right-[1.05vw] w-[4vw] h-[4vw] pointer-events-none z-30 flex items-center justify-center'
         : 'absolute -top-[1.5vw] -right-[1.5vw] w-[4vw] h-[4vw] pointer-events-none z-30 flex items-center justify-center';
     const powerTokenLabelClassName = isMobileViewport
-        ? 'absolute -bottom-[0.28vw] bg-white text-slate-900 text-[0.6vw] font-bold px-[0.4vw] py-[0.1vw] rounded shadow-sm border border-slate-300 whitespace-nowrap'
-        : 'absolute -bottom-[0.5vw] bg-white text-slate-900 text-[0.6vw] font-bold px-[0.4vw] py-[0.1vw] rounded shadow-sm border border-slate-300 whitespace-nowrap';
+        ? 'smashup-chip absolute -bottom-[0.28vw] text-[0.6vw] font-bold px-[0.4vw] py-[0.1vw] rounded shadow-sm border whitespace-nowrap'
+        : 'smashup-chip absolute -bottom-[0.5vw] text-[0.6vw] font-bold px-[0.4vw] py-[0.1vw] rounded shadow-sm border whitespace-nowrap';
     const titansOnBase = getTitansOnBase(core, baseIndex);
     const ongoingActions = base.ongoingActions ?? [];
     const monstersOnBase = base.monsters ?? [];
@@ -219,7 +219,7 @@ export const BaseZone: React.FC<{
         : isBaseHighlighted
             ? 'cursor-pointer rotate-0 scale-[1.07]'
             : 'cursor-pointer rotate-1 hover:rotate-0';
-    const baseCardFrameClassName = `relative w-full h-full bg-white p-[0.4vw] rounded-sm transition-[box-shadow] duration-300
+    const baseCardFrameClassName = `smashup-card-frame-striped relative w-full h-full p-[0.4vw] rounded-sm transition-[box-shadow] duration-300
         ${isSelectable
             ? 'shadow-[0_0_2.5vw_rgba(74,222,128,0.58)] ring-4 ring-green-400'
             : canUseBaseAbility
@@ -510,7 +510,7 @@ export const BaseZone: React.FC<{
                     transition={{ type: 'spring', stiffness: 350, damping: 20, delay: idx * 0.06 }}
                 >
                     <div
-                        className={`relative h-full w-full bg-white rounded-[0.15vw] shadow-lg border-[0.12vw] ${
+                        className={`smashup-card-frame relative h-full w-full rounded-[0.15vw] shadow-lg border-[0.12vw] ${
                             isDimmedOngoing
                                 ? 'cursor-not-allowed'
                                 : isMultiSelectedOngoing
@@ -640,7 +640,7 @@ export const BaseZone: React.FC<{
         const titanAccessoryChromeClass = getAccessoryChromeClass(titanAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
         const titanTimeboxSurfaceClass = getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-sky-300', 'bg-gradient-to-br from-cyan-200 to-sky-400');
         const titanPowerCounterSurfaceClass = getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
-        const titanFrameClassName = `relative aspect-[0.714] w-full cursor-pointer rounded-[0.18vw] border-[0.12vw] bg-white shadow-lg origin-bottom transition-[transform,box-shadow,filter,opacity] duration-200 ${
+        const titanFrameClassName = `smashup-card-frame relative aspect-[0.714] w-full cursor-pointer rounded-[0.18vw] border-[0.12vw] shadow-lg origin-bottom transition-[transform,box-shadow,filter,opacity] duration-200 ${
             isCoarsePointer ? '' : 'hover:scale-110 hover:-translate-y-[0.12vw]'
         } ${
             isSelectedTitanSource
@@ -1012,14 +1012,14 @@ export const BaseZone: React.FC<{
                 <div
                     className={baseCardFrameClassName}
                     style={{
-                        backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 2px, #fdfdfd 2px, #fdfdfd 4px)',
+                        backgroundImage: 'var(--smashup-card-frame-stripes)',
                     }}
                 >
                     {/* Inner Art Area — AnimatePresence 实现基地替换过渡 */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={base.defId}
-                            className="w-full h-full bg-slate-200 border border-slate-300 overflow-hidden relative"
+                            className="smashup-card-inner w-full h-full border overflow-hidden relative"
                             initial={{ opacity: 0, scale: 0.85 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.85 }}
@@ -1775,7 +1775,7 @@ const MinionCard: React.FC<{
             ? 'cursor-default'
             : 'cursor-pointer'
     }`;
-    const minionFrameClassName = `relative w-full h-full bg-white p-[0.2vw] rounded-[0.2vw] border-[0.15vw] transition-shadow duration-200
+    const minionFrameClassName = `smashup-card-frame relative w-full h-full p-[0.2vw] rounded-[0.2vw] border-[0.15vw] transition-shadow duration-200
         ${isVisuallySelectedMinion
             ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_40px_rgba(74,222,128,0.34)]'
             : isSelectableMinion
@@ -1873,7 +1873,7 @@ const MinionCard: React.FC<{
                     data-disabled={isDimmed ? 'true' : 'false'}
                     className={minionFrameClassName}
                 >
-                    <div className="w-full h-full bg-slate-100 relative">
+                    <div className="smashup-card-inner w-full h-full relative">
                         <div className="w-full h-full overflow-hidden">
                             <CardPreview
                                 previewRef={genericDef?.previewRef
@@ -2047,7 +2047,7 @@ const MinionCard: React.FC<{
                                             onViewAction(aa.defId);
                                         }
                                     }}
-                                    className={`aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
+                                    className={`smashup-card-frame aspect-[0.714] rounded-[0.1vw] shadow-lg cursor-pointer
                                         hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
                                         border-[0.08vw] ${isDimmedAA
                                             ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'

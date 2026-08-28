@@ -15,6 +15,7 @@ import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
 import { LIEREN_CARDS } from '../heroes/lieren/cards';
+import { VAMPIRE_LORD_CARDS } from '../heroes/vampire_lord/cards';
 import type { HeroState } from '../domain/types';
 import { getSlotBaseAbilityIdForCharacter } from './abilitySlotMapping';
 
@@ -34,6 +35,7 @@ export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     artificer: ARTIFICER_CARDS,
     tianshi: TIANSHI_CARDS,
     lieren: LIEREN_CARDS,
+    vampire_lord: VAMPIRE_LORD_CARDS,
 };
 
 export function getSlotAbilityId(

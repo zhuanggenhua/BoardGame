@@ -85,7 +85,7 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
             >
                 <button
                     onClick={onClose}
-                    className="absolute -top-4 -right-4 bg-white text-black rounded-full w-8 h-8 font-black border-2 border-black z-50 hover:scale-110 transition-transform"
+                    className="smashup-close-button absolute -top-4 -right-4 rounded-full w-8 h-8 font-black border-2 z-50 hover:scale-110 transition-transform"
                 >
                     X
                 </button>
@@ -95,7 +95,7 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
                     title={resolvedName}
                 />
                 {!previewRef && (
-                    <div className="absolute inset-0 bg-white rounded-xl p-6 border-4 border-slate-800 flex flex-col items-center justify-center text-center">
+                    <div className="smashup-paper-panel absolute inset-0 rounded-xl p-6 border-4 flex flex-col items-center justify-center text-center">
                         <h2 className="text-3xl font-black uppercase mb-4">{resolvedName}</h2>
                         <p className="font-mono text-lg">{resolvedText}</p>
                     </div>

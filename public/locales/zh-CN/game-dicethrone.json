@@ -600,6 +600,18 @@
       "description": [
         "同伴机器人，基础上限 1，升级后上限 2。受到至少 6 点攻击伤害后可激活并投骰治疗。"
       ]
+    },
+    "blood_power": {
+      "name": "鲜血之力",
+      "description": [
+        "正面标记，上限 5。当前静态接入支持获得和显示；完整消费增强规则仍处于实施中。"
+      ]
+    },
+    "mesmerize": {
+      "name": "催眠",
+      "description": [
+        "正面标记，上限 1。当前静态接入支持获得和显示；强迫重掷等完整交互规则仍处于实施中。"
+      ]
     }
   },
   "actionLog": {
@@ -746,7 +758,8 @@
     "gunslinger": "枪手",
     "samurai": "武士",
     "tianshi": "炽天使",
-    "lieren": "女猎手"
+    "lieren": "女猎手",
+    "vampire_lord": "吸血鬼领主"
   },
   "characters": {
     "monk": "僧侣",
@@ -763,7 +776,8 @@
     "cursed_pirate": "咒缚海盗",
     "artificer": "工匠",
     "tianshi": "炽天使",
-    "lieren": "女猎手"
+    "lieren": "女猎手",
+    "vampire_lord": "吸血鬼领主"
   },
   "companion": {
     "nyra": {
@@ -840,6 +854,14 @@
           "claw": "利爪面",
           "nyras_bond": "魂之羁绊面",
           "sabertooth": "剑齿虎面"
+        }
+      },
+      "vampire_lord": {
+        "name": "吸血鬼领主骰子",
+        "face": {
+          "claw": "利爪面",
+          "mesmerize": "催眠面",
+          "blood_drop": "血滴面"
         }
       }
     },
@@ -1022,7 +1044,9 @@
       "spear": "长矛",
       "claw": "利爪",
       "nyras_bond": "魂之羁绊",
-      "sabertooth": "剑齿虎"
+      "sabertooth": "剑齿虎",
+      "mesmerize": "催眠",
+      "blood_drop": "血滴"
     }
   },
   "bonusDie": {
@@ -1482,7 +1506,9 @@
       "spear": "长矛",
       "claw": "利爪",
       "nyras_bond": "魂之羁绊",
-      "sabertooth": "剑齿虎"
+      "sabertooth": "剑齿虎",
+      "mesmerize": "催眠",
+      "blood_drop": "血滴"
     },
     "trigger": {
       "generic": "变体条件",
@@ -1758,7 +1784,7 @@
       "s0_a1_d1_p1": "养成后木苗 1，神性 1；对手获得生命源泉"
     },
     "tianshi": {
-      "player": "玩家 {{player}}",
+      "player": "{{player}}",
       "divinePurification": { "title": "神圣净化：选择一名玩家" },
       "gospelArrival": { "title": "福音临世：选择一名对手施加眩光" },
       "divineCommand": { "title": "神圣指令：选择一名对手承受 4 点不可防御伤害" },
@@ -1808,7 +1834,7 @@
     "gunslingerTheLaw": "选择至多 2 名目标玩家",
     "targetingRollSelectTarget": "选择本次攻击目标",
     "targetingRollOpponentDecidesTarget": "由对手决定谁承受本次攻击",
-    "targetingRollPlayerOption": "玩家 {{playerNumber}}",
+    "targetingRollPlayerOption": "{{player}}",
     "selectHandCardToDiscard": "选择 1 张手牌弃置",
     "selectStatusToTransfer": "选择要转移的状态效果",
     "hint_copy_step1": "选择要复制的源骰子",
@@ -4556,7 +4582,25 @@
     "kindred-bond": { "name": "情同骨肉", "description": "防御投掷 3 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
     "kindred-bond-2": { "name": "情同骨肉 II", "description": "防御投掷 4 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
     "kindred-bond-3": { "name": "情同骨肉 III", "description": "防御投掷 4 骰；长矛和剑齿虎各造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
-    "jungle-fury": { "name": "丛林狂怒！", "description": "5 个剑齿虎：获得妮拉之系，施加 2 层流血，造成 12 点伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } }
+    "jungle-fury": { "name": "丛林狂怒！", "description": "5 个剑齿虎：获得妮拉之系，施加 2 层流血，造成 12 点伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } },
+    "bloodthirsty-claws": { "name": "嗜血之爪", "description": "3/4/5 个利爪：造成 3/4/5 点伤害。", "effects": { "damage3": "造成 3 点伤害", "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害" } },
+    "bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "3/4/5 个利爪：造成 4/5/6 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害" } },
+    "bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "3/4/5 个利爪：造成 4/6/8 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage6": "造成 6 点伤害", "damage8": "造成 8 点伤害" } },
+    "mesmerize-power": { "name": "魅惑之力", "description": "3 个催眠：获得 1 个催眠并造成 4 点伤害。", "effects": { "gainMesmerize": "获得 1 个催眠", "damage4": "造成 4 点伤害" } },
+    "mesmerize-power-2": { "name": "魅惑之力 II", "description": "3 个催眠：获得 1 个催眠并造成 5 点伤害。", "effects": { "gainMesmerize": "获得 1 个催眠", "damage5": "造成 5 点伤害" } },
+    "blood-feast": { "name": "鲜血盛宴", "description": "3 个血滴：治疗 2 点并获得 3 个鲜血之力。", "effects": { "heal2": "治疗 2 点", "gainBloodPower": "获得 3 个鲜血之力" } },
+    "blood-feast-2": { "name": "鲜血盛宴 II", "description": "3 个血滴：治疗 2 点、获得 3 个鲜血之力并造成 7 点伤害。", "effects": { "heal2": "治疗 2 点", "gainBloodPower": "获得 3 个鲜血之力", "damage7": "造成 7 点伤害" } },
+    "rend-claws": { "name": "撕裂之爪", "description": "小顺子：施加 1 层流血并造成 6 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage6": "造成 6 点伤害" } },
+    "rend-claws-2": { "name": "撕裂之爪 II", "description": "小顺子：施加 1 层流血并造成 6 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage6": "造成 6 点伤害" } },
+    "blood-possessed": { "name": "魔血附身", "description": "大顺子：获得 2 个鲜血之力并造成 6 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage6": "造成 6 点伤害" } },
+    "blood-possessed-2": { "name": "魔血附身 II", "description": "大顺子：获得 2 个鲜血之力并造成 8 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage8": "造成 8 点伤害" } },
+    "blood-thirst": { "name": "血之渴望", "description": "2 个血滴：施加 1 层流血并造成 4 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage4": "造成 4 点伤害" } },
+    "blood-thirst-2": { "name": "血之渴望 II", "description": "大顺子：施加 2 层流血并造成 6 点伤害。", "effects": { "bleed2": "施加 2 层流血", "damage6": "造成 6 点伤害" } },
+    "blood-magic": { "name": "鲜血魔法", "description": "小顺子：获得 2 个鲜血之力并造成 7 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage7": "造成 7 点伤害" } },
+    "blood-magic-2": { "name": "鲜血魔法 II", "description": "小顺子：获得 2 个鲜血之力并造成 8 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage8": "造成 8 点伤害" } },
+    "undying": { "name": "不死之身", "description": "防御投掷 4 骰：造成 1 点反击伤害并治疗 1 点。", "effects": { "counter1": "造成 1 点反击伤害", "heal1": "治疗 1 点" } },
+    "undying-2": { "name": "不死之身 II", "description": "防御投掷 4 骰：造成 1 点反击伤害并治疗 1 点。", "effects": { "counter1": "造成 1 点反击伤害", "heal1": "治疗 1 点" } },
+    "bloody-slaughter": { "name": "血色杀戮！", "description": "5 个血滴：获得 2 个鲜血之力，施加 2 层流血，造成 12 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } }
   },
   "cards": {
     "card-energetic": {
@@ -5628,7 +5672,23 @@
     "upgrade-lieren-beast-instinct-2": { "name": "野兽本能 II / 挥爪", "description": "升级野兽本能，并加入挥爪分支。" },
     "upgrade-lieren-life-revival-2": { "name": "生命复苏 II", "description": "升级生命复苏至 II 级。" },
     "upgrade-lieren-savage-force-2": { "name": "蛮荒之力 II / 狩猎", "description": "升级蛮荒之力，并加入狩猎分支。" },
-    "upgrade-lieren-wild-force-2": { "name": "野性之力 II", "description": "升级野性之力至 II 级。" }
+    "upgrade-lieren-wild-force-2": { "name": "野性之力 II", "description": "升级野性之力至 II 级。" },
+    "card-vampire-lord-blood-surge": { "name": "血潮汹涌！", "description": "获得 1 个鲜血之力。" },
+    "card-vampire-lord-blood-from-above": { "name": "血从天降！", "description": "获得 1 个鲜血之力。" },
+    "card-vampire-lord-total-demise": { "name": "死无全尸！", "description": "攻击修正：本次攻击伤害 +1。" },
+    "card-vampire-lord-boiling-blood": { "name": "沸血之力！", "description": "攻击修正：本次攻击伤害 +1。" },
+    "card-vampire-lord-gushing-blood": { "name": "血流如注！", "description": "获得 1 个鲜血之力和 1 个催眠。" },
+    "upgrade-vampire-lord-undying-2": { "name": "不死之身 II", "description": "升级不死之身至 II 级。" },
+    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "血之渴望 II / 血流成河", "description": "升级血之渴望至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "鲜血魔法 II / 皮开肉绽", "description": "升级鲜血魔法至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "魔血附身 II / 嗜血成性", "description": "升级魔血附身至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-rend-claws-2": { "name": "撕裂之爪 II", "description": "升级撕裂之爪至 II 级。" },
+    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "鲜血盛宴 II / 盛装出席", "description": "升级鲜血盛宴至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "魅惑之力 II / 摄魂术", "description": "升级魅惑之力至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "升级嗜血之爪至 III 级。" },
+    "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "升级嗜血之爪至 II 级。" },
+    "card-vampire-lord-drink-up": { "name": "饮血如酒！", "description": "获得 2 个鲜血之力。" },
+    "card-vampire-lord-bloodstone": { "name": "血石！", "description": "获得 1 个催眠和 2 个鲜血之力，施加 1 层流血，并抽 1 张牌。" }
   },
   "passive": {
     "tithes": {

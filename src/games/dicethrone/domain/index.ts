@@ -40,6 +40,7 @@ import { cursedPirateDiceDefinition } from '../heroes/cursed_pirate/diceConfig';
 import { artificerDiceDefinition } from '../heroes/artificer/diceConfig';
 import { tianshiDiceDefinition } from '../heroes/tianshi/diceConfig';
 import { lierenDiceDefinition } from '../heroes/lieren/diceConfig';
+import { vampireLordDiceDefinition } from '../heroes/vampire_lord/diceConfig';
 
 // 注册 DiceThrone 游戏特定条件（骰子组合、顺子等）
 registerDiceThroneConditions();
@@ -60,6 +61,7 @@ registerDiceDefinition(cursedPirateDiceDefinition);
 registerDiceDefinition(artificerDiceDefinition);
 registerDiceDefinition(tianshiDiceDefinition);
 registerDiceDefinition(lierenDiceDefinition);
+registerDiceDefinition(vampireLordDiceDefinition);
 monkResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 barbarianResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 pyromancerResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
@@ -377,5 +379,5 @@ export * from './rules';
 export * from './damagePreventionCommit';
 
 // 导出常量
-export { STATUS_IDS, TOKEN_IDS, DICE_FACE_IDS, ARTIFICER_DICE_FACE_IDS, TIANSHI_DICE_FACE_IDS, LIEREN_DICE_FACE_IDS, DICETHRONE_COMMANDS } from './ids';
+export { STATUS_IDS, TOKEN_IDS, DICE_FACE_IDS, ARTIFICER_DICE_FACE_IDS, TIANSHI_DICE_FACE_IDS, LIEREN_DICE_FACE_IDS, VAMPIRE_LORD_DICE_FACE_IDS, DICETHRONE_COMMANDS } from './ids';
 export { RESOURCE_IDS } from './resources';

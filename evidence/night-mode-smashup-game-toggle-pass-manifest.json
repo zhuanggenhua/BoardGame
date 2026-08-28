@@ -1,0 +1,42 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "夜间/日间切换入口不再只限制在主页，游戏内悬浮球也能显示该入口。",
+      "status": "PASS",
+      "evidence": [
+        "大杀四方真实路由 /play/smashup 加载后，局内悬浮球展开项包含 display-theme。",
+        "展开后按钮文案为“夜间模式”。"
+      ]
+    },
+    {
+      "requirement": "点击夜间模式后，游戏页也同步进入夜间主题状态。",
+      "status": "PASS",
+      "evidence": [
+        "点击 display-theme 后 html[data-system-display-theme] = night。",
+        "点击 display-theme 后 body[data-system-display-theme] = night。",
+        "本地偏好 system_display_theme = night。",
+        "页面 color-scheme = dark。"
+      ]
+    },
+    {
+      "requirement": "夜间主题变量不再排除游戏页，通用浅色组件可复用同一套变量。",
+      "status": "PASS",
+      "evidence": [
+        "游戏页夜间状态下 --color-parchment-base-bg = #0d1118。",
+        "游戏页夜间状态下 --color-parchment-base-text = #f1e7d2。",
+        "游戏页夜间状态下 --color-parchment-card-bg = #141a24。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\night-mode-smashup-game-toggle.png"
+  ]
+}

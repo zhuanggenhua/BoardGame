@@ -1,0 +1,12 @@
+{
+  "imageW": 900,
+  "imageH": 2048,
+  "rows": 7,
+  "cols": 5,
+  "rowStarts": [0, 293, 586, 879, 1172, 1465, 1758],
+  "rowHeights": [288, 288, 288, 288, 288, 288, 288],
+  "colStarts": [0, 181, 362, 543, 724],
+  "colWidths": [176, 176, 176, 176, 176],
+  "contract": "vampire-lord-normalized-5x7-physical-card-grid",
+  "note": "吸血鬼领主源图 1910x4348 按已验证的 5 列 x 7 行物理卡槽归一化到 900x2048；运行时每个 slot 对应一张物理牌。"
+}

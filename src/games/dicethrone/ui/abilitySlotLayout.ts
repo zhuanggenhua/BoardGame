@@ -84,6 +84,7 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
     artificer: { width: 2048, height: 1256 },
     tianshi: { width: 3643, height: 2234 },
     lieren: { width: 3632, height: 2234 },
+    vampire_lord: { width: 3627, height: 2234 },
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
@@ -102,6 +103,7 @@ export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string,
     artificer: 'v2',
     tianshi: 'v2',
     lieren: 'v2',
+    vampire_lord: 'v2',
 };
 
 export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = {

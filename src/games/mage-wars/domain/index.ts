@@ -8,14 +8,20 @@ import {
     getFormalArenaZonesFromConfig,
     getFormalStartingZoneIdFromConfig,
     getPresetMageSetupFromConfig,
-    getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
 import { executeCommand } from './execute';
 import { reduceEvent } from './reducer';
 import { validateCommand } from './validate';
 import type { MageWarsCore, MageWarsCommand, MageWarsEvent, MageWarsPlayerState } from './types';
 import { discoverMageWarsTimingOpportunities } from './timingOpportunities';
-import { resolveMageWarsSelectedMageIdForSeat } from '../roomSetup';
+import {
+    resolveMageWarsSelectedMageIdForSeat,
+    resolveMageWarsSpellbookEntriesForSeat,
+} from '../roomSetup';
+import {
+    getMageWarsSpellbookCardCount,
+    type MageWarsPlayerSpellbookEntry,
+} from './spellbook';
 
 function normalizePlayerIds(playerIds: PlayerId[]): PlayerId[] {
     return playerIds.length >= 2 ? playerIds.slice(0, 2) : ['0', '1'];
@@ -25,6 +31,7 @@ function createPlayerState(
     playerId: PlayerId,
     mageId: MageId,
     mageZoneId: ArenaZoneId,
+    spellbookEntries: readonly MageWarsPlayerSpellbookEntry[],
 ): MageWarsPlayerState {
     const setup = getPresetMageSetupFromConfig(mageId);
 
@@ -41,7 +48,8 @@ function createPlayerState(
         guarding: false,
         statusTokens: {},
         mageZoneId,
-        spellbookCount: getPresetSpellbookCountFromConfig(mageId),
+        spellbookCount: getMageWarsSpellbookCardCount(spellbookEntries),
+        spellbookEntries,
         preparedSpellSlots: 0,
         preparedSpellCardIds: [],
         discardSpellCardIds: [],
@@ -88,9 +96,10 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
         const players = Object.fromEntries(
             normalizedPlayerIds.map((playerId, index) => {
                 const mageId = resolveMageWarsSelectedMageIdForSeat(setupData, index);
+                const spellbookEntries = resolveMageWarsSpellbookEntriesForSeat(setupData, index, mageId);
                 return [
                     playerId,
-                    createPlayerState(playerId, mageId, resolveStartingZoneId(index)),
+                    createPlayerState(playerId, mageId, resolveStartingZoneId(index), spellbookEntries),
                 ];
             }),
         ) as Record<PlayerId, MageWarsPlayerState>;

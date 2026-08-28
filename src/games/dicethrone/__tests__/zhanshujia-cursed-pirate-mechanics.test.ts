@@ -926,10 +926,10 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const prompt = getSimpleChoicePrompt(promptState, 'upkeep-powder-keg');
         const self = prompt.options.find(option => (
             option.value as { value?: number; labelParams?: { target?: string } }
-        ).labelParams?.target === 'P1');
+        ).labelParams?.target === 'characters.zhanshujia');
         const target = prompt.options.find(option => (
             option.value as { value?: number; labelParams?: { target?: string } }
-        ).labelParams?.target === 'P2');
+        ).labelParams?.target === 'characters.cursed_pirate');
 
         expect(self).toBeDefined();
         expect(target).toBeDefined();
@@ -943,7 +943,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const transferPrompt = getSimpleChoicePrompt(transferPromptState, 'upkeep-powder-keg');
         const transferTarget = transferPrompt.options.find(option => (
             option.value as { value?: number; labelParams?: { target?: string } }
-        ).labelParams?.target === 'P2');
+        ).labelParams?.target === 'characters.cursed_pirate');
         expect(transferTarget).toBeDefined();
         const result = respondToPrompt(transferPromptState, transferTarget!.id, '0', fixedRandom, ['0', '1']);
         expect(result.success).toBe(true);
@@ -960,7 +960,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const prompt = getSimpleChoicePrompt(promptState, 'upkeep-powder-keg');
         const target = prompt.options.find(option => (
             option.value as { value?: number; labelParams?: { target?: string } }
-        ).labelParams?.target === 'P2');
+        ).labelParams?.target === 'characters.cursed_pirate');
         expect(target).toBeDefined();
 
         const result = respondToPrompt(promptState, target!.id, '0', fixedRandom, ['0', '1']);
@@ -1077,7 +1077,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const prompt = getSimpleChoicePrompt(upkeepPromptState, 'upkeep-powder-keg');
         const target = prompt.options.find(option => (
             option.value as { value?: number; labelParams?: { target?: string } }
-        ).labelParams?.target === 'P2');
+        ).labelParams?.target === 'characters.cursed_pirate');
         expect(target).toBeDefined();
 
         const result = respondToPrompt(upkeepPromptState, target!.id, '0', fixedRandom, ['0', '1']);
@@ -2677,8 +2677,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(prompt.title).toBe('choices.mercilessCursePowderKeg.title');
         expect(values.map(option => option.value).sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
         expect(values.every(option => option.customId === 'cursed-pirate-merciless-curse-powder-keg')).toBe(true);
-        expect(values.some(option => option.labelParams?.targets === 'P2, P4')).toBe(true);
-        expect(values.some(option => option.labelParams?.targets?.includes('P3'))).toBe(false);
+        expect(values.some(option => option.labelParams?.targets === 'characters.zhanshujia, characters.treant')).toBe(true);
+        expect(values.some(option => option.labelParams?.targets?.includes('characters.monk'))).toBe(false);
         expect(values.find(option => option.value === 3)).toMatchObject({
             targetPlayerIds: ['1', '3'],
             statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
@@ -3475,8 +3475,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             statusGrantConfig?: { statusId?: string; amount?: number };
         });
         expect(values.map(option => option.value).sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
-        expect(values.some(option => option.labelParams?.targets === 'P2, P4')).toBe(true);
-        expect(values.some(option => option.labelParams?.targets?.includes('P3'))).toBe(false);
+        expect(values.some(option => option.labelParams?.targets === 'characters.zhanshujia, characters.treant')).toBe(true);
+        expect(values.some(option => option.labelParams?.targets?.includes('characters.monk'))).toBe(false);
         expect(values.find(option => option.value === 3)).toMatchObject({
             targetPlayerIds: ['1', '3'],
             statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },

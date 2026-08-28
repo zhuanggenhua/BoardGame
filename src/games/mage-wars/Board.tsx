@@ -40,7 +40,6 @@ import {
 import type { MageWarsWallState } from './domain/types';
 import {
     getPresetMageSetupFromConfig,
-    getPresetSpellbookEntriesFromConfig,
     getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
 } from './data/configPackage';
@@ -81,6 +80,7 @@ import {
     resolveMageWarsObjectEffectiveLife,
     type MageWarsObjectAttackProfile,
 } from './domain/spellRules';
+import { getMageWarsPlayerSpellbookEntries } from './domain/spellbook';
 
 type Props = GameBoardProps<MageWarsCore>;
 
@@ -1471,8 +1471,8 @@ function SpellbookShelf({
         { id: 'equipment', label: t('spellbook.categories.equipment') },
     ];
     const spellbookEntries = useMemo(() => (
-        getPresetSpellbookEntriesFromConfig(player.mageId)
-    ), [player.mageId]);
+        getMageWarsPlayerSpellbookEntries(player)
+    ), [player]);
     const filteredEntries = useMemo(() => spellbookEntries.filter((entry) => {
         const cardId = entry.spellCardId;
         if (category === 'all') return true;
@@ -1908,18 +1908,6 @@ function ArenaStage({
         selectedSpellCastNextChainTargetObjectIds
         || selectedSpellCastCurrentChainSubmitObjectId,
     );
-    const hasSelectedSpellCastContract = Boolean(
-        selectedSpellCastTargetIds
-        || selectedSpellCastTargetZoneIds
-        || selectedSpellCastTargetWallEdgeIds
-        || selectedSpellCastDestinationZoneIds
-        || selectedSpellCastNewTargetObjectIds
-        || selectedSpellCastTargetPlayerIds
-        || selectedSpellCastNewTargetPlayerIds
-        || selectedSpellCastNewTargetZoneIds
-        || selectedSpellCastNextChainTargetObjectIds
-        || selectedSpellCastCurrentChainSubmitObjectId,
-    );
     const pendingSpellTargetObjectId = pendingSpellCastSelection?.kind === 'object'
         ? pendingSpellCastSelection.objectId
         : undefined;
@@ -2063,7 +2051,9 @@ function ArenaStage({
             )}
             data-testid="mage-wars-arena-stage"
             data-tutorial-id="mw-arena"
-            ref={fxAnchors.registerSurface}
+            ref={(element) => {
+                fxAnchors.registerSurface(element);
+            }}
             style={{ left: '50%', transform: 'translateX(-50%)' }}
         >
             <OptimizedImage
@@ -2235,11 +2225,13 @@ function ArenaStage({
                                             : canSelectObjectActor
                                                 ? () => onActorObjectSelect?.(object.id)
                                                 : undefined}
-                                    fxAnchorRef={fxAnchors.registerAnchor({
-                                        anchorId: object.id,
-                                        anchorKind: 'entity',
-                                        entityRef: object.id,
-                                    })}
+                                    fxAnchorRef={(element) => {
+                                        fxAnchors.registerAnchor({
+                                            anchorId: object.id,
+                                            anchorKind: 'entity',
+                                            entityRef: object.id,
+                                        })(element);
+                                    }}
                                 />
                             </div>
                             <ArenaAttachmentStrip
@@ -2249,11 +2241,13 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
                                 getRole={resolveAttachmentRole}
                                 getOnClick={resolveAttachmentClick}
-                                getFxAnchorRef={(attachment) => fxAnchors.registerAnchor({
-                                    anchorId: attachment.id,
-                                    anchorKind: 'attachment-slot',
-                                    entityRef: attachment.id,
-                                })}
+                                getFxAnchorRef={(attachment) => (element) => {
+                                    fxAnchors.registerAnchor({
+                                        anchorId: attachment.id,
+                                        anchorKind: 'attachment-slot',
+                                        entityRef: attachment.id,
+                                    })(element);
+                                }}
                             />
                         </div>
                     );
@@ -2293,11 +2287,13 @@ function ArenaStage({
                                     density={density}
                                     visualDamage={getVisualPlayerDamage(occupant)}
                                     showLifeTotals={showLifeTotals}
-                                    fxAnchorRef={fxAnchors.registerAnchor({
-                                        anchorId: occupant.id,
-                                        anchorKind: 'player',
-                                        entityRef: occupant.id,
-                                    })}
+                                    fxAnchorRef={(element) => {
+                                        fxAnchors.registerAnchor({
+                                            anchorId: occupant.id,
+                                            anchorKind: 'player',
+                                            entityRef: occupant.id,
+                                        })(element);
+                                    }}
                                     onClick={occupant.id === legalAttackTargetId || spellNeedsObjectTarget
                                         ? () => onPlayerSelect?.(occupant.id)
                                         : canSelectMageActor
@@ -2312,11 +2308,13 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, occupant.id)}
                                 getRole={resolveAttachmentRole}
                                 getOnClick={resolveAttachmentClick}
-                                getFxAnchorRef={(attachment) => fxAnchors.registerAnchor({
-                                    anchorId: attachment.id,
-                                    anchorKind: 'attachment-slot',
-                                    entityRef: attachment.id,
-                                })}
+                                getFxAnchorRef={(attachment) => (element) => {
+                                    fxAnchors.registerAnchor({
+                                        anchorId: attachment.id,
+                                        anchorKind: 'attachment-slot',
+                                        entityRef: attachment.id,
+                                    })(element);
+                                }}
                             />
                         </div>
                     );
@@ -2406,11 +2404,13 @@ function ArenaStage({
                             ownerSide="neutral"
                             getRole={resolveAttachmentRole}
                             getOnClick={resolveAttachmentClick}
-                            getFxAnchorRef={(attachment) => fxAnchors.registerAnchor({
-                                anchorId: attachment.id,
-                                anchorKind: 'attachment-slot',
-                                entityRef: attachment.id,
-                            })}
+                            getFxAnchorRef={(attachment) => (element) => {
+                                fxAnchors.registerAnchor({
+                                    anchorId: attachment.id,
+                                    anchorKind: 'attachment-slot',
+                                    entityRef: attachment.id,
+                                })(element);
+                            }}
                         />
                     </div>
                 );
@@ -3248,7 +3248,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         && (selectedObjectAvailableAbilities.length > 0 || selectedMageRestoreAbility || canGuardSelectedActor),
     );
     const spellNeedsWallEdgeTarget = selectedSpellCastTargetWallEdgeIds !== undefined;
-    const spellNeedsZoneTarget = selectedSpellCastTargetZoneIds !== undefined;
     const selectedSpellUsesConfirmChoice = selectedSpellCastRequest?.kind === 'confirm';
     const spellNeedsDestinationZone = selectedSpellCastEnabledPayloads.some((payload) => (
         (payload.targetObjectId !== undefined || payload.targetPlayerId !== undefined)
@@ -3747,7 +3746,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     };
     const handlePreparedSpellSelect = (cardId: number) => {
         if (!isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)) return;
-        const spell = getMageWarsSpellCardFromConfig(cardId);
         if (canAct && activePlayer) {
             const opportunity = buildMageWarsSpellCastOpportunity({
                 state: G,

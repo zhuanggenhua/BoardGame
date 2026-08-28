@@ -29,6 +29,7 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     artificer: 'artificial',
     tianshi: 'tianshi',
     lieren: 'lieren',
+    vampire_lord: 'xixuegui',
 };
 
 const IMPLEMENTED_CHARACTERS: readonly SelectableCharacterId[] = IMPLEMENTED_DICETHRONE_CHARACTER_IDS;

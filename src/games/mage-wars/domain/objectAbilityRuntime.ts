@@ -8,9 +8,7 @@ import {
 import { createTimingPoint, type Opportunity } from '../../../engine/TimingOpportunity';
 import type { MatchState, RandomFn, ValidationResult } from '../../../engine/types';
 import {
-    getPresetSpellbookCardIdsFromConfig,
     getMageWarsSpellCardFromConfig,
-    hasPresetSpellbookCardInConfig,
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
 import {
@@ -43,6 +41,10 @@ import { getArenaObject } from './utils';
 import { hasObjectAbilityUseInRound } from './objectAbilityUsage';
 import { hasTemporarySwift, hasTemporaryTeleportMovement } from './temporaryTraits';
 import { createMageWarsArenaObjectSourceConsumeAvailableEvent } from './sourceConsumeEvents';
+import {
+    getMageWarsPlayerSpellbookCardIds,
+    hasMageWarsPlayerSpellbookCard,
+} from './spellbook';
 
 type MageWarsObjectAbilityValidator = (ctx: MageWarsObjectAbilityValidationContext) => ValidationResult;
 
@@ -86,7 +88,7 @@ function rollD3(random: RandomFn, diceCount: number): number[] {
 }
 
 function hasSpellbookCard(player: MageWarsPlayerState, spellCardId: number): boolean {
-    return hasPresetSpellbookCardInConfig(player.mageId, spellCardId);
+    return hasMageWarsPlayerSpellbookCard(player, spellCardId);
 }
 
 function resolveMageWarsElementalStaffBoundSpell(
@@ -521,7 +523,7 @@ function buildMageWarsObjectAbilityActivationCandidates(args: {
     }
 
     if (args.ability.meta.targetMode === 'bound-spell') {
-        const candidateSpellCardIds = Array.from(new Set(getPresetSpellbookCardIdsFromConfig(args.player.mageId)))
+        const candidateSpellCardIds = Array.from(new Set(getMageWarsPlayerSpellbookCardIds(args.player)))
             .sort((left, right) => left - right);
         const candidates = candidateSpellCardIds.map((spellCardId) => {
             const spell = getMageWarsSpellCardFromConfig(spellCardId);

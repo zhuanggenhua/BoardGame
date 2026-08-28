@@ -271,6 +271,7 @@ let cachedReviewTable: GameConfigReviewTable | undefined;
 let cachedApprenticeMageOrder: readonly MageId[] | undefined;
 let cachedStandardStartingMageOrder: readonly MageId[] | undefined;
 const cachedSpellbookEntries = new Map<string, readonly MageWarsConfigSpellbookEntry[]>();
+let cachedSpellCards: readonly MageWarsConfigSpellCard[] | undefined;
 const cachedSpellCardsByCardId = new Map<number, MageWarsConfigSpellCard>();
 const cachedStatusTokensByStatusTokenId = new Map<StatusTokenId, MageWarsConfigStatusToken>();
 const cachedMageAbilities = new Map<MageId, readonly MageWarsConfigMageAbility[]>();
@@ -1483,6 +1484,23 @@ export function getMageWarsSpellCardFromConfig(spellCardId: number): MageWarsCon
     const spellCard = buildSpellCardFromObject(object);
     cachedSpellCardsByCardId.set(spellCardId, spellCard);
     return spellCard;
+}
+
+export function getMageWarsSpellCardsFromConfig(): readonly MageWarsConfigSpellCard[] {
+    if (cachedSpellCards) {
+        return cachedSpellCards;
+    }
+
+    cachedSpellCards = materializeMageWarsConfigPackage().package.objects
+        .filter(isMageWarsSpellObject)
+        .map(buildSpellCardFromObject)
+        .sort((left, right) => left.spellCardId - right.spellCardId);
+
+    cachedSpellCards.forEach((spellCard) => {
+        cachedSpellCardsByCardId.set(spellCard.spellCardId, spellCard);
+    });
+
+    return cachedSpellCards;
 }
 
 export function requireMageWarsSpellCardFromConfig(spellCardId: number): MageWarsConfigSpellCard {

@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "image": "status-icons-atlas.png",
+    "size": {
+      "w": 1204,
+      "h": 400
+    },
+    "comment": "吸血鬼领主状态图标图集；血滴、催眠、鲜血之力来自用户指定素材目录。"
+  },
+  "frames": {
+    "blood_power": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "comment": "鲜血之力"
+    },
+    "mesmerize": {
+      "frame": {
+        "x": 402,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "comment": "催眠"
+    },
+    "bleed": {
+      "frame": {
+        "x": 804,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      },
+      "comment": "流血"
+    }
+  }
+}

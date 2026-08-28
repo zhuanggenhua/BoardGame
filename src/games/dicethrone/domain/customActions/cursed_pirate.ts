@@ -31,6 +31,7 @@ import {
     getPowderKegTransferTargetIds,
 } from '../statusEvents';
 import { updatePendingAttackSettlementStage } from '../utils';
+import { getDiceThronePlayerChoiceListLabel } from '../playerDisplay';
 
 const MERCILESS_CURSE_POWDER_KEG_CHOICE_ID = 'cursed-pirate-merciless-curse-powder-keg';
 const CURSE_CARD_CHOICE_ID = 'cursed-pirate-curse-card-choice';
@@ -61,11 +62,8 @@ const countBits = (value: number): number => {
     return count;
 };
 
-const formatPlayerList = (playerIds: string[]): string =>
-    playerIds.map((playerId) => {
-        const seatNumber = Number.parseInt(playerId, 10) + 1;
-        return Number.isFinite(seatNumber) ? `P${seatNumber}` : playerId;
-    }).join(', ');
+const formatPlayerList = (state: CustomActionContext['state'], playerIds: string[]): string =>
+    getDiceThronePlayerChoiceListLabel(state, playerIds);
 
 const formatHandCardNameList = (cards: Array<{ id: string; name?: string }>): string =>
     cards.length > 0
@@ -460,7 +458,7 @@ function resolveCrowsNest({
                     value: 0,
                     customId: CROWS_NEST_VIEW_CHOICE_ID,
                     labelKey: 'choices.cursedPirateCrowsNestView.confirm',
-                    labelParams: { player: formatPlayerList([targetId]), cards: handSummary },
+                    labelParams: { player: formatPlayerList(state, [targetId]), cards: handSummary },
                 }],
             },
             sourceCommandType: 'ABILITY_EFFECT',
@@ -1077,7 +1075,7 @@ function requestMercilessCursePowderKegTargets({
                         value: mask,
                         customId: MERCILESS_CURSE_POWDER_KEG_CHOICE_ID,
                         labelKey: 'choices.mercilessCursePowderKeg.apply',
-                        labelParams: { targets: formatPlayerList(selectedTargetIds) },
+                        labelParams: { targets: formatPlayerList(state, selectedTargetIds) },
                         targetPlayerIds: selectedTargetIds,
                         statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
                     };
@@ -1123,7 +1121,7 @@ function requestGoFishPowderKegTargets({
                         value: mask,
                         customId: GO_FISH_POWDER_KEG_CHOICE_ID,
                         labelKey: 'choices.cursedPirateGoFish.apply',
-                        labelParams: { targets: formatPlayerList(selectedTargetIds) },
+                        labelParams: { targets: formatPlayerList(state, selectedTargetIds) },
                         targetPlayerIds: selectedTargetIds,
                         statusGrantConfig: { statusId: STATUS_IDS.POWDER_KEG, amount: 1 },
                     };

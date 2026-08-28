@@ -16,6 +16,7 @@ import {
 import { getAttackMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
 import { isPurifiableDebuffId } from '../statusRemoval';
 import { STATUS_IDS, TIANSHI_DICE_FACE_IDS as FACE, TOKEN_IDS } from '../ids';
+import { getDiceThronePlayerChoiceLabel } from '../playerDisplay';
 import type {
     BonusDieInfo,
     BonusDieRolledEvent,
@@ -220,7 +221,7 @@ function playerChoiceEvent(
                 targetPlayerId: targetId,
                 ...grants,
                 labelKey: 'choices.tianshi.player',
-                labelParams: { player: targetId },
+                labelParams: { player: getDiceThronePlayerChoiceLabel(state, targetId) },
             })),
         },
         ...eventSource(sourceAbilityId, timestamp, 'ABILITY_EFFECT'),

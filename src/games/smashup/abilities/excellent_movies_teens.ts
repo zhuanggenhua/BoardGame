@@ -36,6 +36,7 @@ import {
 } from '../domain/abilityHelpers';
 import {
     getActionControllerId,
+    matchesRuntimeDefId,
     registerCustomBreakpointModifiers,
     registerCustomPowerModifiers,
 } from '../domain/ongoingModifiers';
@@ -518,6 +519,7 @@ function actionHeroesKickboxbroTurnEnd(ctx: TriggerContext): TriggerResult {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId || !ctx.matchState) {
         return { events: [] };
     }
+    const kickboxbroDefId = ctx.sourceDefId ?? 'action_heroes_kickboxbro';
     const player = ctx.state.players[ctx.sourceControllerId];
     if (!player || player.hand.length === 0) return { events: [] };
     const options = [
@@ -541,7 +543,7 @@ function actionHeroesKickboxbroTurnEnd(ctx: TriggerContext): TriggerResult {
             'ui.action_heroes_kickboxbro_store_title',
             {
                 kickboxbroUid: ctx.sourceCardUid,
-                kickboxbroDefId: 'action_heroes_kickboxbro',
+                kickboxbroDefId,
                 sourceBaseIndex: ctx.sourceBaseIndex,
             },
         ),
@@ -634,12 +636,14 @@ function registerActionHeroesModifiers(): void {
     registerCustomBreakpointModifiers([
         {
             sourceDefId: 'action_heroes_rumbro',
-            variantPolicy: 'baseOnly',
+            runtimeIdentity: 'actionFamily',
             compute: (ctx) => {
                 const activePlayer = currentPlayerId(ctx.state);
                 if (!activePlayer) return 0;
                 return isOnlyOwnMinionHere(ctx.state, ctx.baseIndex, activePlayer)
-                    && ctx.base.minions.some(minion => minion.defId === 'action_heroes_rumbro' && minion.controller === activePlayer)
+                    && ctx.base.minions.some(minion =>
+                        matchesRuntimeDefId(minion.defId, 'action_heroes_rumbro')
+                        && minion.controller === activePlayer)
                     ? -4
                     : 0;
             },
@@ -667,7 +671,7 @@ function actionHeroesSloMoProtection(ctx: ProtectionCheckContext): boolean {
     if (ctx.sourceKind !== 'action') return false;
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     return ctx.state.bases[ctx.targetBaseIndex]?.ongoingActions.some(action =>
-        action.defId === 'action_heroes_slo_mo_attack'
+        matchesRuntimeDefId(action.defId, 'action_heroes_slo_mo_attack')
         && getActionControllerId(action) === ctx.targetMinion.controller
     ) ?? false;
 }
@@ -868,10 +872,11 @@ function registerActionHeroesInteractionHandlers(): void {
         if (selected.skip || !selected.cardUid || !continuation?.kickboxbroUid) return { state, events: [] };
         const player = state.core.players[playerId];
         const card = player?.hand.find(candidate => candidate.uid === selected.cardUid);
+        const kickboxbroDefId = continuation.kickboxbroDefId ?? 'action_heroes_kickboxbro';
         const kickboxbroStillInPlay = state.core.bases.some(base =>
             base.minions.some(minion =>
                 minion.uid === continuation.kickboxbroUid
-                && minion.defId === 'action_heroes_kickboxbro'
+                && minion.defId === kickboxbroDefId
                 && minion.controller === playerId
             )
         );
@@ -888,8 +893,8 @@ function registerActionHeroesInteractionHandlers(): void {
                     ownerId: card.owner,
                     from: 'hand',
                     storedUnderUid: continuation.kickboxbroUid,
-                    storedUnderDefId: continuation.kickboxbroDefId ?? 'action_heroes_kickboxbro',
-                    reason: 'action_heroes_kickboxbro',
+                    storedUnderDefId: kickboxbroDefId,
+                    reason: kickboxbroDefId,
                 },
                 timestamp,
             } as SmashUpEvent],

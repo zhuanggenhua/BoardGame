@@ -29,6 +29,14 @@ describe('DiceThrone compatibility source guards', () => {
         expect(attackShowcase).toContain('function buildCardFrameStyle');
     });
 
+    it('奖励骰右侧骰盘不应在 Board 层清空或隐藏卡牌特写队列', () => {
+        const board = readUiSource('../Board.tsx');
+
+        expect(board).toContain('cardSpotlightQueue={cardSpotlightQueue}');
+        expect(board).not.toContain('suppressCardSpotlightForBonusDiceSurface');
+        expect(board).not.toContain('handleCardSpotlightClose(item.id)');
+    });
+
     it('CenterBoard tip 图应提供显式宽度，避免旧 WebView 丢失 aspect 类后横条化', () => {
         const centerBoard = readUiSource('CenterBoard.tsx');
 

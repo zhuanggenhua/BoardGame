@@ -92,7 +92,7 @@ interface BetrayalAiMummyRuntime {
 }
 
 interface BetrayalAiRecentRoll {
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'eventRolledDamage' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
     playerId: string;
     dice: number[];
     passiveBonus: number;

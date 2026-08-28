@@ -5,10 +5,13 @@ import { ToastProvider } from '../../../contexts/ToastContext';
 import type { InteractionDescriptor, SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import { PromptOverlay } from '../ui/PromptOverlay';
 import { respondCommand, respondOptionsCommand } from './helpers';
+import type { SmashUpCore } from '../domain/types';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key,
+        t: (key: string, options?: { defaultValue?: string }) => ({
+            'factions.pirates.name': '海盗',
+        }[key] ?? options?.defaultValue ?? key),
         i18n: { exists: () => false },
     }),
     initReactI18next: {
@@ -29,6 +32,10 @@ function renderPromptOverlay(props: React.ComponentProps<typeof PromptOverlay>) 
             <PromptOverlay {...props} />
         </ToastProvider>,
     );
+}
+
+function promptCore(players: Record<string, { factions: string[] }>): SmashUpCore {
+    return { players } as unknown as SmashUpCore;
 }
 
 describe('SmashUp PromptOverlay interaction regressions', () => {
@@ -454,6 +461,114 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
             interactionId: interaction.id,
             optionId: 'order-1',
         });
+    });
+
+    it('玩家目标候选优先显示真实玩家名，不显示玩家编号', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'player-target-name',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择目标玩家',
+                sourceId: 'player_target_name',
+                targetType: 'player',
+                options: [
+                    { id: 'target-1', label: '玩家 1', value: { targetPlayerId: '1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({
+            interaction,
+            dispatch: vi.fn(),
+            playerID: '0',
+            playerNames: { '0': 'Host', '1': 'Alice' },
+            core: promptCore({ '1': { factions: ['pirates', 'vikings'] } }),
+        });
+
+        expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '玩家 1' })).not.toBeInTheDocument();
+    });
+
+    it('玩家目标候选缺少真实玩家名且目标只有一个派系时显示派系名', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'single-faction-player-target',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择目标玩家',
+                sourceId: 'single_faction_player_target',
+                targetType: 'player',
+                options: [
+                    { id: 'target-1', label: 'P2', value: { targetPlayerId: '1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({
+            interaction,
+            dispatch: vi.fn(),
+            playerID: '0',
+            playerNames: { '1': 'P2' },
+            core: promptCore({ '1': { factions: ['pirates'] } }),
+        });
+
+        expect(screen.getByRole('button', { name: '海盗' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'P2' })).not.toBeInTheDocument();
+    });
+
+    it('玩家目标候选缺少真实玩家名且目标有多个派系时保留玩家兜底名', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'multi-faction-player-target',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择目标玩家',
+                sourceId: 'multi_faction_player_target',
+                targetType: 'player',
+                options: [
+                    { id: 'target-1', label: 'P2', value: { targetPlayerId: '1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({
+            interaction,
+            dispatch: vi.fn(),
+            playerID: '0',
+            playerNames: { '1': 'P2' },
+            core: promptCore({ '1': { factions: ['pirates', 'vikings'] } }),
+        });
+
+        expect(screen.getByRole('button', { name: 'P2' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '海盗' })).not.toBeInTheDocument();
+    });
+
+    it('玩家目标复合文案只替换身份词，保留目标区域语义', () => {
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'composite-player-target',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择弃牌堆',
+                sourceId: 'composite_player_target',
+                targetType: 'player',
+                options: [
+                    { id: 'target-discard-1', label: '玩家 1 的弃牌堆', value: { targetPlayerId: '1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({
+            interaction,
+            dispatch: vi.fn(),
+            playerID: '0',
+            playerNames: { '1': 'Bob' },
+            core: promptCore({ '1': { factions: ['pirates', 'vikings'] } }),
+        });
+
+        expect(screen.getByRole('button', { name: 'Bob 的弃牌堆' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Bob' })).not.toBeInTheDocument();
     });
 
     it('非 owner 只有拿到可见 current prompt 时才会出现中央 waiting_for_player 文案', () => {

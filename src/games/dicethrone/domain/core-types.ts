@@ -78,7 +78,9 @@ export type DieFace =
     | 'spear'
     | 'claw'
     | 'nyras_bond'
-    | 'sabertooth';
+    | 'sabertooth'
+    | 'mesmerize'
+    | 'blood_drop';
 
 // ============================================================================
 // 角色编目
@@ -100,6 +102,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'artificer',
     'tianshi',
     'lieren',
+    'vampire_lord',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -155,6 +158,11 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
         nameKey: 'characters.lieren',
         setupOptionStatus: 'in_progress',
         hasTipBoard: false,
+    },
+    {
+        id: 'vampire_lord',
+        nameKey: 'characters.vampire_lord',
+        setupOptionStatus: 'in_progress',
     },
 ].map(withDerivedCharacterBadges);
 

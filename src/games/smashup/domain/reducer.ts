@@ -115,7 +115,12 @@ import {
     buildSmashUpSetupBasesForSelectedFactions,
     getSmashUpDraftTurnOrder,
     getSmashUpFactionsPerPlayer,
+    getSmashUpSelectableFactionIds,
 } from './pregameDraft';
+import {
+    buildFactionSelectionIdentitySet,
+    normalizeFactionSelectionId,
+} from './ids';
 
 // ============================================================================
 // execute：命令 → 事件
@@ -123,6 +128,66 @@ import {
 
 function findTitanByUid(core: SmashUpCore, titanUid: string) {
     return (core.titans ?? []).find(titan => titan.uid === titanUid);
+}
+
+function completeSmashUpFactionSelectionsForSetup(
+    core: SmashUpCore,
+    playerSelections: Record<PlayerId, string[]>,
+    draftTurnOrder: readonly PlayerId[],
+    factionsPerPlayer: number,
+    random: RandomFn,
+): Record<PlayerId, string[]> {
+    const requiredFactionCount = Math.max(2, factionsPerPlayer);
+    const selection = core.factionSelection;
+    const selectableFactionIds = getSmashUpSelectableFactionIds(
+        core.enabledExpansions ?? ['titans', 'diy'],
+        core.includedFactionIds,
+    );
+    const selectableIdentities = buildFactionSelectionIdentitySet(selectableFactionIds);
+    const completedSelections: Record<PlayerId, string[]> = {};
+    const takenIdentities = new Set<string>();
+
+    for (const playerId of draftTurnOrder) {
+        const normalizedSelections: string[] = [];
+        for (const factionId of playerSelections[playerId] ?? []) {
+            if (typeof factionId !== 'string' || factionId.length === 0) continue;
+            const identity = normalizeFactionSelectionId(factionId);
+            if (!identity || !selectableIdentities.has(identity)) continue;
+            normalizedSelections.push(factionId);
+            takenIdentities.add(identity);
+            if (normalizedSelections.length >= requiredFactionCount) break;
+        }
+        completedSelections[playerId] = normalizedSelections;
+    }
+
+    for (const playerId of draftTurnOrder) {
+        const currentSelections = completedSelections[playerId] ?? [];
+        if (currentSelections.length >= requiredFactionCount) continue;
+
+        const mode = selection?.mode ?? core.factionSelectionMode ?? 'snakeDraft';
+        const configuredCandidatePool = mode === 'individualPools'
+            ? selection?.playerCandidatePools?.[playerId] ?? []
+            : selection?.sharedCandidatePool ?? [];
+        const candidatePool = configuredCandidatePool.length > 0
+            ? configuredCandidatePool
+            : selectableFactionIds;
+        const shuffledCandidates = random.shuffle(candidatePool);
+
+        for (const factionId of shuffledCandidates) {
+            if (typeof factionId !== 'string' || factionId.length === 0) continue;
+            const identity = normalizeFactionSelectionId(factionId);
+            if (!identity || !selectableIdentities.has(identity) || takenIdentities.has(identity)) continue;
+            currentSelections.push(factionId);
+            takenIdentities.add(identity);
+            if (currentSelections.length >= requiredFactionCount) break;
+        }
+
+        if (currentSelections.length < requiredFactionCount) {
+            throw new Error(`派系选择补齐失败：玩家 ${playerId} 需要 ${requiredFactionCount} 个可用派系`);
+        }
+    }
+
+    return completedSelections;
 }
 
 function buildAllFactionsSelectedSetupEvent(
@@ -134,10 +199,17 @@ function buildAllFactionsSelectedSetupEvent(
     now: number,
 ): { event: AllFactionsSelectedEvent; mulliganPlayers: PlayerId[] } {
     const readiedPlayers: AllFactionsSelectedEvent['payload']['readiedPlayers'] = {};
+    const completedPlayerSelections = completeSmashUpFactionSelectionsForSetup(
+        core,
+        playerSelections,
+        draftTurnOrder,
+        factionsPerPlayer,
+        random,
+    );
     let nextUid = core.nextUid;
     const mulliganPlayers: PlayerId[] = [];
 
-    const selectedFactions = Object.values(playerSelections).flatMap((items) => items);
+    const selectedFactions = Object.values(completedPlayerSelections).flatMap((items) => items);
     const setupBases = buildSmashUpSetupBasesForSelectedFactions(
         selectedFactions,
         draftTurnOrder.length,
@@ -147,8 +219,8 @@ function buildAllFactionsSelectedSetupEvent(
     );
 
     for (const pid of draftTurnOrder) {
-        const factions = playerSelections[pid];
-        if (factions && factions.length === factionsPerPlayer) {
+        const factions = completedPlayerSelections[pid];
+        if (factions && factions.length >= 2) {
             const { deck, nextUid: afterDeckUid } = buildDeck(
                 [factions[0], factions[1]],
                 pid,
@@ -183,6 +255,7 @@ function buildAllFactionsSelectedSetupEvent(
             type: SU_EVENTS.ALL_FACTIONS_SELECTED,
             payload: {
                 readiedPlayers,
+                selectedFactionsByPlayer: completedPlayerSelections,
                 nextUid,
                 bases: setupBases.bases,
                 baseDeck: setupBases.baseDeck,

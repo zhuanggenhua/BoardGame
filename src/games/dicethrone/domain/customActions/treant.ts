@@ -27,6 +27,10 @@ import type {
     TokenGrantedEvent,
 } from '../events';
 import { TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../ids';
+import {
+    getDiceThronePlayerChoiceLabel,
+    getDiceThronePlayerChoiceListLabel,
+} from '../playerDisplay';
 
 const WILD_GROWTH_CHOICE_ID = 'treant-wild-growth-resolve';
 const SHATTERING_FIST_CHOICE_ID = 'treant-shattering-fist-resolve';
@@ -490,13 +494,11 @@ function getTendCareLifeSapTargetIds(state: CustomActionContext['state']): strin
 }
 
 function getChoicePlayerLabel(state: CustomActionContext['state'], playerId: string): string {
-    const seatIndex = getSeatingOrder(state).indexOf(playerId);
-    return seatIndex >= 0 ? `P${seatIndex + 1}` : playerId;
+    return getDiceThronePlayerChoiceLabel(state, playerId);
 }
 
 function getChoicePlayerListLabel(state: CustomActionContext['state'], playerIds: string[]): string {
-    if (playerIds.length === 0) return 'none';
-    return playerIds.map(id => getChoicePlayerLabel(state, id)).join(', ');
+    return getDiceThronePlayerChoiceListLabel(state, playerIds);
 }
 
 function buildWildGrowthChoices({ attackerId, state }: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {

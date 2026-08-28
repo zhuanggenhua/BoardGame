@@ -1,0 +1,50 @@
+{
+  "title": "Mage Wars 法术书库流程验收",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\01-先选法师-兽王已绑定到当前构筑对象.jpg",
+      "label": "1. 选角入口：兽王已选中",
+      "transition": "起点：先选法师，法术书绑定所选法师"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\02-进入组书-已选兽王上下文和保存库可见.jpg",
+      "label": "2. 进入组书：法术书库与清单可见",
+      "transition": "从选角页点击编辑选中书，进入法术书构筑"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\03-法师详情-点击已选法师主控打开.jpg",
+      "label": "3. 法师详情：点击法师本体打开",
+      "transition": "点击已选法师主控，打开能力牌详情"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\04-保存命名副本-标准起始书完整进入同库.jpg",
+      "label": "4. 保存副本：从选中书另存",
+      "transition": "输入名称后保存命名副本，标准起始书仍在同一库"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\05-回到选角页-标准书和命名副本同库可见.jpg",
+      "label": "5. 回选角：同库显示标准书和副本",
+      "transition": "确认法术书后回到选角页，库项同级可见"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\06-选角页直接使用-命名副本绑定所选法师.jpg",
+      "label": "6. 使用副本：绑定所选法师",
+      "transition": "点击命名副本，选角摘要使用该副本"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\07-编辑已有命名副本-更新名称和数量.jpg",
+      "label": "7. 编辑副本：更新名称和数量",
+      "transition": "重新打开命名副本，移除一张并更新副本"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\08-选角页删除-法术书库只保留一个命名副本.jpg",
+      "label": "8. 删除副本：库内删除回收",
+      "transition": "新增待删除副本后回选角页删除，库中只保留有效副本"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\09-牌桌计划态-命名副本进入可计划牌列.jpg",
+      "label": "9. 进入牌桌：命名副本进入计划态",
+      "transition": "确认角色开局后，命名副本进入可计划牌列"
+    }
+  ]
+}

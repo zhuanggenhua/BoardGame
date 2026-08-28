@@ -600,6 +600,18 @@
       "description": [
         "Companion bot, base limit 1, upgraded limit 2. Can activate after receiving at least 6 attack damage and roll to heal."
       ]
+    },
+    "blood_power": {
+      "name": "Blood Power",
+      "description": [
+        "Positive token, limit 5. Static intake currently supports gaining and displaying it; full spend and boost rules remain in progress."
+      ]
+    },
+    "mesmerize": {
+      "name": "Mesmerize",
+      "description": [
+        "Positive token, limit 1. Static intake currently supports gaining and displaying it; forced reroll interactions remain in progress."
+      ]
     }
   },
   "actionLog": {
@@ -746,7 +758,8 @@
     "gunslinger": "Gunslinger",
     "samurai": "Samurai",
     "tianshi": "Seraph",
-    "lieren": "Huntress"
+    "lieren": "Huntress",
+    "vampire_lord": "Vampire Lord"
   },
   "characters": {
     "monk": "Monk",
@@ -763,7 +776,8 @@
     "cursed_pirate": "Cursed Pirate",
     "artificer": "Artificer",
     "tianshi": "Seraph",
-    "lieren": "Huntress"
+    "lieren": "Huntress",
+    "vampire_lord": "Vampire Lord"
   },
   "config": {
     "dice": {
@@ -795,6 +809,14 @@
           "claw": "Claw Face",
           "nyras_bond": "Nyra's Bond Face",
           "sabertooth": "Sabertooth Face"
+        }
+      },
+      "vampire_lord": {
+        "name": "Vampire Lord Dice",
+        "face": {
+          "claw": "Claw Face",
+          "mesmerize": "Mesmerize Face",
+          "blood_drop": "Blood Drop Face"
         }
       }
     },
@@ -939,7 +961,9 @@
       "spear": "Spear",
       "claw": "Claw",
       "nyras_bond": "Nyra's Bond",
-      "sabertooth": "Sabertooth"
+      "sabertooth": "Sabertooth",
+      "mesmerize": "Mesmerize",
+      "blood_drop": "Blood Drop"
     }
   },
   "bonusDie": {
@@ -1414,7 +1438,9 @@
       "spear": "Spear",
       "claw": "Claw",
       "nyras_bond": "Nyra's Bond",
-      "sabertooth": "Sabertooth"
+      "sabertooth": "Sabertooth",
+      "mesmerize": "Mesmerize",
+      "blood_drop": "Blood Drop"
     },
     "trigger": {
       "generic": "variant condition",
@@ -1690,7 +1716,7 @@
       "s0_a1_d1_p1": "After cultivate: 1 Sapling, 1 Divine; opponent gains Life Sap"
     },
     "tianshi": {
-      "player": "Player {{player}}",
+      "player": "{{player}}",
       "divinePurification": { "title": "Divine Purification: choose a player" },
       "gospelArrival": { "title": "Gospel Arrival: choose an opponent to Dazzle" },
       "divineCommand": { "title": "Divine Command: choose an opponent to take 4 undefendable damage" },
@@ -1740,7 +1766,7 @@
     "gunslingerTheLaw": "Select up to 2 target players",
     "targetingRollSelectTarget": "Select this attack's target",
     "targetingRollOpponentDecidesTarget": "The opponent decides who takes this attack",
-    "targetingRollPlayerOption": "Player {{playerNumber}}",
+    "targetingRollPlayerOption": "{{player}}",
       "selectHandCardToDiscard": "Select 1 card from your hand to discard",
       "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",
@@ -4460,7 +4486,25 @@
     "kindred-bond": { "name": "Kindred Bond", "description": "Defensive roll 3 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
     "kindred-bond-2": { "name": "Kindred Bond II", "description": "Defensive roll 4 dice: each Spear deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
     "kindred-bond-3": { "name": "Kindred Bond III", "description": "Defensive roll 4 dice: each Spear and Sabertooth deals 1 damage, each Nyra's Bond heals Nyra 1, and each Claw deals 2 damage while Nyra is active.", "effects": { "blockedDefense": "Resolve Nyra healing and counter damage from the defense dice" } },
-    "jungle-fury": { "name": "Jungle Fury!", "description": "5 Sabertooths: gain Nyra's Bond, inflict 2 Bleed, and deal 12 damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "bleed2": "Inflict 2 Bleed", "damage12": "Deal 12 damage" } }
+    "jungle-fury": { "name": "Jungle Fury!", "description": "5 Sabertooths: gain Nyra's Bond, inflict 2 Bleed, and deal 12 damage.", "effects": { "gainNyrasBond": "Gain Nyra's Bond", "bleed2": "Inflict 2 Bleed", "damage12": "Deal 12 damage" } },
+    "bloodthirsty-claws": { "name": "Bloodthirsty Claws", "description": "3/4/5 Claws: deal 3/4/5 damage.", "effects": { "damage3": "Deal 3 damage", "damage4": "Deal 4 damage", "damage5": "Deal 5 damage" } },
+    "bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "3/4/5 Claws: deal 4/5/6 damage.", "effects": { "damage4": "Deal 4 damage", "damage5": "Deal 5 damage", "damage6": "Deal 6 damage" } },
+    "bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "3/4/5 Claws: deal 4/6/8 damage.", "effects": { "damage4": "Deal 4 damage", "damage6": "Deal 6 damage", "damage8": "Deal 8 damage" } },
+    "mesmerize-power": { "name": "Mesmerize Power", "description": "3 Mesmerize: gain 1 Mesmerize and deal 4 damage.", "effects": { "gainMesmerize": "Gain 1 Mesmerize", "damage4": "Deal 4 damage" } },
+    "mesmerize-power-2": { "name": "Mesmerize Power II", "description": "3 Mesmerize: gain 1 Mesmerize and deal 5 damage.", "effects": { "gainMesmerize": "Gain 1 Mesmerize", "damage5": "Deal 5 damage" } },
+    "blood-feast": { "name": "Blood Feast", "description": "3 Blood Drops: heal 2 and gain 3 Blood Power.", "effects": { "heal2": "Heal 2", "gainBloodPower": "Gain 3 Blood Power" } },
+    "blood-feast-2": { "name": "Blood Feast II", "description": "3 Blood Drops: heal 2, gain 3 Blood Power, and deal 7 damage.", "effects": { "heal2": "Heal 2", "gainBloodPower": "Gain 3 Blood Power", "damage7": "Deal 7 damage" } },
+    "rend-claws": { "name": "Rend Claws", "description": "Small Straight: inflict 1 Bleed and deal 6 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage6": "Deal 6 damage" } },
+    "rend-claws-2": { "name": "Rend Claws II", "description": "Small Straight: inflict 1 Bleed and deal 6 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage6": "Deal 6 damage" } },
+    "blood-possessed": { "name": "Blood Possessed", "description": "Large Straight: gain 2 Blood Power and deal 6 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage6": "Deal 6 damage" } },
+    "blood-possessed-2": { "name": "Blood Possessed II", "description": "Large Straight: gain 2 Blood Power and deal 8 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage8": "Deal 8 damage" } },
+    "blood-thirst": { "name": "Blood Thirst", "description": "2 Blood Drops: inflict 1 Bleed and deal 4 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage4": "Deal 4 damage" } },
+    "blood-thirst-2": { "name": "Blood Thirst II", "description": "Large Straight: inflict 2 Bleed and deal 6 damage.", "effects": { "bleed2": "Inflict 2 Bleed", "damage6": "Deal 6 damage" } },
+    "blood-magic": { "name": "Blood Magic", "description": "Small Straight: gain 2 Blood Power and deal 7 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage7": "Deal 7 damage" } },
+    "blood-magic-2": { "name": "Blood Magic II", "description": "Small Straight: gain 2 Blood Power and deal 8 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage8": "Deal 8 damage" } },
+    "undying": { "name": "Undying", "description": "Defensive roll 4 dice: deal 1 counter damage and heal 1.", "effects": { "counter1": "Deal 1 counter damage", "heal1": "Heal 1" } },
+    "undying-2": { "name": "Undying II", "description": "Defensive roll 4 dice: deal 1 counter damage and heal 1.", "effects": { "counter1": "Deal 1 counter damage", "heal1": "Heal 1" } },
+    "bloody-slaughter": { "name": "Bloody Slaughter!", "description": "5 Blood Drops: gain 2 Blood Power, inflict 2 Bleed, and deal 12 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "bleed2": "Inflict 2 Bleed", "damage12": "Deal 12 damage" } }
   },
   "companion": {
     "nyra": {
@@ -5553,7 +5597,23 @@
     "upgrade-lieren-beast-instinct-2": { "name": "Beast Instinct II / Swipe", "description": "Upgrade Beast Instinct and add the Swipe branch." },
     "upgrade-lieren-life-revival-2": { "name": "Life Revival II", "description": "Upgrade Life Revival to level II." },
     "upgrade-lieren-savage-force-2": { "name": "Savage Force II / Hunting", "description": "Upgrade Savage Force and add the Hunting branch." },
-    "upgrade-lieren-wild-force-2": { "name": "Wild Force II", "description": "Upgrade Wild Force to level II." }
+    "upgrade-lieren-wild-force-2": { "name": "Wild Force II", "description": "Upgrade Wild Force to level II." },
+    "card-vampire-lord-blood-surge": { "name": "Blood Surge!", "description": "Gain 1 Blood Power." },
+    "card-vampire-lord-blood-from-above": { "name": "Blood from Above!", "description": "Gain 1 Blood Power." },
+    "card-vampire-lord-total-demise": { "name": "Total Demise!", "description": "Attack modifier: add +1 attack damage." },
+    "card-vampire-lord-boiling-blood": { "name": "Boiling Blood!", "description": "Attack modifier: add +1 attack damage." },
+    "card-vampire-lord-gushing-blood": { "name": "Gushing Blood!", "description": "Gain 1 Blood Power and 1 Mesmerize." },
+    "upgrade-vampire-lord-undying-2": { "name": "Undying II", "description": "Upgrade Undying to level II." },
+    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "Blood Thirst II / Blood River", "description": "Upgrade Blood Thirst to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "Blood Magic II / Flayed", "description": "Upgrade Blood Magic to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "Blood Possessed II / Blood Addiction", "description": "Upgrade Blood Possessed to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-rend-claws-2": { "name": "Rend Claws II", "description": "Upgrade Rend Claws to level II." },
+    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "Blood Feast II / Dressed to Kill", "description": "Upgrade Blood Feast to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "Mesmerize Power II / Soul Gaze", "description": "Upgrade Mesmerize Power to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "Upgrade Bloodthirsty Claws to level III." },
+    "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "Upgrade Bloodthirsty Claws to level II." },
+    "card-vampire-lord-drink-up": { "name": "Drink Up!", "description": "Gain 2 Blood Power." },
+    "card-vampire-lord-bloodstone": { "name": "Bloodstone!", "description": "Gain 1 Mesmerize and 2 Blood Power, inflict 1 Bleed, and draw 1 card." }
   },
   "passive": {
     "tithes": {

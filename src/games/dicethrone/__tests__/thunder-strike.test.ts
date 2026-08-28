@@ -9,10 +9,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
-import {
-    getCurrentInteractionData,
-    getCurrentInteractionSummary,
-} from '../../../engine/testing/interactionTestFacade';
 import { DiceThroneDomain } from '../domain';
 import { diceThroneSystemsForTest } from '../game';
 import { createQueuedRandom, getCardById } from './test-utils';
@@ -138,7 +134,7 @@ describe('雷霆万钧技能', () => {
         });
 
         const opened = runner.run({
-            name: '雷霆万钧奖励骰先给对手响应再由骰主确认',
+            name: '雷霆万钧奖励骰停在右侧骰盘且对手可打弹一手改骰',
             commands: [
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
                 { type: 'ROLL_DICE', playerId: '0', payload: {} },
@@ -164,12 +160,11 @@ describe('雷霆万钧技能', () => {
         });
         const openedDiceValues = opened.finalState.core.pendingBonusDiceSettlement?.dice.map(die => die.value) ?? [];
         expect(openedDiceValues).toHaveLength(3);
-        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['1'],
-            currentResponderIndex: 0,
+        expect(opened.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(opened.finalState.sys.interaction.current).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
         });
-        expect(getCurrentInteractionSummary(opened.finalState).id).toBeUndefined();
         const targetDieIndex = 2;
         const targetDieValue = openedDiceValues[targetDieIndex] ?? 1;
         const modifiedDieValue = targetDieValue < 6 ? targetDieValue + 1 : targetDieValue - 1;
@@ -180,19 +175,19 @@ describe('雷霆万钧技能', () => {
         runner.setState(opened.finalState);
         const playedFlick = runner.dispatch('PLAY_CARD', { playerId: '1', cardId: 'card-flick' });
         expect(playedFlick.success).toBe(true);
-        expect(playedFlick.finalState.sys.responseWindow?.current).toMatchObject({
-            windowType: 'afterRollConfirmed',
-            responderQueue: ['1'],
-            currentResponderIndex: 0,
-            pendingInteractionId: expect.any(String),
-        });
-        expect(getCurrentInteractionSummary(playedFlick.finalState)).toMatchObject({
+        expect(playedFlick.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(playedFlick.finalState.sys.interaction.current).toMatchObject({
             kind: 'multistep-choice',
             playerId: '1',
+            data: {
+                minSteps: 1,
+                maxSteps: undefined,
+            },
         });
-        const flickInteractionData = getCurrentInteractionData<{ minSteps?: number; maxSteps?: number }>(playedFlick.finalState);
-        expect(flickInteractionData).toMatchObject({ minSteps: 1 });
-        expect(flickInteractionData?.maxSteps).toBeUndefined();
+        expect(playedFlick.finalState.sys.interaction.queue?.[0]).toMatchObject({
+            kind: 'dt:bonus-dice',
+            playerId: '0',
+        });
 
         const modified = runner.dispatch('MODIFY_DIE', { playerId: '1', dieId: targetDieIndex, newValue: modifiedDieValue });
         expect(modified.success).toBe(true);
@@ -203,7 +198,7 @@ describe('雷霆万钧技能', () => {
         const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '1' });
         expect(confirmedCard.success).toBe(true);
         expect(confirmedCard.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(getCurrentInteractionSummary(confirmedCard.finalState)).toMatchObject({
+        expect(confirmedCard.finalState.sys.interaction.current).toMatchObject({
             kind: 'dt:bonus-dice',
             playerId: '0',
         });

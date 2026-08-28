@@ -68,12 +68,12 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
 
     return (
         <div className="flex flex-col items-center gap-4 w-full max-w-lg">
-            {/* 计分轨 — 白色记分纸风格 */}
+            {/* 计分轨 — 记分纸风格，跟随 Smash Up 主题色板。 */}
             <motion.div
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 20 }}
-                className="bg-white text-slate-900 p-5 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-[0.5deg] w-full rounded-sm relative"
+                className="smashup-paper-panel p-5 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-[0.5deg] w-full rounded-sm relative"
             >
                 {isTeamMode && teamScores && (
                     <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
@@ -86,8 +86,8 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                                     key={teamId}
                                     className={`rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide ${
                                         isWinningTeam
-                                            ? 'border-amber-300 bg-amber-50 text-amber-800'
-                                            : 'border-slate-300 bg-slate-100 text-slate-700'
+                                            ? 'smashup-winner-chip'
+                                            : 'smashup-chip'
                                     }`}
                                 >
                                     {tSmashUp(labelKey)}
@@ -108,7 +108,7 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                     <div className="flex justify-between items-end px-1 mb-1">
                         {Array.from({ length: trackMax + 1 }, (_, i) => (
                             <div key={i} className="flex flex-col items-center" style={{ width: `${100 / (trackMax + 1)}%` }}>
-                                <span className={`text-[9px] font-mono ${i === victoryTarget ? 'text-amber-600 font-black text-[11px]' : i % 5 === 0 ? 'text-slate-600 font-bold' : 'text-slate-300'}`}>
+                                <span className={`text-[9px] font-mono ${i === victoryTarget ? 'text-amber-600 font-black text-[11px]' : i % 5 === 0 ? 'smashup-text-muted font-bold' : 'smashup-text-faint'}`}>
                                     {i}
                                 </span>
                             </div>
@@ -116,12 +116,12 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                     </div>
 
                     {/* 轨道条 */}
-                    <div className="relative h-8 bg-slate-100 border border-slate-200 rounded-sm overflow-visible">
+                    <div className="smashup-score-track relative h-8 border rounded-sm overflow-visible">
                         {/* 格子分隔线 */}
                         {Array.from({ length: trackMax }, (_, i) => (
                             <div
                                 key={i}
-                                className="absolute top-0 bottom-0 border-l border-slate-200"
+                                className="smashup-score-grid-line absolute top-0 bottom-0 border-l"
                                 style={{ left: `${((i + 1) / (trackMax + 1)) * 100}%` }}
                             />
                         ))}
@@ -183,12 +183,12 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                                 animate={{ x: 0, opacity: 1 }}
                                 transition={{ delay: 0.5 + rankIdx * 0.15 }}
                                 className={`flex items-center gap-3 p-2 rounded border ${
-                                    isThisWinner ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'
+                                    isThisWinner ? 'smashup-winner-chip' : 'smashup-paper-subtle-panel'
                                 }`}
                             >
                                 {/* 排名 */}
                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                                    rankIdx === 0 ? 'bg-amber-400 text-white' : 'bg-slate-300 text-slate-600'
+                                    rankIdx === 0 ? 'bg-amber-400 text-white' : 'smashup-chip'
                                 }`}>
                                     {rankIdx + 1}
                                 </div>
@@ -201,10 +201,10 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                                 {/* 信息 */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="max-w-[13rem] truncate text-sm font-black text-slate-800">
+                                        <span className="smashup-text-main max-w-[13rem] truncate text-sm font-black">
                                             {displayName}
                                         </span>
-                                        {isMe && <span className="rounded-full bg-slate-800/8 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{tSmashUp('ui.you_short')}</span>}
+                                        {isMe && <span className="smashup-chip rounded-full px-1.5 py-0.5 text-[10px] font-bold">{tSmashUp('ui.you_short')}</span>}
                                         {isThisWinner && <Trophy className="w-4 h-4 text-amber-500" />}
                                     </div>
                                     {/* 派系图标 */}
@@ -222,8 +222,8 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                                 </div>
 
                                 {/* 分数明细 */}
-                                <div className="text-right text-xs font-mono text-slate-500 shrink-0">
-                                    <div className="text-lg font-black text-slate-800">{finalVp} <span className="text-[10px] text-slate-400">VP</span></div>
+                                <div className="smashup-text-muted text-right text-xs font-mono shrink-0">
+                                    <div className="smashup-text-main text-lg font-black">{finalVp} <span className="smashup-text-faint text-[10px]">VP</span></div>
                                     {penalty > 0 && (
                                         <div className="text-red-500 text-[10px]">
                                             {tSmashUp('endgame.madnessPenalty', { count: madnessCount, penalty })}

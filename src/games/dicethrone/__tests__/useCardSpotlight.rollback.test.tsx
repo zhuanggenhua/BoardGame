@@ -477,6 +477,104 @@ describe('useCardSpotlight rollback consumer', () => {
         });
     });
 
+    it('对手打出精力充沛并路由奖励骰时，卡牌特写仍保留给玩家阅读', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+        const cardEntry: EventStreamEntry = {
+            id: 50,
+            event: {
+                type: 'CARD_PLAYED',
+                payload: {
+                    playerId: '1',
+                    cardId: 'card-energetic',
+                    previewRef: {
+                        type: 'atlas',
+                        atlasId: 'dicethrone-barbarian-cards',
+                        index: 1,
+                    },
+                },
+                timestamp: 6000,
+            },
+        };
+        const bonusEntry: EventStreamEntry = {
+            id: 51,
+            event: {
+                type: 'BONUS_DIE_ROLLED',
+                payload: {
+                    playerId: '1',
+                    targetPlayerId: '0',
+                    value: 1,
+                    face: 'strength',
+                    effectKey: 'bonusDie.effect.energeticStrength',
+                    effectParams: { value: 1, index: 0 },
+                },
+                timestamp: 6001,
+            },
+        };
+        const settlementEntry: EventStreamEntry = {
+            id: 52,
+            event: {
+                type: 'BONUS_DICE_REROLL_REQUESTED',
+                payload: {
+                    settlement: {
+                        id: 'barbarian-energetic-6000',
+                        sourceAbilityId: 'card-energetic',
+                        attackerId: '1',
+                        targetId: '0',
+                        dice: [{ index: 0, value: 1, face: 'strength' }],
+                        rerollCostTokenId: '',
+                        rerollCostAmount: 0,
+                        rerollCount: 0,
+                        maxRerollCount: 0,
+                        readyToSettle: false,
+                        displayOnly: true,
+                        allowDiceModification: true,
+                    },
+                },
+                timestamp: 6001,
+            },
+        };
+
+        const view = render(
+            <HookProbe
+                streamEntries={[]}
+                selectedCharacters={{ '0': 'lieren', '1': 'barbarian' }}
+                suppressStandaloneBonusDie
+                suppressBonusDiceInCardSpotlight
+            />,
+            { wrapper },
+        );
+        view.rerender(
+            <HookProbe
+                streamEntries={[cardEntry, bonusEntry, settlementEntry]}
+                selectedCharacters={{ '0': 'lieren', '1': 'barbarian' }}
+                suppressStandaloneBonusDie
+                suppressBonusDiceInCardSpotlight
+            />,
+        );
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0]).toMatchObject({
+                id: 'card-energetic-6000',
+                cardId: 'card-energetic',
+                playerId: '1',
+                previewRef: {
+                    type: 'atlas',
+                    atlasId: 'dicethrone-barbarian-cards',
+                    index: 1,
+                },
+            });
+            expect(state.cardSpotlightQueue[0].bonusDice ?? []).toHaveLength(0);
+            expect(state.cardSpotlightQueue[0].summaryText).toBeUndefined();
+            expect(state.bonusDie.show).toBe(false);
+        });
+    });
+
     it('自己打出会投奖励骰的卡时，只保留右侧骰盘，不再创建中央卡牌或奖励骰展示', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>

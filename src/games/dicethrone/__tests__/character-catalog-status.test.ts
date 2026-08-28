@@ -22,12 +22,14 @@ describe('DiceThrone 角色目录实施中状态合同', () => {
         }
     });
 
-    it('女猎手当前应保留 implementation_in_progress 徽标', () => {
-        expect(getImplementationInProgressBadge('lieren')).toMatchObject({
-            id: 'implementation_in_progress',
-            labelKey: 'common:status_tags.under_construction',
-            tone: 'warning',
-            variant: 'disabled-overlay',
-        });
+    it('女猎手和吸血鬼领主当前应保留 implementation_in_progress 徽标', () => {
+        for (const characterId of ['lieren', 'vampire_lord']) {
+            expect(getImplementationInProgressBadge(characterId)).toMatchObject({
+                id: 'implementation_in_progress',
+                labelKey: 'common:status_tags.under_construction',
+                tone: 'warning',
+                variant: 'disabled-overlay',
+            });
+        }
     });
 });

@@ -94,6 +94,15 @@
         }
       }
     },
+    "dicethrone/ability-cards-vampire_lord.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "d239f39c95e911e2c9665d20284c69c0304f840c89ddca96ef4fd0e7c4f08be3",
+          "bytes": 472,
+          "mime": "application/json"
+        }
+      }
+    },
     "mage-wars/apprentice-spell-atlases": {
       "variants": {
         "json": {

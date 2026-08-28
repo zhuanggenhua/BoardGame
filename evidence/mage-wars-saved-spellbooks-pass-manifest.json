@@ -1,0 +1,64 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "新的法术书从当前标准起始书或当前书保存命名副本，而不是空白主流程",
+      "status": "PASS",
+      "evidence": [
+        "E2E 保存前未清空，localStorage 断言 entryCount=50、cardCount=67、野性山猫=2、缠绕藤蔓=3",
+        "截图 02、04"
+      ]
+    },
+    {
+      "requirement": "选角页和构筑器使用同一个法术书库模型，标准起始书和命名副本同级",
+      "status": "PASS",
+      "evidence": [
+        "截图 02、05、06；DOM 快照扫描要求 standard library item 存在",
+        "MageSelectionGate 单测覆盖同库展示"
+      ]
+    },
+    {
+      "requirement": "不再在角落展示 DIY 法术书小区、旧 DIY 空态或空白自组主入口",
+      "status": "PASS",
+      "evidence": [
+        "scan-ui-duplicate-owners: DIY 法术书、空白自组、还没有 DIY 法术书均 count=0",
+        "组件测试和 E2E 断言 builder-blank 不存在"
+      ]
+    },
+    {
+      "requirement": "命名副本可直接使用、编辑、另存、删除，并进入牌桌计划态",
+      "status": "PASS",
+      "evidence": [
+        "E2E 完成使用、编辑、删除、开局；setupState 断言 50 条、66 张、2224=2、2906=2",
+        "截图 06、07、08、09"
+      ]
+    },
+    {
+      "requirement": "规范已回代到项目唯一真相源，不是只修按钮",
+      "status": "PASS",
+      "evidence": [
+        ".spec/skills/game-ui-design/references/layout-interaction-patterns.md 新增构筑器同库模型和跨游戏复用门槛",
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md 与纠正账本同步记录 Mage Wars 纠偏"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\01-labeled-01-先选法师-兽王已绑定到当前构筑对象.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\02-labeled-02-进入组书-已选兽王上下文和保存库可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\03-labeled-03-法师详情-点击已选法师主控打开.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\04-labeled-04-保存命名副本-标准起始书完整进入同库.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\05-labeled-05-回到选角页-标准书和命名副本同库可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\06-labeled-06-选角页直接使用-命名副本绑定当前法师.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\07-labeled-07-编辑已有命名副本-更新名称和数量.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\08-labeled-08-选角页删除-法术书库只保留一个命名副本.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\mage-selection.e2e\\Mage-Wars-组书编辑器：先选法师后从标准起始书保存命名副本、使用、编辑、删除，再进入计划代表态\\_labeled-for-pureref\\09-labeled-09-牌桌计划态-命名副本进入可计划牌列.png"
+  ]
+}

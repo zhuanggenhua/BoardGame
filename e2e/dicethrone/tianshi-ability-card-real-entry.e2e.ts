@@ -959,10 +959,10 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await clickAbilitySlot(page, 'sky', 'divine-purification');
         await advancePhase(page);
         await expect(page.getByText('神圣净化：选择一名玩家')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByRole('button', { name: '玩家 0' })).toBeVisible({ timeout: 10000 });
-        await expect(page.getByRole('button', { name: '玩家 1' })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('button', { name: '炽天使' })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('button', { name: '武僧' })).toBeVisible({ timeout: 10000 });
         await game.screenshot('tianshi-divine-purification-target-choice', testInfo);
-        await page.getByRole('button', { name: '玩家 0' }).click();
+        await page.getByRole('button', { name: '炽天使' }).click();
 
         await expect.poll(async () => {
             const state = await readState(game);

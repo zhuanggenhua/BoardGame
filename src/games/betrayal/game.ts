@@ -727,9 +727,24 @@ interface BetrayalRolledDamageResult {
     appliedAmount: number;
 }
 
+type BetrayalEventRollRecentKind = 'eventTraitCheck' | 'eventDiceRoll';
+
+interface BetrayalSourceEventRollState {
+    id: string;
+    kind: BetrayalEventRollRecentKind;
+    playerId: string;
+    sourceTitle: string;
+    trait?: BetrayalTraitKey;
+    rollLabel?: string;
+    dice: number[];
+    passiveBonus: number;
+    total: number;
+    latestLabel: string;
+}
+
 export interface BetrayalRecentRollState {
     id: string;
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
+    kind: BetrayalEventRollRecentKind | 'eventRolledDamage' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
     playerId: string;
     sourceTitle: string;
     trait?: BetrayalTraitKey;
@@ -740,7 +755,8 @@ export interface BetrayalRecentRollState {
     acknowledgedPlayerIds?: string[];
     branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
     latestLabel: string;
-    eventDamagePreviewResults?: BetrayalRolledDamageResult[];
+    eventRolledDamageResults?: BetrayalRolledDamageResult[];
+    sourceEventRoll?: BetrayalSourceEventRollState;
     eventEffectSnapshot?: {
         traitsBeforeEffect: BetrayalExplorerSummary['traits'];
         traitTracksBeforeEffect: BetrayalTraitTrackMap;
@@ -2450,6 +2466,10 @@ type RolledDamageAllocationDeferral = {
 
 type ApplyEventEffectOptions = {
     deferRolledDamageAllocation?: RolledDamageAllocationDeferral;
+};
+
+type MaterializeEventEffectOptions = {
+    materializeRandomResults?: boolean;
 };
 
 interface BetrayalHauntRollResult {
@@ -4300,10 +4320,10 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                     ...branch,
                     effect: { ...branch.effect },
                 })),
-                eventDamagePreviewResults: core.recentRoll.eventDamagePreviewResults?.map((damage) => ({
-                    ...damage,
-                    rolls: [...damage.rolls],
-                })),
+                eventRolledDamageResults: core.recentRoll.eventRolledDamageResults?.map(cloneRolledDamageResult),
+                sourceEventRoll: core.recentRoll.sourceEventRoll
+                    ? cloneSourceEventRoll(core.recentRoll.sourceEventRoll)
+                    : undefined,
                 eventEffectSnapshot: core.recentRoll.eventEffectSnapshot
                     ? {
                         ...core.recentRoll.eventEffectSnapshot,
@@ -4312,10 +4332,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                         possessionOrderByKindBeforeEffect: clonePossessionOrderByKind(core.recentRoll.eventEffectSnapshot.possessionOrderByKindBeforeEffect),
                         deckCountsBeforeEffect: { ...core.recentRoll.eventEffectSnapshot.deckCountsBeforeEffect },
                         damageRolls: [...core.recentRoll.eventEffectSnapshot.damageRolls],
-                        rolledDamageResults: (core.recentRoll.eventEffectSnapshot.rolledDamageResults ?? []).map((damage) => ({
-                            ...damage,
-                            rolls: [...damage.rolls],
-                        })),
+                        rolledDamageResults: (core.recentRoll.eventEffectSnapshot.rolledDamageResults ?? []).map(cloneRolledDamageResult),
                         drawnCards: core.recentRoll.eventEffectSnapshot.drawnCards.map(cloneInventoryCard),
                     }
                     : undefined,
@@ -5216,6 +5233,20 @@ function shouldDeadPlayerControlFeverish(core: BetrayalCore, playerId: string): 
         && core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
         && core.scenarioRuntime.dust?.feverishPlayerIds.includes(playerId)
         && findFeverishMonster(core, playerId),
+    );
+}
+
+function canPlayerControlStandardMonsterTurn(core: BetrayalCore, playerId: string): boolean {
+    return Boolean(
+        shouldDeadPlayerControlFeverish(core, playerId)
+        || (
+            isUponReflectionHaunt(core)
+            && core.scenarioRuntime.uponReflection?.revealerPlayerId === playerId
+        )
+        || (
+            Boolean(core.scenarioRuntime.traitorPlayerId)
+            && core.scenarioRuntime.traitorPlayerId === playerId
+        ),
     );
 }
 
@@ -7735,8 +7766,7 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
         : isHelpingHandsHaunt(core)
             ? helpingHandsMonsterTurnStatus.active
                 && helpingHandsMonsterTurnStatus.controllerPlayerId === core.currentPlayer
-            : Boolean(core.scenarioRuntime.traitorPlayerId)
-                && core.scenarioRuntime.traitorPlayerId === core.currentPlayer;
+            : canPlayerControlStandardMonsterTurn(core, core.currentPlayer);
     if (!isMonsterActionControllerTurn) {
         return {
             active: false,
@@ -10321,6 +10351,9 @@ function isRecentTraitCheckRoll(recentRoll: BetrayalRecentRollState): boolean {
 }
 
 function recentRollAllowsRerollItem(recentRoll: BetrayalRecentRollState, rule: RecentRollRerollItemRule): boolean {
+    if (recentRoll.kind === 'eventRolledDamage') {
+        return false;
+    }
     if (rule.mode === 'single-die') {
         return recentRoll.kind !== 'monsterMoveRoll' && recentRoll.kind !== 'hauntRoll';
     }
@@ -10368,8 +10401,7 @@ function resolveRecentRollRerollCommandDieIndices(
 export function canUseRecentRollRerollItemForRecentRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
     const card = resolveRecentRollRerollItemCard(core, cardId, playerId);
     const rule = card ? resolveRecentRollRerollItemRule(card.id) : null;
-    const eventRollStillAwaitingFinalization = core.recentRoll?.kind === 'eventTraitCheck'
-        || core.recentRoll?.kind === 'eventDiceRoll'
+    const eventRollStillAwaitingFinalization = isEventRecentRoll(core.recentRoll)
         ? core.pendingEventRollResolution?.rollId === core.recentRoll.id
         : true;
     const receivedThisTurn = core.receivedCardIdsThisTurnByPlayerId[playerId] ?? [];
@@ -10410,6 +10442,73 @@ function resolveDeathsDoorTraitGainChoices(explorer: BetrayalExplorerSummary): B
 
 function resolveRecentRollTotal(recentRoll: BetrayalRecentRollState): number {
     return recentRoll.dice.reduce((sum, pip) => sum + pip, 0) + recentRoll.passiveBonus;
+}
+
+function isEventRecentRoll(recentRoll: BetrayalRecentRollState | null | undefined): recentRoll is BetrayalRecentRollState & { kind: BetrayalEventRollRecentKind } {
+    return recentRoll?.kind === 'eventTraitCheck' || recentRoll?.kind === 'eventDiceRoll';
+}
+
+function cloneRolledDamageResult(damage: BetrayalRolledDamageResult): BetrayalRolledDamageResult {
+    return {
+        ...damage,
+        rolls: [...damage.rolls],
+    };
+}
+
+function cloneSourceEventRoll(sourceRoll: BetrayalSourceEventRollState): BetrayalSourceEventRollState {
+    return {
+        ...sourceRoll,
+        dice: [...sourceRoll.dice],
+    };
+}
+
+function cloneSourceEventRollFromRecentRoll(
+    recentRoll: BetrayalRecentRollState | null | undefined,
+): BetrayalSourceEventRollState | undefined {
+    if (!isEventRecentRoll(recentRoll)) {
+        return undefined;
+    }
+    return {
+        id: recentRoll.id,
+        kind: recentRoll.kind,
+        playerId: recentRoll.playerId,
+        sourceTitle: recentRoll.sourceTitle,
+        trait: recentRoll.trait,
+        rollLabel: recentRoll.rollLabel,
+        dice: [...recentRoll.dice],
+        passiveBonus: recentRoll.passiveBonus,
+        total: resolveRecentRollTotal(recentRoll),
+        latestLabel: recentRoll.latestLabel,
+    };
+}
+
+function setEventRolledDamageRecentRollFromSnapshot(
+    core: BetrayalCore,
+    snapshot: EventEffectSnapshot | undefined,
+    sourceTitle: string,
+    timestamp: number,
+    sourceEventRoll = cloneSourceEventRollFromRecentRoll(core.recentRoll),
+): boolean {
+    const damageResults = snapshot?.rolledDamageResults?.map(cloneRolledDamageResult) ?? [];
+    const dice = damageResults.flatMap((damage) => damage.rolls);
+    if (damageResults.length === 0 || dice.length === 0) {
+        return false;
+    }
+    const playerId = sourceEventRoll?.playerId ?? core.currentExplorer.playerId;
+    core.recentRoll = {
+        id: `${sourceEventRoll?.id ?? `${playerId}-${sourceTitle}`}-event-rolled-damage-${timestamp}`,
+        kind: 'eventRolledDamage',
+        playerId,
+        sourceTitle,
+        rollLabel: '重新投掷的伤害骰',
+        dice,
+        passiveBonus: 0,
+        latestLabel: sourceTitle,
+        eventRolledDamageResults: damageResults,
+        sourceEventRoll: sourceEventRoll ? cloneSourceEventRoll(sourceEventRoll) : undefined,
+        consumedRabbitFootCardIds: [],
+    };
+    return true;
 }
 
 function resolveAttackRerollOutcome(
@@ -10634,38 +10733,6 @@ function resolveAssignableDamageAmount(
         0,
     );
     return Math.min(Math.max(0, amount), assignableSteps);
-}
-
-function collectRolledDamageResultsFromEffect(
-    effect: UseEffectProfile | undefined,
-    explorer: BetrayalExplorerSummary,
-    core: BetrayalCore,
-): BetrayalRolledDamageResult[] {
-    if (!effect) {
-        return [];
-    }
-    if (effect.mode === 'compound') {
-        return effect.effects.flatMap((childEffect) => (
-            collectRolledDamageResultsFromEffect(childEffect, explorer, core)
-        ));
-    }
-    if (effect.mode !== 'rolledDamage' || !effect.rolls?.length) {
-        return [];
-    }
-    const total = effect.rolls.reduce((sum, pip) => sum + pip, 0);
-    const reducedAmount = resolveReducedDamageAmount(explorer, effect.damageKind, total);
-    const appliedAmount = resolveAssignableDamageAmount(
-        explorer,
-        resolveDamageAllocationAllowedTraits(effect.damageKind),
-        reducedAmount,
-        { allowSkull: core.phase === 'haunt' },
-    );
-    return [{
-        damageKind: effect.damageKind,
-        rolls: [...effect.rolls],
-        total,
-        appliedAmount,
-    }];
 }
 
 function createPendingDamageAllocation(params: {
@@ -11124,10 +11191,25 @@ function applyEventEffect(
         return nextSnapshot;
     }
     if (effect.mode === 'fixedDamage') {
-        if (effect.damageKind === 'physical') {
-            applyPhysicalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
-        } else {
-            applyMentalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
+        const deferred = options?.deferRolledDamageAllocation;
+        const pendingAllocation = deferred
+            ? createPendingDamageAllocation({
+                id: `event-fixed-damage-${core.currentExplorer.playerId}-${deferred.timestamp}-${deferred.allocations.length}`,
+                explorer: core.currentExplorer,
+                sourceTitle: deferred.sourceTitle,
+                damageKind: effect.damageKind,
+                amount: effect.amount,
+                allowSkull: core.phase === 'haunt',
+            })
+            : null;
+        if (pendingAllocation) {
+            deferred!.allocations.push(pendingAllocation);
+        } else if (!deferred) {
+            if (effect.damageKind === 'physical') {
+                applyPhysicalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
+            } else {
+                applyMentalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
+            }
         }
         return nextSnapshot;
     }
@@ -11246,10 +11328,25 @@ function applyEventEffect(
             core.currentExplorer.roomId = targetRoom.id;
         }
         if (currentRoom?.floor === 'basement' && effect.basementFallbackDamage) {
-            if (effect.basementFallbackDamage.damageKind === 'physical') {
-                applyPhysicalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
-            } else {
-                applyMentalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
+            const deferred = options?.deferRolledDamageAllocation;
+            const pendingAllocation = deferred
+                ? createPendingDamageAllocation({
+                    id: `event-floor-fallback-damage-${core.currentExplorer.playerId}-${deferred.timestamp}-${deferred.allocations.length}`,
+                    explorer: core.currentExplorer,
+                    sourceTitle: deferred.sourceTitle,
+                    damageKind: effect.basementFallbackDamage.damageKind,
+                    amount: effect.basementFallbackDamage.amount,
+                    allowSkull: core.phase === 'haunt',
+                })
+                : null;
+            if (pendingAllocation) {
+                deferred!.allocations.push(pendingAllocation);
+            } else if (!deferred) {
+                if (effect.basementFallbackDamage.damageKind === 'physical') {
+                    applyPhysicalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
+                } else {
+                    applyMentalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
+                }
             }
         }
         return nextSnapshot;
@@ -11285,16 +11382,93 @@ function applyEventEffect(
     return nextSnapshot;
 }
 
+function applyEventEffectWithDeferredRolledDamage(
+    core: BetrayalCore,
+    effect: UseEffectProfile,
+    sourceTitle: string,
+    timestamp: number,
+): {
+    eventEffectSnapshot?: EventEffectSnapshot;
+    pendingRolledDamageAllocation: BetrayalPendingDamageAllocationState | null;
+} {
+    const rolledDamageAllocations: BetrayalPendingDamageAllocationState[] = [];
+    const eventEffectSnapshot = applyEventEffect(core, effect, undefined, undefined, {
+        deferRolledDamageAllocation: {
+            sourceTitle,
+            timestamp,
+            allocations: rolledDamageAllocations,
+        },
+    });
+    return {
+        eventEffectSnapshot,
+        pendingRolledDamageAllocation: chainPendingDamageAllocations(rolledDamageAllocations),
+    };
+}
+
+function activatePendingRolledDamageAllocation(
+    core: BetrayalCore,
+    pendingRolledDamageAllocation: BetrayalPendingDamageAllocationState | null,
+): boolean {
+    if (!pendingRolledDamageAllocation) {
+        return false;
+    }
+    core.pendingDamageAllocation = pendingRolledDamageAllocation;
+    core.activePlayerId = pendingRolledDamageAllocation.playerId;
+    return true;
+}
+
+function applyImmediateEventDeathPreventionIfNeeded(
+    core: BetrayalCore,
+    deathPrevention: BetrayalPendingEventRollResolutionState['deathPrevention'] | undefined,
+    timestamp: number,
+    scenarioRuntimeBeforeDefeat: BetrayalCore['scenarioRuntime'] | null,
+    monstersBeforeDefeat: BetrayalMonsterSummary[],
+): void {
+    if (deathPrevention?.dice.length) {
+        core.recentRoll = {
+            id: `${deathPrevention.playerId}-death-prevention-${timestamp}`,
+            kind: 'deathPrevention',
+            playerId: deathPrevention.playerId,
+            sourceTitle: deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
+            dice: [...deathPrevention.dice],
+            passiveBonus: 0,
+            latestLabel: deathPrevention.prevented ? '阻止死亡' : '正常死亡',
+            deathPrevention: {
+                cardId: deathPrevention.cardId,
+                minTotal: deathPrevention.minTotal,
+                damageKind: deathPrevention.damageKind,
+                damageAmount: deathPrevention.damageAmount,
+                damageTraits: [...deathPrevention.damageTraits],
+                traitsBeforeDamage: { ...deathPrevention.traitsBeforeDamage },
+                scenarioRuntimeBeforeDefeat: scenarioRuntimeBeforeDefeat
+                    ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
+                monstersBeforeDefeat,
+            },
+            consumedRabbitFootCardIds: [],
+        };
+    }
+    if (deathPrevention?.prevented) {
+        const protectedExplorer = findExplorerByPlayerId(core, deathPrevention.playerId);
+        if (protectedExplorer) {
+            setExplorerTraitsToDeathsDoor(protectedExplorer);
+        }
+    } else {
+        applyDustEventEffectDeathIfNeeded(core);
+    }
+}
+
 function materializeEventEffect(
     effect: UseEffectProfile,
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     core?: BetrayalCore,
+    options: MaterializeEventEffectOptions = {},
 ): UseEffectProfile {
+    const materializeRandomResults = options.materializeRandomResults ?? true;
     if (effect.mode === 'compound') {
         return {
             ...effect,
-            effects: effect.effects.map((childEffect) => materializeEventEffect(childEffect, random, explorer, core)),
+            effects: effect.effects.map((childEffect) => materializeEventEffect(childEffect, random, explorer, core, options)),
         };
     }
     if (effect.mode === 'optionalEventRoll') {
@@ -11313,6 +11487,9 @@ function materializeEventEffect(
         return cloneUseEffect(effect);
     }
     if (effect.mode === 'allTraitChecks') {
+        if (!materializeRandomResults) {
+            return cloneUseEffect(effect);
+        }
         const results = rollAllTraitChecks(explorer, effect.traits, effect.passMin, random, core);
         const hasFailure = results.some((result) => !result.passed);
         return {
@@ -11378,6 +11555,9 @@ function materializeEventEffect(
         return { ...effect };
     }
     if (effect.mode === 'rolledDamage' && !effect.rolls) {
+        if (!materializeRandomResults) {
+            return cloneUseEffect(effect);
+        }
         return { ...effect, rolls: rollDicePips(random, effect.dice) };
     }
     return { ...effect };
@@ -14323,6 +14503,27 @@ function resolveEvent(core: BetrayalCore): EventTemplate {
     return cloneEventTemplate(core.eventOrder[0]!);
 }
 
+function isWarningEventEffect(effect: PossessionUseEffectProfile): boolean {
+    switch (effect.mode) {
+        case 'generalDamage':
+        case 'generalDamageChoice':
+        case 'rolledDamage':
+        case 'fixedDamage':
+            return true;
+        case 'trait':
+        case 'chosenTrait':
+            return effect.amount < 0;
+        case 'compound':
+            return effect.effects.some(isWarningEventEffect);
+        case 'placeExplorerInNextFloorStartingRoom':
+            return Boolean(effect.basementFallbackDamage);
+        case 'optionalItemEffect':
+            return isWarningEventEffect(effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
+        default:
+            return false;
+    }
+}
+
 function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     if (effect.mode === 'none') {
         return '无事发生';
@@ -15447,6 +15648,13 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (!bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand) {
         return { valid: false, error: '石像小天使怪物回合尚未开始。' };
     }
+    const isStandardMonsterTurnCommand = (
+        command.type === BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
+        || command.type === BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP
+        || command.type === BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
+        || command.type === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
+        || command.type === BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
+    ) && !isHelpingHandsMonsterCommand && !isBloodFromStoneMonsterCommand;
     const pendingRecentRollAcknowledgement = command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
         ? resolveAcknowledgeableRecentRoll(core)
         : null;
@@ -15458,6 +15666,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         !isPlayersTurn(core, command.playerId)
         && !(helpingHandsMonsterTurnStatus.active && isHelpingHandsMonsterCommand)
         && !(bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand)
+        && !(isStandardMonsterTurnCommand && canPlayerControlStandardMonsterTurn(core, command.playerId))
         && !isRecentRollAcknowledgementParticipant
     ) {
         return { valid: false, error: '还没有轮到该玩家。' };
@@ -15470,14 +15679,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     const actorRoomId = resolveControlledRoomId(core, actor);
     const isTraitor = core.scenarioRuntime.traitorPlayerId === command.playerId;
     const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(command.playerId);
-    const isStandardMonsterTurnCommand = (
-        command.type === BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
-        || command.type === BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP
-        || command.type === BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
-        || command.type === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
-        || command.type === BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
-    ) && !isHelpingHandsMonsterCommand && !isBloodFromStoneMonsterCommand;
-    if (isStandardMonsterTurnCommand && !isTraitor) {
+    if (isStandardMonsterTurnCommand && !canPlayerControlStandardMonsterTurn(core, command.playerId)) {
         return { valid: false, error: '只有当前叛徒能执行普通怪物回合动作。' };
     }
 
@@ -16856,8 +17058,17 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 if (!eventEffect) {
                     throw new Error(`event ${eventCard.name} has no resolvable effect`);
                 }
-                const materializedEventEffect = materializeEventEffect(eventEffect, random, roomTextResolvedCore.currentExplorer, roomTextResolvedCore);
-                const deathPrevention = resolveEventDamageDeathPrevention(roomTextResolvedCore, materializedEventEffect, random);
+                const deferEventRollEffectRandomResults = Boolean(eventCard.roll && eventRollTotal !== null && eventBranch);
+                const materializedEventEffect = materializeEventEffect(
+                    eventEffect,
+                    random,
+                    roomTextResolvedCore.currentExplorer,
+                    roomTextResolvedCore,
+                    { materializeRandomResults: !deferEventRollEffectRandomResults },
+                );
+                const deathPrevention = deferEventRollEffectRandomResults
+                    ? undefined
+                    : resolveEventDamageDeathPrevention(roomTextResolvedCore, materializedEventEffect, random);
                 const effectLabel = formatEffectLabel(materializedEventEffect);
                 const eventRollLabel = eventCard.roll
                     ? eventRollKind === 'dice'
@@ -16926,10 +17137,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: eventCard.name,
                         summary: '即时生效',
                         detail: eventEffectResolutionText,
-                        tone: eventEffect.mode === 'generalDamage'
-                            || (eventEffect.mode !== 'none' && eventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                         resolutionSteps: discoveryResolutionSteps,
                     },
                     logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，事件：${eventCard.name}（${rollLabel ? `${rollLabel}，` : ''}${effectLabel}）`,
@@ -17101,6 +17309,13 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 pending,
                 acknowledgedPlayerIds,
             );
+            const shouldResolveFinalEffect = isFullyAcknowledged && !pending.nextPendingEventChoice;
+            const finalEffect = shouldResolveFinalEffect
+                ? materializeEventEffect(pending.effect, random, core.currentExplorer, core)
+                : cloneUseEffect(pending.effect);
+            const finalDeathPrevention = shouldResolveFinalEffect
+                ? resolveEventDamageDeathPrevention(core, finalEffect, random)
+                : pending.deathPrevention;
             return [nowEvent(EVENTS.EVENT_ROLL_FINALIZED, {
                 rollId: pending.rollId,
                 playerId: command.playerId,
@@ -17110,16 +17325,16 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 acknowledgedPlayerIds,
                 remainingAcknowledgementCount: Math.max(0, requiredPlayerIds.length - acknowledgedPlayerIds.length),
                 isFullyAcknowledged,
-                effect: cloneUseEffect(pending.effect),
+                effect: cloneUseEffect(finalEffect),
                 nextPendingEventChoice: pending.nextPendingEventChoice
                     ? clonePendingEventChoice(pending.nextPendingEventChoice)
                     : undefined,
-                deathPrevention: pending.deathPrevention
+                deathPrevention: finalDeathPrevention
                     ? {
-                        ...pending.deathPrevention,
-                        dice: [...pending.deathPrevention.dice],
-                        damageTraits: [...pending.deathPrevention.damageTraits],
-                        traitsBeforeDamage: { ...pending.deathPrevention.traitsBeforeDamage },
+                        ...finalDeathPrevention,
+                        dice: [...finalDeathPrevention.dice],
+                        damageTraits: [...finalDeathPrevention.damageTraits],
+                        traitsBeforeDamage: { ...finalDeathPrevention.traitsBeforeDamage },
                     }
                     : undefined,
                 hauntTriggered: pending.hauntTriggered,
@@ -17210,10 +17425,17 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 && core.recentRoll.branchThresholds
                 ? resolveEventBranch(core.recentRoll.branchThresholds, nextDice.reduce((sum, pip) => sum + pip, 0) + core.recentRoll.passiveBonus)
                 : null;
+            const rerollTargetsPendingEventRoll = core.pendingEventRollResolution?.rollId === core.recentRoll?.id;
             const eventRerollEffect = nextEventBranch
-                ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer, core)
+                ? materializeEventEffect(
+                    nextEventBranch.effect,
+                    random,
+                    core.currentExplorer,
+                    core,
+                    { materializeRandomResults: !rerollTargetsPendingEventRoll },
+                )
                 : undefined;
-            const pendingHauntRoll = core.pendingEventRollResolution?.rollId === core.recentRoll?.id
+            const pendingHauntRoll = rerollTargetsPendingEventRoll
                 ? core.pendingEventRollResolution.hauntRoll
                 : undefined;
             const rerolledEventTotal = nextDice.reduce((sum, pip) => sum + pip, 0)
@@ -17276,7 +17498,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 newPips,
                 mentalDamageAfterReroll: mentalDamageAfterReroll || undefined,
                 eventRerollEffect,
-                eventRerollDeathPrevention: eventRerollEffect
+                eventRerollDeathPrevention: eventRerollEffect && !rerollTargetsPendingEventRoll
                     ? resolveEventDamageDeathPrevention(core, eventRerollEffect, random)
                     : undefined,
                 eventRerollHaunt,
@@ -17343,9 +17565,16 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 if (!eventEffect) {
                     throw new Error(`event ${eventCard.name} has no resolvable effect`);
                 }
-                const materializedEventEffect = materializeEventEffect(eventEffect, random, core.currentExplorer, core);
+                const deferEventRollEffectRandomResults = Boolean(eventCard.roll && eventRollTotal !== null && eventBranch);
+                const materializedEventEffect = materializeEventEffect(
+                    eventEffect,
+                    random,
+                    core.currentExplorer,
+                    core,
+                    { materializeRandomResults: !deferEventRollEffectRandomResults },
+                );
                 const needsFollowUpChoice = eventEffectNeedsPendingEventChoice(materializedEventEffect);
-                const deathPrevention = needsFollowUpChoice
+                const deathPrevention = needsFollowUpChoice || deferEventRollEffectRandomResults
                     ? undefined
                     : resolveEventDamageDeathPrevention(core, materializedEventEffect, random);
                 const effectLabel = formatEffectLabel(materializedEventEffect);
@@ -17418,10 +17647,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         detail: nextPendingEventChoice
                             ? `${eventEffectResolutionText}；等待选择事件效果`
                             : eventEffectResolutionText,
-                        tone: materializedEventEffect.mode === 'generalDamage'
-                            || (materializedEventEffect.mode !== 'none' && 'amount' in materializedEventEffect && materializedEventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(materializedEventEffect) ? 'warning' : 'accent',
                         resolutionSteps: discoveryResolutionSteps,
                     },
                     logText: `${actor.displayName}选择抽取事件牌：${eventCard.name}（${eventEffectResolutionText}${nextPendingEventChoice ? '，等待选择事件效果' : ''}）`,
@@ -17480,9 +17706,15 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         logText: `${actor.displayName}${logVerb}：${pending.sourceTitle}（${rollLabel} ${rollTotal}，等待选择事件效果）`,
                     }, timestamp)];
                 }
-                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
+                const eventEffect = materializeEventEffect(
+                    selectedEffect,
+                    random,
+                    core.currentExplorer,
+                    core,
+                    { materializeRandomResults: false },
+                );
                 const effectLabel = formatEffectLabel(eventEffect);
-                const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                const deathPrevention = undefined;
                 return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
                     playerId: command.playerId,
                     sourceTitle: pending.sourceTitle,
@@ -17495,14 +17727,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: pending.sourceTitle,
                         summary,
                         detail: `${rollLabel} ${rollTotal}：${eventBranch.label}；${effectLabel}`,
-                        tone: eventEffect.mode === 'generalDamage'
-                            || eventEffect.mode === 'generalDamageChoice'
-                            || eventEffect.mode === 'rolledDamage'
-                            || eventEffect.mode === 'fixedDamage'
-                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
-                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}${logVerb}：${pending.sourceTitle}（${rollLabel} ${rollTotal}，${effectLabel}）`,
                 }, timestamp)];
@@ -17548,9 +17773,15 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     : undefined;
                 const eventEffect = hauntTriggered
                     ? { mode: 'none' as const, recommendedAction: 'endTurn' as const }
-                    : materializeEventEffect(pending.effect.failureEffect, random, core.currentExplorer, core);
+                    : materializeEventEffect(
+                        pending.effect.failureEffect,
+                        random,
+                        core.currentExplorer,
+                        core,
+                        { materializeRandomResults: false },
+                    );
                 const effectLabel = hauntTriggered ? pending.effect.successLabel : formatEffectLabel(eventEffect);
-                const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                const deathPrevention = undefined;
                 const hauntRevealResolution = hauntTriggered
                     ? resolveHauntRevealResolutionForTrigger(
                         core,
@@ -17627,10 +17858,16 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
                 const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
                 const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
-                const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
+                const eventEffect = materializeEventEffect(
+                    selectedEffect,
+                    random,
+                    core.currentExplorer,
+                    core,
+                    { materializeRandomResults: false },
+                );
                 const effectLabel = formatEffectLabel(eventEffect);
                 const rollLabel = `${TRAIT_LABEL[selectedTrait]}检定`;
-                const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+                const deathPrevention = undefined;
                 return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
                     playerId: command.playerId,
                     sourceTitle: pending.sourceTitle,
@@ -17660,12 +17897,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: pending.sourceTitle,
                         summary: pending.effect.prompt,
                         detail: `${rollLabel} ${rollTotal}：${eventBranch.label}；${effectLabel}`,
-                        tone: eventEffect.mode === 'generalDamage'
-                            || eventEffect.mode === 'rolledDamage'
-                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
-                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}选择${TRAIT_LABEL[selectedTrait]}：${pending.sourceTitle}（${rollLabel} ${rollTotal}，${effectLabel}）`,
                 }, timestamp)];
@@ -17687,7 +17919,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: pending.sourceTitle,
                         summary: '每项属性均通过',
                         detail: `每项属性均通过；${effectLabel}`,
-                        tone: 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}选择${command.payload.trait ? TRAIT_LABEL[command.payload.trait] : '任意属性'}：${pending.sourceTitle}（${effectLabel}）`,
                 }, timestamp)];
@@ -17728,17 +17960,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             title: pending.sourceTitle,
                             summary: pending.effect.acceptLabel,
                             detail: effectLabel,
-                            tone: eventEffect.mode === 'optionalItemEffect'
-                                && (
-                                    eventEffect.acceptEffect.mode === 'generalDamage'
-                                    || eventEffect.acceptEffect.mode === 'generalDamageChoice'
-                                    || eventEffect.acceptEffect.mode === 'rolledDamage'
-                                    || eventEffect.acceptEffect.mode === 'fixedDamage'
-                                    || (eventEffect.acceptEffect.mode === 'trait' && eventEffect.acceptEffect.amount < 0)
-                                    || (eventEffect.acceptEffect.mode === 'chosenTrait' && eventEffect.acceptEffect.amount < 0)
-                                )
-                                ? 'warning'
-                                : 'accent',
+                            tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                         },
                         logText: `${actor.displayName}选择${pending.effect.acceptLabel}：${pending.sourceTitle}（${effectLabel}）`,
                     }, timestamp)];
@@ -17768,14 +17990,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: pending.sourceTitle,
                         summary: pending.effect.declineLabel,
                         detail: effectLabel,
-                        tone: eventEffect.mode === 'generalDamage'
-                            || eventEffect.mode === 'generalDamageChoice'
-                            || eventEffect.mode === 'rolledDamage'
-                            || eventEffect.mode === 'fixedDamage'
-                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
-                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}选择${pending.effect.declineLabel}：${pending.sourceTitle}（${effectLabel}）`,
                 }, timestamp)];
@@ -17803,11 +18018,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: pending.sourceTitle,
                         summary: '选择事件效果',
                         detail: effectLabel,
-                        tone: eventEffect.mode === 'generalDamage'
-                            || eventEffect.mode === 'rolledDamage'
-                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}选择事件效果：${pending.sourceTitle}（${effectLabel}）`,
                 }, timestamp)];
@@ -17846,13 +18057,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         title: pending.sourceTitle,
                         summary: pending.effect.acceptLabel,
                         detail: effectLabel,
-                        tone: eventEffect.mode === 'generalDamage'
-                            || eventEffect.mode === 'rolledDamage'
-                            || eventEffect.mode === 'fixedDamage'
-                            || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
-                            || (eventEffect.mode === 'chosenTrait' && eventEffect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}选择${pending.effect.acceptLabel}：${pending.sourceTitle}（${effectLabel}）`,
                 }, timestamp)];
@@ -17918,9 +18123,15 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     logText: `${actor.displayName}选择${pending.acceptLabel}：${pending.sourceTitle}（${pending.effect.roll.label} ${rollTotal}，等待选择事件效果）`,
                 }, timestamp)];
             }
-            const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
+            const eventEffect = materializeEventEffect(
+                selectedEffect,
+                random,
+                core.currentExplorer,
+                core,
+                { materializeRandomResults: false },
+            );
             const effectLabel = formatEffectLabel(eventEffect);
-            const deathPrevention = resolveEventDamageDeathPrevention(core, eventEffect, random);
+            const deathPrevention = undefined;
             return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
                 playerId: command.playerId,
                 sourceTitle: pending.sourceTitle,
@@ -17933,11 +18144,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     title: pending.sourceTitle,
                     summary: pending.acceptLabel,
                     detail: `${pending.effect.roll.label} ${rollTotal}：${eventBranch.label}；${effectLabel}`,
-                    tone: eventEffect.mode === 'generalDamage'
-                        || eventEffect.mode === 'rolledDamage'
-                        || (eventEffect.mode === 'trait' && eventEffect.amount < 0)
-                        ? 'warning'
-                        : 'accent',
+                    tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                 },
                 logText: `${actor.displayName}选择${pending.acceptLabel}：${pending.sourceTitle}（${pending.effect.roll.label} ${rollTotal}，${effectLabel}）`,
             }, timestamp)];
@@ -20088,11 +20295,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         effect: { ...branch.effect },
                     })),
                     latestLabel: event.payload.eventRoll.label,
-                    eventDamagePreviewResults: collectRolledDamageResultsFromEffect(
-                        event.payload.eventEffect,
-                        core.currentExplorer,
-                        core,
-                    ),
                     consumedRabbitFootCardIds: [],
                 };
             } else if (event.payload.hauntRoll?.dice.length) {
@@ -20237,39 +20439,38 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
                     ? core.monsters.map(cloneMonster)
                     : [];
-                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
-                if (event.payload.deathPrevention?.dice.length) {
-                    core.recentRoll = {
-                        id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                        kind: 'deathPrevention',
-                        playerId: event.payload.deathPrevention.playerId,
-                        sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                        dice: [...event.payload.deathPrevention.dice],
-                        passiveBonus: 0,
-                        latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                        deathPrevention: {
-                            cardId: event.payload.deathPrevention.cardId,
-                            minTotal: event.payload.deathPrevention.minTotal,
-                            damageKind: event.payload.deathPrevention.damageKind,
-                            damageAmount: event.payload.deathPrevention.damageAmount,
-                            damageTraits: [...event.payload.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                            scenarioRuntimeBeforeDefeat: deathPreventionScenarioRuntimeBeforeDefeat
-                                ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                            monstersBeforeDefeat: deathPreventionMonstersBeforeDefeat,
-                        },
-                        consumedRabbitFootCardIds: [],
-                    };
+                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
+                const {
+                    eventEffectSnapshot,
+                    pendingRolledDamageAllocation,
+                } = applyEventEffectWithDeferredRolledDamage(
+                    core,
+                    event.payload.eventEffect,
+                    event.payload.discovery.title,
+                    event.timestamp,
+                );
+                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
+                    applyImmediateEventDeathPreventionIfNeeded(
+                        core,
+                        event.payload.deathPrevention,
+                        event.timestamp,
+                        deathPreventionScenarioRuntimeBeforeDefeat,
+                        deathPreventionMonstersBeforeDefeat,
+                    );
                 }
-                if (event.payload.deathPrevention?.prevented) {
-                    const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                    if (protectedExplorer) {
-                        setExplorerTraitsToDeathsDoor(protectedExplorer);
-                    }
-                } else {
-                    applyDustEventEffectDeathIfNeeded(core);
-                }
-                if (core.recentRoll) {
+                const replacedWithDamageRoll = (
+                    pendingRolledDamageAllocation
+                    || !event.payload.deathPrevention?.dice.length
+                )
+                    ? setEventRolledDamageRecentRollFromSnapshot(
+                        core,
+                        eventEffectSnapshot,
+                        event.payload.discovery.title,
+                        event.timestamp,
+                        sourceEventRollBeforeEffect,
+                    )
+                    : false;
+                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
                     core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
                 core.turnEndedByDiscovery = true;
@@ -20280,39 +20481,38 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
                     ? core.monsters.map(cloneMonster)
                     : [];
-                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
-                if (event.payload.deathPrevention?.dice.length) {
-                    core.recentRoll = {
-                        id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                        kind: 'deathPrevention',
-                        playerId: event.payload.deathPrevention.playerId,
-                        sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                        dice: [...event.payload.deathPrevention.dice],
-                        passiveBonus: 0,
-                        latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                        deathPrevention: {
-                            cardId: event.payload.deathPrevention.cardId,
-                            minTotal: event.payload.deathPrevention.minTotal,
-                            damageKind: event.payload.deathPrevention.damageKind,
-                            damageAmount: event.payload.deathPrevention.damageAmount,
-                            damageTraits: [...event.payload.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                            scenarioRuntimeBeforeDefeat: deathPreventionScenarioRuntimeBeforeDefeat
-                                ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                            monstersBeforeDefeat: deathPreventionMonstersBeforeDefeat,
-                        },
-                        consumedRabbitFootCardIds: [],
-                    };
+                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
+                const {
+                    eventEffectSnapshot,
+                    pendingRolledDamageAllocation,
+                } = applyEventEffectWithDeferredRolledDamage(
+                    core,
+                    event.payload.eventEffect,
+                    event.payload.discovery.title,
+                    event.timestamp,
+                );
+                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
+                    applyImmediateEventDeathPreventionIfNeeded(
+                        core,
+                        event.payload.deathPrevention,
+                        event.timestamp,
+                        deathPreventionScenarioRuntimeBeforeDefeat,
+                        deathPreventionMonstersBeforeDefeat,
+                    );
                 }
-                if (event.payload.deathPrevention?.prevented) {
-                    const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                    if (protectedExplorer) {
-                        setExplorerTraitsToDeathsDoor(protectedExplorer);
-                    }
-                } else {
-                    applyDustEventEffectDeathIfNeeded(core);
-                }
-                if (core.recentRoll) {
+                const replacedWithDamageRoll = (
+                    pendingRolledDamageAllocation
+                    || !event.payload.deathPrevention?.dice.length
+                )
+                    ? setEventRolledDamageRecentRollFromSnapshot(
+                        core,
+                        eventEffectSnapshot,
+                        event.payload.discovery.title,
+                        event.timestamp,
+                        sourceEventRollBeforeEffect,
+                    )
+                    : false;
+                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
                     core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
                 core.turnEndedByDiscovery = true;
@@ -20346,12 +20546,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const mummyGirlPickupLog = mummyGirlPickedUp
                 ? `；${synced.currentExplorer.displayName}拾起女孩`
                 : '';
+            const pendingDamageAllocationAfterEventDraw = core.pendingDamageAllocation;
             let nextCore = {
                 ...synced,
-                recommendedAction: resolveRecommendedAction(synced),
+                recommendedAction: pendingDamageAllocationAfterEventDraw ? 'endTurn' : resolveRecommendedAction(synced),
+                activePlayerId: pendingDamageAllocationAfterEventDraw?.playerId ?? synced.activePlayerId,
                 activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, event.payload.discovery.tone),
             };
-            const dustCompletedAfterEventDraw = completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
+            const dustCompletedAfterEventDraw = pendingDamageAllocationAfterEventDraw
+                ? null
+                : completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
             if (dustCompletedAfterEventDraw) {
                 return dustCompletedAfterEventDraw;
             }
@@ -20444,11 +20648,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         effect: cloneUseEffect(branch.effect),
                     })),
                     latestLabel: event.payload.eventRoll.label,
-                    eventDamagePreviewResults: collectRolledDamageResultsFromEffect(
-                        event.payload.eventEffect,
-                        core.currentExplorer,
-                        core,
-                    ),
                     consumedRabbitFootCardIds: [],
                 }
                 : carriedRecentRoll;
@@ -20516,39 +20715,38 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
                     ? core.monsters.map(cloneMonster)
                     : [];
-                const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
-                if (event.payload.deathPrevention?.dice.length) {
-                    core.recentRoll = {
-                        id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                        kind: 'deathPrevention',
-                        playerId: event.payload.deathPrevention.playerId,
-                        sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                        dice: [...event.payload.deathPrevention.dice],
-                        passiveBonus: 0,
-                        latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                        deathPrevention: {
-                            cardId: event.payload.deathPrevention.cardId,
-                            minTotal: event.payload.deathPrevention.minTotal,
-                            damageKind: event.payload.deathPrevention.damageKind,
-                            damageAmount: event.payload.deathPrevention.damageAmount,
-                            damageTraits: [...event.payload.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                            scenarioRuntimeBeforeDefeat: deathPreventionScenarioRuntimeBeforeDefeat
-                                ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                            monstersBeforeDefeat: deathPreventionMonstersBeforeDefeat,
-                        },
-                        consumedRabbitFootCardIds: [],
-                    };
+                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
+                const {
+                    eventEffectSnapshot,
+                    pendingRolledDamageAllocation,
+                } = applyEventEffectWithDeferredRolledDamage(
+                    core,
+                    event.payload.eventEffect,
+                    event.payload.sourceTitle,
+                    event.timestamp,
+                );
+                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
+                    applyImmediateEventDeathPreventionIfNeeded(
+                        core,
+                        event.payload.deathPrevention,
+                        event.timestamp,
+                        deathPreventionScenarioRuntimeBeforeDefeat,
+                        deathPreventionMonstersBeforeDefeat,
+                    );
                 }
-                if (event.payload.deathPrevention?.prevented) {
-                    const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                    if (protectedExplorer) {
-                        setExplorerTraitsToDeathsDoor(protectedExplorer);
-                    }
-                } else {
-                    applyDustEventEffectDeathIfNeeded(core);
-                }
-                if (core.recentRoll) {
+                const replacedWithDamageRoll = (
+                    pendingRolledDamageAllocation
+                    || !event.payload.deathPrevention?.dice.length
+                )
+                    ? setEventRolledDamageRecentRollFromSnapshot(
+                        core,
+                        eventEffectSnapshot,
+                        event.payload.sourceTitle,
+                        event.timestamp,
+                        sourceEventRollBeforeEffect,
+                    )
+                    : false;
+                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
                     core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
             }
@@ -20564,12 +20762,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     discovery: eventChoiceDiscovery,
                 });
             const synced = syncCurrentExplorerProjection(core);
+            const pendingDamageAllocationAfterEventChoice = core.pendingDamageAllocation;
             let nextCore = {
                 ...synced,
-                recommendedAction: resolveRecommendedAction(synced),
+                recommendedAction: pendingDamageAllocationAfterEventChoice ? 'endTurn' : resolveRecommendedAction(synced),
+                activePlayerId: pendingDamageAllocationAfterEventChoice?.playerId ?? synced.activePlayerId,
                 activityLog: appendActivity(synced, event.payload.logText, eventChoiceDiscovery.tone),
             };
-            const dustCompletedAfterEventChoice = completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
+            const dustCompletedAfterEventChoice = pendingDamageAllocationAfterEventChoice
+                ? null
+                : completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
             if (dustCompletedAfterEventChoice) {
                 return dustCompletedAfterEventChoice;
             }
@@ -20771,10 +20973,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         core.latestDiscovery = {
                             ...core.latestDiscovery,
                             detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${formatEffectLabel(nextEffect)}`,
-                            tone: nextEffect.mode === 'generalDamage'
-                                || (nextEffect.mode !== 'none' && 'amount' in nextEffect && nextEffect.amount < 0)
-                                ? 'warning'
-                                : 'accent',
+                            tone: isWarningEventEffect(nextEffect) ? 'warning' : 'accent',
                         };
                     }
                     return finalizeRecentRollReroll();
@@ -20797,7 +20996,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         core.latestDiscovery = {
                             ...core.latestDiscovery,
                             detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${effectLabel}`,
-                            tone: 'accent',
+                            tone: isWarningEventEffect(nextEffect) ? 'warning' : 'accent',
                         };
                     }
                     return finalizeRecentRollReroll();
@@ -20820,10 +21019,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     core.latestDiscovery = {
                         ...core.latestDiscovery,
                         detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${effectLabel}`,
-                        tone: nextBranch.effect.mode === 'generalDamage'
-                            || (nextBranch.effect.mode !== 'none' && nextBranch.effect.amount < 0)
-                            ? 'warning'
-                            : 'accent',
+                        tone: isWarningEventEffect(nextBranch.effect) ? 'warning' : 'accent',
                     };
                 }
             } else if (recentRoll.kind === 'mysticElevator') {
@@ -20998,6 +21194,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ? core.monsters.map(cloneMonster)
                 : [];
             const rolledDamageAllocations: BetrayalPendingDamageAllocationState[] = [];
+            const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
             const eventEffectSnapshot = applyEventEffect(core, event.payload.effect, undefined, undefined, {
                 deferRolledDamageAllocation: {
                     sourceTitle: event.payload.sourceTitle,
@@ -21041,10 +21238,19 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             } else if (!pendingRolledDamageAllocation) {
                 applyDustEventEffectDeathIfNeeded(core);
             }
-            if (
-                core.recentRoll
-                && (core.recentRoll.kind === 'eventTraitCheck' || core.recentRoll.kind === 'eventDiceRoll')
-            ) {
+            const replacedWithDamageRoll = (
+                pendingRolledDamageAllocation
+                || !event.payload.deathPrevention?.dice.length
+            )
+                ? setEventRolledDamageRecentRollFromSnapshot(
+                    core,
+                    eventEffectSnapshot,
+                    event.payload.sourceTitle,
+                    event.timestamp,
+                    sourceEventRollBeforeEffect,
+                )
+                : false;
+            if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
                 core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
             }
             core.pendingEventRollResolution = null;

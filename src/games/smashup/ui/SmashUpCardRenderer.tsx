@@ -180,9 +180,9 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     // 如果未配置任何图集，只渲染外框和名字
     if (!finalAtlasId) {
         return (
-            <div className={`relative bg-[#f3f0e8] flex flex-col items-center justify-center p-2 border-2 border-slate-300 rounded overflow-hidden ${className || ''}`} style={style}>
-                <div className="text-[1vw] font-black uppercase text-slate-800 mb-1">{name}</div>
-                <div className="text-[0.6vw] text-slate-600 text-center font-mono leading-tight">{text}</div>
+            <div className={`smashup-paper-muted relative flex flex-col items-center justify-center p-2 border-2 rounded overflow-hidden ${className || ''}`} style={style}>
+                <div className="smashup-text-main text-[1vw] font-black uppercase mb-1">{name}</div>
+                <div className="smashup-text-muted text-[0.6vw] text-center font-mono leading-tight">{text}</div>
             </div>
         );
     }
@@ -264,14 +264,14 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
                     ${overlayVisibilityClass}`}
                 >
                     {/* 标题 */}
-                    <div className={`w-fit max-w-full bg-black/80 backdrop-blur-sm text-white font-bold rounded px-2 shadow 
+                    <div className={`smashup-card-title-overlay w-fit max-w-full backdrop-blur-sm font-bold rounded px-2 shadow
                         ${isBase ? 'text-[1vw] max-w-[50%]' : 'text-[1.2vw]'}`}
                     >
                         {name}
                     </div>
                     {/* 文本 —— 仅在有内容时渲染 */}
                     {!!text && (
-                        <div className={`w-full bg-white/90 backdrop-blur-md text-slate-900 rounded shadow-md font-medium leading-tight
+                        <div className={`smashup-card-text-panel w-full backdrop-blur-md rounded shadow-md font-medium leading-tight
                             ${isBase ? 'text-[0.7vw] mb-[25%] p-2' : 'text-[0.8vw] mb-[5%] p-1.5'}`}
                         >
                             {text}

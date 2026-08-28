@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import type { RandomFn } from '../../../engine/types';
 import {
     getFormalStartingMageIdFromConfig,
@@ -6,15 +7,19 @@ import {
     getPresetMageSetupFromConfig,
     getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
-import { MageWarsDomain } from '../domain';
+import { MageWarsDomain, MAGE_WARS_COMMANDS } from '../domain';
 import { MAGE_IDS } from '../domain/ids';
+import { engineConfig } from '../game';
 import {
     buildMageWarsMageSetupData,
     buildMageWarsSetupOptions,
     getMageWarsSelectableMageIds,
     MAGE_WARS_SEAT_0_MAGE_SETUP_FIELD,
+    MAGE_WARS_SEAT_0_SPELLBOOK_SETUP_FIELD,
     MAGE_WARS_SEAT_1_MAGE_SETUP_FIELD,
+    normalizeMageWarsSpellbookEntries,
     resolveMageWarsSelectedMageIdForSeat,
+    resolveMageWarsSpellbookEntriesForSeat,
 } from '../roomSetup';
 
 const fixedRandom: RandomFn = {
@@ -79,5 +84,61 @@ describe('mage-wars room setup', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom, setupData);
         expect(core.players['0'].mageId).toBe(getFormalStartingMageIdFromConfig(0));
         expect(core.players['1'].mageId).toBe(MAGE_IDS.WIZARD_APPRENTICE);
+    });
+
+    it('normalizes custom spellbook entries from setupData and clamps invalid duplicate counts', () => {
+        const setupData = {
+            [MAGE_WARS_SEAT_0_SPELLBOOK_SETUP_FIELD]: JSON.stringify([
+                { spellCardId: 2906, count: 4 },
+                { spellCardId: 2906, count: 4 },
+                { spellCardId: 999999, count: 2 },
+                { spellCardId: 2819, count: -1 },
+            ]),
+        };
+
+        expect(normalizeMageWarsSpellbookEntries(setupData[MAGE_WARS_SEAT_0_SPELLBOOK_SETUP_FIELD])).toEqual([
+            { spellCardId: 2906, count: 6 },
+        ]);
+        expect(resolveMageWarsSpellbookEntriesForSeat(
+            setupData,
+            0,
+            MAGE_IDS.BEASTMASTER_APPRENTICE,
+        )).toEqual([{ spellCardId: 2906, count: 6 }]);
+    });
+
+    it('feeds custom spellbook setup data into runtime planning validation', () => {
+        const setupData = buildMageWarsMageSetupData([
+            MAGE_IDS.BEASTMASTER_APPRENTICE,
+            MAGE_IDS.PRIESTESS_APPRENTICE,
+        ], [
+            [{ spellCardId: 2906, count: 1 }],
+            [{ spellCardId: 2909, count: 1 }],
+        ]);
+        const core = MageWarsDomain.setup(['0', '1'], fixedRandom, setupData);
+        const planningState = {
+            core,
+            sys: {
+                ...createInitialSystemState(['0', '1'], engineConfig.systems, 'local:mage-wars-custom-spellbook'),
+                phase: 'planning',
+            },
+        };
+
+        expect(core.players['0'].spellbookEntries).toEqual([{ spellCardId: 2906, count: 1 }]);
+        expect(core.players['0'].spellbookCount).toBe(1);
+        expect(MageWarsDomain.validate(planningState, {
+            type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
+            playerId: '0',
+            payload: { spellCardIds: [2906] },
+        })).toEqual({ valid: true });
+        expect(MageWarsDomain.validate(planningState, {
+            type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
+            playerId: '0',
+            payload: { spellCardIds: [2906, 2906] },
+        })).toMatchObject({ valid: false, error: 'tooManyPreparedSpellCopies' });
+        expect(MageWarsDomain.validate(planningState, {
+            type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
+            playerId: '0',
+            payload: { spellCardIds: [2819] },
+        })).toMatchObject({ valid: false, error: 'spellNotInPresetSpellbook' });
     });
 });

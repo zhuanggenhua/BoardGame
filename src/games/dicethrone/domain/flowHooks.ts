@@ -76,6 +76,7 @@ import {
     buildStatusAppliedOrChoiceEvents,
     getPowderKegTransferTargetIds,
 } from './statusEvents';
+import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
@@ -95,11 +96,6 @@ const isLegacySelectedHeroMissingInitialization = (
     const hasInitializedAbilities = Array.isArray(player.abilities) && player.abilities.length > 0;
 
     return !hasInitializedAbilities;
-};
-
-const formatSeatLabel = (playerId: string): string => {
-    const seatNumber = Number.parseInt(playerId, 10) + 1;
-    return Number.isFinite(seatNumber) ? `P${seatNumber}` : playerId;
 };
 
 registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state, playerId, sourceAbilityId }) => {
@@ -182,7 +178,7 @@ registerBonusDiceSettlementHandler(POWDER_KEG_SETTLEMENT_ID, ({ state, settlemen
                         value: index,
                         customId: POWDER_KEG_TRANSFER_CHOICE_ID,
                         labelKey: 'choices.powderKegTransfer.give',
-                        labelParams: { target: formatSeatLabel(targetId) },
+                        labelParams: { target: getDiceThronePlayerChoiceLabel(state, targetId) },
                     })),
                 },
                 sourceCommandType: 'ABILITY_EFFECT',

@@ -24,19 +24,10 @@ import { getPlayerPassiveAbilities } from './passiveAbility';
 import { findPlayerAbility } from './abilityLookup';
 import { getChoiceResolvedEventHandler } from './choiceResolvedEvents';
 import { hasCurrentChoiceAnchor } from './choiceEffects';
-import {
-    getActiveDice,
-    getCombatOpponentId,
-    getDefaultOpponentId,
-    getResponderQueue,
-    shouldOpenAfterRollConfirmedForBonusSettlement,
-} from './rules';
+import { getActiveDice } from './rules';
 import { isRemovableStatusId } from './statusRemoval';
 import { updatePendingAttackSettlementStage } from './utils';
-import {
-    buildAfterRollConfirmedSignature,
-    hasAfterRollConfirmedWindowBeenHandled,
-} from './responseWindowGuards';
+import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import {
     readDiceThroneTokenResponseChoiceContract,
     resolveDiceThroneTokenResponseInteractionPendingDamageId,
@@ -1227,52 +1218,18 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     };
                 }
 
-                // ---- BONUS_DICE_REROLL_REQUESTED → response window or right-tray confirmation ----
-                // 奖励骰有可响应者时先开放 afterRollConfirmed；所有响应收口后，
-                // 再由既有 RESPONSE_WINDOW_CLOSED 分支排骰主的右侧骰盘确认。
+                // ---- BONUS_DICE_REROLL_REQUESTED → right-tray confirmation ----
+                // 奖励骰不再打开 afterRollConfirmed 响应窗口；双方仍可通过当前骰区
+                // 看到并介入骰面，骰主必须在右侧骰盘主动确认后才结算。
                 if (dtEvent.type === 'BONUS_DICE_REROLL_REQUESTED') {
                     const payload = (dtEvent as BonusDiceRerollRequestedEvent).payload;
-                    const ownerId = payload.settlement.attackerId;
-                    const currentPhase = (newState.sys.phase ?? 'main1') as TurnPhase;
-                    const rollSignature = buildAfterRollConfirmedSignature(newState.core, currentPhase);
-                    const responseTriggerId = getCombatOpponentId(newState.core, ownerId)
-                        ?? getDefaultOpponentId(newState.core, ownerId)
-                        ?? ownerId;
-                    const responderQueue = (
-                        shouldOpenAfterRollConfirmedForBonusSettlement(payload.settlement)
-                        && !hasAfterRollConfirmedWindowBeenHandled(newState.core, rollSignature)
-                    )
-                        ? getResponderQueue(
-                            newState.core,
-                            'afterRollConfirmed',
-                            responseTriggerId,
-                            rollSignature,
-                            ownerId,
-                            currentPhase,
-                        )
-                        : [];
-
-                    if (responderQueue.length > 0) {
-                        nextEvents.push({
-                            type: 'RESPONSE_WINDOW_OPENED',
-                            payload: {
-                                windowId: `afterRollConfirmed-bonus-${payload.settlement.id}-${dtEvent.timestamp ?? 0}`,
-                                responderQueue,
-                                windowType: 'afterRollConfirmed',
-                                sourceId: rollSignature,
-                            },
-                            sourceCommandType: dtEvent.sourceCommandType,
-                            timestamp: dtEvent.timestamp,
-                        });
-                    } else {
-                        const interaction: EngineInteractionDescriptor = {
-                            id: `dt-bonus-dice-${payload.settlement.id}`,
-                            kind: 'dt:bonus-dice',
-                            playerId: ownerId,
-                            data: null,
-                        };
-                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
-                    }
+                    const interaction: EngineInteractionDescriptor = {
+                        id: `dt-bonus-dice-${payload.settlement.id}`,
+                        kind: 'dt:bonus-dice',
+                        playerId: payload.settlement.attackerId,
+                        data: null,
+                    };
+                    newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                 }
 
                 if (shouldQueueBonusDiceAfterResponseWindow(newState, dtEvent)) {

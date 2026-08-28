@@ -1,0 +1,57 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "跑玩家 1 视角的神圣裁决端到端诊断链路",
+      "status": "PASS",
+      "evidence": [
+        "命令 node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone/dicethrone-divine-arbitration-feedback.e2e.ts 返回 1 passed",
+        "测试入口关闭本地 AI 自动响应，并将玩家 0 / 玩家 1 均设为真人"
+      ]
+    },
+    {
+      "requirement": "截图展示为什么会选反",
+      "status": "PASS",
+      "evidence": [
+        "01 图展示眩光弹窗只显示玩家 0 / 玩家 1",
+        "02 图展示选择玩家 1 后眩光落到自己，飞行弹窗仍只显示玩家 0 / 玩家 1",
+        "03 图展示选择玩家 0 后飞行落到对手，净化弹窗仍只显示玩家 0 / 玩家 1",
+        "04 图展示最终眩光在玩家 1，飞行和净化在玩家 0"
+      ]
+    },
+    {
+      "requirement": "核对选择按钮和真实目标是否反了",
+      "status": "PASS",
+      "evidence": [
+        "轨迹文件显示三段弹窗均为 option-0 -> targetPlayerId 0、option-1 -> targetPlayerId 1",
+        "轨迹文件显示按反馈轨迹选择后最终落点为玩家 1 眩光、玩家 0 飞行和净化"
+      ]
+    },
+    {
+      "requirement": "截图文件本轮新生成且可展示",
+      "status": "PASS",
+      "evidence": [
+        "4 张原始截图均为 1920x1080，文件非空",
+        "已生成中文序号标记图组和 00-sequence-index.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-divine-arbitration-feedback.e2e\\玩家-1-视角应复现玩家-0-玩家-1-按钮文案与反馈轨迹的目标落点\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-divine-arbitration-feedback.e2e\\玩家-1-视角应复现玩家-0-玩家-1-按钮文案与反馈轨迹的目标落点\\_labeled-for-pureref\\01-labeled-01-玩家1视角-神圣裁决眩光选择-按钮只有玩家0和玩家1.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-divine-arbitration-feedback.e2e\\玩家-1-视角应复现玩家-0-玩家-1-按钮文案与反馈轨迹的目标落点\\_labeled-for-pureref\\02-labeled-02-选择玩家1后-眩光落到自己-飞行仍只显示玩家0和玩家1.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-divine-arbitration-feedback.e2e\\玩家-1-视角应复现玩家-0-玩家-1-按钮文案与反馈轨迹的目标落点\\_labeled-for-pureref\\03-labeled-03-选择玩家0后-飞行落到对手-净化仍只显示玩家0和玩家1.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-divine-arbitration-feedback.e2e\\玩家-1-视角应复现玩家-0-玩家-1-按钮文案与反馈轨迹的目标落点\\_labeled-for-pureref\\04-labeled-04-三次选择后-眩光在自己-飞行净化在对手.png"
+  ],
+  "notes": [
+    "本清单只覆盖用户本轮要求：端到端诊断、截图展示、目标映射核对。",
+    "本清单不声明线上反馈已修复，也不声明业务 UI 已完成修改。"
+  ]
+}

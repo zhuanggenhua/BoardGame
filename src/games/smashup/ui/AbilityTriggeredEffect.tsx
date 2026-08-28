@@ -1220,7 +1220,7 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
   const renderTargetLabel = !explicitTargetPosition;
   const compactTargetCardBody = !!explicitTargetPosition;
   const sourceAnchorClassName = renderSourceCardBody
-    ? 'relative h-[min(17vw,142px)] w-[min(12vw,100px)] overflow-hidden rounded-xl border-[3px] border-amber-200 bg-white shadow-[0_18px_44px_rgba(0,0,0,0.6)]'
+    ? 'smashup-card-frame relative h-[min(17vw,142px)] w-[min(12vw,100px)] overflow-hidden rounded-xl border-[3px] border-amber-200 shadow-[0_18px_44px_rgba(0,0,0,0.6)]'
     : 'relative h-[218px] w-[158px] rounded-2xl bg-transparent';
   const targetShatterSource = renderTargetCardBody && actionKind === 'destroy'
     ? resolveShatterImageSource(targetAtlasPreview, i18next.language || 'zh-CN')
@@ -1273,7 +1273,7 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
                     title={resolvedName}
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-amber-100 p-2 text-center text-xs font-black text-slate-900">
+                  <div className="smashup-paper-muted absolute inset-0 flex items-center justify-center p-2 text-center text-xs font-black">
                     {resolvedName}
                   </div>
                 )

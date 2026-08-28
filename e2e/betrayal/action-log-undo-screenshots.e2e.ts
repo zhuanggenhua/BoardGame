@@ -38,9 +38,10 @@ const RADIO_DAMAGE_EVIDENCE_DIR =
 const RADIO_DAMAGE_READY_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/01-无线电广播-探索前玩家名与属性.png`;
 const RADIO_DAMAGE_TRIGGER_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/02-无线电广播-低点数受伤分支.png`;
 const RADIO_DAMAGE_ROLL_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/03-无线电广播-事件骰结果.png`;
-const RADIO_DAMAGE_DAMAGE_ROLL_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/04-无线电广播-追加伤害骰结果.png`;
-const RADIO_DAMAGE_AFTER_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/05-无线电广播-精神属性扣减2点.png`;
-const RADIO_DAMAGE_LOG_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/06-无线电广播-日志记录伤害骰.png`;
+const RADIO_DAMAGE_REROLL_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/04-无线电广播-重新投掷一颗骰子.png`;
+const RADIO_DAMAGE_ALLOCATION_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/05-无线电广播-精神伤害分配面板.png`;
+const RADIO_DAMAGE_AFTER_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/06-无线电广播-分配后属性结果.png`;
+const RADIO_DAMAGE_LOG_SCREENSHOT = `${RADIO_DAMAGE_EVIDENCE_DIR}/07-无线电广播-日志记录重新投骰与分配.png`;
 
 type BetrayalHarnessWindow = Window & {
   __BG_TEST_HARNESS__?: {
@@ -68,9 +69,12 @@ async function readSupportState(page: Page) {
       currentExplorerRoomId: snapshot?.core?.currentExplorer?.roomId,
       latestDiscoveryKind: snapshot?.core?.latestDiscovery?.kind ?? null,
       latestDiscoveryTitle: snapshot?.core?.latestDiscovery?.title ?? null,
+      recentRollKind: snapshot?.core?.recentRoll?.kind ?? null,
       recentRollSourceTitle: snapshot?.core?.recentRoll?.sourceTitle ?? null,
       recentRollLatestLabel: snapshot?.core?.recentRoll?.latestLabel ?? null,
       recentRollDice: snapshot?.core?.recentRoll?.dice ?? [],
+      recentRollSourceEventDice:
+        snapshot?.core?.recentRoll?.sourceEventRoll?.dice ?? [],
       pendingEventRollSourceTitle:
         snapshot?.core?.pendingEventRollResolution?.sourceTitle ?? null,
       pendingEventRollAcknowledgedPlayerIds:
@@ -232,7 +236,10 @@ function createRadioDamageScreenshotCore(): BetrayalCore {
   return core;
 }
 
-async function finalizePendingEventRollForAllPlayers(page: Page) {
+async function finalizePendingEventRollForAllPlayers(
+  page: Page,
+  finalRollRandomQueue: number[] = [],
+) {
   const pending = await page.evaluate(() => {
     const snapshot = (
       window as BetrayalHarnessWindow
@@ -255,6 +262,9 @@ async function finalizePendingEventRollForAllPlayers(page: Page) {
   const unacknowledgedPlayerIds = pending.requiredPlayerIds.filter(
     (playerId) => !acknowledged.has(playerId),
   );
+  if (finalRollRandomQueue.length > 0) {
+    await setHarnessRandomQueue(page, finalRollRandomQueue);
+  }
   for (const playerId of unacknowledgedPlayerIds) {
     await dispatchHarnessCommand(page, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, playerId, {
       rollId: pending.rollId,
@@ -455,7 +465,7 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     ).toBeVisible();
     await page.getByTestId("betrayal-room-ground-north").click();
     await expect(page.getByTestId("betrayal-room-placement-panel")).toBeVisible();
-    await setHarnessRandomQueue(page, [0, 0, 0.99]);
+    await setHarnessRandomQueue(page, [0, 0]);
     await page.getByTestId("betrayal-room-placement-confirm").click();
 
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
@@ -472,57 +482,166 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
       expectedEventFrameIndex: "25",
     });
     const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
-    await expect(rollPanel).toContainText("总点数 0");
-    await expect(rollPanel).toContainText("受到一颗骰子的精神伤害");
-    await expect(rollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(1);
-    await expect(rollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveAttribute(
-      "data-damage-rolls",
-      "2",
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
+      "受到一颗骰子的精神伤害",
     );
-    await expect(rollPanel).toContainText("伤害骰 2");
-    await expect(rollPanel).toContainText("合计 2");
-    await expect(rollPanel).toContainText("承受 2 点精神伤害");
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
+      "总点数 0",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      "伤害骰合计 2",
+    );
+    await expect(rollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(0);
+    await expect(rollPanel).toHaveAttribute("data-visible-dice-source", "recent-roll");
     await expect(
-      page.getByTestId("betrayal-house-dice-3d-group"),
+      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-count", "2");
     await expect(
-      page.getByTestId("betrayal-house-dice-3d-group"),
+      rollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-subtotal", "0");
     await expectVisiblePhysicalDiceBox(rollPanel);
     await waitForPhysicalDiceSettled(rollPanel);
     await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
     await saveScreenshot(page, RADIO_DAMAGE_ROLL_SCREENSHOT);
-    await saveScreenshot(page, RADIO_DAMAGE_DAMAGE_ROLL_SCREENSHOT);
 
     const beforeFinalizeCore = await readCurrentCore(page);
-    expect(beforeFinalizeCore.recentRoll?.sourceTitle).toBe("无线电广播");
-    expect(beforeFinalizeCore.recentRoll?.dice).toEqual([0, 0]);
+    expect(beforeFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventDiceRoll",
+      sourceTitle: "无线电广播",
+      dice: [0, 0],
+      latestLabel: "受到一颗骰子的精神伤害",
+    });
+    expect(beforeFinalizeCore.recentRoll?.eventRolledDamageResults).toBeUndefined();
     expect(beforeFinalizeCore.pendingEventRollResolution).toMatchObject({
       sourceTitle: "无线电广播",
     });
 
-    await finalizePendingEventRollForAllPlayers(page);
-    const afterDamageCore = await readCurrentCore(page);
-    expect(afterDamageCore.recentRoll?.eventEffectSnapshot?.damageRolls).toEqual([2]);
-    expect(afterDamageCore.recentRoll?.eventEffectSnapshot?.rolledDamageResults).toEqual([{
+    await finalizePendingEventRollForAllPlayers(page, [0.99]);
+    const afterFinalizeCore = await readCurrentCore(page);
+    expect(afterFinalizeCore.recentRoll).toMatchObject({
+      kind: "eventRolledDamage",
+      sourceTitle: "无线电广播",
+      rollLabel: "重新投掷的伤害骰",
+      dice: [2],
+      passiveBonus: 0,
+      latestLabel: "无线电广播",
+      sourceEventRoll: {
+        kind: "eventDiceRoll",
+        sourceTitle: "无线电广播",
+        dice: [0, 0],
+        total: 0,
+        latestLabel: "受到一颗骰子的精神伤害",
+      },
+    });
+    expect(afterFinalizeCore.recentRoll?.eventEffectSnapshot).toBeUndefined();
+    expect(afterFinalizeCore.recentRoll?.eventRolledDamageResults).toEqual([{
       damageKind: "mental",
       rolls: [2],
       total: 2,
       appliedAmount: 2,
     }]);
-    expect(mentalTraitTotal(afterDamageCore, "0")).toBe(mentalBefore - 2);
-    expect(afterDamageCore.currentExplorer.traits.knowledge).toBe(2);
-    expect(afterDamageCore.currentExplorer.traits.sanity).toBe(4);
+
+    const damageRollPanel = page.getByTestId("betrayal-recent-roll-panel");
+    await expect(damageRollPanel).toBeVisible();
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
+      "无线电广播",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).not.toContainText(
+      "受到一颗骰子的精神伤害",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
+      "伤害骰合计 2",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
+      "事件总点数 0",
+    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(1);
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveAttribute(
+      "data-damage-rolls",
+      "2",
+    );
+    await expect(damageRollPanel).toContainText("合计 2");
+    await expect(damageRollPanel).toContainText("待分配 2 点精神伤害");
+    await expect(damageRollPanel).toHaveAttribute("data-visible-dice-source", "event-rolled-damage");
+    await expect(damageRollPanel).toContainText("重新投掷的伤害骰（1 颗）");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", "1");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", "2");
+    await expectVisiblePhysicalDiceBox(damageRollPanel);
+    await waitForPhysicalDiceSettled(damageRollPanel);
+    await expectPhysicalDiceSeparated(damageRollPanel, {
+      minDiceCount: 1,
+      minNormalizedCenterDistance: 0,
+      minNormalizedCenterSpan: 0,
+    });
+    await saveScreenshot(page, RADIO_DAMAGE_REROLL_SCREENSHOT);
+    expect(afterFinalizeCore.pendingDamageAllocation).toMatchObject({
+      sourceTitle: "无线电广播",
+      playerId: "0",
+      damageKind: "mental",
+      amount: 2,
+      originalAmount: 2,
+      allowedTraits: ["knowledge", "sanity"],
+    });
+    expect(mentalTraitTotal(afterFinalizeCore, "0")).toBe(mentalBefore);
+    expect(afterFinalizeCore.currentExplorer.traits.knowledge).toBe(4);
+    expect(afterFinalizeCore.currentExplorer.traits.sanity).toBe(4);
+
+    const allocationPanel = page.getByTestId("betrayal-damage-allocation-panel");
+    await expect(allocationPanel).toBeVisible();
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-source")).toContainText(
+      "无线电广播",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-player")).toContainText(
+      "薇薇安",
+    );
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-amount")).toContainText(
+      "2 点精神伤害",
+    );
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
+    ).toBeEnabled();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
+    ).toBeEnabled();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-might"),
+    ).toHaveCount(0);
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-speed"),
+    ).toHaveCount(0);
+
+    await allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge").click();
+    await allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity").click();
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
+    ).toHaveAttribute("data-damage-selected-count", "1");
+    await expect(
+      allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
+    ).toHaveAttribute("data-damage-selected-count", "1");
+    await expect(allocationPanel.getByTestId("betrayal-damage-allocation-confirm")).toBeEnabled();
+    await saveScreenshot(page, RADIO_DAMAGE_ALLOCATION_SCREENSHOT);
+
+    await allocationPanel.getByTestId("betrayal-damage-allocation-confirm").click();
+    await expect(page.getByTestId("betrayal-damage-allocation-panel")).toHaveCount(0);
+    const afterAllocationCore = await readCurrentCore(page);
+    expect(afterAllocationCore.pendingDamageAllocation).toBeNull();
+    expect(mentalTraitTotal(afterAllocationCore, "0")).toBe(mentalBefore - 2);
+    expect(afterAllocationCore.currentExplorer.traits.knowledge).toBe(3);
+    expect(afterAllocationCore.currentExplorer.traits.sanity).toBe(3);
 
     await closeDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-current-traits")).toBeVisible();
     await expect(page.getByTestId("betrayal-current-trait-track-knowledge")).toHaveAttribute(
       "data-trait-track-value",
-      "2",
+      "3",
     );
     await expect(page.getByTestId("betrayal-current-trait-track-sanity")).toHaveAttribute(
       "data-trait-track-value",
-      "4",
+      "3",
     );
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
     await saveScreenshot(page, RADIO_DAMAGE_AFTER_SCREENSHOT);
@@ -538,9 +657,10 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     await expect(logPanel).toContainText(/无线电广播结果/);
     await expect(logPanel).toContainText(/总点数 0/);
     await expect(logPanel).toContainText(/受到一颗骰子的精神伤害/);
-    await expect(logPanel).toContainText(/无线电广播伤害骰：2/);
+    await expect(logPanel).toContainText(/重新投掷 1 颗骰子/);
     await expect(logPanel).toContainText(/合计 2/);
-    await expect(logPanel).toContainText(/承受 2 点精神伤害/);
+    await expect(logPanel).toContainText(/待分配 2 点精神伤害/);
+    await expect(logPanel).toContainText(/将无线电广播的 2 点精神伤害分配到知识、神志/);
     await expect(logPanel).not.toContainText(/玩家 1|玩家1/);
     await saveScreenshot(page, RADIO_DAMAGE_LOG_SCREENSHOT);
 

@@ -1544,12 +1544,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                             mode: 'compound',
                             recommendedAction: 'endTurn',
                             effects: [
-                                {
-                                    mode: 'generalDamage',
-                                    amount: 1,
-                                    traits: ['might', 'speed'],
-                                    recommendedAction: 'endTurn',
-                                },
+                                { mode: 'fixedDamage', amount: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
                                 { mode: 'placeObstacleToken', recommendedAction: 'endTurn' },
                             ],
                         },
@@ -1603,12 +1598,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                     {
                         min: 0,
                         label: '受到 2 点精神伤害',
-                        effect: {
-                            mode: 'generalDamage',
-                            amount: 2,
-                            traits: ['knowledge', 'sanity'],
-                            recommendedAction: 'endTurn',
-                        },
+                        effect: { mode: 'fixedDamage', amount: 2, damageKind: 'mental', recommendedAction: 'endTurn' },
                     },
                 ],
             },
@@ -1626,22 +1616,12 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                     {
                         min: 2,
                         label: '受到 1 点物理伤害',
-                        effect: {
-                            mode: 'generalDamage',
-                            amount: 1,
-                            traits: ['might', 'speed'],
-                            recommendedAction: 'endTurn',
-                        },
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
                     },
                     {
                         min: 0,
                         label: '受到 3 点物理伤害',
-                        effect: {
-                            mode: 'generalDamage',
-                            amount: 3,
-                            traits: ['might', 'speed'],
-                            recommendedAction: 'endTurn',
-                        },
+                        effect: { mode: 'fixedDamage', amount: 3, damageKind: 'physical', recommendedAction: 'endTurn' },
                     },
                 ],
             },
@@ -1843,12 +1823,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                                     targetRoomScope: 'basementDiscovered',
                                     recommendedAction: 'endTurn',
                                 },
-                                {
-                                    mode: 'generalDamage',
-                                    amount: 1,
-                                    traits: ['knowledge', 'sanity'],
-                                    recommendedAction: 'endTurn',
-                                },
+                                { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
                             ],
                         },
                     },
@@ -2050,12 +2025,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                     {
                         min: 1,
                         label: '受到 1 点精神伤害',
-                        effect: {
-                            mode: 'generalDamage',
-                            amount: 1,
-                            traits: ['knowledge', 'sanity'],
-                            recommendedAction: 'endTurn',
-                        },
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
                     },
                     {
                         min: 0,
@@ -2090,12 +2060,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                     {
                         min: 0,
                         label: '受到 1 点精神伤害',
-                        effect: {
-                            mode: 'generalDamage',
-                            amount: 1,
-                            traits: ['knowledge', 'sanity'],
-                            recommendedAction: 'endTurn',
-                        },
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
                     },
                 ],
             },
@@ -2113,12 +2078,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                     {
                         min: 0,
                         label: '受到 1 点物理伤害',
-                        effect: {
-                            mode: 'generalDamage',
-                            amount: 1,
-                            traits: ['might', 'speed'],
-                            recommendedAction: 'endTurn',
-                        },
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
                     },
                 ],
             },

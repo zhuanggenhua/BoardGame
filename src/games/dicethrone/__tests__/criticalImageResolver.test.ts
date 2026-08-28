@@ -166,7 +166,7 @@ describe('diceThroneCriticalImageResolver', () => {
     });
 
     it('玩家面板布局调参必须包含 CenterBoard 所需的尺寸字段', () => {
-        for (const characterId of ['monk', 'gunslinger', 'samurai', 'tianshi'] as const) {
+        for (const characterId of ['monk', 'gunslinger', 'samurai', 'tianshi', 'vampire_lord'] as const) {
             const tuning = getPlayerBoardUiTuning(characterId);
 
             expect(tuning.playerBoardBaseHeightVw, `${characterId} 缺少 playerBoardBaseHeightVw`).toBeGreaterThan(0);
@@ -185,6 +185,7 @@ describe('diceThroneCriticalImageResolver', () => {
             shadow_thief: { width: 2048, height: 1260 },
             tianshi: { width: 3643, height: 2234 },
             lieren: { width: 3632, height: 2234 },
+            vampire_lord: { width: 3627, height: 2234 },
         } as const;
 
         for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {

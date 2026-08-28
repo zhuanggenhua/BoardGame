@@ -6,7 +6,7 @@ import type {
     MatchState,
 } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore, BetrayalTraitKey } from './game';
 
 export const BETRAYAL_ACTION_LOG_ALLOWLIST = Object.values(BETRAYAL_COMMANDS);
 export const BETRAYAL_UNDO_ALLOWLIST = [
@@ -67,11 +67,13 @@ const NS = 'game-betrayal';
 const i18nSeg = (
     key: string,
     params?: Record<string, string | number>,
+    paramI18nKeys?: string[],
 ): ActionLogSegment => ({
     type: 'i18n',
     ns: NS,
     key,
     ...(params ? { params } : {}),
+    ...(paramI18nKeys ? { paramI18nKeys } : {}),
 });
 
 const roomNameOf = (core: BetrayalCore, roomId: unknown) => (
@@ -98,6 +100,21 @@ const stringValue = (value: unknown): string | undefined => (
 
 const numberValue = (value: unknown): number | undefined => (
     typeof value === 'number' && Number.isFinite(value) ? value : undefined
+);
+
+const BETRAYAL_TRAIT_LABEL: Record<BetrayalTraitKey, string> = {
+    might: '力量',
+    speed: '速度',
+    knowledge: '知识',
+    sanity: '神志',
+};
+
+const isBetrayalTraitKey = (value: unknown): value is BetrayalTraitKey => (
+    value === 'might' || value === 'speed' || value === 'knowledge' || value === 'sanity'
+);
+
+const formatTraitList = (traits: BetrayalTraitKey[]): string => (
+    traits.map((trait) => BETRAYAL_TRAIT_LABEL[trait]).join('、')
 );
 
 const entry = (
@@ -195,10 +212,16 @@ const buildEventRolledDamageEntries = (
     core: BetrayalCore,
 ): ActionLogEntry[] => {
     const recentRoll = core.recentRoll;
-    const rolledDamageResults = recentRoll?.eventEffectSnapshot?.rolledDamageResults ?? [];
+    const rolledDamageResults = recentRoll?.kind === 'eventRolledDamage'
+        ? recentRoll.eventRolledDamageResults ?? []
+        : recentRoll?.eventEffectSnapshot?.rolledDamageResults ?? [];
     if (
         !recentRoll
-        || (recentRoll.kind !== 'eventTraitCheck' && recentRoll.kind !== 'eventDiceRoll')
+        || (
+            recentRoll.kind !== 'eventRolledDamage'
+            && recentRoll.kind !== 'eventTraitCheck'
+            && recentRoll.kind !== 'eventDiceRoll'
+        )
         || rolledDamageResults.length === 0
     ) {
         return [];
@@ -216,6 +239,37 @@ const buildEventRolledDamageEntries = (
             appliedDamage: damage.appliedAmount,
         }),
     )], `event-rolled-damage-${index}`));
+};
+
+const buildDamageAllocationEntry = (
+    command: Command,
+    state: MatchState<unknown>,
+    events: GameEvent[],
+): ActionLogEntry | null => {
+    const damageEvent = events.find((event) => event.type === 'DAMAGE_ALLOCATION_RESOLVED');
+    const eventPayload = asRecord(damageEvent?.payload);
+    if (!eventPayload) {
+        return null;
+    }
+
+    const damageKind = stringValue(eventPayload.damageKind);
+    const key = damageKind === 'physical'
+        ? 'actionLog.resolvePhysicalDamageAllocationDetail'
+        : damageKind === 'mental'
+            ? 'actionLog.resolveMentalDamageAllocationDetail'
+            : 'actionLog.resolveGeneralDamageAllocationDetail';
+    const traits = Array.isArray(eventPayload.traits)
+        ? eventPayload.traits.filter(isBetrayalTraitKey)
+        : [];
+    const source = stringValue(eventPayload.sourceTitle) ?? '伤害';
+    const amount = numberValue(eventPayload.amount) ?? traits.length;
+    const playerId = stringValue(eventPayload.playerId) ?? command.playerId;
+
+    return entry(command, state, [i18nSeg(key, playerParams(playerId, {
+        source,
+        amount,
+        traits: formatTraitList(traits),
+    }))]);
 };
 
 export function formatBetrayalActionEntry({
@@ -315,7 +369,8 @@ export function formatBetrayalActionEntry({
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return entry(command, state, [i18nSeg('actionLog.acknowledgeTurnEndRoll', playerParams(command.playerId))]);
         case BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION:
-            return entry(command, state, [i18nSeg('actionLog.resolveDamageAllocation', playerParams(command.playerId))]);
+            return buildDamageAllocationEntry(command, state, events)
+                ?? entry(command, state, [i18nSeg('actionLog.resolveDamageAllocation', playerParams(command.playerId))]);
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
             const key = payload.target === 'traitor'
                 ? 'actionLog.attackTraitor'

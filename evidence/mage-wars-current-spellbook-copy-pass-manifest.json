@@ -1,0 +1,48 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "炉石类组牌范式不引入第二个“当前法术书”概念；Mage Wars 组书页可见文案改为法术书库、法术书清单、编辑选中书、更新选中副本和从选中书保存命名副本。",
+      "status": "PASS",
+      "evidence": [
+        "temp/mage-wars-spellbook-builder-default-dom.html 已包含法术书库、法术书清单、编辑选中书、更新选中副本、命名副本名称、新书从选中书保存命名副本。",
+        ".spec/tools/scan-ui-duplicate-owners.mjs 检查当前法术书、当前法师法术书库、编辑当前书、更新当前副本、给当前书取名、新书从当前书、当前书内均为 0。"
+      ]
+    },
+    {
+      "requirement": "标准起始书和命名副本在同一个法术书库同级展示，并能保存、使用、编辑、删除后进入计划态。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/mage-selection.e2e.ts：2 passed。",
+        "截图 01-09 覆盖选角、进入组书、详情、保存、回选角、使用、编辑、删除和牌桌计划态。"
+      ]
+    },
+    {
+      "requirement": "组书默认态没有重复 owner：法术点总体容量、120/120、法师身份、xN、席位、P1/P2、DIY/空白入口和独立详情入口均按门禁扫描。",
+      "status": "PASS",
+      "evidence": [
+        "node .spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-builder temp/mage-wars-spellbook-builder-default-dom.html：OK。",
+        "MageSelectionGate 单测：3 files / 16 tests passed。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\01-labeled-01-先选法师-兽王已绑定到当前构筑对象.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\02-labeled-02-进入组书-已选兽王上下文和保存库可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\03-labeled-03-法师详情-点击已选法师主控打开.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\04-labeled-04-保存命名副本-标准起始书完整进入同库.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\05-labeled-05-回到选角页-标准书和命名副本同库可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\06-labeled-06-选角页直接使用-命名副本绑定所选法师.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\07-labeled-07-编辑已有命名副本-更新名称和数量.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\08-labeled-08-选角页删除-法术书库只保留一个命名副本.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\mage-wars-current-spellbook-labeled\\09-labeled-09-牌桌计划态-命名副本进入可计划牌列.png"
+  ]
+}

@@ -2,8 +2,6 @@ import type { MatchState, ValidationResult } from '../../../engine/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import {
     getMageWarsSpellCardFromConfig,
-    getPresetSpellbookEntriesFromConfig,
-    hasPresetSpellbookCardInConfig,
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS } from './commands';
@@ -23,6 +21,10 @@ import {
     isMageWarsConfiguredSpellcastingSource,
     isMageWarsSpellcastingObject,
 } from './spellCasting';
+import {
+    getMageWarsPlayerSpellbookCopyCount,
+    hasMageWarsPlayerSpellbookCard,
+} from './spellbook';
 import { validateMageWarsArenaObjectAbility } from './objectAbilityRuntime';
 import { validateMageWarsMageAbilityStatusRemoval } from './mageAbilityRuntime';
 import {
@@ -71,7 +73,6 @@ import {
     isMageWarsWallSpell,
     countMageWarsStealEnchantmentNewTargets,
     parseMageWarsSpellAttackProfile,
-    parseMageWarsRange,
     resolveMageWarsAttachedEquipmentZoneId,
     resolveMageWarsDamageTypeImmunity,
     resolveMageWarsEnchantmentTotalManaCost,
@@ -117,13 +118,11 @@ const MAGE_WARS_PUSH_ZONE_TARGET_FAMILIES = new Set<MageWarsSpellCastChoiceFamil
 ]);
 
 function hasSpellbookCard(player: MageWarsPlayerState, spellCardId: number): boolean {
-    return hasPresetSpellbookCardInConfig(player.mageId, spellCardId);
+    return hasMageWarsPlayerSpellbookCard(player, spellCardId);
 }
 
 function getSpellbookCardCopyCount(player: MageWarsPlayerState, spellCardId: number): number {
-    return getPresetSpellbookEntriesFromConfig(player.mageId)
-        .find((entry) => entry.spellCardId === spellCardId)
-        ?.count ?? 0;
+    return getMageWarsPlayerSpellbookCopyCount(player, spellCardId);
 }
 
 function exceedsSpellbookCopyCount(player: MageWarsPlayerState, spellCardIds: readonly number[]): boolean {

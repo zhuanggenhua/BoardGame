@@ -1197,6 +1197,16 @@ function cloneRecentRollForDiscoveryDisplay(
           ...branch,
           effect: { ...branch.effect },
         })),
+        eventRolledDamageResults: recentRoll.eventRolledDamageResults?.map((damage) => ({
+          ...damage,
+          rolls: [...damage.rolls],
+        })),
+        sourceEventRoll: recentRoll.sourceEventRoll
+          ? {
+              ...recentRoll.sourceEventRoll,
+              dice: [...recentRoll.sourceEventRoll.dice],
+            }
+          : undefined,
       }
     : null;
 }
@@ -6349,41 +6359,24 @@ function RecentRollPanel({
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
   const { t } = useTranslation("game-betrayal");
-  const bonusLabel =
-    roll.passiveBonus > 0 ? `+${roll.passiveBonus}` : String(roll.passiveBonus);
   const diceSubtotal = roll.dice.reduce((sum, value) => sum + value, 0);
-  const rollDetailText = t("board.roll.detail", {
-    subtotal: diceSubtotal,
-    bonus: bonusLabel,
-    total: resolveRecentRollTotal(roll),
-  });
-  const totalLabel = t("board.roll.total", {
-    value: resolveRecentRollTotal(roll),
-  });
-  const diceSubtotalLabel = t("board.roll.diceSubtotal", {
-    value: diceSubtotal,
-  });
-  const passiveBonusLabel = t("board.roll.passiveBonus", { value: bonusLabel });
-  const bonusText =
-    roll.passiveBonus !== 0
-      ? t("board.roll.bonus", { value: bonusLabel })
-      : t("board.roll.noBonus");
+  const baseRollTotal = resolveRecentRollTotal(roll);
   const attackComparisonText = roll.attack
     ? t(
         (roll.attack.defenderDefenseExtraDice ?? 0) > 0
           ? "board.roll.attackComparisonWithExtraDice"
           : "board.roll.attackComparison",
         {
-          attacker: resolveRecentRollTotal(roll),
+          attacker: baseRollTotal,
           defender: roll.attack.defenderRoll,
           extraDice: roll.attack.defenderDefenseExtraDice ?? 0,
         },
       )
     : null;
   const eventDamageResults =
-    roll.eventEffectSnapshot?.rolledDamageResults?.length
-      ? roll.eventEffectSnapshot.rolledDamageResults
-      : roll.eventDamagePreviewResults ?? [];
+    roll.kind === "eventRolledDamage"
+      ? roll.eventRolledDamageResults ?? []
+      : roll.eventEffectSnapshot?.rolledDamageResults ?? [];
   const eventDamageSummaries = eventDamageResults.map((damage) => {
     const damageKindLabel =
       damage.damageKind === "physical"
@@ -6401,18 +6394,81 @@ function RecentRollPanel({
       }),
     };
   });
+  const eventDamageDiceForStage = eventDamageResults.flatMap(
+    (damage) => damage.rolls,
+  );
+  const eventDamageDiceSubtotal = eventDamageDiceForStage.reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const eventDamageDiceSignature = eventDamageDiceForStage.join(",");
+  const showEventDamageDiceStage =
+    eventDamageDiceForStage.length > 0 && !rerollSelection;
+  const visibleDiceSubtotal = showEventDamageDiceStage
+    ? eventDamageDiceSubtotal
+    : diceSubtotal;
+  const visiblePassiveBonus = showEventDamageDiceStage ? 0 : roll.passiveBonus;
+  const visibleBonusLabel =
+    visiblePassiveBonus > 0
+      ? `+${visiblePassiveBonus}`
+      : String(visiblePassiveBonus);
+  const visibleRollTotal = showEventDamageDiceStage
+    ? eventDamageDiceSubtotal
+    : baseRollTotal;
+  const rollDetailText = t("board.roll.detail", {
+    subtotal: visibleDiceSubtotal,
+    bonus: visibleBonusLabel,
+    total: visibleRollTotal,
+  });
+  const passiveBonusLabel = t("board.roll.passiveBonus", {
+    value: visibleBonusLabel,
+  });
+  const bonusText =
+    visiblePassiveBonus !== 0
+      ? t("board.roll.bonus", { value: visibleBonusLabel })
+      : t("board.roll.noBonus");
+  const primaryOutcomeLabel = showEventDamageDiceStage
+    ? roll.sourceTitle || roll.rollLabel || t("board.roll.eventDamageDiceLabel")
+    : roll.latestLabel;
+  const diceStageRoll: BetrayalRecentRollState = showEventDamageDiceStage
+    ? roll.kind === "eventRolledDamage"
+      ? roll
+      : {
+        ...roll,
+        id: `${roll.id}-event-rolled-damage-${eventDamageDiceSignature}`,
+        rollLabel: t("board.roll.eventDamageDiceLabel"),
+        dice: eventDamageDiceForStage,
+        passiveBonus: 0,
+      }
+    : roll;
+  const totalLabel = t(
+    showEventDamageDiceStage
+      ? "board.roll.eventDamageDiceTotal"
+      : "board.roll.total",
+    {
+      value: visibleRollTotal,
+    },
+  );
+  const diceSubtotalLabel = t(
+    showEventDamageDiceStage
+      ? "board.roll.eventDamageDiceSubtotal"
+      : "board.roll.diceSubtotal",
+    {
+      value: visibleDiceSubtotal,
+    },
+  );
   const canvasTestId = React.useMemo(() => {
     const safeRollId =
-      roll.id
+      diceStageRoll.id
         .replace(/[^a-zA-Z0-9_-]+/g, "-")
         .replace(/^-+|-+$/g, "")
         .slice(0, 80) || "roll";
     return `betrayal-house-dice-box-canvas-${safeRollId}`;
-  }, [roll.id]);
+  }, [diceStageRoll.id]);
 
   const diceStage = (
     <BetrayalHouseDice3DGroup
-      roll={roll}
+      roll={diceStageRoll}
       locale={effectiveLocale}
       canvasTestId={canvasTestId}
       animateInitialRoll={animateInitialRoll}
@@ -6423,19 +6479,26 @@ function RecentRollPanel({
       className={`h-full w-full min-w-0 ${diceClassName ?? ""}`}
     />
   );
-  const shouldShowRerollPrompt = Boolean(rerollSelection);
+  const diceStagePromptLabel =
+    rerollSelection?.promptLabel ??
+    (showEventDamageDiceStage
+      ? t("board.roll.eventDamageDiceStage", {
+          count: eventDamageDiceForStage.length,
+        })
+      : "");
+  const shouldShowDiceStagePrompt = Boolean(diceStagePromptLabel);
   const diceStageWithPrompt = (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-visible">
       <div
         data-testid="betrayal-reroll-prompt-outside-dice"
-        aria-hidden={shouldShowRerollPrompt ? undefined : "true"}
+        aria-hidden={shouldShowDiceStagePrompt ? undefined : "true"}
         className={
-          shouldShowRerollPrompt
+          shouldShowDiceStagePrompt
             ? "pointer-events-none mb-1 justify-self-center px-2 py-0.5 text-[11px] font-semibold tracking-[0.14em] text-[#f7e6ab] drop-shadow-[0_2px_7px_rgba(0,0,0,0.72)]"
             : "pointer-events-none h-0 overflow-hidden p-0 text-[0px] leading-none opacity-0"
         }
       >
-        {rerollSelection?.promptLabel ?? ""}
+        {diceStagePromptLabel}
       </div>
       {diceStage}
     </div>
@@ -6563,7 +6626,7 @@ function RecentRollPanel({
                 : "mt-2 truncate text-[16px] md:text-[18px]"
             }`}
           >
-            {roll.latestLabel}
+            {primaryOutcomeLabel}
           </div>
         ) : null}
         {showBreakdown && attackComparisonText ? (
@@ -6644,7 +6707,7 @@ function RecentRollPanel({
         </span>
       ))}
       <span>{totalLabel}</span>
-      {showOutcome ? <span>{roll.latestLabel}</span> : null}
+      {showOutcome ? <span>{primaryOutcomeLabel}</span> : null}
     </div>
   );
 
@@ -6654,6 +6717,9 @@ function RecentRollPanel({
         data-testid="betrayal-recent-roll-panel"
         data-tutorial-id="betrayal-recent-roll-panel"
         data-roll-panel-style="mobile-landscape-open-dock"
+        data-visible-dice-source={
+          showEventDamageDiceStage ? "event-rolled-damage" : "recent-roll"
+        }
         className={`pointer-events-none min-h-[214px] text-[#f3e0a6] ${className}`}
       >
         <div className="grid h-full min-h-[214px] grid-cols-[minmax(260px,1fr)_minmax(190px,0.58fr)] items-center gap-3">
@@ -6674,6 +6740,9 @@ function RecentRollPanel({
       data-testid="betrayal-recent-roll-panel"
       data-tutorial-id="betrayal-recent-roll-panel"
       data-roll-panel-style={openTable ? "open-table-transparent" : "boxed"}
+      data-visible-dice-source={
+        showEventDamageDiceStage ? "event-rolled-damage" : "recent-roll"
+      }
       className={`pointer-events-none relative ${
         openTable ? "overflow-visible rounded-none" : "overflow-hidden rounded-[20px]"
       } ${denseResult ? "min-h-[236px]" : "min-h-[260px]"} text-[#f3e0a6] ${

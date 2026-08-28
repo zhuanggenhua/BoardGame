@@ -4277,15 +4277,15 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ALL_FACTIONS_SELECTED: {
-            const { readiedPlayers, nextUid, bases, baseDeck, nextBaseInstanceId } = event.payload;
+            const { readiedPlayers, selectedFactionsByPlayer, nextUid, bases, baseDeck, nextBaseInstanceId } = event.payload;
             const newPlayers: Record<PlayerId, PlayerState> = { ...state.players };
             const titans: TitanState[] = [];
             const titansEnabled = (state.enabledExpansions ?? ['titans']).includes('titans');
 
             for (const [pid, data] of Object.entries(readiedPlayers)) {
                 if (newPlayers[pid]) {
-                    const selectedFactions = state.factionSelection?.playerSelections[pid];
-                    const factions = Array.isArray(selectedFactions) && selectedFactions.length === 2
+                    const selectedFactions = selectedFactionsByPlayer?.[pid] ?? state.factionSelection?.playerSelections[pid];
+                    const factions = Array.isArray(selectedFactions) && selectedFactions.length >= 2
                         ? [selectedFactions[0], selectedFactions[1]] as PlayerState['factions']
                         : newPlayers[pid].factions;
 

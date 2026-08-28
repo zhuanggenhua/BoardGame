@@ -371,7 +371,7 @@ describe('小黑屋操作日志与撤回', () => {
         expect(JSON.stringify(resolvedParams)).not.toContain('玩家 1');
     });
 
-    it('无线电广播低点数分支会重新投一颗伤害骰并写入玩家操作日志', () => {
+    it('无线电广播低点数分支会重新投一颗骰子并由玩家分配精神伤害', () => {
         let state = setupStartedScenarioState();
         state.core.drawOrder = ['event'];
         state.core.eventOrder = [eventByName('无线电广播')];
@@ -397,40 +397,69 @@ describe('小黑屋操作日志与撤回', () => {
             playerId: '0',
             payload: { roomId: 'ground-north' },
             timestamp: 20,
-        }, createBetrayalScriptedRandom(1, 1, 3));
+        }, createBetrayalScriptedRandom(1, 1));
 
         expect(state.core.recentRoll).toMatchObject({
+            kind: 'eventDiceRoll',
             sourceTitle: '无线电广播',
             dice: [0, 0],
             latestLabel: '受到一颗骰子的精神伤害',
         });
-        expect(state.core.recentRoll?.eventDamagePreviewResults).toEqual([{
+        expect(state.core.pendingEventRollResolution?.effect).toMatchObject({
+            mode: 'rolledDamage',
+            dice: 1,
             damageKind: 'mental',
-            rolls: [2],
-            total: 2,
-            appliedAmount: 2,
-        }]);
+        });
+        expect((state.core.pendingEventRollResolution?.effect as { rolls?: number[] } | undefined)?.rolls).toBeUndefined();
+        expect(state.core.recentRoll?.eventRolledDamageResults).toBeUndefined();
+        expect(state.core.recentRoll?.sourceEventRoll).toBeUndefined();
         expect(mentalTraitTotal(state.core, '0')).toBe(8);
 
-        for (const playerId of playerIds) {
-            state = runCommand(state, {
+        for (const [index, playerId] of playerIds.entries()) {
+            const command = {
                 type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
                 playerId,
                 payload: { rollId: state.core.recentRoll?.id },
                 timestamp: 30 + Number(playerId),
-            });
+            };
+            state = runCommand(state, {
+                ...command,
+            }, index === playerIds.length - 1 ? createBetrayalScriptedRandom(3) : undefined);
         }
 
         expect(state.core.pendingEventRollResolution).toBeNull();
-        expect(state.core.recentRoll?.eventEffectSnapshot?.damageRolls).toEqual([2]);
-        expect(state.core.recentRoll?.eventEffectSnapshot?.rolledDamageResults).toEqual([{
+        expect(state.core.recentRoll).toMatchObject({
+            kind: 'eventRolledDamage',
+            sourceTitle: '无线电广播',
+            rollLabel: '重新投掷的伤害骰',
+            dice: [2],
+            passiveBonus: 0,
+            latestLabel: '无线电广播',
+            sourceEventRoll: {
+                kind: 'eventDiceRoll',
+                sourceTitle: '无线电广播',
+                dice: [0, 0],
+                total: 0,
+                latestLabel: '受到一颗骰子的精神伤害',
+            },
+        });
+        expect(state.core.recentRoll?.eventEffectSnapshot).toBeUndefined();
+        expect(state.core.recentRoll?.eventRolledDamageResults).toEqual([{
             damageKind: 'mental',
             rolls: [2],
             total: 2,
             appliedAmount: 2,
         }]);
-        expect(mentalTraitTotal(state.core, '0')).toBe(6);
-        expect(state.core.currentExplorer.traits.knowledge).toBe(2);
+        expect(state.core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '无线电广播',
+            playerId: '0',
+            damageKind: 'mental',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        expect(mentalTraitTotal(state.core, '0')).toBe(8);
+        expect(state.core.currentExplorer.traits.knowledge).toBe(4);
         expect(state.core.currentExplorer.traits.sanity).toBe(4);
 
         expect(state.sys.actionLog.entries).toEqual(expect.arrayContaining([
@@ -441,9 +470,36 @@ describe('小黑屋操作日志与撤回', () => {
                     params: {
                         playerId: '0',
                         event: '无线电广播',
+                        diceCount: 1,
                         damageRolls: '2',
                         damageTotal: 2,
                         appliedDamage: 2,
+                    },
+                })],
+            }),
+        ]));
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            playerId: '0',
+            payload: { traits: ['knowledge', 'sanity'] },
+            timestamp: 40,
+        });
+
+        expect(state.core.pendingDamageAllocation).toBeNull();
+        expect(mentalTraitTotal(state.core, '0')).toBe(6);
+        expect(state.core.currentExplorer.traits.knowledge).toBe(3);
+        expect(state.core.currentExplorer.traits.sanity).toBe(3);
+        expect(state.sys.actionLog.entries).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+                segments: [expect.objectContaining({
+                    key: 'actionLog.resolveMentalDamageAllocationDetail',
+                    params: {
+                        playerId: '0',
+                        source: '无线电广播',
+                        amount: 2,
+                        traits: '知识、神志',
                     },
                 })],
             }),
@@ -461,9 +517,16 @@ describe('小黑屋操作日志与撤回', () => {
             expect.objectContaining({
                 playerId: '薇薇安',
                 event: '无线电广播',
+                diceCount: 1,
                 damageRolls: '2',
                 damageTotal: 2,
                 appliedDamage: 2,
+            }),
+            expect.objectContaining({
+                playerId: '薇薇安',
+                source: '无线电广播',
+                amount: 2,
+                traits: '知识、神志',
             }),
         ]));
         expect(JSON.stringify(resolvedParams)).not.toContain('玩家 1');

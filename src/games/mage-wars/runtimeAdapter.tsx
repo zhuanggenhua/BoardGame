@@ -4,14 +4,22 @@ import {
     buildMageWarsMageSetupData,
     buildMageWarsMageSetupSelections,
     MAGE_WARS_SEAT_0_MAGE_SETUP_FIELD,
+    MAGE_WARS_SEAT_0_SPELLBOOK_SETUP_FIELD,
     MAGE_WARS_SEAT_1_MAGE_SETUP_FIELD,
+    MAGE_WARS_SEAT_1_SPELLBOOK_SETUP_FIELD,
     resolveMageWarsSelectedMageIdForSeat,
+    resolveMageWarsSpellbookEntriesForSeat,
 } from './roomSetup';
 import { MageWarsMageSelectionGate } from './ui/MageSelectionGate';
 
 function buildSetupDataFromSearchParams(searchParams: URLSearchParams): Record<string, unknown> {
     const setupData: Record<string, unknown> = {};
-    for (const field of [MAGE_WARS_SEAT_0_MAGE_SETUP_FIELD, MAGE_WARS_SEAT_1_MAGE_SETUP_FIELD]) {
+    for (const field of [
+        MAGE_WARS_SEAT_0_MAGE_SETUP_FIELD,
+        MAGE_WARS_SEAT_1_MAGE_SETUP_FIELD,
+        MAGE_WARS_SEAT_0_SPELLBOOK_SETUP_FIELD,
+        MAGE_WARS_SEAT_1_SPELLBOOK_SETUP_FIELD,
+    ]) {
         const value = searchParams.get(`setup.${field}`);
         if (value !== null) {
             setupData[field] = value;
@@ -31,11 +39,15 @@ export function resolveMageWarsLocalSetup(args: {
         resolveMageWarsSelectedMageIdForSeat(setupDataFromSearch, 0),
         resolveMageWarsSelectedMageIdForSeat(setupDataFromSearch, 1),
     ] as [MageId, MageId];
+    const seatSpellbookEntries = [
+        resolveMageWarsSpellbookEntriesForSeat(setupDataFromSearch, 0, seatMageIds[0]),
+        resolveMageWarsSpellbookEntriesForSeat(setupDataFromSearch, 1, seatMageIds[1]),
+    ] as const;
 
     return {
         numPlayers: 2,
         setupSelections: buildMageWarsMageSetupSelections(seatMageIds),
-        setupData: buildMageWarsMageSetupData(seatMageIds),
+        setupData: buildMageWarsMageSetupData(seatMageIds, seatSpellbookEntries),
     };
 }
 

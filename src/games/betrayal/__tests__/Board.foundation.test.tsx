@@ -206,6 +206,7 @@ type BoardHarnessProps = {
     playerID?: string;
     matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
     diceResults?: number[];
+    finalizeEventRollDiceResults?: number[];
     autoAcknowledgeOtherPlayers?: boolean;
 };
 
@@ -433,6 +434,7 @@ function HarnessBoardWithRandom({
     playerID = '0',
     matchData,
     diceResults,
+    finalizeEventRollDiceResults,
     autoAcknowledgeOtherPlayers = true,
 }: BoardHarnessProps) {
     const [core, setCore] = React.useState(initialCore);
@@ -451,13 +453,16 @@ function HarnessBoardWithRandom({
         if (!validation.valid) {
             return;
         }
-        const nextCore = BetrayalDomain.execute(stateOf(core), command, createBetrayalScriptedRandom(...(diceResults ?? [2, 2, 2, 2])))
+        const commandDiceResults = type === BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
+            ? finalizeEventRollDiceResults ?? diceResults
+            : diceResults;
+        const nextCore = BetrayalDomain.execute(stateOf(core), command, createBetrayalScriptedRandom(...(commandDiceResults ?? [2, 2, 2, 2])))
             .reduce((currentCore, event) => BetrayalDomain.reduce(currentCore, event), core);
         if (type === BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL && autoAcknowledgeOtherPlayers) {
             const completedCore = acknowledgeRemainingEventRollPlayers(
                 nextCore,
                 (payload as { rollId?: string }).rollId,
-                createBetrayalScriptedRandom(...(diceResults ?? [2, 2, 2, 2])),
+                createBetrayalScriptedRandom(...(commandDiceResults ?? [2, 2, 2, 2])),
             );
             setCore(completedCore);
             return;
@@ -503,7 +508,7 @@ function HarnessBoardWithRandom({
             return;
         }
         setCore(nextCore);
-    }, [autoAcknowledgeOtherPlayers, core, diceResults, playerID]);
+    }, [autoAcknowledgeOtherPlayers, core, diceResults, finalizeEventRollDiceResults, playerID]);
 
     return (
         <ToastProvider>
@@ -8797,9 +8802,9 @@ describe('Betrayal Board foundation', () => {
         );
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('获得 1 点知识');
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '2');
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('投 2 颗骰子');
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveAttribute('data-visible-dice-source', 'recent-roll');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 4');
-        expectSingleEventEffectResolutionStep('知识 +1');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('获得 1 点知识');
         rewardView.unmount();
 
         const damageCore = createBetrayalFoundationCore(['0', '1', '2', '3']);
@@ -8823,7 +8828,8 @@ describe('Betrayal Board foundation', () => {
             <HarnessBoardWithRandom
                 initialCore={damageCore}
                 matchData={defaultMatchData}
-                diceResults={[1, 1, 3]}
+                diceResults={[1, 1]}
+                finalizeEventRollDiceResults={[3]}
             />,
         );
 
@@ -8835,10 +8841,25 @@ describe('Betrayal Board foundation', () => {
             'aria-label',
             expect.stringContaining('无线电广播'),
         );
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('投 2 颗骰子');
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 0');
-        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到 1 颗骰子的精神伤害');
-        expectSingleEventEffectResolutionStep('受到 1 颗骰子的精神伤害');
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveAttribute('data-visible-dice-source', 'recent-roll');
+        expect(screen.getByTestId('betrayal-recent-roll-outcome')).toHaveTextContent('受到一颗骰子的精神伤害');
+        expect(screen.getByTestId('betrayal-recent-roll-total')).toHaveTextContent('总点数 0');
+        expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '2');
+        expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rule-subtotal', '0');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到一颗骰子的精神伤害');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('重新投掷 1 颗骰子');
+
+        finalizeEventRollIfVisible();
+
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveAttribute('data-visible-dice-source', 'event-rolled-damage');
+        expect(screen.getByTestId('betrayal-recent-roll-outcome')).toHaveTextContent('无线电广播');
+        expect(screen.getByTestId('betrayal-recent-roll-outcome')).not.toHaveTextContent('受到一颗骰子的精神伤害');
+        expect(screen.getByTestId('betrayal-recent-roll-total')).toHaveTextContent('伤害骰合计 2');
+        expect(screen.getByTestId('betrayal-recent-roll-total')).not.toHaveTextContent('事件总点数 0');
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('重新投掷的伤害骰（1 颗）');
+        expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '1');
+        expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rule-subtotal', '2');
+        expect(screen.getByTestId('betrayal-recent-roll-damage-dice')).toHaveAttribute('data-damage-rolls', '2');
     });
 
     it('一罐器官会在真实页面承接神志检定、抽物品和力量降低结果', () => {
