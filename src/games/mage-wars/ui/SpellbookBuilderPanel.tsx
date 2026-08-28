@@ -733,18 +733,6 @@ export function MageWarsSpellbookBuilderPanel({
                             </select>
                             <select
                                 className="h-7 border border-stone-100/15 bg-[#211712] px-2 text-[0.66rem] font-bold"
-                                value={legalityFilter}
-                                aria-label={t('spellbookBuilder.statusFilterAria')}
-                                data-testid="mage-wars-spellbook-builder-filter-legality"
-                                onChange={(event) => setLegalityFilter(event.currentTarget.value as LegalityFilter)}
-                            >
-                                <option value="all">{t('spellbookBuilder.legality.all')}</option>
-                                <option value="addable">{t('spellbookBuilder.legality.addable')}</option>
-                                <option value="inBook">{t('spellbookBuilder.legality.inBook')}</option>
-                                <option value="restricted">{t('spellbookBuilder.legality.restricted')}</option>
-                            </select>
-                            <select
-                                className="h-7 border border-stone-100/15 bg-[#211712] px-2 text-[0.66rem] font-bold"
                                 value={manaFilter}
                                 aria-label={t('spellbookBuilder.manaFilterAria')}
                                 data-testid="mage-wars-spellbook-builder-filter-mana"
@@ -759,6 +747,18 @@ export function MageWarsSpellbookBuilderPanel({
                                                 : t('spellbookBuilder.manaFilter.range', { value })}
                                     </option>
                                 ))}
+                            </select>
+                            <select
+                                className="h-7 border border-stone-100/15 bg-[#211712] px-2 text-[0.66rem] font-bold"
+                                value={legalityFilter}
+                                aria-label={t('spellbookBuilder.statusFilterAria')}
+                                data-testid="mage-wars-spellbook-builder-filter-legality"
+                                onChange={(event) => setLegalityFilter(event.currentTarget.value as LegalityFilter)}
+                            >
+                                <option value="all">{t('spellbookBuilder.legality.all')}</option>
+                                <option value="addable">{t('spellbookBuilder.legality.addable')}</option>
+                                <option value="inBook">{t('spellbookBuilder.legality.inBook')}</option>
+                                <option value="restricted">{t('spellbookBuilder.legality.restricted')}</option>
                             </select>
                         </div>
 
