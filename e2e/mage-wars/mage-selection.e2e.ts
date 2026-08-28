@@ -307,13 +307,24 @@ test('Mage Wars 组书编辑器：先选法师后从标准起始书保存命名�
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-type')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-school')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-level')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-mana')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-legality')).toBeVisible();
 
     const builderVisibleText = await builder.evaluate((element) => element.textContent ?? '');
     expect(builderVisibleText).not.toMatch(/席位|\bP1\b|\bP2\b|xN|兽王标准书|当前法师：|当前法术书|当前法师法术书库|编辑当前书|更新当前副本|给当前书取名|新书从当前书|当前书内|详情|缺图|DIY 法术书|空白自组|还没有 DIY/u);
     expect(builderVisibleText).not.toMatch(/标准起始书和命名副本同级|真实缩略、数量上限|滚动查看整本书|数量：1级|成本：受训/u);
+    expect(builderVisibleText).not.toMatch(/全部卡牌/u);
     expect(Array.from(builderVisibleText.matchAll(/法术点/g))).toHaveLength(1);
     expect(Array.from(builderVisibleText.matchAll(/120\s*\/\s*120/g))).toHaveLength(1);
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-scope-filters')).toHaveCount(0);
+    const typeOptions = await builder.getByTestId('mage-wars-spellbook-builder-filter-type').locator('option').evaluateAll((options) => (
+        options.map((option) => option.textContent ?? '')
+    ));
+    expect(typeOptions).toEqual(expect.arrayContaining(['类型：全部', '攻击', '结界', '生物', '魔物', '咒语', '装备', '墙体']));
+    const manaOptions = await builder.getByTestId('mage-wars-spellbook-builder-filter-mana').locator('option').evaluateAll((options) => (
+        options.map((option) => option.textContent ?? '')
+    ));
+    expect(manaOptions).toEqual(expect.arrayContaining(['法力：全部', '法力：0-2', '法力：3-5', '法力：6-8', '法力：9+', '法力：X']));
     const schoolOptions = await builder.getByTestId('mage-wars-spellbook-builder-filter-school').locator('option').evaluateAll((options) => (
         options.map((option) => option.textContent ?? '')
     ));
@@ -333,7 +344,7 @@ test('Mage Wars 组书编辑器：先选法师后从标准起始书保存命名�
     );
     await saveLocatorHtmlSnapshot(builder, testInfo, 'temp/mage-wars-spellbook-builder-default-dom.html');
     const builderDefaultScreenshot = await saveEvidenceScreenshot(page, testInfo, '02-进入组书-已选兽王上下文和保存库可见');
-    await builder.getByTestId('mage-wars-spellbook-builder-scope-wall').click();
+    await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('墙体');
     await expectAtlasFrameAspectRatioPreserved(
         builder.locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"] [data-card-atlas-frame="true"]'),
         '组书卡池荆棘之墙横向牌面',
@@ -346,7 +357,7 @@ test('Mage Wars 组书编辑器：先选法师后从标准起始书保存命名�
     });
     expect(wallCardBox.width / wallCardBox.height, '墙体牌在组书页必须按横向比例显示').toBeGreaterThan(1);
 
-    await builder.getByTestId('mage-wars-spellbook-builder-scope-all').click();
+    await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('all');
     await builder.getByTestId('mage-wars-spellbook-builder-mage-context').click();
     const mageDetail = builder.getByTestId('mage-wars-spellbook-builder-mage-detail');
     await expect(mageDetail).toBeVisible();

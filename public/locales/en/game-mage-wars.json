@@ -280,6 +280,7 @@
     "schoolFilterAria": "School filter",
     "schoolAll": "School / element: all",
     "levelFilterAria": "Level filter",
+    "manaFilterAria": "Mana cost filter",
     "statusFilterAria": "Status filter",
     "cardStatusRestricted": "Unavailable",
     "cardStatusAtLimit": "At limit; remove from list first",
@@ -315,23 +316,23 @@
       "creature": "Creature",
       "conjuration": "Conjuration",
       "incantation": "Incantation",
-      "equipment": "Equipment"
+      "equipment": "Equipment",
+      "wall": "Wall"
     },
     "level": {
       "all": "Level: all",
       "value": "Level: {{value}}"
+    },
+    "manaFilter": {
+      "all": "Mana: all",
+      "range": "Mana: {{value}}",
+      "variable": "Mana: X"
     },
     "legality": {
       "all": "Status: all",
       "addable": "Addable",
       "inBook": "In book",
       "restricted": "Unavailable"
-    },
-    "scope": {
-      "all": "All cards",
-      "inBook": "In book",
-      "addable": "Addable",
-      "wall": "Walls"
     },
     "training": {
       "trained": "Trained",

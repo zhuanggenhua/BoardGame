@@ -39,13 +39,14 @@ type SpellbookBuilderPanelProps = {
     onClose: () => void;
 };
 
-type TypeFilter = 'all' | '攻击' | '结界' | '生物' | '魔物' | '咒语' | '装备';
+type TypeFilter = 'all' | '攻击' | '结界' | '生物' | '魔物' | '咒语' | '装备' | '墙体';
 type LevelFilter = 'all' | '0-1' | '2' | '3' | '4' | '5' | '6+';
+type ManaFilter = 'all' | '0-2' | '3-5' | '6-8' | '9+' | 'x';
 type LegalityFilter = 'all' | 'addable' | 'inBook' | 'restricted';
-type ScopeFilter = 'all' | 'inBook' | 'addable' | 'wall';
 
-const TYPE_FILTERS = ['all', '攻击', '结界', '生物', '魔物', '咒语', '装备'] as const satisfies readonly TypeFilter[];
+const TYPE_FILTERS = ['all', '攻击', '结界', '生物', '魔物', '咒语', '装备', '墙体'] as const satisfies readonly TypeFilter[];
 const LEVEL_FILTERS = ['all', '0-1', '2', '3', '4', '5', '6+'] as const satisfies readonly LevelFilter[];
+const MANA_FILTERS = ['all', '0-2', '3-5', '6-8', '9+', 'x'] as const satisfies readonly ManaFilter[];
 const TYPE_FILTER_LABEL_KEYS: Record<Exclude<TypeFilter, 'all'>, string> = {
     '攻击': 'spellbookBuilder.type.attack',
     '结界': 'spellbookBuilder.type.enchantment',
@@ -53,8 +54,8 @@ const TYPE_FILTER_LABEL_KEYS: Record<Exclude<TypeFilter, 'all'>, string> = {
     '魔物': 'spellbookBuilder.type.conjuration',
     '咒语': 'spellbookBuilder.type.incantation',
     '装备': 'spellbookBuilder.type.equipment',
+    '墙体': 'spellbookBuilder.type.wall',
 };
-const SCOPE_FILTERS = ['all', 'inBook', 'addable', 'wall'] as const satisfies readonly ScopeFilter[];
 
 const SPELL_CARD_BACK_PATH = 'mage-wars/cards/backs/spell-card-back';
 const WALL_CARD_BACK_PATH = 'mage-wars/cards/backs/wall-card-back';
@@ -107,6 +108,18 @@ function matchesLevelFilter(spell: MageWarsConfigSpellCard, filter: LevelFilter)
     if (filter === '0-1') return level <= 1;
     if (filter === '6+') return level >= 6;
     return level === Number(filter);
+}
+
+function matchesManaFilter(spell: MageWarsConfigSpellCard, filter: ManaFilter): boolean {
+    if (filter === 'all') return true;
+    const rawCost = spell.rawCost ?? '';
+    if (filter === 'x') return /\bX\b/i.test(rawCost);
+    const manaCost = spell.manaCost;
+    if (typeof manaCost !== 'number' || !Number.isFinite(manaCost)) return false;
+    if (filter === '0-2') return manaCost >= 0 && manaCost <= 2;
+    if (filter === '3-5') return manaCost >= 3 && manaCost <= 5;
+    if (filter === '6-8') return manaCost >= 6 && manaCost <= 8;
+    return manaCost >= 9;
 }
 
 function formatSchools(spell: MageWarsConfigSpellCard): string {
@@ -189,8 +202,8 @@ export function MageWarsSpellbookBuilderPanel({
     const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
     const [schoolFilter, setSchoolFilter] = useState('all');
     const [levelFilter, setLevelFilter] = useState<LevelFilter>('all');
+    const [manaFilter, setManaFilter] = useState<ManaFilter>('all');
     const [legalityFilter, setLegalityFilter] = useState<LegalityFilter>('all');
-    const [scopeFilter, setScopeFilter] = useState<ScopeFilter>('all');
     const [detailOpen, setDetailOpen] = useState(false);
     const [libraryOpen, setLibraryOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
@@ -223,20 +236,18 @@ export function MageWarsSpellbookBuilderPanel({
 
             if (query && !`${spell.name} ${spell.spellCardId}`.toLowerCase().includes(query)) return false;
             if (typeFilter !== 'all') {
-                if (typeFilter === '生物' && spell.spellType !== '生物') return false;
-                if (typeFilter !== '生物' && spell.spellType !== typeFilter) return false;
+                if (typeFilter === '墙体' && !isWallSpell(spell)) return false;
+                if (typeFilter !== '墙体' && spell.spellType !== typeFilter) return false;
             }
             if (schoolFilter !== 'all' && !getMageWarsSpellSchools(spell).includes(schoolFilter)) return false;
             if (!matchesLevelFilter(spell, levelFilter)) return false;
+            if (!matchesManaFilter(spell, manaFilter)) return false;
             if (legalityFilter === 'addable' && !canAdd) return false;
             if (legalityFilter === 'inBook' && selectedCount <= 0) return false;
             if (legalityFilter === 'restricted' && !restricted) return false;
-            if (scopeFilter === 'inBook' && selectedCount <= 0) return false;
-            if (scopeFilter === 'addable' && !canAdd) return false;
-            if (scopeFilter === 'wall' && !isWallSpell(spell)) return false;
             return true;
         });
-    }, [allCards, entries, legalityFilter, levelFilter, mageId, schoolFilter, scopeFilter, search, summary.pointLimit, summary.pointsUsed, typeFilter]);
+    }, [allCards, entries, legalityFilter, levelFilter, mageId, manaFilter, schoolFilter, search, summary.pointLimit, summary.pointsUsed, typeFilter]);
     const selectedRows = useMemo(() => entries
         .map((entry) => {
             const spell = allCards.find((candidate) => candidate.spellCardId === entry.spellCardId);
@@ -668,7 +679,7 @@ export function MageWarsSpellbookBuilderPanel({
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-[9.5rem_6.25rem_8.25rem_5.75rem_6.25rem_minmax(0,1fr)] items-center gap-1.5 border-b border-stone-100/15 bg-black/15 px-2 py-1.5" aria-label={t('spellbookBuilder.filterAria')}>
+                        <div className="grid grid-cols-[9.5rem_6.25rem_8.25rem_5.75rem_6.25rem_6.25rem] items-center gap-1.5 border-b border-stone-100/15 bg-black/15 px-2 py-1.5" aria-label={t('spellbookBuilder.filterAria')}>
                             <label className="grid h-7 grid-cols-[1rem_minmax(0,1fr)] items-center gap-1.5 border border-stone-100/15 bg-white/[0.045] px-2">
                                 <span aria-hidden="true" className="relative h-3.5 w-3.5 opacity-75 before:absolute before:left-0 before:top-0 before:h-2.5 before:w-2.5 before:rounded-full before:border-2 before:border-current after:absolute after:bottom-0 after:right-0 after:h-0.5 after:w-1.5 after:rotate-45 after:bg-current" />
                                 <input
@@ -732,34 +743,23 @@ export function MageWarsSpellbookBuilderPanel({
                                 <option value="inBook">{t('spellbookBuilder.legality.inBook')}</option>
                                 <option value="restricted">{t('spellbookBuilder.legality.restricted')}</option>
                             </select>
-                            <div className="flex min-w-0 gap-1.5 overflow-hidden" data-testid="mage-wars-spellbook-builder-scope-filters">
-                                {SCOPE_FILTERS.map((value) => {
-                                    const label = value === 'all'
-                                        ? t('spellbookBuilder.scope.all')
-                                        : value === 'inBook'
-                                            ? t('spellbookBuilder.scope.inBook')
-                                            : value === 'addable'
-                                                ? t('spellbookBuilder.scope.addable')
-                                                : t('spellbookBuilder.scope.wall');
-                                    return (
-                                        <button
-                                            key={value}
-                                            type="button"
-                                            className={cx(
-                                                'h-7 min-w-[3.9rem] border px-2 text-[0.6rem] font-black leading-none',
-                                                scopeFilter === value
-                                                    ? 'border-amber-200/70 bg-amber-300/15 text-stone-50'
-                                                    : 'border-white/15 bg-white/[0.045] text-stone-200/75',
-                                            )}
-                                            data-testid={`mage-wars-spellbook-builder-scope-${value}`}
-                                            aria-pressed={scopeFilter === value}
-                                            onClick={() => setScopeFilter(value)}
-                                        >
-                                            {label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            <select
+                                className="h-7 border border-stone-100/15 bg-[#211712] px-2 text-[0.66rem] font-bold"
+                                value={manaFilter}
+                                aria-label={t('spellbookBuilder.manaFilterAria')}
+                                data-testid="mage-wars-spellbook-builder-filter-mana"
+                                onChange={(event) => setManaFilter(event.currentTarget.value as ManaFilter)}
+                            >
+                                {MANA_FILTERS.map((value) => (
+                                    <option key={value} value={value}>
+                                        {value === 'all'
+                                            ? t('spellbookBuilder.manaFilter.all')
+                                            : value === 'x'
+                                                ? t('spellbookBuilder.manaFilter.variable')
+                                                : t('spellbookBuilder.manaFilter.range', { value })}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="min-h-0 overflow-auto p-2 scrollbar-thin" data-testid="mage-wars-spellbook-builder-card-pool">

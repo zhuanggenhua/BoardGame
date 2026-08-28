@@ -63,6 +63,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.schoolFilterAria': '学派筛选',
                 'spellbookBuilder.schoolAll': '学派 / 元素：全部',
                 'spellbookBuilder.levelFilterAria': '等级筛选',
+                'spellbookBuilder.manaFilterAria': '法力费用筛选',
                 'spellbookBuilder.statusFilterAria': '状态筛选',
                 'spellbookBuilder.cardStatusRestricted': '不可加入',
                 'spellbookBuilder.cardStatusAtLimit': '已达上限；先从清单移除',
@@ -81,6 +82,24 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.currentListLabel': '法术书清单',
                 'spellbookBuilder.none': '无',
                 'spellbookBuilder.close': '关闭',
+                'spellbookBuilder.type.all': '类型：全部',
+                'spellbookBuilder.type.attack': '攻击',
+                'spellbookBuilder.type.enchantment': '结界',
+                'spellbookBuilder.type.creature': '生物',
+                'spellbookBuilder.type.conjuration': '魔物',
+                'spellbookBuilder.type.incantation': '咒语',
+                'spellbookBuilder.type.equipment': '装备',
+                'spellbookBuilder.type.wall': '墙体',
+                'spellbookBuilder.level.all': '等级：全部',
+                'spellbookBuilder.legality.all': '状态：全部',
+                'spellbookBuilder.legality.addable': '可加入',
+                'spellbookBuilder.legality.inBook': '书内',
+                'spellbookBuilder.legality.restricted': '不可加入',
+                'spellbookBuilder.manaFilter.all': '法力：全部',
+                'spellbookBuilder.manaFilter.variable': '法力：X',
+                'spellbookBuilder.training.trained': '受训',
+                'spellbookBuilder.training.untrained': '未受训',
+                'spellbookBuilder.training.opposed': '相斥',
             };
             if (key === 'setup.mageSelection.spellbookCardSummary') return `${params?.count} 张 · ${params?.status}`;
             if (key === 'setup.mageSelection.spellbookCount') return `法术书 ${params?.count}`;
@@ -98,6 +117,8 @@ vi.mock('react-i18next', () => ({
             if (key === 'spellbookBuilder.visibleRange') return `显示 ${params?.range} / ${params?.total} 条`;
             if (key === 'spellbookBuilder.schoolTrainingSummary') return `${params?.schools} · ${params?.training}`;
             if (key === 'spellbookBuilder.pointsCompact') return `${params?.points}点`;
+            if (key === 'spellbookBuilder.level.value') return `等级：${params?.value}`;
+            if (key === 'spellbookBuilder.manaFilter.range') return `法力：${params?.value}`;
             if (key === 'spellbookBuilder.removeCardAria') return `移除 ${params?.name}`;
             if (key === 'spellbookBuilder.addCardAria') return `加入 ${params?.name}`;
             if (key === 'spellbookBuilder.status.saved') return `已保存 ${params?.name}`;
@@ -186,17 +207,28 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-filter-type')).toBeInTheDocument();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-filter-school')).toBeInTheDocument();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-filter-level')).toBeInTheDocument();
+        expect(within(builder).getByTestId('mage-wars-spellbook-builder-filter-mana')).toBeInTheDocument();
         expect(within(builder).getByTestId('mage-wars-spellbook-builder-filter-legality')).toBeInTheDocument();
 
         expect(builder.textContent).not.toMatch(/席位|\bP1\b|\bP2\b|xN|兽王标准书|当前法师：|当前法术书|当前法师法术书库|编辑当前书|更新当前副本|给当前书取名|新书从当前书|当前书内|详情|缺图|DIY 法术书|空白自组|还没有 DIY/u);
+        expect(builder.textContent).not.toMatch(/全部卡牌/u);
         expect(countText(builder, /法术点/g)).toBe(1);
         expect(countText(builder, /120\s*\/\s*120/g)).toBe(1);
         expect(countText(builder, /兽王/g)).toBeLessThanOrEqual(1);
+        const typeOptions = Array.from(
+            within(builder).getByTestId('mage-wars-spellbook-builder-filter-type').querySelectorAll('option'),
+        ).map((option) => option.textContent ?? '');
+        expect(typeOptions).toEqual(expect.arrayContaining(['类型：全部', '攻击', '结界', '生物', '魔物', '咒语', '装备', '墙体']));
+        const manaOptions = Array.from(
+            within(builder).getByTestId('mage-wars-spellbook-builder-filter-mana').querySelectorAll('option'),
+        ).map((option) => option.textContent ?? '');
+        expect(manaOptions).toEqual(expect.arrayContaining(['法力：全部', '法力：0-2', '法力：3-5', '法力：6-8', '法力：9+', '法力：X']));
         const schoolOptions = Array.from(
             within(builder).getByTestId('mage-wars-spellbook-builder-filter-school').querySelectorAll('option'),
         ).map((option) => option.textContent ?? '');
         expect(schoolOptions).toEqual(expect.arrayContaining(['自然', '火焰', '圣光', '黑暗']));
         expect(schoolOptions).not.toEqual(expect.arrayContaining(['蝙蝠', '手套', '靴子', '传送门', '胸甲']));
+        expect(builder.querySelector('[data-testid="mage-wars-spellbook-builder-scope-filters"]')).toBeNull();
         expect(builder.querySelectorAll('.mage-context[data-mage-detail-open]').length).toBe(1);
         expect(builder.querySelectorAll('[data-testid^="mage-wars-spellbook-builder-mage-option-"]').length).toBe(0);
         expect(builder.querySelector('.mage-detail-trigger')).toBeNull();

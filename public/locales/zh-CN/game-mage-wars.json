@@ -280,6 +280,7 @@
     "schoolFilterAria": "学派筛选",
     "schoolAll": "学派 / 元素：全部",
     "levelFilterAria": "等级筛选",
+    "manaFilterAria": "法力费用筛选",
     "statusFilterAria": "状态筛选",
     "cardStatusRestricted": "不可加入",
     "cardStatusAtLimit": "已达上限；先从清单移除",
@@ -315,23 +316,23 @@
       "creature": "生物",
       "conjuration": "魔物",
       "incantation": "咒语",
-      "equipment": "装备"
+      "equipment": "装备",
+      "wall": "墙体"
     },
     "level": {
       "all": "等级：全部",
       "value": "等级：{{value}}"
+    },
+    "manaFilter": {
+      "all": "法力：全部",
+      "range": "法力：{{value}}",
+      "variable": "法力：X"
     },
     "legality": {
       "all": "状态：全部",
       "addable": "可加入",
       "inBook": "书内",
       "restricted": "不可加入"
-    },
-    "scope": {
-      "all": "全部卡牌",
-      "inBook": "书内",
-      "addable": "可加入",
-      "wall": "墙体"
     },
     "training": {
       "trained": "受训",
