@@ -59,16 +59,25 @@ const CONTRACTS = {
       { id: 'p1-owner', label: '组书页 P1 主控', pattern: /\bP1\b/g },
       { id: 'p2-owner', label: '组书页 P2 主控', pattern: /\bP2\b/g },
       { id: 'missing-art', label: '缺图占位', pattern: /缺图/g },
+      { id: 'default-management-helper-copy', label: '默认态不显示管理说明文案', pattern: /标准起始书和命名副本同级/g },
+      { id: 'default-list-helper-copy', label: '默认态不显示右侧清单解释文案', pattern: /真实缩略、数量上限/g },
+      { id: 'default-scroll-helper-copy', label: '默认态不显示滚动说明文案', pattern: /滚动查看整本书/g },
+      { id: 'default-count-rule-copy', label: '默认态不显示数量规则说明块', pattern: /数量：1级/g },
+      { id: 'default-cost-rule-copy', label: '默认态不显示成本规则说明块', pattern: /成本：受训/g },
     ],
     forbiddenSelectors: [
       { id: 'standalone-detail-button', label: '独立详情按钮', selector: '.mage-detail-trigger' },
       { id: 'builder-mage-switcher', label: '组书页内部法师切换器', selector: '[data-testid^="mage-wars-spellbook-builder-mage-option-"], .mage-option' },
+      { id: 'default-expanded-library-panel', label: '默认态不得展开法术书库管理面板', selector: '.builder-library-panel' },
     ],
     requiredSelectors: [
+      { id: 'hearthstone-comparison-topbar', label: '成熟组牌式紧凑顶栏', selector: '.builder-topbar[data-hearthstone-comparison="card-pool-deck-list"]' },
       { id: 'selected-mage-context-opens-detail', label: '已选法师主控打开规则卡', selector: '.mage-context[data-mage-detail-open]' },
       { id: 'saved-spellbook-library', label: '同法师已保存法术书库', selector: '[data-testid="mage-wars-spellbook-builder-saved-library"]' },
-      { id: 'standard-spellbook-library-item', label: '标准起始书是法术书库同级项', selector: '[data-testid="mage-wars-spellbook-builder-standard"][data-library-kind="standard"]' },
+      { id: 'saved-spellbook-library-toggle', label: '法术书库按需展开入口', selector: '[data-testid="mage-wars-spellbook-builder-saved-library-toggle"]' },
       { id: 'spellpoint-capacity-owner', label: '顶部容量区总体法术点 owner', selector: '.capacity' },
+      { id: 'card-pool-grid', label: '主视觉卡池网格', selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]' },
+      { id: 'right-deck-list', label: '右侧法术书清单', selector: '[data-testid="mage-wars-spellbook-builder-current-list"]' },
     ],
     selectorForbidden: [
       {
