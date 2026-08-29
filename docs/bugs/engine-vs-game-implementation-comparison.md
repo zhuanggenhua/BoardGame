@@ -334,7 +334,7 @@ if (event.type === 'DAMAGE_DEALT') {
 
 ## 相关文档
 
-- [累计状态解决方案分析](../archive/reports/cumulative-state-solution-analysis.md)
+- [累计状态解决方案分析](../archive/reports/cumulative-state-solution-history.md)
 - [护盾撤回修复说明](./dicethrone/dicethrone-shield-undo-fix.md)
 - [累计状态污染分析](./undo-cumulative-state-pattern.md)
 - [引擎系统规范](../../.spec/knowledge/standards/engine-systems.md)
