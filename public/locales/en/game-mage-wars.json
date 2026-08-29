@@ -175,7 +175,8 @@
     "guardCreature": "Guard",
     "attack": "Basic attack",
     "attackCreature": "Creature attack",
-    "endTurn": "End Turn"
+    "endTurn": "End Turn",
+    "close": "Close"
   },
   "interaction": {
     "mageAbilityStatusChoice": {

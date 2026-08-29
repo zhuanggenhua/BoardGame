@@ -175,7 +175,8 @@
     "guardCreature": "进行守卫",
     "attack": "基础攻击",
     "attackCreature": "生物攻击",
-    "endTurn": "回合结束"
+    "endTurn": "回合结束",
+    "close": "关闭"
   },
   "interaction": {
     "mageAbilityStatusChoice": {
