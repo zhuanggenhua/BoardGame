@@ -119,6 +119,10 @@ const legacyDiceThroneEmoteCompressedPaths = new Set([
     'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
     'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
 ]);
+const nonRuntimeDiceThroneCompressedPaths = new Set([
+    'i18n/zh-CN/dicethrone/images/tianshi/compressed/cards.webp',
+]);
+const diceThronePublicCropPathPattern = /(?:^|\/)dicethrone\/images\/[^/]+\/crops\//;
 const legacySmashUpAtlasConfigPaths = new Set([
     'atlas-configs/smashup/2833984701.json',
 ]);
@@ -273,6 +277,13 @@ const isCompressedDeliveryPath = (relativePath: string, gameId?: string) => {
     }
 
     if (gameId === 'smashup' && legacySmashUpAtlasConfigPaths.has(normalized)) {
+        return false;
+    }
+
+    if (
+        gameId === 'dicethrone'
+        && (nonRuntimeDiceThroneCompressedPaths.has(normalized) || diceThronePublicCropPathPattern.test(normalized))
+    ) {
         return false;
     }
 
@@ -585,16 +596,20 @@ describe('Android 游戏包素材内容', () => {
             .filter((relativePath) => isCompressedDeliveryPath(relativePath, 'dicethrone'));
 
         const rawImageFiles = diceThronePackageFiles.filter((relativePath) => /\.(?:png|jpe?g)$/i.test(relativePath));
+        const publicCropFiles = diceThronePackageFiles.filter((relativePath) => diceThronePublicCropPathPattern.test(relativePath));
         const totalBytes = diceThronePackageFiles.reduce((sum, relativePath) => {
             return sum + getMetadata(relativePath).size;
         }, 0);
 
         expect(rawImageFiles).toEqual([]);
+        expect(publicCropFiles).toEqual([]);
         expect(totalBytes).toBeLessThan(50 * 1024 * 1024);
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp');
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v2.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp');
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v2.webp');
+        expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/images/tianshi/compressed/cards.webp');
+        expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/images/tianshi/compressed/ability-cards.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/images/cursed/compressed/玩家面板.webp');
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/images/cursed/compressed/player-board.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/images/artificial/compressed/手牌.webp');

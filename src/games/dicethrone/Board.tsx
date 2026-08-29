@@ -109,7 +109,7 @@ import { InteractionOverlay } from './ui/InteractionOverlay';
 import { ChoiceModal } from './ui/ChoiceModal';
 import { DefenderChoiceModal } from './ui/DefenderChoiceModal';
 import { canRerollBonusDiceSettlement } from './domain/bonusDiceSettlement';
-import { getCurrentDamageSummary } from './domain/damageSummary';
+import { getCurrentDamageSummary, isPendingDamageBonusSettlement } from './domain/damageSummary';
 import {
     projectDiceThroneTokenResponseChoiceContract,
     readDiceThroneTokenResponseChoiceContract,
@@ -699,6 +699,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const rollConfirmed = G.rollConfirmed;
     const isCompareRoll = G.currentRollContext?.kind === 'compare';
     const isCurrentBonusDiceSettlementActive = isCurrentBonusRollSettlement(G, G.pendingBonusDiceSettlement);
+    const hasUnsettledTokenResponseBonusDice = isPendingDamageBonusSettlement(G, G.pendingBonusDiceSettlement);
     
     // availableAbilityIds 计算：
     // 1. 响应窗口打开时，显示响应者的可用技能（不限于掷骰阶段）
@@ -841,7 +842,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return {
                 tokenIds: directTokenResponseIds,
                 onTokenClick: handleDirectTokenResponse,
-                onSkip: tokenResponseChoiceProjection && !tokenResponseChoiceProjection.skipAvailable
+                onSkip: hasUnsettledTokenResponseBonusDice
+                    ? undefined
+                    : tokenResponseChoiceProjection && !tokenResponseChoiceProjection.skipAvailable
                     ? undefined
                     : () => {
                         if (tokenResponseChoiceProjection?.skipCommand) {
@@ -880,6 +883,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         engineMoves,
         handleDirectTokenChoice,
         handleDirectTokenResponse,
+        hasUnsettledTokenResponseBonusDice,
         isTokenResponder,
         isTokenResponseInteraction,
         pendingDamage,
@@ -1421,6 +1425,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         && (
             !rawG.sys.interaction?.current
             || rawG.sys.interaction.current.kind === 'dt:bonus-dice'
+            || (
+                rawG.sys.interaction.current.kind === 'dt:token-response'
+                && hasUnsettledTokenResponseBonusDice
+            )
         )
     );
     const requiresManualBonusDiceSettlement = Boolean(rightTrayBonusDiceSettlement);

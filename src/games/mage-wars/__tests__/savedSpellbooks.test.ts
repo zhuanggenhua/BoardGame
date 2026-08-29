@@ -5,6 +5,7 @@ import {
     getMageWarsSavedSpellbookById,
     listMageWarsSavedSpellbooksForMage,
     loadMageWarsSavedSpellbooks,
+    MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
     MAGE_WARS_SAVED_SPELLBOOKS_STORAGE_KEY,
     normalizeMageWarsSavedSpellbookEntries,
     normalizeMageWarsSavedSpellbooks,
@@ -63,6 +64,33 @@ describe('Mage Wars saved spellbooks', () => {
             .toEqual(['兽王山猫书']);
         expect(listMageWarsSavedSpellbooksForMage(MAGE_IDS.PRIESTESS_APPRENTICE).map((spellbook) => spellbook.name))
             .toEqual(['女祭司骑士书']);
+    });
+
+    it('limits named spellbook saves to ten total books while still allowing updates', () => {
+        for (let index = 0; index < MAGE_WARS_SAVED_SPELLBOOK_LIMIT; index += 1) {
+            saveMageWarsSpellbookDraft({
+                mageId: index % 2 === 0 ? MAGE_IDS.BEASTMASTER_APPRENTICE : MAGE_IDS.PRIESTESS_APPRENTICE,
+                name: `命名法术书 ${index + 1}`,
+                entries: [{ spellCardId: 2906, count: 1 }],
+            });
+        }
+
+        expect(loadMageWarsSavedSpellbooks()).toHaveLength(MAGE_WARS_SAVED_SPELLBOOK_LIMIT);
+        expect(() => saveMageWarsSpellbookDraft({
+            mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+            name: '第十一本',
+            entries: [{ spellCardId: 2906, count: 1 }],
+        })).toThrow('最多保存 10 本法术书');
+
+        const [existing] = loadMageWarsSavedSpellbooks();
+        const updated = updateMageWarsSavedSpellbookDraft({
+            id: existing.id,
+            mageId: existing.mageId,
+            name: '第十本更新后仍可保存',
+            entries: [{ spellCardId: 2906, count: 2 }],
+        });
+        expect(updated.name).toBe('第十本更新后仍可保存');
+        expect(loadMageWarsSavedSpellbooks()).toHaveLength(MAGE_WARS_SAVED_SPELLBOOK_LIMIT);
     });
 
     it('loads, updates, and deletes a saved spellbook by id', () => {

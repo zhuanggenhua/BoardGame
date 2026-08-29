@@ -65,13 +65,14 @@ import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
 import { getPassiveActionTokenCosts, isPassiveActionUsable } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
-import { DICETHRONE_CHARACTER_CATALOG } from './core-types';
+import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getGameMode, isDiceThroneAiSeat } from './utils';
 import { canRemoveStatusFromPlayer, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
+import { isPendingDamageBonusSettlement } from './damageSummary';
 
 // ============================================================================
 // 验证函数
@@ -79,7 +80,7 @@ import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, r
 
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
-const SELECTABLE_CHARACTER_ID_SET = new Set<string>(DICETHRONE_CHARACTER_CATALOG.map(character => character.id));
+const SELECTABLE_CHARACTER_ID_SET = new Set<string>(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map(character => character.id));
 
 const validateCommandPendingDamageId = (
     pendingDamage: DiceThroneCore['pendingDamage'],
@@ -1478,6 +1479,9 @@ const validateSkipTokenResponse = (
 ): ValidationResult => {
     if (!state.pendingDamage) {
         return fail('no_pending_damage');
+    }
+    if (isPendingDamageBonusSettlement(state, state.pendingBonusDiceSettlement)) {
+        return fail('pending_bonus_dice_settlement');
     }
     const pendingDamageMismatch = validateCommandPendingDamageId(state.pendingDamage, cmd.payload);
     if (pendingDamageMismatch) return pendingDamageMismatch;

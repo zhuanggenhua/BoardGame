@@ -30,7 +30,6 @@ import {
     assertState,
     createHeroMatchup,
     advanceTo,
-    cancelPromptCommand,
 } from './test-utils';
 
 const advancePickpocketSamuraiToTokenResponseCommands = () => [
@@ -143,19 +142,10 @@ describe('破隐一击伤害计算 Bug 复现', () => {
         });
 
         expect(afterBackStrikeAndDamage.steps.every(step => step.success)).toBe(true);
-        expect(afterBackStrikeAndDamage.finalState.sys.phase).toBe('defensiveRoll');
-        expect(afterBackStrikeAndDamage.finalState.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+        expect(afterBackStrikeAndDamage.finalState.sys.phase).toBe('main2');
+        expect(afterBackStrikeAndDamage.finalState.sys.interaction.current).toBeUndefined();
 
-        const result = runner.run({
-            name: 'pickpocket + stand-tall + back-strike closes bonus dice display',
-            setup: () => afterBackStrikeAndDamage.finalState,
-            commands: [
-                cancelPromptCommand(afterBackStrikeAndDamage.finalState, '1', 'bonus-dice-display-ack'),
-            ],
-            expect: { turnPhase: 'main2' },
-        });
-
-        expect(result.steps.every(step => step.success)).toBe(true);
+        const result = afterBackStrikeAndDamage;
         expect(result.assertionErrors).toEqual([]);
         const core = result.finalState.core;
         expect(core.players['0'].resources[RESOURCE_IDS.CP]).toBe(9);

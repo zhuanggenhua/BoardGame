@@ -229,6 +229,8 @@ export interface EffectAction {
     // choice 相关
     choiceTitleKey?: string;
     choiceOptions?: ChoiceOption[];
+    /** 选择依赖的当前结算上下文，由效果解析器透传到 CHOICE_REQUESTED。 */
+    choiceContext?: Record<string, string | number | boolean>;
     // rollDie 相关
     diceCount?: number;
     conditionalEffects?: RollDieConditionalEffect[];

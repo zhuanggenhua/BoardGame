@@ -11,12 +11,17 @@ export const VAMPIRE_LORD_SFX_ULTIMATE = 'magic.general.modern_magic_sound_fx_pa
 const damage = (
     value: number,
     description: string,
-    opts?: { timing?: EffectTiming; unblockable?: boolean; damageScope?: 'attack' | 'direct' },
+    opts?: {
+        timing?: EffectTiming;
+        unblockable?: boolean;
+        target?: 'opponent' | 'allOpponents';
+        damageScope?: 'attack' | 'direct';
+    },
 ): AbilityEffect => ({
     description,
     action: {
         type: 'damage',
-        target: 'opponent',
+        target: opts?.target ?? 'opponent',
         value,
         ...(opts?.unblockable ? { unblockable: true } : {}),
         ...(opts?.damageScope ? { damageScope: opts.damageScope } : {}),
@@ -45,6 +50,26 @@ const healSelf = (value: number, description: string, timing: EffectTiming = 'pr
     description,
     action: { type: 'heal', target: 'self', value },
     timing,
+});
+
+const drawCard = (count: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
+    description,
+    action: { type: 'drawCard', target: 'self', drawCount: count },
+    timing,
+});
+
+const bloodPossessedChoice = (description: string): AbilityEffect => ({
+    description,
+    action: {
+        type: 'choice',
+        target: 'self',
+        choiceTitleKey: 'choices.vampireLordBloodPossessed.title',
+        choiceOptions: [
+            { customId: 'vampire-lord-blood-possessed-inflict-bleed', value: 1, labelKey: 'choices.vampireLordBloodPossessed.inflictBleed' },
+            { customId: 'vampire-lord-blood-possessed-gain-mesmerize', value: 1, labelKey: 'choices.vampireLordBloodPossessed.gainMesmerize' },
+        ],
+    },
+    timing: 'postDamage',
 });
 
 const replaceable = (
@@ -92,35 +117,135 @@ export const BLOODTHIRSTY_CLAWS_3: AbilityDef = {
 };
 
 export const MESMERIZE_POWER_2: AbilityDef = replaceable('mesmerize-power', 'mesmerize-power-2', 'mesmerize-power-2', { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3 } }, [
+    grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('mesmerize-power-2', 'gainEvasive')),
     grantToken(TOKEN_IDS.MESMERIZE, 1, abilityEffectText('mesmerize-power-2', 'gainMesmerize')),
-    damage(5, abilityEffectText('mesmerize-power-2', 'damage5')),
-], { sfxKey: VAMPIRE_LORD_SFX_LIGHT });
+    damage(5, abilityEffectText('mesmerize-power-2', 'damage5Unblockable'), { unblockable: true }),
+], { tags: ['unblockable'], sfxKey: VAMPIRE_LORD_SFX_LIGHT });
 
-export const BLOOD_FEAST_2: AbilityDef = replaceable('blood-feast', 'blood-feast-2', 'blood-feast-2', { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 3 } }, [
-    healSelf(2, abilityEffectText('blood-feast-2', 'heal2')),
+MESMERIZE_POWER_2.variants = [
+    {
+        id: 'mesmerize-power-2-main',
+        trigger: { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3 } },
+        effects: MESMERIZE_POWER_2.effects ?? [],
+        priority: 1,
+        tags: ['unblockable'],
+    },
+    {
+        id: 'mesmerize-power-2-soul-gaze',
+        name: abilityText('mesmerize-power-2-soul-gaze', 'name'),
+        description: abilityText('mesmerize-power-2-soul-gaze', 'description'),
+        trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 1, [FACE.MESMERIZE]: 2 } },
+        effects: [
+            grantToken(TOKEN_IDS.MESMERIZE, 1, abilityEffectText('mesmerize-power-2-soul-gaze', 'gainMesmerize')),
+            grantBleed(2, abilityEffectText('mesmerize-power-2-soul-gaze', 'bleed2')),
+        ],
+        priority: 0,
+    },
+];
+
+export const BLOOD_FEAST_2: AbilityDef = replaceable('blood-feast', 'blood-feast-2', 'blood-feast-2', { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3, [FACE.BLOOD_DROP]: 1 } }, [
+    healSelf(3, abilityEffectText('blood-feast-2', 'heal3')),
     grantToken(TOKEN_IDS.BLOOD_POWER, 3, abilityEffectText('blood-feast-2', 'gainBloodPower')),
-    damage(7, abilityEffectText('blood-feast-2', 'damage7')),
 ]);
+
+BLOOD_FEAST_2.variants = [
+    {
+        id: 'blood-feast-2-main',
+        trigger: { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3, [FACE.BLOOD_DROP]: 1 } },
+        effects: BLOOD_FEAST_2.effects ?? [],
+        priority: 1,
+    },
+    {
+        id: 'blood-feast-2-dressed-to-kill',
+        name: abilityText('blood-feast-2-dressed-to-kill', 'name'),
+        description: abilityText('blood-feast-2-dressed-to-kill', 'description'),
+        trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 1, [FACE.MESMERIZE]: 1, [FACE.BLOOD_DROP]: 2 } },
+        effects: [
+            grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-feast-2-dressed-to-kill', 'gainBloodPower')),
+            drawCard(1, abilityEffectText('blood-feast-2-dressed-to-kill', 'draw1')),
+        ],
+        priority: 0,
+    },
+];
 
 export const REND_CLAWS_2: AbilityDef = replaceable('rend-claws', 'rend-claws-2', 'rend-claws-2', { type: 'smallStraight' }, [
     grantBleed(1, abilityEffectText('rend-claws-2', 'bleed1')),
     damage(6, abilityEffectText('rend-claws-2', 'damage6')),
 ]);
 
-export const BLOOD_POSSESSED_2: AbilityDef = replaceable('blood-possessed', 'blood-possessed-2', 'blood-possessed-2', { type: 'largeStraight' }, [
-    grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-possessed-2', 'gainBloodPower')),
+export const BLOOD_POSSESSED_2: AbilityDef = replaceable('blood-possessed', 'blood-possessed-2', 'blood-possessed-2', { type: 'smallStraight' }, [
     damage(8, abilityEffectText('blood-possessed-2', 'damage8')),
+    bloodPossessedChoice(abilityEffectText('blood-possessed-2', 'choice')),
 ]);
 
-export const BLOOD_THIRST_2: AbilityDef = replaceable('blood-thirst', 'blood-thirst-2', 'blood-thirst-2', { type: 'largeStraight' }, [
-    grantBleed(2, abilityEffectText('blood-thirst-2', 'bleed2')),
-    damage(6, abilityEffectText('blood-thirst-2', 'damage6')),
-]);
+BLOOD_POSSESSED_2.variants = [
+    {
+        id: 'blood-possessed-2-main',
+        trigger: { type: 'smallStraight' },
+        effects: BLOOD_POSSESSED_2.effects ?? [],
+        priority: 1,
+    },
+    {
+        id: 'blood-possessed-2-blood-addiction',
+        name: abilityText('blood-possessed-2-blood-addiction', 'name'),
+        description: abilityText('blood-possessed-2-blood-addiction', 'description'),
+        trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 2, [FACE.BLOOD_DROP]: 1 } },
+        effects: [grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-possessed-2-blood-addiction', 'gainBloodPower'))],
+        priority: 0,
+    },
+];
 
-export const BLOOD_MAGIC_2: AbilityDef = replaceable('blood-magic', 'blood-magic-2', 'blood-magic-2', { type: 'smallStraight' }, [
+export const BLOOD_THIRST_2: AbilityDef = replaceable('blood-thirst', 'blood-thirst-2', 'blood-thirst-2', { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 4 } }, [
+    grantToken(TOKEN_IDS.BLOOD_POWER, 3, abilityEffectText('blood-thirst-2', 'gainBloodPower')),
+    damage(6, abilityEffectText('blood-thirst-2', 'damage6Unblockable'), { unblockable: true }),
+], { tags: ['unblockable'] });
+
+BLOOD_THIRST_2.variants = [
+    {
+        id: 'blood-thirst-2-main',
+        trigger: { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 4 } },
+        effects: BLOOD_THIRST_2.effects ?? [],
+        priority: 1,
+        tags: ['unblockable'],
+    },
+    {
+        id: 'blood-thirst-2-blood-river',
+        name: abilityText('blood-thirst-2-blood-river', 'name'),
+        description: abilityText('blood-thirst-2-blood-river', 'description'),
+        trigger: { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 3 } },
+        effects: [
+            grantBleed(2, abilityEffectText('blood-thirst-2-blood-river', 'bleed2')),
+            damage(2, abilityEffectText('blood-thirst-2-blood-river', 'collateral2'), { target: 'allOpponents', damageScope: 'direct' }),
+        ],
+        priority: 0,
+        tags: ['unblockable'],
+    },
+];
+
+export const BLOOD_MAGIC_2: AbilityDef = replaceable('blood-magic', 'blood-magic-2', 'blood-magic-2', { type: 'largeStraight' }, [
     grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-magic-2', 'gainBloodPower')),
-    damage(8, abilityEffectText('blood-magic-2', 'damage8')),
-]);
+    grantBleed(1, abilityEffectText('blood-magic-2', 'bleed1')),
+    damage(8, abilityEffectText('blood-magic-2', 'damage8Unblockable'), { unblockable: true }),
+], { tags: ['unblockable'], sfxKey: VAMPIRE_LORD_SFX_LIGHT });
+
+BLOOD_MAGIC_2.variants = [
+    {
+        id: 'blood-magic-2-main',
+        trigger: { type: 'largeStraight' },
+        effects: BLOOD_MAGIC_2.effects ?? [],
+        priority: 1,
+        tags: ['unblockable'],
+    },
+    {
+        id: 'blood-magic-2-flayed',
+        name: abilityText('blood-magic-2-flayed', 'name'),
+        description: abilityText('blood-magic-2-flayed', 'description'),
+        trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 2, [FACE.BLOOD_DROP]: 2 } },
+        effects: [damage(5, abilityEffectText('blood-magic-2-flayed', 'damage5Unblockable'), { unblockable: true })],
+        priority: 0,
+        tags: ['unblockable'],
+    },
+];
 
 export const UNDYING_2: AbilityDef = replaceable('undying', 'undying-2', 'undying-2', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 }, [
     damage(1, abilityEffectText('undying-2', 'counter1'), { timing: 'withDamage', damageScope: 'direct' }),

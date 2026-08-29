@@ -113,6 +113,8 @@ export interface CharacterDefinition {
     id: SelectableCharacterId;
     nameKey: string;
     setupOptionStatus?: AiSetupOptionStatus;
+    /** 状态原因；会透传给共享 AI 过滤诊断。 */
+    setupOptionStatusReason?: string;
     badges?: import('../../../core/ui').CharacterBadgeDef[];
     /** 是否存在需要在选角与对局中展示的运行时提示卡。默认 true。 */
     hasTipBoard?: boolean;
@@ -162,9 +164,18 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     {
         id: 'vampire_lord',
         nameKey: 'characters.vampire_lord',
-        setupOptionStatus: 'in_progress',
+        setupOptionStatus: 'hidden',
+        setupOptionStatusReason: 'Dice Throne 角色未完成实施与审计，暂不对玩家开放',
     },
 ].map(withDerivedCharacterBadges);
+
+export function isDiceThroneCharacterVisibleInPlayerCatalog(character: CharacterDefinition): boolean {
+    return character.setupOptionStatus !== 'hidden';
+}
+
+export const DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG: CharacterDefinition[] = (
+    DICETHRONE_CHARACTER_CATALOG.filter(isDiceThroneCharacterVisibleInPlayerCatalog)
+);
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
     DICETHRONE_CHARACTER_CATALOG.map((character) => [character.id, character.nameKey]),
@@ -995,6 +1006,16 @@ export interface DiceThroneCore {
      * key: playerId -> tokenId -> true。
      */
     treantSpiritSpentThisTurn?: Record<PlayerId, Record<string, true>>;
+    /**
+     * 被动动作每回合限用记录。
+     * key: playerId -> passive action use key -> true。
+     */
+    passiveActionUsedThisTurn?: Record<PlayerId, Record<string, true>>;
+    /**
+     * 吸血鬼领主本回合结束时待获得鲜血之力。
+     * 条件由攻击结算记录，实际 TOKEN_GRANTED 在弃牌阶段退出时发出。
+     */
+    vampireLordBloodPowerEndTurnPending?: Record<PlayerId, true>;
 }
 
 // ============================================================================

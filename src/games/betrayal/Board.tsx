@@ -5023,6 +5023,12 @@ function ExplorerTraitOutcomePreview({
   locale,
   t,
   testIdPrefix,
+  selected = false,
+  disabled = false,
+  selectedCount,
+  locked,
+  ariaLabel,
+  onClick,
 }: {
   explorer: BetrayalExplorerSummary;
   trait: BetrayalTraitKey;
@@ -5032,23 +5038,31 @@ function ExplorerTraitOutcomePreview({
   locale: string;
   t: ReturnType<typeof useTranslation>["t"];
   testIdPrefix: string;
+  selected?: boolean;
+  disabled?: boolean;
+  selectedCount?: number;
+  locked?: boolean;
+  ariaLabel?: string;
+  onClick?: () => void;
 }) {
   const track = resolveExplorerTraitTrack(explorer, trait);
   const currentPosition = clampTraitTrackPosition(track);
   const floorPosition = resolveTraitDamageFloorPosition(track, phase);
+  const requestedSteps = Math.max(0, stepCount);
   const targetPosition =
     mode === "heal"
       ? currentPosition < track.startPosition
         ? Math.min(track.startPosition, track.maxPosition)
         : currentPosition
-      : Math.max(floorPosition, currentPosition - Math.max(0, stepCount));
+      : Math.max(floorPosition, currentPosition - requestedSteps);
   const actualSteps = Math.abs(targetPosition - currentPosition);
   const currentValue = resolveTraitTrackValueAtPosition(track, currentPosition);
   const targetValue = resolveTraitTrackValueAtPosition(track, targetPosition);
   const slots = resolveTraitTrackSlots(track);
   const currentPercent = resolveTrackPositionPercent(slots, currentPosition);
   const targetPercent = resolveTrackPositionPercent(slots, targetPosition);
-  const isLockedForDamage = mode === "damage" && actualSteps === 0;
+  const isLockedForDamage = mode === "damage" && currentPosition <= floorPosition;
+  const isInteractive = typeof onClick === "function";
   const outcomeLabel =
     mode === "heal"
       ? actualSteps > 0
@@ -5056,28 +5070,36 @@ function ExplorerTraitOutcomePreview({
         : t("board.traitPreview.noChange")
       : actualSteps > 0
         ? t("board.traitPreview.damageSteps", { count: actualSteps })
-        : t("board.traitPreview.locked");
+        : isLockedForDamage
+          ? t("board.traitPreview.locked")
+          : t("board.traitPreview.noChange");
   const valueFlowLabel = t("board.traitPreview.valueFlow", {
     from: currentValue,
     to: targetValue,
   });
-
-  return (
-    <div
-      data-testid={`${testIdPrefix}-${trait}`}
-      data-trait-preview-mode={mode}
-      data-trait-preview-current-position={currentPosition}
-      data-trait-preview-target-position={targetPosition}
-      data-trait-preview-step-count={actualSteps}
-      data-trait-preview-current-value={currentValue}
-      data-trait-preview-target-value={targetValue}
-      data-trait-preview-locked={isLockedForDamage ? "true" : "false"}
-      className={`grid gap-1.5 rounded-[8px] border px-2.5 py-2 ${
-        isLockedForDamage
-          ? "border-[rgba(115,54,47,0.56)] bg-[rgba(48,19,18,0.48)]"
-          : "border-[rgba(211,179,109,0.28)] bg-[rgba(13,16,13,0.46)]"
-      }`}
-    >
+  const previewClassName = `grid gap-1.5 rounded-[8px] border px-2.5 py-2 text-left transition ${
+    isLockedForDamage
+      ? "border-[rgba(115,54,47,0.56)] bg-[rgba(48,19,18,0.48)]"
+      : selected
+        ? `${TRAIT_CHOICE_TONE_CLASS[trait].selected} shadow-[0_0_18px_rgba(214,181,109,0.20)]`
+        : "border-[rgba(211,179,109,0.28)] bg-[rgba(13,16,13,0.46)]"
+  } ${
+    isInteractive
+      ? "pointer-events-auto w-full min-w-0 cursor-pointer hover:border-[rgba(211,179,109,0.54)] hover:bg-[rgba(209,176,95,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:bg-[rgba(13,15,11,0.28)] disabled:text-[#7a6a4a] disabled:shadow-none"
+      : ""
+  }`;
+  const previewAttributes = {
+    "data-testid": `${testIdPrefix}-${trait}`,
+    "data-trait-preview-mode": mode,
+    "data-trait-preview-current-position": currentPosition,
+    "data-trait-preview-target-position": targetPosition,
+    "data-trait-preview-step-count": actualSteps,
+    "data-trait-preview-current-value": currentValue,
+    "data-trait-preview-target-value": targetValue,
+    "data-trait-preview-locked": isLockedForDamage ? "true" : "false",
+  };
+  const previewContent = (
+    <>
       <div className="flex min-w-0 items-center justify-between gap-2">
         <span className={`inline-flex min-w-0 items-center gap-1.5 text-[11px] font-bold ${TRAIT_TONE_CLASS[trait].text}`}>
           <OptimizedImage
@@ -5181,6 +5203,33 @@ function ExplorerTraitOutcomePreview({
       <div className="text-[10px] font-semibold text-[#cbb37d]">
         {valueFlowLabel}
       </div>
+    </>
+  );
+
+  if (isInteractive) {
+    return (
+      <button
+        type="button"
+        {...previewAttributes}
+        data-damage-selected-count={selectedCount}
+        data-damage-locked={(locked ?? isLockedForDamage) ? "true" : "false"}
+        aria-label={
+          ariaLabel ??
+          `${TRAIT_LABEL_LOCAL[trait]}：${valueFlowLabel}，${outcomeLabel}`
+        }
+        aria-pressed={selected}
+        disabled={disabled}
+        onClick={onClick}
+        className={previewClassName}
+      >
+        {previewContent}
+      </button>
+    );
+  }
+
+  return (
+    <div {...previewAttributes} className={previewClassName}>
+      {previewContent}
     </div>
   );
 }
@@ -6394,28 +6443,18 @@ function RecentRollPanel({
         ? t("board.status.damageKindPhysical")
         : t("board.status.damageKindMental");
     const rollsLabel = damage.rolls.join(" / ");
+    const resultLabel = t("board.roll.eventDamageResult", {
+      diceCount: damage.rolls.length,
+      rolls: rollsLabel,
+      total: damage.total,
+      applied: damage.appliedAmount,
+      kind: damageKindLabel,
+    });
     return {
       ...damage,
       rollsLabel,
-      visibleLabel: showEventDamageDiceStage
-        ? t("board.roll.eventDamagePendingAllocation", {
-            applied: damage.appliedAmount,
-            kind: damageKindLabel,
-          })
-        : t("board.roll.eventDamageResult", {
-            diceCount: damage.rolls.length,
-            rolls: rollsLabel,
-            total: damage.total,
-            applied: damage.appliedAmount,
-            kind: damageKindLabel,
-          }),
-      srLabel: t("board.roll.eventDamageResult", {
-        diceCount: damage.rolls.length,
-        rolls: rollsLabel,
-        total: damage.total,
-        applied: damage.appliedAmount,
-        kind: damageKindLabel,
-      }),
+      visibleLabel: resultLabel,
+      srLabel: resultLabel,
     };
   });
   const visibleDiceSubtotal = showEventDamageDiceStage
@@ -6493,13 +6532,7 @@ function RecentRollPanel({
       className={`h-full w-full min-w-0 ${diceClassName ?? ""}`}
     />
   );
-  const diceStagePromptLabel =
-    rerollSelection?.promptLabel ??
-    (showEventDamageDiceStage
-      ? t("board.roll.eventDamageDiceStage", {
-          count: eventDamageDiceForStage.length,
-        })
-      : "");
+  const diceStagePromptLabel = rerollSelection?.promptLabel ?? "";
   const shouldShowDiceStagePrompt = Boolean(diceStagePromptLabel);
   const diceStageWithPrompt = (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-visible">
@@ -6517,11 +6550,18 @@ function RecentRollPanel({
       {diceStage}
     </div>
   );
+  const shouldShowVisibleSource = showSource && !showEventDamageDiceStage;
+  const shouldShowVisibleRollLabel = showRollLabel && !showEventDamageDiceStage;
+  const shouldShowPrimaryOutcome =
+    showOutcome && !showEventDamageDiceStage;
+  const shouldShowEventDamageVisibleSummary =
+    showOutcome && eventDamageSummaries.length > 0 && !showEventDamageDiceStage;
   const showResultCopy = Boolean(
     actorLabel ||
-      showSource ||
-      showRollLabel ||
-      showOutcome ||
+      shouldShowVisibleSource ||
+      shouldShowVisibleRollLabel ||
+      shouldShowPrimaryOutcome ||
+      shouldShowEventDamageVisibleSummary ||
       (showBreakdown && attackComparisonText),
   );
   const actionSlotBelowResult = Boolean(actionSlot && openTable && !denseResult);
@@ -6618,17 +6658,17 @@ function RecentRollPanel({
             <span className="truncate">{actorLabel}</span>
           </div>
         ) : null}
-        {showSource ? (
+        {shouldShowVisibleSource ? (
           <div className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">
             {roll.sourceTitle}
           </div>
         ) : null}
-        {showRollLabel ? (
+        {shouldShowVisibleRollLabel ? (
           <div className="mt-0.5 truncate text-[12px] font-semibold text-[#d8c38b]">
             {roll.rollLabel ?? t("board.roll.fallbackLabel")}
           </div>
         ) : null}
-        {showOutcome ? (
+        {shouldShowPrimaryOutcome ? (
           <div
             data-testid="betrayal-recent-roll-outcome"
             data-result-role="outcome-primary"
@@ -6651,7 +6691,7 @@ function RecentRollPanel({
             {attackComparisonText}
           </div>
         ) : null}
-        {showOutcome && eventDamageSummaries.length > 0 ? (
+        {shouldShowEventDamageVisibleSummary ? (
           <div
             data-testid="betrayal-recent-roll-effect-damage"
             className={`mt-1 grid max-w-full gap-0.5 font-semibold text-[#f0d99a] ${
@@ -6712,7 +6752,7 @@ function RecentRollPanel({
       {showSource ? <span>{roll.sourceTitle}</span> : null}
       {showRollLabel ? (
         <span>{roll.rollLabel ?? t("board.roll.fallbackLabel")}</span>
-      ) : roll.rollLabel ? (
+      ) : roll.rollLabel && !showEventDamageDiceStage ? (
         <span>{roll.rollLabel}</span>
       ) : null}
       <span>{bonusText}</span>
@@ -6724,7 +6764,7 @@ function RecentRollPanel({
       ))}
       <span>{rollDetailText}</span>
       <span>{totalLabel}</span>
-      {showOutcome ? <span>{primaryOutcomeLabel}</span> : null}
+      {shouldShowPrimaryOutcome ? <span>{primaryOutcomeLabel}</span> : null}
     </div>
   );
 
@@ -17252,7 +17292,7 @@ export default function BetrayalBoard({
 
                       <div
                         data-testid="betrayal-damage-allocation-traits"
-                        className="flex flex-wrap gap-3"
+                        className="grid grid-cols-2 gap-2.5"
                       >
                         {pendingDamageAllocationAllowedTraits.map((trait) => {
                           const selectedDamageTraitCount =
@@ -17276,64 +17316,28 @@ export default function BetrayalBoard({
                               (maxDamageTraitCount <= 0 ||
                                 selectedDamageAllocationTraits.length >=
                                   pendingDamageAllocation.amount));
-                          const damageTraitButtonLabel =
-                            selectedDamageTraitCount > 0
-                              ? t("board.status.damageAllocationTraitAssigned", {
-                                  trait: TRAIT_LABEL_LOCAL[trait],
-                                  count: selectedDamageTraitCount,
-                                })
-                              : TRAIT_LABEL_LOCAL[trait];
                           return (
-                            <BetrayalSelectionChip
-                              key={trait}
-                              type="button"
+                            <ExplorerTraitOutcomePreview
+                              key={`pending-damage-preview-${trait}`}
+                              explorer={pendingDamageExplorer}
+                              trait={trait}
+                              mode="damage"
+                              phase={pendingDamageAllocationPhase}
+                              stepCount={selectedDamageTraitCount}
+                              locale={effectiveLocale}
+                              t={t}
+                              testIdPrefix="betrayal-damage-allocation-trait"
+                              selected={isSelectedDamageTrait}
+                              disabled={isDamageTraitDisabled}
+                              selectedCount={selectedDamageTraitCount}
+                              locked={maxDamageTraitCount <= 0}
+                              ariaLabel={`${TRAIT_LABEL_LOCAL[trait]}：${selectedDamageTraitCount > 0 ? t("board.traitPreview.damageSteps", { count: selectedDamageTraitCount }) : t("board.traitPreview.noChange")}`}
                               onClick={() =>
                                 handleToggleDamageAllocationTrait(trait)
                               }
-                              disabled={isDamageTraitDisabled}
-                              data-testid={`betrayal-damage-allocation-trait-${trait}`}
-                              data-damage-selected-count={
-                                selectedDamageTraitCount
-                              }
-                              data-damage-locked={
-                                maxDamageTraitCount <= 0 ? "true" : "false"
-                              }
-                              selected={isSelectedDamageTrait}
-                              selectedClassName={
-                                TRAIT_CHOICE_TONE_CLASS[trait].selected
-                              }
-                              idleClassName={
-                                TRAIT_CHOICE_TONE_CLASS[trait].idle
-                              }
-                              className="min-h-[64px] min-w-[184px] px-5 py-3 text-[18px] tracking-[0.04em]"
-                              aria-label={damageTraitButtonLabel}
-                            >
-                              {damageTraitButtonLabel}
-                            </BetrayalSelectionChip>
+                            />
                           );
                         })}
-                      </div>
-
-                      <div
-                        data-testid="betrayal-damage-allocation-preview"
-                        className="grid grid-cols-2 gap-2.5"
-                      >
-                        {pendingDamageAllocationAllowedTraits.map((trait) => (
-                          <ExplorerTraitOutcomePreview
-                            key={`pending-damage-preview-${trait}`}
-                            explorer={pendingDamageExplorer}
-                            trait={trait}
-                            mode="damage"
-                            phase={pendingDamageAllocationPhase}
-                            stepCount={countSelectedDamageTrait(
-                              selectedDamageAllocationTraits,
-                              trait,
-                            )}
-                            locale={effectiveLocale}
-                            t={t}
-                            testIdPrefix="betrayal-damage-allocation-preview"
-                          />
-                        ))}
                       </div>
 
                       <div className="flex justify-end">
@@ -17670,8 +17674,8 @@ export default function BetrayalBoard({
                             <div
                               className={
                                 isPhoneLandscapeLayout
-                                  ? "flex flex-wrap gap-3"
-                                  : "flex flex-wrap gap-4"
+                                  ? "grid grid-cols-2 gap-2"
+                                  : "grid grid-cols-2 gap-2.5"
                               }
                             >
                               {pendingEventDamageChoice.allowedTraits.map(
@@ -17695,69 +17699,27 @@ export default function BetrayalBoard({
                                       selectedEventDamageTraits.length >=
                                         pendingEventDamageChoice.amount);
                                   return (
-                                    <BetrayalSelectionChip
-                                      key={trait}
-                                      type="button"
+                                    <ExplorerTraitOutcomePreview
+                                      key={`damage-preview-${trait}`}
+                                      explorer={core.currentExplorer}
+                                      trait={trait}
+                                      mode="damage"
+                                      phase={core.phase}
+                                      stepCount={selectedDamageTraitCount}
+                                      locale={effectiveLocale}
+                                      t={t}
+                                      testIdPrefix="betrayal-event-choice-damage"
+                                      selected={isSelectedDamageTrait}
+                                      disabled={isDamageTraitDisabled}
+                                      selectedCount={selectedDamageTraitCount}
+                                      locked={maxDamageTraitCount <= 0}
+                                      ariaLabel={`${TRAIT_LABEL_LOCAL[trait]}：${selectedDamageTraitCount > 0 ? t("board.traitPreview.damageSteps", { count: selectedDamageTraitCount }) : t("board.traitPreview.noChange")}`}
                                       onClick={() =>
                                         handleToggleEventDamageTrait(trait)
                                       }
-                                      disabled={isDamageTraitDisabled}
-                                      data-testid={`betrayal-event-choice-damage-${trait}`}
-                                      data-damage-selected-count={
-                                        selectedDamageTraitCount
-                                      }
-                                      data-damage-locked={
-                                        maxDamageTraitCount <= 0
-                                          ? "true"
-                                          : "false"
-                                      }
-                                      selected={isSelectedDamageTrait}
-                                      selectedClassName={
-                                        TRAIT_CHOICE_TONE_CLASS[trait].selected
-                                      }
-                                      idleClassName={
-                                        TRAIT_CHOICE_TONE_CLASS[trait].idle
-                                      }
-                                      className={
-                                        isPhoneLandscapeLayout
-                                          ? "!min-h-[44px] !min-w-[92px] !px-4 !py-2 !text-[16px]"
-                                          : ""
-                                      }
-                                    >
-                                      {TRAIT_LABEL_LOCAL[trait]}
-                                      {selectedDamageTraitCount > 0
-                                        ? ` ×${selectedDamageTraitCount}`
-                                        : ""}
-                                    </BetrayalSelectionChip>
+                                    />
                                   );
                                 },
-                              )}
-                            </div>
-                            <div
-                              data-testid="betrayal-event-damage-preview"
-                              className={
-                                isPhoneLandscapeLayout
-                                  ? "grid grid-cols-2 gap-2"
-                                  : "grid grid-cols-2 gap-2.5"
-                              }
-                            >
-                              {pendingEventDamageChoice.allowedTraits.map(
-                                (trait) => (
-                                  <ExplorerTraitOutcomePreview
-                                    key={`damage-preview-${trait}`}
-                                    explorer={core.currentExplorer}
-                                    trait={trait}
-                                    mode="damage"
-                                    phase={core.phase}
-                                    stepCount={countSelectedDamageTrait(
-                                      selectedEventDamageTraits,
-                                      trait,
-                                    )}
-                                    locale={effectiveLocale}
-                                    t={t}
-                                    testIdPrefix="betrayal-event-damage-preview"
-                                  />
-                                ),
                               )}
                             </div>
                           </div>

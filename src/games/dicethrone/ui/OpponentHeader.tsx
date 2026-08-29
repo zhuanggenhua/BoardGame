@@ -292,6 +292,7 @@ export const OpponentHeader = ({
                                     maxPerRow={10}
                                     locale={locale}
                                     atlas={statusIconAtlas}
+                                    characterId={opponent.characterId}
                                     tokenDefinitions={tokenDefinitions}
                                     tokenStackLimits={opponent.tokenStackLimits}
                                     testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
@@ -302,6 +303,7 @@ export const OpponentHeader = ({
                                     maxPerRow={10}
                                     locale={locale}
                                     atlas={statusIconAtlas}
+                                    characterId={opponent.characterId}
                                     testIdPrefix={playerId ? `dt-player-${playerId}-status` : undefined}
                                 />
                             </div>

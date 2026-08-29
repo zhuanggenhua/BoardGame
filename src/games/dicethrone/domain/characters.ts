@@ -24,7 +24,7 @@ import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TO
 import { ARTIFICER_ABILITIES, ARTIFICER_TOKENS, ARTIFICER_INITIAL_TOKENS, ARTIFICER_PASSIVE_ABILITIES, getArtificerStartingDeck } from '../heroes/artificer';
 import { TIANSHI_ABILITIES, TIANSHI_TOKENS, TIANSHI_INITIAL_TOKENS, TIANSHI_INITIAL_STATUS_EFFECTS, getTianshiStartingDeck } from '../heroes/tianshi';
 import { LIEREN_ABILITIES, LIEREN_TOKENS, LIEREN_INITIAL_TOKENS, LIEREN_INITIAL_STATUS_EFFECTS, getLierenStartingDeck } from '../heroes/lieren';
-import { VAMPIRE_LORD_ABILITIES, VAMPIRE_LORD_TOKENS, VAMPIRE_LORD_INITIAL_TOKENS, VAMPIRE_LORD_INITIAL_STATUS_EFFECTS, getVampireLordStartingDeck } from '../heroes/vampire_lord';
+import { VAMPIRE_LORD_ABILITIES, VAMPIRE_LORD_TOKENS, VAMPIRE_LORD_INITIAL_TOKENS, VAMPIRE_LORD_INITIAL_STATUS_EFFECTS, VAMPIRE_LORD_PASSIVE_ABILITIES, getVampireLordStartingDeck } from '../heroes/vampire_lord';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -444,6 +444,7 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         },
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.VAMPIRE_LORD,
         statusAtlasPath: 'dicethrone/images/xixuegui/status-icons-atlas.json',
+        passiveAbilities: VAMPIRE_LORD_PASSIVE_ABILITIES,
     },
 };
 

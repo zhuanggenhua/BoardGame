@@ -718,8 +718,8 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
 
         expect(next.players['1'].tokens[TOKEN_IDS.HEAL_BOT]).toBe(1);
         expect(next.players['1'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(42);
-        expect(next.pendingDamage?.currentDamage).toBe(6);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(36);
+        expect(next.pendingDamage).toBeUndefined();
         expect(eventsOfType(events, 'BONUS_DIE_ROLLED')[0]?.payload.face).toBe('gear');
         expect(eventsOfType(settlementEvents, 'BONUS_DICE_SETTLED')).toHaveLength(1);
         expect(next.pendingBonusDiceSettlement).toBeUndefined();
@@ -779,8 +779,9 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
 
         expect(next.players['1'].tokens[TOKEN_IDS.HEAL_BOT]).toBe(1);
         expect(next.players['1'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(41);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(35);
         expect(eventsOfType(settlementEvents, 'BONUS_DICE_SETTLED')).toHaveLength(1);
+        expect(next.pendingDamage).toBeUndefined();
         expect(next.pendingBonusDiceSettlement).toBeUndefined();
         expect(next.players['1'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]).toMatchObject({
             built: true,
@@ -2499,7 +2500,8 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(confirmed.state.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(getCurrentInteractionId(confirmed.state)).toBeUndefined();
         expect(confirmed.state.sys.responseWindow?.current).toBeUndefined();
-        expect(confirmed.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(42);
+        expect(confirmed.state.core.pendingDamage).toBeUndefined();
+        expect(confirmed.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(36);
         expect(confirmed.state.core.players['0'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]).toMatchObject({
             built: true,
             upgraded: false,

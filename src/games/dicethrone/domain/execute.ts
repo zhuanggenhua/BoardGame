@@ -1190,6 +1190,7 @@ export function execute(
                         amount: tokenCost.amount,
                         newTotal: Math.max(0, currentTokenAmount - tokenCost.amount),
                         sourceAbilityId: passiveId,
+                        ...(action.oncePerTurnKey ? { passiveActionUseKey: action.oncePerTurnKey } : {}),
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -1209,7 +1210,7 @@ export function execute(
                 }));
             } else if (action.type === 'drawCard') {
                 events.push(
-                    ...buildDrawEvents(state, command.playerId, 1, random, command.type, timestamp + 1, passiveId)
+                    ...buildDrawEvents(state, command.playerId, action.drawCount ?? 1, random, command.type, timestamp + 1, passiveId)
                 );
             } else if (action.type === 'custom' && action.customActionId) {
                 const handler = getCustomActionHandler(action.customActionId);
@@ -1230,7 +1231,12 @@ export function execute(
                         state,
                         timestamp: timestamp + 1,
                         random,
-                        action: { type: 'custom', target: 'self', customActionId: action.customActionId },
+                        action: {
+                            type: 'custom',
+                            target: 'self',
+                            customActionId: action.customActionId,
+                            params: action.customActionParams,
+                        },
                     }));
                 }
             }

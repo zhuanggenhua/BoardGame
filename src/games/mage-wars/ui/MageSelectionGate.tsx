@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Plus } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import type { GameRuntimeLocalSetupGateProps } from '../../gameRuntimeAdapter';
 import {
@@ -19,6 +20,7 @@ import type { MageWarsPlayerSpellbookEntry } from '../domain/spellbook';
 import {
     deleteMageWarsSavedSpellbook,
     loadMageWarsSavedSpellbooks,
+    MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
     type MageWarsSavedSpellbook,
 } from '../domain/savedSpellbooks';
 import {
@@ -70,6 +72,9 @@ function MageWarsMageSelectionGateContent({
     const [seatSavedSpellbookIds, setSeatSavedSpellbookIds] = useState<[string | null, string | null]>([null, null]);
     const [activeSeatId, setActiveSeatId] = useState<SeatId>('0');
     const [builderOpen, setBuilderOpen] = useState(false);
+    const [builderStartAsNew, setBuilderStartAsNew] = useState(false);
+    const [builderSessionKey, setBuilderSessionKey] = useState(0);
+    const [newSpellbookMagePickerOpen, setNewSpellbookMagePickerOpen] = useState(false);
     const [savedLibraryRevision, setSavedLibraryRevision] = useState(0);
 
     const standardSpellbookOptions = useMemo<StandardSpellbookOption[]>(() => getMageWarsSelectableMageIds()
@@ -87,6 +92,7 @@ function MageWarsMageSelectionGateContent({
         void savedLibraryRevision;
         return loadMageWarsSavedSpellbooks();
     }, [savedLibraryRevision]);
+    const savedSpellbookLimitReached = savedSpellbooks.length >= MAGE_WARS_SAVED_SPELLBOOK_LIMIT;
     const activeSavedSpellbookId = seatSavedSpellbookIds[activeSeatIndex];
 
     const applyStandardSpellbookToActiveSeat = (mageId: MageId) => {
@@ -191,6 +197,27 @@ function MageWarsMageSelectionGateContent({
 
     const editSavedSpellbook = (saved: MageWarsSavedSpellbook) => {
         applySavedSpellbookToActiveSeat(saved);
+        setBuilderStartAsNew(false);
+        setBuilderSessionKey((value) => value + 1);
+        setBuilderOpen(true);
+    };
+
+    const openSelectedSpellbookBuilder = () => {
+        setBuilderStartAsNew(false);
+        setBuilderSessionKey((value) => value + 1);
+        setBuilderOpen(true);
+    };
+
+    const startNewSpellbookFromSelection = () => {
+        if (savedSpellbookLimitReached) return;
+        setNewSpellbookMagePickerOpen(true);
+    };
+
+    const startNewSpellbookForMage = (mageId: MageId) => {
+        selectStandardSpellbook(mageId);
+        setBuilderStartAsNew(true);
+        setBuilderSessionKey((value) => value + 1);
+        setNewSpellbookMagePickerOpen(false);
         setBuilderOpen(true);
     };
 
@@ -413,11 +440,7 @@ function MageWarsMageSelectionGateContent({
                                 );
                             })}
 
-                            {savedSpellbooks.length === 0 ? (
-                                <div className="rounded-[0.45rem] border border-dashed border-white/10 bg-black/24 px-4 py-5 text-sm font-semibold text-stone-200/58">
-                                    {t('setup.mageSelection.noNamedCopies')}
-                                </div>
-                            ) : savedSpellbooks.map((saved) => {
+                            {savedSpellbooks.map((saved) => {
                                 const setup = getPresetMageSetupFromConfig(saved.mageId);
                                 const cardCount = saved.entries.reduce((total, entry) => total + entry.count, 0);
                                 const selected = activeSavedSpellbookId === saved.id;
@@ -514,6 +537,45 @@ function MageWarsMageSelectionGateContent({
                                     </article>
                                 );
                             })}
+                            <button
+                                type="button"
+                                className={cx(
+                                    'group grid min-h-0 content-center justify-items-center rounded-[0.5rem] border-2 border-dashed bg-black/28 p-4 text-center shadow-[0_18px_42px_rgba(0,0,0,0.22)] transition',
+                                    savedSpellbookLimitReached
+                                        ? 'cursor-not-allowed border-white/10 text-stone-500 opacity-55'
+                                        : 'border-white/18 text-stone-100 hover:border-amber-300/65 hover:bg-amber-300/10',
+                                )}
+                                data-testid="mage-wars-mage-selection-new-spellbook-entry"
+                                data-library-kind="new"
+                                data-new-spellbook-mage-choice="required"
+                                data-saved-spellbook-count={savedSpellbooks.length}
+                                data-saved-spellbook-limit={MAGE_WARS_SAVED_SPELLBOOK_LIMIT}
+                                style={{ aspectRatio: magePreviewAspectRatio }}
+                                disabled={savedSpellbookLimitReached}
+                                aria-label={t('setup.mageSelection.newSpellbookAria')}
+                                title={t('setup.mageSelection.newSpellbookAria')}
+                                onClick={startNewSpellbookFromSelection}
+                            >
+                                <span className="grid h-16 w-16 place-items-center rounded-full border border-amber-200/45 bg-amber-300/10 text-amber-100 transition group-hover:border-amber-100/80">
+                                    <Plus size={32} strokeWidth={2.6} aria-hidden="true" />
+                                </span>
+                                <strong className="mt-4 block text-base font-black leading-tight text-amber-100">
+                                    {t('setup.mageSelection.newSpellbook')}
+                                </strong>
+                                <span
+                                    className="mt-2 block text-[0.72rem] font-black text-stone-200/70"
+                                    data-testid="mage-wars-mage-selection-saved-limit"
+                                >
+                                    {savedSpellbookLimitReached
+                                        ? t('setup.mageSelection.savedLimitReached', {
+                                            limit: MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
+                                        })
+                                        : t('setup.mageSelection.savedLimit', {
+                                            count: savedSpellbooks.length,
+                                            limit: MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
+                                        })}
+                                </span>
+                            </button>
                         </div>
                     </section>
 
@@ -580,22 +642,104 @@ function MageWarsMageSelectionGateContent({
                             type="button"
                             className="mt-5 rounded-[0.35rem] border border-amber-200/60 bg-amber-300 px-3 py-2.5 text-sm font-black text-stone-950 shadow-[0_10px_20px_rgba(0,0,0,0.32)] transition hover:bg-amber-200"
                             data-testid="mage-wars-open-spellbook-builder"
-                            onClick={() => setBuilderOpen(true)}
+                            onClick={openSelectedSpellbookBuilder}
                         >
                             {t('setup.mageSelection.editCurrentSpellbook')}
                         </button>
                     </aside>
                 </main>
             </div>
+            {newSpellbookMagePickerOpen ? (
+                <section
+                    className="fixed inset-0 z-50 grid place-items-center bg-black/72 p-10 backdrop-blur-[3px]"
+                    data-testid="mage-wars-new-spellbook-mage-picker"
+                    aria-label={t('setup.mageSelection.newSpellbookMageAria')}
+                >
+                    <div className="grid max-h-[calc(100vh-5rem)] w-[min(74rem,calc(100vw-5rem))] grid-rows-[auto_minmax(0,1fr)_auto] gap-4 overflow-hidden border border-amber-200/45 bg-[#180d08] p-5 shadow-[0_38px_90px_rgba(0,0,0,0.64)]">
+                        <header className="flex items-start justify-between gap-5 border-b border-white/12 pb-4">
+                            <div>
+                                <h2 className="m-0 text-2xl font-black leading-tight text-amber-100">
+                                    {t('setup.mageSelection.newSpellbookMageTitle')}
+                                </h2>
+                                <p className="mt-2 max-w-3xl text-sm font-semibold leading-relaxed text-stone-200/72">
+                                    {t('setup.mageSelection.newSpellbookMageDescription')}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                className="border border-white/15 bg-white/[0.06] px-4 py-2 text-sm font-black text-stone-100 hover:border-amber-200/55"
+                                data-testid="mage-wars-new-spellbook-mage-picker-cancel"
+                                onClick={() => setNewSpellbookMagePickerOpen(false)}
+                            >
+                                {t('spellbookBuilder.cancel')}
+                            </button>
+                        </header>
+                        <div
+                            className="grid min-h-0 grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-4 overflow-auto pr-1 scrollbar-thin"
+                            data-testid="mage-wars-new-spellbook-mage-picker-options"
+                        >
+                            {standardSpellbookOptions.map((option) => (
+                                <button
+                                    key={`new-spellbook-mage-${option.mageId}`}
+                                    type="button"
+                                    className="group grid min-h-0 grid-rows-[minmax(0,1fr)_auto] border border-white/14 bg-black/34 p-3 text-left transition hover:border-amber-200/65 hover:bg-amber-300/10 focus:outline-none focus:ring-2 focus:ring-amber-100"
+                                    data-testid={`mage-wars-new-spellbook-mage-option-${option.mageId}`}
+                                    data-mage-id={option.mageId}
+                                    data-library-kind="new-spellbook-mage"
+                                    aria-label={t('setup.mageSelection.newSpellbookMageOptionAria', {
+                                        mage: option.displayName,
+                                    })}
+                                    onClick={() => startNewSpellbookForMage(option.mageId)}
+                                >
+                                    <span
+                                        className="relative mx-auto block w-full max-w-[13rem] overflow-hidden bg-black/50"
+                                        style={{ aspectRatio: magePreviewAspectRatio }}
+                                    >
+                                        <CardPreview
+                                            previewRef={getMageWarsMagePreviewRef(option.mageId, 'portrait')}
+                                            className="h-full w-full object-contain transition duration-200 group-hover:scale-[1.025]"
+                                            title={option.displayName}
+                                            alt={option.displayName}
+                                        />
+                                    </span>
+                                    <span className="mt-3 block">
+                                        <strong className="block truncate text-base font-black leading-tight text-stone-50">
+                                            {option.displayName}
+                                        </strong>
+                                        <span className="mt-1 block truncate text-xs font-semibold text-stone-200/70">
+                                            {t('setup.mageSelection.newSpellbookMageDraftSource')}
+                                        </span>
+                                        <span className="mt-2 block text-[0.72rem] font-semibold text-stone-200/70">
+                                            {t('setup.mageSelection.spellbookCardSummary', {
+                                                count: option.spellbookCount,
+                                            })}
+                                        </span>
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ) : null}
             {builderOpen ? (
                 <MageWarsSpellbookBuilderPanel
+                    key={`${activeMageId}-${builderSessionKey}`}
                     mageId={activeMageId}
                     entries={seatSpellbookEntries[activeSeatIndex]}
                     activeSavedSpellbookId={activeSavedSpellbookId}
+                    startAsNewSpellbookDraft={builderStartAsNew}
                     onEntriesChange={updateActiveSpellbookEntries}
+                    onRequestNewSpellbookMage={startNewSpellbookFromSelection}
                     onSavedLibraryChange={refreshSavedLibrary}
-                    onSavedSpellbookChange={updateActiveSavedSpellbook}
-                    onClose={() => setBuilderOpen(false)}
+                    onSavedSpellbookChange={(saved) => {
+                        setBuilderStartAsNew(false);
+                        updateActiveSavedSpellbook(saved);
+                    }}
+                    onClose={() => {
+                        setBuilderOpen(false);
+                        setBuilderStartAsNew(false);
+                        setNewSpellbookMagePickerOpen(false);
+                    }}
                 />
             ) : null}
         </div>

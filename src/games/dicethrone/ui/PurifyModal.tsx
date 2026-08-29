@@ -129,6 +129,7 @@ export const PurifyModal: React.FC<PurifyModalProps> = ({
                                     size="normal"
                                     locale={locale}
                                     atlas={statusIconAtlas}
+                                    characterId={playerState.characterId}
                                 />
                             </div>
                         ))}

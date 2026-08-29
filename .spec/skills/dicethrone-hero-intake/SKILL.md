@@ -71,7 +71,7 @@ Dice Throne 资源常被 `.gitignore` 忽略，不能只看 `git status`。资�
 - **机制实现**：被动、Token、状态、攻击、防御、延迟结算、可选目标、响应时机逐项裁定；未实现项同步写入规则文档和 evidence。
 - **资源发布**：本地资源、manifest、运行时代码引用、上传结果和远端回查逐项对上。
 - **审计证据**：evidence 写清权威来源、对象矩阵、原子语义、实现消费、最终权威结果、测试 / 截图证据和剩余风险。
-- **真实入口**：至少覆盖真实在线双玩家；Host / Guest 截图分别看到对应新角色玩家板、提示板、手牌 / 卡图和 HUD。最终说 E2E 通过时，必须给出本轮实际核对过的截图绝对路径。
+- **真实入口**：按 [新增派系玩家可见生命周期](../add-new-faction/SKILL.md#玩家可见生命周期) 验收；隐藏阶段先证明玩家入口不可见，同时用内部状态注入或测试入口验证玩家板、提示板、手牌 / 卡图和 HUD；进入实施中或完成态后才要求真实在线双玩家可选。最终说 E2E 通过时，必须给出本轮实际核对过的截图绝对路径。
 
 只完成静态接入或领域行为验证，只能说“某层已完成”；不得写“发布级完成”或“全流程完成”。
 
@@ -144,7 +144,7 @@ Dice Throne 资源常被 `.gitignore` 忽略，不能只看 `git status`。资�
 - 不得伪造未确认的 `abilityTags`、费用、数值或时机。
 - `type='action'` 是打出后直接结算；`type='upgrade'` 是替换玩家板基础技能。
 - `targetAbilityId` 必须指向基础技能 ID，不能指向变体、子集或临时 UI 槽位。
-- 新角色若仍实施中，只使用既有 `implementation_in_progress` disabled overlay，不新建第二套实施中组件或样式。
+- 新角色只有达到新增派系流程的 `in_progress` 展示门槛后，才使用既有 `implementation_in_progress` disabled overlay；未完成实施与审计前应保持 `hidden`，不得出现在玩家选角、自动选角或直接玩家命令里。
 
 ### 6. 共享合同对比
 
@@ -185,7 +185,7 @@ npm run assets:upload
 - 静态数据 / 机制实现：相关 Vitest。
 - 资源引用 / 预加载：资源、manifest 或 resolver 测试。
 - UI 卡图展示 / 手牌预览：真实 E2E 与截图证据；UI 展示改动必须人工看图。
-- 新增角色最低包：ESLint、TypeScript、`npm run i18n:check`、角色 intake / registry / critical image 测试、`npm run assets:manifest`、`npm run assets:validate`、`npm run assets:upload` + URL 回查、`npm run build`、真实在线双玩家 E2E。
+- 新增角色最低包：ESLint、TypeScript、`npm run i18n:check`、角色 intake / registry / critical image 测试、`npm run assets:manifest`、`npm run assets:validate`、`npm run assets:upload` + URL 回查、`npm run build`、按玩家可见生命周期执行真实入口 E2E。
 
 最终交付至少包含：
 

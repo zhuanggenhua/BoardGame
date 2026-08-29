@@ -604,13 +604,13 @@
     "blood_power": {
       "name": "鲜血之力",
       "description": [
-        "正面标记，上限 5。当前静态接入支持获得和显示；完整消费增强规则仍处于实施中。"
+        "正面标记，上限 5。可按提示卡消费增强攻击、移除状态、抽牌或治疗；真实入口 E2E 仍处于实施中。"
       ]
     },
     "mesmerize": {
       "name": "催眠",
       "description": [
-        "正面标记，上限 1。当前静态接入支持获得和显示；强迫重掷等完整交互规则仍处于实施中。"
+        "正面标记，上限 1。对手有当前骰区时可花费并投 1 颗骰子；5-6 时选择 1 颗对手骰子强迫重掷。真实入口 E2E 仍处于实施中。"
       ]
     }
   },
@@ -1104,6 +1104,7 @@
       "gunslingerEatMyLead.result": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}，并施加击倒",
       "tianshi.divinePunishment": "神圣惩戒：按额外骰面结算伤害、飞行、净化和眩光",
+      "vampireLordMesmerizeDie": "催眠投掷：{{value}}（5-6 可强迫对手重掷 1 颗骰子）",
       "lieren.savageForce.spear": "长矛：本次攻击伤害 +1",
       "lieren.savageForce.claw": "利爪：本次攻击伤害 +2",
       "lieren.savageForce.nyrasBond": "魂之羁绊：获得妮拉之系",
@@ -1541,6 +1542,11 @@
     },
     "evasiveOrPurify": "请选择获得的状态效果",
     "evasiveOrPurifyToken": "请选择获得的道具",
+    "vampireLordBloodPossessed": {
+      "title": "魔血附身 II：选择追加效果",
+      "inflictBleed": "对对手施加 1 层流血",
+      "gainMesmerize": "获得 1 个催眠"
+    },
     "lotusPalmUnblockable": {
       "title": "是否花费 2 个太极标记令此次攻击不可防御？",
       "pay2": "花费 2 太极：不可防御",
@@ -4587,17 +4593,22 @@
     "bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "3/4/5 个利爪：造成 4/5/6 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害" } },
     "bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "3/4/5 个利爪：造成 4/6/8 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage6": "造成 6 点伤害", "damage8": "造成 8 点伤害" } },
     "mesmerize-power": { "name": "魅惑之力", "description": "3 个催眠：获得 1 个催眠并造成 4 点伤害。", "effects": { "gainMesmerize": "获得 1 个催眠", "damage4": "造成 4 点伤害" } },
-    "mesmerize-power-2": { "name": "魅惑之力 II", "description": "3 个催眠：获得 1 个催眠并造成 5 点伤害。", "effects": { "gainMesmerize": "获得 1 个催眠", "damage5": "造成 5 点伤害" } },
+    "mesmerize-power-2": { "name": "魅惑之力 II", "description": "3 个催眠：获得 1 个闪避和 1 个催眠，并造成 5 点不可防御伤害。", "effects": { "gainEvasive": "获得 1 个闪避", "gainMesmerize": "获得 1 个催眠", "damage5Unblockable": "造成 5 点不可防御伤害" } },
+    "mesmerize-power-2-soul-gaze": { "name": "摄魂术", "description": "1 个利爪 + 2 个催眠：获得 1 个催眠，并对对手施加 2 层流血。", "effects": { "gainMesmerize": "获得 1 个催眠", "bleed2": "施加 2 层流血" } },
     "blood-feast": { "name": "鲜血盛宴", "description": "3 个血滴：治疗 2 点并获得 3 个鲜血之力。", "effects": { "heal2": "治疗 2 点", "gainBloodPower": "获得 3 个鲜血之力" } },
-    "blood-feast-2": { "name": "鲜血盛宴 II", "description": "3 个血滴：治疗 2 点、获得 3 个鲜血之力并造成 7 点伤害。", "effects": { "heal2": "治疗 2 点", "gainBloodPower": "获得 3 个鲜血之力", "damage7": "造成 7 点伤害" } },
+    "blood-feast-2": { "name": "鲜血盛宴 II", "description": "3 个催眠 + 1 个血滴：治疗 3 点并获得 3 个鲜血之力。", "effects": { "heal3": "治疗 3 点", "gainBloodPower": "获得 3 个鲜血之力" } },
+    "blood-feast-2-dressed-to-kill": { "name": "盛装出席", "description": "1 个利爪 + 1 个催眠 + 2 个血滴：获得 2 个鲜血之力并抽 1 张牌。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "draw1": "抽 1 张牌" } },
     "rend-claws": { "name": "撕裂之爪", "description": "小顺子：施加 1 层流血并造成 6 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage6": "造成 6 点伤害" } },
     "rend-claws-2": { "name": "撕裂之爪 II", "description": "小顺子：施加 1 层流血并造成 6 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage6": "造成 6 点伤害" } },
     "blood-possessed": { "name": "魔血附身", "description": "大顺子：获得 2 个鲜血之力并造成 6 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage6": "造成 6 点伤害" } },
-    "blood-possessed-2": { "name": "魔血附身 II", "description": "大顺子：获得 2 个鲜血之力并造成 8 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage8": "造成 8 点伤害" } },
+    "blood-possessed-2": { "name": "魔血附身 II", "description": "小顺子：造成 8 点伤害，并选择以下其一：施加流血或获得催眠。", "effects": { "damage8": "造成 8 点伤害", "choice": "选择施加流血或获得催眠" } },
+    "blood-possessed-2-blood-addiction": { "name": "嗜血成性", "description": "2 个利爪 + 1 个血滴：获得 2 个鲜血之力。", "effects": { "gainBloodPower": "获得 2 个鲜血之力" } },
     "blood-thirst": { "name": "血之渴望", "description": "2 个血滴：施加 1 层流血并造成 4 点伤害。", "effects": { "bleed1": "施加 1 层流血", "damage4": "造成 4 点伤害" } },
-    "blood-thirst-2": { "name": "血之渴望 II", "description": "大顺子：施加 2 层流血并造成 6 点伤害。", "effects": { "bleed2": "施加 2 层流血", "damage6": "造成 6 点伤害" } },
+    "blood-thirst-2": { "name": "血之渴望 II", "description": "4 个血滴：获得 3 个鲜血之力，然后造成 6 点不可防御伤害。", "effects": { "gainBloodPower": "获得 3 个鲜血之力", "damage6Unblockable": "造成 6 点不可防御伤害" } },
+    "blood-thirst-2-blood-river": { "name": "血流成河", "description": "3 个血滴：施加 2 层流血，并对所有对手造成 2 点附属伤害。", "effects": { "bleed2": "施加 2 层流血", "collateral2": "对所有对手造成 2 点附属伤害" } },
     "blood-magic": { "name": "鲜血魔法", "description": "小顺子：获得 2 个鲜血之力并造成 7 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage7": "造成 7 点伤害" } },
-    "blood-magic-2": { "name": "鲜血魔法 II", "description": "小顺子：获得 2 个鲜血之力并造成 8 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "damage8": "造成 8 点伤害" } },
+    "blood-magic-2": { "name": "鲜血魔法 II", "description": "大顺子：获得 2 个鲜血之力，施加流血，然后造成 8 点不可防御伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "bleed1": "施加 1 层流血", "damage8Unblockable": "造成 8 点不可防御伤害" } },
+    "blood-magic-2-flayed": { "name": "皮开肉绽", "description": "2 个利爪 + 2 个血滴：造成 5 点不可防御伤害。", "effects": { "damage5Unblockable": "造成 5 点不可防御伤害" } },
     "undying": { "name": "不死之身", "description": "防御投掷 4 骰：造成 1 点反击伤害并治疗 1 点。", "effects": { "counter1": "造成 1 点反击伤害", "heal1": "治疗 1 点" } },
     "undying-2": { "name": "不死之身 II", "description": "防御投掷 4 骰：造成 1 点反击伤害并治疗 1 点。", "effects": { "counter1": "造成 1 点反击伤害", "heal1": "治疗 1 点" } },
     "bloody-slaughter": { "name": "血色杀戮！", "description": "5 个血滴：获得 2 个鲜血之力，施加 2 层流血，造成 12 点伤害。", "effects": { "gainBloodPower": "获得 2 个鲜血之力", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } }
@@ -5679,12 +5690,12 @@
     "card-vampire-lord-boiling-blood": { "name": "沸血之力！", "description": "攻击修正：本次攻击伤害 +1。" },
     "card-vampire-lord-gushing-blood": { "name": "血流如注！", "description": "获得 1 个鲜血之力和 1 个催眠。" },
     "upgrade-vampire-lord-undying-2": { "name": "不死之身 II", "description": "升级不死之身至 II 级。" },
-    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "血之渴望 II / 血流成河", "description": "升级血之渴望至 II 级；卡面下区效果仍处于实施中。" },
-    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "鲜血魔法 II / 皮开肉绽", "description": "升级鲜血魔法至 II 级；卡面下区效果仍处于实施中。" },
-    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "魔血附身 II / 嗜血成性", "description": "升级魔血附身至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "血之渴望 II / 血流成河", "description": "升级血之渴望至 II 级，并保留卡面下区“血流成河”作为同一升级后的可选技能变体。" },
+    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "鲜血魔法 II / 皮开肉绽", "description": "升级鲜血魔法至 II 级，并保留卡面下区“皮开肉绽”作为同一升级后的可选技能变体。" },
+    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "魔血附身 II / 嗜血成性", "description": "升级魔血附身至 II 级，并保留卡面下区“嗜血成性”作为同一升级后的可选技能变体。" },
     "upgrade-vampire-lord-rend-claws-2": { "name": "撕裂之爪 II", "description": "升级撕裂之爪至 II 级。" },
-    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "鲜血盛宴 II / 盛装出席", "description": "升级鲜血盛宴至 II 级；卡面下区效果仍处于实施中。" },
-    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "魅惑之力 II / 摄魂术", "description": "升级魅惑之力至 II 级；卡面下区效果仍处于实施中。" },
+    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "鲜血盛宴 II / 盛装出席", "description": "升级鲜血盛宴至 II 级，并保留卡面下区“盛装出席”作为同一升级后的可选技能变体。" },
+    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "魅惑之力 II / 摄魂术", "description": "升级魅惑之力至 II 级，并保留卡面下区“摄魂术”作为同一升级后的可选技能变体。" },
     "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "升级嗜血之爪至 III 级。" },
     "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "升级嗜血之爪至 II 级。" },
     "card-vampire-lord-drink-up": { "name": "饮血如酒！", "description": "获得 2 个鲜血之力。" },
@@ -5744,6 +5755,22 @@
       "protect": "消耗 4 战术优势获得 1 个守护",
       "transferShort": "转移状态",
       "transfer": "消耗 4 战术优势转移 1 个状态效果"
+    },
+    "vampireLordBloodPower": {
+      "name": "鲜血之力",
+      "attackBonusShort": "+3 伤害",
+      "attackBonus": "消耗 1 个鲜血之力，本次攻击伤害 +3",
+      "removeStatusShort": "移除状态",
+      "removeStatus": "消耗 2 个鲜血之力，选择 1 名玩家移除 1 个状态效果",
+      "drawShort": "抽 2 张",
+      "draw": "消耗 3 个鲜血之力，抽 2 张牌",
+      "healShort": "吸血治疗",
+      "heal": "消耗 4 个鲜血之力，治疗等同于本次成功攻击造成的伤害"
+    },
+    "vampireLordMesmerize": {
+      "name": "催眠",
+      "useShort": "催眠重掷",
+      "use": "消耗 1 个催眠并投 1 颗骰子；结果为 5-6 时，选择 1 颗对手骰子强迫重掷"
     },
     "artificerWorkshop": {
       "buildNanobotShort": "制造纳米",

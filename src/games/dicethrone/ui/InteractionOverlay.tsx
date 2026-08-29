@@ -225,6 +225,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
         return {
             playerId: sourcePlayerId,
             statusId,
+            characterId: sourcePlayer.characterId,
             effects: effectStacks > 0 ? { [statusId]: effectStacks } : {},
             tokens: tokenStacks > 0 ? { [statusId]: tokenStacks } : {},
         };
@@ -322,6 +323,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             className="justify-center"
                                             locale={locale}
                                             atlas={statusIconAtlas}
+                                            characterId={player.characterId}
                                         />
                                         {!hasStatus && requiresTargetWithStatus && (
                                             <div className="text-slate-500 text-sm text-center mt-2">
@@ -363,6 +365,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             className="justify-center"
                                             locale={locale}
                                             atlas={statusIconAtlas}
+                                            characterId={player.characterId}
                                         />
                                     ) : (
                                         <div className="text-slate-500 text-sm text-center">
@@ -431,6 +434,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 className="justify-center"
                                                 locale={locale}
                                                 atlas={statusIconAtlas}
+                                                characterId={transferSourceCard.characterId}
                                             />
                                         ) : (
                                             <div className="text-sm text-slate-400">
@@ -447,6 +451,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 className="justify-center"
                                                 locale={locale}
                                                 atlas={statusIconAtlas}
+                                                characterId={player.characterId}
                                             />
                                         </div>
                                     )}

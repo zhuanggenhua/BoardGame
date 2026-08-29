@@ -3,6 +3,7 @@ import {
   assertNoFatalFrontendErrors,
   attachPageDiagnostics,
 } from "../helpers/common";
+import { expectNoDuplicateUiOwners } from "../helpers/uiDuplicateOwners";
 import {
   BETRAYAL_COMMANDS,
   type BetrayalCore,
@@ -17,6 +18,7 @@ import {
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
   injectCore,
+  readVisibleNonSrText,
   saveScreenshot,
   setHarnessRandomQueue,
   waitForPhysicalDiceSettled,
@@ -445,7 +447,7 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
   test("无线电广播低点数分支从触发到精神伤害结算与日志完整可见", async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(120000);
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(
@@ -556,12 +558,7 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
 
     const damageRollPanel = page.getByTestId("betrayal-recent-roll-panel");
     await expect(damageRollPanel).toBeVisible();
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveText(
-      "无线电广播",
-    );
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).not.toContainText(
-      "受到一颗骰子的精神伤害",
-    );
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveCount(0);
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
       "伤害骰合计 2",
     );
@@ -571,23 +568,28 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).not.toContainText(
       /骰面合计|加值/,
     );
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(1);
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveAttribute(
-      "data-damage-rolls",
-      "2",
-    );
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage")).toHaveText(
-      "待分配 2 点精神伤害",
-    );
-    await expect(
-      damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage"),
-    ).not.toContainText("重新投掷 1 颗骰子");
-    await expect(
-      damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage"),
-    ).not.toContainText("合计 2");
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(0);
+    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage")).toHaveCount(0);
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toHaveCount(0);
     await expect(damageRollPanel).toHaveAttribute("data-visible-dice-source", "event-rolled-damage");
-    await expect(damageRollPanel).toContainText("重新投掷的伤害骰（1 颗）");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-reroll-prompt-outside-dice"),
+    ).toHaveAttribute("aria-hidden", "true");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-reroll-prompt-outside-dice"),
+    ).toHaveText("");
+    const damageRollVisibleText = await readVisibleNonSrText(damageRollPanel);
+    expect(damageRollVisibleText).toContain("伤害骰合计 2");
+    expect(damageRollVisibleText).not.toContain("待分配 2 点精神伤害");
+    expect(damageRollVisibleText).not.toContain("无线电广播");
+    expect(damageRollVisibleText).not.toContain("受到一颗骰子的精神伤害");
+    expect(damageRollVisibleText).not.toContain("重新投掷的伤害骰");
+    await expectNoDuplicateUiOwners(
+      damageRollPanel,
+      testInfo,
+      "rolled-damage-resolution",
+      "temp/betrayal-radio-event-rolled-damage-panel-dom.html",
+    );
     await expect(
       damageRollPanel.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-count", "1");
@@ -654,15 +656,35 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     ).toHaveAttribute("data-damage-selected-count", "1");
     await expect(
       allocationPanel.getByTestId("betrayal-damage-allocation-trait-knowledge"),
-    ).toHaveText("知识 承担 1 点");
+    ).toHaveAttribute("data-trait-preview-step-count", "1");
+    const knowledgePreviewPositions = await allocationPanel
+      .getByTestId("betrayal-damage-allocation-trait-knowledge")
+      .evaluate((element) => ({
+        current: Number(element.getAttribute("data-trait-preview-current-position")),
+        target: Number(element.getAttribute("data-trait-preview-target-position")),
+      }));
+    expect(knowledgePreviewPositions.target).toBeLessThan(knowledgePreviewPositions.current);
     await expect(
       allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
     ).toHaveAttribute("data-damage-selected-count", "1");
     await expect(
       allocationPanel.getByTestId("betrayal-damage-allocation-trait-sanity"),
-    ).toHaveText("神志 承担 1 点");
+    ).toHaveAttribute("data-trait-preview-step-count", "1");
+    const sanityPreviewPositions = await allocationPanel
+      .getByTestId("betrayal-damage-allocation-trait-sanity")
+      .evaluate((element) => ({
+        current: Number(element.getAttribute("data-trait-preview-current-position")),
+        target: Number(element.getAttribute("data-trait-preview-target-position")),
+      }));
+    expect(sanityPreviewPositions.target).toBeLessThan(sanityPreviewPositions.current);
     await expect(allocationPanel.getByTestId("betrayal-damage-allocation-traits")).not.toContainText(
-      /×\d/,
+      /承担\s*\d+\s*点|×\d/,
+    );
+    await expectNoDuplicateUiOwners(
+      allocationPanel,
+      testInfo,
+      "damage-allocation",
+      "temp/betrayal-radio-mental-damage-allocation-panel-dom.html",
     );
     await expect(allocationPanel.getByTestId("betrayal-damage-allocation-confirm")).toBeEnabled();
     await saveScreenshot(page, RADIO_DAMAGE_ALLOCATION_SCREENSHOT);

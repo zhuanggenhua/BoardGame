@@ -49,7 +49,7 @@ import {
     getNextPhase,
 } from './domain';
 import { DICETHRONE_COMMANDS } from './domain/ids';
-import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
+import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
@@ -2370,12 +2370,12 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
                 takenCharacters.add(value as SelectableCharacterId);
             }
         }
-        const availableCharacters = DICETHRONE_CHARACTER_CATALOG.filter(
+        const availableCharacters = DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.filter(
             (character) => !takenCharacters.has(character.id),
         );
         const candidates = availableCharacters.length > 0
             ? availableCharacters
-            : DICETHRONE_CHARACTER_CATALOG;
+            : DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG;
 
         for (const character of candidates) {
             appendAction(actions, state, playerId, {
@@ -2391,7 +2391,7 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
                     ...(character.setupOptionStatus
                         ? {
                             setupOptionStatus: character.setupOptionStatus,
-                            setupOptionStatusReason: 'Dice Throne 角色仍在实施中',
+                            setupOptionStatusReason: character.setupOptionStatusReason ?? 'Dice Throne 角色仍在实施中',
                         }
                         : {}),
                 },

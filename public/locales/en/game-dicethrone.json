@@ -604,13 +604,13 @@
     "blood_power": {
       "name": "Blood Power",
       "description": [
-        "Positive token, limit 5. Static intake currently supports gaining and displaying it; full spend and boost rules remain in progress."
+        "Positive token, limit 5. Spend it per the tip card to boost attack damage, remove status effects, draw cards, or heal; real-entry E2E remains in progress."
       ]
     },
     "mesmerize": {
       "name": "Mesmerize",
       "description": [
-        "Positive token, limit 1. Static intake currently supports gaining and displaying it; forced reroll interactions remain in progress."
+        "Positive token, limit 1. When an opponent has current dice, spend it and roll 1 die; on 5-6, choose 1 opponent die to force a reroll. Real-entry E2E remains in progress."
       ]
     }
   },
@@ -1021,6 +1021,7 @@
       "gunslingerEatMyLead.result": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack and inflict Knockdown",
       "tianshi.divinePunishment": "Divine Punishment: resolve damage, Flight, Purify, and Dazzle from the extra dice",
+      "vampireLordMesmerizeDie": "Mesmerize roll: {{value}} (5-6 forces 1 opponent die reroll)",
       "lieren.savageForce.spear": "Spear: +1 attack damage",
       "lieren.savageForce.claw": "Claw: +2 attack damage",
       "lieren.savageForce.nyrasBond": "Nyra's Bond: gain Nyra's Bond",
@@ -1473,6 +1474,11 @@
     },
     "evasiveOrPurify": "Choose a status effect to gain",
     "evasiveOrPurifyToken": "Choose a token to gain",
+    "vampireLordBloodPossessed": {
+      "title": "Blood Possessed II: choose a bonus effect",
+      "inflictBleed": "Inflict 1 Bleed on the opponent",
+      "gainMesmerize": "Gain 1 Mesmerize"
+    },
     "lotusPalmUnblockable": {
       "title": "Lotus Bloom",
       "pay2": "Spend 2 Taiji to make this attack undefendable",
@@ -4491,17 +4497,22 @@
     "bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "3/4/5 Claws: deal 4/5/6 damage.", "effects": { "damage4": "Deal 4 damage", "damage5": "Deal 5 damage", "damage6": "Deal 6 damage" } },
     "bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "3/4/5 Claws: deal 4/6/8 damage.", "effects": { "damage4": "Deal 4 damage", "damage6": "Deal 6 damage", "damage8": "Deal 8 damage" } },
     "mesmerize-power": { "name": "Mesmerize Power", "description": "3 Mesmerize: gain 1 Mesmerize and deal 4 damage.", "effects": { "gainMesmerize": "Gain 1 Mesmerize", "damage4": "Deal 4 damage" } },
-    "mesmerize-power-2": { "name": "Mesmerize Power II", "description": "3 Mesmerize: gain 1 Mesmerize and deal 5 damage.", "effects": { "gainMesmerize": "Gain 1 Mesmerize", "damage5": "Deal 5 damage" } },
+    "mesmerize-power-2": { "name": "Mesmerize Power II", "description": "3 Mesmerize: gain 1 Evasive and 1 Mesmerize, then deal 5 undefendable damage.", "effects": { "gainEvasive": "Gain 1 Evasive", "gainMesmerize": "Gain 1 Mesmerize", "damage5Unblockable": "Deal 5 undefendable damage" } },
+    "mesmerize-power-2-soul-gaze": { "name": "Soul Gaze", "description": "1 Claw + 2 Mesmerize: gain 1 Mesmerize and inflict 2 Bleed on the opponent.", "effects": { "gainMesmerize": "Gain 1 Mesmerize", "bleed2": "Inflict 2 Bleed" } },
     "blood-feast": { "name": "Blood Feast", "description": "3 Blood Drops: heal 2 and gain 3 Blood Power.", "effects": { "heal2": "Heal 2", "gainBloodPower": "Gain 3 Blood Power" } },
-    "blood-feast-2": { "name": "Blood Feast II", "description": "3 Blood Drops: heal 2, gain 3 Blood Power, and deal 7 damage.", "effects": { "heal2": "Heal 2", "gainBloodPower": "Gain 3 Blood Power", "damage7": "Deal 7 damage" } },
+    "blood-feast-2": { "name": "Blood Feast II", "description": "3 Mesmerize + 1 Blood Drop: heal 3 and gain 3 Blood Power.", "effects": { "heal3": "Heal 3", "gainBloodPower": "Gain 3 Blood Power" } },
+    "blood-feast-2-dressed-to-kill": { "name": "Dressed to Kill", "description": "1 Claw + 1 Mesmerize + 2 Blood Drops: gain 2 Blood Power and draw 1 card.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "draw1": "Draw 1 card" } },
     "rend-claws": { "name": "Rend Claws", "description": "Small Straight: inflict 1 Bleed and deal 6 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage6": "Deal 6 damage" } },
     "rend-claws-2": { "name": "Rend Claws II", "description": "Small Straight: inflict 1 Bleed and deal 6 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage6": "Deal 6 damage" } },
     "blood-possessed": { "name": "Blood Possessed", "description": "Large Straight: gain 2 Blood Power and deal 6 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage6": "Deal 6 damage" } },
-    "blood-possessed-2": { "name": "Blood Possessed II", "description": "Large Straight: gain 2 Blood Power and deal 8 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage8": "Deal 8 damage" } },
+    "blood-possessed-2": { "name": "Blood Possessed II", "description": "Small Straight: deal 8 damage and choose one: inflict Bleed or gain Mesmerize.", "effects": { "damage8": "Deal 8 damage", "choice": "Choose to inflict Bleed or gain Mesmerize" } },
+    "blood-possessed-2-blood-addiction": { "name": "Blood Addiction", "description": "2 Claws + 1 Blood Drop: gain 2 Blood Power.", "effects": { "gainBloodPower": "Gain 2 Blood Power" } },
     "blood-thirst": { "name": "Blood Thirst", "description": "2 Blood Drops: inflict 1 Bleed and deal 4 damage.", "effects": { "bleed1": "Inflict 1 Bleed", "damage4": "Deal 4 damage" } },
-    "blood-thirst-2": { "name": "Blood Thirst II", "description": "Large Straight: inflict 2 Bleed and deal 6 damage.", "effects": { "bleed2": "Inflict 2 Bleed", "damage6": "Deal 6 damage" } },
+    "blood-thirst-2": { "name": "Blood Thirst II", "description": "4 Blood Drops: gain 3 Blood Power, then deal 6 undefendable damage.", "effects": { "gainBloodPower": "Gain 3 Blood Power", "damage6Unblockable": "Deal 6 undefendable damage" } },
+    "blood-thirst-2-blood-river": { "name": "Blood River", "description": "3 Blood Drops: inflict 2 Bleed and deal 2 collateral damage to all opponents.", "effects": { "bleed2": "Inflict 2 Bleed", "collateral2": "Deal 2 collateral damage to all opponents" } },
     "blood-magic": { "name": "Blood Magic", "description": "Small Straight: gain 2 Blood Power and deal 7 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage7": "Deal 7 damage" } },
-    "blood-magic-2": { "name": "Blood Magic II", "description": "Small Straight: gain 2 Blood Power and deal 8 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "damage8": "Deal 8 damage" } },
+    "blood-magic-2": { "name": "Blood Magic II", "description": "Large Straight: gain 2 Blood Power, inflict Bleed, then deal 8 undefendable damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "bleed1": "Inflict 1 Bleed", "damage8Unblockable": "Deal 8 undefendable damage" } },
+    "blood-magic-2-flayed": { "name": "Flayed", "description": "2 Claws + 2 Blood Drops: deal 5 undefendable damage.", "effects": { "damage5Unblockable": "Deal 5 undefendable damage" } },
     "undying": { "name": "Undying", "description": "Defensive roll 4 dice: deal 1 counter damage and heal 1.", "effects": { "counter1": "Deal 1 counter damage", "heal1": "Heal 1" } },
     "undying-2": { "name": "Undying II", "description": "Defensive roll 4 dice: deal 1 counter damage and heal 1.", "effects": { "counter1": "Deal 1 counter damage", "heal1": "Heal 1" } },
     "bloody-slaughter": { "name": "Bloody Slaughter!", "description": "5 Blood Drops: gain 2 Blood Power, inflict 2 Bleed, and deal 12 damage.", "effects": { "gainBloodPower": "Gain 2 Blood Power", "bleed2": "Inflict 2 Bleed", "damage12": "Deal 12 damage" } }
@@ -5604,12 +5615,12 @@
     "card-vampire-lord-boiling-blood": { "name": "Boiling Blood!", "description": "Attack modifier: add +1 attack damage." },
     "card-vampire-lord-gushing-blood": { "name": "Gushing Blood!", "description": "Gain 1 Blood Power and 1 Mesmerize." },
     "upgrade-vampire-lord-undying-2": { "name": "Undying II", "description": "Upgrade Undying to level II." },
-    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "Blood Thirst II / Blood River", "description": "Upgrade Blood Thirst to level II; the lower card section remains in progress." },
-    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "Blood Magic II / Flayed", "description": "Upgrade Blood Magic to level II; the lower card section remains in progress." },
-    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "Blood Possessed II / Blood Addiction", "description": "Upgrade Blood Possessed to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-blood-thirst-2-blood-river": { "name": "Blood Thirst II / Blood River", "description": "Upgrade Blood Thirst to level II and keep the lower Blood River section as a variant of the upgraded ability." },
+    "upgrade-vampire-lord-blood-magic-2-flayed": { "name": "Blood Magic II / Flayed", "description": "Upgrade Blood Magic to level II and keep the lower Flayed section as a variant of the upgraded ability." },
+    "upgrade-vampire-lord-blood-possessed-2-blood-addiction": { "name": "Blood Possessed II / Blood Addiction", "description": "Upgrade Blood Possessed to level II and keep the lower Blood Addiction section as a variant of the upgraded ability." },
     "upgrade-vampire-lord-rend-claws-2": { "name": "Rend Claws II", "description": "Upgrade Rend Claws to level II." },
-    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "Blood Feast II / Dressed to Kill", "description": "Upgrade Blood Feast to level II; the lower card section remains in progress." },
-    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "Mesmerize Power II / Soul Gaze", "description": "Upgrade Mesmerize Power to level II; the lower card section remains in progress." },
+    "upgrade-vampire-lord-blood-feast-2-dressed-to-kill": { "name": "Blood Feast II / Dressed to Kill", "description": "Upgrade Blood Feast to level II and keep the lower Dressed to Kill section as a variant of the upgraded ability." },
+    "upgrade-vampire-lord-mesmerize-power-2-soul-gaze": { "name": "Mesmerize Power II / Soul Gaze", "description": "Upgrade Mesmerize Power to level II and keep the lower Soul Gaze section as a variant of the upgraded ability." },
     "upgrade-vampire-lord-bloodthirsty-claws-3": { "name": "Bloodthirsty Claws III", "description": "Upgrade Bloodthirsty Claws to level III." },
     "upgrade-vampire-lord-bloodthirsty-claws-2": { "name": "Bloodthirsty Claws II", "description": "Upgrade Bloodthirsty Claws to level II." },
     "card-vampire-lord-drink-up": { "name": "Drink Up!", "description": "Gain 2 Blood Power." },
@@ -5669,6 +5680,22 @@
     "protect": "Spend 4 Tactical Advantage to gain 1 Protect",
     "transferShort": "Transfer",
     "transfer": "Spend 4 Tactical Advantage to transfer 1 status effect"
+  },
+  "vampireLordBloodPower": {
+    "name": "Blood Power",
+    "attackBonusShort": "+3 Damage",
+    "attackBonus": "Spend 1 Blood Power to add +3 attack damage",
+    "removeStatusShort": "Remove Status",
+    "removeStatus": "Spend 2 Blood Power to choose a player and remove 1 status effect",
+    "drawShort": "Draw 2",
+    "draw": "Spend 3 Blood Power to draw 2 cards",
+    "healShort": "Blood Heal",
+    "heal": "Spend 4 Blood Power to heal equal to the damage successfully dealt by this attack"
+  },
+  "vampireLordMesmerize": {
+    "name": "Mesmerize",
+    "useShort": "Mesmerize",
+    "use": "Spend 1 Mesmerize and roll 1 die; on 5-6, choose 1 opponent die to force a reroll"
   },
   "artificerWorkshop": {
     "buildNanobotShort": "Build Nano",

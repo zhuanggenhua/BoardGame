@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { render, waitFor, fireEvent } from '@testing-library/react';
 
-import { DICETHRONE_STATUS_ATLAS_IDS, TOKEN_IDS } from '../domain/ids';
+import { DICETHRONE_STATUS_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { moonElfDiceDefinition } from '../heroes/moon_elf/diceConfig';
 import { GUNSLINGER_SFX_BOUNTY } from '../heroes/gunslinger/abilities';
+import { LIEREN_TOKENS } from '../heroes/lieren/tokens';
+import { VAMPIRE_LORD_TOKENS } from '../heroes/vampire_lord/tokens';
 import { getVisualMetaById } from '../domain/statusEffects';
 import { Dice2D, __resetDice2DLoadedSpriteUrlsForTests } from '../ui/Dice2D';
 import {
@@ -18,6 +20,7 @@ import {
     resolveSpriteAssetUrls,
 } from '../ui/assets';
 import {
+    StatusEffectBadge,
     TokenBadge,
     TokensContainer,
     __resetStatusEffectImageCachesForTests,
@@ -389,6 +392,66 @@ describe('StatusEffectsIcons', () => {
         expect(meta?.frameId).toBe(TOKEN_IDS.BOUNTY);
         expect(meta?.iconPath).toBe('dicethrone/images/gunslinger/icons/赏金');
         expect(meta?.sfxKey).toBe(GUNSLINGER_SFX_BOUNTY);
+    });
+
+    it('同名状态应优先使用当前英雄定义的状态图集', () => {
+        const vampireBleedMeta = getVisualMetaById(STATUS_IDS.BLEED, VAMPIRE_LORD_TOKENS);
+        const lierenBleedMeta = getVisualMetaById(STATUS_IDS.BLEED, LIEREN_TOKENS);
+
+        expect(vampireBleedMeta?.atlasId).toBe(DICETHRONE_STATUS_ATLAS_IDS.VAMPIRE_LORD);
+        expect(lierenBleedMeta?.atlasId).toBe(DICETHRONE_STATUS_ATLAS_IDS.LIEREN);
+
+        const atlas = {
+            [DICETHRONE_STATUS_ATLAS_IDS.VAMPIRE_LORD]: {
+                imageW: 800,
+                imageH: 400,
+                imagePath: 'dicethrone/images/xixuegui/status-icons-atlas.png',
+                frames: {
+                    [STATUS_IDS.BLEED]: { x: 0, y: 0, w: 400, h: 400 },
+                    [TOKEN_IDS.BLOOD_POWER]: { x: 400, y: 0, w: 400, h: 400 },
+                },
+            },
+            [DICETHRONE_STATUS_ATLAS_IDS.LIEREN]: {
+                imageW: 800,
+                imageH: 400,
+                imagePath: 'dicethrone/images/lieren/status-icons-atlas.png',
+                frames: {
+                    [STATUS_IDS.BLEED]: { x: 0, y: 0, w: 400, h: 400 },
+                },
+            },
+        } satisfies Record<string, StatusIconAtlasConfig>;
+
+        const vampireBleedHtml = renderToStaticMarkup(
+            <StatusEffectBadge
+                effectId={STATUS_IDS.BLEED}
+                stacks={1}
+                locale="zh-CN"
+                atlas={atlas}
+                characterId="vampire_lord"
+            />,
+        );
+        const lierenBleedHtml = renderToStaticMarkup(
+            <StatusEffectBadge
+                effectId={STATUS_IDS.BLEED}
+                stacks={1}
+                locale="zh-CN"
+                atlas={atlas}
+                characterId="lieren"
+            />,
+        );
+        const vampireTokenHtml = renderToStaticMarkup(
+            <TokenBadge
+                tokenId={TOKEN_IDS.BLOOD_POWER}
+                amount={1}
+                locale="zh-CN"
+                atlas={atlas}
+                characterId="vampire_lord"
+            />,
+        );
+
+        expect(vampireBleedHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/xixuegui/compressed/status-icons-atlas.webp');
+        expect(lierenBleedHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/lieren/compressed/status-icons-atlas.webp');
+        expect(vampireTokenHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/xixuegui/compressed/status-icons-atlas.webp');
     });
 
     it('武士 token 视觉元数据应暴露专属 sfxKey，供动画冲击音优先使用', () => {

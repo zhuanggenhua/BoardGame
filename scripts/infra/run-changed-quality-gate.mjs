@@ -578,6 +578,19 @@ function isLintTarget(file) {
     && !file.startsWith('test-results/');
 }
 
+function affectsPlayerVisibleUi(file) {
+  const normalized = normalizeFile(file);
+  if (!/\.(tsx|css|scss|md|mjs|ts)$/.test(normalized)) return false;
+  return normalized === '.spec/tools/scan-ui-duplicate-owners.mjs'
+    || normalized === 'e2e/helpers/uiDuplicateOwners.ts'
+    || normalized === '.spec/knowledge/standards/ui-change-gates.md'
+    || normalized.startsWith('.spec/skills/game-ui-design/')
+    || normalized.startsWith('src/components/')
+    || normalized.startsWith('src/pages/')
+    || normalized.startsWith('src/games/')
+    || normalized.startsWith('e2e/');
+}
+
 function isLintWarningDeltaIgnored(file) {
   return ESLINT_WARNING_DELTA_IGNORE_PATTERNS.some((pattern) => pattern.test(file));
 }
@@ -1195,6 +1208,15 @@ function collectCommands(files, baseRef, affectsTypecheck) {
         '--files-from',
         writeListFile(TEST_STRUCTURE_FILES_LIST, files),
       ],
+    });
+  }
+
+  if (hasAny(workspaceScopeFiles, affectsPlayerVisibleUi)) {
+    commands.push({
+      label: 'UI duplicate owner contract self-check',
+      reason: '存在玩家可见 UI / E2E / UI 规范改动，先确认重复信息 owner 扫描合同本身可运行，防止重复自查工具漂移',
+      command: process.execPath,
+      args: ['.spec/tools/scan-ui-duplicate-owners.mjs', '--self-check'],
     });
   }
 

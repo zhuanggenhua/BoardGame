@@ -3,8 +3,8 @@
  * scan-ui-duplicate-owners — UI 信息 owner 重复扫描。
  *
  * 用法：
- *   node .spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-builder <html-file>
- *   node .spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-selection <html-file>
+ *   node .spec/tools/scan-ui-duplicate-owners.mjs --contract <contract-name> <html-file>
+ *   node .spec/tools/scan-ui-duplicate-owners.mjs --self-check
  *
  * 目的：
  *   对用户已反复指出的“同一身份 / 数值 / 容量 / 数量被多个 UI 同时复写”做机械门禁。
@@ -22,6 +22,8 @@ const CONTRACTS = {
       { id: 'clickability-as-visible-state', label: '可点击性被写成可见状态', pattern: /点击使用|点击选择|点此加入|Click to use|Tap to select/g },
       { id: 'selected-state-duplicated-as-copy', label: '选中态被额外文字复写', pattern: /已使用|In use/g },
       { id: 'old-mage-card-selector', label: '旧法师卡主选择器文案', pattern: /选择双方学徒法师|Choose apprentice mages/g },
+      { id: 'named-copy-empty-state', label: '命名副本空态文字不得替代加号入口', pattern: /暂无命名副本|No named copies/g },
+      { id: 'new-book-from-selected-copy', label: '新建入口不得隐式沿用选中书', pattern: /新书从选中书|从选中书新建|从选中书保存命名副本|Create a named copy from the selected book|Save from selected book/g },
     ],
     forbiddenSelectors: [
       {
@@ -39,6 +41,8 @@ const CONTRACTS = {
       { id: 'spellbook-selection-gate', label: '法术书选择页', selector: '[data-testid="mage-wars-mage-selection-gate"]' },
       { id: 'spellbook-library', label: '主对象法术书库', selector: '[data-testid="mage-wars-mage-selection-spellbook-library"]' },
       { id: 'standard-spellbooks', label: '标准起始书卡', selector: '[data-testid="mage-wars-mage-selection-standard-spellbook"]' },
+      { id: 'new-spellbook-plus-entry', label: '法术书库加号新建入口', selector: '[data-testid="mage-wars-mage-selection-new-spellbook-entry"]' },
+      { id: 'new-spellbook-requires-mage-choice', label: '新建法术书必须先选择绑定法师', selector: '[data-testid="mage-wars-mage-selection-new-spellbook-entry"][data-new-spellbook-mage-choice="required"]' },
       { id: 'single-edit-selected-entry', label: '统一编辑选中书入口', selector: '[data-testid="mage-wars-open-spellbook-builder"]' },
     ],
     perItemRequiredSelectors: [
@@ -49,7 +53,15 @@ const CONTRACTS = {
         childSelector: '[data-testid="mage-wars-mage-selection-saved-spellbook-diy-badge"]',
       },
     ],
-    numericAttributes: [],
+    numericAttributes: [
+      {
+        id: 'selection-saved-spellbook-limit',
+        label: '选择页命名法术书保存上限',
+        selector: '[data-testid="mage-wars-mage-selection-new-spellbook-entry"]',
+        attribute: 'data-saved-spellbook-limit',
+        min: 10,
+      },
+    ],
     selectorForbidden: [],
   },
   'mage-wars-spellbook-builder': {
@@ -87,12 +99,14 @@ const CONTRACTS = {
       { id: 'hidden-diy-library-copy', label: '角落 DIY 法术书文案', pattern: /DIY\s*法术书/g },
       { id: 'blank-builder-primary-entry', label: '空白自组主入口', pattern: /空白自组/g },
       { id: 'old-diy-empty-state', label: '旧 DIY 空态', pattern: /还没有\s*DIY\s*法术书/g },
+      { id: 'named-copy-empty-state', label: '命名副本空态文字不得替代加号入口', pattern: /暂无命名副本|No named copies/g },
       { id: 'redundant-current-spellbook-title', label: '选中态被复写为当前法术书', pattern: /当前法术书/g },
       { id: 'redundant-current-mage-library-title', label: '选中法师库被复写为当前法师法术书库', pattern: /当前法师法术书库/g },
       { id: 'redundant-edit-current-book', label: '编辑按钮复写当前书', pattern: /编辑当前书/g },
       { id: 'redundant-update-current-copy', label: '更新按钮复写当前副本', pattern: /更新当前副本/g },
       { id: 'redundant-name-current-book', label: '命名输入复写当前书', pattern: /给当前书取名/g },
       { id: 'redundant-save-from-current-book', label: '保存说明复写当前书', pattern: /新书从当前书/g },
+      { id: 'new-book-from-selected-copy', label: '新建入口不得隐式沿用选中书', pattern: /新书从选中书|从选中书新建|从选中书保存命名副本|Create a named copy from the selected book|Save from selected book/g },
       { id: 'redundant-current-book-filter', label: '筛选项复写当前书内', pattern: /当前书内/g },
       { id: 'seat-owner', label: '组书页席位主控', pattern: /席位/g },
       { id: 'p1-owner', label: '组书页 P1 主控', pattern: /\bP1\b/g },
@@ -117,6 +131,8 @@ const CONTRACTS = {
       { id: 'selected-mage-context-visible-cue', label: '已选法师主控有详情视觉入口', selector: '[data-testid="mage-wars-spellbook-builder-mage-detail-cue"]' },
       { id: 'saved-spellbook-library', label: '同法师已保存法术书库', selector: '[data-testid="mage-wars-spellbook-builder-saved-library"]' },
       { id: 'saved-spellbook-library-toggle', label: '法术书库按需展开入口', selector: '[data-testid="mage-wars-spellbook-builder-saved-library-toggle"]' },
+      { id: 'new-spellbook-plus-button', label: '组书器加号新建入口', selector: '[data-testid="mage-wars-spellbook-builder-new-spellbook"]' },
+      { id: 'builder-new-spellbook-requires-mage-choice', label: '组书器新建法术书必须回到绑定法师选择', selector: '[data-testid="mage-wars-spellbook-builder-new-spellbook"][data-new-spellbook-mage-choice="required"]' },
       { id: 'spellpoint-capacity-owner', label: '顶部容量区总体法术点 owner', selector: '.capacity' },
       { id: 'mana-cost-filter', label: '法力费用筛选', selector: '[data-testid="mage-wars-spellbook-builder-filter-mana"]' },
       { id: 'card-pool-grid', label: '主视觉卡池网格', selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]' },
@@ -160,6 +176,13 @@ const CONTRACTS = {
         selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]',
         attribute: 'data-min-card-width-rem',
         min: 10.5,
+      },
+      {
+        id: 'builder-saved-spellbook-limit',
+        label: '组书器命名法术书保存上限',
+        selector: '[data-testid="mage-wars-spellbook-builder"]',
+        attribute: 'data-saved-spellbook-limit',
+        min: 10,
       },
     ],
   },
@@ -192,12 +215,14 @@ const CONTRACTS = {
       { id: 'hidden-diy-library-copy', label: '角落 DIY 法术书文案', pattern: /DIY\s*法术书/g },
       { id: 'blank-builder-primary-entry', label: '空白自组主入口', pattern: /空白自组/g },
       { id: 'old-diy-empty-state', label: '旧 DIY 空态', pattern: /还没有\s*DIY\s*法术书/g },
+      { id: 'named-copy-empty-state', label: '命名副本空态文字不得替代加号入口', pattern: /暂无命名副本|No named copies/g },
       { id: 'redundant-current-spellbook-title', label: '选中态被复写为当前法术书', pattern: /当前法术书/g },
       { id: 'redundant-current-mage-library-title', label: '选中法师库被复写为当前法师法术书库', pattern: /当前法师法术书库/g },
       { id: 'redundant-edit-current-book', label: '编辑按钮复写当前书', pattern: /编辑当前书/g },
       { id: 'redundant-update-current-copy', label: '更新按钮复写当前副本', pattern: /更新当前副本/g },
       { id: 'redundant-name-current-book', label: '命名输入复写当前书', pattern: /给当前书取名/g },
       { id: 'redundant-save-from-current-book', label: '保存说明复写当前书', pattern: /新书从当前书/g },
+      { id: 'new-book-from-selected-copy', label: '新建入口不得隐式沿用选中书', pattern: /新书从选中书|从选中书新建|从选中书保存命名副本|Create a named copy from the selected book|Save from selected book/g },
       { id: 'redundant-current-book-filter', label: '筛选项复写当前书内', pattern: /当前书内/g },
       { id: 'seat-owner', label: '组书页席位主控', pattern: /席位/g },
       { id: 'p1-owner', label: '组书页 P1 主控', pattern: /\bP1\b/g },
@@ -222,6 +247,8 @@ const CONTRACTS = {
       { id: 'expanded-saved-list', label: '已展开法术书库列表', selector: '[data-testid="mage-wars-spellbook-builder-saved-list"]' },
       { id: 'saved-spellbook-row', label: '命名副本库项', selector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook"]' },
       { id: 'saved-spellbook-diy-badge', label: '命名副本 DIY 标记', selector: '[data-testid="mage-wars-spellbook-builder-saved-spellbook-diy-badge"]' },
+      { id: 'new-spellbook-plus-entry', label: '展开库加号新建入口', selector: '[data-testid="mage-wars-spellbook-builder-new-spellbook-entry"]' },
+      { id: 'expanded-new-spellbook-requires-mage-choice', label: '展开库新建法术书必须回到绑定法师选择', selector: '[data-testid="mage-wars-spellbook-builder-new-spellbook-entry"][data-new-spellbook-mage-choice="required"]' },
       { id: 'spellpoint-capacity-owner', label: '顶部容量区总体法术点 owner', selector: '.capacity' },
       { id: 'mana-cost-filter', label: '法力费用筛选', selector: '[data-testid="mage-wars-spellbook-builder-filter-mana"]' },
       { id: 'card-pool-grid', label: '主视觉卡池网格', selector: '[data-testid="mage-wars-spellbook-builder-card-pool-grid"]' },
@@ -266,6 +293,77 @@ const CONTRACTS = {
         attribute: 'data-min-card-width-rem',
         min: 10.5,
       },
+      {
+        id: 'builder-saved-spellbook-limit',
+        label: '组书器命名法术书保存上限',
+        selector: '[data-testid="mage-wars-spellbook-builder-new-spellbook-entry"]',
+        attribute: 'data-saved-spellbook-limit',
+        min: 10,
+      },
+    ],
+  },
+  'betrayal-event-rolled-damage-panel': {
+    visibleMax: [
+      {
+        id: 'damage-total-visible-owner',
+        label: '伤害骰合计唯一可见 owner',
+        pattern: /伤害骰合计\s*\d+/g,
+        max: 1,
+      },
+    ],
+    visibleForbidden: [
+      { id: 'event-branch-copy', label: '伤害骰阶段不得复写事件分支标题', pattern: /受到(?:一颗|[一二三四五六\d]+\s*颗)骰子的(?:精神|物理)伤害/g },
+      { id: 'roll-kind-copy', label: '伤害骰阶段不得复写骰种标题', pattern: /重新投掷的伤害骰|重新投掷\s*\d+\s*颗骰子/g },
+      { id: 'pending-allocation-copy', label: '伤害骰阶段不得提前显示待分配伤害', pattern: /待分配\s*\d+\s*点(?:精神|物理)伤害/g },
+      { id: 'event-total-copy', label: '伤害骰阶段不得沿用事件总点数', pattern: /事件总点数/g },
+      { id: 'subtotal-breakdown-copy', label: '伤害骰阶段不得复写骰面小计或固定加值', pattern: /骰面合计|加值/g },
+    ],
+    forbiddenSelectors: [
+      { id: 'recent-roll-outcome', label: '伤害骰阶段旧结果标题', selector: '[data-testid="betrayal-recent-roll-outcome"]' },
+      { id: 'damage-dice-copy', label: '伤害骰阶段旧伤害骰说明块', selector: '[data-testid="betrayal-recent-roll-damage-dice"]' },
+      { id: 'effect-damage-copy', label: '伤害骰阶段旧待分配说明块', selector: '[data-testid="betrayal-recent-roll-effect-damage"]' },
+      { id: 'roll-breakdown-copy', label: '伤害骰阶段旧小计拆解块', selector: '[data-testid="betrayal-recent-roll-breakdown"]' },
+    ],
+    requiredSelectors: [
+      { id: 'damage-roll-panel', label: '伤害骰面板', selector: '[data-testid="betrayal-recent-roll-panel"][data-visible-dice-source="event-rolled-damage"]' },
+      { id: 'damage-total', label: '伤害骰合计', selector: '[data-testid="betrayal-recent-roll-total"]' },
+      { id: 'damage-dice-group', label: '伤害骰由骰子本体承接', selector: '[data-testid="betrayal-house-dice-3d-group"][data-dice-count]' },
+      { id: 'hidden-reroll-caption', label: '骰种说明只保留无障碍/隐藏承载', selector: '[data-testid="betrayal-reroll-prompt-outside-dice"][aria-hidden="true"]' },
+    ],
+    perItemRequiredSelectors: [],
+    numericAttributes: [],
+    selectorForbidden: [],
+  },
+  'betrayal-mental-damage-allocation-panel': {
+    visibleMax: [
+      {
+        id: 'mental-damage-amount-visible-owner',
+        label: '精神伤害总额唯一可见 owner',
+        pattern: /\d+\s*点精神伤害/g,
+        max: 1,
+      },
+    ],
+    visibleForbidden: [
+      { id: 'trait-damage-button-copy', label: '属性刻度尺外不得复写承伤点数', pattern: /承担\s*\d+\s*点|×\d/g },
+      { id: 'pending-allocation-copy', label: '分配阶段不得继续显示待分配句', pattern: /待分配\s*\d+\s*点精神伤害/g },
+    ],
+    forbiddenSelectors: [],
+    requiredSelectors: [
+      { id: 'allocation-panel', label: '精神伤害分配面板', selector: '[data-testid="betrayal-damage-allocation-panel"]' },
+      { id: 'source-hidden-owner', label: '来源事件只作隐藏归属，不占主可见层', selector: '[data-testid="betrayal-damage-allocation-source"][data-visible-source-owner="discovery-card"].sr-only' },
+      { id: 'knowledge-trait-owner', label: '知识刻度尺承接已选 1 点', selector: '[data-testid="betrayal-damage-allocation-trait-knowledge"][data-damage-selected-count="1"][data-trait-preview-step-count="1"]' },
+      { id: 'sanity-trait-owner', label: '神志刻度尺承接已选 1 点', selector: '[data-testid="betrayal-damage-allocation-trait-sanity"][data-damage-selected-count="1"][data-trait-preview-step-count="1"]' },
+    ],
+    perItemRequiredSelectors: [],
+    numericAttributes: [],
+    selectorForbidden: [
+      {
+        id: 'traits-no-secondary-allocation-copy',
+        label: '属性列表不得把刻度尺选择改写成第二套文字',
+        selector: '[data-testid="betrayal-damage-allocation-traits"]',
+        includeHidden: false,
+        patterns: [/承担\s*\d+\s*点/g, /×\d/g],
+      },
     ],
   },
 };
@@ -273,11 +371,13 @@ const CONTRACTS = {
 function usage() {
   const names = Object.keys(CONTRACTS).join(', ');
   console.error(`用法: node .spec/tools/scan-ui-duplicate-owners.mjs --contract <${names}> <html-file>`);
+  console.error('      node .spec/tools/scan-ui-duplicate-owners.mjs --self-check');
 }
 
 function parseArgs(argv) {
   let contract = 'mage-wars-spellbook-builder';
   let json = false;
+  let selfCheck = false;
   const files = [];
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -287,6 +387,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--json') {
       json = true;
+    } else if (arg === '--self-check') {
+      selfCheck = true;
     } else if (arg === '--help' || arg === '-h') {
       usage();
       process.exit(0);
@@ -297,6 +399,7 @@ function parseArgs(argv) {
     }
   }
 
+  if (selfCheck) return { contract, json, files, selfCheck };
   if (!CONTRACTS[contract]) {
     usage();
     throw new Error(`未知 contract: ${contract}`);
@@ -306,7 +409,50 @@ function parseArgs(argv) {
     throw new Error('缺少 html-file');
   }
 
-  return { contract, json, files };
+  return { contract, json, files, selfCheck };
+}
+
+function validatePattern(owner, rule, key = 'pattern') {
+  const pattern = rule?.[key];
+  if (!(pattern instanceof RegExp)) {
+    throw new Error(`${owner}.${rule?.id || 'unknown'} 缺少 RegExp ${key}`);
+  }
+}
+
+function validateArray(owner, contract, key) {
+  if (!Array.isArray(contract[key])) {
+    throw new Error(`${owner} 缺少数组字段 ${key}`);
+  }
+}
+
+function runSelfCheck() {
+  for (const [name, contract] of Object.entries(CONTRACTS)) {
+    for (const key of [
+      'visibleMax',
+      'visibleForbidden',
+      'forbiddenSelectors',
+      'requiredSelectors',
+      'selectorForbidden',
+      'perItemRequiredSelectors',
+      'numericAttributes',
+    ]) {
+      validateArray(name, contract, key);
+    }
+
+    for (const rule of contract.visibleMax) validatePattern(name, rule);
+    for (const rule of contract.visibleForbidden) validatePattern(name, rule);
+    for (const rule of contract.selectorForbidden) {
+      if (!Array.isArray(rule.patterns)) {
+        throw new Error(`${name}.${rule.id} 缺少 patterns 数组`);
+      }
+      for (const pattern of rule.patterns) {
+        if (!(pattern instanceof RegExp)) {
+          throw new Error(`${name}.${rule.id} patterns 包含非 RegExp`);
+        }
+      }
+    }
+  }
+  return { ok: true, contracts: Object.keys(CONTRACTS) };
 }
 
 function normalizeText(value) {
@@ -315,10 +461,23 @@ function normalizeText(value) {
 
 function isHiddenElement(element) {
   for (let node = element; node; node = node.parentElement) {
+    if (
+      node.classList?.contains('sr-only')
+      || node.classList?.contains('visually-hidden')
+      || node.classList?.contains('hidden')
+      || node.classList?.contains('invisible')
+      || node.classList?.contains('opacity-0')
+    ) return true;
     if (node.hasAttribute('hidden')) return true;
     if (node.getAttribute('aria-hidden') === 'true') return true;
     const style = (node.getAttribute('style') || '').replace(/\s+/g, '').toLowerCase();
-    if (style.includes('display:none') || style.includes('visibility:hidden')) return true;
+    if (
+      style.includes('display:none')
+      || style.includes('visibility:hidden')
+      || style.includes('opacity:0')
+      || style.includes('clip:rect(0,0,0,0)')
+      || style.includes('clip-path:inset(50%)')
+    ) return true;
   }
   return false;
 }
@@ -466,6 +625,21 @@ try {
 } catch (error) {
   console.error(error.message);
   process.exit(2);
+}
+
+if (parsed.selfCheck) {
+  try {
+    const result = runSelfCheck();
+    if (parsed.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`OK UI duplicate owner contracts: ${result.contracts.join(', ')}`);
+    }
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 const results = parsed.files.map((file) => runContract(file, parsed.contract));

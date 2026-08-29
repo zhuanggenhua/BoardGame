@@ -753,6 +753,11 @@ function resolveEffectAction(
                     playerId: targetId,
                     sourceAbilityId,
                     titleKey: action.choiceTitleKey || 'choices.default',
+                    choiceContext: {
+                        attackerId: ctx.attackerId,
+                        defenderId: ctx.defenderId,
+                        ...(action.choiceContext ?? {}),
+                    },
                     options: action.choiceOptions,
                 },
                 sourceCommandType: 'ABILITY_EFFECT',
@@ -1173,6 +1178,10 @@ function resolveConditionalEffect(
                 playerId: targetId,
                 sourceAbilityId,
                 titleKey: effect.triggerChoice.titleKey,
+                choiceContext: {
+                    attackerId: ctx.attackerId,
+                    defenderId: ctx.defenderId,
+                },
                 options: effect.triggerChoice.options,
             },
             sourceCommandType: 'ABILITY_EFFECT',

@@ -36,6 +36,7 @@ import {
     getNextPlayerId,
     getOpponents,
     getPlayerDieFace,
+    getTokenStackLimit,
     getResponderQueue,
     getRollerId,
     getTargetingRollAutoDefenderId,
@@ -976,6 +977,34 @@ function resolveCursedPirateNoAttackPowderKegEvents(
         sourceCommandType: commandType,
         timestamp,
     });
+}
+
+function resolveVampireLordBloodPowerEndTurnEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    sourceCommandType: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    if (!core.vampireLordBloodPowerEndTurnPending?.[playerId]) return [];
+    const player = core.players[playerId];
+    if (player?.characterId !== 'vampire_lord') return [];
+
+    const current = player.tokens[TOKEN_IDS.BLOOD_POWER] ?? 0;
+    const nextTotal = Math.min(current + 1, getTokenStackLimit(core, playerId, TOKEN_IDS.BLOOD_POWER));
+    if (nextTotal <= current) return [];
+
+    return [{
+        type: 'TOKEN_GRANTED',
+        payload: {
+            targetId: playerId,
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: 1,
+            newTotal: nextTotal,
+            sourceAbilityId: 'vampire-lord-blood-power-end-turn',
+        },
+        sourceCommandType,
+        timestamp: timestamp + 0.02,
+    } as DiceThroneEvent];
 }
 
 function resolvePowderKegUpkeepEvents(
@@ -2277,6 +2306,12 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 timestamp,
                 random,
             }));
+            events.push(...resolveVampireLordBloodPowerEndTurnEvents(
+                core,
+                activeId,
+                command.type,
+                timestamp,
+            ));
 
             const nextPlayerId = getNextPlayerId(core);
             const turnEvent: TurnChangedEvent = {

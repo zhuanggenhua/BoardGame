@@ -117,6 +117,7 @@ export const LeftSidebar = ({
                         className="flex-wrap-reverse justify-start gap-[0.3vw]"
                         locale={locale}
                         atlas={statusIconAtlas}
+                        characterId={viewPlayer.characterId}
                         tokenDefinitions={tokenDefinitions}
                         tokenStackLimits={viewPlayer.tokenStackLimits}
                         testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
@@ -150,6 +151,7 @@ export const LeftSidebar = ({
                         className="flex-wrap-reverse justify-start gap-[0.3vw]"
                         locale={locale}
                         atlas={statusIconAtlas}
+                        characterId={viewPlayer.characterId}
                         testIdPrefix={playerId ? `dt-player-${playerId}-status` : undefined}
                         onEffectClick={(effectId) => {
                             if (effectId === STATUS_IDS.KNOCKDOWN && onKnockdownClick) {

@@ -45,6 +45,16 @@ type StatusIconAtlasResponse = {
     frames: Record<string, { frame: StatusIconAtlasFrame }>;
 };
 
+const getCharacterTokenDefinitions = (characterId?: string): TokenDef[] | undefined => {
+    if (!characterId) return undefined;
+    return CHARACTER_DATA_MAP[characterId as keyof typeof CHARACTER_DATA_MAP]?.tokens;
+};
+
+const resolveVisualDefinitions = (
+    characterId?: string,
+    visualDefinitions?: TokenDef[],
+): TokenDef[] | undefined => visualDefinitions ?? getCharacterTokenDefinitions(characterId);
+
 const isStatusIconAtlasResponse = (value: unknown): value is StatusIconAtlasResponse => {
     if (!value || typeof value !== 'object') return false;
     const data = value as StatusIconAtlasResponse;
@@ -709,6 +719,8 @@ export const StatusEffectBadge = ({
     size = 'normal',
     locale,
     atlas,
+    characterId,
+    visualDefinitions,
     onClick,
     clickable = false,
     dataTestId,
@@ -718,12 +730,15 @@ export const StatusEffectBadge = ({
     size?: 'normal' | 'small' | 'tiny';
     locale?: string;
     atlas?: StatusAtlases | null;
+    characterId?: string;
+    visualDefinitions?: TokenDef[];
     onClick?: () => void;
     clickable?: boolean;
     dataTestId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const meta = STATUS_EFFECT_META[effectId] || { color: 'from-gray-500 to-gray-600' };
+    const meta = getVisualMetaById(effectId, resolveVisualDefinitions(characterId, visualDefinitions))
+        || { color: 'from-gray-500 to-gray-600' };
 
     // Check if sprite exists in the resolved atlas
     let hasSprite = false;
@@ -817,6 +832,8 @@ export const StatusEffectsContainer = ({
     className = '',
     locale,
     atlas,
+    characterId,
+    visualDefinitions,
     onEffectClick,
     clickableEffects,
     testIdPrefix,
@@ -827,6 +844,8 @@ export const StatusEffectsContainer = ({
     className?: string;
     locale?: string;
     atlas?: StatusAtlases | null;
+    characterId?: string;
+    visualDefinitions?: TokenDef[];
     /** 点击状态效果的回调 */
     onEffectClick?: (effectId: string) => void;
     /** 可点击的状态效果 ID 列表 */
@@ -852,6 +871,8 @@ export const StatusEffectsContainer = ({
                         size={size}
                         locale={locale}
                         atlas={atlas}
+                        characterId={characterId}
+                        visualDefinitions={visualDefinitions}
                         onClick={isClickable ? () => onEffectClick?.(effectId) : undefined}
                         clickable={isClickable}
                         dataTestId={testIdPrefix ? `${testIdPrefix}-${effectId}` : undefined}
@@ -870,6 +891,8 @@ export const TokenBadge = ({
     size = 'normal',
     locale,
     atlas,
+    characterId,
+    visualDefinitions,
     onClick,
     clickable = false,
     suppressTooltip = false,
@@ -882,6 +905,8 @@ export const TokenBadge = ({
     size?: 'normal' | 'small' | 'tiny';
     locale?: string;
     atlas?: StatusAtlases | null;
+    characterId?: string;
+    visualDefinitions?: TokenDef[];
     onClick?: () => void;
     clickable?: boolean;
     /** 需要持续露出临近操作条时，避免 hover 说明遮住该操作。 */
@@ -889,7 +914,8 @@ export const TokenBadge = ({
     dataTestId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const meta = getVisualMetaById(tokenId) || { color: 'from-gray-500 to-gray-600' };
+    const meta = getVisualMetaById(tokenId, resolveVisualDefinitions(characterId, visualDefinitions))
+        || { color: 'from-gray-500 to-gray-600' };
 
     let hasSprite = false;
     if (atlas && meta.frameId) {
@@ -995,6 +1021,8 @@ export const TokensContainer = ({
     className = '',
     locale,
     atlas,
+    characterId,
+    visualDefinitions,
     onTokenClick,
     clickableTokens,
     tokenDefinitions,
@@ -1008,6 +1036,8 @@ export const TokensContainer = ({
     className?: string;
     locale?: string;
     atlas?: StatusAtlases | null;
+    characterId?: string;
+    visualDefinitions?: TokenDef[];
     /** 点击 Token 的回调 */
     onTokenClick?: (tokenId: string) => void;
     /** 可点击的 Token ID 列表 */
@@ -1053,6 +1083,8 @@ export const TokensContainer = ({
                         size={size}
                         locale={locale}
                         atlas={atlas}
+                        characterId={characterId}
+                        visualDefinitions={visualDefinitions}
                         onClick={isClickable ? () => onTokenClick?.(tokenId) : undefined}
                         clickable={isClickable}
                         suppressTooltip={suppressTooltips}
@@ -1079,6 +1111,8 @@ export const SelectableStatusBadge = ({
     size = 'normal',
     locale,
     atlas,
+    characterId,
+    visualDefinitions,
 }: {
     effectId: string;
     stacks: number;
@@ -1089,10 +1123,16 @@ export const SelectableStatusBadge = ({
     size?: 'normal' | 'small';
     locale?: string;
     atlas?: StatusAtlases | null;
+    characterId?: string;
+    visualDefinitions?: TokenDef[];
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const meta = STATUS_EFFECT_META[effectId] || TOKEN_META[effectId] || { color: 'from-gray-500 to-gray-600' };
-    const isToken = !STATUS_EFFECT_META[effectId] && Boolean(TOKEN_META[effectId]);
+    const preferredDefinitions = resolveVisualDefinitions(characterId, visualDefinitions);
+    const preferredDefinition = preferredDefinitions?.find(def => def.id === effectId);
+    const meta = getVisualMetaById(effectId, preferredDefinitions) || { color: 'from-gray-500 to-gray-600' };
+    const isToken = preferredDefinition
+        ? preferredDefinition.category !== 'debuff'
+        : !STATUS_EFFECT_META[effectId] && Boolean(TOKEN_META[effectId]);
     const i18nPrefix = isToken ? 'tokens' : 'statusEffects';
 
     let hasSprite = false;
@@ -1175,6 +1215,8 @@ export const SelectableEffectsContainer = ({
     className = '',
     locale,
     atlas,
+    characterId,
+    visualDefinitions,
 }: {
     effects: Record<string, number>;
     tokens?: Record<string, number>;
@@ -1187,6 +1229,8 @@ export const SelectableEffectsContainer = ({
     className?: string;
     locale?: string;
     atlas?: StatusAtlases | null;
+    characterId?: string;
+    visualDefinitions?: TokenDef[];
 }) => {
     const activeEffects = Object.entries(effects).filter(([, stacks]) => stacks > 0);
     const activeTokens = tokens ? Object.entries(tokens).filter(([, amount]) => amount > 0) : [];
@@ -1208,6 +1252,8 @@ export const SelectableEffectsContainer = ({
                     size={size}
                     locale={locale}
                     atlas={atlas}
+                    characterId={characterId}
+                    visualDefinitions={visualDefinitions}
                 />
             ))}
         </div>

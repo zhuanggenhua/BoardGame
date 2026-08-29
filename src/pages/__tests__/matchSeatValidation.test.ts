@@ -1784,6 +1784,7 @@ describe('resolveNextAiAction 在线视角', () => {
                 activePlayerId: '1',
                 players: {
                     '0': {
+                        characterId: 'samurai',
                         resources: { hp: 50, cp: 2 },
                         hand: [],
                         statusEffects: {},
@@ -1791,6 +1792,7 @@ describe('resolveNextAiAction 在线视角', () => {
                         abilities: [],
                     },
                     '1': {
+                        characterId: 'monk',
                         resources: { hp: 50, cp: 2 },
                         hand: [],
                         statusEffects: {},
@@ -1879,9 +1881,9 @@ describe('resolveNextAiAction 在线视角', () => {
         });
 
         expect(resolution?.playerId).toBe('1');
-        expect(resolution?.action.kind).toBe('skip-bonus-dice-reroll');
+        expect(resolution?.action.kind).toBe('confirm-roll');
         expect(resolution?.action.commands).toEqual([
-            { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+            { type: 'CONFIRM_ROLL', payload: {} },
         ]);
     });
 

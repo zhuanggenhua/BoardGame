@@ -23,6 +23,7 @@ import {
     waitForGameBoard,
 } from '../helpers/dicethrone';
 import {
+    expectRightTrayBonusDiceConfirmation,
     settleCurrentBonusDice,
     waitForDiceThroneVisualIdle,
 } from './bonus-dice-flow';
@@ -66,8 +67,39 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     return path;
 };
 
-const prepareShadowThiefVsSamuraiScene = async (page: Page) => {
-    await page.evaluate(async ({ hpId, cpId, shameId, backStrikeId }) => {
+type ShadowThiefVsSamuraiSceneOptions = {
+    attackerCp?: number;
+    attackerHp?: number;
+    attackerShame?: number;
+    attackerSneakAttack?: number;
+    defenderHp?: number;
+    defenderBackStrike?: number;
+};
+
+const prepareShadowThiefVsSamuraiScene = async (
+    page: Page,
+    {
+        attackerCp = 6,
+        attackerHp = 50,
+        attackerShame = 2,
+        attackerSneakAttack = 0,
+        defenderHp = 49,
+        defenderBackStrike = 1,
+    }: ShadowThiefVsSamuraiSceneOptions = {},
+) => {
+    await page.evaluate(async ({
+        hpId,
+        cpId,
+        shameId,
+        sneakAttackId,
+        backStrikeId,
+        attackerCp,
+        attackerHp,
+        attackerShame,
+        attackerSneakAttack,
+        defenderHp,
+        defenderBackStrike,
+    }) => {
         const harness = (window as Window).__BG_TEST_HARNESS__;
         const state = harness?.state?.get?.();
         if (!harness?.state?.set || !state) {
@@ -113,12 +145,13 @@ const prepareShadowThiefVsSamuraiScene = async (page: Page) => {
                         damageShields: [],
                         resources: {
                             ...shadowThief.resources,
-                            [hpId]: 50,
-                            [cpId]: 6,
+                            [hpId]: attackerHp,
+                            [cpId]: attackerCp,
                         },
                         tokens: {
                             ...shadowThief.tokens,
-                            [shameId]: 2,
+                            [shameId]: attackerShame,
+                            [sneakAttackId]: attackerSneakAttack,
                         },
                     },
                     '1': {
@@ -128,12 +161,12 @@ const prepareShadowThiefVsSamuraiScene = async (page: Page) => {
                         damageShields: [],
                         resources: {
                             ...samurai.resources,
-                            [hpId]: 49,
+                            [hpId]: defenderHp,
                             [cpId]: 0,
                         },
                         tokens: {
                             ...samurai.tokens,
-                            [backStrikeId]: 1,
+                            [backStrikeId]: defenderBackStrike,
                         },
                     },
                 },
@@ -158,8 +191,34 @@ const prepareShadowThiefVsSamuraiScene = async (page: Page) => {
         hpId: RESOURCE_IDS.HP,
         cpId: RESOURCE_IDS.CP,
         shameId: TOKEN_IDS.SHAME,
+        sneakAttackId: TOKEN_IDS.SNEAK_ATTACK,
         backStrikeId: TOKEN_IDS.SAMURAI_RETRIBUTION,
+        attackerCp,
+        attackerHp,
+        attackerShame,
+        attackerSneakAttack,
+        defenderHp,
+        defenderBackStrike,
     });
+};
+
+const readHarnessMatchState = async (page: Page) => page.evaluate(() => (
+    (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as Record<string, any>
+));
+
+const setHarnessRandomQueue = async (page: Page, values: number[]): Promise<void> => {
+    await page.evaluate((queue) => {
+        const harness = (window as Window).__BG_TEST_HARNESS__;
+        if (!harness?.random?.setQueue) {
+            throw new Error('DiceThrone TestHarness random queue 不可用');
+        }
+        harness.random.setQueue(queue);
+    }, values);
+};
+
+const randomValueForDieFace = (value: number): number => {
+    const normalized = Math.max(1, Math.min(6, Math.floor(value)));
+    return ((normalized - 1) / 6) + 0.001;
 };
 
 const readHpVisualSummary = async (page: Page) => page.evaluate(() => {
@@ -226,6 +285,69 @@ const readVisibleDamageTexts = async (page: Page) => page.evaluate(() => (
         .filter((entry) => entry.visible)
         .map((entry) => entry.text)
 ));
+
+const readShadowShankSneakSummary = async (page: Page) => page.evaluate(({ hpId, cpId, sneakAttackId, shameId }) => {
+    const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as HarnessState | null | undefined;
+    const core = state?.core;
+    const pendingDamage = core?.pendingDamage as Record<string, any> | undefined;
+    const pendingBonusDiceSettlement = core?.pendingBonusDiceSettlement as Record<string, any> | undefined;
+    const entries = state?.sys?.eventStream?.entries ?? [];
+    const events = entries.map((entry) => entry.event).filter(Boolean);
+
+    return {
+        phase: state?.sys?.phase ?? null,
+        attackerHp: core?.players?.['0']?.resources?.[hpId] ?? null,
+        attackerCp: core?.players?.['0']?.resources?.[cpId] ?? null,
+        defenderHp: core?.players?.['1']?.resources?.[hpId] ?? null,
+        attackerSneakAttack: core?.players?.['0']?.tokens?.[sneakAttackId] ?? null,
+        attackerShame: core?.players?.['0']?.tokens?.[shameId] ?? null,
+        uiDefenderHp: document.querySelector('[data-testid="dt-top-header-1-hp-value"]')?.textContent?.trim() ?? null,
+        pendingDamageId: typeof pendingDamage?.id === 'string' ? pendingDamage.id : null,
+        pendingDamageCurrentDamage: typeof pendingDamage?.currentDamage === 'number' ? pendingDamage.currentDamage : null,
+        pendingDamageResponderId: pendingDamage?.responderId ?? null,
+        pendingDamageResponseType: pendingDamage?.responseType ?? null,
+        pendingBonusDiceSource: pendingBonusDiceSettlement?.sourceAbilityId ?? null,
+        pendingAttack: Boolean(core?.pendingAttack),
+        pendingBonusDiceSettlement: Boolean(core?.pendingBonusDiceSettlement),
+        pendingDamage: Boolean(core?.pendingDamage),
+        interaction: Boolean(state?.sys?.interaction?.current),
+        responseWindow: Boolean(state?.sys?.responseWindow?.current),
+        damageEvents: events
+            .filter((event) => event?.type === 'DAMAGE_DEALT')
+            .map((event) => ({
+                targetId: event?.payload?.targetId ?? null,
+                amount: event?.payload?.amount ?? null,
+                actualDamage: event?.payload?.actualDamage ?? null,
+                sourceAbilityId: event?.payload?.sourceAbilityId ?? null,
+                modifiers: Array.isArray(event?.payload?.modifiers)
+                    ? event.payload.modifiers.map((modifier: Record<string, unknown>) => ({
+                        sourceId: modifier.sourceId ?? null,
+                        value: modifier.value ?? null,
+                    }))
+                    : [],
+            })),
+        bonusDieEvents: events
+            .filter((event) => event?.type === 'BONUS_DIE_ROLLED')
+            .map((event) => ({
+                value: event?.payload?.value ?? null,
+                pendingDamageBonus: event?.payload?.pendingDamageBonus ?? null,
+                effectKey: event?.payload?.effectKey ?? null,
+            })),
+        tokenConsumedEvents: events
+            .filter((event) => event?.type === 'TOKEN_CONSUMED')
+            .map((event) => ({
+                playerId: event?.payload?.playerId ?? null,
+                tokenId: event?.payload?.tokenId ?? null,
+                amount: event?.payload?.amount ?? null,
+                newTotal: event?.payload?.newTotal ?? null,
+            })),
+    };
+}, {
+    hpId: RESOURCE_IDS.HP,
+    cpId: RESOURCE_IDS.CP,
+    sneakAttackId: TOKEN_IDS.SNEAK_ATTACK,
+    shameId: TOKEN_IDS.SHAME,
+});
 
 const readDamageVisualDiagnostics = async (page: Page) => page.evaluate(() => {
     const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.() as HarnessState | null | undefined;
@@ -578,6 +700,161 @@ test.describe('DiceThrone Shadow Thief HP visual update', () => {
         testInfo.annotations.push({
             type: 'evidence',
             description: `暗影刺客小顺子 UI 血量更新截图：${beforePath}；${impactPath}；${finalPath}`,
+        });
+    });
+
+    test('暗影穿刺带伏击和耻辱时，伏击骰计入总伤害且攻击后耻辱移除', async ({ page, game }, testInfo) => {
+        test.setTimeout(120000);
+
+        await game.openTestGame('dicethrone', {}, OPEN_TIMEOUT_MS);
+        await waitForDiceThroneHarness(page, 40000);
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: { resources: { CP: 6, HP: 50 } },
+            player1: { resources: { CP: 0, HP: 50 } },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                hostStarted: true,
+                selectedCharacters: { '0': 'shadow_thief', '1': 'samurai' },
+                rollConfirmed: false,
+                rollCount: 0,
+                rollLimit: 3,
+            },
+        });
+        await prepareShadowThiefVsSamuraiScene(page, {
+            attackerCp: 6,
+            attackerShame: 2,
+            attackerSneakAttack: 1,
+            defenderHp: 50,
+            defenderBackStrike: 0,
+        });
+
+        await expect(page.getByTestId('dt-top-header-1')).toHaveAttribute('data-player-id', '1', { timeout: 10000 });
+        await expect(page.getByTestId('dt-top-header-1-hp-value')).toHaveText('50', { timeout: 10000 });
+        await expect.poll(async () => readShadowShankSneakSummary(page), { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            attackerCp: 6,
+            defenderHp: 50,
+            attackerSneakAttack: 1,
+            attackerShame: 2,
+            pendingAttack: false,
+            pendingDamage: false,
+        });
+        const beforePath = await saveEvidenceScreenshot(page, testInfo, '暗影穿刺伏击前-暗影刺客有伏击和耻辱');
+
+        await setDiceThroneDiceValues(page, [6, 6, 6, 6, 6]);
+        await dispatch(page, 'ROLL_DICE', '0');
+        await dispatch(page, 'CONFIRM_ROLL', '0');
+        await dispatch(page, 'SELECT_ABILITY', '0', { abilityId: 'shadow-shank' });
+        await dispatch(page, 'ADVANCE_PHASE', '0');
+
+        await expect.poll(async () => readShadowShankSneakSummary(page), { timeout: 10000 }).toMatchObject({
+            attackerCp: 9,
+            defenderHp: 50,
+            attackerSneakAttack: 1,
+            attackerShame: 0,
+            pendingDamageCurrentDamage: 14,
+            pendingDamageResponderId: '0',
+            pendingDamageResponseType: 'beforeDamageDealt',
+            pendingAttack: true,
+            pendingDamage: true,
+        });
+        const tokenResponseSummary = await readShadowShankSneakSummary(page);
+        const pendingDamageId = tokenResponseSummary.pendingDamageId;
+        expect(pendingDamageId).toBeTruthy();
+        const tokenResponsePath = await saveEvidenceScreenshot(page, testInfo, '暗影穿刺响应窗口-基础伤害14且伏击可用');
+
+        await setHarnessRandomQueue(page, [randomValueForDieFace(3)]);
+        await dispatch(page, 'USE_TOKEN', '0', {
+            tokenId: TOKEN_IDS.SNEAK_ATTACK,
+            amount: 1,
+            pendingDamageId,
+        });
+
+        await expect.poll(async () => readShadowShankSneakSummary(page), { timeout: 10000 }).toMatchObject({
+            attackerCp: 9,
+            defenderHp: 50,
+            attackerSneakAttack: 0,
+            attackerShame: 0,
+            pendingDamageCurrentDamage: 14,
+            pendingDamageResponderId: '0',
+            pendingDamageResponseType: 'beforeDamageDealt',
+            pendingAttack: true,
+            pendingDamage: true,
+            pendingBonusDiceSettlement: true,
+            pendingBonusDiceSource: 'shadow-thief-sneak-attack',
+        });
+        await expect(page.getByTestId('dicethrone-response-pass-button')).toHaveCount(0, { timeout: 5000 });
+        await expectRightTrayBonusDiceConfirmation(
+            page,
+            () => readHarnessMatchState(page),
+            { sourceAbilityId: 'shadow-thief-sneak-attack' },
+        );
+        const bonusRollPath = await saveEvidenceScreenshot(page, testInfo, '暗影穿刺伏击骰-掷到3待确认');
+
+        await settleCurrentBonusDice(
+            page,
+            () => readHarnessMatchState(page),
+            { sourceAbilityId: 'shadow-thief-sneak-attack' },
+        );
+
+        await expect.poll(async () => readShadowShankSneakSummary(page), { timeout: 10000 }).toMatchObject({
+            attackerCp: 9,
+            defenderHp: 50,
+            attackerSneakAttack: 0,
+            attackerShame: 0,
+            pendingDamageCurrentDamage: 17,
+            pendingDamageResponderId: '0',
+            pendingDamageResponseType: 'beforeDamageDealt',
+            pendingAttack: true,
+            pendingDamage: true,
+            pendingBonusDiceSettlement: false,
+        });
+        const bonusSettledPath = await saveEvidenceScreenshot(page, testInfo, '暗影穿刺伏击确认后-总伤害17');
+
+        await dispatch(page, 'SKIP_TOKEN_RESPONSE', '0', { pendingDamageId });
+        await expect.poll(async () => readShadowShankSneakSummary(page), { timeout: 15000 }).toMatchObject({
+            phase: 'main2',
+            attackerCp: 9,
+            defenderHp: 33,
+            attackerSneakAttack: 0,
+            attackerShame: 0,
+            uiDefenderHp: '33',
+            pendingAttack: false,
+            pendingDamage: false,
+            pendingBonusDiceSettlement: false,
+            interaction: false,
+            responseWindow: false,
+        });
+        await waitForDiceThroneVisualIdle(page);
+
+        const finalSummary = await readShadowShankSneakSummary(page);
+        const damageEvent = finalSummary.damageEvents.find((event) => (
+            event.targetId === '1'
+            && event.sourceAbilityId === 'shadow-shank'
+        ));
+        expect(damageEvent).toMatchObject({
+            amount: 17,
+            actualDamage: 17,
+        });
+        expect(damageEvent?.modifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({ sourceId: TOKEN_IDS.SNEAK_ATTACK, value: 3 }),
+        ]));
+        expect(damageEvent?.modifiers ?? []).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ sourceId: TOKEN_IDS.SHAME }),
+        ]));
+        expect(finalSummary.bonusDieEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({ value: 3, pendingDamageBonus: 3 }),
+        ]));
+        expect(finalSummary.tokenConsumedEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({ playerId: '0', tokenId: TOKEN_IDS.SHAME, amount: 2, newTotal: 0 }),
+        ]));
+        const finalPath = await saveEvidenceScreenshot(page, testInfo, '暗影穿刺结算后-武士血量33且耻辱清除');
+
+        testInfo.annotations.push({
+            type: 'evidence',
+            description: `暗影穿刺 + 伏击 + 耻辱 E2E 截图：${beforePath}；${tokenResponsePath}；${bonusRollPath}；${bonusSettledPath}；${finalPath}`,
         });
     });
 

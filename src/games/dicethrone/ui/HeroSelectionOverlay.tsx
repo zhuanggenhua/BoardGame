@@ -15,7 +15,7 @@ import { OptimizedImage } from '../../../components/common/media/OptimizedImage'
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { UI_Z_INDEX } from '../../../core';
 import { getPortraitStyle, ASSETS } from './assets';
-import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId, type CharacterId } from '../domain/types';
+import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type SelectableCharacterId, type CharacterId } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import clsx from 'clsx';
 
@@ -100,7 +100,7 @@ export const HeroSelectionOverlay: React.FC<HeroSelectionOverlayProps> = ({
 
     // 仅显示目前已实现的英雄
     const availableCharacters = useMemo(() => {
-        return DICETHRONE_CHARACTER_CATALOG.filter(char => ['monk', 'barbarian', 'pyromancer'].includes(char.id));
+        return DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.filter(char => ['monk', 'barbarian', 'pyromancer'].includes(char.id));
     }, []);
 
     // 预览的角色 ID：当前玩家已选的，或默认第一个

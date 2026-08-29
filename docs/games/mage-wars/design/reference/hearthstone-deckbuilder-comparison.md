@@ -5,7 +5,9 @@
 ## 参考源
 
 - Blizzard 官方 Card Library / Deck Builder 页面：`https://hearthstone.blizzard.com/en-us/deckbuilder`
+- Blizzard 官方 Returning Player Guide：`https://hearthstone.blizzard.com/en-us/news/24244450/welcome-back-to-hearthstone-a-returning-player-s-guide`
 - Blizzard 官方 Card Library 新闻：`https://news.blizzard.com/en-us/article/20056284/the-hearthstone-card-library-is-now-live`
+- Blizzard 官方 Deck Recipes 新闻：`https://hearthstone.blizzard.com/en-us/news/20056279/lets-get-brewing-with-deck-recipes`
 - HearthPwn in-game deck building guide：`https://www.hearthpwn.com/deckbuilding`
 - Gamer Experience deck tutorial：`https://gamerexperience.com/hearthstone-how-to-build-a-deck/`
 
@@ -22,7 +24,8 @@ Hearthstone 组牌编辑态可迁移的是结构和职责，不是木纹、卡�
 - 当玩家最终选择的是可使用 deck / loadout 时，deck / loadout 是主对象；hero / class 只是绑定信息、筛选信息或详情入口。
 - 完成 / 返回是编辑态的收口动作，不在卡池、牌表和 footer 多处重复。
 - import / new deck / save 这类管理动作存在，但不应默认压过卡池和 deck list。
-- 玩家自定义 / 命名保存副本必须有清楚身份标记；参考 Summoner Wars 时，迁移的是 DIY 身份标记在配置本体上可见这个不变量，不是另造角落管理区。
+- Hearthstone 新建 deck 的身份归属发生在新建分支里：`New Deck` 后先选择 class，再进入推荐 deck / 编辑；可迁移不变量是“未绑定配置先绑定身份”，不是在编辑态常驻第二套 hero / class owner。
+- 玩家自定义 / 命名保存副本必须有清楚身份标记；参考 Summoner Wars 时，迁移的是同一配置库末尾 `+` 入口和 DIY 身份标记在配置本体上可见这两个不变量，不是另造角落管理区。
 - 每个常驻 UI 元素都要先通过职责自证：成熟参考没有的元素必须能由 Mage Wars 规则、保存模型、素材比例、错误恢复或可访问性解释；解释不了就删除、折叠或降权。
 
 ## 炉石有，而 Mage Wars 必须问为什么没有
@@ -48,7 +51,8 @@ Hearthstone 组牌编辑态可迁移的是结构和职责，不是木纹、卡�
 | 每卡 `当前 / 上限` | Hearthstone 有数量限制但通常是 deck list 计数 | 保留在右侧清单唯一 owner。卡池不再贴 `xN` |
 | 横向墙牌 | Hearthstone 卡牌比例统一 | 保留。Mage Wars 墙体法术是正式横向牌面，必须按源素材比例显示 |
 | 右侧真实卡图缩略 | Hearthstone 右侧多为费用 + 文字列表 | 保留。用户已禁止简单几何；Mage Wars 牌名陌生且有横向墙牌，缩略图承担卡牌身份，不替代卡池 |
-| 标准起始书 / 命名副本库 | Hearthstone 有 My Decks，但编辑态不默认展开 | 保留为按需库弹层。Mage Wars 新书从标准书或选中书保存副本，不能藏成 DIY 空态 |
+| 标准起始书 / 命名副本库 | Hearthstone 有 My Decks，但编辑态不默认展开 | 保留为按需库弹层。Mage Wars 新书不能藏成 DIY 空态；未绑定新书先选法师，再从该法师标准起始书开草稿 |
+| 法术书库 `+` 新建入口 | Hearthstone / Summoner Wars 的配置库有明确 new deck / `+` 入口；Hearthstone 的新 deck 分支会先选 class | 保留。Mage Wars `+` 不隐式沿用当前法师：先选择绑定法师，再进入该法师标准起始书草稿；已保存副本可更新原副本或另存新 id；最多保存 10 本，数据层和 UI 扫描都要卡住 |
 | 命名副本 DIY 徽章 | Hearthstone 没有同名标签；Summoner Wars 自定义牌组有 DIY 身份标记 | 保留在命名副本本体上。它区分玩家保存副本和标准起始书，不替代名称、绑定法师或数量 |
 | 每张标准书卡常驻 `编辑并另存` | Hearthstone 不在每个预设 / deck 卡下放同权重编辑保存副本按钮 | 删除。点击标准书只负责选择；编辑从统一 `编辑选中书` 入口进入，保存 / 命名副本在构筑器内完成 |
 | 导入列表 | Hearthstone 支持导入 deck code | 保留为低权重弹层，不默认占主视觉 |
@@ -59,12 +63,13 @@ Hearthstone 组牌编辑态可迁移的是结构和职责，不是木纹、卡�
 
 ## 当前实现检查口径
 
-- 默认态只能看到：已选法师主控、选中书入口、命名输入 / 保存动作、唯一法术点容量、紧凑筛选工具条、卡池、右侧法术书清单、唯一确认入口。
+- 默认态只能看到：已选法师主控、选中书入口、`+` 新建入口、命名输入 / 保存动作、唯一法术点容量、紧凑筛选工具条、卡池、右侧法术书清单、唯一确认入口。
 - 默认态不能看到：展开法术书库、管理说明文案、规则说明块、第二个完成区、`当前法术书`、P1 / P2 / 席位、卡池 `xN`、独立详情按钮、第二套范围按钮、`全部卡牌`、每张标准书卡常驻 `编辑并另存`、把可点击性复述成状态的 `点击使用` / `Click to use`。
-- Setup 选书页的主对象必须是法术书库：四本标准起始书和玩家命名副本同屏同级；旧法师卡选择器、先选法师再选书的截图名 / 测试名 / 文案都视为回归。
+- Setup 选书页的主对象必须是法术书库：四本标准起始书、玩家命名副本和 `+` 新建入口同屏同级；旧法师卡选择器、先选法师再选书的截图名 / 测试名 / 文案都视为回归。
+- `+` 新建入口是新配置的身份绑定分支，不是构筑器常驻法师切换器：选书页 `+`、构筑器顶部 `+` 和展开库 `+` 必须先打开绑定法师候选层，候选层显示四名法师；选择后以该法师标准起始书进入新草稿，保存出的命名副本绑定玩家选择的法师。
 - 有命名副本时，选书页库卡和组书页法术书库行必须显示 DIY 徽章；标准起始书不显示 DIY。
 - 组书页默认态必须有红圈标注版截图说明已选法师主控就是能力牌 / 法师详情入口，同时有详情打开态截图。
-- 送验前必须跑 `.spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-selection temp/mage-wars-spellbook-selection-default-dom.html` 和 `.spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-builder temp/mage-wars-spellbook-builder-default-dom.html`，并用真实截图确认选书卡无废话状态、卡池首屏连续、墙牌横向比例保真、右侧清单可滚动。
+- 送验前必须跑 `.spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-selection temp/mage-wars-spellbook-selection-default-dom.html`、`.spec/tools/scan-ui-duplicate-owners.mjs --contract mage-wars-spellbook-builder temp/mage-wars-spellbook-builder-default-dom.html` 和 `mage-wars-spellbook-builder-with-saved` 对应扫描，并用真实截图确认选书卡无废话状态、`02-新建法术书-先选择绑定法师` 截图存在、卡池首屏连续、墙牌横向比例保真、右侧清单可滚动。
 - 送验前必须对当前画面所有常驻 UI 元素做职责审计：成熟参考没有且 Mage Wars 规则 / 保存模型 / 素材比例解释不了的 UI 不得保留。
 - 学派筛选送验前必须确认只含正式学派 / 元素词；蝙蝠、手套、靴子、传送门、胸甲等卡牌子类型不得出现在学派下拉。
 - 类型筛选必须包含墙体；法力费用筛选必须存在，并且不能把打出法力费用和构筑法术点混成一个读数。

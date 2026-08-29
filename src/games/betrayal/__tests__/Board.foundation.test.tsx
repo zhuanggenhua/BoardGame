@@ -73,6 +73,33 @@ function expectNoForbiddenPlayerUiInternalCopy(container: HTMLElement = document
     }
 }
 
+function readVisibleNonSrText(container: HTMLElement) {
+    const chunks: string[] = [];
+    const isHiddenForPlayer = (element: HTMLElement) => {
+        for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+            if (current.classList.contains('sr-only')) return true;
+            if (current.hidden || current.getAttribute('aria-hidden') === 'true') return true;
+            const style = window.getComputedStyle(current);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                return true;
+            }
+            if (current === container) break;
+        }
+        return false;
+    };
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let current = walker.nextNode();
+    while (current) {
+        const parent = current.parentElement;
+        const text = current.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+        if (parent && text && !isHiddenForPlayer(parent)) {
+            chunks.push(text);
+        }
+        current = walker.nextNode();
+    }
+    return chunks.join(' ').replace(/\s+/g, ' ').trim();
+}
+
 function expectEventRollConfirmButtonStyle(button: HTMLElement) {
     expect(button).toHaveClass('bg-[#d6b56d]');
     expect(button).toHaveClass('border-[#d6b56d]');
@@ -6609,7 +6636,7 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-speed'));
         expect(screen.getByTestId('betrayal-damage-allocation-confirm')).not.toBeDisabled();
-        expect(screen.getByTestId('betrayal-damage-allocation-preview')).toHaveTextContent('速度');
+        expect(screen.getByTestId('betrayal-damage-allocation-trait-speed')).toHaveAttribute('data-trait-preview-step-count', '1');
 
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-confirm'));
 
@@ -8851,18 +8878,23 @@ describe('Betrayal Board foundation', () => {
 
         finalizeEventRollIfVisible();
 
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveAttribute('data-visible-dice-source', 'event-rolled-damage');
-        expect(screen.getByTestId('betrayal-recent-roll-outcome')).toHaveTextContent('无线电广播');
-        expect(screen.getByTestId('betrayal-recent-roll-outcome')).not.toHaveTextContent('受到一颗骰子的精神伤害');
+        const damageRollPanel = screen.getByTestId('betrayal-recent-roll-panel');
+        expect(damageRollPanel).toHaveAttribute('data-visible-dice-source', 'event-rolled-damage');
+        expect(within(damageRollPanel).queryByTestId('betrayal-recent-roll-outcome')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-reroll-prompt-outside-dice')).toHaveTextContent('');
+        expect(screen.getByTestId('betrayal-reroll-prompt-outside-dice')).toHaveAttribute('aria-hidden', 'true');
         expect(screen.getByTestId('betrayal-recent-roll-total')).toHaveTextContent('伤害骰合计 2');
         expect(screen.getByTestId('betrayal-recent-roll-total')).not.toHaveTextContent('事件总点数 0');
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('重新投掷的伤害骰（1 颗）');
+        const damageRollVisibleText = readVisibleNonSrText(damageRollPanel);
+        expect(damageRollVisibleText).toContain('伤害骰合计 2');
+        expect(damageRollVisibleText).not.toContain('待分配 2 点精神伤害');
+        expect(damageRollVisibleText).not.toContain('无线电广播');
+        expect(damageRollVisibleText).not.toContain('受到一颗骰子的精神伤害');
+        expect(damageRollVisibleText).not.toContain('重新投掷的伤害骰');
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '1');
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rule-subtotal', '2');
-        expect(screen.getByTestId('betrayal-recent-roll-damage-dice')).toHaveAttribute('data-damage-rolls', '2');
-        expect(screen.getByTestId('betrayal-recent-roll-effect-damage')).toHaveTextContent('待分配 2 点精神伤害');
-        expect(screen.getByTestId('betrayal-recent-roll-effect-damage')).not.toHaveTextContent('重新投掷 1 颗骰子');
-        expect(screen.getByTestId('betrayal-recent-roll-effect-damage')).not.toHaveTextContent('合计 2');
+        expect(screen.queryByTestId('betrayal-recent-roll-damage-dice')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-recent-roll-effect-damage')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-recent-roll-breakdown')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-roll-continue')).toHaveTextContent('确认 0/1');
@@ -8882,9 +8914,19 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-knowledge'));
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-sanity'));
 
-        expect(screen.getByTestId('betrayal-damage-allocation-trait-knowledge')).toHaveTextContent('知识 承担 1 点');
-        expect(screen.getByTestId('betrayal-damage-allocation-trait-sanity')).toHaveTextContent('神志 承担 1 点');
-        expect(screen.getByTestId('betrayal-damage-allocation-traits')).not.toHaveTextContent(/×\d/);
+        const knowledgeDamageCard = screen.getByTestId('betrayal-damage-allocation-trait-knowledge');
+        const sanityDamageCard = screen.getByTestId('betrayal-damage-allocation-trait-sanity');
+        expect(knowledgeDamageCard).toHaveAttribute('data-damage-selected-count', '1');
+        expect(knowledgeDamageCard).toHaveAttribute('data-trait-preview-step-count', '1');
+        expect(Number(knowledgeDamageCard.getAttribute('data-trait-preview-target-position'))).toBeLessThan(
+            Number(knowledgeDamageCard.getAttribute('data-trait-preview-current-position')),
+        );
+        expect(sanityDamageCard).toHaveAttribute('data-damage-selected-count', '1');
+        expect(sanityDamageCard).toHaveAttribute('data-trait-preview-step-count', '1');
+        expect(Number(sanityDamageCard.getAttribute('data-trait-preview-target-position'))).toBeLessThan(
+            Number(sanityDamageCard.getAttribute('data-trait-preview-current-position')),
+        );
+        expect(screen.getByTestId('betrayal-damage-allocation-traits')).not.toHaveTextContent(/承担\s*\d+\s*点|×\d/);
     });
 
     it('一罐器官会在真实页面承接神志检定、抽物品和力量降低结果', () => {
@@ -10094,8 +10136,9 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '脑状食品');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might'));
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-damage-selected-count', '1');
-        expect(screen.getByTestId('betrayal-event-damage-preview-might')).toHaveAttribute('data-trait-preview-mode', 'damage');
-        expect(screen.getByTestId('betrayal-event-damage-preview-might')).toHaveAttribute('data-trait-preview-step-count', '1');
+        expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-trait-preview-mode', 'damage');
+        expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-trait-preview-step-count', '1');
+        expect(screen.getByTestId('betrayal-event-choice-damage-traits')).not.toHaveTextContent(/承担\s*\d+\s*点|×\d/);
         expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-knowledge'));
 
@@ -10171,7 +10214,7 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toBeDisabled();
         expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-damage-locked', 'true');
-        expect(screen.getByTestId('betrayal-event-damage-preview-might')).toHaveAttribute('data-trait-preview-locked', 'true');
+        expect(screen.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute('data-trait-preview-locked', 'true');
         expect(screen.queryByTestId('betrayal-event-choice-confirm')).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might'));
         expect(screen.getByTestId('betrayal-event-choice-panel')).toBeInTheDocument();

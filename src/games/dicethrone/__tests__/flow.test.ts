@@ -3413,7 +3413,12 @@ describe('王权骰铸流程测试', () => {
                     },
                 },
             });
-            expect(result.steps.filter(step => !step.success)).toEqual([]);
+            expect(result.steps.filter(step => !step.success)).toEqual([
+                expect.objectContaining({
+                    commandType: DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN,
+                    error: 'not_enough_cp',
+                }),
+            ]);
             expect(result.assertionErrors).toEqual([]);
         });
 

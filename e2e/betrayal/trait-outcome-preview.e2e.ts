@@ -12,10 +12,37 @@ import {
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
 } from './betrayalTestHelpers';
+import type { BetrayalCore, BetrayalTraitKey } from '../../src/games/betrayal/game';
 
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/trait-outcome-preview';
 const DAMAGE_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/01-伤害分配属性轨预览.jpg`;
 const HEAL_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/02-治疗目标属性轨预览.jpg`;
+
+function setCurrentExplorerTraitTrack(
+    core: BetrayalCore,
+    trait: BetrayalTraitKey,
+    values: number[],
+    position: number,
+    startPosition = position,
+) {
+    core.currentExplorer.traitTracks = {
+        ...core.currentExplorer.traitTracks,
+        [trait]: {
+            trackId: `e2e-trait-preview-${trait}`,
+            values: [...values],
+            position,
+            startPosition,
+            criticalPosition: 0,
+            skullPosition: -1,
+            maxPosition: values.length - 1,
+        },
+    };
+    core.currentExplorer.traits = {
+        ...core.currentExplorer.traits,
+        [trait]: values[position] ?? core.currentExplorer.traits[trait],
+    };
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+}
 
 const openBetrayalBoard = async (
     page: Parameters<typeof attachPageDiagnostics>[0],
@@ -43,6 +70,7 @@ test.describe('山屋惊魂属性后果预览', () => {
         );
 
         const core = createRuntimeCore();
+        setCurrentExplorerTraitTrack(core, 'might', [1, 2, 3, 4, 5], 3);
         core.pendingEventChoice = {
             id: 'e2e-repeat-damage-choice',
             playerId: '0',
@@ -64,10 +92,13 @@ test.describe('山屋惊魂属性后果预览', () => {
             'data-damage-selected-count',
             '1',
         );
-        const mightPreview = page.getByTestId('betrayal-event-damage-preview-might');
+        const mightPreview = page.getByTestId('betrayal-event-choice-damage-might');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-mode', 'damage');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-step-count', '1');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-locked', 'false');
+        await expect(page.getByTestId('betrayal-event-choice-damage-traits')).not.toContainText(
+            /承担\s*\d+\s*点|×\d/,
+        );
         await expect(page.getByTestId('betrayal-event-choice-confirm')).toHaveCount(0);
 
         await saveScreenshot(page, DAMAGE_PREVIEW_SCREENSHOT);

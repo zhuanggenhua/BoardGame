@@ -15,7 +15,7 @@ import { playSound } from '../../../lib/audio/useGameAudio';
 import { getPortraitStyle, ASSETS } from './assets';
 import { getPlayerBoardAspectRatio } from './abilitySlotLayout';
 import {
-    DICETHRONE_CHARACTER_CATALOG,
+    DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG,
     getDiceThroneCharacterNameKey,
     hasDiceThroneTipBoard,
     type CharacterDefinition,
@@ -105,7 +105,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
     const hasSelectedChar = selectedCharacters[currentPlayerId] && selectedCharacters[currentPlayerId] !== 'unselected';
 
     const availableCharacters = useMemo(() => {
-        return DICETHRONE_CHARACTER_CATALOG;
+        return DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG;
     }, []);
 
     const previewCharId = useMemo(() => {

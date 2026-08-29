@@ -4,7 +4,12 @@ import type { CardPreviewRef } from '../../../../core';
 import type { RandomFn } from '../../../../engine/types';
 import type { AbilityCard } from '../../types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';
-import { COMMON_CARDS, TREANT_NINJA_COMMON_ATLAS_INDEX, injectCommonCardPreviewRefs } from '../../domain/commonCards';
+import {
+    COMMON_CARDS,
+    TREANT_NINJA_COMMON_ATLAS_INDEX,
+    injectCommonCardPreviewRefs,
+    type CommonCardAtlasIndexMap,
+} from '../../domain/commonCards';
 import { DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
 import {
     BLOOD_FEAST_2,
@@ -22,6 +27,9 @@ import {
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
 const VAMPIRE_LORD_CARD_ATLAS_ID = DICETHRONE_CARD_ATLAS_IDS.VAMPIRE_LORD;
+const VAMPIRE_LORD_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = Object.fromEntries(
+    Object.entries(TREANT_NINJA_COMMON_ATLAS_INDEX).filter(([cardId]) => cardId !== 'card-unexpected'),
+);
 
 const atlasPreview = (index: number): CardPreviewRef => ({ type: 'atlas', atlasId: VAMPIRE_LORD_CARD_ATLAS_ID, index });
 
@@ -59,9 +67,14 @@ const grantBleed = (value: number, description: string): AbilityEffect => ({
     timing: 'immediate',
 });
 
-const damage = (value: number, description: string): AbilityEffect => ({
+const addAttackBonus = (value: number, description: string): AbilityEffect => ({
     description,
-    action: { type: 'damage', target: 'opponent', value, damageScope: 'direct' },
+    action: {
+        type: 'custom',
+        target: 'self',
+        customActionId: 'common-add-attack-bonus',
+        params: { amount: value },
+    },
     timing: 'immediate',
 });
 
@@ -104,7 +117,8 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         sfxKey: VAMPIRE_LORD_SFX_HEAVY,
         ...vampireLordCardRef(19),
         isAttackModifier: true,
-        effects: [damage(1, cardText('card-vampire-lord-total-demise', 'description'))],
+        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        effects: [addAttackBonus(1, cardText('card-vampire-lord-total-demise', 'description'))],
     },
     {
         id: 'card-vampire-lord-boiling-blood',
@@ -116,7 +130,8 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
         sfxKey: VAMPIRE_LORD_SFX_HEAVY,
         ...vampireLordCardRef(20),
         isAttackModifier: true,
-        effects: [damage(1, cardText('card-vampire-lord-boiling-blood', 'description'))],
+        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        effects: [addAttackBonus(1, cardText('card-vampire-lord-boiling-blood', 'description'))],
     },
     {
         id: 'card-vampire-lord-gushing-blood',
@@ -262,7 +277,7 @@ const VAMPIRE_LORD_HERO_CARDS: AbilityCard[] = [
 
 export const VAMPIRE_LORD_CARDS: AbilityCard[] = [
     ...VAMPIRE_LORD_HERO_CARDS,
-    ...injectCommonCardPreviewRefs(COMMON_CARDS, VAMPIRE_LORD_CARD_ATLAS_ID, TREANT_NINJA_COMMON_ATLAS_INDEX),
+    ...injectCommonCardPreviewRefs(COMMON_CARDS, VAMPIRE_LORD_CARD_ATLAS_ID, VAMPIRE_LORD_COMMON_ATLAS_INDEX),
 ];
 
 export const getVampireLordStartingDeck = (random: RandomFn): AbilityCard[] => random.shuffle(

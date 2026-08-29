@@ -107,6 +107,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             .sort();
 
         expect(directDiceToolIds).toEqual([
+            'card-cursed-pirate-ransom',
             'card-flick',
             'card-give-hand',
             'card-i-can-again',
@@ -118,6 +119,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-worthy-of-me',
         ]);
         expect(afterRollIds).toEqual([
+            'card-cursed-pirate-ransom',
             'card-flick',
             'card-give-hand',
             'card-surprise',

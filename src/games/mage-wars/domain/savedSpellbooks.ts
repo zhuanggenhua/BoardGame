@@ -3,6 +3,7 @@ import type { MageWarsPlayerSpellbookEntry } from './spellbook';
 import { getMageWarsSpellbookCopyLimitForCard } from './spellbookBuilder';
 
 export const MAGE_WARS_SAVED_SPELLBOOKS_STORAGE_KEY = 'mage-wars:saved-spellbooks:v1';
+export const MAGE_WARS_SAVED_SPELLBOOK_LIMIT = 10;
 
 export interface MageWarsSavedSpellbook {
     id: string;
@@ -147,6 +148,11 @@ export function saveMageWarsSpellbookDraft({
         throw new Error('至少加入一张法术牌后再保存');
     }
 
+    const spellbooks = loadMageWarsSavedSpellbooks(storage);
+    if (spellbooks.length >= MAGE_WARS_SAVED_SPELLBOOK_LIMIT) {
+        throw new Error(`最多保存 ${MAGE_WARS_SAVED_SPELLBOOK_LIMIT} 本法术书`);
+    }
+
     const now = new Date().toISOString();
     const saved: MageWarsSavedSpellbook = {
         id: createSavedSpellbookId(),
@@ -156,7 +162,7 @@ export function saveMageWarsSpellbookDraft({
         createdAt: now,
         updatedAt: now,
     };
-    writeStorage([saved, ...loadMageWarsSavedSpellbooks(storage)], storage);
+    writeStorage([saved, ...spellbooks], storage);
     return saved;
 }
 

@@ -3,7 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import '../domain';
-import { DICETHRONE_CHARACTER_CATALOG, hasDiceThroneTipBoard } from '../domain/types';
+import {
+    DICETHRONE_CHARACTER_CATALOG,
+    DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG,
+    hasDiceThroneTipBoard,
+} from '../domain/types';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
 import { getDiceDefinition } from '../domain/diceRegistry';
 import {
@@ -75,6 +79,14 @@ const VAMPIRE_LORD_I18N_KEYS = [
     'abilities.blood-magic.name',
     'abilities.undying.name',
     'abilities.bloody-slaughter.name',
+    'abilities.mesmerize-power-2-soul-gaze.name',
+    'abilities.blood-feast-2-dressed-to-kill.name',
+    'abilities.blood-possessed-2-blood-addiction.name',
+    'abilities.blood-thirst-2-blood-river.name',
+    'abilities.blood-magic-2-flayed.name',
+    'choices.vampireLordBloodPossessed.title',
+    'choices.vampireLordBloodPossessed.inflictBleed',
+    'choices.vampireLordBloodPossessed.gainMesmerize',
     'cards.card-vampire-lord-blood-surge.name',
     'cards.card-vampire-lord-blood-from-above.name',
     'cards.card-vampire-lord-total-demise.name',
@@ -94,18 +106,13 @@ const VAMPIRE_LORD_I18N_KEYS = [
 ];
 
 describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
-    it('角色目录、实施中状态、骰面、状态标记和角色板九槽已接入', () => {
+    it('内部角色目录、隐藏状态、骰面、状态标记和角色板九槽已接入', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(entry => entry.id === 'vampire_lord');
         expect(character?.nameKey).toBe('characters.vampire_lord');
-        expect(character?.setupOptionStatus).toBe('in_progress');
-        expect(character?.badges).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                id: 'implementation_in_progress',
-                labelKey: 'common:status_tags.under_construction',
-                tone: 'warning',
-                variant: 'disabled-overlay',
-            }),
-        ]));
+        expect(character?.setupOptionStatus).toBe('hidden');
+        expect(character?.setupOptionStatusReason).toContain('未完成实施与审计');
+        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(false);
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map(entry => entry.id)).not.toContain('vampire_lord');
         expect(hasDiceThroneTipBoard('vampire_lord')).toBe(true);
 
         expect(CHARACTER_DATA_MAP.vampire_lord.diceDefinitionId).toBe('vampire_lord-dice');
@@ -174,14 +181,14 @@ describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
         }
     });
 
-    it('吸血鬼专属卡牌使用 xixuegui ability-cards atlas，并显式保留 slot-32 争议', () => {
+    it('吸血鬼专属卡牌使用 xixuegui ability-cards atlas，并解决 slot-32 公共牌预览冲突', () => {
         expect(HERO_CARDS_MAP.vampire_lord).toBe(VAMPIRE_LORD_CARDS);
         expect(VAMPIRE_LORD_CARDS).toHaveLength(34);
         expect(VAMPIRE_LORD_CARDS.filter(card => card.sourceAtlasIndex !== undefined).map(card => card.sourceAtlasIndex)).toEqual([
             17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
         ]);
-        expect(VAMPIRE_LORD_CARDS.every(card => card.previewRef?.type === 'atlas')).toBe(true);
-        expect(VAMPIRE_LORD_CARDS.every(card => (
+        expect(VAMPIRE_LORD_CARDS.filter(card => card.id !== 'card-unexpected').every(card => card.previewRef?.type === 'atlas')).toBe(true);
+        expect(VAMPIRE_LORD_CARDS.filter(card => card.id !== 'card-unexpected').every(card => (
             card.previewRef?.type !== 'atlas' || card.previewRef.atlasId === DICETHRONE_CARD_ATLAS_IDS.VAMPIRE_LORD
         ))).toBe(true);
         expect(VAMPIRE_LORD_CARDS.find(card => card.id === 'card-vampire-lord-bloodstone')?.previewRef).toMatchObject({
@@ -189,11 +196,7 @@ describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
             atlasId: DICETHRONE_CARD_ATLAS_IDS.VAMPIRE_LORD,
             index: 32,
         });
-        expect(VAMPIRE_LORD_CARDS.find(card => card.id === 'card-unexpected')?.previewRef).toMatchObject({
-            type: 'atlas',
-            atlasId: DICETHRONE_CARD_ATLAS_IDS.VAMPIRE_LORD,
-            index: 32,
-        });
+        expect(VAMPIRE_LORD_CARDS.find(card => card.id === 'card-unexpected')?.previewRef).toBeUndefined();
 
         const upgradeTargets = Object.fromEntries(
             VAMPIRE_LORD_CARDS
@@ -215,6 +218,38 @@ describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
             'upgrade-vampire-lord-bloodthirsty-claws-3': 'bloodthirsty-claws',
             'upgrade-vampire-lord-bloodthirsty-claws-2': 'bloodthirsty-claws',
         });
+
+        const upgradeVariantIds = Object.fromEntries(
+            VAMPIRE_LORD_CARDS
+                .filter(card => card.type === 'upgrade')
+                .map((card) => {
+                    const action = card.effects?.find(effect => effect.action?.type === 'replaceAbility')?.action;
+                    const newAbilityDef = action?.type === 'replaceAbility'
+                        ? action.newAbilityDef as { variants?: Array<{ id: string }> }
+                        : undefined;
+                    return [card.id, newAbilityDef?.variants?.map(variant => variant.id) ?? []];
+                }),
+        );
+        expect(upgradeVariantIds['upgrade-vampire-lord-blood-thirst-2-blood-river']).toEqual([
+            'blood-thirst-2-main',
+            'blood-thirst-2-blood-river',
+        ]);
+        expect(upgradeVariantIds['upgrade-vampire-lord-blood-magic-2-flayed']).toEqual([
+            'blood-magic-2-main',
+            'blood-magic-2-flayed',
+        ]);
+        expect(upgradeVariantIds['upgrade-vampire-lord-blood-possessed-2-blood-addiction']).toEqual([
+            'blood-possessed-2-main',
+            'blood-possessed-2-blood-addiction',
+        ]);
+        expect(upgradeVariantIds['upgrade-vampire-lord-blood-feast-2-dressed-to-kill']).toEqual([
+            'blood-feast-2-main',
+            'blood-feast-2-dressed-to-kill',
+        ]);
+        expect(upgradeVariantIds['upgrade-vampire-lord-mesmerize-power-2-soul-gaze']).toEqual([
+            'mesmerize-power-2-main',
+            'mesmerize-power-2-soul-gaze',
+        ]);
     });
 
     it('正式媒体、状态 atlas 和 5x7 卡牌 atlas 配置存在', () => {

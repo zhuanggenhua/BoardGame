@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ZoomIn } from 'lucide-react';
+import { Plus, ZoomIn } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { MageWarsConfigSpellCard } from '../data/configPackage';
@@ -10,6 +10,8 @@ import type { MageWarsPlayerSpellbookEntry } from '../domain/spellbook';
 import {
     deleteMageWarsSavedSpellbook,
     listMageWarsSavedSpellbooksForMage,
+    loadMageWarsSavedSpellbooks,
+    MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
     normalizeMageWarsSavedSpellbookEntries,
     saveMageWarsSpellbookDraft,
     updateMageWarsSavedSpellbookDraft,
@@ -34,7 +36,9 @@ type SpellbookBuilderPanelProps = {
     mageId: MageId;
     entries: readonly MageWarsPlayerSpellbookEntry[];
     activeSavedSpellbookId?: string | null;
+    startAsNewSpellbookDraft?: boolean;
     onEntriesChange: (entries: readonly MageWarsPlayerSpellbookEntry[]) => void;
+    onRequestNewSpellbookMage?: () => void;
     onSavedLibraryChange?: () => void;
     onSavedSpellbookChange?: (saved: MageWarsSavedSpellbook | null) => void;
     onClose: () => void;
@@ -193,7 +197,9 @@ export function MageWarsSpellbookBuilderPanel({
     mageId,
     entries,
     activeSavedSpellbookId = null,
+    startAsNewSpellbookDraft = false,
     onEntriesChange,
+    onRequestNewSpellbookMage,
     onSavedLibraryChange,
     onSavedSpellbookChange,
     onClose,
@@ -210,10 +216,16 @@ export function MageWarsSpellbookBuilderPanel({
     const [importOpen, setImportOpen] = useState(false);
     const [importText, setImportText] = useState('');
     const [saveName, setSaveName] = useState('');
-    const [saveStatus, setSaveStatus] = useState('');
+    const [saveStatus, setSaveStatus] = useState(() => (
+        startAsNewSpellbookDraft ? t('spellbookBuilder.status.newDraft') : ''
+    ));
     const [editingSavedSpellbookId, setEditingSavedSpellbookId] = useState<string | null>(activeSavedSpellbookId);
+    const [newSpellbookDraftActive, setNewSpellbookDraftActive] = useState(startAsNewSpellbookDraft);
     const [savedSpellbooks, setSavedSpellbooks] = useState<MageWarsSavedSpellbook[]>(() => (
         listMageWarsSavedSpellbooksForMage(mageId)
+    ));
+    const [savedSpellbookTotalCount, setSavedSpellbookTotalCount] = useState(() => (
+        loadMageWarsSavedSpellbooks().length
     ));
     const allCards = useMemo(() => [...getMageWarsSpellbookCandidateCards()], []);
     const currentSetup = getPresetMageSetupFromConfig(mageId);
@@ -267,16 +279,26 @@ export function MageWarsSpellbookBuilderPanel({
 
     useEffect(() => {
         const nextSavedSpellbooks = listMageWarsSavedSpellbooksForMage(mageId);
+        const nextSavedSpellbookTotalCount = loadMageWarsSavedSpellbooks().length;
         const activeSavedSpellbook = activeSavedSpellbookId
             ? nextSavedSpellbooks.find((spellbook) => spellbook.id === activeSavedSpellbookId) ?? null
             : null;
         setSavedSpellbooks(nextSavedSpellbooks);
-        setEditingSavedSpellbookId(activeSavedSpellbook?.id ?? null);
-        setSaveName(activeSavedSpellbook?.name ?? '');
+        setSavedSpellbookTotalCount(nextSavedSpellbookTotalCount);
+        if (startAsNewSpellbookDraft) {
+            setEditingSavedSpellbookId(null);
+            setSaveName('');
+            setNewSpellbookDraftActive(true);
+            setSaveStatus((current) => current || t('spellbookBuilder.status.newDraft'));
+        } else {
+            setEditingSavedSpellbookId(activeSavedSpellbook?.id ?? null);
+            setSaveName(activeSavedSpellbook?.name ?? '');
+            setNewSpellbookDraftActive(false);
+        }
         setDetailOpen(false);
         setLibraryOpen(false);
         setImportOpen(false);
-    }, [activeSavedSpellbookId, mageId]);
+    }, [activeSavedSpellbookId, mageId, startAsNewSpellbookDraft]);
 
     const applyEntries = (nextEntries: readonly MageWarsPlayerSpellbookEntry[]) => {
         onEntriesChange(normalizeMageWarsSavedSpellbookEntries(nextEntries));
@@ -284,6 +306,7 @@ export function MageWarsSpellbookBuilderPanel({
 
     const refreshSavedSpellbooks = () => {
         setSavedSpellbooks(listMageWarsSavedSpellbooksForMage(mageId));
+        setSavedSpellbookTotalCount(loadMageWarsSavedSpellbooks().length);
     };
 
     const addSpell = (spell: MageWarsConfigSpellCard) => {
@@ -299,6 +322,7 @@ export function MageWarsSpellbookBuilderPanel({
     const resetToStandard = () => {
         applyEntries(getMageWarsDefaultSpellbookEntries(mageId));
         setEditingSavedSpellbookId(null);
+        setNewSpellbookDraftActive(false);
         setSaveName('');
         setImportOpen(false);
         setLibraryOpen(false);
@@ -309,9 +333,29 @@ export function MageWarsSpellbookBuilderPanel({
     const importEntries = () => {
         applyEntries(parseImportedEntries(importText));
         setEditingSavedSpellbookId(null);
+        setNewSpellbookDraftActive(false);
         setImportOpen(false);
         setLibraryOpen(false);
         onSavedSpellbookChange?.(null);
+    };
+
+    const prepareNewSpellbookDraft = () => {
+        if (savedSpellbookTotalCount >= MAGE_WARS_SAVED_SPELLBOOK_LIMIT) {
+            setSaveStatus(t('spellbookBuilder.status.limitReached', {
+                limit: MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
+            }));
+            return;
+        }
+        if (onRequestNewSpellbookMage) {
+            onRequestNewSpellbookMage();
+            return;
+        }
+        setEditingSavedSpellbookId(null);
+        setNewSpellbookDraftActive(true);
+        setSaveName('');
+        setImportOpen(false);
+        setLibraryOpen(false);
+        setSaveStatus(t('spellbookBuilder.status.newDraft'));
     };
 
     const saveAsNewSpellbook = () => {
@@ -324,6 +368,7 @@ export function MageWarsSpellbookBuilderPanel({
             refreshSavedSpellbooks();
             onSavedLibraryChange?.();
             setEditingSavedSpellbookId(saved.id);
+            setNewSpellbookDraftActive(false);
             setSaveName(saved.name);
             setLibraryOpen(false);
             setSaveStatus(t('spellbookBuilder.status.saved', { name: saved.name }));
@@ -344,6 +389,7 @@ export function MageWarsSpellbookBuilderPanel({
             });
             refreshSavedSpellbooks();
             onSavedLibraryChange?.();
+            setNewSpellbookDraftActive(false);
             setSaveName(saved.name);
             setLibraryOpen(false);
             setSaveStatus(t('spellbookBuilder.status.updated', { name: saved.name }));
@@ -356,6 +402,7 @@ export function MageWarsSpellbookBuilderPanel({
     const loadSavedSpellbook = (saved: MageWarsSavedSpellbook) => {
         applyEntries(saved.entries);
         setEditingSavedSpellbookId(saved.id);
+        setNewSpellbookDraftActive(false);
         setSaveName(saved.name);
         setImportOpen(false);
         setLibraryOpen(false);
@@ -369,6 +416,7 @@ export function MageWarsSpellbookBuilderPanel({
         onSavedLibraryChange?.();
         if (editingSavedSpellbookId === saved.id) {
             setEditingSavedSpellbookId(null);
+            setNewSpellbookDraftActive(false);
             setSaveName('');
             onSavedSpellbookChange?.(null);
         }
@@ -377,18 +425,24 @@ export function MageWarsSpellbookBuilderPanel({
 
     const shownEnd = Math.min(selectedRows.length, Math.max(0, selectedRows.length));
     const budgetRatio = Math.min(1, Math.max(0, summary.pointsUsed / summary.pointLimit));
-    const canSaveAsNew = saveName.trim().length > 0 && entries.length > 0;
-    const canUpdateSaved = Boolean(editingSavedSpellbookId) && canSaveAsNew;
+    const savedSpellbookLimitReached = savedSpellbookTotalCount >= MAGE_WARS_SAVED_SPELLBOOK_LIMIT;
+    const canSaveNamedSpellbook = saveName.trim().length > 0 && entries.length > 0;
+    const canSaveAsNew = canSaveNamedSpellbook && !savedSpellbookLimitReached;
+    const canUpdateSaved = Boolean(editingSavedSpellbookId) && canSaveNamedSpellbook;
     const editingSavedSpellbook = editingSavedSpellbookId
         ? savedSpellbooks.find((saved) => saved.id === editingSavedSpellbookId) ?? null
         : null;
-    const selectedBookLabel = editingSavedSpellbook?.name ?? t('spellbookBuilder.standardSpellbook');
+    const selectedBookLabel = newSpellbookDraftActive
+        ? t('spellbookBuilder.newSpellbook')
+        : editingSavedSpellbook?.name ?? t('spellbookBuilder.standardSpellbook');
 
     return (
         <div
             className="absolute inset-0 z-30 overflow-hidden bg-[#14100d] text-stone-100"
             data-testid="mage-wars-spellbook-builder"
             data-mage-id={mageId}
+            data-saved-spellbook-count={savedSpellbookTotalCount}
+            data-saved-spellbook-limit={MAGE_WARS_SAVED_SPELLBOOK_LIMIT}
         >
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(146,98,38,0.25),transparent_30%),radial-gradient(circle_at_76%_16%,rgba(69,105,119,0.19),transparent_29%),linear-gradient(135deg,#211712_0%,#2b211b_52%,#111414_100%)]" />
             <div className="relative z-10 grid h-full min-h-0 grid-rows-[4.625rem_minmax(0,1fr)] gap-2.5 px-5 pb-5 pt-3">
@@ -435,8 +489,10 @@ export function MageWarsSpellbookBuilderPanel({
                     </section>
 
                     <section
-                        className="relative grid min-h-0 grid-cols-[11rem_minmax(8rem,1fr)_auto_auto_auto] items-center gap-2 border border-stone-100/15 bg-black/25 p-2 shadow-[0_18px_44px_rgba(0,0,0,0.32)]"
+                        className="relative grid min-h-0 grid-cols-[11rem_2.5rem_minmax(8rem,1fr)_auto_auto_auto] items-center gap-2 border border-stone-100/15 bg-black/25 p-2 shadow-[0_18px_44px_rgba(0,0,0,0.32)]"
                         data-testid="mage-wars-spellbook-builder-saved-library"
+                        data-saved-spellbook-count={savedSpellbookTotalCount}
+                        data-saved-spellbook-limit={MAGE_WARS_SAVED_SPELLBOOK_LIMIT}
                         aria-label={t('spellbookBuilder.libraryAria')}
                     >
                         <button
@@ -455,6 +511,18 @@ export function MageWarsSpellbookBuilderPanel({
                             <strong className="mt-1 truncate text-xs font-black leading-none text-stone-50">
                                 {selectedBookLabel}
                             </strong>
+                        </button>
+                        <button
+                            type="button"
+                            className="grid h-full place-items-center border border-dashed border-amber-200/45 bg-amber-300/10 text-amber-100 transition hover:border-amber-100/80 hover:bg-amber-300/18 disabled:border-white/10 disabled:bg-white/5 disabled:text-stone-500"
+                            data-testid="mage-wars-spellbook-builder-new-spellbook"
+                            data-new-spellbook-mage-choice="required"
+                            aria-label={t('spellbookBuilder.newSpellbookAria')}
+                            title={t('spellbookBuilder.newSpellbookAria')}
+                            disabled={savedSpellbookLimitReached}
+                            onClick={prepareNewSpellbookDraft}
+                        >
+                            <Plus size={17} strokeWidth={2.7} aria-hidden="true" />
                         </button>
                         <label className="grid h-full min-w-0 grid-cols-[minmax(0,1fr)] border border-white/15 bg-white/[0.045] px-2">
                             <span className="sr-only">{t('spellbookBuilder.saveNameLabel')}</span>
@@ -563,11 +631,13 @@ export function MageWarsSpellbookBuilderPanel({
                                 type="button"
                                 className={cx(
                                     'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border px-2.5 py-2 text-left hover:border-amber-200/45',
-                                    editingSavedSpellbookId === null ? 'border-amber-200/70 bg-amber-300/12' : 'border-white/15 bg-white/[0.045]',
+                                    editingSavedSpellbookId === null && !newSpellbookDraftActive
+                                        ? 'border-amber-200/70 bg-amber-300/12'
+                                        : 'border-white/15 bg-white/[0.045]',
                                 )}
                                 data-testid="mage-wars-spellbook-builder-standard"
                                 data-library-kind="standard"
-                                data-active={String(editingSavedSpellbookId === null)}
+                                data-active={String(editingSavedSpellbookId === null && !newSpellbookDraftActive)}
                                 onClick={resetToStandard}
                             >
                                 <strong className="block truncate text-sm font-black leading-none text-stone-50">
@@ -580,11 +650,7 @@ export function MageWarsSpellbookBuilderPanel({
                                     })}
                                 </span>
                             </button>
-                            {savedSpellbooks.length === 0 ? (
-                                <span className="grid min-h-10 place-items-center border border-dashed border-white/12 bg-black/20 px-2 text-xs font-semibold text-stone-200/60">
-                                    {t('spellbookBuilder.noNamedCopies')}
-                                </span>
-                            ) : savedSpellbooks.map((saved) => {
+                            {savedSpellbooks.map((saved) => {
                                 const savedCardCount = saved.entries.reduce((total, entry) => total + entry.count, 0);
                                 const active = editingSavedSpellbookId === saved.id;
                                 return (
@@ -639,6 +705,51 @@ export function MageWarsSpellbookBuilderPanel({
                                     </div>
                                 );
                             })}
+                            <button
+                                type="button"
+                                className={cx(
+                                    'grid min-h-12 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2 border border-dashed px-2.5 py-2 text-left transition',
+                                    newSpellbookDraftActive
+                                        ? 'border-amber-200/70 bg-amber-300/12'
+                                        : 'border-white/18 bg-white/[0.035] hover:border-amber-200/45',
+                                    savedSpellbookLimitReached && 'cursor-not-allowed opacity-45',
+                                )}
+                                data-testid="mage-wars-spellbook-builder-new-spellbook-entry"
+                                data-library-kind="new"
+                                data-new-spellbook-mage-choice="required"
+                                data-active={String(newSpellbookDraftActive)}
+                                data-saved-spellbook-count={savedSpellbookTotalCount}
+                                data-saved-spellbook-limit={MAGE_WARS_SAVED_SPELLBOOK_LIMIT}
+                                disabled={savedSpellbookLimitReached}
+                                aria-label={t('spellbookBuilder.newSpellbookAria')}
+                                title={t('spellbookBuilder.newSpellbookAria')}
+                                onClick={prepareNewSpellbookDraft}
+                            >
+                                <span className="grid h-8 w-8 place-items-center border border-amber-200/45 bg-amber-300/10 text-amber-100">
+                                    <Plus size={18} strokeWidth={2.8} aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0">
+                                    <strong className="block truncate text-sm font-black leading-none text-stone-50">
+                                        {t('spellbookBuilder.newSpellbook')}
+                                    </strong>
+                                    <span className="mt-1 block truncate text-[0.62rem] font-semibold leading-none text-stone-200/62">
+                                        {savedSpellbookLimitReached
+                                            ? t('spellbookBuilder.savedLimitReached', {
+                                                limit: MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
+                                            })
+                                            : t('spellbookBuilder.newSpellbookHint')}
+                                    </span>
+                                </span>
+                                <span
+                                    className="text-xs font-black text-stone-200/70"
+                                    data-testid="mage-wars-spellbook-builder-saved-limit"
+                                >
+                                    {t('spellbookBuilder.savedLimit', {
+                                        count: savedSpellbookTotalCount,
+                                        limit: MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
+                                    })}
+                                </span>
+                            </button>
                         </div>
                     </section>
                 ) : null}

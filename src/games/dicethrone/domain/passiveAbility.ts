@@ -72,6 +72,20 @@ export interface PassiveActionDef {
     descriptionKey: string;
     /** custom 动作 ID（type='custom' 时必填） */
     customActionId?: string;
+    /** custom 动作参数（type='custom' 时可选） */
+    customActionParams?: Record<string, unknown>;
+    /** 抽牌数量（type='drawCard' 时可选，默认 1） */
+    drawCount?: number;
+    /** 同一回合内同一 key 只能使用一次 */
+    oncePerTurnKey?: string;
+    /** 要求当前玩家正在结算一次自己发起的攻击 */
+    requiresCurrentAttack?: boolean;
+    /** 要求当前攻击已经成功造成过至少 1 点实际伤害 */
+    requiresCurrentAttackDamageDealt?: boolean;
+    /** 要求场上至少存在一个规则允许移除的状态或标记 */
+    requiresAnyRemovableStatus?: boolean;
+    /** 要求当前骰区里存在至少一颗对手骰子 */
+    requiresOpponentRollDice?: boolean;
 }
 
 /** 被动能力定义（一个英雄可有多个被动能力，如教皇税） */
@@ -162,6 +176,55 @@ function getPassiveTokenStackLimit(
     return base ?? 99;
 }
 
+function isRemovableStatusOrToken(state: DiceThroneCore, id: string): boolean {
+    const def = state.tokenDefinitions?.find(entry => entry.id === id);
+    return def?.passiveTrigger?.removable ?? true;
+}
+
+function getTokenAmountAfterPassiveCosts(
+    playerId: PlayerId,
+    actingPlayerId: PlayerId,
+    tokenId: string,
+    amount: number,
+    action: PassiveActionDef,
+): number {
+    if (playerId !== actingPlayerId) return amount;
+    const spent = getPassiveActionTokenCosts(action)
+        .filter(cost => cost.tokenId === tokenId)
+        .reduce((sum, cost) => sum + cost.amount, 0);
+    return Math.max(0, amount - spent);
+}
+
+function hasAnyRemovableStatusOrToken(
+    state: DiceThroneCore,
+    actingPlayerId: PlayerId,
+    action: PassiveActionDef,
+): boolean {
+    return Object.entries(state.players).some(([playerId, player]) => (
+        Object.entries(player.statusEffects ?? {}).some(([statusId, amount]) => (
+            amount > 0 && isRemovableStatusOrToken(state, statusId)
+        ))
+        || Object.entries(player.tokens ?? {}).some(([tokenId, amount]) => (
+            getTokenAmountAfterPassiveCosts(playerId, actingPlayerId, tokenId, amount, action) > 0
+            && isRemovableStatusOrToken(state, tokenId)
+        ))
+    ));
+}
+
+function hasOpponentRollDice(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): boolean {
+    const currentRollContext = resolveCurrentRollContext(state, phase);
+    if (!currentRollContext || currentRollContext.policy.rerollableBy === 'none') {
+        return false;
+    }
+    return currentRollContext.dice.some((die) => (
+        (die.ownerId ?? currentRollContext.ownerPlayerId) !== playerId
+    ));
+}
+
 /**
  * 检查被动动作在当前阶段是否可用
  */
@@ -185,6 +248,25 @@ export function isPassiveActionUsable(
     if (!player) return false;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
+    if (
+        action.oncePerTurnKey
+        && state.passiveActionUsedThisTurn?.[playerId]?.[action.oncePerTurnKey] === true
+    ) {
+        return false;
+    }
+    if (action.requiresCurrentAttack) {
+        if (!state.pendingAttack || state.pendingAttack.attackerId !== playerId) return false;
+    }
+    if (action.requiresCurrentAttackDamageDealt) {
+        if (!state.pendingAttack || state.pendingAttack.attackerId !== playerId) return false;
+        if ((state.pendingAttack.resolvedDamage ?? 0) <= 0) return false;
+    }
+    if (action.requiresAnyRemovableStatus && !hasAnyRemovableStatusOrToken(state, playerId, action)) {
+        return false;
+    }
+    if (action.requiresOpponentRollDice && !hasOpponentRollDice(state, playerId, phase)) {
+        return false;
+    }
     if (isArtificerNanobotPassiveActivation(passiveId, actionIndex)) {
         const botState = player.artificerBotState?.[TOKEN_IDS.NANOBOT];
         const activationsUsed = botState?.activationsUsedThisTurn ?? 0;

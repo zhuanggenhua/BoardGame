@@ -259,6 +259,46 @@ export const saveScreenshot = async (page: Page, path: string) => {
   throw lastError;
 };
 
+export async function readVisibleNonSrText(locator: Locator) {
+  return locator.evaluate((root) => {
+    const rootElement = root as HTMLElement;
+    const chunks: string[] = [];
+    const isHiddenForPlayer = (element: HTMLElement) => {
+      for (
+        let current: HTMLElement | null = element;
+        current;
+        current = current.parentElement
+      ) {
+        if (current.classList.contains("sr-only")) return true;
+        if (current.hidden || current.getAttribute("aria-hidden") === "true") {
+          return true;
+        }
+        const style = window.getComputedStyle(current);
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          style.opacity === "0"
+        ) {
+          return true;
+        }
+        if (current === rootElement) break;
+      }
+      return false;
+    };
+    const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT);
+    let current = walker.nextNode();
+    while (current) {
+      const parent = current.parentElement;
+      const text = current.textContent?.replace(/\s+/g, " ").trim() ?? "";
+      if (parent && text && !isHiddenForPlayer(parent)) {
+        chunks.push(text);
+      }
+      current = walker.nextNode();
+    }
+    return chunks.join(" ").replace(/\s+/g, " ").trim();
+  });
+}
+
 export const expectEventRollWorkbenchReadable = async (
   page: Page,
   label: string,

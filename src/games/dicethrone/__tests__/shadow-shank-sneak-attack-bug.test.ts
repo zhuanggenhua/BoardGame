@@ -241,6 +241,41 @@ describe('暗影穿刺 + 伏击 伤害丢失 Bug 复现', () => {
         ]));
     });
 
+    it('伏击奖励骰未确认时，不能先跳过伤害响应', () => {
+        const random = createQueuedRandom([
+            6, 6, 6, 6, 6,
+            3,
+        ]);
+
+        const opened = openShadowShankTokenResponse(random, (core) => {
+            core.players['0'].resources[RESOURCE_IDS.CP] = 6;
+            core.players['0'].tokens[TOKEN_IDS.SHAME] = 2;
+        });
+        const pendingDamageId = requirePendingDamageId(opened.state.core);
+        const usedSneakAttack = runCommands(opened.state, [
+            cmd('USE_TOKEN', '0', { tokenId: TOKEN_IDS.SNEAK_ATTACK, amount: 1, pendingDamageId }),
+        ], random);
+
+        expect(usedSneakAttack.state.core.pendingDamage?.currentDamage).toBe(14);
+        expect(usedSneakAttack.state.core.pendingBonusDiceSettlement?.sourceAbilityId).toBe('shadow-thief-sneak-attack');
+
+        const skippedTooEarly = executePipeline(
+            pipelineConfig,
+            usedSneakAttack.state,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '0',
+                payload: { pendingDamageId },
+                timestamp: 99,
+            } as DiceThroneCommand,
+            random,
+            PLAYER_IDS,
+        );
+
+        expect(skippedTooEarly.success).toBe(false);
+        expect(skippedTooEarly.error).toBe('pending_bonus_dice_settlement');
+    });
+
     it('ActionLog：TOKEN_USED 显示伏击掷骰值，DAMAGE_DEALT 包含总伤害', () => {
         const random = createQueuedRandom([
             6, 6, 6, 6, 6,

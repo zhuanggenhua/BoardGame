@@ -210,7 +210,8 @@ describe('DiceThrone 工匠机器人持久化与使用次数', () => {
         } as any, fixedRandom);
         const next = applyEvents(pending, settleEvents);
 
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(41);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(35);
+        expect(next.pendingDamage).toBeUndefined();
         expect(next.players['1'].artificerBotState?.[TOKEN_IDS.HEAL_BOT]).toMatchObject({
             built: true,
             upgraded: true,

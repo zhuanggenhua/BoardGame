@@ -82,7 +82,7 @@ const previewLive = (source: DamageSummarySource): DamageSummaryValueContract =>
     source,
 });
 
-const isPendingDamageBonusSettlement = (
+export const isPendingDamageBonusSettlement = (
     state: DiceThroneCore,
     settlement: PendingBonusDiceSettlement | undefined,
 ): settlement is PendingBonusDiceSettlement => (

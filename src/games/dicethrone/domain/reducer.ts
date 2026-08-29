@@ -654,7 +654,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
     state,
     event
 ) => {
-    const { playerId, tokenId, newTotal, sourceAbilityId } = event.payload;
+    const { playerId, tokenId, newTotal, sourceAbilityId, passiveActionUseKey } = event.payload;
     const player = state.players[playerId];
     if (!player) return state;
 
@@ -666,6 +666,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
     }
 
     let treantSpiritSpentThisTurn = state.treantSpiritSpentThisTurn;
+    let passiveActionUsedThisTurn = state.passiveActionUsedThisTurn;
     if (
         isTreantTreeSpiritToken(tokenId)
         && (
@@ -681,6 +682,15 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
             },
         };
     }
+    if (event.sourceCommandType === 'USE_PASSIVE_ABILITY' && passiveActionUseKey) {
+        passiveActionUsedThisTurn = {
+            ...(passiveActionUsedThisTurn ?? {}),
+            [playerId]: {
+                ...(passiveActionUsedThisTurn?.[playerId] ?? {}),
+                [passiveActionUseKey]: true,
+            },
+        };
+    }
 
     return {
         ...state,
@@ -690,6 +700,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
         },
         sneakGainedTurn,
         treantSpiritSpentThisTurn,
+        passiveActionUsedThisTurn,
     };
 };
 
@@ -967,6 +978,8 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         currentChoiceContext: undefined,
         taijiGainedThisTurn: undefined, // 清除太极本回合获得量追踪
         treantSpiritSpentThisTurn: undefined,
+        passiveActionUsedThisTurn: undefined,
+        vampireLordBloodPowerEndTurnPending: undefined,
         offensiveRollAttemptsThisTurn: undefined,
         offensiveRollAttackMadeThisTurn: undefined,
         lastSoldCardId: undefined,

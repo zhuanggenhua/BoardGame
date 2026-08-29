@@ -20,6 +20,7 @@ import type {
 } from '../events';
 import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
+import { finalizeTokenResponse } from '../tokenResponse';
 import {
     ADVANCED_ARTIFICER_BOT_LIMIT as ADVANCED_ROBOT_LIMIT,
     ARTIFICER_BOT_IDS as ARTIFICER_ROBOT_IDS,
@@ -1155,18 +1156,28 @@ export function registerArtificerCustomActions(): void {
         if (!die) return { totalDamage: 0, followupEvents: [] };
         const healAmount = die.face === ARTIFICER_DICE_FACE_IDS.WRENCH ? 1 : 2;
         const currentHp = state.players[settlement.attackerId]?.resources[RESOURCE_IDS.HP] ?? 0;
+        const followupEvents: DiceThroneEvent[] = [{
+            type: 'HEAL_APPLIED',
+            payload: {
+                targetId: settlement.attackerId,
+                amount: Math.max(0, Math.min(healAmount, MAX_HEALTH - currentHp)),
+                sourceAbilityId: settlement.sourceAbilityId,
+            },
+            sourceCommandType: 'BONUS_DICE_SETTLED',
+            timestamp,
+        } as HealAppliedEvent];
+        const pendingDamage = state.pendingDamage;
+        if (
+            pendingDamage
+            && pendingDamage.responseType === 'beforeDamageReceived'
+            && pendingDamage.responderId === settlement.attackerId
+            && pendingDamage.targetPlayerId === settlement.targetId
+        ) {
+            followupEvents.push(...finalizeTokenResponse(pendingDamage, state, timestamp + 0.001));
+        }
         return {
             totalDamage: 0,
-            followupEvents: [{
-                type: 'HEAL_APPLIED',
-                payload: {
-                    targetId: settlement.attackerId,
-                    amount: Math.max(0, Math.min(healAmount, MAX_HEALTH - currentHp)),
-                    sourceAbilityId: settlement.sourceAbilityId,
-                },
-                sourceCommandType: 'BONUS_DICE_SETTLED',
-                timestamp,
-            } as HealAppliedEvent],
+            followupEvents,
         };
     });
     registerBonusDiceSettlementHandler(ARTIFICER_WRENCH_STRIKE_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {

@@ -36,7 +36,7 @@
     "lint": "eslint .",
     "spec:lint": "node .spec/tools/spec-lint.mjs",
     "spec:hosts": "node .spec/tools/setup-hosts.mjs",
-    "verify:ui-owners": "node .spec/tools/scan-ui-duplicate-owners.mjs",
+    "verify:ui-owners": "node .spec/tools/scan-ui-duplicate-owners.mjs --self-check",
     "clean:ports": "node scripts/infra/clean_ports.js",
     "generate:manifests": "node scripts/game/generate_game_manifests.js",
     "generate:locales": "node scripts/game/generate-card-locales.cjs",

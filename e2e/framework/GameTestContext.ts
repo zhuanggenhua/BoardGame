@@ -28,6 +28,7 @@ import {
     SHADOW_THIEF_DICE_FACE_IDS,
     TIANSHI_DICE_FACE_IDS,
     TREANT_DICE_FACE_IDS,
+    VAMPIRE_LORD_DICE_FACE_IDS,
     ZHANSHUJIA_DICE_FACE_IDS,
     CURSED_PIRATE_DICE_FACE_IDS,
 } from '../../src/games/dicethrone/domain/ids';
@@ -144,6 +145,8 @@ interface DiceThronePlayerConfig {
     resources?: Record<string, number>;
     /** Token（如 { shield: 2 }） */
     tokens?: Record<string, number>;
+    /** 状态效果（如 { poison: 1 }） */
+    statusEffects?: Record<string, number>;
 }
 
 interface SplendorPlayerConfig {
@@ -340,6 +343,7 @@ function normalizeDiceThroneExtraDice(
             zhanshujia: [ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.MEDAL],
             cursed_pirate: [CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.SKULL],
             tianshi: [TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.WING, TIANSHI_DICE_FACE_IDS.CROSS, TIANSHI_DICE_FACE_IDS.SHIELD],
+            vampire_lord: [VAMPIRE_LORD_DICE_FACE_IDS.CLAW, VAMPIRE_LORD_DICE_FACE_IDS.CLAW, VAMPIRE_LORD_DICE_FACE_IDS.CLAW, VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE, VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE, VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP],
         };
         const normalized = Math.max(1, Math.min(6, Math.floor(value))) - 1;
         return faceMap[characterId]?.[normalized] ?? null;
@@ -779,6 +783,9 @@ export class GameTestContext {
                     }
                     if (playerConfig?.tokens !== undefined) {
                         partialState.tokens = playerConfig.tokens;
+                    }
+                    if (playerConfig?.statusEffects !== undefined) {
+                        partialState.statusEffects = playerConfig.statusEffects;
                     }
 
                     return partialState;

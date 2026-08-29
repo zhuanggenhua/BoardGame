@@ -533,6 +533,17 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
         ? sourceAbilityId
         : state.suppressNextBonusDiceReplaySourceAbilityId;
 
+    const attackResolvedDamage = state.pendingAttack?.resolvedDamage ?? event.payload.totalDamage;
+    const attackerId = state.pendingAttack?.attackerId ?? event.payload.attackerId;
+    const shouldQueueVampireLordBloodPowerEndTurn = Boolean(
+        attackerId
+        && defenderId
+        && state.activePlayerId === attackerId
+        && state.players[attackerId]?.characterId === 'vampire_lord'
+        && attackResolvedDamage > 0
+        && ((players[defenderId]?.statusEffects?.[STATUS_IDS.BLEED] ?? 0) >= 2)
+    );
+
     const nextState: DiceThroneCore = {
         ...state,
         activatingAbilityId: sourceAbilityId || defenseAbilityId,
@@ -541,9 +552,15 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
             ? buildNextTeamHealth(state, defenderId!, players[defenderId!]?.resources[RESOURCE_IDS.HP] ?? 0)
             : state.teamHealth,
         pendingAttack: null,
-        lastResolvedAttackDamage: state.pendingAttack?.resolvedDamage ?? event.payload.totalDamage,
+        lastResolvedAttackDamage: attackResolvedDamage,
         attackResolvedSequence: nextAttackResolvedSequence,
         suppressNextBonusDiceReplaySourceAbilityId: suppressFutureBonusReplaySourceAbilityId,
+        vampireLordBloodPowerEndTurnPending: shouldQueueVampireLordBloodPowerEndTurn
+            ? {
+                ...(state.vampireLordBloodPowerEndTurnPending ?? {}),
+                [attackerId]: true,
+            }
+            : state.vampireLordBloodPowerEndTurnPending,
     };
     if (isSettledReplayOnlyRollContext(nextState.currentRollContext)) {
         return state.pendingAttack?.tokenResponseFullyEvaded === true

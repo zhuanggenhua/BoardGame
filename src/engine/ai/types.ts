@@ -134,7 +134,7 @@ export interface AiActionStrategyMetadata {
     followUpDelayPolicy?: 'skip' | 'delay';
 }
 
-export type AiSetupOptionStatus = 'available' | 'in_progress' | 'disabled';
+export type AiSetupOptionStatus = 'available' | 'in_progress' | 'hidden' | 'disabled';
 
 export interface AiSetupOptionActionMetadata {
     /** 开局选项可玩状态：共享 AI 层默认据此过滤自动选择。 */

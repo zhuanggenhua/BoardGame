@@ -35,7 +35,7 @@ import {
     getMultistepChoicePrompt,
     injectSimpleChoicePrompt,
 } from './test-utils';
-import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type PendingDamage, type TransferStatusCommand } from '../domain/types';
+import { DICETHRONE_CHARACTER_CATALOG, DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneEvent, type PendingBonusDiceSettlement, type PendingDamage, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
@@ -370,7 +370,7 @@ describe('AI legal actions', () => {
         )).toBe(true);
     });
 
-    it('setup 阶段共享 AI 上下文应过滤仍标记实施中的角色', () => {
+    it('setup 阶段共享 AI 上下文应过滤实施中角色，原始 AI 动作也不包含隐藏角色', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         const state: MatchState<DiceThroneCore> = {
             core,
@@ -401,7 +401,9 @@ describe('AI legal actions', () => {
             .map((action) => (action.commands[0]?.payload as { characterId?: string } | undefined)?.characterId);
 
         expect(rawCharacterIds).toContain('lieren');
+        expect(rawCharacterIds).not.toContain('vampire_lord');
         expect(contextCharacterIds).not.toContain('lieren');
+        expect(contextCharacterIds).not.toContain('vampire_lord');
     });
 
     it('在线 AI 尚未选角和准备时，房主开始命令必须被拒绝，AI 仍能生成选角动作', () => {
@@ -2676,7 +2678,9 @@ describe('AI legal actions', () => {
         });
         const selectedCharacterId = (resolution?.action.commands[0]?.payload as { characterId?: string } | undefined)?.characterId;
         expect(DICETHRONE_CHARACTER_CATALOG.map((item) => item.id)).toContain(selectedCharacterId);
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((item) => item.id)).toContain(selectedCharacterId);
         expect(selectedCharacterId).not.toBe('monk');
+        expect(selectedCharacterId).not.toBe('vampire_lord');
     });
 
     it('setup 阶段应避开已被其他玩家选走的角色', () => {
@@ -2702,6 +2706,23 @@ describe('AI legal actions', () => {
 
         expect(selectableCharacterIds.length).toBeGreaterThan(0);
         expect(selectableCharacterIds).not.toContain('monk');
+        expect(selectableCharacterIds).not.toContain('vampire_lord');
+    });
+
+    it('setup 阶段直接选择隐藏角色应被拒绝', () => {
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
+        const state: MatchState<DiceThroneCore> = {
+            core,
+            sys: {
+                ...createInitialSystemState(['0', '1'], testSystems, undefined),
+                phase: 'setup',
+            },
+        };
+
+        const result = tryCmd(state, cmd('SELECT_CHARACTER', '0', { characterId: 'vampire_lord' }));
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('unsupported_character');
     });
 
     it('玩家选择 AI 已选角色时，应释放 AI 角色并让 AI 重新准备', () => {

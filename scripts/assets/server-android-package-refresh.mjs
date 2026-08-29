@@ -43,6 +43,10 @@ const LEGACY_DICETHRONE_EMOTE_COMPRESSED_PATHS = new Set([
     'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
     'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
 ]);
+const NON_RUNTIME_DICETHRONE_COMPRESSED_PATHS = new Set([
+    'i18n/zh-CN/dicethrone/images/tianshi/compressed/cards.webp',
+]);
+const DICETHRONE_PUBLIC_CROP_PATH_PATTERN = /(?:^|\/)dicethrone\/images\/[^/]+\/crops\//;
 const LEGACY_SMASHUP_ATLAS_CONFIG_PATHS = new Set([
     'atlas-configs/smashup/2833984701.json',
 ]);
@@ -236,6 +240,13 @@ const shouldIncludeInGamePackage = (relativePath, gameId, rootDir) => {
     }
 
     if (gameId === 'smashup' && LEGACY_SMASHUP_ATLAS_CONFIG_PATHS.has(normalized)) {
+        return false;
+    }
+
+    if (
+        gameId === 'dicethrone'
+        && (NON_RUNTIME_DICETHRONE_COMPRESSED_PATHS.has(normalized) || DICETHRONE_PUBLIC_CROP_PATH_PATTERN.test(normalized))
+    ) {
         return false;
     }
 

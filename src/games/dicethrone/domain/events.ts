@@ -414,6 +414,8 @@ export interface TokenConsumedEvent extends GameEvent<'TOKEN_CONSUMED'> {
         amount: number;
         newTotal: number;
         sourceAbilityId?: string;
+        /** 被动动作每回合一次限制 key；仅由 USE_PASSIVE_ABILITY 写入 */
+        passiveActionUseKey?: string;
     };
 }
 
