@@ -11,7 +11,15 @@ import { resolveEffectsToEvents } from '../domain/effects';
 import { RESOURCE_IDS } from '../domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { INITIAL_HEALTH } from '../domain/types';
-import { createHeroMatchup, createQueuedRandom, fixedRandom, getCardById, testSystems } from './test-utils';
+import {
+    createHeroMatchup,
+    createQueuedRandom,
+    expectNoPrompt,
+    fixedRandom,
+    getCardById,
+    getMultistepChoicePrompt,
+    testSystems,
+} from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -503,17 +511,11 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(settled.success).toBe(true);
         if (!settled.success) return;
 
-        const interaction = settled.state.sys.interaction.current;
-        const interactionData = interaction?.kind === 'multistep-choice'
-            ? interaction.data as { allowedDieIds?: number[]; meta?: Record<string, unknown> }
-            : undefined;
+        const interaction = getMultistepChoicePrompt(settled.state);
         const rerollCommand = command('REROLL_DIE', '0', { dieId: 0 });
 
+        expect(interaction.playerId).toBe('0');
         expect(interaction).toMatchObject({
-            kind: 'multistep-choice',
-            playerId: '0',
-        });
-        expect(interactionData).toMatchObject({
             allowedDieIds: [0, 1],
             meta: {
                 dtType: 'selectDie',
@@ -555,7 +557,7 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         );
         expect(confirmed.success).toBe(true);
         if (!confirmed.success) return;
-        expect(confirmed.state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(confirmed.state);
     });
 
     it('鲜血盛宴的治疗与鲜血之力获得落到最终 HP / token 状态，并按上限封顶', () => {

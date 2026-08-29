@@ -13,6 +13,7 @@ import {
     getFormalArenaZonesFromConfig,
     getFormalStartingZoneIdFromConfig,
     getPresetSpellbookCardIdsFromConfig,
+    getPresetSpellbookEntriesFromConfig,
     getPresetSpellbookCountFromConfig,
 } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
@@ -136,6 +137,7 @@ function withPlayerMage(
     playerId: string,
     mageId: typeof MAGE_IDS[keyof typeof MAGE_IDS],
 ): MageWarsCore {
+    const spellbookEntries = getPresetSpellbookEntriesFromConfig(mageId);
     return {
         ...core,
         players: {
@@ -143,6 +145,7 @@ function withPlayerMage(
             [playerId]: {
                 ...core.players[playerId],
                 mageId,
+                spellbookEntries,
                 spellbookCount: getPresetSpellbookCountFromConfig(mageId),
             },
         },

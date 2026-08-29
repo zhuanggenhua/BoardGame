@@ -63,11 +63,7 @@ describe('betrayal manifest integration', () => {
             .filter(([, entry]) => entry.hiddenFromCatalog !== true)
             .map(([id]) => id)).toEqual([
             'basic-setup-and-turn',
-            'omen-confirmation-and-haunt-risk',
-            'trade-and-agreement',
-            'haunt-actions-and-finish',
             'traitor-path',
-            'mummy-monster-actions',
         ]);
         expect(resolveGameTutorialManifest('betrayal')).toEqual(
             implementation?.tutorialCatalog?.tutorials['basic-setup-and-turn']?.manifest ?? null,

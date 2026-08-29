@@ -403,6 +403,7 @@ export interface BetrayalEventResultBranch {
 
 export interface BetrayalEventSeed {
     name: string;
+    description?: string;
     effect?: BetrayalUseEffectSeed;
     roll?: (
         | {
@@ -2554,6 +2555,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
         },
         {
             name: '无线电广播',
+            description: '华盛顿展开了一次核物理打击',
             roll: {
                 kind: 'dice',
                 dice: 2,

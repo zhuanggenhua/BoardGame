@@ -64,6 +64,30 @@ const makeMultiActionManifest = (): TutorialManifest => ({
     ],
 });
 
+const makeSingleRuntimeActionManifest = (): TutorialManifest => ({
+    id: 'single-runtime-action-tutorial',
+    steps: [
+        {
+            id: 'intro',
+            content: 'intro',
+            position: 'center',
+        },
+        {
+            id: 'single-ai-step',
+            content: 'single',
+            position: 'center',
+            aiActions: [
+                {
+                    commandType: 'AI_ONLY',
+                    payload: { ready: true },
+                    playerId: '1',
+                },
+            ],
+            autoAdvanceAfterAi: false,
+        },
+    ],
+});
+
 const runNextTutorialTimer = async () => {
     await act(async () => {
         await vi.runOnlyPendingTimersAsync();
@@ -188,15 +212,42 @@ describe('TutorialContext', () => {
                 __tutorialPlayerId: '1',
             },
         });
-        expect(dispatched.map(item => item.type)).not.toContain(TUTORIAL_COMMANDS.AI_CONSUMED);
-
-        act(() => {
-            syncTutorialStep(result.current.syncTutorialState, manifest, 1, 'after-ai-two');
-        });
-        await runNextTutorialTimer();
         expect(dispatched).toContainEqual({
             type: TUTORIAL_COMMANDS.AI_CONSUMED,
             payload: { stepId: 'multi-ai-step' },
+        });
+    });
+
+    it('运行中单条教程 AI 动作即使没有额外状态帧同步，也会消费 AI 并恢复可见步骤', async () => {
+        const manifest = makeSingleRuntimeActionManifest();
+        const dispatched: Array<{ type: string; payload?: unknown }> = [];
+        const { result } = renderHook(() => useTutorial(), { wrapper });
+
+        let generation = 0;
+        act(() => {
+            generation = result.current.bindDispatch((type, payload) => {
+                dispatched.push({ type, payload });
+            });
+        });
+        act(() => {
+            result.current.startTutorial(manifest);
+            syncTutorialStep(result.current.syncTutorialState, manifest, 1, 'single-ai-step-start');
+            result.current.notifyBoardMounted(generation);
+        });
+
+        await runNextTutorialTimer();
+
+        expect(dispatched).toContainEqual({
+            type: 'AI_ONLY',
+            payload: {
+                ready: true,
+                __tutorialAiCommand: true,
+                __tutorialPlayerId: '1',
+            },
+        });
+        expect(dispatched).toContainEqual({
+            type: TUTORIAL_COMMANDS.AI_CONSUMED,
+            payload: { stepId: 'single-ai-step' },
         });
     });
 

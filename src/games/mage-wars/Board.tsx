@@ -1,8 +1,11 @@
 import { useMemo, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CardPreviewRef } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
+import { ZoomPanViewport } from '../../components/game/framework';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
+import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import { BoardDamageStateOverlay } from '../../components/common/animations/BoardDamageStateOverlay';
 import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
@@ -83,6 +86,14 @@ import {
 import { getMageWarsPlayerSpellbookEntries } from './domain/spellbook';
 
 type Props = GameBoardProps<MageWarsCore>;
+
+type MageWarsMagnifiedPreview = {
+    previewRef: CardPreviewRef;
+    title: string;
+    aspectRatio: number;
+    sourceCardId?: number;
+    mageId?: string;
+};
 
 type ZoneRect = {
     left: number;
@@ -951,6 +962,7 @@ function PreparedSpellCard({
     copyCount,
     disabled = false,
     onClick,
+    onInspect,
     tutorialId,
 }: {
     cardId?: number;
@@ -965,6 +977,7 @@ function PreparedSpellCard({
     copyCount?: number;
     disabled?: boolean;
     onClick?: () => void;
+    onInspect?: () => void;
     tutorialId?: string;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -976,6 +989,8 @@ function PreparedSpellCard({
         : getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
     const cardSizeClass = compact ? 'h-[5.05rem]' : 'h-[14rem]';
     const cardSizeStyle = { aspectRatio: cardAspectRatio };
+    const handleCardClick = onClick ?? onInspect;
+    const canInteract = Boolean(handleCardClick);
 
     const content = (
         <>
@@ -1039,14 +1054,15 @@ function PreparedSpellCard({
         </>
     );
 
-    if (onClick) {
+    if (canInteract) {
         return (
             <button
                 type="button"
                 className={cx(
-                    'relative block shrink-0 text-left',
+                    'relative block shrink-0 cursor-zoom-in text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
                     cardSizeClass,
-                    disabled && 'cursor-not-allowed opacity-45',
+                    disabled && !onInspect && 'cursor-not-allowed opacity-45',
+                    onClick && 'cursor-pointer',
                 )}
                 style={cardSizeStyle}
                 data-testid={testId}
@@ -1056,9 +1072,14 @@ function PreparedSpellCard({
                 data-copy-count={copyCount ?? undefined}
                 data-selected-count={selectedCount > 0 ? selectedCount : undefined}
                 data-selected={selected ? 'true' : undefined}
-                disabled={disabled}
-                onClick={onClick}
+                data-browse-inspectable={onInspect ? 'true' : undefined}
+                disabled={!canInteract}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    handleCardClick?.();
+                }}
                 aria-label={title}
+                title={title}
             >
                 {content}
             </button>
@@ -1076,6 +1097,8 @@ function PreparedSpellCard({
             data-copy-count={copyCount ?? undefined}
             data-selected-count={selectedCount > 0 ? selectedCount : undefined}
             data-selected={selected ? 'true' : undefined}
+            aria-label={title}
+            title={title}
         >
             {content}
         </div>
@@ -1089,6 +1112,7 @@ function ZoneFieldCard({
     density = 'solo',
     ownerSide,
     onClick,
+    onInspect,
     visualDamage = object?.damage,
     visualLife,
     visualHeld = false,
@@ -1101,6 +1125,7 @@ function ZoneFieldCard({
     density?: ZoneEntityDensity;
     ownerSide?: SeatOwnerSide;
     onClick?: () => void;
+    onInspect?: () => void;
     visualDamage?: number;
     visualLife?: number;
     visualHeld?: boolean;
@@ -1124,6 +1149,7 @@ function ZoneFieldCard({
     const damage = visualDamage ?? 0;
 
     if (!previewRef) return null;
+    const handleCardClick = onClick ?? onInspect;
 
     const content = (
         <>
@@ -1179,16 +1205,17 @@ function ZoneFieldCard({
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
                 role === 'target' && 'shadow-[0_0_32px_rgba(16,185,129,0.46)]',
                 role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
-                !onClick && 'pointer-events-none',
+                handleCardClick ? (onClick ? 'cursor-pointer' : 'cursor-zoom-in') : 'pointer-events-none',
             )}
             ref={fxAnchorRef}
             style={cardSizeStyle}
-            disabled={!onClick}
+            disabled={!handleCardClick}
             onClick={(event) => {
                 event.stopPropagation();
-                onClick?.();
+                handleCardClick?.();
             }}
             aria-label={title}
+            title={title}
             data-testid="mage-wars-zone-field-card"
             data-tutorial-id={object ? `mw-field-object-${object.sourceSpellCardId}` : `mw-field-card-${cardId}`}
             data-tutorial-object-id={object ? `mw-arena-object-${object.id}` : undefined}
@@ -1198,6 +1225,7 @@ function ZoneFieldCard({
             data-field-card-role={role}
             data-visual-damage={visualDamage ?? 0}
             data-visual-held={visualHeld ? 'true' : undefined}
+            data-browse-inspectable={onInspect ? 'true' : undefined}
         >
             {object ? (
                 <span
@@ -1217,6 +1245,7 @@ function ArenaAttachmentCard({
     density = 'solo',
     ownerSide,
     onClick,
+    onInspect,
     fxAnchorRef,
 }: {
     object: MageWarsArenaObjectState;
@@ -1224,6 +1253,7 @@ function ArenaAttachmentCard({
     density?: ZoneEntityDensity;
     ownerSide?: SeatOwnerSide;
     onClick?: () => void;
+    onInspect?: () => void;
     fxAnchorRef?: (element: HTMLElement | null) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -1240,6 +1270,7 @@ function ArenaAttachmentCard({
     const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
 
     if (!previewRef) return null;
+    const handleCardClick = onClick ?? onInspect;
 
     const content = (
         <>
@@ -1271,8 +1302,7 @@ function ArenaAttachmentCard({
         heightClass,
         role === 'target' && 'shadow-[0_0_18px_rgba(16,185,129,0.45)]',
         role === 'source' && 'shadow-[0_0_18px_rgba(34,211,238,0.52)]',
-        onClick && 'cursor-pointer',
-        !onClick && 'pointer-events-none',
+        handleCardClick ? (onClick ? 'cursor-pointer' : 'cursor-zoom-in') : 'pointer-events-none',
     );
 
     const dataProps = {
@@ -1282,9 +1312,10 @@ function ArenaAttachmentCard({
         'data-owner-side': ownerSide,
         'data-attachment-kind': object.kind,
         'data-attachment-role': role,
+        'data-browse-inspectable': onInspect ? 'true' : undefined,
     };
 
-    if (onClick) {
+    if (handleCardClick) {
         return (
             <button
                 type="button"
@@ -1292,9 +1323,10 @@ function ArenaAttachmentCard({
                 ref={fxAnchorRef as (element: HTMLButtonElement | null) => void}
                 onClick={(event) => {
                     event.stopPropagation();
-                    onClick();
+                    handleCardClick();
                 }}
                 aria-label={title}
+                title={title}
                 style={cardSizeStyle}
                 {...dataProps}
             >
@@ -1409,7 +1441,13 @@ function OpponentPlanMirror({ player, compact = false }: { player: MageWarsPlaye
     );
 }
 
-function DiscardPile({ player }: { player: MageWarsPlayerState }) {
+function DiscardPile({
+    player,
+    onInspectCard,
+}: {
+    player: MageWarsPlayerState;
+    onInspectCard?: (cardId: number, label?: string) => void;
+}) {
     const { t } = useTranslation('game-mage-wars');
     const discardSpellCardIds = player.discardSpellCardIds ?? [];
     const topCardId = discardSpellCardIds[0];
@@ -1420,8 +1458,19 @@ function DiscardPile({ player }: { player: MageWarsPlayerState }) {
         <section className="pointer-events-auto flex h-[6.25rem] w-[8.65rem] shrink-0 items-center gap-2" data-testid="mage-wars-discard-pile" data-tutorial-id="mw-discard">
             <button
                 type="button"
-                className="relative h-[6.25rem] w-[5.15rem] overflow-visible rounded-[0.12rem] text-left"
+                className={cx(
+                    'relative h-[6.25rem] w-[5.15rem] overflow-visible rounded-[0.12rem] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                    topCardId != null ? 'cursor-zoom-in' : 'cursor-default',
+                )}
                 aria-label={t('privateZones.discardPileAria', { count })}
+                disabled={topCardId == null}
+                data-browse-inspectable={topCardId != null ? 'true' : undefined}
+                data-source-card-id={topCardId ?? undefined}
+                onClick={() => {
+                    if (topCardId != null) {
+                        onInspectCard?.(topCardId, getMageWarsSpellCardName(topCardId) ?? t('privateZones.discardPile'));
+                    }
+                }}
             >
                 {topCardPreviewRef ? (
                     <>
@@ -1450,6 +1499,7 @@ function SpellbookShelf({
     canPlan,
     selectedCardIds,
     onSelectedCardIdsChange,
+    onInspectCard,
 }: {
     player: MageWarsPlayerState;
     phase: string;
@@ -1457,6 +1507,7 @@ function SpellbookShelf({
     canPlan: boolean;
     selectedCardIds: number[];
     onSelectedCardIdsChange: Dispatch<SetStateAction<number[]>>;
+    onInspectCard?: (cardId: number, label?: string) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const [category, setCategory] = useState<SpellbookCategoryId>('all');
@@ -1506,14 +1557,11 @@ function SpellbookShelf({
 
     return (
         <section
-            className={cx(
-                'flex items-end gap-[1.125rem] px-1.5 pb-2 pt-3',
-                planning ? 'pointer-events-auto' : 'pointer-events-none',
-            )}
+            className="pointer-events-auto flex items-end gap-[1.125rem] px-1.5 pb-2 pt-3"
             data-testid="mage-wars-desktop-spellbook-shelf"
             data-tutorial-id="mw-spellbook"
             aria-label={t('privateZones.spellbook')}
-            aria-disabled={!planning}
+            data-planning-enabled={planning ? 'true' : 'false'}
         >
             <span className="sr-only">{t('privateZones.spellbook')}</span>
             <div className="flex h-[9.875rem] w-[3.625rem] shrink-0 flex-col justify-end gap-1.5">
@@ -1552,6 +1600,10 @@ function SpellbookShelf({
                         copyCount={entry.count}
                         disabled={!planning}
                         onClick={planning ? () => togglePlannedCard(entry.spellCardId, entry.count) : undefined}
+                        onInspect={() => onInspectCard?.(
+                            entry.spellCardId,
+                            getMageWarsSpellCardName(entry.spellCardId) ?? t('privateZones.spell'),
+                        )}
                     />
                 ))}
             </div>
@@ -1593,6 +1645,7 @@ function PreparedSpellsDock({
     canCast,
     selectedCardId,
     onSelect,
+    onInspectCard,
 }: {
     player: MageWarsPlayerState;
     phase: string;
@@ -1600,6 +1653,7 @@ function PreparedSpellsDock({
     canCast: boolean;
     selectedCardId: number | null;
     onSelect: (cardId: number) => void;
+    onInspectCard?: (cardId: number, label?: string) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const preparedIds = player.preparedSpellCardIds.slice(0, 2);
@@ -1634,6 +1688,12 @@ function PreparedSpellsDock({
                         onClick={preparedIds[slot] == null || !canSelectSpell
                             ? undefined
                             : () => onSelect(preparedIds[slot]!)}
+                        onInspect={preparedIds[slot] == null
+                            ? undefined
+                            : () => onInspectCard?.(
+                                preparedIds[slot]!,
+                                getMageWarsSpellCardName(preparedIds[slot]!) ?? t('privateZones.preparedSpell'),
+                            )}
                     />
                 ))}
             </div>
@@ -1832,6 +1892,7 @@ function ArenaStage({
     onActorObjectSelect,
     onPlayerSelect,
     onActorPlayerSelect,
+    onInspectCard,
     fxBus,
     onFxImpact,
     onFxComplete,
@@ -1840,7 +1901,6 @@ function ArenaStage({
     getVisualPlayerDamage,
     showLifeTotals = false,
     visualHeldObjects = [],
-    desktopFrame = false,
 }: {
     core: MageWarsCore;
     phase: string;
@@ -1874,6 +1934,7 @@ function ArenaStage({
     onActorObjectSelect?: (objectId: string) => void;
     onPlayerSelect?: (playerId: PlayerId) => void;
     onActorPlayerSelect?: (playerId: PlayerId) => void;
+    onInspectCard?: (cardId: number, label?: string) => void;
     fxBus: FxBus;
     onFxImpact?: (id: string, cue: string) => void;
     onFxComplete?: (id: string, cue: string) => void;
@@ -1882,7 +1943,6 @@ function ArenaStage({
     getVisualPlayerDamage: (player: MageWarsPlayerState) => number;
     showLifeTotals?: boolean;
     visualHeldObjects?: MageWarsArenaObjectState[];
-    desktopFrame?: boolean;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const creatureActionActive = isCreatureActionPhase(phase) && canAct;
@@ -2045,16 +2105,12 @@ function ArenaStage({
 
     return (
         <section
-            className={cx(
-                'absolute w-auto aspect-[4/3] overflow-hidden rounded-[0.5rem] shadow-[0_34px_58px_rgba(0,0,0,0.55)]',
-                desktopFrame ? 'top-[2.75%] h-[74%]' : 'top-0 h-full lg:top-[2.75%] lg:h-[74%]',
-            )}
+            className="relative h-full w-full overflow-hidden rounded-[0.5rem] shadow-[0_34px_58px_rgba(0,0,0,0.55)]"
             data-testid="mage-wars-arena-stage"
             data-tutorial-id="mw-arena"
             ref={(element) => {
                 fxAnchors.registerSurface(element);
             }}
-            style={{ left: '50%', transform: 'translateX(-50%)' }}
         >
             <OptimizedImage
                 src="mage-wars/board/standard-arena"
@@ -2155,6 +2211,19 @@ function ArenaStage({
                     }
                     return undefined;
                 };
+                const resolveCardInspect = (cardId: number, label?: string): (() => void) | undefined => {
+                    if (!onInspectCard) return undefined;
+                    return () => onInspectCard(
+                        cardId,
+                        label ?? getMageWarsSpellCardName(cardId) ?? t('privateZones.spell'),
+                    );
+                };
+                const resolveAttachmentInspect = (object: MageWarsArenaObjectState): (() => void) | undefined => (
+                    resolveCardInspect(
+                        object.sourceSpellCardId,
+                        object.name ?? getMageWarsSpellCardName(object.sourceSpellCardId) ?? t('privateZones.spell'),
+                    )
+                );
                 const renderFieldObject = (object: MageWarsArenaObjectState, density: ZoneEntityDensity = 'solo') => {
                     const visualHeld = zoneHeldObjectIds.has(object.id);
                     const objectAttachments = attachedObjects.filter((attachment) => (
@@ -2225,6 +2294,10 @@ function ArenaStage({
                                             : canSelectObjectActor
                                                 ? () => onActorObjectSelect?.(object.id)
                                                 : undefined}
+                                    onInspect={resolveCardInspect(
+                                        object.sourceSpellCardId,
+                                        object.name ?? getMageWarsSpellCardName(object.sourceSpellCardId) ?? t('privateZones.spell'),
+                                    )}
                                     fxAnchorRef={(element) => {
                                         fxAnchors.registerAnchor({
                                             anchorId: object.id,
@@ -2241,6 +2314,7 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, object.ownerId)}
                                 getRole={resolveAttachmentRole}
                                 getOnClick={resolveAttachmentClick}
+                                getOnInspect={resolveAttachmentInspect}
                                 getFxAnchorRef={(attachment) => (element) => {
                                     fxAnchors.registerAnchor({
                                         anchorId: attachment.id,
@@ -2308,6 +2382,7 @@ function ArenaStage({
                                 ownerSide={resolveSeatOwnerSide(core, occupant.id)}
                                 getRole={resolveAttachmentRole}
                                 getOnClick={resolveAttachmentClick}
+                                getOnInspect={resolveAttachmentInspect}
                                 getFxAnchorRef={(attachment) => (element) => {
                                     fxAnchors.registerAnchor({
                                         anchorId: attachment.id,
@@ -2391,6 +2466,10 @@ function ArenaStage({
                                         cardId={cardId}
                                         ownerSide="neutral"
                                         role={isLegalAttackZone && index === 0 ? 'target' : undefined}
+                                        onInspect={resolveCardInspect(
+                                            cardId,
+                                            getMageWarsSpellCardName(cardId) ?? t('privateZones.spell'),
+                                        )}
                                     />
                                 ))}
                                 {fieldObjects.map((object) => renderFieldObject(object))}
@@ -2404,6 +2483,7 @@ function ArenaStage({
                             ownerSide="neutral"
                             getRole={resolveAttachmentRole}
                             getOnClick={resolveAttachmentClick}
+                            getOnInspect={resolveAttachmentInspect}
                             getFxAnchorRef={(attachment) => (element) => {
                                 fxAnchors.registerAnchor({
                                     anchorId: attachment.id,
@@ -2448,17 +2528,26 @@ function ArenaStage({
                         style={edge.style}
                         aria-label={label}
                         title={label}
-                        disabled={!isLegalWallTarget}
+                        disabled={!isLegalWallTarget && !wall}
                         data-testid={`mage-wars-wall-edge-${edge.edgeId}`}
                         data-tutorial-id={`mw-wall-edge-${edge.edgeId}`}
                         data-wall-edge-id={edge.edgeId}
                         data-legal-target-wall-edge={isLegalWallTarget ? 'true' : undefined}
                         data-wall-object={wall ? 'true' : undefined}
                         data-wall-spell-card-id={wall?.sourceSpellCardId}
+                        data-browse-inspectable={wall ? 'true' : undefined}
                         onClick={(event) => {
-                            if (!isLegalWallTarget) return;
                             event.stopPropagation();
-                            onWallEdgeSelect?.(edge.edgeId);
+                            if (isLegalWallTarget) {
+                                onWallEdgeSelect?.(edge.edgeId);
+                                return;
+                            }
+                            if (wall) {
+                                onInspectCard?.(
+                                    wall.sourceSpellCardId,
+                                    wall.name || getMageWarsSpellCardName(wall.sourceSpellCardId) || label,
+                                );
+                            }
                         }}
                     >
                         {wall ? (
@@ -2951,6 +3040,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [pendingMageAbility, setPendingMageAbility] = useState<PendingMageAbilitySelection | null>(null);
     const [pendingMageAbilityStatusTargetObjectId, setPendingMageAbilityStatusTargetObjectId] = useState<string | null>(null);
     const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
+    const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
     const viewport = useRuntimeViewport();
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
@@ -3796,6 +3886,16 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const getVisualObjectDamage = (object: MageWarsArenaObjectState) => (
         mageWarsEvents.damageBuffer.get(mageWarsObjectDamageKey(object.id), object.damage)
     );
+    const handleInspectSpellCard = (cardId: number, label?: string) => {
+        const previewRef = getMageWarsSpellCardPreviewRef(cardId);
+        if (!previewRef) return;
+        setMagnifiedPreview({
+            previewRef,
+            title: label ?? getMageWarsSpellCardName(cardId) ?? t('privateZones.spell'),
+            aspectRatio: getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO,
+            sourceCardId: cardId,
+        });
+    };
     return (
         <div
             className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
@@ -3822,49 +3922,71 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 data-testid={isLandscapeMobileViewport ? 'mage-wars-mobile-desktop-mirror-layer' : undefined}
                 data-mage-wars-layout-source={isLandscapeMobileViewport ? 'desktop-mirror' : undefined}
             >
-            <ArenaStage
-                core={core}
-                phase={phase}
-                canAct={canAct}
-                activePlayer={activePlayer}
-                activeOpponent={activeOpponent}
-                selectedSpellCardId={selectedSpellCardId}
-                pendingSpellCastSelection={pendingSpellCastSelection}
-                selectedObjectId={selectedObjectId}
-                selectedMageId={selectedMageId}
-                objectAbilitySourceIds={objectAbilitySourceIds}
-                selectedSpellCastTargetIds={selectedSpellCastTargetIds}
-                selectedSpellCastTargetZoneIds={selectedSpellCastTargetZoneIds}
-                selectedSpellCastTargetWallEdgeIds={selectedSpellCastTargetWallEdgeIds}
-                selectedSpellCastDestinationZoneIds={selectedSpellCastDestinationZoneIds}
-                selectedSpellCastNewTargetObjectIds={selectedSpellCastNewTargetObjectIds}
-                selectedSpellCastTargetPlayerIds={selectedSpellCastTargetPlayerIds}
-                selectedSpellCastNewTargetPlayerIds={selectedSpellCastNewTargetPlayerIds}
-                selectedSpellCastNewTargetZoneIds={selectedSpellCastNewTargetZoneIds}
-                selectedSpellCastChainPathObjectIds={selectedSpellCastChainPathObjectIds}
-                selectedSpellCastNextChainTargetObjectIds={selectedSpellCastNextChainTargetObjectIds}
-                selectedSpellCastCurrentChainSubmitObjectId={selectedSpellCastCurrentChainSubmitObjectId}
-                mageRestoreAvailablePlayerIds={mageRestoreAvailablePlayerIds}
-                pendingObjectAbility={pendingObjectAbility}
-                pendingObjectAbilityTargetIds={pendingObjectAbilityTargetIds}
-                pendingMageAbility={pendingMageAbility}
-                pendingMageAbilityTargetIds={pendingMageAbilityTargetIds}
-                onZoneSelect={handleZoneSelect}
-                onObjectSelect={handleObjectSelect}
-                onWallEdgeSelect={handleWallEdgeSelect}
-                onActorObjectSelect={handleActorObjectSelect}
-                onPlayerSelect={handlePlayerSelect}
-                onActorPlayerSelect={handleActorMageSelect}
-                fxBus={fxBus}
-                onFxImpact={mageWarsEvents.onEffectImpact}
-                onFxComplete={mageWarsEvents.onEffectComplete}
-                fxAnchors={fxAnchors}
-                getVisualObjectDamage={getVisualObjectDamage}
-                getVisualPlayerDamage={getVisualPlayerDamage}
-                showLifeTotals={showBoardLifeTotals}
-                visualHeldObjects={mageWarsEvents.heldObjects}
-                desktopFrame={isLandscapeMobileViewport}
-            />
+            <div
+                className={cx(
+                    'absolute left-1/2 z-10 aspect-[4/3] w-auto -translate-x-1/2',
+                    isLandscapeMobileViewport ? 'top-[2.75%] h-[74%]' : 'top-0 h-full lg:top-[2.75%] lg:h-[74%]',
+                )}
+                data-testid="mage-wars-arena-viewport-shell"
+            >
+                <ZoomPanViewport
+                    initialScale={1}
+                    minScale={0.75}
+                    maxScale={2.6}
+                    panBoundsMode="free"
+                    containerTestId="mage-wars-arena-viewport"
+                    contentTestId="mage-wars-arena-viewport-content"
+                    scaleTestId="mage-wars-arena-viewport-scale"
+                    className="h-full w-full rounded-[0.5rem]"
+                    contentClassName="relative h-full w-full"
+                    contentStyle={{ width: '100%', height: '100%' }}
+                    ariaLabel={t('arena.standardArenaAlt')}
+                >
+                    <ArenaStage
+                        core={core}
+                        phase={phase}
+                        canAct={canAct}
+                        activePlayer={activePlayer}
+                        activeOpponent={activeOpponent}
+                        selectedSpellCardId={selectedSpellCardId}
+                        pendingSpellCastSelection={pendingSpellCastSelection}
+                        selectedObjectId={selectedObjectId}
+                        selectedMageId={selectedMageId}
+                        objectAbilitySourceIds={objectAbilitySourceIds}
+                        selectedSpellCastTargetIds={selectedSpellCastTargetIds}
+                        selectedSpellCastTargetZoneIds={selectedSpellCastTargetZoneIds}
+                        selectedSpellCastTargetWallEdgeIds={selectedSpellCastTargetWallEdgeIds}
+                        selectedSpellCastDestinationZoneIds={selectedSpellCastDestinationZoneIds}
+                        selectedSpellCastNewTargetObjectIds={selectedSpellCastNewTargetObjectIds}
+                        selectedSpellCastTargetPlayerIds={selectedSpellCastTargetPlayerIds}
+                        selectedSpellCastNewTargetPlayerIds={selectedSpellCastNewTargetPlayerIds}
+                        selectedSpellCastNewTargetZoneIds={selectedSpellCastNewTargetZoneIds}
+                        selectedSpellCastChainPathObjectIds={selectedSpellCastChainPathObjectIds}
+                        selectedSpellCastNextChainTargetObjectIds={selectedSpellCastNextChainTargetObjectIds}
+                        selectedSpellCastCurrentChainSubmitObjectId={selectedSpellCastCurrentChainSubmitObjectId}
+                        mageRestoreAvailablePlayerIds={mageRestoreAvailablePlayerIds}
+                        pendingObjectAbility={pendingObjectAbility}
+                        pendingObjectAbilityTargetIds={pendingObjectAbilityTargetIds}
+                        pendingMageAbility={pendingMageAbility}
+                        pendingMageAbilityTargetIds={pendingMageAbilityTargetIds}
+                        onZoneSelect={handleZoneSelect}
+                        onObjectSelect={handleObjectSelect}
+                        onWallEdgeSelect={handleWallEdgeSelect}
+                        onActorObjectSelect={handleActorObjectSelect}
+                        onPlayerSelect={handlePlayerSelect}
+                        onActorPlayerSelect={handleActorMageSelect}
+                        onInspectCard={handleInspectSpellCard}
+                        fxBus={fxBus}
+                        onFxImpact={mageWarsEvents.onEffectImpact}
+                        onFxComplete={mageWarsEvents.onEffectComplete}
+                        fxAnchors={fxAnchors}
+                        getVisualObjectDamage={getVisualObjectDamage}
+                        getVisualPlayerDamage={getVisualPlayerDamage}
+                        showLifeTotals={showBoardLifeTotals}
+                        visualHeldObjects={mageWarsEvents.heldObjects}
+                    />
+                </ZoomPanViewport>
+            </div>
             <div className={cx(
                 'pointer-events-none absolute inset-y-0 left-0 bg-gradient-to-r from-black/24 via-black/7 to-transparent',
                 'w-[16rem]',
@@ -3984,7 +4106,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             </aside>
             {viewingPlayer ? (
                 <aside className="pointer-events-none absolute right-14 top-[50.5%] z-20">
-                    <DiscardPile player={viewingPlayer} />
+                    <DiscardPile player={viewingPlayer} onInspectCard={handleInspectSpellCard} />
                 </aside>
             ) : null}
             {viewingPlayer ? (
@@ -3996,6 +4118,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         canPlan={canPlanSpells}
                         selectedCardIds={selectedPlanningSpellCardIds}
                         onSelectedCardIdsChange={setSelectedPlanningSpellCardIds}
+                        onInspectCard={handleInspectSpellCard}
                     />
                 </aside>
             ) : null}
@@ -4008,9 +4131,38 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         canCast={isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)}
                         selectedCardId={selectedSpellCardId}
                         onSelect={handlePreparedSpellSelect}
+                        onInspectCard={handleInspectSpellCard}
                     />
                 </aside>
             ) : null}
+            <MagnifyOverlay
+                isOpen={magnifiedPreview != null}
+                onClose={() => setMagnifiedPreview(null)}
+                overlayTestId="mage-wars-card-magnify-overlay"
+                closeLabel={t('actions.close')}
+                containerClassName="max-h-[88vh] max-w-[90vw]"
+            >
+                {magnifiedPreview ? (
+                    <div
+                        data-testid="mage-wars-card-magnify-content"
+                        data-source-card-id={magnifiedPreview.sourceCardId}
+                        data-mage-id={magnifiedPreview.mageId}
+                        style={{
+                            width: magnifiedPreview.aspectRatio >= 1
+                                ? 'min(90vw, 72rem)'
+                                : 'min(54vw, 32rem)',
+                            aspectRatio: magnifiedPreview.aspectRatio,
+                        }}
+                    >
+                        <CardPreview
+                            previewRef={magnifiedPreview.previewRef}
+                            className="h-full w-full rounded-xl shadow-2xl"
+                            title={magnifiedPreview.title}
+                            alt={magnifiedPreview.title}
+                        />
+                    </div>
+                ) : null}
+            </MagnifyOverlay>
             <EndgameOverlay {...endgameProps} />
             </div>
         </div>

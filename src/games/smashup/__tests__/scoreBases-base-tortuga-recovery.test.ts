@@ -31,6 +31,8 @@ import {
     expectNoPrompt,
     getPromptOption,
     getPromptSourceId,
+    getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
     respondToPrompt,
 } from './helpers';
@@ -156,7 +158,19 @@ describe('scoreBases / base_tortuga 响应恢复', () => {
         expect(finalState.core.currentPlayerIndex).toBe(0);
         expect((finalState.sys as any).flowHalted).toBe(true);
 
-        const prompt = getSimpleChoicePrompt(finalState, 'base_tortuga');
+        const reactionPrompt = getReactionPrompt(finalState);
+        expect(getPromptSourceId(reactionPrompt)).toBe('smashup_reaction_choose');
+        expect(reactionPrompt.playerId).toBe('1');
+        const tortugaTrigger = getReactionPromptOptionBySourceDefId(
+            finalState,
+            reactionPrompt,
+            'base_tortuga',
+        );
+
+        const openedPrompt = respondToPrompt(finalState, tortugaTrigger.id, '1');
+        expectSuccessfulResult(openedPrompt, '打开托尔图加 prompt 失败');
+
+        const prompt = getSimpleChoicePrompt(openedPrompt.finalState, 'base_tortuga');
         expect(getPromptSourceId(prompt)).toBe('base_tortuga');
         expect(prompt.playerId).toBe('1');
 
@@ -169,7 +183,7 @@ describe('scoreBases / base_tortuga 响应恢复', () => {
             '托尔图加应提供其他基地的亚军随从',
         );
 
-        const resolvePrompt = respondToPrompt(finalState, moveReserveMinion.id, '1');
+        const resolvePrompt = respondToPrompt(openedPrompt.finalState, moveReserveMinion.id, '1');
         expectSuccessfulResult(resolvePrompt, '响应托尔图加 prompt 失败');
 
         const resolvedState = resolvePrompt.finalState;

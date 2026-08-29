@@ -12,6 +12,7 @@ const entry: GameManifestEntry = {
     category: 'wargame',
     playersKey: 'games.mage-wars.players',
     icon: 'MW',
+    cursorTheme: 'mage-wars-arcane',
     allowLocalMode: false,
     playerOptions: [2],
     setupOptions: buildMageWarsSetupOptions(),

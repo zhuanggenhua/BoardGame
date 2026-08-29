@@ -78,7 +78,21 @@ const cleanupTemporaryUploadFiles = () => {
     temporaryUploadFiles.clear();
 };
 process.once('exit', cleanupTemporaryUploadFiles);
-const readArgValue = (name, fallback = '') => {
+const positionalArgs = (() => {
+    const values = [];
+    for (let index = 0; index < args.length; index += 1) {
+        const arg = args[index];
+        if (arg.startsWith('--')) {
+            if (!arg.includes('=') && args[index + 1] && !args[index + 1].startsWith('--')) {
+                index += 1;
+            }
+            continue;
+        }
+        values.push(arg);
+    }
+    return values;
+})();
+const readArgValue = (name, fallback = '', positionalIndex = -1) => {
     const prefix = `--${name}=`;
     const direct = args.find((arg) => arg.startsWith(prefix));
     if (direct) {
@@ -88,12 +102,27 @@ const readArgValue = (name, fallback = '') => {
     if (index >= 0 && args[index + 1]) {
         return args[index + 1];
     }
+    const npmConfigValue = process.env[`npm_config_${name.replace(/-/g, '_')}`]?.trim();
+    if (npmConfigValue && npmConfigValue !== 'true' && npmConfigValue !== 'false') {
+        return npmConfigValue;
+    }
+    if (positionalIndex >= 0 && positionalArgs[positionalIndex]) {
+        return positionalArgs[positionalIndex];
+    }
     return fallback;
 };
-const hasFlag = (name) => args.includes(`--${name}`);
+const hasFlag = (name) => {
+    if (args.includes(`--${name}`)) return true;
+    const npmConfigValue = process.env[`npm_config_${name.replace(/-/g, '_')}`]?.trim().toLowerCase();
+    return Boolean(npmConfigValue && !['false', '0', 'no'].includes(npmConfigValue));
+};
 
-const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable');
-const explicitGameId = readArgValue('game', '');
+if (positionalArgs.length === 1) {
+    throw new Error(`无法判断裸参数是 channel 还是 game: ${positionalArgs[0]}。请使用 --channel=<值> --game=<游戏ID>，或同时提供 channel 和 game。`);
+}
+
+const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable', 0);
+const explicitGameId = readArgValue('game', '', 1);
 const explicitVersion = readArgValue('version', '');
 const dryRun = hasFlag('dry-run');
 const manifestOnly = hasFlag('manifest-only');

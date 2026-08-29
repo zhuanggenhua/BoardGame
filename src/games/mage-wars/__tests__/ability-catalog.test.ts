@@ -8,6 +8,7 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import {
     getMageWarsSpellCardFromConfig,
+    getPresetSpellbookEntriesFromConfig,
     materializeMageWarsConfigPackage,
 } from '../data/configPackage';
 import {
@@ -58,6 +59,10 @@ const fixedRandom: RandomFn = {
     shuffle: <T,>(array: T[]) => [...array],
 };
 
+function countSpellbookEntries(entries: readonly { count: number }[]): number {
+    return entries.reduce((total, entry) => total + entry.count, 0);
+}
+
 function makeMageWarsAbilityState(overrides: {
     object?: Partial<MageWarsArenaObjectState>;
     mageId?: MageId;
@@ -65,6 +70,8 @@ function makeMageWarsAbilityState(overrides: {
     phase?: string;
 } = {}): MatchState<MageWarsCore> {
     const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+    const mageId = overrides.mageId ?? core.players['0'].mageId;
+    const spellbookEntries = getPresetSpellbookEntriesFromConfig(mageId);
     const object: MageWarsArenaObjectState = {
         id: 'blue-gremlin-1',
         kind: 'creature',
@@ -89,8 +96,10 @@ function makeMageWarsAbilityState(overrides: {
                 ...core.players,
                 '0': {
                     ...core.players['0'],
-                    mageId: overrides.mageId ?? core.players['0'].mageId,
+                    mageId,
                     mana: overrides.mana ?? 2,
+                    spellbookEntries,
+                    spellbookCount: countSpellbookEntries(spellbookEntries),
                 },
             },
             objects: {

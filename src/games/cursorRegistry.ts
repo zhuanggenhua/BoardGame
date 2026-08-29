@@ -18,3 +18,6 @@ import './cardia/cursor';
 import './splendor/cursor';
 import './fantasyrealms/cursor';
 import './qidahen/cursor';
+import './betrayal/cursor';
+import './mage-wars/cursor';
+import './the-gang/cursor';

@@ -6,11 +6,21 @@
 
 #### Scenario: 玩家选角列表隐藏吸血鬼领主
 
+- **GIVEN** 吸血鬼领主当前范围尚未实施完毕或尚未审计通过
 - **WHEN** 玩家进入 DiceThrone 选角界面
 - **THEN** 玩家可见可选角色列表不包含吸血鬼领主
 - **AND THEN** 吸血鬼领主不显示 implementation-in-progress 徽标
 - **AND THEN** 直接玩家选角命令不能选择 `vampire_lord`
 - **AND THEN** AI 自动选角动作不会包含 `vampire_lord`
+
+#### Scenario: 审计通过后玩家可见实施中吸血鬼领主
+
+- **GIVEN** 吸血鬼领主当前范围实施完毕且审计通过
+- **WHEN** 玩家进入 DiceThrone 选角界面
+- **THEN** 玩家可见可选角色列表包含吸血鬼领主
+- **AND THEN** 吸血鬼领主显示 implementation-in-progress 徽标
+- **AND THEN** 直接玩家选角命令可以选择 `vampire_lord`
+- **AND THEN** 共享 AI 自动选角动作不会选择 `vampire_lord`
 
 #### Scenario: 吸血鬼领主初始化
 
@@ -39,3 +49,10 @@
 - **THEN** 角色完整目录保留 `vampire_lord`
 - **AND THEN** 玩家可见状态仍为 `hidden`
 - **AND THEN** 规则文档列出血力、催眠、复合升级卡和逐卡机制缺口
+
+#### Scenario: 当前范围审计通过后进入实施中
+
+- **WHEN** 静态接入、资源链、机制实现、审计 evidence 和真实入口 E2E 均通过当前范围验收
+- **THEN** 角色完整目录保留 `vampire_lord`
+- **AND THEN** 玩家可见状态为 `in_progress`
+- **AND THEN** 规则文档列出仍不宣称完整完成态的非阻塞扩展范围

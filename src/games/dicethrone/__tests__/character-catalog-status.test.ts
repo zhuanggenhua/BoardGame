@@ -15,7 +15,7 @@ const hasImplementationInProgressBadge = (characterId: string) => (
     getImplementationInProgressBadge(characterId) !== undefined
 );
 
-describe('DiceThrone 角色目录实施中状态合同', () => {
+describe('DiceThrone 角色目录生命周期状态合同', () => {
     it('已完成 closeout 的近批新英雄不应继续保留 implementation_in_progress 徽标', () => {
         for (const characterId of ['gunslinger', 'samurai', 'treant', 'ninja', 'zhanshujia', 'cursed_pirate', 'artificer']) {
             expect(
@@ -25,21 +25,23 @@ describe('DiceThrone 角色目录实施中状态合同', () => {
         }
     });
 
-    it('女猎手当前仍保留 implementation_in_progress 徽标', () => {
-        expect(getImplementationInProgressBadge('lieren')).toMatchObject({
-            id: 'implementation_in_progress',
-            labelKey: 'common:status_tags.under_construction',
-            tone: 'warning',
-            variant: 'disabled-overlay',
-        });
+    it('女猎手和吸血鬼领主当前仍保留 implementation_in_progress 徽标', () => {
+        for (const characterId of ['lieren', 'vampire_lord']) {
+            expect(getImplementationInProgressBadge(characterId)).toMatchObject({
+                id: 'implementation_in_progress',
+                labelKey: 'common:status_tags.under_construction',
+                tone: 'warning',
+                variant: 'disabled-overlay',
+            });
+        }
     });
 
-    it('吸血鬼领主当前为隐藏状态，不进入玩家可见目录，也不显示实施中徽标', () => {
+    it('吸血鬼领主当前为实施中状态，进入玩家可见目录并显示实施中徽标', () => {
         const vampireLord = DICETHRONE_CHARACTER_CATALOG.find((character) => character.id === 'vampire_lord');
 
-        expect(vampireLord?.setupOptionStatus).toBe('hidden');
-        expect(vampireLord?.setupOptionStatusReason).toContain('暂不对玩家开放');
-        expect(hasImplementationInProgressBadge('vampire_lord')).toBe(false);
-        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).not.toContain('vampire_lord');
+        expect(vampireLord?.setupOptionStatus).toBe('in_progress');
+        expect(vampireLord?.setupOptionStatusReason).toContain('当前范围实施与审计');
+        expect(hasImplementationInProgressBadge('vampire_lord')).toBe(true);
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).toContain('vampire_lord');
     });
 });

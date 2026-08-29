@@ -61,8 +61,8 @@
     "exploreEvent": "玩家 {{playerId}} 触发事件：{{event}}",
     "exploreRoomEvent": "玩家 {{playerId}} 探索到{{room}}，触发事件：{{event}}",
     "eventRollResult": "玩家 {{playerId}} 的{{event}}结果：{{roll}}，总点数 {{total}}，{{result}}",
-    "eventRolledPhysicalDamageResult": "玩家 {{playerId}} 为{{event}}重新投掷 {{diceCount}} 颗骰子：{{damageRolls}}；合计 {{damageTotal}} 点；待分配 {{appliedDamage}} 点物理伤害",
-    "eventRolledMentalDamageResult": "玩家 {{playerId}} 为{{event}}重新投掷 {{diceCount}} 颗骰子：{{damageRolls}}；合计 {{damageTotal}} 点；待分配 {{appliedDamage}} 点精神伤害",
+    "eventRolledPhysicalDamageResult": "玩家 {{playerId}} 处理{{event}}伤害骰：{{damageRolls}}；合计 {{damageTotal}} 点；造成 {{appliedDamage}} 点物理伤害",
+    "eventRolledMentalDamageResult": "玩家 {{playerId}} 处理{{event}}伤害骰：{{damageRolls}}；合计 {{damageTotal}} 点；造成 {{appliedDamage}} 点精神伤害",
     "usePossession": "玩家 {{playerId}} 使用了持有物",
     "useRabbitFoot": "玩家 {{playerId}} 使用兔脚重掷",
     "useRollRerollItem": "玩家 {{playerId}} 使用持有物重掷",
@@ -986,7 +986,9 @@
       "eventDamageDiceLabel": "伤害骰",
       "eventDamageDiceTotal": "伤害骰合计 {{value}}",
       "eventDamageDiceSubtotal": "伤害骰面合计 {{value}}",
-      "eventDamageResult": "重新投掷 {{diceCount}} 颗骰子：{{rolls}}；合计 {{total}} 点；待分配 {{applied}} 点{{kind}}",
+      "eventDamageEffect": "实际效果：{{effect}}",
+      "eventDamageEffectItem": "造成 {{applied}} 点{{kind}}",
+      "eventDamageResult": "伤害骰 {{rolls}}；合计 {{total}} 点；造成 {{applied}} 点{{kind}}",
       "attackComparison": "进攻总点 {{attacker}} / 防御总点 {{defender}}",
       "attackComparisonWithExtraDice": "进攻总点 {{attacker}} / 防御总点 {{defender}}（防御额外 {{extraDice}} 骰）",
       "backToBoard": "返回牌桌",
@@ -1059,6 +1061,10 @@
     }
   },
   "tutorial": {
+    "mainPath": {
+      "title": "主线教程：探索到英雄胜利",
+      "description": "从恶兆前基础回合开始，依次学习预兆确认、交易、第一剧本英雄目标、驱逐木乃伊和英雄终局。"
+    },
     "basicSetup": {
       "title": "基础回合：使用、移动、探索",
       "description": "作祟开始前，你可以按任意顺序移动、探索新房间、与同一房间的探险者交易物品和预兆，以及使用物品和预兆的特殊行动。探索新房间会结束你的回合。",
@@ -1138,10 +1144,10 @@
       }
     },
     "traitorPath": {
-      "title": "叛徒帮助木乃伊",
-      "description": "叛徒胜利条件：木乃伊持有女孩和圣符或指环之一，返回石棺房间；所有英雄死亡时，叛徒也胜利。",
+      "title": "叛徒视角：木乃伊行动与胜利",
+      "description": "叛徒先阅读自己的剧本目标，再控制木乃伊移动、攻击、偷取，最后完成女孩与圣符或指环的胜利链。",
       "steps": {
-        "setupTraitorTurn": "切到叛徒视角。让木乃伊持有女孩和圣符或指环之一，并返回石棺房间。",
+        "setupTraitorTurn": "现在看叛徒胜利链：让木乃伊持有女孩和圣符或指环之一，并返回石棺房间。",
         "traitorObjective": "打开叛徒剧本，阅读女孩、圣符或指环、石棺这条胜利条件，以及木乃伊行动规则。",
         "pickUpGirl": "进入女孩标记所在的房间即可持有女孩预兆牌；点“拾起女孩”。",
         "giveGirlToMummy": "持有女孩且与木乃伊同房时，可将女孩交给木乃伊；点“交出女孩”。",

@@ -30,6 +30,7 @@ import {
     assertState,
     createHeroMatchup,
     advanceTo,
+    expectNoPrompt,
 } from './test-utils';
 
 const advancePickpocketSamuraiToTokenResponseCommands = () => [
@@ -143,7 +144,7 @@ describe('破隐一击伤害计算 Bug 复现', () => {
 
         expect(afterBackStrikeAndDamage.steps.every(step => step.success)).toBe(true);
         expect(afterBackStrikeAndDamage.finalState.sys.phase).toBe('main2');
-        expect(afterBackStrikeAndDamage.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(afterBackStrikeAndDamage.finalState);
 
         const result = afterBackStrikeAndDamage;
         expect(result.assertionErrors).toEqual([]);

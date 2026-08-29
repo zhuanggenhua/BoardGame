@@ -341,7 +341,8 @@ async function main() {
   const uploadedPackageManagedGames = new Set();
   let hasUploadedSharedAudioAssets = false;
 
-  const uploadUrl = resolveAssetUploadUrl();
+  const listExplicitCheckMatches = checkOnly && assetPrefixes.length > 0;
+  const uploadUrl = listExplicitCheckMatches ? '' : resolveAssetUploadUrl();
   const remoteInventory = uploadUrl
     ? await fetchAssetPublishInventory({
       uploadUrl,
@@ -364,7 +365,6 @@ async function main() {
     console.log(`路径过滤：${assetPrefixes.join(', ')}`);
   }
 
-  const listExplicitCheckMatches = checkOnly && assetPrefixes.length > 0;
   const uploadPlan = [];
   let skippedUnchanged = 0;
   for (const file of files) {

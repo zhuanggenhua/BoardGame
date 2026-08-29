@@ -370,7 +370,7 @@ describe('AI legal actions', () => {
         )).toBe(true);
     });
 
-    it('setup 阶段共享 AI 上下文应过滤实施中角色，原始 AI 动作也不包含隐藏角色', () => {
+    it('setup 阶段共享 AI 上下文应过滤实施中角色，玩家可见原始列表仍保留它们', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         const state: MatchState<DiceThroneCore> = {
             core,
@@ -401,7 +401,7 @@ describe('AI legal actions', () => {
             .map((action) => (action.commands[0]?.payload as { characterId?: string } | undefined)?.characterId);
 
         expect(rawCharacterIds).toContain('lieren');
-        expect(rawCharacterIds).not.toContain('vampire_lord');
+        expect(rawCharacterIds).toContain('vampire_lord');
         expect(contextCharacterIds).not.toContain('lieren');
         expect(contextCharacterIds).not.toContain('vampire_lord');
     });
@@ -2680,6 +2680,7 @@ describe('AI legal actions', () => {
         expect(DICETHRONE_CHARACTER_CATALOG.map((item) => item.id)).toContain(selectedCharacterId);
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((item) => item.id)).toContain(selectedCharacterId);
         expect(selectedCharacterId).not.toBe('monk');
+        expect(selectedCharacterId).not.toBe('lieren');
         expect(selectedCharacterId).not.toBe('vampire_lord');
     });
 
@@ -2706,10 +2707,10 @@ describe('AI legal actions', () => {
 
         expect(selectableCharacterIds.length).toBeGreaterThan(0);
         expect(selectableCharacterIds).not.toContain('monk');
-        expect(selectableCharacterIds).not.toContain('vampire_lord');
+        expect(selectableCharacterIds).toContain('vampire_lord');
     });
 
-    it('setup 阶段直接选择隐藏角色应被拒绝', () => {
+    it('setup 阶段直接选择实施中吸血鬼领主应被接受', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         const state: MatchState<DiceThroneCore> = {
             core,
@@ -2721,8 +2722,8 @@ describe('AI legal actions', () => {
 
         const result = tryCmd(state, cmd('SELECT_CHARACTER', '0', { characterId: 'vampire_lord' }));
 
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('unsupported_character');
+        expect(result.success).toBe(true);
+        expect((result.state as MatchState<DiceThroneCore>).core.selectedCharacters['0']).toBe('vampire_lord');
     });
 
     it('玩家选择 AI 已选角色时，应释放 AI 角色并让 AI 重新准备', () => {

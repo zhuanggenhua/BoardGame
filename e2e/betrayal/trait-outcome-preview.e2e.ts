@@ -87,23 +87,33 @@ test.describe('山屋惊魂属性后果预览', () => {
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-event-choice-panel')).toBeVisible();
 
-        await page.getByTestId('betrayal-event-choice-damage-might').click();
+        await page.getByTestId('betrayal-event-choice-damage-might-increase').click();
         await expect(page.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute(
             'data-damage-selected-count',
             '1',
         );
+        await expect(page.getByTestId('betrayal-event-choice-damage-might-selected-count')).toHaveText('1');
+        await page.getByTestId('betrayal-event-choice-damage-might-decrease').click();
+        await expect(page.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute(
+            'data-damage-selected-count',
+            '0',
+        );
+        await expect(page.getByTestId('betrayal-event-choice-damage-might-selected-count')).toHaveText('0');
+        await page.getByTestId('betrayal-event-choice-damage-might-increase').click();
+        await page.getByTestId('betrayal-event-choice-damage-might-increase').click();
+        await expect(page.getByTestId('betrayal-event-choice-damage-might-selected-count')).toHaveText('2');
         const mightPreview = page.getByTestId('betrayal-event-choice-damage-might');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-mode', 'damage');
-        await expect(mightPreview).toHaveAttribute('data-trait-preview-step-count', '1');
+        await expect(mightPreview).toHaveAttribute('data-trait-preview-step-count', '2');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-locked', 'false');
         await expect(page.getByTestId('betrayal-event-choice-damage-traits')).not.toContainText(
-            /承担\s*\d+\s*点|×\d/,
+            /承担\s*\d+\s*点|×\d|[+-]\s*\d+\s*步|[+-]\s*\d+\s*steps/i,
         );
         await expect(page.getByTestId('betrayal-event-choice-confirm')).toHaveCount(0);
 
         await saveScreenshot(page, DAMAGE_PREVIEW_SCREENSHOT);
 
-        await page.getByTestId('betrayal-event-choice-damage-might').click();
+        await page.getByTestId('betrayal-event-choice-accept').click();
         await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-current-trait-track-might')).toHaveAttribute(
             'data-trait-track-position',

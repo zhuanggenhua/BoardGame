@@ -1,5 +1,5 @@
 {
-  "title": "Mage Wars current-scope 综合候选链完整流程图组",
+  "title": "Mage Wars current-scope 综合候选链完整流程图组（2026-08-29 重跑）",
   "classification": "current-scope-candidate-flow",
   "canonicalRule": ".spec/knowledge/standards/e2e-verification.md",
   "items": [
@@ -11,92 +11,132 @@
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤来源和目标区域.jpg",
       "label": "兽王召唤前：选择野性山猫和目标区域",
-      "transition": "从 01 的计划结果进入部署，兽王选择已计划生物和合法区域。"
+      "transition": "从计划结果进入部署，兽王选择已计划生物和合法区域。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤光柱过程帧.jpg",
       "label": "兽王召唤中：野性山猫光柱过程帧",
-      "transition": "从 02 点击合法目标后，召唤光柱在目标区域出现。"
+      "transition": "从兽王召唤目标点击后，召唤光柱在目标区域出现。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤完成单位落场.jpg",
       "label": "兽王召唤完成：野性山猫落场",
-      "transition": "从 03 召唤过程收口到正式场上单位。"
+      "transition": "从召唤过程收口到正式场上单位。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
       "label": "女祭司召唤前：选择阿希拉牧师和目标区域",
-      "transition": "从 04 切到女祭司部署，第二派系开始同一真实召唤链。"
+      "transition": "从兽王部署完成切到女祭司部署，第二派系开始同一真实召唤链。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
       "label": "女祭司召唤中：阿希拉牧师光柱过程帧",
-      "transition": "从 05 点击合法目标后，女祭司侧召唤过程帧出现。"
+      "transition": "从女祭司点击合法目标后，召唤过程帧出现。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤完成单位落场.jpg",
       "label": "女祭司召唤完成：阿希拉牧师落场",
-      "transition": "从 06 召唤过程收口，女祭司场上单位落场。"
+      "transition": "从召唤过程收口，女祭司场上单位落场。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09-两派系生物部署后-兽王女祭司各有场上生物.jpg",
       "label": "双方部署完成：两派系各有场上生物",
-      "transition": "从 07 汇总到后续链路起点，双方场上目标都可见。"
+      "transition": "从双方召唤收口到后续链路起点，双方场上目标都可见。"
     },
     {
-      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10-装备和结界作为附件结算后-两派系附着关系可见.jpg",
-      "label": "附件结算：装备和结界挂到宿主旁",
-      "transition": "从 08 进入装备 / 结界代表链，附件不作为场上单位出现。"
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10A-兽王装备巨熊皮甲施放前-兽王法师为绿色合法目标.jpg",
+      "label": "兽王装备：巨熊皮甲选择法师目标",
+      "transition": "从部署结果进入附件链，装备先高亮合法法师目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10B-兽王结界巨熊力量施放前-野性山猫为绿色合法目标.jpg",
+      "label": "兽王结界：巨熊力量选择生物目标",
+      "transition": "从兽王装备目标选择切到结界，野性山猫本体成为合法目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10C-女祭司装备风龙皮甲施放前-女祭司法师为绿色合法目标.jpg",
+      "label": "女祭司装备：风龙皮甲选择法师目标",
+      "transition": "从兽王附件链切到女祭司装备，女祭司法师本体成为合法目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10D-女祭司结界公牛耐力施放前-阿希拉牧师为绿色合法目标.jpg",
+      "label": "女祭司结界：公牛耐力选择生物目标",
+      "transition": "从女祭司装备切到结界，阿希拉牧师本体成为合法目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10E-装备和结界最终附着结果-两派系附着关系可见.jpg",
+      "label": "附件结算：装备和结界挂到对应宿主",
+      "transition": "从四次目标选择收口，附件不作为场上单位出现。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10F-荆棘之墙施放前-A3-B3边界可选.jpg",
+      "label": "墙体施放前：A3-B3 边界可选",
+      "transition": "从附件结果进入墙体链，荆棘之墙来源牌选中后边界成为合法目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10G-荆棘之墙施放后-A3-B3边界墙牌可见.jpg",
+      "label": "墙体施放后：边界显示荆棘之墙牌面",
+      "transition": "从点击边界后，源墙法术牌面贴到 A3-B3 边界。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg",
       "label": "攻击法术开始：间歇喷泉来源到目标投射",
-      "transition": "从 09 进入魔物 / 攻击代表链，攻击路径从来源指向目标。"
+      "transition": "从墙体落位后进入魔物 / 攻击代表链，攻击路径从来源指向目标。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-投射物飞行中.jpg",
       "label": "攻击法术飞行：投射物跨格飞行",
-      "transition": "从 10 进入飞行中段，尚未到命中反馈。"
+      "transition": "从攻击来源帧进入飞行中段，尚未到命中反馈。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-命中动画过程帧.jpg",
       "label": "攻击法术命中：斜切和命中反馈出现",
-      "transition": "从 11 飞行中段进入命中反馈。"
+      "transition": "从飞行中段进入命中反馈。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.jpg",
       "label": "魔物和攻击结算后：结果回到牌桌",
-      "transition": "从 12 命中反馈收口到牌桌结果，缠绕藤蔓与攻击结算可见。"
+      "transition": "从命中反馈收口到牌桌结果，缠绕藤蔓与攻击结算可见。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/12-候选链收口-回到下一轮计划阶段.jpg",
       "label": "阶段收口：回到下一轮计划阶段",
-      "transition": "从 13 继续推进阶段，双方回到下一轮计划入口。"
+      "transition": "从魔物和攻击结算继续推进阶段，双方回到下一轮计划入口。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/13-守卫动作后-阿希拉牧师守卫标记可见.jpg",
       "label": "守卫动作：阿希拉牧师获得守卫标记",
-      "transition": "从 14 进入核心机制代表态，点击守卫后标记出现在单位上。"
+      "transition": "从下一轮计划后进入代表态切片，点击守卫后标记出现在单位上。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/14-近战攻击守卫生物后-守卫标记移除.jpg",
       "label": "近战攻击守卫：守卫标记被移除",
-      "transition": "从 15 野性山猫攻击守卫生物，守卫标记按规则清除。"
+      "transition": "从守卫状态进入近战攻击，攻击后守卫标记按规则清除。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15A-阿希拉牧师治疗之光入口-中下动作按钮可见.jpg",
+      "label": "对象能力入口：治疗之光按钮在屏幕中下",
+      "transition": "从守卫攻击收口后，选中阿希拉牧师并显示中下能力按钮。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.jpg",
+      "label": "对象能力结算中：治疗光效和恢复数字",
+      "transition": "从点击治疗目标后，目标位置出现治疗光效和恢复数字。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15-阿希拉牧师治疗之光结算后-治疗能力可见.jpg",
-      "label": "对象能力：阿希拉牧师治疗之光结算",
-      "transition": "从 16 点击阿希拉牧师能力并选择受伤目标，治疗结算后目标伤害降低。"
+      "label": "对象能力结算后：目标伤害降低",
+      "transition": "从治疗过程帧收口，服务端事件和牌桌状态证明治疗完成。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16-女祭司复原术移除燃烧后-状态标记消失.jpg",
       "label": "法师能力：女祭司复原术移除燃烧",
-      "transition": "从 17 切到女祭司法师能力，复原术结算后燃烧状态消失。"
+      "transition": "从对象能力收口切到女祭司法师能力，复原术结算后燃烧状态消失。"
     },
     {
       "path": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/17-近终局基础攻击后-胜负遮罩可见.jpg",
       "label": "终局：基础攻击触发胜负遮罩",
-      "transition": "从 18 进入近终局代表态，攻击法师本体后胜负遮罩出现。"
+      "transition": "从法师能力切到近终局代表态，攻击法师本体后胜负遮罩出现。"
     }
   ]
 }

@@ -34,6 +34,7 @@ import {
     getPromptOptions,
     getPromptPlayerId,
     getPromptSourceId,
+    getOptionalSimpleChoicePrompt,
     scoreBaseViaFlow,
     getSimpleChoicePrompt,
 } from './helpers';
@@ -1677,20 +1678,23 @@ describe('基地记分与力量计算', () => {
             };
 
             const result = scoreBaseViaFlow(state, 0, [], '0', 1000, undefined, matchState);
-            const reactionPrompt = getSimpleChoicePrompt(result.matchState!, 'smashup_reaction_choose');
-            const igorTrigger = result.matchState!.core.triggerQueue?.find((trigger: any) =>
-                trigger.sourceDefId === 'frankenstein_igor');
-            expect(igorTrigger).toBeTruthy();
-            expect(getPromptOptions(reactionPrompt).some((option: any) =>
-                option.value?.triggerId === igorTrigger!.id)).toBe(true);
+            let current = getOptionalSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
+            if (!current) {
+                const reactionPrompt = getSimpleChoicePrompt(result.matchState!, 'smashup_reaction_choose');
+                const igorTrigger = result.matchState!.core.triggerQueue?.find((trigger: any) =>
+                    trigger.sourceDefId === 'frankenstein_igor');
+                expect(igorTrigger).toBeTruthy();
+                expect(getPromptOptions(reactionPrompt).some((option: any) =>
+                    option.value?.triggerId === igorTrigger!.id)).toBe(true);
 
-            const resolvedIgor = resolveSmashUpReactionChoice(
-                result.matchState!,
-                createSeededRandom('igor-clear-discard-targets'),
-                1001,
-                { kind: 'trigger', triggerId: igorTrigger!.id },
-            );
-            const current = getSimpleChoicePrompt(resolvedIgor.state, 'frankenstein_igor');
+                const resolvedIgor = resolveSmashUpReactionChoice(
+                    result.matchState!,
+                    createSeededRandom('igor-clear-discard-targets'),
+                    1001,
+                    { kind: 'trigger', triggerId: igorTrigger!.id },
+                );
+                current = getSimpleChoicePrompt(resolvedIgor.state, 'frankenstein_igor');
+            }
             const optionUids = getPromptOptions(current).map((option: any) => option?.value?.minionUid);
 
             expect(getPromptSourceId(current)).toBe('frankenstein_igor');

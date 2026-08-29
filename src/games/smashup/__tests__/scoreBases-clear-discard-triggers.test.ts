@@ -9,6 +9,8 @@ import { SU_EVENTS, type SmashUpCommand, type SmashUpCore, type SmashUpEvent } f
 import {
     expectNoPrompt,
     getPromptOption,
+    getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
     makeBase,
     makeMinion,
@@ -145,6 +147,14 @@ describe('scoreBases 清场弃牌触发时序', () => {
         const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0', timestamp: 1 });
         expect(advance.success, advance.error).toBe(true);
         allEvents.push(...advance.events);
+
+        const reactionPrompt = getReactionPrompt(runner.getState());
+        const firstMateTrigger = getReactionPromptOptionBySourceDefId(
+            runner.getState(),
+            reactionPrompt,
+            'pirate_first_mate',
+        );
+        allEvents.push(...resolveCurrentOption(runner, firstMateTrigger.id, reactionPrompt.playerId).events);
 
         const firstMatePrompt = getSimpleChoicePrompt(runner.getState(), 'pirate_first_mate_choose_base');
         const moveMateOption = getPromptOption(

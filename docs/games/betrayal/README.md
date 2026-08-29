@@ -121,20 +121,22 @@
 4. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合，且此后攻击英雄时会按 `Jack's Spirit` 的房间与 `Might 5` 结算；当 `Jack's Spirit` 回到尸体所在房间时，叛徒会恢复肉身并移除 spirit。交易、调查杰克、研究法阵和英雄攻击叛徒也已补真实页面 E2E，不再只停留在领域单测或命令注入。
 5. `HAUNT_ATTACK` 也已经从“命中即秒杀”改成正式对攻：英雄打叛徒、叛徒打英雄都按 `Might` 对掷，按点差造成 `Physical damage`，平手不受伤；`Knowledge of Jack` 的 `+2` 只在英雄攻击叛徒时生效。
 6. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
-7. 教程第一轮已经接入标准教程链，并已通过真实教程 E2E；本轮又对“发现牌揭示 / 骰面 / 参考页”做了当前现场复核：
+7. 教程已重构为 2 个玩家可见章节，并通过本轮真实教程验证：
    - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
    - 默认教程是 `basic-setup-and-turn`
-   - 当前可见教程已压成 3 个章节：`basic-setup-and-turn`、`haunt-actions-and-finish`、`traitor-path`
-   - `move-explore-use`、`crimson-jack-objective` 仅保留为隐藏兼容入口，分别指向基础回合和驱魔章节
+   - 当前可见教程已压成 2 个章节：`basic-setup-and-turn`、`traitor-path`
+   - `basic-setup-and-turn` 是普通玩家主线，合并基础回合、预兆确认、交易、英雄剧本目标、驱逐木乃伊和英雄终局
+   - `traitor-path` 是唯一额外章节，合并叛徒目标、木乃伊怪物行动、偷取奖励和女孩 + 圣符 / 指环胜利链
+   - `move-explore-use`、`omen-confirmation-and-haunt-risk`、`trade-and-agreement`、`haunt-actions-and-finish`、`mummy-monster-actions`、`crimson-jack-objective`、`hero-attack-path`、`jack-spirit-path` 仅保留为隐藏兼容 / 专题回归入口
    - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`
    - `Board.tsx` 已把角色选择、动作区、持有区、房间区、帮助入口和终局挂上真实 `data-tutorial-id`
-   - `e2e/betrayal/betrayal-tutorial.e2e.ts` 已通过，截图证据位于 `evidence/betrayal-tutorial/`
+   - `e2e/betrayal/betrayal-tutorial.e2e.ts` 的 `tutorial-main`、`mummy-traitor-path` 和 `mummy-monster-actions` 已通过，截图证据位于 `evidence/betrayal-tutorial/`
    - `14-山屋惊魂-教程-探索后发现牌.jpg`：发现牌居中作为主结果，底部确认条只保留“下一步”按钮，不复读牌面标题、正文或“已抽到/已翻开”说明。
    - `06-山屋惊魂-教程-终局页.jpg`：驱魔投骰骰面在终局主结果区域可见，不再只有一行文字结果。
    - `evidence/betrayal-first-scenario/02-山屋惊魂-玩家参考卡-帮助面板.jpg`：第一剧本参考页使用正式参考卡素材，不在旁边复读规则正文。
-   - 教程 / 生命周期 / 教程阶段运行时相关单测也已重新通过：
-     - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx --configLoader native`
-     - 结果：`4 passed / 34 passed`
+   - 教程结构、通用教程自动命令执行器和 manifest 集成相关单测也已重新通过：
+     - `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/TutorialContext.test.tsx src/games/betrayal/__tests__/tutorial.test.ts src/games/__tests__/betrayalManifestIntegration.test.ts --configLoader native`
+     - 结果：`3 passed / 22 passed`
 8. 当前教程仍是“首轮基础教程”，不是完整规则书：
    - 已覆盖真实角色选择、恶兆前主循环、第一剧本英雄目标、英雄线收尾，以及第一剧本叛徒视角的最小攻击 / 终局收尾
    - 更复杂 haunt 分支、更多剧本与完整规则书式教学仍留待后续子教程

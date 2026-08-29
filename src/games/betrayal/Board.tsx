@@ -15,6 +15,8 @@ import {
   Hourglass,
   ImageOff,
   LocateFixed,
+  Minus,
+  Plus,
   RotateCcw,
   RotateCw,
   Search,
@@ -1222,6 +1224,8 @@ function buildRecentRollDisplayKey(
     recentRoll.kind,
     recentRoll.playerId,
     recentRoll.sourceTitle,
+    recentRoll.eventDescription ?? "",
+    recentRoll.sourceEventRoll?.eventDescription ?? "",
     recentRoll.rollLabel ?? "",
     recentRoll.latestLabel,
     recentRoll.dice.join(","),
@@ -4798,6 +4802,52 @@ function countSelectedDamageTrait(
     .length;
 }
 
+function adjustSelectedDamageTrait({
+  selectedTraits,
+  trait,
+  delta,
+  allowedTraits,
+  amount,
+  explorer,
+  phase,
+}: {
+  selectedTraits: BetrayalTraitKey[];
+  trait: BetrayalTraitKey;
+  delta: -1 | 1;
+  allowedTraits: BetrayalTraitKey[];
+  amount: number;
+  explorer: BetrayalExplorerSummary;
+  phase: BetrayalCore["phase"];
+}): BetrayalTraitKey[] {
+  const selected = pruneSelectedDamageTraits(
+    selectedTraits,
+    allowedTraits,
+    amount,
+    explorer,
+    phase,
+  );
+  const currentCount = countSelectedDamageTrait(selected, trait);
+  if (delta < 0) {
+    if (currentCount <= 0) {
+      return selected;
+    }
+    const removeIndex = selected.lastIndexOf(trait);
+    return selected.filter((_, index) => index !== removeIndex);
+  }
+  const maxTraitCount = Math.min(
+    amount,
+    resolveTraitDamageAssignableSteps(explorer, trait, phase),
+  );
+  if (
+    !allowedTraits.includes(trait) ||
+    currentCount >= maxTraitCount ||
+    selected.length >= amount
+  ) {
+    return selected;
+  }
+  return [...selected, trait];
+}
+
 function resolveTrackPositionPercent(slots: number[], position: number): number {
   if (slots.length <= 1) {
     return 50;
@@ -5029,6 +5079,10 @@ function ExplorerTraitOutcomePreview({
   locked,
   ariaLabel,
   onClick,
+  onIncrement,
+  onDecrement,
+  canIncrement,
+  canDecrement,
 }: {
   explorer: BetrayalExplorerSummary;
   trait: BetrayalTraitKey;
@@ -5044,6 +5098,10 @@ function ExplorerTraitOutcomePreview({
   locked?: boolean;
   ariaLabel?: string;
   onClick?: () => void;
+  onIncrement?: () => void;
+  onDecrement?: () => void;
+  canIncrement?: boolean;
+  canDecrement?: boolean;
 }) {
   const track = resolveExplorerTraitTrack(explorer, trait);
   const currentPosition = clampTraitTrackPosition(track);
@@ -5062,7 +5120,13 @@ function ExplorerTraitOutcomePreview({
   const currentPercent = resolveTrackPositionPercent(slots, currentPosition);
   const targetPercent = resolveTrackPositionPercent(slots, targetPosition);
   const isLockedForDamage = mode === "damage" && currentPosition <= floorPosition;
-  const isInteractive = typeof onClick === "function";
+  const hasAdjustControls =
+    mode === "damage" &&
+    (typeof onIncrement === "function" || typeof onDecrement === "function");
+  const isCardInteractive =
+    typeof onClick === "function" && !hasAdjustControls;
+  const isInteractive = isCardInteractive || hasAdjustControls;
+  const safeSelectedCount = selectedCount ?? 0;
   const outcomeLabel =
     mode === "heal"
       ? actualSteps > 0
@@ -5077,6 +5141,11 @@ function ExplorerTraitOutcomePreview({
     from: currentValue,
     to: targetValue,
   });
+  const shouldShowOutcomeLabel = mode !== "damage" || isLockedForDamage;
+  const ariaSummaryLabel =
+    mode === "damage"
+      ? valueFlowLabel
+      : `${valueFlowLabel}，${outcomeLabel}`;
   const previewClassName = `grid gap-1.5 rounded-[8px] border px-2.5 py-2 text-left transition ${
     isLockedForDamage
       ? "border-[rgba(115,54,47,0.56)] bg-[rgba(48,19,18,0.48)]"
@@ -5084,9 +5153,11 @@ function ExplorerTraitOutcomePreview({
         ? `${TRAIT_CHOICE_TONE_CLASS[trait].selected} shadow-[0_0_18px_rgba(214,181,109,0.20)]`
         : "border-[rgba(211,179,109,0.28)] bg-[rgba(13,16,13,0.46)]"
   } ${
-    isInteractive
-      ? "pointer-events-auto w-full min-w-0 cursor-pointer hover:border-[rgba(211,179,109,0.54)] hover:bg-[rgba(209,176,95,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:bg-[rgba(13,15,11,0.28)] disabled:text-[#7a6a4a] disabled:shadow-none"
-      : ""
+    isCardInteractive
+      ? "pointer-events-auto w-full min-w-0 cursor-pointer hover:border-[rgba(211,179,109,0.54)] hover:bg-[rgba(209,176,95,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] data-[disabled=true]:cursor-not-allowed data-[disabled=true]:border-[rgba(123,106,74,0.24)] data-[disabled=true]:bg-[rgba(13,15,11,0.28)] data-[disabled=true]:text-[#7a6a4a] data-[disabled=true]:shadow-none"
+      : hasAdjustControls
+        ? "pointer-events-auto w-full min-w-0"
+        : ""
   }`;
   const previewAttributes = {
     "data-testid": `${testIdPrefix}-${trait}`,
@@ -5111,9 +5182,52 @@ function ExplorerTraitOutcomePreview({
           />
           <span className="truncate">{TRAIT_LABEL_LOCAL[trait]}</span>
         </span>
-        <span className="shrink-0 text-[11px] font-semibold text-[#e8d59b]">
-          {outcomeLabel}
-        </span>
+        {shouldShowOutcomeLabel ? (
+          <span className="shrink-0 text-[11px] font-semibold text-[#e8d59b]">
+            {outcomeLabel}
+          </span>
+        ) : null}
+        {hasAdjustControls ? (
+          <span
+            data-testid={`${testIdPrefix}-${trait}-adjust-controls`}
+            className="ml-auto inline-flex shrink-0 items-center overflow-hidden rounded-[999px] border border-[rgba(214,181,109,0.30)] bg-[rgba(5,8,7,0.46)]"
+          >
+            <button
+              type="button"
+              data-testid={`${testIdPrefix}-${trait}-decrease`}
+              aria-label={`减少${TRAIT_LABEL_LOCAL[trait]}分配`}
+              disabled={!canDecrement}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDecrement?.();
+              }}
+              className="grid h-7 w-7 place-items-center text-[#f1d58d] transition hover:bg-[rgba(214,181,109,0.14)] disabled:cursor-not-allowed disabled:text-[rgba(214,181,109,0.28)]"
+            >
+              <Minus size={14} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+            <span
+              data-testid={`${testIdPrefix}-${trait}-selected-count`}
+              data-damage-selected-count={safeSelectedCount}
+              className="grid h-7 min-w-[1.75rem] place-items-center border-x border-[rgba(214,181,109,0.22)] px-1 text-[12px] font-black tabular-nums text-[#fff4c7]"
+              aria-label={`${TRAIT_LABEL_LOCAL[trait]}已分配${safeSelectedCount}`}
+            >
+              {safeSelectedCount}
+            </span>
+            <button
+              type="button"
+              data-testid={`${testIdPrefix}-${trait}-increase`}
+              aria-label={`增加${TRAIT_LABEL_LOCAL[trait]}分配`}
+              disabled={!canIncrement}
+              onClick={(event) => {
+                event.stopPropagation();
+                onIncrement?.();
+              }}
+              className="grid h-7 w-7 place-items-center text-[#f1d58d] transition hover:bg-[rgba(214,181,109,0.14)] disabled:cursor-not-allowed disabled:text-[rgba(214,181,109,0.28)]"
+            >
+              <Plus size={14} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          </span>
+        ) : null}
       </div>
       <div
         data-trait-preview-rail="true"
@@ -5206,24 +5320,56 @@ function ExplorerTraitOutcomePreview({
     </>
   );
 
-  if (isInteractive) {
+  if (hasAdjustControls) {
     return (
-      <button
-        type="button"
+      <div
         {...previewAttributes}
-        data-damage-selected-count={selectedCount}
+        data-damage-selected-count={safeSelectedCount}
         data-damage-locked={(locked ?? isLockedForDamage) ? "true" : "false"}
+        data-disabled={disabled ? "true" : "false"}
         aria-label={
           ariaLabel ??
-          `${TRAIT_LABEL_LOCAL[trait]}：${valueFlowLabel}，${outcomeLabel}`
+          `${TRAIT_LABEL_LOCAL[trait]}：${ariaSummaryLabel}`
         }
-        aria-pressed={selected}
-        disabled={disabled}
-        onClick={onClick}
         className={previewClassName}
       >
         {previewContent}
-      </button>
+      </div>
+    );
+  }
+
+  if (isCardInteractive) {
+    return (
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        {...previewAttributes}
+        data-damage-selected-count={safeSelectedCount}
+        data-damage-locked={(locked ?? isLockedForDamage) ? "true" : "false"}
+        data-disabled={disabled ? "true" : "false"}
+        aria-label={
+          ariaLabel ??
+          `${TRAIT_LABEL_LOCAL[trait]}：${ariaSummaryLabel}`
+        }
+        aria-pressed={selected}
+        onClick={() => {
+          if (!disabled) {
+            onClick?.();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (disabled || !onClick) {
+            return;
+          }
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick();
+          }
+        }}
+        className={previewClassName}
+      >
+        {previewContent}
+      </div>
     );
   }
 
@@ -6443,6 +6589,10 @@ function RecentRollPanel({
         ? t("board.status.damageKindPhysical")
         : t("board.status.damageKindMental");
     const rollsLabel = damage.rolls.join(" / ");
+    const effectItemLabel = t("board.roll.eventDamageEffectItem", {
+      applied: damage.appliedAmount,
+      kind: damageKindLabel,
+    });
     const resultLabel = t("board.roll.eventDamageResult", {
       diceCount: damage.rolls.length,
       rolls: rollsLabel,
@@ -6453,6 +6603,7 @@ function RecentRollPanel({
     return {
       ...damage,
       rollsLabel,
+      effectItemLabel,
       visibleLabel: resultLabel,
       srLabel: resultLabel,
     };
@@ -6480,9 +6631,24 @@ function RecentRollPanel({
     visiblePassiveBonus !== 0
       ? t("board.roll.bonus", { value: visibleBonusLabel })
       : t("board.roll.noBonus");
-  const primaryOutcomeLabel = showEventDamageDiceStage
-    ? roll.sourceTitle || roll.rollLabel || t("board.roll.eventDamageDiceLabel")
-    : roll.latestLabel;
+  const eventDamageDescriptionLabel = showEventDamageDiceStage
+    ? roll.sourceEventRoll?.eventDescription ??
+      roll.sourceEventRoll?.latestLabel ??
+      roll.latestLabel
+    : "";
+  const eventDamageSubtitleLabel =
+    showEventDamageDiceStage && roll.sourceEventRoll?.eventDescription
+      ? roll.sourceEventRoll.latestLabel
+      : "";
+  const eventDamageEffectLabel =
+    showEventDamageDiceStage && eventDamageSummaries.length > 0
+      ? t("board.roll.eventDamageEffect", {
+          effect: eventDamageSummaries
+            .map((damage) => damage.effectItemLabel)
+            .join("；"),
+        })
+      : "";
+  const primaryOutcomeLabel = roll.latestLabel;
   const diceStageRoll: BetrayalRecentRollState = showEventDamageDiceStage
     ? roll.kind === "eventRolledDamage"
       ? roll
@@ -6510,14 +6676,12 @@ function RecentRollPanel({
       value: visibleDiceSubtotal,
     },
   );
-  const canvasTestId = React.useMemo(() => {
-    const safeRollId =
-      diceStageRoll.id
-        .replace(/[^a-zA-Z0-9_-]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 80) || "roll";
-    return `betrayal-house-dice-box-canvas-${safeRollId}`;
-  }, [diceStageRoll.id]);
+  const safeRollId =
+    diceStageRoll.id
+      .replace(/[^a-zA-Z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "roll";
+  const canvasTestId = `betrayal-house-dice-box-canvas-${safeRollId}`;
 
   const diceStage = (
     <BetrayalHouseDice3DGroup
@@ -6550,16 +6714,24 @@ function RecentRollPanel({
       {diceStage}
     </div>
   );
-  const shouldShowVisibleSource = showSource && !showEventDamageDiceStage;
+  const shouldShowVisibleSource = showEventDamageDiceStage ? false : showSource;
   const shouldShowVisibleRollLabel = showRollLabel && !showEventDamageDiceStage;
-  const shouldShowPrimaryOutcome =
-    showOutcome && !showEventDamageDiceStage;
+  const shouldShowEventDamageDescription =
+    showOutcome && showEventDamageDiceStage && Boolean(eventDamageDescriptionLabel);
+  const shouldShowEventDamageSubtitle =
+    showOutcome && showEventDamageDiceStage && Boolean(eventDamageSubtitleLabel);
+  const shouldShowEventDamageEffect =
+    showOutcome && showEventDamageDiceStage && Boolean(eventDamageEffectLabel);
+  const shouldShowPrimaryOutcome = showOutcome && !showEventDamageDiceStage;
   const shouldShowEventDamageVisibleSummary =
     showOutcome && eventDamageSummaries.length > 0 && !showEventDamageDiceStage;
   const showResultCopy = Boolean(
     actorLabel ||
       shouldShowVisibleSource ||
       shouldShowVisibleRollLabel ||
+      shouldShowEventDamageDescription ||
+      shouldShowEventDamageSubtitle ||
+      shouldShowEventDamageEffect ||
       shouldShowPrimaryOutcome ||
       shouldShowEventDamageVisibleSummary ||
       (showBreakdown && attackComparisonText),
@@ -6659,13 +6831,58 @@ function RecentRollPanel({
           </div>
         ) : null}
         {shouldShowVisibleSource ? (
-          <div className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">
+          <div
+            data-testid="betrayal-recent-roll-source-title"
+            data-result-role="source-title"
+            className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]"
+          >
             {roll.sourceTitle}
           </div>
         ) : null}
         {shouldShowVisibleRollLabel ? (
           <div className="mt-0.5 truncate text-[12px] font-semibold text-[#d8c38b]">
             {roll.rollLabel ?? t("board.roll.fallbackLabel")}
+          </div>
+        ) : null}
+        {shouldShowEventDamageDescription ? (
+          <div
+            data-testid="betrayal-recent-roll-event-description"
+            data-result-role="event-damage-description"
+            className={`max-w-full font-bold tracking-[0.03em] text-[#fff7c8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.62)] ${
+              denseResult
+                ? openTableResultDocked
+                  ? "max-h-[34px] overflow-hidden whitespace-normal break-words text-[12px] leading-[17px]"
+                  : "whitespace-normal break-words text-[13px] leading-[18px]"
+                : "truncate text-[16px] md:text-[18px]"
+            }`}
+          >
+            {eventDamageDescriptionLabel}
+          </div>
+        ) : null}
+        {shouldShowEventDamageSubtitle ? (
+          <div
+            data-testid="betrayal-recent-roll-event-subtitle"
+            data-result-role="event-damage-subtitle"
+            className={`max-w-full font-semibold tracking-[0.03em] text-[#e8d59b] drop-shadow-[0_2px_8px_rgba(0,0,0,0.62)] ${
+              denseResult
+                ? "mt-0.5 whitespace-normal break-words text-[11px] leading-[15px]"
+                : "mt-1 truncate text-[12px] leading-[16px]"
+            }`}
+          >
+            {eventDamageSubtitleLabel}
+          </div>
+        ) : null}
+        {shouldShowEventDamageEffect ? (
+          <div
+            data-testid="betrayal-recent-roll-event-effect"
+            data-result-role="event-damage-effect"
+            className={`max-w-full font-semibold tracking-[0.03em] text-[#d8c38b] drop-shadow-[0_2px_8px_rgba(0,0,0,0.62)] ${
+              denseResult
+                ? "mt-0.5 whitespace-normal break-words text-[11px] leading-[15px]"
+                : "mt-1 truncate text-[12px] leading-[16px]"
+            }`}
+          >
+            {eventDamageEffectLabel}
           </div>
         ) : null}
         {shouldShowPrimaryOutcome ? (
@@ -6764,6 +6981,9 @@ function RecentRollPanel({
       ))}
       <span>{rollDetailText}</span>
       <span>{totalLabel}</span>
+      {shouldShowEventDamageDescription ? <span>{eventDamageDescriptionLabel}</span> : null}
+      {shouldShowEventDamageSubtitle ? <span>{eventDamageSubtitleLabel}</span> : null}
+      {shouldShowEventDamageEffect ? <span>{eventDamageEffectLabel}</span> : null}
       {shouldShowPrimaryOutcome ? <span>{primaryOutcomeLabel}</span> : null}
     </div>
   );
@@ -11832,6 +12052,10 @@ export default function BetrayalBoard({
     visibleMapRooms,
   ]);
 
+  const currentLatestDiscoveryEntry = React.useMemo(
+    () => buildLatestDiscoveryDisplayEntry(core),
+    [core],
+  );
   React.useEffect(() => {
     if (isEventSymbolNoCardDiscovery(core.latestDiscovery)) {
       const skippedEventSymbolSourceKey = buildEventSymbolSkipSourceKey(
@@ -11846,7 +12070,7 @@ export default function BetrayalBoard({
       );
       return;
     }
-    const nextEntry = buildLatestDiscoveryDisplayEntry(core);
+    const nextEntry = currentLatestDiscoveryEntry;
     if (!nextEntry) {
       return;
     }
@@ -11883,10 +12107,24 @@ export default function BetrayalBoard({
     });
   }, [
     core,
+    currentLatestDiscoveryEntry,
     previewState.dismissedLatestDiscoveryKey,
     viewerPlayerId,
   ]);
-  const latestDiscoveryEntry = latestDiscoveryQueue[0] ?? null;
+  const queuedLatestDiscoveryEntry = latestDiscoveryQueue[0] ?? null;
+  const visibleCurrentLatestDiscoveryEntry =
+    currentLatestDiscoveryEntry &&
+    currentLatestDiscoveryEntry.key !== previewState.dismissedLatestDiscoveryKey &&
+    !dismissedLatestDiscoveryKeysRef.current.has(currentLatestDiscoveryEntry.key)
+      ? currentLatestDiscoveryEntry
+      : null;
+  const latestDiscoveryEntry =
+    visibleCurrentLatestDiscoveryEntry &&
+    (!queuedLatestDiscoveryEntry ||
+      queuedLatestDiscoveryEntry.sourceKey ===
+        visibleCurrentLatestDiscoveryEntry.sourceKey)
+      ? visibleCurrentLatestDiscoveryEntry
+      : queuedLatestDiscoveryEntry;
   const latestDiscovery = latestDiscoveryEntry?.discovery ?? null;
   const latestDiscoveryRecentRoll = latestDiscoveryEntry?.recentRoll ?? null;
   const latestDiscoveryOwnerPlayerId =
@@ -11897,7 +12135,7 @@ export default function BetrayalBoard({
     latestDiscoveryRecentRoll,
   );
   const currentHauntOpeningDisplayEntry = currentHauntOpeningDiscovery
-    ? buildLatestDiscoveryDisplayEntry(core)
+    ? currentLatestDiscoveryEntry
     : null;
   const hasLatestDiscoveryDisplayEntry = Boolean(
     latestDiscovery &&
@@ -12390,7 +12628,20 @@ export default function BetrayalBoard({
       ? latestDiscoverySearchSequence[latestDiscoverySearchVisibleIndex] ?? null
       : null;
   const latestDiscoveryResolutionSteps =
-    latestDiscovery?.resolutionSteps ?? [];
+    latestDiscovery?.resolutionSteps?.length
+      ? latestDiscovery.resolutionSteps
+      : latestDiscovery &&
+          latestDiscovery.detail.trim() &&
+          !isEventSymbolNoCardDiscovery(latestDiscovery)
+        ? [
+            {
+              id: `event-effect-${latestDiscovery.title}`,
+              kind: "event-effect" as const,
+              text: `事件效果：${latestDiscovery.detail.trim()}`,
+              deckKind: "event" as const,
+            },
+          ]
+        : [];
   const latestDiscoverySearchStepNumber =
     latestDiscoveryVisibleProcessCard && latestDiscoverySearchVisibleIndex >= 0
       ? latestDiscoverySearchVisibleIndex + 1
@@ -13820,9 +14071,46 @@ export default function BetrayalBoard({
       }));
   }
 
-  function handleToggleEventDamageTrait(trait: BetrayalTraitKey) {
+  function applyEventDamageTraitSelection(nextSelectedDamageTraits: BetrayalTraitKey[]) {
+      const nextSelection = {
+        trait: selectedEventTrait,
+        cardId: selectedEventCardId,
+        targetRoomId: selectedEventTargetRoomId,
+        damageTraits: nextSelectedDamageTraits,
+      };
+      const preview = resolveEventAcceptPreview(nextSelection);
+      if (!pendingEventChoice?.declineLabel && preview?.ready) {
+        dispatchResolveEventChoice(true, nextSelection);
+        return;
+      }
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedEventDamageTraits: nextSelectedDamageTraits,
+      }));
+  }
+
+  function handleAdjustEventDamageTrait(
+    trait: BetrayalTraitKey,
+    delta: -1 | 1,
+  ) {
       if (!pendingEventDamageChoice) {
         return;
+      }
+      const nextSelectedDamageTraits = adjustSelectedDamageTrait({
+        selectedTraits: selectedEventDamageTraits,
+        trait,
+        delta,
+        allowedTraits: pendingEventDamageChoice.allowedTraits,
+        amount: pendingEventDamageChoice.amount,
+        explorer: core.currentExplorer,
+        phase: core.phase,
+      });
+      applyEventDamageTraitSelection(nextSelectedDamageTraits);
+  }
+
+  function canIncrementEventDamageTrait(trait: BetrayalTraitKey): boolean {
+      if (!pendingEventDamageChoice) {
+        return false;
       }
       const selected = pruneSelectedDamageTraits(
         selectedEventDamageTraits,
@@ -13840,32 +14128,11 @@ export default function BetrayalBoard({
           core.phase,
         ),
       );
-      if (
-        !pendingEventDamageChoice.allowedTraits.includes(trait) ||
-        maxTraitCount <= 0
-      ) {
-        return;
-      }
-      const nextSelectedDamageTraits =
-        currentCount >= maxTraitCount ||
-        selected.length >= pendingEventDamageChoice.amount
-          ? selected.filter((selectedTrait) => selectedTrait !== trait)
-          : [...selected, trait];
-      const nextSelection = {
-        trait: selectedEventTrait,
-        cardId: selectedEventCardId,
-        targetRoomId: selectedEventTargetRoomId,
-        damageTraits: nextSelectedDamageTraits,
-      };
-      const preview = resolveEventAcceptPreview(nextSelection);
-      if (!pendingEventChoice?.declineLabel && preview?.ready) {
-        dispatchResolveEventChoice(true, nextSelection);
-        return;
-      }
-      setPreviewState((previousState) => ({
-        ...previousState,
-        selectedEventDamageTraits: nextSelectedDamageTraits,
-      }));
+      return (
+        pendingEventDamageChoice.allowedTraits.includes(trait) &&
+        currentCount < maxTraitCount &&
+        selected.length < pendingEventDamageChoice.amount
+      );
   }
 
   function handleToggleDamageAllocationBrooch() {
@@ -13893,9 +14160,31 @@ export default function BetrayalBoard({
       }));
   }
 
-  function handleToggleDamageAllocationTrait(trait: BetrayalTraitKey) {
+  function handleAdjustDamageAllocationTrait(
+    trait: BetrayalTraitKey,
+    delta: -1 | 1,
+  ) {
       if (!pendingDamageAllocation || !pendingDamageExplorer) {
         return;
+      }
+      const nextSelectedDamageTraits = adjustSelectedDamageTrait({
+        selectedTraits: selectedDamageAllocationTraits,
+        trait,
+        delta,
+        allowedTraits: pendingDamageAllocationAllowedTraits,
+        amount: pendingDamageAllocation.amount,
+        explorer: pendingDamageExplorer,
+        phase: pendingDamageAllocationPhase,
+      });
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedDamageAllocationTraits: nextSelectedDamageTraits,
+      }));
+  }
+
+  function canIncrementDamageAllocationTrait(trait: BetrayalTraitKey): boolean {
+      if (!pendingDamageAllocation || !pendingDamageExplorer) {
+        return false;
       }
       const selected = pruneSelectedDamageTraits(
         selectedDamageAllocationTraits,
@@ -13904,7 +14193,10 @@ export default function BetrayalBoard({
         pendingDamageExplorer,
         pendingDamageAllocationPhase,
       );
-      const currentCount = countSelectedDamageTrait(selected, trait);
+      const currentCount = countSelectedDamageTrait(
+        selected,
+        trait,
+      );
       const maxTraitCount = Math.min(
         pendingDamageAllocation.amount,
         resolveTraitDamageAssignableSteps(
@@ -13913,21 +14205,12 @@ export default function BetrayalBoard({
           pendingDamageAllocationPhase,
         ),
       );
-      if (
-        !pendingDamageAllocationAllowedTraits.includes(trait) ||
-        maxTraitCount <= 0
-      ) {
-        return;
-      }
-      const nextSelectedDamageTraits =
-        currentCount >= maxTraitCount ||
-        selected.length >= pendingDamageAllocation.amount
-          ? selected.filter((selectedTrait) => selectedTrait !== trait)
-          : [...selected, trait];
-      setPreviewState((previousState) => ({
-        ...previousState,
-        selectedDamageAllocationTraits: nextSelectedDamageTraits,
-      }));
+      return (
+        isPendingDamageAllocationForViewer &&
+        pendingDamageAllocationAllowedTraits.includes(trait) &&
+        currentCount < maxTraitCount &&
+        selected.length < pendingDamageAllocation.amount
+      );
   }
 
   function handleResolveDamageAllocation() {
@@ -17331,9 +17614,16 @@ export default function BetrayalBoard({
                               disabled={isDamageTraitDisabled}
                               selectedCount={selectedDamageTraitCount}
                               locked={maxDamageTraitCount <= 0}
-                              ariaLabel={`${TRAIT_LABEL_LOCAL[trait]}：${selectedDamageTraitCount > 0 ? t("board.traitPreview.damageSteps", { count: selectedDamageTraitCount }) : t("board.traitPreview.noChange")}`}
-                              onClick={() =>
-                                handleToggleDamageAllocationTrait(trait)
+                              onIncrement={() =>
+                                handleAdjustDamageAllocationTrait(trait, 1)
+                              }
+                              onDecrement={() =>
+                                handleAdjustDamageAllocationTrait(trait, -1)
+                              }
+                              canIncrement={canIncrementDamageAllocationTrait(trait)}
+                              canDecrement={
+                                isPendingDamageAllocationForViewer &&
+                                selectedDamageTraitCount > 0
                               }
                             />
                           );
@@ -17713,10 +18003,14 @@ export default function BetrayalBoard({
                                       disabled={isDamageTraitDisabled}
                                       selectedCount={selectedDamageTraitCount}
                                       locked={maxDamageTraitCount <= 0}
-                                      ariaLabel={`${TRAIT_LABEL_LOCAL[trait]}：${selectedDamageTraitCount > 0 ? t("board.traitPreview.damageSteps", { count: selectedDamageTraitCount }) : t("board.traitPreview.noChange")}`}
-                                      onClick={() =>
-                                        handleToggleEventDamageTrait(trait)
+                                      onIncrement={() =>
+                                        handleAdjustEventDamageTrait(trait, 1)
                                       }
+                                      onDecrement={() =>
+                                        handleAdjustEventDamageTrait(trait, -1)
+                                      }
+                                      canIncrement={canIncrementEventDamageTrait(trait)}
+                                      canDecrement={selectedDamageTraitCount > 0}
                                     />
                                   );
                                 },

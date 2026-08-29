@@ -734,6 +734,7 @@ interface BetrayalSourceEventRollState {
     kind: BetrayalEventRollRecentKind;
     playerId: string;
     sourceTitle: string;
+    eventDescription?: string;
     trait?: BetrayalTraitKey;
     rollLabel?: string;
     dice: number[];
@@ -747,6 +748,7 @@ export interface BetrayalRecentRollState {
     kind: BetrayalEventRollRecentKind | 'eventRolledDamage' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
     playerId: string;
     sourceTitle: string;
+    eventDescription?: string;
     trait?: BetrayalTraitKey;
     rollLabel?: string;
     dice: number[];
@@ -902,6 +904,7 @@ export interface BetrayalPendingEventChoiceState {
     id: string;
     playerId: string;
     sourceTitle: string;
+    eventDescription?: string;
     acceptLabel?: string;
     declineLabel?: string;
     effect: UseEffectProfile;
@@ -1851,6 +1854,7 @@ type BetrayalEvent =
         roomDiscoveryCards?: BetrayalInventoryCard[];
         buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
         eventEffect?: UseEffectProfile;
+        eventDescription?: string;
         deathPrevention?: {
             playerId: string;
             cardId: string;
@@ -1868,6 +1872,7 @@ type BetrayalEvent =
             trait?: BetrayalTraitKey;
             total: number;
             label: string;
+            eventDescription?: string;
             rollLabel?: string;
             dice?: number[];
             passiveBonus?: number;
@@ -1899,6 +1904,7 @@ type BetrayalEvent =
     | GameEvent<typeof EVENTS.EVENT_CHOICE_RESOLVED, {
         playerId: string;
         sourceTitle: string;
+        eventDescription?: string;
         accepted: boolean;
         hauntTriggered?: boolean;
         hauntTraitorPlayerId?: string | null;
@@ -1930,6 +1936,7 @@ type BetrayalEvent =
             trait?: BetrayalTraitKey;
             total: number;
             label: string;
+            eventDescription?: string;
             rollLabel?: string;
             dice?: number[];
             passiveBonus?: number;
@@ -10455,6 +10462,14 @@ function cloneRolledDamageResult(damage: BetrayalRolledDamageResult): BetrayalRo
     };
 }
 
+function formatRolledDamageResultLabel(damageResults: BetrayalRolledDamageResult[]): string {
+    const labels = damageResults.map((damage) => {
+        const kindLabel = damage.damageKind === 'physical' ? '物理伤害' : '精神伤害';
+        return `造成 ${damage.appliedAmount} 点${kindLabel}`;
+    });
+    return labels.join('；');
+}
+
 function cloneSourceEventRoll(sourceRoll: BetrayalSourceEventRollState): BetrayalSourceEventRollState {
     return {
         ...sourceRoll,
@@ -10473,6 +10488,7 @@ function cloneSourceEventRollFromRecentRoll(
         kind: recentRoll.kind,
         playerId: recentRoll.playerId,
         sourceTitle: recentRoll.sourceTitle,
+        eventDescription: recentRoll.eventDescription,
         trait: recentRoll.trait,
         rollLabel: recentRoll.rollLabel,
         dice: [...recentRoll.dice],
@@ -10500,12 +10516,13 @@ function setEventRolledDamageRecentRollFromSnapshot(
         kind: 'eventRolledDamage',
         playerId,
         sourceTitle,
+        eventDescription: sourceEventRoll?.eventDescription,
         rollLabel: '重新投掷的伤害骰',
         dice,
         passiveBonus: 0,
         requiredPlayerIds: [playerId],
         acknowledgedPlayerIds: [],
-        latestLabel: sourceTitle,
+        latestLabel: formatRolledDamageResultLabel(damageResults),
         eventRolledDamageResults: damageResults,
         sourceEventRoll: sourceEventRoll ? cloneSourceEventRoll(sourceEventRoll) : undefined,
         consumedRabbitFootCardIds: [],
@@ -17128,6 +17145,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     deckKind,
                     ...roomDiscoveryCards,
                     eventEffect: materializedEventEffect,
+                    eventDescription: eventCard.description,
                     deathPrevention,
                     eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch
                         ? {
@@ -17135,6 +17153,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
                             total: eventRollTotal,
                             label: eventBranch.label,
+                            eventDescription: eventCard.description,
                             rollLabel: eventRollLabel,
                             dice: eventRollResult?.dice,
                             passiveBonus: eventRollResult?.passiveBonus,
@@ -17610,6 +17629,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         id: `${pending.id}-drawn-event-${timestamp}`,
                         playerId: command.playerId,
                         sourceTitle: eventCard.name,
+                        eventDescription: eventCard.description,
                         sourceKind: 'event' as const,
                         acceptLabel: materializedEventEffect.mode === 'optionalEventRoll'
                             || materializedEventEffect.mode === 'optionalEffect'
@@ -17637,6 +17657,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
                     playerId: command.playerId,
                     sourceTitle: eventCard.name,
+                    eventDescription: eventCard.description,
                     accepted: false,
                     nextPendingEventChoice,
                     eventEffect: nextPendingEventChoice ? undefined : materializedEventEffect,
@@ -17647,6 +17668,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
                             total: eventRollTotal,
                             label: eventBranch.label,
+                            eventDescription: eventCard.description,
                             rollLabel: eventRollLabel,
                             dice: eventRollResult?.dice,
                             passiveBonus: eventRollResult?.passiveBonus,
@@ -17694,6 +17716,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     trait: traitRollEffect.trait,
                     total: rollTotal,
                     label: eventBranch.label,
+                    eventDescription: pending.eventDescription,
                     rollLabel,
                     dice: rollResult.dice,
                     passiveBonus: rollResult.passiveBonus,
@@ -17711,6 +17734,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             id: `${pending.id}-trait-roll-${timestamp}`,
                             playerId: command.playerId,
                             sourceTitle: pending.sourceTitle,
+                            eventDescription: pending.eventDescription,
                             effect: cloneUseEffect(selectedEffect),
                         },
                         eventRoll,
@@ -17897,6 +17921,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         trait: selectedTrait,
                         total: rollTotal,
                         label: eventBranch.label,
+                        eventDescription: pending.eventDescription,
                         rollLabel,
                         dice: rollResult.dice,
                         passiveBonus: rollResult.passiveBonus,
@@ -18111,6 +18136,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 kind: 'dice' as const,
                 total: rollTotal,
                 label: eventBranch.label,
+                eventDescription: pending.eventDescription,
                 rollLabel: pending.effect.roll.label,
                 dice: rollResult.dice,
                 passiveBonus: rollResult.passiveBonus,
@@ -18128,6 +18154,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         id: `${pending.id}-rolled-${timestamp}`,
                         playerId: command.playerId,
                         sourceTitle: pending.sourceTitle,
+                        eventDescription: pending.eventDescription,
                         effect: cloneUseEffect(selectedEffect),
                     },
                     eventRoll,
@@ -20304,6 +20331,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     kind: event.payload.eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.discovery.title,
+                    eventDescription: event.payload.eventRoll.eventDescription,
                     trait: event.payload.eventRoll.trait,
                     rollLabel: event.payload.eventRoll.rollLabel,
                     dice: [...event.payload.eventRoll.dice],
@@ -20390,6 +20418,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.discovery.title,
+                    eventDescription: event.payload.eventDescription,
                     acceptLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
                         || event.payload.eventEffect.mode === 'optionalEffect'
                         || event.payload.eventEffect.mode === 'optionalItemEffect'
@@ -20657,6 +20686,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     kind: event.payload.eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.sourceTitle,
+                    eventDescription: event.payload.eventRoll.eventDescription,
                     trait: event.payload.eventRoll.trait,
                     rollLabel: event.payload.eventRoll.rollLabel,
                     dice: [...event.payload.eventRoll.dice],

@@ -155,7 +155,7 @@ function canTriggerPirateKingBeforeScoring(ctx: TriggerContext): boolean {
 
 function canTriggerPirateFirstMateAfterScoring(ctx: TriggerContext): boolean {
     const scoringBaseIndex = ctx.baseIndex;
-    if (scoringBaseIndex === undefined || !ctx.matchState) return false;
+    if (scoringBaseIndex === undefined) return false;
 
     const snapshotMate = ctx.triggerMinion;
     const mateUid = ctx.sourceCardUid ?? ctx.triggerMinionUid ?? snapshotMate?.uid;

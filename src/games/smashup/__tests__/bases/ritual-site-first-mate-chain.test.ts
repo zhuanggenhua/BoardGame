@@ -11,6 +11,7 @@ import {
     getPromptOptions,
     getReactionPrompt,
     getReactionPromptOptionBySourceDefId,
+    getPromptSourceId,
     getSimpleChoicePrompt,
     makeBase,
     makeMinion,
@@ -48,6 +49,25 @@ function resolveCurrentOption(
     return result.finalState;
 }
 
+function openNextFirstMatePrompt(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+    state: MatchState<SmashUpCore>,
+): { state: MatchState<SmashUpCore>; prompt: any } {
+    const currentPrompt = getSimpleChoicePrompt(state);
+    if (getPromptSourceId(currentPrompt) === 'smashup_reaction_choose') {
+        const firstMateTrigger = getReactionPromptOptionBySourceDefId(
+            state,
+            currentPrompt,
+            'pirate_first_mate',
+        );
+        state = resolveCurrentOption(runner, firstMateTrigger.id, currentPrompt.playerId);
+    }
+    return {
+        state,
+        prompt: getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base'),
+    };
+}
+
 beforeAll(() => {
     resetAbilityInit();
     initAllAbilities();
@@ -73,15 +93,7 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
         const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
         expect(advance.success).toBe(true);
 
-        const reactionPrompt = getReactionPrompt(runner.getState());
-        const ritualSiteTrigger = getReactionPromptOptionBySourceDefId(
-            runner.getState(),
-            reactionPrompt,
-            'base_ritual_site',
-        );
-        let state = resolveCurrentOption(runner, ritualSiteTrigger.id);
-
-        const firstMatePrompt = getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base');
+        let { state, prompt: firstMatePrompt } = openNextFirstMatePrompt(runner, runner.getState());
         expect(firstMatePrompt).toBeDefined();
         const moveOption = getPromptOption(
             firstMatePrompt,
@@ -116,23 +128,7 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
         const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
         expect(advance.success).toBe(true);
 
-        const reactionPrompt = getReactionPrompt(runner.getState());
-        const ritualSiteTrigger = getReactionPromptOptionBySourceDefId(
-            runner.getState(),
-            reactionPrompt,
-            'base_ritual_site',
-        );
-        let state = resolveCurrentOption(runner, ritualSiteTrigger.id);
-
-        const firstReactionPrompt = getReactionPrompt(state);
-        const firstFirstMateTrigger = getReactionPromptOptionBySourceDefId(
-            state,
-            firstReactionPrompt,
-            'pirate_first_mate',
-        );
-        state = resolveCurrentOption(runner, firstFirstMateTrigger.id);
-
-        const firstPrompt = getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base');
+        let { state, prompt: firstPrompt } = openNextFirstMatePrompt(runner, runner.getState());
         const firstMove = getPromptOption(
             firstPrompt,
             (option: any) => option.value?.baseDefId === 'base_secret_garden',
@@ -140,7 +136,9 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
         );
         state = resolveCurrentOption(runner, firstMove.id);
 
-        const secondPrompt = getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base');
+        const openedSecond = openNextFirstMatePrompt(runner, state);
+        state = openedSecond.state;
+        const secondPrompt = openedSecond.prompt;
         expect(secondPrompt).toBeDefined();
         const secondMove = getPromptOption(
             secondPrompt,
@@ -177,19 +175,11 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
         const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
         expect(advance.success).toBe(true);
 
-        const reactionPrompt = getReactionPrompt(runner.getState());
-        const ritualSiteTrigger = getReactionPromptOptionBySourceDefId(
-            runner.getState(),
-            reactionPrompt,
-            'base_ritual_site',
-        );
-        const state = resolveCurrentOption(runner, ritualSiteTrigger.id);
-
-        const resumedReactionPrompt = getReactionPrompt(state);
-        const firstMateOptions = getPromptOptions(resumedReactionPrompt).filter((option: any) => {
-            const optionId = String(option.id ?? '');
-            const optionLabel = String(option.label ?? '');
-            return optionId.includes('pirate_first_mate') || optionLabel.includes('pirate_first_mate');
+        const state = runner.getState();
+        const reactionPrompt = getReactionPrompt(state);
+        const queueById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+        const firstMateOptions = getPromptOptions(reactionPrompt).filter((option: any) => {
+            return queueById.get(option.value?.triggerId)?.sourceDefId === 'pirate_first_mate';
         });
 
         expect(firstMateOptions).toHaveLength(2);

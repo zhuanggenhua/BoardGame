@@ -61,8 +61,8 @@
     "exploreEvent": "Player {{playerId}} triggered event: {{event}}",
     "exploreRoomEvent": "Player {{playerId}} explored {{room}} and triggered event: {{event}}",
     "eventRollResult": "Player {{playerId}} resolved {{event}}: {{roll}}, total {{total}}, {{result}}",
-    "eventRolledPhysicalDamageResult": "Player {{playerId}} rerolled {{diceCount}} die/dice for {{event}}: {{damageRolls}}; total {{damageTotal}}; {{appliedDamage}} physical damage to allocate",
-    "eventRolledMentalDamageResult": "Player {{playerId}} rerolled {{diceCount}} die/dice for {{event}}: {{damageRolls}}; total {{damageTotal}}; {{appliedDamage}} mental damage to allocate",
+    "eventRolledPhysicalDamageResult": "Player {{playerId}} resolved {{event}} damage dice: {{damageRolls}}; total {{damageTotal}}; dealt {{appliedDamage}} physical damage",
+    "eventRolledMentalDamageResult": "Player {{playerId}} resolved {{event}} damage dice: {{damageRolls}}; total {{damageTotal}}; dealt {{appliedDamage}} mental damage",
     "usePossession": "Player {{playerId}} used a possession",
     "useRabbitFoot": "Player {{playerId}} used the Rabbit's Foot",
     "useRollRerollItem": "Player {{playerId}} used a possession to reroll",
@@ -985,7 +985,9 @@
       "eventDamageDiceLabel": "Damage Dice",
       "eventDamageDiceTotal": "Damage dice total {{value}}",
       "eventDamageDiceSubtotal": "Damage dice faces {{value}}",
-      "eventDamageResult": "Reroll {{diceCount}} die/dice: {{rolls}}; total {{total}}; allocate {{applied}} {{kind}}",
+      "eventDamageEffect": "Effect: {{effect}}",
+      "eventDamageEffectItem": "Deal {{applied}} {{kind}}",
+      "eventDamageResult": "Damage dice {{rolls}}; total {{total}}; dealt {{applied}} {{kind}}",
       "attackComparison": "Attack total {{attacker}} / defense total {{defender}}",
       "attackComparisonWithExtraDice": "Attack total {{attacker}} / defense total {{defender}} (defense +{{extraDice}} die)",
       "backToBoard": "Back to Board",
@@ -1058,6 +1060,10 @@
     }
   },
   "tutorial": {
+    "mainPath": {
+      "title": "Main Tutorial: Explore to Hero Victory",
+      "description": "Start before the haunt, then learn omen confirmation, trading, the first hero goal, banishing the Mummy, and the hero ending."
+    },
     "basicSetup": {
       "title": "Core Turn: Use, Move, Explore",
       "description": "Before the haunt begins, you may move, discover a new room, trade Items and Omens with an explorer in the same room, and take special actions in any order. Discovering a new room ends your turn.",
@@ -1137,10 +1143,10 @@
       }
     },
     "traitorPath": {
-      "title": "Helping the Mummy",
-      "description": "Traitor victory: the Mummy carries the Girl and the Holy Symbol or Ring back to the Sarcophagus; the traitor also wins if all heroes die.",
+      "title": "Traitor View: Mummy Actions and Victory",
+      "description": "Read the Traitor goal, control the Mummy through movement, attack, and stealing, then finish the Girl plus Holy Symbol or Ring victory chain.",
       "steps": {
-        "setupTraitorTurn": "Switch to the traitor side. Help the Mummy carry the Girl and the Holy Symbol or Ring back to the Sarcophagus.",
+        "setupTraitorTurn": "Now follow the traitor victory chain: help the Mummy carry the Girl and the Holy Symbol or Ring back to the Sarcophagus.",
         "traitorObjective": "Open the Traitor's Tome and read the victory condition involving the Girl, Holy Symbol or Ring, and Sarcophagus, plus the Mummy's rules.",
         "pickUpGirl": "Entering the room with the Girl token lets you take the Girl Omen; choose Pick Up Girl.",
         "giveGirlToMummy": "While carrying the Girl in the Mummy's room, you may give her to the Mummy; choose Give Girl.",

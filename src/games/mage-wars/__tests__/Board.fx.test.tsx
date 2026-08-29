@@ -10,6 +10,10 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import type { RandomFn, SystemState } from '../../../engine/types';
 import MageWarsBoard from '../Board';
+import {
+    getPresetSpellbookCountFromConfig,
+    getPresetSpellbookEntriesFromConfig,
+} from '../data/configPackage';
 import { MageWarsDomain, MAGE_WARS_COMMANDS, type MageWarsArenaObjectState, type MageWarsCore } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { engineConfig } from '../game';
@@ -35,9 +39,11 @@ vi.mock('react-i18next', () => ({
     initReactI18next: { type: '3rdParty', init: vi.fn() },
     useTranslation: () => ({
         i18n: { language: 'zh-CN' },
-        t: (key: string, params?: Record<string, string | number>) => (
-            params ? `${key}:${JSON.stringify(params)}` : key
-        ),
+        t: (key: string, params?: Record<string, string | number>) => {
+            if (key === 'spellbook.selected') return '已选';
+            if (key === 'spellbook.selectedCount') return `选 ${params?.count}`;
+            return params ? `${key}:${JSON.stringify(params)}` : key;
+        },
     }),
 }));
 
@@ -185,15 +191,30 @@ const fixedRandom: RandomFn = {
     shuffle: <T,>(array: T[]) => [...array],
 };
 
+function withConfiguredSpellbooks(core: MageWarsCore): MageWarsCore {
+    return {
+        ...core,
+        players: Object.fromEntries(Object.entries(core.players).map(([playerId, player]) => {
+            const spellbookEntries = getPresetSpellbookEntriesFromConfig(player.mageId);
+            return [playerId, {
+                ...player,
+                spellbookEntries,
+                spellbookCount: getPresetSpellbookCountFromConfig(player.mageId),
+            }];
+        })) as MageWarsCore['players'],
+    };
+}
+
 function boardProps(
     coreOverride?: MageWarsCore,
     playerID = '0',
     sysOverride?: Partial<SystemState>,
 ): GameBoardProps<MageWarsCore> {
     const playerIds = ['0', '1'];
+    const core = withConfiguredSpellbooks(coreOverride ?? MageWarsDomain.setup(playerIds, fixedRandom));
     return {
         G: {
-            core: coreOverride ?? MageWarsDomain.setup(playerIds, fixedRandom),
+            core,
             sys: {
                 ...createInitialSystemState(playerIds, engineConfig.systems, 'local:mage-wars-board-fx'),
                 phase: 'creatureAction',

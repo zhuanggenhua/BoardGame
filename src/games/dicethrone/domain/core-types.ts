@@ -164,8 +164,8 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     {
         id: 'vampire_lord',
         nameKey: 'characters.vampire_lord',
-        setupOptionStatus: 'hidden',
-        setupOptionStatusReason: 'Dice Throne 角色未完成实施与审计，暂不对玩家开放',
+        setupOptionStatus: 'in_progress',
+        setupOptionStatusReason: 'Dice Throne 角色已完成当前范围实施与审计，仍处实施中验证阶段',
     },
 ].map(withDerivedCharacterBadges);
 

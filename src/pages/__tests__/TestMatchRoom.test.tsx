@@ -111,6 +111,10 @@ vi.mock('../../engine/transport/react', () => ({
         return <div data-testid="local-game-provider-probe">{props.children}</div>;
     },
     BoardBridge: () => <div data-testid="board-bridge-stub">bridge</div>,
+    useGameClient: () => ({
+        playerId: '0',
+        matchPlayers: [],
+    }),
 }));
 
 vi.mock('../../components/system/LoadingScreen', () => ({

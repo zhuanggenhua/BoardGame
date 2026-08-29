@@ -595,6 +595,7 @@ async function waitForCardSpotlightClear(page: Page): Promise<void> {
 
 async function clickVisibleDie(page: Page, dieIndex: number): Promise<void> {
     await closeBoardMagnifyIfVisible(page);
+    await waitForCardSpotlightClear(page);
     const diceTray = page.getByTestId('dicethrone-2d-dice-tray').first();
     const dieButton = diceTray.getByTestId(`die-button-${dieIndex}`).first();
     await expect(dieButton).toBeVisible({ timeout: 15000 });
@@ -1227,6 +1228,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
                 diceValues: [1, 2, 3, 4, 5],
             });
+            await waitForCardSpotlightClear(guestPage);
             await expectRightTrayBonusDiceInterferenceView(guestPage, () => readHarnessState(guestPage), {
                 sourceAbilityId: 'volley',
             });
@@ -1276,6 +1278,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
                 windowType: null,
                 diceValues: volleyAfterValues,
             });
+            await waitForCardSpotlightClear(hostPage);
             await expectRightTrayBonusDiceConfirmation(hostPage, () => readHarnessState(hostPage), {
                 sourceAbilityId: 'volley',
             });

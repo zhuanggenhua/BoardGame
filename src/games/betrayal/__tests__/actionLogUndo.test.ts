@@ -402,6 +402,7 @@ describe('小黑屋操作日志与撤回', () => {
         expect(state.core.recentRoll).toMatchObject({
             kind: 'eventDiceRoll',
             sourceTitle: '无线电广播',
+            eventDescription: '华盛顿展开了一次核物理打击',
             dice: [0, 0],
             latestLabel: '受到一颗骰子的精神伤害',
         });
@@ -431,13 +432,15 @@ describe('小黑屋操作日志与撤回', () => {
         expect(state.core.recentRoll).toMatchObject({
             kind: 'eventRolledDamage',
             sourceTitle: '无线电广播',
+            eventDescription: '华盛顿展开了一次核物理打击',
             rollLabel: '重新投掷的伤害骰',
             dice: [2],
             passiveBonus: 0,
-            latestLabel: '无线电广播',
+            latestLabel: '造成 2 点精神伤害',
             sourceEventRoll: {
                 kind: 'eventDiceRoll',
                 sourceTitle: '无线电广播',
+                eventDescription: '华盛顿展开了一次核物理打击',
                 dice: [0, 0],
                 total: 0,
                 latestLabel: '受到一颗骰子的精神伤害',

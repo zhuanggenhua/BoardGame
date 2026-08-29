@@ -136,7 +136,7 @@ export interface QidahenRegionEventMarker {
     mapLabel?: string;
 }
 
-export interface QidahenRegionSummary {
+interface QidahenRegionSummary {
     id: string;
     name: string;
     isLogicalRegion: boolean;

@@ -106,13 +106,13 @@ const VAMPIRE_LORD_I18N_KEYS = [
 ];
 
 describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
-    it('内部角色目录、隐藏状态、骰面、状态标记和角色板九槽已接入', () => {
+    it('角色目录实施中、骰面、状态标记和角色板九槽已接入', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(entry => entry.id === 'vampire_lord');
         expect(character?.nameKey).toBe('characters.vampire_lord');
-        expect(character?.setupOptionStatus).toBe('hidden');
-        expect(character?.setupOptionStatusReason).toContain('未完成实施与审计');
-        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(false);
-        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map(entry => entry.id)).not.toContain('vampire_lord');
+        expect(character?.setupOptionStatus).toBe('in_progress');
+        expect(character?.setupOptionStatusReason).toContain('当前范围实施与审计');
+        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(true);
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map(entry => entry.id)).toContain('vampire_lord');
         expect(hasDiceThroneTipBoard('vampire_lord')).toBe(true);
 
         expect(CHARACTER_DATA_MAP.vampire_lord.diceDefinitionId).toBe('vampire_lord-dice');

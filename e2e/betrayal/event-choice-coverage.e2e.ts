@@ -305,30 +305,37 @@ async function resolveVisibleDamageAllocation(
   await expect(allocationPanel).toBeVisible();
   const selectedCounts = new Map<BetrayalTraitKey, number>();
   for (const trait of traits) {
-    const traitButton = allocationPanel.getByTestId(
+    const traitCard = allocationPanel.getByTestId(
       `betrayal-damage-allocation-trait-${trait}`,
     );
-    await expect(traitButton).toBeEnabled();
-    await traitButton.click();
+    const increaseButton = allocationPanel.getByTestId(
+      `betrayal-damage-allocation-trait-${trait}-increase`,
+    );
+    await expect(traitCard).toBeEnabled();
+    await expect(increaseButton).toBeEnabled();
+    await increaseButton.click();
     const nextCount = (selectedCounts.get(trait) ?? 0) + 1;
     selectedCounts.set(trait, nextCount);
-    await expect(traitButton).toHaveAttribute(
+    await expect(traitCard).toHaveAttribute(
       "data-damage-selected-count",
       String(nextCount),
     );
-    await expect(traitButton).toHaveAttribute(
+    await expect(traitCard).toHaveAttribute(
       "data-trait-preview-step-count",
       String(nextCount),
     );
-    const previewPositions = await traitButton.evaluate((element) => ({
+    await expect(
+      allocationPanel.getByTestId(`betrayal-damage-allocation-trait-${trait}-selected-count`),
+    ).toHaveText(String(nextCount));
+    const previewPositions = await traitCard.evaluate((element) => ({
       current: Number(element.getAttribute("data-trait-preview-current-position")),
       target: Number(element.getAttribute("data-trait-preview-target-position")),
     }));
     expect(previewPositions.target).toBeLessThan(previewPositions.current);
-    await expect(traitButton).not.toContainText(/承担\s*\d+\s*点|×\d/);
+    await expect(traitCard).not.toContainText(/承担\s*\d+\s*点|×\d|[+-]\s*\d+\s*步|[+-]\s*\d+\s*steps/i);
   }
   await expect(allocationPanel.getByTestId("betrayal-damage-allocation-traits")).not.toContainText(
-    /承担\s*\d+\s*点|×\d/,
+    /承担\s*\d+\s*点|×\d|[+-]\s*\d+\s*步|[+-]\s*\d+\s*steps/i,
   );
   await expect(
     allocationPanel.getByTestId("betrayal-damage-allocation-confirm"),
@@ -2620,6 +2627,9 @@ async function runDirectRollEventFullChain(
       `${eventCase.eventName}事件骰确认后必须切换到独立伤害骰`,
       expectedDamage.damageRandomQueue,
     );
+    const expectedPendingDamageKindLabel =
+      expectedDamage.damageKind === "physical" ? "物理伤害" : "精神伤害";
+    const expectedDamageEffectText = `实际效果：造成 ${expectedDamage.pendingAmount} 点${expectedPendingDamageKindLabel}`;
     const afterFinalizeCore = await readCurrentCore(page);
     expect(afterFinalizeCore.recentRoll).toMatchObject({
       kind: "eventRolledDamage",
@@ -2627,7 +2637,7 @@ async function runDirectRollEventFullChain(
       rollLabel: "重新投掷的伤害骰",
       dice: expectedDamage.damageDice,
       passiveBonus: 0,
-      latestLabel: eventCase.eventName,
+      latestLabel: `造成 ${expectedDamage.pendingAmount} 点${expectedPendingDamageKindLabel}`,
       sourceEventRoll: {
         kind: "eventDiceRoll",
         sourceTitle: eventCase.eventName,
@@ -2660,16 +2670,29 @@ async function runDirectRollEventFullChain(
       "event-rolled-damage",
     );
     await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-source-title"),
+    ).toHaveCount(0);
+    await expect(
       damageRollPanel.getByTestId("betrayal-recent-roll-outcome"),
     ).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-description"),
+    ).toHaveText(expectedDamage.sourceEventLabel);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-description"),
+    ).toHaveAttribute("data-result-role", "event-damage-description");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-effect"),
+    ).toHaveText(expectedDamageEffectText);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-effect"),
+    ).toHaveAttribute("data-result-role", "event-damage-effect");
     await expect(
       damageRollPanel.getByTestId("betrayal-recent-roll-total"),
     ).toContainText(`伤害骰合计 ${damageDiceTotal}`);
     await expect(
       damageRollPanel.getByTestId("betrayal-recent-roll-total"),
     ).not.toContainText(/骰面合计|加值/);
-    const expectedPendingDamageKindLabel =
-      expectedDamage.damageKind === "physical" ? "物理伤害" : "精神伤害";
     await expect(
       damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice"),
     ).toHaveCount(0);
@@ -2677,12 +2700,15 @@ async function runDirectRollEventFullChain(
       damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage"),
     ).toHaveCount(0);
     const damageRollVisibleText = await readVisibleNonSrText(damageRollPanel);
+    expect(damageRollVisibleText).not.toContain(eventCase.eventName);
+    expect(
+      damageRollVisibleText.split(expectedDamage.sourceEventLabel).length - 1,
+    ).toBe(1);
+    expect(damageRollVisibleText.split(expectedDamageEffectText).length - 1).toBe(1);
     expect(damageRollVisibleText).not.toContain(
       `待分配 ${expectedDamage.pendingAmount} 点${expectedPendingDamageKindLabel}`,
     );
-    expect(damageRollVisibleText).not.toContain(eventCase.eventName);
     expect(damageRollVisibleText).not.toContain("重新投掷的伤害骰");
-    expect(damageRollVisibleText).not.toContain(expectedDamage.sourceEventLabel);
     await expect(
       damageRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
     ).toHaveCount(0);
@@ -3577,7 +3603,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toBeVisible();
     await saveScreenshot(page, `${screenshotBase}-04-选择目标后待选伤害.jpg`);
     await setHarnessRandomQueue(page, [0.6, 0.6, 0.6, 0.6]);
-    await page.getByTestId("betrayal-event-choice-damage-might").click();
+    await page.getByTestId("betrayal-event-choice-damage-might-increase").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
@@ -6056,7 +6082,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       rollLabel: "重新投掷的伤害骰",
       dice: [2, 2],
       passiveBonus: 0,
-      latestLabel: "电话铃声",
+      latestLabel: "造成 3 点物理伤害",
       sourceEventRoll: {
         kind: "eventDiceRoll",
         sourceTitle: "电话铃声",
@@ -6093,7 +6119,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "data-visible-dice-source",
       "event-rolled-damage",
     );
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-source-title"),
+    ).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-outcome"),
+    ).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-description"),
+    ).toHaveText(
+      "受到两颗骰子的物理伤害",
+    );
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-description"),
+    ).toHaveAttribute("data-result-role", "event-damage-description");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-effect"),
+    ).toHaveText("实际效果：造成 3 点物理伤害");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-effect"),
+    ).toHaveAttribute("data-result-role", "event-damage-effect");
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
       "伤害骰合计 4",
     );
@@ -6106,8 +6151,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(0);
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage")).toHaveCount(0);
     const damageRollVisibleText = await readVisibleNonSrText(damageRollPanel);
-    expect(damageRollVisibleText).not.toContain("待分配 3 点物理伤害");
     expect(damageRollVisibleText).not.toContain("电话铃声");
+    expect((damageRollVisibleText.match(/受到两颗骰子的物理伤害/g) ?? [])).toHaveLength(1);
+    expect((damageRollVisibleText.match(/实际效果：造成 3 点物理伤害/g) ?? [])).toHaveLength(1);
+    expect(damageRollVisibleText).not.toContain("待分配 3 点物理伤害");
     expect(damageRollVisibleText).not.toContain("重新投掷的伤害骰");
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toHaveCount(0);
     await expect(
@@ -6348,7 +6395,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       rollLabel: "重新投掷的伤害骰",
       dice: [2],
       passiveBonus: 0,
-      latestLabel: "电话铃声",
+      latestLabel: "造成 1 点精神伤害",
       sourceEventRoll: {
         kind: "eventDiceRoll",
         sourceTitle: "电话铃声",
@@ -6379,7 +6426,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "data-visible-dice-source",
       "event-rolled-damage",
     );
-    await expect(damageRollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-source-title"),
+    ).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-outcome"),
+    ).toHaveCount(0);
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-description"),
+    ).toHaveText(
+      "受到一颗骰子的精神伤害",
+    );
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-description"),
+    ).toHaveAttribute("data-result-role", "event-damage-description");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-effect"),
+    ).toHaveText("实际效果：造成 1 点精神伤害");
+    await expect(
+      damageRollPanel.getByTestId("betrayal-recent-roll-event-effect"),
+    ).toHaveAttribute("data-result-role", "event-damage-effect");
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-total")).toContainText(
       "伤害骰合计 2",
     );
@@ -6392,8 +6458,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-damage-dice")).toHaveCount(0);
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-effect-damage")).toHaveCount(0);
     const mentalDamageRollVisibleText = await readVisibleNonSrText(damageRollPanel);
-    expect(mentalDamageRollVisibleText).not.toContain("待分配 1 点精神伤害");
     expect(mentalDamageRollVisibleText).not.toContain("电话铃声");
+    expect((mentalDamageRollVisibleText.match(/受到一颗骰子的精神伤害/g) ?? [])).toHaveLength(1);
+    expect((mentalDamageRollVisibleText.match(/实际效果：造成 1 点精神伤害/g) ?? [])).toHaveLength(1);
+    expect(mentalDamageRollVisibleText).not.toContain("待分配 1 点精神伤害");
     expect(mentalDamageRollVisibleText).not.toContain("重新投掷的伤害骰");
     await expect(damageRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toHaveCount(0);
     await expect(

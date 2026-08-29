@@ -1213,8 +1213,8 @@ function collectCommands(files, baseRef, affectsTypecheck) {
 
   if (hasAny(workspaceScopeFiles, affectsPlayerVisibleUi)) {
     commands.push({
-      label: 'UI duplicate owner contract self-check',
-      reason: '存在玩家可见 UI / E2E / UI 规范改动，先确认重复信息 owner 扫描合同本身可运行，防止重复自查工具漂移',
+      label: 'UI duplicate owner ruleset self-check',
+      reason: '存在玩家可见 UI / E2E / UI 规范改动，先确认重复信息 owner 规则集本身可运行，防止重复自查工具漂移',
       command: process.execPath,
       args: ['.spec/tools/scan-ui-duplicate-owners.mjs', '--self-check'],
     });

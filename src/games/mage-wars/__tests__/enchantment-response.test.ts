@@ -8,7 +8,7 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import { RESPONSE_WINDOW_COMMANDS } from '../../../engine/systems/ResponseWindowSystem';
 import { completeResolutionFrame, updateResolutionFrame } from '../../../engine/systems/resolutionStack';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
-import { getPresetSpellbookCountFromConfig } from '../data/configPackage';
+import { getPresetSpellbookEntriesFromConfig } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { MAGE_WARS_COMMANDS } from '../domain/commands';
 import { MageWarsDomain } from '../domain';
@@ -22,6 +22,18 @@ const fixedRandom: RandomFn = {
     range: (min: number) => min,
     shuffle: <T,>(array: T[]) => [...array],
 };
+
+function createWarlockSpellbookEntriesWith(spellCardId: number): Array<{ spellCardId: number; count: number }> {
+    const entries = [...getPresetSpellbookEntriesFromConfig(MAGE_IDS.WARLOCK_APPRENTICE)];
+    if (!entries.some((entry) => entry.spellCardId === spellCardId)) {
+        entries.push({ spellCardId, count: 1 });
+    }
+    return entries;
+}
+
+function countSpellbookEntries(entries: readonly { count: number }[]): number {
+    return entries.reduce((total, entry) => total + entry.count, 0);
+}
 
 function setupState(phase: 'initiativeQuickcast' | 'creatureAction'): MatchState<MageWarsCore> {
     const playerIds = ['0', '1'];
@@ -121,6 +133,7 @@ function withPreparedSpell(
     state: MatchState<MageWarsCore>,
     spellCardId: number,
 ): MatchState<MageWarsCore> {
+    const spellbookEntries = createWarlockSpellbookEntriesWith(spellCardId);
     return {
         ...state,
         core: {
@@ -130,7 +143,8 @@ function withPreparedSpell(
                 '0': {
                     ...state.core.players['0'],
                     mageId: MAGE_IDS.WARLOCK_APPRENTICE,
-                    spellbookCount: getPresetSpellbookCountFromConfig(MAGE_IDS.WARLOCK_APPRENTICE),
+                    spellbookCount: countSpellbookEntries(spellbookEntries),
+                    spellbookEntries,
                     mana: 20,
                     preparedSpellCardIds: [spellCardId],
                     preparedSpellSlots: 1,
@@ -498,6 +512,7 @@ describe('mage-wars enchantment response windows', () => {
             ...state,
             core: addObject(state.core, response),
         }, 3405);
+        const beastmasterSpellbookEntries = [...getPresetSpellbookEntriesFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)];
         state = {
             ...state,
             core: {
@@ -507,7 +522,8 @@ describe('mage-wars enchantment response windows', () => {
                     '0': {
                         ...state.core.players['0'],
                         mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
-                        spellbookCount: getPresetSpellbookCountFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE),
+                        spellbookCount: countSpellbookEntries(beastmasterSpellbookEntries),
+                        spellbookEntries: beastmasterSpellbookEntries,
                     },
                 },
             },

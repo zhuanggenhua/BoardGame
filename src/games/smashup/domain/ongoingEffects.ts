@@ -729,9 +729,11 @@ function buildTriggerEligibilityContext(
         state,
         timing,
         playerId: pid,
+        sourceDefId: entry.sourceDefId,
         sourceCardUid: located.uid,
         sourceBaseIndex: located.baseIndex,
         sourceControllerId: sourcePlayerId ?? located.controllerId,
+        sourceOwnerPlayerId: located.ownerId,
         now,
     };
 }

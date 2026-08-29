@@ -2078,7 +2078,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(resolvedCommandEventBuildersSource).not.toContain('export const buildQidahenMaShiTradeChoiceResolvedEvent = (');
         expect(resolvedCommandEventBuildersSource).not.toContain('export const buildQidahenKhanEdictChoiceResolvedEvent = (');
         expect(resolvedCommandEventBuildersSource).not.toContain('export const buildQidahenDiplomacyChoiceResolvedEvent = (');
-        expect(resolvedCommandEventBuildersSource).toContain('dependencies: QidahenActionWindowResolvedCommandDependencies = {');
+        expect(resolvedCommandEventBuildersSource).toContain('const DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES: QidahenActionWindowResolvedCommandDependencies = {');
+        expect(resolvedCommandEventBuildersSource).toContain('dependencies: QidahenActionWindowResolvedCommandDependencies = DEFAULT_QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES');
         expect(resolvedCommandEventBuildersSource).toContain('const buildStatefulResolvedCommandEvents = <TCommand>(');
         expect(resolvedCommandEventBuildersSource).toContain('buildEvent: (state: MatchState<QidahenCore>, command: TCommand, timestamp: number) => QidahenEvent,');
         expect(resolvedCommandEventBuildersSource).not.toContain('const buildGaoDiDispatchResolvedCommandEvents = buildSingleResolvedCommandEvents<ResolveGaoDiDispatchCommand>(');
@@ -2591,7 +2592,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingBattleCommittedTroopsSource).toContain("} from './troopCompat';");
         expect(pendingBattleCommittedTroopsSource).not.toContain('export interface QidahenPendingBattleCommittedTroopsDependencies {');
         expect(pendingBattleCommittedTroopsSource).toContain('interface QidahenPendingBattleCommittedTroopsDependencies {');
-        expect(pendingBattleCommittedTroopsSource).toContain('getPendingActionSourceForceSnapshot: (');
+        expect(pendingBattleCommittedTroopsSource).toContain('getPendingActionSourceForceSnapshot: typeof getPendingActionSourceForceSnapshot;');
         expect(pendingBattleCommittedTroopsSource).not.toContain('getMovableTroopCountForProfile: (');
         expect(pendingBattleCommittedTroopsSource).not.toContain('getCharacterCommittedTroopLimit: (');
         expect(pendingBattleCommittedTroopsSource).toContain('export const getMovableTroopCountForProfile = (');
@@ -4079,7 +4080,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingTargetResolutionSource).not.toContain('export type QidahenPendingDefenderRetreatResolution = {');
         expect(pendingTargetResolutionSource).toContain('type QidahenPendingDefenderRetreatResolution = {');
         expect(pendingTargetResolutionSource).toContain('const defenderRetreatResolution = resolvePendingDefenderRetreatLoss(');
-        expect(pendingTargetResolutionSource).toContain('findAutoDefenderRetreatRegion(state, battleRegion, battleRegion.controller)');
+        expect(pendingTargetResolutionSource).toContain('dependencies.findAutoDefenderRetreatRegion(state, battleRegion, defenderRetreatFactionId)');
         expect(pendingTargetResolutionSource).toContain("retreatLossMode === 'rout'");
         expect(pendingTargetResolutionSource).toContain('getSurvivingDefenderRetreatSpecialTroops(');
         expect(pendingTargetResolutionSource).toContain('pruneUnsupportedRetreatArtillery(');
@@ -4203,7 +4204,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(supportSource).toContain("import { isQidahenCityRuntimeRegion } from './regionConfig';");
         expect(supportSource).toContain('export const applyCasualtyPriorityToRegion = (');
         expect(supportSource).toContain('export const applyCasualtiesToSpecialStacks = (');
-        expect(supportSource).toContain('export const applyCommittedTroopRemovalToRegion = (');
+        expect(supportSource).toContain('export const applyCommittedTroopRemovalToRegion = <TRegion extends');
         expect(supportSource).toContain('export const computeRetreatLoss = (');
         expect(supportSource).toContain('export const computeStructuredAttackerRout = (');
         expect(supportSource).toContain('export const computeStructuredDefenderRout = (');

@@ -214,11 +214,59 @@ function clampRenderedInteractionToAuthoritativeSeatView<TCore>(
     };
 }
 
-function cloneMatchStateForPrediction<TCore>(state: MatchState<TCore>): MatchState<TCore> {
-    if (typeof structuredClone === 'function') {
-        return structuredClone(state);
+function cloneValueForPrediction<T>(value: T, seen = new WeakMap<object, unknown>()): T {
+    if (value === null || typeof value !== 'object') return value;
+    if (seen.has(value)) return seen.get(value) as T;
+
+    if (Array.isArray(value)) {
+        const cloned: unknown[] = [];
+        seen.set(value, cloned);
+        for (const item of value) {
+            cloned.push(cloneValueForPrediction(item, seen));
+        }
+        return cloned as T;
     }
-    return JSON.parse(JSON.stringify(state)) as MatchState<TCore>;
+
+    if (value instanceof Date) {
+        return new Date(value.getTime()) as T;
+    }
+
+    if (value instanceof Map) {
+        const cloned = new Map<unknown, unknown>();
+        seen.set(value, cloned);
+        for (const [key, entryValue] of value.entries()) {
+            cloned.set(
+                cloneValueForPrediction(key, seen),
+                cloneValueForPrediction(entryValue, seen),
+            );
+        }
+        return cloned as T;
+    }
+
+    if (value instanceof Set) {
+        const cloned = new Set<unknown>();
+        seen.set(value, cloned);
+        for (const entryValue of value.values()) {
+            cloned.add(cloneValueForPrediction(entryValue, seen));
+        }
+        return cloned as T;
+    }
+
+    const cloned = Object.create(Object.getPrototypeOf(value)) as Record<PropertyKey, unknown>;
+    seen.set(value, cloned);
+    for (const key of Reflect.ownKeys(value)) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        if (!descriptor) continue;
+        if ('value' in descriptor) {
+            descriptor.value = cloneValueForPrediction(descriptor.value, seen);
+        }
+        Object.defineProperty(cloned, key, descriptor);
+    }
+    return cloned as T;
+}
+
+function cloneMatchStateForPrediction<TCore>(state: MatchState<TCore>): MatchState<TCore> {
+    return cloneValueForPrediction(state);
 }
 
 // ============================================================================

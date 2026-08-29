@@ -1637,6 +1637,7 @@ export function registerBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
     }, {
         mandatory: false,
+        ownerPlayerId: (ctx) => ctx.rankings?.[1]?.playerId,
         effectContract: {
             reads: [{ kind: 'scoring' }],
             writes: [{ kind: 'targetAvailability' }],

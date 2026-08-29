@@ -74,7 +74,7 @@ const LOCKED_EVENT_FRONT_FRAMES = {
 } as const;
 
 describe('Betrayal 教程配置', () => {
-    it('导出多章节 TutorialCollection，并把基础开局教程设为默认入口', () => {
+    it('导出合并后的 TutorialCollection，并只把主线和叛徒视角放进玩家目录', () => {
         expect(tutorialCatalog.defaultTutorialId).toBe('basic-setup-and-turn');
         expect(Object.keys(tutorialCatalog.tutorials)).toEqual([
             'basic-setup-and-turn',
@@ -92,20 +92,25 @@ describe('Betrayal 教程配置', () => {
             .filter(([, entry]) => entry.hiddenFromCatalog !== true)
             .map(([id]) => id)).toEqual([
             'basic-setup-and-turn',
+            'traitor-path',
+        ]);
+        expect(tutorialCatalog.tutorials['basic-setup-and-turn']?.titleKey).toBe('tutorial.mainPath.title');
+        for (const hiddenTutorialId of [
             'omen-confirmation-and-haunt-risk',
             'trade-and-agreement',
+            'move-explore-use',
+            'crimson-jack-objective',
             'haunt-actions-and-finish',
-            'traitor-path',
+            'hero-attack-path',
+            'jack-spirit-path',
             'mummy-monster-actions',
-        ]);
-        expect(tutorialCatalog.tutorials['move-explore-use']?.hiddenFromCatalog).toBe(true);
-        expect(tutorialCatalog.tutorials['crimson-jack-objective']?.hiddenFromCatalog).toBe(true);
-        expect(tutorialCatalog.tutorials['hero-attack-path']?.hiddenFromCatalog).toBe(true);
-        expect(tutorialCatalog.tutorials['jack-spirit-path']?.hiddenFromCatalog).toBe(true);
+        ]) {
+            expect(tutorialCatalog.tutorials[hiddenTutorialId]?.hiddenFromCatalog).toBe(true);
+        }
         expect(tutorialCatalog.tutorials['traitor-path']?.hiddenFromCatalog).not.toBe(true);
     });
 
-    it('默认教程会合并作祟前基础回合，并覆盖首轮必需的规则入口', () => {
+    it('默认教程会合并普通玩家主线，只有叛徒视角另列目录章节', () => {
         const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
         expect(manifest?.steps.map((step) => step.id)).toEqual([
             'setup-runtime',
@@ -124,7 +129,25 @@ describe('Betrayal 教程配置', () => {
             'explore-upper',
             'confirm-room-placement',
             'finish',
+            'setup-omen-confirmation',
+            'confirm-omen-card',
+            'omen-confirmation-review',
+            'omen-haunt-risk-track',
+            'setup-trade',
+            'choose-trade-item',
+            'choose-trade-target',
+            'choose-trade-return',
+            'send-trade-request',
+            'request-waiting',
+            'accept-trade-request',
+            'trade-review',
+            'setup-ready-to-banish',
+            'help-entry',
+            'haunt-actions',
+            'banish-mummy',
+            'endgame-review',
         ]);
+        expect(new Set(manifest?.steps.map((step) => step.id)).size).toBe(manifest?.steps.length);
 
         const setupStep = manifest?.steps.find((step) => step.id === 'setup-runtime');
         expect(setupStep?.aiActions).toHaveLength(1);
@@ -137,6 +160,15 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'focus-self-room')?.highlightTarget).toBe('betrayal-focus-self-room');
         expect(manifest?.steps.find((step) => step.id === 'haunt-risk-track')?.highlightTarget).toBe('betrayal-haunt-risk-status');
         expect(manifest?.steps.find((step) => step.id === 'confirm-room-placement')?.highlightTarget).toBe('betrayal-room-placement-confirm');
+        expect(manifest?.steps.find((step) => step.id === 'confirm-omen-card')?.allowedCommands).toEqual([
+            'ACKNOWLEDGE_CARD_RESOLUTION',
+        ]);
+        expect(manifest?.steps.find((step) => step.id === 'send-trade-request')?.allowedCommands).toEqual([
+            'TRADE_POSSESSION',
+        ]);
+        expect(manifest?.steps.find((step) => step.id === 'banish-mummy')?.allowedCommands).toEqual([
+            'BANISH_MUMMY',
+        ]);
     });
 
     it('玩家可见教程注入态不使用测试专用假对象', () => {
@@ -150,22 +182,24 @@ describe('Betrayal 教程配置', () => {
         expect(injectedPayloads).not.toMatch(/测试牌|测试事件|中性占位结果/);
     });
 
-    it('基础回合教程只允许真实的使用、移动、探索命令链，旧移动探索路由隐藏兼容', () => {
-        const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
-        const legacyManifest = tutorialCatalog.tutorials['move-explore-use']?.manifest;
+    it('基础回合兼容入口只保留真实的使用、移动、探索命令链', () => {
+        const defaultManifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
+        const manifest = tutorialCatalog.tutorials['move-explore-use']?.manifest;
         const setupStep = manifest?.steps.find((step) => step.id === 'setup-runtime');
         const setupFields = setupStep?.aiActions?.[0]?.payload?.fields as { eventOrder?: Array<{ name?: string }> } | undefined;
         const setupInventory = setupFields && 'currentExplorer' in setupFields
             ? (setupFields as { currentExplorer?: { inventory?: Array<{ id?: string; name?: string }> } }).currentExplorer?.inventory
             : undefined;
         const actionSteps = manifest?.steps.filter((step) => step.requireAction) ?? [];
-        expect(legacyManifest).toBe(manifest);
         expect(actionSteps.map((step) => step.id)).toEqual([
             'use-book',
             'move-to-hallway',
             'explore-upper',
             'confirm-room-placement',
         ]);
+        expect(defaultManifest?.steps.slice(0, manifest?.steps.length).map((step) => step.id))
+            .toEqual(manifest?.steps.map((step) => step.id));
+        expect(tutorialCatalog.tutorials['move-explore-use']?.hiddenFromCatalog).toBe(true);
         expect(manifest?.steps.map((step) => step.id)).toContain('open-move-targets');
         expect(manifest?.steps.find((step) => step.id === 'open-move-targets')?.highlightTarget).toBe('betrayal-action-move');
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
@@ -324,7 +358,8 @@ describe('Betrayal 教程配置', () => {
         expect(objectiveManifest).toBe(hauntActionsManifest);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-open-scenario');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'haunt-actions')?.highlightTarget).toBe('betrayal-action-use');
-        expect(hauntActionsManifest?.steps.find((step) => step.id === 'banish-mummy')?.allowedCommands).toEqual(['BANISH_MUMMY']);
+        expect(hauntActionsManifest?.steps.find((step) => step.id === 'banish-mummy')?.allowedCommands)
+            .toEqual(['BANISH_MUMMY']);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'banish-mummy')?.randomPolicy).toEqual({
             mode: 'sequence',
             values: [3, 3, 3, 3, 3, 1, 1, 1, 1, 1],
@@ -367,8 +402,20 @@ describe('Betrayal 教程配置', () => {
         ]);
         expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-review')?.highlightTarget).toBe('betrayal-attack-roll-review');
         expect(traitorManifest?.steps.map((step) => step.id)).toEqual([
-            'setup-traitor-turn',
+            'setup-mummy-monster-move',
             'traitor-objective',
+            'mummy-monster-turn-start',
+            'mummy-monster-roll',
+            'mummy-monster-roll-review',
+            'mummy-monster-move-target',
+            'mummy-monster-move-result',
+            'setup-mummy-attack',
+            'mummy-attack-forced',
+            'mummy-attack-target',
+            'mummy-attack-roll-review',
+            'mummy-attack-reward',
+            'mummy-steal-result',
+            'setup-traitor-turn',
             'pick-up-girl',
             'give-girl-to-mummy',
             'give-omen-to-mummy',
@@ -417,6 +464,9 @@ describe('Betrayal 教程配置', () => {
         });
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.allowedCommands)
             .toEqual(['ACKNOWLEDGE_RECENT_ROLL']);
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.advanceOnEvents).toEqual([
+            { type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } },
+        ]);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.highlightFrame)
             .toBe('none');
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-move-target')?.allowedCommands)
@@ -430,6 +480,9 @@ describe('Betrayal 教程配置', () => {
         });
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-roll-review')?.highlightFrame)
             .toBe('none');
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-roll-review')?.advanceOnEvents).toEqual([
+            { type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } },
+        ]);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-reward')?.allowedCommands)
             .toEqual(['RESOLVE_MUMMY_ATTACK_REWARD']);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-reward')?.advanceOnEvents).toEqual([
@@ -548,6 +601,12 @@ describe('Betrayal 教程配置', () => {
     it('中文教程文案会聚焦玩家能理解的规则动作与结果', () => {
         const officialOmenRuleZh = '抽到预兆卡时，大声朗读，把它放在自己面前并获得。然后进行作祟检定：按所有玩家持有的预兆总数掷骰；若作祟检定结果为 5+，作祟开始。';
         const officialOmenRuleEn = 'When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.';
+        expect(zhCNLocale.tutorial.mainPath.title).toContain('主线教程');
+        expect(zhCNLocale.tutorial.mainPath.description).toContain('预兆确认');
+        expect(zhCNLocale.tutorial.mainPath.description).toContain('驱逐木乃伊');
+        expect(enLocale.tutorial.mainPath.title).toContain('Main Tutorial');
+        expect(enLocale.tutorial.mainPath.description).toContain('omen confirmation');
+        expect(enLocale.tutorial.mainPath.description).toContain('banishing the Mummy');
         expect(zhCNLocale.tutorial.basicSetup.description).toContain('按任意顺序');
         expect(zhCNLocale.tutorial.basicSetup.description).toContain('探索新房间会结束你的回合');
         expect(enLocale.tutorial.basicSetup.description).toContain('in any order');
@@ -619,7 +678,9 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritObjective).toContain('叛徒尸体所在房间');
         expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritAttack).toContain('同房间的英雄');
         expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritReview).toContain('按差值结算伤害');
-        expect(zhCNLocale.tutorial.traitorPath.title).toContain('叛徒帮助木乃伊');
+        expect(zhCNLocale.tutorial.traitorPath.title).toContain('叛徒视角');
+        expect(zhCNLocale.tutorial.traitorPath.description).toContain('木乃伊移动');
+        expect(zhCNLocale.tutorial.traitorPath.description).toContain('胜利链');
         expect(zhCNLocale.tutorial.traitorPath.steps.setupTraitorTurn).toContain('女孩和圣符或指环');
         expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('打开叛徒剧本');
         expect(zhCNLocale.tutorial.traitorPath.steps.pickUpGirl).toContain('拾起女孩');

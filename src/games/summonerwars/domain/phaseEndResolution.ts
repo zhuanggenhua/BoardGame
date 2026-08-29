@@ -13,7 +13,7 @@ export function getPhaseEndAbilityResolved(
   state: Readonly<MatchState<SummonerWarsCore>>,
 ): PhaseEndAbilityResolvedMap | undefined {
   return state.core.phaseEndAbilityResolved
-    ?? (state.sys as LegacySummonerWarsSystemState).summonerWars?.phaseEndAbilityResolved;
+    ?? (state.sys as LegacySummonerWarsSystemState | undefined)?.summonerWars?.phaseEndAbilityResolved;
 }
 
 export function withPhaseEndAbilityResolved(

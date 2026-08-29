@@ -367,6 +367,22 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
     ],
 };
 
+const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
+    id: 'basic-setup-and-turn',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        ...BETRAYAL_BASIC_SETUP_AND_TURN.steps,
+        ...BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK.steps.map((step) => (
+            step.id === 'haunt-risk-track'
+                ? { ...step, id: 'omen-haunt-risk-track' }
+                : step
+        )),
+        ...BETRAYAL_TRADE_AND_AGREEMENT.steps,
+        ...BETRAYAL_HAUNT_ACTIONS_AND_FINISH.steps,
+    ],
+};
+
 const BETRAYAL_HERO_ATTACK_PATH: TutorialManifest = {
     id: 'hero-attack-path',
     numPlayers: 3,
@@ -589,7 +605,7 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
             position: 'center',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL],
-            advanceOnEvents: [{ type: 'RECENT_ROLL_ACKNOWLEDGED' }],
+            advanceOnEvents: [{ type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } }],
             viewAs: '2',
         },
         {
@@ -653,7 +669,7 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
             position: 'center',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL],
-            advanceOnEvents: [{ type: 'RECENT_ROLL_ACKNOWLEDGED' }],
+            advanceOnEvents: [{ type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } }],
             viewAs: '2',
         },
         {
@@ -680,23 +696,38 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
     ],
 };
 
+const BETRAYAL_TRAITOR_VIEW_PATH: TutorialManifest = {
+    id: 'traitor-path',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        BETRAYAL_MUMMY_MONSTER_ACTIONS.steps[0],
+        BETRAYAL_TRAITOR_PATH.steps[1],
+        ...BETRAYAL_MUMMY_MONSTER_ACTIONS.steps.slice(1),
+        BETRAYAL_TRAITOR_PATH.steps[0],
+        ...BETRAYAL_TRAITOR_PATH.steps.slice(2),
+    ],
+};
+
 const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
     defaultTutorialId: 'basic-setup-and-turn',
     tutorials: {
         'basic-setup-and-turn': {
-            titleKey: 'tutorial.basicSetup.title',
-            descriptionKey: 'tutorial.basicSetup.description',
-            manifest: BETRAYAL_BASIC_SETUP_AND_TURN,
+            titleKey: 'tutorial.mainPath.title',
+            descriptionKey: 'tutorial.mainPath.description',
+            manifest: BETRAYAL_MAIN_PLAYER_PATH,
         },
         'omen-confirmation-and-haunt-risk': {
             titleKey: 'tutorial.omenConfirmation.title',
             descriptionKey: 'tutorial.omenConfirmation.description',
             manifest: BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK,
+            hiddenFromCatalog: true,
         },
         'trade-and-agreement': {
             titleKey: 'tutorial.tradeAndAgreement.title',
             descriptionKey: 'tutorial.tradeAndAgreement.description',
             manifest: BETRAYAL_TRADE_AND_AGREEMENT,
+            hiddenFromCatalog: true,
         },
         'move-explore-use': {
             titleKey: 'tutorial.basicSetup.title',
@@ -714,6 +745,7 @@ const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
             titleKey: 'tutorial.hauntActions.title',
             descriptionKey: 'tutorial.hauntActions.description',
             manifest: BETRAYAL_HAUNT_ACTIONS_AND_FINISH,
+            hiddenFromCatalog: true,
         },
         'hero-attack-path': {
             titleKey: 'tutorial.heroAttackPath.title',
@@ -730,12 +762,13 @@ const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
         'traitor-path': {
             titleKey: 'tutorial.traitorPath.title',
             descriptionKey: 'tutorial.traitorPath.description',
-            manifest: BETRAYAL_TRAITOR_PATH,
+            manifest: BETRAYAL_TRAITOR_VIEW_PATH,
         },
         'mummy-monster-actions': {
             titleKey: 'tutorial.mummyMonsterActions.title',
             descriptionKey: 'tutorial.mummyMonsterActions.description',
             manifest: BETRAYAL_MUMMY_MONSTER_ACTIONS,
+            hiddenFromCatalog: true,
         },
     },
 };

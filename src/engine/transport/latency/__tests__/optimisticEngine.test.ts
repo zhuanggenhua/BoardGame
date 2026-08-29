@@ -756,6 +756,39 @@ describe('OptimisticEngine 单元测试', () => {
         expect(result.stateToRender.sys.interaction.isBlocked).toBe(false);
     });
 
+    it('reconcile 可以接收带动态选项函数的交互状态，且保留函数引用供预测刷新使用', () => {
+        const engine = createTestEngine();
+        const optionsGenerator = () => [
+            { id: 'only', label: 'Only', value: { id: 'only' } },
+        ];
+        const authoritative = createPromptReplayState(0, {
+            current: {
+                id: 'dynamic-prompt',
+                kind: 'simple-choice',
+                playerId: '0',
+                title: '动态选项',
+                data: {
+                    sourceId: 'dynamic-prompt',
+                    optionsGenerator,
+                },
+            },
+            isBlocked: true,
+            queue: [],
+        });
+
+        const result = engine.reconcile(authoritative);
+        const current = result.stateToRender.sys.interaction.current as {
+            data?: {
+                optionsGenerator?: typeof optionsGenerator;
+            };
+        };
+
+        expect(current.data?.optionsGenerator).toBe(optionsGenerator);
+        expect(current.data?.optionsGenerator?.()).toEqual([
+            { id: 'only', label: 'Only', value: { id: 'only' } },
+        ]);
+    });
+
     it('processCommand 不得污染上一帧 authoritative state 引用，即使 pipeline/系统原地改写了输入对象', () => {
         const engine = createMutatingPromptReplayEngine();
         const authoritative = createPromptReplayState(0, {

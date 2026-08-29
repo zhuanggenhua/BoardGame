@@ -135,6 +135,13 @@ export const getCurrentInteractionId = (state: MatchState<DiceThroneCore>): stri
     state.sys.interaction.current?.id
 );
 
+export const expectNoPrompt = (state: MatchState<DiceThroneCore>): void => {
+    const interactionId = getCurrentInteractionId(state);
+    if (interactionId) {
+        throw new Error(`Expected no active prompt, but "${interactionId}" was active.`);
+    }
+};
+
 export const cancelPromptCommand = (
     state: MatchState<DiceThroneCore>,
     playerId: PlayerId,
@@ -412,10 +419,26 @@ export const createHeroMatchup = (
         const sys = createInitialSystemState(playerIds, testSystems, undefined);
         let state: MatchState<DiceThroneCore> = { sys, core };
 
+        const isPlayerHiddenHero = (heroId: string) => (
+            DICETHRONE_CHARACTER_CATALOG.find((character) => character.id === heroId)?.setupOptionStatus === 'hidden'
+        );
+        const chooseSetupHero = (desiredHero: string, occupiedHero?: string) => {
+            if (!isPlayerHiddenHero(desiredHero) && desiredHero !== occupiedHero) {
+                return desiredHero;
+            }
+            return (DICETHRONE_CHARACTER_CATALOG.find((character) => (
+                character.setupOptionStatus !== 'hidden'
+                && character.id !== occupiedHero
+                && character.id !== desiredHero
+            ))?.id ?? 'monk') as string;
+        };
+
         const setupHero1 = hero0 === hero1 ? 'monk' : hero1;
+        const setupHero0 = chooseSetupHero(hero0);
+        const visibleSetupHero1 = chooseSetupHero(setupHero1, setupHero0);
         const setupCmds = [
-            { type: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: hero0 } },
-            { type: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: setupHero1 } },
+            { type: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: setupHero0 } },
+            { type: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: visibleSetupHero1 } },
             { type: 'PLAYER_READY', playerId: '1', payload: {} },
             { type: 'HOST_START_GAME', playerId: '0', payload: {} },
         ];
@@ -424,6 +447,16 @@ export const createHeroMatchup = (
         for (const c of setupCmds) {
             const r = executePipeline(cfg, state, { ...c, timestamp: Date.now() } as any, random, playerIds);
             if (r.success) state = r.state as MatchState<DiceThroneCore>;
+        }
+
+        if (hero0 !== setupHero0) {
+            state.core.selectedCharacters['0'] = hero0 as any;
+            state.core.players['0'] = initHeroState('0', hero0 as any, random);
+        }
+
+        if (hero1 !== visibleSetupHero1) {
+            state.core.selectedCharacters['1'] = hero1 as any;
+            state.core.players['1'] = initHeroState('1', hero1 as any, random);
         }
 
         // 新规则禁止 setup 阶段双方直选同一英雄；若测试需要镜像对战，

@@ -349,7 +349,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 let completed = false;
                 try {
                     // setup 步骤必须同步完成初始化，避免棋盘挂载与关键图门禁互等。
-                    // 后续运行中 AI actions 每条命令后让出一个状态帧，保证下一条命令
+                    // 后续运行中 AI actions 只在命令之间让出一个状态帧，保证下一条命令
                     // 能读到前一条命令产生的当前交互、待处理伤害等运行态。
                     for (let i = 0; i < aiActions.length; i++) {
                         if (aiExecutionGenerationRef.current !== executionGeneration) return;
@@ -364,7 +364,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         const beforeBoardSyncVersion = boardSyncVersionRef.current;
                         const liveController = controllerRef.current ?? controller;
                         liveController.dispatchCommand(action.commandType, actionPayload);
-                        if (shouldYieldBetweenAiActions) {
+                        if (shouldYieldBetweenAiActions && i < aiActions.length - 1) {
                             const didObserveBoardSync = await new Promise<boolean>((resolve) => {
                                 const startedAt = Date.now();
                                 const poll = () => {

@@ -55,6 +55,28 @@ const createNpmUploadLifecycleEnv = () => {
     return env;
 };
 
+const createNpmMobilePackagesLifecycleEnv = (configs: Record<string, string>) => {
+    const env = { ...process.env };
+    for (const key of Object.keys(env)) {
+        const normalizedKey = key.toLowerCase();
+        if (
+            normalizedKey === 'npm_lifecycle_event'
+            || normalizedKey === 'npm_config_channel'
+            || normalizedKey === 'npm_config_game'
+            || normalizedKey === 'npm_config_dry_run'
+            || normalizedKey === 'npm_config_index_manifest_only'
+            || normalizedKey === 'npm_config_reuse_shared_audio'
+        ) {
+            delete env[key];
+        }
+    }
+    env.npm_lifecycle_event = 'mobile:android:packages:publish';
+    for (const [key, value] of Object.entries(configs)) {
+        env[`npm_config_${key}`] = value;
+    }
+    return env;
+};
+
 const runUploadFromNpmLifecycle = (...args: string[]) => {
     const result = spawnSync(
         process.execPath,
@@ -664,5 +686,34 @@ describe('Android 游戏包素材内容', () => {
         expect(output).toContain('gameId=dicethrone');
         expect(output).toContain('zipBytes=null');
         expect(output).toContain(`fileCount=${expectedFileCount}`);
+    });
+
+    it('npm 参数转发成裸值时仍应保留 DiceThrone dry-run 范围', () => {
+        const result = spawnSync(
+            process.execPath,
+            [
+                path.join(process.cwd(), 'scripts', 'mobile', 'publish-android-game-packages.mjs'),
+                'stable',
+                'dicethrone',
+            ],
+            {
+                cwd: process.cwd(),
+                encoding: 'utf8',
+                env: createNpmMobilePackagesLifecycleEnv({
+                    dry_run: 'true',
+                    index_manifest_only: 'true',
+                    reuse_shared_audio: 'true',
+                }),
+                timeout: 120_000,
+            },
+        );
+        const output = `${result.stdout}\n${result.stderr}`;
+
+        expect(result.status).toBe(0);
+        expect(output).toContain('游戏 file-index/manifest 差异刷新预演完成（未上传 ZIP）');
+        expect(output).toContain('gameId=dicethrone');
+        expect(output).not.toContain('gameId=cardia');
+        expect(output).not.toContain('游戏包上传计划已准备');
+        expect(output).not.toContain('服务器主源整批发布完成');
     });
 });
