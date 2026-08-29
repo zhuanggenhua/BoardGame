@@ -154,11 +154,21 @@ npm run dev:lite
 
 执行要点：
 - 用中文说明关键动作和结果，能直接执行的安装、克隆、配置、启动和验证动作就直接执行。
-- 准备 Git、Node.js 24.1.0、npm 和浏览器；Node 以当前终端 `node -v` 为准。
-- 克隆仓库后读取仓库入口文档，按项目规范加载本地启动和新增游戏相关入口。
-- 执行 `npm install`，按 `.env.example` 创建本地 `.env`。
+- 先检查本机前置工具：`git --version`、`node -v`、`npm -v`，并确认浏览器可用。
+- 如果当前使用的是 Codex，先用一句话说明“最高权限会允许 AI 读写本机文件并执行命令，且通常不再逐次询问命令授权”，然后询问用户是否开启最高权限；用户明确同意后，直接把当前 Codex 生效用户配置改为最高权限：`sandbox_mode = "danger-full-access"`、`approval_policy = "never"`，保存后让用户重启 Codex 或开启新会话再继续。用户不同意或未回答时，保持现有权限，不要绕过确认。
+- Git 不可用时，先安装或引导安装 Git；重开终端后重新执行 `git --version`。在 Git 验证成功前，绝对不要执行 `git clone`。
+- Node / npm 不可用，或 Node 不是 24.1.0 时，先安装或切换到 Node.js 24.1.0；在 `node -v` 和 `npm -v` 成功前，不要执行 `npm install`。
+- Git 可用后，先用 `git ls-remote https://github.com/zhuanggenhua/BoardGame.git HEAD` 验证能连上 GitHub；连不上就判断为 GitHub / Git 网络连通性问题，不要反复 `git clone`、换目录或重装项目。
+- GitHub 连不上时，先确认浏览器能否打开 GitHub：没开代理就先打开代理；浏览器能打开但 Git 仍连不上时，说明 Git 没有走到当前代理，需要给 Git 单独配置代理。
+- 配 Git 代理时不要猜端口，先查看本机代理软件的 HTTP 或 SOCKS5 监听地址。常见示例：`git config --global http.https://github.com.proxy http://127.0.0.1:7890` 或 `git config --global http.https://github.com.proxy socks5://127.0.0.1:7890`，端口必须按本机实际设置改。
+- 代理配置后，用 `git config --global --get-regexp "http.*proxy"` 确认配置，再重试 `git ls-remote`；只有 GitHub 连通性验证成功后，才克隆仓库并进入项目目录。
+- 执行 `git clone` 后，如果终端仍在显示接收对象、下载百分比、传输速度或文件数量变化，说明仍有实际进度，要继续等待，不要因为一次短暂超时、速度慢或长时间大仓库下载就放弃。
+- 只有明确报错、连续长时间无任何进度变化，或网络断开时，才停止 clone 并回到 GitHub 连通性 / 代理配置诊断；不要改用 ZIP 下载、换仓库、跳过 clone 或继续后续步骤。
+- 进入仓库后读取 README.md、AGENTS.md、.spec/AGENTS.md，按项目规范加载本地启动和新增游戏相关入口。
+- 执行 `npm install`，再按 `.env.example` 创建本地 `.env`。
 - 优先用 `npm run dev:lite` 验证本地页面可访问；缺 Docker 或 MongoDB 时按轻量本地启动处理。
 - 范围到本地制作环境和新增游戏前置准备为止。
+- 如果工具安装、权限、网络或端口被阻塞，停止继续执行，不要猜测或跳步骤；按“现实后果 / 当前证据 / 为什么挡住目标 / 最小补救动作”汇报。
 
 收尾汇报：Git / Node / npm 版本、项目路径、本地访问地址、启动模式、是否可以开始新增游戏；如遇阻塞，说清现实后果、证据和最小补救动作。
 ```
