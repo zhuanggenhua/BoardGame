@@ -11,6 +11,7 @@ import {
     expectNoPrompt,
     getSimpleChoicePrompt,
     getPromptOptions,
+    respondToPromptOption,
 } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -210,8 +211,8 @@ describe('shayu 第一入口直接消费专项审计', () => {
             turnOrder: ['0', '1'],
             currentPlayerIndex: 0,
             bases: [makeBase('base_the_deep', [
-                makeMinion('chosen', 'mythic_greeks_spartan', '0', 2),
-                makeMinion('other-own', 'sharks_mako', '0', 2),
+                makeMinion('chosen', 'sharks_mako', '0', 2),
+                makeMinion('other-own', 'tornados_dust_devil', '0', 2),
             ])],
             baseDeck: [],
             turnNumber: 1,
@@ -223,9 +224,20 @@ describe('shayu 第一入口直接消费专项审计', () => {
             payload: { cardUid: 'ares', targetBaseIndex: 0, targetMinionUid: 'chosen' },
         } as any);
         expect(ares.success).toBe(true);
-        expectNoPrompt(ares.finalState);
-        expect(ares.finalState.core.bases[0].minions.find(minion => minion.uid === 'chosen')?.tempPowerModifier).toBe(3);
-        expect(ares.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-own')?.tempPowerModifier ?? 0).toBe(0);
+        const aresPrompt = getSimpleChoicePrompt(ares.finalState, 'mythic_greeks_favor_of_ares');
+        const aresOptions = getPromptOptions(aresPrompt);
+        expect(aresPrompt.targetType).toBe('minion');
+        expect(aresOptions.map((option: any) => option.value?.minionUid)).toEqual(['chosen']);
+        const aresResolved = respondToPromptOption(
+            ares.finalState,
+            (option: any) => option.value?.minionUid === 'chosen',
+            '阿瑞斯的恩惠已选源随从',
+            '0',
+        );
+        expect(aresResolved.success).toBe(true);
+        expectNoPrompt(aresResolved.finalState);
+        expect(aresResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'chosen')?.tempPowerModifier).toBe(3);
+        expect(aresResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-own')?.tempPowerModifier ?? 0).toBe(0);
 
         const laserCore = {
             players: {

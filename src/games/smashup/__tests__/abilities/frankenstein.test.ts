@@ -1005,6 +1005,7 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
                 minionDefId: 'frankenstein_igor',
                 fromBaseIndex: 0,
                 ownerId: '1',
+                controllerId: '0',
                 destroyerId: '0',
             }],
             defaultTestRandom,
@@ -1012,7 +1013,7 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
         );
 
         expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
-        expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
         const prompt = getSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
         expect(prompt.playerId).toBe('0');
         const optionUids = getPromptOptions(prompt).map(option => option.value?.minionUid);

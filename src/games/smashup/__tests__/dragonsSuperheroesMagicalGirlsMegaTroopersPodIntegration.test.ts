@@ -23,6 +23,8 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    getPromptOptions,
+    getSimpleChoicePrompt,
     respondToPromptOption,
 } from './helpers';
 import { runCommand } from './testRunner';
@@ -324,18 +326,38 @@ describe('龙族、超级英雄、魔法少女与超级战队 POD 接入', () =>
             timestamp: 205,
         });
         expect(white.success).toBe(true);
-        expect(white.finalState.core.players['0'].hand.map(card => card.uid)).toContain('maid-pod');
-        expect(white.finalState.core.players['0'].deck.map(card => card.uid)).toContain('maid-base');
+        const whitePrompt = getSimpleChoicePrompt(white.finalState, 'magical_girls_white_magicat_pod');
+        expect(getPromptOptions(whitePrompt).map(option => option.value?.cardUid)).toContain('maid-pod');
+        expect(getPromptOptions(whitePrompt).map(option => option.value?.cardUid)).not.toContain('maid-base');
+        const whiteResolved = respondToPromptOption(
+            white.finalState,
+            option => option.value?.cardUid === 'maid-pod',
+            '白魔猫 POD 搜索女仆 POD',
+            '0',
+        );
+        expect(whiteResolved.success).toBe(true);
+        expect(whiteResolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('maid-pod');
+        expect(whiteResolved.finalState.core.players['0'].deck.map(card => card.uid)).toContain('maid-base');
 
-        const black = runCommand(white.finalState, {
+        const black = runCommand(whiteResolved.finalState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
             payload: { cardUid: 'black-pod', baseIndex: 0 },
             timestamp: 206,
         });
         expect(black.success).toBe(true);
-        expect(black.finalState.core.players['0'].hand.map(card => card.uid)).toContain('captain-pod');
-        expect(black.finalState.core.players['0'].discard.map(card => card.uid)).toContain('captain-base');
+        const blackPrompt = getSimpleChoicePrompt(black.finalState, 'magical_girls_black_magicat_pod');
+        expect(getPromptOptions(blackPrompt).map(option => option.value?.cardUid)).toContain('captain-pod');
+        expect(getPromptOptions(blackPrompt).map(option => option.value?.cardUid)).not.toContain('captain-base');
+        const blackResolved = respondToPromptOption(
+            black.finalState,
+            option => option.value?.cardUid === 'captain-pod',
+            '黑魔猫 POD 搜索月之队长 POD',
+            '0',
+        );
+        expect(blackResolved.success).toBe(true);
+        expect(blackResolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('captain-pod');
+        expect(blackResolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('captain-base');
     });
 
     it('女仆 POD 的移动交互绑定触发它的真实卡 UID，不会串到基础版女仆', () => {
@@ -373,7 +395,16 @@ describe('龙族、超级英雄、魔法少女与超级战队 POD 接入', () =>
             '0',
         );
         expect(moved.success).toBe(true);
-        expect(moved.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('target');
-        expect(moved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('target');
+        const destinationPrompt = getSimpleChoicePrompt(moved.finalState, 'magical_girls_power_maid_destination');
+        expect(getPromptOptions(destinationPrompt).map(option => option.value?.baseIndex)).toContain(2);
+        const destinationChosen = respondToPromptOption(
+            moved.finalState,
+            option => option.value?.baseIndex === 2,
+            '女仆 POD 移动目的基地',
+            '0',
+        );
+        expect(destinationChosen.success).toBe(true);
+        expect(destinationChosen.finalState.core.bases[2].minions.map(minion => minion.uid)).toContain('target');
+        expect(destinationChosen.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('target');
     });
 });

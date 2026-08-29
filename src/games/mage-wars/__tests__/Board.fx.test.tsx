@@ -285,6 +285,12 @@ function renderBoardWithProviders(board: ReactElement) {
     return render(withBoardProviders(board));
 }
 
+function visibleDesktopSpellbookCardIds(container: HTMLElement): string[] {
+    return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-card"]'))
+        .map((card) => card.getAttribute('data-source-card-id'))
+        .filter((cardId): cardId is string => cardId != null);
+}
+
 function advanceSharedFxClockDelay(delayMs: number) {
     const totalMs = delayMs + 64;
     for (let elapsed = 0; elapsed < totalMs; elapsed += 16) {
@@ -1114,6 +1120,77 @@ describe('MageWarsBoard FX wiring', () => {
             resetFxFrameClockForTests();
             vi.useRealTimers();
         }
+    });
+});
+
+describe('MageWarsBoard browse interactions', () => {
+    it('keeps the default spellbook controls clickable for browsing and card magnification', () => {
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps()} />);
+
+        const shelf = screen.getByTestId('mage-wars-desktop-spellbook-shelf');
+        expect(shelf.getAttribute('data-planning-enabled')).toBe('false');
+
+        const firstCard = container.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]');
+        expect(firstCard).not.toBeNull();
+        const firstCardId = firstCard!.getAttribute('data-source-card-id');
+        expect(firstCard?.getAttribute('data-browse-inspectable')).toBe('true');
+
+        fireEvent.click(firstCard!);
+
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
+        expect(screen.getByTestId('mage-wars-card-magnify-content').getAttribute('data-source-card-id')).toBe(firstCardId);
+
+        fireEvent.click(screen.getByTestId('mage-wars-card-magnify-overlay-close'));
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('true');
+
+        const beforeIds = visibleDesktopSpellbookCardIds(container);
+        const categoryIds = ['attack', 'enchantment', 'creature', 'incantation', 'equipment'];
+        let changedCategory: HTMLElement | null = null;
+        let changedIds: string[] = [];
+        for (const categoryId of categoryIds) {
+            const categoryButton = screen.getByTestId(`mage-wars-spellbook-category-${categoryId}`);
+            fireEvent.click(categoryButton);
+            const nextIds = visibleDesktopSpellbookCardIds(container);
+            if (nextIds.length > 0 && nextIds.join('|') !== beforeIds.join('|')) {
+                changedCategory = categoryButton;
+                changedIds = nextIds;
+                break;
+            }
+        }
+
+        expect(changedCategory).not.toBeNull();
+        expect(changedCategory?.getAttribute('aria-pressed')).toBe('true');
+        expect(changedIds).not.toEqual(beforeIds);
+    });
+
+    it('uses the shared free pan and zoom viewport without permanently swallowing card clicks', async () => {
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps()} />);
+        const viewport = screen.getByTestId('mage-wars-arena-viewport');
+        const content = screen.getByTestId('mage-wars-arena-viewport-content');
+
+        await act(async () => {
+            fireEvent.mouseDown(viewport, { button: 0, clientX: 0, clientY: 0 });
+            fireEvent.mouseMove(window, { clientX: 80, clientY: 35 });
+            fireEvent.mouseUp(window);
+        });
+
+        await waitFor(() => {
+            expect(content.style.transform).toContain('translate(80px, 35px)');
+        });
+
+        await act(async () => {
+            fireEvent.wheel(viewport, { deltaY: -100, clientX: 50, clientY: 50 });
+        });
+
+        await waitFor(() => {
+            expect(content.style.transform).toContain('scale(1.1');
+        });
+
+        const firstCard = container.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]');
+        expect(firstCard).not.toBeNull();
+
+        fireEvent.click(firstCard!);
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
     });
 });
 

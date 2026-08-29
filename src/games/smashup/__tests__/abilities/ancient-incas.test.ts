@@ -241,7 +241,16 @@ describe('古代印加人代表性玩法行为', () => {
             41,
         );
 
-        expect(resolved?.state.core.bases[1].minions[0].powerCounters).toBe(1);
+        expect(resolved).toBeDefined();
+        const selected = respondToPromptOption(
+            resolved!.state,
+            option => option.value?.minionUid === 'target' && option.value?.baseIndex === 1,
+            'choose 萨帕·印加 counter target',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(selected.finalState.core.bases[1].minions[0].powerCounters).toBe(1);
     });
 
     it('军械库按同基地其它己方行动提供力量，库斯科每有一个行动降低 3 临界点', () => {

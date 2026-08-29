@@ -317,7 +317,7 @@ describe('direct trigger caller contract', () => {
 
     expect([...text.matchAll(/resolveSmashUpReactionPassRequest\(/g)]).toHaveLength(1);
 
-    const afterEventsStart = text.indexOf('afterEvents: ({ state, events, random })');
+    const afterEventsStart = text.search(/afterEvents:\s*\(\{\s*state,\s*events,\s*random(?:,\s*afterEventsRound)?\s*\}\)/);
     expect(afterEventsStart).toBeGreaterThanOrEqual(0);
     const bodyShopStart = text.indexOf('const bodyShopReconcile = reconcilePendingBodyShopDistributions', afterEventsStart);
     expect(bodyShopStart).toBeGreaterThan(afterEventsStart);

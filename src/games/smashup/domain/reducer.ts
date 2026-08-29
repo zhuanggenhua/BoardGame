@@ -1374,14 +1374,14 @@ export function processDestroyTriggers(
             continue;
         }
         destroyEventKeysToProcess.delete(destroyEventKey);
-        const { minionUid, minionDefId, fromBaseIndex, ownerId: eventOwnerId, destroyerId: eventDestroyerId, reason } = de.payload;
+        const { minionUid, minionDefId, fromBaseIndex, ownerId: eventOwnerId, controllerId: eventControllerId, destroyerId: eventDestroyerId, reason } = de.payload;
         const base = currentCore.bases[fromBaseIndex];
         const minion = base?.minions.find(m => m.uid === minionUid);
         const triggerMinion = minion ?? {
             uid: minionUid,
             defId: minionDefId,
             owner: eventOwnerId,
-            controller: eventOwnerId,
+            controller: eventControllerId ?? eventOwnerId,
             basePower: getMinionLikePower(minionDefId) ?? 0,
             powerCounters: 0,
             powerModifier: 0,
@@ -1498,7 +1498,7 @@ export function processDestroyTriggers(
                         triggerMinionDefId: minionDefId,
                         triggerMinionPower,
                         destroyerId,
-                        controllerId: minion?.controller ?? ownerId,
+                        controllerId: triggerPlayerId,
                         reason: de.payload.reason,
                         frameId,
                         sourceEventId,
@@ -1534,7 +1534,7 @@ export function processDestroyTriggers(
             if (didEnterOwnerDiscard) {
                 const discardSourceEventId = `minion-discarded-from-base:${minionUid}:${fromBaseIndex}:${now}`;
                 const discardFrameId = `minion-discarded-from-base-frame:${minionUid}:${fromBaseIndex}:${now}`;
-                const discardTriggerPlayerId = minion?.controller ?? ownerId;
+                const discardTriggerPlayerId = triggerPlayerId;
                 const queuedDiscardReactions = collectTriggers(phase2Core, 'onMinionDiscardedFromBase', {
                     state: phase2Core,
                     matchState: phase2State,
@@ -1545,7 +1545,7 @@ export function processDestroyTriggers(
                     triggerMinion: minion,
                     triggerMinionPower,
                     destroyerId,
-                    controllerId: minion?.controller ?? ownerId,
+                    controllerId: triggerPlayerId,
                     reason: de.payload.reason,
                     frameId: discardFrameId,
                     sourceEventId: discardSourceEventId,
@@ -1559,7 +1559,7 @@ export function processDestroyTriggers(
             // 1. 触发随从自身的 onDestroy 能力
             const executor = resolveOnDestroy(minionDefId);
             if (executor) {
-                const onDestroyPlayerId = minion?.controller ?? ownerId;
+                const onDestroyPlayerId = triggerPlayerId;
                 const ctx: AbilityContext = {
                     state: phase2Core,
                     matchState: phase2State,

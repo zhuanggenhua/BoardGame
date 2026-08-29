@@ -1355,6 +1355,7 @@ function ArenaAttachmentStrip({
     ownerSide,
     getRole,
     getOnClick,
+    getOnInspect,
     getFxAnchorRef,
 }: {
     objects: MageWarsArenaObjectState[];
@@ -1363,6 +1364,7 @@ function ArenaAttachmentStrip({
     ownerSide?: SeatOwnerSide;
     getRole: (object: MageWarsArenaObjectState) => FieldCardRole | undefined;
     getOnClick: (object: MageWarsArenaObjectState) => (() => void) | undefined;
+    getOnInspect?: (object: MageWarsArenaObjectState) => (() => void) | undefined;
     getFxAnchorRef?: (object: MageWarsArenaObjectState) => (element: HTMLElement | null) => void;
 }) {
     if (objects.length === 0) return null;
@@ -1385,6 +1387,7 @@ function ArenaAttachmentStrip({
                     role={getRole(object)}
                     ownerSide={ownerSide}
                     onClick={getOnClick(object)}
+                    onInspect={getOnInspect?.(object)}
                     fxAnchorRef={getFxAnchorRef?.(object)}
                 />
             ))}
@@ -3924,10 +3927,11 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             >
             <div
                 className={cx(
-                    'absolute left-1/2 z-10 aspect-[4/3] w-auto -translate-x-1/2',
+                    'absolute z-10 aspect-[4/3] w-auto',
                     isLandscapeMobileViewport ? 'top-[2.75%] h-[74%]' : 'top-0 h-full lg:top-[2.75%] lg:h-[74%]',
                 )}
                 data-testid="mage-wars-arena-viewport-shell"
+                style={{ left: '50%', transform: 'translateX(-50%)' }}
             >
                 <ZoomPanViewport
                     initialScale={1}

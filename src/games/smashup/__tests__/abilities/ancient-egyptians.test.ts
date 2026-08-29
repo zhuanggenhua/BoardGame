@@ -179,7 +179,13 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
                 makeBase({
                     defId: 'base_a',
                     minions: [makeMinion('pharaoh-1', 'ancient_egyptians_pharaoh', '1', 5)],
-                    buriedCards: [makeCard('buried-1', 'robot_microbot_alpha', 'minion', '1')],
+                    buriedCards: [{
+                        uid: 'buried-1',
+                        defId: 'robot_microbot_alpha',
+                        trueOwnerId: '1',
+                        controllerId: '1',
+                        buriedFrom: 'hand',
+                    }],
                     ongoingActions: [],
                 }),
                 makeBase({
@@ -224,7 +230,13 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
                 makeBase({
                     defId: 'base_a',
                     minions: [makeMinion('pharaoh-pod-1', 'ancient_egyptians_pharaoh_pod', '1', 5)],
-                    buriedCards: [makeCard('buried-2', 'robot_microbot_alpha', 'minion', '1')],
+                    buriedCards: [{
+                        uid: 'buried-2',
+                        defId: 'robot_microbot_alpha',
+                        trueOwnerId: '1',
+                        controllerId: '1',
+                        buriedFrom: 'hand',
+                    }],
                     ongoingActions: [],
                 }),
                 makeBase({
