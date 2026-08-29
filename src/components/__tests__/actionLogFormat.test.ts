@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ActionLogEntry } from '../../engine/types';
-import { buildActionLogRows, formatActionLogSegments } from '../game/utils/actionLogFormat';
+import {
+    buildActionLogRows,
+    createStateBackedActionLogPlayerLabel,
+    formatActionLogSegments,
+} from '../game/utils/actionLogFormat';
 
 describe('actionLogFormat', () => {
     it('formatActionLogSegments 拼接文本与卡牌预览', () => {
@@ -63,5 +67,21 @@ describe('actionLogFormat', () => {
             { type: 'diceResult', spriteAsset: 'summonerwars/common/dice', spriteCols: 3, spriteRows: 3, dice: [{ value: 1 }, { value: 2 }] } as any,
         ]);
         expect(result).toBe('掷骰 [1,2]');
+    });
+
+    it('玩家名兜底会从游戏状态读取探索者显示名', () => {
+        const getPlayerLabel = createStateBackedActionLogPlayerLabel({
+            core: {
+                currentExplorer: { playerId: '0', displayName: '薇薇安' },
+                otherExplorers: [{ playerId: '1', displayName: '布兰登' }],
+            },
+            sys: {
+                actionLog: { entries: [], maxEntries: 50 },
+            },
+        } as any);
+
+        expect(getPlayerLabel('0')).toBe('薇薇安');
+        expect(getPlayerLabel('1')).toBe('布兰登');
+        expect(getPlayerLabel('2')).toBe('P2');
     });
 });

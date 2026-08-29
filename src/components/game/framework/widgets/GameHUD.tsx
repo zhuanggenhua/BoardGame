@@ -38,7 +38,10 @@ import type { EmoteDefinition } from '../../../../shared/emotes';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';
 import { useOptionalSocial } from '../../../../contexts/SocialContext';
-import { buildActionLogRows } from '../../utils/actionLogFormat';
+import {
+    buildActionLogRows,
+    createStateBackedActionLogPlayerLabel,
+} from '../../utils/actionLogFormat';
 import { ActionLogSegments } from './ActionLogSegments';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardPreviewRegistry';
 import { generateId, copyToClipboard } from '../../../../lib/utils';
@@ -259,14 +262,20 @@ export const GameHUD = ({
         });
         return map;
     }, [players]);
+    const getStateActionLogPlayerLabel = useMemo(
+        () => createStateBackedActionLogPlayerLabel(undoState?.G, () => ''),
+        [undoState?.G],
+    );
 
     const getActionLogPlayerLabel = useCallback((playerId: string | number) => {
         const normalizedId = String(playerId);
         const knownName = playerNameMap.get(normalizedId);
         if (knownName) return knownName;
         if (myPlayerId != null && normalizedId === String(myPlayerId) && myDisplayName) return myDisplayName;
+        const stateName = getStateActionLogPlayerLabel(normalizedId);
+        if (stateName) return stateName;
         return t('hud.status.player', { id: normalizedId });
-    }, [myPlayerId, myDisplayName, playerNameMap, t]);
+    }, [getStateActionLogPlayerLabel, myPlayerId, myDisplayName, playerNameMap, t]);
 
     const actionLogRows = useMemo(() => {
         const entries = undoState?.G?.sys?.actionLog?.entries ?? [];

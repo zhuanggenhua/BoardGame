@@ -1,4 +1,4 @@
-import type { ActionLogEntry, ActionLogSegment } from '../../../engine/types';
+import type { ActionLogEntry, ActionLogSegment, MatchState } from '../../../engine/types';
 import i18n from '../../../lib/i18n';
 
 export interface ActionLogRow {
@@ -15,6 +15,9 @@ interface BuildActionLogRowsOptions {
     getPlayerLabel?: (playerId: string | number) => string;
     newestFirst?: boolean;
 }
+
+type ActionLogPlayerLabelResolver = (playerId: string | number) => string;
+type UnknownRecord = Record<string, unknown>;
 
 export const formatActionLogSegments = (segments: ActionLogSegment[] = []): string => {
     if (!Array.isArray(segments)) return '';
@@ -35,9 +38,13 @@ export const formatActionLogSegments = (segments: ActionLogSegment[] = []): stri
                     }
                 }
                 const fullKey = `${segment.ns}:${segment.key}`;
+                const fallbackText = Object.values(resolvedParams)
+                    .map((value) => String(value).trim())
+                    .filter(Boolean)
+                    .join(' ');
                 return i18n.exists(fullKey)
                     ? i18n.t(fullKey, resolvedParams)
-                    : segment.key;
+                    : fallbackText || segment.key;
             }
             // breakdown segment：纯文本 fallback 只显示数值
             if (segment.type === 'breakdown') return segment.displayText;
@@ -94,6 +101,80 @@ const resolvePlayerIdParams = (
         }
         return changed ? { ...seg, params: resolved } : seg;
     });
+
+const isRecord = (value: unknown): value is UnknownRecord =>
+    !!value && typeof value === 'object' && !Array.isArray(value);
+
+const stringField = (record: UnknownRecord, key: string): string | undefined => {
+    const value = record[key];
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+};
+
+const addStatePlayerName = (
+    names: Map<string, string>,
+    rawPlayerId: unknown,
+    rawName: unknown,
+) => {
+    const playerId = typeof rawPlayerId === 'string' || typeof rawPlayerId === 'number'
+        ? String(rawPlayerId)
+        : undefined;
+    const name = typeof rawName === 'string' && rawName.trim()
+        ? rawName.trim()
+        : undefined;
+    if (playerId && name && !names.has(playerId)) {
+        names.set(playerId, name);
+    }
+};
+
+const collectNamedPlayer = (names: Map<string, string>, candidate: unknown) => {
+    if (!isRecord(candidate)) return;
+    const playerId = candidate.playerId ?? candidate.id;
+    const name = stringField(candidate, 'displayName')
+        ?? stringField(candidate, 'name')
+        ?? stringField(candidate, 'username')
+        ?? stringField(candidate, 'nickname');
+    addStatePlayerName(names, playerId, name);
+};
+
+const collectNamedPlayerList = (names: Map<string, string>, candidates: unknown) => {
+    if (!Array.isArray(candidates)) return;
+    candidates.forEach((candidate) => collectNamedPlayer(names, candidate));
+};
+
+const collectNamedPlayerRecord = (names: Map<string, string>, candidates: unknown) => {
+    if (!isRecord(candidates)) return;
+    for (const [playerId, candidate] of Object.entries(candidates)) {
+        if (!isRecord(candidate)) {
+            continue;
+        }
+        const name = stringField(candidate, 'displayName')
+            ?? stringField(candidate, 'name')
+            ?? stringField(candidate, 'username')
+            ?? stringField(candidate, 'nickname');
+        addStatePlayerName(names, candidate.playerId ?? candidate.id ?? playerId, name);
+    }
+};
+
+export const buildStateActionLogPlayerNameMap = (
+    state: MatchState<unknown> | null | undefined,
+): Map<string, string> => {
+    const names = new Map<string, string>();
+    const core = isRecord(state?.core) ? state.core : null;
+    collectNamedPlayer(names, core?.currentExplorer);
+    collectNamedPlayerList(names, core?.otherExplorers);
+    collectNamedPlayerList(names, core?.explorers);
+    collectNamedPlayerRecord(names, core?.players);
+    collectNamedPlayerList(names, (state as unknown as UnknownRecord | null)?.players);
+    return names;
+};
+
+export const createStateBackedActionLogPlayerLabel = (
+    state: MatchState<unknown> | null | undefined,
+    fallback: ActionLogPlayerLabelResolver = (playerId) => `P${playerId}`,
+): ActionLogPlayerLabelResolver => {
+    const names = buildStateActionLogPlayerNameMap(state);
+    return (playerId) => names.get(String(playerId)) ?? fallback(playerId);
+};
 
 export const buildActionLogRows = (
     entries: ActionLogEntry[] = [],

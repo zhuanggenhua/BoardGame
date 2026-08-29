@@ -1,4 +1,8 @@
-import type { MatchState } from '../../engine/types';
+import type { ActionLogEntry, MatchState } from '../../engine/types';
+import {
+    buildActionLogRows,
+    createStateBackedActionLogPlayerLabel,
+} from '../../components/game/utils/actionLogFormat';
 
 const FEEDBACK_ACTION_LOG_TAIL_LIMIT = 12;
 const FEEDBACK_EVENT_STREAM_TAIL_LIMIT = 12;
@@ -65,6 +69,17 @@ const parseResourceValue = (value: string | undefined): number | string | undefi
     return Number.isFinite(numeric) ? numeric : normalized;
 };
 
+const isActionLogEntry = (value: unknown): value is ActionLogEntry => {
+    const entry = asFeedbackRecord(value);
+    return (
+        typeof entry.id === 'string'
+        && typeof entry.timestamp === 'number'
+        && (typeof entry.actorId === 'string' || typeof entry.actorId === 'number')
+        && typeof entry.kind === 'string'
+        && Array.isArray(entry.segments)
+    );
+};
+
 export const buildVisibleResourceSnapshot = (): FeedbackVisibleResourceSnapshot[] => {
     if (typeof document === 'undefined') return [];
 
@@ -98,8 +113,17 @@ export const buildGameFeedbackActionLog = (
             : [];
         const interaction = cloneJsonValue(state.sys?.interaction?.current);
         const responseWindow = cloneJsonValue(state.sys?.responseWindow?.current);
-        const humanReadableLog = actionLogRows.length > 0
-            ? actionLogRows.map((row) => `[${row.timeLabel}] ${row.playerLabel}: ${row.text}`).join('\n')
+        const formattedActionLogRows = actionLogRows.length > 0
+            ? actionLogRows
+            : buildActionLogRows(actionLogEntries.filter(isActionLogEntry), {
+                newestFirst: false,
+                getPlayerLabel: createStateBackedActionLogPlayerLabel(
+                    state,
+                    (playerId) => `玩家${playerId}`,
+                ),
+            });
+        const humanReadableLog = formattedActionLogRows.length > 0
+            ? formattedActionLogRows.map((row) => `[${row.timeLabel}] ${row.playerLabel}: ${row.text}`).join('\n')
             : '';
         const visibleResourceSnapshot = buildVisibleResourceSnapshot();
 
