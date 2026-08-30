@@ -112,6 +112,12 @@ function appendEntry<TCore>(
         ? currentActionLog.maxEntries
         : maxEntries;
 
+    // 同一命令可能在 afterEvents 的后续轮次再次经过格式化；稳定 id 已经
+    // 标识了同一条玩家可见操作，重复写入只会让日志出现成片重复行。
+    if (existingEntries.some((existingEntry) => existingEntry?.id === entry.id)) {
+        return state;
+    }
+
     const entries = [...existingEntries, entry];
 
     while (entries.length > normalizedMaxEntries) {

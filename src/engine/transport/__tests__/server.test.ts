@@ -4674,6 +4674,57 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(executeSpy).not.toHaveBeenCalled();
     });
 
+    it('串行执行期间已知旧状态的命令应在入队前立即拒绝', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-prequeue-stale-command', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => (
+                metadata.players[playerID]?.credentials === credentials
+            ),
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<{
+                executing: boolean;
+                stateID: number;
+                commandQueue: unknown[];
+            }>;
+            handleCommand: (
+                matchID: string,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { expectedStateID?: number },
+            ) => Promise<boolean>;
+            executeCommandInternal: (...args: unknown[]) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-prequeue-stale-command');
+        match.executing = true;
+        match.stateID += 1;
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await expect(serverInternal.handleCommand(
+            'match-prequeue-stale-command',
+            '0',
+            'TEST_CMD',
+            { stale: true },
+            { expectedStateID: match.stateID - 1 },
+        )).resolves.toBe(false);
+
+        expect(match.commandQueue).toHaveLength(0);
+        expect(executeSpy).toHaveBeenCalledTimes(1);
+    });
+
     it('batch 内命令验证失败时应透传领域错误码而不是折叠成 command_failed', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

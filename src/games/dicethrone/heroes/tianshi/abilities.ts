@@ -239,11 +239,11 @@ export const ARCHANGEL_RESOLVE_2: AbilityDef = {
 };
 
 export const ANGELIC_CLOAK_2: AbilityDef = {
-    ...replaceable('angelic-cloak', 'angelic-cloak-2', 'angelic-cloak-2', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 1 }, [custom('tianshi-angelic-cloak', abilityEffectText('angelic-cloak-2', 'resolve'), 'withDamage', { maxRerolls: 1, blade: 2, wing: 1, cross: 2, shield: 3 })], { type: 'defensive', tags: ['defensive'] }),
+    ...replaceable('angelic-cloak', 'angelic-cloak-2', 'angelic-cloak-2', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 1, rollLimit: 2, rerollDieLimit: 1 }, [custom('tianshi-angelic-cloak', abilityEffectText('angelic-cloak-2', 'resolve'), 'withDamage', { blade: 2, wing: 1, cross: 2, shield: 3 })], { type: 'defensive', tags: ['defensive'] }),
 };
 
 export const ANGELIC_CLOAK_3: AbilityDef = {
-    ...replaceable('angelic-cloak', 'angelic-cloak-3', 'angelic-cloak-3', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 1 }, [custom('tianshi-angelic-cloak', abilityEffectText('angelic-cloak-3', 'resolve'), 'withDamage', { maxRerolls: 1, blade: 3, wing: 2, cross: 3, shield: 4 })], { type: 'defensive', tags: ['defensive'] }),
+    ...replaceable('angelic-cloak', 'angelic-cloak-3', 'angelic-cloak-3', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 1, rollLimit: 2, rerollDieLimit: 1 }, [custom('tianshi-angelic-cloak', abilityEffectText('angelic-cloak-3', 'resolve'), 'withDamage', { blade: 3, wing: 2, cross: 3, shield: 4 })], { type: 'defensive', tags: ['defensive'] }),
 };
 
 export const TIANSHI_ABILITIES: AbilityDef[] = [
@@ -280,7 +280,7 @@ export const TIANSHI_ABILITIES: AbilityDef[] = [
         grantStatus(STATUS_IDS.DAZZLE, 1, abilityEffectText('archangel-resolve', 'dazzle')),
         damage(8, abilityEffectText('archangel-resolve', 'damage8')),
     ]),
-    replaceable('angelic-cloak', 'angelic-cloak', 'angelic-cloak', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 1 }, [custom('tianshi-angelic-cloak', abilityEffectText('angelic-cloak', 'resolve'), 'withDamage', { maxRerolls: 1, blade: 2, wing: 1, cross: 2, shield: 3 })], { type: 'defensive', tags: ['defensive'] }),
+    replaceable('angelic-cloak', 'angelic-cloak', 'angelic-cloak', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 1 }, [custom('tianshi-angelic-cloak', abilityEffectText('angelic-cloak', 'resolve'), 'withDamage', { blade: 2, wing: 1, cross: 2, shield: 3 })], { type: 'defensive', tags: ['defensive'] }),
     {
         id: 'heavenly-severing',
         name: abilityText('heavenly-severing', 'name'),

@@ -1,5 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { UI_Z_INDEX } from "../../../core";
 
 export const MagnifyOverlay = ({
@@ -25,6 +27,7 @@ export const MagnifyOverlay = ({
   interactive?: boolean;
   zIndex?: number;
 }) => {
+  const { t } = useTranslation("common");
   const portalRoot = useMemo(() => {
     if (typeof document === "undefined") return null;
     return document.getElementById("modal-root") ?? document.body;
@@ -49,14 +52,16 @@ export const MagnifyOverlay = ({
     >
       {/* 外层 wrapper 不裁剪，让关闭按钮可见 */}
       <div className="relative" onClick={(e) => e.stopPropagation()}>
-        {isOpen && closeLabel && (
+        {isOpen && (
           <button
             type="button"
             data-testid={overlayTestId ? `${overlayTestId}-close` : undefined}
-            className={`absolute -top-12 right-0 whitespace-nowrap text-white/50 hover:text-white text-sm flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full transition-colors z-10 ${closeButtonClassName}`}
+            className={`absolute right-2 top-2 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/65 text-white/80 shadow-lg transition-colors hover:bg-black/85 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${closeButtonClassName}`}
             onClick={onClose}
+            aria-label={closeLabel ?? t("close")}
+            title={closeLabel ?? t("close")}
           >
-            {closeLabel}
+            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.5} />
           </button>
         )}
         <div

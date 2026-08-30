@@ -604,7 +604,7 @@
     "blood_power": {
       "name": "鲜血之力",
       "description": [
-        "正面标记，上限 5。可按提示卡消费增强攻击、移除状态、抽牌或治疗；真实入口 E2E 仍处于实施中。"
+        "正面标记，上限 5。按提示卡可用于增强攻击、移除状态、抽牌或治疗。"
       ]
     },
     "mesmerize": {
@@ -1212,6 +1212,7 @@
       "samuraiRighteousnessKatana": "武士刀：+2 伤害",
       "samuraiRighteousnessHelm": "头盔：使对手获得 2 层耻辱",
       "samuraiRighteousnessRisingSun": "旭日：获得 1 个反击指示物",
+      "samuraiMasamune.die": "正宗：本骰结果计入正宗结算",
       "samuraiMasamune.result": "{{katanaCount}} 个武士刀：+{{katanaCount}} 伤害；{{shameCount}} 个头盔：施加 {{shameCount}} 层耻辱；{{retributionCount}} 个旭日：获得 {{retributionCount}} 个反击（若已达堆叠上限则多余部分无效）",
       "totalDamageContribution": "本骰点数 {{value}} 计入最终伤害",
       "totalDamageContributionThreshold": "本骰点数 {{value}} 计入最终伤害；总和达阈值会触发额外效果",
@@ -4589,9 +4590,9 @@
     "kindred-bond-2": { "name": "情同骨肉 II", "description": "防御投掷 4 骰；长矛造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
     "kindred-bond-3": { "name": "情同骨肉 III", "description": "防御投掷 4 骰；长矛和剑齿虎各造成 1 伤害，魂之羁绊治疗妮拉 1；妮拉激活时利爪造成 2 伤害。", "effects": { "blockedDefense": "按防御骰结算妮拉治疗与反击" } },
     "jungle-fury": { "name": "丛林狂怒！", "description": "5 个剑齿虎：获得妮拉之系，施加 2 层流血，造成 12 点伤害。", "effects": { "gainNyrasBond": "获得妮拉之系", "bleed2": "施加 2 层流血", "damage12": "造成 12 点伤害" } },
-    "bloodthirsty-claws": { "name": "嗜血之爪", "description": "3/4/5 个利爪：造成 3/4/5 点伤害。", "effects": { "damage3": "造成 3 点伤害", "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害" } },
-    "bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "3/4/5 个利爪：造成 4/5/6 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage5": "造成 5 点伤害", "damage6": "造成 6 点伤害" } },
-    "bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "3/4/5 个利爪：造成 4/6/8 点伤害。", "effects": { "damage4": "造成 4 点伤害", "damage6": "造成 6 点伤害", "damage8": "造成 8 点伤害" } },
+    "bloodthirsty-claws": { "name": "嗜血之爪", "description": "3/4/5 个利爪：造成 3/5/7 点伤害。若投出 4 个相同数字，获得 1 个鲜血之力。", "effects": { "damage3": "造成 3 点伤害", "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "gainBloodPowerIfFourKind": "若投出 4 个相同数字，获得 1 个鲜血之力" } },
+    "bloodthirsty-claws-2": { "name": "嗜血之爪 II", "description": "3/4/5 个利爪：造成 3/5/7 点伤害。若投出 3 个相同数字，获得 1 个鲜血之力。", "effects": { "damage3": "造成 3 点伤害", "damage5": "造成 5 点伤害", "damage7": "造成 7 点伤害", "gainBloodPowerIfThreeKind": "若投出 3 个相同数字，获得 1 个鲜血之力" } },
+    "bloodthirsty-claws-3": { "name": "嗜血之爪 III", "description": "3/4/5 个利爪：造成 4/6/8 点伤害。若投出 3 个相同数字，获得 1 个鲜血之力。", "effects": { "damage4": "造成 4 点伤害", "damage6": "造成 6 点伤害", "damage8": "造成 8 点伤害", "gainBloodPowerIfThreeKind": "若投出 3 个相同数字，获得 1 个鲜血之力" } },
     "mesmerize-power": { "name": "魅惑之力", "description": "3 个催眠：获得 1 个催眠并造成 4 点伤害。", "effects": { "gainMesmerize": "获得 1 个催眠", "damage4": "造成 4 点伤害" } },
     "mesmerize-power-2": { "name": "魅惑之力 II", "description": "3 个催眠：获得 1 个闪避和 1 个催眠，并造成 5 点不可防御伤害。", "effects": { "gainEvasive": "获得 1 个闪避", "gainMesmerize": "获得 1 个催眠", "damage5Unblockable": "造成 5 点不可防御伤害" } },
     "mesmerize-power-2-soul-gaze": { "name": "摄魂术", "description": "1 个利爪 + 2 个催眠：获得 1 个催眠，并对对手施加 2 层流血。", "effects": { "gainMesmerize": "获得 1 个催眠", "bleed2": "施加 2 层流血" } },
@@ -5758,14 +5759,14 @@
     },
     "vampireLordBloodPower": {
       "name": "鲜血之力",
-      "attackBonusShort": "+3 伤害",
-      "attackBonus": "消耗 1 个鲜血之力，本次攻击伤害 +3",
-      "removeStatusShort": "移除状态",
-      "removeStatus": "消耗 2 个鲜血之力，选择 1 名玩家移除 1 个状态效果",
-      "drawShort": "抽 2 张",
-      "draw": "消耗 3 个鲜血之力，抽 2 张牌",
-      "healShort": "吸血治疗",
-      "heal": "消耗 4 个鲜血之力，治疗等同于本次成功攻击造成的伤害"
+      "attackBonusShort": "+3 伤害（消耗1）",
+      "attackBonus": "拥有至少 1 个鲜血之力时，消耗 1 个鲜血之力，本次攻击伤害 +3；每回合每个效果只能激活一次",
+      "removeStatusShort": "移除状态（消耗2）",
+      "removeStatus": "拥有至少 2 个鲜血之力时，消耗 2 个鲜血之力，选择 1 名玩家移除 1 个状态效果；只能在主要阶段激活，每回合每个效果只能激活一次",
+      "drawShort": "抽 2 张（消耗3）",
+      "draw": "拥有至少 3 个鲜血之力时，消耗 3 个鲜血之力，抽 2 张牌；每回合每个效果只能激活一次",
+      "healShort": "吸血治疗（消耗4）",
+      "heal": "拥有至少 4 个鲜血之力时，消耗 4 个鲜血之力，治疗等同于本次成功攻击造成的伤害；只能在攻击阶段激活，每回合每个效果只能激活一次"
     },
     "vampireLordMesmerize": {
       "name": "催眠",

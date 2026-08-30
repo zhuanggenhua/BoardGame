@@ -97,6 +97,8 @@ import {
   EXPLORER_CATALOG,
   canUseDogForTrade,
   canUseHolySymbolForDiscovery,
+  canUseIdolToSkipEvent,
+  canUseBookForPendingEventRoll,
   canUseRecentRollRerollItemForRecentRoll,
   canUseSkeletonKeyForMove,
   createBetrayalCharacterSelectCore,
@@ -127,6 +129,8 @@ import {
   resolveAttackWeaponCardStatuses,
   resolveDogTradeTargets,
   resolveExplorableRoomSlots,
+  resolveNextRoomDiscoveryDeckKind,
+  resolveBetrayalTraitorPowerStatus,
   resolveMagicCameraPhotoTargets,
   resolveRoomPlacementPreview,
   resolveRoomTileAdjustmentOptions,
@@ -134,6 +138,7 @@ import {
   resolveInventoryEffectId,
   resolveBetrayalMonsterRelationToExplorer,
   resolveUseEffect,
+  resolveMoveTargetRooms as resolveDomainMoveTargetRooms,
 } from "./game";
 import {
   BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
@@ -1244,7 +1249,6 @@ function isAcknowledgeableRecentRollDisplay(
   }
   return (
     recentRoll.kind === "eventRolledDamage" ||
-    recentRoll.kind === "mysticElevator" ||
     recentRoll.kind === "attackRoll" ||
     recentRoll.kind === "hauntActionTraitCheck" ||
     recentRoll.kind === "monsterMoveRoll"
@@ -2568,17 +2572,6 @@ function resolveConnectedRoomIds(
     }
   }
   return connectedIds;
-}
-
-function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
-  const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-  if (!activeRoom) {
-    return [];
-  }
-  const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
-  return core.rooms.filter(
-    (room) => room.state === "discovered" && connectedIds.has(room.id),
-  );
 }
 
 function resolveDynamiteTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
@@ -6518,6 +6511,7 @@ function RecentRollPanel({
   compactResult = false,
   denseResult = false,
   denseResultPlacement = "stacked",
+  deferEventDamageStage = false,
   diceStyleProfile = BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
   diceVisualScale = 1,
   landscapeResultDock = false,
@@ -6543,6 +6537,7 @@ function RecentRollPanel({
   compactResult?: boolean;
   denseResult?: boolean;
   denseResultPlacement?: "stacked" | "floatingSide";
+  deferEventDamageStage?: boolean;
   diceStyleProfile?: DiceBoxStyleProfile;
   diceVisualScale?: number;
   landscapeResultDock?: boolean;
@@ -6582,7 +6577,7 @@ function RecentRollPanel({
   );
   const eventDamageDiceSignature = eventDamageDiceForStage.join(",");
   const showEventDamageDiceStage =
-    eventDamageDiceForStage.length > 0 && !rerollSelection;
+    !deferEventDamageStage && eventDamageDiceForStage.length > 0 && !rerollSelection;
   const eventDamageSummaries = eventDamageResults.map((damage) => {
     const damageKindLabel =
       damage.damageKind === "physical"
@@ -8264,12 +8259,20 @@ export default function BetrayalBoard({
     activeHauntDossier,
     scenarioReaderScope,
   );
-  const scenarioStartOpeningKey = referenceScenarioOpeningSection
-    ? `${activeHauntDossier.id}:${scenarioReaderScope}:${referenceScenarioOpeningSection.id}`
+  const scenarioStartOpeningScope =
+    core.phase === "characterSelect" || core.phase === "preHaunt"
+      ? "heroes"
+      : scenarioReaderScope;
+  const scenarioStartOpeningSection = findScenarioOpeningNarrationSection(
+    activeHauntDossier,
+    scenarioStartOpeningScope,
+  );
+  const scenarioStartOpeningKey = scenarioStartOpeningSection
+    ? `${activeHauntDossier.id}:${scenarioStartOpeningScope}:${scenarioStartOpeningSection.id}`
     : null;
   const shouldShowScenarioStartOpening =
     core.phase === "preHaunt" &&
-    Boolean(referenceScenarioOpeningSection) &&
+    Boolean(scenarioStartOpeningSection) &&
     scenarioStartOpeningCinematicKey === scenarioStartOpeningKey &&
     dismissedScenarioStartOpeningCinematicKey !== scenarioStartOpeningKey;
   const referenceScenarioPages = buildScenarioReaderPages(
@@ -8421,7 +8424,7 @@ export default function BetrayalBoard({
       const canContinueMoveMode =
         previousState.interactionMode === "move" &&
         baseCore.movesRemaining > 0 &&
-        (resolveMoveTargetRooms(baseCore).length > 0 ||
+        (resolveDomainMoveTargetRooms(baseCore).length > 0 ||
           baseCore.rooms.some((room) =>
             canUseSkeletonKeyForMove(baseCore, room.id),
           ));
@@ -8515,8 +8518,31 @@ export default function BetrayalBoard({
       tutorialScenarioStepId === "traitor-objective"
         ? Math.min(1, referenceScenarioSpreadCount - 1)
         : 0;
+    const isPublicHauntRevealReader =
+      core.phase === "haunt" &&
+      resolveScenarioReaderScope(core, viewerPlayerId) === "all" &&
+      isHauntScenarioOpeningDiscovery(core);
+    const hauntRevealKey = isPublicHauntRevealReader
+      ? buildLatestDiscoveryKey(core)
+      : null;
+    if (hauntRevealKey) {
+      dismissedLatestDiscoveryKeysRef.current.add(hauntRevealKey);
+      setDismissedHauntRevealDiscoveryKey(hauntRevealKey);
+      setLatestDiscoveryQueue((previousQueue) =>
+        previousQueue.filter((entry) => entry.key !== hauntRevealKey),
+      );
+      if (
+        core.recentRoll?.sourceTitle === core.latestDiscovery?.title &&
+        buildRecentRollDisplayKey(core.recentRoll)
+      ) {
+        setPreviewState((previousState) => ({
+          ...previousState,
+          dismissedRecentRollId: buildRecentRollDisplayKey(core.recentRoll),
+        }));
+      }
+    }
     setReferenceScenarioSpreadIndex(initialScenarioSpreadIndex);
-    setReferenceScenarioOpeningStageActive(false);
+    setReferenceScenarioOpeningStageActive(isPublicHauntRevealReader);
     setReferenceScenarioTurnDirection(null);
     setReferenceScenarioTurnSnapshot(null);
     setScenarioReaderOpen(true);
@@ -8524,10 +8550,12 @@ export default function BetrayalBoard({
       nextStep("auto");
     }
   }, [
+    core,
     isTutorialActive,
     nextStep,
     referenceScenarioSpreadCount,
     tutorialStep?.id,
+    viewerPlayerId,
   ]);
 
   React.useEffect(() => {
@@ -8948,7 +8976,7 @@ export default function BetrayalBoard({
           diceCount: hauntRisk.nextRollDiceCount,
           threshold: hauntRisk.threshold,
         });
-  const recentRollRerollOwner = React.useMemo(() => {
+  const recentRollInterventionOwner = React.useMemo(() => {
     if (!core.recentRoll || core.recentRoll.playerId !== viewerPlayerId) {
       return null;
     }
@@ -8958,14 +8986,15 @@ export default function BetrayalBoard({
     if (!owner) {
       return null;
     }
-    return owner.inventory.some((card) =>
-      canUseRecentRollRerollItemForRecentRoll(core, owner.playerId, card.id),
-    )
+    return owner.inventory.some((card) => (
+      canUseRecentRollRerollItemForRecentRoll(core, owner.playerId, card.id)
+      || canUseBookForPendingEventRoll(core, owner.playerId, card.id)
+    ))
       ? owner
       : null;
   }, [allExplorers, core, viewerPlayerId]);
   const inventoryActionPlayerId =
-    recentRollRerollOwner?.playerId ?? core.currentExplorer.playerId;
+    recentRollInterventionOwner?.playerId ?? core.currentExplorer.playerId;
   const pendingDiscoveryInventoryCardIds = React.useMemo(() => {
     const pending = core.pendingCardResolutionQueue?.[0];
     if (!pending) {
@@ -8986,9 +9015,9 @@ export default function BetrayalBoard({
     return cardIds;
   }, [core.pendingCardResolutionQueue]);
   const actionInventoryCards = (
-    recentRollRerollOwner?.inventory ?? core.currentExplorerInventory
+    recentRollInterventionOwner?.inventory ?? core.currentExplorerInventory
   ).filter((card) => !pendingDiscoveryInventoryCardIds.has(card.id));
-  const inventoryDisplayExplorer = recentRollRerollOwner ?? observedExplorer;
+  const inventoryDisplayExplorer = recentRollInterventionOwner ?? observedExplorer;
   const isInventoryDisplayReadOnly =
     inventoryDisplayExplorer.playerId !== inventoryActionPlayerId;
   const visibleInventoryCards = inventoryDisplayExplorer.inventory.filter(
@@ -9116,7 +9145,7 @@ export default function BetrayalBoard({
     [visibleActivityEntries],
   );
   const normalMoveTargetRooms = React.useMemo(
-    () => resolveMoveTargetRooms(core),
+    () => resolveDomainMoveTargetRooms(core),
     [core],
   );
   const skeletonKeyMoveTargetRooms = React.useMemo(
@@ -9142,7 +9171,7 @@ export default function BetrayalBoard({
     [moveTargetRooms],
   );
   const maskTargetRooms = React.useMemo(
-    () => resolveMoveTargetRooms(core),
+    () => resolveDomainMoveTargetRooms(core),
     [core],
   );
   const inventoryTargetRooms = React.useMemo(
@@ -9606,14 +9635,27 @@ export default function BetrayalBoard({
     !core.turnEndedByDiscovery &&
     explorableRoomSlots.length > 0,
   );
-  const canDeclareIdolExplore = false;
-  const canDeclareTraitorEventSkip = false;
+  const nextExploreDeckKind = resolveNextRoomDiscoveryDeckKind(core, {
+    useHolySymbol: useHolySymbolForExplore,
+  });
+  const canDeclareIdolExplore =
+    canStartExploreSelection &&
+    nextExploreDeckKind === "event" &&
+    canUseIdolToSkipEvent(core);
+  const canDeclareTraitorEventSkip =
+    false;
   const hasExploreDeclarationOptions = Boolean(
-    canDeclareHolySymbolExplore && canStartExploreSelection,
+    canStartExploreSelection &&
+    (canDeclareHolySymbolExplore ||
+      canDeclareIdolExplore ||
+      canDeclareTraitorEventSkip),
   );
   const exploreDeclarationLabel = t("board.inventory.exploreDeclaration");
-  const useIdolForExplore = false;
-  const ignoreEventSymbolWithTraitorPower = false;
+  const useIdolForExplore =
+    previewState.useIdolForExplore && canDeclareIdolExplore;
+  const ignoreEventSymbolWithTraitorPower =
+    previewState.ignoreEventSymbolWithTraitorPower &&
+    canDeclareTraitorEventSkip;
   const pendingRoomPlacementPreview =
     React.useMemo<BetrayalRoomPlacementPreview | null>(
       () =>
@@ -10334,6 +10376,7 @@ export default function BetrayalBoard({
     ? resolveBetrayalPossessionSpecialActionStatus(
         core,
         selectedInventoryCard.id,
+        inventoryActionPlayerId,
       )
     : null;
   const selectedCardRecentRollRerollDieIndices =
@@ -10395,6 +10438,8 @@ export default function BetrayalBoard({
     }
     dispatchCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, {
       rollId: pending.rollId,
+    }, {
+      allowDuringVisualBusy: true,
     });
   }, [core.pendingEventRollResolution, dispatchCommand]);
   const rollModifierCardIds = new Set(
@@ -10406,6 +10451,11 @@ export default function BetrayalBoard({
           card.id,
         ),
       )
+      .map((card) => card.id),
+  );
+  const eventRollBookCardIds = new Set(
+    actionInventoryCards
+      .filter((card) => canUseBookForPendingEventRoll(core, inventoryActionPlayerId, card.id))
       .map((card) => card.id),
   );
   const selectedCardNeedsTargetRoom =
@@ -12141,6 +12191,11 @@ export default function BetrayalBoard({
     latestDiscovery &&
     latestDiscoveryKey !== previewState.dismissedLatestDiscoveryKey,
   );
+  const shouldDisplayEventRolledDamageAsIndependentRoll = Boolean(
+    core.recentRoll?.kind === "eventRolledDamage" &&
+      latestDiscoveryRecentRoll?.kind === "eventRolledDamage" &&
+      coreRecentRollDisplayKey === latestDiscoveryRecentRollDisplayKey,
+  );
   const isConfirmedExorciseRoll =
     core.recentRoll?.kind === "hauntActionTraitCheck" &&
     (core.recentRoll.sourceTitle === "驱魔" ||
@@ -12167,6 +12222,72 @@ export default function BetrayalBoard({
     },
     [],
   );
+  React.useEffect(() => {
+    const pending = core.pendingEventRollResolution;
+    const rollId = core.recentRoll?.id;
+    const displayKey = coreRecentRollDisplayKey;
+    if (
+      viewerPlayerId !== pending?.playerId ||
+      pending?.requiresAcknowledgement !== false ||
+      !rollId ||
+      settledRecentRollId !== displayKey ||
+      core.recentRoll?.id !== pending.rollId
+    ) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      if (
+        core.pendingEventRollResolution?.requiresAcknowledgement === false &&
+        core.pendingEventRollResolution.rollId === core.recentRoll?.id
+      ) {
+        dispatchCommand(
+          BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+          { rollId: core.pendingEventRollResolution.rollId },
+          { allowDuringVisualBusy: true },
+        );
+      }
+    }, 1400);
+    return () => window.clearTimeout(timer);
+  }, [
+    core.pendingEventRollResolution?.playerId,
+    core.pendingEventRollResolution?.requiresAcknowledgement,
+    core.pendingEventRollResolution?.rollId,
+    core.recentRoll?.id,
+    coreRecentRollDisplayKey,
+    dispatchCommand,
+    settledRecentRollId,
+    viewerPlayerId,
+  ]);
+  React.useEffect(() => {
+    if (
+      core.pendingEventRollResolution ||
+      core.pendingEventRollStart ||
+      core.pendingEventChoice ||
+      core.latestDiscovery?.kind !== "event" ||
+      !core.recentRoll ||
+      (core.recentRoll.kind !== "eventTraitCheck" &&
+        core.recentRoll.kind !== "eventDiceRoll") ||
+      core.recentRoll.sourceTitle !== core.latestDiscovery.title ||
+      !core.turnEndedByDiscovery ||
+      !coreRecentRollDisplayKey
+    ) {
+      return;
+    }
+    setPreviewState((previousState) =>
+      previousState.dismissedRecentRollId === coreRecentRollDisplayKey
+        ? previousState
+        : { ...previousState, dismissedRecentRollId: coreRecentRollDisplayKey },
+    );
+  }, [
+    core.pendingEventChoice,
+    core.pendingEventRollResolution,
+    core.pendingEventRollStart,
+    core.recentRoll,
+    core.turnEndedByDiscovery,
+    core.latestDiscovery?.kind,
+    core.latestDiscovery?.title,
+    coreRecentRollDisplayKey,
+  ]);
   const attackImpactByPlayerId = React.useMemo(
     () => resolveAttackImpactByPlayerId(core, allExplorers),
     [allExplorers, core],
@@ -12284,6 +12405,16 @@ export default function BetrayalBoard({
       return;
     }
     autoOpenedHauntScenarioReaderKeysRef.current.add(hauntRevealAutoOpenKey);
+    if (
+      core.recentRoll?.sourceTitle === core.latestDiscovery?.title &&
+      coreRecentRollDisplayKey
+    ) {
+      setPreviewState((previousState) => ({
+        ...previousState,
+        dismissedRecentRollId:
+          coreRecentRollDisplayKey ?? previousState.dismissedRecentRollId,
+      }));
+    }
     setDismissedHauntRevealDiscoveryKey(hauntRevealDiscoveryKey);
     setReferenceScenarioSpreadIndex(0);
     setReferenceScenarioOpeningStageActive(true);
@@ -12294,6 +12425,9 @@ export default function BetrayalBoard({
     core.scenarioRuntime.hauntCardNumber,
     core.scenarioRuntime.hauntTriggered,
     core.scenarioRuntime.triggeringOmenId,
+    core.recentRoll?.sourceTitle,
+    core.latestDiscovery?.title,
+    coreRecentRollDisplayKey,
     hauntRevealAutoOpenKey,
     hauntRevealDiscoveryKey,
     referenceOpen,
@@ -12303,7 +12437,7 @@ export default function BetrayalBoard({
   const visibleDustProgressItems = shouldShowHauntRevealCue
     ? []
     : dustProgressItems;
-  const hasRecentRollModifier = rollModifierCardIds.size > 0;
+  const hasRecentRollModifier = rollModifierCardIds.size > 0 || eventRollBookCardIds.size > 0;
   const isLatestDiscoveryRecentRollDismissed = Boolean(
     latestDiscoveryRecentRollDisplayKey &&
       previewState.dismissedRecentRollId === latestDiscoveryRecentRollDisplayKey,
@@ -12313,7 +12447,7 @@ export default function BetrayalBoard({
       latestDiscoveryRecentRoll &&
       hasRecentRollModifier &&
       coreRecentRollDisplayKey === latestDiscoveryRecentRollDisplayKey &&
-      latestDiscoveryRecentRoll.playerId === core.currentExplorer.playerId,
+      latestDiscoveryRecentRoll.playerId === inventoryActionPlayerId,
   );
   const shouldAutoReturnAfterLatestDiscovery = Boolean(
     !pendingEventChoice &&
@@ -12325,7 +12459,15 @@ export default function BetrayalBoard({
   const shouldShowLatestDiscovery =
     hasLatestDiscoveryDisplayEntry &&
     !shouldAutoReturnAfterLatestDiscovery &&
-    !shouldShowHauntRevealCue;
+    !shouldShowHauntRevealCue &&
+    !shouldDisplayEventRolledDamageAsIndependentRoll;
+  const isAutomaticEventRollDisplay = Boolean(
+    core.pendingEventRollResolution?.requiresAcknowledgement === false &&
+      core.recentRoll &&
+      (core.recentRoll.kind === "eventTraitCheck" ||
+        core.recentRoll.kind === "eventDiceRoll") &&
+      core.pendingEventRollResolution.rollId === core.recentRoll.id,
+  );
   const shouldShowLatestDiscoveryRoll = Boolean(
     shouldShowLatestDiscovery &&
     !shouldAutoReturnAfterLatestDiscovery &&
@@ -12343,38 +12485,25 @@ export default function BetrayalBoard({
       hasRecentRollModifier &&
       latestDiscoveryRecentRoll &&
       coreRecentRollDisplayKey === latestDiscoveryRecentRollDisplayKey &&
-      latestDiscoveryRecentRoll.playerId === core.currentExplorer.playerId,
+      latestDiscoveryRecentRoll.playerId === inventoryActionPlayerId,
   );
   const latestDiscoveryRerollSelection =
     canCurrentPlayerModifyLatestDiscoveryRoll ? recentRollRerollSelection : null;
-  const pendingLatestDiscoveryEventRoll =
-    core.pendingEventRollResolution &&
-    core.pendingEventRollResolution.rollId === latestDiscoveryRecentRoll?.id
-      ? core.pendingEventRollResolution
+  const pendingLatestDiscoveryEventRollStart =
+    core.pendingEventRollStart &&
+    core.pendingEventRollStart.playerId === core.latestDiscoveryOwnerPlayerId &&
+    core.pendingEventRollStart.sourceTitle === core.latestDiscovery?.title
+      ? core.pendingEventRollStart
       : null;
-  const pendingLatestDiscoveryEventRollRequiredPlayerIds =
-    pendingLatestDiscoveryEventRoll?.requiredPlayerIds?.length
-      ? pendingLatestDiscoveryEventRoll.requiredPlayerIds
-      : pendingLatestDiscoveryEventRoll
-        ? core.playerIds
-        : [];
-  const pendingLatestDiscoveryEventRollAcknowledgedPlayerIds =
-    pendingLatestDiscoveryEventRoll?.acknowledgedPlayerIds ?? [];
-  const pendingLatestDiscoveryEventRollConfirmedCount =
-    pendingLatestDiscoveryEventRollAcknowledgedPlayerIds.length;
-  const pendingLatestDiscoveryEventRollTotalCount =
-    pendingLatestDiscoveryEventRollRequiredPlayerIds.length;
-  const hasCurrentViewerConfirmedLatestDiscoveryEventRoll =
-    pendingLatestDiscoveryEventRollAcknowledgedPlayerIds.includes(viewerPlayerId);
-  const canCurrentViewerFinalizeLatestDiscoveryEventRoll = Boolean(
-    pendingLatestDiscoveryEventRoll &&
-      pendingLatestDiscoveryEventRollRequiredPlayerIds.includes(viewerPlayerId) &&
-      !hasCurrentViewerConfirmedLatestDiscoveryEventRoll,
+  const canCurrentViewerStartLatestDiscoveryEventRoll = Boolean(
+    pendingLatestDiscoveryEventRollStart &&
+      pendingLatestDiscoveryEventRollStart.playerId === viewerPlayerId,
   );
   const diceConfirmButtonClass =
     "inline-flex min-h-[42px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-4 py-2 text-[12px] font-bold tracking-[0.10em] text-[#19140d] transition hover:bg-[#f0d28a] disabled:cursor-not-allowed disabled:border-[rgba(214,181,109,0.32)] disabled:bg-[rgba(214,181,109,0.18)] disabled:text-[rgba(243,224,166,0.48)]";
+  const betrayalConfirmButtonClass = diceConfirmButtonClass;
   const eventRollConfirmButtonClass =
-    `pointer-events-auto min-w-[132px] shrink-0 ${diceConfirmButtonClass}`;
+    `pointer-events-auto min-w-[132px] shrink-0 ${betrayalConfirmButtonClass}`;
   const rollModifierActionSlot = selectedRollModifierCanConfirm ? (
     <div className="pointer-events-auto flex items-center gap-2">
       <button
@@ -12393,7 +12522,7 @@ export default function BetrayalBoard({
       <button
         type="button"
         data-testid="betrayal-roll-modifier-confirm"
-        className={diceConfirmButtonClass}
+        className={betrayalConfirmButtonClass}
         onClick={confirmSelectedRollModifier}
       >
         {t("board.roll.confirmModifier", { card: selectedRollModifierCard?.name ?? "" })}
@@ -12439,13 +12568,17 @@ export default function BetrayalBoard({
   );
   const canDismissLatestDiscoveryByBackdrop =
     !hasLatestDiscoveryPendingCardResolution &&
-    !pendingLatestDiscoveryEventRoll &&
+    !core.pendingEventRollResolution &&
+    !pendingLatestDiscoveryEventRollStart &&
     (!shouldShowLatestDiscoveryRoll || !canCurrentPlayerModifyLatestDiscoveryRoll);
   const hasPendingAttackReward = Boolean(
     mummyPendingReward || helpingHandsPendingReward,
   );
   const canDismissRecentRollByBackdrop =
-    !hasRecentRollModifier && !hasPendingAttackReward && !hasAcknowledgeableRecentRoll;
+    !hasRecentRollModifier &&
+    !hasPendingAttackReward &&
+    !hasAcknowledgeableRecentRoll &&
+    !isAutomaticEventRollDisplay;
   const shouldGateDamageAllocationBehindRecentRoll = Boolean(
     pendingDamageAllocation &&
       core.recentRoll?.kind === "eventRolledDamage" &&
@@ -12671,18 +12804,6 @@ export default function BetrayalBoard({
       && !canAdvanceLatestDiscoverySearch,
   );
   const latestDiscoveryContinueLabel = (() => {
-    if (pendingLatestDiscoveryEventRoll) {
-      if (hasCurrentViewerConfirmedLatestDiscoveryEventRoll) {
-        return t("board.discovery.confirmedWithProgress", {
-          confirmed: pendingLatestDiscoveryEventRollConfirmedCount,
-          total: pendingLatestDiscoveryEventRollTotalCount,
-        });
-      }
-      return t("board.discovery.confirmWithProgress", {
-        confirmed: pendingLatestDiscoveryEventRollConfirmedCount,
-        total: pendingLatestDiscoveryEventRollTotalCount,
-      });
-    }
     if (!latestDiscoveryPendingCardResolution) {
       return t("board.roll.backToBoard");
     }
@@ -12707,10 +12828,6 @@ export default function BetrayalBoard({
   const latestDiscoveryPendingResolutionSeenRef = React.useRef<{
     sourceKey: string;
     resolutionId: string;
-  } | null>(null);
-  const latestDiscoveryPendingEventRollSeenRef = React.useRef<{
-    sourceKey: string;
-    rollId: string;
   } | null>(null);
   const startPendingDiscoveryGainVisual = React.useCallback(
     (onComplete: () => void) => {
@@ -12792,14 +12909,21 @@ export default function BetrayalBoard({
     latestDiscoveryRecentRollDisplayKey,
     latestDiscoveryTitle,
   ]);
-  const handleContinueLatestDiscovery = React.useCallback(() => {
-    if (isVisualBusy) {
+  const handleRollLatestDiscoveryEvent = React.useCallback(() => {
+    if (!canCurrentViewerStartLatestDiscoveryEventRoll || isVisualBusy) {
       return;
     }
-    if (pendingLatestDiscoveryEventRoll) {
-      if (canCurrentViewerFinalizeLatestDiscoveryEventRoll) {
-        finalizePendingEventRoll();
-      }
+    dispatchCommand(BETRAYAL_COMMANDS.ROLL_EVENT, {
+      sourceTitle: pendingLatestDiscoveryEventRollStart?.sourceTitle,
+    });
+  }, [
+    canCurrentViewerStartLatestDiscoveryEventRoll,
+    dispatchCommand,
+    isVisualBusy,
+    pendingLatestDiscoveryEventRollStart?.sourceTitle,
+  ]);
+  const handleContinueLatestDiscovery = React.useCallback(() => {
+    if (isVisualBusy) {
       return;
     }
     if (latestDiscoveryPendingCardResolution) {
@@ -12831,11 +12955,8 @@ export default function BetrayalBoard({
     handleDismissLatestDiscovery();
   }, [
     dispatch,
-    finalizePendingEventRoll,
     handleDismissLatestDiscovery,
     isVisualBusy,
-    pendingLatestDiscoveryEventRoll,
-    canCurrentViewerFinalizeLatestDiscoveryEventRoll,
     canAdvanceLatestDiscoverySearch,
     canCurrentViewerAcknowledgeCardResolution,
     startPendingDiscoveryGainVisual,
@@ -12873,9 +12994,7 @@ export default function BetrayalBoard({
           : undefined
       }
       disabled={Boolean(
-        (pendingLatestDiscoveryEventRoll &&
-          !canCurrentViewerFinalizeLatestDiscoveryEventRoll) ||
-          (latestDiscoveryPendingCardResolution &&
+        (latestDiscoveryPendingCardResolution &&
             !canAdvanceLatestDiscoverySearch &&
             !canCurrentViewerAcknowledgeCardResolution),
       )}
@@ -12885,63 +13004,6 @@ export default function BetrayalBoard({
       {latestDiscoveryContinueLabel}
     </button>
   );
-  React.useEffect(() => {
-    const pendingEventRoll = pendingLatestDiscoveryEventRoll;
-    if (pendingEventRoll && latestDiscoveryEntry?.sourceKey) {
-      latestDiscoveryPendingEventRollSeenRef.current = {
-        sourceKey: latestDiscoveryEntry.sourceKey,
-        rollId: pendingEventRoll.rollId,
-      };
-      return;
-    }
-    const seenEventRoll = latestDiscoveryPendingEventRollSeenRef.current;
-    if (!seenEventRoll) {
-      return;
-    }
-    latestDiscoveryPendingEventRollSeenRef.current = null;
-    if (
-      latestDiscoveryPendingCardResolution &&
-      latestDiscoveryEntry?.sourceKey === seenEventRoll.sourceKey
-    ) {
-      return;
-    }
-    const dismissedDiscoveryKey =
-      latestDiscoveryEntry?.sourceKey === seenEventRoll.sourceKey
-        ? latestDiscoveryEntry.key
-        : null;
-    if (dismissedDiscoveryKey) {
-      dismissedLatestDiscoveryKeysRef.current.add(dismissedDiscoveryKey);
-    }
-    setLatestDiscoveryQueue((previousQueue) => {
-      let removedAnyEntry = false;
-      const nextQueue = previousQueue.filter((entry) => {
-        if (entry.sourceKey !== seenEventRoll.sourceKey) {
-          return true;
-        }
-        dismissedLatestDiscoveryKeysRef.current.add(entry.key);
-        removedAnyEntry = true;
-        return false;
-      });
-      return removedAnyEntry ? nextQueue : previousQueue;
-    });
-    setPreviewState((previousState) => ({
-      ...previousState,
-      dismissedLatestDiscoveryKey:
-        dismissedDiscoveryKey ?? previousState.dismissedLatestDiscoveryKey,
-      dismissedRecentRollId:
-        latestDiscoveryRecentRoll?.sourceTitle === latestDiscoveryTitle
-          ? latestDiscoveryRecentRollDisplayKey
-          : previousState.dismissedRecentRollId,
-    }));
-  }, [
-    latestDiscoveryEntry?.key,
-    latestDiscoveryEntry?.sourceKey,
-    latestDiscoveryRecentRoll?.sourceTitle,
-    latestDiscoveryRecentRollDisplayKey,
-    latestDiscoveryTitle,
-    latestDiscoveryPendingCardResolution,
-    pendingLatestDiscoveryEventRoll,
-  ]);
   React.useEffect(() => {
     const pendingResolution = latestDiscoveryPendingCardResolution;
     if (pendingResolution && latestDiscoveryEntry?.sourceKey) {
@@ -13049,7 +13111,7 @@ export default function BetrayalBoard({
       data-testid="betrayal-roll-continue"
       data-recent-roll-confirmed-count={String(recentRollConfirmedCount)}
       data-recent-roll-required-count={String(recentRollTotalCount)}
-      className={`pointer-events-auto min-w-[168px] shrink-0 px-5 text-[14px] shadow-[0_10px_22px_rgba(0,0,0,0.34)] ${diceConfirmButtonClass}`}
+      className={`pointer-events-auto min-w-[168px] shrink-0 px-5 text-[14px] shadow-[0_10px_22px_rgba(0,0,0,0.34)] ${betrayalConfirmButtonClass}`}
       disabled={!canCurrentViewerAcknowledgeRecentRoll}
       onClick={handleDismissRecentRoll}
     >
@@ -13477,10 +13539,6 @@ export default function BetrayalBoard({
       previewState.interactionMode !== "move" &&
       core.movesRemaining > 0 &&
       moveTargetRooms.length > 0;
-    const isEnteringMoveMode =
-      previewState.interactionMode !== "move" &&
-      core.movesRemaining > 0 &&
-      moveTargetRooms.length > 0;
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "move") {
         return {
@@ -13500,15 +13558,11 @@ export default function BetrayalBoard({
         selectedMonsterAttackMonsterId: null,
       };
     });
-    if (isEnteringMoveMode) {
-      focusExplorerRoom(null);
-    }
     if (shouldAdvanceOpenMoveTutorial) {
       nextStep("auto");
     }
   }, [
     core.movesRemaining,
-    focusExplorerRoom,
     isTutorialActive,
     moveTargetRooms.length,
     nextStep,
@@ -15495,7 +15549,7 @@ export default function BetrayalBoard({
                   variant: "secondary",
                 },
               ]
-            : selectedMonsterAttackEntry
+      : selectedMonsterAttackEntry
               ? [
                   {
                     id: "monsterAttack",
@@ -15524,6 +15578,14 @@ export default function BetrayalBoard({
                   ]
                 : []
       : [];
+  const hauntSpecialActionItem =
+    core.phase === "haunt" && hauntActionContext && !selectedInventoryCard
+      ? actionItems.find((action) => action.id === "use") ?? null
+      : null;
+  const monsterActionItemsWithHauntAction =
+    monsterActionItems.length > 0 && hauntSpecialActionItem
+    ? [...monsterActionItems, hauntSpecialActionItem]
+    : monsterActionItems;
   const visibleActionItems = shouldShowHauntRevealCue
     ? []
     : activeHauntTargetGuide
@@ -15546,15 +15608,17 @@ export default function BetrayalBoard({
     : helpingHandsMonsterTurnStatus.active
     ? helpingHandsMonsterTurnActionItems
     : isDeadTraitorJackSpiritControlTurn
-    ? actionItems.filter(
-        (action) => action.id === "move" || action.id === "endTurn",
-      )
+    ? monsterActionItemsWithHauntAction.length > 0
+      ? monsterActionItemsWithHauntAction
+      : actionItems.filter(
+          (action) => action.id === "move" || action.id === "endTurn",
+        )
     : bloodFromStoneSetupPlacementActionItems.length > 0
     ? bloodFromStoneSetupPlacementActionItems
     : core.turnEndedByDiscovery
     ? actionItems.filter((action) => action.id === "endTurn")
-    : monsterActionItems.length > 0
-    ? monsterActionItems
+    : monsterActionItemsWithHauntAction.length > 0
+    ? monsterActionItemsWithHauntAction
     : [
         ...actionItems.filter((action) => {
           if (action.id === "explore" && !canStartExploreSelection) {
@@ -15566,7 +15630,6 @@ export default function BetrayalBoard({
           return true;
         }),
       ];
-
   const tutorialMapTargetRoomId = React.useMemo(() => {
     const target = tutorialStep?.highlightTarget;
     if (!isTutorialActive || !target) {
@@ -15667,7 +15730,11 @@ export default function BetrayalBoard({
       tutorialStep?.id === "use-book" &&
       item.id === "omen-book";
     const canModifyRecentRoll =
-      !isReadOnly && !isPreview && rollModifierCardIds.has(item.id);
+      !isReadOnly &&
+      !isPreview &&
+      (rollModifierCardIds.has(item.id) || eventRollBookCardIds.has(item.id));
+    const canUseBookForCurrentEventRoll =
+      !isReadOnly && !isPreview && eventRollBookCardIds.has(item.id);
     const isTradeCompact =
       isCompact && Boolean(frontVisual) && isTradeDraftActive;
     const isDenseNoFrontCompact =
@@ -15721,6 +15788,18 @@ export default function BetrayalBoard({
               setInventoryPreviewCardId(item.id);
               return;
             }
+            if (canUseBookForCurrentEventRoll) {
+              dispatchCommand(BETRAYAL_COMMANDS.USE_POSSESSION, {
+                cardId: item.id,
+              });
+              setInventoryPreviewCardId(null);
+              setPreviewState((previousState) => ({
+                ...previousState,
+                selectedInventoryCardId: null,
+                selectedRollModifierDieIndex: null,
+              }));
+              return;
+            }
             if (options.onSelect) {
               options.onSelect();
               return;
@@ -15746,6 +15825,7 @@ export default function BetrayalBoard({
           data-testid={options.testId}
           data-inventory-read-only={isReadOnly ? "true" : undefined}
           data-roll-modifier-available={canModifyRecentRoll ? "true" : "false"}
+          data-event-roll-book-available={canUseBookForCurrentEventRoll ? "true" : "false"}
           data-trade-card-status={resolvedTradeStatus?.canTrade === false ? "disabled" : resolvedTradeStatus ? "available" : undefined}
           data-trade-card-disabled-reason={disabledReason ?? undefined}
           title={
@@ -15785,7 +15865,7 @@ export default function BetrayalBoard({
             <span
               data-testid={
                 options.testId
-                  ? `${options.testId}-${isTutorialBookTarget ? "tutorial-target" : "roll-modifier"}`
+                  ? `${options.testId}-${isTutorialBookTarget ? "tutorial-target" : canUseBookForCurrentEventRoll ? "event-roll-book" : "roll-modifier"}`
                   : undefined
               }
               data-highlight-shape="card"
@@ -15821,6 +15901,9 @@ export default function BetrayalBoard({
             }
             data-modifier-outline={
               canModifyRecentRoll && !showSelectedState ? "true" : undefined
+            }
+            data-event-roll-book-outline={
+              canUseBookForCurrentEventRoll && !showSelectedState ? "true" : undefined
             }
             data-rules-summary={resolveInventoryRulesSummary(item, t)}
             className={`relative flex w-full flex-col overflow-hidden ${shellRadiusClass} ${outerRingClass} border ${
@@ -16116,15 +16199,15 @@ export default function BetrayalBoard({
       {!isHauntTargetingMode && !isPhoneLandscapeLayout ? (
         <BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />
       ) : null}
-      {shouldShowScenarioStartOpening && referenceScenarioOpeningSection ? (
+      {shouldShowScenarioStartOpening && scenarioStartOpeningSection ? (
         <div
           data-testid="betrayal-start-scenario-opening-stage"
           className="fixed inset-0 z-[240] bg-[rgba(0,0,0,0.58)] text-[#f5e6c7]"
         >
           <CinematicNarrationPanel
             testId="betrayal-start-scenario-opening-cinematic"
-            label={t(referenceScenarioOpeningSection.labelKey)}
-            text={t(referenceScenarioOpeningSection.bodyKey)}
+            label={t(scenarioStartOpeningSection.labelKey)}
+            text={t(scenarioStartOpeningSection.bodyKey)}
             variant="opening"
             presentation="stage"
             compact={isPhoneLandscapeLayout}
@@ -17174,13 +17257,11 @@ export default function BetrayalBoard({
                   >
                     {isPhoneLandscapeLayout &&
                     shouldShowLatestDiscoveryRoll &&
-                    latestDiscoveryRecentRoll ? (
-                      renderLatestDiscoveryContinueButton(
-                        "panel-corner",
-                        pendingLatestDiscoveryEventRoll
-                          ? `absolute right-2 top-2 z-20 leading-tight ${eventRollConfirmButtonClass}`
-                          : "pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]",
-                      )
+                    latestDiscoveryRecentRoll &&
+                    rollModifierActionSlot ? (
+                      <div className="pointer-events-auto absolute right-2 top-2 z-20">
+                        {rollModifierActionSlot}
+                      </div>
                     ) : null}
                     <span
                       className="sr-only"
@@ -17305,6 +17386,7 @@ export default function BetrayalBoard({
                               : "min-h-[236px]"
                           }
                           rerollSelection={latestDiscoveryRerollSelection}
+                          deferEventDamageStage={false}
                           effectiveLocale={effectiveLocale}
                           actorLabel={resolveRecentRollActorLabel(
                             latestDiscoveryRecentRoll,
@@ -17327,7 +17409,8 @@ export default function BetrayalBoard({
                     ) : null}
                     {(isPhoneLandscapeLayout &&
                       shouldShowLatestDiscoveryRoll &&
-                      latestDiscoveryRecentRoll) ||
+                      latestDiscoveryRecentRoll &&
+                      rollModifierActionSlot) ||
                     rollModifierActionSlot
                       ? null
                       : (
@@ -17335,11 +17418,19 @@ export default function BetrayalBoard({
                           data-testid="betrayal-discovery-card-external-action-dock"
                           className={`pointer-events-auto z-10 flex min-h-[62px] justify-center ${isPhoneLandscapeLayout ? "relative w-full" : "relative mt-2 w-full"}`}
                         >
-                          {renderLatestDiscoveryContinueButton(
+                          {pendingLatestDiscoveryEventRollStart ? (
+                            <button
+                              type="button"
+                              data-testid="betrayal-event-roll-start"
+                              className={betrayalConfirmButtonClass}
+                              disabled={!canCurrentViewerStartLatestDiscoveryEventRoll}
+                              onClick={handleRollLatestDiscoveryEvent}
+                            >
+                              {t("board.discovery.rollEvent")}
+                            </button>
+                          ) : renderLatestDiscoveryContinueButton(
                             "bottom",
-                            pendingLatestDiscoveryEventRoll
-                              ? eventRollConfirmButtonClass
-                              : "pointer-events-auto min-h-[46px] min-w-[118px] shrink-0 rounded-[10px] border border-[rgba(214,181,109,0.72)] bg-[linear-gradient(180deg,rgba(31,25,13,0.96),rgba(11,10,7,0.94))] px-6 py-2 text-[12px] font-black tracking-[0.14em] text-[#fff1b8] shadow-[0_14px_28px_rgba(0,0,0,0.52),0_0_18px_rgba(214,181,109,0.16)] transition hover:border-[#f0cc7a] hover:bg-[linear-gradient(180deg,rgba(46,36,15,0.98),rgba(18,14,8,0.96))]",
+                            "pointer-events-auto min-h-[46px] min-w-[118px] shrink-0 rounded-[10px] border border-[rgba(214,181,109,0.72)] bg-[linear-gradient(180deg,rgba(31,25,13,0.96),rgba(11,10,7,0.94))] px-6 py-2 text-[12px] font-black tracking-[0.14em] text-[#fff1b8] shadow-[0_14px_28px_rgba(0,0,0,0.52),0_0_18px_rgba(214,181,109,0.16)] transition hover:border-[#f0cc7a] hover:bg-[linear-gradient(180deg,rgba(46,36,15,0.98),rgba(18,14,8,0.96))]",
                             { disabledWhilePendingRoll: true },
                           )}
                         </div>
@@ -17355,6 +17446,9 @@ export default function BetrayalBoard({
               !pendingEventChoice &&
               !shouldAutoReturnAfterLatestDiscovery &&
               !shouldShowHauntRevealCue &&
+              !shouldPauseHauntBoardActions &&
+              !scenarioReaderOpen &&
+              !shouldShowScenarioStartOpening &&
               !shouldShowLatestDiscovery ? (
                 isExorciseRollReview ||
                 core.recentRoll.kind === "attackRoll" ? (
@@ -20813,7 +20907,7 @@ export default function BetrayalBoard({
                           }}
                           data-testid="betrayal-action-trade"
                           data-trade-confirm-placement="bottom-action-panel"
-                          className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[7px] border border-[#d7c16f] bg-[rgba(215,193,111,0.26)] px-5 py-2 text-[15px] font-black tracking-[0.08em] text-[#fff4ba] shadow-[0_0_18px_rgba(215,193,111,0.24)] transition hover:bg-[rgba(215,193,111,0.36)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fff1b8]"
+                          className={`${betrayalConfirmButtonClass} min-w-[132px] px-5 text-[15px] tracking-[0.08em] shadow-[0_0_18px_rgba(215,193,111,0.24)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fff1b8]`}
                         >
                           <Handshake size={17} strokeWidth={2.4} />
                           <span>{t("board.status.tradeFlowRequest")}</span>
@@ -20831,7 +20925,7 @@ export default function BetrayalBoard({
                               handleResolveTradeAgreement(true);
                             }}
                             data-testid="betrayal-trade-agreement-accept"
-                            className="min-h-[46px] rounded-[7px] border border-[#d7c16f] bg-[rgba(215,193,111,0.24)] px-5 py-2 text-[15px] font-black text-[#fff4ba] shadow-[0_0_16px_rgba(215,193,111,0.22)] transition hover:bg-[rgba(215,193,111,0.34)]"
+                            className={`${betrayalConfirmButtonClass} min-w-[112px] px-5 text-[15px] shadow-[0_0_16px_rgba(215,193,111,0.22)]`}
                           >
                             {t("board.status.tradeAgreementAccept")}
                           </button>
@@ -20842,7 +20936,7 @@ export default function BetrayalBoard({
                               handleResolveTradeAgreement(false);
                             }}
                             data-testid="betrayal-trade-agreement-decline"
-                            className="min-h-[46px] rounded-[7px] border border-[rgba(244,164,120,0.46)] bg-[rgba(96,48,30,0.40)] px-5 py-2 text-[15px] font-bold text-[#f3c1a1] transition hover:bg-[rgba(116,58,36,0.50)]"
+                            className="inline-flex min-h-[42px] min-w-[112px] items-center justify-center border border-[rgba(244,164,120,0.46)] bg-[rgba(96,48,30,0.40)] px-5 py-2 text-[15px] font-bold text-[#f3c1a1] transition hover:bg-[rgba(116,58,36,0.50)]"
                           >
                             {t("board.status.tradeAgreementDecline")}
                           </button>
@@ -22018,7 +22112,7 @@ export default function BetrayalBoard({
                         type="button"
                         onClick={() => handleTradeAction()}
                         data-testid="betrayal-mobile-trade-flow-confirm"
-                        className="mt-2 min-h-[38px] w-full rounded-[9px] border border-[#d7c16f] bg-[rgba(215,193,111,0.22)] px-3 text-[12px] font-black tracking-[0.06em] text-[#fff4ba] shadow-[0_0_16px_rgba(215,193,111,0.20)]"
+                        className={`${betrayalConfirmButtonClass} mt-2 min-h-[42px] w-full px-3 text-[12px] tracking-[0.06em] shadow-[0_0_16px_rgba(215,193,111,0.20)]`}
                       >
                         {t("board.status.tradeFlowRequest")}
                       </button>
@@ -22115,7 +22209,7 @@ export default function BetrayalBoard({
                                 handleResolveSicknessExchange(true)
                               }
                               data-testid="betrayal-mobile-sickness-exchange-accept"
-                              className="min-h-[36px] flex-1 rounded-[8px] border border-[#d7c16f] bg-[rgba(215,193,111,0.20)] px-2 text-[12px] font-black text-[#fff4ba]"
+                              className={`${betrayalConfirmButtonClass} min-h-[42px] flex-1 px-2 text-[12px]`}
                             >
                               {t("board.status.sicknessExchangeAccept")}
                             </button>
@@ -22125,7 +22219,7 @@ export default function BetrayalBoard({
                                 handleResolveSicknessExchange(false)
                               }
                               data-testid="betrayal-mobile-sickness-exchange-decline"
-                              className="min-h-[36px] flex-1 rounded-[8px] border border-[rgba(244,164,120,0.42)] bg-[rgba(96,48,30,0.36)] px-2 text-[12px] font-bold text-[#f3c1a1]"
+                              className="inline-flex min-h-[42px] flex-1 items-center justify-center border border-[rgba(244,164,120,0.42)] bg-[rgba(96,48,30,0.36)] px-2 text-[12px] font-bold text-[#f3c1a1]"
                             >
                               {t("board.status.sicknessExchangeDecline")}
                             </button>

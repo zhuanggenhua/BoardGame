@@ -196,6 +196,8 @@
     "opponent_card": "对手的牌",
     "select_factions_title": "选择你的派系",
     "select_factions_desc": "组合两个派系来构建你的终极牌组。利用不同的能力组合来大杀四方。",
+    "random_faction_name": "随机派系",
+    "random_faction_desc": "从当前可选派系中随机选择一个",
     "player_taken": "{{player}} 已占领",
     "faction_details": "派系详情",
     "minion_count": "{{count}} 随从",

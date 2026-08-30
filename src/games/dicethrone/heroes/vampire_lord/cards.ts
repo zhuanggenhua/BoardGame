@@ -1,4 +1,4 @@
-/** 吸血鬼领主卡牌定义。复杂机制未完全核准前保持实施中静态接入。 */
+/** 吸血鬼领主卡牌定义。 */
 
 import type { CardPreviewRef } from '../../../../core';
 import type { RandomFn } from '../../../../engine/types';

@@ -826,6 +826,10 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 月精灵迷影步：防御技能，伤害依赖骰面结果（每2个弓面造成1点反伤）
             'moon_elf-elusive-step-resolve-1',
             'moon_elf-elusive-step-resolve-2',
+            // 月精灵爆裂箭：伤害、资源和状态在奖励骰确认后的自定义结算处理器中落地
+            'moon_elf-exploding-arrow-resolve-1',
+            'moon_elf-exploding-arrow-resolve-2',
+            'moon_elf-exploding-arrow-resolve-3',
             // 火法师熔岩护甲：防御技能，伤害依赖防御投掷骰面结果（火面数量），mock 骰子无 symbol 字段
             'magma-armor-resolve',
             'magma-armor-2-resolve',

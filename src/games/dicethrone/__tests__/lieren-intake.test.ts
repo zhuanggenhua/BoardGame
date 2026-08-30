@@ -108,7 +108,7 @@ describe('DiceThrone 女猎手录入与资源合同', () => {
     it('角色目录、骰面、角色板九槽和妮拉运行时入口已接入', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(entry => entry.id === 'lieren');
         expect(character?.nameKey).toBe('characters.lieren');
-        expect(hasDiceThroneTipBoard('lieren')).toBe(false);
+        expect(hasDiceThroneTipBoard('lieren')).toBe(true);
         expect(CHARACTER_DATA_MAP.lieren.diceDefinitionId).toBe('lieren-dice');
         expect(CHARACTER_DATA_MAP.lieren.statusAtlasId).toBe(DICETHRONE_STATUS_ATLAS_IDS.LIEREN);
         expect(CHARACTER_DATA_MAP.lieren.statusAtlasPath).toBe('dicethrone/images/lieren/status-icons-atlas.json');
@@ -252,12 +252,13 @@ describe('DiceThrone 女猎手录入与资源合同', () => {
             'dicethrone/images/lieren/dice',
             'dicethrone/images/lieren/status-icons-atlas',
         ]));
-        expect(criticalImages.getCharAssetsByTag('lieren', 'selection')).not.toContain('dicethrone/images/lieren/tip');
-        expect(criticalImages.getCharAssetsByTag('lieren', 'gameplay')).not.toContain('dicethrone/images/lieren/tip');
+        expect(criticalImages.getCharAssetsByTag('lieren', 'selection')).toContain('dicethrone/images/lieren/tip');
+        expect(criticalImages.getCharAssetsByTag('lieren', 'gameplay')).toContain('dicethrone/images/lieren/tip');
 
         const dicethroneManifest = join(process.cwd(), 'public', 'assets', 'i18n', 'zh-CN', 'dicethrone', 'assets-manifest.json');
         const rootAssetManifest = join(process.cwd(), 'public', 'assets', 'i18n', 'assets-manifest.json');
         for (const assetPath of [
+            'images/lieren/tip',
             'images/lieren/compressed/player-board',
             'images/lieren/compressed/dice',
             'images/lieren/compressed/ability-cards',
@@ -269,6 +270,7 @@ describe('DiceThrone 女猎手录入与资源合同', () => {
             expect(manifestHas(dicethroneManifest, assetPath), `DiceThrone manifest 缺少 ${assetPath}`).toBe(true);
         }
         for (const assetPath of [
+            'zh-CN/dicethrone/images/lieren/tip',
             'zh-CN/dicethrone/images/lieren/compressed/player-board',
             'zh-CN/dicethrone/images/lieren/compressed/dice',
             'zh-CN/dicethrone/images/lieren/compressed/ability-cards',

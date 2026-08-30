@@ -1022,6 +1022,38 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             expect((statusEvents[0] as any).payload.statusId).toBe(STATUS_IDS.BURN);
         });
 
+        it('两颗magma面只应施加1层burn，不应重复写入已达上限的状态', () => {
+            const state = createState({ attackerFM: 0 });
+            const handler = getCustomActionHandler('pyro-blast-2-roll')!;
+            const events = handler(buildCtx(state, 'pyro-blast-2-roll', {
+                random: () => 4 / 6,
+            }));
+
+            const settlement = getPyroBlastSettlement(events);
+            const followupEvents = settlePyroBlastDice(state, settlement);
+            const statusEvents = eventsOfType(followupEvents, 'STATUS_APPLIED');
+
+            expect(statusEvents).toHaveLength(1);
+            expect(statusEvents.map(event => event.payload.newTotal)).toEqual([1]);
+            expect(reduceAll(state, followupEvents).players['1'].statusEffects[STATUS_IDS.BURN]).toBe(1);
+        });
+
+        it('两颗meteor面只应施加1层knockdown，不应重复写入已达上限的状态', () => {
+            const state = createState({ attackerFM: 0 });
+            const handler = getCustomActionHandler('pyro-blast-2-roll')!;
+            const events = handler(buildCtx(state, 'pyro-blast-2-roll', {
+                random: () => 1,
+            }));
+
+            const settlement = getPyroBlastSettlement(events);
+            const followupEvents = settlePyroBlastDice(state, settlement);
+            const statusEvents = eventsOfType(followupEvents, 'STATUS_APPLIED');
+
+            expect(statusEvents).toHaveLength(1);
+            expect(statusEvents.map(event => event.payload.newTotal)).toEqual([1]);
+            expect(reduceAll(state, followupEvents).players['1'].statusEffects[STATUS_IDS.KNOCKDOWN]).toBe(1);
+        });
+
         it('投出meteor面时施加knockdown', () => {
             const state = createState({ attackerFM: 0 });
             let callCount = 0;

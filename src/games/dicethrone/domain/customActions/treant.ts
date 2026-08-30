@@ -5,6 +5,7 @@ import { getPlayerAbilityEffects } from '../abilityLookup';
 import { RESOURCE_IDS } from '../resources';
 import { buildDrawEvents } from '../deckEvents';
 import {
+    getActiveDice,
     getAttackMaxDuplicateValueCount,
     getOpponents,
     getPendingBonusSettlementDice,
@@ -1276,36 +1277,73 @@ function handleMotherTree(ctx: CustomActionContext): DiceThroneEvent[] {
 }
 
 function handleRootedDefense(ctx: CustomActionContext): DiceThroneEvent[] {
-    const { attackerId, sourceAbilityId, state, timestamp, random, action } = ctx;
-    if (!random) return [];
-
+    const { attackerId, sourceAbilityId, state, timestamp, action } = ctx;
     const diceCount = Math.max(1, Math.floor(action.diceCount ?? 3));
-    const rollDice: Array<{ index: number; value: number; face: string; effectKey: string }> = [];
+    const dice = getActiveDice(state).slice(0, diceCount);
+    const branchCount = dice.filter(die => die.symbol === TREANT_DICE_FACE_IDS.BRANCH).length;
+    const leafCount = dice.filter(die => die.symbol === TREANT_DICE_FACE_IDS.LEAF).length;
+    const spiritCount = dice.filter(die => die.symbol === TREANT_DICE_FACE_IDS.SPIRIT).length;
     const events: DiceThroneEvent[] = [];
 
-    for (let i = 0; i < diceCount; i += 1) {
-        const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
-
-        rollDice.push({ index: i, value, face, effectKey: `bonusDie.effect.treantRooted.${face}` });
+    const originalAttackerId = state.pendingAttack?.attackerId;
+    const preventAmount = branchCount + spiritCount;
+    if (preventAmount > 0 && originalAttackerId) {
         events.push({
-            type: 'BONUS_DIE_ROLLED',
+            type: 'PENDING_ATTACK_UPDATED',
             payload: {
-                value,
-                face,
-                playerId: attackerId,
-                targetPlayerId: attackerId,
-                effectKey: `bonusDie.effect.treantRooted.${face}`,
+                attackerId: originalAttackerId,
+                patch: {
+                    bonusDamage: (state.pendingAttack?.bonusDamage ?? 0) - preventAmount,
+                },
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
-        } as BonusDieRolledEvent);
+        } as PendingAttackUpdatedEvent);
     }
 
-    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, attackerId, rollDice, timestamp, {
-        customResolutionId: TREANT_ROOTED_SETTLEMENT_ID,
-        continuation: { kind: 'attack', settlementStage: 'afterDefense', markBonusDiceResolved: false },
-    }));
+    const needsCultivate = leafCount >= 2;
+    const needsLifeSap = spiritCount >= 2;
+    if (needsCultivate || needsLifeSap) {
+        const cultivateOutcomes = needsCultivate
+            ? enumerateCultivateOutcomes(
+                getSpiritCounts({ attackerId, state }),
+                getSpiritLimits({ attackerId, state }),
+                1,
+            )
+            : [getSpiritCounts({ attackerId, state })];
+        const playerIds = needsLifeSap
+            ? getRootedLifeSapTargetIds(state, attackerId)
+            : [attackerId];
+        const options = cultivateOutcomes.flatMap(outcome => playerIds.map((_, targetIndex) => {
+            const choice: RootedChoice = {
+                ...outcome,
+                lifeSapTargetIndex: needsLifeSap ? targetIndex : -1,
+                requiresCultivate: needsCultivate,
+                requiresLifeSap: needsLifeSap,
+            };
+            return {
+                value: encodeRootedChoice(choice),
+                customId: ROOTED_CHOICE_ID,
+                labelKey: getRootedChoiceLabelKey(choice, needsCultivate, needsLifeSap),
+            };
+        }));
+
+        if (options.length > 0) {
+            events.push({
+                type: 'CHOICE_REQUESTED',
+                payload: {
+                    playerId: attackerId,
+                    sourceAbilityId,
+                    titleKey: 'choices.treantRooted.title',
+                    choiceContext: { requiresCultivate: needsCultivate, requiresLifeSap: needsLifeSap },
+                    options,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 1,
+            } as ChoiceRequestedEvent);
+        }
+    }
+
     return events;
 }
 

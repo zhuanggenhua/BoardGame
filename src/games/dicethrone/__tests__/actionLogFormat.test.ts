@@ -12,6 +12,7 @@ import type {
     ChoiceResolvedEvent,
     DamageDealtEvent,
     DiceThroneCore,
+    PendingBonusDiceSettlement,
     HealAppliedEvent,
     StatusAppliedEvent,
     StatusRemovedEvent,
@@ -22,6 +23,7 @@ import type {
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { createInitializedState, fixedRandom, fistAttackAbilityId, getCardById } from './test-utils';
 import { formatDiceThroneActionEntry } from '../game';
+import { createBonusRollContextFromSettlement } from '../domain/rollContext';
 
 const normalizeEntries = (result: ActionLogEntry | ActionLogEntry[] | null): ActionLogEntry[] => {
     if (!result) return [];
@@ -854,6 +856,62 @@ describe('formatDiceThroneActionEntry', () => {
         expect(getI18nKeys(settledEntry!.segments)).toContain('bonusDie.effect.volley.result');
         const finalDiceSegment = settledEntry!.segments.find(segment => segment.type === 'diceResult') as Extract<ActionLogSegment, { type: 'diceResult' }> | undefined;
         expect(finalDiceSegment?.dice.map(die => die.value)).toEqual([1, 2, 4, 4, 5]);
+    });
+
+    it('奖励骰确认不应复用正式防御骰和防御技能生成第二条确认日志', () => {
+        const state = createState();
+        state.sys.phase = 'defensiveRoll';
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'fist-technique-5',
+            defenseAbilityId: 'angelic-cloak',
+            isDefendable: true,
+        };
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'angelic-cloak-bonus-log-test',
+            sourceAbilityId: 'angelic-cloak',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 2, face: 'banner' }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            readyToSettle: false,
+            displayOnly: true,
+            resolutionMode: 'none',
+        };
+        state.core.pendingBonusDiceSettlement = settlement;
+        state.core.currentRollContext = createBonusRollContextFromSettlement(state.core, settlement);
+
+        const result = formatDiceThroneActionEntry({
+            command: {
+                type: 'CONFIRM_ROLL',
+                playerId: '0',
+                payload: {},
+                timestamp: 100,
+            },
+            state,
+            events: [{
+                type: 'BONUS_DICE_SETTLED',
+                payload: {
+                    finalDice: [{ index: 0, value: 2, face: 'banner' }],
+                    attackerId: '0',
+                    targetId: '1',
+                    sourceAbilityId: 'angelic-cloak',
+                    displayOnly: true,
+                    effectKey: 'bonusDie.effect.tianshi.angelicCloak',
+                },
+                timestamp: 101,
+            } as GameEvent],
+        });
+        const entries = normalizeEntries(result);
+
+        expect(entries.find(entry => entry.kind === 'BONUS_DICE_SETTLED')).toBeTruthy();
+        expect(entries.find(entry => entry.kind === 'CONFIRM_ROLL')).toBeUndefined();
+        expect(entries.flatMap(entry => getI18nKeys(entry.segments))).not.toContain(
+            'actionLog.confirmRollDefenseWithAbility',
+        );
     });
 
 });

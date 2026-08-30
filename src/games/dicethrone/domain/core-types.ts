@@ -159,13 +159,12 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
         id: 'lieren',
         nameKey: 'characters.lieren',
         setupOptionStatus: 'in_progress',
-        hasTipBoard: false,
     },
     {
         id: 'vampire_lord',
         nameKey: 'characters.vampire_lord',
         setupOptionStatus: 'in_progress',
-        setupOptionStatusReason: 'Dice Throne 角色已完成当前范围实施与审计，仍处实施中验证阶段',
+        setupOptionStatusReason: '当前范围已完成审计，等待真人确认进入完成态',
     },
 ].map(withDerivedCharacterBadges);
 
@@ -679,6 +678,8 @@ export interface PendingBonusDiceSettlement {
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
     /** 自定义奖励骰收口处理器 ID（用于非“点数总和即伤害”的特殊结算） */
     customResolutionId?: string;
+    /** 自定义结算处理器的规则参数，不参与骰面展示。 */
+    customResolutionParams?: Record<string, string | number | boolean>;
     /** 历史存档兼容字段；所有未结算骰默认允许规则修改，不再据此决定权限。 */
     allowDiceModification?: boolean;
     /** 历史存档兼容字段；终极来源不再锁定未结算骰。 */

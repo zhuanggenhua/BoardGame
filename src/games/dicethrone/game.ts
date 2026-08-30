@@ -51,7 +51,7 @@ import type {
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
 import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
-import { isCurrentBonusRollSettlement } from './domain/rollContext';
+import { isCurrentBonusRollSettlement, resolveCurrentRollContext } from './domain/rollContext';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { DICETHRONE_CHEAT_COMMANDS, diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
@@ -555,11 +555,15 @@ function formatDiceThroneActionEntry({
 
     if (shouldRecordCommandEntry && command.type === 'CONFIRM_ROLL') {
         const phase = (state as MatchState<DiceThroneCore>).sys?.phase as TurnPhase | undefined;
+        const currentRollContext = resolveCurrentRollContext(core, phase);
         const rollerId = getRollerId(core, phase);
         const activeDice = getActiveDice(core);
         const characterId = core.players[rollerId]?.characterId;
 
-        if (characterId && characterId !== 'unselected' && activeDice.length > 0) {
+        // 奖励骰确认由 BONUS_DICE_SETTLED 单独记录；不能把当前奖励骰复用成正式防御骰确认。
+        const isBonusRoll = currentRollContext?.kind === 'bonus';
+
+        if (!isBonusRoll && characterId && characterId !== 'unselected' && activeDice.length > 0) {
             const spriteAsset = getDiceDefinition(activeDice[0]?.definitionId)?.assets?.spriteSheet
                 ?? ASSETS.DICE_SPRITE(characterId);
             const SPRITE_COLS = 3;

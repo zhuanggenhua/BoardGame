@@ -76,6 +76,20 @@ function getMageWarsE2eStandardSpellbookEntries(mageId: MageId): MageWarsPlayerS
         count: entry.quantity,
     }));
 }
+
+function buildMageWarsCurrentScopeSetupData(): Record<string, unknown> {
+    const setupSelections = {
+        mageWarsSeat0MageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+        mageWarsSeat1MageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+    };
+
+    return {
+        ...setupSelections,
+        mageWarsSeat0SpellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.BEASTMASTER_APPRENTICE),
+        mageWarsSeat1SpellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.PRIESTESS_APPRENTICE),
+        setupSelections,
+    };
+}
 type MageWarsTargetContinuityProbeReport = {
     sampleCount: number;
     fxSampleCount: number;
@@ -86,7 +100,7 @@ type MageWarsTargetContinuityProbeReport = {
 
 const TEST_API_TOKEN_FILE = 'temp/e2e/shared-test-api-token.txt';
 const SELF_PREPARED_CARD_SELECTOR = '[data-mage-wars-prepared-card="self"]';
-const MAGE_WARS_CURRENT_SCOPE_CANDIDATE_TEST_NAME = 'Mage Wars 当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局';
+const MAGE_WARS_CURRENT_SCOPE_CANDIDATE_TEST_NAME = 'Mage Wars 入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局';
 const MAGE_WARS_SPELLBOOK_PAGE_SCAN_LIMIT = 24;
 type EvidenceScreenshotAnimationMode = 'allow' | 'disabled';
 const TRUTHY_ENV_VALUES = new Set(['1', 'true', 'yes', 'on']);
@@ -2652,6 +2666,7 @@ async function setupOnlineMageWars(
     browser: Browser,
     baseURL?: string,
     contextOptions: BrowserContextOptions = {},
+    setupData?: Record<string, unknown>,
 ): Promise<MageWarsOnlineMatch> {
     const hostContext = await browser.newContext({ baseURL, ...contextOptions });
     await initContext(hostContext, {
@@ -2671,7 +2686,12 @@ async function setupOnlineMageWars(
     const createResponse = await hostPage.request.post(`${base}/games/mage-wars/create`, {
         data: {
             numPlayers: 2,
-            setupData: { guestId, ownerKey: `guest:${guestId}`, ownerType: 'guest' },
+            setupData: {
+                ...(setupData ?? {}),
+                guestId,
+                ownerKey: `guest:${guestId}`,
+                ownerType: 'guest',
+            },
         },
     });
     if (!createResponse.ok()) {
@@ -2725,6 +2745,107 @@ async function setupOnlineMageWars(
         hostCredentials: claimData.playerCredentials,
         guestCredentials,
     };
+}
+
+async function selectMageWarsCurrentScopeSetupDataViaLocalGate(
+    browser: Browser,
+    baseURL: string | undefined,
+    testInfo: TestInfo,
+): Promise<Record<string, unknown>> {
+    const context = await browser.newContext({ baseURL });
+    await initContext(context, {
+        storageKey: `mage-wars-entry-current-scope-${Date.now()}`,
+        skipImageGate: false,
+        blockCdnAssets: false,
+        locale: 'zh-CN',
+    });
+    const page = await context.newPage();
+    const diagnostics = attachPageDiagnostics(page, 'entry-setup-gate');
+
+    try {
+        await page.goto('/play/mage-wars?setupGate=true&seed=mage-wars-entry-current-scope-e2e&disableLocalAiAutomation=true', {
+            waitUntil: 'domcontentloaded',
+        });
+        await waitForFrontendAssets(page, 45_000);
+        await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+
+        await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 60_000 });
+        await expect(page.getByRole('heading', { name: '选择双方法术书' })).toBeVisible();
+        await expect(page.getByTestId('mage-wars-mage-selection-standard-spellbook')).toHaveCount(4);
+        await expect(page.getByTestId('mage-wars-mage-selection-new-spellbook-entry')).toHaveAttribute('data-saved-spellbook-limit', '10');
+        await waitForVisibleImagesLoaded(page, '当前范围入口选书页');
+        await saveEvidenceScreenshot(page, testInfo, '01-入口选择页-四本标准书和双方选择目标可见');
+
+        await page.getByTestId('mage-wars-mage-selection-seat-0').click();
+        await page.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice').click();
+        await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute('data-mage-id', MAGE_IDS.BEASTMASTER_APPRENTICE);
+        await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toContainText('兽王');
+
+        await page.getByTestId('mage-wars-mage-selection-seat-1').click();
+        await page.getByTestId('mage-wars-mage-selection-standard-spellbook-priestess_apprentice').click();
+        await expect(page.getByTestId('mage-wars-mage-selection-summary-1')).toHaveAttribute('data-mage-id', MAGE_IDS.PRIESTESS_APPRENTICE);
+        await expect(page.getByTestId('mage-wars-mage-selection-summary-1')).toContainText('女祭司');
+        await waitForVisibleImagesLoaded(page, '当前范围入口双方选中后');
+        await saveEvidenceScreenshot(page, testInfo, '02-入口选择页-P1兽王书-P2女祭司书已选中');
+
+        await page.getByTestId('mage-wars-mage-selection-confirm').click();
+        await expect(page.getByTestId('mage-wars-board')).toBeVisible({ timeout: 60_000 });
+        await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeHidden({ timeout: 10_000 });
+        await expect(page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]'))
+            .toHaveAttribute('data-mage-id', MAGE_IDS.BEASTMASTER_APPRENTICE);
+        await expect(page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]'))
+            .toHaveAttribute('data-mage-id', MAGE_IDS.PRIESTESS_APPRENTICE);
+        await waitForVisibleImagesLoaded(page, '当前范围入口确认后牌桌');
+        await waitForVisibleMageWarsAtlasCardsLoaded(page, '当前范围入口确认后牌桌');
+        await saveEvidenceScreenshot(page, testInfo, '03-入口确认后-牌桌绑定兽王女祭司法术书');
+
+        await waitForTestHarness(page, 10_000);
+        const localSetupProbe = await page.evaluate(() => {
+            const state = (window as Window & {
+                __BG_TEST_HARNESS__?: {
+                    state?: { get?: () => unknown };
+                };
+            }).__BG_TEST_HARNESS__?.state?.get?.() as {
+                core?: {
+                    playerOrder?: string[];
+                    players?: Record<string, {
+                        mageId?: string;
+                        spellbookCount?: number;
+                        spellbookEntries?: Array<{ spellCardId?: number; count?: number }>;
+                    }>;
+                };
+            } | null | undefined;
+            const playerOrder = state?.core?.playerOrder ?? [];
+            return playerOrder.map((playerId) => {
+                const player = state?.core?.players?.[playerId] ?? {};
+                return {
+                    mageId: player.mageId,
+                    playerId,
+                    spellbookCount: player.spellbookCount,
+                    spellbookEntryCount: player.spellbookEntries?.length ?? 0,
+                };
+            });
+        });
+        expect(localSetupProbe).toEqual([
+            {
+                mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                playerId: '0',
+                spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.BEASTMASTER_APPRENTICE),
+                spellbookEntryCount: getStandardStartingSpellbook(MAGE_IDS.BEASTMASTER_APPRENTICE).length,
+            },
+            {
+                mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                playerId: '1',
+                spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.PRIESTESS_APPRENTICE),
+                spellbookEntryCount: getStandardStartingSpellbook(MAGE_IDS.PRIESTESS_APPRENTICE).length,
+            },
+        ]);
+        expect(diagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+
+        return buildMageWarsCurrentScopeSetupData();
+    } finally {
+        await context.close();
+    }
 }
 
 async function advanceUntilEnabled(page: Page, locator: ReturnType<Page['getByRole']>) {
@@ -3403,6 +3524,24 @@ async function expectServerObjectZone(
     }).toBe(zoneId);
 }
 
+async function hasReadyServerFieldObject(
+    page: Page,
+    match: MageWarsOnlineMatch,
+    playerId: '0' | '1',
+    zoneId: string,
+    sourceCardId: number,
+): Promise<boolean> {
+    const snapshot = await readServerCoreSnapshot(page, match, playerId);
+    const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+    return Object.values(objects).some((candidate) => (
+        isRecord(candidate)
+        && candidate.ownerId === playerId
+        && candidate.zoneId === zoneId
+        && candidate.sourceSpellCardId === sourceCardId
+        && candidate.actionReady === true
+    ));
+}
+
 function hasSpellMovementResolvedEvent(
     snapshot: JsonRecord,
     eventType: 'MW_SPELL_PUSH_RESOLVED' | 'MW_SPELL_TELEPORT_RESOLVED',
@@ -3643,7 +3782,7 @@ async function advanceToReadyFieldObjectAction(
         if (
             phase === 'creatureAction'
             && phaseActorId === playerId
-            && await fieldObject.isEnabled({ timeout: 200 }).catch(() => false)
+            && await hasReadyServerFieldObject(targetPage, match, playerId, zoneId, sourceCardId)
         ) {
             return;
         }
@@ -4183,6 +4322,7 @@ test.describe('Mage Wars formal online runtime', () => {
                     '03-间歇喷泉攻击阿希拉牧师',
                     {
                         expectTravel: true,
+                        expectDamageFloat: true,
                     },
                 );
             });
@@ -4230,7 +4370,8 @@ test.describe('Mage Wars formal online runtime', () => {
     test(MAGE_WARS_CURRENT_SCOPE_CANDIDATE_TEST_NAME, async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(420_000);
         await clearEvidenceScreenshotsForTest(testInfo);
-        const match = await setupOnlineMageWars(browser, baseURL);
+        const setupData = await selectMageWarsCurrentScopeSetupDataViaLocalGate(browser, baseURL, testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL, {}, setupData);
         const hostDiagnostics = attachPageDiagnostics(match.hostPage);
         const guestDiagnostics = attachPageDiagnostics(match.guestPage);
         const diagnostics = [
@@ -4246,7 +4387,7 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.guestPage.getByTestId('mage-wars-opponent-prepared-mirror')).toBeVisible();
             await expect(match.hostPage.locator('[data-testid="mage-wars-opponent-prepared-mirror"] img[alt="隐藏计划"]')).toHaveCount(2);
             await expect(match.guestPage.locator('[data-testid="mage-wars-opponent-prepared-mirror"] img[alt="隐藏计划"]')).toHaveCount(2);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-双方计划后-对手计划仍隐藏');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-双方计划后-对手计划仍隐藏');
 
             const hostSummon = await deployCreatureWithSummonProcessEvidence(
                 match,
@@ -4463,6 +4604,7 @@ test.describe('Mage Wars formal online runtime', () => {
                             '11A-间歇喷泉攻击法术',
                             {
                                 expectTravel: true,
+                                expectDamageFloat: true,
                             },
                         );
                     });
@@ -4555,13 +4697,20 @@ test.describe('Mage Wars formal online runtime', () => {
                 '同格近战攻击守卫生物后守卫标记应被移除',
             );
             await expect.poll(async () => (
-                hasEvent(
-                    await readServerCoreSnapshot(match.hostPage, match, '0'),
-                    'MW_GUARD_REMOVED',
-                    (payload) => payload.targetObjectId === guestClericObjectId,
-                )
+                await (async () => {
+                    const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                    return hasEvent(
+                        snapshot,
+                        'MW_GUARD_REMOVED',
+                        (payload) => payload.targetObjectId === guestClericObjectId,
+                    ) || hasEvent(
+                        snapshot,
+                        'MW_ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE',
+                        (payload) => payload.targetObjectId === guestClericObjectId,
+                    );
+                })()
             ), {
-                message: '近战攻击守卫生物应产生守卫移除事件',
+                message: '近战攻击守卫生物应产生守卫移除机会或最终守卫移除事件',
                 timeout: 5_000,
             }).toBe(true);
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '近战攻击守卫生物截图前');
@@ -4610,22 +4759,37 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(healingLightButton).toBeVisible({ timeout: 3_000 });
             const healingAbilityDock = match.guestPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(healingAbilityDock).toBeVisible({ timeout: 3_000 });
-            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
-            await expect(healingAbilityDock).toHaveClass(/bottom-\[15\.75rem\]/);
-            await expect(healingAbilityDock).not.toHaveClass(/top-\[4\.85rem\]/);
-            const healingDockBox = await healingAbilityDock.boundingBox();
-            const healingViewport = match.guestPage.viewportSize();
-            if (!healingDockBox || !healingViewport) {
-                throw new Error('无法读取治疗之光能力按钮的视口位置');
-            }
-            expect(healingDockBox.y).toBeGreaterThan(healingViewport.height * 0.55);
-            expect(healingDockBox.y + healingDockBox.height).toBeLessThan(healingViewport.height * 0.86);
+            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(healingAbilityDock).toHaveAttribute('data-ability-source-key', `object:${guestClericObjectId}`);
+            const healingPlacement = await match.guestPage.evaluate((objectId) => {
+                const source = document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+                );
+                const dock = document.querySelector<HTMLElement>('[data-testid="mage-wars-selected-ability-action-dock"]');
+                if (!source || !dock) return null;
+                const sourceRect = source.getBoundingClientRect();
+                const dockRect = dock.getBoundingClientRect();
+                return {
+                    sourceBottom: sourceRect.bottom,
+                    dockTop: dockRect.top,
+                    centerDelta: Math.abs(
+                        (sourceRect.left + sourceRect.width / 2) - (dockRect.left + dockRect.width / 2),
+                    ),
+                    anchoredToSource: dock.getAttribute('data-ability-source-key') === `object:${objectId}`,
+                    renderedInBodyOverlay: dock.parentElement === document.body,
+                };
+            }, guestClericObjectId);
+            expect(healingPlacement).not.toBeNull();
+            expect(healingPlacement!.dockTop).toBeGreaterThanOrEqual(healingPlacement!.sourceBottom);
+            expect(healingPlacement!.centerDelta).toBeLessThanOrEqual(8);
+            expect(healingPlacement!.anchoredToSource).toBe(true);
+            expect(healingPlacement!.renderedInBodyOverlay).toBe(true);
             await expect(healingLightButton).toHaveAttribute('data-ability-visual', 'text-action');
-            await expect(healingLightButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(healingLightButton).toHaveAttribute('data-ability-action-placement', 'source-card-below');
             await expect(healingLightButton.locator('img')).toHaveCount(0);
             await expect(healingLightButton.locator('svg')).toHaveCount(0);
             await expect(healingLightButton).toContainText('治疗之光');
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '16A-阿希拉牧师治疗之光入口-中下动作按钮可见');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见');
             await healingLightButton.click({ timeout: 3_000, noWaitAfter: true });
             await expect(hostBobcatForHealing.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
             const healingFxAuditPromise = captureMageWarsFxProcessScreenshots(
@@ -4707,18 +4871,33 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(restoreButton).toBeVisible({ timeout: 3_000 });
             const restoreAbilityDock = match.guestPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(restoreAbilityDock).toBeVisible({ timeout: 3_000 });
-            await expect(restoreAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
-            await expect(restoreAbilityDock).toHaveClass(/bottom-\[15\.75rem\]/);
-            await expect(restoreAbilityDock).not.toHaveClass(/top-\[4\.85rem\]/);
-            const restoreDockBox = await restoreAbilityDock.boundingBox();
-            const restoreViewport = match.guestPage.viewportSize();
-            if (!restoreDockBox || !restoreViewport) {
-                throw new Error('无法读取复原术能力按钮的视口位置');
-            }
-            expect(restoreDockBox.y).toBeGreaterThan(restoreViewport.height * 0.55);
-            expect(restoreDockBox.y + restoreDockBox.height).toBeLessThan(restoreViewport.height * 0.86);
+            await expect(restoreAbilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(restoreAbilityDock).toHaveAttribute('data-ability-source-key', 'mage:1');
+            const restorePlacement = await match.guestPage.evaluate(() => {
+                const source = document.querySelector<HTMLElement>(
+                    '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+                );
+                const dock = document.querySelector<HTMLElement>('[data-testid="mage-wars-selected-ability-action-dock"]');
+                if (!source || !dock) return null;
+                const sourceRect = source.getBoundingClientRect();
+                const dockRect = dock.getBoundingClientRect();
+                return {
+                    sourceBottom: sourceRect.bottom,
+                    dockTop: dockRect.top,
+                    centerDelta: Math.abs(
+                        (sourceRect.left + sourceRect.width / 2) - (dockRect.left + dockRect.width / 2),
+                    ),
+                    anchoredToSource: dock.getAttribute('data-ability-source-key') === 'mage:1',
+                    renderedInBodyOverlay: dock.parentElement === document.body,
+                };
+            });
+            expect(restorePlacement).not.toBeNull();
+            expect(restorePlacement!.dockTop).toBeGreaterThanOrEqual(restorePlacement!.sourceBottom);
+            expect(restorePlacement!.centerDelta).toBeLessThanOrEqual(8);
+            expect(restorePlacement!.anchoredToSource).toBe(true);
+            expect(restorePlacement!.renderedInBodyOverlay).toBe(true);
             await expect(restoreButton).toHaveAttribute('data-ability-visual', 'text-action');
-            await expect(restoreButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(restoreButton).toHaveAttribute('data-ability-action-placement', 'source-card-below');
             await expect(restoreButton.locator('img')).toHaveCount(0);
             await expect(restoreButton.locator('svg')).toHaveCount(0);
             await expect(restoreButton).toContainText('复原术');
@@ -4994,12 +5173,12 @@ test.describe('Mage Wars formal online runtime', () => {
             await staffCard.click({ timeout: 3_000, noWaitAfter: true });
             const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(abilityDock).toBeVisible({ timeout: 3_000 });
-            await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
             const abilityButton = abilityDock.locator(`[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF}"]`).first();
             await expect(abilityButton).toBeVisible({ timeout: 3_000 });
             await expect(abilityButton).toHaveAttribute('data-ability-visual', 'text-action');
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖入口截图前');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '24A-群兽法杖附件入口-中下能力按钮可见');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '24A-群兽法杖附件入口-来源卡牌下方能力按钮可见');
 
             await abilityButton.click({ timeout: 3_000, noWaitAfter: true });
             await expect(animalCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });

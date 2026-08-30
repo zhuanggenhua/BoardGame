@@ -5983,6 +5983,10 @@ describe('Home 活跃对局缺房确认', () => {
         }));
 
         vi.doMock('react-i18next', () => ({
+            initReactI18next: {
+                type: '3rdParty',
+                init: () => undefined,
+            },
             useTranslation: () => ({
                 t: (key: string) => key,
                 i18n: { resolvedLanguage: 'zh-CN', language: 'zh-CN' },

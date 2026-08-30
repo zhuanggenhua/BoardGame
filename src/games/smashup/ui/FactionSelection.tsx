@@ -30,7 +30,7 @@ import {
     resolveCardName,
 } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { X, Check, Layers, ZoomIn, Pencil, Lock, BookOpen } from 'lucide-react';
+import { X, Check, Layers, ZoomIn, Pencil, Lock, BookOpen, Shuffle } from 'lucide-react';
 import { UI_Z_INDEX } from '../../../core';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay } from './CardMagnifyOverlay';
@@ -392,6 +392,14 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         handleCloseDetails();
     };
 
+    const handleSelectRandomFaction = () => {
+        if (!isMyTurn) return;
+        if (mySelections.length >= 2) return;
+
+        dispatch(SU_COMMANDS.SELECT_RANDOM_FACTION, {});
+        handleCloseDetails();
+    };
+
     const handleCancelSelect = (factionId: string) => {
         if (!isMyTurn) return;
         if (!mySelections.includes(factionId)) return;
@@ -453,7 +461,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             : useCompactPlayerRail
                 ? (viewportSize.width >= 1536 ? 292 : viewportSize.width >= 1024 ? 266 : 244)
                 : (viewportSize.width >= 1536 ? 354 : 336);
-    const selectionVirtualRowCount = Math.ceil(filteredFactionGroups.length / selectionVirtualColumnCount);
+    const showRandomFactionOption = normalizedFactionSearch.length === 0;
+    const totalFactionOptionCount = filteredFactionGroups.length + (showRandomFactionOption ? 1 : 0);
+    const selectionVirtualRowCount = Math.ceil(totalFactionOptionCount / selectionVirtualColumnCount);
     const selectionFirstVisibleRow = Math.max(
         0,
         Math.floor(selectionGridMetrics.scrollTop / selectionVirtualRowHeight) - FACTION_GRID_OVERSCAN_ROWS,
@@ -467,16 +477,22 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         ),
     );
     const selectionVirtualStartIndex = Math.min(
-        filteredFactionGroups.length,
+        totalFactionOptionCount,
         selectionFirstVisibleRow * selectionVirtualColumnCount,
     );
     const selectionVirtualEndIndex = Math.min(
-        filteredFactionGroups.length,
+        totalFactionOptionCount,
         selectionLastVisibleRow * selectionVirtualColumnCount,
     );
+    const factionOptionStartOffset = showRandomFactionOption ? 1 : 0;
+    const visibleFactionGroupStartIndex = Math.max(0, selectionVirtualStartIndex - factionOptionStartOffset);
+    const visibleFactionGroupEndIndex = Math.max(0, selectionVirtualEndIndex - factionOptionStartOffset);
+    const shouldRenderRandomFactionOption = showRandomFactionOption
+        && selectionVirtualStartIndex === 0
+        && selectionVirtualEndIndex > 0;
     const visibleFactionOptionGroups = filteredFactionGroups.slice(
-        selectionVirtualStartIndex,
-        selectionVirtualEndIndex,
+        visibleFactionGroupStartIndex,
+        visibleFactionGroupEndIndex,
     );
     const selectionVirtualTopSpacer = selectionFirstVisibleRow * selectionVirtualRowHeight;
     const selectionVirtualBottomSpacer = Math.max(
@@ -565,8 +581,53 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             </div>
         </motion.div>
     );
+    const randomFactionOptionNode = shouldRenderRandomFactionOption ? (
+        <motion.div
+            key="random-faction"
+            initial={{ opacity: 0, y: 20, rotate: -3 }}
+            animate={{ opacity: 1, y: 0, rotate: -2 }}
+            whileHover={{ rotate: 0, scale: isMyTurn && mySelections.length < 2 ? 1.035 : 1, zIndex: 30 }}
+            transition={{ delay: 0, duration: 0.16 }}
+            onClick={handleSelectRandomFaction}
+            data-testid="faction-option-random"
+            role="button"
+            aria-label={t('ui.random_faction_name')}
+            className={`
+                group relative flex w-full flex-col items-center
+                ${isMyTurn && mySelections.length < 2 ? 'cursor-pointer z-10' : 'cursor-not-allowed opacity-55 grayscale'}
+            `}
+        >
+            <div className={selectionCardFrameClassName} style={selectionCardFrameStyle}>
+                <div className={`${selectionCardSurfaceClassName} border-amber-300`}>
+                    <div className="smashup-card-inner relative flex h-full w-full flex-col items-center justify-center overflow-hidden border bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.42),_rgba(88,28,135,0.56)_45%,_rgba(15,23,42,0.94))] p-3 text-center">
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,_rgba(255,255,255,0.16),_transparent_38%,_rgba(0,0,0,0.26))]" />
+                        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2">
+                            <div className="rounded-full border-2 border-amber-100/85 bg-black/25 p-3 text-amber-100 shadow-[0_8px_18px_rgba(0,0,0,0.32)]">
+                                <Shuffle size={30} strokeWidth={2.6} />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-black text-[11px] lg:text-base leading-none mb-1 drop-shadow-md uppercase italic tracking-tight lg:tracking-tighter">
+                                    {t('ui.random_faction_name')}
+                                </h3>
+                                <p className="mx-auto max-w-[8rem] text-[8px] font-black uppercase leading-tight tracking-[0.08em] text-amber-100/78 lg:text-[10px]">
+                                    {t('ui.random_faction_desc')}
+                                </p>
+                            </div>
+                        </div>
+                        {isMyTurn && mySelections.length < 2 && (
+                            <div className="pointer-events-none absolute inset-0 z-20 border-[4px] border-amber-100 opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
+                        )}
+                    </div>
+
+                    <div className="smashup-chip-inverse absolute -top-1.5 -right-1.5 lg:-top-2 lg:-right-2 z-40 w-8 h-8 lg:w-10 lg:h-10 border-2 border-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Shuffle size={16} strokeWidth={2.5} className="text-amber-300" />
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    ) : null;
     const factionOptionNodes = visibleFactionOptionGroups.map(({ group, selectedVariantId, isSelectedByMe, isTakenByOther }, visibleIndex) => {
-        const idx = selectionVirtualStartIndex + visibleIndex;
+        const idx = factionOptionStartOffset + visibleFactionGroupStartIndex + visibleIndex;
         const ownerId = Object.entries(playerSelectionIdentities).find(([, identities]) => identities.has(group.groupId))?.[0];
         const previewFactionId = selectedVariantId ?? group.defaultVariant.id;
         const cards = getFactionCards(previewFactionId);
@@ -812,12 +873,13 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 <div
                     data-testid="faction-virtual-window"
                     data-total-factions={filteredFactionGroups.length}
+                    data-total-options={totalFactionOptionCount}
                     data-rendered-factions={visibleFactionOptionGroups.length}
                     data-start-index={selectionVirtualStartIndex}
                     data-end-index={selectionVirtualEndIndex}
                     style={selectionVirtualSpacerStyle}
                 >
-                    <div className={selectionGridClassName}>{factionOptionNodes}</div>
+                    <div className={selectionGridClassName}>{randomFactionOptionNode}{factionOptionNodes}</div>
                 </div>
             ) : (
                 selectionEmptyState

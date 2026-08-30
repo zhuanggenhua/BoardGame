@@ -60,6 +60,7 @@ import {
     canSmashUpPlayerBanFaction,
     canSmashUpPlayerConfirmFactionReady,
     canSmashUpPlayerSelectFaction,
+    canSmashUpPlayerSelectRandomFaction,
     isSmashUpBanSelectionPhase,
 } from './pregameDraft';
 
@@ -1161,6 +1162,13 @@ export function validate(
                 return { valid: false, error: '只能在派系选择阶段选择派系' };
             }
             return canSmashUpPlayerSelectFaction(core, command.playerId, command.payload.factionId);
+        }
+
+        case SU_COMMANDS.SELECT_RANDOM_FACTION: {
+            if (phase !== 'factionSelect') {
+                return { valid: false, error: '只能在派系选择阶段选择派系' };
+            }
+            return canSmashUpPlayerSelectRandomFaction(core, command.playerId);
         }
 
         case SU_COMMANDS.DESELECT_FACTION: {

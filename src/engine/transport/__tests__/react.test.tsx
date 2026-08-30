@@ -1802,6 +1802,81 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
     });
 
+    it('keeps a queued phase advance when its first retry is rejected and retries after resync', () => {
+        const authoritativeState = {
+            core: { marker: 'authoritative-start' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+        const mockEngine = {
+            hasPendingCommands: vi.fn(() => false),
+            reconcile: vi.fn((state: unknown) => ({
+                stateToRender: state,
+                didRollback: false,
+                optimisticEventWatermark: null,
+            })),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(),
+            processCommand: vi.fn(() => ({
+                stateToRender: null,
+                shouldSend: true,
+                animationMode: 'wait-confirm',
+            })),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-retry-queued-advance"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{
+                    optimistic: { enabled: true },
+                    batching: {
+                        enabled: true,
+                        windowMs: 50,
+                        maxBatchSize: 5,
+                        immediateCommands: ['ADVANCE_PHASE'],
+                    },
+                } as any}
+            >
+                <DoubleAdvanceProbe />
+            </GameProvider>,
+        );
+
+        const client = mockClientInstances[0]!;
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 1, randomCursor: 0 });
+            screen.getByTestId('dispatch-double-advance').click();
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        client.sendCommand.mockReturnValueOnce(false);
+
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(client.resync).toHaveBeenCalledWith({ force: true });
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+
+        client.sendCommand.mockReturnValue(true);
+        act(() => {
+            client.emitStateUpdate(authoritativeState, [], { stateID: 3, randomCursor: 0 });
+        });
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(3);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
+    });
+
     it('rejects an optimistic command before prediction when transport is not ready', () => {
         const authoritativeState = {
             core: { marker: 'authoritative-second-phase' },

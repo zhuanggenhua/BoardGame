@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import enLocale from '../../../../public/locales/en/game-betrayal.json';
+import zhCNLocale from '../../../../public/locales/zh-CN/game-betrayal.json';
 import {
     createInitialSystemState,
     createSeededRandom,
@@ -167,13 +169,39 @@ const pinGroundNorthToKitchenEventRoom = (core: BetrayalCore): void => {
 };
 
 describe('小黑屋操作日志与撤回', () => {
-    it('全部正式命令有日志白名单，撤回白名单独立排除纯确认命令', () => {
+    it('操作日志模板默认把 playerId 当作已解析玩家名', () => {
+        const zhActionLogText = Object.values(zhCNLocale.actionLog).join('\n');
+        const enActionLogText = Object.values(enLocale.actionLog).join('\n');
+
+        expect(zhActionLogText).toContain('{{playerId}} 选择了探索者');
+        expect(zhActionLogText).toContain('{{playerId}} 与{{targetPlayerId}} 完成交易');
+        expect(zhActionLogText).not.toContain('玩家 {{playerId}}');
+        expect(zhActionLogText).not.toContain('玩家 {{targetPlayerId}}');
+
+        expect(enActionLogText).toContain('{{playerId}} selected an explorer');
+        expect(enActionLogText).toContain('{{playerId}} traded with {{targetPlayerId}}');
+        expect(enActionLogText).not.toContain('Player {{playerId}}');
+        expect(enActionLogText).not.toContain('player {{targetPlayerId}}');
+    });
+
+    it('日志和撤回白名单独立，日志不记录纯确认命令', () => {
         const commands = Object.values(BETRAYAL_COMMANDS);
-        expect(BETRAYAL_ACTION_LOG_ALLOWLIST).toEqual(commands);
+        for (const command of BETRAYAL_ACTION_LOG_ALLOWLIST) {
+            expect(commands).toContain(command);
+        }
         expect(BETRAYAL_UNDO_ALLOWLIST).not.toBe(BETRAYAL_ACTION_LOG_ALLOWLIST);
         for (const command of BETRAYAL_UNDO_ALLOWLIST) {
             expect(commands).toContain(command);
         }
+        expect(BETRAYAL_ACTION_LOG_ALLOWLIST).toEqual(expect.arrayContaining([
+            BETRAYAL_COMMANDS.SELECT_EXPLORER,
+            BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD,
+            BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE,
+        ]));
         expect(BETRAYAL_UNDO_ALLOWLIST).toEqual(expect.arrayContaining([
             BETRAYAL_COMMANDS.SELECT_EXPLORER,
             BETRAYAL_COMMANDS.MOVE_TO_ROOM,
@@ -182,13 +210,23 @@ describe('小黑屋操作日志与撤回', () => {
             BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE,
         ]));
         for (const confirmationCommand of [
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
             BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
             BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
             BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
             BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY,
         ]) {
+            expect(BETRAYAL_ACTION_LOG_ALLOWLIST).not.toContain(confirmationCommand);
             expect(BETRAYAL_UNDO_ALLOWLIST).not.toContain(confirmationCommand);
+            expect(formatBetrayalActionEntry({
+                command: {
+                    type: confirmationCommand,
+                    playerId: '0',
+                    payload: {},
+                    timestamp: 1,
+                },
+                state: setupStartedScenarioState(),
+                events: [],
+            })).toBeNull();
         }
         expect(engineConfig.disableUndo).not.toBe(true);
         expect(engineConfig.systems.map((system) => system.id)).toEqual(
@@ -196,7 +234,7 @@ describe('小黑屋操作日志与撤回', () => {
         );
     });
 
-    it('全部正式命令都有公开日志摘要且不复写私密参数', () => {
+    it('正式日志命令都有公开摘要且不复写私密参数', () => {
         const core = createStartedFirstScenarioCore();
         const state: MatchState<BetrayalCore> = {
             core,
@@ -236,7 +274,9 @@ describe('小黑屋操作日志与撤回', () => {
             },
         };
 
-        const commandTypes = Object.values(BETRAYAL_COMMANDS);
+        const commandTypes = BETRAYAL_ACTION_LOG_ALLOWLIST.filter(
+            (type) => type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+        );
         const entries = commandTypes.map((type, index) => (
             formatBetrayalActionEntry({
                 command: {
@@ -255,6 +295,8 @@ describe('小黑屋操作日志与撤回', () => {
         expect(serialized).not.toContain('secret-');
         expect(serialized).not.toContain('targetRoomIdsByTokenId');
         expect(serialized).not.toContain('weaponCardId');
+        expect(serialized).not.toContain('acknowledge');
+        expect(serialized).not.toContain('finalizeEventRoll');
     });
 
     it('真人动作生成快照和日志，撤回后两者同步回退', () => {
@@ -368,6 +410,9 @@ describe('小黑屋操作日志与撤回', () => {
         expect(resolvedParams).toEqual(expect.arrayContaining([
             expect.objectContaining({ playerId: '薇薇安' }),
         ]));
+        const displayText = displayRows.map((row) => row.text).join('\n');
+        expect(displayText).toContain('薇薇安');
+        expect(displayText).not.toMatch(/玩家\s+薇薇安|Player\s+薇薇安/);
         expect(JSON.stringify(resolvedParams)).not.toContain('玩家 1');
     });
 
@@ -481,6 +526,7 @@ describe('小黑屋操作日志与撤回', () => {
                 })],
             }),
         ]));
+        expect(JSON.stringify(state.sys.actionLog.entries)).not.toContain('actionLog.finalizeEventRoll');
 
         expect(engineConfig.domain.validate(state, {
             type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
@@ -492,6 +538,7 @@ describe('小黑屋操作日志与撤回', () => {
             error: '请先确认当前伤害骰结果。',
         });
 
+        const logCountBeforeAcknowledgement = state.sys.actionLog.entries.length;
         state = runCommand(state, {
             type: BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
             playerId: '0',
@@ -499,6 +546,8 @@ describe('小黑屋操作日志与撤回', () => {
             timestamp: 39,
         });
 
+        expect(state.sys.actionLog.entries).toHaveLength(logCountBeforeAcknowledgement);
+        expect(JSON.stringify(state.sys.actionLog.entries)).not.toContain('actionLog.acknowledgeRecentRoll');
         expect(state.core.recentRoll).toBeNull();
         expect(state.core.pendingDamageAllocation).toMatchObject({
             sourceTitle: '无线电广播',
@@ -559,6 +608,10 @@ describe('小黑屋操作日志与撤回', () => {
                 traits: '知识、神志',
             }),
         ]));
+        const displayText = displayRows.map((row) => row.text).join('\n');
+        expect(displayText).toContain('薇薇安');
+        expect(displayText).toContain('无线电广播');
+        expect(displayText).not.toMatch(/玩家\s+薇薇安|Player\s+薇薇安/);
         expect(JSON.stringify(resolvedParams)).not.toContain('玩家 1');
     });
 

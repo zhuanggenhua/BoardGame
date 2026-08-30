@@ -93,8 +93,9 @@ export function useGameProviderRuntime(args: {
     const lastConfirmedStateIDRef = useRef<number | null>(null);
     const commandDispatchBlockedUntilSyncRef = useRef(false);
     const inFlightSerializedCommandTypeRef = useRef<string | null>(null);
+    const lastSerializedCommandRef = useRef<DeferredCommand | null>(null);
     const deferredSerializedCommandRef = useRef<DeferredCommand | null>(null);
-    const dispatchRef = useRef<((type: string, payload: unknown) => void) | null>(null);
+    const dispatchRef = useRef<((type: string, payload: unknown) => boolean) | null>(null);
     const engineConfigRef = useRef(engineConfig);
     const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
         watermark: null,
@@ -146,8 +147,15 @@ export function useGameProviderRuntime(args: {
         if (!dispatchCurrent) {
             return;
         }
-        deferredSerializedCommandRef.current = null;
-        dispatchCurrent(command.type, command.payload);
+        // 只有命令真正交给 transport 后才能移除排队项。
+        // 连接尚未就绪或发送被拒绝时保留它，等待后续权威同步/重连继续尝试。
+        if (dispatchCurrent(command.type, command.payload)) {
+            deferredSerializedCommandRef.current = null;
+        } else if (!deferredSerializedCommandRef.current) {
+            // 发送失败的恢复路径会清理 deferred ref；把当前命令放回队列，
+            // 避免一次瞬时传输失败吞掉玩家已经点击的下一步。
+            deferredSerializedCommandRef.current = command;
+        }
     }, []);
 
     const resetOptimisticProviderRuntime = useCallback((): boolean => {
@@ -190,7 +198,9 @@ export function useGameProviderRuntime(args: {
         }
         commandDispatchBlockedUntilSyncRef.current = true;
         inFlightSerializedCommandTypeRef.current = null;
-        clearDeferredSerializedCommand();
+        if (!deferredSerializedCommandRef.current && lastSerializedCommandRef.current) {
+            deferredSerializedCommandRef.current = lastSerializedCommandRef.current;
+        }
         resetOptimisticProviderRuntime();
         requestProviderResync();
     }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
@@ -291,6 +301,7 @@ export function useGameProviderRuntime(args: {
 
                 commandDispatchBlockedUntilSyncRef.current = false;
                 inFlightSerializedCommandTypeRef.current = null;
+                lastSerializedCommandRef.current = null;
 
                 if (meta?.stateID !== undefined) {
                     lastConfirmedStateIDRef.current = meta.stateID;
@@ -345,6 +356,7 @@ export function useGameProviderRuntime(args: {
                 if (!connected) {
                     commandDispatchBlockedUntilSyncRef.current = false;
                     inFlightSerializedCommandTypeRef.current = null;
+                    lastSerializedCommandRef.current = null;
                     clearDeferredSerializedCommand();
                     lastConfirmedStateIDRef.current = null;
                 }
@@ -389,36 +401,36 @@ export function useGameProviderRuntime(args: {
         });
     }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
-    const dispatch = useCallback((type: string, payload: unknown) => {
+    const dispatch = useCallback((type: string, payload: unknown): boolean => {
         if (commandDispatchBlockedUntilSyncRef.current) {
             notifyCommandWaitingForPreviousStep();
-            return;
+            return false;
         }
         if (inFlightSerializedCommandTypeRef.current === type) {
             deferCommandWaitingForPreviousStep(type, payload);
-            return;
+            return false;
         }
         const client = clientRef.current;
         if (!client?.canSendCommand()) {
             notifyCommandWaitingForPreviousStep();
-            return;
+            return false;
         }
         if (type === TRANSPORT_BATCH_COMMAND) {
             const commands = getTransportBatchCommands(payload);
             if (commands.length === 0) {
-                return;
+                return false;
             }
             const engine = optimisticEngineRef.current;
             if (engine?.hasPendingCommands()) {
                 notifyCommandWaitingForPreviousStep();
-                return;
+                return false;
             }
             const batcher = batcherRef.current;
             if (batcher && !batcher.flush()) {
                 if (engine) {
                     rollbackOptimisticRenderAndResync();
                 }
-                return;
+                return false;
             }
             const batchId = `b-${++batchSeqRef.current}`;
             const sent = client.sendBatch(batchId, commands, undefined, (reason) => {
@@ -430,13 +442,13 @@ export function useGameProviderRuntime(args: {
             if (!sent && engine) {
                 rollbackOptimisticRenderAndResync();
             }
-            return;
+            return sent;
         }
         const engine = optimisticEngineRef.current;
         const sendWithoutPrediction = Boolean(engine?.hasPendingCommands() && canSendWhileOptimisticPending(type));
         if (engine?.hasPendingCommands() && !sendWithoutPrediction) {
             deferCommandWaitingForPreviousStep(type, payload);
-            return;
+            return false;
         }
         let shouldSend = true;
         if (engine && !sendWithoutPrediction) {
@@ -448,7 +460,7 @@ export function useGameProviderRuntime(args: {
             }
         }
         if (!shouldSend) {
-            return;
+            return true;
         }
         const batcher = batcherRef.current;
         let sent = false;
@@ -459,11 +471,13 @@ export function useGameProviderRuntime(args: {
         }
         if (!sent && engine) {
             rollbackOptimisticRenderAndResync();
-            return;
+            return false;
         }
         if (sent && shouldSerializeCommand(type)) {
             inFlightSerializedCommandTypeRef.current = type;
+            lastSerializedCommandRef.current = { type, payload };
         }
+        return sent;
     }, [deferCommandWaitingForPreviousStep, notifyCommandWaitingForPreviousStep, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
 
     useEffect(() => {

@@ -160,8 +160,8 @@ describe('BoardOverlays 放大预览', () => {
 
         const closeButton = screen.getByRole('button', { name: 'actions.closePreview' });
         expect(closeButton.className).toContain('absolute');
-        expect(closeButton.className).toContain('-top-12');
-        expect(closeButton.className).toContain('right-0');
+        expect(closeButton.className).toContain('top-2');
+        expect(closeButton.className).toContain('right-2');
     });
 
     it('教程模式下会把牌面特写自动关闭延迟传给特写层', () => {

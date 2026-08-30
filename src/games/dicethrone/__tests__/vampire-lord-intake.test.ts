@@ -71,6 +71,12 @@ const VAMPIRE_LORD_I18N_KEYS = [
     'statusEffects.bleed.name',
     'statusEffects.bleed.description',
     'abilities.bloodthirsty-claws.name',
+    'abilities.bloodthirsty-claws.effects.damage7',
+    'abilities.bloodthirsty-claws.effects.gainBloodPowerIfFourKind',
+    'abilities.bloodthirsty-claws-2.effects.damage3',
+    'abilities.bloodthirsty-claws-2.effects.damage7',
+    'abilities.bloodthirsty-claws-2.effects.gainBloodPowerIfThreeKind',
+    'abilities.bloodthirsty-claws-3.effects.gainBloodPowerIfThreeKind',
     'abilities.mesmerize-power.name',
     'abilities.blood-feast.name',
     'abilities.rend-claws.name',
@@ -106,11 +112,11 @@ const VAMPIRE_LORD_I18N_KEYS = [
 ];
 
 describe('DiceThrone 吸血鬼领主录入与资源合同', () => {
-    it('角色目录实施中、骰面、状态标记和角色板九槽已接入', () => {
+    it('角色目录实施中状态、骰面、状态标记和角色板九槽已接入', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(entry => entry.id === 'vampire_lord');
         expect(character?.nameKey).toBe('characters.vampire_lord');
         expect(character?.setupOptionStatus).toBe('in_progress');
-        expect(character?.setupOptionStatusReason).toContain('当前范围实施与审计');
+        expect(character?.setupOptionStatusReason).toContain('真人确认');
         expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(true);
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map(entry => entry.id)).toContain('vampire_lord');
         expect(hasDiceThroneTipBoard('vampire_lord')).toBe(true);

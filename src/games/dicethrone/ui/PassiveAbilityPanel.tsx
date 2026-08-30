@@ -60,13 +60,13 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
                     isSelecting,
                 };
             })
-            .filter(item => item.isUsable || item.isSelecting);
+            .filter(item => item.isUsable || item.isSelecting || item.action.showWhenUnavailable);
     });
 
     if (visibleActions.length === 0) return null;
 
     return (
-        <div className="w-[10.2vw] min-w-0">
+        <div className="w-[10.2vw] min-w-0" data-testid="passive-ability-action-bar">
             <div className="grid min-w-0 grid-cols-2 gap-[0.25vw]">
                 {visibleActions.map(({ passive, action, actionIndex, isUsable, isSelecting }) => (
                     <PassiveActionButton
@@ -119,8 +119,8 @@ const PassiveActionButton: React.FC<{
         ? tokenCosts.map(cost => `${cost.amount} ${t(`tokens.${cost.tokenId}.name`)}`).join(' + ')
         : null;
     const cpCostLabel = action.cpCost > 0 ? `${action.cpCost} CP` : null;
-    const fullCostLabel = [cpCostLabel, tokenCostLabel].filter(Boolean).join(' + ') || t('passive.action.free');
-    const accessibleLabel = `${passiveName}：${isSelecting ? t('passive.action.cancel') : label}${fullCostLabel ? `，${fullCostLabel}` : ''}`;
+    const costLabel = [cpCostLabel, tokenCostLabel].filter(Boolean).join(' + ');
+    const accessibleLabel = `${passiveName}：${isSelecting ? t('passive.action.cancel') : label}${costLabel ? `，${costLabel}` : ''}`;
 
     return (
         <GameButton
@@ -143,9 +143,9 @@ const PassiveActionButton: React.FC<{
                     {isSelecting ? t('passive.action.cancel') : label}
                 </span>
             </div>
-            {cpCostLabel ? (
-                <span className={`truncate whitespace-nowrap !text-[0.48vw] ${notEnoughCp ? 'text-red-400' : 'text-amber-300'}`}>
-                    {cpCostLabel}
+            {costLabel ? (
+                <span className={`truncate whitespace-nowrap !text-[0.48vw] ${notEnoughCp || !isUsable ? 'text-red-400' : 'text-amber-300'}`}>
+                    {costLabel}
                 </span>
             ) : null}
         </GameButton>

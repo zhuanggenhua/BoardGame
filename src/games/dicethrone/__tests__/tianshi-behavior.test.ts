@@ -12,7 +12,6 @@ import { diceThroneAiRuntime } from '../ai';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
-import { canRerollBonusDiceSettlement } from '../domain/bonusDiceSettlement';
 import { checkPlayCard } from '../domain/rules';
 import { getUsableTokensForTiming } from '../domain/tokenResponse';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
@@ -21,7 +20,7 @@ import {
     buildDiceThroneTokenResponseOpportunityId,
 } from '../domain/timingOpportunities';
 import { initHeroState } from '../domain/characters';
-import { DIVINE_PURIFICATION_2, DIVINE_PUNISHMENT_2, HOLY_BLADE_2, SUPREME_POWER_2, TIANSHI_ABILITIES } from '../heroes/tianshi/abilities';
+import { ANGELIC_CLOAK_2, DIVINE_PURIFICATION_2, DIVINE_PUNISHMENT_2, HOLY_BLADE_2, SUPREME_POWER_2, TIANSHI_ABILITIES } from '../heroes/tianshi/abilities';
 import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
 import { TIANSHI_TOKENS } from '../heroes/tianshi/tokens';
 import {
@@ -199,8 +198,9 @@ describe('炽天使领域行为', () => {
         expect(result.success).toBe(true);
         if (!result.success) return;
         expect(result.state.core.players['0'].tokens[TOKEN_IDS.FLIGHT] ?? 0).toBe(0);
-        expect(result.state.core.pendingAttack?.defensiveFlightActivated).toBe(true);
-        expect(result.state.core.pendingDamage).toBeUndefined();
+        expect(result.state.core.pendingAttack?.defensiveFlightActivated).not.toBe(true);
+        expect(result.state.core.pendingAttack?.isDefendable).toBe(true);
+        expect(result.state.core.pendingDamage?.currentDamage).toBe(7);
         expect(result.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(50);
         expect(result.state.core.currentRollContext).toMatchObject({
             kind: 'bonus',
@@ -218,6 +218,9 @@ describe('炽天使领域行为', () => {
         );
         expect(confirmed.success).toBe(true);
         if (!confirmed.success) return;
+        expect(confirmed.state.core.pendingAttack?.defensiveFlightActivated).toBe(true);
+        expect(confirmed.state.core.pendingDamage).toBeUndefined();
+        expect(confirmed.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(50);
         expect(confirmed.state.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(confirmed.state.core.currentRollContext).toMatchObject({
             kind: 'bonus',
@@ -537,7 +540,18 @@ describe('炽天使领域行为', () => {
         expect(result.success).toBe(true);
         if (!result.success) return;
         expect(result.state.core.players['0'].tokens[TOKEN_IDS.FLIGHT]).toBe(0);
-        expect(result.state.core.pendingAttack?.isDefendable).toBe(defendable);
+        expect(result.state.core.pendingAttack?.isDefendable).toBe(true);
+
+        const settled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            result.state,
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(settled.success).toBe(true);
+        if (!settled.success) return;
+        expect(settled.state.core.pendingAttack?.isDefendable).toBe(defendable);
     });
 
     it.each([
@@ -753,7 +767,18 @@ describe('炽天使领域行为', () => {
 
         expect(result.success).toBe(true);
         if (!result.success) return;
-        expect(result.state.core.pendingAttack?.defensiveFlightActivated).toBe(true);
+        expect(result.state.core.pendingAttack?.defensiveFlightActivated).not.toBe(true);
+
+        const settled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            result.state,
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(settled.success).toBe(true);
+        if (!settled.success) return;
+        expect(settled.state.core.pendingAttack?.defensiveFlightActivated).toBe(true);
 
         const ability = TIANSHI_ABILITIES.find(entry => entry.id === 'holy-blade');
         const effects = ability?.variants?.find(variant => variant.id === 'holy-blade-3')?.effects ?? [];
@@ -761,7 +786,7 @@ describe('炽天使领域行为', () => {
             attackerId: '1',
             defenderId: '0',
             sourceAbilityId: 'holy-blade-3',
-            state: result.state.core,
+            state: settled.state.core,
             damageDealt: 0,
             timestamp: 210,
         }, { random: createQueuedRandom([1]) });
@@ -1616,7 +1641,7 @@ describe('炽天使领域行为', () => {
         { value: 4, expectedFlight: 1 },
         { value: 5, expectedShield: 2 },
         { value: 6, expectedShield: 3 },
-    ])('天使斗篷骰面 $value 在奖励骰收口后落到正确的防御结果', ({ value, expectedDamage, expectedFlight, expectedShield }) => {
+    ])('天使斗篷普通防御骰面 $value 落到正确的防御结果', ({ value, expectedDamage, expectedFlight, expectedShield }) => {
         const state = createTianshiState();
         state.sys.phase = 'defensiveRoll';
         state.core.pendingAttack = {
@@ -1626,6 +1651,18 @@ describe('炽天使领域行为', () => {
             isDefendable: true,
             damage: 5,
         };
+        state.core.rollCount = 1;
+        state.core.rollDiceCount = 1;
+        state.core.currentRollContext = {
+            kind: 'defensive',
+            phase: 'defensiveRoll',
+            ownerPlayerId: '0',
+            dice: [{ ...state.core.dice[0], id: 0, value, ownerId: '0' }],
+            status: 'settling',
+            policy: { blocksPhaseFlow: true, allowReroll: true, allowModification: true },
+            display: { surface: 'diceTray', replayOnly: false },
+        } as any;
+        state.core.dice = state.core.currentRollContext.dice;
         const ability = TIANSHI_ABILITIES.find(entry => entry.id === 'angelic-cloak');
         const context: EffectContext = {
             attackerId: '0',
@@ -1637,23 +1674,9 @@ describe('炽天使领域行为', () => {
             isDefensiveContext: true,
         };
 
-        const events = resolveEffectsToEvents(ability?.effects ?? [], 'withDamage', context, {
-            random: createQueuedRandom([value]),
-        });
-        const settlementEvent = events.find((event): event is Extract<DiceThroneEvent, { type: 'BONUS_DICE_REROLL_REQUESTED' }> => (
-            event.type === 'BONUS_DICE_REROLL_REQUESTED'
-        ));
-        expect(settlementEvent?.payload.settlement.targetId).toBe('1');
-
-        const settled = executePipeline(
-            { domain: DiceThroneDomain, systems: testSystems },
-            { ...state, core: applyEvents(state.core, events) },
-            command('SKIP_BONUS_DICE_REROLL', '0'),
-            createQueuedRandom([1]),
-            playerIds,
-        );
-        expect(settled.success).toBe(true);
-        if (!settled.success) return;
+        const events = resolveEffectsToEvents(ability?.effects ?? [], 'withDamage', context);
+        expect(events.some(event => event.type === 'BONUS_DICE_REROLL_REQUESTED')).toBe(false);
+        const settled = { events, state: { ...state, core: applyEvents(state.core, events) } };
         if (expectedDamage !== undefined) {
             expect(settled.events).toContainEqual(expect.objectContaining({
                 type: 'DAMAGE_DEALT',
@@ -1795,6 +1818,75 @@ describe('炽天使领域行为', () => {
         expect(rerolled.state.core.dice[0]?.value).toBe(6);
     });
 
+    it('僧侣攻击天使斗篷时，普通防御骰结算后主攻击仍扣除炽天使生命', () => {
+        let state = createHeroMatchup('monk', 'tianshi')(playerIds, createQueuedRandom([1]));
+        const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        const run = (step: DiceThroneCommand, randomValues: number[] = [1]) => {
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                step,
+                createQueuedRandom(randomValues),
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            if (!result.success) return undefined;
+            state = result.state;
+            return result;
+        };
+
+        run(command('ADVANCE_PHASE', '0'));
+        run(command('ROLL_DICE', '0'), [1, 1, 1, 1, 1]);
+        run(command('CONFIRM_ROLL', '0'));
+        const attackSelected = run(command('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }));
+        expect(attackSelected?.events).toContainEqual(expect.objectContaining({
+            type: 'ATTACK_INITIATED',
+            payload: expect.objectContaining({
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'fist-technique-5',
+            }),
+        }));
+
+        run(command('ADVANCE_PHASE', '0'));
+        expect(state.sys.phase).toBe('defensiveRoll');
+        expect(state.core.pendingAttack?.defenseAbilityId).toBe('angelic-cloak');
+        const defenseRolled = run(command('ROLL_DICE', '1'), [1]);
+        expect(defenseRolled?.events).toContainEqual(expect.objectContaining({
+            type: 'DICE_ROLLED',
+            payload: expect.objectContaining({
+                phase: 'defensiveRoll',
+                rollerId: '1',
+                results: [1],
+            }),
+        }));
+        const defenseConfirmed = run(command('CONFIRM_ROLL', '1'));
+        expect(defenseConfirmed?.events.some(event => event.type === 'BONUS_DICE_REROLL_REQUESTED')).toBe(false);
+
+        const resolved = run(command('ADVANCE_PHASE', '1'));
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({
+                targetId: '0',
+                amount: 2,
+                unblockable: true,
+            }),
+        }));
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({
+                targetId: '1',
+                amount: 8,
+                sourceAbilityId: 'fist-technique-5',
+            }),
+        }));
+        expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 8);
+        expect(state.core.pendingAttack).toBeNull();
+        expect(state.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(state.sys.phase).toBe('main2');
+    });
+
     it('神圣祝福在炽天使持有者遭受致死伤害时消耗标记并保留 1 点生命', () => {
         const state = createTianshiState();
         state.core.players['0'].resources[RESOURCE_IDS.HP] = 3;
@@ -1819,60 +1911,43 @@ describe('炽天使领域行为', () => {
         expect(after.players['0'].resources[RESOURCE_IDS.HP]).toBe(1);
     });
 
-    it('天使斗篷可以不支付 Token 免费重掷一次奖励骰', () => {
-        const state = createTianshiState();
-        const ability = TIANSHI_ABILITIES.find(entry => entry.id === 'angelic-cloak');
-        const context: EffectContext = {
-            attackerId: '0',
-            defenderId: '1',
-            sourceAbilityId: 'angelic-cloak',
-            state: state.core,
-            damageDealt: 0,
-            timestamp: 600,
-        };
-
-        const events = resolveEffectsToEvents(ability?.effects ?? [], 'withDamage', context, {
-            random: createQueuedRandom([1]),
-        });
-        const rerollRequest = events.find((event): event is Extract<DiceThroneEvent, { type: 'BONUS_DICE_REROLL_REQUESTED' }> => (
-            event.type === 'BONUS_DICE_REROLL_REQUESTED'
-        ));
-        expect(rerollRequest).toBeDefined();
-        if (!rerollRequest) return;
-        expect(rerollRequest.payload.settlement.displayOnly).not.toBe(true);
-        expect(rerollRequest.payload.settlement.rerollCostTokenId).toBe('');
-        expect(rerollRequest.payload.settlement.rerollCostAmount).toBe(0);
-        expect(rerollRequest.payload.settlement.maxRerollCount).toBe(1);
-        expect(canRerollBonusDiceSettlement(rerollRequest.payload.settlement, state.core.players['0'].tokens)).toBe(true);
-
-        const pendingState: MatchState<DiceThroneCore> = {
-            ...state,
-            core: applyEvents(state.core, events),
-        };
-        const rerollResult = executePipeline(
+    it('天使斗篷免费重投使用普通防御骰，并限制为一颗骰一次', () => {
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 1, 6]);
+        let state = createHeroMatchup('monk', 'tianshi')(playerIds, random);
+        state.core.players['1'].abilities = [ANGELIC_CLOAK_2];
+        const steps = [
+            command('ADVANCE_PHASE', '0'),
+            command('ROLL_DICE', '0'),
+            command('CONFIRM_ROLL', '0'),
+            command('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            command('ADVANCE_PHASE', '0'),
+            command('ROLL_DICE', '1'),
+            command('CONFIRM_ROLL', '1'),
+            command('SELECT_ABILITY', '1', { abilityId: 'angelic-cloak' }),
+            command('ROLL_DICE', '1'),
+            command('CONFIRM_ROLL', '1'),
+        ];
+        for (const step of steps) {
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                step,
+                random,
+                playerIds,
+            );
+            if (!result.success) throw new Error(`防御重投流程失败: ${result.error ?? 'unknown_error'}`);
+            state = result.state;
+        }
+        expect(state.core.dice[0]?.value).toBe(6);
+        const secondReroll = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            pendingState,
-            command('REROLL_BONUS_DIE', '0', { dieIndex: 0 }),
-            createQueuedRandom([6]),
-            playerIds,
-        );
-        expect(rerollResult.success).toBe(true);
-        if (!rerollResult.success) return;
-        expect(rerollResult.events.some(event => event.type === 'TOKEN_CONSUMED')).toBe(false);
-        expect(rerollResult.state.core.pendingBonusDiceSettlement?.rerollCount).toBe(1);
-        expect(rerollResult.state.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
-
-        const secondRerollResult = executePipeline(
-            { domain: DiceThroneDomain, systems: testSystems },
-            rerollResult.state,
-            command('REROLL_BONUS_DIE', '0', { dieIndex: 0 }),
+            state,
+            command('ROLL_DICE', '1'),
             createQueuedRandom([2]),
             playerIds,
         );
-        expect(secondRerollResult.success).toBe(false);
-        if (!secondRerollResult.success) {
-            expect(secondRerollResult.error).toBe('bonus_reroll_limit_reached');
-        }
+        expect(secondReroll.success).toBe(false);
+        if (!secondReroll.success) expect(secondReroll.error).toBe('roll_limit_reached');
     });
 
     it('神圣裁决先选择玩家施加眩光，再选择玩家获得 2 个飞行和净化', () => {

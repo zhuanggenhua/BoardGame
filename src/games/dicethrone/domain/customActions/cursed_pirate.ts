@@ -19,6 +19,7 @@ import type {
 import { registerChoiceEffectHandler } from '../choiceEffects';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
@@ -40,6 +41,10 @@ const RANSOM_RESOLVE_CHOICE_ID = 'cursed-pirate-ransom-resolve-choice';
 const CROWS_NEST_VIEW_CHOICE_ID = 'cursed-pirate-crows-nest-view-choice';
 const GO_FISH_POWDER_KEG_CHOICE_ID = 'cursed-pirate-go-fish-powder-keg';
 const SIP_CHOICE_ID = 'cursed-pirate-sip-choice';
+const FLAY_SETTLEMENT_ID = 'cursed-pirate-flay';
+const CROWS_NEST_SETTLEMENT_ID = 'cursed-pirate-crows-nest';
+const HEFTY_SETTLEMENT_ID = 'cursed-pirate-hefty';
+const SIP_ROLL_SETTLEMENT_ID = 'cursed-pirate-sip-roll';
 const HUMAN_WALK_THE_PLANK_CHOICE_ID = 'cursed-pirate-human-walk-the-plank-choice';
 const HUMAN_REMOVE_CURSED_COINS_CHOICE_ID = 'cursed-pirate-human-remove-cursed-coins-choice';
 const HUMAN_VERDICT_COMMAND_CHOICE_ID = 'cursed-pirate-human-verdict-command-choice';
@@ -181,6 +186,8 @@ const createBonusDieEvents = (
     values: number[],
     timestamp: number,
     effectKeyBuilder?: (value: number, face: string, index: number) => string,
+    customResolutionId?: string,
+    settlementTargetId?: string,
 ): { dice: BonusDieInfo[]; events: DiceThroneEvent[] } => {
     const dice = values.map((value, index) => {
         const face = getPlayerDieFace(state, playerId, value) ?? '';
@@ -201,7 +208,8 @@ const createBonusDieEvents = (
         timestamp,
     } as BonusDieRolledEvent));
 
-    events.push(createDisplayOnlySettlement(sourceAbilityId, playerId, playerId, dice, timestamp, {
+    events.push(createDisplayOnlySettlement(sourceAbilityId, playerId, settlementTargetId ?? playerId, dice, timestamp, {
+        customResolutionId,
         continuation: { kind: 'complete' },
     }));
     return { dice, events };
@@ -355,34 +363,9 @@ function resolveFlay({
         (_value, face) => face === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS
             ? 'bonusDie.effect.cursedPirateFlayCutlass'
             : 'bonusDie.effect.cursedPirateFlayOther',
+        FLAY_SETTLEMENT_ID,
+        targetId,
     );
-    const cutlassCount = dice.filter(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS).length;
-
-    if (cutlassCount > 0) {
-        events.push({
-            type: 'BONUS_DAMAGE_ADDED',
-            payload: {
-                playerId: attackerId,
-                amount: cutlassCount,
-                sourceCardId: sourceAbilityId,
-            },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + 1,
-        } as BonusDamageAddedEvent);
-    }
-
-    if (cutlassCount >= 3) {
-        events.push(...buildStatusAppliedOrChoiceEvents({
-            state,
-            targetId,
-            statusId: STATUS_IDS.POWDER_KEG,
-            stacks: 1,
-            sourceAbilityId,
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + 2,
-        }));
-    }
-
     return events;
 }
 
@@ -443,73 +426,9 @@ function resolveCrowsNest({
             if (face === CURSED_PIRATE_DICE_FACE_IDS.SKULL) return 'bonusDie.effect.cursedPirateCrowsNestSkull';
             return 'bonusDie.effect.cursedPirateCrowsNestOther';
         },
+        CROWS_NEST_SETTLEMENT_ID,
+        targetId,
     );
-    const face = dice[0]?.face;
-
-    if (face === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS) {
-        const handSummary = formatHandCardNameList(target.hand);
-        events.push({
-            type: 'CHOICE_REQUESTED',
-            payload: {
-                playerId: attackerId,
-                sourceAbilityId,
-                titleKey: 'choices.cursedPirateCrowsNestView.title',
-                options: [{
-                    value: 0,
-                    customId: CROWS_NEST_VIEW_CHOICE_ID,
-                    labelKey: 'choices.cursedPirateCrowsNestView.confirm',
-                    labelParams: { player: formatPlayerList(state, [targetId]), cards: handSummary },
-                }],
-            },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + 1,
-        } as ChoiceRequestedEvent);
-        return events;
-    }
-
-    if (target.hand.length === 0) return events;
-
-    if (face === CURSED_PIRATE_DICE_FACE_IDS.LOOT) {
-        events.push(...requestOpponentDiscardOneCard({
-            attackerId,
-            targetId,
-            sourceAbilityId,
-            state,
-            timestamp: timestamp + 1,
-            random,
-            ctx: {
-                attackerId,
-                defenderId: targetId,
-                sourceAbilityId,
-                state,
-                damageDealt: 0,
-                timestamp: timestamp + 1,
-            },
-            action: {
-                type: 'custom',
-                target: 'opponent',
-                customActionId: 'cursed-pirate-crows-nest-roll',
-            },
-        }));
-        return events;
-    }
-
-    if (face === CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
-        const randomIndex = Math.floor(random.random() * target.hand.length);
-        const card = target.hand[randomIndex];
-        if (card) {
-            events.push({
-                type: 'CARD_DISCARDED',
-                payload: {
-                    playerId: targetId,
-                    cardId: card.id,
-                },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: timestamp + 1,
-            } as CardDiscardedEvent);
-        }
-    }
-
     return events;
 }
 
@@ -533,27 +452,9 @@ function resolveHefty({
         (_value, face) => face === CURSED_PIRATE_DICE_FACE_IDS.LOOT
             ? 'bonusDie.effect.cursedPirateHeftyLoot'
             : 'bonusDie.effect.cursedPirateHeftyOther',
+        HEFTY_SETTLEMENT_ID,
+        attackerId,
     );
-    const hasLoot = dice.some(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.LOOT);
-    if (!hasLoot) return events;
-
-    events.push(...buildDrawEvents(state, attackerId, 2, random, 'ABILITY_EFFECT', timestamp + 1, sourceAbilityId));
-    const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
-    const sourceCardCost = player.hand.find(card => card.id === sourceAbilityId)?.cpCost ?? 0;
-    const cpAfterCardCost = Math.max(0, currentCp - sourceCardCost);
-    const newValue = Math.min(CP_MAX, cpAfterCardCost + 2);
-    events.push({
-        type: 'CP_CHANGED',
-        payload: {
-            playerId: attackerId,
-            delta: newValue - cpAfterCardCost,
-            newValue,
-            sourceAbilityId,
-        },
-        sourceCommandType: 'ABILITY_EFFECT',
-        timestamp: timestamp + 2,
-    } as CpChangedEvent);
-
     return events;
 }
 
@@ -1192,6 +1093,150 @@ function resolvePiratesLife({
 }
 
 export function registerCursedPirateCustomActions(): void {
+    registerBonusDiceSettlementHandler(FLAY_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const cutlassCount = settlement.dice.filter(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS).length;
+        const targetId = state.pendingAttack?.defenderId ?? settlement.targetId;
+        const followupEvents: DiceThroneEvent[] = [];
+        if (cutlassCount > 0) {
+            followupEvents.push({
+                type: 'BONUS_DAMAGE_ADDED',
+                payload: {
+                    playerId: settlement.attackerId,
+                    amount: cutlassCount,
+                    sourceCardId: settlement.sourceAbilityId,
+                },
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp,
+            } as BonusDamageAddedEvent);
+        }
+        if (cutlassCount >= 3) {
+            followupEvents.push(...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId,
+                statusId: STATUS_IDS.POWDER_KEG,
+                stacks: 1,
+                sourceAbilityId: settlement.sourceAbilityId,
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp: timestamp + 1,
+            }));
+        }
+        return { totalDamage: 0, followupEvents };
+    });
+
+    registerBonusDiceSettlementHandler(CROWS_NEST_SETTLEMENT_ID, ({ state, settlement, timestamp, random }) => {
+        const die = settlement.dice[0];
+        const targetId = state.pendingAttack?.defenderId ?? settlement.targetId;
+        const target = state.players[targetId];
+        if (!die || !target) return { totalDamage: 0, followupEvents: [] };
+
+        if (die.face === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS) {
+            return {
+                totalDamage: 0,
+                followupEvents: [{
+                    type: 'CHOICE_REQUESTED',
+                    payload: {
+                        playerId: settlement.attackerId,
+                        sourceAbilityId: settlement.sourceAbilityId,
+                        titleKey: 'choices.cursedPirateCrowsNestView.title',
+                        options: [{
+                            value: 0,
+                            customId: CROWS_NEST_VIEW_CHOICE_ID,
+                            labelKey: 'choices.cursedPirateCrowsNestView.confirm',
+                            labelParams: { player: formatPlayerList(state, [targetId]), cards: formatHandCardNameList(target.hand) },
+                        }],
+                    },
+                    sourceCommandType: 'BONUS_DICE_SETTLED',
+                    timestamp,
+                } as ChoiceRequestedEvent],
+            };
+        }
+
+        if (target.hand.length === 0) return { totalDamage: 0, followupEvents: [] };
+        if (die.face === CURSED_PIRATE_DICE_FACE_IDS.LOOT) {
+            return {
+                totalDamage: 0,
+                followupEvents: requestOpponentDiscardOneCard({
+                    targetId,
+                    sourceAbilityId: settlement.sourceAbilityId,
+                    state,
+                    timestamp,
+                }),
+            };
+        }
+        if (die.face === CURSED_PIRATE_DICE_FACE_IDS.SKULL && random) {
+            const card = target.hand[Math.floor(random.random() * target.hand.length)];
+            if (card) {
+                return {
+                    totalDamage: 0,
+                    followupEvents: [{
+                        type: 'CARD_DISCARDED',
+                        payload: { playerId: targetId, cardId: card.id },
+                        sourceCommandType: 'BONUS_DICE_SETTLED',
+                        timestamp,
+                    } as CardDiscardedEvent],
+                };
+            }
+        }
+        return { totalDamage: 0, followupEvents: [] };
+    });
+
+    registerBonusDiceSettlementHandler(HEFTY_SETTLEMENT_ID, ({ state, settlement, timestamp, random }) => {
+        if (!settlement.dice.some(die => die.face === CURSED_PIRATE_DICE_FACE_IDS.LOOT)) {
+            return { totalDamage: 0, followupEvents: [] };
+        }
+        const player = state.players[settlement.attackerId];
+        if (!player) return { totalDamage: 0, followupEvents: [] };
+        const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
+        const newValue = Math.min(CP_MAX, currentCp + 2);
+        return {
+            totalDamage: 0,
+            followupEvents: [
+                ...(random
+                    ? buildDrawEvents(state, settlement.attackerId, 2, random, 'BONUS_DICE_SETTLED', timestamp, settlement.sourceAbilityId)
+                    : []),
+                {
+                    type: 'CP_CHANGED',
+                    payload: {
+                        playerId: settlement.attackerId,
+                        delta: newValue - currentCp,
+                        newValue,
+                        sourceAbilityId: settlement.sourceAbilityId,
+                    },
+                    sourceCommandType: 'BONUS_DICE_SETTLED',
+                    timestamp: timestamp + 2,
+                } as CpChangedEvent,
+            ],
+        };
+    });
+
+    registerBonusDiceSettlementHandler(SIP_ROLL_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const die = settlement.dice[0];
+        if (!die || die.value < 3) return { totalDamage: 0, followupEvents: [] };
+        return {
+            totalDamage: 0,
+            followupEvents: [
+                ...buildStatusAppliedOrChoiceEvents({
+                    state,
+                    targetId: settlement.attackerId,
+                    statusId: STATUS_IDS.POWDER_KEG,
+                    stacks: 1,
+                    sourceAbilityId: settlement.sourceAbilityId,
+                    sourceCommandType: 'BONUS_DICE_SETTLED',
+                    timestamp,
+                }),
+                ...buildStatusAppliedOrChoiceEvents({
+                    state,
+                    targetId: settlement.attackerId,
+                    statusId: STATUS_IDS.WITHER,
+                    stacks: 1,
+                    sourceAbilityId: settlement.sourceAbilityId,
+                    sourceCommandType: 'BONUS_DICE_SETTLED',
+                    timestamp: timestamp + 1,
+                }),
+            ],
+        };
+    });
+
     registerCustomActionHandler('cursed-pirate-curse-card-choice', requestCurseCardChoice, {
         categories: ['card', 'choice', 'damage'],
         requiresInteraction: true,
@@ -1714,27 +1759,9 @@ export function registerCursedPirateCustomActions(): void {
             (dieValue) => dieValue >= 3
                 ? 'bonusDie.effect.cursedPirateSipHit'
                 : 'bonusDie.effect.cursedPirateSipMiss',
+            SIP_ROLL_SETTLEMENT_ID,
+            playerId,
         );
-        if (rolledValue < 3) return events;
-
-        events.push(...buildStatusAppliedOrChoiceEvents({
-            state,
-            targetId: playerId,
-            statusId: STATUS_IDS.POWDER_KEG,
-            stacks: 1,
-            sourceAbilityId,
-            sourceCommandType: 'CHOICE_RESOLVED',
-            timestamp: timestamp + 1,
-        }));
-        events.push(...buildStatusAppliedOrChoiceEvents({
-            state,
-            targetId: playerId,
-            statusId: STATUS_IDS.WITHER,
-            stacks: 1,
-            sourceAbilityId,
-            sourceCommandType: 'CHOICE_RESOLVED',
-            timestamp: timestamp + 2,
-        }));
         return events;
     });
     registerChoiceResolvedEventHandler(POWDER_KEG_TRANSFER_CHOICE_ID, ({

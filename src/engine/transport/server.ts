@@ -1574,6 +1574,23 @@ export class GameTransportServer {
         if (!match) return false;
         const roomRuntime = this.createMatchRoomRuntime(match);
 
+        // 命令已经基于更早的权威状态发出时，无论房间当前是否正在执行 AI，
+        // 都应立即拒绝。若先入房间队列，要等整段 AI 行动结束后才会触发 stale_state，
+        // 玩家会在这段时间看到“下一步已排队”却没有可操作反馈。
+        if (
+            roomRuntime.isExecuting()
+            && typeof options?.expectedStateID === 'number'
+            && options.expectedStateID !== match.stateID
+        ) {
+            return this.executeCommandInternal(
+                match,
+                playerID,
+                commandType,
+                payload,
+                options,
+            );
+        }
+
         return roomRuntime.executeCommand({
             playerID,
             commandType,

@@ -1,10 +1,12 @@
 import net from 'node:net';
 import os from 'node:os';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { saveDevRuntimePorts, removeDevRuntimePorts } from './dev-port-runtime.js';
 import { findAvailablePort } from './port-allocator.js';
+import { getPortPids } from './port-allocator.js';
+import { DEV_PROCESS_MATCHERS, isRepoDevProcess } from './clean_ports.js';
 import { withWindowsHide } from './windows-hide.js';
 
 const managedChildren = [];
@@ -94,7 +96,11 @@ function resolvePreferredDevPorts(env, preferredPorts = DEFAULT_DEV_PORTS) {
 
 export async function resolveDevPortsFromEnv(env = process.env, options = {}) {
     const preferredPorts = resolvePreferredDevPorts(env, options.preferredPorts);
-    const strictPorts = env.BG_DEV_STRICT_PORTS === '1';
+    const respectExplicitPorts = options.respectExplicitPorts ?? true;
+    if (options.fixedPorts === true) {
+        return preferredPorts;
+    }
+    const strictPorts = env.BG_DEV_STRICT_PORTS === '1' && respectExplicitPorts;
     if (strictPorts) {
         return preferredPorts;
     }
@@ -108,7 +114,7 @@ export async function resolveDevPortsFromEnv(env = process.env, options = {}) {
     const reservedPorts = new Set();
 
     for (const [service, preferredPort] of Object.entries(preferredPorts)) {
-        if (explicitPorts[service]) {
+        if (explicitPorts[service] && respectExplicitPorts) {
             resolvedPorts[service] = preferredPort;
             reservedPorts.add(preferredPort);
             continue;
@@ -251,6 +257,49 @@ async function resolveLocalDevMongoUri() {
     return defaultLocalDevMongoUri;
 }
 
+async function startCommandUnlessPortInUse(label, port, command, args = [], extraEnv = {}) {
+    if (!(await probePort(port))) {
+        return startCommand(label, command, args, extraEnv);
+    }
+
+    const pids = getPortPids(port).map((pid) => Number(pid)).filter((pid) => Number.isInteger(pid) && pid > 0);
+    const ownPids = pids.filter((pid) => isOwnDevProcess(pid));
+    if (ownPids.length === pids.length && ownPids.length > 0) {
+        console.warn(`[dev-orchestrator] ${label} 端口 ${port} 已由本仓库服务监听，本次复用现有服务，不重复启动`);
+        return null;
+    }
+
+    const detail = pids.length > 0 ? `PID ${pids.join(', ')}` : '无法读取进程信息';
+    throw new Error(`${label} 端口 ${port} 已被外部进程占用（${detail}），为避免递增端口制造重复服务，本次停止启动。`);
+}
+
+function getProcessCommandLine(pid) {
+    try {
+        if (process.platform === 'win32') {
+            return execFileSync('powershell', [
+                '-NoProfile',
+                '-Command',
+                `(Get-CimInstance Win32_Process -Filter \"ProcessId = ${pid}\").CommandLine`,
+            ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        }
+
+        return execFileSync('ps', ['-p', String(pid), '-o', 'command='], {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+    } catch {
+        return '';
+    }
+}
+
+function isOwnDevProcess(pid) {
+    const commandLine = getProcessCommandLine(pid);
+    return isRepoDevProcess(commandLine, {
+        cwd: repoRoot,
+        matchers: [...DEV_PROCESS_MATCHERS, 'vite-cli-safe.mjs', 'temp/dev-bundles'],
+    });
+}
+
 function resolveGameDevEnv(mongoUri) {
     if (devLiteMode) {
         return { USE_PERSISTENT_STORAGE: 'false' };
@@ -266,13 +315,19 @@ function resolveGameDevEnv(mongoUri) {
 async function main() {
     disableHotReload = isHotReloadDisabled(process.env);
     removeDevRuntimePorts();
-    const resolvedPorts = await resolveDevPortsFromEnv();
+    const resolvedPorts = await resolveDevPortsFromEnv(process.env, {
+        // lite 重启场景必须保持固定端口；已有服务复用，缺失服务才补启动。
+        fixedPorts: devLiteMode,
+        respectExplicitPorts: !devLiteMode,
+    });
     const resolvedMongoUri = await resolveLocalDevMongoUri();
     saveDevRuntimePorts(resolvedPorts);
     const sharedDevEnv = {
         VITE_DEV_PORT: String(resolvedPorts.frontend),
         GAME_SERVER_PORT: String(resolvedPorts.gameServer),
         API_SERVER_PORT: String(resolvedPorts.apiServer),
+        // 端口已由本编排器成组分配，前端必须使用同一端口，避免代理和运行时地址漂移。
+        BG_DEV_STRICT_PORTS: '1',
         VITE_DEV_SKIP_API: skipApiMode ? 'true' : 'false',
         GAME_SERVER_PROXY_TARGET: `http://127.0.0.1:${resolvedPorts.gameServer}`,
         ...(resolvedMongoUri ? { MONGO_URI: resolvedMongoUri } : {}),
@@ -295,7 +350,7 @@ async function main() {
         console.log('[dev-orchestrator] dev:lite mode enabled: game uses in-memory storage');
     }
     if (skipApiMode) {
-        console.log('[dev-orchestrator] API startup is disabled for this run');
+        console.warn('[dev-orchestrator] dev:lite 模式不会启动 API；认证、社交、管理后台和持久化能力不可用');
     } else if (resolvedMongoUri && !process.env.MONGO_URI) {
         console.log(`[dev-orchestrator] auto-detected local Mongo and injected MONGO_URI=${resolvedMongoUri}`);
     }
@@ -312,15 +367,23 @@ async function main() {
             tsconfig: 'apps/api/tsconfig.json',
         }), sharedDevEnv, { optional: true });
     const gameExtraEnv = resolveGameDevEnv(resolvedMongoUri);
-    startCommand('dev:game', process.execPath, createBundleRunnerArgs({
+    const gameArgs = createBundleRunnerArgs({
         label: 'game',
         entry: 'server.ts',
         outfile: getBundleOutfile('game', 'server.mjs'),
         tsconfig: 'tsconfig.server.json',
-    }), {
-        ...sharedDevEnv,
-        ...gameExtraEnv,
     });
+    if (devLiteMode) {
+        await startCommandUnlessPortInUse('dev:game', resolvedPorts.gameServer, process.execPath, gameArgs, {
+            ...sharedDevEnv,
+            ...gameExtraEnv,
+        });
+    } else {
+        startCommand('dev:game', process.execPath, gameArgs, {
+            ...sharedDevEnv,
+            ...gameExtraEnv,
+        });
+    }
 
     console.log(`[dev-orchestrator] waiting for ports (timeout=${Math.floor(devStartupTimeoutMs / 1000)}s)`);
 
@@ -351,7 +414,11 @@ async function main() {
     }
 
     console.log('[dev-orchestrator] starting frontend');
-    startCommand('dev:frontend', process.execPath, ['scripts/infra/vite-with-logging.js'], sharedDevEnv);
+    if (devLiteMode) {
+        await startCommandUnlessPortInUse('dev:frontend', resolvedPorts.frontend, process.execPath, ['scripts/infra/vite-with-logging.js'], sharedDevEnv);
+    } else {
+        startCommand('dev:frontend', process.execPath, ['scripts/infra/vite-with-logging.js'], sharedDevEnv);
+    }
 
     if (skipApiMode) {
         console.log('[dev-orchestrator] frontend 已启动；API 已按当前模式跳过');

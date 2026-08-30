@@ -17,7 +17,7 @@ import { SU_COMMANDS, STARTING_HAND_SIZE } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
 import { buildSmashUpAiLegalActions } from '../ai';
-import { getSmashUpNextDraftPlayerIndex } from '../domain/pregameDraft';
+import { getSmashUpNextDraftPlayerIndex, getSmashUpSelectableFactionCandidatesForPlayer } from '../domain/pregameDraft';
 import smashUpEnglishMap from '../data/englishAtlasMap.json';
 import {
     getAllBaseDefs,
@@ -62,6 +62,52 @@ describe('派系选择系统', () => {
 
     // Property 1: 派系互斥选择
     describe('Property 1: 派系互斥选择', () => {
+        it('随机派系会提交一个当前合法的真实派系，不会写入随机伪 ID', () => {
+            const runner = createRunner();
+            const result = runner.run({
+                name: '随机派系选择',
+                commands: [
+                    { type: SU_COMMANDS.SELECT_RANDOM_FACTION, playerId: '0', payload: {} },
+                ],
+            });
+
+            expect(result.steps[0]?.success).toBe(true);
+            const selected = result.finalState.core.factionSelection?.playerSelections['0'] ?? [];
+            const candidates = getSmashUpSelectableFactionCandidatesForPlayer(result.finalState.core, '0');
+            expect(selected).toHaveLength(1);
+            expect(selected[0]).not.toBe('random');
+            expect(selected[0]).toEqual(expect.any(String));
+            expect(result.finalState.core.factionSelection?.takenFactions).toContain(selected[0]);
+            expect(candidates).not.toContain(selected[0]);
+        });
+
+        it('随机派系不会抽到已选择或已 Ban 的派系，并按身份去重 POD/普通版', () => {
+            const runner = createRunner();
+            const initial = runner.run({ name: '随机派系过滤初始态', commands: [] }).finalState;
+            const filteredState: MatchState<SmashUpCore> = {
+                ...initial,
+                sys: { ...initial.sys, phase: 'factionSelect' },
+                core: {
+                    ...initial.core,
+                    factionSelection: {
+                        ...initial.core.factionSelection!,
+                        takenFactions: [SMASHUP_FACTION_IDS.ALIENS_POD],
+                        bannedFactions: [SMASHUP_FACTION_IDS.PIRATES],
+                        playerSelections: {
+                            '0': [SMASHUP_FACTION_IDS.ALIENS_POD],
+                            '1': [],
+                        },
+                    },
+                },
+            };
+            const candidates = getSmashUpSelectableFactionCandidatesForPlayer(filteredState.core, '0');
+
+            expect(candidates).not.toContain(SMASHUP_FACTION_IDS.ALIENS);
+            expect(candidates).not.toContain(SMASHUP_FACTION_IDS.ALIENS_POD);
+            expect(candidates).not.toContain(SMASHUP_FACTION_IDS.PIRATES);
+            expect(new Set(candidates.map((id) => id.replace(/_pod$/, ''))).size).toBe(candidates.length);
+        });
+
         it('已选派系不可被其他玩家选择', () => {
             const runner = createRunner();
             const result = runner.run({

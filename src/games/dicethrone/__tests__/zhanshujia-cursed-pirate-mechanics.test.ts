@@ -3125,9 +3125,11 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const events = execute(state, command('PLAY_CARD', '0', {
             cardId: 'card-cursed-pirate-flay',
         }), createQueuedRandom([1, 2, 3, 4, 6]));
-        const next = applyEvents(state.core, events);
+        const settled = settleBonusDice({ ...state, core: applyEvents(state.core, events) }, '0');
+        const allEvents = [...events, ...settled.events];
+        const next = settled.state.core;
 
-        const bonusDamage = eventsOfType(events, 'BONUS_DAMAGE_ADDED')[0];
+        const bonusDamage = eventsOfType(allEvents, 'BONUS_DAMAGE_ADDED')[0];
         expect(bonusDamage?.payload).toMatchObject({
             playerId: '0',
             amount: 3,
@@ -3152,9 +3154,11 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const events = execute(state, command('PLAY_CARD', '0', {
             cardId: 'card-cursed-pirate-flay',
         }), createQueuedRandom([1, 4, 5, 6, 6]));
-        const next = applyEvents(state.core, events);
+        const settled = settleBonusDice({ ...state, core: applyEvents(state.core, events) }, '0');
+        const allEvents = [...events, ...settled.events];
+        const next = settled.state.core;
 
-        const bonusDamage = eventsOfType(events, 'BONUS_DAMAGE_ADDED')[0];
+        const bonusDamage = eventsOfType(allEvents, 'BONUS_DAMAGE_ADDED')[0];
         expect(bonusDamage?.payload).toMatchObject({
             playerId: '0',
             amount: 1,
@@ -3423,10 +3427,12 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const events = execute(state, command('PLAY_CARD', '0', {
             cardId: 'card-cursed-pirate-hefty',
         }), createQueuedRandom([4, 6]));
-        const next = applyEvents(state.core, events);
+        const settled = settleBonusDice({ ...state, core: applyEvents(state.core, events) }, '0', createQueuedRandom([1, 1, 1, 1]));
+        const allEvents = [...events, ...settled.events];
+        const next = settled.state.core;
 
-        expect(eventsOfType(events, 'BONUS_DIE_ROLLED')).toHaveLength(2);
-        expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(2);
+        expect(eventsOfType(allEvents, 'BONUS_DIE_ROLLED')).toHaveLength(2);
+        expect(eventsOfType(allEvents, 'CARD_DRAWN')).toHaveLength(2);
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(3 - 2 + 2);
         expect(next.players['0'].hand.map(card => card.id)).toEqual([
             'card-flick',
@@ -3445,11 +3451,13 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const events = execute(state, command('PLAY_CARD', '0', {
             cardId: 'card-cursed-pirate-hefty',
         }), createQueuedRandom([1, 6]));
-        const next = applyEvents(state.core, events);
+        const settled = settleBonusDice({ ...state, core: applyEvents(state.core, events) }, '0', createQueuedRandom([1, 1, 1, 1]));
+        const allEvents = [...events, ...settled.events];
+        const next = settled.state.core;
 
-        expect(eventsOfType(events, 'BONUS_DIE_ROLLED')).toHaveLength(2);
-        expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(0);
-        expect(eventsOfType(events, 'CP_CHANGED')).toHaveLength(0);
+        expect(eventsOfType(allEvents, 'BONUS_DIE_ROLLED')).toHaveLength(2);
+        expect(eventsOfType(allEvents, 'CARD_DRAWN')).toHaveLength(0);
+        expect(eventsOfType(allEvents, 'CP_CHANGED')).toHaveLength(0);
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(3 - 2);
         expect(next.players['0'].hand).toHaveLength(0);
         expect(next.players['0'].deck.map(card => card.id)).toEqual([
@@ -3534,8 +3542,9 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const rollResult = respondToPrompt(rollPlay.state, roll!.id, '1', createQueuedRandom([4]));
         expect(rollResult.success).toBe(true);
         expect(eventsOfType(rollResult.events as DiceThroneEvent[], 'BONUS_DIE_ROLLED')[0]?.payload.value).toBe(4);
-        expect(rollResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
-        expect(rollResult.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        const rollSettled = settleBonusDiceThroughPipeline(rollResult.state, '1', createQueuedRandom([1]));
+        expect(rollSettled.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(rollSettled.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
     });
 
     it('啜呼改为投骰后若掷出 1-2 则不施加任何状态', () => {
@@ -3551,8 +3560,9 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(rollResult.success).toBe(true);
         expect(eventsOfType(rollResult.events as DiceThroneEvent[], 'BONUS_DIE_ROLLED')[0]?.payload.value).toBe(1);
         expect(eventsOfType(rollResult.events as DiceThroneEvent[], 'STATUS_APPLIED')).toHaveLength(0);
-        expect(rollResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
-        expect(rollResult.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
+        const rollSettled = settleBonusDiceThroughPipeline(rollResult.state, '1', createQueuedRandom([1]));
+        expect(rollSettled.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(rollSettled.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
     });
 
     it('瞭望台按弯刀查看手牌、战利品自选弃牌、骷髅随机弃牌分支结算', () => {
@@ -3596,8 +3606,10 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const skullEvents = execute(skullState, command('PLAY_CARD', '0', {
             cardId: 'card-cursed-pirate-crows-nest',
         }), createQueuedRandom([6]));
-        const afterSkull = applyEvents(skullState.core, skullEvents);
-        const randomDiscard = eventsOfType(skullEvents, 'CARD_DISCARDED')[0];
+        const skullSettled = settleBonusDice({ ...skullState, core: applyEvents(skullState.core, skullEvents) }, '0', createQueuedRandom([1]));
+        const skullAllEvents = [...skullEvents, ...skullSettled.events];
+        const afterSkull = skullSettled.state.core;
+        const randomDiscard = eventsOfType(skullAllEvents, 'CARD_DISCARDED')[0];
         expect(randomDiscard?.payload).toMatchObject({
             playerId: '1',
             cardId: 'card-flick',

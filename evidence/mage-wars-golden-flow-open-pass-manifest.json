@@ -9,80 +9,82 @@
   },
   "requirements": [
     {
-      "requirement": "Mage Wars 当前范围候选链必须按当前 30 张原图、索引图加 30 张标号图完整展示",
+      "requirement": "完整流程展示必须从选择法师 / 法术书入口开始，再进入正式牌桌和计划阶段",
       "status": "PASS",
       "evidence": [
         "evidence/mage-wars-golden-flow-display-sequence-manifest.json",
-        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/"
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/01-labeled-01-入口选择页-四本标准书和双方选择目标可见.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/04-labeled-04-双方计划后-对手计划仍隐藏.png"
       ]
     },
     {
-      "requirement": "候选链第一张必须是计划阶段，后续按玩家流程覆盖部署、附件目标选择、墙体、攻击、移动、守卫、响应、能力和终局",
+      "requirement": "当前范围候选链必须覆盖计划、召唤部署、附件目标选择、墙体边界、攻击、移动、守卫响应、对象能力和终局代表态",
       "status": "PASS",
       "evidence": [
-        "01-labeled-01-双方计划后-对手计划仍隐藏.png",
-        "09-labeled-10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.png 到 15-labeled-10G-荆棘之墙施放后-A3-B3边界墙牌可见.png",
-        "21-labeled-13-阿希拉牧师自然移动到A2-与受伤野性山猫同区.png 到 28-labeled-16-阿希拉牧师治疗之光结算后-治疗能力可见.png"
+        "e2e/mage-wars/online-runtime.e2e.ts：入口接入当前范围候选链真实浏览器用例",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/05-labeled-09A-兽王野性山猫-召唤来源和目标区域.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/12-labeled-10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/17-labeled-10F-荆棘之墙施放前-A3-B3边界可选.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/25-labeled-14-守卫动作后-阿希拉牧师守卫标记可见.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/29-labeled-16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/33-labeled-18-近终局代表态基础攻击后-胜负遮罩可见.png"
       ]
     },
     {
-      "requirement": "当前候选链必须已有本轮真实浏览器成功回执，而不是只靠截图目录或旧记录",
+      "requirement": "关键交互必须由玩家选择目标或响应，不能用自动选目标替代；墙体、附件、守卫和治疗过程要有对应可见证据",
       "status": "PASS",
       "evidence": [
-        "2026-08-29 命令：$env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-single.mjs isolated e2e/mage-wars/online-runtime.e2e.ts \"Mage Wars 当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局\"",
-        "结果：1 passed (3.7m)，目标用例约 3.4m"
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/12-labeled-10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/17-labeled-10F-荆棘之墙施放前-A3-B3边界可选.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/18-labeled-10G-荆棘之墙施放后-A3-B3边界墙牌可见.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/27-labeled-15A-守卫生物被攻击后-反击响应可见.png",
+        "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/30-labeled-16-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.png"
       ]
     },
     {
-      "requirement": "守卫被攻击后的反击响应必须纳入当前候选链，并证明玩家可见选择和放弃收口",
+      "requirement": "本图组明确是入口接入 + current-scope 综合候选链，不外推为 stable 主黄金链、全卡表或完整实体版 Mage Wars",
       "status": "PASS",
       "evidence": [
-        "15A-守卫生物被攻击后-反击响应可见.jpg",
-        "15B-放弃反击后-守卫响应收口.jpg",
-        "e2e/mage-wars/online-runtime.e2e.ts"
-      ]
-    },
-    {
-      "requirement": "复原术和近终局必须明确标为代表态切片，不得外推为自然连续主黄金链、全卡表完成或完整实体版 Mage Wars",
-      "status": "PASS",
-      "evidence": [
+        "evidence/mage-wars-golden-flow-display-sequence-manifest.json：scopeNote",
         "evidence/mage-wars-golden-flow-coverage-matrix.md",
-        "evidence/mage-wars-golden-flow-e2e-test.md",
         "docs/games/mage-wars/runtime-gameplay-closeout-self-audit.md"
       ]
     }
   ],
   "images": [
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/00-sequence-index.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/01-labeled-01-双方计划后-对手计划仍隐藏.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/02-labeled-09A-兽王野性山猫-召唤来源和目标区域.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/03-labeled-09A-兽王野性山猫-召唤光柱过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/04-labeled-09A-兽王野性山猫-召唤完成单位落场.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/05-labeled-09B-女祭司阿希拉牧师-召唤来源和目标区域.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/06-labeled-09B-女祭司阿希拉牧师-召唤光柱过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/07-labeled-09B-女祭司阿希拉牧师-召唤完成单位落场.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/08-labeled-09-两派系生物部署后-兽王女祭司各有场上生物.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/09-labeled-10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/10-labeled-10B-兽王结界犀牛兽皮施放前-野性山猫为绿色合法目标.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/11-labeled-10C-女祭司装备风龙皮甲施放前-女祭司法师为绿色合法目标.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/12-labeled-10D-女祭司结界公牛耐力施放前-阿希拉牧师为绿色合法目标.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/13-labeled-10E-装备和结界最终附着结果-两派系附着关系可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/14-labeled-10F-荆棘之墙施放前-A3-B3边界可选.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/15-labeled-10G-荆棘之墙施放后-A3-B3边界墙牌可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/16-labeled-11A-间歇喷泉攻击法术-来源到目标投射过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/17-labeled-11A-间歇喷泉攻击法术-投射物飞行中.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/18-labeled-11A-间歇喷泉攻击法术-命中动画过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/19-labeled-11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/20-labeled-12-候选链收口-回到下一轮计划阶段.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/21-labeled-13-阿希拉牧师自然移动到A2-与受伤野性山猫同区.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/22-labeled-14-守卫动作后-阿希拉牧师守卫标记可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/23-labeled-15-近战攻击守卫生物后-守卫标记移除.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/24-labeled-15A-守卫生物被攻击后-反击响应可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/25-labeled-15B-放弃反击后-守卫响应收口.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/26-labeled-16A-阿希拉牧师治疗之光入口-中下动作按钮可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/27-labeled-16-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/28-labeled-16-阿希拉牧师治疗之光结算后-治疗能力可见.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/29-labeled-17-女祭司复原术代表态移除燃烧后-状态标记消失.png",
-    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-当前范围候选链：标准竞技场两派系覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/_labeled-current-scope-candidate-flow/30-labeled-18-近终局代表态基础攻击后-胜负遮罩可见.png"
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/01-labeled-01-入口选择页-四本标准书和双方选择目标可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/02-labeled-02-入口选择页-P1兽王书-P2女祭司书已选中.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/03-labeled-03-入口确认后-牌桌绑定兽王女祭司法术书.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/04-labeled-04-双方计划后-对手计划仍隐藏.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/05-labeled-09A-兽王野性山猫-召唤来源和目标区域.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/06-labeled-09A-兽王野性山猫-召唤光柱过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/07-labeled-09A-兽王野性山猫-召唤完成单位落场.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/08-labeled-09B-女祭司阿希拉牧师-召唤来源和目标区域.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/09-labeled-09B-女祭司阿希拉牧师-召唤光柱过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/10-labeled-09B-女祭司阿希拉牧师-召唤完成单位落场.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/11-labeled-09-两派系生物部署后-兽王女祭司各有场上生物.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/12-labeled-10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/13-labeled-10B-兽王结界犀牛兽皮施放前-野性山猫为绿色合法目标.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/14-labeled-10C-女祭司装备风龙皮甲施放前-女祭司法师为绿色合法目标.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/15-labeled-10D-女祭司结界公牛耐力施放前-阿希拉牧师为绿色合法目标.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/16-labeled-10E-装备和结界最终附着结果-两派系附着关系可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/17-labeled-10F-荆棘之墙施放前-A3-B3边界可选.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/18-labeled-10G-荆棘之墙施放后-A3-B3边界墙牌可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/19-labeled-11A-间歇喷泉攻击法术-来源到目标投射过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/20-labeled-11A-间歇喷泉攻击法术-投射物飞行中.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/21-labeled-11A-间歇喷泉攻击法术-命中动画过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/22-labeled-11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/23-labeled-12-候选链收口-回到下一轮计划阶段.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/24-labeled-13-阿希拉牧师自然移动到A2-与受伤野性山猫同区.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/25-labeled-14-守卫动作后-阿希拉牧师守卫标记可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/26-labeled-15-近战攻击守卫生物后-守卫标记移除.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/27-labeled-15A-守卫生物被攻击后-反击响应可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/28-labeled-15B-放弃反击后-守卫响应收口.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/29-labeled-16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/30-labeled-16-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/31-labeled-16-阿希拉牧师治疗之光结算后-治疗能力可见.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/32-labeled-17-女祭司复原术代表态移除燃烧后-状态标记消失.png",
+    "test-results/evidence-screenshots/mage-wars/complete-flow-entry-candidate-20260830/_labeled-entry-plus-current-scope-candidate-flow/33-labeled-18-近终局代表态基础攻击后-胜负遮罩可见.png"
   ]
 }

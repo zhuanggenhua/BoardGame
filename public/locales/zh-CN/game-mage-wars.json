@@ -111,7 +111,9 @@
   },
   "ui": {
     "showAllLifeTotals": "显示全部生命读数",
-    "hideAllLifeTotals": "隐藏全部生命读数"
+    "hideAllLifeTotals": "隐藏全部生命读数",
+    "inspectCardTitle": "放大查看",
+    "inspectCardAria": "放大查看 {{name}}"
   },
   "zonesPanel": {
     "title": "私有与附着区",

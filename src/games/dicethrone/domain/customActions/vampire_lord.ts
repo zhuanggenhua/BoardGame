@@ -4,12 +4,13 @@ import type {
     HealAppliedEvent,
     InteractionRequestedEvent,
     PendingInteraction,
+    TokenGrantedEvent,
 } from '../types';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceEffectHandler } from '../choiceEffects';
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { STATUS_IDS, TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from '../ids';
-import { getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getAttackMaxDuplicateValueCount, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
 
 const VAMPIRE_LORD_MESMERIZE_SETTLEMENT_ID = 'vampire-lord-mesmerize-roll';
 
@@ -137,6 +138,51 @@ function handleBloodPowerHealAttackDamage({
     } as HealAppliedEvent];
 }
 
+function getPositiveIntParam(
+    action: CustomActionContext['action'],
+    key: string,
+    fallback: number,
+): number {
+    const params = action.params as Record<string, unknown> | undefined;
+    const value = params?.[key];
+    return Number.isFinite(value)
+        ? Math.max(0, Math.trunc(value as number))
+        : fallback;
+}
+
+function handleBloodthirstyClawsBloodPowerIfKind({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+    action,
+}: CustomActionContext): DiceThroneEvent[] {
+    const threshold = getPositiveIntParam(action, 'threshold', 3);
+    if (getAttackMaxDuplicateValueCount(state) < threshold) return [];
+
+    const amount = getPositiveIntParam(action, 'amount', 1);
+    if (amount <= 0) return [];
+
+    const currentAmount = state.players[attackerId]?.tokens[TOKEN_IDS.BLOOD_POWER] ?? 0;
+    const maxStacks = getTokenStackLimit(state, attackerId, TOKEN_IDS.BLOOD_POWER);
+    const newTotal = Math.min(currentAmount + amount, maxStacks);
+    const granted = newTotal - currentAmount;
+    if (granted <= 0) return [];
+
+    return [{
+        type: 'TOKEN_GRANTED',
+        payload: {
+            targetId: attackerId,
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: granted,
+            newTotal,
+            sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as TokenGrantedEvent];
+}
+
 function getBloodPossessedChoiceDefenderId(
     state: CustomActionContext['state'],
     playerId: string,
@@ -183,6 +229,10 @@ export function registerVampireLordCustomActions(): void {
     });
     registerCustomActionHandler('vampire-lord-blood-power-heal-attack-damage', handleBloodPowerHealAttackDamage, {
         categories: ['resource', 'passive'],
+    });
+    registerCustomActionHandler('vampire-lord-bloodthirsty-claws-blood-power-if-kind', handleBloodthirstyClawsBloodPowerIfKind, {
+        categories: ['token'],
+        usesAttackDiceSnapshot: true,
     });
     registerChoiceEffectHandler('vampire-lord-blood-possessed-inflict-bleed', ({ state, playerId, value }) => {
         const targetId = getBloodPossessedChoiceDefenderId(state, playerId);

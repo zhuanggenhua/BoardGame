@@ -7,6 +7,9 @@ vi.mock('../../config/server', () => ({
     IS_DEV_API_DISABLED: false,
 }));
 
+const getFeedbackFetchCalls = () => (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls
+    .filter(([input]) => String(input) === '/feedback');
+
 describe('clientAutoReport', () => {
     beforeEach(() => {
         vi.resetModules();
@@ -93,14 +96,14 @@ describe('clientAutoReport', () => {
             stack: '{"phase":"scoreBases"}',
         });
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
         expect(getLastErrorContext()).toMatchObject({
             name: 'SmashUpRuntimeStateNormalized',
             message: '大杀四方运行时状态存在空数组合同破坏',
             source: 'smashup.runtime_state_guard',
         });
 
-        const requestInit = (globalThis.fetch as any).mock.calls[0]?.[1];
+        const requestInit = getFeedbackFetchCalls()[0]?.[1];
         const body = JSON.parse(String(requestInit?.body ?? '{}'));
         expect(body).toMatchObject({
             source: 'client-runtime-guard',
@@ -168,7 +171,7 @@ describe('clientAutoReport', () => {
             errorSource: 'react.error_boundary',
         });
 
-        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        const body = JSON.parse(String(getFeedbackFetchCalls()[0]?.[1]?.body ?? '{}'));
         expect(body.source).toBe('react-error-boundary');
         expect(body.contactInfo).toBe('auto:react-error-boundary');
         expect(body.clientContext?.gameId).toBe('smashup');
@@ -191,7 +194,7 @@ describe('clientAutoReport', () => {
             componentStack: '\n    at CardPanel\n    at MatchRoomWithAudio',
         });
 
-        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        const body = JSON.parse(String(getFeedbackFetchCalls()[0]?.[1]?.body ?? '{}'));
         expect(body.errorContext).toMatchObject({
             jsStack: expect.stringContaining('CardPanel'),
             componentStack: expect.stringContaining('MatchRoomWithAudio'),
@@ -258,7 +261,7 @@ describe('clientAutoReport', () => {
             errorSource: 'react.error_boundary',
         });
 
-        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        const body = JSON.parse(String(getFeedbackFetchCalls()[0]?.[1]?.body ?? '{}'));
         expect(body).toMatchObject({
             actionLog: expect.stringContaining('user-feedback-diagnostic'),
             stateSnapshot: expect.stringContaining('"turnNumber": 7'),
@@ -283,7 +286,7 @@ describe('clientAutoReport', () => {
         await reportClientAutoFeedbackOnce('dedupe-signature', payload);
         await reportClientAutoFeedbackOnce('dedupe-signature', payload);
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
     });
 
     it('测试模式下不会真的发请求，但仍会记录最近错误上下文', async () => {
@@ -300,7 +303,7 @@ describe('clientAutoReport', () => {
             errorSource: 'smashup.runtime_state_guard',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
         expect(getLastErrorContext()).toMatchObject({
             name: 'SmashUpRuntimeStateNormalized',
             message: '仅记录上下文',
@@ -322,7 +325,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.error',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('动态导入模块加载失败噪音会被过滤，不进入自动反馈', async () => {
@@ -340,7 +343,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('WKWebView 空堆栈 Load failed 噪音会被过滤，不进入自动反馈', async () => {
@@ -359,7 +362,7 @@ describe('clientAutoReport', () => {
             stack: '',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('有站内堆栈的 Load failed 不会被 WKWebView 噪音规则误过滤', async () => {
@@ -378,7 +381,7 @@ describe('clientAutoReport', () => {
             stack: 'TypeError: Load failed\n    at loadRoomDetails (https://easyboardgame.top/assets/index-Cmi8y5la.js:120:15)',
         });
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
     });
 
     it('模块脚本 MIME type 噪音会被过滤，不进入自动反馈', async () => {
@@ -396,7 +399,7 @@ describe('clientAutoReport', () => {
             errorSource: 'react.error_boundary',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('音频设备启动失败噪音会被过滤，不进入自动反馈', async () => {
@@ -414,7 +417,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('音频编解码不支持噪音会被过滤，不进入自动反馈', async () => {
@@ -432,7 +435,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('音频解码失败噪音会被过滤，不进入自动反馈', async () => {
@@ -450,7 +453,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('音频资源 502 加载失败会被过滤，不进入自动反馈', async () => {
@@ -469,7 +472,7 @@ describe('clientAutoReport', () => {
             stack: 'Error: Failed loading audio file with status: 502.\n    at c (https://easyboardgame.top/assets/index.js:192:42706)\n    at _.<anonymous> (https://easyboardgame.top/assets/vendor-howler-Bp1HXCiM.js:1:19873)',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('Howler 音频错误码噪音会被过滤，不进入自动反馈', async () => {
@@ -488,7 +491,7 @@ describe('clientAutoReport', () => {
             stack: 'Error: 4\n    at c (https://easyboardgame.top/assets/index-Cmi8y5la.js:187:33412)\n    at _.<anonymous> (https://easyboardgame.top/assets/vendor-howler-Bp1HXCiM.js:1:19873)',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('旧 Android 壳缺少 App 插件时会过滤噪音，不进入自动反馈', async () => {
@@ -506,7 +509,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('旧 Android 壳缺少 CapacitorUpdater 插件时会过滤噪音，不进入自动反馈', async () => {
@@ -524,7 +527,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('通用 AbortError 噪音会被过滤，不进入自动反馈', async () => {
@@ -542,7 +545,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.unhandledrejection',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('空堆栈的泛化 Unhandled rejection 会被过滤，不进入自动反馈', async () => {
@@ -561,7 +564,7 @@ describe('clientAutoReport', () => {
             stack: '',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('钱包扩展注入 ethereum 的噪音会被过滤，不进入自动反馈', async () => {
@@ -580,7 +583,7 @@ describe('clientAutoReport', () => {
             stack: 'TypeError: Cannot redefine property: ethereum\n    at Object.defineProperty (<anonymous>)\n    at chrome-extension://mfgccjchihfkkindfppnaooecgfneiii/inpage.js:144:113558',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('扩展 inpage 脚本 sseError 噪音会被过滤，不进入自动反馈', async () => {
@@ -599,7 +602,7 @@ describe('clientAutoReport', () => {
             stack: 'Error: func sseError not found\n    at Object.<anonymous> (chrome-extension://cadiboklkpojfamcoggejbbdjcoiljjk/inpage.js:250:19715)',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('纯浏览器扩展栈的空节点 removeAttribute 报错会被过滤，不进入自动反馈', async () => {
@@ -618,7 +621,7 @@ describe('clientAutoReport', () => {
             stack: "TypeError: Cannot read properties of null (reading 'removeAttribute')\n    at chrome-extension://iikmkjmpaadaobahmlepeloendndfphd/userscript.html?name=testcsdn.user.js&id=b6de601d-911a-4bd4-b2a6-f3c385814ac5:16:17\n    at Object.<anonymous> (chrome-extension://iikmkjmpaadaobahmlepeloendndfphd/userscript.html?name=testcsdn.user.js&id=b6de601d-911a-4bd4-b2a6-f3c385814ac5:25:3)",
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('扩展栈混入站内帧时仍会上报', async () => {
@@ -637,7 +640,7 @@ describe('clientAutoReport', () => {
             stack: "TypeError: Cannot read properties of null (reading 'removeAttribute')\n    at chrome-extension://iikmkjmpaadaobahmlepeloendndfphd/userscript.html:16:17\n    at reportAppError (https://easyboardgame.top/assets/index-Cmi8y5la.js:120:15)",
         });
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
     });
 
     it('Cloudflare 统计脚本 readyState 噪音会被过滤，不进入自动反馈', async () => {
@@ -656,7 +659,7 @@ describe('clientAutoReport', () => {
             stack: "TypeError: Cannot read properties of undefined (reading 'readyState')\n    at r.onreadystatechange (https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:12345)\n    at <anonymous>:1:32811",
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it.each([
@@ -684,7 +687,7 @@ describe('clientAutoReport', () => {
             stack,
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('Cloudflare 堆栈中混入站内调用时不会按 at 兼容噪音过滤', async () => {
@@ -703,7 +706,7 @@ describe('clientAutoReport', () => {
             stack: 'TypeError: t.entries.at is not a function\n    at https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496:1:5773\n    at reportMetric (https://easyboardgame.top/src/lib/metrics.ts:12:3)',
         });
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
     });
 
     it('dice-box-threejs 第三方渲染空值噪音会被过滤，不进入自动反馈', async () => {
@@ -722,7 +725,7 @@ describe('clientAutoReport', () => {
             stack: "TypeError: Cannot read properties of null (reading 'trim')\n    at new ou (https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3105:314)\n    at Object._ [as acquireProgram] (https://easyboardgame.top/assets/dice-box-threejs.es-C-evTbCv.js:3109:9979)",
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('Script error. 浏览器通用噪音会被过滤，不进入自动反馈', async () => {
@@ -740,7 +743,7 @@ describe('clientAutoReport', () => {
             errorSource: 'window.error',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('匿名页面级注入脚本的全局未定义噪音会被过滤，不进入自动反馈', async () => {
@@ -760,7 +763,7 @@ describe('clientAutoReport', () => {
             stack: 'ReferenceError: LIDNotifyId is not defined\n    at <anonymous>:1:1',
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('匿名页面级注入脚本的属性读取噪音会被过滤，不进入自动反馈', async () => {
@@ -780,7 +783,7 @@ describe('clientAutoReport', () => {
             stack: "TypeError: Cannot read properties of undefined (reading 'logout')\n    at <anonymous>:1:26",
         });
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('站内真实堆栈的 window error 不会被匿名注入噪音规则误过滤', async () => {
@@ -799,6 +802,6 @@ describe('clientAutoReport', () => {
             stack: "TypeError: Cannot read properties of undefined (reading 'logout')\n    at handleLogout (https://easyboardgame.top/src/components/social/UserMenu.tsx:320:15)",
         });
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
     });
 });

@@ -359,6 +359,7 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
       /薇薇安.*移动|移动.*薇薇安/,
     );
     await expect(logPanel.getByTestId("hud-action-log-row")).not.toContainText(/玩家 1|玩家1/);
+    await expect(logPanel.getByTestId("hud-action-log-row")).not.toContainText(/玩家\s+薇薇安|Player\s+薇薇安/);
     await saveScreenshot(page, ACTION_LOG_SCREENSHOT);
 
     await expect(page.locator('button[data-fab-id="undo-request"]')).toBeVisible();
@@ -437,6 +438,10 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     await expect(finalLogPanel).toContainText(/获得 1 点知识/);
     await expect(finalLogPanel).toContainText(/薇薇安/);
     await expect(finalLogPanel).not.toContainText(/玩家 1|玩家1/);
+    await expect(finalLogPanel).not.toContainText(/玩家\s+薇薇安|Player\s+薇薇安/);
+    await expect(finalLogPanel).not.toContainText(
+      /确认了事件检定结果|确认了卡牌结算|确认了掷骰结果|确认了回合结束检定结果/,
+    );
     await saveScreenshot(page, ACTION_LOG_WITH_EVENT_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
@@ -779,6 +784,10 @@ test.describe("山屋惊魂日志与撤回截图验收", () => {
     await expect(logPanel).toContainText(/将无线电广播的 2 点精神伤害分配到知识、神志/);
     await expect(logPanel).not.toContainText(/待分配 2 点精神伤害/);
     await expect(logPanel).not.toContainText(/玩家 1|玩家1/);
+    await expect(logPanel).not.toContainText(/玩家\s+薇薇安|Player\s+薇薇安/);
+    await expect(logPanel).not.toContainText(
+      /确认了事件检定结果|确认了卡牌结算|确认了掷骰结果|确认了回合结束检定结果/,
+    );
     await saveScreenshot(page, RADIO_DAMAGE_LOG_SCREENSHOT);
 
     assertNoFatalFrontendErrors([

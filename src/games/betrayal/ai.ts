@@ -153,6 +153,10 @@ interface BetrayalAiCore {
         replacementTrait: BetrayalTraitKey;
     } | null;
     recentRoll: BetrayalAiRecentRoll | null;
+    pendingEventRollStart?: {
+        playerId: string;
+        sourceTitle: string;
+    } | null;
     pendingEventChoice: {
         playerId: string;
         sourceTitle: string;
@@ -228,6 +232,8 @@ const ACTION_KINDS = {
     LOOT_CORPSE: 'loot-corpse',
     USE_RABBIT_FOOT: 'use-rabbit-foot',
     USE_ROOM_EFFECT: 'use-room-effect',
+    ROLL_EVENT: 'roll-event',
+    FINALIZE_EVENT_ROLL: 'finalize-event-roll',
     ACKNOWLEDGE_EVENT_ROLL: 'acknowledge-event-roll',
     ACKNOWLEDGE_CARD_RESOLUTION: 'acknowledge-card-resolution',
     END_TURN: 'end-turn',
@@ -1984,6 +1990,26 @@ function buildEventRollFinalizationActions(
     playerId: PlayerId,
 ): AiLegalAction[] {
     const pending = state.core.pendingEventRollResolution;
+    if (pending?.requiresAcknowledgement === false) {
+        if (pending.playerId !== playerId) {
+            return [];
+        }
+        const action = createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            payload: { rollId: pending.rollId },
+            kind: ACTION_KINDS.FINALIZE_EVENT_ROLL,
+            label: `自动继续事件结算：${pending.sourceTitle}`,
+            idParts: [pending.rollId],
+            metadata: {
+                strategicScore: 1190,
+                visibleStepDelayPolicy: 'visible',
+            },
+        });
+        return action ? [action] : [];
+    }
     const requiredPlayerIds = pending?.requiredPlayerIds?.length
         ? pending.requiredPlayerIds
         : pending
@@ -2003,6 +2029,32 @@ function buildEventRollFinalizationActions(
         label: `确认事件投骰结果：${pending.sourceTitle}`,
         metadata: {
             strategicScore: 1190,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    return action ? [action] : [];
+}
+
+function buildEventRollStartActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pending = state.core.pendingEventRollStart;
+    if (!pending || pending.playerId !== playerId) {
+        return [];
+    }
+    const action = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.ROLL_EVENT,
+        payload: { sourceTitle: pending.sourceTitle },
+        kind: ACTION_KINDS.ROLL_EVENT,
+        label: `投掷事件：${pending.sourceTitle}`,
+        idParts: [pending.sourceTitle],
+        metadata: {
+            sourceTitle: pending.sourceTitle,
             visibleStepDelayPolicy: 'visible',
         },
     });
@@ -2033,6 +2085,11 @@ function buildBetrayalAiLegalActions(
     const eventChoiceActions = buildEventChoiceActions(validate, state, args.playerId);
     if (eventChoiceActions.length > 0) {
         return eventChoiceActions;
+    }
+
+    const eventRollStartActions = buildEventRollStartActions(validate, state, args.playerId);
+    if (eventRollStartActions.length > 0) {
+        return eventRollStartActions;
     }
 
     const eventRollFinalizationActions = buildEventRollFinalizationActions(validate, state, args.playerId);
@@ -2365,6 +2422,10 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 1120;
         case ACTION_KINDS.USE_RABBIT_FOOT:
             return strategicScore;
+        case ACTION_KINDS.ROLL_EVENT:
+            return 1190;
+        case ACTION_KINDS.FINALIZE_EVENT_ROLL:
+            return strategicScore;
         case ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL:
             return strategicScore;
         case ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION:
@@ -2458,6 +2519,8 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.RESOLVE_TRADE_AGREEMENT,
                 ACTION_KINDS.LOOT_CORPSE,
                 ACTION_KINDS.USE_RABBIT_FOOT,
+                ACTION_KINDS.ROLL_EVENT,
+                ACTION_KINDS.FINALIZE_EVENT_ROLL,
                 ACTION_KINDS.ACKNOWLEDGE_RECENT_ROLL,
                 ACTION_KINDS.ACKNOWLEDGE_EVENT_ROLL,
                 ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION,

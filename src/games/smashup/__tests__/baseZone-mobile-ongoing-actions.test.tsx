@@ -528,7 +528,7 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(minionStack?.getAttribute('data-minion-select-list')).toBe('true');
         expect(minionStack?.className).toContain('overflow-y-auto');
         expect(minionStack?.className).toContain('no-scrollbar');
-        expect(minionStack?.style.maxHeight).toBe('20.4132vw');
+        expect(minionStack?.style.maxHeight).toBe('21.6132vw');
         expect(secondMinion?.style.marginTop).toBe('-3.5203vw');
         expect(sixthMinion?.style.marginTop).toBe('-3.5203vw');
     });

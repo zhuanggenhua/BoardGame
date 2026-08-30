@@ -2,7 +2,7 @@
  * DiceThrone 女猎手真实入口证据。
  *
  * 范围：真实在线双玩家选角、开局、玩家板、手牌、妮拉伙伴状态和流血状态图标。
- * 提示卡仅作本地规则记录，必须不被选角或对局运行时请求。
+ * 提示卡和其他 DiceThrone 英雄一样在选角与对局运行时可见。
  * 妮拉实现由本轮用户直接授权；候选设计稿仍不作为验收通过依据。
  */
 
@@ -496,7 +496,7 @@ const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<vo
 };
 
 test.describe('DiceThrone 女猎手真实入口', () => {
-    test('真实在线双玩家应完成女猎手选角初始化、隐藏提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标', async ({ browser }, testInfo) => {
+    test('真实在线双玩家应完成女猎手选角初始化、显示提示卡并看到妮拉、伤害分配、玩家板、手牌与流血状态图标', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const baseURL = testInfo.project.use.baseURL as string | undefined ?? getGameServerBaseURL();
@@ -508,7 +508,7 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await waitForImage(match.hostPage, 'character-selection-player-board-image');
             await expect(match.hostPage.getByTestId('character-selection-player-board-image'))
                 .toHaveAttribute('data-debug-current-src', /dicethrone\/images\/lieren\/compressed\/player-board\.webp/i);
-            await expect(match.hostPage.getByTestId('tip-board-image')).toHaveCount(0);
+            await expect(match.hostPage.getByTestId('tip-board-image')).toBeVisible();
             await saveEvidenceScreenshot(match.hostPage, testInfo, '01-选角-女猎手与武僧-角色板');
 
             await readyAndStartGame(match.hostPage, match.guestPage);
@@ -534,7 +534,7 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(nyraPanel).toBeVisible({ timeout: 10000 });
             await expect(nyraPanel).toContainText('7/7');
             await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(4, { timeout: 10000 });
-            await expect(match.hostPage.getByTestId('tip-board-image')).toHaveCount(0);
+            await expect(match.hostPage.getByTestId('tip-board-image')).toBeVisible();
 
             await injectLierenBleedStatus(match.matchId, match.hostPage);
             const statusTokens = match.hostPage.locator('[data-tutorial-id="status-tokens"]');

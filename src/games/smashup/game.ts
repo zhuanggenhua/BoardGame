@@ -92,7 +92,9 @@ export const engineConfig = {
         autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
         legacyResponseWindowMirrorSourceIds: ['smashup_reaction_choose'],
         resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
-            type === SU_COMMANDS.SELECT_FACTION && hasSmashUpFactionPayload(payload)
+            type === SU_COMMANDS.SELECT_RANDOM_FACTION
+                ? 'select-faction'
+                : type === SU_COMMANDS.SELECT_FACTION && hasSmashUpFactionPayload(payload)
                 ? 'select-faction'
                 : undefined
         ),

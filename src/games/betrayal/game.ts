@@ -859,6 +859,35 @@ export interface BetrayalPendingEventRollResolutionState {
         successHauntTriggerLabel?: string;
         successTraitorSelection?: 'current-explorer' | 'magic-camera-owner';
     };
+    requiresAcknowledgement?: boolean;
+}
+
+export interface BetrayalPendingEventRollStartState {
+    playerId: string;
+    roomId: string;
+    sourceTitle: string;
+    eventDescription?: string;
+}
+
+interface BetrayalEventRollReplacementResult {
+    dice: number[];
+    passiveBonus: number;
+    total: number;
+    latestLabel: string;
+    effect: UseEffectProfile;
+    hauntRoll?: BetrayalPendingEventRollResolutionState['hauntRoll'];
+    nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+    deathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
+    hauntTriggered?: boolean;
+    hauntCardNumber?: number;
+    hauntTriggerLabel?: string;
+    hauntTraitorPlayerId?: string | null;
+    hauntRevealResolution?: BetrayalHauntRevealResolution;
+    hauntTraitorResolution?: BetrayalHauntTraitorResolution;
+    dustSetup?: BetrayalDustRuntimeState;
+    magicCameraSetup?: BetrayalMagicCameraRuntimeState;
+    helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
+    uponReflectionSetup?: BetrayalUponReflectionRuntimeState;
 }
 
 export interface BetrayalMonsterMovementRollResult {
@@ -1656,6 +1685,7 @@ export interface BetrayalCore {
     } | null;
     pendingExtraTurnAfterCurrentTurn: BetrayalExtraTurnAfterCurrentTurnState | null;
     pendingEventChoice: BetrayalPendingEventChoiceState | null;
+    pendingEventRollStart?: BetrayalPendingEventRollStartState | null;
     pendingCardResolutionQueue: BetrayalPendingCardResolutionState[];
     pendingTradeAgreement: BetrayalPendingTradeAgreementState | null;
     pendingDamageAllocation: BetrayalPendingDamageAllocationState | null;
@@ -1692,6 +1722,7 @@ export type BetrayalCommandMap = {
         ignoreEventSymbolWithTraitorPower?: boolean;
         roomTileAdjustment?: BetrayalRoomTileAdjustmentSelection;
     };
+    [BETRAYAL_COMMANDS.ROLL_EVENT]: { sourceTitle?: string };
     [BETRAYAL_COMMANDS.USE_POSSESSION]: {
         cardId?: string;
         targetPlayerId?: string;
@@ -1771,6 +1802,7 @@ const EVENTS = {
     EXPLORER_MOVED: 'EXPLORER_MOVED',
     ROOM_EXPLORED: 'ROOM_EXPLORED',
     EVENT_CHOICE_RESOLVED: 'EVENT_CHOICE_RESOLVED',
+    EVENT_ROLLED: 'EVENT_ROLLED',
     TOOTH_NECKLACE_CHOICE_STARTED: 'TOOTH_NECKLACE_CHOICE_STARTED',
     TOOTH_NECKLACE_TRAIT_GAINED: 'TOOTH_NECKLACE_TRAIT_GAINED',
     CARD_RESOLUTION_ACKNOWLEDGED: 'CARD_RESOLUTION_ACKNOWLEDGED',
@@ -1855,6 +1887,12 @@ type BetrayalEvent =
         buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
         eventEffect?: UseEffectProfile;
         eventDescription?: string;
+        eventRollPending?: {
+            kind?: 'trait' | 'dice';
+            trait?: BetrayalTraitKey;
+            dice?: number;
+            label?: string;
+        };
         deathPrevention?: {
             playerId: string;
             cardId: string;
@@ -1946,6 +1984,40 @@ type BetrayalEvent =
         discovery: BetrayalDiscoverySummary;
         logText: string;
     }>
+    | GameEvent<typeof EVENTS.EVENT_ROLLED, {
+        rollId: string;
+        playerId: string;
+        sourceTitle: string;
+        eventDescription?: string;
+        eventEffect?: UseEffectProfile;
+        deathPrevention?: {
+            playerId: string;
+            cardId: string;
+            rollTotal: number;
+            dice: number[];
+            minTotal: number;
+            damageAmount: number;
+            damageKind: 'physical' | 'mental' | 'general';
+            damageTraits: BetrayalTraitKey[];
+            traitsBeforeDamage: BetrayalExplorerSummary['traits'];
+            prevented: boolean;
+        };
+        eventRoll: {
+            kind?: 'trait' | 'dice';
+            trait?: BetrayalTraitKey;
+            total: number;
+            label: string;
+            eventDescription?: string;
+            rollLabel?: string;
+            dice?: number[];
+            passiveBonus?: number;
+            branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
+        };
+        nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+        discovery: BetrayalDiscoverySummary;
+        drawnEventCardNameToBury?: string;
+        logText: string;
+    }>
     | GameEvent<typeof EVENTS.TOOTH_NECKLACE_CHOICE_STARTED, {
         playerId: string;
         cardId: string;
@@ -1979,6 +2051,7 @@ type BetrayalEvent =
         targetRoomId?: string;
         targetRoomIdsByTokenId?: Record<string, string>;
         replacementRollTotal?: number;
+        eventRollReplacement?: BetrayalEventRollReplacementResult;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.RABBIT_FOOT_USED, {
@@ -3023,6 +3096,34 @@ function isPendingCardResolutionFullyAcknowledged(
 ): boolean {
     const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
     return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
+}
+
+function acknowledgeEventEffectCardResolution(
+    core: BetrayalCore,
+    sourceTitle: string,
+    playerId: string,
+): void {
+    core.pendingCardResolutionQueue = (core.pendingCardResolutionQueue ?? [])
+        .flatMap((resolution) => {
+            if (
+                resolution.stepKind !== 'event-effect'
+                || resolution.discoveryTitle !== sourceTitle
+            ) {
+                return [resolution];
+            }
+            const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
+            const acknowledgedPlayerIds = Array.from(new Set([
+                ...resolvePendingCardResolutionAcknowledgedPlayerIds(resolution),
+                playerId,
+            ]));
+            return isPendingCardResolutionFullyAcknowledged(
+                core,
+                { ...resolution, requiredPlayerIds, acknowledgedPlayerIds },
+                acknowledgedPlayerIds,
+            )
+                ? []
+                : [{ ...resolution, requiredPlayerIds, acknowledgedPlayerIds }];
+        });
 }
 
 function resolvePendingEventRollResolutionRequiredPlayerIds(
@@ -4377,6 +4478,9 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         pendingEventChoice: core.pendingEventChoice
             ? clonePendingEventChoice(core.pendingEventChoice)
             : null,
+        pendingEventRollStart: core.pendingEventRollStart
+            ? { ...core.pendingEventRollStart }
+            : null,
         pendingCardResolutionQueue: (core.pendingCardResolutionQueue ?? []).map(clonePendingCardResolution),
         pendingTradeAgreement: core.pendingTradeAgreement
             ? {
@@ -4588,6 +4692,7 @@ function makeBaseCore(
         nextNonCombatTraitRollTotalReplacement: null,
         pendingExtraTurnAfterCurrentTurn: null,
         pendingEventChoice: null,
+        pendingEventRollStart: null,
         pendingCardResolutionQueue: [],
         pendingTradeAgreement: null,
         pendingDamageAllocation: null,
@@ -8206,6 +8311,143 @@ export function resolveBetrayalPossessionSpecialActionStatus(
 
 function canUsePossessionThisTurn(core: BetrayalCore, cardId: string): boolean {
     return resolveBetrayalPossessionSpecialActionStatus(core, cardId).canUse;
+}
+
+export function canUseBookForPendingEventRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
+    const pending = core.pendingEventRollResolution;
+    const recentRoll = core.recentRoll;
+    if (
+        !pending
+        || !recentRoll
+        || pending.rollId !== recentRoll.id
+        || pending.playerId !== playerId
+        || recentRoll.playerId !== playerId
+        || recentRoll.kind !== 'eventTraitCheck'
+        || !recentRoll.trait
+        || !recentRoll.branchThresholds?.length
+    ) {
+        return false;
+    }
+    const owner = findExplorerByPlayerId(core, playerId);
+    const candidates = owner?.inventory.filter((card) => (
+        resolveUseEffect(card)?.mode === 'nextNonCombatTraitReplacement'
+    )) ?? [];
+    const card = cardId
+        ? candidates.find((candidate) => candidate.id === cardId)
+        : candidates[0];
+    const effect = card ? resolveUseEffect(card) : null;
+    return Boolean(
+        card
+        && effect?.mode === 'nextNonCombatTraitReplacement'
+        && recentRoll.trait !== effect.replacementTrait
+        && resolveBetrayalPossessionSpecialActionStatus(core, card.id, playerId).canUse,
+    );
+}
+
+function createBookPendingEventRollReplacement(
+    core: BetrayalCore,
+    playerId: string,
+    cardId: string | undefined,
+    random: RandomFn,
+    timestamp: number,
+): BetrayalEventRollReplacementResult | null {
+    if (!canUseBookForPendingEventRoll(core, playerId, cardId)) {
+        return null;
+    }
+    const pending = core.pendingEventRollResolution;
+    const recentRoll = core.recentRoll;
+    const owner = findExplorerByPlayerId(core, playerId);
+    if (
+        !pending
+        || !recentRoll
+        || recentRoll.kind !== 'eventTraitCheck'
+        || !recentRoll.trait
+        || !recentRoll.branchThresholds?.length
+        || !owner
+    ) {
+        return null;
+    }
+    const candidates = owner.inventory.filter((card) => (
+        resolveUseEffect(card)?.mode === 'nextNonCombatTraitReplacement'
+    ));
+    const card = cardId
+        ? candidates.find((candidate) => candidate.id === cardId)
+        : candidates[0];
+    const effect = card ? resolveUseEffect(card) : null;
+    if (!card || effect?.mode !== 'nextNonCombatTraitReplacement') {
+        return null;
+    }
+    const replacementCore: BetrayalCore = {
+        ...core,
+        nextNonCombatTraitReplacement: {
+            playerId,
+            sourceCardId: card.id,
+            replacementTrait: effect.replacementTrait,
+        },
+    };
+    const roll = rollEventTraitCheckWithDice(random, owner, effect.replacementTrait, replacementCore);
+    const nextBranch = resolveEventBranch(recentRoll.branchThresholds, roll.total);
+    const nextEffect = materializeEventEffect(
+        nextBranch.effect,
+        random,
+        owner,
+        replacementCore,
+        { materializeRandomResults: false },
+    );
+    const nextPendingEventChoice = eventEffectNeedsPendingEventChoice(nextEffect)
+        ? {
+            id: `${pending.rollId}-book-${timestamp}`,
+            playerId: pending.playerId,
+            sourceTitle: pending.sourceTitle,
+            eventDescription: recentRoll.eventDescription,
+            effect: cloneUseEffect(nextEffect),
+        }
+        : undefined;
+    const pendingHauntRoll = pending.hauntRoll;
+    const hauntTriggered = pendingHauntRoll
+        ? roll.total >= pendingHauntRoll.threshold
+        : false;
+    const hauntRevealResolution = hauntTriggered
+        ? resolveHauntRevealResolutionForTrigger(
+            core,
+            { id: null, name: pendingHauntRoll?.successHauntTriggerLabel ?? recentRoll.sourceTitle },
+            pendingHauntRoll?.successHauntId,
+        )
+        : undefined;
+    const hauntTraitorResolution = hauntTriggered && hauntRevealResolution
+        ? resolveHauntTraitorResolutionForTrigger(
+            core,
+            hauntRevealResolution.hauntCardNumber,
+            playerId,
+            {
+                eventSelection: pendingHauntRoll?.successTraitorSelection,
+                revealRepresentativeOnly: hauntRevealResolution.representativeOnly,
+            },
+        )
+        : undefined;
+    return {
+        dice: [...roll.dice],
+        passiveBonus: roll.passiveBonus,
+        total: roll.total,
+        latestLabel: nextBranch.label,
+        effect: cloneUseEffect(nextEffect),
+        hauntRoll: pending.hauntRoll ? { ...pending.hauntRoll } : undefined,
+        nextPendingEventChoice,
+        hauntTriggered: pendingHauntRoll ? hauntTriggered : pending.hauntTriggered,
+        hauntCardNumber: hauntTriggered ? pendingHauntRoll?.successHauntId : undefined,
+        hauntTriggerLabel: hauntTriggered
+            ? pendingHauntRoll?.successHauntTriggerLabel ?? recentRoll.sourceTitle
+            : undefined,
+        hauntTraitorPlayerId: hauntTraitorResolution?.traitorPlayerId,
+        hauntRevealResolution,
+        hauntTraitorResolution,
+        dustSetup: hauntTriggered && pendingHauntRoll?.successHauntId === 3
+            ? createDustRuntimeState(core, random)
+            : undefined,
+        uponReflectionSetup: hauntTriggered && pendingHauntRoll?.successHauntId === 7
+            ? createUponReflectionRuntimeState(core, playerId, random)
+            : undefined,
+    };
 }
 
 export interface BetrayalRoomSpecialActionStatus {
@@ -14522,6 +14764,87 @@ function resolveEvent(core: BetrayalCore): EventTemplate {
     return cloneEventTemplate(core.eventOrder[0]!);
 }
 
+function resolveEventRollResolution(
+    core: BetrayalCore,
+    eventCard: EventTemplate,
+    random: RandomFn,
+): {
+    eventEffect: UseEffectProfile;
+    deathPrevention?: NonNullable<Extract<BetrayalEvent, { type: typeof EVENTS.EVENT_CHOICE_RESOLVED }>['payload']['deathPrevention']>;
+    eventRoll: NonNullable<Extract<BetrayalEvent, { type: typeof EVENTS.EVENT_CHOICE_RESOLVED }>['payload']['eventRoll']>;
+    nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+    resolutionText: string;
+} {
+    if (!eventCard.roll) {
+        throw new Error(`event ${eventCard.name} has no roll to resolve`);
+    }
+    const eventRollKind = eventCard.roll.kind ?? 'trait';
+    const eventRollResult = eventRollKind === 'dice'
+        ? rollEventFixedDice(random, eventCard.roll.dice)
+        : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core);
+    const eventRollTotal = eventRollResult.total;
+    const eventBranch = resolveEventBranch(eventCard.roll.branches, eventRollTotal);
+    const eventEffect = eventBranch.effect;
+    const deferEventRollEffectRandomResults = true;
+    const materializedEventEffect = materializeEventEffect(
+        eventEffect,
+        random,
+        core.currentExplorer,
+        core,
+        { materializeRandomResults: !deferEventRollEffectRandomResults },
+    );
+    const deathPrevention = deferEventRollEffectRandomResults
+        ? undefined
+        : resolveEventDamageDeathPrevention(core, materializedEventEffect, random);
+    const eventRollLabel = eventRollKind === 'dice'
+        ? eventCard.roll.label
+        : `${TRAIT_LABEL[eventCard.roll.trait]}检定`;
+    const resolutionText = `${eventRollLabel} ${eventRollTotal}：${eventBranch.label}；${formatEffectLabel(materializedEventEffect)}`;
+    const nextPendingEventChoice = eventEffectNeedsPendingEventChoice(materializedEventEffect)
+        ? {
+            id: `${core.pendingEventRollStart?.playerId ?? core.currentExplorer.playerId}-${eventCard.name}-choice`,
+            playerId: core.pendingEventRollStart?.playerId ?? core.currentExplorer.playerId,
+            sourceTitle: eventCard.name,
+            eventDescription: eventCard.description,
+            sourceKind: 'event' as const,
+            acceptLabel: materializedEventEffect.mode === 'optionalEventRoll'
+                || materializedEventEffect.mode === 'optionalEffect'
+                || materializedEventEffect.mode === 'optionalItemEffect'
+                || materializedEventEffect.mode === 'optionalHauntRoll'
+                ? materializedEventEffect.acceptLabel
+                : undefined,
+            declineLabel: materializedEventEffect.mode === 'optionalEventRoll'
+                || materializedEventEffect.mode === 'optionalEffect'
+                || materializedEventEffect.mode === 'optionalItemEffect'
+                || materializedEventEffect.mode === 'optionalHauntRoll'
+                ? materializedEventEffect.declineLabel
+                : undefined,
+            effect: cloneUseEffect(materializedEventEffect),
+        } satisfies BetrayalPendingEventChoiceState
+        : undefined;
+    return {
+        eventEffect: materializedEventEffect,
+        deathPrevention,
+        eventRoll: {
+            kind: eventRollKind,
+            trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
+            total: eventRollTotal,
+            label: eventBranch.label,
+            eventDescription: eventCard.description,
+            rollLabel: eventRollLabel,
+            dice: eventRollResult.dice,
+            passiveBonus: eventRollResult.passiveBonus,
+            branchThresholds: eventCard.roll.branches.map((branch) => ({
+                min: branch.min,
+                label: branch.label,
+                effect: { ...branch.effect },
+            })),
+        },
+        nextPendingEventChoice,
+        resolutionText,
+    };
+}
+
 function isWarningEventEffect(effect: PossessionUseEffectProfile): boolean {
     switch (effect.mode) {
         case 'generalDamage':
@@ -14817,7 +15140,6 @@ function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRol
         return null;
     }
     const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
-        'eventRolledDamage',
         'mysticElevator',
         'attackRoll',
         'hauntActionTraitCheck',
@@ -14976,7 +15298,29 @@ function validateEventRollFinalization(core: BetrayalCore, command: BetrayalComm
             : null;
     }
     if (command.type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL) {
-        return { valid: false, error: '请先确认事件骰的最终结果。' };
+        if (
+            command.type === BETRAYAL_COMMANDS.USE_POSSESSION
+            && canUseBookForPendingEventRoll(core, command.playerId, command.payload.cardId)
+        ) {
+            return { valid: true };
+        }
+        if (
+            pending.requiresAcknowledgement === false
+            && (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+                || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM)
+        ) {
+            return null;
+        }
+        return { valid: false, error: '请先处理当前事件投掷结果。' };
+    }
+    if (pending.requiresAcknowledgement === false) {
+        if (command.playerId !== pending.playerId) {
+            return { valid: false, error: '只有触发事件的玩家可以继续处理当前投掷。' };
+        }
+        if (command.payload.rollId && command.payload.rollId !== pending.rollId) {
+            return { valid: false, error: '当前投掷结果已经改变。' };
+        }
+        return { valid: true };
     }
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, pending);
     if (!requiredPlayerIds.includes(command.playerId)) {
@@ -15251,6 +15595,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         && command.type !== BETRAYAL_COMMANDS.END_TURN
         && command.type !== BETRAYAL_COMMANDS.USE_RABBIT_FOOT
         && command.type !== BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
+        && !(command.type === BETRAYAL_COMMANDS.USE_POSSESSION && canUseBookForPendingEventRoll(core, command.playerId, command.payload.cardId))
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
@@ -15353,8 +15698,9 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
             const cardId = command.payload.cardId;
-            const actionStatus = resolveBetrayalPossessionSpecialActionStatus(core, cardId);
-            if (!actionStatus.sourceId || !core.currentExplorer.inventory.some((card) => card.id === actionStatus.sourceId)) {
+            const actor = findExplorerByPlayerId(core, command.playerId);
+            const actionStatus = resolveBetrayalPossessionSpecialActionStatus(core, cardId, command.playerId);
+            if (!actor || !actionStatus.sourceId || !actor.inventory.some((card) => card.id === actionStatus.sourceId)) {
                 return { valid: false, error: actionStatus.reason ?? '当前没有可使用持有物。' };
             }
             if (!actionStatus.active) {
@@ -15362,10 +15708,11 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             }
             const effect = USE_EFFECTS[actionStatus.effectId]!;
             if (effect.mode === 'healTraits' && effect.target === 'selfOrSameRoomExplorer' && command.payload.targetPlayerId) {
-                const canTargetSelf = command.payload.targetPlayerId === core.currentExplorer.playerId;
-                const sameRoomTarget = core.otherExplorers.some((explorer) => (
+                const canTargetSelf = command.payload.targetPlayerId === actor.playerId;
+                const sameRoomTarget = getAllExplorers(core).some((explorer) => (
                     explorer.playerId === command.payload.targetPlayerId
-                    && explorer.roomId === core.currentExplorer.roomId
+                    && explorer.playerId !== actor.playerId
+                    && explorer.roomId === actor.roomId
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
                 ));
                 if (!canTargetSelf && !sameRoomTarget) {
@@ -15375,24 +15722,25 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (effect.mode === 'placeExplorer') {
                 const targetRoomId = command.payload.targetRoomId;
                 if (!targetRoomId || !core.rooms.some((room) => room.id === targetRoomId && room.state === 'discovered')) {
-                    const card = core.currentExplorer.inventory.find((item) => item.id === cardId);
+                    const card = actor.inventory.find((item) => item.id === cardId);
                     const cardName = card?.name ?? '该持有物';
                     return { valid: false, error: `${cardName}只能把探索者放置到已发现板块。` };
                 }
             }
             if (effect.mode === 'moveOthersInRoom') {
                 const targetRoomId = command.payload.targetRoomId;
-                const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
+                const currentRoom = core.rooms.find((room) => room.id === actor.roomId);
                 const targetRoomIdsByTokenId = command.payload.targetRoomIdsByTokenId ?? {};
                 const targetTokenIds = [
-                    ...core.otherExplorers
+                    ...getAllExplorers(core)
                         .filter((explorer) => (
-                            explorer.roomId === core.currentExplorer.roomId
+                            explorer.playerId !== actor.playerId
+                            && explorer.roomId === actor.roomId
                             && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
                         ))
                         .map((explorer) => explorer.playerId),
                     ...core.monsters
-                        .filter((monster) => monster.roomId === core.currentExplorer.roomId)
+                        .filter((monster) => monster.roomId === actor.roomId)
                         .map((monster) => monster.id),
                 ];
                 const hasOtherTargets = targetTokenIds.length > 0;
@@ -15407,13 +15755,14 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                         && connectedRoomIds.has(room.id)
                     ))
                 ));
-                const hasSameRoomExplorerTarget = core.otherExplorers.some((explorer) => (
-                    explorer.roomId === core.currentExplorer.roomId
+                const hasSameRoomExplorerTarget = getAllExplorers(core).some((explorer) => (
+                    explorer.playerId !== actor.playerId
+                    && explorer.roomId === actor.roomId
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
                     && Object.prototype.hasOwnProperty.call(targetRoomIdsByTokenId, explorer.playerId)
                 ));
                 const hasSameRoomMonsterTarget = core.monsters.some((monster) => (
-                    monster.roomId === core.currentExplorer.roomId
+                    monster.roomId === actor.roomId
                     && Object.prototype.hasOwnProperty.call(targetRoomIdsByTokenId, monster.id)
                 ));
                 const hasOnlySameRoomTokenKeys = Object.keys(targetRoomIdsByTokenId).every((tokenId) => (
@@ -15520,6 +15869,19 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             }
             if (!canPlayerAcknowledgeRecentRoll(core, command.playerId)) {
                 return { valid: false, error: '你已经确认过当前投骰结果。' };
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.ROLL_EVENT: {
+            const pending = core.pendingEventRollStart;
+            if (!pending) {
+                return { valid: false, error: '当前没有等待投掷的事件。' };
+            }
+            if (pending.playerId !== command.playerId) {
+                return { valid: false, error: '只有触发事件的玩家可以投掷。' };
+            }
+            if (command.payload.sourceTitle && command.payload.sourceTitle !== pending.sourceTitle) {
+                return { valid: false, error: '当前事件已经改变。' };
             }
             return { valid: true };
         }
@@ -17079,6 +17441,54 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         hauntTriggered: false,
                     }, timestamp)];
                 }
+                if (eventCard.roll) {
+                return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                    playerId: command.playerId,
+                    roomId: nextSlot.id,
+                    room: {
+                        name: roomTemplate.name,
+                        hint: roomTemplate.hint,
+                        tags: roomTemplate.tags,
+                        discoveryReward: deckKind,
+                        visualId: roomTemplate.visualId,
+                        doorways: selectedOrientation.doorways,
+                        backVisualId: nextSlot.backVisualId,
+                        orientationTurns: selectedOrientation.orientationTurns,
+                        discoveryEffect: roomTemplate.discoveryEffect,
+                        endTurnEffect: roomTemplate.endTurnEffect,
+                        enterEffect: roomTemplate.enterEffect,
+                    },
+                    deckKind,
+                    eventDescription: eventCard.description,
+                    eventRollPending: eventCard.roll
+                        ? {
+                            kind: eventCard.roll.kind,
+                            trait: eventCard.roll.kind === 'dice' ? undefined : eventCard.roll.trait,
+                            dice: eventCard.roll.kind === 'dice' ? eventCard.roll.dice : undefined,
+                            label: eventCard.roll.kind === 'dice' ? eventCard.roll.label : undefined,
+                        }
+                        : undefined,
+                    roomDiscoveryCards: roomDiscoveryCards.roomDiscoveryCards,
+                    buriedRoomDiscoveryCards: roomDiscoveryCards.buriedRoomDiscoveryCards,
+                    skippedRoomWithHolySymbol: skippedRoomTemplate
+                        ? { name: skippedRoomTemplate.name }
+                        : undefined,
+                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                    roomTileAdjustment,
+                    discovery: {
+                        kind: deckKind,
+                        title: eventCard.name,
+                        summary: '事件牌已公开，等待投掷',
+                        detail: eventCard.description ?? '请按事件牌要求投掷。',
+                        tone: 'accent',
+                        resolutionSteps: [
+                            ...roomDiscoveryEffectResolutionSteps,
+                        ],
+                    },
+                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，公开事件：${eventCard.name}，等待投掷`,
+                    hauntTriggered: false,
+                }, timestamp)];
+                }
                 const eventRollKind = eventCard.roll?.kind ?? 'trait';
                 const eventRollResult = eventCard.roll
                     ? eventRollKind === 'dice'
@@ -17181,6 +17591,9 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     hauntTriggered: false,
                 }, timestamp)];
             }
+            if (core.pendingEventRollStart) {
+                throw new Error('event roll must be started by ROLL_EVENT');
+            }
 
             const roomDiscoveryItemDrawCount = (roomDiscoveryCards.roomDiscoveryCards?.length ?? 0)
                 + (roomDiscoveryCards.buriedRoomDiscoveryCards?.length ?? 0);
@@ -17269,6 +17682,55 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 hauntRoll: hauntRoll ?? undefined,
                 hauntTriggered: hauntRoll?.triggered ?? false,
                 hauntRevealResolution,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.ROLL_EVENT: {
+            const pending = core.pendingEventRollStart;
+            if (!pending) {
+                return [];
+            }
+            const eventCard = resolveEvent(core);
+            const resolution = resolveEventRollResolution(core, eventCard, random);
+            const rollId = `${command.playerId}-${pending.sourceTitle}-${timestamp}`;
+            return [nowEvent(EVENTS.EVENT_ROLLED, {
+                rollId,
+                playerId: command.playerId,
+                sourceTitle: pending.sourceTitle,
+                eventDescription: pending.eventDescription,
+                eventEffect: cloneUseEffect(resolution.eventEffect),
+                deathPrevention: resolution.deathPrevention
+                    ? {
+                        ...resolution.deathPrevention,
+                        dice: [...resolution.deathPrevention.dice],
+                        damageTraits: [...resolution.deathPrevention.damageTraits],
+                        traitsBeforeDamage: { ...resolution.deathPrevention.traitsBeforeDamage },
+                    }
+                    : undefined,
+                eventRoll: {
+                    ...resolution.eventRoll,
+                    branchThresholds: resolution.eventRoll.branchThresholds?.map((branch) => ({
+                        ...branch,
+                        effect: cloneUseEffect(branch.effect),
+                    })),
+                },
+                nextPendingEventChoice: resolution.nextPendingEventChoice
+                    ? clonePendingEventChoice(resolution.nextPendingEventChoice)
+                    : undefined,
+                discovery: {
+                    kind: 'event',
+                    title: pending.sourceTitle,
+                    summary: '结果已公开',
+                    detail: resolution.resolutionText,
+                    tone: isWarningEventEffect(resolution.eventEffect) ? 'warning' : 'accent',
+                    resolutionSteps: [{
+                        id: `event-effect-${pending.sourceTitle}`,
+                        kind: 'event-effect',
+                        text: `事件效果：${resolution.resolutionText}`,
+                        deckKind: 'event',
+                    }],
+                },
+                drawnEventCardNameToBury: eventCard.name,
+                logText: `${core.currentExplorer.displayName}投掷事件：${pending.sourceTitle}（${resolution.resolutionText}）`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION: {
@@ -17399,7 +17861,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
-            const card = core.currentExplorer.inventory.find((item) => item.id === command.payload.cardId);
+            const actor = findExplorerByPlayerId(core, command.playerId);
+            const card = actor?.inventory.find((item) => item.id === command.payload.cardId);
             if (!card) {
                 return [];
             }
@@ -17409,26 +17872,38 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }
             const targetExplorer = effect.mode === 'healTraits' && effect.target === 'selfOrSameRoomExplorer'
                 ? (
-                    command.payload.targetPlayerId === core.currentExplorer.playerId
-                        ? core.currentExplorer
-                        : core.otherExplorers.find((explorer) => explorer.playerId === command.payload.targetPlayerId)
+                    command.payload.targetPlayerId === actor.playerId
+                        ? actor
+                        : getAllExplorers(core).find((explorer) => explorer.playerId === command.payload.targetPlayerId)
                 )
-                : core.currentExplorer;
+                : actor;
+            const eventRollReplacement = effect.mode === 'nextNonCombatTraitReplacement'
+                ? createBookPendingEventRollReplacement(
+                    core,
+                    command.playerId,
+                    card.id,
+                    random,
+                    timestamp,
+                )
+                : null;
+            const actorName = actor.displayName;
             const logText = effect.mode === 'move'
-                ? `${core.currentExplorer.displayName}用${card.name}稳住路线，额外获得 ${effect.amount} 点移动`
+                ? `${actorName}用${card.name}稳住路线，额外获得 ${effect.amount} 点移动`
                 : effect.mode === 'nextNonCombatTraitReplacement'
-                    ? `${core.currentExplorer.displayName}使用${card.name}，失去 ${effect.sanityCost} 点神志；本回合下一次非战斗检定可用${TRAIT_LABEL[effect.replacementTrait]}替换`
+                    ? eventRollReplacement
+                        ? `${actorName}使用${card.name}，失去 ${effect.sanityCost} 点神志；本次事件检定改用${TRAIT_LABEL[effect.replacementTrait]}重新投骰并结算`
+                        : `${actorName}使用${card.name}，失去 ${effect.sanityCost} 点神志；本回合下一次非战斗检定可用${TRAIT_LABEL[effect.replacementTrait]}替换`
                     : effect.mode === 'nextNonCombatTraitRollTotalReplacement'
-                        ? `${core.currentExplorer.displayName}埋葬${card.name}，下一次属性检定使用 ${command.payload.replacementRollTotal} 作为投骰结果`
+                        ? `${actorName}埋葬${card.name}，下一次属性检定使用 ${command.payload.replacementRollTotal} 作为投骰结果`
                         : effect.mode === 'extraTurnAfterTurnEnd'
-                            ? `${core.currentExplorer.displayName}埋葬${card.name}，本回合结束后再进行一轮行动`
+                            ? `${actorName}埋葬${card.name}，本回合结束后再进行一轮行动`
                             : effect.mode === 'healTraits'
-                                ? `${core.currentExplorer.displayName}埋葬${card.name}，治疗${targetExplorer?.displayName ?? core.currentExplorer.displayName}的${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`
+                                ? `${actorName}埋葬${card.name}，治疗${targetExplorer?.displayName ?? actorName}的${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`
                                 : effect.mode === 'placeExplorer'
-                                    ? `${core.currentExplorer.displayName}埋葬${card.name}，放置到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '目标板块'}`
+                                    ? `${actorName}埋葬${card.name}，放置到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '目标板块'}`
                                     : effect.mode === 'moveOthersInRoom'
-                                        ? `${core.currentExplorer.displayName}使用${card.name}，将同板块其他角色移动到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '相邻板块'}`
-                                        : `${core.currentExplorer.displayName}用${card.name}调整状态，${TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
+                                        ? `${actorName}使用${card.name}，将同板块其他角色移动到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '相邻板块'}`
+                                        : `${actorName}用${card.name}调整状态，${TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
             return [nowEvent(EVENTS.POSSESSION_USED, {
                 playerId: command.playerId,
                 cardId: card.id,
@@ -17437,6 +17912,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 targetRoomId: command.payload.targetRoomId,
                 targetRoomIdsByTokenId: command.payload.targetRoomIdsByTokenId,
                 replacementRollTotal: command.payload.replacementRollTotal,
+                eventRollReplacement: eventRollReplacement ?? undefined,
                 logText,
             }, timestamp)];
         }
@@ -20304,7 +20780,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.latestDiscovery = cloneDiscoverySummary(event.payload.discovery);
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
             core.pendingEventChoice = null;
-            core.pendingCardResolutionQueue = event.payload.nextPendingEventChoice
+            core.pendingEventRollStart = event.payload.eventRollPending
+                ? {
+                    playerId: event.payload.playerId,
+                    roomId: event.payload.roomId,
+                    sourceTitle: event.payload.discovery.title,
+                    eventDescription: event.payload.eventDescription,
+                }
+                : null;
+            core.pendingEventRollResolution = null;
+            core.pendingCardResolutionQueue = event.payload.eventRollPending || event.payload.nextPendingEventChoice
                 ? []
                 : createPendingCardResolutionQueue({
                     playerId: event.payload.playerId,
@@ -20322,6 +20807,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 && !event.payload.skippedEventWithTraitorPower
                 && !event.payload.skippedEventWithUponReflection
                 && !event.payload.nextPendingEventChoice
+                && !event.payload.eventRollPending
             ) {
                 buryEventCardToBottom(core, event.payload.discovery.title);
             }
@@ -20478,7 +20964,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
                 };
                 core.turnEndedByDiscovery = true;
-                core.pendingCardResolutionQueue = [];
             } else if (!core.turnEndedByDiscovery && event.payload.deckKind === 'event' && event.payload.eventEffect) {
                 const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
                     ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
@@ -20748,7 +21233,16 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
                 };
                 core.turnEndedByDiscovery = true;
-                core.pendingCardResolutionQueue = [];
+                core.pendingCardResolutionQueue = event.payload.nextPendingEventChoice
+                    ? []
+                    : createPendingCardResolutionQueue({
+                        playerId: event.payload.playerId,
+                        requiredPlayerIds: core.playerIds,
+                        roomId: core.currentExplorer.roomId,
+                        timestamp: event.timestamp,
+                        deckKind: 'event',
+                        discovery: eventChoiceDiscovery,
+                    });
                 const synced = syncCurrentExplorerProjection(core);
                 return {
                     ...synced,
@@ -21206,6 +21700,69 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             }
             return finalizeRecentRollReroll();
         }
+        case EVENTS.EVENT_ROLLED: {
+            core.pendingEventRollStart = null;
+            if (event.payload.drawnEventCardNameToBury) {
+                buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
+            }
+            const eventRoll = event.payload.eventRoll;
+            core.recentRoll = {
+                id: event.payload.rollId,
+                kind: eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
+                playerId: event.payload.playerId,
+                sourceTitle: event.payload.sourceTitle,
+                eventDescription: event.payload.eventDescription,
+                trait: eventRoll.trait,
+                rollLabel: eventRoll.rollLabel,
+                dice: [...(eventRoll.dice ?? [])],
+                passiveBonus: eventRoll.passiveBonus ?? 0,
+                branchThresholds: (eventRoll.branchThresholds ?? []).map((branch) => ({
+                    ...branch,
+                    effect: cloneUseEffect(branch.effect),
+                })),
+                latestLabel: eventRoll.label,
+                consumedRabbitFootCardIds: [],
+            };
+            core.latestDiscovery = cloneDiscoverySummary(event.payload.discovery);
+            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            if (event.payload.nextPendingEventChoice) {
+                core.pendingEventChoice = clonePendingEventChoice(event.payload.nextPendingEventChoice);
+                core.pendingEventRollResolution = null;
+                core.turnEndedByDiscovery = false;
+                const synced = syncCurrentExplorerProjection(core);
+                return {
+                    ...synced,
+                    recommendedAction: resolveRecommendedAction(synced),
+                    activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
+                };
+            }
+            core.pendingEventRollResolution = event.payload.eventEffect
+                ? {
+                    rollId: event.payload.rollId,
+                    playerId: event.payload.playerId,
+                    sourceTitle: event.payload.sourceTitle,
+                    requiredPlayerIds: [event.payload.playerId],
+                    acknowledgedPlayerIds: [],
+                    effect: cloneUseEffect(event.payload.eventEffect),
+                    deathPrevention: event.payload.deathPrevention
+                        ? {
+                            ...event.payload.deathPrevention,
+                            dice: [...event.payload.deathPrevention.dice],
+                            damageTraits: [...event.payload.deathPrevention.damageTraits],
+                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
+                        }
+                        : undefined,
+                    requiresAcknowledgement: false,
+                }
+                : null;
+            core.turnEndedByDiscovery = true;
+            const synced = syncCurrentExplorerProjection(core);
+            return {
+                ...synced,
+                recommendedAction: resolveRecommendedAction(synced),
+                activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
+            };
+        }
         case EVENTS.EVENT_ROLL_FINALIZED: {
             if (core.pendingEventRollResolution?.rollId !== event.payload.rollId) {
                 return core;
@@ -21216,6 +21773,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     requiredPlayerIds: [...event.payload.requiredPlayerIds],
                     acknowledgedPlayerIds: [...event.payload.acknowledgedPlayerIds],
                 };
+                acknowledgeEventEffectCardResolution(
+                    core,
+                    event.payload.sourceTitle,
+                    event.payload.playerId,
+                );
                 const synced = syncCurrentExplorerProjection(core);
                 return {
                     ...synced,
@@ -21302,7 +21864,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
             }
             core.pendingEventRollResolution = null;
-            core.pendingCardResolutionQueue = [];
+            acknowledgeEventEffectCardResolution(
+                core,
+                event.payload.sourceTitle,
+                event.payload.playerId,
+            );
             const eventTriggerPlayerId = event.payload.triggerPlayerId || event.payload.playerId;
             const synced = syncCurrentExplorerProjection(core);
             let nextCore = {
@@ -21354,10 +21920,89 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return nextCore;
         }
         case EVENTS.POSSESSION_USED: {
+            if (event.payload.eventRollReplacement) {
+                const replacement = event.payload.eventRollReplacement;
+                const pending = core.pendingEventRollResolution;
+                const recentRoll = core.recentRoll;
+                const owner = findExplorerByPlayerId(core, event.payload.playerId);
+                if (!pending || !recentRoll || !owner || pending.rollId !== recentRoll.id) {
+                    return core;
+                }
+                applyTraitLoss(owner, ['sanity'], event.payload.effect.sanityCost);
+                core.recentRoll = {
+                    ...recentRoll,
+                    trait: event.payload.effect.replacementTrait,
+                    rollLabel: `${TRAIT_LABEL[event.payload.effect.replacementTrait]}检定`,
+                    dice: [...replacement.dice],
+                    passiveBonus: replacement.passiveBonus,
+                    latestLabel: replacement.latestLabel,
+                };
+                core.pendingEventRollResolution = {
+                    ...pending,
+                    requiredPlayerIds: resolvePendingEventRollResolutionRequiredPlayerIds(core, pending),
+                    acknowledgedPlayerIds: [],
+                    hauntRoll: replacement.hauntRoll ? { ...replacement.hauntRoll } : undefined,
+                    effect: cloneUseEffect(replacement.effect),
+                    nextPendingEventChoice: replacement.nextPendingEventChoice
+                        ? clonePendingEventChoice(replacement.nextPendingEventChoice)
+                        : undefined,
+                    deathPrevention: replacement.deathPrevention
+                        ? {
+                            ...replacement.deathPrevention,
+                            dice: [...replacement.deathPrevention.dice],
+                            damageTraits: [...replacement.deathPrevention.damageTraits],
+                            traitsBeforeDamage: { ...replacement.deathPrevention.traitsBeforeDamage },
+                        }
+                        : undefined,
+                    hauntTriggered: replacement.hauntTriggered,
+                    hauntCardNumber: replacement.hauntCardNumber,
+                    hauntTriggerLabel: replacement.hauntTriggerLabel,
+                    hauntTraitorPlayerId: replacement.hauntTraitorPlayerId,
+                    hauntRevealResolution: replacement.hauntRevealResolution
+                        ? { ...replacement.hauntRevealResolution }
+                        : undefined,
+                    hauntTraitorResolution: replacement.hauntTraitorResolution
+                        ? cloneHauntTraitorResolution(replacement.hauntTraitorResolution) ?? undefined
+                        : undefined,
+                    dustSetup: replacement.dustSetup
+                        ? cloneDustRuntimeState(replacement.dustSetup)
+                        : undefined,
+                    magicCameraSetup: replacement.magicCameraSetup
+                        ? cloneMagicCameraRuntimeState(replacement.magicCameraSetup)
+                        : undefined,
+                    helpingHandsSetup: replacement.helpingHandsSetup
+                        ? cloneHelpingHandsRuntimeState(replacement.helpingHandsSetup)
+                        : undefined,
+                    uponReflectionSetup: replacement.uponReflectionSetup
+                        ? cloneUponReflectionRuntimeState(replacement.uponReflectionSetup)
+                        : undefined,
+                };
+                core.usedCardIdsThisTurn = Array.from(new Set([
+                    ...core.usedCardIdsThisTurn,
+                    event.payload.cardId,
+                ]));
+                core.nextNonCombatTraitReplacement = null;
+                if (core.latestDiscovery && core.latestDiscovery.title === recentRoll.sourceTitle) {
+                    const total = resolveRecentRollTotal(core.recentRoll);
+                    const rollLabel = core.recentRoll.rollLabel ?? '投骰';
+                    core.latestDiscovery = {
+                        ...core.latestDiscovery,
+                        detail: `${rollLabel} ${total}：${replacement.latestLabel}；${formatEffectLabel(replacement.effect)}`,
+                        tone: isWarningEventEffect(replacement.effect) ? 'warning' : 'accent',
+                    };
+                }
+                const synced = syncCurrentExplorerProjection(core);
+                return {
+                    ...synced,
+                    recommendedAction: resolveRecommendedAction(synced),
+                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+                };
+            }
             if (event.payload.effect.mode === 'move') {
                 core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + event.payload.effect.amount));
             } else if (event.payload.effect.mode === 'nextNonCombatTraitReplacement') {
-                applyTraitLoss(core.currentExplorer, ['sanity'], event.payload.effect.sanityCost);
+                const owner = findExplorerByPlayerId(core, event.payload.playerId) ?? core.currentExplorer;
+                applyTraitLoss(owner, ['sanity'], event.payload.effect.sanityCost);
                 core.nextNonCombatTraitReplacement = {
                     playerId: event.payload.playerId,
                     sourceCardId: event.payload.cardId,
@@ -24036,6 +24681,9 @@ const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
     if (!pendingResolution) {
         return null;
     }
+    if (pendingResolution.requiresAcknowledgement === false) {
+        return null;
+    }
 
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(
         { playerIds: core?.playerIds ?? [] },
@@ -24062,8 +24710,8 @@ const resolveBetrayalSeatLegalOnlyRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
 }) => (
-    resolveBetrayalPendingCardResolutionRecovery(args)
-    ?? resolveBetrayalPendingEventRollResolutionRecovery(args)
+    resolveBetrayalPendingEventRollResolutionRecovery(args)
+    ?? resolveBetrayalPendingCardResolutionRecovery(args)
 );
 
 const shouldSuppressBetrayalActiveTurnRecovery = (args: {

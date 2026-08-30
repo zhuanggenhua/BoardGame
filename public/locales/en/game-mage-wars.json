@@ -111,7 +111,9 @@
   },
   "ui": {
     "showAllLifeTotals": "Show all life totals",
-    "hideAllLifeTotals": "Hide all life totals"
+    "hideAllLifeTotals": "Hide all life totals",
+    "inspectCardTitle": "Magnify",
+    "inspectCardAria": "Magnify {{name}}"
   },
   "zonesPanel": {
     "title": "Private And Attached Zones",

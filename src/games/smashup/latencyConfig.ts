@@ -35,6 +35,8 @@ const NON_DETERMINISTIC_COMMANDS = [
     SU_COMMANDS.PLAY_ACTION,
     // 选择派系 → 最后一人选择时触发牌库洗牌和初始手牌抽取
     SU_COMMANDS.SELECT_FACTION,
+    // 随机选择派系 → 直接消耗随机源并可能触发开局洗牌/抽牌
+    SU_COMMANDS.SELECT_RANDOM_FACTION,
     // 使用天赋 → 触发能力效果（可能涉及随机）
     SU_COMMANDS.USE_TALENT,
 ] as const;
@@ -71,6 +73,7 @@ export const smashUpLatencyConfig: LatencyOptimizationConfig = {
             [SU_COMMANDS.PLAY_MINION]: 'optimistic',
             [SU_COMMANDS.PLAY_ACTION]: 'optimistic',
             [SU_COMMANDS.SELECT_FACTION]: 'optimistic',
+            [SU_COMMANDS.SELECT_RANDOM_FACTION]: 'optimistic',
             [SU_COMMANDS.USE_TALENT]: 'optimistic',
             // ADVANCE_PHASE 也使用 optimistic：立即应用状态，不等待服务器确认
             // 这样可以确保 afterScoring 效果（如自助餐）立即生效
@@ -98,6 +101,7 @@ export const smashUpLatencyConfig: LatencyOptimizationConfig = {
             SU_COMMANDS.USE_TALENT,
             // 选择派系（低频但重要）
             SU_COMMANDS.SELECT_FACTION,
+            SU_COMMANDS.SELECT_RANDOM_FACTION,
             // 交互响应和 reaction pass 必须即时发送，绕过批处理窗口
             // 防止快速连点时多个交互命令被聚合，导致重复消费/状态异常
             'SYS_INTERACTION_RESPOND',

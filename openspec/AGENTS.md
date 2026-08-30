@@ -2,6 +2,13 @@
 
 Instructions for AI coding assistants using OpenSpec for spec-driven development.
 
+## Language Convention
+
+- `proposal.md`、`design.md`、`tasks.md` 和规格正文默认使用简体中文，面向项目协作者的说明也使用中文。
+- OpenSpec 固定格式、章节关键字（例如 `## ADDED Requirements`、`#### Scenario:`）、命令、代码符号、路径和协议要求的英文标识保留原文。
+- 只有用户明确要求英文，或外部协议 / 工具格式强制要求英文时，才使用英文正文；此时仍应优先用中文补充项目语境说明。
+- 新游戏 proposal 获批后，默认先进入项目 Open Design 设计阶段，再进入 UI / runtime 实现；设计稿获批和真实入口基础 E2E 通过前，不得宣称该阶段完成。具体安装与流程见 [`create-new-game`](../.spec/skills/create-new-game/SKILL.md) 及其 UI 门禁。
+
 ## TL;DR Quick Checklist
 
 - Search existing work: `openspec spec list --long`, `openspec list` (use `rg` only for full-text search)
@@ -41,6 +48,8 @@ Skip proposal for:
 - Tests for existing behavior
 
 **Workflow**
+For a new game, complete the project `create-new-game` pre-proposal intake before scaffolding or sharing the proposal. The proposal must be based on a playable rules/data slice and cannot replace source reading or data entry.
+If that intake is missing, incomplete for the target flow, or has not queried architecture-changing signature mechanisms, stop at S0 and do not approve the proposal.
 1. Review `openspec/project.md`, `openspec list`, and `openspec list --specs` to understand current context.
 2. Choose a unique verb-led `change-id` and scaffold `proposal.md`, `tasks.md`, optional `design.md`, and spec deltas under `openspec/changes/<id>/`.
 3. Draft spec deltas using `## ADDED|MODIFIED|REMOVED Requirements` with at least one `#### Scenario:` per requirement.
@@ -55,6 +64,8 @@ Track these steps as TODOs and complete them one by one.
 5. **Confirm completion** - Ensure every item in `tasks.md` is finished before updating statuses
 6. **Update checklist** - After all work is done, set every task to `- [x]` so the list reflects reality
 7. **Approval gate** - Do not start implementation until the proposal is reviewed and approved
+
+新游戏 change 若包含 UI / runtime，批准后必须先完成项目 Open Design 设计稿及其批准记录，再定稿 UI-facing 数据模型和执行 UI 任务；执行到对应任务时缺少设计稿必须标记为 `blocked`，不能用临时实现、页面加载或夹具测试绕过。具体顺序与下载入口见项目 `create-new-game` workflow 和 [`docs/infra/open-design.md`](../docs/infra/open-design.md)。
 
 ### Stage 3: Archiving Changes
 After deployment, create separate PR to:
@@ -173,6 +184,26 @@ New request?
 - Affected specs: [list capabilities]
 - Affected code: [key files/systems]
 ```
+
+For a new game, this minimal template is insufficient by itself. The proposal / accompanying `design.md` must also consume the pre-proposal intake and state the architecture, data model, playable flow, change decomposition, dependencies, E2E acceptance points, unrecorded-data risks, and proactive queries for mechanisms that may affect the architecture. Full catalog intake may be deferred, but the minimum architecture slice and its evidence cannot be deferred.
+
+新游戏 proposal 还必须包含以下前置规划字段：
+
+```markdown
+## Pre-Proposal Intake
+- 可跑通的主流程切片：setup、回合/阶段、资源、胜负、关键对象、玩家决策、状态变化
+- 已录入卡牌/能力效果：规则原文、原子子句、来源定位、素材状态
+- 尚未录入对象：对象全集、缺口、阻塞影响、后续补回 change
+- 特色机制主动查询：查询来源、代表机制、对共享引擎/数据模型/流程的影响
+
+## Architecture Plan
+- 领域对象与数据模型
+- UI-facing 状态、事件、命令和交互合同
+- 流程阶段与 change 拆分、依赖和顺序
+- 真实入口 E2E 节点、截图证据和验收口径
+```
+
+`Pre-Proposal Intake` 或 `Architecture Plan` 缺失时，proposal 只能作为草稿，不能记为已批准或进入实施。
 
 3. **Create spec deltas:** `specs/[capability]/spec.md`
 ```markdown

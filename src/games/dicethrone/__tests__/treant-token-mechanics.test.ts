@@ -446,6 +446,89 @@ describe('DiceThrone Treant Token 机制', () => {
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(38);
     });
 
+    it('生命源泉的主阶段奖励骰只能等待普通确认，不能被幼种树灵当作自己的掷骰阶段重掷', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'main1';
+        state.core.players['0'].tokens[TOKEN_IDS.LIFE_SAP] = 1;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 35;
+
+        const lifeSapEvents = execute(state, command('USE_PASSIVE_ABILITY', '0', {
+            passiveId: 'treant-life-sap',
+            actionIndex: 0,
+        }), createQueuedRandom([5]));
+        const rolled = applyEvents(state.core, lifeSapEvents);
+
+        expect(rolled.pendingBonusDiceSettlement?.dice).toHaveLength(1);
+        expect(rolled.currentRollContext?.kind).toBe('bonus');
+        expect(rolled.players['0'].resources[RESOURCE_IDS.HP]).toBe(35);
+
+        const seedlingEvents = execute({ core: rolled, sys: state.sys }, command('USE_PASSIVE_ABILITY', '0', {
+            passiveId: 'treant-seedling-cultivation',
+            actionIndex: 0,
+            targetDieId: 0,
+        }), createQueuedRandom([6]));
+
+        expect(seedlingEvents).toHaveLength(0);
+        expect(rolled.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(1);
+
+        const next = applyEvents(rolled, settlePendingBonusDice(rolled));
+        expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(38);
+    });
+
+    it('攻击中的奖励骰不应写入普通攻击额外骰，也不应改变刺藤读取的普通掷骰次数', () => {
+        const cases = [
+            { rollCount: 1, expectedHp: 30, expectedThornDamage: 0 },
+            { rollCount: 3, expectedHp: 28, expectedThornDamage: 2 },
+        ];
+
+        for (const { rollCount, expectedHp, expectedThornDamage } of cases) {
+            const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+            state.core.players['0'].tokens[TOKEN_IDS.THORN] = 1;
+            state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
+            state.core.rollCount = rollCount;
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'ninja-test-attack',
+                isDefendable: true,
+                damage: 1,
+                extraRoll: { value: 99, resolved: false },
+            };
+
+            const rolled = applyEvents(state.core, [{
+                type: 'BONUS_DIE_ROLLED',
+                payload: {
+                    value: 6,
+                    face: 'mask',
+                    playerId: '0',
+                    targetPlayerId: '1',
+                    effectKey: 'bonusDie.effect.test',
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: 101,
+            } as DiceThroneEvent]);
+
+            expect(rolled.rollCount).toBe(rollCount);
+            expect(rolled.pendingAttack?.extraRoll).toEqual({ value: 99, resolved: false });
+
+            const result = diceThroneFlowHooks.onPhaseExit?.({
+                state: { core: rolled, sys: { phase: 'offensiveRoll' } },
+                from: 'offensiveRoll',
+                to: 'main2',
+                command: command('ADVANCE_PHASE', '0'),
+                random: createQueuedRandom([1]),
+            } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+            const events = Array.isArray(result) ? result : (result?.events ?? []);
+            const next = applyEvents(rolled, events as DiceThroneEvent[]);
+
+            expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(expectedHp);
+            expect(next.players['0'].tokens[TOKEN_IDS.THORN]).toBe(0);
+            expect((events as DiceThroneEvent[]).find(event => event.type === 'DAMAGE_DEALT')?.payload.amount ?? 0)
+                .toBe(expectedThornDamage);
+        }
+    });
+
     it('生命源泉治疗按骰面半值向上取整，低点和高点边界都应正确', () => {
         const low = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         low.sys.phase = 'main1';

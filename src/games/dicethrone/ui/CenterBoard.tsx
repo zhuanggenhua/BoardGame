@@ -70,7 +70,8 @@ export const CenterBoard = ({
     const playerBoardHeightVw = boardUiTuning.playerBoardBaseHeightVw;
     const tipBoardHeightVw = boardUiTuning.tipBoardHeightVw;
     const hasTipBoard = hasDiceThroneTipBoard(characterId);
-    const shellTranslateX = boardUiTuning.shellTranslateX;
+    // 女猎手提示卡恢复显示后，组合宽度增加；右移少量以保持妮拉面板不侵入左侧回合栏。
+    const shellTranslateX = boardUiTuning.shellTranslateX + (characterId === 'lieren' ? 0.5 : 0);
     const shellTransform = shellTranslateX === 0 ? '' : `translateX(${shellTranslateX}vw)`;
     const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
     const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';

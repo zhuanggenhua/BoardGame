@@ -31,6 +31,11 @@ const FACE = MOON_ELF_DICE_FACE_IDS;
 const MOON_ELF_VOLLEY_SETTLEMENT_ID = 'moon-elf-volley';
 const MOON_ELF_SHADOW_STRIKE_SETTLEMENT_ID = 'moon-elf-shadow-strike';
 const MOON_ELF_WATCH_OUT_SETTLEMENT_ID = 'moon-elf-watch-out';
+const MOON_ELF_EXPLODING_ARROW_SETTLEMENT_IDS = {
+    1: 'moon-elf-exploding-arrow',
+    2: 'moon-elf-exploding-arrow-2',
+    3: 'moon-elf-exploding-arrow-3',
+} as const;
 
 // ============================================================================
 // 杈呭姪鍑芥暟
@@ -136,6 +141,7 @@ function createMoonElfFiveDiceEvents(
     attackerId: string,
     opponentId: string,
     roll: MoonElfFiveDiceRollResult,
+    dieEffectKey: string,
     summaryEffectKey: string,
     summaryEffectParams: Record<string, string | number>,
     timestamp: number,
@@ -147,6 +153,7 @@ function createMoonElfFiveDiceEvents(
             face: die.face,
             playerId: attackerId,
             targetPlayerId: opponentId,
+            effectKey: dieEffectKey,
             effectParams: { value: die.value, index: die.index },
         },
         sourceCommandType: 'ABILITY_EFFECT',
@@ -251,6 +258,7 @@ function handleExplodingArrowResolve1(context: CustomActionContext): DiceThroneE
         1,
         1,
         false,
+        MOON_ELF_EXPLODING_ARROW_SETTLEMENT_IDS[1],
     );
 }
 
@@ -264,6 +272,7 @@ function handleExplodingArrowResolve2(context: CustomActionContext): DiceThroneE
         1,
         2,
         false,
+        MOON_ELF_EXPLODING_ARROW_SETTLEMENT_IDS[2],
     );
 }
 
@@ -277,6 +286,7 @@ function handleExplodingArrowResolve3(context: CustomActionContext): DiceThroneE
         1,
         2,
         true,
+        MOON_ELF_EXPLODING_ARROW_SETTLEMENT_IDS[3],
     );
 }
 
@@ -286,6 +296,7 @@ function resolveExplodingArrowMultiDie(
     bowDamageMultiplier: number,
     footDamageMultiplier: number,
     includeEntangle: boolean,
+    settlementId: string,
 ): DiceThroneEvent[] {
     const { attackerId, sourceAbilityId, state, timestamp, random, ctx } = context;
     if (!random) return [];
@@ -302,6 +313,7 @@ function resolveExplodingArrowMultiDie(
             attackerId,
             opponentId,
             roll,
+            'bonusDie.effect.explodingArrow',
             summaryEffectKey,
             {
                 bowCount,
@@ -313,28 +325,6 @@ function resolveExplodingArrowMultiDie(
         ),
     );
 
-    if (damageAmount > 0) {
-        events.push(...dealDamage(context, opponentId, damageAmount, sourceAbilityId, timestamp + 6));
-    }
-
-    if (moonCount > 0) {
-        const targetPlayer = state.players[opponentId];
-        const currentCp = targetPlayer?.resources[RESOURCE_IDS.CP] ?? 0;
-        const cpLoss = moonCount;
-        const newCp = Math.max(0, currentCp - cpLoss);
-        events.push({
-            type: 'CP_CHANGED',
-            payload: { playerId: opponentId, delta: -cpLoss, newValue: newCp, sourceAbilityId },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + 7,
-        } as import('../types').CpChangedEvent);
-    }
-
-    events.push(applyStatus(opponentId, STATUS_IDS.BLINDED, 1, sourceAbilityId, state, timestamp + 8));
-    if (includeEntangle) {
-        events.push(applyStatus(opponentId, STATUS_IDS.ENTANGLE, 1, sourceAbilityId, state, timestamp + 9));
-    }
-
     events.push(
         createDisplayOnlySettlement(
             sourceAbilityId,
@@ -342,7 +332,11 @@ function resolveExplodingArrowMultiDie(
             opponentId,
             dice,
             timestamp + (includeEntangle ? 10 : 9),
-            { continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true } },
+            {
+                customResolutionId: settlementId,
+                customResolutionParams: { bowDamageMultiplier, footDamageMultiplier, includeEntangle },
+                continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true },
+            },
         ),
     );
 
@@ -498,6 +492,7 @@ function handleVolley(context: CustomActionContext): DiceThroneEvent[] {
             attackerId,
             opponentId,
             roll,
+            'bonusDie.effect.volley',
             'bonusDie.effect.volley.result',
             {
                 bowCount,
@@ -664,6 +659,64 @@ function handleEntangleEffect(context: CustomActionContext): DiceThroneEvent[] {
 // ============================================================================
 
 export function registerMoonElfCustomActions(): void {
+    const resolveExplodingArrowSettlement = ({ state, settlement, timestamp }: {
+        state: CustomActionContext['state'];
+        settlement: NonNullable<CustomActionContext['state']['pendingBonusDiceSettlement']>;
+        timestamp: number;
+    }) => {
+        const params = settlement.customResolutionParams ?? {};
+        const bowDamageMultiplier = Number(params.bowDamageMultiplier ?? 1);
+        const footDamageMultiplier = Number(params.footDamageMultiplier ?? 1);
+        const includeEntangle = params.includeEntangle === true;
+        const bowCount = settlement.dice.filter(die => die.face === FACE.BOW).length;
+        const footCount = settlement.dice.filter(die => die.face === FACE.FOOT).length;
+        const moonCount = settlement.dice.filter(die => die.face === FACE.MOON).length;
+        const damageAmount = 3 + (bowDamageMultiplier * bowCount) + (footDamageMultiplier * footCount);
+        const targetId = settlement.targetId;
+        const target = state.players[targetId];
+        const followupEvents: DiceThroneEvent[] = [];
+        if (damageAmount > 0 && target) {
+            const context = {
+                attackerId: settlement.attackerId,
+                targetId,
+                sourceAbilityId: settlement.sourceAbilityId,
+                state,
+                timestamp,
+                ctx: {
+                    attackerId: settlement.attackerId,
+                    defenderId: targetId,
+                    sourceAbilityId: settlement.sourceAbilityId,
+                    state,
+                    damageDealt: 0,
+                    timestamp,
+                },
+            } as CustomActionContext;
+            followupEvents.push(...dealDamage(context, targetId, damageAmount, settlement.sourceAbilityId, timestamp));
+        }
+
+        if (moonCount > 0 && target) {
+            const currentCp = target.resources[RESOURCE_IDS.CP] ?? 0;
+            const newCp = Math.max(0, currentCp - moonCount);
+            followupEvents.push({
+                type: 'CP_CHANGED',
+                payload: { playerId: targetId, delta: newCp - currentCp, newValue: newCp, sourceAbilityId: settlement.sourceAbilityId },
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp: timestamp + 1,
+            } as import('../types').CpChangedEvent);
+        }
+
+        if (target) {
+            followupEvents.push(applyStatus(targetId, STATUS_IDS.BLINDED, 1, settlement.sourceAbilityId, state, timestamp + 2));
+            if (includeEntangle) {
+                followupEvents.push(applyStatus(targetId, STATUS_IDS.ENTANGLE, 1, settlement.sourceAbilityId, state, timestamp + 3));
+            }
+        }
+        return { totalDamage: 0, followupEvents };
+    };
+
+    for (const settlementId of Object.values(MOON_ELF_EXPLODING_ARROW_SETTLEMENT_IDS)) {
+        registerBonusDiceSettlementHandler(settlementId, resolveExplodingArrowSettlement);
+    }
     registerBonusDiceSettlementHandler(MOON_ELF_SHADOW_STRIKE_SETTLEMENT_ID, ({ state, settlement, timestamp, random }) => {
         const die = getPendingBonusSettlementDice(settlement)[0];
         if (!die) return { totalDamage: 0, followupEvents: [] };

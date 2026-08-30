@@ -1204,6 +1204,7 @@ export const SU_COMMANDS = {
     REACTION_PASS: 'su:reaction_pass',
     // === 新增 ===
     SELECT_FACTION: 'su:select_faction',
+    SELECT_RANDOM_FACTION: 'su:select_random_faction',
     DESELECT_FACTION: 'su:deselect_faction',
     BAN_FACTION: 'su:ban_faction',
     CONFIRM_FACTION_READY: 'su:confirm_faction_ready',
@@ -1276,6 +1277,11 @@ export interface SelectFactionCommand extends Command<typeof SU_COMMANDS.SELECT_
     payload: {
         factionId: string;
     };
+}
+
+/** 随机选择一个当前合法派系 */
+export interface SelectRandomFactionCommand extends Command<typeof SU_COMMANDS.SELECT_RANDOM_FACTION> {
+    payload: Record<string, never>;
 }
 
 /** 取消已选派系 */
@@ -1367,6 +1373,7 @@ export type SmashUpCommand =
     | DiscardToLimitCommand
     | ReactionPassCommand
     | SelectFactionCommand
+    | SelectRandomFactionCommand
     | DeselectFactionCommand
     | BanFactionCommand
     | ConfirmFactionReadyCommand

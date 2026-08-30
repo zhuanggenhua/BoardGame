@@ -9,7 +9,7 @@ import { resolveEffectsToEvents } from '../domain/effects';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
 import { getChoiceEffectHandler } from '../domain/choiceEffects';
 import { getCurrentDamageSummary } from '../domain/damageSummary';
-import { getAvailableAbilityIds } from '../domain/rules';
+import { getAvailableAbilityIds, getPlayerDieFace } from '../domain/rules';
 import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CARE_2, VENGEFUL_VINES_2, WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';
 import { TREANT_CARDS } from '../heroes/treant/cards';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
@@ -27,6 +27,25 @@ const settleBonusDice = (core: DiceThroneCore, timestamp = 200): DiceThroneEvent
         random: createQueuedRandom([1]),
         timestamp,
         sourceCommandType: 'SKIP_BONUS_DICE_REROLL',
+    });
+};
+
+const seedCurrentDefenseDice = (core: DiceThroneCore, playerId: string, values: number[]): void => {
+    core.rollDiceCount = values.length;
+    core.rollCount = 1;
+    core.rollConfirmed = true;
+    core.dice = core.dice.map((die, index) => {
+        const value = values[index];
+        if (value === undefined) return { ...die, isKept: true };
+        const face = getPlayerDieFace(core, playerId, value) ?? undefined;
+        return {
+            ...die,
+            value,
+            symbol: face,
+            symbols: face ? [face] : [],
+            ownerId: playerId,
+            isKept: false,
+        };
     });
 };
 
@@ -170,10 +189,12 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [1, 4, 6]);
         const events = resolveAttack(state.core, createQueuedRandom([1, 4, 6]), undefined, 100);
         let next = applyEvents(state.core, events);
 
-        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(3);
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
+        expect(events.filter(event => event.type === 'DICE_ROLLED')).toHaveLength(0);
         expect(events.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(true);
         expect(events.some(event => event.type === 'CHOICE_REQUESTED')).toBe(false);
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(30);
@@ -201,17 +222,16 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [4, 5, 1]);
         const defenseEvents = resolveAttack(state.core, createQueuedRandom([4, 5, 1]), undefined, 100);
         let next = applyEvents(state.core, defenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        const choiceEvent = settlementEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
             option.labelKey === 'choices.treantRooted.s2_a0_d0_none'
         );
         expect(selectedOption).toBeDefined();
 
-        next = applyEvents(next, settlementEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {
@@ -248,18 +268,17 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [6, 6, 1, 4]);
         const defenseEvents = resolveAttack(state.core, createQueuedRandom([6, 6, 1, 4]), undefined, 100);
-        expect(defenseEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(4);
+        expect(defenseEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
         let next = applyEvents(state.core, defenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        const choiceEvent = settlementEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
             option.labelKey === 'choices.treantRooted.none_p0'
         );
         expect(selectedOption).toBeDefined();
 
-        next = applyEvents(next, settlementEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {
@@ -346,10 +365,10 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [6, 6, 1, 4]);
         const defenseEvents = resolveAttack(state.core, createQueuedRandom([6, 6, 1, 4]), undefined, 100);
         let next = applyEvents(state.core, defenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        const choiceEvent = settlementEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         const options = (choiceEvent as any).payload.options as Array<{ labelKey?: string; customId: string; value: number }>;
         expect(options.map(option => option.labelKey).sort()).toEqual([
@@ -361,7 +380,6 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
 
         const selectedOption = options.find(option => option.labelKey === 'choices.treantRooted.none_p3');
         expect(selectedOption).toBeDefined();
-        next = applyEvents(next, settlementEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {
@@ -392,17 +410,16 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [1, 1, 1]);
         const events = resolveAttack(state.core, createQueuedRandom([1, 1, 1]), undefined, 100);
         let next = applyEvents(state.core, events);
 
-        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(3);
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
         expect(events.some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
         next = applyEvents(next, settleBonusDice(next));
-        const followupEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 300);
-        expect(followupEvents.find(event => event.type === 'ATTACK_RESOLVED')?.payload).toMatchObject({
+        expect(events.find(event => event.type === 'ATTACK_RESOLVED')?.payload).toMatchObject({
             totalDamage: 0,
         });
-        next = applyEvents(next, followupEvents);
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
     });
 
@@ -451,13 +468,12 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [4, 5, 1, 1]);
         const defenseEvents = resolveAttack(state.core, createQueuedRandom([4, 5, 1, 1]), undefined, 100);
         let next = applyEvents(state.core, defenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        const choiceEvent = settlementEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
 
-        next = applyEvents(next, settlementEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {
@@ -498,11 +514,10 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '0', [4, 5, 6, 6]);
         const defenseEvents = resolveAttack(state.core, createQueuedRandom([4, 5, 6, 6]), undefined, 100);
         let next = applyEvents(state.core, defenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        expect(settlementEvents.find(event => event.type === 'CHOICE_REQUESTED')).toBeDefined();
-        next = applyEvents(next, settlementEvents);
+        expect(defenseEvents.find(event => event.type === 'CHOICE_REQUESTED')).toBeDefined();
 
         const handler = getChoiceEffectHandler('treant-rooted-resolve');
         expect(handler).toBeDefined();
@@ -541,18 +556,17 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
+        seedCurrentDefenseDice(state.core, '1', [4, 5, 6, 6]);
         const defenseEvents = resolveAttack(state.core, createQueuedRandom([4, 5, 6, 6]), undefined, 100);
-        expect(defenseEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(4);
+        expect(defenseEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
         let next = applyEvents(state.core, defenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        const choiceEvent = settlementEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
             option.labelKey === 'choices.treantRooted.s0_a1_d0_p1'
         );
         expect(selectedOption).toBeDefined();
 
-        next = applyEvents(next, settlementEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {
@@ -703,7 +717,6 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
 
         next = applyEvents(state.core, events);
         settlementEvents = settleBonusDice(next);
-        next = applyEvents(next, settlementEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {

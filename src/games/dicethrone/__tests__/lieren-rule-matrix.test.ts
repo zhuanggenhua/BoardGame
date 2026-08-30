@@ -251,6 +251,16 @@ describe('DiceThrone 女猎手规则矩阵', () => {
         }
     });
 
+    it('目标是对手的通用奖励骰，投掷者仍应记录为攻击方', () => {
+        const state = createLierenState();
+        const card = getCard('card-lieren-opportunistic-strike');
+        const { rollEvents } = resolveAndSettleBonusDice(state, card.id, card.effects, 'immediate', [1]);
+        const bonusDie = rollEvents.find(event => event.type === 'BONUS_DIE_ROLLED');
+
+        expect(bonusDie?.payload.playerId).toBe('0');
+        expect(bonusDie?.payload.targetPlayerId).toBe('1');
+    });
+
     it.each([
         { value: 1, face: FACE.SPEAR, expectedDamage: 1, expectedBond: 0, expectedBleed: 0, effectKey: 'bonusDie.effect.lieren.savageForce.spear' },
         { value: 3, face: FACE.CLAW, expectedDamage: 2, expectedBond: 0, expectedBleed: 0, effectKey: 'bonusDie.effect.lieren.savageForce.claw' },

@@ -130,4 +130,44 @@ describe('ActionLogSystem', () => {
             'PHASE_CHANGED',
         ]);
     });
+
+    it('同一稳定日志 id 在后续事件轮次不会重复写入', () => {
+        const system = createActionLogSystem({
+            maxEntries: 5,
+            commandAllowlist: ['RESERVE_OPEN_CARD'],
+            formatEntry: ({ command }): ActionLogEntry => ({
+                id: `${command.type}-${command.playerId}-${command.timestamp}`,
+                timestamp: command.timestamp ?? 0,
+                actorId: command.playerId,
+                kind: command.type,
+                segments: [{ type: 'text', text: '保留公开牌' }],
+            }),
+        });
+        const command: Command = {
+            type: 'RESERVE_OPEN_CARD',
+            playerId: '0',
+            payload: { cardId: 'card-1' },
+            timestamp: 42,
+        };
+
+        const first = system.afterEvents?.({
+            state: createStateWithoutActionLog(),
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+            afterEventsRound: 0,
+        });
+        const second = system.afterEvents?.({
+            state: first!.state!,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+            afterEventsRound: 1,
+        });
+
+        expect(second?.state?.sys.actionLog.entries).toHaveLength(1);
+        expect(second?.state?.sys.actionLog.entries[0]?.id).toBe('RESERVE_OPEN_CARD-0-42');
+    });
 });

@@ -51,6 +51,7 @@ export function DiceBoxPhysicsSource({
 }: DiceBoxPhysicsSourceProps) {
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const engineRef = React.useRef<DiceBoxThreeEngine | null>(null);
+    const diceLengthRef = React.useRef(dice.length);
     const onPhysicsStatesChangeRef = React.useRef(onPhysicsStatesChange);
     const onSettledChangeRef = React.useRef(onSettledChange);
     const previousDiceIdsRef = React.useRef<number[]>([]);
@@ -65,6 +66,8 @@ export function DiceBoxPhysicsSource({
     const [settled, setSettled] = React.useState(() => dice.length === 0);
     const [engineFailureMessage, setEngineFailureMessage] = React.useState('');
     const [containerSizeReady, setContainerSizeReady] = React.useState(() => typeof ResizeObserver !== 'function');
+
+    diceLengthRef.current = dice.length;
 
     React.useEffect(() => {
         onPhysicsStatesChangeRef.current = onPhysicsStatesChange;
@@ -83,7 +86,7 @@ export function DiceBoxPhysicsSource({
         completedRollMotionKeyRef.current = null;
         completedRerollMotionKeyRef.current = null;
         pendingRerollMotionRef.current = null;
-        const nextSettled = dice.length === 0;
+        const nextSettled = diceLengthRef.current === 0;
         settledRef.current = nextSettled;
         lastPhysicsSnapshotRef.current = '';
         setEngineReady(false);
@@ -96,7 +99,7 @@ export function DiceBoxPhysicsSource({
         } catch {
             // Ignore cleanup failures after WebGL errors.
         }
-    }, [dice.length]);
+    }, []);
 
     const values = React.useMemo(() => dice.map((die) => die.value), [dice]);
     const valuesKey = React.useMemo(() => values.join(','), [values]);
@@ -259,7 +262,7 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [canvasTestId, containerSizeReady, dice.length, failEngine, rendererMode, requireDieSkins, styleProfile]);
+    }, [canvasTestId, containerSizeReady, failEngine, rendererMode, requireDieSkins, styleProfile]);
 
     React.useEffect(() => {
         const engine = engineRef.current;

@@ -4,6 +4,7 @@ import {
     buildDeterministicAiNoise,
     buildAiLegalActionsFromInteractionDecision,
     buildSelectPlayerDecisionActions,
+    createAiActionOutcomeNoBenefitScorer,
     createAiLegalActionId,
     createProfileAwareActionScorer,
     getAiActionStrategyTags,
@@ -55,6 +56,7 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passi
 import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
+import { canRemoveStatusFromPlayer } from './domain/statusRemoval';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
 import { getDieFaceByValue } from './domain/diceRegistry';
 import { getCustomActionMeta } from './domain/effects';
@@ -3441,6 +3443,59 @@ const cardValueScorer: LocalAiActionScorer = {
     },
 };
 
+const projectDiceThroneActionOutcome = ({
+    context,
+    action,
+}: {
+    context: AiDecisionContext;
+    action: AiLegalAction;
+}) => {
+    if (action.kind !== 'play-card' && action.kind !== 'response-play-card') {
+        return null;
+    }
+
+    const state = context.visibleState as DiceThroneState;
+    const cardId = typeof action.metadata?.cardId === 'string'
+        ? action.metadata.cardId
+        : null;
+    const card = cardId ? findPlayerHandCard(state, context.playerId, cardId) : null;
+    if (!card) return null;
+
+    const statusUtility = getCardStatusUtility(state, context.playerId, card);
+    if (statusUtility === null) {
+        return null;
+    }
+
+    const utilityDelta = statusUtility - card.cpCost * 12;
+    return {
+        actionId: action.actionId,
+        actionKind: action.kind,
+        status: 'succeeded' as const,
+        utilityDelta,
+        hasMeaningfulEffect: utilityDelta > 0,
+        eventTypes: ['CARD_PLAYED'],
+        tags: utilityDelta <= 0 ? ['no-benefit'] : ['status-cleanup'],
+        metadata: {
+            cardId: card.id,
+            bestTargetUtility: statusUtility,
+            cpCost: card.cpCost,
+        },
+    };
+};
+
+const statusCardOutcomeScorer = createAiActionOutcomeNoBenefitScorer({
+    id: 'status-card-outcome-gate',
+    actionKinds: ['play-card', 'response-play-card'],
+    projectOutcome: projectDiceThroneActionOutcome,
+    treatNonPositiveUtilityAsNoBenefit: true,
+    noBenefitScore: -300,
+    getReason: ({ outcome }) => (
+        (outcome.utilityDelta ?? 0) < 0
+            ? '这张状态牌当前最好的目标扣除费用后仍是负收益，保留牌比空耗资源更好'
+            : '这张状态牌当前没有扣除费用后仍为正收益的合法目标，应该保留'
+    ),
+});
+
 const interactionValueScorer: LocalAiActionScorer = {
     id: 'interaction-value',
     score(context, action) {
@@ -4468,6 +4523,70 @@ const estimateEffectsStrategicValue = (
     }, 0) ?? 0;
 };
 
+const getBestStatusActionUtility = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    customActionId: string,
+): number | null => {
+    const playerIds = Object.keys(state.core.players) as PlayerId[];
+    const scoreRemoveFromTargets = (targetPlayerIds: PlayerId[]): number => {
+        const candidates = targetPlayerIds.flatMap((targetPlayerId) => (
+            getSelectableStatusIds(state, targetPlayerId)
+                .filter((statusId) => canRemoveStatusFromPlayer(state.core, playerId, targetPlayerId, statusId))
+                .map((statusId) => scoreRemoveSingleStatusTarget(state, playerId, targetPlayerId, statusId))
+        ));
+        return candidates.length > 0 ? Math.max(...candidates) : 0;
+    };
+
+    if (customActionId === 'remove-status-self') {
+        return scoreRemoveFromTargets([playerId]);
+    }
+    if (customActionId === 'remove-status-1') {
+        return scoreRemoveFromTargets(playerIds);
+    }
+    if (customActionId === 'remove-all-status') {
+        const candidates = playerIds
+            .filter((targetPlayerId) => playerHasStatusOrToken(state, targetPlayerId))
+            .map((targetPlayerId) => scoreRemoveAllStatusesTarget(state, playerId, targetPlayerId));
+        return candidates.length > 0 ? Math.max(...candidates) : 0;
+    }
+    if (customActionId === 'transfer-status') {
+        const candidates = playerIds.flatMap((fromPlayerId) => (
+            getSelectableStatusIds(state, fromPlayerId)
+                .filter((statusId) => canRemoveStatusFromPlayer(state.core, playerId, fromPlayerId, statusId))
+                .flatMap((statusId) => playerIds
+                    .filter((toPlayerId) => toPlayerId !== fromPlayerId)
+                    .map((toPlayerId) => scoreTransferStatusTarget(
+                        state,
+                        playerId,
+                        fromPlayerId,
+                        toPlayerId,
+                        statusId,
+                    )))
+        ));
+        return candidates.length > 0 ? Math.max(...candidates) : 0;
+    }
+
+    return null;
+};
+
+const getCardStatusUtility = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    card: AbilityCard,
+): number | null => {
+    const utilities = card.effects?.flatMap((effect) => {
+        const customActionId = effect.action?.type === 'custom'
+            ? effect.action.customActionId
+            : undefined;
+        if (!customActionId) return [];
+        const utility = getBestStatusActionUtility(state, playerId, customActionId);
+        return utility === null ? [] : [utility];
+    }) ?? [];
+
+    return utilities.length > 0 ? Math.max(...utilities) : null;
+};
+
 const evaluateBonusDiceSettlementValue = (
     state: DiceThroneState,
     settlement: PendingBonusDiceSettlement,
@@ -4533,6 +4652,10 @@ const estimateCardStrategicValue = (
     }
 
     if (actionKind === 'play-card' || actionKind === 'response-play-card') {
+        const statusUtility = getCardStatusUtility(state, playerId, card);
+        if (statusUtility !== null) {
+            return 35 + card.cpCost * 10 + statusUtility;
+        }
         return 35
             + card.cpCost * 10
             + (card.isAttackModifier ? 22 : 0)
@@ -5059,7 +5182,8 @@ const projectDiceThroneAction = (args: {
             : 0;
         const phaseBonus = phase === 'main1' ? 12 : 0;
         return {
-            score: Number(((strategicValue * 0.24 + tacticalDiceValue * 0.7 + projectedPosition * 0.04 + phaseBonus) * scale).toFixed(3)),
+            // 局势总分只用于 trace，不是这次行动带来的收益；直接相加会抬高所有出牌动作。
+            score: Number(((strategicValue * 0.24 + tacticalDiceValue * 0.7 + phaseBonus) * scale).toFixed(3)),
             reason: args.action.kind === 'play-upgrade-card'
                 ? '高难度会额外考虑长期成长与后续回合收益'
                 : '高难度会额外考虑当前出牌后的即时收益与持续收益',
@@ -5204,6 +5328,7 @@ const diceThroneLocalPolicyScorers: LocalAiActionScorer[] = [
     setupCharacterRandomScorer,
     abilityValueScorer,
     cardValueScorer,
+    statusCardOutcomeScorer,
     interactionValueScorer,
     interactionHintScorer,
     bonusDieScorer,
@@ -5346,6 +5471,7 @@ export const diceThroneAiRuntime: GameAiRuntime = {
             proposedAction,
         });
     },
+    projectActionOutcome: projectDiceThroneActionOutcome,
     resolveCurrentDecisionPlayerId: resolveDiceThroneCurrentDecisionPlayerId,
     resolveOnlineDecisionVisibility: resolveDiceThroneOnlineDecisionVisibility,
     shouldUseRemoteDecision: shouldUseRemoteDecisionForDiceThrone,

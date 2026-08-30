@@ -102,6 +102,57 @@ function runCommandWithFullSystems(
 
 type CommandRunner = typeof runCommand;
 
+function chooseBridgeOptionTowardBase(
+    choice: any,
+    baseDefId: string,
+): string {
+    if (choice.sourceId === 'smashup_reaction_choose') {
+        return findReactionOptionOrPass(choice, [baseDefId, 'pirate_first_mate', 'base_pirate_cove']);
+    }
+    if (choice.sourceId === 'pirate_first_mate_choose_base') {
+        return findOption(choice, (option: any) => option.id === 'skip' || option.value?.skip === true);
+    }
+    if (choice.sourceId === 'base_pirate_cove') {
+        return findOption(choice, (option: any) => option.id === 'skip' || option.value?.skip === true);
+    }
+    if (choice.sourceId === 'multi_base_scoring') {
+        const options = getPromptOptions(choice);
+        return (
+            options.find((option: any) => option.value?.baseDefId === baseDefId)?.id
+            ?? options.find((option: any) => option.value?.baseIndex === 0)?.id
+            ?? options[0]!.id
+        );
+    }
+    return getPromptOptions(choice)[0]!.id;
+}
+
+function advanceUntilChoiceSource(
+    initialState: MatchState<SmashUpCore>,
+    targetSourceId: string,
+    runner: CommandRunner,
+    eventsAcc: SmashUpEvent[] = [],
+) {
+    let state = initialState;
+    let choice = getActiveSimpleChoice(state);
+    for (let guard = 0; guard < 16 && choice && choice.sourceId !== targetSourceId; guard++) {
+        expect([
+            'smashup_reaction_choose',
+            'pirate_first_mate_choose_base',
+            'base_pirate_cove',
+            'multi_base_scoring',
+        ]).toContain(choice.sourceId);
+        const optionId = chooseBridgeOptionTowardBase(choice, targetSourceId);
+        const resolved = runner(state, respondCommand(optionId, choice.playerId));
+        expect(resolved.success).toBe(true);
+        eventsAcc.push(...(resolved.events as SmashUpEvent[]));
+        state = resolved.finalState;
+        choice = getActiveSimpleChoice(state);
+    }
+    expect(choice).toBeTruthy();
+    expect(choice!.sourceId).toBe(targetSourceId);
+    return { state, choice: choice! };
+}
+
 function drainReactionQueueChoice(
     initialState: MatchState<SmashUpCore>,
     runner: CommandRunner,
@@ -1324,47 +1375,17 @@ describe('scoreBases 多基地计分链恢复', () => {
             expect(['meFirst', 'afterScoring']).toContain(presentationAfterPirateKing.windowType);
         }
 
-        // 兼容不同链路顺序：有的实现会先回到 multi_base_scoring，再进入 base_tortuga。
+        // 兼容真实队列顺序：Me First、afterScoring 和多基地选择可能交错出现。
         let stateForTortuga = stateAfterPlayerTwo;
         const preTortugaEvents: SmashUpEvent[] = [];
-        for (let guard = 0; guard < 3; guard++) {
-            const nextAfterPirateKing = getActiveSimpleChoice(stateForTortuga);
-            if (nextAfterPirateKing?.sourceId !== 'multi_base_scoring') break;
-            const nextOptions = getPromptOptions(nextAfterPirateKing);
-            const continueOption = (
-                nextOptions.find(
-                    (option: any) => option.value?.baseIndex === 0 || option.value?.baseDefId === 'base_tortuga',
-                )?.id
-                ?? nextOptions[0]?.id
-            );
-            expect(continueOption).toBeTruthy();
-            const continueScoring = runCommandWithFullSystems(
-                stateForTortuga,
-                respondCommand(continueOption, nextAfterPirateKing.playerId),
-            );
-            expect(continueScoring.success).toBe(true);
-            preTortugaEvents.push(...continueScoring.events);
-            stateForTortuga = continueScoring.finalState;
-        }
-
-        let tortugaAfterScoringChoice = getActiveSimpleChoice(stateForTortuga)!;
-        expect(tortugaAfterScoringChoice).toBeTruthy();
-        if (tortugaAfterScoringChoice.sourceId === 'smashup_reaction_choose') {
-            const chosen = {
-                id: findReactionOptionOrPass(
-                    tortugaAfterScoringChoice,
-                    ['base_tortuga', 'pirate_first_mate', 'base_pirate_cove'],
-                ),
-            };
-            const picked = runCommandWithFullSystems(
-                stateForTortuga,
-                respondCommand(chosen.id, tortugaAfterScoringChoice.playerId),
-            );
-            expect(picked.success).toBe(true);
-            stateForTortuga = picked.finalState;
-            tortugaAfterScoringChoice = getActiveSimpleChoice(stateForTortuga)!;
-        }
-        expect(tortugaAfterScoringChoice.sourceId).toBe('base_tortuga');
+        const tortugaBridge = advanceUntilChoiceSource(
+            stateForTortuga,
+            'base_tortuga',
+            runCommandWithFullSystems,
+            preTortugaEvents,
+        );
+        stateForTortuga = tortugaBridge.state;
+        const tortugaAfterScoringChoice = tortugaBridge.choice;
         const skipTortugaMove = findOption(
             tortugaAfterScoringChoice,
             (option: any) => option.id === 'skip' || option.value?.skip === true,

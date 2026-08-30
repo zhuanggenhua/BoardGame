@@ -50,11 +50,15 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 - 基础规则语义覆盖矩阵；
 - 图面字段、空间载体、setup、资源用途和运行时素材需求。
 
+新游戏的第一优先级是数据录入：凡是已经读取过的图片、图集、截图或裁图，必须先回填数据录入规范要求的图片登记表，完成图面数据、对象 / 槽位、最终处置和处置依据；不得先判断“这张图有没有用”再决定是否登记。卡牌描述、i18n、运行时定义和机制实现只能消费锁定后的录入合同。
+
 缺口只能写成 `blocked / disputed / out-of-scope / approved-programmatic` 等可追溯状态，不能用占位素材、CSS 图形、示意图或 E2E 绿灯顶替。
+
+新游戏的正式 OpenSpec proposal 也必须建立在 S0 之上：proposal 不是 intake 的替代物，而是基于已录入事实做架构、数据模型、流程和任务拆分的规划产物。无需录完全部卡库，但至少要录入能跑通目标主流程的规则对象、卡牌/能力效果、状态变化、玩家决策和所需素材；另需主动查询尚未录入的派系/角色特色机制，凡可能改变共享引擎、对象模型或流程边界的机制都必须写入风险和设计依据。
 
 ### S1 骨架与 Manifest
 
-按 `references/game-skeleton.md` 建目录、manifest、domain、Board、thumbnail、tutorial、audio、critical image resolver 和基础测试。主 skill 不维护代码模板。
+Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI 目录骨架、manifest、domain 草稿、规则文件和资源索引；不得创建正式 Board、运行时 HUD 或玩家交互。设计稿批准后，再按 `references/game-skeleton.md` 补齐 Board、thumbnail、tutorial、audio、critical image resolver 和基础测试。主 skill 不维护代码模板。
 
 最低验收：
 
@@ -65,6 +69,8 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 ### S2 机制与数据设计
 
 先把规则动作拆成状态、事件、命令、UI 承接和验证证据，再实现。正式事实、系统状态、派生读模型和纯 UI 状态必须分开。
+
+若当前新游戏 change 包含 `board-ui`、`runtime-entry` 或玩家可见交互，S2 不能在没有已批准的 Open Design 设计稿 / 交互合同的情况下标记完成：规则事实可以先依据主规则源整理，但 UI-facing 状态、事件、命令、选择项、可见字段和溢出策略必须回填设计稿结论。缺设计稿时只能停在 `in_progress`，不得直接进入 UI 实施或把临时模型当正式模型。
 
 一票否决：
 
@@ -101,6 +107,8 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 ### S5 Board/UI
 
 进入主 UI 前先读 `references/ui-implementation-gates.md`。新游戏默认按“桌面基线 -> 桌面真实 E2E -> 桌面截图复看 -> 移动适配 -> 移动截图复看”推进。
+
+S5 是硬阻塞步骤：当前 change 若包含 UI，执行到 UI 实施任务时必须检查 Open Design artifact、导出设计图、AI 图面核验、用户批准记录、UI 前置包和需求对齐表。任一缺失都必须停在 `blocked`，不得写 Board / runtime UI、不得启动实现 E2E，也不得用页面能打开或测试夹具通过替代设计稿门禁。
 
 禁止：
 

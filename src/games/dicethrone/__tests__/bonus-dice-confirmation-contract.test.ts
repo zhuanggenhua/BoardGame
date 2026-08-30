@@ -8,6 +8,9 @@ import type { DiceThroneCore, DiceThroneEvent, PendingBonusDiceSettlement } from
 import { createHeroMatchup, createQueuedRandom, testSystems } from './test-utils';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { RESOURCE_IDS } from '../domain/resources';
+import { TOKEN_IDS } from '../domain/ids';
+import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
+import { CP_MAX } from '../domain/types';
 
 const bonusSettlement = (): PendingBonusDiceSettlement => ({
     id: 'ordinary-confirm-required',
@@ -249,5 +252,87 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
         // 左轮基础伤害 3 + Loaded 奖励骰 6 => +3 + Wild West 后续 +1。
         expect(confirmed.state.core.lastResolvedAttackDamage).toBe(7);
         expect(confirmed.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(43);
+    });
+
+    it('默认奖励骰获得 Token 时，事件数量必须按实际上限截断', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1])).core;
+        state.players['0'].tokens[TOKEN_IDS.TAIJI] = 5;
+
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'default-token-cap',
+            sourceAbilityId: 'default-token-cap',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 6, face: 'unknown' }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            rollDieResolution: {
+                defaultEffect: {
+                    grantToken: { tokenId: TOKEN_IDS.TAIJI, value: 2 },
+                },
+                effectTargetId: '0',
+            },
+        };
+
+        const events = buildBonusDiceSettlementEvents({
+            state,
+            settlement,
+            random: createQueuedRandom([1]),
+            timestamp: 101,
+            sourceCommandType: 'TEST_CONFIRM_BONUS_DICE',
+        });
+
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'TOKEN_GRANTED',
+            payload: expect.objectContaining({
+                targetId: '0',
+                tokenId: TOKEN_IDS.TAIJI,
+                amount: 0,
+                newTotal: 5,
+            }),
+        }));
+    });
+
+    it('奖励骰获得 CP 达到上限时，事件增量必须按实际增加量记录', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1])).core;
+        state.players['0'].resources[RESOURCE_IDS.CP] = CP_MAX;
+
+        const settlement: PendingBonusDiceSettlement = {
+            id: 'conditional-cp-cap',
+            sourceAbilityId: 'conditional-cp-cap',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 6, face: 'unknown' }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            resolutionMode: 'none',
+            rollDieResolution: {
+                conditionalEffects: [{ face: 'unknown', cp: 2 }],
+                effectTargetId: '0',
+            },
+        };
+
+        const events = buildBonusDiceSettlementEvents({
+            state,
+            settlement,
+            random: createQueuedRandom([1]),
+            timestamp: 102,
+            sourceCommandType: 'TEST_CONFIRM_BONUS_DICE',
+        });
+
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'CP_CHANGED',
+            payload: expect.objectContaining({
+                playerId: '0',
+                delta: 0,
+                newValue: CP_MAX,
+            }),
+        }));
     });
 });

@@ -175,15 +175,6 @@
         }
       }
     },
-    "base/compressed/longzu": {
-      "variants": {
-        "webp": {
-          "sha256": "946b214749a58ce02135cb1893f46c07cb3ba1f29a0ce87eba6d77368c008438",
-          "bytes": 441940,
-          "mime": "image/webp"
-        }
-      }
-    },
     "base/compressed/munchkin_clerics_bases": {
       "variants": {
         "webp": {

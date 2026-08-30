@@ -21,15 +21,14 @@ const STEP_01 = `${EVIDENCE_DIR}/01-山屋惊魂-教程-恶兆前动作区.jpg`;
 const STEP_02 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-剩余移动.jpg`;
 const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.jpg`;
 const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.jpg`;
-const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-书本使用前.jpg`;
-const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-书本已选中准备使用.jpg`;
-const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-已用书本预览清晰.jpg`;
-const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-使用后准备移动.jpg`;
-const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-房间牌整张承接-点击前.jpg`;
-const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-房间牌整张承接-点击后.jpg`;
-const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-探索未知房间前.jpg`;
-const STEP_11A = `${EVIDENCE_DIR}/11a-山屋惊魂-教程-确认放置新房间.jpg`;
-const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-探索后发现牌.jpg`;
+const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-移动入口.jpg`;
+const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-移动到门厅后.jpg`;
+const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-探索目标房间.jpg`;
+const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-确认放置新房间.jpg`;
+const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-事件牌与事件骰出现.jpg`;
+const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-书本直接介入后.jpg`;
+const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-书本牌面查看.jpg`;
+const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-知识改骰结果.jpg`;
 const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
 const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
 const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-兔脚重投结束.jpg`;
@@ -79,12 +78,12 @@ const MOBILE_EVIDENCE_DIR = resolve(
   process.cwd(),
   "test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收",
 );
-const MOBILE_STEP_01 = `${MOBILE_EVIDENCE_DIR}/01-手机横屏-教程书本使用入口.png`;
+const MOBILE_STEP_01 = `${MOBILE_EVIDENCE_DIR}/01-手机横屏-教程移动入口.png`;
 const PC_REGRESSION_EVIDENCE_DIR = resolve(
   process.cwd(),
   "test-results/evidence-screenshots/betrayal/pc-regression-current",
 );
-const PC_REGRESSION_STEP_USE_BOOK = `${PC_REGRESSION_EVIDENCE_DIR}/09-pc-第二章使用书本前-current.png`;
+const PC_REGRESSION_STEP_USE_BOOK = `${PC_REGRESSION_EVIDENCE_DIR}/05-pc-移动入口-current.png`;
 const PC_REGRESSION_STEP_BOARD = `${PC_REGRESSION_EVIDENCE_DIR}/03-pc-房间主视区-current.png`;
 
 const waitForStep = async (
@@ -1744,7 +1743,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await clickNext(page);
     await waitForStep(page, "inventory-and-help");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "物品和预兆放在你面前",
+      "物品和预兆会放在你面前",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
       "帮助入口",
@@ -2279,89 +2278,23 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       timeout: 15000,
     });
 
-    await advanceToStep(page, "use-book");
-    await waitForStep(page, "use-book");
-    await expect(page.getByTestId("betrayal-action-use")).toBeVisible();
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "先选择持有区里的书本",
-    );
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "再点“使用”",
-    );
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      /非战斗.*检定/,
-    );
-    await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
-      "放大镜",
-    );
-    await expect(
-      page.getByTestId("betrayal-inventory-omen-book"),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-inventory-omen-book-shell"),
-    ).toHaveAttribute("data-tutorial-target-outline", "true");
-    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
-      "data-tutorial-highlight-target",
-      "betrayal-inventory-omen-book",
-    );
-    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
-      "data-tutorial-highlight-shape",
-      "rect",
-    );
-    await expect(
-      page.getByTestId("betrayal-inventory-omen-book-magnify"),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-inventory-preview-overlay"),
-    ).not.toBeVisible();
-    await saveScreenshot(page, STEP_05);
-
-    await page.getByTestId("betrayal-inventory-omen-book").click();
-    await expect(
-      page.getByTestId("betrayal-selected-inventory-card-name"),
-    ).toContainText("书本");
-    await expect(page.getByTestId("betrayal-action-use")).toBeEnabled();
-    await expect(
-      page.getByTestId("betrayal-inventory-omen-book"),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page.getByTestId("betrayal-inventory-omen-book-selected-outline"),
-    ).toBeVisible();
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "再点“使用”",
-    );
-    await saveScreenshot(page, STEP_06);
-    await page.getByTestId("betrayal-action-use").click();
+    await advanceToStep(page, "open-move-targets");
     await waitForStep(page, "open-move-targets");
     await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
-    await page.getByTestId("betrayal-inventory-omen-book-magnify").click();
-    const usedBookPreview = page.getByTestId(
-      "betrayal-inventory-preview-overlay",
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "点“移动”",
     );
-    await expect(usedBookPreview).toBeVisible();
-    await expect(
-      usedBookPreview.getByTestId("betrayal-inventory-preview-card-shell"),
-    ).toBeVisible();
-    await expectInventoryPreviewCardReadable(usedBookPreview);
-    await saveScreenshot(page, STEP_07);
-    await usedBookPreview.click({ position: { x: 8, y: 8 } });
-    await expect(
-      page.getByTestId("betrayal-inventory-preview-overlay"),
-    ).not.toBeVisible();
+    await saveScreenshot(page, STEP_05);
+
     await page.getByTestId("betrayal-action-move").click();
     await waitForStep(page, "move-to-hallway");
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-inventory-preview-overlay"),
-    ).not.toBeVisible();
-    await saveScreenshot(page, STEP_08);
-    await saveScreenshot(page, STEP_09);
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(
       page.getByTestId("betrayal-room-latest-feedback"),
     ).toContainText("移动到门厅");
-    await saveScreenshot(page, STEP_10);
     await waitForStep(page, "explore-upper");
+    await saveScreenshot(page, STEP_06);
     await expect(page.getByTestId("betrayal-action-explore")).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "再选择出口",
@@ -2384,7 +2317,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         `betrayal-room-explore-card-highlight-${targetRoomTestId!.replace("betrayal-room-", "")}`,
       ),
     ).toBeVisible();
-    await saveScreenshot(page, STEP_11);
+    await saveScreenshot(page, STEP_07);
     await exploreTargetRoom.click();
     const roomPlacementPanel = page.getByTestId("betrayal-room-placement-panel");
     await expect(roomPlacementPanel).toBeVisible({ timeout: 10000 });
@@ -2404,13 +2337,110 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       await roomTileAdjustmentOption.click();
     }
     await expect(roomPlacementConfirm).toBeEnabled();
-    await saveScreenshot(page, STEP_11A);
+    await saveScreenshot(page, STEP_08);
     await roomPlacementConfirm.click();
-    await waitForStep(page, "finish", 30000);
+    await waitForStep(page, "use-book", 30000);
     const latestDiscovery = page.locator(
       '[data-tutorial-id="betrayal-latest-discovery"]',
     );
     await expect(latestDiscovery).toBeVisible({ timeout: 30000 });
+    const discoveryReveal = page.getByTestId("betrayal-discovery-panel");
+    await expect(discoveryReveal).toBeVisible();
+    const discoveryRollPanel = discoveryReveal.getByTestId(
+      "betrayal-recent-roll-panel",
+    );
+    await expect(discoveryRollPanel).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-inventory-omen-book"),
+    ).toHaveAttribute("data-event-roll-book-available", "true");
+    await expect(
+      page.getByTestId("betrayal-inventory-omen-book-shell"),
+    ).toHaveAttribute("data-tutorial-target-outline", "true");
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-inventory-omen-book",
+    );
+    await expectVisiblePhysicalDiceBox(discoveryRollPanel);
+    await waitForPhysicalDiceSettled(discoveryRollPanel);
+    await saveScreenshot(page, STEP_09);
+
+    const beforeBookState = await page.evaluate(() => {
+      const state = (
+        window as unknown as {
+          __BG_TEST_HARNESS__?: {
+            state?: {
+              get?: () => {
+                core?: {
+                  currentExplorer?: { traits?: { sanity?: number } };
+                  recentRoll?: { trait?: string };
+                  pendingEventRollResolution?: unknown;
+                };
+              };
+            };
+          };
+        }
+      ).__BG_TEST_HARNESS__?.state?.get?.();
+      return {
+        sanity: state?.core?.currentExplorer?.traits?.sanity ?? null,
+        rollTrait: state?.core?.recentRoll?.trait ?? null,
+        pendingRoll: Boolean(state?.core?.pendingEventRollResolution),
+      };
+    });
+    expect(beforeBookState.pendingRoll).toBe(true);
+    expect(beforeBookState.rollTrait).toBe("might");
+
+    await page.getByTestId("betrayal-inventory-omen-book").click();
+    await waitForStep(page, "finish", 30000);
+    await expect(
+      page.getByTestId("betrayal-selected-inventory-card-name"),
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("betrayal-inventory-preview-overlay"),
+    ).not.toBeVisible();
+    const afterBookState = await page.evaluate(() => {
+      const state = (
+        window as unknown as {
+          __BG_TEST_HARNESS__?: {
+            state?: {
+              get?: () => {
+                core?: {
+                  currentExplorer?: { traits?: { sanity?: number } };
+                  recentRoll?: { trait?: string };
+                  pendingEventRollResolution?: unknown;
+                  usedCardIdsThisTurn?: string[];
+                };
+              };
+            };
+          };
+        }
+      ).__BG_TEST_HARNESS__?.state?.get?.();
+      return {
+        sanity: state?.core?.currentExplorer?.traits?.sanity ?? null,
+        rollTrait: state?.core?.recentRoll?.trait ?? null,
+        pendingRoll: Boolean(state?.core?.pendingEventRollResolution),
+        usedBook: state?.core?.usedCardIdsThisTurn?.includes("omen-book") ?? false,
+      };
+    });
+    expect(afterBookState.sanity).toBe((beforeBookState.sanity ?? 0) - 1);
+    expect(afterBookState.rollTrait).toBe("knowledge");
+    expect(afterBookState.pendingRoll).toBe(true);
+    expect(afterBookState.usedBook).toBe(true);
+    await saveScreenshot(page, STEP_10);
+
+    await page.getByTestId("betrayal-inventory-omen-book-magnify").click();
+    const usedBookPreview = page.getByTestId(
+      "betrayal-inventory-preview-overlay",
+    );
+    await expect(usedBookPreview).toBeVisible();
+    await expect(
+      usedBookPreview.getByTestId("betrayal-inventory-preview-card-shell"),
+    ).toBeVisible();
+    await expectInventoryPreviewCardReadable(usedBookPreview);
+    await saveScreenshot(page, STEP_11);
+    await usedBookPreview.click({ position: { x: 8, y: 8 } });
+    await expect(
+      page.getByTestId("betrayal-inventory-preview-overlay"),
+    ).not.toBeVisible();
     const tutorialOverlayCard = page.getByTestId("tutorial-overlay-card");
     await expect(tutorialOverlayCard).toHaveAttribute(
       "data-tutorial-placement",
@@ -2420,9 +2450,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "使用持有物 -> 移动 -> 探索 -> 抽发现牌",
     );
     await expect(tutorialOverlayCard).toContainText("兔脚");
-    await expect(tutorialOverlayCard).toContainText("重掷一颗骰子");
-    await expect(tutorialOverlayCard).toContainText("不想改时继续结算");
-    const discoveryReveal = page.getByTestId("betrayal-discovery-panel");
+    await expect(tutorialOverlayCard).toContainText("改用知识重新投骰");
+    await expect(tutorialOverlayCard).toContainText("若不使用兔脚，点击确认继续结算");
     await expect(discoveryReveal).toBeVisible();
     await expect(discoveryReveal).toHaveAttribute(
       "data-allows-inventory-roll-modifiers",
@@ -2443,12 +2472,9 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       discoveryReveal,
       rabbitFootCard,
     );
-    const discoveryRollPanel = discoveryReveal.getByTestId(
-      "betrayal-recent-roll-panel",
-    );
     await expect(discoveryRollPanel).toBeVisible();
     await expect(discoveryRollPanel).not.toContainText("外星几何");
-    await expect(discoveryRollPanel).not.toContainText("知识检定");
+    await expect(discoveryRollPanel).toContainText("知识检定");
     await expect(
       discoveryReveal.getByTestId("betrayal-recent-roll-total"),
     ).toContainText("总点数");
@@ -2458,6 +2484,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
     ).toContainText("加值");
+    const eventRollConfirm = discoveryReveal.getByTestId(
+      "betrayal-discovery-continue",
+    );
+    await expect(eventRollConfirm).toHaveCSS(
+      "background-color",
+      "rgb(214, 181, 109)",
+    );
+    await expect(eventRollConfirm).toHaveCSS("border-radius", "0px");
     await expect(discoveryRollPanel).toHaveAttribute(
       "data-roll-panel-style",
       "open-table-transparent",
@@ -2620,11 +2654,11 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(discoveryFrontAtlas).toHaveAttribute(
       "data-atlas-frame-index",
-      "24",
+      "0",
     );
     await expect(discoveryFrontAtlas).toHaveAttribute(
       "aria-label",
-      /外星几何|事件|物品|预兆/,
+      /标本剥制|事件|物品|预兆/,
     );
     await expect
       .poll(async () =>
@@ -2686,13 +2720,21 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("加值");
     await expectTutorialNextDoesNotStealRollModifierFocus(page);
     await saveScreenshot(page, STEP_13);
-    await saveScreenshot(page, STEP_14);
     await setHarnessRandomQueue(page, [0.99]);
     await rerollTargetDie.click();
     const rollModifierConfirm = page.getByTestId("betrayal-roll-modifier-confirm");
     await expect(rollModifierConfirm).toBeVisible();
     await expect(rollModifierConfirm).toContainText("确认使用兔脚");
     await expect(rollModifierConfirm).toBeEnabled();
+    await expect(rollModifierConfirm).toHaveCSS(
+      "background-color",
+      "rgb(214, 181, 109)",
+    );
+    await expect(rollModifierConfirm).toHaveCSS(
+      "border-radius",
+      "0px",
+    );
+    await saveScreenshot(page, STEP_14);
     await rollModifierConfirm.click();
     await expect(rabbitFootDice).toHaveCount(0);
     const rerolledDicePhysicsSource = discoveryRollPanel.getByTestId(
@@ -2712,6 +2754,35 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
     ).toContainText("加值");
     await saveScreenshot(page, STEP_15);
+    const finalEventRollConfirm = discoveryReveal.getByTestId(
+      "betrayal-discovery-continue",
+    );
+    await expect(finalEventRollConfirm).toBeVisible({ timeout: 10000 });
+    await expect(finalEventRollConfirm).toBeEnabled();
+    await finalEventRollConfirm.click();
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const core = (
+              window as unknown as {
+                __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: { pendingEventRollResolution?: unknown } } } };
+              }
+            ).__BG_TEST_HARNESS__?.state?.get?.().core;
+            return core?.pendingEventRollResolution?.acknowledgedPlayerIds?.length ?? 0;
+          }),
+        { timeout: 10000 },
+      )
+      .toBe(1);
+    await expect(finalEventRollConfirm).toContainText("确认 1/3");
+    await expect(finalEventRollConfirm).toHaveAttribute(
+      "data-card-resolution-confirmed-count",
+      "1",
+    );
+    await expect(finalEventRollConfirm).toHaveAttribute(
+      "data-card-resolution-required-count",
+      "3",
+    );
     await waitForStep(page, "finish", 10000);
     await expect(exploreTargetRoom).toBeVisible();
     await expect(
@@ -2748,11 +2819,16 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       };
     });
     expect(finalDiscoveryState).toMatchObject({
-      latestDiscoveryTitle: "外星几何",
+      latestDiscoveryTitle: "标本剥制",
       latestDiscoveryKind: "event",
       currentRoomName: "厨房",
     });
     expect(finalDiscoveryState.hasPendingEventRollResolution).toBe(true);
+    await expect(finalEventRollConfirm).toContainText("确认 1/3");
+    await expect(finalEventRollConfirm).toHaveAttribute(
+      "data-card-resolution-confirmed-count",
+      "1",
+    );
     await saveScreenshot(page, STEP_16);
 
     assertNoFatalFrontendErrors([
@@ -2796,8 +2872,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("mobile-orientation-game-banner"),
     ).toHaveCount(0);
-    await advanceToStep(page, "use-book");
-    await waitForStep(page, "use-book");
+    await advanceToStep(page, "open-move-targets");
+    await waitForStep(page, "open-move-targets");
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await expect(
       page.getByTestId("betrayal-mobile-landscape-layout"),
@@ -3029,8 +3105,8 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     });
     await waitForBetrayalPageReady(page);
 
-    await advanceToStep(page, "use-book");
-    await waitForStep(page, "use-book");
+    await advanceToStep(page, "open-move-targets");
+    await waitForStep(page, "open-move-targets");
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await expect(page.getByTestId("betrayal-desktop-layout")).toBeVisible();
     await expect(page.getByTestId("betrayal-desktop-layout")).toHaveAttribute(
@@ -3125,14 +3201,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await saveScreenshot(page, PC_REGRESSION_STEP_USE_BOOK);
 
-    await page.getByTestId("betrayal-inventory-omen-book").click();
-    await expect(
-      page.getByTestId("betrayal-selected-inventory-card-name"),
-    ).toContainText("书本");
-    await expect(page.getByTestId("betrayal-action-use")).toBeEnabled();
-    await page.getByTestId("betrayal-action-use").click();
-    await waitForStep(page, "open-move-targets");
-    await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
     await page.getByTestId("betrayal-action-move").click();
     await waitForStep(page, "move-to-hallway");
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();

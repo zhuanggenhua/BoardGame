@@ -58,6 +58,17 @@ const drawCard = (count: number, description: string, timing: EffectTiming = 'pr
     timing,
 });
 
+const bloodthirstyClawsBloodPowerIfKind = (threshold: 3 | 4, description: string): AbilityEffect => ({
+    description,
+    action: {
+        type: 'custom',
+        target: 'self',
+        customActionId: 'vampire-lord-bloodthirsty-claws-blood-power-if-kind',
+        params: { threshold, amount: 1 },
+    },
+    timing: 'postDamage',
+});
+
 const bloodPossessedChoice = (description: string): AbilityEffect => ({
     description,
     action: {
@@ -97,9 +108,9 @@ export const BLOODTHIRSTY_CLAWS_2: AbilityDef = {
     description: abilityText('bloodthirsty-claws-2', 'description'),
     sfxKey: VAMPIRE_LORD_SFX_HEAVY,
     variants: [
-        { id: 'bloodthirsty-claws-2-3', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 3 } }, effects: [damage(4, abilityEffectText('bloodthirsty-claws-2', 'damage4'))], priority: 0 },
-        { id: 'bloodthirsty-claws-2-4', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 4 } }, effects: [damage(5, abilityEffectText('bloodthirsty-claws-2', 'damage5'))], priority: 1 },
-        { id: 'bloodthirsty-claws-2-5', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 5 } }, effects: [damage(6, abilityEffectText('bloodthirsty-claws-2', 'damage6'))], priority: 2 },
+        { id: 'bloodthirsty-claws-2-3', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 3 } }, effects: [damage(3, abilityEffectText('bloodthirsty-claws-2', 'damage3')), bloodthirstyClawsBloodPowerIfKind(3, abilityEffectText('bloodthirsty-claws-2', 'gainBloodPowerIfThreeKind'))], priority: 0 },
+        { id: 'bloodthirsty-claws-2-4', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 4 } }, effects: [damage(5, abilityEffectText('bloodthirsty-claws-2', 'damage5')), bloodthirstyClawsBloodPowerIfKind(3, abilityEffectText('bloodthirsty-claws-2', 'gainBloodPowerIfThreeKind'))], priority: 1 },
+        { id: 'bloodthirsty-claws-2-5', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 5 } }, effects: [damage(7, abilityEffectText('bloodthirsty-claws-2', 'damage7')), bloodthirstyClawsBloodPowerIfKind(3, abilityEffectText('bloodthirsty-claws-2', 'gainBloodPowerIfThreeKind'))], priority: 2 },
     ],
 };
 
@@ -110,9 +121,9 @@ export const BLOODTHIRSTY_CLAWS_3: AbilityDef = {
     description: abilityText('bloodthirsty-claws-3', 'description'),
     sfxKey: VAMPIRE_LORD_SFX_HEAVY,
     variants: [
-        { id: 'bloodthirsty-claws-3-3', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 3 } }, effects: [damage(4, abilityEffectText('bloodthirsty-claws-3', 'damage4'))], priority: 0 },
-        { id: 'bloodthirsty-claws-3-4', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 4 } }, effects: [damage(6, abilityEffectText('bloodthirsty-claws-3', 'damage6'))], priority: 1 },
-        { id: 'bloodthirsty-claws-3-5', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 5 } }, effects: [damage(8, abilityEffectText('bloodthirsty-claws-3', 'damage8'))], priority: 2 },
+        { id: 'bloodthirsty-claws-3-3', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 3 } }, effects: [damage(4, abilityEffectText('bloodthirsty-claws-3', 'damage4')), bloodthirstyClawsBloodPowerIfKind(3, abilityEffectText('bloodthirsty-claws-3', 'gainBloodPowerIfThreeKind'))], priority: 0 },
+        { id: 'bloodthirsty-claws-3-4', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 4 } }, effects: [damage(6, abilityEffectText('bloodthirsty-claws-3', 'damage6')), bloodthirstyClawsBloodPowerIfKind(3, abilityEffectText('bloodthirsty-claws-3', 'gainBloodPowerIfThreeKind'))], priority: 1 },
+        { id: 'bloodthirsty-claws-3-5', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 5 } }, effects: [damage(8, abilityEffectText('bloodthirsty-claws-3', 'damage8')), bloodthirstyClawsBloodPowerIfKind(3, abilityEffectText('bloodthirsty-claws-3', 'gainBloodPowerIfThreeKind'))], priority: 2 },
     ],
 };
 
@@ -260,9 +271,9 @@ export const VAMPIRE_LORD_ABILITIES: AbilityDef[] = [
         description: abilityText('bloodthirsty-claws', 'description'),
         sfxKey: VAMPIRE_LORD_SFX_HEAVY,
         variants: [
-            { id: 'bloodthirsty-claws-3', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 3 } }, effects: [damage(3, abilityEffectText('bloodthirsty-claws', 'damage3'))], priority: 0 },
-            { id: 'bloodthirsty-claws-4', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 4 } }, effects: [damage(4, abilityEffectText('bloodthirsty-claws', 'damage4'))], priority: 1 },
-            { id: 'bloodthirsty-claws-5', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 5 } }, effects: [damage(5, abilityEffectText('bloodthirsty-claws', 'damage5'))], priority: 2 },
+            { id: 'bloodthirsty-claws-3', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 3 } }, effects: [damage(3, abilityEffectText('bloodthirsty-claws', 'damage3')), bloodthirstyClawsBloodPowerIfKind(4, abilityEffectText('bloodthirsty-claws', 'gainBloodPowerIfFourKind'))], priority: 0 },
+            { id: 'bloodthirsty-claws-4', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 4 } }, effects: [damage(5, abilityEffectText('bloodthirsty-claws', 'damage5')), bloodthirstyClawsBloodPowerIfKind(4, abilityEffectText('bloodthirsty-claws', 'gainBloodPowerIfFourKind'))], priority: 1 },
+            { id: 'bloodthirsty-claws-5', trigger: { type: 'diceSet', faces: { [FACE.CLAW]: 5 } }, effects: [damage(7, abilityEffectText('bloodthirsty-claws', 'damage7')), bloodthirstyClawsBloodPowerIfKind(4, abilityEffectText('bloodthirsty-claws', 'gainBloodPowerIfFourKind'))], priority: 2 },
         ],
     },
     replaceable('mesmerize-power', 'mesmerize-power', 'mesmerize-power', { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3 } }, [

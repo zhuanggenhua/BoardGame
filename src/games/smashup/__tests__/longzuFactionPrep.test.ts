@@ -8,10 +8,12 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { ActionCardDef, MinionCardDef } from '../domain/types';
 import { isFactionImplementationInProgress } from '../ui/factionMeta';
 
-const LONGZU_CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/longzu.png';
 const LONGZU_CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/longzu.webp';
 const LONGZU_BASE_PNG = 'public/assets/i18n/zh-CN/smashup/base/longzu.png';
 const LONGZU_BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/longzu.webp';
+
+const LONGZU_CARD_SOURCE_PNG_SHA256 = '090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13';
+const LONGZU_CARD_SOURCE_PNG_BYTES = 42040387;
 
 const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
@@ -32,14 +34,19 @@ describe('SmashUp longzu 三派系接入合同', () => {
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
 
         expect(rootManifest.files['zh-CN/smashup/cards/longzu'].variants.png.sha256)
-            .toBe(sha256(LONGZU_CARD_PNG));
+            .toBe(LONGZU_CARD_SOURCE_PNG_SHA256);
+        expect(rootManifest.files['zh-CN/smashup/cards/longzu'].variants.png.bytes)
+            .toBe(LONGZU_CARD_SOURCE_PNG_BYTES);
         expect(rootManifest.files['zh-CN/smashup/cards/compressed/longzu'].variants.webp.sha256)
             .toBe(sha256(LONGZU_CARD_WEBP));
         expect(gameManifest.files['cards/longzu'].variants.png.sha256)
-            .toBe(sha256(LONGZU_CARD_PNG));
+            .toBe(LONGZU_CARD_SOURCE_PNG_SHA256);
+        expect(gameManifest.files['cards/longzu'].variants.png.bytes)
+            .toBe(LONGZU_CARD_SOURCE_PNG_BYTES);
         expect(gameManifest.files['cards/compressed/longzu'].variants.webp.sha256)
             .toBe(sha256(LONGZU_CARD_WEBP));
 
+        expect(existsSync('public/assets/i18n/zh-CN/smashup/cards/longzu.png')).toBe(false);
         expect(rootManifest.files['zh-CN/smashup/base/longzu']).toBeUndefined();
         expect(rootManifest.files['zh-CN/smashup/base/compressed/longzu']).toBeUndefined();
         expect(gameManifest.files['base/longzu']).toBeUndefined();

@@ -13,10 +13,11 @@ import {
     type CustomActionContext,
     type EffectContext,
 } from '../effects';
-import { getAttackMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
 import { isPurifiableDebuffId } from '../statusRemoval';
 import { STATUS_IDS, TIANSHI_DICE_FACE_IDS as FACE, TOKEN_IDS } from '../ids';
 import { getDiceThronePlayerChoiceLabel } from '../playerDisplay';
+import { finalizeTokenResponse } from '../tokenResponse';
 import type {
     BonusDieInfo,
     BonusDieRolledEvent,
@@ -36,8 +37,8 @@ const HOLY_STRIKE_SETTLEMENT_ID = 'tianshi-holy-strike';
 const ANGELIC_TACTICS_SETTLEMENT_ID = 'tianshi-angelic-tactics';
 const TRIUMPHANT_RETURN_SETTLEMENT_ID = 'tianshi-triumphant-return';
 const SUPREME_HOLINESS_SETTLEMENT_ID = 'tianshi-supreme-holiness';
-const ANGELIC_CLOAK_SETTLEMENT_ID = 'tianshi-angelic-cloak';
 const DIVINE_PUNISHMENT_SETTLEMENT_ID = 'tianshi-divine-punishment';
+const FLIGHT_SETTLEMENT_ID = 'tianshi-flight';
 
 const CHOICE_DIVINE_PURIFICATION_TARGET = 'tianshi-divine-purification-target';
 const CHOICE_DIVINE_PURIFICATION_TARGET_2 = 'tianshi-divine-purification-target-2';
@@ -432,9 +433,12 @@ function resolveDivinePunishmentBonus(ctx: CustomActionContext, dice: BonusDieIn
     return events;
 }
 
-function resolveAngelicCloak(customCtx: CustomActionContext, dice?: BonusDieInfo[]): DiceThroneEvent[] {
+function resolveAngelicCloak(customCtx: CustomActionContext): DiceThroneEvent[] {
     const { ctx, state, attackerId, sourceAbilityId, timestamp, action } = customCtx;
-    const die = dice?.[0];
+    const activeDie = getActiveDice(state)[0];
+    const die = activeDie
+        ? { value: activeDie.value, face: getPlayerDieFace(state, attackerId, activeDie.value) }
+        : undefined;
     if (!die || !ctx.defenderId) return [];
     const params = (action.params ?? {}) as Record<string, unknown>;
     const bladeDamage = Number(params.blade ?? 0);
@@ -470,11 +474,9 @@ function handleUseFlight({ state, attackerId, sourceAbilityId, timestamp, action
 
     const events: DiceThroneEvent[] = [];
     const dice: BonusDieInfo[] = [];
-    let activated = false;
     for (let index = 0; index < 2; index += 1) {
         const value = random.d(6);
         const face = getPlayerDieFace(state, attackerId, value) ?? String(value);
-        activated ||= value === 6;
         dice.push({
             index,
             value,
@@ -502,33 +504,12 @@ function handleUseFlight({ state, attackerId, sourceAbilityId, timestamp, action
         state.pendingAttack.defenderId ?? state.pendingAttack.attackerId,
         dice,
         timestamp + 2,
-        { continuation: { kind: 'complete' } },
+        {
+            customResolutionId: FLIGHT_SETTLEMENT_ID,
+            customResolutionParams: { phase: phase ?? '' },
+            continuation: { kind: 'complete' },
+        },
     ));
-
-    if (activated) {
-        if (phase === 'defensiveRoll' && state.pendingDamage?.targetPlayerId === attackerId) {
-            events.push({
-                type: 'PREVENT_DAMAGE',
-                payload: {
-                    targetId: attackerId,
-                    amount: state.pendingDamage.currentDamage,
-                    sourceAbilityId,
-                    applyImmediately: true,
-                },
-                ...eventSource(sourceAbilityId, timestamp + 3, 'USE_TOKEN'),
-            } as DiceThroneEvent);
-        }
-        events.push({
-            type: 'PENDING_ATTACK_UPDATED',
-            payload: {
-                attackerId: state.pendingAttack.attackerId,
-                patch: phase === 'defensiveRoll'
-                    ? { defensiveFlightActivated: true }
-                    : { isDefendable: false },
-            },
-            ...eventSource(sourceAbilityId, timestamp + 4, 'USE_TOKEN'),
-        } as DiceThroneEvent);
-    }
     return events;
 }
 
@@ -638,19 +619,7 @@ function handleHolyBlade3FourKindDazzle(ctx: CustomActionContext): DiceThroneEve
 }
 
 function handleAngelicCloak(ctx: CustomActionContext): DiceThroneEvent[] {
-    return createBonusDiceWithReroll(ctx, {
-        diceCount: 1,
-        rerollCostTokenId: '',
-        rerollCostAmount: 0,
-        maxRerollCount: 1,
-        dieEffectKey: 'bonusDie.effect.tianshi.angelicCloak',
-        rerollEffectKey: 'bonusDie.effect.tianshi.angelicCloak',
-        resolutionMode: 'none',
-        customResolutionId: ANGELIC_CLOAK_SETTLEMENT_ID,
-        damageTargetId: ctx.ctx.defenderId,
-        showTotal: false,
-        continuation: { kind: 'attack', settlementStage: 'readyToResolve', markBonusDiceResolved: true },
-    }, () => []);
+    return resolveAngelicCloak(ctx);
 }
 
 function handleHolyStrikeCard(ctx: CustomActionContext): DiceThroneEvent[] {
@@ -947,30 +916,71 @@ export function registerTianshiCustomActions(): void {
             getPendingDice(settlement),
         ),
     }));
+    registerBonusDiceSettlementHandler(FLIGHT_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const activated = getPendingDice(settlement).some(die => die.value === 6);
+        if (!activated || !state.pendingAttack) return { totalDamage: 0 };
 
-    registerBonusDiceSettlementHandler(ANGELIC_CLOAK_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
-        const player = state.players[settlement.attackerId];
-        const ability = player?.abilities.find(entry => entry.id === 'angelic-cloak');
-        const params = (ability?.effects?.find(effect => effect.action?.customActionId === 'tianshi-angelic-cloak')?.action?.params ?? {}) as Record<string, unknown>;
-        const ctx = {
-            ctx: {
-                attackerId: settlement.attackerId,
-                defenderId: settlement.targetId,
-                sourceAbilityId: settlement.sourceAbilityId,
-                state,
-                damageDealt: 0,
+        const phase = settlement.customResolutionParams?.phase;
+        if (phase === 'defensiveRoll') {
+            const pendingDamage = state.pendingDamage?.targetPlayerId === settlement.attackerId
+                ? state.pendingDamage
+                : undefined;
+            const followupEvents: DiceThroneEvent[] = [{
+                type: 'PENDING_ATTACK_UPDATED',
+                payload: {
+                    attackerId: state.pendingAttack.attackerId,
+                    patch: { defensiveFlightActivated: true },
+                },
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp: timestamp + 0.002,
+            } as DiceThroneEvent];
+            if (!pendingDamage) {
+                return { totalDamage: 0, followupEvents };
+            }
+            const preventedDamage: DiceThroneEvent = {
+                type: 'PREVENT_DAMAGE',
+                payload: {
+                    targetId: settlement.attackerId,
+                    amount: pendingDamage.currentDamage,
+                    sourceAbilityId: settlement.sourceAbilityId,
+                    applyImmediately: true,
+                },
+                sourceCommandType: 'BONUS_DICE_SETTLED',
                 timestamp,
-            },
-            targetId: settlement.attackerId,
-            attackerId: settlement.attackerId,
-            sourceAbilityId: settlement.sourceAbilityId,
-            state,
-            timestamp,
-            action: { type: 'custom', target: 'self', customActionId: 'tianshi-angelic-cloak', params },
-        } as CustomActionContext;
-        const handlerEvents = resolveAngelicCloak(ctx, getPendingDice(settlement));
-        return { totalDamage: 0, followupEvents: handlerEvents };
+            } as DiceThroneEvent;
+            const closedResponse = finalizeTokenResponse(
+                {
+                    ...pendingDamage,
+                    currentDamage: 0,
+                    isFullyEvaded: true,
+                },
+                state,
+                timestamp + 0.001,
+            );
+            return {
+                totalDamage: 0,
+                followupEvents: [
+                    preventedDamage,
+                    ...followupEvents,
+                    ...closedResponse,
+                ],
+            };
+        }
+
+        return {
+            totalDamage: 0,
+            followupEvents: [{
+                type: 'PENDING_ATTACK_UPDATED',
+                payload: {
+                    attackerId: state.pendingAttack.attackerId,
+                    patch: { isDefendable: false },
+                },
+                sourceCommandType: 'BONUS_DICE_SETTLED',
+                timestamp: timestamp + 0.001,
+            } as DiceThroneEvent],
+        };
     });
+
 }
 
 function getPendingDice(settlement: { dice: BonusDieInfo[] }): BonusDieInfo[] {

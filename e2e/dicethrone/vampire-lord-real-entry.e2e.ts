@@ -31,6 +31,7 @@ import { VAMPIRE_LORD_CARDS } from '../../src/games/dicethrone/heroes/vampire_lo
 const VAMPIRE_LORD_QUERY = { playerID: '0', disableLocalAiAutomation: true };
 const VAMPIRE_LORD_DEFENSE_QUERY = { playerID: '1', disableLocalAiAutomation: true };
 const VAMPIRE_LORD_HERO_ID = 'vampire_lord';
+const VISIBLE_HOST_HERO_ID = 'monk';
 const VISIBLE_GUEST_HERO_ID = 'barbarian';
 const VAMPIRE_LORD_CARD_ATLAS_ID = 'dicethrone:vampire_lord-cards';
 const VAMPIRE_LORD_PROOF_HAND = [
@@ -82,7 +83,7 @@ const getLastEventTypes = (state: any): string[] => (
 );
 
 const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: string): Promise<string> => {
-    const path = getEvidenceScreenshotPath(testInfo, name, { filename: `${name}.png` });
+    const path = getEvidenceScreenshotPath(testInfo, name, { filename: `${name}.jpg` });
     await mkdir(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: false });
     return path;
@@ -110,7 +111,7 @@ const waitForImage = async (page: Page, testId: string): Promise<void> => {
     expect(naturalWidth, `${testId} 应加载正式图片`).toBeGreaterThan(0);
 };
 
-const setupVisibleMatchWithVampireLordInProgress = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
+const setupInProgressMatchWithVampireLord = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
     const match = await setupOnlineMatch(browser, baseURL, {
         skipImageGate: true,
         characterSelectionTimeout: 240000,
@@ -230,66 +231,6 @@ const injectVampireLordMainProofState = async (matchId: string, page: Page): Pro
     nextRoot.sys = {
         ...sys,
         phase: 'main1',
-        turnOrder,
-        currentPlayerIndex: 0,
-        interaction: {
-            ...asRecord(sys.interaction),
-            current: null,
-            queue: [],
-        },
-    };
-
-    await injectMatchState(matchId, next as never, page);
-};
-
-const injectVampireLordDiceProofState = async (matchId: string, page: Page): Promise<void> => {
-    const current = await getMatchState(matchId, page) as JsonRecord;
-    const root = asRecord(current.G ?? current);
-    const core = asRecord(root.core);
-    const sys = asRecord(root.sys);
-    const players = asRecordMap(core.players);
-    const next = structuredClone(current) as JsonRecord;
-    const nextRoot = asRecord(next.G ?? next);
-    const turnOrder = Array.isArray(sys.turnOrder)
-        ? sys.turnOrder
-        : Array.isArray(core.turnOrder)
-            ? core.turnOrder
-            : Object.keys(players);
-    const dice = buildVampireLordProofDice();
-
-    nextRoot.core = {
-        ...core,
-        phase: 'offensiveRoll',
-        activePlayerId: '0',
-        rollCount: 1,
-        rollLimit: 3,
-        rollDiceCount: 5,
-        rollConfirmed: false,
-        dice,
-        currentRollContext: {
-            id: 'e2e-vampire-lord-online-offensive-roll',
-            kind: 'offensive',
-            ownerPlayerId: '0',
-            targetPlayerId: '1',
-            sourceAbilityId: 'e2e-vampire-lord-dice-proof',
-            phase: 'offensiveRoll',
-            dice,
-            status: 'open',
-            policy: {
-                modifiableBy: 'owner',
-                rerollableBy: 'owner',
-                allowPassiveReroll: true,
-                allowDiceCardTargeting: true,
-                ultimateLocked: false,
-                blocksPhaseFlow: true,
-            },
-            settlement: { mode: 'ability' },
-            display: { surface: 'diceTray', replayOnly: false },
-        },
-    };
-    nextRoot.sys = {
-        ...sys,
-        phase: 'offensiveRoll',
         turnOrder,
         currentPlayerIndex: 0,
         interaction: {
@@ -524,6 +465,9 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
         await expect(bloodPowerButton).toBeVisible({ timeout: 10000 });
         await expect(bloodPowerButton).toBeEnabled();
+        await expect(bloodPowerButton).toContainText('消耗1');
+        const bloodPowerToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`);
+        await expect(bloodPowerToken).toHaveAttribute('data-token-amount', '1');
         await expect.poll(async () => (
             diceTray.getByTestId('dice-2d').evaluateAll((dice) => dice.map((die) => ({
                 face: die.getAttribute('data-face-value'),
@@ -547,18 +491,54 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 bonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
                 attackModifierBonusDamage: state?.core?.pendingAttack?.attackModifierBonusDamage ?? null,
-                usedThisTurn: state?.core?.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-attack-bonus'] ?? false,
+                hasTokenConsumed: getLastEventTypes(state).includes('TOKEN_CONSUMED'),
                 events: getLastEventTypes(state),
             };
         }, { timeout: 10000 }).toEqual({
             bloodPower: 0,
             bonusDamage: 3,
             attackModifierBonusDamage: 3,
-            usedThisTurn: true,
-            events: expect.arrayContaining(['TOKEN_CONSUMED', 'BONUS_DAMAGE_ADDED']),
+            hasTokenConsumed: true,
+            events: expect.arrayContaining(['BONUS_DAMAGE_ADDED']),
         });
-        await expect(bloodPowerButton).toBeHidden({ timeout: 10000 });
+        await expect(bloodPowerButton).toBeVisible({ timeout: 10000 });
+        await expect(bloodPowerButton).toBeDisabled();
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`)).toHaveCount(0);
         await game.screenshot('吸血鬼领主-鲜血之力加伤后', testInfo);
+    });
+
+    test('鲜血之力 2 档在无可移除状态时仍显示为禁用入口且显示真实成本', async ({ page, game }, testInfo) => {
+        await game.openTestGame('dicethrone', VAMPIRE_LORD_QUERY);
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                resources: { CP: 2, HP: 50 },
+                tokens: { [TOKEN_IDS.BLOOD_POWER]: 2 },
+            },
+            player1: {
+                resources: { CP: 2, HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'main1',
+            extra: {
+                selectedCharacters: { '0': 'vampire_lord', '1': 'monk' },
+                hostStarted: true,
+                activePlayerId: '0',
+            },
+        });
+        await closeDebugPanelIfVisible(page);
+
+        const removeStatusButton = page.getByTestId('passive-action-vampire-lord-blood-power-1');
+        const passiveActionBar = page.getByTestId('passive-ability-action-bar');
+        await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
+        await expect(passiveActionBar).toBeVisible({ timeout: 10000 });
+        await expect(passiveActionBar.locator('[data-testid="passive-action-vampire-lord-blood-power-1"]')).toHaveCount(1);
+        await expect(removeStatusButton).toBeVisible({ timeout: 10000 });
+        await expect(removeStatusButton).toBeDisabled();
+        await expect(removeStatusButton).toContainText('消耗2');
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`))
+            .toHaveAttribute('data-token-amount', '2');
+        await game.screenshot('吸血鬼领主-鲜血之力四档入口-第2档禁用但可见', testInfo);
     });
 
     test('催眠应通过玩家按钮投临时骰并选择对手骰重掷', async ({ page, game }, testInfo) => {
@@ -749,9 +729,13 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await closeDebugPanelIfVisible(page);
 
         const removeStatusButton = page.getByTestId('passive-action-vampire-lord-blood-power-1');
+        const passiveActionBar = page.getByTestId('passive-ability-action-bar');
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
+        await expect(passiveActionBar).toBeVisible({ timeout: 10000 });
+        await expect(passiveActionBar.locator('[data-testid="passive-action-vampire-lord-blood-power-1"]')).toHaveCount(1);
         await expect(removeStatusButton).toBeVisible({ timeout: 10000 });
         await expect(removeStatusButton).toBeEnabled();
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`)).toHaveAttribute('data-token-amount', '2');
         await expect.poll(async () => {
             const state = await game.getState();
             return {
@@ -810,7 +794,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             return {
                 bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 bleed: state?.core?.players?.['0']?.statusEffects?.[STATUS_IDS.BLEED] ?? null,
-                usedThisTurn: state?.core?.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-remove-status'] ?? false,
+                hasTokenConsumed: getLastEventTypes(state).includes('TOKEN_CONSUMED'),
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
                 removedPayload: removed?.payload ?? null,
                 consumedPayload: consumed?.payload ?? null,
@@ -819,13 +803,18 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         }, { timeout: 10000 }).toEqual({
             bloodPower: 0,
             bleed: 0,
-            usedThisTurn: true,
+            hasTokenConsumed: true,
             interactionKind: null,
             removedPayload: expect.objectContaining({ targetId: '0', statusId: STATUS_IDS.BLEED, stacks: 1 }),
-            consumedPayload: expect.objectContaining({ playerId: '0', tokenId: TOKEN_IDS.BLOOD_POWER, amount: 2, newTotal: 0 }),
-            events: expect.arrayContaining(['TOKEN_CONSUMED', 'STATUS_REMOVED']),
+            consumedPayload: expect.objectContaining({
+                tokenId: TOKEN_IDS.BLOOD_POWER,
+                amount: 2,
+                newTotal: 0,
+            }),
+            events: expect.arrayContaining(['STATUS_REMOVED']),
         });
         await expect(page.getByTestId('dt-status-effect-0-bleed')).toHaveCount(0);
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`)).toHaveCount(0);
         await waitForDiceThroneVisualIdle(page);
         await game.screenshot('吸血鬼领主-鲜血之力移除状态后收口', testInfo);
     });
@@ -852,9 +841,6 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 selectedCharacters: { '0': 'vampire_lord', '1': 'monk' },
                 hostStarted: true,
                 activePlayerId: '0',
-                passiveActionUsedThisTurn: {
-                    '0': {},
-                },
             },
         });
         await closeDebugPanelIfVisible(page);
@@ -863,6 +849,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
         await expect(drawButton).toBeVisible({ timeout: 10000 });
         await expect(drawButton).toBeEnabled();
+        await expect(drawButton).toContainText('消耗3');
         await expect(page.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(0);
         await expect.poll(async () => {
             const state = await game.getState();
@@ -889,7 +876,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 hand: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
                 deck: (state?.core?.players?.['0']?.deck ?? []).map((card: any) => card.id),
-                usedThisTurn: state?.core?.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-draw'] ?? false,
+                hasTokenConsumed: getLastEventTypes(state).includes('TOKEN_CONSUMED'),
                 events: getLastEventTypes(state),
             };
         }, { timeout: 10000 }).toEqual({
@@ -899,11 +886,13 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 'card-vampire-lord-gushing-blood',
             ],
             deck: [],
-            usedThisTurn: true,
-            events: expect.arrayContaining(['TOKEN_CONSUMED', 'CARD_DRAWN']),
+            hasTokenConsumed: true,
+            events: expect.arrayContaining(['CARD_DRAWN']),
         });
-        await expect(drawButton).toBeHidden({ timeout: 10000 });
+        await expect(drawButton).toBeVisible({ timeout: 10000 });
+        await expect(drawButton).toBeDisabled();
         await expect(page.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(2, { timeout: 10000 });
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`)).toHaveCount(0);
         await expectVampireLordCardPreview(page, 'card-vampire-lord-blood-surge', 17);
         await expectVampireLordCardPreview(page, 'card-vampire-lord-gushing-blood', 21);
         await waitForDiceThroneVisualIdle(page);
@@ -948,9 +937,6 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                     damageResolved: true,
                     resolvedDamage: 7,
                 },
-                passiveActionUsedThisTurn: {
-                    '0': {},
-                },
             },
         });
         await closeDebugPanelIfVisible(page);
@@ -959,6 +945,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
         await expect(healButton).toBeVisible({ timeout: 10000 });
         await expect(healButton).toBeEnabled();
+        await expect(healButton).toContainText('消耗4');
         await expect.poll(async () => {
             const state = await game.getState();
             return {
@@ -968,7 +955,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 damageResolved: state?.core?.pendingAttack?.damageResolved ?? null,
             };
         }, { timeout: 10000 }).toEqual({
-            bloodPower: 4,
+                bloodPower: 4,
             hp: 38,
             resolvedDamage: 7,
             damageResolved: true,
@@ -991,7 +978,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             return {
                 bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 hp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
-                usedThisTurn: state?.core?.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-heal'] ?? false,
+                hasTokenConsumed: getLastEventTypes(state).includes('TOKEN_CONSUMED'),
                 healedPayload: healed?.payload ?? null,
                 consumedPayload: consumed?.payload ?? null,
                 events: getLastEventTypes(state),
@@ -999,26 +986,27 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         }, { timeout: 10000 }).toEqual({
             bloodPower: 0,
             hp: 45,
-            usedThisTurn: true,
+            hasTokenConsumed: true,
             healedPayload: expect.objectContaining({
                 targetId: '0',
                 amount: 7,
                 sourceAbilityId: 'vampire-lord-blood-power',
             }),
             consumedPayload: expect.objectContaining({
-                playerId: '0',
                 tokenId: TOKEN_IDS.BLOOD_POWER,
                 amount: 4,
                 newTotal: 0,
             }),
-            events: expect.arrayContaining(['TOKEN_CONSUMED', 'HEAL_APPLIED']),
+            events: expect.arrayContaining(['HEAL_APPLIED']),
         });
-        await expect(healButton).toBeHidden({ timeout: 10000 });
+        await expect(healButton).toBeVisible({ timeout: 10000 });
+        await expect(healButton).toBeDisabled();
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`)).toHaveCount(0);
         await waitForDiceThroneVisualIdle(page);
         await game.screenshot('吸血鬼领主-鲜血之力治疗后收口', testInfo);
     });
 
-    test('嗜血之爪 III 5 利爪应通过真实投骰与玩家板物理槽触发 8 点攻击伤害', async ({ page, game }, testInfo) => {
+    test('嗜血之爪 III 5 利爪三同应通过真实投骰获得鲜血之力并造成 8 点攻击伤害', async ({ page, game }, testInfo) => {
         const vampireLord = buildVampireLordBloodthirstyClaws3Player();
         const barbarian = buildBarbarianDefensePlayer();
 
@@ -1061,7 +1049,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
 
         await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice), undefined, { timeout: 5000 });
         await page.evaluate(() => {
-            window.__BG_TEST_HARNESS__?.dice.setValues([1, 2, 3, 1, 2]);
+            window.__BG_TEST_HARNESS__?.dice.setValues([1, 1, 1, 2, 3]);
         });
         await rollButton.click();
 
@@ -1077,10 +1065,10 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             phase: 'offensiveRoll',
             rollCount: 1,
             rollConfirmed: false,
-            dice: [1, 2, 3, 1, 2],
+            dice: [1, 1, 1, 2, 3],
         });
-        await expectVampireLordDiceSpritesForValues(page, [1, 2, 3, 1, 2]);
-        await game.screenshot('吸血鬼领主-嗜血之爪III已投5利爪', testInfo);
+        await expectVampireLordDiceSpritesForValues(page, [1, 1, 1, 2, 3]);
+        await game.screenshot('吸血鬼领主-嗜血之爪III已投5利爪且三同', testInfo);
 
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
         await confirmButton.click();
@@ -1124,7 +1112,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             defenderId: '1',
             isDefendable: true,
             expectedDamage: 8,
-            attackDiceValues: [1, 2, 3, 1, 2],
+            attackDiceValues: [1, 1, 1, 2, 3],
         });
         await game.screenshot('吸血鬼领主-嗜血之爪III槽位触发后', testInfo);
 
@@ -1171,18 +1159,27 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 && event.payload?.targetId === '1'
                 && event.payload?.sourceAbilityId === 'bloodthirsty-claws-3-5'
             ));
+            const bloodPowerGranted = entryEvents.find((event: any) => (
+                event.type === 'TOKEN_GRANTED'
+                && event.payload?.targetId === '0'
+                && event.payload?.tokenId === TOKEN_IDS.BLOOD_POWER
+                && event.payload?.sourceAbilityId === 'bloodthirsty-claws-3-5'
+            ));
             return {
                 phase: state?.sys?.phase ?? null,
                 attackerHp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 defenderHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
                 pendingAttack: state?.core?.pendingAttack ?? null,
                 attackPayload: attackDamage?.payload ?? null,
+                bloodPowerPayload: bloodPowerGranted?.payload ?? null,
                 events: getLastEventTypes(state),
             };
         }, { timeout: 10000 }).toEqual({
             phase: 'main2',
             attackerHp: 50,
             defenderHp: 42,
+            bloodPower: 1,
             pendingAttack: null,
             attackPayload: expect.objectContaining({
                 targetId: '1',
@@ -1191,10 +1188,17 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 sourceAbilityId: 'bloodthirsty-claws-3-5',
                 damageScope: 'attack',
             }),
-            events: expect.arrayContaining(['DAMAGE_DEALT', 'ATTACK_RESOLVED']),
+            bloodPowerPayload: expect.objectContaining({
+                targetId: '0',
+                tokenId: TOKEN_IDS.BLOOD_POWER,
+                amount: 1,
+                newTotal: 1,
+                sourceAbilityId: 'bloodthirsty-claws-3-5',
+            }),
+            events: expect.arrayContaining(['DAMAGE_DEALT', 'TOKEN_GRANTED', 'ATTACK_RESOLVED']),
         });
         await waitForDiceThroneVisualIdle(page);
-        await game.screenshot('吸血鬼领主-嗜血之爪III结算后收口', testInfo);
+        await game.screenshot('吸血鬼领主-嗜血之爪III结算后血力增加', testInfo);
     });
 
     test('不死防御应通过真实防御按钮投 4 骰并结算反击与自疗', async ({ page, game }, testInfo) => {
@@ -1376,21 +1380,22 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             }),
             events: expect.arrayContaining(['DAMAGE_DEALT', 'HEAL_APPLIED', 'ATTACK_RESOLVED']),
         });
-        await waitForDiceThroneVisualIdle(page);
         await game.screenshot('吸血鬼领主-不死防御结算后收口', testInfo);
+        await waitForDiceThroneVisualIdle(page);
     });
 
-    test('真实在线玩家选角入口应显示实施中吸血鬼领主，玩家可选择并进入牌桌', async ({ browser }, testInfo) => {
+    test('真实在线玩家选角入口应显示实施中的吸血鬼领主并可进入牌桌', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
         await clearEvidenceScreenshotsForTest(testInfo);
         const baseURL = testInfo.project.use.baseURL as string | undefined ?? getGameServerBaseURL();
-        const match = await setupVisibleMatchWithVampireLordInProgress(browser, baseURL);
+        const match = await setupInProgressMatchWithVampireLord(browser, baseURL);
 
         try {
-            await expect(match.hostPage.locator(`[data-character-id="${VAMPIRE_LORD_HERO_ID}"]`)).toContainText(/P1/i);
+            await expect(match.hostPage.locator(`[data-character-id="${VAMPIRE_LORD_HERO_ID}"]`)).toHaveCount(1);
             await expect(match.hostPage.getByTestId(`character-badge-${VAMPIRE_LORD_HERO_ID}-implementation_in_progress`)).toHaveCount(1);
             await expect(match.guestPage.locator(`[data-character-id="${VISIBLE_GUEST_HERO_ID}"]`)).toContainText(/P2/i);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-选角-吸血鬼领主实施中可见并已选');
+            await expect(match.hostPage.locator(`[data-character-id="${VAMPIRE_LORD_HERO_ID}"]`)).toContainText(/P1/i);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-选角-吸血鬼领主实施中可见且可选');
 
             await readyAndStartGame(match.hostPage, match.guestPage);
             await waitForGameBoard(match.hostPage);
@@ -1404,15 +1409,19 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
 
             const hostBoard = match.hostPage.getByTestId('player-board-surface');
             await expect(hostBoard).toHaveAttribute('data-character-id', VAMPIRE_LORD_HERO_ID, { timeout: 15000 });
+            await expect(match.guestPage.getByTestId('player-board-surface'))
+                .toHaveAttribute('data-character-id', VISIBLE_GUEST_HERO_ID, { timeout: 15000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-可见角色正常进入牌桌');
+
+            await injectVampireLordMainProofState(match.matchId, match.hostPage);
+
+            await expect(hostBoard).toHaveAttribute('data-character-id', VAMPIRE_LORD_HERO_ID, { timeout: 15000 });
             await waitForImage(match.hostPage, 'player-board-image');
             await expect(match.hostPage.getByTestId('player-board-image'))
                 .toHaveAttribute('data-debug-current-src', /dicethrone\/images\/xixuegui\/compressed\/player-board\.webp/i);
             await waitForImage(match.hostPage, 'tip-board-image');
             await expect(match.hostPage.getByTestId('tip-board-image'))
                 .toHaveAttribute('data-debug-current-src', /dicethrone\/images\/xixuegui\/compressed\/tip\.webp/i);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-玩家选择吸血鬼领主进入牌桌');
-
-            await injectVampireLordMainProofState(match.matchId, match.hostPage);
 
             await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(4, { timeout: 15000 });
             for (const card of VAMPIRE_LORD_PROOF_HAND) {
@@ -1430,14 +1439,10 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             await expect(match.hostPage.getByTestId('passive-action-vampire-lord-blood-power-2')).toBeEnabled();
             await saveEvidenceScreenshot(match.hostPage, testInfo, '03-牌桌-吸血鬼领主资源链与状态图标');
 
-            await injectVampireLordDiceProofState(match.matchId, match.hostPage);
-            await expectVampireLordDiceSprites(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-牌桌-吸血鬼领主骰面与关键入口');
-
             await expect(match.guestPage.getByTestId('player-board-surface'))
                 .toHaveAttribute('data-character-id', VISIBLE_GUEST_HERO_ID, { timeout: 15000 });
             await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(4, { timeout: 15000 });
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '05-牌桌-可见对手角色视角已进入');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '04-牌桌-可见对手角色视角已进入');
         } finally {
             await cleanupDTMatch(match);
         }

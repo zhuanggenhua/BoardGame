@@ -370,7 +370,7 @@ describe('AI legal actions', () => {
         )).toBe(true);
     });
 
-    it('setup 阶段共享 AI 上下文应过滤实施中角色，玩家可见原始列表仍保留它们', () => {
+    it('setup 阶段原始 AI 候选包含实施中角色，但共享 AI 上下文应过滤它们', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         const state: MatchState<DiceThroneCore> = {
             core,
@@ -1651,6 +1651,51 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('本地 AI 只有敌方减益可移除时不应浪费移除状态牌', async () => {
+        const state = createSetupWithHand(['card-get-away'], {
+            cp: 1,
+            mutate: (core) => {
+                core.activePlayerId = '0';
+                core.players['1'].statusEffects[STATUS_IDS.BURN] = 1;
+            },
+        })(['0', '1'], fixedRandom);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:avoid-negative-status-card',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('advance-phase');
+    });
+
+    it('本地 AI 有己方减益可清理时仍应出移除状态牌', async () => {
+        const state = createSetupWithHand(['card-get-away'], {
+            cp: 1,
+            mutate: (core) => {
+                core.activePlayerId = '0';
+                core.players['0'].statusEffects[STATUS_IDS.BURN] = 1;
+            },
+        })(['0', '1'], fixedRandom);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:keep-positive-status-card',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-get-away' });
+    });
+
     it('remove-status 交互会带 purify-control tag，并让通用 strategy profile scorer 参与评分', async () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.players['0'].statusEffects[STATUS_IDS.BURN] = 1;
@@ -2710,7 +2755,7 @@ describe('AI legal actions', () => {
         expect(selectableCharacterIds).toContain('vampire_lord');
     });
 
-    it('setup 阶段直接选择实施中吸血鬼领主应被接受', () => {
+    it('setup 阶段直接选择实施中吸血鬼领主应成功', () => {
         const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
         const state: MatchState<DiceThroneCore> = {
             core,

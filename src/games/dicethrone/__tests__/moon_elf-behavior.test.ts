@@ -236,7 +236,8 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
                 random: () => 3 / 6, // d(6)→3 → BOW面，5骰全BOW
             }));
 
-            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            const settledEvents = settlePendingBonusDice(state, events);
+            const dmg = eventsOfType(settledEvents, 'DAMAGE_DEALT');
             expect(dmg).toHaveLength(1);
             expect((dmg[0] as any).payload.amount).toBe(8); // 3 + 1×5弓 + 1×0足
         });
@@ -248,7 +249,8 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
                 random: () => 1, // d(6)→6 → MOON面，5骰全MOON
             }));
 
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(3); // 3 + 0弓 + 0足
+            const settledEvents = settlePendingBonusDice(state, events);
+            expect((eventsOfType(settledEvents, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(3); // 3 + 0弓 + 0足
         });
     });
 
@@ -263,15 +265,16 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
             const events = handler(buildCtx(state, 'moon_elf-exploding-arrow-resolve-2', {
                 random: () => diceQueue[callIdx++]! / 6,
             }));
+            const settledEvents = settlePendingBonusDice(state, events);
 
             // 伤害 = 3 + 1×2弓 + 2×2足 = 9
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(9);
+            expect((eventsOfType(settledEvents, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(9);
             // 对手失去1CP（1月）
-            const cpEvents = eventsOfType(events, 'CP_CHANGED');
+            const cpEvents = eventsOfType(settledEvents, 'CP_CHANGED');
             expect(cpEvents).toHaveLength(1);
             expect((cpEvents[0] as any).payload.delta).toBe(-1);
             // 施加致盲（II级无缠绕）
-            const status = eventsOfType(events, 'STATUS_APPLIED');
+            const status = eventsOfType(settledEvents, 'STATUS_APPLIED');
             expect(status).toHaveLength(1);
             expect((status[0] as any).payload.statusId).toBe(STATUS_IDS.BLINDED);
 
@@ -313,15 +316,16 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
             const events = handler(buildCtx(state, 'moon_elf-exploding-arrow-resolve-3', {
                 random: () => diceQueue[callIdx++]! / 6,
             }));
+            const settledEvents = settlePendingBonusDice(state, events);
 
             // 伤害 = 3 + 1×2弓 + 2×2足 = 9
-            expect((eventsOfType(events, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(9);
+            expect((eventsOfType(settledEvents, 'DAMAGE_DEALT')[0] as any).payload.amount).toBe(9);
             // 对手失去1CP（1月）
-            const cpEvents = eventsOfType(events, 'CP_CHANGED');
+            const cpEvents = eventsOfType(settledEvents, 'CP_CHANGED');
             expect(cpEvents).toHaveLength(1);
             expect((cpEvents[0] as any).payload.delta).toBe(-1);
             // 施加致盲和缠绕
-            const status = eventsOfType(events, 'STATUS_APPLIED');
+            const status = eventsOfType(settledEvents, 'STATUS_APPLIED');
             expect(status).toHaveLength(2);
             expect((status[0] as any).payload.statusId).toBe(STATUS_IDS.BLINDED);
             expect((status[1] as any).payload.statusId).toBe(STATUS_IDS.ENTANGLE);

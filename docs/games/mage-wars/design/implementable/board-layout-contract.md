@@ -17,9 +17,9 @@
 | Arena layer | `absolute` 中央，按底图比例约束 | 后续叠加 `zoneId` 热区 |
 | Entity layer | 法师、生物、墙体、魔物 | 从领域状态派生，不手写展示样板 |
 | FX layer | 独立 overlay，`pointer-events-none` | 仅事件驱动 |
-| Player lower HUD | 底部靠近自己侧 | 法术书、已计划法术、弃牌堆入口不得被横幅压住 |
+| Player lower HUD | 底部靠近自己侧 | 法术书、已计划法术、弃牌堆入口不得被横幅压住；右下已计划法术位于回合结束入口下方，二者保持同一纵向操作列 |
 | Opponent upper HUD | 顶部靠近对手侧 | 只显示公开信息 |
-| Action rail | 右侧偏下固定 | 当前阶段、当前可操作对象、跳过 / 回合结束；不得承载无规则授权的常驻确认 / 执行 / 取消 |
+| Action rail | 右下固定纵向列 | 回合结束 / 行动推进位于己方已计划法术上方；不得承载无规则授权的常驻确认 / 执行 / 取消 |
 | Attachment strips | 贴近法师状态 | 装备公开，结界分隐藏/展示 |
 
 ## 交互状态
@@ -56,7 +56,7 @@
 - 当前 `board-ui-preview.html` 已被用户否决，状态为 `rejected / failed-candidate`；不得继续作为人工验收图或实现入口。
 - Open Design v75 是当前 PC 目标稿；旧 v6-v74 不能恢复为人工验收或实现依据。
 - 继续改设计稿、Open Design artifact 或 AI 图面核验时，必须先重新读取规则真相源和素材矩阵，至少覆盖学徒法师属性、法术书组成、逐卡字段、竞技场、法师牌、法术牌、卡背、token、骰子和状态标记。
-- 进入真实 Board/UI 实现时，必须先逐项消费 `docs/games/mage-wars/design/reference/user-correction-traceability-ledger.md`，并写出实现截图中的对应承载：法术书 6 张、已计划 2 张同尺寸、对手计划左上卡背、右侧公开弃牌堆正面半露、攻击骰、效果骰、伤害 / 燃烧 / 守卫 / 行动 token、无常驻确认、对象本体直选、地图底层开放 overlay。
+- 进入真实 Board/UI 实现时，必须先逐项消费 `docs/games/mage-wars/design/reference/user-correction-traceability-ledger.md`，并写出实现截图中的对应承载：法术书 6 张、已计划 2 张同尺寸、对手计划左上卡背、右侧公开弃牌堆正面半露、攻击骰、效果骰、伤害 / 燃烧 / 守卫 / 行动 token、无常驻确认、对象本体直选、地图底层开放 overlay。单位能力按钮视觉位于来源卡牌正下方并居中，但实现应挂在舞台 / `body` 级交互 overlay，以来源实体实时几何矩形定位，避免溢出到相邻棋盘格或 ownership lane 后被其命中层拦截。
 - 每个画面中可见的规则对象都必须能回查到正式素材状态：`pass`、`approved-programmatic`、`blocked`、`planned-not-moved`、`temp-only` 或等价状态。
 - `planned-not-moved`、`frame-candidate`、`temp-only` 对象不能被包装成正式视觉素材；除非补齐正式落盘、压缩、manifest/atlas config 和运行时引用，否则不得出现在验收稿中冒充完成。
 - HTML/CSS 预览只可用于内部布局探索；只有规则/素材前置矩阵通过，才允许渲染 PNG 进入 AI 图面核验。

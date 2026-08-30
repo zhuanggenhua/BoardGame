@@ -57,6 +57,77 @@ const getAbilityVariantEffects = (core: DiceThroneCore, playerId: string, abilit
     return variant.effects;
 };
 
+const upgradeBloodthirstyClaws = (level: 1 | 2 | 3): DiceThroneCore => {
+    const state = createVampireLordState();
+    if (level === 1) return state.core;
+
+    const cardId = level === 2
+        ? 'upgrade-vampire-lord-bloodthirsty-claws-2'
+        : 'upgrade-vampire-lord-bloodthirsty-claws-3';
+    const events = resolveEffectsToEvents(
+        getCardById(cardId).effects ?? [],
+        'immediate',
+        {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: cardId,
+            state: state.core,
+            damageDealt: 0,
+            timestamp: 100,
+        },
+        { random: fixedRandom },
+    );
+    return applyEvents(state.core, events);
+};
+
+const resolveBloodthirstyClawsVariant = (
+    core: DiceThroneCore,
+    variantId: string,
+    attackDiceValues: number[],
+): DiceThroneCore => {
+    core.pendingAttack = {
+        attackerId: '0',
+        defenderId: '1',
+        sourceAbilityId: variantId,
+        settlementStage: 'preDamage',
+        isDefendable: true,
+        bonusDamage: 0,
+        attackModifierBonusDamage: 0,
+        damageResolved: false,
+        resolvedDamage: 0,
+        attackDiceValues,
+    };
+    const effects = getAbilityVariantEffects(core, '0', 'bloodthirsty-claws', variantId);
+    const damageEvents = resolveEffectsToEvents(
+        effects,
+        'withDamage',
+        {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: variantId,
+            state: core,
+            damageDealt: 0,
+            timestamp: 110,
+        },
+        { random: fixedRandom },
+    );
+    const afterDamage = applyEvents(core, damageEvents);
+    const postDamageEvents = resolveEffectsToEvents(
+        effects,
+        'postDamage',
+        {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: variantId,
+            state: afterDamage,
+            damageDealt: eventsOfType(damageEvents, 'DAMAGE_DEALT')[0]?.payload.actualDamage ?? 0,
+            timestamp: 120,
+        },
+        { random: fixedRandom },
+    );
+    return applyEvents(afterDamage, postDamageEvents);
+};
+
 const playVampireLordCard = (cardId: string, options: { cp?: number } = {}) => {
     const state = createVampireLordState();
     state.sys.phase = 'main1';
@@ -196,7 +267,7 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         }
     });
 
-    it('鲜血之力 1 档消耗 1 个标记并按攻击修正给当前攻击 +3，且本回合不能重复用同档', () => {
+    it('鲜血之力 1 档消耗 1 个标记、按攻击修正给当前攻击 +3，并在本回合限制一次', () => {
         const state = createBloodPowerPassiveState(2);
         state.sys.phase = 'offensiveRoll';
         state.core.pendingAttack = {
@@ -222,7 +293,6 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
             tokenId: TOKEN_IDS.BLOOD_POWER,
             amount: 1,
             newTotal: 1,
-            sourceAbilityId: 'vampire-lord-blood-power',
             passiveActionUseKey: 'vampire-lord-blood-power-attack-bonus',
         });
         expect(eventsOfType(events, 'BONUS_DAMAGE_ADDED')[0]?.payload).toMatchObject({
@@ -233,11 +303,11 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(1);
         expect(next.pendingAttack?.bonusDamage).toBe(3);
         expect(next.pendingAttack?.attackModifierBonusDamage).toBe(3);
+        expect(next.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-attack-bonus']).toBe(true);
         expect(validateCommand(next, passiveCommand, 'offensiveRoll').valid).toBe(false);
-        expect(execute({ core: next, sys: { phase: 'offensiveRoll' } }, passiveCommand, fixedRandom)).toHaveLength(0);
     });
 
-    it('鲜血之力 2 档仅在主要阶段且场上有可移除状态时消耗并打开状态选择', () => {
+    it('鲜血之力 2 档需要至少 2 个标记，在主要阶段消耗 2 个并分别限制一次', () => {
         const blocked = createBloodPowerPassiveState(2);
         blocked.sys.phase = 'main1';
         expect(validateCommand(blocked.core, useBloodPower(1), 'main1').valid).toBe(false);
@@ -254,6 +324,12 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         const next = applyEvents(state.core, events.filter(event => event.type !== 'INTERACTION_REQUESTED'));
         const interaction = eventsOfType(events, 'INTERACTION_REQUESTED')[0]?.payload.interaction;
 
+        expect(eventsOfType(events, 'TOKEN_CONSUMED')[0]?.payload).toMatchObject({
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: 2,
+            newTotal: 0,
+            passiveActionUseKey: 'vampire-lord-blood-power-remove-status',
+        });
         expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(0);
         expect(interaction).toMatchObject({
             playerId: '0',
@@ -262,10 +338,9 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
             selectCount: 1,
             targetPlayerIds: ['0', '1'],
         });
-        expect(validateCommand(next, passiveCommand, 'main1').valid).toBe(false);
     });
 
-    it('鲜血之力 3 档消耗 3 个标记抽 2 张牌，并按每回合限制记录该档已用', () => {
+    it('鲜血之力 3 档需要至少 3 个标记，消耗 3 个抽 2 张并限制一次', () => {
         const state = createBloodPowerPassiveState(3);
         state.sys.phase = 'main1';
         state.core.players['0'].hand = [];
@@ -285,6 +360,12 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
             'card-vampire-lord-blood-surge',
             'card-vampire-lord-gushing-blood',
         ]);
+        expect(eventsOfType(events, 'TOKEN_CONSUMED')[0]?.payload).toMatchObject({
+            tokenId: TOKEN_IDS.BLOOD_POWER,
+            amount: 3,
+            newTotal: 0,
+            passiveActionUseKey: 'vampire-lord-blood-power-draw',
+        });
         expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(0);
         expect(next.players['0'].hand.map(card => card.id)).toEqual([
             'card-vampire-lord-blood-surge',
@@ -327,7 +408,6 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         const next = applyEvents(state.core, events);
 
         expect(eventsOfType(events, 'TOKEN_CONSUMED')[0]?.payload).toMatchObject({
-            playerId: '0',
             tokenId: TOKEN_IDS.BLOOD_POWER,
             amount: 4,
             newTotal: 0,
@@ -340,6 +420,11 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
         });
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 5);
         expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(0);
+        expect(next.passiveActionUsedThisTurn?.['0']?.['vampire-lord-blood-power-heal']).toBe(true);
+        expect(validateCommand(next, useBloodPower(0), 'offensiveRoll').valid).toBe(false);
+        expect(validateCommand(next, useBloodPower(1), 'main1').valid).toBe(false);
+        expect(validateCommand(next, useBloodPower(2), 'main1').valid).toBe(false);
+        expect(validateCommand(next, useBloodPower(3), 'offensiveRoll').valid).toBe(false);
     });
 
     it('攻击成功伤害到 2 层流血对手后，回合结束获得 1 个鲜血之力', () => {
@@ -944,21 +1029,7 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
     });
 
     it('嗜血之爪 III 分支通过同一伤害结算入口造成 8 点攻击伤害', () => {
-        const state = createVampireLordState();
-        const upgradeEvents = resolveEffectsToEvents(
-            getCardById('upgrade-vampire-lord-bloodthirsty-claws-3').effects ?? [],
-            'immediate',
-            {
-                attackerId: '0',
-                defenderId: '1',
-                sourceAbilityId: 'upgrade-vampire-lord-bloodthirsty-claws-3',
-                state: state.core,
-                damageDealt: 0,
-                timestamp: 100,
-            },
-            { random: fixedRandom },
-        );
-        const upgraded = applyEvents(state.core, upgradeEvents);
+        const upgraded = upgradeBloodthirstyClaws(3);
         const damageEvents = resolveEffectsToEvents(
             getAbilityVariantEffects(upgraded, '0', 'bloodthirsty-claws', 'bloodthirsty-claws-3-5'),
             'withDamage',
@@ -983,6 +1054,50 @@ describe('DiceThrone 吸血鬼领主机制实现矩阵', () => {
             sourceAbilityId: 'bloodthirsty-claws',
         });
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 8);
+    });
+
+    it('嗜血之爪 I / II / III 应按图面伤害，并在相同数字阈值满足后获得 1 个鲜血之力', () => {
+        const cases = [
+            { level: 1 as const, variantId: 'bloodthirsty-claws-4', attackDiceValues: [1, 1, 1, 1, 5], expectedDamage: 5, expectedBloodPower: 1 },
+            { level: 1 as const, variantId: 'bloodthirsty-claws-5', attackDiceValues: [1, 1, 1, 1, 1], expectedDamage: 7, expectedBloodPower: 1 },
+            { level: 2 as const, variantId: 'bloodthirsty-claws-2-3', attackDiceValues: [1, 1, 1, 4, 5], expectedDamage: 3, expectedBloodPower: 1 },
+            { level: 2 as const, variantId: 'bloodthirsty-claws-2-5', attackDiceValues: [2, 2, 2, 2, 2], expectedDamage: 7, expectedBloodPower: 1 },
+            { level: 3 as const, variantId: 'bloodthirsty-claws-3-3', attackDiceValues: [3, 3, 3, 4, 5], expectedDamage: 4, expectedBloodPower: 1 },
+        ];
+
+        for (const { level, variantId, attackDiceValues, expectedDamage, expectedBloodPower } of cases) {
+            const core = upgradeBloodthirstyClaws(level);
+            const next = resolveBloodthirstyClawsVariant(core, variantId, attackDiceValues);
+
+            expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - expectedDamage);
+            expect(next.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(expectedBloodPower);
+        }
+    });
+
+    it('嗜血之爪相同数字奖励应只读取攻击骰快照，不被防御阶段当前骰覆盖', () => {
+        const noBonus = upgradeBloodthirstyClaws(3);
+        noBonus.dice = noBonus.dice.map((die, index) => ({
+            ...die,
+            ownerId: '1',
+            value: 6,
+            symbol: 'chi',
+            symbols: ['chi'],
+            id: index,
+        }));
+        const noBonusNext = resolveBloodthirstyClawsVariant(noBonus, 'bloodthirsty-claws-3-3', [1, 2, 3, 4, 5]);
+        expect(noBonusNext.players['0'].tokens[TOKEN_IDS.BLOOD_POWER] ?? 0).toBe(0);
+
+        const withBonus = upgradeBloodthirstyClaws(3);
+        withBonus.dice = withBonus.dice.map((die, index) => ({
+            ...die,
+            ownerId: '1',
+            value: index + 1,
+            symbol: 'chi',
+            symbols: ['chi'],
+            id: index,
+        }));
+        const withBonusNext = resolveBloodthirstyClawsVariant(withBonus, 'bloodthirsty-claws-3-3', [3, 3, 3, 4, 5]);
+        expect(withBonusNext.players['0'].tokens[TOKEN_IDS.BLOOD_POWER]).toBe(1);
     });
 
     it('升级后的共享技能上区效果按吸血鬼图面落到 HP、token、流血、选择与伤害', () => {

@@ -64,7 +64,7 @@ metadata:
 ## 单位选择
 
 - 文本、按钮、表单、日志和常规 HUD：优先 `rem`，必要时 `clamp()`，不要用裸 `vw` 做正文字号。
-- 固定构图主布局：用设计画布 `px` + 外层统一等比 `scale = min(availableWidth / designWidth, availableHeight / designHeight)`；不要让各区域各自用 `vw / vh` 拼居中。
+- 固定构图主布局：先锁定设计宽高比（例如 `16:9`），用设计画布 `px` + 外层统一等比 `scale = min(availableWidth / designWidth, availableHeight / designHeight)`；横屏可让外层容器以 `vh` 为高度约束、宽度由宽高比计算，宽度不足时回退到 `vw`，但不要让各区域各自用 `vw / vh` 拼居中。
 - 壳层高度和移动可视高度：优先运行时 viewport 变量；`board-shell` 内禁止直接依赖裸 `100vh / 100dvh`。
 - 局部装饰可少量用 `vw / vh`，前提是它不承担可读性和主布局稳定性。
 - 触控命中区用 `px / rem` 下限。最低 `44px x 44px`，移动端优先 `48px x 48px`；小图标可以更小，但按钮盒子必须足够大。

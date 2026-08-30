@@ -544,6 +544,14 @@ function buildPyroBlastDieEvents(args: {
     const events: DiceThroneEvent[] = [];
     let rollingFM = args.state.players[args.attackerId]?.tokens[TOKEN_IDS.FIRE_MASTERY] ?? 0;
     const fmLimit = args.state.players[args.attackerId]?.tokenStackLimits?.[TOKEN_IDS.FIRE_MASTERY] || 5;
+    let rollingBurn = args.state.players[args.opponentId]?.statusEffects[STATUS_IDS.BURN] ?? 0;
+    const burnLimit = args.state.tokenDefinitions?.some(def => def.id === STATUS_IDS.BURN)
+        ? getTokenStackLimit(args.state, args.opponentId, STATUS_IDS.BURN)
+        : 1;
+    let rollingKnockdown = args.state.players[args.opponentId]?.statusEffects[STATUS_IDS.KNOCKDOWN] ?? 0;
+    const knockdownLimit = args.state.tokenDefinitions?.some(def => def.id === STATUS_IDS.KNOCKDOWN)
+        ? getTokenStackLimit(args.state, args.opponentId, STATUS_IDS.KNOCKDOWN)
+        : 1;
 
     args.dice.forEach((die, idx) => {
         const eff = getPyroBlastDieEffect(die.face ?? '');
@@ -561,58 +569,62 @@ function buildPyroBlastDieEvents(args: {
             } as DamageDealtEvent);
         }
         if (eff.burn) {
-            events.push({
-                type: 'STATUS_APPLIED',
-                payload: {
-                    targetId: args.opponentId,
-                    statusId: STATUS_IDS.BURN,
-                    stacks: 1,
-                    newTotal: getBurnNewTotalFromState(args.state, args.opponentId),
-                    sourceAbilityId: args.sourceAbilityId,
-                },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: args.timestamp + 5 + idx,
-            } as StatusAppliedEvent);
+            const nextBurn = Math.min(rollingBurn + 1, burnLimit);
+            if (nextBurn > rollingBurn) {
+                rollingBurn = nextBurn;
+                events.push({
+                    type: 'STATUS_APPLIED',
+                    payload: {
+                        targetId: args.opponentId,
+                        statusId: STATUS_IDS.BURN,
+                        stacks: 1,
+                        newTotal: nextBurn,
+                        sourceAbilityId: args.sourceAbilityId,
+                    },
+                    sourceCommandType: 'ABILITY_EFFECT',
+                    timestamp: args.timestamp + 5 + idx,
+                } as StatusAppliedEvent);
+            }
         }
         if (eff.fm) {
+            const previousFM = rollingFM;
             rollingFM = Math.min(rollingFM + eff.fm, fmLimit);
-            events.push({
-                type: 'TOKEN_GRANTED',
-                payload: {
-                    targetId: args.attackerId,
-                    tokenId: TOKEN_IDS.FIRE_MASTERY,
-                    amount: eff.fm,
-                    newTotal: rollingFM,
-                    sourceAbilityId: args.sourceAbilityId,
-                },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: args.timestamp + 5 + idx,
-            } as TokenGrantedEvent);
+            if (rollingFM > previousFM) {
+                events.push({
+                    type: 'TOKEN_GRANTED',
+                    payload: {
+                        targetId: args.attackerId,
+                        tokenId: TOKEN_IDS.FIRE_MASTERY,
+                        amount: rollingFM - previousFM,
+                        newTotal: rollingFM,
+                        sourceAbilityId: args.sourceAbilityId,
+                    },
+                    sourceCommandType: 'ABILITY_EFFECT',
+                    timestamp: args.timestamp + 5 + idx,
+                } as TokenGrantedEvent);
+            }
         }
         if (eff.knockdown) {
-            events.push({
-                type: 'STATUS_APPLIED',
-                payload: {
-                    targetId: args.opponentId,
-                    statusId: STATUS_IDS.KNOCKDOWN,
-                    stacks: 1,
-                    newTotal: (args.state.players[args.opponentId]?.statusEffects[STATUS_IDS.KNOCKDOWN] || 0) + 1,
-                    sourceAbilityId: args.sourceAbilityId,
-                },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: args.timestamp + 5 + idx,
-            } as StatusAppliedEvent);
+            const nextKnockdown = Math.min(rollingKnockdown + 1, knockdownLimit);
+            if (nextKnockdown > rollingKnockdown) {
+                rollingKnockdown = nextKnockdown;
+                events.push({
+                    type: 'STATUS_APPLIED',
+                    payload: {
+                        targetId: args.opponentId,
+                        statusId: STATUS_IDS.KNOCKDOWN,
+                        stacks: 1,
+                        newTotal: nextKnockdown,
+                        sourceAbilityId: args.sourceAbilityId,
+                    },
+                    sourceCommandType: 'ABILITY_EFFECT',
+                    timestamp: args.timestamp + 5 + idx,
+                } as StatusAppliedEvent);
+            }
         }
     });
 
     return events;
-}
-
-function getBurnNewTotalFromState(state: CustomActionContext['state'], targetId: string): number {
-    const current = state.players[targetId]?.statusEffects[STATUS_IDS.BURN] ?? 0;
-    const hasDefinition = state.tokenDefinitions?.some(def => def.id === STATUS_IDS.BURN) ?? false;
-    const max = hasDefinition ? getTokenStackLimit(state, targetId, STATUS_IDS.BURN) : 1;
-    return Math.min(current + 1, max);
 }
 
 const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount: number; maxRerollCount?: number; rerollCostAmount?: number; dieEffectKey: string; rerollEffectKey: string }): DiceThroneEvent[] => {

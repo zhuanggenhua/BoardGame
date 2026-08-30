@@ -7,6 +7,9 @@ vi.mock('../../config/server', () => ({
     IS_DEV_API_DISABLED: false,
 }));
 
+const getFeedbackFetchCalls = () => (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls
+    .filter(([input]) => String(input) === '/feedback');
+
 describe('errorContext 自动反馈', () => {
     beforeEach(() => {
         vi.resetModules();
@@ -17,6 +20,7 @@ describe('errorContext 自动反馈', () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({ ok: true }),
+            text: async () => '',
         }));
     });
 
@@ -72,12 +76,12 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getFeedbackFetchCalls()).toHaveLength(1);
         expect(getLastErrorContext()).toMatchObject({
             name: 'Error',
             message: 'window boom',
         });
-        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        const body = JSON.parse(String(getFeedbackFetchCalls()[0]?.[1]?.body ?? '{}'));
         expect(body).toMatchObject({
             source: 'client-window-error',
             autoReportKind: 'window-error',
@@ -98,7 +102,7 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        const body = JSON.parse(String(getFeedbackFetchCalls()[0]?.[1]?.body ?? '{}'));
         expect(body).toMatchObject({
             source: 'client-unhandled-rejection',
             autoReportKind: 'unhandled-rejection',
@@ -118,7 +122,7 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('动态导入模块加载失败不会自动上报', async () => {
@@ -131,7 +135,7 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
     it('旧 Android 壳缺少 App 插件的 unhandledrejection 不会自动上报，但会保留最近错误上下文', async () => {
@@ -144,7 +148,7 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
         expect(getLastErrorContext()).toMatchObject({
             name: 'Error',
             message: '"App" plugin is not implemented on android',
@@ -164,7 +168,7 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
         expect(getLastErrorContext()).toMatchObject({
             name: 'InvalidStateError',
             message: 'Failed to start the audio device',
@@ -189,7 +193,7 @@ describe('errorContext 自动反馈', () => {
 
         await Promise.resolve();
 
-        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
         expect(getLastErrorContext()).toMatchObject({
             name: 'Error',
             message: 'Script error.',

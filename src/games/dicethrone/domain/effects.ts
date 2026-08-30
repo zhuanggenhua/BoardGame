@@ -216,6 +216,7 @@ export function createDisplayOnlySettlement(
         summaryEffectKey?: string;
         summaryEffectParams?: Record<string, string | number>;
         customResolutionId?: string;
+        customResolutionParams?: Record<string, string | number | boolean>;
         allowDiceModification?: boolean;
         opensAfterRollConfirmedResponseWindow?: boolean;
         continuation: NonNullable<PendingBonusDiceSettlement['continuation']>;
@@ -239,6 +240,7 @@ export function createDisplayOnlySettlement(
                 summaryEffectKey: options.summaryEffectKey,
                 summaryEffectParams: options.summaryEffectParams,
                 customResolutionId: options.customResolutionId,
+                customResolutionParams: options.customResolutionParams,
                 continuation: options.continuation,
                 allowDiceModification: true,
                 opensAfterRollConfirmedResponseWindow: options.opensAfterRollConfirmedResponseWindow,
@@ -793,12 +795,12 @@ function resolveEffectAction(
                 rollDice.push({ index: i, value, face, effectKey });
 
                 // 生成 BONUS_DIE_ROLLED 事件（总是提供 effectKey）
-                const bonusDieEvent: BonusDieRolledEvent = {
-                    type: 'BONUS_DIE_ROLLED',
-                    payload: {
+            const bonusDieEvent: BonusDieRolledEvent = {
+                type: 'BONUS_DIE_ROLLED',
+                payload: {
                         value,
                         face,
-                        playerId: targetId,
+                        playerId: attackerId,
                         targetPlayerId: targetId,
                         // 骰面效果描述：使用自定义 effectKey 或通用 key
                         effectKey,
@@ -1159,7 +1161,7 @@ function resolveConditionalEffect(
             type: 'CP_CHANGED',
             payload: {
                 playerId: ctx.attackerId,
-                delta: effect.cp,
+                delta: newValue - currentCp,
                 newValue,
                 sourceAbilityId,
             },
@@ -1266,7 +1268,7 @@ function resolveDefaultEffect(
         const newValue = Math.max(0, Math.min(currentCp + effect.cp, CP_MAX));
         events.push({
             type: 'CP_CHANGED',
-            payload: { playerId: ctx.attackerId, delta: effect.cp, newValue, sourceAbilityId },
+            payload: { playerId: ctx.attackerId, delta: newValue - currentCp, newValue, sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
             sfxKey,
@@ -1282,9 +1284,10 @@ function resolveDefaultEffect(
         const currentAmount = targetPlayer?.tokens[tokenId] ?? 0;
         const maxStacks = getTokenStackLimit(state, actualTargetId, tokenId);
         const newTotal = Math.min(currentAmount + value, maxStacks);
+        const grantedAmount = Math.max(0, newTotal - currentAmount);
         events.push({
             type: 'TOKEN_GRANTED',
-            payload: { targetId: actualTargetId, tokenId, amount: value, newTotal, sourceAbilityId },
+            payload: { targetId: actualTargetId, tokenId, amount: grantedAmount, newTotal, sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
             sfxKey,

@@ -6,6 +6,8 @@
 
 ## 必备目录
 
+以下是新游戏最终目录合同，不代表可以在设计稿前一次性创建全部正式运行时文件。Open Design 设计稿和 UI-facing 数据模型批准前，只能建立非 UI 骨架；`Board.tsx`、`ui/` 下的正式组件和运行时交互必须在设计门通过后创建。
+
 ```text
 src/games/<gameId>/
   manifest.ts
@@ -25,7 +27,7 @@ src/games/<gameId>/
 
 - `manifest.ts`：清单元数据；`id` 必须与目录名一致，缩略图路径使用逻辑资源路径。
 - `game.ts`：组装领域内核和引擎系统；`commandTypes` 只列业务命令，系统命令由引擎适配层合并。
-- `Board.tsx`：正式玩家 UI 入口；超过约 `300` 行或出现多职责区域时拆入 `ui/`。
+- `Board.tsx`：设计门通过后的正式玩家 UI 入口；超过约 `300` 行或出现多职责区域时拆入 `ui/`。设计门通过前不得用占位 Board 冒充骨架完成。
 - `thumbnail.tsx`：缩略图组件；优先使用项目统一 thumbnail 组件，不自写资源 URL。
 - `tutorial.ts`、`audio.config.ts`：可先占位，但最终完成前必须按教程和音频规范裁定。
 - `domain/`：规则状态、命令、事件、校验、执行、reducer、流程钩子和共享工具。
@@ -71,11 +73,11 @@ src/games/<gameId>/
 
 ## 最小骨架验收
 
-新游戏 S1 骨架完成前至少证明：
+设计门通过前的非 UI 骨架只能证明：
 
-- 目录职责齐全，且没有把规则事实写进 UI 或占位文案。
+- 非 UI 目录职责、规则来源和资源索引已建立，且没有把规则事实写进 UI 或占位文案。
 - manifest 可生成，大厅能发现游戏。
-- Domain setup 能生成合法初始 core。
-- validate / execute / reduce / isGameOver 有最小测试。
-- Board 能从正式 route 挂载，不依赖隐藏调试命令。
+- Domain setup、validate / execute / reduce / isGameOver 可以作为草稿或低层验证，但不得据此宣称正式游戏骨架完成。
 - tutorial、audio、critical image、debug 等占位项已登记到后续收尾清单，不被误报为完成。
+
+只有 Open Design 设计稿、UI-facing 数据模型和用户批准记录齐全后，才能补齐正式 Board / `ui/` 并进行完整 S1 骨架验收；此时还必须证明 Board 能从正式 route 挂载，不依赖隐藏调试命令。

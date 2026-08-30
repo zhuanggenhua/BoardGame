@@ -123,11 +123,11 @@ describe('Betrayal 教程配置', () => {
             'focus-self-room',
             'haunt-risk-track',
             'inventory-and-help',
-            'use-book',
             'open-move-targets',
             'move-to-hallway',
             'explore-upper',
             'confirm-room-placement',
+            'use-book',
             'finish',
             'setup-omen-confirmation',
             'confirm-omen-card',
@@ -192,10 +192,10 @@ describe('Betrayal 教程配置', () => {
             : undefined;
         const actionSteps = manifest?.steps.filter((step) => step.requireAction) ?? [];
         expect(actionSteps.map((step) => step.id)).toEqual([
-            'use-book',
             'move-to-hallway',
             'explore-upper',
             'confirm-room-placement',
+            'use-book',
         ]);
         expect(defaultManifest?.steps.slice(0, manifest?.steps.length).map((step) => step.id))
             .toEqual(manifest?.steps.map((step) => step.id));
@@ -203,20 +203,20 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.map((step) => step.id)).toContain('open-move-targets');
         expect(manifest?.steps.find((step) => step.id === 'open-move-targets')?.highlightTarget).toBe('betrayal-action-move');
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
-            ['USE_POSSESSION'],
             ['MOVE_TO_ROOM'],
             [],
             ['EXPLORE_ROOM'],
+            ['USE_POSSESSION'],
         ]);
         expect(actionSteps.map((step) => step.allowedTargets ?? null)).toEqual([
-            ['omen-book'],
             ['hallway'],
             null,
             null,
+            ['omen-book'],
         ]);
-        expect(actionSteps[0]?.highlightTarget).toBe('betrayal-inventory-omen-book');
+        expect(actionSteps.at(-1)?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(setupInventory?.map((card) => card.id)).toEqual(['rope', 'omen-book']);
-        expect(setupFields?.eventOrder?.map((event) => event.name)).toEqual(['外星几何']);
+        expect(setupFields?.eventOrder?.map((event) => event.name)).toEqual(['标本剥制']);
         expect(JSON.stringify(setupFields)).not.toContain('测试中性事件');
     });
 
@@ -317,24 +317,23 @@ describe('Betrayal 教程配置', () => {
             && frameIndex >= 0
             && frameIndex < 43
         ))).toBe(true);
-        expect(EVENT_FRONT_FRAME_BY_TITLE.外星几何).toBe(24);
+        expect(EVENT_FRONT_FRAME_BY_TITLE.标本剥制).toBe(0);
 
         const visual = resolveDiscoveryAtlasVisual({
             kind: 'event',
-            title: '外星几何',
-            summary: '进行一次知识检定。',
-            detail: '4+ 获得 1 点知识。',
+            title: '标本剥制',
+            summary: '进行一次力量检定。',
+            detail: '5+ 获得 1 点神志。',
         }, []);
 
         expect(visual).toMatchObject({
             image: 'betrayal/cards/event-front-atlas',
-            frameIndex: 24,
+            frameIndex: 0,
         });
         const style = buildDiscoveryAtlasImageStyle(visual!);
         expect(Number.parseFloat(String(style.width))).toBeCloseTo(900.148, 3);
         expect(Number.parseFloat(String(style.height))).toBeCloseTo(500.078, 3);
-        expect(String(style.transform)).toContain('translate(-66.655');
-        expect(String(style.transform)).toContain('-39.993');
+        expect(String(style.transform)).toContain('translate(-0%, -0%)');
     });
 
     it('发现牌展示能识别带运行时来源后缀的物品牌 ID', () => {
@@ -629,13 +628,17 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆进度条');
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('5+');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('选择持有区里的书本');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('点“使用”');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('看到事件牌和事件骰后');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('立即失去 1 点神志');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('书本的使用不需要再次确认');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('事件结果仍要等所有玩家确认看清');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('未探索走廊');
         expect(zhCNLocale.tutorial.basicSetup.steps.confirmRoomPlacement).toContain('确认放置');
+        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('原本是力量检定');
+        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('改用知识重新投骰');
         expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('兔脚');
-        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('继续结算');
+        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('让其他玩家看清结果');
         expect(zhCNLocale.tutorial.omenConfirmation.title).toContain('预兆');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('5+');

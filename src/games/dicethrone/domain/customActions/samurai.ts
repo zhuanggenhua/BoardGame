@@ -238,6 +238,7 @@ function handleMasamune({ attackerId, ctx, sourceAbilityId, state, timestamp, ra
     const katanaCount = dice.filter(die => die.face === FACE.KATANA).length;
     const shameCount = dice.filter(die => die.face === FACE.HELM).length;
     const retributionCount = dice.filter(die => die.face === FACE.RISING_SUN).length;
+    const dieEffectKey = 'bonusDie.effect.samuraiMasamune.die';
 
     const events: DiceThroneEvent[] = dice.map((die, index) => ({
         type: 'BONUS_DIE_ROLLED',
@@ -246,7 +247,9 @@ function handleMasamune({ attackerId, ctx, sourceAbilityId, state, timestamp, ra
             face: die.face,
             playerId: attackerId,
             targetPlayerId: defenderId,
-        },
+            effectKey: dieEffectKey,
+            effectParams: { value: die.value, index },
+            },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp: timestamp + index,
     } as BonusDieRolledEvent));

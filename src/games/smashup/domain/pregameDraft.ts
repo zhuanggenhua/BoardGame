@@ -273,7 +273,14 @@ export function buildSmashUpTakenFactionsFromPlayerSelections(
     return Object.values(playerSelections).flatMap((items) => items.filter((item): item is string => typeof item === 'string'));
 }
 
-export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: PlayerId, factionId: string): { valid: true } | { valid: false; error: string } {
+type SmashUpFactionSelectionActorValidation = {
+    valid: true;
+    selection: FactionSelectionState;
+    mode: SmashUpFactionSelectionMode;
+    playerSelections: string[];
+} | { valid: false; error: string };
+
+function validateSmashUpFactionSelectionActor(core: SmashUpCore, playerId: PlayerId): SmashUpFactionSelectionActorValidation {
     const selection = core.factionSelection;
     if (!selection) return { valid: false, error: '派系选择状态未初始化' };
     if (isSmashUpBanSelectionPhase(selection)) {
@@ -296,6 +303,67 @@ export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: Playe
     if (!core.players[playerId]) {
         return { valid: false, error: '玩家不存在' };
     }
+
+    const playerSelections = selection.playerSelections[playerId] || [];
+    const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
+    if (playerSelections.length >= factionsPerPlayer) {
+        return { valid: false, error: `你已选择了 ${factionsPerPlayer} 个派系` };
+    }
+
+    return { valid: true, selection, mode, playerSelections };
+}
+
+export function getSmashUpSelectableFactionCandidatesForPlayer(core: SmashUpCore, playerId: PlayerId): string[] {
+    const selection = core.factionSelection;
+    if (!selection) return [];
+
+    const enabledExpansions = core.enabledExpansions ?? DEFAULT_EXPANSIONS;
+    const selectableFactionIds = getSmashUpSelectableFactionIds(enabledExpansions, core.includedFactionIds);
+    const selectableIdentities = buildFactionSelectionIdentitySet(selectableFactionIds);
+    const mode = selection.mode ?? core.factionSelectionMode ?? 'snakeDraft';
+    const candidatePool = mode === 'individualPools'
+        ? selection.playerCandidatePools?.[playerId] ?? []
+        : (mode === 'snakeDraft' || mode === 'straightDraft') && (selection.sharedCandidatePool?.length ?? 0) > 0
+            ? selection.sharedCandidatePool ?? []
+            : selectableFactionIds;
+    const takenFactionIdentities = buildFactionSelectionIdentitySet(
+        buildSmashUpTakenFactionsFromPlayerSelections(selection.playerSelections),
+    );
+    const bannedFactionIdentities = buildFactionSelectionIdentitySet(selection.bannedFactions ?? []);
+    const result: string[] = [];
+    const resultIdentities = new Set<string>();
+
+    for (const factionId of candidatePool) {
+        if (typeof factionId !== 'string' || factionId.length === 0) continue;
+        const identity = normalizeFactionSelectionId(factionId);
+        if (!identity || resultIdentities.has(identity)) continue;
+        if (!selectableIdentities.has(identity)) continue;
+        if (takenFactionIdentities.has(identity)) continue;
+        if (bannedFactionIdentities.has(identity)) continue;
+
+        resultIdentities.add(identity);
+        result.push(factionId);
+    }
+
+    return result;
+}
+
+export function canSmashUpPlayerSelectRandomFaction(core: SmashUpCore, playerId: PlayerId): { valid: true } | { valid: false; error: string } {
+    const actorValidation = validateSmashUpFactionSelectionActor(core, playerId);
+    if (!actorValidation.valid) return actorValidation;
+
+    const candidates = getSmashUpSelectableFactionCandidatesForPlayer(core, playerId);
+    if (candidates.length === 0) {
+        return { valid: false, error: '没有可随机选择的派系' };
+    }
+
+    return { valid: true };
+}
+
+export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: PlayerId, factionId: string): { valid: true } | { valid: false; error: string } {
+    const actorValidation = validateSmashUpFactionSelectionActor(core, playerId);
+    if (!actorValidation.valid) return actorValidation;
+    const { selection, mode, playerSelections } = actorValidation;
 
     const enabledExpansions = core.enabledExpansions ?? DEFAULT_EXPANSIONS;
     if (isSmashUpDiyFaction(factionId) && !enabledExpansions.includes('diy')) {
@@ -322,15 +390,9 @@ export function canSmashUpPlayerSelectFaction(core: SmashUpCore, playerId: Playe
         return { valid: false, error: '该派系已被 Ban' };
     }
 
-    const playerSelections = selection.playerSelections[playerId] || [];
     const playerSelectionIdentities = buildFactionSelectionIdentitySet(playerSelections);
     if (playerSelectionIdentities.has(factionIdentity)) {
         return { valid: false, error: '该派系已被选择' };
-    }
-
-    const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
-    if (playerSelections.length >= factionsPerPlayer) {
-        return { valid: false, error: `你已选择了 ${factionsPerPlayer} 个派系` };
     }
 
     if (mode === 'individualPools') {

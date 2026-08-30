@@ -68,6 +68,8 @@ export interface PassiveActionDef {
     timing: PassiveActionTiming;
     /** 是否允许在已确认骰面的响应窗口中干预对手当前骰区 */
     allowConfirmedRollInterference?: boolean;
+    /** 即使当前条件不满足，也保留按钮并以禁用态展示规则入口。 */
+    showWhenUnavailable?: boolean;
     /** 描述 i18n key */
     descriptionKey: string;
     /** custom 动作 ID（type='custom' 时必填） */
@@ -82,7 +84,7 @@ export interface PassiveActionDef {
     requiresCurrentAttack?: boolean;
     /** 要求当前攻击已经成功造成过至少 1 点实际伤害 */
     requiresCurrentAttackDamageDealt?: boolean;
-    /** 要求场上至少存在一个规则允许移除的状态或标记 */
+    /** 要求场上至少存在一个规则允许移除的状态效果 */
     requiresAnyRemovableStatus?: boolean;
     /** 要求当前骰区里存在至少一颗对手骰子 */
     requiresOpponentRollDice?: boolean;
@@ -176,37 +178,17 @@ function getPassiveTokenStackLimit(
     return base ?? 99;
 }
 
-function isRemovableStatusOrToken(state: DiceThroneCore, id: string): boolean {
+function isRemovableStatusEffect(state: DiceThroneCore, id: string): boolean {
     const def = state.tokenDefinitions?.find(entry => entry.id === id);
     return def?.passiveTrigger?.removable ?? true;
 }
 
-function getTokenAmountAfterPassiveCosts(
-    playerId: PlayerId,
-    actingPlayerId: PlayerId,
-    tokenId: string,
-    amount: number,
-    action: PassiveActionDef,
-): number {
-    if (playerId !== actingPlayerId) return amount;
-    const spent = getPassiveActionTokenCosts(action)
-        .filter(cost => cost.tokenId === tokenId)
-        .reduce((sum, cost) => sum + cost.amount, 0);
-    return Math.max(0, amount - spent);
-}
-
-function hasAnyRemovableStatusOrToken(
+function hasAnyRemovableStatusEffect(
     state: DiceThroneCore,
-    actingPlayerId: PlayerId,
-    action: PassiveActionDef,
 ): boolean {
-    return Object.entries(state.players).some(([playerId, player]) => (
+    return Object.values(state.players).some((player) => (
         Object.entries(player.statusEffects ?? {}).some(([statusId, amount]) => (
-            amount > 0 && isRemovableStatusOrToken(state, statusId)
-        ))
-        || Object.entries(player.tokens ?? {}).some(([tokenId, amount]) => (
-            getTokenAmountAfterPassiveCosts(playerId, actingPlayerId, tokenId, amount, action) > 0
-            && isRemovableStatusOrToken(state, tokenId)
+            amount > 0 && isRemovableStatusEffect(state, statusId)
         ))
     ));
 }
@@ -261,7 +243,7 @@ export function isPassiveActionUsable(
         if (!state.pendingAttack || state.pendingAttack.attackerId !== playerId) return false;
         if ((state.pendingAttack.resolvedDamage ?? 0) <= 0) return false;
     }
-    if (action.requiresAnyRemovableStatus && !hasAnyRemovableStatusOrToken(state, playerId, action)) {
+    if (action.requiresAnyRemovableStatus && !hasAnyRemovableStatusEffect(state)) {
         return false;
     }
     if (action.requiresOpponentRollDice && !hasOpponentRollDice(state, playerId, phase)) {

@@ -146,4 +146,5 @@ UI 设计、设计稿、Open Design、HTML 预览和 Board 实现前必须先完
 - 布局真相源已读取或明确不可用，并记录影响。
 - 空间载体、setup、随机池、对象粒度和权限矩阵缺口已转入 [mechanics-data-design](mechanics-data-design.md) 对应合同。
 - OpenSpec 是否需要介入已裁定；进入具体方案或正式范围管理时切到 `openspec/AGENTS.md`。
+- 若当前范围包含 `board-ui`、`runtime-entry` 或玩家可见交互，Open Design artifact、UI 前置包和批准状态已闭合；否则只能停在非 UI intake / 模型草稿，不能进入正式 Board、UI-facing 数据模型定稿或 UI 实施。
 - 已知缺口写入任务、proposal、evidence 或矩阵，不能被截图、E2E 或代表态覆盖。

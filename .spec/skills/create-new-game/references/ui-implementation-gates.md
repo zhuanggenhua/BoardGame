@@ -68,6 +68,21 @@ DOM、HTML、TTS/Workshop JSON、XmlUI、对象 Transform、截图、PureRef、�
 
 ## 设计顺序
 
+### Open Design 默认门与模型依赖
+
+新游戏 proposal 获批后，UI 相关实现默认必须先使用 Open Design 产出设计稿。工具安装、启动和健康检查按 [`docs/infra/open-design.md`](../../../../docs/infra/open-design.md) 执行；正式素材必须导入当前 OD 项目并由 artifact 引用。
+
+对包含 UI / runtime 的 change，未完成以下任一项，不得把 UI-facing 数据模型标记完成，不得写 Board、运行时 HUD、动作条、PromptOverlay，不得启动真实页面实现 E2E，也不得宣称进入 UI 实施阶段：
+
+- Open Design artifact 已创建且可渲染；
+- 导出设计图已完成 AI 图面核验；
+- 当前设计稿已获用户明确批准；
+- 设计稿对应的 UI 前置包、素材账本和风格合同可回查。
+
+规则源中的纯领域事实可以先做草稿，但玩家决策、权限、状态显隐、事件反馈、空间承载和容量 / 溢出策略等 UI-facing 模型必须在已批准设计稿 / 交互合同之后定稿；不能先写一套临时模型，事后用设计稿解释。
+
+设计稿批准后，必须继续跑真实玩家入口的基础端到端流程；只有真实控件推进、关键状态截图和结果复核都成立，才允许把该 UI 阶段标记完成。夹具、教程注入、脚本直发命令或单纯页面加载不能替代基础 E2E。
+
 如果用户要“设计稿 / 视觉稿 / Open Design 稿 / 先看图”，当前目标停在设计稿候选；用户明确批准前，不写 Board、运行时 HUD、动作条、PromptOverlay，也不启动真实页面或跑实现 E2E。
 
 默认设计顺序：

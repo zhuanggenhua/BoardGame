@@ -240,6 +240,8 @@
     "opponent_card": "Opponent's Card",
     "select_factions_title": "Draft Your Factions",
     "select_factions_desc": "Combine two factions to build your ultimate deck. Use different ability combinations to smash up!",
+    "random_faction_name": "Random Faction",
+    "random_faction_desc": "Randomly pick one available faction",
     "player_taken": "Taken by {{player}}",
     "faction_details": "Faction Details",
     "minion_count": "{{count}} Minions",

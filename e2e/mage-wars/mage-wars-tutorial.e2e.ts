@@ -353,7 +353,7 @@ test.describe('Mage Wars tutorial', () => {
         await expect(guardActionButton).toBeVisible({ timeout: 10_000 });
         await expect(guardActionButton).toHaveAttribute('data-action-kind', 'guard');
         await expect(guardActionButton).toHaveAttribute('data-action-visual', 'text-action');
-        await expect(guardActionButton).toHaveAttribute('data-action-placement', 'middle-lower-action-dock');
+        await expect(guardActionButton).toHaveAttribute('data-action-placement', 'source-card-below');
         await expect(guardActionButton).toContainText(/进行守卫|guard/i);
         await expect(guardActionButton.locator('img')).toHaveCount(0);
         await expect(guardActionButton.locator('svg')).toHaveCount(0);

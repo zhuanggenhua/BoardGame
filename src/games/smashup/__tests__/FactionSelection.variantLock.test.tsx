@@ -152,6 +152,28 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByText('AI 已占领')).toBeInTheDocument();
     });
 
+    it('随机派系卡固定排在第一个，点击后直接提交随机选择命令', () => {
+        const dispatch = renderSelection();
+        const firstOption = document.querySelector('[data-testid^="faction-option-"]');
+
+        expect(firstOption).toHaveAttribute('data-testid', 'faction-option-random');
+        expect(screen.getByTestId('faction-option-random')).toHaveAttribute('aria-label', 'ui.random_faction_name');
+
+        fireEvent.click(screen.getByTestId('faction-option-random'));
+
+        expect(dispatch).toHaveBeenCalledWith('su:select_random_faction', {});
+        expect(screen.queryByTestId('faction-detail-panel')).not.toBeInTheDocument();
+    });
+
+    it('搜索派系时隐藏随机派系卡，避免它绕过当前搜索结果', () => {
+        renderSelection();
+
+        searchFaction('pirates');
+
+        expect(screen.queryByTestId('faction-option-random')).not.toBeInTheDocument();
+        expect(screen.getByTestId('faction-option-pirates')).toBeInTheDocument();
+    });
+
     it('别人选择 robots_pod 后，打开 robots 详情不应再出现确认选择按钮', () => {
         renderSelection();
 
@@ -308,6 +330,8 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         const orderedIds = Array.from(
             document.querySelectorAll<HTMLElement>('[data-testid^="faction-option-"]'),
         ).map((node) => node.dataset.testid?.replace('faction-option-', '') ?? '');
+        expect(orderedIds[0]).toBe('random');
+        const orderedFactionIds = orderedIds.filter((id) => id !== 'random');
         const originalOrderedIds = getVisibleFactionVariantGroups('zh-CN').map((group) => group.groupId);
         const inProgressIds = originalOrderedIds.filter((groupId) => isFactionImplementationInProgress(groupId));
         const expectedOrderedIds = [
@@ -329,8 +353,9 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         ]));
         const virtualWindow = screen.getByTestId('faction-virtual-window');
         expect(Number(virtualWindow.dataset.totalFactions)).toBe(expectedOrderedIds.length);
+        expect(Number(virtualWindow.dataset.totalOptions)).toBe(expectedOrderedIds.length + 1);
         expect(Number(virtualWindow.dataset.renderedFactions)).toBeLessThan(expectedOrderedIds.length);
-        expect(orderedIds).toEqual(expectedOrderedIds.slice(0, orderedIds.length));
+        expect(orderedFactionIds).toEqual(expectedOrderedIds.slice(0, orderedFactionIds.length));
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
     });
 

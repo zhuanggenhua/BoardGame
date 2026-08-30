@@ -129,7 +129,7 @@ describe('Volley 5 Dice Display', () => {
         for (let index = 0; index < 5; index += 1) {
             const event = bonusDieEvents[index].event as any;
             expect(event.payload.value).toBe(index + 1);
-            expect(event.payload.effectKey).toBeUndefined();
+            expect(event.payload.effectKey).toBe('bonusDie.effect.volley');
             expect(event.payload.effectParams).toEqual({ value: index + 1, index });
         }
 

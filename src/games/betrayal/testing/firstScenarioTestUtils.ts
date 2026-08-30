@@ -389,10 +389,10 @@ export function createStartedFirstScenarioCore(
 
 function applyTutorialDiscoveryOrder(core: BetrayalCore): BetrayalCore {
   const tutorialEvent = BETRAYAL_DISCOVERY_POOLS.events.find(
-    (event) => event.name === "外星几何",
+    (event) => event.name === "标本剥制",
   );
   if (!tutorialEvent) {
-    throw new Error("山屋教程缺少官方事件牌：外星几何");
+    throw new Error("山屋教程缺少官方事件牌：标本剥制");
   }
   core.eventOrder = [tutorialEvent];
   core.deckCounts.event = core.eventOrder.length;
@@ -563,6 +563,10 @@ export function createSafeOmenPendingResolutionTutorialCore(): BetrayalCore {
 
   core.drawOrder = ["omen"];
   core.possessionOrderByKind.omen = [{ ...dogOmen }];
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "observatory") },
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "kitchen") },
+  ]);
   core.currentExplorer.inventory = [];
   core.currentExplorerInventory = [];
   core.otherExplorers = core.otherExplorers.map((explorer) => ({

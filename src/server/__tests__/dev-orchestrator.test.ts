@@ -107,4 +107,56 @@ describe('resolveDevPortsFromEnv', () => {
         expect(resolved.gameServer).toBe(preferredPorts.gameServer);
         expect(resolved.apiServer).toBe(preferredPorts.apiServer);
     });
+
+    it('非固定端口入口将显式端口视为首选端口，冲突时自动切换', async () => {
+        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const occupiedFrontend = await listenOnRandomPort();
+        const preferredPorts = {
+            frontend: occupiedFrontend.port,
+            gameServer: await getFreePort(),
+            apiServer: await getFreePort(),
+        };
+
+        const resolved = await resolveDevPortsFromEnv(
+            { VITE_DEV_PORT: String(occupiedFrontend.port) },
+            { preferredPorts, respectExplicitPorts: false },
+        );
+
+        expect(resolved.frontend).not.toBe(occupiedFrontend.port);
+        expect(resolved.frontend).toBeGreaterThan(0);
+    });
+
+    it('非固定端口入口即使继承严格端口环境变量，关闭尊重显式端口后仍能自动切换', async () => {
+        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const occupiedFrontend = await listenOnRandomPort();
+        const preferredPorts = {
+            frontend: occupiedFrontend.port,
+            gameServer: await getFreePort(),
+            apiServer: await getFreePort(),
+        };
+
+        const resolved = await resolveDevPortsFromEnv(
+            { BG_DEV_STRICT_PORTS: '1', VITE_DEV_PORT: String(occupiedFrontend.port) },
+            { preferredPorts, respectExplicitPorts: false },
+        );
+
+        expect(resolved.frontend).not.toBe(occupiedFrontend.port);
+    });
+
+    it('lite 入口固定使用首选端口，不因占用而递增', async () => {
+        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const occupiedFrontend = await listenOnRandomPort();
+        const preferredPorts = {
+            frontend: occupiedFrontend.port,
+            gameServer: await getFreePort(),
+            apiServer: await getFreePort(),
+        };
+
+        const resolved = await resolveDevPortsFromEnv(
+            {},
+            { preferredPorts, fixedPorts: true },
+        );
+
+        expect(resolved).toEqual(preferredPorts);
+    });
 });

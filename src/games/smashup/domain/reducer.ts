@@ -115,6 +115,7 @@ import {
     buildSmashUpSetupBasesForSelectedFactions,
     getSmashUpDraftTurnOrder,
     getSmashUpFactionsPerPlayer,
+    getSmashUpSelectableFactionCandidatesForPlayer,
     getSmashUpSelectableFactionIds,
 } from './pregameDraft';
 import {
@@ -266,6 +267,60 @@ function buildAllFactionsSelectedSetupEvent(
         },
         mulliganPlayers,
     };
+}
+
+function buildFactionSelectedEventsForCommand(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    factionId: string,
+    sourceCommandType: string,
+    random: RandomFn,
+    now: number,
+): { events: SmashUpEvent[]; updatedState?: MatchState<SmashUpCore> } {
+    const core = state.core;
+    const events: SmashUpEvent[] = [];
+    const selectedEvt: FactionSelectedEvent = {
+        type: SU_EVENTS.FACTION_SELECTED,
+        payload: { playerId, factionId },
+        sourceCommandType,
+        timestamp: now,
+    };
+    events.push(selectedEvt);
+
+    // 检查选秀是否完成
+    const selection = core.factionSelection!;
+    const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
+    const draftTurnOrder = getSmashUpDraftTurnOrder(core);
+    const tempSelections = { ...selection.playerSelections };
+    tempSelections[playerId] = [
+        ...(tempSelections[playerId] || []),
+        factionId,
+    ];
+    const allPlayersSelected = draftTurnOrder.every(
+        (draftPlayerId) => (tempSelections[draftPlayerId] ?? []).length >= factionsPerPlayer,
+    );
+
+    if (allPlayersSelected && selection.mode !== 'individualPools') {
+        const setupEvent = buildAllFactionsSelectedSetupEvent(
+            core,
+            tempSelections,
+            draftTurnOrder,
+            factionsPerPlayer,
+            random,
+            now,
+        );
+        events.push(setupEvent.event);
+
+        // 规则：起手无随从“可”重抽一次 → 排队交互（不会影响核心事件链）
+        // 注意：这一步只改变 sys.interaction，不直接改 core；重抽由交互 handler 生成事件完成。
+        let updated = state;
+        for (const pid of setupEvent.mulliganPlayers) {
+            updated = maybeQueueStartingHandMulliganPrompt(updated, pid, now);
+        }
+        return { events, updatedState: updated };
+    }
+
+    return { events };
 }
 
 export function execute(
@@ -572,49 +627,20 @@ function executeCommand(
 
         case SU_COMMANDS.SELECT_FACTION: {
             const { factionId } = command.payload;
-            const events: SmashUpEvent[] = [];
-            const selectedEvt: FactionSelectedEvent = {
-                type: SU_EVENTS.FACTION_SELECTED,
-                payload: { playerId: command.playerId, factionId },
-                sourceCommandType: command.type,
-                timestamp: now,
-            };
-            events.push(selectedEvt);
+            return buildFactionSelectedEventsForCommand(state, command.playerId, factionId, command.type, random, now);
+        }
 
-            // 检查选秀是否完成
-            const selection = core.factionSelection!;
-            const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
-            const draftTurnOrder = getSmashUpDraftTurnOrder(core);
-            const tempSelections = { ...selection.playerSelections };
-            tempSelections[command.playerId] = [
-                ...(tempSelections[command.playerId] || []),
-                factionId,
-            ];
-            const allPlayersSelected = draftTurnOrder.every(
-                (playerId) => (tempSelections[playerId] ?? []).length >= factionsPerPlayer,
-            );
-
-            if (allPlayersSelected && selection.mode !== 'individualPools') {
-                const setupEvent = buildAllFactionsSelectedSetupEvent(
-                    core,
-                    tempSelections,
-                    draftTurnOrder,
-                    factionsPerPlayer,
-                    random,
-                    now,
-                );
-                events.push(setupEvent.event);
-
-                // 规则：起手无随从“可”重抽一次 → 排队交互（不会影响核心事件链）
-                // 注意：这一步只改变 sys.interaction，不直接改 core；重抽由交互 handler 生成事件完成。
-                let updated = state;
-                for (const pid of setupEvent.mulliganPlayers) {
-                    updated = maybeQueueStartingHandMulliganPrompt(updated, pid, now);
-                }
-                return { events, updatedState: updated };
+        case SU_COMMANDS.SELECT_RANDOM_FACTION: {
+            const candidates = getSmashUpSelectableFactionCandidatesForPlayer(core, command.playerId);
+            if (candidates.length === 0) {
+                throw new Error('随机派系选择失败：没有可随机选择的派系');
             }
-
-            return { events };
+            const selectedIndex = random.range(0, candidates.length - 1);
+            const factionId = candidates[selectedIndex];
+            if (!factionId) {
+                throw new Error(`随机派系选择失败：随机索引 ${selectedIndex} 越界，可选数量 ${candidates.length}`);
+            }
+            return buildFactionSelectedEventsForCommand(state, command.playerId, factionId, command.type, random, now);
         }
 
         case SU_COMMANDS.DESELECT_FACTION: {

@@ -616,6 +616,10 @@ export default defineConfig(({ mode }) => {
   const devPort = Number.isFinite(cliPort) && cliPort > 0
     ? cliPort
     : Number(env.VITE_DEV_PORT) || 4273
+  // 编排器完成整套服务的端口分配后会显式锁定端口；
+  // 直接运行 Vite/旧并行入口时则允许 Vite 自动切换到下一个空闲端口。
+  const strictDevPort = env.BG_DEV_STRICT_PORTS === '1'
+    || process.env.BG_DEV_STRICT_PORTS === '1'
   const serverHost = cliHost || '0.0.0.0'
   const hmrHost = cliHost && cliHost !== '0.0.0.0' ? cliHost : 'localhost'
   const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
@@ -762,14 +766,18 @@ export default defineConfig(({ mode }) => {
     server: {
       host: serverHost,
       port: devPort,
-      strictPort: true,
+      strictPort: strictDevPort,
       hmr: disableViteHmr
         ? false
         : {
             protocol: 'ws',
             host: hmrHost,
-            port: devPort,
-            clientPort: devPort,
+            ...(strictDevPort
+              ? {
+                  port: devPort,
+                  clientPort: devPort,
+                }
+              : {}),
           },
       // 稳定测试模式不依赖热更新；禁用监听可避免 AI/脚本并发改工作区时触发刷新。
       watch: disableViteWatch

@@ -196,13 +196,12 @@ const handleBonusDieRolled: EventHandler<Extract<DiceThroneEvent, { type: 'BONUS
     state,
     event
 ) => {
-    const { value } = event.payload;
-    const pendingDamageBonus = event.payload.pendingDamageBonus;
+    const { pendingDamageBonus } = event.payload;
 
-    // 更新 pendingAttack.extraRoll
-    let pendingAttack = state.pendingAttack
-        ? { ...state.pendingAttack, extraRoll: { value, resolved: true } }
-        : state.pendingAttack;
+    // 奖励骰属于独立的 pendingBonusDiceSettlement，不是普通攻击骰的“额外投掷”。
+    // 不要把它写进 pendingAttack.extraRoll；该历史字段只保留给旧状态兼容，
+    // 否则奖励骰会污染普通攻击状态，混淆刺藤等只读取普通投掷次数的规则。
+    let pendingAttack = state.pendingAttack;
 
     // 如果有 pendingDamageBonus，更新 pendingDamage.currentDamage（伏击等 Token 掷骰加伤）
     let pendingDamage = state.pendingDamage;

@@ -40,6 +40,7 @@ import {
     resolveBetrayalHauntSpecialActionStatus,
     resolveBetrayalHauntTokenInstances,
     resolveBetrayalPossessionSpecialActionStatus,
+    canUseBookForPendingEventRoll,
     resolveBetrayalRoomSpecialActionStatus,
     resolveBetrayalTradeCardStatus,
     resolveAttackWeaponCardStatuses,
@@ -23298,6 +23299,98 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.sanity).toBe(5);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
         expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('事件骰出现后使用书本会立即支付神志并按知识重新投骰，仍等待确认结算', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '标本剥制')!];
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            traits: {
+                ...core.currentExplorer.traits,
+                might: 3,
+                knowledge: 2,
+                sanity: 4,
+            },
+            inventory: [{ id: 'omen-book', name: '书本', kind: 'omen' }],
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['omen-book'];
+        setTestTraitTrack(core, '0', 'might', [1, 2, 3, 4, 5], 2, 2);
+        setTestTraitTrack(core, '0', 'knowledge', [1, 2, 3, 4, 5], 1, 1);
+        setTestTraitTrack(core, '0', 'sanity', [1, 2, 3, 4, 5], 3, 3);
+        const sanityPositionBeforeBook = traitTrackPosition(core, '0', 'sanity');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-north' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+            false,
+        );
+
+        expect(core.recentRoll?.trait).toBe('might');
+        expect(core.recentRoll?.dice).toHaveLength(3);
+        expect(canUseBookForPendingEventRoll(core, '0', 'omen-book')).toBe(true);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'omen-book' }),
+        )).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_POSSESSION,
+            '0',
+            { cardId: 'omen-book' },
+            101,
+            createBetrayalScriptedRandom(3, 3),
+            false,
+        );
+
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeBook - 1);
+        expect(core.usedCardIdsThisTurn).toContain('omen-book');
+        expect(core.nextNonCombatTraitReplacement).toBeNull();
+        expect(core.recentRoll?.kind).toBe('eventTraitCheck');
+        expect(core.recentRoll?.trait).toBe('knowledge');
+        expect(core.recentRoll?.rollLabel).toBe('知识检定');
+        expect(core.recentRoll?.dice).toHaveLength(2);
+        expect(core.pendingEventRollResolution).toMatchObject({
+            rollId: core.recentRoll?.id,
+            sourceTitle: '标本剥制',
+            acknowledgedPlayerIds: [],
+            effect: { mode: 'trait', trait: 'sanity', amount: 1 },
+        });
+        expect(core.latestDiscovery?.title).toBe('标本剥制');
+        expect(core.latestDiscovery?.detail).toContain('知识检定');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: core.pendingEventRollResolution!.rollId },
+            102,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+        expect(core.pendingEventRollResolution).toMatchObject({
+            acknowledgedPlayerIds: ['0'],
+        });
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            stepKind: 'event-effect',
+            acknowledgedPlayerIds: ['0'],
+        });
+        core = acknowledgePendingEventRollResolution(core);
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeBook);
+        expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
     it('兔脚重掷电话铃声时会在最终确认时应用新分支', () => {

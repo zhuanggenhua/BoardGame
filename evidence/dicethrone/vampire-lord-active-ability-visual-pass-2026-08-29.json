@@ -1,0 +1,36 @@
+{
+  "verdict": "REVISE",
+  "scope": "superseded-by-rule-contract-revision",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": false,
+    "note": "旧视觉证据建立在鲜血之力不消耗、不限次的错误录入合同上，已被提示卡完整规则和本轮 E2E 证据替代。"
+  },
+  "requirements": [
+    {
+      "requirement": "鲜血之力第二档在没有可移除状态时仍位于统一被动能力操作栏、可见但禁用，同时显示真实消耗 2 个",
+      "status": "SUPERSEDED",
+      "evidence": [
+        "e2e/dicethrone/vampire-lord-real-entry.e2e.ts:510",
+        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/鲜血之力-2-档在无可移除状态时仍显示为禁用入口且显示真实成本/吸血鬼领主-鲜血之力四档入口-第2档禁用但可见.jpg",
+        "e2e/dicethrone/vampire-lord-real-entry.e2e.ts:538"
+      ]
+    },
+    {
+      "requirement": "鲜血之力第一档使用后消耗 1 个鲜血之力，并因本回合限制变为禁用",
+      "status": "SUPERSEDED",
+      "evidence": [
+        "e2e/dicethrone/vampire-lord-real-entry.e2e.ts:421",
+        "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/鲜血之力-1-档应通过玩家板按钮给当前攻击加-3-点/吸血鬼领主-鲜血之力加伤后.jpg",
+        "e2e/dicethrone/vampire-lord-real-entry.e2e.ts:506"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/_active-ability-pass-2026-08-29/00-sequence-index.png",
+    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/_active-ability-pass-2026-08-29/01-labeled-吸血鬼领主-鲜血之力四档入口-第2档禁用但可见.png",
+    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/_active-ability-pass-2026-08-29/02-labeled-吸血鬼领主-鲜血之力加伤后.png"
+  ]
+}

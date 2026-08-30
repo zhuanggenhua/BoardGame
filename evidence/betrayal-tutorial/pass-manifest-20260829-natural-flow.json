@@ -1,0 +1,67 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "教程按移动、探索、放置、事件投骰、书本改骰、兔脚重掷、事件确认的自然因果顺序教学",
+      "status": "PASS",
+      "evidence": [
+        "桌面 E2E 1 passed",
+        "截图 05-16 按玩家动作顺序排列"
+      ]
+    },
+    {
+      "requirement": "书本只在事件骰出现后使用，点击后直接生效，不出现第二次确认",
+      "status": "PASS",
+      "evidence": [
+        "截图 09 事件牌和事件骰先出现",
+        "截图 10 书本即时介入",
+        "E2E 断言点击书本后神志减少 1、检定变为知识且仍等待事件骰确认"
+      ]
+    },
+    {
+      "requirement": "兔脚重掷经过选择骰子和统一样式的确认按钮，并显示重投结果",
+      "status": "PASS",
+      "evidence": [
+        "截图 13-15",
+        "E2E 真实点击兔脚、选择骰子、确认并等待物理骰盘结束"
+      ]
+    },
+    {
+      "requirement": "事件确认显示多玩家确认进度，首位确认后保留等待状态",
+      "status": "PASS",
+      "evidence": [
+        "截图 16",
+        "E2E 断言最终按钮显示确认 1/3，待确认事件仍保留"
+      ]
+    },
+    {
+      "requirement": "三类牌在正式牌桌中可识别，狗归入预兆牌",
+      "status": "PASS",
+      "evidence": [
+        "截图 05-16 右侧牌堆区同时显示预兆、物品、事件三类牌"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/01-labeled-05-山屋惊魂-教程-移动入口.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/02-labeled-06-山屋惊魂-教程-移动到门厅后.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/03-labeled-07-山屋惊魂-教程-探索目标房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/04-labeled-08-山屋惊魂-教程-确认放置新房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/05-labeled-09-山屋惊魂-教程-事件牌与事件骰出现.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/06-labeled-10-山屋惊魂-教程-书本直接介入后.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/07-labeled-11-山屋惊魂-教程-书本牌面查看.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/08-labeled-12-山屋惊魂-教程-知识改骰结果.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/09-labeled-13-山屋惊魂-教程-点击兔脚后选择骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/10-labeled-14-山屋惊魂-教程-兔脚选中改骰高亮.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/11-labeled-15-山屋惊魂-教程-兔脚重投结束.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260829-natural-flow/12-labeled-16-山屋惊魂-教程-探索后牌桌结果.png"
+  ]
+}

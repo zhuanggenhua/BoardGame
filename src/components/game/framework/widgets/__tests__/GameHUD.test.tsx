@@ -95,6 +95,7 @@ vi.mock('../../../../../contexts/SocialContext', () => ({
 
 vi.mock('../../../utils/actionLogFormat', () => ({
     buildActionLogRows: () => [],
+    createStateBackedActionLogPlayerLabel: () => () => '',
 }));
 
 vi.mock('../ActionLogSegments', () => ({
