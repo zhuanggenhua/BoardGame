@@ -203,7 +203,7 @@ export function useGameProviderRuntime(args: {
         }
         resetOptimisticProviderRuntime();
         requestProviderResync();
-    }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
+    }, [requestProviderResync, resetOptimisticProviderRuntime]);
 
     useEffect(() => {
         onErrorRef.current = onError;
