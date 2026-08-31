@@ -15596,6 +15596,8 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         && command.type !== BETRAYAL_COMMANDS.USE_RABBIT_FOOT
         && command.type !== BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
         && !(command.type === BETRAYAL_COMMANDS.USE_POSSESSION && canUseBookForPendingEventRoll(core, command.playerId, command.payload.cardId))
+        && command.type !== BETRAYAL_COMMANDS.ROLL_EVENT
+        && command.type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
@@ -16151,6 +16153,19 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return validatePreHauntAction(state, command);
         case BETRAYAL_COMMANDS.USE_POSSESSION:
             return validatePreHauntAction(state, command);
+        case BETRAYAL_COMMANDS.ROLL_EVENT: {
+            const pending = core.pendingEventRollStart;
+            if (!pending) {
+                return { valid: false, error: '当前没有等待投掷的事件。' };
+            }
+            if (pending.playerId !== command.playerId) {
+                return { valid: false, error: '只有触发事件的玩家可以投掷。' };
+            }
+            if (command.payload.sourceTitle && command.payload.sourceTitle !== pending.sourceTitle) {
+                return { valid: false, error: '当前事件已经改变。' };
+            }
+            return { valid: true };
+        }
         case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
         case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM:
         case BETRAYAL_COMMANDS.TRADE_POSSESSION:
@@ -20933,6 +20948,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     requiredPlayerIds: [...core.playerIds],
                     acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(event.payload.eventEffect),
+                    requiresAcknowledgement: true,
                     deathPrevention: event.payload.deathPrevention
                         ? {
                             ...event.payload.deathPrevention,
@@ -21132,6 +21148,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
         }
         case EVENTS.EVENT_CHOICE_RESOLVED: {
             const previousRecentRoll = core.recentRoll;
+            const previousDiscovery = core.latestDiscovery;
             const deferNextPendingEventChoiceBehindRoll = Boolean(
                 event.payload.eventRoll?.dice?.length
                 && event.payload.nextPendingEventChoice,
@@ -21142,7 +21159,18 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.pendingEventChoice = event.payload.nextPendingEventChoice && !deferNextPendingEventChoiceBehindRoll
                 ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
                 : null;
-            core.latestDiscovery = cloneDiscoverySummary(eventChoiceDiscovery);
+            const nextDiscovery = cloneDiscoverySummary(eventChoiceDiscovery);
+            if (
+                previousDiscovery?.kind === nextDiscovery.kind
+                && previousDiscovery.title === nextDiscovery.title
+                && previousDiscovery.resolutionSteps?.length
+            ) {
+                nextDiscovery.resolutionSteps = [
+                    ...previousDiscovery.resolutionSteps.map((step) => ({ ...step })),
+                    ...(nextDiscovery.resolutionSteps ?? []).map((step) => ({ ...step })),
+                ];
+            }
+            core.latestDiscovery = nextDiscovery;
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
             if (event.payload.drawnEventCardNameToBury) {
                 buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
@@ -21199,6 +21227,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     requiredPlayerIds: [...core.playerIds],
                     acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(pendingEffect),
+                    requiresAcknowledgement: true,
                     nextPendingEventChoice: event.payload.nextPendingEventChoice
                         ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
                         : undefined,
@@ -21723,27 +21752,36 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 latestLabel: eventRoll.label,
                 consumedRabbitFootCardIds: [],
             };
-            core.latestDiscovery = cloneDiscoverySummary(event.payload.discovery);
-            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
-            if (event.payload.nextPendingEventChoice) {
-                core.pendingEventChoice = clonePendingEventChoice(event.payload.nextPendingEventChoice);
-                core.pendingEventRollResolution = null;
-                core.turnEndedByDiscovery = false;
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
-                };
+            consumeNextNonCombatTraitReplacementAfterTraitRoll(
+                core,
+                event.payload.playerId,
+                eventRoll,
+            );
+            const previousDiscovery = core.latestDiscovery;
+            const eventDiscovery = cloneDiscoverySummary(event.payload.discovery);
+            if (
+                previousDiscovery?.kind === eventDiscovery.kind
+                && previousDiscovery.title === eventDiscovery.title
+                && previousDiscovery.resolutionSteps?.length
+            ) {
+                eventDiscovery.resolutionSteps = [
+                    ...previousDiscovery.resolutionSteps.map((step) => ({ ...step })),
+                    ...(eventDiscovery.resolutionSteps ?? []).map((step) => ({ ...step })),
+                ];
             }
-            core.pendingEventRollResolution = event.payload.eventEffect
+            core.latestDiscovery = eventDiscovery;
+            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            core.pendingEventRollResolution = event.payload.eventEffect || event.payload.nextPendingEventChoice
                 ? {
                     rollId: event.payload.rollId,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.sourceTitle,
                     requiredPlayerIds: [event.payload.playerId],
                     acknowledgedPlayerIds: [],
-                    effect: cloneUseEffect(event.payload.eventEffect),
+                    effect: cloneUseEffect(event.payload.eventEffect ?? event.payload.nextPendingEventChoice!.effect),
+                    nextPendingEventChoice: event.payload.nextPendingEventChoice
+                        ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
+                        : undefined,
                     deathPrevention: event.payload.deathPrevention
                         ? {
                             ...event.payload.deathPrevention,

@@ -1077,7 +1077,7 @@ describe('GameProvider transport baseline', () => {
         });
     });
 
-    it('blocks a second optimistic command until the previous command is confirmed', () => {
+    it('allows a second optimistic phase advance to build on the latest predicted state', () => {
         let hasPending = false;
         const predictedState = {
             core: { marker: 'predicted-ai-turn' },
@@ -1157,10 +1157,10 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
-        expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
-        expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
+        expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandQueuedAfterPreviousStep');
 
         act(() => {
             client.emitStateUpdate({
@@ -1179,7 +1179,7 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
         expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
-        expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
+        expect(screen.getByTestId('state').textContent).toContain('authoritative-confirmed');
 
         mockEngine.processCommand.mockClear();
         client.sendCommand.mockClear();
@@ -1203,12 +1203,12 @@ describe('GameProvider transport baseline', () => {
         act(() => {
             screen.getByTestId('dispatch-double-advance').click();
         });
-        expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
     });
 
-    it('keeps only one next serialized command during rapid repeat clicks', () => {
+    it('sends each rapid phase advance that remains valid in the predicted chain', () => {
         let hasPending = false;
         const mockEngine = {
             hasPendingCommands: vi.fn(() => hasPending),
@@ -1286,10 +1286,10 @@ describe('GameProvider transport baseline', () => {
             screen.getByTestId('dispatch-burst-advance').click();
         });
 
-        expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
-        expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
+        expect(client.sendCommand).toHaveBeenCalledTimes(20);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(20);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 20 });
+        expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandQueuedAfterPreviousStep');
 
         act(() => {
             client.emitStateUpdate({
@@ -1305,10 +1305,9 @@ describe('GameProvider transport baseline', () => {
             }, [], { stateID: 2, randomCursor: 0 });
         });
 
-        expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
-        expect(client.sendCommand).not.toHaveBeenCalledWith('ADVANCE_PHASE', { step: 20 });
+        expect(client.sendCommand).toHaveBeenCalledTimes(20);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(20);
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 20 });
 
         act(() => {
             client.emitStateUpdate({
@@ -1324,8 +1323,8 @@ describe('GameProvider transport baseline', () => {
             }, [], { stateID: 3, randomCursor: 0 });
         });
 
-        expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
+        expect(client.sendCommand).toHaveBeenCalledTimes(20);
+        expect(mockEngine.processCommand).toHaveBeenCalledTimes(20);
     });
 
     it('drops a deferred serialized command when connection resets before confirmation', () => {
@@ -1621,7 +1620,7 @@ describe('GameProvider transport baseline', () => {
             screen.getByTestId('dispatch-double-advance').click();
         });
 
-        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
     });
 
     it('blocks repeated serialized commands even when the first command is not optimistically predicted', () => {

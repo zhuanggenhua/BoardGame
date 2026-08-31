@@ -5,15 +5,7 @@ description: "游戏 UI 设计流程与验收入口。用于游戏 HUD、棋盘/
 
 # Game UI Design
 
-本 skill 是跨项目通用的游戏 UI 设计 `canonical-source`。它负责把游戏规则、玩家任务、素材对象和饱和状态转成可送审的 UI 设计；项目 skill 负责项目路径、素材合同、组件约定和用户专项纠正。
-
-## 连续流程基线
-
-- 先把回合拆成“系统自动结算阶段”和“玩家决策阶段”。没有选择、响应或并行确认的阶段应自动进入下一个决策阶段，不能把系统结算伪装成需要点击的结束回合。
-- 所有需要阅读的卡牌、规则提示和计划对象都必须有统一、可发现的放大入口；关闭控件使用叠加在右上角的叉号，不为关闭文字单独占用布局空间。实现优先复用共享检视组件。
-- 地图缩放与拖拽只作用于地图视窗及其内容父级，不能让页面壳层、手牌或 HUD 一起移动；验收必须在拖拽前后确认 HUD 锚点保持不变。
-- 阶段指示器按游戏模型选择：卡牌中心、直接出牌的流程默认采用上下文动作提示，不强行加入 Dice Throne 式阶段轨道；仅当阶段顺序本身是玩家决策信息时才独立展示。
-- 开放式地图不得被固定 `aspect-ratio` 或百分比小框限制。视窗占据牌桌可用空间，地图内容在独立变换层中自由平移/缩放，HUD 保持固定锚点。
+本 skill 是项目内游戏 UI 设计 workflow 与路由入口。长期通用 UI/UX 原则以 [`ui-ux`](../../knowledge/standards/ui-ux.md) 为 `canonical-source`，可执行改动门禁以 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 为 `canonical-source`；本 skill 只负责把规则、玩家任务、素材对象和饱和状态组织成设计与验收步骤。
 
 ## 使用顺序
 
@@ -22,7 +14,7 @@ description: "游戏 UI 设计流程与验收入口。用于游戏 HUD、棋盘/
 3. 若 UI 依赖规则、卡牌、棋盘、token、骰子、TTS/Workshop、旧平台或物理配件，先读 `references/rule-to-ui-design.md`。
 4. 进入布局和交互前，读 `references/layout-interaction-patterns.md`。
 5. 用户点名已有游戏、旧实现或成熟产品作为参考时，先读取该参考的真实实现与当前截图，提炼可迁移不变量；参考截图必须处在同类任务的实际操作态，例如组牌要进入真实编辑页、地图要进入真实对局页，入口页、导入页、选角色页、营销页或空态不能冒充参考依据；不得只凭印象复制视觉，也不得跳过参考直接改目标游戏。若参考已具备卡牌放大、分类筛选、地图拖拽缩放、详情层、视角切换等基础交互，目标游戏必须复用、抽共享或写出不采用理由。
-6. 送设计稿、截图或实现验收前，读 `references/quality-gates.md`。
+6. 送设计稿、截图或实现验收前，读 `references/quality-gates.md`，并回到上位 [`ui-ux`](../../knowledge/standards/ui-ux.md) 与 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 对照通用门禁。
 7. 若用户明确指定 Open Design，走 Open Design artifact 设计稿；不得改走图片模型生图。若用户要求位图视觉稿，则按项目位图设计交付规则执行。
 
 ## 核心流程

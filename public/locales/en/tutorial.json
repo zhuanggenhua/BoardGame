@@ -2,7 +2,8 @@
   "overlay": {
     "finish": "Finish and return",
     "next": "Next",
-    "clickToContinue": "Complete the current action to continue"
+    "clickToContinue": "Complete the current action to continue",
+    "skipped": "{{count}} step(s) do not apply to this situation and were skipped."
   },
   "default": {
     "welcome": "Welcome to Tic-Tac-Toe! The goal is to align three marks.",

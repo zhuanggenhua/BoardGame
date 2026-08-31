@@ -117,6 +117,11 @@ export class GameTransportClient {
         return this._connectionState === 'connected';
     }
 
+    /** 最近一次收到的权威 stateID；连续乐观命令用它计算下一条命令的前置版本。 */
+    get lastReceivedStateID(): number | null {
+        return this._lastReceivedStateID;
+    }
+
     /** 是否可以立即发送玩家命令。用于乐观预测前的入口检查。 */
     canSendCommand(): boolean {
         return Boolean(this.socket)
@@ -258,6 +263,18 @@ export class GameTransportClient {
 
         socket.on('state:sync', (matchID, state, matchPlayers, randomMeta, syncMeta) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
+            // 多次强制 resync 可能交错返回；旧的全量快照不能覆盖已经收到的更新。
+            if (
+                typeof syncMeta?.stateID === 'number'
+                && this._lastReceivedStateID !== null
+                && syncMeta.stateID < this._lastReceivedStateID
+            ) {
+                this.clearSyncTimer();
+                this._syncRetries = 0;
+                this._syncInFlight = false;
+                this._connectionState = 'connected';
+                return;
+            }
             this.clearSyncTimer();
             this._syncRetries = 0;
             this._syncInFlight = false;
@@ -278,6 +295,15 @@ export class GameTransportClient {
 
         socket.on('state:update', (matchID, state, matchPlayers, meta) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
+            // 全量更新同样必须单调；网络/并发广播乱序时丢弃旧快照，
+            // 避免客户端把已恢复的阶段回退成 main1 等旧阶段。
+            if (
+                typeof meta?.stateID === 'number'
+                && this._lastReceivedStateID !== null
+                && meta.stateID < this._lastReceivedStateID
+            ) {
+                return;
+            }
             this._latestState = state;
             this._matchPlayers = matchPlayers;
             // 全量事件更新时同步 stateID，为后续增量 patch 建立基线
@@ -292,9 +318,14 @@ export class GameTransportClient {
         socket.on('state:patch', (matchID, patches, matchPlayers, meta) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
 
-            // stateID 连续性校验
+            // 投影视图可能因权限裁剪而跳过若干全局 stateID；只要 patch 能基于
+            // 当前投影成功应用，就不应因合法的可见性间隙触发 5 秒级全量同步。
             if (this._lastReceivedStateID !== null && meta.stateID !== this._lastReceivedStateID + 1) {
-                console.warn('[GameTransportClient] stateID 不连续，请求 resync', {
+                if (meta.stateID < this._lastReceivedStateID) {
+                    this.sendSync('stale-stateid');
+                    return;
+                }
+                console.warn('[GameTransportClient] stateID 存在可见性间隙，继续应用 patch', {
                     matchID,
                     expected: this._lastReceivedStateID + 1,
                     received: meta.stateID,
@@ -311,8 +342,6 @@ export class GameTransportClient {
                     receivedStateID: meta.stateID,
                     at: Date.now(),
                 };
-                this.sendSync('stateid-discontinuity');
-                return;
             }
 
             // 应用 patch
@@ -402,7 +431,7 @@ export class GameTransportClient {
     sendCommand(
         commandType: string,
         payload: unknown,
-        dispatchContext?: Pick<CommandDispatchMeta, 'onlineAiAttemptKey'>,
+        dispatchContext?: Pick<CommandDispatchMeta, 'onlineAiAttemptKey' | 'expectedStateID'>,
     ): boolean {
         if (!this.socket || this._destroyed) return false;
         if (this._syncInFlight) {
@@ -423,7 +452,7 @@ export class GameTransportClient {
             return false;
         }
         const commandMeta: CommandDispatchMeta = {
-            expectedStateID: this._lastReceivedStateID ?? undefined,
+            expectedStateID: dispatchContext?.expectedStateID ?? this._lastReceivedStateID ?? undefined,
             ...(dispatchContext?.onlineAiAttemptKey
                 ? {
                     onlineAiAttemptKey: dispatchContext.onlineAiAttemptKey,

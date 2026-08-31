@@ -20,11 +20,11 @@ import type {
     TokenConsumedEvent,
     ChoiceRequestedEvent,
     DefenderSelectionRequestedEvent,
-    AttackResolvedEvent,
     DamageDealtEvent,
     DamageShieldGrantedEvent,
     BonusDieRolledEvent,
     PendingBonusDiceSettlement,
+    PlayerId,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -1091,16 +1091,59 @@ function resolveBlindedCheckExitResult(
         return null;
     }
 
+    return createBlindedCheckExitResult(
+        core,
+        pendingAttack.attackerId,
+        blindedStacks,
+        sourceCommandType,
+        timestamp,
+        random,
+        { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: false },
+    );
+}
+
+function resolveBlindedCheckWithoutAttackExitResult(
+    core: DiceThroneCore,
+    attackerId: PlayerId,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): PhaseExitResult | null {
+    const blindedStacks = core.players[attackerId]?.statusEffects[STATUS_IDS.BLINDED] ?? 0;
+    if (blindedStacks <= 0 || !random) {
+        return null;
+    }
+
+    return createBlindedCheckExitResult(
+        core,
+        attackerId,
+        blindedStacks,
+        sourceCommandType,
+        timestamp,
+        random,
+        { kind: 'complete' },
+    );
+}
+
+function createBlindedCheckExitResult(
+    core: DiceThroneCore,
+    attackerId: PlayerId,
+    blindedStacks: number,
+    sourceCommandType: string,
+    timestamp: number,
+    random: RandomFn,
+    continuation: NonNullable<PendingBonusDiceSettlement['continuation']>,
+): PhaseExitResult {
     const value = random.d(6);
-    const face = getPlayerDieFace(core, pendingAttack.attackerId, value) ?? '';
+    const face = getPlayerDieFace(core, attackerId, value) ?? '';
     const effectKey = value <= 2
         ? 'bonusDie.effect.blinded.miss'
         : 'bonusDie.effect.blinded.hit';
     const settlement: PendingBonusDiceSettlement = {
-        id: `${BLINDED_CHECK_SETTLEMENT_ID}-${pendingAttack.attackerId}-${timestamp}`,
+        id: `${BLINDED_CHECK_SETTLEMENT_ID}-${attackerId}-${timestamp}`,
         sourceAbilityId: STATUS_IDS.BLINDED,
-        attackerId: pendingAttack.attackerId,
-        targetId: pendingAttack.attackerId,
+        attackerId,
+        targetId: attackerId,
         dice: [{
             index: 0,
             value,
@@ -1119,7 +1162,7 @@ function resolveBlindedCheckExitResult(
         customResolutionId: BLINDED_CHECK_SETTLEMENT_ID,
         allowDiceModification: true,
         opensAfterRollConfirmedResponseWindow: value <= 2,
-        continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: false },
+        continuation,
     };
 
     return {
@@ -1128,8 +1171,8 @@ function resolveBlindedCheckExitResult(
             payload: {
                 value,
                 face,
-                playerId: pendingAttack.attackerId,
-                targetPlayerId: pendingAttack.attackerId,
+                playerId: attackerId,
+                targetPlayerId: attackerId,
                 effectKey,
                 effectParams: { value },
             },
@@ -1138,7 +1181,7 @@ function resolveBlindedCheckExitResult(
         } as DiceThroneEvent, {
             type: 'STATUS_REMOVED',
             payload: {
-                targetId: pendingAttack.attackerId,
+                targetId: attackerId,
                 statusId: STATUS_IDS.BLINDED,
                 stacks: blindedStacks,
             },
@@ -1801,6 +1844,21 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
             }
             // 额外攻击可能先把首次攻击的 afterAttackResolved 窗口延后到空壳 offensiveRoll 之后。
+            if (!isWarMongerExtraOffensiveRoll && core.rollCount > 0) {
+                const blindedCheckResult = resolveBlindedCheckWithoutAttackExitResult(
+                    core,
+                    core.activePlayerId,
+                    command.type,
+                    timestamp,
+                    random,
+                );
+                if (blindedCheckResult) {
+                    return {
+                        ...blindedCheckResult,
+                        events: [...events, ...(blindedCheckResult.events ?? [])],
+                    };
+                }
+            }
             events.push(...resolveCursedPirateNoAttackPowderKegEvents(core, command.type, timestamp));
             return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
         }

@@ -195,7 +195,7 @@
 
 | 项 | 当前结论 |
 | --- | --- |
-| 规则真相源 | `docs/games/mage-wars/rule/apprentice-card-field-contract.md` 已锁定 `3425` / `3523` 原力推斥：目标生物按施法者选择的方向被推斥 1 格区域；当前学徒 2x3 基础实现没有墙体通行伤害结算。 |
+| 规则真相源 | `docs/games/mage-wars/rule/apprentice-card-field-contract.md`（历史卡牌字段）已锁定 `3425` / `3523` 原力推斥；当前运行空间是完整标准 4x3，墙体通行伤害仍属后续规则切片。 |
 | 已覆盖 | `3425` / `3523` 已由配置包标为 implemented；校验层要求目标为生物对象、显式提供相邻目标区域且在法术射程内；执行层复用 `SPELL_PUSH_RESOLVED`，目标生物被移动到所选相邻区域，并消费快速施法标记 / 已计划法术。 |
 | 仍未覆盖 | 标准 12 区墙体、穿越具有通行伤害墙体时额外支付 3 点法力，以及完整墙体伤害链仍属后续墙体切片。 |
 | 验证证据 | `ability-catalog.test.ts` 覆盖 3425 / 3523 implemented 计数；`domain-flow.test.ts` 覆盖原力推斥移动目标生物、缺少目标区域拒绝、非相邻目标区域拒绝和不能以法师为目标。 |
@@ -233,7 +233,7 @@
 | --- | --- |
 | 规则真相源 | `docs/games/mage-wars/rule/apprentice-card-field-contract.md` 已锁定 `2822` 蓝色精怪：激活时可支付 1 点法力；若支付，则蓝色精怪获得迅捷直到本回合结束，并且本回合每次执行移动行动时以传送方式进入下一格区域。规则书 `规则.txt` 说明迅捷与迟缓互相抵消，传送是直接移动到另一格区域并绕过墙体与对象。 |
 | 已覆盖 | `2822` 已由配置包标为 implemented；运行时新增场上对象能力命令，只允许 ready 的蓝色精怪在己方生物行动阶段支付 1 法力获得临时 `swift` / `teleportMovement`；第一次相邻移动记录为 `movementMode=teleport` 且 `actionCost=none`，第二次移动仍消耗行动标记；离开生物行动阶段时清理该临时能力。 |
-| 仍未覆盖 | 当前学徒 2x3 基础竞技场尚无墙体 / 阻挡对象模型，因此本切片只记录“传送式移动”的事件事实，并不放宽相邻一格校验；迟缓与迅捷抵消、墙体穿越、飞行与其它移动特性仍待后续切片。 |
+| 仍未覆盖 | 当前标准 4x3 竞技场尚无完整墙体 / 阻挡对象模型，因此本切片只记录“传送式移动”的事件事实，并不放宽相邻一格校验；迟缓与迅捷抵消、墙体穿越、飞行与其它移动特性仍待后续切片。 |
 | 验证证据 | `domain-flow.test.ts` 覆盖蓝色精怪按配置召唤后付费激活、首次传送移动不耗行动、第二次移动耗行动、行动阶段结束清理临时能力，以及非蓝色精怪 / 费用不匹配 / 已激活重复使用的拒绝路径；`ability-catalog.test.ts` 覆盖 2822 implemented 计数。 |
 
 ## 2026-08-02 迟缓移动切片补充
@@ -576,10 +576,10 @@
 
 | 规则对象 | 工程对象 | 单对象 / 资源 | 稳定身份 | 真相层 | 当前范围 |
 | --- | --- | --- | --- | --- | --- |
-| 法师 | `MageEntity` / `MageWarsPlayerState` | 单对象 | `playerId + mageId` | `core.players` | 学徒法师状态已占位；完整能力后续 |
+| 法师 | `MageEntity` / `MageWarsPlayerState` | 单对象 | `playerId + mageId` | `core.players` | 正式起始法师状态已接入；扩展能力后续 |
 | 法师状态板 | `MageBoardState` | 单对象面板 | `playerId` | `core.players` + 后续派生读模型 | 生命、伤害、法力、聚魔已占位 |
-| 竞技场区域 | `ArenaZone` | 单对象格区 | `zoneId` | `core.arena` | 学徒 2x3 已占位；标准 12 区后续 |
-| 法术书 | `SpellbookZone` | 私有卡组 | `playerId` | `core.players` + `APPRENTICE_SPELLBOOKS` | 四名学徒法术书组成已录入并在 Board 预览；完整卡牌执行器后续 |
+| 竞技场区域 | `ArenaZone` | 单对象格区 | `zoneId` | `core.arena` | 完整标准 4x3 / 12 区已接入 |
+| 法术书 | `SpellbookZone` | 私有卡组 | `playerId` | `core.players` + 标准起始法术书配置 | 标准起始法术书已录入并在 Board 预览；完整卡牌执行器后续 |
 | 计划法术 | `PreparedSpellRef` | 单卡实例 | `cardInstanceId` | 私有 `playerView` 过滤 | foundation 层已有准备槽 / 对手卡背 UI；完整多步骤计划交互后续 |
 | 法术牌 | `SpellCardDef` + `SpellCardInstance` | 单卡 | `defId` + `instanceId` | 静态数据 + runtime 区域 | 91 张学徒 S0 字段和 atlas/frame 已完成；`次级治疗` / `群体治疗` / `单体治疗` 已有治疗执行切片；`生命汲取` 已有直接伤害 + 治疗执行切片；10 张攻击法术已接入普通攻击骰 / 区域攻击 / 状态骰 / 非活体加伤 / 对飞行加伤 / 推斥 / 连锁递减等覆盖管线；其它逐张执行器后续 |
 | 生物 / 魔物 | `ArenaObject` | 单对象 | `objectId` | `core.objects` | 学徒生物 / 魔物字段和视觉素材已完成；基础召唤、移动、显式攻击 profile、近战/远程基础距离校验、场上生物执行守卫命令、同区敌方守卫对生物近战目标选择的拦截、守卫被近战攻击后移除、守卫反击机会 / 放弃 / 选择反击结算、对象防御窗口（可放弃、成功回避、失败继续、用后冷却、重置恢复、无法回避跳过）、对象攻击效果骰状态 token（燃烧 / 眩晕 / 昏迷 / 腐化 / 虚弱 / 残废）、毒素状态对魔物 / 非活体免疫过滤、对象护甲减伤、穿刺抵消对象护甲、三连击多段伤害、维持阶段重生、燃烧维持阶段攻击骰 tick、虚弱非法术攻击减骰、残废阻止生物普通移动、残废行动阶段结束 7+ 逃逸检定、眩晕防御骰 -2、昏迷行动阶段结束清理、对象伤害和死亡移除已实现；`气流` 与 `原力推斥` 已覆盖显式相邻目标区和区域移动；强制防御结界、反伤屏障、非护甲属性修正、墙体通行伤害额外费用、虚弱 / 残废移除费用和特殊行动后续 |
@@ -651,7 +651,7 @@
 
 | 规则语义 | 基础版必要性 | 状态真相 | 命令 / 事件 / 结算路径 | UI 承接对象 | 验证证据 | 当前状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2 人学徒对局 setup | 基础版必需 | `MageWarsCore.players`、`arenaMode`、`arena` | `setup()` | Board 骨架显示法师状态与 2x3 区域 | `smoke.test.ts` | done-foundation |
+| 2 人正式标准竞技场 setup | 基础版必需 | `MageWarsCore.players`、`arena` | `setup()` | Board 显示法师状态与完整 4x3 区域 | `smoke.test.ts` | done-foundation |
 | 回合阶段顺序 | 基础版必需 | `sys.phase` + `MAGE_WARS_PHASE_ORDER` | FlowSystem `ADVANCE_PHASE` | phase chip | `domain-flow.test.ts`、`smoke.test.ts` | done-foundation |
 | 法术书与计划法术 | 基础版必需 | `mage-wars.config.json`、准备槽、私有视角 UI | 配置包法术书读取 / foundation 准备槽 / 计划显示；完整计划交互后续 | 私有法术书/计划区 | `config-package.test.ts`、`smoke.test.ts`、真实 Board E2E | done-foundation-visual / config-runtime-source |
 | 逐卡法术能力缺口 | 基础版必需 | `domain/abilityCatalog.ts` + `mage-wars.config.json` | 91 个 `mw.spell.<CardID>` 能力 ID；当前配置包标记 90 张已实现，其中攻击法术 10/10、生物 24/24、魔物 1/1、咒语 18/18、装备 14/14、结界 23/24。武器装备攻击已覆盖 `3701` 狱火长鞭、`3704` 奥秘法杖和 `3706` 阿希拉法杖，`3710` 群兽法杖已覆盖兽王限制、快速能力、回合一次、近战 +2 / 2 骰治疗，`3716` 元素魔杖已覆盖首次绑定和快速施法支付 3 点法力替换绑定；来袭攻击费用已覆盖 `3705` 抑制斗篷，反伤屏障已覆盖 `3700` 恶魔胸甲；显性附属持续结界已覆盖公牛耐力、`1813` / `1911` 神力加护、身心俱疲、巨熊力量、体肤重生与犀牛兽皮；区域结界已覆盖 `1913` 圣佑领地；附属防御已覆盖 `1809` 灵蛇反射与 `1818` 原力法剑；`1903` 反戈一击已覆盖可见附属授予反击及首次反击消费；`1825` 厄运、`1901` 法力失效和 `1904` 攻击逆转已覆盖强制展示、响应前支付、对应取消 / 逆转结算、来源结界摧毁与弃牌；其中 `1825` 额外覆盖法师 / 生物锚点、法力返还和准备牌返还；`结界窃取` 覆盖显性附属结界目标、新合法目标、双重总费用 X 校验、控制权转移、锚点迁移和非法目标拒绝；庇护已覆盖对象攻击、普通攻击法术和连锁闪电的最高来源减骰。剩余 1 张结界为 `1804` 法师祸咒，仍缺非玩家生物施法者来源；多响应优先级、墙体通行伤害额外费用、毒素净化类法术和逐卡特殊效果仍未闭合 | 施法执行器 / 配置审查表 | `ability-catalog.test.ts`、`domain-flow.test.ts`、`enchantment-response.test.ts` | in_progress-partial-executors / enchantment-response-runtime-covered |

@@ -238,15 +238,16 @@ function resolveDefaultMemoryMinFreeGb(group) {
 }
 
 function resolveMemoryMinFreeGb(group) {
+    const isE2EGroup = normalizeName(group, 'default') === 'e2e';
     const normalizedGroup = normalizeName(group, 'default').toUpperCase().replace(/-/g, '_');
     const groupOverride = parseOptionalEnvNumber(`BG_HEAVY_${normalizedGroup}_MEMORY_MIN_FREE_GB`);
     if (groupOverride !== null) {
-        return groupOverride;
+        return isE2EGroup ? Math.max(1, groupOverride) : groupOverride;
     }
 
     const globalOverride = parseOptionalEnvNumber('BG_HEAVY_MEMORY_MIN_FREE_GB');
     if (globalOverride !== null) {
-        return globalOverride;
+        return isE2EGroup ? Math.max(1, globalOverride) : globalOverride;
     }
 
     return resolveDefaultMemoryMinFreeGb(group);

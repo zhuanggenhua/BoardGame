@@ -45,6 +45,9 @@ export interface OptimisticEngine {
     /** 是否有未确认的乐观命令 */
     hasPendingCommands(): boolean;
 
+    /** 当前未确认的乐观命令数量，用于给连续命令分配连续的权威 stateID 预期值 */
+    getPendingCommandCount(): number;
+
     /** 重置（断线重连时调用） */
     reset(): void;
 
@@ -864,6 +867,10 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
 
         hasPendingCommands(): boolean {
             return pendingCommands.length > 0;
+        },
+
+        getPendingCommandCount(): number {
+            return pendingCommands.length;
         },
 
         reset(): void {

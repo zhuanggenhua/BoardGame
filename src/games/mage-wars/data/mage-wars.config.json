@@ -1243,8 +1243,7 @@
       "data": {
         "zoneId": "a1",
         "row": 1,
-        "col": 1,
-        "arenaMode": "formal-4x3"
+        "col": 1
       }
     },
     {
@@ -1261,8 +1260,7 @@
       "data": {
         "zoneId": "a2",
         "row": 2,
-        "col": 1,
-        "arenaMode": "formal-4x3"
+        "col": 1
       }
     },
     {
@@ -1279,8 +1277,7 @@
       "data": {
         "zoneId": "a3",
         "row": 3,
-        "col": 1,
-        "arenaMode": "formal-4x3"
+        "col": 1
       }
     },
     {
@@ -1297,8 +1294,7 @@
       "data": {
         "zoneId": "b1",
         "row": 1,
-        "col": 2,
-        "arenaMode": "formal-4x3"
+        "col": 2
       }
     },
     {
@@ -1315,8 +1311,7 @@
       "data": {
         "zoneId": "b2",
         "row": 2,
-        "col": 2,
-        "arenaMode": "formal-4x3"
+        "col": 2
       }
     },
     {
@@ -1333,8 +1328,7 @@
       "data": {
         "zoneId": "b3",
         "row": 3,
-        "col": 2,
-        "arenaMode": "formal-4x3"
+        "col": 2
       }
     },
     {
@@ -1351,8 +1345,7 @@
       "data": {
         "zoneId": "c1",
         "row": 1,
-        "col": 3,
-        "arenaMode": "formal-4x3"
+        "col": 3
       }
     },
     {
@@ -1369,8 +1362,7 @@
       "data": {
         "zoneId": "c2",
         "row": 2,
-        "col": 3,
-        "arenaMode": "formal-4x3"
+        "col": 3
       }
     },
     {
@@ -1387,8 +1379,7 @@
       "data": {
         "zoneId": "c3",
         "row": 3,
-        "col": 3,
-        "arenaMode": "formal-4x3"
+        "col": 3
       }
     },
     {
@@ -1405,8 +1396,7 @@
       "data": {
         "zoneId": "d1",
         "row": 1,
-        "col": 4,
-        "arenaMode": "formal-4x3"
+        "col": 4
       }
     },
     {
@@ -1423,8 +1413,7 @@
       "data": {
         "zoneId": "d2",
         "row": 2,
-        "col": 4,
-        "arenaMode": "formal-4x3"
+        "col": 4
       }
     },
     {
@@ -1441,8 +1430,7 @@
       "data": {
         "zoneId": "d3",
         "row": 3,
-        "col": 4,
-        "arenaMode": "formal-4x3"
+        "col": 4
       }
     },
     {
@@ -1459,8 +1447,7 @@
       "data": {
         "zoneId": "a1",
         "row": 1,
-        "col": 1,
-        "arenaMode": "apprentice-2x3"
+        "col": 1
       }
     },
     {
@@ -1477,8 +1464,7 @@
       "data": {
         "zoneId": "a2",
         "row": 2,
-        "col": 1,
-        "arenaMode": "apprentice-2x3"
+        "col": 1
       }
     },
     {
@@ -1495,8 +1481,7 @@
       "data": {
         "zoneId": "a3",
         "row": 3,
-        "col": 1,
-        "arenaMode": "apprentice-2x3"
+        "col": 1
       }
     },
     {
@@ -1513,8 +1498,7 @@
       "data": {
         "zoneId": "b1",
         "row": 1,
-        "col": 2,
-        "arenaMode": "apprentice-2x3"
+        "col": 2
       }
     },
     {
@@ -1531,8 +1515,7 @@
       "data": {
         "zoneId": "b2",
         "row": 2,
-        "col": 2,
-        "arenaMode": "apprentice-2x3"
+        "col": 2
       }
     },
     {
@@ -1549,8 +1532,7 @@
       "data": {
         "zoneId": "b3",
         "row": 3,
-        "col": 2,
-        "arenaMode": "apprentice-2x3"
+        "col": 2
       }
     },
     {
@@ -12455,7 +12437,6 @@
       }
     ],
     "data": {
-      "arenaMode": "formal-4x3",
       "hiddenInformation": [
         "spellbook",
         "preparedSpells"

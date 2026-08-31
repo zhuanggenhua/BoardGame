@@ -181,7 +181,7 @@ async function expectMageWarsDefaultBrowseInteractions(page: Page) {
 
 async function expectMageWarsArenaFreeViewport(
     page: Page,
-    options: { verifySpellbookInspectAfterDrag?: boolean } = {},
+    options: { verifySpellbookInspectAfterDrag?: boolean; dragScreenshotPath?: string } = {},
 ) {
     const verifySpellbookInspectAfterDrag = options.verifySpellbookInspectAfterDrag ?? true;
     const viewport = page.getByTestId('mage-wars-arena-viewport');
@@ -199,8 +199,42 @@ async function expectMageWarsArenaFreeViewport(
     await expect.poll(async () => content.evaluate((element) => (element as HTMLElement).style.transform))
         .not.toBe(beforeTransform);
 
+    const dragAudit = await page.evaluate(() => {
+        const viewportElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const shellElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-shell"]');
+        const contentElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        const viewportRect = viewportElement?.getBoundingClientRect();
+        const shellRect = shellElement?.getBoundingClientRect();
+        const contentRect = contentElement?.getBoundingClientRect();
+        if (!viewportRect || !shellRect || !contentRect) return null;
+        const tolerance = 2;
+        return {
+            shellRatio: shellRect.width / shellRect.height,
+            contentWidth: contentRect.width,
+            contentHeight: contentRect.height,
+            viewportWidth: viewportRect.width,
+            viewportHeight: viewportRect.height,
+            contentCoversViewport: contentRect.left <= viewportRect.left + tolerance
+                && contentRect.top <= viewportRect.top + tolerance
+                && contentRect.right >= viewportRect.right - tolerance
+                && contentRect.bottom >= viewportRect.bottom - tolerance,
+        };
+    });
+    expect(dragAudit, '竞技场拖拽验收必须能读取视窗和地图内容尺寸').not.toBeNull();
+    expect(dragAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用牌桌地图层').toBeGreaterThan(1.7);
+    expect(dragAudit!.contentWidth, '地图内容必须宽于视窗，拖拽才是在查看大场景').toBeGreaterThan(dragAudit!.viewportWidth);
+    expect(dragAudit!.contentHeight, '地图内容必须高于视窗，拖拽才是在查看大场景').toBeGreaterThan(dragAudit!.viewportHeight);
+    expect(dragAudit!.contentCoversViewport, '拖拽后地图内容仍必须覆盖视窗，不能露出外层黑框').toBe(true);
+
+    if (options.dragScreenshotPath) {
+        await mkdir(dirname(options.dragScreenshotPath), { recursive: true });
+        await page.screenshot({ path: options.dragScreenshotPath, fullPage: false });
+    }
+
     await viewport.hover();
-    await page.mouse.wheel(0, -240);
+    for (let wheelIndex = 0; wheelIndex < 8; wheelIndex += 1) {
+        await page.mouse.wheel(0, -240);
+    }
     await expect.poll(async () => content.evaluate((element) => {
         const transform = (element as HTMLElement).style.transform;
         const match = transform.match(/scale\(([^)]+)\)/);
@@ -220,8 +254,22 @@ async function expectMageWarsArenaFreeViewport(
                     y: rect.top + rect.height / 2,
                 };
             };
-            const sourcePoint = toPoint(sourceZone);
-            const sourceHit = sourcePoint ? document.elementFromPoint(sourcePoint.x, sourcePoint.y) : null;
+            const viewportRect = arenaViewport?.getBoundingClientRect();
+            const sourceRect = sourceZone?.getBoundingClientRect();
+            const sourcePoint = viewportRect && sourceRect
+                ? {
+                    x: Math.max(viewportRect.left, sourceRect.left)
+                        + (Math.min(viewportRect.right, sourceRect.right) - Math.max(viewportRect.left, sourceRect.left)) / 2,
+                    y: Math.max(viewportRect.top, sourceRect.top)
+                        + (Math.min(viewportRect.bottom, sourceRect.bottom) - Math.max(viewportRect.top, sourceRect.top)) / 2,
+                }
+                : toPoint(sourceZone);
+            const sourceHit = sourcePoint
+                && sourceRect
+                && Math.min(viewportRect?.right ?? 0, sourceRect.right) > Math.max(viewportRect?.left ?? 0, sourceRect.left)
+                && Math.min(viewportRect?.bottom ?? 0, sourceRect.bottom) > Math.max(viewportRect?.top ?? 0, sourceRect.top)
+                ? document.elementFromPoint(sourcePoint.x, sourcePoint.y)
+                : null;
             const entityZoneAttached = Array.from(document.querySelectorAll<HTMLElement>(
                 '[data-testid="mage-wars-zone-field-card"], [data-testid="mage-wars-zone-mage-entity"]',
             )).some((entity) => {
@@ -283,7 +331,6 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
             board: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]')),
             arenaStage: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]')),
             arenaViewport: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]')),
-            stageChip: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-stage-chip"]')),
             lifeToggle: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]')),
             selfHud: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]')),
             opponentHud: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]')),
@@ -307,9 +354,6 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
                 ?.getAttribute('aria-pressed') ?? null,
         }));
         const boardCenterX = rects.board ? rects.board.x + rects.board.width / 2 : null;
-        const stageChipCenterDelta = rects.stageChip && boardCenterX != null
-            ? Math.abs(rects.stageChip.x + rects.stageChip.width / 2 - boardCenterX)
-            : null;
         const arenaStageCenterDelta = rects.arenaStage && boardCenterX != null
             ? Math.abs(rects.arenaStage.x + rects.arenaStage.width / 2 - boardCenterX)
             : null;
@@ -330,7 +374,6 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
             },
             rects,
             categoryButtons,
-            stageChipCenterDelta,
             arenaStageCenterDelta,
             lifeToggleLeftGap,
             pageRailGap,
@@ -346,9 +389,12 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.viewport).toEqual({ width: 2560, height: 1304 });
     expect(layoutAudit.document.scrollWidth).toBeLessThanOrEqual(layoutAudit.viewport.width + 2);
     expect(layoutAudit.document.scrollHeight).toBeLessThanOrEqual(layoutAudit.viewport.height + 2);
-    const requiredRects = [
+    expect(layoutAudit.rects.arenaStage, 'arenaStage must render as the draggable map scene').not.toBeNull();
+    expect(layoutAudit.rects.arenaStage!.width, 'arenaStage must be wider than the camera viewport').toBeGreaterThan(layoutAudit.rects.arenaViewport!.width);
+    expect(layoutAudit.rects.arenaStage!.height, 'arenaStage must be taller than the camera viewport').toBeGreaterThan(layoutAudit.rects.arenaViewport!.height);
+
+    const screenBoundRects = [
         ['board', layoutAudit.rects.board],
-        ['arenaStage', layoutAudit.rects.arenaStage],
         ['arenaViewport', layoutAudit.rects.arenaViewport],
         ['lifeToggle', layoutAudit.rects.lifeToggle],
         ['selfHud', layoutAudit.rects.selfHud],
@@ -364,7 +410,7 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
         ['firstSpellbookCard', layoutAudit.rects.firstSpellbookCard],
         ['lastSpellbookCard', layoutAudit.rects.lastSpellbookCard],
     ] as const;
-    requiredRects.forEach(([name, rect]) => {
+    screenBoundRects.forEach(([name, rect]) => {
         expect(rect, `${name} must be visible in 2560x1304`).not.toBeNull();
         expect(rect!.width, `${name} width`).toBeGreaterThan(0);
         expect(rect!.height, `${name} height`).toBeGreaterThan(0);
@@ -849,8 +895,6 @@ test.describe('Mage Wars foundation runtime board', () => {
         ]);
         await applyMageWarsSaturatedState(page);
         const board = page.getByTestId('mage-wars-board');
-        await expect(page.getByTestId('mage-wars-stage-chip')).toHaveText('行动环节');
-        await expect(page.getByTestId('mage-wars-stage-chip')).not.toContainText('选择目标');
         await expect(page.getByTestId('mage-wars-prepared-source-badge')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-prepared-source-frame').first()).toBeVisible();
         await expect(page.getByTestId('mage-wars-mage-hud-current-badge')).toHaveText(/行动中/);
@@ -920,7 +964,6 @@ test.describe('Mage Wars foundation runtime board', () => {
         const desktopLayoutAudit = await page.evaluate(() => {
             const arenaStage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
             const boardRoot = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
-            const stageChip = document.querySelector<HTMLElement>('[data-testid="mage-wars-stage-chip"]');
             const lifeToggle = document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]');
             const arenaImage = document.querySelector<HTMLImageElement>('img[alt="法师战争标准竞技场"]');
             const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
@@ -1054,7 +1097,6 @@ test.describe('Mage Wars foundation runtime board', () => {
             return {
                 viewportWidth: window.innerWidth,
                 arenaStage: toRect(arenaStage),
-                stageChip: toRect(stageChip),
                 lifeToggle: lifeToggle
                     ? {
                         rect: toRect(lifeToggle),
@@ -1104,7 +1146,6 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.preparedCard).not.toBeNull();
         expect(desktopLayoutAudit.spellbookCard).not.toBeNull();
         expect(desktopLayoutAudit.arenaStage).not.toBeNull();
-        expect(desktopLayoutAudit.stageChip).not.toBeNull();
         expect(desktopLayoutAudit.lifeToggle).not.toBeNull();
         expect(desktopLayoutAudit.lifeToggle!.pressed).toBe('true');
         expect(desktopLayoutAudit.lifeToggle!.lifeVisible).toBe('true');
@@ -1212,10 +1253,6 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(Math.abs(zone.rect!.width - desktopLayoutAudit.arenaStage!.width * 0.25)).toBeLessThanOrEqual(2);
             expect(Math.abs(zone.rect!.height - desktopLayoutAudit.arenaStage!.height / 3)).toBeLessThanOrEqual(2);
         });
-        expect(Math.abs(desktopLayoutAudit.stageChip!.x - 820)).toBeLessThanOrEqual(6);
-        expect(Math.abs(desktopLayoutAudit.stageChip!.y - 16)).toBeLessThanOrEqual(4);
-        expect(Math.abs(desktopLayoutAudit.stageChip!.width - 280)).toBeLessThanOrEqual(8);
-        expect(Math.abs(desktopLayoutAudit.stageChip!.height - 34)).toBeLessThanOrEqual(4);
         expect(Math.abs(desktopLayoutAudit.opponentHud!.x - 1648)).toBeLessThanOrEqual(8);
         expect(Math.abs(desktopLayoutAudit.opponentHud!.y - 70)).toBeLessThanOrEqual(8);
         expect(Math.abs(desktopLayoutAudit.opponentHud!.width - 248)).toBeLessThanOrEqual(4);
@@ -1460,7 +1497,10 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(planSpellsButton).toHaveText('确认计划（2张）');
         await page.screenshot({ path: DESKTOP_2560_SCREENSHOT_PATH, fullPage: false });
 
-        await expectMageWarsArenaFreeViewport(page, { verifySpellbookInspectAfterDrag: false });
+        await expectMageWarsArenaFreeViewport(page, {
+            verifySpellbookInspectAfterDrag: false,
+            dragScreenshotPath: 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged-before-zoom.png',
+        });
         await mkdir(dirname(DESKTOP_2560_DRAGGED_MAP_SCREENSHOT_PATH), { recursive: true });
         await page.screenshot({ path: DESKTOP_2560_DRAGGED_MAP_SCREENSHOT_PATH, fullPage: false });
         await assertNoFatalFrontendErrors([{ label: 'mage-wars-2560x1304', diagnostics }]);

@@ -1,0 +1,29 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "鲜血之力按钮正文不重复显示 Token 成本",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-2-档在无可移除状态时仍显示为禁用入口且不重复显示成本\\吸血鬼领主-鲜血之力四档入口-第2档禁用但可见.jpg"
+      ]
+    },
+    {
+      "requirement": "按钮可用状态仍由真实规则状态表达",
+      "status": "PASS",
+      "evidence": [
+        "第 2 档在无可移除状态时置灰；提示卡、鲜血之力数量和玩家板均正常渲染。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-2-档在无可移除状态时仍显示为禁用入口且不重复显示成本\\吸血鬼领主-鲜血之力四档入口-第2档禁用但可见.jpg"
+  ]
+}

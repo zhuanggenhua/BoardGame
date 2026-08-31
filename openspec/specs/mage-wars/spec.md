@@ -21,7 +21,7 @@
 #### Scenario: 配置与运行时一致
 - **WHEN** 运行时查询首批法师、标准起始法术书、法术牌或标准竞技场区域
 - **THEN** 查询结果 MUST 能回到 `src/games/mage-wars/data/mage-wars.config.json`
-- **AND** 当前运行时竞技场模式 MUST 为 `formal-4x3`
+- **AND** 当前运行时竞技场 MUST 使用完整 `4x3` / `12` 区域坐标；系统不维护可切换的竞技场模式字段
 - **AND** 卡牌素材 MUST 使用正式 atlas/frame 引用
 - **AND** 未实现的特殊效果 MUST 明确标记为代码能力缺口，不能仅凭卡面文字宣称可执行
 

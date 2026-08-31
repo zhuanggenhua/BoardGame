@@ -25,8 +25,8 @@
     "dicethrone/ability-cards-gunslinger.atlas": {
       "variants": {
         "json": {
-          "sha256": "957a0b030f51c7b8b3a4c90a4d52892dcab81e20dbb4fbd8e7f96b3244490aef",
-          "bytes": 1879,
+          "sha256": "9e462b4ac975030a8332436ba89ea0977b68027de36463f845d18ecaa3a2f564",
+          "bytes": 2047,
           "mime": "application/json"
         }
       }

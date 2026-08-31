@@ -158,7 +158,6 @@ export interface MageWarsCore {
     /** 当前阶段已经完成阶段动作的玩家。准备阶段双方都完成后才进入下一阶段。 */
     phaseReadyPlayerIds?: PlayerId[];
     turnNumber: number;
-    arenaMode: 'apprentice-2x3' | 'formal-4x3';
     players: Record<PlayerId, MageWarsPlayerState>;
     objects: Record<string, MageWarsArenaObjectState>;
     walls: Record<MageWarsWallEdgeId, MageWarsWallState>;

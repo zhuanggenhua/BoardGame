@@ -160,14 +160,27 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
     (nextCore, event) => BetrayalDomain.reduce(nextCore, event),
     core,
   );
+  // 规则测试夹具保持旧的“一次调用完成探索事件”便利性；产品页面仍通过独立的 ROLL_EVENT 按钮启动投掷。
+  const nextCoreAfterEventRoll =
+    type !== BETRAYAL_COMMANDS.ROLL_EVENT && nextCore.pendingEventRollStart
+      ? applyBetrayalCommand(
+        nextCore,
+        BETRAYAL_COMMANDS.ROLL_EVENT,
+        nextCore.pendingEventRollStart.playerId,
+        { sourceTitle: nextCore.pendingEventRollStart.sourceTitle },
+        timestamp + 1,
+        random,
+        false,
+      )
+      : nextCore;
   if (
     finalizeEventRoll
     && type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
-    && nextCore.pendingEventRollResolution
+    && nextCoreAfterEventRoll.pendingEventRollResolution
   ) {
-    return acknowledgePendingEventRollResolution(nextCore, timestamp, random);
+    return acknowledgePendingEventRollResolution(nextCoreAfterEventRoll, timestamp, random);
   }
-  return nextCore;
+  return nextCoreAfterEventRoll;
 }
 
 export function acknowledgePendingEventRollResolution(

@@ -292,7 +292,7 @@ describe('mage-wars config package', () => {
     });
 
     test('exposes formal runtime setup and diagonal standard arena deployment from the config package', () => {
-        expect(MAGE_WARS_CONFIG_PACKAGE.setup?.data?.arenaMode).toBe('formal-4x3');
+        expect(MAGE_WARS_CONFIG_PACKAGE.setup?.data).not.toHaveProperty('arenaMode');
 
         const deployment = getFormalStartingDeploymentFromConfig();
         expect(deployment).toEqual([

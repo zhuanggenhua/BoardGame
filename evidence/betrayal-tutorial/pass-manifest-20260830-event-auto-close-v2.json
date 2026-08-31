@@ -1,0 +1,27 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {"purpose": "final-user-visible-delivery", "trigger": "user-requested-open", "viewer": "pureref", "finalPassBeforeOpen": true},
+  "requirements": [
+    {"requirement": "事件牌公开后显示并点击投掷事件按钮", "status": "PASS", "evidence": ["隔离桌面教程 E2E 1 passed", "v2 图组第 09 张为点击前投掷入口"]},
+    {"requirement": "事件结果展示期间没有继续或事件确认按钮", "status": "PASS", "evidence": ["E2E 断言 betrayal-discovery-continue 不可见", "v2 图组第 10、12、15 张"]},
+    {"requirement": "真实玩家选择骰子后显示确认使用兔脚按钮", "status": "PASS", "evidence": ["E2E 真实点击兔脚并选择骰子", "v2 图组第 13、14 张"]},
+    {"requirement": "结果展示结束后自动进入伤害分配，完成属性选择和确认后继续", "status": "PASS", "evidence": ["E2E 1 passed", "第 16 张显示伤害分配区域", "第 16a 张显示确认后的结果牌桌"]}
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/01-labeled-05-山屋惊魂-教程-移动入口.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/02-labeled-06-山屋惊魂-教程-移动到门厅后.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/03-labeled-07-山屋惊魂-教程-探索目标房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/04-labeled-08-山屋惊魂-教程-确认放置新房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/05-labeled-09-山屋惊魂-教程-事件牌与事件骰出现.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/06-labeled-10-山屋惊魂-教程-书本直接介入后.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/07-labeled-11-山屋惊魂-教程-书本牌面查看.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/08-labeled-12-山屋惊魂-教程-知识改骰结果.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/09-labeled-13-山屋惊魂-教程-点击兔脚后选择骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/10-labeled-14-山屋惊魂-教程-兔脚选中改骰高亮.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref-20260830-event-auto-close-v2/11-labeled-15-山屋惊魂-教程-兔脚重投结束.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/16-山屋惊魂-教程-探索后牌桌结果.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/16a-山屋惊魂-教程-伤害分配完成后.jpg"
+  ]
+}

@@ -33,6 +33,11 @@ export function getBonusDiceSettlementHandler(
     return bonusDiceSettlementHandlers.get(settlementId);
 }
 
+/** 供领域审计和测试核对专用结算器是否完整注册。 */
+export function getRegisteredBonusDiceSettlementIds(): Set<string> {
+    return new Set(bonusDiceSettlementHandlers.keys());
+}
+
 export function canRerollBonusDiceSettlement(
     settlement: Pick<PendingBonusDiceSettlement, 'rerollCostTokenId' | 'rerollCostAmount' | 'rerollCount' | 'maxRerollCount'> | undefined,
     tokens: Record<string, number> | undefined,

@@ -529,6 +529,67 @@ describe('DiceThrone Treant Token 机制', () => {
         }
     });
 
+    it('奖励骰确认阶段不触发刺藤，随后正常进攻阶段才按普通投掷次数扣血并消费 token', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.THORN] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.rollCount = 3;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-bonus-attack',
+            isDefendable: false,
+            damage: 0,
+            settlementStage: 'preDamage',
+        };
+
+        const settlement = {
+            id: 'test-bonus-attack-roll',
+            sourceAbilityId: 'test-bonus-attack',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 6, face: 'mask' }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            displayOnly: true,
+            resolutionMode: 'none' as const,
+            continuation: { kind: 'attack' as const, settlementStage: 'preDamage' as const, markBonusDiceResolved: false },
+        };
+        const opened = reduce(state.core, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            sourceCommandType: 'TEST_BONUS_DICE',
+            timestamp: 100,
+        } as DiceThroneEvent);
+        const settled = buildBonusDiceSettlementEvents({
+            state: opened,
+            settlement: opened.pendingBonusDiceSettlement!,
+            random: createQueuedRandom([1]),
+            timestamp: 101,
+            sourceCommandType: 'CONFIRM_ROLL',
+        });
+        const afterBonusConfirm = applyEvents(opened, settled);
+
+        expect(afterBonusConfirm.players['0'].resources[RESOURCE_IDS.HP]).toBe(30);
+        expect(afterBonusConfirm.players['0'].tokens[TOKEN_IDS.THORN]).toBe(1);
+
+        const exitResult = diceThroneFlowHooks.onPhaseExit?.({
+            state: { core: afterBonusConfirm, sys: { phase: 'offensiveRoll' } },
+            from: 'offensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '0'),
+            random: createQueuedRandom([1]),
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const exitEvents = Array.isArray(exitResult) ? exitResult : (exitResult?.events ?? []);
+        const final = applyEvents(afterBonusConfirm, exitEvents as DiceThroneEvent[]);
+
+        expect(final.players['0'].resources[RESOURCE_IDS.HP]).toBe(28);
+        expect(final.players['0'].tokens[TOKEN_IDS.THORN]).toBe(0);
+    });
+
     it('生命源泉治疗按骰面半值向上取整，低点和高点边界都应正确', () => {
         const low = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         low.sys.phase = 'main1';
@@ -647,6 +708,33 @@ describe('DiceThrone Treant Token 机制', () => {
 
         expect(next.players['0'].tokens[TOKEN_IDS.THORN]).toBe(0);
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(30);
+        expect((events as DiceThroneEvent[]).some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
+    });
+
+    it('战争贩子的额外进攻阶段不结算刺藤，最终 HP 和 token 都保持到正常进攻阶段', () => {
+        const state = createHeroMatchup('treant', 'zhanshujia')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.THORN] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.rollCount = 3;
+        state.core.extraAttackInProgress = {
+            attackerId: '0',
+            originalActivePlayerId: '0',
+            phaseEntered: true,
+            sourceStatusId: 'war-monger',
+        } as any;
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state: { core: state.core, sys: { phase: 'offensiveRoll' } },
+            from: 'offensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '0'),
+            random: createQueuedRandom([1]),
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const events = Array.isArray(result) ? result : (result?.events ?? []);
+        const next = applyEvents(state.core, events as DiceThroneEvent[]);
+
+        expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(30);
+        expect(next.players['0'].tokens[TOKEN_IDS.THORN]).toBe(1);
         expect((events as DiceThroneEvent[]).some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
     });
 

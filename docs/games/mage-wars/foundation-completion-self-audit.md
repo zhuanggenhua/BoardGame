@@ -18,7 +18,7 @@
 | 真实入口桌面选择态 / 攻击结算态截图 | AI 图面已通过；等待用户人工确认 | [evidence.md](../../../test-results/evidence-screenshots/mage-wars/foundation-board-runtime/evidence.md)；最新原图分别为 `e2e-desktop-board.png`、`e2e-desktop-attack-settlement.png`，截图时间 2026-08-14 18:57:15-16 +08:00 |
 | 真实入口移动横屏截图 | secondary 技术证据，不替代 PC 人工验收 | `test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png`，截图时间 2026-08-14 18:57:22 +08:00 |
 | 用户人工批准 | 未证明 | 当前对话尚未收到用户明确“通过 / 可以收口 / 认可此图”的确认 |
-| 规则对象覆盖矩阵 | 已证明 foundation 行均已裁定 | `docs/games/mage-wars/design/generated/runtime-board-rule-object-coverage.md` 覆盖 2x3 竞技场、双方学徒法师、法术书、已计划法术、对手计划卡背、公开弃牌堆、骰子、token、来源、目标和阶段入口 |
+| 规则对象覆盖矩阵 | 已证明 foundation 行均已裁定 | `docs/games/mage-wars/design/generated/runtime-board-rule-object-coverage.md` 覆盖完整 4x3 竞技场、双方正式起始法师、法术书、已计划法术、对手计划卡背、公开弃牌堆、骰子、token、来源、目标和阶段入口 |
 | 资源链远端 / Android 包 | 已由资源链审计证明 | `docs/games/mage-wars/design/generated/runtime-resource-chain-audit.md` 记录服务器主源、Android file-index 和 ZIP 回查 |
 
 ## 需求逐项自审
@@ -27,8 +27,8 @@
 | --- | --- | --- |
 | 已获 proposal approval 后再实现 | `proposal.md` 与 `tasks.md` 0.1 记录用户 2026-07-26 批准 foundation 范围 | 通过 |
 | 阶段 0 intake 完成 | `tasks.md` 1.1-1.8 全部勾选；`docs/games/mage-wars/intake/**` 存在规则、素材、布局和运行时资源计划 | 通过 |
-| 2 人学徒模式 / 24 生命 / 2x3 学徒竞技场 | `domain-flow.test.ts`、`Board.tsx`、真实入口截图和规则对象覆盖矩阵 | 通过 foundation 层 |
-| 学徒法术书与 91 张学徒卡 atlas/frame | `apprentice-spellbooks.md`、`apprentice-card-field-contract.md`、`apprentice-card-atlas-contract.md`、`apprentice-spell-atlases.json` | 通过 foundation 层 |
+| 2 人正式标准竞技场 / 24 生命 / 4x3 竞技场 | `domain-flow.test.ts`、`Board.tsx`、真实入口截图和规则对象覆盖矩阵 | 通过 foundation 层 |
+| 标准起始法术书与正式 atlas/frame（历史 `apprentice` 命名仅作兼容） | `standard-starting-spellbooks.md`、配置包和 `cardAtlas.ts` | 通过 foundation 层 |
 | 基础回合 / 计划 / 施法 / 移动 / 攻击 / 守卫 / 状态 / 胜负主链 | `src/games/mage-wars/__tests__/domain-flow.test.ts` 随 `vitest` 当前通过 | 通过 foundation 层 |
 | 隐藏信息边界 | Board 对手已计划法术使用正式卡背；真实截图显示对手计划为卡背；完整隐藏结界揭示和响应窗口仍在 deferred 边界 | 通过 foundation 层 |
 | 法术释放 FX | `src/games/mage-wars/ui/fxSetup.ts`、`fxRenderers.tsx`、`eventFxMapper.ts`、`useGameEvents.ts`；`event-fx-mapper.test.ts` 当前通过 | 通过 foundation 层 |

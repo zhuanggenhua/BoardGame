@@ -70,7 +70,7 @@
 | `mages-core-atlas` | 已建 `public/assets/atlas-configs/mage-wars/mages-core-atlas.json`，记录四名学徒法师牌和肖像 frame，并由 `src/games/mage-wars/ui/cardAtlas.ts` 注册为 `CardPreview` 图集 | runtime-preview-wired |
 | `spell-apprentice-*` | 已建 `public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json`，按 91 张学徒法术字段合同建立 frame，并追加首批来源卡 `2218` / `2908` frame；由 `src/games/mage-wars/ui/cardAtlas.ts` 注册为 `CardPreview` 图集 | runtime-preview-wired / first-batch-source-card-frames |
 | `status-tokens` | 小图已直接落盘并压缩；暂不强制合并 atlas | 需要确认法力指示物、效果骰等剩余对象；聚魔 token、红/蓝行动标记、快速施法标记已 local-asset-ready |
-| `board-coordinate-contract` | 已建 `docs/games/mage-wars/design/implementable/board-coordinate-contract.md`，记录标准竞技场 `4x3` 坐标、状态板三轨道、红 / 黑状态方块、效果骰内置来源和当前 Board 的玩家可见 `2x3` 舞台映射 | 标准竞技场源图左 / 右半场仍不反向锁定；独立法力指示物仍不进入完成态主 UI |
+| `board-coordinate-contract` | 已建 `docs/games/mage-wars/design/implementable/board-coordinate-contract.md`，记录完整标准竞技场 `4x3` 坐标、状态板三轨道、红 / 黑状态方块和效果骰内置来源 | 半场模式不再作为运行时前置；独立法力指示物仍不进入完成态主 UI |
 
 ## 压缩与 manifest 计划
 
@@ -85,6 +85,6 @@
 ## 当前不能宣称完成的点
 
 - 不能宣称完整 Mage Wars 素材链完成；全 322 张法术、完整自由构筑、四人模式、豪华竞技场和扩展法师属于后续 change。
-- 不能把标准竞技场源图左 / 右半场方向反向锁成规则真相；当前 Board 只锁玩家可见 `2x3` 舞台映射。
+- 不能把历史学徒半场重新带回运行时；当前 Board 只锁完整 `4x3` / `12` 区域映射。
 - 不能把独立法力指示物画成已完成素材；主 UI 法力读数走用户已批准的自制运行态 HUD。
 - 不能把 Open Design v6 / v7 视觉稿写成用户已批准或当前可验收；旧 AI_PASS 已撤销，下一步必须重出 v8。

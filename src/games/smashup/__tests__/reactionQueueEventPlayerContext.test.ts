@@ -12,7 +12,13 @@ import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { defaultTestRandom, runCommand } from './testRunner';
 import { getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { clearOngoingEffectRegistry, collectTriggers, registerTrigger } from '../domain/ongoingEffects';
+import {
+    clearOngoingEffectRegistry,
+    collectTriggers,
+    isBaseAbilitySuppressed,
+    isBaseScoringSuppressed,
+    registerTrigger,
+} from '../domain/ongoingEffects';
 import { processAffectTriggers, processMoveTriggers, reduce } from '../domain/reducer';
 
 describe('reaction queue: preserves event player context', () => {
@@ -4724,6 +4730,67 @@ describe('reaction queue: preserves event player context', () => {
         expect(resolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
         expect(resolved?.state.core.players['0']?.discard.map((card: any) => card.uid) ?? []).not.toContain('stasis-borrowed');
         expect(resolved?.state.core.players['1']?.discard.map((card: any) => card.uid)).toContain('stasis-borrowed');
+    });
+
+    it('Stasis Field POD 应同样压制基地并在控制者回合开始自毁', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_portal_room',
+                    minions: [
+                        makeMinion('power-a', 'sharks_megalodon', '0', 10),
+                        makeMinion('power-b', 'sharks_megalodon', '1', 10),
+                    ],
+                    ongoingActions: [{
+                        uid: 'stasis-pod',
+                        defId: 'time_travelers_stasis_field_pod',
+                        ownerId: '0',
+                    } as any],
+                }),
+            ],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+        });
+
+        expect(isBaseAbilitySuppressed(core, 0)).toBe(true);
+        expect(isBaseScoringSuppressed(core, 0)).toBe(true);
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 12,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('time_travelers_stasis_field_pod');
+        expect(queued?.payload?.triggers?.[0]?.sourceCardUid).toBe('stasis-pod');
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            12,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'stasis-pod',
+                defId: 'time_travelers_stasis_field_pod',
+                ownerId: '0',
+                reason: 'time_travelers_stasis_field_pod',
+            }),
+        }));
+        expect(resolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
+        expect(resolved?.state.core.players['0']?.discard.map((card: any) => card.uid)).toContain('stasis-pod');
     });
 
     it('同一控制者有两张 Stasis Field 时，queued onTurnStart 应逐实例排队并逐张自毁，而不是一次清空全部', () => {

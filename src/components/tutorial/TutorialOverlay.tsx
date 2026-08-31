@@ -128,7 +128,7 @@ const escapeTutorialTargetSelector = (value: string): string => {
 };
 
 export const TutorialOverlay: React.FC = () => {
-  const { isActive, currentStep, nextStep, isLastStep } = useTutorial();
+  const { isActive, currentStep, nextStep, isLastStep, tutorial } = useTutorial();
   const stepNamespace = currentStep?.content?.includes(":")
     ? currentStep.content.split(":")[0]
     : undefined;
@@ -784,7 +784,7 @@ export const TutorialOverlay: React.FC = () => {
       {/* 提示框弹窗 - requireAction 时不拦截点击，让用户与游戏 UI 交互 */}
       <div
         ref={tooltipRef}
-        className={`${currentStep.requireAction ? "pointer-events-none" : "pointer-events-auto"} flex flex-col items-center absolute transition-opacity duration-150`}
+        className={`${currentStep.requireAction || isBottomConfirmStep ? "pointer-events-none" : "pointer-events-auto"} flex flex-col items-center absolute transition-opacity duration-150`}
         style={{
           ...tooltipStyles.style,
           opacity: positionedStepId === currentStep.id ? 1 : 0,
@@ -799,7 +799,7 @@ export const TutorialOverlay: React.FC = () => {
         <div
           data-testid="tutorial-overlay-card"
           data-tutorial-placement={tooltipStyles.placement}
-          className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${currentStep.requireAction ? "pointer-events-none" : "pointer-events-auto"} ${
+          className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${currentStep.requireAction || isBottomConfirmStep ? "pointer-events-none" : "pointer-events-auto"} ${
             isBottomConfirmStep
               ? "w-[min(320px,calc(100vw-2rem))]"
               : isCompactTutorialLayout
@@ -816,11 +816,20 @@ export const TutorialOverlay: React.FC = () => {
             <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
           ) : null}
 
+          {tutorial.skippedStepIds && tutorial.skippedStepIds.length > 0 ? (
+            <div
+              data-testid="tutorial-skipped-notice"
+              className="mb-3 border border-[#e5d8b8] bg-[#f8f2e4] px-3 py-2 text-left text-xs font-bold leading-relaxed text-[#765f3d]"
+            >
+              {t("overlay.skipped", { count: tutorial.skippedStepIds.length })}
+            </div>
+          ) : null}
+
           <div
             data-testid="tutorial-overlay-content"
             className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
               isBottomConfirmStep
-                ? "sr-only"
+                ? "mb-2 max-h-[92px] rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] leading-[1.45] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
                 : isCompactTutorialLayout
                   ? "mb-2.5 text-left text-[15px] leading-[1.55]"
                   : "mb-4 text-left text-lg leading-relaxed"
@@ -828,15 +837,6 @@ export const TutorialOverlay: React.FC = () => {
           >
             {t(currentStep.content)}
           </div>
-
-          {isBottomConfirmStep ? (
-            <div
-              aria-hidden="true"
-              className="mb-2 max-h-[92px] overflow-y-auto rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] font-bold leading-[1.45] text-[#433422] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
-            >
-              {t(currentStep.content)}
-            </div>
-          ) : null}
 
           {!currentStep.requireAction && (
             <button

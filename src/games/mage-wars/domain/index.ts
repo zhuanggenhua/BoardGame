@@ -109,7 +109,6 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
             currentPlayerId: normalizedPlayerIds[0],
             phaseReadyPlayerIds: [],
             turnNumber: 1,
-            arenaMode: 'formal-4x3',
             players,
             objects: {},
             walls: {},

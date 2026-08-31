@@ -229,7 +229,13 @@ const advanceStep = <TCore>(
         };
     }
 
-    const nextTutorial = deriveStepState(manifest, nextIndex, tutorial.randomPolicy?.cursor);
+    const skippedStepIds = events
+        .map((event) => isRecord(event.payload) && typeof event.payload.stepId === 'string' ? event.payload.stepId : null)
+        .filter((stepId): stepId is string => Boolean(stepId));
+    const nextTutorial = {
+        ...deriveStepState(manifest, nextIndex, tutorial.randomPolicy?.cursor),
+        ...(skippedStepIds.length > 0 ? { skippedStepIds } : {}),
+    };
     return {
         state: applyTutorialState(state, nextTutorial),
         events: [...events, createStepChangedEvent(prevIndex, nextIndex, nextTutorial.step, timestamp)],

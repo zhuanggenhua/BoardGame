@@ -472,6 +472,8 @@ export interface TutorialState {
     allowManualSkip?: boolean;
     /** 动画等待：事件已匹配，正在等待动画完成 */
     pendingAnimationAdvance?: boolean;
+    /** 本次推进中因当前局面不适用而跳过的步骤，供教程界面给出可见提示 */
+    skippedStepIds?: string[];
 }
 
 export const DEFAULT_TUTORIAL_STATE: TutorialState = {

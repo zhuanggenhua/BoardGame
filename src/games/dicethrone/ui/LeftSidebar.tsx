@@ -28,6 +28,8 @@ export const LeftSidebar = ({
     canUsePurify,
     onFlightClick,
     canUseFlight,
+    onNyraBondHealClick,
+    canUseNyraBondHeal,
     tokenDefinitions,
     onKnockdownClick,
     canRemoveKnockdown,
@@ -61,6 +63,10 @@ export const LeftSidebar = ({
     onFlightClick?: () => void;
     /** 是否可以使用飞行（进攻/防御掷骰阶段且有待处理攻击） */
     canUseFlight?: boolean;
+    /** 点击妮拉之系 Token 主动治疗妮拉的回调 */
+    onNyraBondHealClick?: () => void;
+    /** 是否可以主动消耗妮拉之系治疗妮拉 */
+    canUseNyraBondHeal?: boolean;
     /** Token 定义列表（用于判断哪些 Token 可点击） */
     tokenDefinitions?: TokenDef[];
     /** 点击击倒状态的回调 */
@@ -130,6 +136,10 @@ export const LeftSidebar = ({
                                 onFlightClick();
                                 return;
                             }
+                            if (tokenId === TOKEN_IDS.NYRAS_BOND && canUseNyraBondHeal && onNyraBondHealClick) {
+                                onNyraBondHealClick();
+                                return;
+                            }
                             // 从定义中查找该 Token 是否有 removeDebuff 效果（即净化类 Token）
                             const tokenDef = tokenDefinitions?.find(def => def.id === tokenId);
                             if (tokenDef?.activeUse?.effect.type === 'removeDebuff' && onPurifyClick) {
@@ -142,6 +152,7 @@ export const LeftSidebar = ({
                                 ? (tokenDefinitions ?? []).filter(def => def.activeUse?.effect.type === 'removeDebuff').map(def => def.id)
                                 : []),
                             ...(canUseFlight ? [TOKEN_IDS.FLIGHT] : []),
+                            ...(canUseNyraBondHeal ? [TOKEN_IDS.NYRAS_BOND] : []),
                         ]}
                     />
                     <StatusEffectsContainer

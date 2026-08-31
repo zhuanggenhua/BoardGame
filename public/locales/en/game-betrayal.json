@@ -1069,8 +1069,8 @@
       "title": "Core Turn: Use, Move, Explore",
       "description": "Before the haunt begins, you may move, discover a new room, trade Items and Omens with an explorer in the same room, and take special actions in any order. Discovering a new room ends your turn.",
       "steps": {
-        "setupRuntime": "Before the haunt begins, you may move, discover a new room, trade Items and Omens with an explorer in the same room, and take special actions in any order. Discovering a new room ends your turn. Start with one core turn.",
-        "objectiveAndTurn": "On your turn, you may move, discover a new room, trade Items and Omens with an explorer in the same room, and take special actions in any order. Start with Move.",
+        "setupRuntime": "Before the haunt begins, learn one core turn: move to a room, discover a new room, reveal a discovery card, and see how the turn closes.",
+        "objectiveAndTurn": "It is your turn. Start with Move: moving changes your room and decides which unexplored doorway you can use next.",
         "traitsAndSpeed": "At the start of your turn, check your Speed. It is the most rooms your explorer can move this turn.",
         "traitTrackReading": "The green number on a trait track is the starting value; the highlighted slot is the current value, and the skull is death, not a number. Repeated values are still separate slots.",
         "movesRemaining": "Check Speed at the start of the turn; the movement marker in the upper-right shows the movement left this turn. A mid-turn Speed change does not change movement already set for the turn.",
@@ -1079,13 +1079,15 @@
         "focusSelfRoom": "After the camera leaves your position, Focus My Room returns it to your explorer's room.",
         "hauntRiskTrack": "The omen track records the number of Omens discovered, and the highlighted slot is the current value. When an Omen is drawn, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
         "inventoryAndHelp": "Event cards enter the current event resolution when revealed and do not stay in front of you; Items and Omens do. Choose the relevant card here when you use, trade, or resolve a card effect.",
-        "useBook": "After the Event card is revealed, choose Roll Event first. While the dice result is displayed, click the Book in your inventory. It immediately costs 1 Sanity and rerolls this non-combat check with Knowledge.",
+        "useBook": "Click the Book in your inventory: it costs 1 Sanity and rerolls this non-combat check with Knowledge.",
         "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
         "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
         "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, connect one of its doorways to the unexplored doorway.",
         "confirmRoomPlacement": "Rotate the new room so one doorway connects to the unexplored doorway, then choose Confirm Placement. Resolve its text and symbol after placement; your turn ends when the exploration is complete.",
-        "rollEvent": "The Event card is public. Click Roll Event to start the check required by this card; the dice and result remain visible on the table for a moment, during which you can use the Book or Rabbit's Foot directly without confirming the public result again.",
-        "finish": "This event was originally a Might check; the Book changed it to a Knowledge reroll. Rabbit's Foot can still reroll one die during the result window. Without a roll modifier, the event continues automatically when the display window ends."
+        "rollEvent": "The Event card is public. Click Roll Event to make the Might check on this card; the dice and event result stay on the table for every player to read.",
+        "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
+        "rabbitFootResult": "This rerolled result is the final event result. The Event card and dice have already been shown, so the game automatically moves into the damage step.",
+        "finish": "Choose the trait that takes 1 physical damage, then confirm the allocation."
       }
     },
     "omenConfirmation": {

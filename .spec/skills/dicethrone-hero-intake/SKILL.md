@@ -193,6 +193,8 @@ npm run assets:upload
 
 至少回查代表性公开 URL：`player-board.webp`、`tip.webp`、`ability-cards.webp`、`dice.webp`，如适用再加 `status-icons-atlas.webp`、共享背景和角色头像。任一代表 URL 为 `404`，资源 intake 不算完成。atlas JSON 若不上传，必须在 evidence 写清本地路径、构建结果和真实消费证据。
 
+**审计前置门禁**：只要角色的提示板、角色板、骰面、卡图或状态图标会被运行时消费，必须先完成对应正式压缩产物、manifest 登记、服务器上传和公开 URL `200` 回查，再进入规则审计、真实入口验收或“审计完成”口径。仅本地源图、仅本地 manifest、仅本地截图或上传前的 E2E 通过，都不能替代远端资源闭合；任一运行时资源未上传或公开 URL 非 `200`，该对象保持 `blocked`，先补资源链。
+
 ### 8. 机制实现前置
 
 如果本轮包含技能或 Token 机制实现，先读 [`engine-systems`](../../knowledge/standards/engine-systems.md)，并完成术语到事件、决策点、冲突项裁定。禁止跳过建模，直接凭图片正文硬写 handler。
@@ -204,7 +206,7 @@ npm run assets:upload
 - 静态数据 / 机制实现：相关 Vitest。
 - 资源引用 / 预加载：资源、manifest 或 resolver 测试。
 - UI 卡图展示 / 手牌预览：真实 E2E 与截图证据；UI 展示改动必须人工看图。
-- 新增角色最低包：ESLint、TypeScript、`npm run i18n:check`、角色 intake / registry / critical image 测试、`npm run assets:manifest`、`npm run assets:validate`、`npm run assets:upload` + URL 回查、`npm run build`、按玩家可见生命周期执行真实入口 E2E。
+- 新增角色最低包：先完成运行时媒体压缩、`npm run assets:manifest`、`npm run assets:validate`、`npm run assets:upload` + 每个代表资源 URL 回查 `200`；再执行 ESLint、TypeScript、`npm run i18n:check`、角色 intake / registry / critical image 测试、`npm run build` 和按玩家可见生命周期执行真实入口 E2E。资源上传或 URL 回查未完成时，不得进入审计收口。
 
 最终交付至少包含：
 

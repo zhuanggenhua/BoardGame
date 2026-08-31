@@ -7,7 +7,7 @@
 | 来源 | 文件 | 直接结论 |
 | --- | --- | --- |
 | 组件规则原文 | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_006.md` | 游戏组件包含 1 块竞技场版图、2 本法术书、322 张法术牌、4 张法师牌、2 块法师状态板、8 个状态方块、20 个行动标记、2 个快速施法标记、9 颗攻击骰、1 颗 12 面效果骰、24 枚伤害指示物和 8 枚法力指示物；这些是主 UI 素材对象入口 |
-| setup 规则原文 | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_007.md` | 竞技场共 12 区域；学徒模式只用正常版图一半区域；两人拿红/蓝各 10 个行动标记、每人 3 个黑色状态方块、1 个红色状态方块和 1 个黑色快速施法标记；行动标记和快速施法标记放在法师牌上且白色符号面朝上；状态板放初始聚魔、法力池、生命和伤害 |
+| setup 规则原文 | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_007.md` | 当前运行只消费标准竞技场 12 区域、正式部署和状态 / 行动标记规则；学徒半场只作历史资料 |
 | 学徒规则与法术书 | `docs/games/mage-wars/rule/apprentice-spellbooks.md` | 四名学徒法师属性、生命 24、法术书数量和 `CardID` 候选已锁定 |
 | 学徒法术图集 | `docs/games/mage-wars/rule/apprentice-card-atlas-contract.md` | deck 源图和 `CardID` frame 候选已锁；正式 atlas/frame 已由 `apprentice-spell-atlases.json` 和 `CardPreview` 消费 |
 | 学徒逐卡字段 | `docs/games/mage-wars/rule/apprentice-card-field-contract.md` | 91 张学徒范围卡牌 S0 字段已录入；临时裁图只作核对 |
@@ -40,8 +40,8 @@
 
 | 规则对象 | 规则依据 | 基础版主 UI 可见 | 应用素材 / 正式素材要求 | 当前素材状态 | 允许画面表达 | 禁止替代方式 | 进入下一版设计稿前动作 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 标准竞技场 | 规则页竞技场与区域规则；`rule-object-asset-matrix.md` | 是，第一视觉主体 | `board/standard-arena.jpg`，并需要区域热区坐标合同 | `foundation-runtime-ready / coordinate-contract-ready` | 当前 Board 用 `OptimizedImage` 渲染正式竞技场；真实入口截图已验证 | 纯 CSS 棋盘、抽象 2x3 色块、旧 HTML 背景图冒充正式棋盘 | 完整标准模式坐标扩展留到 foundation 后 |
-| 学徒 2x3 半场 / 区域高亮 | 规则学徒竞技场范围；区域移动 / 目标规则 | 是，作为交互 overlay | 依附标准竞技场；高亮本身可程序化，但不能替代棋盘；必须读取 `apprentice-zone-layout-contract.md` | `foundation-runtime-ready / zone-anchor-contract-ready-for-v75` | v75 继承 `2列 x 3行` 半场、唯一 `zoneId`、中心点入格和 token 贴附规则；实现截图仍必须复核对象没有骑线或格外 | 离开正式棋盘单独画网格；用任意坐标点位代替区域；把卡牌摆在两个区域中间；让未使用半场仍像可摆卡区域 | 实现前后都做区域 / 锚点 / token 贴附几何检查 |
+| 标准竞技场 | 规则页竞技场与区域规则；`rule-object-asset-matrix.md` | 是，第一视觉主体 | `board/standard-arena.jpg`，并需要完整 4x3 区域热区坐标合同 | `foundation-runtime-ready / coordinate-contract-ready` | 当前 Board 用 `OptimizedImage` 渲染完整正式竞技场；真实入口截图已验证 | 纯 CSS 棋盘、抽象 2x3 色块、旧 HTML 背景图或半场裁切冒充正式棋盘 | 后续只扩展标准竞技场规则对象，不再建立学徒地图分支 |
+| 历史学徒半场 | 历史规则资料；不属于当前运行目标 | 否，out-of-scope | 仅保留文档 / 迁移对照 | `historical / out-of-scope` | 不进入当前 Board、E2E 或人工验收图 | 把半场当当前区域、高亮或正式入口 | 不再为其新增布局、入口或实现 |
 | 四名学徒法师 | `apprentice-spellbooks.md`；法师牌 atlas 计划 | 是 | `cards/mages/mages-core-atlas.png` + 四名法师 frame | `foundation-runtime-ready / atlas-loader-ready` | 当前 Board 用 `CardPreview` 渲染正式法师 atlas | 圆形头像、字母徽章、通用 fantasy 头像 | 扩展法师留到 foundation 后 |
 | 法师状态板 | 规则起始生命、法力、聚魔、行动标记 | 否，主界面只作参考来源 | `boards/mage-status/mage-status-board.png`；状态方块与轨道坐标见 `board-coordinate-contract.md` | `reference-only / coordinate-contract-ready / preloaded-reference` | 状态板不进入主界面；当前 Board 使用贴近法师牌的自制生命 / 法力 / 聚魔 HUD | 把整张状态板或裁切状态板当玩家血量 / 蓝量面板；把 reference sheet 里的状态板复现到主界面 | 状态板详情层留到 foundation 后 |
 | 法术书 / 已计划法术 / 弃牌堆 | 规则计划与隐藏信息；`apprentice-spellbooks.md`；用户纠正覆盖账本 | 是，本人可见；对手隐藏信息保密 | 通用法术卡背、学徒法术牌 atlas/frame、私密可见规则 | `foundation-runtime-ready / hidden-info-boundary-verified / v75-layout-locked` | v75 目标：法术书当前页 6 张、已计划 2 张同尺寸、对手已计划左上卡背、公开弃牌堆在右侧竖向空位并显示紧凑顶牌正面 / 半露正面 + 数量；实现必须逐项复刻这些职责 | 文字列表、灰色卡壳、临时裁图当正式卡；公开弃牌堆不得用卡背误导成未知牌；禁止命名为手牌或对手手牌；不得把已计划和已选法术重复画成两个实体 | 实现前列明 `规则名 -> UI 名称 -> 可见性 -> 流转关系 -> 可操作入口 -> v75 图面承载` |

@@ -306,16 +306,15 @@ describe('Feature: incremental-state-sync', () => {
   /**
    * **Validates: Requirements 6.2, 6.3**
    *
-   * Property 4: StateID 连续性校验
-   * 当 stateID 不连续（meta.stateID !== lastReceivedStateID + 1 且 lastReceivedStateID !== null）时，
-   * 客户端应丢弃 patch（不更新本地状态）并触发 resync。
+   * Property 4: StateID 可见性间隙
+   * 投影视图可能跳过全局 stateID；只要 patch 可应用，客户端应继续处理，避免无谓全量同步。
    */
   describe('Property 4: StateID Continuity', () => {
     beforeEach(() => {
       mockSocket = new MockClientSocket();
     });
 
-    it('discards patch and triggers resync when stateID is not continuous', () => {
+    it('applies patch without resync when stateID has a visibility gap', () => {
       fc.assert(
         fc.property(
           fc.integer({ min: 1, max: 100 }),  // lastReceivedStateID
@@ -337,15 +336,15 @@ describe('Feature: incremental-state-sync', () => {
             const patches: Operation[] = [{ op: 'replace', path: '/core/turn', value: 1 }];
             simulatePatch(patches, { stateID: discontinuousId, randomCursor: 1 });
 
-            // 验证：onStateUpdate 不应被调用（patch 被丢弃）
-            expect(onStateUpdate).not.toHaveBeenCalled();
+            // 验证：patch 仍应交给上层
+            expect(onStateUpdate).toHaveBeenCalledTimes(1);
 
-            // 验证：应触发 resync（emit sync 事件）
+            // 验证：不应因合法可见性间隙触发 resync
             const syncEmits = mockSocket.findEmitted('sync');
-            expect(syncEmits.length).toBeGreaterThan(0);
+            expect(syncEmits.length).toBe(0);
 
-            // 验证：本地状态未变化
-            expect(client.latestState).toEqual(initialState);
+            // 验证：本地状态已应用 patch
+            expect(client.latestState).toEqual({ core: { turn: 1 } });
 
             client.disconnect();
           },
@@ -834,6 +833,21 @@ describe('Feature: incremental-state-sync', () => {
       const commandEmits = mockSocket.findEmitted('command');
       expect(commandEmits).toHaveLength(1);
       expect(commandEmits[0]?.args[4]).toEqual({ expectedStateID: 7 });
+
+      client.disconnect();
+    });
+
+    it('sendCommand permits an optimistic chain to provide the next expected stateID', () => {
+      const { client } = createConnectedClient();
+
+      simulateSync({ core: { hp: 100 } }, [{ id: 0 }], 7);
+      mockSocket.clearEmitted();
+
+      client.sendCommand('ADVANCE_PHASE', {}, { expectedStateID: 8 });
+
+      const commandEmits = mockSocket.findEmitted('command');
+      expect(commandEmits).toHaveLength(1);
+      expect(commandEmits[0]?.args[4]).toEqual({ expectedStateID: 8 });
 
       client.disconnect();
     });

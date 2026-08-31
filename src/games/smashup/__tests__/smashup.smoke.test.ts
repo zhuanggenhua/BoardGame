@@ -12364,6 +12364,57 @@ describe('smashup', () => {
         vi.doUnmock('../data/cards');
         vi.resetModules();
     });
+
+    it('决斗里选择条件不满足的特殊行动牌会无效果丢弃并继续决斗', () => {
+        const duelState = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    hand: [makeCard('cosplay-duel-card', 'geeks_cosplay', 'action', '1')],
+                }),
+            },
+            bases: [makeBase({
+                defId: 'base_a',
+                minions: [
+                    makeMinion('challenger', 'cowboys_gunfighter_pod', '0', 4),
+                    makeMinion('challenged', 'robot_zapbot_pod', '1', 2),
+                ],
+                ongoingActions: [],
+            })],
+        }));
+
+        const started = startDuel(
+            duelState,
+            {
+                sourceId: 'cowboys_run_em_off',
+                sourcePlayerId: '0',
+                challengerMinionUid: 'challenger',
+                challengedMinionUid: 'challenged',
+                outcome: 'run_em_off',
+            },
+            300,
+        );
+
+        const resolved = resolveDuelChain(started, {
+            smashup_duel_card: (prompt) => {
+                if (getPromptPlayerId(prompt) !== '1') {
+                    const skip = getPromptOption(prompt, entry => entry?.value?.skip === true, '决斗发起方跳过出牌选项');
+                    return { optionId: skip.id };
+                }
+                const cosplay = getPromptOption(
+                    prompt,
+                    entry => entry.value?.cardUid === 'cosplay-duel-card',
+                    '角色扮演决斗牌选项',
+                );
+                return { optionId: cosplay.id };
+            },
+        });
+
+        expect(resolved.finalState.core.players['1'].hand.map(card => card.uid)).not.toContain('cosplay-duel-card');
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('cosplay-duel-card');
+        expect(resolved.finalState.core.players['1'].vp).toBe(0);
+        expectNoPrompt(resolved.finalState);
+    });
     it('Great Wolf Spirit creates a start-of-turn move interaction and only offers bases where you are strictly ahead', () => {
         const core = makeState({
             bases: [

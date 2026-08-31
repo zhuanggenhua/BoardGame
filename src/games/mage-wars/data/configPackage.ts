@@ -962,8 +962,8 @@ function buildApprenticeArenaZoneFromObject(object: GameConfigObject): MageWarsC
     if (object.objectType !== 'board-zone') {
         throw new Error(`Mage Wars config object "${object.id}" is not a board zone`);
     }
-    if (object.data?.arenaMode !== 'apprentice-2x3') {
-        throw new Error(`Mage Wars config board zone "${object.id}" is not in apprentice-2x3 mode`);
+    if (object.tags?.includes('apprentice-2x3') !== true) {
+        throw new Error(`Mage Wars config board zone "${object.id}" is not a legacy apprentice zone`);
     }
 
     return {
@@ -979,8 +979,8 @@ function buildFormalArenaZoneFromObject(object: GameConfigObject): MageWarsConfi
     if (object.objectType !== 'board-zone') {
         throw new Error(`Mage Wars config object "${object.id}" is not a board zone`);
     }
-    if (object.data?.arenaMode !== 'formal-4x3') {
-        throw new Error(`Mage Wars config board zone "${object.id}" is not in formal-4x3 mode`);
+    if (object.tags?.includes('formal-4x3') !== true) {
+        throw new Error(`Mage Wars config board zone "${object.id}" is not a formal arena zone`);
     }
 
     return {

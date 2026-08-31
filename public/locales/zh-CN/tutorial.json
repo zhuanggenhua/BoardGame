@@ -2,7 +2,8 @@
   "overlay": {
     "finish": "完成并返回",
     "next": "下一步",
-    "clickToContinue": "完成当前操作继续"
+    "clickToContinue": "完成当前操作继续",
+    "skipped": "当前局面不需要 {{count}} 个步骤，已自动跳过。"
   },
   "default": {
     "welcome": "欢迎来到井字棋！目标是连成三子。",

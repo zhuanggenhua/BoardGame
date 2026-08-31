@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "法师战争单层地图舞台修复验收",
+  "generatedAt": "2026-08-30T19:02:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "正式地图只保留一个 4:3 地图舞台，不再叠加圆角、阴影、暗带或渐变外圈",
+      "status": "PASS",
+      "evidence": [
+        "最新真实入口截图：地图边界只有一层正式竞技场，外部为单色桌面底色",
+        "正式入口 E2E 通过，地图图片与舞台保持同一 4:3 几何比例"
+      ]
+    },
+    {
+      "requirement": "地图拖拽和缩放后仍保持真实区域命中与牌桌布局固定",
+      "status": "PASS",
+      "evidence": [
+        "最新宽屏自由查看 E2E：1 passed",
+        "拖拽后地图内容移动，法术书、计划区和玩家 HUD 保持固定"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

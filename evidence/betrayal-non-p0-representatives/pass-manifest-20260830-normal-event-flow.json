@@ -1,0 +1,18 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {"purpose": "final-user-visible-delivery", "trigger": "user-requested-open", "viewer": "pureref", "finalPassBeforeOpen": true},
+  "requirements": [
+    {"requirement": "使用正常牌桌入口 /play/betrayal 完成事件投掷端到端流程", "status": "PASS", "evidence": ["non-p0-representative.e2e.ts 正常牌桌用例 1 passed"]},
+    {"requirement": "事件牌公开后显示投掷事件入口，点击后出现真实骰盘", "status": "PASS", "evidence": ["截图 02、03", "E2E 真实点击 betrayal-event-roll-start"]},
+    {"requirement": "事件结果展示期间不显示继续或事件确认按钮", "status": "PASS", "evidence": ["E2E 断言 betrayal-discovery-continue 数量为 0", "截图 03、04"]},
+    {"requirement": "截图不包含教程入口或教程浮层", "status": "PASS", "evidence": ["测试 URL 为 /play/betrayal", "正常牌桌图组 4 张"]}
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-non-p0-representatives/_labeled-normal-event-flow-20260830/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-non-p0-representatives/_labeled-normal-event-flow-20260830/01-labeled-01-普通投骰事件-探索目标.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-non-p0-representatives/_labeled-normal-event-flow-20260830/02-labeled-02-普通投骰事件-卡牌正面.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-non-p0-representatives/_labeled-normal-event-flow-20260830/03-labeled-03-普通投骰事件-投掷骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-non-p0-representatives/_labeled-normal-event-flow-20260830/04-labeled-04-普通投骰事件-牌面骰盘分支.png"
+  ]
+}

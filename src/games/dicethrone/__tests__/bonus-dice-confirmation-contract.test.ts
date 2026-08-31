@@ -11,6 +11,8 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
 import { CP_MAX } from '../domain/types';
+import { getRegisteredBonusDiceSettlementIds } from '../domain/bonusDiceSettlement';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 
 const bonusSettlement = (): PendingBonusDiceSettlement => ({
     id: 'ordinary-confirm-required',
@@ -59,6 +61,71 @@ const openBonusDiceState = (
 };
 
 describe('DiceThrone 奖励骰普通确认合同', () => {
+    it('所有生产奖励骰专用结算器都必须注册，避免投掷成功但确认后没有规则消费者', () => {
+        const expectedSettlementIds = [
+            'artificer-heal-bot-use',
+            'artificer-wrench-strike-branch',
+            'artificer-perfectly-calibrated-roll',
+            'barbarian-suppress-roll',
+            'barbarian-suppress-2-roll',
+            'barbarian-lucky-roll-heal',
+            'barbarian-more-please-roll-damage',
+            'cursed-pirate-flay',
+            'cursed-pirate-crows-nest',
+            'cursed-pirate-hefty',
+            'cursed-pirate-sip-roll',
+            'gunslinger-loaded-use',
+            'gunslinger-eat-my-lead',
+            'gunslinger-high-noon',
+            'one-throw-fortune-cp',
+            'monk-thunder-strike-settlement',
+            'monk-thunder-strike-2-settlement',
+            'moon-elf-exploding-arrow',
+            'moon-elf-exploding-arrow-2',
+            'moon-elf-exploding-arrow-3',
+            'moon-elf-shadow-strike',
+            'moon-elf-volley',
+            'moon-elf-watch-out',
+            'ninja-going-forward',
+            'ninja-going-forward-bleed',
+            'ninja-going-forward-2',
+            'ninja-poison-blade-2',
+            'ninja-death-blossom',
+            'ninja-ninjutsu',
+            'ninja-death-blossom-2',
+            'pyro-get-fired-up-roll',
+            'pyro-infernal-embrace-roll',
+            'pyro-blast-roll',
+            'samurai-back-strike-use',
+            'samurai-masamune',
+            'samurai-righteousness',
+            'shadow-thief-shadow-dance',
+            'shadow-thief-shadow-dance-2',
+            'shadow-thief-sneak-attack',
+            'tianshi-divine-punishment',
+            'tianshi-triumphant-return',
+            'tianshi-holy-strike',
+            'tianshi-angelic-tactics',
+            'tianshi-supreme-holiness',
+            'tianshi-flight',
+            'treant-life-sap-roll',
+            'treant-wild-growth-2-roll',
+            'treant-trample-roll',
+            'treant-soulfire-roll',
+            'treant-mother-tree-roll',
+            'treant-rooted-roll',
+            'vampire-lord-mesmerize-roll',
+            'zhanshujia-war-monger-roll',
+            'zhanshujia-war-monger-2-roll',
+            'zhanshujia-war-room-roll',
+            'powder-keg-upkeep',
+            'blinded-check',
+            'tianshi-dazzle-check',
+        ];
+
+        expect(getRegisteredBonusDiceSettlementIds()).toEqual(new Set(expectedSettlementIds));
+    });
+
     it('即使对手有改骰牌，奖励骰也不再打开响应窗口，而是直接停在右侧骰盘等待普通确认', () => {
         const settlement = bonusSettlement();
         const nextState = openBonusDiceState(settlement, (core) => {
@@ -171,6 +238,40 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
             kind: 'dt:bonus-dice',
             playerId: '0',
         });
+    });
+
+    it('奖励骰确认只结算一次，确认后再次点击不能重复造成伤害或重新打开交互', () => {
+        const settlement = bonusSettlement();
+        const opened = openBonusDiceState(settlement, (core) => {
+            core.players['0'].tokens = {};
+            core.players['1'].tokens = {};
+            core.players['1'].resources[RESOURCE_IDS.HP] = 20;
+        });
+
+        const first = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            opened,
+            { type: 'CONFIRM_ROLL', playerId: '0', payload: {}, timestamp: 101 } as any,
+            createQueuedRandom([1]),
+            ['0', '1'],
+        );
+
+        expect(first.success).toBe(true);
+        expect(first.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(16);
+        expect(first.state.core.pendingBonusDiceSettlement).toBeUndefined();
+
+        const second = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            first.state,
+            { type: 'CONFIRM_ROLL', playerId: '0', payload: {}, timestamp: 102 } as any,
+            createQueuedRandom([1]),
+            ['0', '1'],
+        );
+
+        expect(second.success).toBe(false);
+        expect(second.events.filter((event) => event.type === 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(second.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(16);
+        expect(getCurrentInteractionSummary(second.state).kind).toBeUndefined();
     });
 
     it('攻击型奖励骰普通确认后必须把同批后续加伤一起带入攻击续跑', () => {

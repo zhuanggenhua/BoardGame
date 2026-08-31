@@ -58,12 +58,30 @@
         }
       }
     },
+    "cards/compressed/back-event.webp": {
+      "variants": {
+        "download-172700": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "mime": "application/octet-stream"
+        }
+      }
+    },
     "cards/compressed/back-item": {
       "variants": {
         "webp": {
           "sha256": "ff88b140a4d97cd29ea456ccfe09416011a87e32d228ad5e227216a4976ac3ba",
           "bytes": 81534,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/back-item.webp": {
+      "variants": {
+        "download-172700": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "mime": "application/octet-stream"
         }
       }
     },
@@ -76,12 +94,30 @@
         }
       }
     },
+    "cards/compressed/back-monster.webp": {
+      "variants": {
+        "download-172700": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "mime": "application/octet-stream"
+        }
+      }
+    },
     "cards/compressed/back-omen": {
       "variants": {
         "webp": {
           "sha256": "e94f09db5267b30d9973be1d4c9fdd1d5b95396291099e833a12d065df6a6cc3",
           "bytes": 173354,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/back-omen.webp": {
+      "variants": {
+        "download-172700": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "mime": "application/octet-stream"
         }
       }
     },
@@ -1027,6 +1063,42 @@
           "sha256": "8650589a45408b0576da6e260a4b6439e9d5f42dd0ce22733ac8a7f8d6057364",
           "bytes": 1525352,
           "mime": "image/png"
+        }
+      }
+    },
+    "rooms/compressed/room-back-basement": {
+      "variants": {
+        "webp": {
+          "sha256": "68271b091625c870d635d25adef4c8e2fd5e50a1d829d92c8a77df06578816a0",
+          "bytes": 8084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/room-back-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "42f6b5e3c0f6ed13c9de3cccd4715c48dc3c215293ce6098cf181468a531caf1",
+          "bytes": 7976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/sunroom": {
+      "variants": {
+        "webp": {
+          "sha256": "f4cb2dd7b578efa16725d0f9702f26ab6c8d376a2aeea842a56da50799d3c917",
+          "bytes": 11374,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "rooms/compressed/trophy-room": {
+      "variants": {
+        "webp": {
+          "sha256": "85018580cc961bc1b135e0758e20b486f0fec7c3d045e1d2ad32f574fba0a181",
+          "bytes": 11656,
+          "mime": "image/webp"
         }
       }
     },

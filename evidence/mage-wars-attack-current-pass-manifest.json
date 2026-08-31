@@ -1,0 +1,36 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "Mage Wars 间歇喷泉攻击目标与伤害跳字当前验收",
+  "generatedAt": "2026-08-30T12:30:14+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "攻击过程必须按真实顺序展示来源到目标、投射物飞行、命中与伤害跳字，并且命中/跳字同帧目标本体可见",
+      "status": "PASS",
+      "evidence": [
+        "正式页面召唤和攻击必要过程帧覆盖 E2E：1 passed",
+        "命中帧通过伤害跳字可见性与目标锚点可见性断言，目标牌边框/牌面区域与 -8 同帧可见"
+      ]
+    },
+    {
+      "requirement": "攻击反馈不能用整张红色遮罩盖住目标，玩家应能一眼认出被攻击对象",
+      "status": "PASS",
+      "evidence": [
+        "Mage Wars 攻击预设关闭整张红脉冲覆盖，保留命中斜切、爆发和伤害数字",
+        "最终命中原图肉眼核验：目标牌仍可辨，伤害数字清晰贴近目标"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-current-user-attack-20260830\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-current-user-attack-20260830\\01-labeled-03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-current-user-attack-20260830\\02-labeled-03-间歇喷泉攻击阿希拉牧师-投射物飞行中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\online-runtime.e2e\\正式页面召唤和攻击必要过程帧覆盖\\_labeled-current-user-attack-20260830\\03-labeled-03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.png"
+  ]
+}

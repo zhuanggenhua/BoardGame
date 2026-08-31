@@ -28,6 +28,8 @@ function HookProbe({
     const selfBuffRef = React.useRef<HTMLDivElement | null>(null);
     const opponentBuffRef = React.useRef<HTMLDivElement | null>(null);
     const opponentHeaderRef = React.useRef<HTMLDivElement | null>(null);
+    const selfCompanionRef = React.useRef<HTMLDivElement | null>(null);
+    const opponentCompanionRef = React.useRef<HTMLDivElement | null>(null);
 
     const { damageBuffer } = useAnimationEffects({
         fxBus,
@@ -55,6 +57,8 @@ function HookProbe({
             opponentBuff: opponentBuffRef,
             selfBuff: selfBuffRef,
             opponentHeader: opponentHeaderRef,
+            selfCompanion: selfCompanionRef,
+            opponentCompanion: opponentCompanionRef,
         },
         getEffectStartPos: () => ({ x: 0, y: 0 }),
         getAbilityStartPos: () => ({ x: 0, y: 0 }),
@@ -78,6 +82,8 @@ function HookProbe({
             <div ref={selfBuffRef} data-testid="self-buff" />
             <div ref={opponentBuffRef} data-testid="opponent-buff" />
             <div ref={opponentHeaderRef} data-testid="opponent-header" />
+            <div ref={selfCompanionRef} data-testid="self-companion" />
+            <div ref={opponentCompanionRef} data-testid="opponent-companion" />
         </div>
     );
 }
@@ -246,6 +252,68 @@ describe('useAnimationEffects rollback consumer', () => {
             'fx.damage',
             {},
             expect.objectContaining({ damage: 2 }),
+        );
+    });
+
+    it('妮拉伙伴回血事件应播放回血飞字', async () => {
+        const fxBus = {
+            push: vi.fn(() => 'fx-1'),
+        } as unknown as FxBus;
+
+        const companionHealEntry: EventStreamEntry = {
+            id: 8,
+            event: {
+                type: 'COMPANION_HEALTH_CHANGED',
+                payload: {
+                    playerId: '0',
+                    companionId: 'nyra',
+                    delta: 2,
+                    sourceAbilityId: 'nyras_bond',
+                },
+                timestamp: 1000,
+            },
+        };
+
+        render(<HookProbe entries={[companionHealEntry]} fxBus={fxBus} />);
+
+        await waitFor(() => {
+            expect(fxBus.push).toHaveBeenCalledTimes(1);
+        });
+        expect(fxBus.push).toHaveBeenCalledWith(
+            'fx.heal',
+            {},
+            expect.objectContaining({ amount: 2 }),
+        );
+    });
+
+    it('妮拉伙伴扣血事件应播放扣血飞字', async () => {
+        const fxBus = {
+            push: vi.fn(() => 'fx-1'),
+        } as unknown as FxBus;
+
+        const companionDamageEntry: EventStreamEntry = {
+            id: 9,
+            event: {
+                type: 'COMPANION_HEALTH_CHANGED',
+                payload: {
+                    playerId: '0',
+                    companionId: 'nyra',
+                    delta: -3,
+                    sourceAbilityId: 'test-hit',
+                },
+                timestamp: 1000,
+            },
+        };
+
+        render(<HookProbe entries={[companionDamageEntry]} fxBus={fxBus} />);
+
+        await waitFor(() => {
+            expect(fxBus.push).toHaveBeenCalledTimes(1);
+        });
+        expect(fxBus.push).toHaveBeenCalledWith(
+            'fx.damage',
+            {},
+            expect.objectContaining({ damage: 3 }),
         );
     });
 

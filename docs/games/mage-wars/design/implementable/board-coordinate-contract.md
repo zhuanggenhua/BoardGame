@@ -1,12 +1,12 @@
 # 法师战争主 UI 坐标与内置物件合同
 
-> 状态：`historical-runtime-coordinate-evidence / v19-design-requires-apprentice-zone-layout-contract / source-half-not-reverse-locked`。本文件保留棋盘、状态板轨道、Workshop 内置物件和旧 foundation 运行时坐标证据；下一版 PC Open Design 设计稿不得继续直接消费这里的 `3列 x 2行` 舞台映射，必须先读取 `apprentice-zone-layout-contract.md`。
+> 状态：`formal-4x3-runtime-coordinate-source / current`。运行时只使用正式 `4列 x 3行` 竞技场；“学徒”仅保留在角色名和迁移期历史数据中，不再作为地图模式或运行时分支。
 
 ## 本轮重读证据
 
 | 来源 | 路径 | 本轮直接结论 |
 | --- | --- | --- |
-| 学徒规则 | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_004.md` | 学徒模式使用 `2x3` 区域竞技场，是标准竞技场一半；学徒法师统一为 `10` 聚魔、`24` 生命、`3` 颗基础近战攻击骰。 |
+| 历史学徒规则（不作为当前目标） | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_004.md` | 仅保留作历史规则 / 角色命名对照；当前运行不使用 `2x3` 学徒竞技场。 |
 | 组件清单 | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_006.md` | 基础组件包含标准竞技场、法师状态板、状态方块、行动标记、快速施法标记、攻击骰、12 面效果骰、伤害指示物和法力指示物。 |
 | 设置规则 | `D:\gongzuo\webgame\gameasset\法师战争\output\pdf\ai_readable_pdf_exports\101721 法师战争 Mage Wars 规则\pages\page_007.md` | 标准竞技场共 `12` 区域；相邻只按水平 / 垂直共享边，不按对角；每名玩家拿 `3` 个黑色状态方块、`1` 个红色状态方块和 `1` 个黑色快速施法标记；状态板用状态方块记录初始聚魔、法力池、生命和伤害。 |
 | 正式竞技场素材 | `public/assets/i18n/zh-CN/mage-wars/board/standard-arena.jpg` | 源尺寸 `3210x2407`；图面为 `4` 列 x `3` 行标准竞技场。 |
@@ -41,19 +41,18 @@
 | `std-r3c3` | 3 | 3 | `0.50, 0.6667, 0.25, 0.3333` |
 | `std-r3c4` | 3 | 4 | `0.75, 0.6667, 0.25, 0.3333` |
 
-### 学徒半场裁定
+### 旧学徒半场资料（不再作为运行目标）
 
-- 规则已锁：学徒模式只使用标准竞技场一半，即 `2x3` 六区域；移动 / 射程距离只按水平和垂直相邻区域计算。
+- 旧规则资料曾记录学徒模式只使用标准竞技场一半，即 `2x3` 六区域；该模式已从当前运行目标移除。
 - 视觉源已锁：当前正式竞技场素材是 `4x3`，因此图面上的完整半场候选是左半场或右半场。
 - 代码现状：`src/games/mage-wars/domain/ids.ts` 只提供逻辑区域 `a1/a2/a3/b1/b2/b3`，`createApprenticeArena()` 只证明抽象 `2x3` 结构，不证明它对应标准图的左半场或右半场。
-- 当前复核：规则页和标准竞技场素材共同指向“半张 `4列 x 3行` 标准图”，因此下一版设计稿默认按 `2列 x 3行` 学徒半场处理，详见 `apprentice-zone-layout-contract.md`。
+- 当前复核：半场资料不再进入当前设计稿或运行时；所有新设计和实现只消费完整 `4列 x 3行` 标准坐标。
 - 旧运行时裁定：当前 Board 曾采用玩家可见 `3列 x 2行` 舞台并通过 foundation 技术验证；该证据只能保留为历史实现状态，不能反向证明下一版设计稿区域方向正确。
-- 设计稿裁定：v18 已因场上对象没有单一区域锚点撤销；v19 之前必须先建立 `2列 x 3行` 区域 / 锚点 / token 贴附合同。
-- 禁止：不得离开正式竞技场单独画六格棋盘；不得把 `a1/a2/a3/b1/b2/b3` 直接当成源图像素坐标；不得把候选半场截图打开给用户当最终验收稿。
+- 当前禁止：不得重新引入 `2x3` 学徒地图分支或把半场截图当正式地图验收稿；所有运行时区域必须回到本文件的 `4×3` 标准坐标。
 
-### 旧运行时玩家可见 2x3 舞台映射
+### 历史运行时玩家可见 2x3 舞台映射（仅供追溯）
 
-`src/games/mage-wars/Board.tsx` 旧 foundation 运行时不反向裁定标准竞技场源图的左 / 右半场，而是把正式竞技场图作为底图纹理，叠加一个玩家可见的 `3列 x 2行` 交互舞台。该舞台只用于解释历史 E2E 为什么能跑通；它不是下一版设计稿坐标源，也不得用于推导完整 `4x3` 版图的左右半场。
+`src/games/mage-wars/Board.tsx` 曾叠加一个玩家可见的 `3列 x 2行` 交互舞台。该段只解释历史 E2E，不是当前实现坐标源；当前 Board 已使用完整 `4×3` 区域映射。
 
 | 逻辑区 ID | row | col | Board 舞台百分比 rect |
 | --- | ---: | ---: | --- |
@@ -97,8 +96,8 @@ FX 层旧实现使用逻辑 `row / col` 的 `3x2` 单元格公式：`left=(col/3
 
 ## 当前 foundation 影响
 
-- 当前 Board 已使用正式竞技场图、旧玩家可见 `3列 x 2行` 舞台 rect、蓝色 12 面效果骰程序化对象和学徒卡牌 atlas；桌面 / 移动横屏真实入口 E2E 已通过，但这些是历史 foundation 技术证据，不能证明当前设计稿通过。
+- 当前 Board 已使用正式竞技场图、完整 `4列 x 3行` 区域映射、蓝色 12 面效果骰程序化对象和正式起始法术书 atlas；桌面 / 移动横屏真实入口 E2E 是运行时证据，但不替代完整 Mage Wars 范围声明。
 - 正式状态板图、状态板轨道坐标和红 / 黑状态方块仍只作为 `reference-only` 规则 / setup / 详情输入，不能成为 Step 1 主界面常驻玩家面板。
-- 标准竞技场源图的左 / 右半场仍未反向锁定；当前完成证据只覆盖旧运行时舞台，不覆盖下一版 `2列 x 3行` 学徒设计稿坐标合同，也不覆盖完整标准模式坐标合同。
+- 标准竞技场源图按完整 `4列 x 3行` 坐标合同消费；旧半场方向选择不再是当前实现或设计稿前置条件。
 - 独立法力指示物仍未闭合；当前 foundation 通过贴近法师牌的自制法力 HUD 避开该对象，不把非状态板法力 token 画成已完成素材。
 - 服务器 / Android 资源回查、真实截图和 E2E 证据见 `runtime-resource-chain-audit.md` 与 `test-results/evidence-screenshots/mage-wars/foundation-board-runtime/evidence.md`。

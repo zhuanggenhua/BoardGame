@@ -8450,8 +8450,8 @@
     "zh-CN/dicethrone/images/lieren/compressed/nyras-bond": {
       "variants": {
         "webp": {
-          "sha256": "2364438ee5a18e209f3deb9069b235972715bf50834ed45c8fc62ab7783c6649",
-          "bytes": 13284,
+          "sha256": "57bf667bf67b80d25defc9ebf488e276e77e5bdd9ebd7d25e0e16235694c57d7",
+          "bytes": 13286,
           "mime": "image/webp"
         }
       }
@@ -8459,8 +8459,8 @@
     "zh-CN/dicethrone/images/lieren/compressed/player-board": {
       "variants": {
         "webp": {
-          "sha256": "42ef27cbbf55d57e9f5fb1ac7b389ad593ff979557b4ca71d0472f51bbaf11a5",
-          "bytes": 2076750,
+          "sha256": "d94c8fe52e9e0f5e3879e7b0ae22009c57ac483ab2a6796f0a6592291304c5f6",
+          "bytes": 2076838,
           "mime": "image/webp"
         }
       }
@@ -8468,8 +8468,17 @@
     "zh-CN/dicethrone/images/lieren/compressed/status-icons-atlas": {
       "variants": {
         "webp": {
-          "sha256": "3acdd25c075288e853cc44665a5b26f77d636b380ca8c0de4692e8612476c467",
-          "bytes": 30164,
+          "sha256": "14cd83328a21cd8453a80edea9fbb53526e19187b2272c81aceaad640d1759c5",
+          "bytes": 30168,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/lieren/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "13edd7f232359507b113b24238b1d40b55ab47aeadfef5752d90ac21c8003d69",
+          "bytes": 607588,
           "mime": "image/webp"
         }
       }

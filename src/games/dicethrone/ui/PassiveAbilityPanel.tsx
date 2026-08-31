@@ -105,7 +105,6 @@ const PassiveActionButton: React.FC<{
 }> = ({ action, passiveId, actionIndex, passiveName, isUsable, isSelecting, currentCp, onClick }) => {
     const { t } = useTranslation('game-dicethrone');
     const icon = ACTION_ICON[action.type];
-    const notEnoughCp = currentCp < action.cpCost;
     const label = action.type === 'rerollDie'
         ? t(action.labelKey ?? 'passive.action.reroll')
         : action.type === 'drawCard'
@@ -143,11 +142,6 @@ const PassiveActionButton: React.FC<{
                     {isSelecting ? t('passive.action.cancel') : label}
                 </span>
             </div>
-            {costLabel ? (
-                <span className={`truncate whitespace-nowrap !text-[0.48vw] ${notEnoughCp || !isUsable ? 'text-red-400' : 'text-amber-300'}`}>
-                    {costLabel}
-                </span>
-            ) : null}
         </GameButton>
     );
 };

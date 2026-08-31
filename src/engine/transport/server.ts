@@ -1578,9 +1578,8 @@ export class GameTransportServer {
         // 都应立即拒绝。若先入房间队列，要等整段 AI 行动结束后才会触发 stale_state，
         // 玩家会在这段时间看到“下一步已排队”却没有可操作反馈。
         if (
-            roomRuntime.isExecuting()
-            && typeof options?.expectedStateID === 'number'
-            && options.expectedStateID !== match.stateID
+            typeof options?.expectedStateID === 'number'
+            && options.expectedStateID < match.stateID
         ) {
             return this.executeCommandInternal(
                 match,

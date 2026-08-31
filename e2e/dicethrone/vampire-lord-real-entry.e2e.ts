@@ -465,7 +465,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
         await expect(bloodPowerButton).toBeVisible({ timeout: 10000 });
         await expect(bloodPowerButton).toBeEnabled();
-        await expect(bloodPowerButton).toContainText('消耗1');
+        await expect(bloodPowerButton).not.toContainText('消耗1');
         const bloodPowerToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`);
         await expect(bloodPowerToken).toHaveAttribute('data-token-amount', '1');
         await expect.poll(async () => (
@@ -507,7 +507,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await game.screenshot('吸血鬼领主-鲜血之力加伤后', testInfo);
     });
 
-    test('鲜血之力 2 档在无可移除状态时仍显示为禁用入口且显示真实成本', async ({ page, game }, testInfo) => {
+    test('鲜血之力 2 档在无可移除状态时仍显示为禁用入口且不重复显示成本', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone', VAMPIRE_LORD_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
@@ -535,7 +535,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(passiveActionBar.locator('[data-testid="passive-action-vampire-lord-blood-power-1"]')).toHaveCount(1);
         await expect(removeStatusButton).toBeVisible({ timeout: 10000 });
         await expect(removeStatusButton).toBeDisabled();
-        await expect(removeStatusButton).toContainText('消耗2');
+        await expect(removeStatusButton).not.toContainText('消耗2');
         await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.BLOOD_POWER}`))
             .toHaveAttribute('data-token-amount', '2');
         await game.screenshot('吸血鬼领主-鲜血之力四档入口-第2档禁用但可见', testInfo);
@@ -849,7 +849,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
         await expect(drawButton).toBeVisible({ timeout: 10000 });
         await expect(drawButton).toBeEnabled();
-        await expect(drawButton).toContainText('消耗3');
+        await expect(drawButton).not.toContainText('消耗3');
         await expect(page.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(0);
         await expect.poll(async () => {
             const state = await game.getState();
@@ -945,7 +945,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
         await expect(healButton).toBeVisible({ timeout: 10000 });
         await expect(healButton).toBeEnabled();
-        await expect(healButton).toContainText('消耗4');
+        await expect(healButton).not.toContainText('消耗4');
         await expect.poll(async () => {
             const state = await game.getState();
             return {

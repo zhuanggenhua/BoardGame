@@ -73,7 +73,6 @@ describe('mage-wars foundation', () => {
 
         expect(core.playerOrder).toEqual(['0', '1']);
         expect(core.currentPlayerId).toBe('0');
-        expect(core.arenaMode).toBe('formal-4x3');
         expect(core.arena).toHaveLength(12);
         expect(core.objects).toEqual({});
         expect(core.arena.every((zone) => Array.isArray(zone.objectIds))).toBe(true);

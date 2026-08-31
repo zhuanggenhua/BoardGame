@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "法师战争地图自由拖拽与牌桌布局验收",
+  "generatedAt": "2026-08-30T13:27:25+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "地图拖拽后场景发生平移，且不带动页面壳层、手牌、计划区、玩家 HUD 或主动作按钮",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E：2560x1304 真实入口验证放大镜悬浮、宽屏布局和地图自由查看 1 passed",
+        "最终拖拽截图显示地图内容已平移，底部手牌/计划区、两侧法师 HUD 与确认计划按钮保持固定锚点"
+      ]
+    },
+    {
+      "requirement": "地图视窗占据牌桌可用区域，不被固定比例小框限制；顶部无职责标题不占主舞台",
+      "status": "PASS",
+      "evidence": [
+        "真实入口截图中地图视窗覆盖牌桌主体区域，未出现固定 4:3 小框或顶部正式竞技场标题",
+        "规范 lint 与 Mage Wars Board 测试通过"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

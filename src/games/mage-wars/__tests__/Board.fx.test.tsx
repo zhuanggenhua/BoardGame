@@ -158,6 +158,7 @@ vi.mock('../../../components/common/animations/DamageFlash', () => ({
         numberFontScale,
         numberColorClass,
         numberDurationSeconds,
+        showRedPulse = true,
     }: {
         damage?: number;
         intensity?: string;
@@ -168,6 +169,7 @@ vi.mock('../../../components/common/animations/DamageFlash', () => ({
         numberFontScale?: number;
         numberColorClass?: string;
         numberDurationSeconds?: number;
+        showRedPulse?: boolean;
     }) => (
         <div
             data-testid="mock-damage-flash"
@@ -179,6 +181,7 @@ vi.mock('../../../components/common/animations/DamageFlash', () => ({
             data-number-font-scale={String(numberFontScale ?? '')}
             data-number-color-class={numberColorClass ?? ''}
             data-number-duration-seconds={String(numberDurationSeconds ?? '')}
+            data-show-red-pulse={String(showRedPulse)}
         >
             {damage}
         </div>
@@ -961,6 +964,7 @@ describe('MageWarsBoard FX wiring', () => {
                 .querySelector('[data-testid="mock-burst-particles"]')
                 ?.getAttribute('data-overflow')).toBe('2.2');
             expect(screen.getByTestId('mock-damage-flash').getAttribute('data-number-duration-seconds')).toBe('1.6');
+            expect(screen.getByTestId('mock-damage-flash').getAttribute('data-show-red-pulse')).toBe('false');
 
             act(() => {
                 advanceSharedFxClockDelay(2600);
@@ -1194,7 +1198,7 @@ describe('MageWarsBoard browse interactions', () => {
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('scale(0.7');
+            expect(content.style.transform).toContain('scale(1.22');
         });
 
         const firstCard = container.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]');

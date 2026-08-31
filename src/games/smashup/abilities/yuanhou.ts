@@ -1787,10 +1787,10 @@ function timeTravelersStasisFieldTurnStart(ctx: TriggerContext): SmashUpEvent[] 
     for (const base of ctx.state.bases) {
         for (const action of base.ongoingActions) {
             const controllerId = action.metadata?.sourceControllerId ?? action.ownerId;
-            if (action.defId !== 'time_travelers_stasis_field') continue;
+            if (!matchesDefId(action.defId, 'time_travelers_stasis_field')) continue;
             if (ctx.sourceCardUid && action.uid !== ctx.sourceCardUid) continue;
             if (controllerId === ctx.playerId) {
-                events.push(detachOngoing(action.uid, action.defId, action.ownerId, 'time_travelers_stasis_field', ctx.now));
+                events.push(detachOngoing(action.uid, action.defId, action.ownerId, action.defId, ctx.now));
             }
         }
     }
@@ -2996,10 +2996,10 @@ export function registerYuanhouAbilities(): void {
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerBaseAbilitySuppression('time_travelers_stasis_field', (state, baseIndex) =>
-        state.bases[baseIndex]?.ongoingActions.some(action => action.defId === 'time_travelers_stasis_field') ?? false,
+        state.bases[baseIndex]?.ongoingActions.some(action => matchesDefId(action.defId, 'time_travelers_stasis_field')) ?? false,
     );
     registerBaseScoringSuppression('time_travelers_stasis_field', (state, baseIndex) =>
-        state.bases[baseIndex]?.ongoingActions.some(action => action.defId === 'time_travelers_stasis_field') ?? false,
+        state.bases[baseIndex]?.ongoingActions.some(action => matchesDefId(action.defId, 'time_travelers_stasis_field')) ?? false,
     );
     registerTrigger('time_travelers_stasis_field', 'onTurnStart', timeTravelersStasisFieldTurnStart, {
         playerContext: 'sourceController',

@@ -601,10 +601,8 @@ async function clickVisibleDie(page: Page, dieIndex: number): Promise<void> {
     await expect(dieButton).toBeVisible({ timeout: 15000 });
     await expect(dieButton).toHaveAttribute('data-clickable', 'true', { timeout: 15000 });
     await dieButton.click();
-    const confirmModifyButton = page.getByTestId('dice-interaction-confirm-button').first();
-    await expect(confirmModifyButton).toBeEnabled({ timeout: 10000 });
-    await confirmModifyButton.click();
-    await page.waitForTimeout(500);
+    // “改为指定值”是单步交互，点击骰面即会提交并关闭交互，不应再等待一个不存在的确认按钮。
+    await expect(page.getByTestId('dice-interaction-confirm-button')).toHaveCount(0, { timeout: 10000 });
 }
 
 async function confirmDiceInteraction(page: Page): Promise<void> {

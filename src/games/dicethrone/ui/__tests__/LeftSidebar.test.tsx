@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { initHeroState } from '../../domain/characters';
 import { TOKEN_IDS } from '../../domain/ids';
 import { createQueuedRandom } from '../../__tests__/test-utils';
+import { LIEREN_TOKENS } from '../../heroes/lieren/tokens';
 import { TIANSHI_TOKENS } from '../../heroes/tianshi/tokens';
 import { LeftSidebar } from '../LeftSidebar';
 
@@ -100,5 +101,31 @@ describe('LeftSidebar 飞行 Token 入口', () => {
 
         expect(onTokenClick).toHaveBeenCalledWith(TOKEN_IDS.FLIGHT);
         expect(screen.queryByTestId('dicethrone-token-response-inline')).not.toBeInTheDocument();
+    });
+
+    it('女猎手可从左侧 Token 徽章主动消耗妮拉之系治疗妮拉', () => {
+        const player = initHeroState('0', 'lieren', createQueuedRandom([1]));
+        player.tokens[TOKEN_IDS.NYRAS_BOND] = 1;
+        player.companion = { id: 'nyra', hp: 4, maxHp: 7 };
+        const onNyraBondHealClick = vi.fn();
+
+        render(
+            <LeftSidebar
+                currentPhase="main1"
+                viewPlayer={player}
+                playerId="0"
+                locale="zh-CN"
+                tokenDefinitions={LIEREN_TOKENS}
+                canUseNyraBondHeal
+                onNyraBondHealClick={onNyraBondHealClick}
+            />,
+        );
+
+        const nyraBondToken = screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.NYRAS_BOND}`);
+        expect(nyraBondToken).toHaveAttribute('data-token-clickable', 'true');
+
+        fireEvent.click(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.NYRAS_BOND}-hit-target`));
+
+        expect(onNyraBondHealClick).toHaveBeenCalledTimes(1);
     });
 });

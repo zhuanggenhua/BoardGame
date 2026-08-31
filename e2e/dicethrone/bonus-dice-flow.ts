@@ -13,6 +13,7 @@ type RightTrayBonusDiceReviewOptions = {
 };
 
 type NoCentralBonusDicePresentationOptions = {
+    /** 纯卡牌预览可以与右侧奖励骰并存；只有其中的骰子/汇总内容应被禁止。 */
     allowCardSpotlight?: boolean;
 };
 
@@ -46,7 +47,7 @@ const rightTrayRail = (page: Page) => {
  */
 export const expectNoCentralBonusDicePresentation = async (
     page: Page,
-    { allowCardSpotlight = false }: NoCentralBonusDicePresentationOptions = {},
+    { allowCardSpotlight = true }: NoCentralBonusDicePresentationOptions = {},
 ): Promise<void> => {
     await expect(page.getByTestId('compare-roll-overlay')).toHaveCount(0);
     await expect(page.getByTestId('bonus-die-overlay')).toHaveCount(0);

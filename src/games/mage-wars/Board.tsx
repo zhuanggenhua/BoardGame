@@ -92,6 +92,8 @@ type Props = GameBoardProps<MageWarsCore>;
 
 const MAGE_WARS_DESIGN_WIDTH = 1920;
 const MAGE_WARS_DESIGN_HEIGHT = 1080;
+const MAGE_WARS_ARENA_ASSET_WIDTH = 3210;
+const MAGE_WARS_ARENA_ASSET_HEIGHT = 2407;
 
 type MageWarsMagnifiedPreview = {
     previewRef: CardPreviewRef;
@@ -1126,6 +1128,7 @@ function PreparedSpellCard({
                         data-tutorial-id={tutorialId}
                         data-mage-wars-prepared-card={preparedScope}
                         data-source-card-id={cardId ?? undefined}
+                        data-spell-type={cardId == null ? undefined : getMageWarsSpellCardFromConfig(cardId)?.spellType}
                         data-copy-count={copyCount ?? undefined}
                         data-selected-count={selectedCount > 0 ? selectedCount : undefined}
                         data-selected={selected ? 'true' : undefined}
@@ -1165,6 +1168,7 @@ function PreparedSpellCard({
                 data-tutorial-id={tutorialId}
                 data-mage-wars-prepared-card={preparedScope}
                 data-source-card-id={cardId ?? undefined}
+                data-spell-type={cardId == null ? undefined : getMageWarsSpellCardFromConfig(cardId)?.spellType}
                 data-copy-count={copyCount ?? undefined}
                 data-selected-count={selectedCount > 0 ? selectedCount : undefined}
                 data-selected={selected ? 'true' : undefined}
@@ -2284,7 +2288,7 @@ function ArenaStage({
 
     return (
         <section
-            className="relative h-full w-full overflow-hidden rounded-[0.5rem] shadow-[0_34px_58px_rgba(0,0,0,0.55)]"
+            className="relative h-full w-full overflow-hidden"
             data-testid="mage-wars-arena-stage"
             data-tutorial-id="mw-arena"
             ref={(element) => {
@@ -4208,12 +4212,14 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const rootFontSize = typeof document !== 'undefined'
         ? Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
         : 16;
+    const liveViewportWidth = typeof window !== 'undefined' ? window.innerWidth : viewport.width;
+    const liveViewportHeight = typeof window !== 'undefined' ? window.innerHeight : viewport.height;
     const rootRemScale = isLandscapeMobileViewport ? 1 : rootFontSize / 16;
     const desktopLayoutScale = isLandscapeMobileViewport
         ? 1
         : Math.min(
-            viewport.width / MAGE_WARS_DESIGN_WIDTH,
-            viewport.height / MAGE_WARS_DESIGN_HEIGHT,
+            liveViewportWidth / MAGE_WARS_DESIGN_WIDTH,
+            liveViewportHeight / MAGE_WARS_DESIGN_HEIGHT,
         );
     const desktopVisualScale = desktopLayoutScale / rootRemScale;
     return (
@@ -4231,9 +4237,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             data-mage-wars-event-cursor={mageWarsEvents.debug.cursor}
             data-mage-wars-last-consumed-events={mageWarsEvents.debug.lastConsumedTypes.join(',')}
             data-mage-wars-last-fx-cues={mageWarsEvents.debug.lastFxCues.join(',')}
-            style={{
-                background: 'radial-gradient(circle at 50% 40%, rgba(185,79,28,0.28), transparent 50%), radial-gradient(circle at 12% 92%, rgba(201,92,31,0.22), transparent 28%), linear-gradient(135deg, #170503 0%, #371207 56%, #120302 100%)',
-            }}
+            style={{ background: '#151311' }}
         >
             <div
                 className="absolute left-1/2 top-1/2"
@@ -4264,26 +4268,24 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                         }}
                 >
             <div
-                className={cx(
-                    'absolute z-10',
-                    isLandscapeMobileViewport
-                        ? 'inset-x-4 top-4 bottom-[15%]'
-                        : 'inset-x-[3%] top-[3%] bottom-[15%]',
-                )}
+                className="absolute inset-0 z-10"
                 data-testid="mage-wars-arena-viewport-shell"
                 data-tutorial-id="mw-stage"
             >
                 <ZoomPanViewport
-                    initialScale={0.6}
-                    minScale={0.6}
+                    initialScale={1.06}
+                    minScale={1}
                     maxScale={2.6}
-                    panBoundsMode="free"
+                    baseScaleMode="cover"
                     containerTestId="mage-wars-arena-viewport"
                     contentTestId="mage-wars-arena-viewport-content"
                     scaleTestId="mage-wars-arena-viewport-scale"
-                    className="h-full w-full rounded-[0.5rem]"
-                    contentClassName="relative h-full w-full"
-                    contentStyle={{ width: '100%', height: '100%' }}
+                    className="flex h-full w-full items-center justify-center"
+                    contentClassName="relative"
+                    contentStyle={{
+                        width: MAGE_WARS_ARENA_ASSET_WIDTH + 'px',
+                        height: MAGE_WARS_ARENA_ASSET_HEIGHT + 'px',
+                    }}
                     ariaLabel={t('arena.standardArenaAlt')}
                 >
                     <ArenaStage
@@ -4338,28 +4340,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     />
                 </ZoomPanViewport>
             </div>
-            <div className={cx(
-                'pointer-events-none absolute inset-y-0 left-0 bg-gradient-to-r from-black/24 via-black/7 to-transparent',
-                'w-[16rem]',
-            )} />
-            <div className={cx(
-                'pointer-events-none absolute inset-y-0 right-0 bg-gradient-to-l from-black/24 via-black/8 to-transparent',
-                'w-[17rem]',
-            )} />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/16 to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/12 to-transparent" />
-
-            <div
-                className="pointer-events-none absolute left-1/2 top-4 z-30 flex h-[2.125rem] w-[17.5rem] -translate-x-1/2 items-center justify-center rounded-full border border-amber-100/16 bg-black/40 px-8 text-sm shadow-[0_10px_28px_rgba(0,0,0,0.36)]"
-                data-testid="mage-wars-stage-chip"
-                data-tutorial-id="mw-stage"
-                style={{ left: '50%', transform: 'translateX(-50%)' }}
-            >
-                <span className="font-semibold text-amber-100">
-                    {isCreatureActionPhase(phase) ? t('arena.actionStage') : t('arena.mode')}
-                </span>
-            </div>
-
             <MageWarsLifeToggle
                 pressed={showBoardLifeTotals}
                 onToggle={() => setShowBoardLifeTotals((value) => !value)}

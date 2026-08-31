@@ -155,6 +155,31 @@ describe('致盲（Blinded）攻击判定链', () => {
         });
         expect(result.passed).toBe(true);
     });
+
+    it('完成进攻投掷但没有投出技能时，仍进行致盲判定并移除致盲', () => {
+        const runner = createRunner(createQueuedRandom([1, 1, 4, 4, 6, 3]));
+        const result = runner.run({
+            name: 'blinded no offensive ability after roll',
+            setup: createHeroMatchup('barbarian', 'monk', (core) => {
+                core.players['0'].statusEffects[STATUS_IDS.BLINDED] = 1;
+            }),
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),
+            ],
+            expect: {
+                turnPhase: 'main2',
+                players: {
+                    '0': { statusEffects: { [STATUS_IDS.BLINDED]: 0 } },
+                    '1': { hp: INITIAL_HEALTH },
+                },
+            },
+        });
+        expect(result.passed).toBe(true);
+    });
 });
 
 describe('不可防御攻击链', () => {

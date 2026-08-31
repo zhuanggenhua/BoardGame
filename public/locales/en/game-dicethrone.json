@@ -2114,6 +2114,7 @@
       "effects": {
         "heal1": "Heal 1",
         "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage",
         "heal2": "Heal 2",
         "damage8": "Deal 8 damage"
       }
@@ -5684,13 +5685,13 @@
   },
   "vampireLordBloodPower": {
     "name": "Blood Power",
-    "attackBonusShort": "+3 Damage (cost 1)",
+    "attackBonusShort": "+3 Damage",
     "attackBonus": "With at least 1 Blood Power, spend 1 Blood Power to add 3 damage to this attack; each effect can be activated once per turn",
-    "removeStatusShort": "Remove Status (cost 2)",
+    "removeStatusShort": "Remove Status",
     "removeStatus": "With at least 2 Blood Power, spend 2 Blood Power to choose 1 player and remove 1 status effect; activate only during the Main Phase, once per effect per turn",
-    "drawShort": "Draw 2 (cost 3)",
+    "drawShort": "Draw 2",
     "draw": "With at least 3 Blood Power, spend 3 Blood Power to draw 2 cards; each effect can be activated once per turn",
-    "healShort": "Blood Heal (cost 4)",
+    "healShort": "Blood Heal",
     "heal": "With at least 4 Blood Power, spend 4 Blood Power to heal equal to the damage successfully dealt by this attack; activate only during the Attack Phase, once per effect per turn"
   },
   "vampireLordMesmerize": {

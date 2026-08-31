@@ -1161,6 +1161,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         && Boolean(G.pendingAttack)
         && (player.tokens?.[TOKEN_IDS.FLIGHT] ?? 0) > 0;
 
+    const canUseNyraBondHeal = !isSpectator
+        && player.characterId === 'lieren'
+        && !G.pendingDamage
+        && (player.tokens?.[TOKEN_IDS.NYRAS_BOND] ?? 0) > 0
+        && Boolean(player.companion)
+        && (player.companion?.hp ?? 0) < (player.companion?.maxHp ?? 0);
+
     // 是否可以移除击倒（有击倒状态且 CP >= 2 且在 offensiveRoll 前的阶段）
     const canRemoveKnockdown = !isSpectator && isActivePlayer &&
         (currentPhase === 'upkeep' || currentPhase === 'income' || currentPhase === 'main1') &&
@@ -2172,6 +2179,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         canUsePurify={canUsePurify}
                         onFlightClick={() => engineMoves.useToken(TOKEN_IDS.FLIGHT, 1)}
                         canUseFlight={canUseFlight}
+                        onNyraBondHealClick={() => engineMoves.useToken(TOKEN_IDS.NYRAS_BOND, 1)}
+                        canUseNyraBondHeal={canUseNyraBondHeal}
                         tokenDefinitions={G.tokenDefinitions}
                         responseTokenIds={tokenInteraction?.tokenIds}
                         onResponseTokenClick={tokenInteraction?.onTokenClick}
@@ -2209,7 +2218,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
                         nyraPlayer={viewPlayer.characterId === 'lieren' ? viewPlayer : undefined}
-                        onConsumeNyraBond={() => engineMoves.useToken('nyras_bond', 1)}
                         nyraDamageResponse={nyraDamageResponse}
                     />
 

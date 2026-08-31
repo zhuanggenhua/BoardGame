@@ -105,7 +105,10 @@ async function screenshotActionLogPanel(
     const panel = await openActionLogPanel(page);
     await expect(page.locator('[data-testid="hud-action-log-row"]').first()).toBeVisible({ timeout: 10000 });
     const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
-    await panel.screenshot(withJpegEvidenceScreenshotOptions({ path, timeout: 20000 }));
+    // 行为日志是可滚动面板，元素级截图会按整块滚动内容计算裁剪高度，
+    // 在线局累积足够多日志时可能卡在浏览器截图阶段。视口截图仍保留面板
+    // 当前可见内容，且能证明日志入口和最终状态，不把整条历史展开成超大图片。
+    await page.screenshot(withJpegEvidenceScreenshotOptions({ path, fullPage: false, timeout: 20000 }));
     await closeActionLogPanel(page);
     return path;
 }
@@ -298,6 +301,10 @@ async function closeCardSpotlightIfVisible(page: Page): Promise<void> {
         return;
     }
 
+    // 卡牌特写默认不自动关闭，点击遮罩空白区才能释放它；这里只关闭卡牌预览，
+    // 不触碰右侧奖励骰确认交互。
+    const spotlightRoot = page.getByTestId('spotlight-container-root').last();
+    await spotlightRoot.click({ position: { x: 8, y: 8 } });
     await expect(spotlight).toHaveCount(0, { timeout: 8000 });
 }
 

@@ -2001,7 +2001,7 @@ function buildEventRollFinalizationActions(
             type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
             payload: { rollId: pending.rollId },
             kind: ACTION_KINDS.FINALIZE_EVENT_ROLL,
-            label: `自动继续事件结算：${pending.sourceTitle}`,
+            label: `自动收口事件展示：${pending.sourceTitle}`,
             idParts: [pending.rollId],
             metadata: {
                 strategicScore: 1190,

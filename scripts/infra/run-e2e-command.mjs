@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withWindowsHide } from './windows-hide.js';
@@ -48,6 +49,9 @@ const HEAVY_TASK_GUARD_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
 const HEAVY_TASK_GUARD_WAIT_POLL_MS = 10 * 1000;
 const E2E_RUNTIME_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
 const E2E_RUNTIME_WAIT_POLL_MS = 10 * 1000;
+const CRITICAL_MEMORY_PERCENT = 1;
+const CRITICAL_MEMORY_SAMPLE_COUNT = 3;
+const CRITICAL_MEMORY_SAMPLE_INTERVAL_MS = 2000;
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -191,24 +195,119 @@ function createE2ESessionId() {
     return `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function run(command, args, env) {
+export function shouldTerminateForCriticalMemory({
+    freeMemoryPercent,
+    consecutiveSamples,
+    thresholdPercent = CRITICAL_MEMORY_PERCENT,
+    requiredSamples = CRITICAL_MEMORY_SAMPLE_COUNT,
+} = {}) {
+    return Number.isFinite(freeMemoryPercent)
+        && Number.isFinite(consecutiveSamples)
+        && freeMemoryPercent <= thresholdPercent
+        && consecutiveSamples >= requiredSamples;
+}
+
+function terminateProcessTree(pid, logger = console) {
+    if (!Number.isInteger(pid) || pid <= 0) {
+        return;
+    }
+
+    if (process.platform === 'win32') {
+        const result = spawnSync('taskkill', ['/F', '/T', '/PID', String(pid)], withWindowsHide({
+            stdio: 'ignore',
+            shell: false,
+        }));
+        if (result.error) {
+            logger.warn?.(`[e2e-memory-watchdog] taskkill 失败: ${result.error.message}`);
+        }
+        return;
+    }
+
+    try {
+        process.kill(pid, 'SIGTERM');
+    } catch (error) {
+        if (error?.code !== 'ESRCH') {
+            logger.warn?.(`[e2e-memory-watchdog] 终止 Playwright 失败: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+}
+
+function startCriticalMemoryWatchdog(pid, {
+    logger = console,
+    thresholdPercent = Number(process.env.BG_E2E_CRITICAL_FREE_MEMORY_PERCENT) || CRITICAL_MEMORY_PERCENT,
+    requiredSamples = Number(process.env.BG_E2E_CRITICAL_MEMORY_SAMPLE_COUNT) || CRITICAL_MEMORY_SAMPLE_COUNT,
+    sampleIntervalMs = Number(process.env.BG_E2E_CRITICAL_MEMORY_SAMPLE_INTERVAL_MS) || CRITICAL_MEMORY_SAMPLE_INTERVAL_MS,
+} = {}) {
+    let consecutiveSamples = 0;
+    let triggered = false;
+    const timer = setInterval(() => {
+        const totalMemory = os.totalmem();
+        const freeMemory = os.freemem();
+        const freeMemoryPercent = totalMemory > 0 ? (freeMemory / totalMemory) * 100 : 100;
+
+        if (freeMemoryPercent <= thresholdPercent) {
+            consecutiveSamples += 1;
+        } else {
+            consecutiveSamples = 0;
+        }
+
+        if (!shouldTerminateForCriticalMemory({
+            freeMemoryPercent,
+            consecutiveSamples,
+            thresholdPercent,
+            requiredSamples,
+        })) {
+            return;
+        }
+
+        triggered = true;
+        clearInterval(timer);
+        logger.error?.(
+            `[e2e-memory-watchdog] 可用内存持续危险：${freeMemoryPercent.toFixed(2)}% <= ${thresholdPercent}% `
+            + `（连续 ${consecutiveSamples} 次），终止本次 Playwright 进程树。`,
+        );
+        terminateProcessTree(pid, logger);
+    }, Math.max(250, sampleIntervalMs));
+    timer.unref?.();
+
+    return {
+        stop() {
+            clearInterval(timer);
+        },
+        wasTriggered() {
+            return triggered;
+        },
+    };
+}
+
+async function run(command, args, env) {
     console.log(`🎭 启动 Playwright: ${[command, ...args].join(' ')}`);
-    const result = spawnSync(command, args, withWindowsHide({
+    const child = spawn(command, args, withWindowsHide({
         stdio: 'inherit',
         env,
         shell: false,
     }, env));
+    const watchdog = startCriticalMemoryWatchdog(child.pid);
 
-    if (result.error) {
-        throw result.error;
-    }
-
-    if (typeof result.status === 'number' && result.status !== 0) {
-        return result.status;
-    }
-
-    console.log('✅ Playwright 进程已结束。');
-    return 0;
+    return await new Promise((resolve, reject) => {
+        child.once('error', (error) => {
+            watchdog.stop();
+            reject(error);
+        });
+        child.once('exit', (code) => {
+            watchdog.stop();
+            if (watchdog.wasTriggered()) {
+                resolve(1);
+                return;
+            }
+            if (typeof code === 'number' && code !== 0) {
+                resolve(code);
+                return;
+            }
+            console.log('✅ Playwright 进程已结束。');
+            resolve(0);
+        });
+    });
 }
 
 function runJsonCommand(command, args, env) {
@@ -884,7 +983,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
 
         playwrightArgs.push(...extraArgs);
 
-        const exitCode = run(runtimeNode, [playwrightCli, ...playwrightArgs], modeEnv);
+        const exitCode = await run(runtimeNode, [playwrightCli, ...playwrightArgs], modeEnv);
         if (exitCode !== 0) {
             process.exitCode = exitCode;
         }

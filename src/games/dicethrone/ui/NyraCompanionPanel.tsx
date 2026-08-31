@@ -22,17 +22,15 @@ export interface NyraDamageResponse {
 export const NyraCompanionPanel = ({
     player,
     locale,
-    onConsumeBond,
     damageResponse,
     variant = 'hud',
 }: {
     player: HeroState;
     locale?: string;
-    onConsumeBond?: () => void;
     damageResponse?: NyraDamageResponse;
     variant?: 'hud' | 'boardBadge';
 }) => {
-    const { t, i18n } = useTranslation('game-dicethrone');
+    const { t } = useTranslation('game-dicethrone');
     const companion = player.companion;
     const maxAssignableDamage = Math.max(0, damageResponse?.maxAssignableDamage ?? 0);
     const [damageAllocation, setDamageAllocation] = React.useState(0);
@@ -50,10 +48,6 @@ export const NyraCompanionPanel = ({
     const activeDamageResponse = damageResponse && isActive && damageResponse.currentDamage > 0
         ? damageResponse
         : undefined;
-    const showHealAction = !activeDamageResponse && Boolean(onConsumeBond) && bondCount > 0 && hp < companion.maxHp;
-    const shortHealLabel = (locale ?? i18n.resolvedLanguage ?? i18n.language).toLowerCase().startsWith('en')
-        ? 'Heal'
-        : '治疗';
     const isBoardBadge = variant === 'boardBadge';
     const currentDamage = activeDamageResponse?.currentDamage ?? 0;
     const selectedDamage = Math.max(0, Math.min(damageAllocation, currentDamage));
@@ -195,19 +189,6 @@ export const NyraCompanionPanel = ({
                                 <Link2 className={isBoardBadge ? 'h-3 w-3' : 'h-3 w-3'} aria-hidden="true" />
                                 <span className={isBoardBadge ? 'text-[10px] font-black tabular-nums' : 'text-[10px] font-black tabular-nums'}>{bondCount}/1</span>
                             </div>
-                            {!isBoardBadge && showHealAction && (
-                                <GameButton
-                                    size="sm"
-                                    variant="secondary"
-                                    className="h-5 min-w-[2rem] !min-h-0 !px-1 !py-0 !text-[9px]"
-                                    onClick={onConsumeBond}
-                                    title={t('companion.nyra.healAction')}
-                                    aria-label={t('companion.nyra.healAction')}
-                                    data-testid="nyra-bond-heal-button"
-                                >
-                                    {shortHealLabel}
-                                </GameButton>
-                            )}
                         </div>
                     </div>
                 </div>

@@ -127,7 +127,10 @@ describe('Betrayal 教程配置', () => {
             'move-to-hallway',
             'explore-upper',
             'confirm-room-placement',
+            'roll-event',
             'use-book',
+            'use-rabbit-foot',
+            'confirm-event-result',
             'finish',
             'setup-omen-confirmation',
             'confirm-omen-card',
@@ -160,6 +163,12 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'focus-self-room')?.highlightTarget).toBe('betrayal-focus-self-room');
         expect(manifest?.steps.find((step) => step.id === 'haunt-risk-track')?.highlightTarget).toBe('betrayal-haunt-risk-status');
         expect(manifest?.steps.find((step) => step.id === 'confirm-room-placement')?.highlightTarget).toBe('betrayal-room-placement-confirm');
+        expect(manifest?.steps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
+        expect(manifest?.steps.find((step) => step.id === 'use-rabbit-foot')?.highlightTarget).toBe('betrayal-inventory-rope');
+        expect(manifest?.steps.find((step) => step.id === 'confirm-event-result')?.highlightTarget).toBe('betrayal-latest-discovery');
+        expect(manifest?.steps.find((step) => step.id === 'confirm-event-result')?.advanceOnEvents).toEqual([
+            { type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } },
+        ]);
         expect(manifest?.steps.find((step) => step.id === 'confirm-omen-card')?.allowedCommands).toEqual([
             'ACKNOWLEDGE_CARD_RESOLUTION',
         ]);
@@ -195,7 +204,9 @@ describe('Betrayal 教程配置', () => {
             'move-to-hallway',
             'explore-upper',
             'confirm-room-placement',
+            'roll-event',
             'use-book',
+            'use-rabbit-foot',
         ]);
         expect(defaultManifest?.steps.slice(0, manifest?.steps.length).map((step) => step.id))
             .toEqual(manifest?.steps.map((step) => step.id));
@@ -206,15 +217,20 @@ describe('Betrayal 教程配置', () => {
             ['MOVE_TO_ROOM'],
             [],
             ['EXPLORE_ROOM'],
+            ['ROLL_EVENT'],
             ['USE_POSSESSION'],
+            ['USE_RABBIT_FOOT', 'USE_ROLL_REROLL_ITEM'],
         ]);
         expect(actionSteps.map((step) => step.allowedTargets ?? null)).toEqual([
             ['hallway'],
             null,
             null,
+            null,
             ['omen-book'],
+            ['rope'],
         ]);
-        expect(actionSteps.at(-1)?.highlightTarget).toBe('betrayal-inventory-omen-book');
+        expect(actionSteps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
+        expect(actionSteps.at(-1)?.highlightTarget).toBe('betrayal-inventory-rope');
         expect(setupInventory?.map((card) => card.id)).toEqual(['rope', 'omen-book']);
         expect(setupFields?.eventOrder?.map((event) => event.name)).toEqual(['标本剥制']);
         expect(JSON.stringify(setupFields)).not.toContain('测试中性事件');
@@ -600,6 +616,7 @@ describe('Betrayal 教程配置', () => {
     it('中文教程文案会聚焦玩家能理解的规则动作与结果', () => {
         const officialOmenRuleZh = '抽到预兆卡时，大声朗读，把它放在自己面前并获得。然后进行作祟检定：按所有玩家持有的预兆总数掷骰；若作祟检定结果为 5+，作祟开始。';
         const officialOmenRuleEn = 'When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.';
+        const basicSteps = zhCNLocale.tutorial.basicSetup.steps;
         expect(zhCNLocale.tutorial.mainPath.title).toContain('主线教程');
         expect(zhCNLocale.tutorial.mainPath.description).toContain('预兆确认');
         expect(zhCNLocale.tutorial.mainPath.description).toContain('驱逐木乃伊');
@@ -615,7 +632,7 @@ describe('Betrayal 教程配置', () => {
         expect(enLocale.tutorial.omenConfirmation.description).toBe(officialOmenRuleEn);
         expect(enLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(officialOmenRuleEn);
         expect(zhCNLocale.tutorial.basicSetup.steps.setupRuntime).toContain('基础回合');
-        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('在你的回合中');
+        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('现在是你的回合');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitsAndSpeed).toContain('速度');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitTrackReading).toContain('绿色数字');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitTrackReading).toContain('骷髅');
@@ -628,17 +645,38 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆进度条');
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('5+');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('看到事件牌和事件骰后');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('立即失去 1 点神志');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('书本的使用不需要再次确认');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('事件结果仍要等所有玩家确认看清');
+        expect(basicSteps.useBook).toContain('花费 1 点神志');
+        expect(basicSteps.useBook).toContain('直接点持有区的书本');
+        expect(basicSteps.useBook).toContain('改用知识重新投骰');
+        expect(basicSteps.useBook).not.toContain('事件牌公开后');
+        expect(basicSteps.rollEvent).toContain('给所有玩家看清');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('未探索走廊');
         expect(zhCNLocale.tutorial.basicSetup.steps.confirmRoomPlacement).toContain('确认放置');
-        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('原本是力量检定');
-        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('改用知识重新投骰');
-        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('兔脚');
-        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('让其他玩家看清结果');
+        expect(basicSteps.rollEvent).not.toContain('兔脚');
+        expect(basicSteps.rollEvent).not.toContain('伤害');
+        expect(basicSteps.useBook).not.toContain('兔脚');
+        expect(basicSteps.useBook).not.toContain('其他玩家确认');
+        expect(basicSteps.useRabbitFoot).toContain('书本已把检定改成知识');
+        expect(basicSteps.useRabbitFoot).toContain('确认使用兔脚');
+        expect(basicSteps.useRabbitFoot).not.toContain('其他玩家确认');
+        expect(basicSteps.useRabbitFoot).not.toContain('伤害');
+        expect(basicSteps.confirmEventResult).toContain('最终结果');
+        expect(basicSteps.confirmEventResult).toContain('其他玩家确认');
+        expect(basicSteps.confirmEventResult).not.toContain('承受 1 点物理伤害');
+        expect(basicSteps.finish).toContain('后续伤害');
+        expect(basicSteps.finish).toContain('承受 1 点物理伤害');
+        expect(basicSteps.finish).not.toContain('改用知识重新投骰');
+        expect(basicSteps.finish).not.toContain('兔脚');
+        expect([
+            [basicSteps.rollEvent, basicSteps.useBook],
+            [basicSteps.useBook, basicSteps.useRabbitFoot],
+            [basicSteps.useRabbitFoot, basicSteps.confirmEventResult],
+            [basicSteps.confirmEventResult, basicSteps.finish],
+        ].flatMap(([previous, current]) => {
+            const previousSentences = previous.split(/[。；]/).map((part) => part.trim()).filter((part) => part.length >= 8);
+            return previousSentences.filter((sentence) => current.includes(sentence));
+        })).toEqual([]);
         expect(zhCNLocale.tutorial.omenConfirmation.title).toContain('预兆');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('5+');

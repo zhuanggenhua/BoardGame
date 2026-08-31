@@ -1034,8 +1034,10 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-card-testid', 'betrayal-discovery-card-reveal');
         await expect(page.getByTestId('betrayal-discovery-top-banner')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-resolution-steps')).toBeHidden();
-        await expect(page.getByTestId('betrayal-discovery-continue')).toHaveText(/^确认(?: \d+\/\d+)?$/);
-        await saveLocatorScreenshot(page.getByTestId('betrayal-discovery-panel-content'), ORDINARY_ROLL_EVENT_CARD_FRONT_SCREENSHOT);
+        await expect(page.getByTestId('betrayal-event-roll-start')).toBeVisible();
+        await expect(page.getByTestId('betrayal-event-roll-start')).toBeEnabled();
+        await saveScreenshot(page, ORDINARY_ROLL_EVENT_CARD_FRONT_SCREENSHOT);
+        await page.getByTestId('betrayal-event-roll-start').click();
 
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(/检定|投|骰/);
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('力量检定 3');
@@ -1044,10 +1046,20 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
         await expect(page.getByTestId('betrayal-recent-roll-breakdown')).toContainText('骰面合计');
         await expect(page.getByTestId('betrayal-recent-roll-breakdown')).toContainText('加值');
+        const eventResultConfirm = page.getByTestId('betrayal-discovery-continue');
+        await expect(eventResultConfirm).toBeVisible();
+        await expect(eventResultConfirm).toHaveText('确认 0/1');
+        await expect(eventResultConfirm).toHaveAttribute('data-event-roll-required-count', '1');
+        await expect(eventResultConfirm).toHaveClass(/bg-\[#d6b56d\]/);
+        await expect(eventResultConfirm).toHaveClass(/border-\[#d6b56d\]/);
+        await expect(eventResultConfirm).toHaveCSS('border-radius', '0px');
         await expectVisiblePhysicalDiceBox(eventRollPanel);
         await waitForPhysicalDiceSettled(eventRollPanel);
         await expectPhysicalDiceSeparated(eventRollPanel, { minDiceCount: 4 });
-        await saveLocatorScreenshot(eventRollPanel, ORDINARY_ROLL_EVENT_DICE_SCREENSHOT);
+        await saveScreenshot(page, ORDINARY_ROLL_EVENT_DICE_SCREENSHOT);
+        await expect(eventResultConfirm).toBeVisible();
+        await eventResultConfirm.click();
+        await expect(page.getByTestId('betrayal-damage-allocation-panel')).toBeVisible();
         await saveScreenshot(page, ORDINARY_ROLL_EVENT_FULL_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-ordinary-roll-event', diagnostics }]);

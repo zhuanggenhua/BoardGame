@@ -381,12 +381,14 @@ export interface BoardDamageImpactPresetProps {
   numberTestId?: string;
   intensity?: 'normal' | 'strong';
   showImpactBurst?: boolean;
+  showRedPulse?: boolean;
   impactBurstPreset?: BoardBurstPresetName;
   impactBurstColors?: string[];
   impactBurstOverflow?: number;
   numberFontScale?: number;
   numberColorClass?: string;
   numberDurationSeconds?: number;
+  pulseColor?: string;
   shakeDuration?: number;
   impactEffects?: ImpactEffects;
   damageFlashCompleteMs?: number;
@@ -403,12 +405,14 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
   numberTestId,
   intensity = 'strong',
   showImpactBurst = true,
+  showRedPulse = true,
   impactBurstPreset = 'explosionStrong',
   impactBurstColors,
   impactBurstOverflow = 2.2,
   numberFontScale = 1.45,
   numberColorClass = 'text-amber-50',
   numberDurationSeconds = 1.2,
+  pulseColor,
   shakeDuration = 620,
   impactEffects = { shake: true, hitStop: true },
   damageFlashCompleteMs = 1_550,
@@ -453,6 +457,7 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
           active={active}
           damage={damage}
           intensity={intensity}
+          showRedPulse={showRedPulse}
           numberTestId={numberTestId}
           numberFontScale={numberFontScale}
           numberColorClass={numberColorClass}
@@ -462,6 +467,7 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
           slashActiveMs={220}
           pulseDurationMs={620}
           pulseActiveMs={620}
+          pulseColor={pulseColor}
           completeMs={damageFlashCompleteMs}
         />
       </ImpactContainer>
@@ -640,6 +646,7 @@ export interface BoardProjectileAttackPresetProps {
   damageNumberFontScale?: number;
   damageNumberColorClass?: string;
   damageNumberDurationSeconds?: number;
+  pulseColor?: string;
   impactBurstPreset?: BoardBurstPresetName;
   impactBurstColors?: string[];
   impactBurstOverflow?: number;
@@ -649,6 +656,7 @@ export interface BoardProjectileAttackPresetProps {
   showSourceWake?: boolean;
   showMidBurst?: boolean;
   showImpactBurst?: boolean;
+  showRedPulse?: boolean;
   pathPaddingCells?: number;
   pathMinSizeCells?: number;
   onImpact?: () => void;
@@ -683,6 +691,7 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
   damageNumberFontScale = 1.45,
   damageNumberColorClass = 'text-amber-50',
   damageNumberDurationSeconds = 1.2,
+  pulseColor,
   impactBurstPreset = 'explosionStrong',
   impactBurstColors,
   impactBurstOverflow = 2.2,
@@ -692,6 +701,7 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
   showSourceWake = false,
   showMidBurst = false,
   showImpactBurst = true,
+  showRedPulse = true,
   pathPaddingCells,
   pathMinSizeCells,
   onImpact,
@@ -757,12 +767,14 @@ export const BoardProjectileAttackPreset: React.FC<BoardProjectileAttackPresetPr
           numberTestId={damageNumberTestId}
           intensity={intensity}
           showImpactBurst={showImpactBurst}
+          showRedPulse={showRedPulse}
           impactBurstPreset={impactBurstPreset}
           impactBurstColors={impactBurstColors}
           impactBurstOverflow={impactBurstOverflow}
           numberFontScale={damageNumberFontScale}
           numberColorClass={damageNumberColorClass}
           numberDurationSeconds={damageNumberDurationSeconds}
+          pulseColor={pulseColor}
           shakeDuration={shakeDuration}
           impactEffects={impactEffects}
           damageFlashCompleteMs={damageFlashCompleteMs}

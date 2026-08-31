@@ -91,11 +91,18 @@ export class MatchRoomRuntime<Match extends MatchRoomRuntimeMatch<Options>, Opti
 
     async executeCommand(args: MatchRoomRuntimeCommandArgs<Match, Options>): Promise<boolean> {
         if (this.isExecuting()) {
+            const expectedStateID = (
+                args.queuedOptions as { expectedStateID?: unknown } | undefined
+            )?.expectedStateID;
             return this.enqueueCommand({
                 commandType: args.commandType,
                 payload: args.payload,
                 playerID: args.playerID,
-                stateIDAtEnqueue: this.match.stateID,
+                // 连续乐观命令可以在前一条仍执行时进入队列；记录它声明的
+                // 目标版本，前一条完成后仍能按连续 stateID 顺序执行。
+                stateIDAtEnqueue: typeof expectedStateID === 'number'
+                    ? expectedStateID
+                    : this.match.stateID,
                 options: args.queuedOptions,
             });
         }

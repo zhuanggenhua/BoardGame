@@ -34,7 +34,6 @@ export interface CenterBoardProps {
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
     nyraPlayer?: HeroState;
-    onConsumeNyraBond?: () => void;
     nyraDamageResponse?: NyraDamageResponse;
 }
 
@@ -60,7 +59,6 @@ export const CenterBoard = ({
     abilityOverlaysRef,
     playerTokens,
     nyraPlayer,
-    onConsumeNyraBond,
     nyraDamageResponse,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
@@ -139,7 +137,6 @@ export const CenterBoard = ({
                 <NyraCompanionPanel
                     player={nyraPlayer}
                     locale={locale}
-                    onConsumeBond={onConsumeNyraBond}
                     damageResponse={nyraDamageResponse}
                     variant="boardBadge"
                 />

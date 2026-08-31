@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { EventStreamEntry } from '../../../engine/types';
 import type { DamageDealtEvent, HealAppliedEvent, HeroState, AbilityDef } from '../domain/types';
-import type { CpChangedEvent } from '../domain/events';
+import type { CompanionHealthChangedEvent, CpChangedEvent } from '../domain/events';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusAtlases } from '../ui/statusEffects';
 import { getStatusEffectIconNode } from '../ui/statusEffects';
@@ -74,6 +74,10 @@ export interface AnimationEffectsConfig {
         selfCp: React.RefObject<HTMLDivElement | null>;
         opponentBuff: React.RefObject<HTMLDivElement | null>;
         selfBuff: React.RefObject<HTMLDivElement | null>;
+        /** 自己当前可见的伙伴面板（女猎手妮拉）。 */
+        selfCompanion?: React.RefObject<HTMLDivElement | null>;
+        /** 当前观察对手的伙伴面板（女猎手妮拉）。 */
+        opponentCompanion?: React.RefObject<HTMLDivElement | null>;
         /** 对手悬浮窗容器（对手效果的 fallback 起点） */
         opponentHeader: React.RefObject<HTMLDivElement | null>;
     };
@@ -257,6 +261,55 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     }, [currentPlayerId, opponentId, opponent, player, getAbilityStartPos, refs.opponentHp, refs.selfHp]);
 
     /**
+     * 妮拉是伙伴血量，不改变英雄 HP；但对玩家来说仍是血量变化。
+     * 正数复用回血飞字，负数复用扣血飞字，终点落到当前可见的妮拉面板。
+     */
+    const buildCompanionHealthStep = useCallback((event: CompanionHealthChangedEvent): AnimStep | null => {
+        const { playerId, delta, sourceAbilityId } = event.payload;
+        if (delta === 0) return null;
+        if (playerId !== currentPlayerId && playerId !== opponentId) return null;
+
+        const isOpponent = playerId === opponentId;
+        const companionRef = isOpponent ? refs.opponentCompanion : refs.selfCompanion;
+        const fallbackHpRef = isOpponent ? refs.opponentHp : refs.selfHp;
+        const endPos = getElementCenter(companionRef?.current ?? fallbackHpRef.current);
+        const startPos = delta < 0
+            ? (isOpponent
+                ? getAbilityStartPos(sourceAbilityId || undefined)
+                : getElementCenter(refs.opponentHeader.current))
+            : getAbilityStartPos(sourceAbilityId || undefined);
+
+        if (delta > 0) {
+            return {
+                cue: DT_FX.HEAL,
+                params: { amount: delta, startPos, endPos },
+                bufferKey: '',
+                frozenHp: -1,
+                damage: 0,
+            };
+        }
+
+        const damage = Math.abs(delta);
+        const soundKey = resolveDamageImpactKey(damage, playerId, currentPlayerId);
+        return {
+            cue: DT_FX.DAMAGE,
+            params: { damage, startPos, endPos, soundKey },
+            bufferKey: '',
+            frozenHp: -1,
+            damage,
+        };
+    }, [
+        currentPlayerId,
+        getAbilityStartPos,
+        opponentId,
+        refs.opponentCompanion,
+        refs.opponentHeader,
+        refs.opponentHp,
+        refs.selfCompanion,
+        refs.selfHp,
+    ]);
+
+    /**
      * 构建单个 CP 变化事件的 FX 参数
      * 
      * CP 获得（delta > 0）：从触发技能的来源位置飞到自己的 CP 条（金色 buff 飞行数字）
@@ -401,6 +454,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
 
         const damageSteps: AnimStep[] = [];
         const healSteps: AnimStep[] = [];
+        const companionHealthSteps: AnimStep[] = [];
         const cpSteps: AnimStep[] = [];
 
         for (const entry of dedupedEntries) {
@@ -413,13 +467,16 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
             } else if (event.type === 'HEAL_APPLIED') {
                 const step = buildHealStep(event as unknown as HealAppliedEvent);
                 if (step) healSteps.push(step);
+            } else if (event.type === 'COMPANION_HEALTH_CHANGED') {
+                const step = buildCompanionHealthStep(event as unknown as CompanionHealthChangedEvent);
+                if (step) companionHealthSteps.push(step);
             } else if (event.type === 'CP_CHANGED') {
                 const step = buildCpStep(event as unknown as CpChangedEvent);
                 if (step) cpSteps.push(step);
             }
         }
 
-        const allSteps = [...damageSteps, ...healSteps, ...cpSteps];
+        const allSteps = [...damageSteps, ...healSteps, ...companionHealthSteps, ...cpSteps];
         if (allSteps.length === 0) return;
 
         let needsBufferCommit = false;
@@ -444,6 +501,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         consumeNew,
         buildDamageStep,
         buildHealStep,
+        buildCompanionHealthStep,
         buildCpStep,
         damageBuffer,
         pushNextStep,

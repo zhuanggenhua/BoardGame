@@ -3,7 +3,7 @@
 ## 基本信息
 
 - 对象：Dice Throne 新英雄吸血鬼领主（`vampire_lord` / Vampire Lord）。
-- 日期：2026-08-28；最近更新：2026-08-30（旧完成态结论失效；本轮补齐鲜血之力四档成本、累计门槛和每回合限制的录入与实现，并完成当前范围审计）。
+- 日期：2026-08-28；最近更新：2026-08-30（旧完成态结论失效；本轮补齐鲜血之力四档成本、累计门槛和每回合限制的录入与实现，并修正按钮重复显示成本的问题）。
 - 文档类型：`invalidation` + `audit`。
 - 关联需求：新增 DiceThrone 吸血鬼新派系；修复旧审计把“角色可选 / 一条伤害代表链”误当完整派系完成的问题。
 - 当前工作目录：`D:\gongzuo\webgame\BoardGame`。
@@ -126,11 +126,18 @@
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\嗜血之爪-III-5-利爪三同应通过真实投骰获得鲜血之力并造成-8-点攻击伤害\吸血鬼领主-嗜血之爪III进入防御.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\嗜血之爪-III-5-利爪三同应通过真实投骰获得鲜血之力并造成-8-点攻击伤害\吸血鬼领主-嗜血之爪III结算后血力增加.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\真实在线玩家选角入口应隐藏未完成审计的吸血鬼领主，但内部注入仍可初始化\01-选角-吸血鬼领主隐藏且其它角色可选.jpg`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\鲜血之力-2-档在无可移除状态时仍显示为禁用入口且显示真实成本\吸血鬼领主-鲜血之力四档入口-第2档禁用但可见.jpg`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\鲜血之力-2-档在无可移除状态时仍显示为禁用入口且不重复显示成本\吸血鬼领主-鲜血之力四档入口-第2档禁用但可见.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\真实在线玩家选角入口应隐藏未完成审计的吸血鬼领主，但内部注入仍可初始化\03-牌桌-吸血鬼领主资源链与状态图标.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\真实在线玩家选角入口应显示实施中的吸血鬼领主并可进入牌桌\01-选角-吸血鬼领主实施中可见且可选.jpg`
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\vampire-lord-real-entry.e2e\完成态最终截图组\open-pass-manifest-vampire-lord-completed.json`（历史候选，不代表已获真人批准）
- - 人工观察结论：四档鲜血之力入口显示真实成本与禁用条件，使用后对应最终资源和效果已落地；催眠截图显示临时骰、对手骰候选和重掷收口；嗜血之爪结算后截图显示攻击者鲜血之力为 1/5、对手生命 42；不死防御截图显示 4 颗骰、确认、反击 / 自疗后的最终生命值和主要阶段 2；实施中入口截图显示吸血鬼领主可见、带实施中标记且可选；完成态候选截图仅作为误切换后的历史证据，不能替代真人批准。部分收口帧保留正常对手思考提示，未将该覆盖层误报为无覆盖层视觉美术验收。
+ - 人工观察结论：四档鲜血之力按钮只显示动作短名，亮起 / 置灰表达当前是否可用，详细成本、门槛、效果和次数由提示卡承载；使用后对应最终资源和效果已落地。催眠截图显示临时骰、对手骰候选和重掷收口；嗜血之爪结算后截图显示攻击者鲜血之力为 1/5、对手生命 42；不死防御截图显示 4 颗骰、确认、反击 / 自疗后的最终生命值和主要阶段 2；实施中入口截图显示吸血鬼领主可见、带实施中标记且可选；完成态候选截图仅作为误切换后的历史证据，不能替代真人批准。部分收口帧保留正常对手思考提示，未将该覆盖层误报为无覆盖层视觉美术验收。
+
+## 2026-08-30 UI 职责修正
+
+- 发现：被动能力按钮正文同时显示动作短名和“消耗 N 个鲜血之力”，与提示卡的规则说明重复；按钮亮起本身已经表达当前可执行，按钮置灰已经表达当前不可执行。
+- 修正：移除被动按钮正文的可见成本行，并将吸血鬼四个短按钮文案改为只保留动作名称；真实成本仍保留在规则数据、提示卡和无障碍名称中，领域层的成本校验与实际扣除不变。
+- 验证：`PassiveAbilityPanel` 组件回归测试 1 条通过；吸血鬼领域 / 录入定向测试与组件测试共 30 条通过；真实入口 E2E 9/9 通过，其中第 2 条直接断言无可移除状态时按钮置灰且不显示“消耗 2”，其余三档断言亮起和点击后的真实 Token 消耗。
+- 规范来源：项目 UI 改动门禁中的“动作按钮与规则说明分工”条款；按钮成本不是新的规则真相，提示卡仍是鲜血之力成本、门槛、效果和次数的说明来源。
 
 ## 同类扩审与漏审归因
 

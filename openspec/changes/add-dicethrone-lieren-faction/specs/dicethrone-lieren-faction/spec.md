@@ -19,13 +19,13 @@
 
 ### Requirement: 女猎手素材与提示卡记录
 
-系统 SHALL 使用女猎手正式压缩资源和独立卡牌/状态图集配置渲染运行时素材；提示卡 SHALL 使用已登记的 `tip.jpg` 在选角和牌桌中显示，`tip.png` 继续作为录入真相源。
+系统 SHALL 使用女猎手正式压缩资源和独立卡牌/状态图集配置渲染运行时素材；提示卡 SHALL 由 `tip.png` 压缩为 `compressed/tip.webp`，在选角和牌桌中显示，并在进入审计前完成服务器上传和公开 URL 回查。
 
 #### Scenario: 提示卡可见且可追溯
 
 - **WHEN** 玩家进入选角或女猎手牌桌
 - **THEN** 可见女猎手提示卡并可点击放大
-- **AND THEN** `tip.png` 原图、尺寸、hash 与规则用途仍出现在真相源表与 evidence
+- **AND THEN** `tip.png` 原图、尺寸、hash 与规则用途仍出现在真相源表与 evidence，`compressed/tip.webp` 的远端 URL 返回 `200`
 
 ### Requirement: 妮拉宠物 UI 人工验收门禁
 

@@ -601,8 +601,8 @@ function resolvePendingDamageForTest(
 ): BetrayalCore {
     let acknowledgedCore = core;
     if (acknowledgedCore.recentRoll?.kind === 'eventRolledDamage') {
-        acknowledgedCore = acknowledgeAnyPendingCardResolutions(acknowledgedCore);
-        acknowledgedCore = acknowledgeRecentRollForAllPlayers(acknowledgedCore);
+        // 事件结果确认完成后，伤害骰作为新的结果窗口单独进入伤害分配。
+        expect(acknowledgedCore.pendingEventRollResolution).toBeNull();
     }
     const pending = acknowledgedCore.pendingDamageAllocation;
     expect(pending).toBeTruthy();
@@ -683,7 +683,7 @@ function acknowledgeSingleEventEffectResolution(
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, core.currentPlayer, {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认事件骰的最终结果。',
+            error: '请先处理当前事件投掷结果。',
         });
         const nextCore = acknowledgePendingEventRollResolution(core);
         expect(nextCore.pendingEventRollResolution).toBeNull();
@@ -4082,7 +4082,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.speed).toBe(3);
     });
 
-    it('投骰事件使用同一个全员确认窗口，最后一票直接放行结算', () => {
+    it('普通事件投掷先保留结果展示，并等待全员确认', () => {
         let core = createStartedFirstScenarioCore(['0', '1']);
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -4109,51 +4109,48 @@ describe('Betrayal first scenario runtime', () => {
         }))).toEqual([
             { kind: 'event-effect', text: '事件效果：知识检定 6：获得 1 点知识；知识 +1' },
         ]);
-        const requiredPlayerIds = [...core.playerIds];
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.pendingEventRollResolution).toMatchObject({
             rollId: core.recentRoll?.id,
             sourceTitle: '外星几何',
-            requiredPlayerIds,
+            requiredPlayerIds: ['0', '1', '2', '3'],
             acknowledgedPlayerIds: [],
+            requiresAcknowledgement: true,
         });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认事件骰的最终结果。',
+            error: '请先处理当前事件投掷结果。',
         });
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '0', {
             rollId: core.pendingEventRollResolution!.rollId,
         }, 100, BETRAYAL_FIXED_RANDOM, false);
-
-        expect(core.pendingCardResolutionQueue).toEqual([]);
-        expect(core.pendingEventRollResolution).toMatchObject({
-            requiredPlayerIds,
-            acknowledgedPlayerIds: ['0'],
-        });
-        expect(BetrayalDomain.validate(
-            { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
-        )).toMatchObject({
-            valid: false,
-            error: '请先确认事件骰的最终结果。',
-        });
-
-        for (const playerId of requiredPlayerIds.slice(1)) {
-            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, playerId, {
-                rollId: core.pendingEventRollResolution!.rollId,
-            }, 100, BETRAYAL_FIXED_RANDOM, false);
+        for (const [index, playerId] of ['1', '2', '3'].entries()) {
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                playerId,
+                { rollId: core.pendingEventRollResolution!.rollId },
+                101 + index,
+                BETRAYAL_FIXED_RANDOM,
+                false,
+            );
         }
 
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         ).valid).toBe(true);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '1', { rollId: core.recentRoll?.id }),
+        ).valid).toBe(false);
     });
 
     it('小丑房间支持无事发生分支与精神伤害分支', () => {
@@ -4665,24 +4662,23 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(3, 3),
             false,
         );
+        core = acknowledgePendingEventRollResolution(core, 101, BETRAYAL_FIXED_RANDOM);
 
         expect(core.latestDiscovery?.summary).toBe('大口吸入芳香');
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 4');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点任意属性');
         expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
-        expect(core.pendingEventChoice).toBeNull();
-        expect(core.pendingEventRollResolution?.sourceTitle).toBe('肉质苔癣');
-        expect(core.pendingEventRollResolution?.effect.mode).toBe('chosenTrait');
-        expect(core.pendingEventRollResolution?.nextPendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingEventChoice).toMatchObject({
+            sourceTitle: '肉质苔癣',
+            effect: { mode: 'chosenTrait' },
+        });
+        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([2, 2]);
         const knowledgePositionBeforeMossReward = traitTrackPosition(core, '0', 'knowledge');
 
-        core = finalizePendingEventRollForTest(core);
-
-        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.pendingEventChoice?.sourceTitle).toBe('肉质苔癣');
         expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
 
@@ -22923,32 +22919,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recentRoll?.dice).toEqual([2, 2, 2]);
         expect(core.usedCardIdsThisTurn).toContain('scary-doll');
 
-        const otherPlayerFinalization = BetrayalDomain.validate(
-            { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, '1', { rollId: core.recentRoll?.id }),
-        );
-        expect(otherPlayerFinalization.valid).toBe(true);
-
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            '1',
-            { rollId: core.recentRoll?.id },
-            100,
-            BETRAYAL_FIXED_RANDOM,
-            false,
-        );
-        expect(core.pendingEventRollResolution?.acknowledgedPlayerIds).toContain('1');
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll);
-        expect(core.currentExplorer.traits.knowledge).toBe(3);
-
-        const blockedTurnEnd = BetrayalDomain.validate(
-            { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
-        );
-        expect(blockedTurnEnd.valid).toBe(false);
-
-        core = finalizePendingEventRollForTest(core);
+        core = acknowledgePendingEventRollResolution(core, 100, BETRAYAL_FIXED_RANDOM);
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll + 1);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
@@ -23301,7 +23272,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.usedCardIdsThisTurn).toContain('rope');
     });
 
-    it('事件骰出现后使用书本会立即支付神志并按知识重新投骰，仍等待确认结算', () => {
+    it('事件骰出现后使用书本会立即支付神志并按知识重新投骰，展示结束后自动结算', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -23363,30 +23334,13 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.pendingEventRollResolution).toMatchObject({
             rollId: core.recentRoll?.id,
             sourceTitle: '标本剥制',
-            acknowledgedPlayerIds: [],
+            requiresAcknowledgement: true,
             effect: { mode: 'trait', trait: 'sanity', amount: 1 },
         });
         expect(core.latestDiscovery?.title).toBe('标本剥制');
         expect(core.latestDiscovery?.detail).toContain('知识检定');
 
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            '0',
-            { rollId: core.pendingEventRollResolution!.rollId },
-            102,
-            BETRAYAL_FIXED_RANDOM,
-            false,
-        );
-        expect(core.pendingEventRollResolution).toMatchObject({
-            acknowledgedPlayerIds: ['0'],
-        });
-        expect(core.pendingCardResolutionQueue).toHaveLength(1);
-        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
-            stepKind: 'event-effect',
-            acknowledgedPlayerIds: ['0'],
-        });
-        core = acknowledgePendingEventRollResolution(core);
+        core = acknowledgePendingEventRollResolution(core, 102, BETRAYAL_FIXED_RANDOM);
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeBook);

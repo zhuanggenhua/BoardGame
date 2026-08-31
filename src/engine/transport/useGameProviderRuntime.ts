@@ -202,7 +202,9 @@ export function useGameProviderRuntime(args: {
             deferredSerializedCommandRef.current = lastSerializedCommandRef.current;
         }
         resetOptimisticProviderRuntime();
-        requestProviderResync();
+        // 命令过期属于明确的权威竞争：立即打断可能卡住的普通同步重试，
+        // 让 UI 尽快回到服务端最新状态，而不是再等一个同步超时周期。
+        requestProviderResync(true);
     }, [requestProviderResync, resetOptimisticProviderRuntime]);
 
     useEffect(() => {
@@ -251,7 +253,16 @@ export function useGameProviderRuntime(args: {
                 const client = clientRef.current;
                 if (!client) return false;
                 if (commands.length === 1) {
-                    return client.sendCommand(commands[0].type, commands[0].payload);
+                    const command = commands[0];
+                    const pendingCount = optimisticEngineRef.current?.getPendingCommandCount?.() ?? 0;
+                    const lastStateID = client.lastReceivedStateID;
+                    const expectedStateID = command.type === 'ADVANCE_PHASE'
+                        && typeof lastStateID === 'number'
+                        ? lastStateID + Math.max(0, pendingCount - 1)
+                        : undefined;
+                    return expectedStateID === undefined
+                        ? client.sendCommand(command.type, command.payload)
+                        : client.sendCommand(command.type, command.payload, { expectedStateID });
                 } else {
                     const batchId = `b-${++batchSeqRef.current}`;
                     return client.sendBatch(batchId, commands, undefined, (reason) => {
@@ -406,6 +417,7 @@ export function useGameProviderRuntime(args: {
             notifyCommandWaitingForPreviousStep();
             return false;
         }
+        const engine = optimisticEngineRef.current;
         if (inFlightSerializedCommandTypeRef.current === type) {
             deferCommandWaitingForPreviousStep(type, payload);
             return false;
@@ -420,7 +432,6 @@ export function useGameProviderRuntime(args: {
             if (commands.length === 0) {
                 return false;
             }
-            const engine = optimisticEngineRef.current;
             if (engine?.hasPendingCommands()) {
                 notifyCommandWaitingForPreviousStep();
                 return false;
@@ -444,19 +455,27 @@ export function useGameProviderRuntime(args: {
             }
             return sent;
         }
-        const engine = optimisticEngineRef.current;
         const sendWithoutPrediction = Boolean(engine?.hasPendingCommands() && canSendWhileOptimisticPending(type));
-        if (engine?.hasPendingCommands() && !sendWithoutPrediction) {
+        const serialized = shouldSerializeCommand(type);
+        if (engine?.hasPendingCommands() && !sendWithoutPrediction && !serialized) {
             deferCommandWaitingForPreviousStep(type, payload);
             return false;
         }
         let shouldSend = true;
+        let wasPredicted = false;
         if (engine && !sendWithoutPrediction) {
             const result = engine.processCommand(type, payload, playerId ?? '0');
             shouldSend = result.shouldSend;
+            wasPredicted = result.stateToRender !== null;
             if (result.stateToRender) {
                 const refreshed = refreshInteractionOptions(result.stateToRender);
                 setState(refreshed);
+            }
+            // 当前已有乐观命令但本次阶段推进无法在最新预测态上安全执行时，
+            // 不要把旧版本命令再发一次；等权威同步后由唯一恢复入口重试。
+            if (serialized && engine.hasPendingCommands() && !wasPredicted) {
+                deferCommandWaitingForPreviousStep(type, payload);
+                return false;
             }
         }
         if (!shouldSend) {
@@ -467,13 +486,21 @@ export function useGameProviderRuntime(args: {
         if (batcher) {
             sent = batcher.enqueue(type, payload);
         } else {
-            sent = client.sendCommand(type, payload);
+            const pendingCount = engine?.getPendingCommandCount?.() ?? 0;
+            const lastStateID = client.lastReceivedStateID;
+            const expectedStateID = serialized
+                && typeof lastStateID === 'number'
+                ? lastStateID + Math.max(0, pendingCount - 1)
+                : undefined;
+            sent = expectedStateID === undefined
+                ? client.sendCommand(type, payload)
+                : client.sendCommand(type, payload, { expectedStateID });
         }
         if (!sent && engine) {
             rollbackOptimisticRenderAndResync();
             return false;
         }
-        if (sent && shouldSerializeCommand(type)) {
+        if (sent && serialized && !wasPredicted) {
             inFlightSerializedCommandTypeRef.current = type;
             lastSerializedCommandRef.current = { type, payload };
         }

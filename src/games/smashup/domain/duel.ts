@@ -682,6 +682,23 @@ function playActionAsDuelCard(
         ? (def as FusionCardDef).actionSubtype
         : (def as ActionCardDef | undefined)?.subtype;
 
+    const events: SmashUpEvent[] = [buildActionPlayedEvent({
+        playerId,
+        cardUid,
+        defId,
+        ownerId: card.owner,
+        targetBaseIndex: duel.baseIndex,
+        timestamp: now,
+    }) as SmashUpEvent];
+
+    if (subtype === 'special') {
+        const stageResult = advanceQueuedStage(state, duel, nextStage, now);
+        return {
+            state: stageResult.state,
+            events: [...events, ...stageResult.events],
+        };
+    }
+
     if (subtype === 'ongoing') {
         const ongoingTarget = (def as any)?.type === 'fusion'
             ? ((def as FusionCardDef).actionOngoingTarget ?? 'base')
@@ -691,15 +708,6 @@ function playActionAsDuelCard(
             events: [],
         };
     }
-
-    const events: SmashUpEvent[] = [buildActionPlayedEvent({
-        playerId,
-        cardUid,
-        defId,
-        ownerId: card.owner,
-        targetBaseIndex: duel.baseIndex,
-        timestamp: now,
-    }) as SmashUpEvent];
 
     return appendResolvedActionAbility({
         state,

@@ -99,6 +99,31 @@ describe('ZoomPanViewport', () => {
         });
     });
 
+    it('can use a cover base scale for map-camera viewports', async () => {
+        render(
+            <ZoomPanViewport
+                initialScale={1}
+                minScale={1}
+                maxScale={3}
+                baseScaleMode="cover"
+                containerTestId="viewport"
+                contentTestId="content"
+            >
+                <div>wide map</div>
+            </ZoomPanViewport>,
+        );
+
+        const viewport = screen.getByTestId('viewport');
+        const content = screen.getByTestId('content');
+        mockElementBox(viewport, { width: 400, height: 300 });
+        mockElementBox(content, { width: 200, height: 100 });
+        await refreshMeasuredSizes();
+
+        await waitFor(() => {
+            expect(content.style.transform).toContain('scale(3');
+        });
+    });
+
     it('only handles the same pan target instruction once', async () => {
         const { rerender } = render(
             <ZoomPanViewport

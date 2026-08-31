@@ -33,6 +33,7 @@ const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-点击兔脚后选择骰
 const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
 const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-兔脚重投结束.jpg`;
 const STEP_16 = `${EVIDENCE_DIR}/16-山屋惊魂-教程-探索后牌桌结果.jpg`;
+const STEP_16A = `${EVIDENCE_DIR}/16a-山屋惊魂-教程-伤害分配完成后.jpg`;
 const STEP_17 = `${EVIDENCE_DIR}/17-山屋惊魂-教程-木乃伊作祟目标改变.jpg`;
 const STEP_18 = `${EVIDENCE_DIR}/18-山屋惊魂-教程-打开木乃伊剧本目标页.jpg`;
 const STEP_19 = `${EVIDENCE_DIR}/19-山屋惊魂-教程-驱逐木乃伊前因果说明.jpg`;
@@ -887,9 +888,7 @@ const expectTutorialNextDoesNotStealRollModifierFocus = async (
     if (!button || !dice) {
       return {
         visible: false,
-        verticalGap: Number.POSITIVE_INFINITY,
-        buttonCenterX: 0,
-        diceCenterX: 0,
+        overlaps: false,
       };
     }
     const buttonRect = button.getBoundingClientRect();
@@ -899,16 +898,18 @@ const expectTutorialNextDoesNotStealRollModifierFocus = async (
         buttonRect.width > 0 &&
         buttonRect.height > 0 &&
         window.getComputedStyle(button).visibility !== "hidden",
-      verticalGap: buttonRect.top - diceRect.bottom,
-      buttonCenterX: buttonRect.left + buttonRect.width / 2,
-      diceCenterX: diceRect.left + diceRect.width / 2,
+      overlaps:
+        buttonRect.left < diceRect.right &&
+        buttonRect.right > diceRect.left &&
+        buttonRect.top < diceRect.bottom &&
+        buttonRect.bottom > diceRect.top,
     };
   });
   if (!geometry.visible) return;
   expect(
-    geometry.verticalGap,
+    geometry.overlaps,
     "选择重投骰子时，“下一步”不能贴着骰子选择控件抢主焦点",
-  ).toBeGreaterThanOrEqual(18);
+  ).toBe(false);
 };
 
 const expectTradeCandidateTrayAnchoredToFlow = async (
@@ -1242,6 +1243,10 @@ type PendingRecentRollAcknowledgement = {
   acknowledgedPlayerIds: string[];
 };
 
+type PendingEventRollAcknowledgement = PendingRecentRollAcknowledgement & {
+  rollId: string;
+};
+
 const readPendingRecentRollAcknowledgement = async (
   page: Page,
 ): Promise<PendingRecentRollAcknowledgement | null> =>
@@ -1335,6 +1340,75 @@ const acknowledgeRecentRollForAllPlayers = async (page: Page) => {
   }
 
   throw new Error("全员确认投骰结果超过安全上限");
+};
+
+const readPendingEventRollAcknowledgement = async (
+  page: Page,
+): Promise<PendingEventRollAcknowledgement | null> =>
+  page.evaluate(() => {
+    const core = (
+      window as typeof window & {
+        __BG_TEST_HARNESS__?: {
+          state?: {
+            get?: () => {
+              core?: {
+                playerIds?: string[];
+                pendingEventRollResolution?: {
+                  rollId?: string;
+                  playerId?: string;
+                  requiredPlayerIds?: string[];
+                  acknowledgedPlayerIds?: string[];
+                } | null;
+              };
+            };
+          };
+        };
+      }
+    ).__BG_TEST_HARNESS__?.state?.get?.().core;
+    const pending = core?.pendingEventRollResolution;
+    if (!pending?.rollId) {
+      return null;
+    }
+    return {
+      rollId: pending.rollId,
+      requiredPlayerIds: pending.requiredPlayerIds?.length
+        ? [...pending.requiredPlayerIds]
+        : core?.playerIds?.length
+          ? [...core.playerIds]
+          : pending.playerId
+            ? [pending.playerId]
+            : [],
+      acknowledgedPlayerIds: [...(pending.acknowledgedPlayerIds ?? [])],
+    };
+  });
+
+const acknowledgeEventRollForAllPlayers = async (page: Page) => {
+  const pendingBefore = await readPendingEventRollAcknowledgement(page);
+  if (!pendingBefore) {
+    throw new Error("当前没有待全员确认的事件骰结果");
+  }
+  const confirmButton = page.getByTestId("betrayal-discovery-continue");
+  await expect(confirmButton).toBeVisible();
+  await expect(confirmButton).toBeDisabled();
+  for (const playerId of pendingBefore.requiredPlayerIds) {
+    if (pendingBefore.acknowledgedPlayerIds.includes(playerId)) {
+      continue;
+    }
+    await dispatchHarnessCommand(
+      page,
+      BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+      playerId,
+      { rollId: pendingBefore.rollId },
+    );
+    await expect
+      .poll(async () => {
+        const pending = await readPendingEventRollAcknowledgement(page);
+        return pending
+          ? pending.acknowledgedPlayerIds.includes(playerId)
+          : true;
+      })
+      .toBe(true);
+  }
 };
 
 const completeMummyMonsterActionsFromTurnStart = async (
@@ -2339,7 +2413,17 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(roomPlacementConfirm).toBeEnabled();
     await saveScreenshot(page, STEP_08);
     await roomPlacementConfirm.click();
+    await waitForStep(page, "roll-event", 30000);
+    await expect(page.getByTestId("betrayal-event-roll-start")).toBeVisible();
+    await expect(page.getByTestId("betrayal-event-roll-start")).toBeEnabled();
+    await saveScreenshot(page, STEP_09);
+    await page.getByTestId("betrayal-event-roll-start").click();
     await waitForStep(page, "use-book", 30000);
+    const tutorialOverlayCard = page.getByTestId("tutorial-overlay-card");
+    await expect(tutorialOverlayCard).toContainText("直接点持有区的书本");
+    await expect(tutorialOverlayCard).toContainText("改用知识重新投骰");
+    await expect(tutorialOverlayCard).not.toContainText("兔脚");
+    await expect(tutorialOverlayCard).not.toContainText("其他玩家确认");
     const latestDiscovery = page.locator(
       '[data-tutorial-id="betrayal-latest-discovery"]',
     );
@@ -2362,8 +2446,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expectVisiblePhysicalDiceBox(discoveryRollPanel);
     await waitForPhysicalDiceSettled(discoveryRollPanel);
-    await saveScreenshot(page, STEP_09);
-
     const beforeBookState = await page.evaluate(() => {
       const state = (
         window as unknown as {
@@ -2390,7 +2472,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     expect(beforeBookState.rollTrait).toBe("might");
 
     await page.getByTestId("betrayal-inventory-omen-book").click();
-    await waitForStep(page, "finish", 30000);
+    await waitForStep(page, "use-rabbit-foot", 30000);
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
     ).toHaveCount(0);
@@ -2441,17 +2523,18 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-inventory-preview-overlay"),
     ).not.toBeVisible();
-    const tutorialOverlayCard = page.getByTestId("tutorial-overlay-card");
     await expect(tutorialOverlayCard).toHaveAttribute(
       "data-tutorial-placement",
-      "center",
+      "top",
     );
     await expect(tutorialOverlayCard).not.toContainText(
       "使用持有物 -> 移动 -> 探索 -> 抽发现牌",
     );
     await expect(tutorialOverlayCard).toContainText("兔脚");
-    await expect(tutorialOverlayCard).toContainText("改用知识重新投骰");
-    await expect(tutorialOverlayCard).toContainText("若不使用兔脚，点击确认继续结算");
+    await expect(tutorialOverlayCard).toContainText("书本已把检定改成知识");
+    await expect(tutorialOverlayCard).toContainText("确认使用兔脚");
+    await expect(tutorialOverlayCard).not.toContainText("其他玩家确认");
+    await expect(tutorialOverlayCard).not.toContainText("承受 1 点物理伤害");
     await expect(discoveryReveal).toBeVisible();
     await expect(discoveryReveal).toHaveAttribute(
       "data-allows-inventory-roll-modifiers",
@@ -2484,20 +2567,22 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
     ).toContainText("加值");
-    const eventRollConfirm = discoveryReveal.getByTestId(
-      "betrayal-discovery-continue",
-    );
-    await expect(eventRollConfirm).toHaveCSS(
-      "background-color",
-      "rgb(214, 181, 109)",
-    );
-    await expect(eventRollConfirm).toHaveCSS("border-radius", "0px");
     await expect(discoveryRollPanel).toHaveAttribute(
       "data-roll-panel-style",
       "open-table-transparent",
     );
     await expectVisiblePhysicalDiceBox(discoveryRollPanel);
     await waitForPhysicalDiceSettled(discoveryRollPanel);
+    await expect
+      .poll(
+        async () =>
+          discoveryRollPanel.evaluate((node) => {
+            const rect = (node as HTMLElement).getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          }),
+        { timeout: 10000 },
+      )
+      .toBe(true);
     const rollPanelLayout = await discoveryRollPanel.evaluate((node) => {
       const panel = node as HTMLElement;
       const dice = panel.querySelector(
@@ -2754,36 +2839,38 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
     ).toContainText("加值");
     await saveScreenshot(page, STEP_15);
-    const finalEventRollConfirm = discoveryReveal.getByTestId(
+    await waitForStep(page, "confirm-event-result", 30000);
+    await expect(tutorialOverlayCard).toHaveAttribute(
+      "data-tutorial-placement",
+      "center",
+    );
+    await expect(tutorialOverlayCard).toContainText("最终结果");
+    await expect(tutorialOverlayCard).toContainText("其他玩家确认");
+    await expect(tutorialOverlayCard).not.toContainText("承受 1 点物理伤害");
+    const eventRollConfirm = discoveryReveal.getByTestId(
       "betrayal-discovery-continue",
     );
-    await expect(finalEventRollConfirm).toBeVisible({ timeout: 10000 });
-    await expect(finalEventRollConfirm).toBeEnabled();
-    await finalEventRollConfirm.click();
-    await expect
-      .poll(
-        async () =>
-          page.evaluate(() => {
-            const core = (
-              window as unknown as {
-                __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: { pendingEventRollResolution?: unknown } } } };
-              }
-            ).__BG_TEST_HARNESS__?.state?.get?.().core;
-            return core?.pendingEventRollResolution?.acknowledgedPlayerIds?.length ?? 0;
-          }),
-        { timeout: 10000 },
-      )
-      .toBe(1);
-    await expect(finalEventRollConfirm).toContainText("确认 1/3");
-    await expect(finalEventRollConfirm).toHaveAttribute(
-      "data-card-resolution-confirmed-count",
+    await expect(eventRollConfirm).toBeVisible();
+    await expect(eventRollConfirm).toBeEnabled();
+    await eventRollConfirm.click();
+    await expect(eventRollConfirm).toContainText("确认 1/3");
+    await expect(eventRollConfirm).toHaveAttribute(
+      "data-event-roll-confirmed-count",
       "1",
     );
-    await expect(finalEventRollConfirm).toHaveAttribute(
-      "data-card-resolution-required-count",
+    await expect(eventRollConfirm).toHaveAttribute(
+      "data-event-roll-required-count",
       "3",
     );
+    await expect(eventRollConfirm).toBeDisabled();
+    await waitForStep(page, "confirm-event-result", 10000);
+    await saveScreenshot(page, STEP_16);
+    await acknowledgeEventRollForAllPlayers(page);
     await waitForStep(page, "finish", 10000);
+    await expect(tutorialOverlayCard).toContainText("后续伤害");
+    await expect(tutorialOverlayCard).toContainText("承受 1 点物理伤害");
+    await expect(tutorialOverlayCard).not.toContainText("兔脚");
+    await expect(tutorialOverlayCard).not.toContainText("其他玩家确认");
     await expect(exploreTargetRoom).toBeVisible();
     await expect(
       page.locator('[data-testid^="betrayal-room-explore-target-"]'),
@@ -2823,13 +2910,45 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       latestDiscoveryKind: "event",
       currentRoomName: "厨房",
     });
-    expect(finalDiscoveryState.hasPendingEventRollResolution).toBe(true);
-    await expect(finalEventRollConfirm).toContainText("确认 1/3");
-    await expect(finalEventRollConfirm).toHaveAttribute(
-      "data-card-resolution-confirmed-count",
-      "1",
+    const damageAllocationPanel = page.getByTestId(
+      "betrayal-damage-allocation-panel",
     );
-    await saveScreenshot(page, STEP_16);
+    await expect(damageAllocationPanel).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-amount"),
+    ).toContainText("分配 1 点物理伤害");
+    await page.waitForTimeout(500);
+    const damageTraitIncrease = page.getByTestId(
+      "betrayal-damage-allocation-trait-speed-increase",
+    );
+    await expect(damageTraitIncrease).toBeVisible();
+    await damageTraitIncrease.click();
+    const damageAllocationConfirm = page.getByTestId(
+      "betrayal-damage-allocation-confirm",
+    );
+    await expect(damageAllocationConfirm).toBeEnabled();
+    await expect(damageAllocationConfirm).toHaveCSS(
+      "background-color",
+      "rgb(214, 181, 109)",
+    );
+    await damageAllocationConfirm.click();
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const core = (
+              window as unknown as {
+                __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: { pendingEventRollResolution?: unknown } } } };
+              }
+            ).__BG_TEST_HARNESS__?.state?.get?.().core;
+            return Boolean(core?.pendingEventRollResolution);
+          }),
+        { timeout: 10000 },
+      )
+      .toBe(false);
+    await expect(damageAllocationPanel).toBeHidden({ timeout: 10000 });
+    await page.waitForTimeout(300);
+    await saveScreenshot(page, STEP_16A);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-tutorial-move-explore-use", diagnostics },

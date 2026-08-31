@@ -2683,6 +2683,7 @@
       "effects": {
         "heal1": "恢复 1 点生命值",
         "damage5": "造成 5 点伤害",
+        "damage6": "造成 6 点伤害",
         "heal2": "恢复 2 点生命值",
         "damage8": "造成 8 点伤害"
       }
@@ -5759,13 +5760,13 @@
     },
     "vampireLordBloodPower": {
       "name": "鲜血之力",
-      "attackBonusShort": "+3 伤害（消耗1）",
+      "attackBonusShort": "+3 伤害",
       "attackBonus": "拥有至少 1 个鲜血之力时，消耗 1 个鲜血之力，本次攻击伤害 +3；每回合每个效果只能激活一次",
-      "removeStatusShort": "移除状态（消耗2）",
+      "removeStatusShort": "移除状态",
       "removeStatus": "拥有至少 2 个鲜血之力时，消耗 2 个鲜血之力，选择 1 名玩家移除 1 个状态效果；只能在主要阶段激活，每回合每个效果只能激活一次",
-      "drawShort": "抽 2 张（消耗3）",
+      "drawShort": "抽 2 张",
       "draw": "拥有至少 3 个鲜血之力时，消耗 3 个鲜血之力，抽 2 张牌；每回合每个效果只能激活一次",
-      "healShort": "吸血治疗（消耗4）",
+      "healShort": "吸血治疗",
       "heal": "拥有至少 4 个鲜血之力时，消耗 4 个鲜血之力，治疗等同于本次成功攻击造成的伤害；只能在攻击阶段激活，每回合每个效果只能激活一次"
     },
     "vampireLordMesmerize": {

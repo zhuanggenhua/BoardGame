@@ -82,6 +82,7 @@ export interface ZoomPanViewportProps {
     initialScale?: number;
     minScale?: number;
     maxScale?: number;
+    baseScaleMode?: 'contain' | 'cover';
     dragBoundsPaddingRatioY?: number;
     panBoundsMode?: 'content' | 'free';
     interactionDisabled?: boolean;
@@ -114,6 +115,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     initialScale = 0.6,
     minScale = 0.5,
     maxScale = 3,
+    baseScaleMode = 'contain',
     dragBoundsPaddingRatioY = 0,
     panBoundsMode = 'content',
     interactionDisabled = false,
@@ -151,6 +153,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const scaleBadgeTimerRef = useRef<number | null>(null);
     const animationTimerRef = useRef<number | null>(null);
     const suppressNextClickRef = useRef(false);
+    const suppressClickResetTimerRef = useRef<number | null>(null);
     const handledPanInstructionRef = useRef<string | null>(null);
 
     const [zoomLevel, setZoomLevel] = useState(initialScale);
@@ -188,13 +191,18 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         && containerSize.height > 0
         && contentSize.width > 0
         && contentSize.height > 0
-        ? Math.min(
-            1,
-            Math.min(
+        ? baseScaleMode === 'cover'
+            ? Math.max(
                 containerSize.width / contentSize.width,
                 containerSize.height / contentSize.height,
-            ),
-        )
+            )
+            : Math.min(
+                1,
+                Math.min(
+                    containerSize.width / contentSize.width,
+                    containerSize.height / contentSize.height,
+                ),
+            )
         : 1;
     const scale = baseScale * activeZoomLevel;
     const isAtDefaultZoom = Math.abs(activeZoomLevel - initialScale) <= SCALE_EPSILON;
@@ -213,6 +221,22 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             animationTimerRef.current = null;
         }
     }, []);
+
+    const clearSuppressClickResetTimer = useCallback(() => {
+        if (suppressClickResetTimerRef.current !== null) {
+            window.clearTimeout(suppressClickResetTimerRef.current);
+            suppressClickResetTimerRef.current = null;
+        }
+    }, []);
+
+    const armSuppressNextClickReset = useCallback(() => {
+        if (!suppressNextClickRef.current) return;
+        clearSuppressClickResetTimer();
+        suppressClickResetTimerRef.current = window.setTimeout(() => {
+            suppressNextClickRef.current = false;
+            suppressClickResetTimerRef.current = null;
+        }, 180);
+    }, [clearSuppressClickResetTimer]);
 
     const clampZoomLevel = useCallback((nextZoomLevel: number) => (
         Math.max(minScale, Math.min(maxScale, nextZoomLevel))
@@ -242,8 +266,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         return () => {
             clearScaleBadgeTimer();
             clearAnimationTimer();
+            clearSuppressClickResetTimer();
         };
-    }, [clearAnimationTimer, clearScaleBadgeTimer]);
+    }, [clearAnimationTimer, clearScaleBadgeTimer, clearSuppressClickResetTimer]);
 
     const clampPosition = useCallback((x: number, y: number, nextScale = scale) => {
         if (panBoundsMode === 'free') {
@@ -504,8 +529,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         isPointerDownRef.current = false;
         pinchStartDistanceRef.current = null;
         pinchStartZoomRef.current = null;
+        armSuppressNextClickReset();
         setIsDragging(false);
-    }, [clampedPosition]);
+    }, [armSuppressNextClickReset, clampedPosition]);
 
     useEffect(() => {
         const handleGlobalMouseMove = (event: MouseEvent) => {
@@ -535,6 +561,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
         const handleGlobalMouseUp = () => {
             isPointerDownRef.current = false;
+            armSuppressNextClickReset();
             setIsDragging(false);
         };
 
@@ -545,7 +572,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             window.removeEventListener('mousemove', handleGlobalMouseMove);
             window.removeEventListener('mouseup', handleGlobalMouseUp);
         };
-    }, [activeZoomLevel, applyViewport, clearAnimationTimer, convertDeltaToViewportUnits, markUserViewportChanged]);
+    }, [activeZoomLevel, applyViewport, armSuppressNextClickReset, clearAnimationTimer, convertDeltaToViewportUnits, markUserViewportChanged]);
 
     const handleWheel = useCallback((event: WheelEvent) => {
         if (interactionDisabled) return;
@@ -740,6 +767,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             }}
             onClickCapture={(event) => {
                 if (!suppressNextClickRef.current) return;
+                clearSuppressClickResetTimer();
                 suppressNextClickRef.current = false;
                 event.preventDefault();
                 event.stopPropagation();
