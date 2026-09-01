@@ -26,7 +26,7 @@ import {
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
-import { buildOngoingDetachedEvent, buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionOnBase, MinionPlayedEvent } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
@@ -182,10 +182,6 @@ export function registerBearCavalryAbilities(): void {
     registerAbility('bear_cavalry_youre_screwed_pod', 'onPlay', bearCavalryYoureScrewedPodAbility);
     // 黑熊口粮 POD：压制天赋 + 回合开始自毁
     registerAbility('bear_cavalry_bear_necessities_pod', 'talent', bearCavalryBearNecessitiesPodTalent);
-    registerTrigger('bear_cavalry_bear_necessities_pod', 'onTurnStart', bearCavalryBearNecessitiesPodTurnStart, {
-        perInstance: true,
-        playerContext: 'sourceController',
-    });
     // 你们都是美食 POD: 批量移动（与原版相同，已在上方注册）
     // 与熊同行 POD: 移动 + 压制能力
     registerAbility('bear_cavalry_bear_rides_you_pod', 'onPlay', bearCavalryBearRidesYouPod);
@@ -1430,56 +1426,6 @@ function bearCavalryBearNecessitiesPodTalent(ctx: AbilityContext): AbilityResult
     // 压制效果通过 commands.ts 中的验证逻辑实现（检查 ongoing.talentUsed 标志）
     return { events: [] };
 }
-
-/** 黑熊口粮 POD 回合开始触发器：自毁 */
-function bearCavalryBearNecessitiesPodTurnStart(ctx: TriggerContext): SmashUpEvent[] {
-    if (ctx.sourceCardUid) {
-        for (const base of ctx.state.bases) {
-            const card = base.ongoingActions.find((ongoing) =>
-                ongoing.uid === ctx.sourceCardUid
-                && ongoing.defId === 'bear_cavalry_bear_necessities_pod'
-                && ongoing.talentUsed === true,
-            );
-            if (!card) continue;
-            const controllerId = ((card.metadata?.sourceControllerId as PlayerId | undefined) ?? card.ownerId);
-            if (controllerId !== ctx.playerId) return [];
-            return [buildOngoingDetachedEvent({
-                cardUid: card.uid,
-                defId: card.defId,
-                ownerId: card.ownerId,
-                reason: 'bear_cavalry_bear_necessities_pod',
-                now: ctx.now,
-            })];
-        }
-        return [];
-    }
-
-    const events: SmashUpEvent[] = [];
-    
-    // 检查是否是卡牌拥有者的回合
-    // onTurnStart 的 ctx.playerId 就是当前回合玩家
-    
-    // 找到黑熊口粮 POD 卡牌（必须已激活天赋）
-    for (const base of ctx.state.bases) {
-        const cards = base.ongoingActions.filter(
-            a => a.defId === 'bear_cavalry_bear_necessities_pod'
-                && (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.playerId)
-                && a.talentUsed === true
-        );
-        for (const card of cards) {
-            events.push(buildOngoingDetachedEvent({
-                cardUid: card.uid,
-                defId: card.defId,
-                ownerId: card.ownerId,
-                reason: 'bear_cavalry_bear_necessities_pod',
-                now: ctx.now,
-            }));
-        }
-    }
-    
-    return events;
-}
-
 
 // ============================================================================
 // POD 版本能力实现

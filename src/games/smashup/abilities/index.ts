@@ -96,7 +96,7 @@ import { registerActionCounterInteractionHandlers } from '../domain/actionCounte
 import { registerMulliganInteractionHandlers } from '../domain/mulliganHandlers';
 import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry, registerPodPowerModifierAliases } from '../domain/ongoingModifiers';
-import { clearOngoingEffectRegistry, registerPodOngoingAliases } from '../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, registerDataDrivenOngoingLifecycles, registerPodOngoingAliases } from '../domain/ongoingEffects';
 import { clearDiscardPlayProviders } from '../domain/discardPlayability';
 import { clearDiscardActionPlayProviders } from '../domain/discardActionPlayability';
 import { clearDiscardSpecialProviders } from '../domain/discardSpecialAbilities';
@@ -247,6 +247,8 @@ export function initAllAbilities(): void {
     registerAllOngoingModifiers();
 
     // === POD 变体绑定 ===
+    // 先把牌定义声明的生命周期注册为通用 per-instance trigger，再生成 POD shared 别名。
+    registerDataDrivenOngoingLifecycles();
     // 只有 metadata 显式声明 shared 的 surface，才允许生成 _pod 运行时别名。
     registerPodAbilityAliases();
     registerPodInteractionAliases();

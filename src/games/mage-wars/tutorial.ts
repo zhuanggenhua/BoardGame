@@ -1,6 +1,6 @@
 import type { PlayerId, TutorialAiAction, TutorialCollection, TutorialManifest } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
-import { FLOW_COMMANDS, FLOW_EVENTS } from '../../engine/systems/FlowSystem';
+import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { MAGE_WARS_COMMANDS, MAGE_WARS_EVENTS } from './domain';
 import type { MageWarsArenaObjectState, MageWarsCore } from './domain';
 import {
@@ -51,23 +51,15 @@ const mergeState = (fields: Partial<MageWarsCore>): TutorialAiAction => ({
     payload: { fields },
 });
 
+// 机制练习从明确的预设局面开始；阶段推进仅用于把夹具放到练习入口，
+// 不计入基础教程的自然流程。setup 步骤通过 skipAutomaticFlow 禁止正式自动推进。
 const SETUP_TO_DEPLOYMENT_ACTIONS: TutorialAiAction[] = [
-    advancePhase('1'),
-    advancePhase('0'),
-    advancePhase('1'),
-    advancePhase('0'),
-    advancePhase('1'),
-    advancePhase('0'),
-    advancePhase('1'),
-    advancePhase('0'),
+    advancePhase('1'), advancePhase('0'), advancePhase('1'), advancePhase('0'),
+    advancePhase('1'), advancePhase('0'), advancePhase('1'), advancePhase('0'),
 ];
-
 const SETUP_TO_CREATURE_ACTION_ACTIONS: TutorialAiAction[] = [
     ...SETUP_TO_DEPLOYMENT_ACTIONS,
-    advancePhase('0'),
-    advancePhase('1'),
-    advancePhase('0'),
-    advancePhase('1'),
+    advancePhase('0'), advancePhase('1'), advancePhase('0'), advancePhase('1'),
 ];
 
 function createTutorialCreatureObject(args: {
@@ -266,41 +258,11 @@ export const MageWarsTutorial: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'advance-channel',
-            content: 'game-mage-wars:tutorial.steps.advanceChannel',
-            highlightTarget: 'mw-turn-end',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
-            aiActions: [advancePhase('1')],
-            advanceOnEvents: [{ type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'channel' } }],
-        },
-        {
             id: 'channel-result',
             content: 'game-mage-wars:tutorial.steps.channelResult',
             highlightTarget: 'mw-self-hud',
             position: 'right',
             infoStep: true,
-        },
-        {
-            id: 'advance-upkeep',
-            content: 'game-mage-wars:tutorial.steps.advanceUpkeep',
-            highlightTarget: 'mw-turn-end',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
-            aiActions: [advancePhase('1')],
-            advanceOnEvents: [{ type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'upkeep' } }],
-        },
-        {
-            id: 'advance-planning',
-            content: 'game-mage-wars:tutorial.steps.advancePlanning',
-            highlightTarget: 'mw-turn-end',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
-            aiActions: [advancePhase('1')],
-            advanceOnEvents: [{ type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'planning' } }],
         },
         {
             id: 'plan-wolf',
@@ -318,12 +280,17 @@ export const MageWarsTutorial: TutorialManifest = {
                 `mw-spellbook-card-${ROUSE_THE_BEAST_CARD_ID}`,
                 'mw-plan-spells',
             ],
+            advanceOnEvents: [{ type: MAGE_WARS_EVENTS.SPELLS_PLANNED, match: { playerId: '0' } }],
+        },
+        {
+            id: 'prepare-opponent-spells',
+            content: 'game-mage-wars:tutorial.steps.prepareOpponentSpells',
+            allowedCommands: [MAGE_WARS_COMMANDS.PLAN_SPELLS],
             aiActions: [{
                 commandType: MAGE_WARS_COMMANDS.PLAN_SPELLS,
                 playerId: '1',
                 payload: { spellCardIds: [ASYRAN_CLERIC_CARD_ID, PILLAR_OF_LIGHT_CARD_ID] },
             }],
-            advanceOnEvents: [{ type: MAGE_WARS_EVENTS.SPELLS_PLANNED, match: { playerId: '0' } }],
         },
         {
             id: 'prepared-and-hidden',
@@ -363,6 +330,8 @@ export const MageWarsTutorial: TutorialManifest = {
             content: 'game-mage-wars:tutorial.steps.passYourDeployment',
             position: 'center',
             allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            // 对手尚未完成部署时，这一步代表玩家结束自己的部署决策；
+            // 该点击仍是正式流程的一部分，不是系统结算。
             aiActions: [advancePhase('0')],
         },
         {
@@ -411,6 +380,8 @@ export const MageWarsTutorial: TutorialManifest = {
             content: 'game-mage-wars:tutorial.steps.skipToCreatureAction',
             position: 'center',
             allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            // 这里是对手完成部署/先手窗口后的真实对手行为；玩家自己的
+            // deployment 已在上一段完成，不把系统结算伪装成玩家点击。
             aiActions: [
                 advancePhase('1'),
                 advancePhase('0'),
@@ -451,6 +422,7 @@ export const MageWarsWallAndLineOfSightTutorial: TutorialManifest = {
             content: 'game-mage-wars:tutorial.wallAndLineOfSight.steps.setup',
             position: 'center',
             showMask: true,
+            skipAutomaticFlow: true,
             aiActions: [
                 ...SETUP_TO_DEPLOYMENT_ACTIONS,
                 mergeState(createWallSetupPatch()),
@@ -509,6 +481,7 @@ export const MageWarsGuardTutorial: TutorialManifest = {
             content: 'game-mage-wars:tutorial.guard.steps.setup',
             position: 'center',
             showMask: true,
+            skipAutomaticFlow: true,
             aiActions: [
                 ...SETUP_TO_CREATURE_ACTION_ACTIONS,
                 mergeState(createPriestessMechanicsPatch()),
@@ -561,6 +534,7 @@ export const MageWarsHealingTutorial: TutorialManifest = {
             content: 'game-mage-wars:tutorial.healing.steps.setup',
             position: 'center',
             showMask: true,
+            skipAutomaticFlow: true,
             aiActions: [
                 ...SETUP_TO_CREATURE_ACTION_ACTIONS,
                 mergeState(createPriestessMechanicsPatch()),
@@ -624,6 +598,7 @@ export const MageWarsRestoreAndBurnTutorial: TutorialManifest = {
             content: 'game-mage-wars:tutorial.restoreAndBurn.steps.setup',
             position: 'center',
             showMask: true,
+            skipAutomaticFlow: true,
             aiActions: [
                 ...SETUP_TO_CREATURE_ACTION_ACTIONS,
                 mergeState(createPriestessMechanicsPatch()),
@@ -678,28 +653,24 @@ export const MageWarsTutorialCatalog: TutorialCollection = {
         [MageWarsWallAndLineOfSightTutorial.id]: {
             titleKey: 'tutorial.chapters.wallAndLineOfSight.title',
             descriptionKey: 'tutorial.chapters.wallAndLineOfSight.description',
-            hiddenFromCatalog: true,
             nextTutorialId: MageWarsGuardTutorial.id,
             manifest: MageWarsWallAndLineOfSightTutorial,
         },
         [MageWarsGuardTutorial.id]: {
             titleKey: 'tutorial.chapters.guard.title',
             descriptionKey: 'tutorial.chapters.guard.description',
-            hiddenFromCatalog: true,
             nextTutorialId: MageWarsHealingTutorial.id,
             manifest: MageWarsGuardTutorial,
         },
         [MageWarsHealingTutorial.id]: {
             titleKey: 'tutorial.chapters.healing.title',
             descriptionKey: 'tutorial.chapters.healing.description',
-            hiddenFromCatalog: true,
             nextTutorialId: MageWarsRestoreAndBurnTutorial.id,
             manifest: MageWarsHealingTutorial,
         },
         [MageWarsRestoreAndBurnTutorial.id]: {
             titleKey: 'tutorial.chapters.restoreAndBurn.title',
             descriptionKey: 'tutorial.chapters.restoreAndBurn.description',
-            hiddenFromCatalog: true,
             manifest: MageWarsRestoreAndBurnTutorial,
         },
     },

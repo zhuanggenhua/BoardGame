@@ -86,6 +86,8 @@ import type {
     CardType,
     CardInstance,
     BaseInPlay,
+    BaseOngoingAction,
+    AttachedActionOnMinion,
     ActionCardDef,
     FusionCardDef,
     PlayerState,
@@ -146,6 +148,20 @@ import {
     resolveLiveBaseIndex,
 } from './utils';
 import { shouldRedirectDestroyedMinionToDeckBottom } from './destroyFacts';
+
+function hasActiveGreatWolfSpiritAtBase(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+): boolean {
+    return (state.titans ?? []).some(titan =>
+        titan.defId === 'werewolves_great_wolf_spirit'
+        && titan.location.zone === 'base'
+        && titan.location.baseIndex === baseIndex
+        && titan.controllerId === playerId
+        && !((state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid)),
+    );
+}
 
 function removeTempBreakpointModifierAtBaseIndex(
     modifiers: Record<number, number> | undefined,
@@ -1072,6 +1088,16 @@ function clearPlayedThisTurnMetadata(metadata?: Record<string, unknown>): Record
     return Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined;
 }
 
+function clearExtraTalentMetadata(metadata?: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!metadata) return undefined;
+    const {
+        mythicHorsesSeastarExtraTalent: _seastarExtra,
+        mythicHorsesSeastarExtraTalentConsumed: _seastarConsumed,
+        ...remainingMetadata
+    } = metadata;
+    return Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined;
+}
+
 export function reduceTurnStartedEvent(
     state: SmashUpCore,
     event: SmashUpEvent,
@@ -1115,7 +1141,7 @@ export function reduceTurnStartedEvent(
                 attachedActions: m.attachedActions.map(a => {
                     const controllerId = (a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId;
                     const metadata = controllerId === playerId
-                        ? clearPlayedThisTurnMetadata(a.metadata)
+                        ? clearPlayedThisTurnMetadata(clearExtraTalentMetadata(a.metadata))
                         : a.metadata;
                     return {
                         ...a,
@@ -1139,7 +1165,7 @@ export function reduceTurnStartedEvent(
                 ? (Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined)
                 : o.metadata;
             const metadata = controllerId === playerId
-                ? clearPlayedThisTurnMetadata(kingCandyMetadata)
+                ? clearPlayedThisTurnMetadata(clearExtraTalentMetadata(kingCandyMetadata))
                 : kingCandyMetadata;
             return {
                 ...o,
@@ -1148,10 +1174,15 @@ export function reduceTurnStartedEvent(
             };
         }),
     }));
-    const newTitans = (state.titans ?? []).map(titan => ({
-        ...titan,
-        talentUsed: titan.controllerId === playerId ? false : titan.talentUsed,
-    }));
+    const newTitans = (state.titans ?? []).map(titan => {
+        if (titan.controllerId !== playerId) return titan;
+        const metadata = clearExtraTalentMetadata(titan.metadata);
+        return {
+            ...titan,
+            ...(metadata ? { metadata } : { metadata: undefined }),
+            talentUsed: false,
+        };
+    });
     const remainingPlayerRestrictions = state.playerRestrictionsUntilTurnStart?.filter(
         entry => entry.sourcePlayerId !== playerId,
     );
@@ -1886,7 +1917,6 @@ export function reduceTalentUsedEvent(
     let reusedTalent = false;
     let consumedStandingStones = false;
     let consumedSeastarExtra = false;
-    let standingStonesHostMinionUid: string | undefined;
 
     if (ongoingCardUid) {
         const baseOngoing = oldBase?.ongoingActions.find(o => o.uid === ongoingCardUid);
@@ -1901,11 +1931,6 @@ export function reduceTalentUsedEvent(
                 const attached = minion.attachedActions.find(action => action.uid === ongoingCardUid);
                 if (attached?.talentUsed) {
                     reusedTalent = true;
-                    consumedStandingStones =
-                        oldBase?.defId === 'base_standing_stones'
-                        && minion.controller === playerId
-                        && !state.standingStonesDoubleTalentMinionUid;
-                    standingStonesHostMinionUid = minion.uid;
                     consumedSeastarExtra =
                         (attached.metadata?.mythicHorsesSeastarExtraTalent === true)
                         && (attached.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true);
@@ -1916,6 +1941,9 @@ export function reduceTalentUsedEvent(
     } else if (titanUid) {
         const oldTitan = (state.titans ?? []).find(titan => titan.uid === titanUid);
         reusedTalent = oldTitan?.talentUsed ?? false;
+        consumedSeastarExtra = reusedTalent
+            && oldTitan?.metadata?.mythicHorsesSeastarExtraTalent === true
+            && oldTitan?.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
     } else if (minionUid) {
         const oldMinion = oldBase?.minions.find(m => m.uid === minionUid);
         reusedTalent = oldMinion?.talentUsed ?? false;
@@ -1932,12 +1960,16 @@ export function reduceTalentUsedEvent(
             return {
                 ...base,
                 ongoingActions: base.ongoingActions.map(o =>
-                    o.uid === ongoingCardUid
+                        o.uid === ongoingCardUid
                         ? {
                             ...o,
                             talentUsed: true,
-                            metadata: consumedSeastarExtra
-                                ? { ...(o.metadata ?? {}), mythicHorsesSeastarExtraTalentConsumed: true }
+                            metadata: (consumedSeastarExtra || getCardDef(o.defId)?.type === 'action' && getCardDef(o.defId)?.lifecycle?.expires.condition?.talentUsed === true)
+                                ? {
+                                    ...(o.metadata ?? {}),
+                                    ...(consumedSeastarExtra ? { mythicHorsesSeastarExtraTalentConsumed: true } : {}),
+                                    ...(getCardDef(o.defId)?.type === 'action' && getCardDef(o.defId)?.lifecycle?.expires.condition?.talentUsed === true ? { lifecycleArmed: true } : {}),
+                                }
                                 : o.metadata,
                         }
                         : o
@@ -1949,9 +1981,13 @@ export function reduceTalentUsedEvent(
                             ? {
                                 ...a,
                                 talentUsed: true,
-                                metadata: consumedSeastarExtra
-                                    ? { ...(a.metadata ?? {}), mythicHorsesSeastarExtraTalentConsumed: true }
-                                    : a.metadata,
+                            metadata: (consumedSeastarExtra || getCardDef(a.defId)?.type === 'action' && getCardDef(a.defId)?.lifecycle?.expires.condition?.talentUsed === true)
+                                ? {
+                                    ...(a.metadata ?? {}),
+                                    ...(consumedSeastarExtra ? { mythicHorsesSeastarExtraTalentConsumed: true } : {}),
+                                    ...(getCardDef(a.defId)?.type === 'action' && getCardDef(a.defId)?.lifecycle?.expires.condition?.talentUsed === true ? { lifecycleArmed: true } : {}),
+                                }
+                                : a.metadata,
                             }
                             : a
                     ),
@@ -1974,11 +2010,19 @@ export function reduceTalentUsedEvent(
     });
     let newStandingStonesUid = state.standingStonesDoubleTalentMinionUid;
     if (consumedStandingStones) {
-        newStandingStonesUid = standingStonesHostMinionUid ?? minionUid;
+        newStandingStonesUid = minionUid;
     }
     const newTitans = titanUid
         ? (state.titans ?? []).map(titan =>
-            titan.uid === titanUid ? { ...titan, talentUsed: true } : titan,
+            titan.uid === titanUid
+                ? {
+                    ...titan,
+                    talentUsed: true,
+                    metadata: consumedSeastarExtra
+                        ? { ...(titan.metadata ?? {}), mythicHorsesSeastarExtraTalentConsumed: true }
+                        : titan.metadata,
+                }
+                : titan,
         )
         : state.titans;
     const currentPlayer = state.players[playerId];
@@ -1988,23 +2032,18 @@ export function reduceTalentUsedEvent(
             extraTalentUsesConsumed: (currentPlayer.extraTalentUsesConsumed ?? 0) + 1,
         }
         : currentPlayer;
+    const greatWolfSpiritTalentCardUid = minionUid ?? ongoingCardUid ?? titanUid;
     const greatWolfSpiritActive = !!(
-        minionUid
+        greatWolfSpiritTalentCardUid
         && baseIndex !== undefined
-        && (state.titans ?? []).some(titan =>
-            titan.defId === 'werewolves_great_wolf_spirit'
-            && titan.location.zone === 'base'
-            && titan.location.baseIndex === baseIndex
-            && titan.controllerId === playerId
-            && !((state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid)),
-        )
+        && hasActiveGreatWolfSpiritAtBase(state, playerId, baseIndex)
     );
     const prevGreatWolfSpiritUids = state.greatWolfSpiritDoubleTalentCardUids ?? [];
     const nextGreatWolfSpiritUids = reusedTalent
         && !consumedStandingStones
         && greatWolfSpiritActive
-        && minionUid
-        ? Array.from(new Set([...prevGreatWolfSpiritUids, minionUid]))
+        && greatWolfSpiritTalentCardUid
+        ? Array.from(new Set([...prevGreatWolfSpiritUids, greatWolfSpiritTalentCardUid]))
         : prevGreatWolfSpiritUids;
     return {
         ...state,
@@ -4795,9 +4834,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED: {
             const { cardUid, delta, metadataUpdate, replaceMode } = (event as OngoingCardCounterChangedEvent).payload;
             // 使用 cardUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
-            const newBases = state.bases.map(base => ({
-                ...base,
-                ongoingActions: base.ongoingActions.map(oa => {
+            const updateOngoing = (oa: BaseOngoingAction | AttachedActionOnMinion) => {
                     if (oa.uid !== cardUid) return oa;
                     const prev = ((oa.metadata?.powerCounters as number) ?? 0);
                     const nextPowerCounters = replaceMode
@@ -4811,7 +4848,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                             powerCounters: nextPowerCounters,
                         },
                     };
-                }),
+            };
+            const newBases = state.bases.map(base => ({
+                ...base,
+                ongoingActions: base.ongoingActions.map(updateOngoing),
+                minions: base.minions.map(minion => ({
+                    ...minion,
+                    attachedActions: minion.attachedActions.map(updateOngoing),
+                })),
             }));
             return { ...state, bases: newBases };
         }

@@ -3,7 +3,7 @@
  *
  * 通过 GameTestRunner 走完整管线验证技能效果：
  * 1. blessing-of-might — 不可防御 3 伤害 + 暴击 + 精准（preDefense 授予，offensiveRollEnd 门控过滤无弹窗）
- * 2. holy-strike-small — 小顺 5 伤害 + 治疗 1（可防御，BONUS_DICE_REROLL 流程）
+ * 2. holy-strike-small — 小顺 6 伤害 + 治疗 1（可防御，BONUS_DICE_REROLL 流程）
  * 3. vengeance — 获得神罚 + 3 CP（无伤害，跳过防御）
  * 4. unyielding-faith — 终极：不可防御 10 伤害 + 治疗 5 + 神圣祝福
  *
@@ -126,10 +126,10 @@ describe('圣骑士 GTR 技能覆盖', () => {
     });
 
     // ========================================================================
-    // holy-strike-small — 神圣冲击（小顺 5 伤害 + 治疗 1，可防御）
+    // holy-strike-small — 神圣冲击（小顺 6 伤害 + 治疗 1，可防御）
     // ========================================================================
     describe('神圣冲击 (holy-strike)', () => {
-        it('小顺造成 5 伤害 + 治疗 1（防御骰全祈祷=0防御）', () => {
+        it('小顺造成 6 伤害 + 治疗 1（防御骰全祈祷=0防御）', () => {
             // 进攻骰: [1,2,3,4,5] → 小顺
             // 防御骰: [6,6,6] → 3 pray（holy-defense: 0剑0盔0心3祈祷 → +3CP，0防御）
             // 流程：defensiveRoll → holy-defense 投 3 骰 → 攻击结算 → main2
@@ -140,7 +140,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                 setup: createPaladinSetup(), assertFn: assertState, silent: true,
             });
             const result = runner.run({
-                name: '神圣冲击 小顺=5伤害+治疗1',
+                name: '神圣冲击 小顺=6伤害+治疗1',
                 commands: [
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '0'),
@@ -155,7 +155,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     turnPhase: 'main2',
                     players: {
                         '0': { hp: 51 }, // 50 + 1 = 51（未超上限 60）
-                        '1': { hp: 45 }, // 50 - 5 = 45
+                        '1': { hp: 44 }, // 50 - 6 = 44
                     },
                 },
             });
@@ -256,7 +256,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                                 [TOKEN_IDS.ACCURACY]: 0,
                             },
                         },
-                        '1': { hp: 41 },
+                        '1': { hp: 40 },
                     },
                 })).toEqual([]);
             expect(result.assertionErrors).toEqual([]);

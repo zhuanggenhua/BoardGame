@@ -118,6 +118,13 @@ export const TIME_TRAVELERS_POD_ACTIONS: ActionCardDef[] = [
         nameEn: 'Stasis Field',
         faction: FACTION,
         ongoingTarget: 'base',
+        lifecycle: {
+            expires: {
+                timing: 'onTurnStart',
+                actor: 'sourceController',
+                effect: 'detach',
+            },
+        },
         playNeedsBase: true,
         abilityTags: ['ongoing'],
         count: 1,

@@ -88,6 +88,7 @@ export const NINJA_POD_ACTIONS: ActionCardDef[] = [
         // Ongoing: This minion is not affected by other players' actions.
         abilityTags: ['ongoing'],
         ongoingTarget: 'minion',
+        lifecycle: { expires: { timing: 'onTurnStart', actor: 'sourceController', effect: 'detach', reason: 'ninja_smoke_bomb_self_destruct' } },
         playConstraint: 'requireOwnMinion',
         playTargetMinionController: 'self',
         count: 1,

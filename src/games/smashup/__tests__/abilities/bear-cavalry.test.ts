@@ -7,6 +7,7 @@ import { clearInteractionHandlers } from '../../domain/abilityInteractionHandler
 import { validate } from '../../domain/commands';
 import {
     clearOngoingEffectRegistry,
+    collectTriggers,
     fireTriggers,
     isMinionProtected,
 } from '../../domain/ongoingEffects';
@@ -55,6 +56,33 @@ beforeAll(() => {
 });
 
 describe('bear_cavalry_general_ivan 保护', () => {
+    it('Bear Necessities POD 激活后跨 TURN_STARTED 重置仍会在控制者下回合自毁', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [makeBase({ ongoingActions: [{ uid: 'bn-1', defId: 'bear_cavalry_bear_necessities_pod', ownerId: '0', talentUsed: false }] as any })],
+        });
+        const activated = reduce(core, {
+            type: SU_EVENTS.TALENT_USED,
+            payload: { playerId: '0', ongoingCardUid: 'bn-1', defId: 'bear_cavalry_bear_necessities_pod', baseIndex: 0 },
+            timestamp: 1,
+        } as any);
+        const nextTurn = reduce(activated, {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '0', turnNumber: 2 },
+            timestamp: 2,
+        } as any);
+        const queued = collectTriggers(nextTurn, 'onTurnStart', {
+            state: nextTurn,
+            playerId: '0',
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 2,
+        });
+        expect(queued?.payload?.triggers?.some(trigger => trigger.sourceCardUid === 'bn-1')).toBe(true);
+    });
+
     it('伊万将军保护己方其他随从不被对手消灭', () => {
         const ivan = makeMinion('ivan', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
         const ally = makeMinion('ally', 'test_minion', '0', 3, { powerModifier: 0 });

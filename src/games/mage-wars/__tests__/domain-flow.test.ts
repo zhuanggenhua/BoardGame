@@ -650,7 +650,8 @@ describe('mage-wars domain flow', () => {
         });
 
         expect(channelResult.success).toBe(true);
-        expect(channelResult.state.sys.phase).toBe('channel');
+        // reset、channel 和无交互 upkeep 由正式流程自动推进，玩家首次决策点是 planning。
+        expect(channelResult.state.sys.phase).toBe('planning');
         expect(channelResult.state.core.players['0'].mana).toBe(manaBefore + channeling);
         expect(channelResult.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             'SYS_PHASE_CHANGED',
@@ -684,7 +685,7 @@ describe('mage-wars domain flow', () => {
         });
 
         expect(nextTurn.success).toBe(true);
-        expect(nextTurn.state.sys.phase).toBe('reset');
+        expect(nextTurn.state.sys.phase).toBe('planning');
         expect(nextTurn.state.core.currentPlayerId).toBe('1');
         expect(nextTurn.state.core.phaseActorId).toBe('1');
         expect(nextTurn.state.core.turnNumber).toBe(1);

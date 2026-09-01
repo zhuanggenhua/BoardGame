@@ -76,7 +76,20 @@ export function validateTitanSpecialActivation(ctx: TitanAbilityValidationContex
 }
 
 export function validateTitanTalentUse(ctx: TitanAbilityValidationContext): string | null {
-    if (ctx.titan.talentUsed) {
+    const canUseGreatWolfSpiritDoubleTalent = ctx.titan.talentUsed
+        && ctx.titan.location.zone === 'base'
+        && (ctx.state.titans ?? []).some(sourceTitan =>
+            sourceTitan.defId === 'werewolves_great_wolf_spirit'
+            && sourceTitan.location.zone === 'base'
+            && sourceTitan.location.baseIndex === ctx.titan.location.baseIndex
+            && sourceTitan.controllerId === ctx.playerId
+            && !(ctx.state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(sourceTitan.uid),
+        )
+        && !(ctx.state.greatWolfSpiritDoubleTalentCardUids ?? []).includes(ctx.titan.uid);
+    const canUseExpertTimingDoubleTalent = ctx.titan.talentUsed
+        && ctx.titan.metadata?.mythicHorsesSeastarExtraTalent === true
+        && ctx.titan.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
+    if (ctx.titan.talentUsed && !canUseGreatWolfSpiritDoubleTalent && !canUseExpertTimingDoubleTalent) {
         return '本回合天赋已使用';
     }
     return titanTalentValidators.get(ctx.titan.defId)?.(ctx) ?? null;

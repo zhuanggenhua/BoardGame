@@ -735,7 +735,10 @@ export function processTokenUsage(
     
     // 生成 TOKEN_USED 事件
     const resolvedResponseType = responseType ?? state.pendingDamage?.responseType;
-    const effectType = resolvedResponseType === 'beforeDamageDealt'
+    const isFlightDefenseAttempt = tokenDef.id === TOKEN_IDS.FLIGHT && resolvedResponseType === 'beforeDamageReceived';
+    const effectType = isFlightDefenseAttempt
+        ? 'evasionAttempt'
+        : resolvedResponseType === 'beforeDamageDealt'
         ? 'damageBoost'
         : effect.type === 'modifyDamageDealt'
             ? 'damageBoost'

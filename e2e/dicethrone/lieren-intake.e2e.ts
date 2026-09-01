@@ -117,6 +117,25 @@ const expectHostHp = async (matchId: string, page: Page, expectedHp: number): Pr
     }, { timeout: 10000 }).toBe(expectedHp);
 };
 
+const expectNyraHealthEvent = async (matchId: string, page: Page, delta: number): Promise<void> => {
+    await expect.poll(async () => {
+        const current = await getMatchState(matchId, page) as JsonRecord;
+        const root = asRecord(current.G ?? current);
+        const entries = Array.isArray(asRecord(root.sys).eventStream)
+            ? []
+            : Array.isArray(asRecord(asRecord(root.sys).eventStream).entries)
+                ? asRecord(asRecord(root.sys).eventStream).entries as JsonRecord[]
+                : [];
+        return entries.some(entry => {
+            const event = asRecord(entry.event);
+            const payload = asRecord(event.payload);
+            return event.type === 'COMPANION_HEALTH_CHANGED'
+                && payload.playerId === '0'
+                && payload.delta === delta;
+        });
+    }, { timeout: 10000 }).toBe(true);
+};
+
 const expectNyraDamageChoiceContract = async (matchId: string, page: Page): Promise<void> => {
     const current = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(current.G ?? current);
@@ -406,6 +425,42 @@ const injectLierenBleedStatus = async (matchId: string, page: Page): Promise<voi
     await injectMatchState(matchId, next as never, page);
 };
 
+/** 构造妮拉之系可主动治疗的正常行动态，不进入伤害响应窗口。 */
+const injectUsableNyraBondHeal = async (matchId: string, page: Page): Promise<void> => {
+    const current = await getMatchState(matchId, page) as JsonRecord;
+    const root = asRecord(current.G ?? current);
+    const core = asRecord(root.core);
+    const sys = asRecord(root.sys);
+    const players = asRecord(core.players);
+    const host = asRecord(players['0']);
+    const companion = asRecord(host.companion);
+    const next = structuredClone(current) as JsonRecord;
+    const nextRoot = asRecord(next.G ?? next);
+
+    nextRoot.core = {
+        ...core,
+        pendingAttack: undefined,
+        pendingDamage: undefined,
+        players: {
+            ...players,
+            '0': {
+                ...host,
+                companion: { ...companion, hp: NYRA_E2E_COMPANION_HP, maxHp: 7 },
+                tokens: { ...asRecord(host.tokens), [TOKEN_IDS.NYRAS_BOND]: 1 },
+            },
+        },
+    };
+    nextRoot.sys = {
+        ...sys,
+        interaction: {
+            ...asRecord(sys.interaction),
+            current: null,
+            queue: [],
+        },
+    };
+    await injectMatchState(matchId, next as never, page);
+};
+
 const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<void> => {
     const current = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(current.G ?? current);
@@ -543,6 +598,20 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expectNyraInsidePlayerBoardImage(match.hostPage);
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '02-牌桌-妮拉在玩家板图片左上空白');
+            await injectUsableNyraBondHeal(match.matchId, match.hostPage);
+            const nyraBondToken = match.hostPage.getByTestId('dt-player-0-token-nyras_bond');
+            await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
+            await waitForDamageFxToSettle(match.hostPage);
+            await expect(nyraBondToken).toHaveAttribute('data-token-clickable', 'true');
+            await expect(nyraBondToken.locator('[data-dicethrone-token-halo="available"]')).toBeVisible();
+            await match.hostPage.getByTestId('dt-player-0-token-nyras_bond-hit-target').click();
+            await expectNyraHealthEvent(match.matchId, match.hostPage, 2);
+            const healFx = match.hostPage.getByTestId('flying-effect-heal');
+            await expect(healFx.locator('span').filter({ hasText: '+2' })).toBeVisible({ timeout: 10000 });
+            await expect(nyraPanel).toContainText('7/7', { timeout: 10000 });
+            await expect(nyraBondToken).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-主动消耗妮拉之系-回血+2飞字');
+
             await injectNyraDamageResponse(match.matchId, match.hostPage);
             await expectNyraDamageChoiceContract(match.matchId, match.hostPage);
             await expectHostHp(match.matchId, match.hostPage, 50);
@@ -570,17 +639,23 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expectNyraDamageChoiceContract(match.matchId, match.hostPage);
             await expectHostHp(match.matchId, match.hostPage, 50);
             await expect(nyraPanel).toContainText('5/7', { timeout: 10000 });
+            await waitForDamageFxToSettle(match.hostPage);
             await expect(match.hostPage.getByRole('button', { name: '确认分配' })).toBeVisible({ timeout: 10000 });
             await setNyraDamageAllocation(match.hostPage, NYRA_E2E_DAMAGE);
             await expect(match.hostPage.getByText('全转移：妮拉承受 8 点伤害，不消耗羁绊。')).toBeVisible();
             await match.hostPage.getByRole('button', { name: '确认分配' }).click();
+            await expectNyraHealthEvent(match.matchId, match.hostPage, -NYRA_E2E_DAMAGE);
+            const damageFx = match.hostPage.getByTestId('flying-effect-damage');
+            await expect.poll(async () => damageFx.locator('span').filter({ hasText: `-${NYRA_E2E_COMPANION_HP}` }).count(), { timeout: 5000 })
+                .toBeGreaterThan(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-妮拉全承伤-5点扣血飞字');
             await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0, { timeout: 10000 });
             await expect(nyraPanel).toContainText('0/7', { timeout: 10000 });
             await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('1/1');
             await expectHostHp(match.matchId, match.hostPage, 50);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
             await waitForDamageFxToSettle(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-8点拉满确认后-妮拉承受全部伤害不耗羁绊');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-8点拉满确认后-妮拉承受全部伤害不耗羁绊');
 
             await injectNyraDamageResponse(match.matchId, match.hostPage);
             await expectNyraDamageChoiceContract(match.matchId, match.hostPage);
@@ -591,16 +666,21 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(match.hostPage.getByText('消耗 1 个羁绊：妮拉承受 6 点，女猎手承受 2 点。')).toBeVisible();
             await match.hostPage.getByRole('button', { name: '确认分配' }).click();
             await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0, { timeout: 10000 });
+            const splitDamageFx = match.hostPage.getByTestId('flying-effect-damage');
+            await expect.poll(async () => splitDamageFx.locator('span').filter({ hasText: `-${NYRA_E2E_COMPANION_HP}` }).count(), { timeout: 5000 })
+                .toBeGreaterThan(0);
+            await expect.poll(async () => splitDamageFx.locator('span').filter({ hasText: '-2' }).count(), { timeout: 5000 })
+                .toBeGreaterThan(0);
             await expect(nyraPanel).toContainText('0/7', { timeout: 10000 });
             await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('0/1');
             await expectHostHp(match.matchId, match.hostPage, 48);
             await expectNyraInsidePlayerBoardImage(match.hostPage);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '07-8点羁绊分配6点确认后-妮拉与女猎手双扣血飞字');
             await waitForDamageFxToSettle(match.hostPage);
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-8点羁绊分配6点确认后-女猎手承受2点');
 
             await expect(match.guestPage.getByTestId('player-board-surface'))
                 .toHaveAttribute('data-character-id', 'monk', { timeout: 10000 });
-            await saveEvidenceScreenshot(match.guestPage, testInfo, '07-牌桌-对手视角已进入');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '08-牌桌-对手视角已进入');
         } finally {
             await cleanupDTMatch(match);
         }

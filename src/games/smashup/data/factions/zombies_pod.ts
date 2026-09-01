@@ -88,6 +88,7 @@ export const ZOMBIE_POD_ACTIONS: ActionCardDef[] = [
         nameEn: 'Overrun',
         faction: 'zombies_pod',
         abilityTags: ['ongoing'],
+        lifecycle: { expires: { timing: 'onTurnStart', actor: 'sourceController', effect: 'detach', reason: 'zombie_overrun_self_destruct' } },
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 7 },
     },

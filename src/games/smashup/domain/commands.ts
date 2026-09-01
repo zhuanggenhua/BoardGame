@@ -66,6 +66,23 @@ import {
 
 type TitanAbilityKind = SmashUpActivationKind;
 
+function canUseGreatWolfSpiritDoubleTalent(
+    core: SmashUpCore,
+    playerId: string,
+    baseIndex: number,
+    cardUid: string,
+): boolean {
+    const greatWolfSpiritActive = (core.titans ?? []).some(titan =>
+        titan.defId === 'werewolves_great_wolf_spirit'
+        && titan.location.zone === 'base'
+        && titan.location.baseIndex === baseIndex
+        && titan.controllerId === playerId
+        && !(core.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid),
+    );
+    return greatWolfSpiritActive
+        && !((core.greatWolfSpiritDoubleTalentCardUids ?? []).includes(cardUid));
+}
+
 export interface SmashUpImmediateExtraValidationContext {
     limitType: 'minion' | 'action';
     playerId: string;
@@ -1292,14 +1309,12 @@ export function validate(
             if (ongoingCardUid) {
                 // 先查基地 ongoingActions
                 let ongoing = targetBase.ongoingActions.find(o => o.uid === ongoingCardUid);
-                let attachedHostMinion = undefined as typeof targetBase.minions[number] | undefined;
                 // 再查随从 attachedActions
                 if (!ongoing) {
                     for (const m of targetBase.minions) {
                         const aa = m.attachedActions.find(a => a.uid === ongoingCardUid);
                         if (aa) {
                             ongoing = aa;
-                            attachedHostMinion = m;
                             break;
                         }
                     }
@@ -1312,18 +1327,18 @@ export function validate(
                     return { valid: false, error: '只能使用自己的持续行动卡天赋' };
                 }
                 if (ongoing.talentUsed) {
-                    // 巨石阵例外：附着在己方随从上的持续行动卡天赋可额外使用一次
-                    const canUseStandingStonesDoubleTalent =
-                        Boolean(attachedHostMinion)
-                        && targetBase.defId === 'base_standing_stones'
-                        && attachedHostMinion?.controller === command.playerId
-                        && !core.standingStonesDoubleTalentMinionUid;
+                    const canUseGreatWolfSpiritDouble = canUseGreatWolfSpiritDoubleTalent(
+                        core,
+                        command.playerId,
+                        baseIndex,
+                        ongoingCardUid,
+                    );
                     const canUseSeastarDouble =
                         (ongoing.metadata as { mythicHorsesSeastarExtraTalent?: boolean; mythicHorsesSeastarExtraTalentConsumed?: boolean } | undefined)
                             ?.mythicHorsesSeastarExtraTalent === true
                         && (ongoing.metadata as { mythicHorsesSeastarExtraTalentConsumed?: boolean } | undefined)
                             ?.mythicHorsesSeastarExtraTalentConsumed !== true;
-                    if (!canUseStandingStonesDoubleTalent && !canUseSeastarDouble) {
+                    if (!canUseGreatWolfSpiritDouble && !canUseSeastarDouble) {
                         return { valid: false, error: '本回合天赋已使用' };
                     }
                 }
@@ -1360,16 +1375,12 @@ export function validate(
                 // 巨石阵例外：允许一个随从每回合使用才能两次
                 const isStandingStones = targetBase.defId === 'base_standing_stones';
                 const doubleTalentAvailable = !core.standingStonesDoubleTalentMinionUid;
-                const greatWolfSpirit = (core.titans ?? []).find(titan =>
-                    titan.defId === 'werewolves_great_wolf_spirit'
-                    && titan.location.zone === 'base'
-                    && titan.controllerId === command.playerId
-                    && !(core.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid),
+                const canUseGreatWolfSpiritDouble = canUseGreatWolfSpiritDoubleTalent(
+                    core,
+                    command.playerId,
+                    baseIndex,
+                    minionUid,
                 );
-                const greatWolfSpiritBaseIndex = greatWolfSpirit?.location.zone === 'base' ? greatWolfSpirit.location.baseIndex : undefined;
-                const canUseGreatWolfSpiritDouble =
-                    greatWolfSpiritBaseIndex === baseIndex
-                    && !((core.greatWolfSpiritDoubleTalentCardUids ?? []).includes(minionUid));
                 const canUseSeastarDouble =
                     targetMinion.metadata?.mythicHorsesSeastarExtraTalent === true
                     && targetMinion.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;

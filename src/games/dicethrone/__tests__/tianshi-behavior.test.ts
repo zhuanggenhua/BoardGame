@@ -201,6 +201,13 @@ describe('炽天使领域行为', () => {
         expect(result.state.core.pendingAttack?.defensiveFlightActivated).not.toBe(true);
         expect(result.state.core.pendingAttack?.isDefendable).toBe(true);
         expect(result.state.core.pendingDamage?.currentDamage).toBe(7);
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: 'TOKEN_USED',
+            payload: expect.objectContaining({
+                tokenId: TOKEN_IDS.FLIGHT,
+                effectType: 'evasionAttempt',
+            }),
+        }));
         expect(result.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(50);
         expect(result.state.core.currentRollContext).toMatchObject({
             kind: 'bonus',
@@ -1818,8 +1825,17 @@ describe('炽天使领域行为', () => {
         expect(rerolled.state.core.dice[0]?.value).toBe(6);
     });
 
-    it('僧侣攻击天使斗篷时，普通防御骰结算后主攻击仍扣除炽天使生命', () => {
-        let state = createHeroMatchup('monk', 'tianshi')(playerIds, createQueuedRandom([1]));
+    it.each([
+        { defenseRoll: 1, expectedCounterDamage: 2, expectedShield: undefined, expectedHpLoss: 8 },
+        { defenseRoll: 5, expectedCounterDamage: undefined, expectedShield: 2, expectedHpLoss: 6 },
+        { defenseRoll: 6, expectedCounterDamage: undefined, expectedShield: 3, expectedHpLoss: 5 },
+    ])('僧侣 8 点攻击经过天使斗篷骰面 $defenseRoll 后应按防御结果扣血', ({
+        defenseRoll,
+        expectedCounterDamage,
+        expectedShield,
+        expectedHpLoss,
+    }) => {
+        let state = createHeroMatchup('monk', 'tianshi')(playerIds, createQueuedRandom([defenseRoll]));
         const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
 
         const run = (step: DiceThroneCommand, randomValues: number[] = [1]) => {
@@ -1852,36 +1868,57 @@ describe('炽天使领域行为', () => {
         run(command('ADVANCE_PHASE', '0'));
         expect(state.sys.phase).toBe('defensiveRoll');
         expect(state.core.pendingAttack?.defenseAbilityId).toBe('angelic-cloak');
-        const defenseRolled = run(command('ROLL_DICE', '1'), [1]);
+        const defenseRolled = run(command('ROLL_DICE', '1'), [defenseRoll]);
         expect(defenseRolled?.events).toContainEqual(expect.objectContaining({
             type: 'DICE_ROLLED',
             payload: expect.objectContaining({
                 phase: 'defensiveRoll',
                 rollerId: '1',
-                results: [1],
+                results: [defenseRoll],
             }),
         }));
         const defenseConfirmed = run(command('CONFIRM_ROLL', '1'));
         expect(defenseConfirmed?.events.some(event => event.type === 'BONUS_DICE_REROLL_REQUESTED')).toBe(false);
 
         const resolved = run(command('ADVANCE_PHASE', '1'));
-        expect(resolved?.events).toContainEqual(expect.objectContaining({
-            type: 'DAMAGE_DEALT',
-            payload: expect.objectContaining({
-                targetId: '0',
-                amount: 2,
-                unblockable: true,
-            }),
-        }));
-        expect(resolved?.events).toContainEqual(expect.objectContaining({
-            type: 'DAMAGE_DEALT',
-            payload: expect.objectContaining({
-                targetId: '1',
-                amount: 8,
-                sourceAbilityId: 'fist-technique-5',
-            }),
-        }));
-        expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 8);
+        if (expectedCounterDamage !== undefined) {
+            expect(resolved?.events).toContainEqual(expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({
+                    targetId: '0',
+                    amount: expectedCounterDamage,
+                    unblockable: true,
+                }),
+            }));
+        }
+        if (expectedShield !== undefined) {
+            expect(resolved?.events).toContainEqual(expect.objectContaining({
+                type: 'DAMAGE_SHIELD_GRANTED',
+                payload: expect.objectContaining({
+                    targetId: '1',
+                    value: expectedShield,
+                    sourceId: 'angelic-cloak',
+                }),
+            }));
+        }
+        const mainAttackDamage = resolved?.events.find((event): event is Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }> => (
+            event.type === 'DAMAGE_DEALT'
+            && event.payload.targetId === '1'
+            && event.payload.sourceAbilityId === 'fist-technique-5'
+        ));
+        expect(mainAttackDamage?.payload).toMatchObject({
+            amount: 8,
+            actualDamage: expectedHpLoss,
+            sourceAbilityId: 'fist-technique-5',
+        });
+        if (expectedShield !== undefined) {
+            expect(mainAttackDamage?.payload.shieldsConsumed).toContainEqual(expect.objectContaining({
+                sourceId: 'angelic-cloak',
+                value: expectedShield,
+                absorbed: expectedShield,
+            }));
+        }
+        expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - expectedHpLoss);
         expect(state.core.pendingAttack).toBeNull();
         expect(state.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(state.sys.phase).toBe('main2');

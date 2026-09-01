@@ -110,6 +110,15 @@ export const SHEEP_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'ongoing'],
         ongoingTarget: 'minion',
+        lifecycle: {
+            expires: {
+                timing: 'onTurnStart',
+                actor: 'sourceController',
+                effect: 'detach',
+                destination: 'hand',
+                reason: 'sheep_shearing',
+            },
+        },
         playNeedsMinion: true,
         playTargetMinionController: 'self',
         count: 1,

@@ -6,7 +6,6 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
-import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
 import type {
     DeckReorderedEvent,
@@ -19,8 +18,8 @@ import type {
 } from '../domain/types';
 import { recoverCardsFromDiscard, grantContextualExtraMinion, buildBaseTargetOptions, buildAbilityFeedback, peekDeckTop } from '../domain/abilityHelpers';
 import type { MatchState, PlayerId } from '../../../engine/types';
-import { registerRestriction, registerTrigger } from '../domain/ongoingEffects';
-import type { RestrictionCheckContext, TriggerContext } from '../domain/ongoingEffects';
+import { registerRestriction } from '../domain/ongoingEffects';
+import type { RestrictionCheckContext } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { validateDiscardMinionPlaySemantics } from '../domain/playLegality';
 import { registerDiscardPlayProvider } from '../domain/discardPlayability';
@@ -131,17 +130,9 @@ export function registerZombieAbilities(): void {
     // 泛滥横行：其他玩家不能打随从到此基地 + 回合开始自毁
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun', 'onPlay', () => []);
-    registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct, {
-        playerContext: 'sourceController',
-        perInstance: true,
-    });
 
     registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun_pod', 'onPlay', () => []);
-    registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct, {
-        playerContext: 'sourceController',
-        perInstance: true,
-    });
 
     // === 弃牌堆出牌能力注册 ===
     // 顽强丧尸：被动，弃牌堆中可作为额外随从打出（每回合限一次）
@@ -211,7 +202,6 @@ export function registerZombieAbilities(): void {
         },
     });
 }
-
 /** 掘墓者 onPlay：从弃牌堆取回一个随从到手牌 */
 function createZombieGraveDiggerContext(ctx: AbilityContext): ZombieGraveDiggerContext {
     const player = ctx.state.players[ctx.playerId];
@@ -1025,24 +1015,5 @@ function zombieOverrunRestriction(ctx: RestrictionCheckContext): boolean {
         if (overrun.defId !== 'zombie_overrun' && overrun.defId !== 'zombie_overrun_pod') return false;
         const controllerId = (overrun.metadata?.sourceControllerId as PlayerId | undefined) ?? overrun.ownerId;
         return ctx.playerId !== controllerId;
-    });
-}
-
-/** 泛滥横行触发：拥有者回合开始时自毁 */
-function zombieOverrunSelfDestruct(ctx: TriggerContext): SmashUpEvent[] {
-    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return [];
-    const base = ctx.state.bases[ctx.sourceBaseIndex];
-    if (!base) return [];
-    const overrun = base.ongoingActions.find(o =>
-        o.uid === ctx.sourceCardUid && (o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod'),
-    );
-    if (!overrun) return [];
-    const controllerId = ctx.sourceControllerId ?? overrun.ownerId;
-    if (controllerId !== ctx.playerId) return [];
-    return buildValidatedOngoingDetachEvents(ctx.state, {
-        cardUid: overrun.uid,
-        reason: 'zombie_overrun_self_destruct',
-        now: ctx.now,
-        expectedLocation: 'base',
     });
 }

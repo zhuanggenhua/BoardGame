@@ -246,6 +246,8 @@ export interface ActionCardDef {
     previewRef?: CardPreviewRef;
     /** ongoing 行动卡的附着目标：'base'（默认）或 'minion'（附着到随从上） */
     ongoingTarget?: 'base' | 'minion';
+    /** 持续行动卡的通用生命周期；由运行时按来源实例 UID 执行。 */
+    lifecycle?: OngoingCardLifecycle;
     /**
      * ongoing 行动卡的打出约束（数据驱动）。
      * @see PlayConstraint
@@ -338,6 +340,19 @@ export interface BaseCardDef {
     allowMultipleTitans?: boolean;
     /** Munchkin 基地翻开时需要从公共怪物牌堆补到基地下方的怪物数量。 */
     monsterCount?: number;
+}
+
+/** 持续行动卡生命周期合同（数据驱动）。 */
+export interface OngoingCardLifecycle {
+    expires: {
+        timing: 'onTurnStart' | 'onTurnEnd';
+        actor: 'sourceController' | 'owner';
+        effect: 'detach';
+        destination?: 'discard' | 'hand';
+        reason?: string;
+        /** 可选的实例状态门槛，例如天赋激活后才在下回合到期。 */
+        condition?: { talentUsed?: boolean };
+    };
 }
 
 // ============================================================================
@@ -1025,6 +1040,7 @@ export interface SmashUpCore {
     specialLimitUsed?: Record<string, number[]>;
     /** 巨石阵：本回合已使用双才能的随从 UID（每回合只有一个随从可用才能两次） */
     standingStonesDoubleTalentMinionUid?: string;
+    /** 巨狼之灵：本回合已使用过额外一次天赋的同基地卡牌 UID */
     greatWolfSpiritDoubleTalentCardUids?: string[];
     /** 计分后触发的 special 延迟记录（回合开始自动清空） */
     pendingAfterScoringSpecials?: PendingAfterScoringSpecial[];

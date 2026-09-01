@@ -336,8 +336,8 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.queryByTestId('mage-wars-board')).not.toBeNull();
     });
 
-    it('automatically advances the channel phase without requiring an end-turn click', async () => {
-        const props = boardProps(undefined, '0', { phase: 'channel' });
+    it('automatically starts the turn from reset without requiring an end-turn click', async () => {
+        const props = boardProps(undefined, '0', { phase: 'reset' });
         renderBoardWithProviders(<MageWarsBoard {...props} />);
 
         await waitFor(() => {

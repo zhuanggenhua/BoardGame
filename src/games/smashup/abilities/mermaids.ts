@@ -123,10 +123,6 @@ const MERMAIDS_CHARMED_SUPPRESSED_TURN_META = 'mermaidsCharmedSuppressedTurn';
 const MERMAIDS_TEMP_CONTROL_CONTROLLER_META = 'mermaidsTemporaryControlOriginalController';
 const MERMAIDS_TEMP_CONTROL_PLAYER_META = 'mermaidsTemporaryControlPlayerId';
 const MERMAIDS_TEMP_CONTROL_TURN_META = 'mermaidsTemporaryControlTurn';
-const selfDetachOrderingContract = {
-    reads: [],
-    writes: [],
-};
 
 function createMermaidsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: AbilityContext['matchState'],
@@ -1236,27 +1232,6 @@ function canTriggerMermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): boole
     return getOtherBases(ctx.state, ctx.sourceBaseIndex).length > 0;
 }
 
-function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
-    if (!ctx.sourceCardUid || !ctx.sourceControllerId) return [];
-    if (ctx.playerId !== ctx.sourceControllerId) return [];
-    const ownerId = (() => {
-        for (const base of ctx.state.bases) {
-            for (const minion of base.minions) {
-                const attached = minion.attachedActions.find(action => action.uid === ctx.sourceCardUid);
-                if (attached) return attached.ownerId;
-            }
-        }
-        return ctx.sourceControllerId;
-    })();
-    return [buildOngoingDetachedEvent({
-        cardUid: ctx.sourceCardUid,
-        defId: ctx.sourceDefId ?? 'mermaids_desert_island',
-        ownerId,
-        reason: ctx.sourceDefId ?? 'mermaids_desert_island',
-        now: ctx.now,
-    })];
-}
-
 export function registerMermaidsAbilities(): void {
     registerAbilityProgram('mermaids_charmer', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmerTalent) });
     registerAbilityProgram('mermaids_charmer_pod', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmerTalent) });
@@ -1292,18 +1267,6 @@ export function registerMermaidsAbilities(): void {
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
         canTrigger: canTriggerMermaidsShipwreckCoveAfterScoring,
-    });
-    registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
-        perInstance: true,
-        playerContext: 'sourceController',
-        sourceScope: 'triggerBase',
-        effectContract: selfDetachOrderingContract,
-    });
-    registerTrigger('mermaids_desert_island_pod', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
-        perInstance: true,
-        playerContext: 'sourceController',
-        sourceScope: 'triggerBase',
-        effectContract: selfDetachOrderingContract,
     });
 }
 

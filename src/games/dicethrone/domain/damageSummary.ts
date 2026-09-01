@@ -82,18 +82,32 @@ const previewLive = (source: DamageSummarySource): DamageSummaryValueContract =>
     source,
 });
 
+export const isPendingDamageResponseBonusSettlement = (
+    state: DiceThroneCore,
+    settlement: PendingBonusDiceSettlement | undefined,
+): settlement is PendingBonusDiceSettlement => {
+    const pendingDamage = state.pendingDamage;
+    if (!pendingDamage || !settlement
+        || settlement.displayOnly !== true
+        || settlement.continuation?.kind !== 'complete'
+        || settlement.dice.length === 0) {
+        return false;
+    }
+    const isSneakAttack = settlement.attackerId === pendingDamage.responderId
+        && settlement.attackerId === pendingDamage.sourcePlayerId
+        && settlement.targetId === pendingDamage.targetPlayerId
+        && settlement.dice.every(die => die.effectKey === 'bonusDie.effect.sneakAttack');
+    const isFlightDefense = settlement.attackerId === pendingDamage.responderId
+        && settlement.targetId === pendingDamage.targetPlayerId
+        && settlement.dice.every(die => die.effectKey === 'bonusDie.effect.tianshi.flight');
+    return isSneakAttack || isFlightDefense;
+};
+
 export const isPendingDamageBonusSettlement = (
     state: DiceThroneCore,
     settlement: PendingBonusDiceSettlement | undefined,
 ): settlement is PendingBonusDiceSettlement => (
-    !!state.pendingDamage
-    && !!settlement
-    && settlement.displayOnly === true
-    && settlement.continuation?.kind === 'complete'
-    && settlement.attackerId === state.pendingDamage.responderId
-    && settlement.attackerId === state.pendingDamage.sourcePlayerId
-    && settlement.targetId === state.pendingDamage.targetPlayerId
-    && settlement.dice.length > 0
+    isPendingDamageResponseBonusSettlement(state, settlement)
     && settlement.dice.every(die => die.effectKey === 'bonusDie.effect.sneakAttack')
 );
 

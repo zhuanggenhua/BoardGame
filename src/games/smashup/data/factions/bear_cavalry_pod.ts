@@ -79,6 +79,14 @@ export const BEAR_CAVALRY_POD_ACTIONS: ActionCardDef[] = [
         nameEn: 'Bear Necessities',
         faction: 'bear_cavalry_pod',
         abilityTags: ['ongoing', 'talent'],
+        lifecycle: {
+            expires: {
+                timing: 'onTurnStart',
+                actor: 'sourceController',
+                effect: 'detach',
+                condition: { talentUsed: true },
+            },
+        },
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS3, index: 14 },
     },

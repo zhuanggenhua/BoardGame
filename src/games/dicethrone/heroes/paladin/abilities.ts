@@ -372,7 +372,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         description: abilityText('holy-strike', 'description'),
         sfxKey: PALADIN_SFX_HEAVY,
         variants: [
-            { id: 'holy-strike-small', trigger: { type: 'smallStraight' }, effects: [heal(1, abilityEffectText('holy-strike', 'heal1')), damage(5, abilityEffectText('holy-strike', 'damage5'))], priority: 0 },
+            { id: 'holy-strike-small', trigger: { type: 'smallStraight' }, effects: [heal(1, abilityEffectText('holy-strike', 'heal1')), damage(6, abilityEffectText('holy-strike', 'damage6'))], priority: 0 },
             { id: 'holy-strike-large', trigger: { type: 'largeStraight' }, effects: [heal(2, abilityEffectText('holy-strike-large', 'heal2')), damage(8, abilityEffectText('holy-strike-large', 'damage8'))], priority: 1 }
         ]
     },

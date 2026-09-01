@@ -69,13 +69,13 @@ describe('圣骑士技能定义', () => {
             // 小顺变体
             expect(ability!.variants![0].trigger.type).toBe('smallStraight');
             expect(ability!.variants![0].effects).toHaveLength(2); // heal + damage
+            expect(ability!.variants![0].effects[0].action.value).toBe(1);
+            expect(ability!.variants![0].effects[1].action.value).toBe(6);
             // 大顺变体
             expect(ability!.variants![1].trigger.type).toBe('largeStraight');
             expect(ability!.variants![1].effects).toHaveLength(2);
-            // 大顺伤害更高
-            const smallDmg = ability!.variants![0].effects[1].action.value;
-            const largeDmg = ability!.variants![1].effects[1].action.value;
-            expect(largeDmg).toBeGreaterThan(smallDmg!);
+            expect(ability!.variants![1].effects[0].action.value).toBe(2);
+            expect(ability!.variants![1].effects[1].action.value).toBe(8);
         });
 
         it('圣光 - 2 Heart 触发', () => {
@@ -189,7 +189,7 @@ describe('圣骑士技能定义', () => {
 
         it('神圣冲击 II - 伤害提升', () => {
             expect(HOLY_STRIKE_2.variants).toHaveLength(2);
-            // 小顺伤害 7 > I 级 5
+            // 小顺伤害 7 > I 级 6
             expect(HOLY_STRIKE_2.variants![0].effects[1].action.value).toBe(7);
             // 大顺伤害 9 > I 级 8
             expect(HOLY_STRIKE_2.variants![1].effects[1].action.value).toBe(9);

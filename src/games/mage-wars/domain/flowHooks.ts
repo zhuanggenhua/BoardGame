@@ -472,6 +472,16 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
     onPhaseExit: ({ state, from, command, random }) => {
         const phase = from as MageWarsPhase;
         if (SIMULTANEOUS_PREPARATION_PHASES.has(phase)) {
+            // 自动流程命令使用 undefined payload；无决策阶段直接完成，不伪造两名玩家的
+            // “准备”点击，也避免在没有新事件时留下半完成的阶段。
+            if (command.payload === undefined && (phase === 'reset' || phase === 'channel' || phase === 'upkeep')) {
+                return {
+                    updatedState: updatePhaseControl(state, {
+                        phaseReadyPlayerIds: [],
+                        phaseActorId: state.core.currentPlayerId,
+                    }),
+                };
+            }
             const ready = resolveReadyPlayerIds(state.core, command.playerId);
             if (!allPlayersReady(state.core, ready)) {
                 return {
@@ -630,7 +640,31 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
     },
 
     onAutoContinueCheck: ({ state }) => {
-        if (state.sys.phase !== 'planning') return;
+        if (state.sys.tutorial?.step?.skipAutomaticFlow) return;
+        const phase = state.sys.phase as MageWarsPhase;
+
+        // reset、聚魔和维持阶段没有玩家决策时由正式流程自动完成。
+        // 这里返回尚未提交该阶段的玩家，FlowSystem 会逐个执行同一条
+        // ADVANCE_PHASE 规则命令；不再要求玩家点击“结束回合”。
+        if (phase === 'reset' || phase === 'channel') {
+            const ready = state.core.phaseReadyPlayerIds ?? [];
+            const nextPlayerId = state.core.playerOrder.find((playerId) => !ready.includes(playerId));
+            if (nextPlayerId) return { autoContinue: true, playerId: nextPlayerId };
+            return;
+        }
+
+        if (phase === 'upkeep') {
+            const hasInteraction = Boolean(
+                state.sys.interaction?.current
+                || state.sys.interaction?.queue?.length
+                || state.sys.responseWindow?.current
+                || state.sys.resolution?.frames?.some((frame) => frame.status === 'blocked'),
+            );
+            if (hasInteraction) return;
+            return { autoContinue: true, playerId: state.core.currentPlayerId };
+        }
+
+        if (phase !== 'planning') return;
         const ready = state.core.phaseReadyPlayerIds ?? [];
         if (!allPlayersReady(state.core, ready)) return;
         return { autoContinue: true, playerId: state.core.currentPlayerId };

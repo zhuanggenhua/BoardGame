@@ -22,6 +22,7 @@ export const MERMAIDS_POD_ACTIONS: ActionCardDef[] = [
         subtype: 'ongoing',
         name: '无人岛 (POD)',
         nameEn: 'Desert Island',
+        lifecycle: { expires: { timing: 'onTurnStart', actor: 'sourceController', effect: 'detach' } },
         faction: MERMAIDS_POD_FACTION,
         abilityTags: ['ongoing'],
         ongoingTarget: 'base',

@@ -55,9 +55,10 @@ import {
     type SmashUpCore,
     type SmashUpEvent,
     type TempPowerAddedEvent,
+    type TitanMetadataUpdatedEvent,
 } from '../domain/types';
 import { getEffectivePower, getPlayerEffectivePowerOnBase, registerPowerModifier } from '../domain/ongoingModifiers';
-import { getBaseDef, getCardDef } from '../data/cards';
+import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 
 type ZhongguoPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -107,17 +108,19 @@ type CounterTransferChoice = {
 };
 
 type ExpertTimingCardChoice = {
-    kind?: 'minion' | 'ongoingAction';
+    kind?: 'minion' | 'ongoingAction' | 'titan';
     minionUid?: string;
     actionUid?: string;
+    titanUid?: string;
     baseIndex?: number;
     defId?: string;
 };
 
 type CardChoice = {
-    kind?: 'minion' | 'ongoingAction';
+    kind?: 'minion' | 'ongoingAction' | 'titan';
     minionUid?: string;
     actionUid?: string;
+    titanUid?: string;
     baseIndex?: number;
     defId?: string;
     skip?: boolean;
@@ -281,9 +284,10 @@ type KungFuExpertTimingMode = 'transfer' | 'talent' | 'both';
 
 type KungFuExpertTimingContext = ZhongguoPromptContext & {
     mode?: KungFuExpertTimingMode;
-    talentCardKind?: 'minion' | 'ongoingAction';
+    talentCardKind?: 'minion' | 'ongoingAction' | 'titan';
     talentMinionUid?: string;
     talentActionUid?: string;
+    talentTitanUid?: string;
     talentBaseIndex?: number;
     sourceCardKind?: 'minion' | 'ongoingAction';
     sourceMinionUid?: string;
@@ -671,7 +675,7 @@ function buildCardChoiceOptions(candidates: Array<{
     uid: string;
     defId: string;
     baseIndex: number;
-    kind: 'minion' | 'ongoingAction';
+    kind: 'minion' | 'ongoingAction' | 'titan';
     label: string;
 }>): Array<{
     id: string;
@@ -690,12 +694,19 @@ function buildCardChoiceOptions(candidates: Array<{
                 baseIndex: candidate.baseIndex,
                 defId: candidate.defId,
             }
-            : {
+            : candidate.kind === 'ongoingAction'
+                ? {
                 kind: 'ongoingAction',
                 actionUid: candidate.uid,
                 baseIndex: candidate.baseIndex,
                 defId: candidate.defId,
-            },
+                }
+                : {
+                    kind: 'titan',
+                    titanUid: candidate.uid,
+                    baseIndex: candidate.baseIndex,
+                    defId: candidate.defId,
+                },
         _source: 'field' as const,
         displayMode: 'card' as const,
     }));
@@ -2810,7 +2821,7 @@ function collectExpertTimingTalentTargets(state: SmashUpCore, playerId: PlayerId
     uid: string;
     defId: string;
     baseIndex: number;
-    kind: 'minion' | 'ongoingAction';
+    kind: 'minion' | 'ongoingAction' | 'titan';
     label: string;
 }> {
     const ownMinionTargets = collectOwnMinions(state, playerId)
@@ -2838,7 +2849,37 @@ function collectExpertTimingTalentTargets(state: SmashUpCore, playerId: PlayerId
         label: candidate.label,
     }));
 
-    return [...ownMinionTargets, ...ownBaseActionTargets];
+    const ownAttachedActionTargets = state.bases.flatMap((base, baseIndex) =>
+        base.minions.flatMap(minion => minion.attachedActions
+            .filter(action => {
+                const controllerId = (action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId;
+                const def = getCardDef(action.defId) as { abilityTags?: string[] } | undefined;
+                return controllerId === playerId && def?.abilityTags?.includes('talent') === true;
+            })
+            .map(action => ({
+                uid: action.uid,
+                defId: action.defId,
+                baseIndex,
+                kind: 'ongoingAction' as const,
+                label: `${getCardDef(action.defId)?.name ?? action.defId}（${getCardDef(minion.defId)?.name ?? minion.defId}）`,
+            })),
+        ),
+    );
+
+    const ownTitanTargets = (state.titans ?? [])
+        .filter(titan => {
+            if (titan.location.zone !== 'base' || titan.controllerId !== playerId) return false;
+            return getTitanDef(titan.defId)?.abilityTags?.includes('talent') === true;
+        })
+        .map(titan => ({
+            uid: titan.uid,
+            defId: titan.defId,
+            baseIndex: titan.location.zone === 'base' ? titan.location.baseIndex : -1,
+            kind: 'titan' as const,
+            label: getTitanDef(titan.defId)?.name ?? titan.defId,
+        }));
+
+    return [...ownMinionTargets, ...ownBaseActionTargets, ...ownAttachedActionTargets, ...ownTitanTargets];
 }
 
 function buildExpertTimingExtraTalentEvent(
@@ -2869,6 +2910,20 @@ function buildExpertTimingExtraTalentEvent(
             'kung_fu_fighters_expert_timing_extra_talent',
             now,
         );
+    }
+    if (selected.kind === 'titan' && selected.titanUid) {
+        return {
+            type: SU_EVENTS.TITAN_METADATA_UPDATED,
+            payload: {
+                titanUid: selected.titanUid,
+                metadataUpdate: {
+                    mythicHorsesSeastarExtraTalent: true,
+                    mythicHorsesSeastarExtraTalentConsumed: false,
+                },
+                reason: 'kung_fu_fighters_expert_timing_extra_talent',
+            },
+            timestamp: now,
+        } satisfies TitanMetadataUpdatedEvent;
     }
     return undefined;
 }
@@ -2945,6 +3000,7 @@ function buildExpertTimingTransferEvents(
             kind: context.talentCardKind,
             minionUid: context.talentMinionUid,
             actionUid: context.talentActionUid,
+            titanUid: context.talentTitanUid,
             baseIndex: context.talentBaseIndex,
         }, timestamp);
         if (extraTalentEvent) {
@@ -3123,6 +3179,7 @@ const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingCo
                     kind: context.talentCardKind,
                     minionUid: context.talentMinionUid,
                     actionUid: context.talentActionUid,
+                    titanUid: context.talentTitanUid,
                     baseIndex: context.talentBaseIndex,
                 }, timestamp);
                 return { events: extraTalentEvent ? [extraTalentEvent] : [] };
@@ -3138,6 +3195,7 @@ const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingCo
                     kind: context.talentCardKind,
                     minionUid: context.talentMinionUid,
                     actionUid: context.talentActionUid,
+                    titanUid: context.talentTitanUid,
                     baseIndex: context.talentBaseIndex,
                 }, timestamp);
                 return { events: extraTalentEvent ? [extraTalentEvent] : [] };
@@ -3185,6 +3243,7 @@ const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingCo
                     talentCardKind: selected.kind,
                     talentMinionUid: selected.minionUid,
                     talentActionUid: selected.actionUid,
+                    talentTitanUid: selected.titanUid,
                     talentBaseIndex: selected.baseIndex,
                 },
                 nextProgram: expertTimingSourcePromptProgram,

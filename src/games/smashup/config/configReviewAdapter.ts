@@ -286,6 +286,7 @@ function getCardPlayRequirements(card: CardDef): string[] {
       card.responseWindowTiming ? `responseWindow:${card.responseWindowTiming}` : undefined,
       card.responseWindowNeedsBase ? 'responseWindowNeedsBase' : undefined,
       card.ongoingTarget ? `ongoingTarget:${card.ongoingTarget}` : undefined,
+      card.lifecycle ? `lifecycle:${card.lifecycle.expires.timing}:${card.lifecycle.expires.actor}:${card.lifecycle.expires.effect}${card.lifecycle.expires.destination ? `:destination=${card.lifecycle.expires.destination}` : ''}${card.lifecycle.expires.condition?.talentUsed !== undefined ? `:talentUsed=${card.lifecycle.expires.condition.talentUsed}` : ''}` : undefined,
     ]);
   }
   if (card.type === 'fusion') {

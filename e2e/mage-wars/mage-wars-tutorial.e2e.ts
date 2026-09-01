@@ -156,6 +156,22 @@ async function clickTutorialObject(page: Page, objectId: string) {
     await target.click({ timeout: 5_000 });
 }
 
+async function clickTutorialSpellbookCard(page: Page, cardId: number) {
+    const card = page.locator(`[data-tutorial-id="mw-spellbook-card-${cardId}"]`).first();
+    for (let pageIndex = 0; pageIndex < 12; pageIndex += 1) {
+        if (await card.isVisible().catch(() => false)) {
+            await expect(card).toBeEnabled({ timeout: 10_000 });
+            await card.click({ timeout: 5_000 });
+            return;
+        }
+        const nextPage = page.getByTestId('mage-wars-spellbook-next-page');
+        await expect(nextPage).toBeVisible({ timeout: 10_000 });
+        if (await nextPage.isDisabled()) break;
+        await nextPage.click({ timeout: 5_000 });
+    }
+    throw new Error(`法术书分页中未找到卡牌 ${cardId}`);
+}
+
 async function screenshot(page: Page, path: string) {
     await mkdir(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: false });
@@ -195,7 +211,7 @@ test.describe('Mage Wars tutorial', () => {
 
         await waitForTutorialStep(page, 'intro', 60_000);
         await expect(page.getByTestId('tutorial-overlay-content')).toContainText('屹立不倒的法师');
-        await expect(page.getByTestId('mage-wars-board')).toContainText('正式竞技场');
+        await expect(page.getByTestId('mage-wars-board')).not.toContainText('正式竞技场');
         await assertAllVisibleImagesLoaded(page);
         await screenshot(page, INTRO_SCREENSHOT_PATH);
         await clickTutorialNext(page);
@@ -212,26 +228,21 @@ test.describe('Mage Wars tutorial', () => {
             await clickTutorialNext(page);
         }
 
-        await waitForTutorialStep(page, 'advance-channel');
-        await clickTutorialTarget(page, 'mw-turn-end');
         await waitForTutorialStep(page, 'channel-result');
         await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
         await screenshot(page, CHANNEL_RESULT_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
-        await waitForTutorialStep(page, 'advance-upkeep');
-        await clickTutorialTarget(page, 'mw-turn-end');
-        await waitForTutorialStep(page, 'advance-planning');
-        await clickTutorialTarget(page, 'mw-turn-end');
-
-        await waitForTutorialStep(page, 'plan-wolf');
+        await waitForTutorialStep(page, 'plan-wolf', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return { phase: state.sys?.phase ?? null, phaseActorId: state.core?.phaseActorId ?? null };
+        }, { timeout: 15_000 }).toEqual({ phase: 'planning', phaseActorId: '0' });
+        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
         await clickTutorialTarget(page, 'mw-spellbook-category-creature');
-        await clickTutorialTarget(page, 'mw-spellbook-next-page');
-        await expect(page.locator('[data-tutorial-id="mw-spellbook-card-2819"]')).toBeVisible({ timeout: 15_000 });
-        await clickTutorialTarget(page, 'mw-spellbook-card-2819');
+        await clickTutorialSpellbookCard(page, 2819);
         await clickTutorialTarget(page, 'mw-spellbook-category-incantation');
-        await clickTutorialTarget(page, 'mw-spellbook-next-page');
-        await clickTutorialTarget(page, 'mw-spellbook-card-3403');
+        await clickTutorialSpellbookCard(page, 3403);
         await screenshot(page, PLAN_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-plan-spells');
         await waitForTutorialStep(page, 'prepared-and-hidden');

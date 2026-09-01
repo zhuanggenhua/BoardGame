@@ -1,0 +1,42 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "天使斗篷投出双翼后获得飞行，真实防御链等待响应并正常收口",
+      "status": "PASS",
+      "evidence": [
+        "E2E: 天使斗篷投出双翼后，真实防御链会先授予飞行并等待响应后收口 (1 passed)"
+      ]
+    },
+    {
+      "requirement": "防御掷骰阶段可使用飞行，奖励骰确认后免除当前伤害且不再卡在待确认状态",
+      "status": "PASS",
+      "evidence": [
+        "E2E: 防御掷骰阶段的伤害响应弹窗应允许立即使用飞行并免除当前伤害 (1 passed)",
+        "最终状态: flight=0, hp=50, pendingDamage=null, defensiveFlightActivated=true"
+      ]
+    },
+    {
+      "requirement": "飞行奖励骰没有 6 时，确认后继续进入伤害响应，点击跳过后正常扣除 7 点伤害并收口",
+      "status": "PASS",
+      "evidence": [
+        "E2E 同一真实入口分支: [2,5]，右侧确认按钮出现",
+        "最终状态: hp=43, pendingDamage=null, defensiveFlightActivated=false"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/00-sequence-index.png",
+    "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/01-labeled-tianshi-flight-token-response-bonus-dice-有6免伤.png",
+    "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/02-labeled-tianshi-flight-token-response-right-tray-settled-有6免伤.png",
+    "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/03-labeled-tianshi-flight-token-response-bonus-dice-无6继续受伤.png",
+    "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/04-labeled-tianshi-flight-token-response-right-tray-settled-无6继续受伤.png"
+  ]
+}

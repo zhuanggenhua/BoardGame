@@ -4,6 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { validate } from '../domain/commands';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { execute, reduce } from '../domain/reducer';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import {
@@ -147,7 +148,7 @@ describe('天赋基础设施', () => {
         expect(result.error).toBe('本回合天赋已使用');
     });
 
-    it('巨石阵：附着行动卡在名额未占用时可发动第2次天赋（ongoingCardUid）', () => {
+    it('巨石阵：附着行动卡不属于“一个随从”，不可发动第2次天赋', () => {
         const core = makeState({
             standingStonesDoubleTalentMinionUid: undefined,
             bases: [
@@ -174,7 +175,8 @@ describe('天赋基础设施', () => {
             playerId: '0',
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         });
-        expect(result.valid).toBe(true);
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('本回合天赋已使用');
     });
 
     it('巨石阵：附着行动卡在名额占用后不可发动第2次天赋（ongoingCardUid）', () => {
@@ -284,6 +286,117 @@ describe('ongoing 行动卡天赋基础设施', () => {
         });
         expect(result.valid).toBe(false);
         expect(result.error).toContain('已使用');
+    });
+
+    it('巨狼之灵：基地上的 ongoing 行动卡可发动第2次天赋并阻止第3次', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [makeOngoing('oa1', 'miskatonic_lost_knowledge', '0', true)],
+                },
+            ],
+            titans: [{
+                uid: 't-gws',
+                defId: 'werewolves_great_wolf_spirit',
+                faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+            madnessDeck: ['madness_0'],
+        });
+
+        const command = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as const;
+
+        expect(validate(makeMatchState(core), command).valid).toBe(true);
+
+        const events = execute(makeMatchState(core), command, defaultRandom);
+        const nextCore = events.reduce(reduce, core);
+        expect(nextCore.greatWolfSpiritDoubleTalentCardUids).toContain('oa1');
+        expect(validate(makeMatchState(nextCore), command).valid).toBe(false);
+    });
+
+    it('巨狼之灵：附着行动卡也可发动第2次天赋', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('host', 'werewolf_pack_alpha', '0', 4, {
+                            attachedActions: [
+                                { uid: 'oa1', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: true },
+                            ],
+                        }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 't-gws',
+                defId: 'werewolves_great_wolf_spirit',
+                faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+        });
+
+        const command = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as const;
+
+        expect(validate(makeMatchState(core), command).valid).toBe(true);
+
+        const events = execute(makeMatchState(core), command, defaultRandom);
+        const nextCore = events.reduce(reduce, core);
+        expect(nextCore.greatWolfSpiritDoubleTalentCardUids).toContain('oa1');
+    });
+
+    it('巨狼之灵：自身天赋也可因持续效果发动第2次并阻止第3次', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('target', 'werewolf_teenage_wolf', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 't-gws',
+                defId: 'werewolves_great_wolf_spirit',
+                faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: true,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+        });
+
+        const command = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 't-gws', baseIndex: 0 },
+        } as const;
+
+        expect(validate(makeMatchState(core), command).valid).toBe(true);
+
+        const events = execute(makeMatchState(core), command, defaultRandom);
+        const nextCore = events.reduce(reduce, core);
+        expect(nextCore.greatWolfSpiritDoubleTalentCardUids).toContain('t-gws');
+        expect(validate(makeMatchState(nextCore), command).valid).toBe(false);
     });
 
     it('不是自己的 ongoing 卡时拒绝', () => {

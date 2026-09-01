@@ -1,4 +1,4 @@
-import { getAllBaseDefs, getAllCardDefs, getBaseDefIdsForFactions } from '../data/cards';
+import { getAllBaseDefs, getAllCardDefs, getBaseDefIdsForFactions, getCardDef } from '../data/cards';
 import { getRegisteredAbilityKeys } from './abilityRegistry';
 import {
     getRegisteredBaseAbilityTimings,
@@ -174,6 +174,23 @@ function validateSharedOngoingBindings(
     }
 }
 
+function validateSharedLifecycleBinding(
+    errors: string[],
+    profile: SmashUpFactionVariantProfile,
+    pair: VariantEntityPair,
+): void {
+    if (!pair.classicId || !pair.podId) return;
+    const classic = getCardDef(pair.classicId);
+    const pod = getCardDef(pair.podId);
+    if (classic?.type !== 'action' || pod?.type !== 'action') return;
+    if (classic.subtype !== 'ongoing' || pod.subtype !== 'ongoing') return;
+    if (JSON.stringify(classic.lifecycle ?? null) !== JSON.stringify(pod.lifecycle ?? null)) {
+        errors.push(
+            `POD 派系 ${profile.podFactionId} 的共享生命周期不一致：${pair.classicId} 与 ${pair.podId} 必须相同；规则不同请将 ongoing 绑定标记为 separate 并显式注册`,
+        );
+    }
+}
+
 function validateSharedBaseAbilityBindings(
     errors: string[],
     profile: SmashUpFactionVariantProfile,
@@ -233,6 +250,7 @@ function validateSharedRuntimeBindings(
                     break;
                 case 'ongoing':
                     validateSharedOngoingBindings(errors, profile, pair);
+                    validateSharedLifecycleBinding(errors, profile, pair);
                     break;
                 case 'baseAbility':
                     validateSharedBaseAbilityBindings(errors, profile, pair);

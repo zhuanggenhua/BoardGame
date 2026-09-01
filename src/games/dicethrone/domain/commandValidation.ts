@@ -72,7 +72,7 @@ import { getGameMode, isDiceThroneAiSeat } from './utils';
 import { canRemoveStatusFromPlayer, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
-import { isPendingDamageBonusSettlement } from './damageSummary';
+import { isPendingDamageResponseBonusSettlement } from './damageSummary';
 
 // ============================================================================
 // 验证函数
@@ -1480,7 +1480,7 @@ const validateSkipTokenResponse = (
     if (!state.pendingDamage) {
         return fail('no_pending_damage');
     }
-    if (isPendingDamageBonusSettlement(state, state.pendingBonusDiceSettlement)) {
+    if (isPendingDamageResponseBonusSettlement(state, state.pendingBonusDiceSettlement)) {
         return fail('pending_bonus_dice_settlement');
     }
     const pendingDamageMismatch = validateCommandPendingDamageId(state.pendingDamage, cmd.payload);

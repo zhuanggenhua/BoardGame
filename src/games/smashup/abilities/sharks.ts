@@ -38,6 +38,7 @@ import {
     runtimeToAbilityResult,
     runtimeToTriggerResult,
 } from './shayu_common';
+import { matchesDefId } from '../domain/utils';
 
 type SharksDestroyContext = PromptContext & {
     sourceId: string;
@@ -641,14 +642,14 @@ function sharksDestroyedCounterTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!base) return [];
     if (ctx.sourceCardUid) {
         const sourceHammerhead = base.minions.find(minion =>
-            minion.uid === ctx.sourceCardUid && minion.defId === 'sharks_hammerhead');
+            minion.uid === ctx.sourceCardUid && matchesDefId(minion.defId, 'sharks_hammerhead'));
         if (sourceHammerhead) {
             return [addPowerCounter(sourceHammerhead.uid, ctx.baseIndex, 1, 'sharks_hammerhead', ctx.now)];
         }
 
         const chumHost = base.minions.find(minion =>
             minion.attachedActions.some(attached =>
-                attached.uid === ctx.sourceCardUid && attached.defId === 'sharks_chum'));
+                attached.uid === ctx.sourceCardUid && matchesDefId(attached.defId, 'sharks_chum')));
         if (chumHost) {
             return [addPowerCounter(chumHost.uid, ctx.baseIndex, 1, 'sharks_chum', ctx.now)];
         }
@@ -656,11 +657,11 @@ function sharksDestroyedCounterTrigger(ctx: TriggerContext): SmashUpEvent[] {
 
     const events: SmashUpEvent[] = [];
     for (const minion of base.minions) {
-        if (minion.defId === 'sharks_hammerhead') {
+        if (matchesDefId(minion.defId, 'sharks_hammerhead')) {
             events.push(addPowerCounter(minion.uid, ctx.baseIndex, 1, 'sharks_hammerhead', ctx.now));
         }
         for (const attached of minion.attachedActions) {
-            if (attached.defId === 'sharks_chum') {
+            if (matchesDefId(attached.defId, 'sharks_chum')) {
                 events.push(addPowerCounter(minion.uid, ctx.baseIndex, 1, 'sharks_chum', ctx.now));
             }
         }
@@ -674,7 +675,7 @@ function sharksBloodInTheWaterTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!base) return [];
     if (ctx.sourceCardUid) {
         const source = base.ongoingActions.find(action =>
-            action.uid === ctx.sourceCardUid && action.defId === 'sharks_blood_in_the_water');
+            action.uid === ctx.sourceCardUid && matchesDefId(action.defId, 'sharks_blood_in_the_water'));
         const sourceControllerId = source
             ? (((source.metadata?.sourceControllerId as PlayerId | undefined) ?? source.ownerId) as PlayerId)
             : undefined;
@@ -686,7 +687,7 @@ function sharksBloodInTheWaterTrigger(ctx: TriggerContext): SmashUpEvent[] {
             : [];
     }
     return base.ongoingActions
-        .filter(action => action.defId === 'sharks_blood_in_the_water')
+        .filter(action => matchesDefId(action.defId, 'sharks_blood_in_the_water'))
         .map(action => grantExtraMinion(
             ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) as PlayerId,
             'sharks_blood_in_the_water',
@@ -704,7 +705,7 @@ function sharksWeekOfSharksTrigger(ctx: TriggerContext): SmashUpEvent[] {
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
         const base = ctx.state.bases[baseIndex];
         for (const action of base.ongoingActions) {
-            if (action.defId !== 'sharks_week_of_sharks') continue;
+            if (!matchesDefId(action.defId, 'sharks_week_of_sharks')) continue;
             const controllerId = action.metadata?.sourceControllerId ?? action.ownerId;
             if (controllerId !== ctx.playerId) continue;
             if (controllerWithWeek.has(controllerId)) continue;
@@ -720,10 +721,11 @@ function sharksWeekOfSharksTrigger(ctx: TriggerContext): SmashUpEvent[] {
 function sharksMakoTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined || ctx.destroyerId === undefined) return [];
     const player = ctx.state.players[ctx.destroyerId];
-    if (!player?.hand.some(card => card.defId === 'sharks_mako')) return [];
-    return [grantExtraMinion(ctx.destroyerId, 'sharks_mako', ctx.now, ctx.baseIndex, {
+    const sourceDefId = ctx.sourceDefId ?? 'sharks_mako';
+    if (!player?.hand.some(card => matchesDefId(card.defId, 'sharks_mako'))) return [];
+    return [grantExtraMinion(ctx.destroyerId, sourceDefId, ctx.now, ctx.baseIndex, {
         sameNameOnly: true,
-        sameNameDefId: 'sharks_mako',
+        sameNameDefId: sourceDefId,
         playTiming: 'immediate',
     })];
 }

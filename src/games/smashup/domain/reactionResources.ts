@@ -317,7 +317,11 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
             break;
         case SU_EVENTS.ONGOING_DETACHED:
             addGenericResourcesFromValue(fp, payload, 'write');
-            addPlayerZoneWrites(fp, playerId(payload.ownerId), ['discard']);
+            addPlayerZoneWrites(
+                fp,
+                playerId(payload.ownerId),
+                payload.destination === 'hand' ? ['hand'] : ['discard'],
+            );
             break;
         case SU_EVENTS.CARDS_DRAWN:
         case SU_EVENTS.CARD_RECOVERED_FROM_DISCARD:

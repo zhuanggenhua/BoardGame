@@ -17,8 +17,10 @@ import type {
 import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
 import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
+import { getAllCardDefs } from '../data/cards';
 import { isSameNameDefId, matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
+import { buildValidatedOngoingDetachEvents, findLiveOngoingCardLocation } from './ongoingDetach';
 
 // ============================================================================
 // Registry types
@@ -255,6 +257,48 @@ export interface TriggerResult {
 
 
 export type TriggerCallback = (ctx: TriggerContext) => SmashUpEvent[] | TriggerResult;
+
+/**
+ * 从牌定义注册通用生命周期。生命周期只使用 collectTriggers 提供的来源实例，
+ * 因此不会因 POD ID、同名牌或场上多张实例而重新扫描并误删其它牌。
+ */
+export function registerDataDrivenOngoingLifecycles(): void {
+    for (const def of getAllCardDefs()) {
+        if (def.type !== 'action' || def.subtype !== 'ongoing' || !def.lifecycle) continue;
+        const lifecycle = def.lifecycle.expires;
+        const callback: TriggerCallback = (ctx) => {
+            if (!ctx.sourceCardUid) return [];
+            if (lifecycle.actor === 'owner' && ctx.sourceOwnerPlayerId !== ctx.playerId) return [];
+            const live = findLiveOngoingCardLocation(ctx.state, ctx.sourceCardUid);
+            if (!live) return [];
+            if (lifecycle.condition?.talentUsed !== undefined) {
+                const armed = live.metadata?.lifecycleArmed === true;
+                if (live.talentUsed !== lifecycle.condition.talentUsed && !armed) return [];
+            }
+            return buildValidatedOngoingDetachEvents(ctx.state, {
+                cardUid: ctx.sourceCardUid,
+                reason: lifecycle.reason ?? ctx.sourceDefId ?? def.id,
+                now: ctx.now,
+                destination: lifecycle.destination,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.sourceCardUid,
+                sourceDefId: ctx.sourceDefId,
+                sourceControllerId: ctx.sourceControllerId,
+                sourceBaseIndex: ctx.sourceBaseIndex,
+            });
+        };
+        registerTrigger(def.id, lifecycle.timing, callback, {
+            perInstance: true,
+            mandatory: true,
+            playerContext: lifecycle.actor === 'sourceController' ? 'sourceController' : 'eventPlayer',
+            canTrigger: lifecycle.actor === 'owner'
+                ? (ctx) => ctx.sourceOwnerPlayerId === ctx.playerId
+                : undefined,
+            // 不提供静态空合同：排序必须从真实 detach 事件推导 hand/discard 写入，
+            // 否则多个同一时点的生命周期触发会错误地跳过规则要求的排序选择。
+        });
+    }
+}
 
 // ============================================================================
 // UI helpers

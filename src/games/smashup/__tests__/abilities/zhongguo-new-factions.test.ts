@@ -2784,6 +2784,94 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(chooseTalent.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.metadata).toBeUndefined();
     });
 
+    it('掌握时机的额外天赋目标覆盖附着行动卡和泰坦', () => {
+        const state = makeState({
+            scoringEligibleBaseIndices: [0],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('expert-1', 'kung_fu_fighters_expert_timing', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_greasy_spoon',
+                    minions: [makeMinion('host', 'werewolf_pack_alpha', '0', 4, {
+                        attachedActions: [
+                            { uid: 'attached-talent', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: true },
+                        ],
+                    })],
+                }),
+            ],
+            titans: [{
+                uid: 'titan-talent',
+                defId: 'werewolves_great_wolf_spirit',
+                faction: 'werewolves',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: true,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+        });
+
+        const played = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'expert-1' },
+        } as any, defaultTestRandom);
+        expect(played.success).toBe(true);
+
+        const chooseMode = respondToPrompt(
+            played.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_expert_timing_mode'),
+                option => option.value?.mode === 'talent',
+                '掌握时机额外天赋模式',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseMode.success).toBe(true);
+
+        const talentPrompt = getSimpleChoicePrompt(chooseMode.finalState, 'kung_fu_fighters_expert_timing_talent');
+        expect(talentPrompt.options.some(option => option.value?.actionUid === 'attached-talent')).toBe(true);
+        expect(talentPrompt.options.some(option => option.value?.titanUid === 'titan-talent')).toBe(true);
+
+        const chooseAttached = respondToPrompt(
+            chooseMode.finalState,
+            getPromptOption(talentPrompt, option => option.value?.actionUid === 'attached-talent', '附着行动卡天赋').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseAttached.success).toBe(true);
+        expect(chooseAttached.finalState.core.bases[0]?.minions[0]?.attachedActions[0]?.metadata)
+            .toEqual(expect.objectContaining({
+                mythicHorsesSeastarExtraTalent: true,
+                mythicHorsesSeastarExtraTalentConsumed: false,
+            }));
+
+        const chooseTitan = respondToPrompt(
+            chooseMode.finalState,
+            getPromptOption(talentPrompt, option => option.value?.titanUid === 'titan-talent', '泰坦天赋').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseTitan.success).toBe(true);
+        expect(chooseTitan.finalState.core.titans?.find(titan => titan.uid === 'titan-talent')?.metadata)
+            .toEqual(expect.objectContaining({
+                mythicHorsesSeastarExtraTalent: true,
+                mythicHorsesSeastarExtraTalentConsumed: false,
+            }));
+
+        const afterTurn = reduce(chooseAttached.finalState.core, {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '0', turnNumber: (chooseAttached.finalState.core.turnNumber ?? 0) + 1 },
+            timestamp: 2,
+        } as any);
+        expect(afterTurn.bases[0]?.minions[0]?.attachedActions[0]?.metadata?.mythicHorsesSeastarExtraTalent).toBeUndefined();
+    });
+
     it('掌握时机会把基地持续战术上的全部 +1 标记转移到另一个随从', () => {
         const state = makeState({
             scoringEligibleBaseIndices: [0],

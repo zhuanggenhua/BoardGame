@@ -11,6 +11,7 @@ import type { GameTestContext } from '../framework';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { ALL_TOKEN_DEFINITIONS } from '../../src/games/dicethrone/domain/characters';
+import { buildDiceThroneTokenResponseChoiceCandidates } from '../../src/games/dicethrone/domain/timingOpportunities';
 import { setDiceThroneBonusDiceValues } from '../helpers/dicethrone';
 import { expectRightTrayBonusDiceConfirmation, settleCurrentBonusDice, waitForDiceThroneVisualIdle } from './bonus-dice-flow';
 import '../../src/games/dicethrone/domain';
@@ -718,6 +719,69 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-angelic-cloak-after-closeout', testInfo);
     });
 
+    test('天使斗篷投出双翼后，真实防御链会先授予飞行并等待响应后收口', async ({ page, game }, testInfo) => {
+        await setupTianshiScene(game, {
+            phase: 'defensiveRoll',
+            dice: [1, 2, 3, 4, 5],
+            currentPlayer: '1',
+            currentPlayerIndex: 1,
+            disableLocalAiAutomation: true,
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'fist-technique-5',
+                isDefendable: true,
+                damage: 8,
+            },
+            extra: {
+                rollCount: 0,
+                rollLimit: 1,
+                rollDiceCount: 0,
+                rollConfirmed: false,
+            },
+        });
+        await dismissAttackShowcaseIfVisible(page);
+        await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+
+        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
+        const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
+        await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([4]);
+        });
+        await expect(rollButton).toBeEnabled({ timeout: 5000 });
+        await rollButton.click();
+        await expect.poll(async () => (await readState(game)).core?.dice?.[0]?.value ?? null, { timeout: 10000 }).toBe(4);
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await confirmButton.click();
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                rollConfirmed: state.core?.rollConfirmed ?? null,
+                phase: state.sys?.phase ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'defensiveRoll',
+            rollConfirmed: true,
+        });
+
+        await expect(page.getByRole('button', { name: /结束防御|End Defense/i }).first()).toBeEnabled({ timeout: 5000 });
+        await page.getByRole('button', { name: /结束防御|End Defense/i }).first().click();
+        const passResponse = page.getByRole('button', { name: /^(跳过|Pass)$/i }).first();
+        await expect(passResponse).toBeEnabled({ timeout: 5000 });
+        await passResponse.click();
+        await expect.poll(async () => {
+            const state = await readState(game);
+            return {
+                phase: state.sys?.phase ?? null,
+                pendingAttack: state.core?.pendingAttack ?? null,
+                tianshiHp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({ phase: 'main2', pendingAttack: null, tianshiHp: 42, flight: 1 });
+        await game.screenshot('tianshi-angelic-cloak-wing-grants-flight', testInfo);
+    });
+
     test('消耗飞行 Token 的临时奖励骰应显示右侧确认，确认后回到正式进攻骰', async ({ page, game }, testInfo) => {
         await setupTianshiScene(game, {
             phase: 'offensiveRoll',
@@ -871,6 +935,10 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
     });
 
     test('防御掷骰阶段的伤害响应弹窗应允许立即使用飞行并免除当前伤害', async ({ page, game }, testInfo) => {
+        for (const scenario of [
+            { name: '有6免伤', values: [6, 1], expectedHp: 50, expectedEvaded: true },
+            { name: '无6继续受伤', values: [2, 5], expectedHp: 43, expectedEvaded: false },
+        ]) {
         await setupTianshiScene(game, {
             phase: 'defensiveRoll',
             tokens: { [TOKEN_IDS.FLIGHT]: 1 },
@@ -895,7 +963,31 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             },
         });
         await dismissAttackShowcaseIfVisible(page);
-        await page.evaluate(() => {
+        const seededState = await readState(game);
+        const pendingDamage = seededState.core?.pendingDamage as JsonRecord;
+        const resolutionFrameId = `dicethrone:token-response-frame:${pendingDamage.id}`;
+        const choiceRequestContract = {
+            requestId: `dicethrone:token-response:${pendingDamage.id}:${pendingDamage.responseType}:${pendingDamage.responderId}`,
+            playerId: pendingDamage.responderId,
+            kind: 'choose-option',
+            sourceId: 'dicethrone_token_response',
+            candidates: buildDiceThroneTokenResponseChoiceCandidates(seededState.core as any, pendingDamage as any),
+            selection: { min: 1, max: 1 },
+            resolution: { type: 'candidate-commands' },
+            metadata: {
+                pendingDamageId: pendingDamage.id,
+                resolutionFrameId,
+                sourcePlayerId: pendingDamage.sourcePlayerId,
+                targetPlayerId: pendingDamage.targetPlayerId,
+                responderId: pendingDamage.responderId,
+                responseType: pendingDamage.responseType,
+                sourceAbilityId: pendingDamage.sourceAbilityId,
+                originalDamage: pendingDamage.originalDamage,
+                currentDamage: pendingDamage.currentDamage,
+                priority: 70,
+            },
+        };
+        await page.evaluate(({ choiceRequestContract: contract, resolutionFrameId: frameId }) => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             if (!state || typeof harness?.state?.set !== 'function') {
@@ -910,22 +1002,33 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
                             id: 'dt-token-response-tianshi-flight',
                             kind: 'dt:token-response',
                             playerId: '0',
-                            data: { pendingDamageId: 'tianshi-flight-response' },
+                            resolutionFrameId: frameId,
+                            data: { choiceRequestContract: contract },
                         },
                         queue: [],
                     },
                 },
             });
-        });
-        await setDiceThroneBonusDiceValues(page, [6, 1]);
+        }, { choiceRequestContract, resolutionFrameId });
+        await dismissAttackShowcaseIfVisible(page);
+        await setDiceThroneBonusDiceValues(page, scenario.values);
 
         const tokenResponse = page.getByTestId('dicethrone-response-window-hint');
         const flightToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
         await expect(tokenResponse).toBeVisible({ timeout: 10000 });
         await expect(flightToken).toBeVisible({ timeout: 10000 });
         await expect(flightToken).toHaveAttribute('data-token-clickable', 'true');
-        await game.screenshot('tianshi-flight-token-response-ready', testInfo);
+        await game.screenshot(`tianshi-flight-token-response-ready-${scenario.name}`, testInfo);
         await flightToken.click();
+        // 飞行先产生右侧临时奖励骰；必须由真实骰盘确认后，才会把结果回写到防御响应。
+        await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+        await game.screenshot(`tianshi-flight-token-response-bonus-dice-${scenario.name}`, testInfo);
+        await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+        if (!scenario.expectedEvaded) {
+            const passResponse = page.getByRole('button', { name: /^(跳过|Pass)$/i }).first();
+            await expect(passResponse).toBeEnabled({ timeout: 10000 });
+            await passResponse.click();
+        }
 
         await expect.poll(async () => {
             const state = await readState(game);
@@ -938,22 +1041,18 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             };
         }, { timeout: 10000 }).toEqual({
             flight: 0,
-            hp: 50,
+            hp: scenario.expectedHp,
             pendingDamage: null,
-            defensiveFlightActivated: true,
-            dice: [6, 1],
+            defensiveFlightActivated: scenario.expectedEvaded,
+            dice: scenario.values,
         });
         await expect(tokenResponse).toBeHidden({ timeout: 10000 });
         await expect(page.getByTestId('bonus-die-overlay')).toBeHidden();
         await expect(page.getByTestId('card-spotlight-overlay')).toBeHidden();
         await expect(page.getByTestId('attack-showcase-overlay')).toHaveCount(0);
-        const diceTray = page.getByTestId('dicethrone-2d-dice-tray');
-        await expect(diceTray).toBeVisible({ timeout: 10000 });
-        await expect(diceTray.getByTestId('dice-2d')).toHaveCount(2);
-        await expect(diceTray.getByTestId('dice-2d').nth(0)).toHaveAttribute('data-face-value', '6');
-        await expect(diceTray.getByTestId('dice-2d').nth(1)).toHaveAttribute('data-face-value', '1');
-        await page.waitForTimeout(1100);
-        await game.screenshot('tianshi-flight-token-response-right-tray-settled', testInfo);
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot(`tianshi-flight-token-response-right-tray-settled-${scenario.name}`, testInfo);
+        }
     });
 
     test('复合升级牌福音临世应从真实手牌支付 CP、替换技能并通过玩家卡片选择目标', async ({ page, game }, testInfo) => {

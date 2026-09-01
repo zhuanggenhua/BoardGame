@@ -2364,22 +2364,28 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             31,
         );
 
-        const prompt = resolved?.state.sys.interaction.current as any;
-        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
-        expect(prompt?.data?.options).toHaveLength(2);
-
-        const handled = resolveSmashUpReactionChoice(
-            resolved!.state as any,
+        expect(resolved?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        const firstTriggerId = (resolved?.state.sys.interaction.current?.data as any)?.options?.[0]?.value?.triggerId;
+        expect(firstTriggerId).toBeDefined();
+        const firstResolved = resolveSmashUpReactionChoice(
+            resolved!.state,
             defaultTestRandom,
-            32,
-            prompt.data.options[0].value,
+            31,
+            { kind: 'trigger', triggerId: firstTriggerId } as any,
         );
-
-        expect((handled.state.core.bases[0]?.ongoingActions ?? []).map((action: any) => action.uid)).toEqual([]);
-        expect(handled.state.core.players['0']?.discard.map((card: any) => card.uid) ?? []).not.toEqual(
+        expect(firstResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'borrowed-overrun-a' }),
+        }));
+        expect(firstResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'borrowed-overrun-b' }),
+        }));
+        expect((firstResolved.state.core.bases[0]?.ongoingActions ?? []).map((action: any) => action.uid)).toEqual([]);
+        expect(firstResolved.state.core.players['0']?.discard.map((card: any) => card.uid) ?? []).not.toEqual(
             expect.arrayContaining(['borrowed-overrun-a', 'borrowed-overrun-b']),
         );
-        expect(handled.state.core.players['1']?.discard.map((card: any) => card.uid)).toEqual(
+        expect(firstResolved.state.core.players['1']?.discard.map((card: any) => card.uid)).toEqual(
             expect.arrayContaining(['borrowed-overrun-a', 'borrowed-overrun-b']),
         );
     });
@@ -2446,22 +2452,28 @@ describe('reaction queue: preserves source card/controller runtime context', () 
             33,
         );
 
-        const prompt = resolved?.state.sys.interaction.current as any;
-        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
-        expect(prompt?.data?.options).toHaveLength(2);
-
-        const handled = resolveSmashUpReactionChoice(
-            resolved!.state as any,
+        expect(resolved?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        const firstTriggerId = (resolved?.state.sys.interaction.current?.data as any)?.options?.[0]?.value?.triggerId;
+        expect(firstTriggerId).toBeDefined();
+        const firstResolved = resolveSmashUpReactionChoice(
+            resolved!.state,
             defaultTestRandom,
-            34,
-            prompt.data.options[0].value,
+            33,
+            { kind: 'trigger', triggerId: firstTriggerId } as any,
         );
-
-        expect((handled.state.core.bases[0]?.ongoingActions ?? []).map((action: any) => action.uid)).toEqual([]);
-        expect(handled.state.core.players['0']?.discard.map((card: any) => card.uid) ?? []).not.toEqual(
+        expect(firstResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'borrowed-entangled-a' }),
+        }));
+        expect(firstResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({ cardUid: 'borrowed-entangled-b' }),
+        }));
+        expect((firstResolved.state.core.bases[0]?.ongoingActions ?? []).map((action: any) => action.uid)).toEqual([]);
+        expect(firstResolved.state.core.players['0']?.discard.map((card: any) => card.uid) ?? []).not.toEqual(
             expect.arrayContaining(['borrowed-entangled-a', 'borrowed-entangled-b']),
         );
-        expect(handled.state.core.players['1']?.discard.map((card: any) => card.uid)).toEqual(
+        expect(firstResolved.state.core.players['1']?.discard.map((card: any) => card.uid)).toEqual(
             expect.arrayContaining(['borrowed-entangled-a', 'borrowed-entangled-b']),
         );
     });

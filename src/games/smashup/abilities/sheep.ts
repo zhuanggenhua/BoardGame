@@ -26,11 +26,10 @@ import {
     getExternalActionEffectiveHandSize,
     type ExternalActionAbilityContinuationContext,
 } from '../domain/externalActionPlay';
-import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { registerProtection, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { registerOngoingPowerModifier } from '../domain/ongoingModifiers';
 import { collectLegalActionPlayTargets, validateActionPlaySemantics, validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
-import type { ActionCardDef, CardInstance, MinionOnBase, MinionPlayedEvent, OngoingDetachedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { ActionCardDef, CardInstance, MinionOnBase, MinionPlayedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 
 type MinionChoice = { minionUid?: string; defId?: string; baseIndex?: number; toBaseIndex?: number; skip?: boolean };
@@ -956,26 +955,6 @@ function registerSheepTriggers(): void {
     });
 
 
-    registerTrigger('sheep_shearing', 'onTurnStart', (ctx) => {
-        const ownerId = ctx.sourceOwnerPlayerId ?? ctx.sourceControllerId;
-        if (!ctx.sourceCardUid || !ownerId) return [];
-        return [buildOngoingDetachedEvent({
-            cardUid: ctx.sourceCardUid,
-            defId: 'sheep_shearing',
-            ownerId,
-            reason: 'sheep_shearing',
-            destination: 'hand',
-            sourcePlayerId: ctx.sourceControllerId ?? ctx.playerId,
-            sourceDefId: 'sheep_shearing',
-            sourceControllerId: ctx.sourceControllerId,
-            sourceBaseIndex: ctx.sourceBaseIndex,
-            now: ctx.now,
-        }) as OngoingDetachedEvent];
-    }, {
-        perInstance: true,
-        mandatory: true,
-        playerContext: 'sourceController',
-    });
 
     registerTrigger('sheep_in_sheeps_clothing', 'onMinionMoved', (ctx) => {
         if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.moveToBaseIndex === undefined) return [];

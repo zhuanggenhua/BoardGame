@@ -20,6 +20,8 @@ import {
     resolveInteractionChain,
 } from '../helpers';
 import { runCommand } from '../testRunner';
+import { collectTriggers } from '../../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 
 function chooseOptionBySource(prompt: any, sourceId: string, predicate: (option: any) => boolean) {
     expect(getPromptSourceId(prompt)).toBe(sourceId);
@@ -417,6 +419,42 @@ describe('鲨鱼代表性玩法行为', () => {
         expect(result.success).toBe(true);
         expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a']);
         expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-b']);
+    });
+
+    it('鲨鱼周 POD 在拥有者回合结束时也会额外抽牌', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('draw-a', 'sharks_mako_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase({
+                defId: 'base_the_deep',
+                minions: [makeMinion('own-a', 'sharks_mako_pod', '0', 2)],
+                ongoingActions: [{ uid: 'week-pod', defId: 'sharks_week_of_sharks_pod', ownerId: '0' }],
+            })],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const queued = collectTriggers(core, 'onTurnEnd', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: () => 0.5,
+            now: 1,
+        }) as any;
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: queued.payload.triggers }),
+            () => 0.5,
+            1,
+        );
+
+        expect(resolved?.state.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a']);
     });
 
     it('鲨鱼周跨到下一次自己回合结束时仍可再次额外抽牌', () => {

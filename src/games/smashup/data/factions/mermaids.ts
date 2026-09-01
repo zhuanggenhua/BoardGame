@@ -138,6 +138,7 @@ export const MERMAIDS_ACTIONS: ActionCardDef[] = [
         subtype: 'ongoing',
         name: '无人岛',
         nameEn: 'Desert Island',
+        lifecycle: { expires: { timing: 'onTurnStart', actor: 'sourceController', effect: 'detach' } },
         faction: SMASHUP_FACTION_IDS.MERMAIDS,
         abilityTags: ['ongoing'],
         ongoingTarget: 'base',

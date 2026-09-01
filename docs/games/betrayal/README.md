@@ -125,7 +125,7 @@
    - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
    - 默认教程是 `basic-setup-and-turn`
    - 当前可见教程已压成 2 个章节：`basic-setup-and-turn`、`traitor-path`
-   - `basic-setup-and-turn` 是普通玩家主线，合并基础回合、预兆确认、交易、英雄剧本目标、驱逐木乃伊和英雄终局
+   - `basic-setup-and-turn` 是普通玩家主线，合并基础回合、预兆确认和真实探索触发作祟；本轮收口到看到目标改变，作祟后的找真名、学法术和驱逐另行承接
    - `traitor-path` 是唯一额外章节，合并叛徒目标、木乃伊怪物行动、偷取奖励和女孩 + 圣符 / 指环胜利链
    - `move-explore-use`、`omen-confirmation-and-haunt-risk`、`trade-and-agreement`、`haunt-actions-and-finish`、`mummy-monster-actions`、`crimson-jack-objective`、`hero-attack-path`、`jack-spirit-path` 仅保留为隐藏兼容 / 专题回归入口
    - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`

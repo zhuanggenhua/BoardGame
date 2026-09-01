@@ -1,0 +1,75 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "主线从恶兆前真实运行时开始，按真实玩家因果链推进，不通过中途状态快照跳到作祟后",
+      "status": "PASS",
+      "evidence": [
+        "主线 E2E 1 passed；截图覆盖目录、恶兆前回合、探索、结束回合、下一轮探索和作祟触发。"
+      ]
+    },
+    {
+      "requirement": "事件流程是触发事件、点击投掷、事件骰公开后使用书本、查看书本、兔脚选择并重掷，之后进入伤害分配",
+      "status": "PASS",
+      "evidence": [
+        "截图 18-24 覆盖事件投掷后书本可用、书本生效、书本牌面、兔脚选择、兔脚确认、重掷结果和伤害分配。"
+      ]
+    },
+    {
+      "requirement": "玩家真实结束基础探索回合，经过队友回合后再探索预兆，并在第二次预兆探索时真实触发作祟",
+      "status": "PASS",
+      "evidence": [
+        "截图 11-17 覆盖结束初始回合、下一轮继续探索、第一次预兆确认、第二次探索触发作祟、确认结果和目标改变。"
+      ]
+    },
+    {
+      "requirement": "只有作祟结果公开并确认后，牌桌才进入作祟中并显示新的目标",
+      "status": "PASS",
+      "evidence": [
+        "截图 15-17 连续显示作祟触发、作祟结果确认和作祟后目标改变；截图 17 阶段为作祟中。"
+      ]
+    },
+    {
+      "requirement": "主线截图素材真实加载，关键牌面、骰盘、预兆牌、属性轨和伤害分配面板可读",
+      "status": "PASS",
+      "evidence": [
+        "25 张 1600x900 原始截图均非空；图面抽查确认关键牌面和骰盘真实渲染。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/01-labeled-00-教程目录.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/02-labeled-01-恶兆前回合动作区.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/03-labeled-05-基础属性轨读法.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/04-labeled-02-剩余移动力.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/05-labeled-03-房间主视区.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/06-labeled-06-观察队友视角.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/07-labeled-07-切换第二名队友视角.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/08-labeled-08-返回上一观察视角.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/09-labeled-09-聚焦自己的房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/10-labeled-10-预兆作祟进度条.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/11-labeled-04-持有区与帮助入口.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/12-labeled-18-事件投掷后书本可用.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/13-labeled-19-书本生效改为知识检定.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/14-labeled-20-查看书本牌面.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/15-labeled-21-兔脚选择骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/16-labeled-22-兔脚确认使用.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/17-labeled-23-兔脚重掷结果.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/18-labeled-24-自动进入伤害分配.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/19-labeled-11-基础探索结束回合.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/20-labeled-12-回到下一轮继续探索.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/21-labeled-13-第一次预兆公开待确认.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/22-labeled-14-第一次预兆确认后.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/23-labeled-15-第二次探索触发作祟.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/24-labeled-16-作祟结果确认.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20260831-main-flow/_labeled-for-pureref/25-labeled-17-作祟后目标改变.png"
+  ]
+}

@@ -13,7 +13,6 @@ import {
     addTempPower,
 } from '../domain/abilityHelpers';
 import { getMinionTargetBlockInfo } from '../domain/effectSemantics';
-import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
 import type {
     SmashUpEvent, CardsDrawnEvent, SmashUpCore,
@@ -820,14 +819,6 @@ export function registerKillerPlantAbilities(): void {
     // entangled: 有己方随从的基地上的随从不收回可被移动?
     registerProtection('killer_plant_entangled', 'move', killerPlantEntangledChecker);
     // entangled: 控制者回合开始时消灭本卡
-    registerTrigger('killer_plant_entangled', 'onTurnStart', killerPlantEntangledDestroyTrigger, {
-        perInstance: true,
-        playerContext: 'sourceController',
-    });
-    registerTrigger('killer_plant_entangled_pod', 'onTurnStart', killerPlantEntangledDestroyTrigger, {
-        perInstance: true,
-        playerContext: 'sourceController',
-    });
 
     // weed_eater_pod: 控制者回合开始后获得 +2 力量（通过 metadata 标记 + PowerModifier）
     registerTrigger('killer_plant_weed_eater_pod', 'onTurnStart', killerPlantWeedEaterPodTrigger, {
@@ -994,28 +985,6 @@ function killerPlantEntangledChecker(ctx: ProtectionCheckContext): boolean {
             mode: 'preview',
         }).blocked;
     });
-}
-
-/** 藤蔓缠绕触发：控制者回合开始时消灭本卡 */
-function killerPlantEntangledDestroyTrigger(ctx: TriggerContext): SmashUpEvent[] {
-    const events: SmashUpEvent[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const base = ctx.state.bases[i];
-        const entangled = ctx.sourceCardUid
-            ? base.ongoingActions.find(a => a.uid === ctx.sourceCardUid && a.defId.startsWith('killer_plant_entangled'))
-            : base.ongoingActions.find(a => a.defId.startsWith('killer_plant_entangled'));
-        if (!entangled) continue;
-        const controllerId = (entangled.metadata?.sourceControllerId as PlayerId | undefined) ?? entangled.ownerId;
-        if (controllerId !== ctx.playerId) continue;
-        events.push(buildOngoingDetachedEvent({
-            cardUid: entangled.uid,
-            defId: entangled.defId,
-            ownerId: entangled.ownerId,
-            reason: 'killer_plant_entangled_self_destruct',
-            now: ctx.now,
-        }));
-    }
-    return events;
 }
 
 

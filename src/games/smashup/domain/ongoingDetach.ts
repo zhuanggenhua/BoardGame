@@ -9,6 +9,8 @@ export interface LiveOngoingCardLocation {
     baseIndex: number;
     targetType: 'base' | 'minion';
     targetMinionUid?: string;
+    talentUsed?: boolean;
+    metadata?: Record<string, unknown>;
 }
 
 export function findLiveOngoingCardLocation(
@@ -26,6 +28,8 @@ export function findLiveOngoingCardLocation(
                 ownerId: ongoingAction.ownerId,
                 baseIndex,
                 targetType: 'base',
+                talentUsed: ongoingAction.talentUsed,
+                metadata: ongoingAction.metadata,
             };
         }
 
@@ -39,6 +43,8 @@ export function findLiveOngoingCardLocation(
                 baseIndex,
                 targetType: 'minion',
                 targetMinionUid: minion.uid,
+                talentUsed: attachedAction.talentUsed,
+                metadata: attachedAction.metadata,
             };
         }
     }

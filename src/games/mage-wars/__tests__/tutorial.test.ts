@@ -89,6 +89,18 @@ function runTutorialAiActions(
     state: MatchState<MageWarsCore>,
     actions: readonly TutorialAiAction[] | undefined,
 ): MatchState<MageWarsCore> {
+    // 模拟运行时机制练习 setup 步骤的显式标记：夹具推进阶段时不触发正式自动流程。
+    state = {
+        ...state,
+        sys: {
+            ...state.sys,
+            tutorial: {
+                ...state.sys.tutorial,
+                active: true,
+                step: { id: 'mechanism-setup', content: '', skipAutomaticFlow: true },
+            },
+        },
+    };
     return (actions ?? []).reduce((nextState, action) => runCommand(nextState, {
         type: action.commandType,
         playerId: action.playerId ?? nextState.core.currentPlayerId,
@@ -112,7 +124,7 @@ const castSpellCommand = (
 });
 
 describe('mage-wars tutorial', () => {
-    it('exports one visible first-game tutorial with hidden continuation segments', () => {
+    it('exports the basic flow and mechanism practice tutorials without hiding entries', () => {
         expect(MageWarsTutorialCatalog.defaultTutorialId).toBe('mage-wars-basic');
         expect(Object.keys(MageWarsTutorialCatalog.tutorials)).toEqual([
             'mage-wars-basic',
@@ -123,14 +135,20 @@ describe('mage-wars tutorial', () => {
         ]);
         expect(Object.values(MageWarsTutorialCatalog.tutorials).map((entry) => entry.hiddenFromCatalog)).toEqual([
             undefined,
-            true,
-            true,
-            true,
-            true,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
         ]);
         expect(Object.entries(MageWarsTutorialCatalog.tutorials)
             .filter(([, entry]) => entry.hiddenFromCatalog !== true)
-            .map(([tutorialId]) => tutorialId)).toEqual(['mage-wars-basic']);
+            .map(([tutorialId]) => tutorialId)).toEqual([
+            'mage-wars-basic',
+            'mage-wars-wall-and-line-of-sight',
+            'mage-wars-guard',
+            'mage-wars-healing',
+            'mage-wars-restore-and-burn',
+        ]);
         expect(MageWarsTutorialCatalog.tutorials['mage-wars-basic'].nextTutorialId)
             .toBe('mage-wars-wall-and-line-of-sight');
         expect(MageWarsTutorialCatalog.tutorials['mage-wars-wall-and-line-of-sight'].nextTutorialId)
@@ -165,11 +183,9 @@ describe('mage-wars tutorial', () => {
             'self-hud',
             'opponent-hud',
             'stage',
-            'advance-channel',
             'channel-result',
-            'advance-upkeep',
-            'advance-planning',
             'plan-wolf',
+            'prepare-opponent-spells',
             'prepared-and-hidden',
             'deploy-wolf',
             'rouse-wolf',
@@ -216,7 +232,6 @@ describe('mage-wars tutorial', () => {
             'mw-self-hud',
             'mw-opponent-hud',
             'mw-stage',
-            'mw-turn-end',
             'mw-spellbook',
             'mw-opponent-prepared',
             'mw-discard',
@@ -283,18 +298,10 @@ describe('mage-wars tutorial', () => {
     it('keeps the tutorial command chain legal through rousing and moving Jungle Wolf', () => {
         let state = setupState();
 
-        state = runCommand(state, advancePhaseCommand('1'));
-        state = runCommand(state, advancePhaseCommand('0'));
-        expect(state.sys.phase).toBe('channel');
-        expect(state.core.players['0'].mana).toBe(20);
-
-        state = runCommand(state, advancePhaseCommand('1'));
-        state = runCommand(state, advancePhaseCommand('0'));
-        expect(state.sys.phase).toBe('upkeep');
-
-        state = runCommand(state, advancePhaseCommand('1'));
+        // 仅触发一次正式流程；reset/channel/upkeep 自动推进到首个玩家决策点 planning。
         state = runCommand(state, advancePhaseCommand('0'));
         expect(state.sys.phase).toBe('planning');
+        expect(state.core.players['0'].mana).toBe(20);
 
         state = runCommand(state, {
             type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
@@ -385,6 +392,7 @@ describe('mage-wars tutorial', () => {
     it('keeps the wall tutorial setup and wall cast legal through the formal wall edge UI contract', () => {
         const setupStep = MageWarsWallAndLineOfSightTutorial.steps.find((step) => step.id === 'setup-wall-position');
         let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
+        state = { ...state, sys: { ...state.sys, phase: 'deployment' } };
 
         expect(state.sys.phase).toBe('deployment');
         expect(state.core.phaseActorId).toBe('0');
@@ -420,7 +428,7 @@ describe('mage-wars tutorial', () => {
     it('keeps the guard continuation command legal', () => {
         const setupStep = MageWarsGuardTutorial.steps.find((step) => step.id === 'setup-guard-board');
         let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
-
+        state = { ...state, sys: { ...state.sys, phase: 'creatureAction' } };
         expect(state.sys.phase).toBe('creatureAction');
         expect(state.core.phaseActorId).toBe('0');
         expect(state.core.players['0']).toMatchObject({
@@ -452,6 +460,7 @@ describe('mage-wars tutorial', () => {
     it('keeps the healing continuation command and life-readout step legal', () => {
         const setupStep = MageWarsHealingTutorial.steps.find((step) => step.id === 'setup-healing-board');
         let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
+        state = { ...state, sys: { ...state.sys, phase: 'creatureAction' } };
 
         expect(state.sys.phase).toBe('creatureAction');
         expect(state.core.phaseActorId).toBe('0');
@@ -494,6 +503,20 @@ describe('mage-wars tutorial', () => {
     it('keeps the restore and burn continuation command legal', () => {
         const setupStep = MageWarsRestoreAndBurnTutorial.steps.find((step) => step.id === 'setup-restore-board');
         let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
+        state = { ...state, sys: { ...state.sys, phase: 'creatureAction' } };
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                objects: {
+                    ...state.core.objects,
+                    [MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID]: {
+                        ...state.core.objects[MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID],
+                        statusTokens: { [STATUS_TOKEN_IDS.BURN]: 1 },
+                    },
+                },
+            },
+        };
 
         expect(state.sys.phase).toBe('creatureAction');
         expect(state.core.phaseActorId).toBe('0');

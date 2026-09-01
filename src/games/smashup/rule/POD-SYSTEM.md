@@ -41,12 +41,31 @@ registerPodOngoingAliases();           // 自动映射 trigger/restriction/prote
 registerPodPowerModifierAliases();     // 自动映射力量修正
 ```
 
+### 生命周期必须数据驱动（强制）
+
+持续行动卡的到期时机、归属角色和到期动作必须写在行动卡定义的 `lifecycle` 合同中，由 ongoing 运行时统一注册 `perInstance` 触发器。能力回调不得通过固定卡牌 ID 扫描全场、按同名牌批量删除，或把普通版 ID 当作生命周期判断。
+
+```typescript
+{
+    id: 'time_travelers_stasis_field',
+    subtype: 'ongoing',
+    lifecycle: {
+        expires: { timing: 'onTurnStart', actor: 'sourceController', effect: 'detach', destination: 'discard' },
+    },
+}
+```
+
+运行时始终按触发来源实例 UID 执行；因此普通版与 POD 版规则一致时可共享同一生命周期实现，规则不一致时必须在 POD 数据中显式声明自己的 `lifecycle` 或明确不声明，不能依赖隐式 ID 合并。
+`destination: 'hand'` 可用于规则要求到期回到真实拥有者手牌的持续牌（例如剪羊毛）；未声明时默认进入弃牌堆。
+
+生命周期声明只负责生成强制的回合边界触发，不改变 Smash Up 的结算交互：同一时点只有一条生命周期触发时自动结算；同一时点有多条强制触发时，仍进入 reaction queue，由当前玩家选择顺序。排序资源从实际到期事件推导，不能用空资源合同把多条触发错误地收口为自动执行。
+
 **选择性覆盖**：
 ```typescript
 // 如果 POD 版需要不同的能力，显式注册即可
 // 自动映射会跳过已注册的 POD 版本
 registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
-registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct);
+// 仅非生命周期的规则差异需要显式注册；生命周期由卡牌数据合同统一注册
 ```
 
 ### Modifier / ongoing 变体语义（强制）

@@ -131,6 +131,7 @@ export const KILLER_PLANT_ACTIONS: ActionCardDef[] = [
         subtype: 'ongoing',
         name: '藤蔓缠绕',
         nameEn: 'Entangled',
+        lifecycle: { expires: { timing: 'onTurnStart', actor: 'sourceController', effect: 'detach', reason: 'killer_plant_entangled_self_destruct' } },
         faction: 'killer_plants',
         abilityTags: ['ongoing'],
         count: 1,
