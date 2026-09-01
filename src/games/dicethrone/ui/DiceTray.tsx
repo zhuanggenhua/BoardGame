@@ -312,6 +312,7 @@ export const DiceTray = ({
                                     data-selected={selected ? 'true' : 'false'}
                                     data-clickable={clickable ? 'true' : 'false'}
                                     data-display-value={displayValue}
+                                    data-definition-id={die.definitionId ?? ''}
                                     data-owner-id={die.ownerId ?? ''}
                                     data-display-only={die.displayOnly ? 'true' : 'false'}
                                     className={`

@@ -1175,6 +1175,27 @@ describe('MageWarsBoard browse interactions', () => {
         expect(changedIds).not.toEqual(beforeIds);
     });
 
+    it('opens mage description magnification from the player hint card itself', () => {
+        const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps()} />);
+        const selfHintCard = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-mage-hud-self"] [data-testid="mage-wars-mage-hud-hint-card"]',
+        );
+
+        expect(selfHintCard).not.toBeNull();
+        expect(selfHintCard?.getAttribute('role')).toBe('button');
+        expect(selfHintCard?.getAttribute('tabindex')).toBe('0');
+
+        fireEvent.click(selfHintCard!);
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
+        expect(screen.getByTestId('mage-wars-card-magnify-content').getAttribute('data-mage-id')).not.toBeNull();
+
+        fireEvent.click(screen.getByTestId('mage-wars-card-magnify-overlay-close'));
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('true');
+
+        fireEvent.keyDown(selfHintCard!, { key: 'Enter' });
+        expect(screen.getByTestId('mage-wars-card-magnify-overlay').getAttribute('aria-hidden')).toBe('false');
+    });
+
     it('uses the shared free pan and zoom viewport without permanently swallowing card clicks', async () => {
         const { container } = renderBoardWithProviders(<MageWarsBoard {...boardProps()} />);
         const viewport = screen.getByTestId('mage-wars-arena-viewport');
@@ -2813,6 +2834,27 @@ describe('MageWarsBoard mage ability status choices', () => {
 });
 
 describe('MageWarsBoard spellbook planning UI', () => {
+    it.each([
+        ['planning', 'actions.passPlanning'],
+        ['deployment', 'actions.passDeployment'],
+        ['initiativeQuickcast', 'actions.passQuickcast'],
+        ['creatureAction', 'actions.endAction'],
+        ['finalQuickcast', 'actions.passQuickcast'],
+    ])('labels the phase advance action for %s instead of reusing end turn', (phase, expectedLabel) => {
+        const { unmount } = renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(undefined, '0', { phase })}
+            />,
+        );
+
+        const mainAction = screen.getByTestId('mage-wars-turn-end');
+        expect(mainAction.textContent).toBe(expectedLabel);
+        expect(mainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
+        expect(mainAction.getAttribute('data-main-action-phase')).toBe(phase);
+        expect(mainAction.textContent).not.toBe('actions.endTurn');
+        unmount();
+    });
+
     it('shows spellbook copy counts and lets one visible card select multiple owned copies', () => {
         const dispatch = vi.fn();
         const { container } = renderBoardWithProviders(
@@ -2826,6 +2868,7 @@ describe('MageWarsBoard spellbook planning UI', () => {
         const initialMainAction = screen.getByTestId('mage-wars-turn-end');
         expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(initialMainAction);
         expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
+        expect(initialMainAction.textContent).toBe('actions.passPlanning');
         expect(screen.queryByTestId('mage-wars-plan-spells')).toBeNull();
 
         const tanglevine = container.querySelector<HTMLElement>(
@@ -2835,13 +2878,13 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(tanglevine?.getAttribute('data-copy-count')).toBe('3');
         const copyCountBadge = tanglevine?.querySelector<HTMLElement>('[data-testid="mage-wars-spellbook-copy-count"]');
         expect(copyCountBadge?.textContent).toBe('x3');
-        expect(copyCountBadge?.className).toContain('bottom-0');
+        expect(copyCountBadge?.className).toContain('bottom-1');
         expect(copyCountBadge?.className).toContain('text-[0.82rem]');
         expect(copyCountBadge?.className).toContain('px-2.5');
         expect(copyCountBadge?.className).not.toContain('right-1');
         expect(copyCountBadge?.className).not.toContain('top-1');
         expect(copyCountBadge?.style.left).toBe('50%');
-        expect(copyCountBadge?.style.transform).toBe('translate(-50%, 50%)');
+        expect(copyCountBadge?.style.transform).toBe('translateX(-50%)');
 
         const inspectButton = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-card-inspect-button"][data-source-card-id="2224"]',

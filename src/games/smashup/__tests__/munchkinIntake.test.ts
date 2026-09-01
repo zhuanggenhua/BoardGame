@@ -250,11 +250,17 @@ describe('SmashUp Munchkin intake 静态合同', () => {
         }
     });
 
-    it('8 个派系在选择页可见，并保持实施中状态', () => {
+    it('8 个派系在选择页可见，已收口派系不再保持实施中状态', () => {
         const visible = new Set(getVisibleFactionMetadata('zh-CN', ['titans']).map(meta => meta.id));
 
         for (const fixture of MUNCHKIN_FIXTURES) {
             expect(visible.has(fixture.factionId)).toBe(true);
+        }
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES)).toBe(false);
+
+        for (const fixture of MUNCHKIN_FIXTURES.filter(fixture =>
+            fixture.factionId !== SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES
+        )) {
             expect(isFactionImplementationInProgress(fixture.factionId)).toBe(true);
         }
     });

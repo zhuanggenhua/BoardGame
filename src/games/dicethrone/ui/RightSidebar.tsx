@@ -151,7 +151,6 @@ export const RightSidebar = ({
         (activeModifiers && activeModifiers.length > 0)
         || (attackModifierBonusDamage && attackModifierBonusDamage > 0),
     );
-
     const interactionHint = useMemo(() => {
         if (!isDiceMultistep || !interaction) return null;
         const dtMeta = getSidebarDiceMeta(interaction);

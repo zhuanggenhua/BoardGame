@@ -102,6 +102,30 @@ export const blockCdnRequests = async (context: BrowserContext) => {
 };
 
 /**
+ * 隐藏不承载当前游戏流程的全局悬浮 FAB。
+ *
+ * 只用于截图 / 流程 E2E 中移除全局工具对牌桌点击的遮挡；不得隐藏游戏 HUD、
+ * 阶段按钮、手牌 / 法术书、地图、目标、确认入口、提示卡或放大入口。
+ */
+export const disableNonFlowFabForE2e = async (
+    page: Page,
+    gameId?: string,
+) => {
+    const scope = gameId
+        ? `html[data-game-id="${gameId}"] [data-testid="fab-menu"]`
+        : '[data-testid="fab-menu"]';
+    await page.addStyleTag({
+        content: [
+            `${scope} {`,
+            '  pointer-events: none !important;',
+            '  opacity: 0 !important;',
+            '  visibility: hidden !important;',
+            '}',
+        ].join('\n'),
+    }).catch(() => {});
+};
+
+/**
  * 重置客户端对局凭证，生成新的 guestId。
  * storageKey 用于防止同一页面重复执行（不同游戏用不同 key）。
  */

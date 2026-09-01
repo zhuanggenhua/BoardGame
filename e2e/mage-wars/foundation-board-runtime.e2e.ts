@@ -229,8 +229,8 @@ async function expectMageWarsArenaFreeViewport(
         };
     });
     expect(dragAudit, '竞技场拖拽验收必须能读取视窗和地图内容尺寸').not.toBeNull();
-    expect(Math.abs(dragAudit!.shellLeft), '竞技场视窗左边必须贴齐屏幕，不能藏在 16:9 安全壳里').toBeLessThanOrEqual(1);
-    expect(Math.abs(dragAudit!.shellTop), '竞技场视窗上边必须贴齐屏幕，不能藏在 16:9 安全壳里').toBeLessThanOrEqual(1);
+    expect(Math.abs(dragAudit!.shellLeft), '竞技场视窗左边必须贴齐屏幕，不能藏在 16:9 内框里').toBeLessThanOrEqual(1);
+    expect(Math.abs(dragAudit!.shellTop), '竞技场视窗上边必须贴齐屏幕，不能藏在 16:9 内框里').toBeLessThanOrEqual(1);
     expect(dragAudit!.shellRight, '竞技场视窗右边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(dragAudit!.windowWidth - 1);
     expect(dragAudit!.shellBottom, '竞技场视窗下边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(dragAudit!.windowHeight - 1);
     expect(dragAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用整块牌桌地图层').toBeGreaterThan(1.7);
@@ -459,10 +459,10 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.hudAnchorLayoutSource).toBe('viewport-anchored');
     expect(layoutAudit.bottomGridLayoutSource).toBe('viewport-grid-anchored');
     expect(layoutAudit.legacyScaledHudLayerCount).toBe(0);
-    expect(layoutAudit.rects.hudAnchorLayer!.x, 'HUD 锚点层必须贴齐屏幕左边，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
-    expect(layoutAudit.rects.hudAnchorLayer!.y, 'HUD 锚点层必须贴齐屏幕顶部，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
-    expect(layoutAudit.rects.hudAnchorLayer!.right, 'HUD 锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 1);
-    expect(layoutAudit.rects.hudAnchorLayer!.bottom, 'HUD 锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
+    expect(layoutAudit.rects.hudAnchorLayer!.x, '玩家界面锚点层必须贴齐屏幕左边，不能套 16:9 内框').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.hudAnchorLayer!.y, '玩家界面锚点层必须贴齐屏幕顶部，不能套 16:9 内框').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.hudAnchorLayer!.right, '玩家界面锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 1);
+    expect(layoutAudit.rects.hudAnchorLayer!.bottom, '玩家界面锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
     expect(layoutAudit.rects.bottomViewportGrid!.bottom, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底边').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
     layoutAudit.categoryButtons.forEach((category) => {
         expect(category.rect, `${category.id} category tab`).not.toBeNull();
@@ -1276,14 +1276,14 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.legalMoveZoneCount).toBeGreaterThan(0);
         expect(desktopLayoutAudit.preparedArea!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 36);
         expect(desktopLayoutAudit.preparedCard!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 44);
-        expect(desktopLayoutAudit.hudAnchorLayer!.x, 'HUD 锚点层必须贴齐屏幕左边，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
-        expect(desktopLayoutAudit.hudAnchorLayer!.y, 'HUD 锚点层必须贴齐屏幕顶部，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
-        expect(desktopLayoutAudit.hudAnchorLayer!.right, 'HUD 锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
-        expect(desktopLayoutAudit.hudAnchorLayer!.bottom, 'HUD 锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.x, '玩家界面锚点层必须贴齐屏幕左边，不能套 16:9 内框').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.y, '玩家界面锚点层必须贴齐屏幕顶部，不能套 16:9 内框').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.right, '玩家界面锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.bottom, '玩家界面锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
         expect(desktopLayoutAudit.bottomViewportGrid!.bottom, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
         expect(desktopLayoutAudit.arenaViewport).not.toBeNull();
-        expect(desktopLayoutAudit.arenaViewport!.x, '地图视窗必须贴齐屏幕左边，不能再被 16:9 安全框限制').toBeLessThanOrEqual(1);
-        expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 安全框限制').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.arenaViewport!.x, '地图视窗必须贴齐屏幕左边，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.arenaViewport!.right, '地图视窗必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
         expect(desktopLayoutAudit.arenaViewport!.bottom, '地图视窗必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
         expect(desktopLayoutAudit.arenaStage!.width, '地图内容宽度不能小于视窗').toBeGreaterThanOrEqual(desktopLayoutAudit.arenaViewport!.width - 2);

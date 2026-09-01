@@ -21535,22 +21535,35 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 const nextBranch = resolveEventBranch(recentRoll.branchThresholds, nextTotal);
                 const nextEffect = event.payload.eventRerollEffect ?? nextBranch.effect;
                 if (core.pendingEventRollResolution?.rollId === recentRoll.id) {
+                    const pendingEventRoll = core.pendingEventRollResolution;
                     const nextPendingEventChoice = eventEffectNeedsPendingEventChoice(nextEffect)
                         ? {
-                            id: `${core.pendingEventRollResolution.rollId}-reroll-${event.timestamp}`,
-                            playerId: core.pendingEventRollResolution.playerId,
-                            sourceTitle: core.pendingEventRollResolution.sourceTitle,
+                            id: `${pendingEventRoll.rollId}-reroll-${event.timestamp}`,
+                            playerId: pendingEventRoll.playerId,
+                            sourceTitle: pendingEventRoll.sourceTitle,
                             effect: cloneUseEffect(nextEffect),
                         }
                         : undefined;
+                    const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
+                        nextPendingEventChoice,
+                        hauntRevealResolution: event.payload.eventRerollHaunt?.hauntRevealResolution,
+                        hauntTraitorResolution: event.payload.eventRerollHaunt?.hauntTraitorResolution,
+                        dustSetup: event.payload.eventRerollHaunt?.dustSetup,
+                        magicCameraSetup: event.payload.eventRerollHaunt?.magicCameraSetup,
+                        helpingHandsSetup: event.payload.eventRerollHaunt?.helpingHandsSetup,
+                        uponReflectionSetup: event.payload.eventRerollHaunt?.uponReflectionSetup,
+                    });
                     nextRoll.latestLabel = nextBranch.label;
                     core.recentRoll = nextRoll;
                     core.pendingEventRollResolution = {
-                        ...core.pendingEventRollResolution,
-                        requiredPlayerIds: resolvePendingEventRollResolutionRequiredPlayerIds(core, core.pendingEventRollResolution),
+                        ...pendingEventRoll,
+                        requiredPlayerIds: requiresAcknowledgement
+                            ? [...core.playerIds]
+                            : [pendingEventRoll.playerId],
                         acknowledgedPlayerIds: [],
                         effect: cloneUseEffect(nextEffect),
                         nextPendingEventChoice,
+                        requiresAcknowledgement,
                         deathPrevention: event.payload.eventRerollDeathPrevention
                             ? {
                                 ...event.payload.eventRerollDeathPrevention,
@@ -21828,12 +21841,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     : undefined;
                 const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
                     nextPendingEventChoice,
-                    hauntRevealResolution: event.payload.hauntRevealResolution,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
-                    dustSetup: event.payload.dustSetup,
-                    magicCameraSetup: event.payload.magicCameraSetup,
-                    helpingHandsSetup: event.payload.helpingHandsSetup,
-                    uponReflectionSetup: event.payload.uponReflectionSetup,
                 });
                 core.pendingEventRollResolution = {
                     rollId: event.payload.rollId,
@@ -21853,27 +21860,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                             traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
                         }
                         : undefined,
-                    hauntTriggered: event.payload.hauntTriggered,
-                    hauntCardNumber: event.payload.hauntCardNumber,
-                    hauntTriggerLabel: event.payload.hauntTriggerLabel,
-                    hauntTraitorPlayerId: event.payload.hauntTraitorPlayerId,
-                    hauntRevealResolution: event.payload.hauntRevealResolution
-                        ? { ...event.payload.hauntRevealResolution }
-                        : undefined,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution
-                        ? cloneHauntTraitorResolution(event.payload.hauntTraitorResolution) ?? undefined
-                        : undefined,
-                    dustSetup: event.payload.dustSetup ? cloneDustRuntimeState(event.payload.dustSetup) : undefined,
-                    magicCameraSetup: event.payload.magicCameraSetup
-                        ? cloneMagicCameraRuntimeState(event.payload.magicCameraSetup)
-                        : undefined,
-                    helpingHandsSetup: event.payload.helpingHandsSetup
-                        ? cloneHelpingHandsRuntimeState(event.payload.helpingHandsSetup)
-                        : undefined,
-                    uponReflectionSetup: event.payload.uponReflectionSetup
-                        ? cloneUponReflectionRuntimeState(event.payload.uponReflectionSetup)
-                        : undefined,
-                    hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
                     requiresAcknowledgement,
                 };
             } else {
@@ -22061,15 +22047,27 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     passiveBonus: replacement.passiveBonus,
                     latestLabel: replacement.latestLabel,
                 };
+                const nextPendingEventChoice = replacement.nextPendingEventChoice
+                    ? clonePendingEventChoice(replacement.nextPendingEventChoice)
+                    : undefined;
+                const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
+                    nextPendingEventChoice,
+                    hauntRevealResolution: replacement.hauntRevealResolution,
+                    hauntTraitorResolution: replacement.hauntTraitorResolution,
+                    dustSetup: replacement.dustSetup,
+                    magicCameraSetup: replacement.magicCameraSetup,
+                    helpingHandsSetup: replacement.helpingHandsSetup,
+                    uponReflectionSetup: replacement.uponReflectionSetup,
+                });
                 core.pendingEventRollResolution = {
                     ...pending,
-                    requiredPlayerIds: resolvePendingEventRollResolutionRequiredPlayerIds(core, pending),
+                    requiredPlayerIds: requiresAcknowledgement
+                        ? [...core.playerIds]
+                        : [pending.playerId],
                     acknowledgedPlayerIds: [],
                     hauntRoll: replacement.hauntRoll ? { ...replacement.hauntRoll } : undefined,
                     effect: cloneUseEffect(replacement.effect),
-                    nextPendingEventChoice: replacement.nextPendingEventChoice
-                        ? clonePendingEventChoice(replacement.nextPendingEventChoice)
-                        : undefined,
+                    nextPendingEventChoice,
                     deathPrevention: replacement.deathPrevention
                         ? {
                             ...replacement.deathPrevention,
@@ -22100,6 +22098,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     uponReflectionSetup: replacement.uponReflectionSetup
                         ? cloneUponReflectionRuntimeState(replacement.uponReflectionSetup)
                         : undefined,
+                    requiresAcknowledgement,
                 };
                 core.usedCardIdsThisTurn = Array.from(new Set([
                     ...core.usedCardIdsThisTurn,

@@ -4,6 +4,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
+    disableNonFlowFabForE2e,
     initContext,
     waitForFrontendAssets,
     waitForTestHarness,
@@ -11,6 +12,7 @@ import {
 
 const SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial';
 const INTRO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00-intro-board-and-win.png`;
+const DRAGGED_MAP_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00b-dragged-map-full-viewport.png`;
 const HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/01-read-mage-hud-life-mana-channeling.png`;
 const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-channel-result-mana-increased.png`;
 const PLAN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-plan-spells.png`;
@@ -69,6 +71,36 @@ type MageWarsTutorialState = {
     };
 };
 
+type RectSnapshot = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+};
+
+type ArenaViewportPoseSnapshot = {
+    originalStyle: string | null;
+    transform: string;
+    board: RectSnapshot;
+    viewport: RectSnapshot;
+    content: RectSnapshot;
+    selfHud: RectSnapshot;
+    bottomGrid: RectSnapshot;
+};
+
+function assertRectsNearlyEqual(
+    actual: RectSnapshot,
+    expected: RectSnapshot,
+    tolerancePx: number,
+) {
+    expect(Math.abs(actual.left - expected.left)).toBeLessThanOrEqual(tolerancePx);
+    expect(Math.abs(actual.top - expected.top)).toBeLessThanOrEqual(tolerancePx);
+    expect(Math.abs(actual.right - expected.right)).toBeLessThanOrEqual(tolerancePx);
+    expect(Math.abs(actual.bottom - expected.bottom)).toBeLessThanOrEqual(tolerancePx);
+}
+
 async function prepareMageWarsTutorialContext(context: BrowserContext, page: Page) {
     await initContext(context, {
         storageKey: 'mage-wars-tutorial',
@@ -84,14 +116,17 @@ async function openMageWarsTutorial(context: BrowserContext, page: Page) {
     const diagnostics = await prepareMageWarsTutorialContext(context, page);
 
     await page.goto('/play/mage-wars/tutorial', { waitUntil: 'domcontentloaded' });
+    await disableNonFlowFabForE2e(page, 'mage-wars');
     await waitForFrontendAssets(page, 45_000);
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     await expect(page.locator('[data-game-page][data-game-id="mage-wars"]').first()).toBeVisible({ timeout: 60_000 });
+    const board = page.getByTestId('mage-wars-board');
     const catalogEntry = page.getByTestId('tutorial-catalog-entry-mage-wars-basic');
-    if (await catalogEntry.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (!(await board.isVisible({ timeout: 1_000 }).catch(() => false))) {
+        await expect(catalogEntry).toBeVisible({ timeout: 60_000 });
         await catalogEntry.click();
     }
-    await expect(page.getByTestId('mage-wars-board')).toBeVisible({ timeout: 60_000 });
+    await expect(board).toBeVisible({ timeout: 60_000 });
     await waitForTestHarness(page, 20_000);
     await page.waitForFunction(() => {
         const harness = (window as Window & {
@@ -182,6 +217,64 @@ async function screenshot(page: Page, path: string) {
     await page.screenshot({ path, fullPage: false });
 }
 
+async function setArenaViewportPoseForScreenshot(page: Page): Promise<ArenaViewportPoseSnapshot> {
+    return page.evaluate(() => {
+        const toRect = (rect: DOMRect): RectSnapshot => ({
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+        });
+        const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
+        const bottomGrid = document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]');
+        if (!board || !viewport || !content || !selfHud || !bottomGrid) {
+            throw new Error('Mage Wars 拖拽地图截图缺少必要视口或 HUD 节点');
+        }
+
+        const originalStyle = content.getAttribute('style');
+        const transform = content.style.transform || '';
+        const currentScale = Number(transform.match(/scale\(([^)]+)\)/)?.[1] ?? '1');
+        const targetScale = Math.max(0.7, currentScale * 1.12);
+        const viewportRect = viewport.getBoundingClientRect();
+        const maxOffsetX = Math.max(0, ((content.offsetWidth * targetScale) - viewportRect.width) / 2);
+        const maxOffsetY = Math.max(0, ((content.offsetHeight * targetScale) - viewportRect.height) / 2);
+        const targetX = -Math.min(180, Math.max(1, maxOffsetX * 0.72));
+        const targetY = -Math.min(120, Math.max(1, maxOffsetY * 0.62));
+
+        content.style.transition = 'none';
+        content.style.transform = `translate(${targetX}px, ${targetY}px) scale(${targetScale})`;
+        content.setAttribute('data-e2e-direct-viewport-pose', 'dragged-map-full-viewport');
+
+        return {
+            originalStyle,
+            transform: content.style.transform,
+            board: toRect(board.getBoundingClientRect()),
+            viewport: toRect(viewport.getBoundingClientRect()),
+            content: toRect(content.getBoundingClientRect()),
+            selfHud: toRect(selfHud.getBoundingClientRect()),
+            bottomGrid: toRect(bottomGrid.getBoundingClientRect()),
+        };
+    });
+}
+
+async function restoreArenaViewportPose(page: Page, originalStyle: string | null) {
+    await page.evaluate((style) => {
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        if (!content) return;
+        if (style === null) {
+            content.removeAttribute('style');
+        } else {
+            content.setAttribute('style', style);
+        }
+        content.removeAttribute('data-e2e-direct-viewport-pose');
+    }, originalStyle);
+}
+
 async function assertAllVisibleImagesLoaded(page: Page) {
     await page.waitForFunction(() => Array.from(document.images)
         .filter((image) => {
@@ -219,6 +312,35 @@ test.describe('Mage Wars tutorial', () => {
         await expect(page.getByTestId('mage-wars-board')).not.toContainText('正式竞技场');
         await assertAllVisibleImagesLoaded(page);
         await screenshot(page, INTRO_SCREENSHOT_PATH);
+        const hudBeforeMapPose = await page.evaluate(() => {
+            const toRect = (rect: DOMRect): RectSnapshot => ({
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            });
+            const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
+            const bottomGrid = document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]');
+            if (!selfHud || !bottomGrid) throw new Error('Mage Wars 拖拽地图截图缺少 HUD 锚点');
+            return {
+                selfHud: toRect(selfHud.getBoundingClientRect()),
+                bottomGrid: toRect(bottomGrid.getBoundingClientRect()),
+            };
+        });
+        const draggedMapPose = await setArenaViewportPoseForScreenshot(page);
+        expect(draggedMapPose.transform).toContain('translate(');
+        expect(draggedMapPose.transform).toContain('scale(');
+        assertRectsNearlyEqual(draggedMapPose.viewport, draggedMapPose.board, 2);
+        expect(draggedMapPose.content.left).toBeLessThanOrEqual(draggedMapPose.viewport.left + 2);
+        expect(draggedMapPose.content.top).toBeLessThanOrEqual(draggedMapPose.viewport.top + 2);
+        expect(draggedMapPose.content.right).toBeGreaterThanOrEqual(draggedMapPose.viewport.right - 2);
+        expect(draggedMapPose.content.bottom).toBeGreaterThanOrEqual(draggedMapPose.viewport.bottom - 2);
+        assertRectsNearlyEqual(draggedMapPose.selfHud, hudBeforeMapPose.selfHud, 1);
+        assertRectsNearlyEqual(draggedMapPose.bottomGrid, hudBeforeMapPose.bottomGrid, 1);
+        await screenshot(page, DRAGGED_MAP_SCREENSHOT_PATH);
+        await restoreArenaViewportPose(page, draggedMapPose.originalStyle);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'self-hud');

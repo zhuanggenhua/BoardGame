@@ -151,7 +151,7 @@ function createObjectManaChannelEvents(
     timestamp: number,
 ): MageWarsEvent[] {
     return Object.values(core.objects)
-        .filter((object) => object.ownerId === core.currentPlayerId && (object.spellcastingSource?.channeling ?? 0) > 0)
+        .filter((object) => (object.spellcastingSource?.channeling ?? 0) > 0)
         .map((object): MageWarsEvent => ({
             type: MAGE_WARS_EVENTS.OBJECT_MANA_CHANNELED,
             payload: {
@@ -162,6 +162,26 @@ function createObjectManaChannelEvents(
             sourceCommandType,
             timestamp,
         }));
+}
+
+function createPlayerManaChannelEvents(
+    core: MageWarsCore,
+    sourceCommandType: string,
+    timestamp: number,
+): MageWarsEvent[] {
+    return core.playerOrder.flatMap((playerId): MageWarsEvent[] => {
+        const player = core.players[playerId];
+        if (!player || player.channeling <= 0) return [];
+        return [{
+            type: MAGE_WARS_EVENTS.MANA_CHANNELED,
+            payload: {
+                playerId: player.id,
+                amount: player.channeling,
+            },
+            sourceCommandType,
+            timestamp,
+        }];
+    });
 }
 
 function createObjectSpellReturnEvents(
@@ -658,21 +678,15 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
             }
             return;
         }
-        const player = state.core.players[state.core.currentPlayerId];
         return {
             updatedState: updatePhaseControl(state, {
                 phaseReadyPlayerIds: [],
                 phaseActorId,
             }),
-            events: player ? [{
-                type: MAGE_WARS_EVENTS.MANA_CHANNELED,
-                payload: {
-                    playerId: player.id,
-                    amount: player.channeling,
-                },
-                sourceCommandType: command.type,
-                timestamp,
-            }, ...createObjectManaChannelEvents(state.core, command.type, timestamp)] : [],
+            events: [
+                ...createPlayerManaChannelEvents(state.core, command.type, timestamp),
+                ...createObjectManaChannelEvents(state.core, command.type, timestamp),
+            ],
         };
     },
 

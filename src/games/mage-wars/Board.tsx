@@ -1,4 +1,13 @@
-import { useLayoutEffect, useMemo, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
+import {
+    useLayoutEffect,
+    useMemo,
+    useState,
+    type CSSProperties,
+    type Dispatch,
+    type KeyboardEvent as ReactKeyboardEvent,
+    type MouseEvent as ReactMouseEvent,
+    type SetStateAction,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZoomIn } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -40,6 +49,7 @@ import {
     type MageWarsArenaObjectState,
     type MageWarsCastSpellCommand,
     type MageWarsCore,
+    type MageWarsPhase,
     type MageWarsPlayerState,
 } from './domain';
 import type { MageWarsWallState } from './domain/types';
@@ -176,6 +186,26 @@ const getVisibleStatusTokenLabel = (
 const SPELL_CARD_BACK = 'mage-wars/cards/backs/spell-card-back';
 const SPELL_CARD_BACK_ASPECT_RATIO = 992 / 1391;
 
+function resolvePhaseAdvanceActionLabelKey(phase: MageWarsPhase): string {
+    switch (phase) {
+        case 'reset':
+            return 'actions.advanceReset';
+        case 'channel':
+            return 'actions.advanceChannel';
+        case 'upkeep':
+            return 'actions.advanceUpkeep';
+        case 'planning':
+            return 'actions.passPlanning';
+        case 'deployment':
+            return 'actions.passDeployment';
+        case 'initiativeQuickcast':
+        case 'finalQuickcast':
+            return 'actions.passQuickcast';
+        case 'creatureAction':
+            return 'actions.endAction';
+    }
+}
+
 const ZONE_RECTS: Record<ArenaZoneId, ZoneRect> = {
     a1: { left: 0, top: 0, width: 25, height: 33.3333 },
     b1: { left: 25, top: 0, width: 25, height: 33.3333 },
@@ -280,7 +310,7 @@ function CardInspectButton({
         <button
             type="button"
             className={cx(
-                'absolute right-1 top-1 z-40 grid place-items-center rounded-full border border-amber-100/55 bg-black/74 text-amber-50 shadow-[0_6px_14px_rgba(0,0,0,0.5)] transition hover:border-amber-100 hover:bg-amber-300 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                'pointer-events-auto absolute right-1 top-1 z-40 grid place-items-center rounded-full border border-amber-100/55 bg-black/74 text-amber-50 shadow-[0_6px_14px_rgba(0,0,0,0.5)] transition hover:border-amber-100 hover:bg-amber-300 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
                 compact ? 'h-5 w-5' : 'h-7 w-7',
             )}
             data-testid="mage-wars-card-inspect-button"
@@ -812,19 +842,40 @@ function MageHud({
     const { t } = useTranslation('game-mage-wars');
     const lifeRemaining = Math.max(0, player.life - visualDamage);
     const mageLabel = getMageDisplayLabel(player);
+    const handleHintCardClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+        if (!onInspect) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onInspect();
+    };
+    const handleHintCardKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (!onInspect || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onInspect();
+    };
 
     if (!compact) {
         return (
             <section
-                className="pointer-events-auto relative flex w-[15.5rem] flex-col items-start gap-2 text-stone-100"
+                className="pointer-events-none relative flex w-[15.5rem] flex-col items-start gap-2 text-stone-100"
                 data-testid={self ? 'mage-wars-mage-hud-self' : 'mage-wars-mage-hud-opponent'}
                 data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
             >
                 <div
-                    className="relative rounded-[0.2rem]"
+                    className={cx(
+                        'relative rounded-[0.2rem]',
+                        onInspect && 'pointer-events-auto cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                    )}
                     data-testid="mage-wars-mage-hud-hint-card"
                     data-mage-preview-kind="card"
                     data-mage-ui-role="player-hint-card"
+                    role={onInspect ? 'button' : undefined}
+                    tabIndex={onInspect ? 0 : undefined}
+                    onClick={handleHintCardClick}
+                    onKeyDown={handleHintCardKeyDown}
+                    aria-label={onInspect ? t('ui.inspectCardAria', { name: mageLabel }) : undefined}
+                    title={onInspect ? t('ui.inspectCardTitle') : mageLabel}
                 >
                     <CardPreview
                             previewRef={getMageWarsMagePreviewRef(player.mageId, 'card')}
@@ -928,10 +979,19 @@ function MageHud({
             data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
         >
             <div
-                className="relative rounded-[0.2rem]"
+                className={cx(
+                    'relative rounded-[0.2rem]',
+                    onInspect && 'pointer-events-auto cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                )}
                 data-testid="mage-wars-mage-hud-hint-card"
                 data-mage-preview-kind="card"
                 data-mage-ui-role="player-hint-card"
+                role={onInspect ? 'button' : undefined}
+                tabIndex={onInspect ? 0 : undefined}
+                onClick={handleHintCardClick}
+                onKeyDown={handleHintCardKeyDown}
+                aria-label={onInspect ? t('ui.inspectCardAria', { name: mageLabel }) : undefined}
+                title={onInspect ? t('ui.inspectCardTitle') : mageLabel}
             >
                 <CardPreview
                     previewRef={getMageWarsMagePreviewRef(player.mageId, 'card')}
@@ -1088,9 +1148,9 @@ function PreparedSpellCard({
             ) : null}
             {copyCount && copyCount > 1 ? (
                 <span
-                    className="pointer-events-none absolute bottom-0 z-30 rounded-full border border-stone-950/60 bg-stone-950/90 px-2.5 py-1 text-[0.82rem] font-black leading-none text-amber-100 shadow-[0_6px_14px_rgba(0,0,0,0.54)]"
+                    className="pointer-events-none absolute bottom-1 z-30 rounded-full border border-stone-950/60 bg-stone-950/90 px-2.5 py-1 text-[0.82rem] font-black leading-none text-amber-100 shadow-[0_6px_14px_rgba(0,0,0,0.54)]"
                     data-testid="mage-wars-spellbook-copy-count"
-                    style={{ left: '50%', transform: 'translate(-50%, 50%)' }}
+                    style={{ left: '50%', transform: 'translateX(-50%)' }}
                 >
                     x{copyCount}
                 </span>
@@ -1720,7 +1780,7 @@ function SpellbookShelf({
 
     return (
         <section
-            className="pointer-events-auto flex max-w-[76.25rem] items-end gap-[1.125rem] px-1.5 pb-2 pt-3"
+            className="pointer-events-auto flex max-w-[76.25rem] items-end gap-[1.125rem] px-1.5 pt-3"
             data-testid="mage-wars-desktop-spellbook-shelf"
             data-tutorial-id="mw-spellbook"
             aria-label={t('privateZones.spellbook')}
@@ -1868,12 +1928,14 @@ function PreparedSpellsDock({
 function TurnStatusDock({
     dispatch,
     disabled,
+    phase,
     compact = false,
     planSpellCount = 0,
     onPlanSpells,
 }: {
     dispatch: Props['dispatch'];
     disabled?: boolean;
+    phase: MageWarsPhase;
     compact?: boolean;
     planSpellCount?: number;
     onPlanSpells?: () => void;
@@ -1885,7 +1947,7 @@ function TurnStatusDock({
     const tutorialId = planningActionActive ? 'mw-plan-spells' : 'mw-turn-end';
     const actionLabel = planningActionActive
         ? t('spellbook.planSelected', { count: planSpellCount })
-        : t('actions.endTurn');
+        : t(resolvePhaseAdvanceActionLabelKey(phase));
 
     return (
         <section
@@ -1915,6 +1977,7 @@ function TurnStatusDock({
                 data-testid={buttonTestId}
                 data-tutorial-id={tutorialId}
                 data-main-action-mode={planningActionActive ? 'plan-spells' : 'advance-phase'}
+                data-main-action-phase={phase}
             >
                 {actionLabel}
             </button>
@@ -4199,6 +4262,14 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             mageId: player.mageId,
         });
     };
+    const shouldCompactPlayerHud = Boolean(
+        selectedSpellCardId != null
+        || pendingSpellCastSelection
+        || pendingObjectAbility
+        || pendingMageAbility
+        || selectedObjectId
+        || selectedMageId,
+    );
     return (
         <div
             className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
@@ -4331,26 +4402,14 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onCancel={() => setPendingMageAbilityStatusTargetObjectId(null)}
             />
 
-            <aside className="pointer-events-none absolute bottom-4 left-4 z-20 w-[17rem]">
-                <div className="pointer-events-auto">
-                    {viewingPlayer ? (
-                        <MageHud
-                            player={viewingPlayer}
-                            current={viewingPlayer.id === phaseActorId}
-                            self
-                            visualDamage={getVisualPlayerDamage(viewingPlayer)}
-                            onInspect={() => handleInspectMage(viewingPlayer)}
-                        />
-                    ) : null}
-                </div>
-            </aside>
             <aside className="pointer-events-none absolute right-6 top-[4.375rem] z-20 w-[15.5rem]">
-                <div className="pointer-events-auto">
+                <div className="pointer-events-none">
                     {opponent ? (
                         <MageHud
                             player={opponent}
                             current={opponent.id === phaseActorId}
                             self={false}
+                            compact={shouldCompactPlayerHud}
                             visualDamage={getVisualPlayerDamage(opponent)}
                             onInspect={() => handleInspectMage(opponent)}
                         />
@@ -4363,45 +4422,66 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     <OpponentPlanMirror player={opponent} />
                 </aside>
             ) : null}
-            <aside className="pointer-events-none absolute bottom-4 right-12 z-30 flex flex-col items-center gap-2">
-                <div className="pointer-events-auto">
-                    <TurnStatusDock
-                        dispatch={dispatch}
-                        disabled={!canAdvance}
-                        planSpellCount={selectedPlanningSpellCardIds.length}
-                        onPlanSpells={canSubmitSelectedPlanningSpells ? planSelectedSpells : undefined}
-                    />
-                </div>
-                {viewingPlayer ? (
-                    <PreparedSpellsDock
-                        player={viewingPlayer}
-                        phase={phase}
-                        canAct={canAct}
-                        canCast={isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)}
-                        selectedCardId={selectedSpellCardId}
-                        onSelect={handlePreparedSpellSelect}
-                        onInspectCard={handleInspectSpellCard}
-                    />
-                ) : null}
-            </aside>
             {viewingPlayer ? (
                 <aside className="pointer-events-none absolute right-14 top-[50.5%] z-20">
                     <DiscardPile player={viewingPlayer} onInspectCard={handleInspectSpellCard} />
                 </aside>
             ) : null}
-            {viewingPlayer ? (
-                <aside className="pointer-events-none absolute bottom-4 left-[18.25rem] right-[30rem] z-20">
-                    <SpellbookShelf
-                        player={viewingPlayer}
-                        phase={phase}
-                        canAct={canAct}
-                        canPlan={canPlanSpells}
-                        selectedCardIds={selectedPlanningSpellCardIds}
-                        onSelectedCardIdsChange={setSelectedPlanningSpellCardIds}
-                        onInspectCard={handleInspectSpellCard}
-                    />
+            <div
+                className="pointer-events-none absolute inset-x-4 bottom-0 z-30 grid grid-cols-[15.5rem_minmax(0,1fr)_22.5rem] items-end gap-3"
+                data-testid="mage-wars-bottom-viewport-grid"
+                data-mage-wars-layout-source="viewport-grid-anchored"
+            >
+                <aside className="pointer-events-none w-[15.5rem] justify-self-start">
+                    <div className="pointer-events-none">
+                        {viewingPlayer ? (
+                            <MageHud
+                                player={viewingPlayer}
+                                current={viewingPlayer.id === phaseActorId}
+                                self
+                                compact={shouldCompactPlayerHud}
+                                visualDamage={getVisualPlayerDamage(viewingPlayer)}
+                                onInspect={() => handleInspectMage(viewingPlayer)}
+                            />
+                        ) : null}
+                    </div>
                 </aside>
-            ) : null}
+                <aside className="pointer-events-none min-w-0 justify-self-start">
+                    {viewingPlayer ? (
+                        <SpellbookShelf
+                            player={viewingPlayer}
+                            phase={phase}
+                            canAct={canAct}
+                            canPlan={canPlanSpells}
+                            selectedCardIds={selectedPlanningSpellCardIds}
+                            onSelectedCardIdsChange={setSelectedPlanningSpellCardIds}
+                            onInspectCard={handleInspectSpellCard}
+                        />
+                    ) : null}
+                </aside>
+                <aside className="pointer-events-none flex flex-col items-center gap-2 justify-self-end">
+                    <div className="pointer-events-auto">
+                        <TurnStatusDock
+                            dispatch={dispatch}
+                            disabled={!canAdvance}
+                            phase={phase}
+                            planSpellCount={selectedPlanningSpellCardIds.length}
+                            onPlanSpells={canSubmitSelectedPlanningSpells ? planSelectedSpells : undefined}
+                        />
+                    </div>
+                    {viewingPlayer ? (
+                        <PreparedSpellsDock
+                            player={viewingPlayer}
+                            phase={phase}
+                            canAct={canAct}
+                            canCast={isCommandAllowed(MAGE_WARS_COMMANDS.CAST_SPELL)}
+                            selectedCardId={selectedSpellCardId}
+                            onSelect={handlePreparedSpellSelect}
+                            onInspectCard={handleInspectSpellCard}
+                        />
+                    ) : null}
+                </aside>
+            </div>
             </div>
             <MagnifyOverlay
                 isOpen={magnifiedPreview != null}

@@ -40,7 +40,7 @@ shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 - `portrait-simple`
   - 只给本来就能在竖屏单列完成主循环的简单游戏。
 - `map-shell`
-  - 适用于地图本体需要独立缩放、平移或触摸手势，而 HUD 需要保持独立安全区的游戏。
+  - 适用于地图本体需要独立缩放、平移或触摸手势，而玩家状态、手牌 / 法术书、计划区等界面对象需要避让真实设备 / 浏览器安全区的游戏；该字段不表示桌面端可以生成固定比例内框或自造摆放范围。
 
 ### `shellTargets`
 

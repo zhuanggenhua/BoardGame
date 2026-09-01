@@ -1704,6 +1704,53 @@ describe('炽天使领域行为', () => {
         }
     });
 
+    it('防御阶段炽天使选择天使斗篷后，应使用炽天使自己的防御骰面而不是攻击方骰面', () => {
+        let state = createHeroMatchup('monk', 'tianshi')(playerIds, createQueuedRandom([1]));
+        state.sys.phase = 'defensiveRoll';
+        state.sys.currentPlayerIndex = 1;
+        state.core.activePlayerId = '1';
+        state.core.turnPhase = 'defensiveRoll';
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'fist-technique-5',
+            isDefendable: true,
+            damage: 8,
+        };
+        state.core.rollDiceCount = 0;
+        state.core.rollCount = 0;
+        state.core.rollConfirmed = false;
+        expect(state.core.dice.map(die => die.definitionId)).toEqual([
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+            'monk-dice',
+        ]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '1', { abilityId: 'angelic-cloak' }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+
+        expect(selected.success).toBe(true);
+        if (!selected.success) return;
+        expect(selected.state.core.pendingAttack?.defenseAbilityId).toBe('angelic-cloak');
+        expect(selected.state.core.rollDiceCount).toBe(1);
+        expect(selected.state.core.dice.map(die => die.definitionId)).toEqual([
+            'tianshi-dice',
+            'tianshi-dice',
+            'tianshi-dice',
+            'tianshi-dice',
+            'tianshi-dice',
+        ]);
+        expect(selected.state.core.dice[0]?.isKept).toBe(false);
+        expect(selected.state.core.dice.slice(1).every(die => die.isKept)).toBe(true);
+    });
+
     it('防御阶段先选择天使斗篷后，飞行失败不会取消已激活的防御能力，且需确认骰面', () => {
         let state = createTianshiState();
         state.sys.phase = 'defensiveRoll';

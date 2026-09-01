@@ -316,7 +316,6 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
 }
 
 export const SMASHUP_FACTION_IMPLEMENTATION_STATUS = {
-    [SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES]: 'in_progress',
     [SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS]: 'in_progress',
     [SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES]: 'in_progress',
     [SMASHUP_FACTION_IDS.MUNCHKIN_MAGES]: 'in_progress',

@@ -170,7 +170,9 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'use-rabbit-foot')?.highlightTarget).toBe('betrayal-inventory-rope');
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.highlightTarget).toBe('betrayal-latest-discovery');
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.infoStep).toBe(true);
-        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.allowedCommands).toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.allowedCommands).toEqual([
+            'FINALIZE_EVENT_ROLL',
+        ]);
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.advanceOnEvents).toEqual([
             { type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } },
         ]);

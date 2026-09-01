@@ -160,6 +160,30 @@ const clickAbilitySlot = async (page: Page, slotId: string, expectedAbilityId: s
     await page.mouse.click(clickBox.x + clickBox.width / 2, clickBox.y + clickBox.height / 2);
 };
 
+const expectRightTrayDiceDefinitions = async (
+    page: Page,
+    expectedDefinitionId: string,
+    expectedCount: number,
+    expectedOwnerId?: string,
+): Promise<void> => {
+    const diceTray = page.getByTestId('dicethrone-2d-dice-tray');
+    await expect(diceTray).toBeVisible({ timeout: 10000 });
+    await expect(diceTray.getByTestId('dice-2d')).toHaveCount(expectedCount);
+    await expect(page.getByTestId('dice-2d')).toHaveCount(expectedCount);
+    await expect.poll(async () => (
+        diceTray.locator('[data-testid^="die-button-"]').evaluateAll(elements => (
+            elements.map(element => element.getAttribute('data-definition-id'))
+        ))
+    ), { timeout: 10000 }).toEqual(Array.from({ length: expectedCount }, () => expectedDefinitionId));
+    if (expectedOwnerId !== undefined) {
+        await expect.poll(async () => (
+            diceTray.locator('[data-testid^="die-button-"]').evaluateAll(elements => (
+                elements.map(element => element.getAttribute('data-owner-id'))
+            ))
+        ), { timeout: 10000 }).toEqual(Array.from({ length: expectedCount }, () => expectedOwnerId));
+    }
+};
+
 const advancePhase = async (page: Page, playerId = '0'): Promise<void> => {
     const button = page.locator('[data-tutorial-id="advance-phase-button"]');
     if (
@@ -630,6 +654,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
         const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
         const endDefenseButton = page.getByRole('button', { name: /结束防御|End Defense/i }).first();
+        await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
         await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
         await page.evaluate(() => {
             window.__BG_TEST_HARNESS__?.dice.setValues([1]);
@@ -653,6 +678,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             rollKind: 'defensive',
             pendingBonusDiceSettlement: null,
         });
+        await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
         await game.screenshot('tianshi-angelic-cloak-normal-defense-roll', testInfo);
 
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
@@ -742,6 +768,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         });
         await dismissAttackShowcaseIfVisible(page);
         await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+        await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
 
         const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
         const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
@@ -809,6 +836,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             });
             await dismissAttackShowcaseIfVisible(page);
             await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
             await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
             await page.evaluate(() => window.__BG_TEST_HARNESS__?.dice.setValues([4]));
             await page.locator('[data-tutorial-id="dice-roll-button"]').click();
@@ -820,6 +848,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             await setDiceThroneBonusDiceValues(page, scenario.flightDice);
             await flightToken.click();
             await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 2, '0');
             await game.screenshot(`tianshi-angelic-cloak-wing-flight-bonus-${scenario.name}`, testInfo);
             await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
 
@@ -875,6 +904,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             });
             await dismissAttackShowcaseIfVisible(page);
             await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
             await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
             await page.evaluate((value) => window.__BG_TEST_HARNESS__?.dice.setValues([value]), defenseFace);
             await page.locator('[data-tutorial-id="dice-roll-button"]').click();

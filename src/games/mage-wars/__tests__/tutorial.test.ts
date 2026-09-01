@@ -316,6 +316,8 @@ describe('mage-wars tutorial', () => {
             'chapter teaches',
             'chapter covered',
             'five-chapter',
+            '点击“回合结束”',
+            'click “end turn”',
         ];
         const tutorialText = locales.flatMap((locale) => flattenStrings(locale.tutorial)).join('\n').toLowerCase();
         for (const term of forbiddenTerms) {
@@ -330,6 +332,7 @@ describe('mage-wars tutorial', () => {
         state = runCommand(state, advancePhaseCommand('0'));
         expect(state.sys.phase).toBe('planning');
         expect(state.core.players['0'].mana).toBe(20);
+        expect(state.core.players['1'].mana).toBe(20);
 
         state = runCommand(state, {
             type: MAGE_WARS_COMMANDS.PLAN_SPELLS,

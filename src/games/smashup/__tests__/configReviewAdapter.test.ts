@@ -32,6 +32,7 @@ describe('SmashUp configReviewAdapter', () => {
     const table = buildSmashUpConfigReviewTable();
     const frozen = table.rows.find((row) => row.objectType === 'faction' && row.objectId === SMASHUP_FACTION_IDS.FROZEN);
     const aladdin = table.rows.find((row) => row.objectType === 'faction' && row.objectId === SMASHUP_FACTION_IDS.ALADDIN);
+    const dwarves = table.rows.find((row) => row.objectType === 'faction' && row.objectId === SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES);
 
     expect(frozen).toMatchObject({
       nameKey: 'factions.frozen.name',
@@ -41,6 +42,11 @@ describe('SmashUp configReviewAdapter', () => {
     expect(aladdin).toMatchObject({
       nameKey: 'factions.aladdin.name',
       descriptionKey: 'factions.aladdin.description',
+      implementationStatus: 'configured',
+    });
+    expect(dwarves).toMatchObject({
+      nameKey: 'factions.munchkin_dwarves.name',
+      descriptionKey: 'factions.munchkin_dwarves.description',
       implementationStatus: 'configured',
     });
     expect(aladdin?.fieldPaths.color).toBe('legacy.smashup.factionMetadata.aladdin.color');

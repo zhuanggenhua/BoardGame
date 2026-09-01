@@ -34,7 +34,7 @@ App / Router
 | --- | --- |
 | `board-shell` | 固定牌桌、卡牌对战、桌面主画布需要等比映射的对局页 |
 | `portrait-simple` | 天然单列、轻量规则、竖屏可读性优先的页面 |
-| `map-shell` | 地图本体需要独立缩放、平移或触摸手势，HUD 需要独立安全区的游戏 |
+| `map-shell` | 地图本体需要独立缩放、平移或触摸手势，玩家状态、手牌 / 法术书、计划区等界面对象只避让真实设备 / 浏览器安全区；不是桌面固定比例内框 |
 
 字段定义和允许值见 [`manifest-fields`](../../.spec/skills/adapt-game-mobile/references/manifest-fields.md)。实际支持类型由 [`src/shared/gameManifest.types.ts`](../../src/shared/gameManifest.types.ts) 和 [`scripts/game/generate_game_manifests.js`](../../scripts/game/generate_game_manifests.js) 约束。
 

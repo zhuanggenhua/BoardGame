@@ -1,0 +1,120 @@
+{
+  "title": "Mage Wars 教程同步验收图顺序",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/00-intro-board-and-win.png",
+      "label": "教程入口：牌桌已进入，胜利条件可读",
+      "transition": "起点：从 Mage Wars 教程入口进入真实牌桌"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/00b-dragged-map-full-viewport.png",
+      "label": "拖拽地图后：棋盘仍覆盖整张牌桌视口",
+      "transition": "直接设置地图拖拽位移后确认不是小框，HUD 与手牌不跟随地图移动"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/01-read-mage-hud-life-mana-channeling.png",
+      "label": "读取法师状态：生命、法力、聚魔可见",
+      "transition": "回到正常牌桌视角，教程先让玩家理解 HUD 读数"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/02-channel-result-mana-increased.png",
+      "label": "聚魔自动结算：法力已增加",
+      "transition": "进入聚魔窗口后系统自动给双方结算法力，不需要玩家点结束回合"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/03-plan-spells.png",
+      "label": "计划法术：手牌与计划槽位对齐",
+      "transition": "进入计划窗口，玩家从手牌选择本轮准备的法术"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/04-summon-target-zone-highlight.png",
+      "label": "召唤目标：可放置区域高亮",
+      "transition": "计划完成后进入部署，召唤目标区域被高亮"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/05-roused-wolf-ready.png",
+      "label": "激励野狼：召唤物准备状态可见",
+      "transition": "完成召唤后显示被激励并准备好的野狼"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/06-opponent-discard-reading.png",
+      "label": "查看对手弃牌：提示卡可读",
+      "transition": "对手信息窗口展示可读信息，不隐藏教程关键决策"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/07-skip-initiative-quickcast.png",
+      "label": "快速施法让过：按钮语义匹配阶段",
+      "transition": "进入快速施法窗口，按钮显示让过快速施法而不是回合结束"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/08-wolf-moved-to-a2.png",
+      "label": "野狼移动到 A2：棋盘位置变化可见",
+      "transition": "生物行动阶段移动野狼，地图和单位位置同步更新"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/09-wall-prepared.png",
+      "label": "墙体准备：墙体法术进入可施放状态",
+      "transition": "下一段进入墙体教学，墙体法术已经准备好"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/10-wall-edge-target-highlight.png",
+      "label": "墙体边目标：边线目标高亮",
+      "transition": "选择墙体施放后，高亮的是边线，不是普通格子"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/11-wall-card-on-edge.png",
+      "label": "墙体落位：墙卡显示在边线上",
+      "transition": "确认目标后，墙体卡牌贴到对应边线"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/12-wall-line-of-sight-and-passage.png",
+      "label": "墙体规则提示：视线与通行信息可读",
+      "transition": "墙体落位后展示视线和通行变化，教程与真实规则同步"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/13-guard-action-dock.png",
+      "label": "守卫行动入口：行动栏指向守卫",
+      "transition": "进入守卫练习，行动栏显示当前单位可执行的守卫动作"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/14-guard-token-result.png",
+      "label": "守卫标记结果：守卫状态已落到单位",
+      "transition": "执行守卫后，单位上的守卫标记可见"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/15-healing-light-action-dock.png",
+      "label": "治疗之光入口：行动栏指向治疗法术",
+      "transition": "切到治疗练习，玩家能从行动栏发起治疗"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/16-healing-target-highlight.png",
+      "label": "治疗目标：可治疗对象高亮",
+      "transition": "选择治疗后，高亮合法目标"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/17-healing-result-life-readout.png",
+      "label": "治疗结果：生命读数变化可见",
+      "transition": "结算治疗后，用生命读数验证结果"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/18-life-toggle-all-readouts.png",
+      "label": "读数总览：左上角眼睛展开全部生命信息",
+      "transition": "点击左上角眼睛入口后展开全局读数"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/19-restore-action-dock.png",
+      "label": "复原术入口：行动栏指向清除燃烧",
+      "transition": "进入复原术练习，行动栏显示清除状态的法术"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/20-restore-burn-target-highlight.png",
+      "label": "复原术目标：燃烧对象高亮",
+      "transition": "选择复原术后，高亮带燃烧状态的目标"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial/21-restore-burn-removed.png",
+      "label": "复原术结果：燃烧已移除",
+      "transition": "结算复原术后，目标身上的燃烧状态消失"
+    }
+  ]
+}

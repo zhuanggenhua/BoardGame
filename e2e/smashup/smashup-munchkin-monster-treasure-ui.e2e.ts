@@ -98,6 +98,17 @@ type BrowserHarnessState = {
     };
     sys?: {
         interaction?: { current?: { data?: { sourceId?: string } } };
+        resolution?: {
+            activeFrameId?: string;
+            frames?: Array<{
+                id?: string;
+                metadata?: {
+                    smashupReactionSession?: {
+                        responseWindowType?: string;
+                    };
+                };
+            }>;
+        };
         responseWindow?: { current?: { windowType?: string } };
     };
 };
@@ -171,9 +182,23 @@ const minion = (uid: string, defId: string, owner: string, basePower: number) =>
 async function getReactionWindowStatus(page: Page): Promise<{ sourceId: string | null; windowType: string | null }> {
     return page.evaluate(() => {
         const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+        const frames = state?.sys?.resolution?.frames ?? [];
+        const frameIds = [
+            state?.sys?.resolution?.activeFrameId,
+            ...frames.map(frame => frame.id).reverse(),
+        ].filter((frameId): frameId is string => !!frameId);
+        let liveReactionWindowType: string | undefined;
+        for (const frameId of frameIds) {
+            const frame = frames.find(candidate => candidate.id === frameId);
+            const session = frame?.metadata?.smashupReactionSession;
+            if (session?.responseWindowType) {
+                liveReactionWindowType = session.responseWindowType;
+                break;
+            }
+        }
         return {
             sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
-            windowType: state?.sys?.responseWindow?.current?.windowType ?? null,
+            windowType: state?.sys?.responseWindow?.current?.windowType ?? liveReactionWindowType ?? null,
         };
     });
 }
@@ -195,6 +220,16 @@ async function clickVisibleInteractionOptionBy(
         await cardOption.click({ force: true });
         await page.waitForTimeout(300);
         return;
+    }
+
+    const handCardUid = option.value?.cardUid ?? option.value?.handCardUid;
+    if (handCardUid) {
+        const handCard = page.locator(handCardSelector(handCardUid)).first();
+        if (await handCard.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await handCard.click({ force: true });
+            await page.waitForTimeout(300);
+            return;
+        }
     }
 
     const buttonLabels = [
@@ -14911,12 +14946,32 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         const discardB = discardOptions.find((option: InteractionOption) => option.value?.cardUid === 'money-discard-b');
         expect(discardA?.id, '为了钱什么都可以应列出套现作为可弃手牌').toBeTruthy();
         expect(discardB?.id, '为了钱什么都可以应列出宝石抓取者作为可弃手牌').toBeTruthy();
-        await expectManualChoiceVisible(page, handCardSelector('money-discard-a'), '为了钱什么都可以选择第一张手牌');
-        await expectManualChoiceVisible(page, handCardSelector('money-discard-b'), '为了钱什么都可以选择第二张手牌');
+        await expectManualChoiceVisible(
+            page,
+            `[data-option-id="${discardA!.id}"]`,
+            '为了钱什么都可以选择第一张手牌',
+            { allowPromptCardGrid: true },
+        );
+        await expectManualChoiceVisible(
+            page,
+            `[data-option-id="${discardB!.id}"]`,
+            '为了钱什么都可以选择第二张手牌',
+            { allowPromptCardGrid: true },
+        );
         await game.screenshot('70-为了钱什么都可以选择弃牌', testInfo);
 
-        await page.locator(handCardSelector('money-discard-a')).first().click({ force: true });
-        await page.locator(handCardSelector('money-discard-b')).first().click({ force: true });
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
+            (option: InteractionOption) => option.value?.cardUid === 'money-discard-a',
+            '为了钱什么都可以选择第一张手牌',
+        );
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
+            (option: InteractionOption) => option.value?.cardUid === 'money-discard-b',
+            '为了钱什么都可以选择第二张手牌',
+        );
         await game.confirm();
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
@@ -14991,13 +15046,36 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         expect(treasureA?.id, '套现应列出矮人雇佣兵作为可选宝藏').toBeTruthy();
         expect(treasureB?.id, '套现应列出虎骑士作为可选宝藏').toBeTruthy();
         expect(nonTreasure, '套现不应列出非宝藏手牌').toBeUndefined();
-        await expectManualChoiceVisible(page, handCardSelector('cash-out-treasure-a'), '套现选择第一张手牌宝藏');
-        await expectManualChoiceVisible(page, handCardSelector('cash-out-treasure-b'), '套现选择第二张手牌宝藏');
-        await expect(page.locator('[data-card-uid="cash-out-non-treasure"]')).toHaveCount(0);
+        await expectManualChoiceVisible(
+            page,
+            `[data-option-id="${treasureA!.id}"]`,
+            '套现选择第一张手牌宝藏',
+            { allowPromptCardGrid: true },
+        );
+        await expectManualChoiceVisible(
+            page,
+            `[data-option-id="${treasureB!.id}"]`,
+            '套现选择第二张手牌宝藏',
+            { allowPromptCardGrid: true },
+        );
+        await expect(
+            page.getByTestId('prompt-card-grid').locator('[data-card-def-id="munchkin_dwarves_gem_grabber"]'),
+            '套现选择框不应列出非宝藏手牌',
+        ).toHaveCount(0);
         await game.screenshot('78-套现多选手牌宝藏', testInfo);
 
-        await page.locator(handCardSelector('cash-out-treasure-a')).first().click({ force: true });
-        await page.locator(handCardSelector('cash-out-treasure-b')).first().click({ force: true });
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
+            (option: InteractionOption) => option.value?.cardUid === 'cash-out-treasure-a',
+            '套现选择第一张手牌宝藏',
+        );
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
+            (option: InteractionOption) => option.value?.cardUid === 'cash-out-treasure-b',
+            '套现选择第二张手牌宝藏',
+        );
         await game.confirm();
         await game.waitForInteraction('smashup_immediate_extra_minion', 10000);
 
@@ -15103,28 +15181,34 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
 
         await game.advancePhase();
         await game.waitForPhase('scoreBases', 10000);
-        await page.waitForFunction(
-            () => {
-                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
-                return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
-                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
-            },
-            { timeout: 15000, polling: 200 },
-        );
+        await expect.poll(async () => getReactionWindowStatus(page), { timeout: 15000 }).toEqual({
+            sourceId: 'smashup_reaction_choose',
+            windowType: 'meFirst',
+        });
 
         await expect.poll(async () => {
             const options = await game.getInteractionOptions() as InteractionOption[];
-            return {
-                hasCunningPlanOption: options.some((option) =>
-                    option.value?.cardUid === 'cunning-plan-1'
-                    || option.label === '狡猾计划'
-                ),
-            };
-        }, { timeout: 10000 }).toEqual({ hasCunningPlanOption: true });
+            return options.some((option) =>
+                option.value?.cardUid === 'cunning-plan-1'
+                || option.label === '狡猾计划'
+            );
+        }, { timeout: 10000 }).toBe(true);
+        const responseOptions = await game.getInteractionOptions() as InteractionOption[];
+        const cunningPlanOption = responseOptions.find((option) =>
+            option.value?.cardUid === 'cunning-plan-1'
+            || option.label === '狡猾计划'
+        );
+        expect(cunningPlanOption?.id, '狡猾计划响应选项应有页面可点击的稳定 option id').toBeTruthy();
+        await expectManualChoiceVisible(
+            page,
+            handCardSelector('cunning-plan-1'),
+            '狡猾计划beforeScoring响应入口',
+        );
         await game.screenshot('83-狡猾计划beforeScoring响应入口', testInfo);
 
-        await game.selectInteractionOptionBy(
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
             (option: InteractionOption) =>
                 option.value?.cardUid === 'cunning-plan-1'
                 || option.label === '狡猾计划',
@@ -15133,10 +15217,18 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.waitForInteraction('smashup_immediate_extra_action', 10000);
 
         const immediateOptions = await game.getInteractionOptions() as InteractionOption[];
-        expect(immediateOptions.some((option) => option.value?.cardUid === 'munchkin_treasure_1280')).toBe(true);
+        const wishingRingOption = immediateOptions.find((option) => option.value?.cardUid === 'munchkin_treasure_1280');
+        expect(wishingRingOption?.id, '许愿指环立即打出选项应有页面可点击的稳定 option id').toBeTruthy();
+        await expectManualChoiceVisible(
+            page,
+            handCardSelector('munchkin_treasure_1280'),
+            '狡猾计划打出刚抽到的许愿指环',
+        );
         await game.screenshot('84-狡猾计划抽到许愿指环并可立即打出', testInfo);
 
-        await game.selectInteractionOptionBy(
+        await clickVisibleInteractionOptionBy(
+            page,
+            game,
             (option: InteractionOption) => option.value?.cardUid === 'munchkin_treasure_1280',
             '狡猾计划打出刚抽到的许愿指环',
         );
@@ -15176,7 +15268,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             interactionSourceId: null,
             responseWindowType: null,
         });
-        await expect(page.getByTestId('su-munchkin-monster-supply-count')).toHaveText('x 19');
+        await expect(page.getByTestId('su-munchkin-monster-supply-count')).toHaveText('x 18');
         await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 2');
         await game.screenshot('85-狡猾计划许愿指环收口后状态', testInfo);
     });

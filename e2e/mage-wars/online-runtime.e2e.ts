@@ -19,6 +19,7 @@ import {
 } from '../framework/evidenceScreenshots';
 import {
     attachPageDiagnostics,
+    disableNonFlowFabForE2e,
     ensureGameServerAvailable,
     getGameServerBaseURL,
     initContext,
@@ -888,15 +889,7 @@ async function openOnlineBoard(page: Page, label: string) {
 }
 
 async function disableMageWarsE2eFabMenu(page: Page) {
-    await page.addStyleTag({
-        content: [
-            'html[data-game-id="mage-wars"] [data-testid="fab-menu"] {',
-            '  pointer-events: none !important;',
-            '  opacity: 0 !important;',
-            '  visibility: hidden !important;',
-            '}',
-        ].join('\n'),
-    }).catch(() => {});
+    await disableNonFlowFabForE2e(page, 'mage-wars');
 }
 
 async function readPhase(page: Page): Promise<string | null> {
@@ -1350,7 +1343,7 @@ async function expectMobileLandscapeHudSlots(page: Page, label: string) {
     expect(audit.desktopPrepared, `${label} 已计划法术必须沿用桌面承载`).not.toBeNull();
     expect(audit.discardPile, `${label} 弃牌堆必须沿用桌面承载`).not.toBeNull();
     expect(audit.opponentMirror, `${label} 对手隐藏计划必须沿用桌面承载`).not.toBeNull();
-    expect(audit.turnEnd, `${label} 回合结束按钮必须可见`).not.toBeNull();
+    expect(audit.turnEnd, `${label} 阶段推进按钮必须可见`).not.toBeNull();
     expect(audit.fabMenu, `${label} E2E 已显式隐藏全局悬浮入口，不参与主游戏压力态`).not.toBeNull();
     expect(audit.compactOpponentMirror, `${label} 对手计划不得使用移动端紧凑镜像`).toBe(false);
     expect(audit.mobileSelfRailCount, `${label} 不得渲染移动专用己方法术轨`).toBe(0);

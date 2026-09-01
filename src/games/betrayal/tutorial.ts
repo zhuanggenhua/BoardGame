@@ -191,6 +191,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             highlightTarget: 'betrayal-latest-discovery',
             position: 'center',
             infoStep: true,
+            allowedCommands: [BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL],
             advanceOnEvents: [{ type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } }],
             viewAs: '0',
         },

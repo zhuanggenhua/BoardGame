@@ -119,6 +119,12 @@ export interface ResponseAutoViewTransitionResult {
     nextViewMode?: ViewMode;
 }
 
+const getSuggestedViewModeForResponse = (suggestionKey: string): ViewMode => (
+    suggestionKey.startsWith('token:')
+        ? 'self'
+        : 'opponent'
+);
+
 export const resolveResponseAutoViewTransition = (
     params: ResponseAutoViewTransitionParams,
 ): ResponseAutoViewTransitionResult => {
@@ -156,7 +162,7 @@ export const resolveResponseAutoViewTransition = (
             suggestionKey: currentSuggestionKey,
             restoreMode: manualViewMode,
         },
-        nextViewMode: 'opponent',
+        nextViewMode: getSuggestedViewModeForResponse(currentSuggestionKey),
     };
 };
 

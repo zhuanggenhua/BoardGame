@@ -639,9 +639,34 @@ describe('mage-wars domain flow', () => {
     });
 
     it('channels mana on channel phase entry and advances turn after final quickcast', () => {
-        const resetState = setupState();
-        const manaBefore = resetState.core.players['0'].mana;
-        const channeling = resetState.core.players['0'].channeling;
+        const baseState = setupState();
+        const playerZeroChannelSource = makeArenaObject('flow-channel-source-0', '0', PLAYER_ZERO_START_ZONE, {
+            kind: 'conjuration',
+            mana: 1,
+            spellcastingSource: {
+                abilityId: 'test-channel-source-0',
+                channeling: 2,
+            },
+        });
+        const playerOneChannelSource = makeArenaObject('flow-channel-source-1', '1', PLAYER_ONE_START_ZONE, {
+            kind: 'conjuration',
+            mana: 3,
+            spellcastingSource: {
+                abilityId: 'test-channel-source-1',
+                channeling: 4,
+            },
+        });
+        const resetState: MatchState<MageWarsCore> = {
+            ...baseState,
+            core: withArenaObject(
+                withArenaObject(baseState.core, playerZeroChannelSource),
+                playerOneChannelSource,
+            ),
+        };
+        const manaBeforeZero = resetState.core.players['0'].mana;
+        const manaBeforeOne = resetState.core.players['1'].mana;
+        const channelingZero = resetState.core.players['0'].channeling;
+        const channelingOne = resetState.core.players['1'].channeling;
 
         const channelResult = runCommand(resetState, {
             type: FLOW_COMMANDS.ADVANCE_PHASE,
@@ -652,10 +677,32 @@ describe('mage-wars domain flow', () => {
         expect(channelResult.success).toBe(true);
         // reset、channel 和无交互 upkeep 由正式流程自动推进，玩家首次决策点是 planning。
         expect(channelResult.state.sys.phase).toBe('planning');
-        expect(channelResult.state.core.players['0'].mana).toBe(manaBefore + channeling);
+        expect(channelResult.state.core.players['0'].mana).toBe(manaBeforeZero + channelingZero);
+        expect(channelResult.state.core.players['1'].mana).toBe(manaBeforeOne + channelingOne);
+        expect(channelResult.state.core.objects[playerZeroChannelSource.id].mana).toBe(3);
+        expect(channelResult.state.core.objects[playerOneChannelSource.id].mana).toBe(7);
+        expect(channelResult.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.MANA_CHANNELED,
+                payload: expect.objectContaining({ playerId: '0', amount: channelingZero }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.MANA_CHANNELED,
+                payload: expect.objectContaining({ playerId: '1', amount: channelingOne }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.OBJECT_MANA_CHANNELED,
+                payload: expect.objectContaining({ ownerId: '0', objectId: playerZeroChannelSource.id, amount: 2 }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.OBJECT_MANA_CHANNELED,
+                payload: expect.objectContaining({ ownerId: '1', objectId: playerOneChannelSource.id, amount: 4 }),
+            }),
+        ]));
         expect(channelResult.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             'SYS_PHASE_CHANGED',
             MAGE_WARS_EVENTS.MANA_CHANNELED,
+            MAGE_WARS_EVENTS.OBJECT_MANA_CHANNELED,
         ]));
         expect(actionLogKinds(channelResult.state)).toEqual(expect.arrayContaining([
             'SYS_PHASE_CHANGED',

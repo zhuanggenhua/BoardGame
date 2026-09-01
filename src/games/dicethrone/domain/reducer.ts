@@ -491,7 +491,8 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
             const triggerDiceCount = (trigger as { diceCount?: number }).diceCount;
             if (triggerDiceCount !== undefined && triggerDiceCount > 0) {
                 rollDiceCount = triggerDiceCount;
-                dice = resetDiceArray(state.dice, triggerDiceCount);
+                const defenderDice = createPlayerDice(state, defenderId);
+                dice = resetDiceArray(defenderDice ?? state.dice, triggerDiceCount);
             }
             const triggerRollLimit = (trigger as { rollLimit?: number }).rollLimit;
             if (triggerRollLimit !== undefined && triggerRollLimit > 0) {

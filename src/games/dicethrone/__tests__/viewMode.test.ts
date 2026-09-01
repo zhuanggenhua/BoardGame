@@ -73,7 +73,7 @@ describe('DiceThrone 视角逻辑', () => {
         expect(exit.nextViewMode).toBe('self');
     });
 
-    it('如果原本就在对方视角，被动切换结束后应恢复到原本视角', () => {
+    it('Token 伤害响应由自己处理时，应临时切回自己，结束后恢复原视角', () => {
         const enter = resolveResponseAutoViewTransition({
             currentSuggestionKey: 'token:pending-damage-1',
             autoResponseEnabled: true,
@@ -85,12 +85,12 @@ describe('DiceThrone 视角逻辑', () => {
             suggestionKey: 'token:pending-damage-1',
             restoreMode: 'opponent',
         });
-        expect(enter.nextViewMode).toBe('opponent');
+        expect(enter.nextViewMode).toBe('self');
 
         const exit = resolveResponseAutoViewTransition({
             currentSuggestionKey: null,
             autoResponseEnabled: true,
-            manualViewMode: 'opponent',
+            manualViewMode: 'self',
             session: enter.nextSession,
         });
 
