@@ -29,7 +29,12 @@ type QidahenTutorialPreset = {
     coreTransform?: QidahenTutorialCoreTransform;
 };
 
-const cloneCore = (core: QidahenCore): QidahenCore => structuredClone(core);
+const cloneCore = (core: QidahenCore): QidahenCore => {
+    const nativeStructuredClone = globalThis.structuredClone as undefined | (<T>(value: T) => T);
+    return nativeStructuredClone
+        ? nativeStructuredClone(core)
+        : JSON.parse(JSON.stringify(core)) as QidahenCore;
+};
 const ATLAS05_RULES_SUMMARY_BY_DEF_ID: Readonly<Record<string, string>> = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID;
 
 const getAtlas05TutorialHandCardIdentity = (

@@ -36,10 +36,8 @@ describe('SmashUp configReviewAdapter', () => {
     expect(frozen).toMatchObject({
       nameKey: 'factions.frozen.name',
       descriptionKey: 'factions.frozen.description',
-      implementationStatus: 'in_progress',
+      implementationStatus: 'configured',
     });
-    expect(frozen?.fieldPaths.implementationStatus)
-      .toBe('legacy.smashup.domain.ids.SMASHUP_FACTION_IMPLEMENTATION_STATUS.frozen');
     expect(aladdin).toMatchObject({
       nameKey: 'factions.aladdin.name',
       descriptionKey: 'factions.aladdin.description',

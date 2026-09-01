@@ -127,7 +127,7 @@ export function registerZombieAbilities(): void {
     registerAbilityProgram('zombie_lord_pod', 'onPlay', { program: zombieLordProgram, createContext: createZombieLordContext });
 
     // === ongoing 效果注册 ===
-    // 泛滥横行：其他玩家不能打随从到此基地 + 回合开始自毁
+    // 泛滥横行：这里只注册“其他玩家不能打随从到此基地”；到期离场由卡牌定义里的 lifecycle 统一注册。
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun', 'onPlay', () => []);
 

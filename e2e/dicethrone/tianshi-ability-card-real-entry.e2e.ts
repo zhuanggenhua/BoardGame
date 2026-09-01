@@ -782,6 +782,128 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-angelic-cloak-wing-grants-flight', testInfo);
     });
 
+    test('天使斗篷双翼取得飞行后，飞行奖励骰有6免伤、无6承受8点原攻击都应从真实防御链收口', async ({ page, game }, testInfo) => {
+        for (const scenario of [
+            { name: '有6免伤', flightDice: [6, 1], expectedHp: 50, expectedEvaded: true },
+            { name: '无6承受8点原攻击', flightDice: [2, 5], expectedHp: 42, expectedEvaded: false },
+        ]) {
+            await setupTianshiScene(game, {
+                phase: 'defensiveRoll',
+                dice: [1, 2, 3, 4, 5],
+                currentPlayer: '1',
+                currentPlayerIndex: 1,
+                disableLocalAiAutomation: true,
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                    sourceAbilityId: 'fist-technique-5',
+                    isDefendable: true,
+                    damage: 8,
+                },
+                extra: {
+                    rollCount: 0,
+                    rollLimit: 1,
+                    rollDiceCount: 0,
+                    rollConfirmed: false,
+                },
+            });
+            await dismissAttackShowcaseIfVisible(page);
+            await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+            await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+            await page.evaluate(() => window.__BG_TEST_HARNESS__?.dice.setValues([4]));
+            await page.locator('[data-tutorial-id="dice-roll-button"]').click();
+            await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+            await page.getByRole('button', { name: /结束防御|End Defense/i }).first().click();
+
+            const flightToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
+            await expect(flightToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 10000 });
+            await setDiceThroneBonusDiceValues(page, scenario.flightDice);
+            await flightToken.click();
+            await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+            await game.screenshot(`tianshi-angelic-cloak-wing-flight-bonus-${scenario.name}`, testInfo);
+            await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+
+            if (!scenario.expectedEvaded) {
+                const passResponse = page.getByRole('button', { name: /^(跳过|Pass)$/i }).first();
+                await expect(passResponse).toBeEnabled({ timeout: 10000 });
+                await passResponse.click();
+            }
+
+            await expect.poll(async () => {
+                const state = await readState(game);
+                return {
+                    hp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? null,
+                    pendingAttack: state.core?.pendingAttack ?? null,
+                    pendingDamage: state.core?.pendingDamage ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                hp: scenario.expectedHp,
+                flight: 0,
+                pendingAttack: null,
+                pendingDamage: null,
+            });
+            await waitForDiceThroneVisualIdle(page);
+            await game.screenshot(`tianshi-angelic-cloak-wing-flight-final-${scenario.name}`, testInfo);
+        }
+    });
+
+    test('天使斗篷防御骰 5 和 6 应从真实防御链分别减免 2 与 3 点伤害', async ({ page, game }, testInfo) => {
+        for (const { defenseFace, preventedDamage, expectedHp } of [
+            { defenseFace: 5, preventedDamage: 2, expectedHp: 44 },
+            { defenseFace: 6, preventedDamage: 3, expectedHp: 45 },
+        ]) {
+            await setupTianshiScene(game, {
+                phase: 'defensiveRoll',
+                dice: [1, 2, 3, 4, 5],
+                currentPlayer: '1',
+                currentPlayerIndex: 1,
+                disableLocalAiAutomation: true,
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                    sourceAbilityId: 'fist-technique-5',
+                    isDefendable: true,
+                    damage: 8,
+                },
+                extra: {
+                    rollCount: 0,
+                    rollLimit: 1,
+                    rollDiceCount: 0,
+                    rollConfirmed: false,
+                },
+            });
+            await dismissAttackShowcaseIfVisible(page);
+            await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+            await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+            await page.evaluate((value) => window.__BG_TEST_HARNESS__?.dice.setValues([value]), defenseFace);
+            await page.locator('[data-tutorial-id="dice-roll-button"]').click();
+            await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+            await page.getByRole('button', { name: /结束防御|End Defense/i }).first().click();
+
+            await expect.poll(async () => {
+                const state = await readState(game);
+                const events = (state.sys?.eventStream?.entries ?? []).map((entry: JsonRecord) => entry?.event ?? entry);
+                const mainDamage = events.find((event: JsonRecord) => (
+                    event?.type === 'DAMAGE_DEALT'
+                    && event?.payload?.sourceAbilityId === 'fist-technique-5'
+                    && event?.payload?.targetId === '0'
+                ));
+                return {
+                    hp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    pendingAttack: state.core?.pendingAttack ?? null,
+                    actualDamage: mainDamage?.payload?.actualDamage ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                hp: expectedHp,
+                pendingAttack: null,
+                actualDamage: 8 - preventedDamage,
+            });
+            await waitForDiceThroneVisualIdle(page);
+            await game.screenshot(`tianshi-angelic-cloak-defense-shield-${defenseFace}-final`, testInfo);
+        }
+    });
+
     test('消耗飞行 Token 的临时奖励骰应显示右侧确认，确认后回到正式进攻骰', async ({ page, game }, testInfo) => {
         await setupTianshiScene(game, {
             phase: 'offensiveRoll',

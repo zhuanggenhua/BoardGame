@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
+import { useLayoutEffect, useMemo, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZoomIn } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -3335,7 +3335,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [pendingMageAbilityStatusTargetObjectId, setPendingMageAbilityStatusTargetObjectId] = useState<string | null>(null);
     const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
     const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
-    const autoAdvancedChannelKeyRef = useRef<string | null>(null);
     const viewport = useRuntimeViewport();
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
@@ -3389,15 +3388,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         && canPlanSpells
         && selectedPlanningSpellCardIds.length > 0;
 
-    useEffect(() => {
-        if (phase !== 'channel' || !isPlayerId(playerID) || playerID !== core.currentPlayerId) {
-            return;
-        }
-        const key = `${core.turnNumber}:${playerID}`;
-        if (autoAdvancedChannelKeyRef.current === key) return;
-        autoAdvancedChannelKeyRef.current = key;
-        dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
-    }, [core.currentPlayerId, core.turnNumber, dispatch, phase, playerID]);
     const planSelectedSpells = () => {
         if (!canSubmitSelectedPlanningSpells) return;
         dispatch(MAGE_WARS_COMMANDS.PLAN_SPELLS, { spellCardIds: selectedPlanningSpellCardIds });
@@ -4240,40 +4230,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             style={{ background: '#151311' }}
         >
             <div
-                className="absolute left-1/2 top-1/2"
-                style={isLandscapeMobileViewport
-                    ? { inset: 0 }
-                    : {
-                        width: 'min(100vw, 177.7778vh)',
-                        height: 'min(100vh, 56.25vw)',
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        aspectRatio: '16 / 9',
-                    }}
-            >
-                <div
-                    className="absolute inset-0"
-                    data-testid={isLandscapeMobileViewport ? 'mage-wars-mobile-desktop-mirror-layer' : undefined}
-                    data-mage-wars-layout-source={isLandscapeMobileViewport ? 'desktop-mirror' : 'desktop-scaled'}
-                    style={isLandscapeMobileViewport
-                        ? undefined
-                        : {
-                            width: `${MAGE_WARS_DESIGN_WIDTH * rootRemScale}px`,
-                            height: `${MAGE_WARS_DESIGN_HEIGHT * rootRemScale}px`,
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) scale(${desktopVisualScale})`,
-                            transformOrigin: 'center center',
-                        }}
-                >
-            <div
                 className="absolute inset-0 z-10"
                 data-testid="mage-wars-arena-viewport-shell"
                 data-tutorial-id="mw-stage"
             >
                 <ZoomPanViewport
-                    initialScale={1.06}
+                    initialScale={1}
                     minScale={1}
                     maxScale={2.6}
                     baseScaleMode="cover"
@@ -4340,6 +4302,34 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     />
                 </ZoomPanViewport>
             </div>
+            <div
+                className="pointer-events-none absolute z-20"
+                style={isLandscapeMobileViewport
+                    ? { inset: 0 }
+                    : {
+                        width: 'min(100vw, 177.7778vh)',
+                        height: 'min(100vh, 56.25vw)',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        aspectRatio: '16 / 9',
+                    }}
+            >
+                <div
+                    className="absolute inset-0"
+                    data-testid={isLandscapeMobileViewport ? 'mage-wars-mobile-desktop-mirror-layer' : undefined}
+                    data-mage-wars-layout-source={isLandscapeMobileViewport ? 'desktop-mirror' : 'desktop-scaled'}
+                    style={isLandscapeMobileViewport
+                        ? undefined
+                        : {
+                            width: `${MAGE_WARS_DESIGN_WIDTH * rootRemScale}px`,
+                            height: `${MAGE_WARS_DESIGN_HEIGHT * rootRemScale}px`,
+                            left: '50%',
+                            top: '50%',
+                            transform: `translate(-50%, -50%) scale(${desktopVisualScale})`,
+                            transformOrigin: 'center center',
+                        }}
+                >
             <MageWarsLifeToggle
                 pressed={showBoardLifeTotals}
                 onToggle={() => setShowBoardLifeTotals((value) => !value)}

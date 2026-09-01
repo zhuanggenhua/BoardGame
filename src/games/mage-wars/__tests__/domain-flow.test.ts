@@ -704,6 +704,70 @@ describe('mage-wars domain flow', () => {
         ]));
     });
 
+    it('emits a visible phase-window completion event when a player passes deployment or quickcast', () => {
+        const deploymentBase = setupState('deployment');
+        const deploymentState: MatchState<MageWarsCore> = {
+            core: {
+                ...deploymentBase.core,
+                phaseReadyPlayerIds: [],
+                phaseActorId: '0',
+            },
+            sys: deploymentBase.sys,
+        };
+
+        const passedDeployment = runCommand(deploymentState, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(passedDeployment.success).toBe(true);
+        expect(passedDeployment.state.sys.phase).toBe('deployment');
+        expect(passedDeployment.state.core.phaseActorId).toBe('1');
+        expect(passedDeployment.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    phase: 'deployment',
+                    nextActorId: '1',
+                    readyPlayerIds: ['0'],
+                }),
+            }),
+        ]));
+
+        const quickcastBase = setupState('initiativeQuickcast');
+        const quickcastState: MatchState<MageWarsCore> = {
+            core: {
+                ...quickcastBase.core,
+                phaseReadyPlayerIds: [],
+                phaseActorId: '0',
+            },
+            sys: quickcastBase.sys,
+        };
+
+        const passedQuickcast = runCommand(quickcastState, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(passedQuickcast.success).toBe(true);
+        expect(passedQuickcast.state.sys.phase).toBe('initiativeQuickcast');
+        expect(passedQuickcast.state.core.phaseActorId).toBe('1');
+        expect(passedQuickcast.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    phase: 'initiativeQuickcast',
+                    nextActorId: '1',
+                    readyPlayerIds: ['0'],
+                }),
+            }),
+        ]));
+    });
+
     it('moves only to adjacent arena zones and guard consumes the main action', () => {
         const state = setupState('creatureAction');
 

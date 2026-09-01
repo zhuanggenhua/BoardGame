@@ -170,6 +170,27 @@ function collectAbilitySourceWindows(sourceId: string, radiusBefore = 1800, radi
     return windows;
 }
 
+function collectManualLifecycleTriggerRegistrations(lifecycleDefs: ActionCardDef[]): string[] {
+    const lifecycleTriggerKeys = new Set(
+        lifecycleDefs.map(def => `${def.id}::${def.lifecycle?.expires.timing}`),
+    );
+    const abilitiesDir = resolve(__dirname, '../abilities');
+    const violations: string[] = [];
+
+    for (const fileName of readdirSync(abilitiesDir).filter((name) => name.endsWith('.ts'))) {
+        const source = readFileSync(resolve(abilitiesDir, fileName), 'utf-8');
+        const registerTriggerPattern = /registerTrigger\(\s*['"]([^'"]+)['"]\s*,\s*['"](onTurnStart|onTurnEnd)['"]/g;
+        for (const match of source.matchAll(registerTriggerPattern)) {
+            const [, sourceId, timing] = match;
+            if (!lifecycleTriggerKeys.has(`${sourceId}::${timing}`)) continue;
+            const line = source.slice(0, match.index).split(/\r?\n/).length;
+            violations.push(`abilities/${fileName}:${line} ${sourceId} ${timing}`);
+        }
+    }
+
+    return violations.sort();
+}
+
 function hasOptionalRejectionImplementationEvidence(sourceId: string): boolean {
     return collectAbilitySourceWindows(sourceId).some((window) => (
         /createSkipOption/.test(window)
@@ -1035,6 +1056,16 @@ describe('SmashUp 能力行为审计', () => {
                 }
             }
             expect(violations).toEqual([]);
+        });
+
+        it('声明 lifecycle 的持续行动卡不得再手写同 ID 的回合边界触发器', () => {
+            const lifecycleDefs = getAllCardDefs().filter((def): def is ActionCardDef => (
+                def.type === 'action'
+                && def.subtype === 'ongoing'
+                && !!def.lifecycle
+            ));
+
+            expect(collectManualLifecycleTriggerRegistrations(lifecycleDefs)).toEqual([]);
         });
     });
 

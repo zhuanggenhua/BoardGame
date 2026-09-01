@@ -328,11 +328,15 @@ export const MageWarsTutorial: TutorialManifest = {
         {
             id: 'pass-your-deployment',
             content: 'game-mage-wars:tutorial.steps.passYourDeployment',
-            position: 'center',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
             allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
-            // 对手尚未完成部署时，这一步代表玩家结束自己的部署决策；
-            // 该点击仍是正式流程的一部分，不是系统结算。
-            aiActions: [advancePhase('0')],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                match: { playerId: '0', phase: 'deployment' },
+            }],
         },
         {
             id: 'opponent-deploy',
@@ -376,17 +380,33 @@ export const MageWarsTutorial: TutorialManifest = {
             infoStep: true,
         },
         {
-            id: 'skip-to-creature-action',
-            content: 'game-mage-wars:tutorial.steps.skipToCreatureAction',
+            id: 'opponent-pass-deployment',
+            content: 'game-mage-wars:tutorial.steps.opponentPassDeployment',
             position: 'center',
             allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
-            // 这里是对手完成部署/先手窗口后的真实对手行为；玩家自己的
-            // deployment 已在上一段完成，不把系统结算伪装成玩家点击。
-            aiActions: [
-                advancePhase('1'),
-                advancePhase('0'),
-                advancePhase('1'),
-            ],
+            aiActions: [advancePhase('1')],
+            autoAdvanceAfterAi: false,
+        },
+        {
+            id: 'skip-initiative-quickcast',
+            content: 'game-mage-wars:tutorial.steps.skipInitiativeQuickcast',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                match: { playerId: '0', phase: 'initiativeQuickcast' },
+            }],
+        },
+        {
+            id: 'opponent-pass-initiative-quickcast',
+            content: 'game-mage-wars:tutorial.steps.opponentPassInitiativeQuickcast',
+            position: 'center',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            aiActions: [advancePhase('1')],
+            autoAdvanceAfterAi: false,
         },
         {
             id: 'move-wolf',

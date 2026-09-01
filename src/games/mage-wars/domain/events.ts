@@ -1,6 +1,6 @@
 import type { GameEvent, PlayerId } from '../../../engine/types';
 import type { ArenaZoneId, MageWarsMageAbilityId, MageWarsObjectAbilityId, MageWarsWallEdgeId, StatusTokenId } from './ids';
-import type { MageWarsArenaObjectState, MageWarsSpellCasterRef, MageWarsWallState } from './core-types';
+import type { MageWarsArenaObjectState, MageWarsPhase, MageWarsSpellCasterRef, MageWarsWallState } from './core-types';
 import type { MageWarsResponseContext } from './responseResolution';
 import type { MageWarsDamageType, MageWarsSpellCounterResponseCardId } from './spellRules';
 import type { MageWarsTemporaryTraitGrantId, MageWarsTemporaryTraitId } from './temporaryTraits';
@@ -81,6 +81,7 @@ export const MAGE_WARS_EVENTS = {
     DAMAGE_BARRIER_AVAILABLE: 'MW_DAMAGE_BARRIER_AVAILABLE',
     DAMAGE_BARRIER_TRIGGERED: 'MW_DAMAGE_BARRIER_TRIGGERED',
     MAGE_DEFEATED: 'MW_MAGE_DEFEATED',
+    PHASE_WINDOW_COMPLETED: 'MW_PHASE_WINDOW_COMPLETED',
     TURN_ADVANCED: 'MW_TURN_ADVANCED',
     ACTION_READINESS_RESET: 'MW_ACTION_READINESS_RESET',
 } as const;
@@ -948,6 +949,15 @@ export interface MageWarsMageDefeatedEvent extends GameEvent<typeof MAGE_WARS_EV
     };
 }
 
+export interface MageWarsPhaseWindowCompletedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED> {
+    payload: {
+        playerId: PlayerId;
+        phase: MageWarsPhase;
+        nextActorId?: PlayerId;
+        readyPlayerIds: PlayerId[];
+    };
+}
+
 export interface MageWarsTurnAdvancedEvent extends GameEvent<typeof MAGE_WARS_EVENTS.TURN_ADVANCED> {
     payload: {
         fromPlayerId: PlayerId;
@@ -1040,5 +1050,6 @@ export type MageWarsEvent =
     | MageWarsAttackMissedEvent
     | MageWarsDamageDealtEvent
     | MageWarsMageDefeatedEvent
+    | MageWarsPhaseWindowCompletedEvent
     | MageWarsTurnAdvancedEvent
     | MageWarsActionReadinessResetEvent;

@@ -128,9 +128,10 @@ describe('Betrayal 教程配置', () => {
             'explore-upper',
             'confirm-room-placement',
             'roll-event',
+            'view-book',
             'use-book',
             'use-rabbit-foot',
-            'confirm-event-result',
+            'rabbit-foot-result',
             'finish',
             'setup-omen-confirmation',
             'confirm-omen-card',
@@ -163,10 +164,14 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'focus-self-room')?.highlightTarget).toBe('betrayal-focus-self-room');
         expect(manifest?.steps.find((step) => step.id === 'haunt-risk-track')?.highlightTarget).toBe('betrayal-haunt-risk-status');
         expect(manifest?.steps.find((step) => step.id === 'confirm-room-placement')?.highlightTarget).toBe('betrayal-room-placement-confirm');
+        expect(manifest?.steps.find((step) => step.id === 'view-book')?.highlightTarget).toBe('betrayal-inventory-omen-book-magnify');
+        expect(manifest?.steps.find((step) => step.id === 'view-book')?.infoStep).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(manifest?.steps.find((step) => step.id === 'use-rabbit-foot')?.highlightTarget).toBe('betrayal-inventory-rope');
-        expect(manifest?.steps.find((step) => step.id === 'confirm-event-result')?.highlightTarget).toBe('betrayal-latest-discovery');
-        expect(manifest?.steps.find((step) => step.id === 'confirm-event-result')?.advanceOnEvents).toEqual([
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.highlightTarget).toBe('betrayal-latest-discovery');
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.infoStep).toBe(true);
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.allowedCommands).toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.advanceOnEvents).toEqual([
             { type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } },
         ]);
         expect(manifest?.steps.find((step) => step.id === 'confirm-omen-card')?.allowedCommands).toEqual([
@@ -645,8 +650,13 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆进度条');
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('5+');
-        expect(basicSteps.useBook).toContain('花费 1 点神志');
-        expect(basicSteps.useBook).toContain('直接点持有区的书本');
+        expect(basicSteps.viewBook).toContain('放大按钮');
+        expect(basicSteps.viewBook).toContain('读它的牌面');
+        expect(basicSteps.viewBook).toContain('花费 1 点神志改用知识');
+        expect(basicSteps.viewBook).not.toContain('兔脚');
+        expect(basicSteps.viewBook).not.toContain('伤害');
+        expect(basicSteps.useBook).toContain('扣除 1 点神志');
+        expect(basicSteps.useBook).toContain('使用书本本体');
         expect(basicSteps.useBook).toContain('改用知识重新投骰');
         expect(basicSteps.useBook).not.toContain('事件牌公开后');
         expect(basicSteps.rollEvent).toContain('给所有玩家看清');
@@ -661,18 +671,20 @@ describe('Betrayal 教程配置', () => {
         expect(basicSteps.useRabbitFoot).toContain('确认使用兔脚');
         expect(basicSteps.useRabbitFoot).not.toContain('其他玩家确认');
         expect(basicSteps.useRabbitFoot).not.toContain('伤害');
-        expect(basicSteps.confirmEventResult).toContain('最终结果');
-        expect(basicSteps.confirmEventResult).toContain('其他玩家确认');
-        expect(basicSteps.confirmEventResult).not.toContain('承受 1 点物理伤害');
-        expect(basicSteps.finish).toContain('后续伤害');
+        expect(basicSteps.rabbitFootResult).toContain('重掷完成');
+        expect(basicSteps.rabbitFootResult).toContain('公开投掷');
+        expect(basicSteps.rabbitFootResult).toContain('伤害分配');
+        expect(basicSteps.rabbitFootResult).not.toContain('其他玩家确认');
+        expect(basicSteps.rabbitFootResult).not.toContain('确认 1/3');
         expect(basicSteps.finish).toContain('承受 1 点物理伤害');
         expect(basicSteps.finish).not.toContain('改用知识重新投骰');
         expect(basicSteps.finish).not.toContain('兔脚');
         expect([
-            [basicSteps.rollEvent, basicSteps.useBook],
+            [basicSteps.rollEvent, basicSteps.viewBook],
+            [basicSteps.viewBook, basicSteps.useBook],
             [basicSteps.useBook, basicSteps.useRabbitFoot],
-            [basicSteps.useRabbitFoot, basicSteps.confirmEventResult],
-            [basicSteps.confirmEventResult, basicSteps.finish],
+            [basicSteps.useRabbitFoot, basicSteps.rabbitFootResult],
+            [basicSteps.rabbitFootResult, basicSteps.finish],
         ].flatMap(([previous, current]) => {
             const previousSentences = previous.split(/[。；]/).map((part) => part.trim()).filter((part) => part.length >= 8);
             return previousSentences.filter((sentence) => current.includes(sentence));

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import './lib/structuredClonePolyfill';
 import './index.css';
 import { i18nInitPromise } from './lib/i18n';
 import { SENTRY_DSN } from './config/server';

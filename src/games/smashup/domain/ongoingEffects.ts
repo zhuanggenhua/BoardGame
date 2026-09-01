@@ -266,6 +266,9 @@ export function registerDataDrivenOngoingLifecycles(): void {
     for (const def of getAllCardDefs()) {
         if (def.type !== 'action' || def.subtype !== 'ongoing' || !def.lifecycle) continue;
         const lifecycle = def.lifecycle.expires;
+        if (triggerRegistry.some(entry => entry.sourceDefId === def.id && entry.timing === lifecycle.timing)) {
+            throw new Error(`Ongoing lifecycle trigger for ${def.id}::${lifecycle.timing} must be data-driven; remove the hand-written trigger registration.`);
+        }
         const callback: TriggerCallback = (ctx) => {
             if (!ctx.sourceCardUid) return [];
             if (lifecycle.actor === 'owner' && ctx.sourceOwnerPlayerId !== ctx.playerId) return [];

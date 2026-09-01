@@ -109,7 +109,7 @@ import { InteractionOverlay } from './ui/InteractionOverlay';
 import { ChoiceModal } from './ui/ChoiceModal';
 import { DefenderChoiceModal } from './ui/DefenderChoiceModal';
 import { canRerollBonusDiceSettlement } from './domain/bonusDiceSettlement';
-import { getCurrentDamageSummary, isPendingDamageBonusSettlement } from './domain/damageSummary';
+import { getCurrentDamageSummary, isPendingDamageResponseBonusSettlement } from './domain/damageSummary';
 import {
     projectDiceThroneTokenResponseChoiceContract,
     readDiceThroneTokenResponseChoiceContract,
@@ -699,7 +699,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const rollConfirmed = G.rollConfirmed;
     const isCompareRoll = G.currentRollContext?.kind === 'compare';
     const isCurrentBonusDiceSettlementActive = isCurrentBonusRollSettlement(G, G.pendingBonusDiceSettlement);
-    const hasUnsettledTokenResponseBonusDice = isPendingDamageBonusSettlement(G, G.pendingBonusDiceSettlement);
+    const hasUnsettledTokenResponseBonusDice = isPendingDamageResponseBonusSettlement(G, G.pendingBonusDiceSettlement);
     
     // availableAbilityIds 计算：
     // 1. 响应窗口打开时，显示响应者的可用技能（不限于掷骰阶段）

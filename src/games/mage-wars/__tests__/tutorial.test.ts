@@ -193,7 +193,9 @@ describe('mage-wars tutorial', () => {
             'opponent-deploy',
             'opponent-attack-spell',
             'discard-reading',
-            'skip-to-creature-action',
+            'opponent-pass-deployment',
+            'skip-initiative-quickcast',
+            'opponent-pass-initiative-quickcast',
             'move-wolf',
             'finish',
         ]);
@@ -225,6 +227,32 @@ describe('mage-wars tutorial', () => {
         expect(rouseWolf?.advanceOnEvents).toContainEqual({
             type: MAGE_WARS_EVENTS.ARENA_OBJECT_ROUSED,
             match: { ownerId: '0' },
+        });
+
+        const passYourDeployment = MageWarsTutorial.steps.find((step) => step.id === 'pass-your-deployment');
+        expect(passYourDeployment).toMatchObject({
+            requireAction: true,
+            highlightTarget: 'mw-turn-end',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+        });
+        expect(passYourDeployment?.aiActions).toBeUndefined();
+        expect(passYourDeployment?.advanceOnEvents).toContainEqual({
+            type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+            match: { playerId: '0', phase: 'deployment' },
+        });
+
+        const skipInitiativeQuickcast = MageWarsTutorial.steps.find((step) => step.id === 'skip-initiative-quickcast');
+        expect(skipInitiativeQuickcast).toMatchObject({
+            requireAction: true,
+            highlightTarget: 'mw-turn-end',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+        });
+        expect(skipInitiativeQuickcast?.aiActions).toBeUndefined();
+        expect(skipInitiativeQuickcast?.advanceOnEvents).toContainEqual({
+            type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+            match: { playerId: '0', phase: 'initiativeQuickcast' },
         });
 
         expect(MageWarsTutorial.steps.map((step) => step.highlightTarget).filter(Boolean)).toEqual(expect.arrayContaining([
@@ -370,7 +398,11 @@ describe('mage-wars tutorial', () => {
         ]);
 
         state = runCommand(state, advancePhaseCommand('1'));
+        expect(state.sys.phase).toBe('initiativeQuickcast');
+        expect(state.core.phaseActorId).toBe('0');
         state = runCommand(state, advancePhaseCommand('0'));
+        expect(state.sys.phase).toBe('initiativeQuickcast');
+        expect(state.core.phaseActorId).toBe('1');
         state = runCommand(state, advancePhaseCommand('1'));
         expect(state.sys.phase).toBe('creatureAction');
         expect(state.core.phaseActorId).toBe('0');

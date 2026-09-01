@@ -692,6 +692,366 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(getModifiedBaseVp(core, 0, '1', 2)).toBe(3);
     });
 
+    it('冰雪奇缘：迷你雪人必须选择同基地角色，不能自动给第一个角色临时加力', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('snowgie-source', 'frozen_snowgie', '0', 2),
+                    makeMinion('first-target', 'pirate_saucy_wench', '0', 3),
+                    makeMinion('chosen-target', 'frozen_olaf', '1', 3),
+                ]),
+                makeBase('test_base_2', [
+                    makeMinion('away-target', 'frozen_snowgie', '1', 2),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('frozen_snowgie', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'snowgie-source',
+            defId: 'frozen_snowgie',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 43,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('minion');
+        expect(getPromptOptions(prompt).map(option => option.value?.minionUid)).toEqual([
+            'snowgie-source',
+            'first-target',
+            'chosen-target',
+        ]);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-target',
+            '迷你雪人临时加力目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'chosen-target', amount: 1, reason: 'frozen_snowgie' }),
+        }));
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'first-target')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'chosen-target')?.tempPowerModifier).toBe(1);
+    });
+
+    it('冰雪奇缘：艾莎天赋必须先选择基地，只压低所选基地其他玩家角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('elsa', 'frozen_elsa', '0', 5),
+                    makeMinion('enemy-at-source', 'frozen_snowgie', '1', 2),
+                ]),
+                makeBase('base_ice_palace', [
+                    makeMinion('ally-at-target', 'frozen_olaf', '0', 3),
+                    makeMinion('enemy-at-target', 'pirate_saucy_wench', '1', 3),
+                    makeMinion('second-enemy-at-target', 'frozen_snowgie', '1', 2),
+                ]),
+            ],
+        });
+
+        const used = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'elsa', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        expect(used.success, used.error).toBe(true);
+        expect(used.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TALENT_USED,
+            payload: expect.objectContaining({ playerId: '0', minionUid: 'elsa', defId: 'frozen_elsa', baseIndex: 0 }),
+        }));
+        expect(used.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(used.finalState, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('base');
+        expect(getPromptOptions(prompt).map(option => option.value?.baseIndex)).toEqual([0, 1]);
+
+        const resolved = respondToPromptOption(
+            used.finalState,
+            option => option.value?.baseIndex === 1,
+            '艾莎目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toEqual([
+            expect.objectContaining({
+                payload: expect.objectContaining({ minionUid: 'enemy-at-target', baseIndex: 1, amount: -1, reason: 'frozen_elsa' }),
+            }),
+            expect.objectContaining({
+                payload: expect.objectContaining({ minionUid: 'second-enemy-at-target', baseIndex: 1, amount: -1, reason: 'frozen_elsa' }),
+            }),
+        ]);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-at-source')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'ally-at-target')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'enemy-at-target')?.tempPowerModifier).toBe(-1);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'second-enemy-at-target')?.tempPowerModifier).toBe(-1);
+    });
+
+    it('冰雪奇缘：夏天大盛宴按所选基地己方角色数量抽牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('summer-draw-a', 'frozen_snowgie', 'minion', '0'),
+                        makeCard('summer-draw-b', 'frozen_olaf', 'minion', '0'),
+                        makeCard('summer-draw-c', 'pirate_saucy_wench', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('own-at-source', 'frozen_snowgie', '0', 2),
+                ]),
+                makeBase('base_ice_palace', [
+                    makeMinion('own-at-target-a', 'frozen_olaf', '0', 3),
+                    makeMinion('own-at-target-b', 'frozen_sven', '0', 3),
+                    makeMinion('enemy-at-target', 'frozen_snowgie', '1', 2),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('frozen_big_summer_blowout', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'big-summer',
+            defId: 'frozen_big_summer_blowout',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 44,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('base');
+        expect(getPromptOptions(prompt).map(option => option.value?.baseIndex)).toEqual([0, 1]);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.baseIndex === 1,
+            '夏天大盛宴目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({ playerId: '0', count: 2, cardUids: ['summer-draw-a', 'summer-draw-b'] }),
+        }));
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['summer-draw-a', 'summer-draw-b']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['summer-draw-c']);
+    });
+
+    it('冰雪奇缘：汉斯必须选择目标基地力量 3 或更低角色，不能自动摧毁第一个角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('low-at-source', 'frozen_snowgie', '1', 2),
+                ]),
+                makeBase('test_base_2', [
+                    makeMinion('first-low-target', 'frozen_snowgie', '1', 2),
+                    makeMinion('chosen-low-target', 'pirate_saucy_wench', '0', 3),
+                    makeMinion('too-strong-target', 'frozen_anna', '1', 4),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('frozen_hans_westergaard', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'hans',
+            defId: 'frozen_hans_westergaard',
+            baseIndex: 0,
+            targetBaseIndex: 1,
+            random: FIXED_RANDOM,
+            now: 45,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'disney_four_factions_prompt');
+        expect(prompt.autoResolveIfSingle).toBe(false);
+        expect(prompt.targetType).toBe('minion');
+        expect(getPromptOptions(prompt).map(option => option.value?.minionUid)).toEqual(['first-low-target', 'chosen-low-target']);
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-low-target',
+            '汉斯摧毁目标',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({ minionUid: 'chosen-low-target', fromBaseIndex: 1, reason: 'frozen_hans_westergaard' }),
+        }));
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['first-low-target', 'too-strong-target']);
+    });
+
+    it('冰雪奇缘：锁上大门只阻止其他玩家在该基地打出力量 3 或更低角色', () => {
+        const enemyTurnCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    hand: [
+                        makeCard('enemy-low', 'frozen_snowgie', 'minion', '1'),
+                        makeCard('enemy-high', 'frozen_anna', 'minion', '1'),
+                    ],
+                }),
+            },
+            currentPlayerIndex: 1,
+            bases: [makeBase({
+                defId: 'base_arendelle',
+                ongoingActions: [{ uid: 'lock', defId: 'frozen_lock_the_gates', ownerId: '0' }],
+            })],
+        });
+
+        const blockedLow = runCommand(makeMatchState(enemyTurnCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'enemy-low', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(blockedLow.success).toBe(false);
+        expect(blockedLow.error).toBe('该基地禁止打出该随从');
+
+        const allowedHigh = runCommand(makeMatchState(enemyTurnCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'enemy-high', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(allowedHigh.success, allowedHigh.error).toBe(true);
+        expect(allowedHigh.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['enemy-high']);
+
+        const ownerTurnCore = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('owner-low', 'frozen_snowgie', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_arendelle',
+                ongoingActions: [{ uid: 'lock', defId: 'frozen_lock_the_gates', ownerId: '0' }],
+            })],
+        });
+        const allowedOwnerLow = runCommand(makeMatchState(ownerTurnCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'owner-low', baseIndex: 0 },
+        } as any, FIXED_RANDOM);
+        expect(allowedOwnerLow.success, allowedOwnerLow.error).toBe(true);
+        expect(allowedOwnerLow.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['owner-low']);
+    });
+
+    it('冰雪奇缘：驯鹿的心地比人好必须选择己方角色，且斯文在场时改为 +4', () => {
+        const withoutSven = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('first-reindeer-target', 'frozen_snowgie', '0', 2),
+                    makeMinion('chosen-reindeer-target', 'frozen_olaf', '0', 3),
+                    makeMinion('enemy-target', 'pirate_saucy_wench', '1', 3),
+                ]),
+            ],
+        });
+
+        const normal = invokeRegisteredAbilityContract('frozen_reindeers_are_better_than_people', 'onPlay', {
+            state: withoutSven,
+            matchState: makeMatchState(withoutSven),
+            playerId: '0',
+            cardUid: 'reindeers',
+            defId: 'frozen_reindeers_are_better_than_people',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 46,
+        });
+
+        expect(normal.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
+        const normalPrompt = getSimpleChoicePrompt(normal.matchState!, 'disney_four_factions_prompt');
+        expect(normalPrompt.autoResolveIfSingle).toBe(false);
+        expect(getPromptOptions(normalPrompt).map(option => option.value?.minionUid)).toEqual(['first-reindeer-target', 'chosen-reindeer-target']);
+        const normalResolved = respondToPromptOption(
+            normal.matchState!,
+            option => option.value?.minionUid === 'chosen-reindeer-target',
+            '驯鹿目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(normalResolved.success, normalResolved.error).toBe(true);
+        expect(normalResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'chosen-reindeer-target', amount: 2, reason: 'frozen_reindeers_are_better_than_people' }),
+        }));
+        expect(normalResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'first-reindeer-target')?.tempPowerModifier ?? 0).toBe(0);
+        expect(normalResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'chosen-reindeer-target')?.tempPowerModifier).toBe(2);
+
+        const withSven = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_arendelle', [
+                    makeMinion('sven', 'frozen_sven', '1', 3),
+                    makeMinion('boosted-by-sven', 'frozen_snowgie', '0', 2),
+                ]),
+            ],
+        });
+        const boosted = invokeRegisteredAbilityContract('frozen_reindeers_are_better_than_people', 'onPlay', {
+            state: withSven,
+            matchState: makeMatchState(withSven),
+            playerId: '0',
+            cardUid: 'reindeers-with-sven',
+            defId: 'frozen_reindeers_are_better_than_people',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 47,
+        });
+        const boostedResolved = respondToPromptOption(
+            boosted.matchState!,
+            option => option.value?.minionUid === 'boosted-by-sven',
+            '有斯文时的驯鹿目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(boostedResolved.success, boostedResolved.error).toBe(true);
+        expect(boostedResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'boosted-by-sven', amount: 4, reason: 'frozen_reindeers_are_better_than_people' }),
+        }));
+        expect(boostedResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'boosted-by-sven')?.tempPowerModifier).toBe(4);
+    });
+
     it('狮子王：木法沙在弃牌堆时触发弃牌条件，并让荣耀石给玩家额外力量', () => {
         const core = makeState({
             players: {

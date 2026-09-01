@@ -3,7 +3,6 @@
   "description": "A 2-player spell tactics game. This foundation locks the formal arena, mage state, spellbook zones, and event-driven spell FX contract.",
   "players": "2 players",
   "arena": {
-    "mode": "Formal Arena",
     "actionStage": "Action phase",
     "selectTarget": "Select target",
     "standardArenaAlt": "Mage Wars standard arena",
@@ -440,7 +439,9 @@
       "opponentDeploy": "The opponent casts Asyran Cleric. Asyran Cleric: Creature / Cleric, Life 6, Armor 1, Staff quick melee 2 dice.",
       "opponentAttackSpell": "Pillar of Light: Attack / Light, range 0-2, target creature or conjuration, 2 attack dice; effect die 4-10 Daze, 11+ Stun.",
       "discardReading": "Each player has their own discard pile. All destroyed objects and spells discarded after casting are placed in the discard pile.",
-      "skipToCreatureAction": "Action Stage: starting with the starting player, players take turns using their creatures to take action phases until all creatures have acted.",
+      "opponentPassDeployment": "After the opponent finishes deployment, both players enter the initiative quickcast window. Now you decide whether to use a quick spell.",
+      "skipInitiativeQuickcast": "You have no quick spell to cast. Click “End Turn” to pass your initiative quickcast window and let the opponent enter the same window.",
+      "opponentPassInitiativeQuickcast": "The opponent also passes initiative quickcast, so your creature action begins. Next, use Jungle Wolf to move.",
       "moveWolf": "Click Jungle Wolf, then click an adjacent zone to move it. During a creature's action phase, it can take a move action to move from one zone to another.",
       "finish": "You have now read the board, channeled, planned, summoned, roused a creature, checked public discard, and moved. Continue to walls, guard, healing, and status removal."
     }

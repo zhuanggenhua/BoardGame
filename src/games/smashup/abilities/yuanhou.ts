@@ -1,7 +1,7 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { getBaseDef, getCardDef } from '../data/cards';
-import { registerAbilityProgram, registerSimpleAbility, resolveOnPlay, resolveTalent } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility, resolveTalent } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addTempPower,
@@ -1782,21 +1782,6 @@ function shapeshiftersCopycatCopiedJumper(ctx: TriggerContext): SmashUpEvent[] {
     return recoverDiscardedJumperLikeMinion(ctx, 'shapeshifters_copycat_copied_jumper');
 }
 
-function timeTravelersStasisFieldTurnStart(ctx: TriggerContext): SmashUpEvent[] {
-    const events: SmashUpEvent[] = [];
-    for (const base of ctx.state.bases) {
-        for (const action of base.ongoingActions) {
-            const controllerId = action.metadata?.sourceControllerId ?? action.ownerId;
-            if (!matchesDefId(action.defId, 'time_travelers_stasis_field')) continue;
-            if (ctx.sourceCardUid && action.uid !== ctx.sourceCardUid) continue;
-            if (controllerId === ctx.playerId) {
-                events.push(detachOngoing(action.uid, action.defId, action.ownerId, action.defId, ctx.now));
-            }
-        }
-    }
-    return events;
-}
-
 function timeTravelersWormhole(ctx: AbilityContext): AbilityResult {
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     const base = ctx.state.bases[baseIndex];
@@ -3001,12 +2986,6 @@ export function registerYuanhouAbilities(): void {
     registerBaseScoringSuppression('time_travelers_stasis_field', (state, baseIndex) =>
         state.bases[baseIndex]?.ongoingActions.some(action => matchesDefId(action.defId, 'time_travelers_stasis_field')) ?? false,
     );
-    registerTrigger('time_travelers_stasis_field', 'onTurnStart', timeTravelersStasisFieldTurnStart, {
-        playerContext: 'sourceController',
-        effectContract: SHAYU_TRIGGER_CONTRACT,
-        perInstance: true,
-    });
-
     registerBaseAbility('base_faceless_city', 'onMinionPlayed', baseFacelessCity, {
         canTrigger: ctx => {
             if (!ctx.minionDefId) return false;

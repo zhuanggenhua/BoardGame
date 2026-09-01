@@ -180,7 +180,7 @@ export function registerBearCavalryAbilities(): void {
     // 黑熊擒抱 POD：全局最弱消灭（与原版相同，已在上方注册）
     // 你们已经完蛋 POD：降低临界点并提供 +2 力量
     registerAbility('bear_cavalry_youre_screwed_pod', 'onPlay', bearCavalryYoureScrewedPodAbility);
-    // 黑熊口粮 POD：压制天赋 + 回合开始自毁
+    // 黑熊口粮 POD：这里只注册天赋；到期离场由卡牌定义里的 lifecycle 统一注册。
     registerAbility('bear_cavalry_bear_necessities_pod', 'talent', bearCavalryBearNecessitiesPodTalent);
     // 你们都是美食 POD: 批量移动（与原版相同，已在上方注册）
     // 与熊同行 POD: 移动 + 压制能力

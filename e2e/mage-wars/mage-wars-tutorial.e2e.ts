@@ -17,20 +17,21 @@ const PLAN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-plan-spells.png`;
 const SUMMON_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-summon-target-zone-highlight.png`;
 const WOLF_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-roused-wolf-ready.png`;
 const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-opponent-discard-reading.png`;
-const MOVE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-wolf-moved-to-a2.png`;
-const WALL_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-wall-prepared.png`;
-const WALL_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-wall-edge-target-highlight.png`;
-const WALL_CARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-wall-card-on-edge.png`;
-const WALL_LOS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-wall-line-of-sight-and-passage.png`;
-const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-guard-action-dock.png`;
-const GUARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-guard-token-result.png`;
-const HEALING_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-healing-light-action-dock.png`;
-const HEALING_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-healing-target-highlight.png`;
-const HEALING_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-healing-result-life-readout.png`;
-const LIFE_TOGGLE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-life-toggle-all-readouts.png`;
-const RESTORE_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-restore-action-dock.png`;
-const RESTORE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-restore-burn-target-highlight.png`;
-const RESTORE_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-restore-burn-removed.png`;
+const QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-skip-initiative-quickcast.png`;
+const MOVE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-wolf-moved-to-a2.png`;
+const WALL_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-wall-prepared.png`;
+const WALL_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-wall-edge-target-highlight.png`;
+const WALL_CARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-wall-card-on-edge.png`;
+const WALL_LOS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-wall-line-of-sight-and-passage.png`;
+const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-guard-action-dock.png`;
+const GUARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-guard-token-result.png`;
+const HEALING_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-healing-light-action-dock.png`;
+const HEALING_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-healing-target-highlight.png`;
+const HEALING_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-healing-result-life-readout.png`;
+const LIFE_TOGGLE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-life-toggle-all-readouts.png`;
+const RESTORE_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-restore-action-dock.png`;
+const RESTORE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-restore-burn-target-highlight.png`;
+const RESTORE_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/21-restore-burn-removed.png`;
 
 const GUARD_CLERIC_OBJECT_ID = 'mw-tutorial-guard-cleric';
 const HEALING_CLERIC_OBJECT_ID = 'mw-tutorial-healing-cleric';
@@ -86,6 +87,10 @@ async function openMageWarsTutorial(context: BrowserContext, page: Page) {
     await waitForFrontendAssets(page, 45_000);
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     await expect(page.locator('[data-game-page][data-game-id="mage-wars"]').first()).toBeVisible({ timeout: 60_000 });
+    const catalogEntry = page.getByTestId('tutorial-catalog-entry-mage-wars-basic');
+    if (await catalogEntry.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await catalogEntry.click();
+    }
     await expect(page.getByTestId('mage-wars-board')).toBeVisible({ timeout: 60_000 });
     await waitForTestHarness(page, 20_000);
     await page.waitForFunction(() => {
@@ -267,22 +272,37 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialTarget(page, 'mw-prepared-card-3403');
         await expect(page.locator('[data-tutorial-id="mw-field-object-2819"][data-field-card-role="target"]')).toBeVisible({ timeout: 10_000 });
         await clickTutorialTarget(page, 'mw-field-object-2819');
-        await waitForTutorialStateStep(page, 'opponent-deploy', 45_000);
+        await waitForTutorialStep(page, 'pass-your-deployment', 45_000);
         await expect.poll(async () => {
             const state = await readMageWarsState(page);
             const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
             return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
                 zoneId: wolf?.zoneId ?? null,
                 actionReady: wolf?.actionReady ?? null,
                 discard: state.core?.players?.['0']?.discardSpellCardIds ?? [],
             };
         }, { timeout: 15_000 }).toEqual({
+            phase: 'deployment',
+            phaseActorId: '0',
             zoneId: 'a3',
             actionReady: true,
             discard: [3403, 2819],
         });
-        await waitForTutorialStep(page, 'opponent-deploy');
         await screenshot(page, WOLF_READY_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+        await waitForTutorialStateStep(page, 'opponent-deploy', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+            };
+        }, { timeout: 15_000 }).toEqual({
+            phase: 'deployment',
+            phaseActorId: '1',
+        });
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'opponent-attack-spell');
@@ -304,6 +324,46 @@ test.describe('Mage Wars tutorial', () => {
         await waitForTutorialStep(page, 'discard-reading');
         await expect(page.locator('[data-tutorial-id="mw-discard"]')).toBeVisible({ timeout: 10_000 });
         await screenshot(page, DISCARD_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStateStep(page, 'opponent-pass-deployment', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+            };
+        }, { timeout: 15_000 }).toEqual({
+            phase: 'initiativeQuickcast',
+            phaseActorId: '0',
+        });
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'skip-initiative-quickcast', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+            };
+        }, { timeout: 15_000 }).toEqual({
+            phase: 'initiativeQuickcast',
+            phaseActorId: '0',
+        });
+        await screenshot(page, QUICKCAST_PASS_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-turn-end');
+
+        await waitForTutorialStateStep(page, 'opponent-pass-initiative-quickcast', 45_000);
+        await expect.poll(async () => {
+            const state = await readMageWarsState(page);
+            return {
+                phase: state.sys?.phase ?? null,
+                phaseActorId: state.core?.phaseActorId ?? null,
+            };
+        }, { timeout: 15_000 }).toEqual({
+            phase: 'creatureAction',
+            phaseActorId: '0',
+        });
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'move-wolf', 45_000);

@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test';
 type InteractionOption = {
     id: string;
     value?: {
+        baseIndex?: number;
         minionUid?: string;
         mode?: string;
     };
@@ -17,6 +18,7 @@ type SmashUpCardSnapshot = {
 type SmashUpMinionSnapshot = {
     uid: string;
     powerCounters?: number;
+    tempPowerModifier?: number;
     metadata?: Record<string, unknown>;
 };
 
@@ -323,5 +325,162 @@ test.describe('SmashUp - 迪士尼四派系代表性交互', () => {
         });
 
         await game.screenshot('mulan-mode-choice-draw-resolved', testInfo);
+    });
+
+    test('冰雪奇缘艾莎天赋必须从真实页面进入基地选择并只压低所选基地对手角色', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', {
+            p0: 'frozen,big_hero_6',
+            p1: 'lion_king,mulan',
+            skipFactionSelect: true,
+            skipInitialization: false,
+        }, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            currentPlayer: '0',
+            phase: 'playCards',
+            player0: {
+                factions: ['frozen', 'big_hero_6'],
+                hand: [],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                factions: ['lion_king', 'mulan'],
+                hand: [],
+                deck: [],
+                discard: [],
+            },
+            bases: [
+                {
+                    defId: 'base_arendelle',
+                    minions: [
+                        {
+                            uid: 'elsa-choice',
+                            defId: 'frozen_elsa',
+                            owner: '0',
+                            controller: '0',
+                            basePower: 5,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                        {
+                            uid: 'enemy-at-source',
+                            defId: 'frozen_snowgie',
+                            owner: '1',
+                            controller: '1',
+                            basePower: 2,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_ice_palace',
+                    minions: [
+                        {
+                            uid: 'ally-at-target',
+                            defId: 'frozen_olaf',
+                            owner: '0',
+                            controller: '0',
+                            basePower: 3,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                        {
+                            uid: 'enemy-at-target',
+                            defId: 'mulan_mushu',
+                            owner: '1',
+                            controller: '1',
+                            basePower: 2,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                        {
+                            uid: 'second-enemy-at-target',
+                            defId: 'lion_king_timon_and_pumbaa',
+                            owner: '1',
+                            controller: '1',
+                            basePower: 3,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        await expect(page.locator('[data-minion-uid="elsa-choice"]')).toBeVisible({ timeout: 15000 });
+        await game.screenshot('frozen-elsa-talent-ready', testInfo);
+
+        await page.getByTestId('su-minion-frame-elsa-choice').click();
+        await game.waitForInteraction('disney_four_factions_prompt', 10000);
+        await expect(page.getByText('艾莎：选择基地')).toBeVisible({ timeout: 10000 });
+
+        await page.waitForFunction(
+            () => {
+                const state = (window as SmashUpHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                const current = state?.sys?.interaction?.current;
+                return current?.data?.sourceId === 'disney_four_factions_prompt'
+                    && current?.data?.targetType === 'base'
+                    && current?.data?.options?.some(option => option?.value?.baseIndex === 0)
+                    && current?.data?.options?.some(option => option?.value?.baseIndex === 1);
+            },
+            { timeout: 5000 },
+        );
+        await game.screenshot('frozen-elsa-base-choice-prompt', testInfo);
+
+        const baseOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(baseOptions.map(option => option.value?.baseIndex).sort()).toEqual(expect.arrayContaining([0, 1]));
+
+        await game.selectInteractionOptionBy(
+            (option: InteractionOption) => option?.value?.baseIndex === 1,
+            '艾莎目标基地',
+        );
+        await game.waitForNoInteraction(10000);
+
+        await expect.poll(async () => {
+            const state = await game.getState() as SmashUpHarnessState;
+            const sourceBase = state.core.bases[0];
+            const targetBase = state.core.bases[1];
+            return {
+                enemyAtSourcePenalty: sourceBase.minions.find(minion => minion.uid === 'enemy-at-source')?.tempPowerModifier ?? 0,
+                allyAtTargetPenalty: targetBase.minions.find(minion => minion.uid === 'ally-at-target')?.tempPowerModifier ?? 0,
+                enemyAtTargetPenalty: targetBase.minions.find(minion => minion.uid === 'enemy-at-target')?.tempPowerModifier ?? 0,
+                secondEnemyAtTargetPenalty: targetBase.minions.find(minion => minion.uid === 'second-enemy-at-target')?.tempPowerModifier ?? 0,
+                interactionOpen: Boolean(state.sys?.interaction?.current),
+            };
+        }, { timeout: 10000 }).toEqual({
+            enemyAtSourcePenalty: 0,
+            allyAtTargetPenalty: 0,
+            enemyAtTargetPenalty: -1,
+            secondEnemyAtTargetPenalty: -1,
+            interactionOpen: false,
+        });
+
+        await game.screenshot('frozen-elsa-talent-resolved', testInfo);
     });
 });

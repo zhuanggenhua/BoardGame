@@ -1079,14 +1079,15 @@
         "focusSelfRoom": "After the camera leaves your position, Focus My Room returns it to your explorer's room.",
         "hauntRiskTrack": "The omen track records the number of Omens discovered, and the highlighted slot is the current value. When an Omen is drawn, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
         "inventoryAndHelp": "Event cards enter the current event resolution when revealed and do not stay in front of you; Items and Omens do. Choose the relevant card here when you use, trade, or resolve a card effect.",
-        "useBook": "Click the Book in your inventory: it costs 1 Sanity and rerolls this non-combat check with Knowledge.",
+        "viewBook": "First click the magnifier on the Book and read the card: this non-combat check can spend 1 Sanity to use Knowledge instead. Close the card when you are done.",
+        "useBook": "Now use the Book itself. After you spend 1 Sanity, this Event check rerolls with Knowledge.",
         "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
         "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
         "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, connect one of its doorways to the unexplored doorway.",
         "confirmRoomPlacement": "Rotate the new room so one doorway connects to the unexplored doorway, then choose Confirm Placement. Resolve its text and symbol after placement; your turn ends when the exploration is complete.",
         "rollEvent": "The Event card is public. Click Roll Event to make the Might check on this card; the dice and event result stay on the table for every player to read.",
         "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
-        "rabbitFootResult": "This rerolled result is the final event result. The Event card and dice have already been shown, so the game automatically moves into the damage step.",
+        "rabbitFootResult": "Rabbit's Foot has finished the reroll. The Event card and dice were already visible during this public roll; when there is no new choice, the game moves into damage allocation.",
         "finish": "Choose the trait that takes 1 physical damage, then confirm the allocation."
       }
     },

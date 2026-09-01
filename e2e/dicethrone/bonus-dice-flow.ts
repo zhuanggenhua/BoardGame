@@ -111,8 +111,9 @@ export const expectRightTrayBonusDiceConfirmation = async (
     }
     await closeDebugPanelIfVisible(page);
 
-    const { diceTray, rail } = rightTrayRail(page);
-    const confirmButton = rail.locator('[data-tutorial-id="dice-confirm-button"]').first();
+    const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]:visible').first();
+    const rail = confirmButton.locator('xpath=ancestor::*[@data-player-seat-anchor][1]');
+    const diceTray = rail.locator('[data-testid="dicethrone-2d-dice-tray"]:visible').first();
     await expectNoCentralBonusDicePresentation(page);
     await expect(diceTray).toBeVisible({ timeout: 10000 });
     await expect(confirmButton).toBeVisible({ timeout: 10000 });
@@ -189,8 +190,7 @@ export const settleCurrentBonusDice = async (
     options: RightTrayBonusDiceOptions,
 ): Promise<void> => {
     await expectRightTrayBonusDiceConfirmation(page, readState, options);
-    const { rail } = rightTrayRail(page);
-    const confirmButton = rail.locator('[data-tutorial-id="dice-confirm-button"]').first();
+    const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]:visible').first();
     await confirmButton.click();
 
     await expect.poll(async () => {

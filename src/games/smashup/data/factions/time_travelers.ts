@@ -114,7 +114,7 @@ export const TIME_TRAVELERS_ACTIONS: ActionCardDef[] = [
         id: 'time_travelers_stasis_field',
         type: 'action',
         subtype: 'ongoing',
-        name: '静滞立场',
+        name: '静滞力场',
         nameEn: 'Stasis Field',
         faction: TIME_TRAVELERS_FACTION,
         ongoingTarget: 'base',

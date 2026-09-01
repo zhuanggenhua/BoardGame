@@ -153,6 +153,14 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             viewAs: '0',
         },
         {
+            id: 'view-book',
+            content: 'game-betrayal:tutorial.basicSetup.steps.viewBook',
+            highlightTarget: 'betrayal-inventory-omen-book-magnify',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
             id: 'use-book',
             content: 'game-betrayal:tutorial.basicSetup.steps.useBook',
             highlightTarget: 'betrayal-inventory-omen-book',
@@ -182,10 +190,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             content: 'game-betrayal:tutorial.basicSetup.steps.rabbitFootResult',
             highlightTarget: 'betrayal-latest-discovery',
             position: 'center',
-            requireAction: true,
-            allowedCommands: [
-                BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            ],
+            infoStep: true,
             advanceOnEvents: [{ type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } }],
             viewAs: '0',
         },

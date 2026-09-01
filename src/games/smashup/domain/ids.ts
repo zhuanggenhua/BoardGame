@@ -338,7 +338,6 @@ export const SMASHUP_FACTION_IMPLEMENTATION_STATUS = {
     [SMASHUP_FACTION_IDS.GI_GERALD]: 'in_progress',
     [SMASHUP_FACTION_IDS.RULERS_OF_THE_COSMOS]: 'in_progress',
     [SMASHUP_FACTION_IDS.PEARL_AND_THE_IMAGES]: 'in_progress',
-    [SMASHUP_FACTION_IDS.FROZEN]: 'in_progress',
 } as const satisfies Partial<Record<SmashUpFactionId, SmashUpFactionImplementationStatus>>;
 
 export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>(

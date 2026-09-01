@@ -77,8 +77,8 @@
 | 预兆/作祟进度条：当前高亮格是已发现预兆数；教程只教玩家如何读取和何时触发检定，设计裁定与规则详情留在 tooltip / 规范 / 测试 | 已补教程 | `basic-setup-and-turn`；隐藏回归入口 `omen-confirmation-and-haunt-risk` | `betrayal-haunt-risk-status`、`betrayal-haunt-risk-progress`、`betrayal-haunt-risk-slot` | `tutorial.test.ts`、`haunt-risk-status.e2e.ts`、`evidence/betrayal-tutorial/39-山屋惊魂-教程-预兆作祟进度条.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` |
 | 持有区与帮助入口都在真实牌桌里，不另造说明页 | 已覆盖 | `basic-setup-and-turn` | `betrayal-inventory-zone`、`betrayal-reference-entry` | `tutorial.test.ts`、`evidence/betrayal-tutorial/03` |
 | 房间牌桌是主视区 | 已覆盖 | `basic-setup-and-turn` | `betrayal-room-board` | `evidence/betrayal-tutorial/03` |
-| 真实移动会消耗移动点，使用兔脚可改骰 | 已覆盖 | `basic-setup-and-turn` | `USE_POSSESSION` -> `MOVE_TO_ROOM` -> `USE_RABBIT_FOOT` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
-| 可探索的盖着房间会真实翻开，并触发事件 / 物品 / 预兆 | 已覆盖 | `basic-setup-and-turn` | `EXPLORE_ROOM` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/11-12` |
+| 事件骰介入时机：先触发事件、点击投掷、看到事件骰；再查看书本牌面、使用书本；之后选择兔脚重掷骰子 | 已覆盖 | `basic-setup-and-turn` | `ROLL_EVENT` -> `betrayal-inventory-omen-book-magnify` -> `USE_POSSESSION` -> `USE_RABBIT_FOOT`；书本牌面查看是只读入口，书本本体使用才扣神志并改用知识 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/10-山屋惊魂-教程-事件骰出现与书本可查看.jpg`、`11-山屋惊魂-教程-书本牌面查看.jpg`、`12-山屋惊魂-教程-书本使用后知识改骰结果.jpg`、`13-15` |
+| 可探索的盖着房间会真实翻开，并触发事件 / 物品 / 预兆 | 已覆盖 | `basic-setup-and-turn` | `EXPLORE_ROOM` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/07-16a` |
 | 预兆承接：玩家能读到刚获得的预兆和本次作祟检定结果，并只点一次 `确认` 继续 | 已补教程 | `basic-setup-and-turn`；隐藏回归入口 `omen-confirmation-and-haunt-risk` | `betrayal-discovery-continue[data-pending-card-resolution-step="1/1"]`、`CARD_RESOLUTION_ACKNOWLEDGED` | `tutorial.test.ts`、`haunt-reveal-discovery-confirmation.e2e.ts`、`evidence/betrayal-tutorial/40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg`、`42-山屋惊魂-教程-确认后回牌桌持有区.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` |
 | 同房间交易规则：同一房间、物品/预兆、双方同意、可任意数量交换且不必等价 | 已覆盖 | `basic-setup-and-turn`；隐藏回归入口 `trade-and-agreement` | 规则书 `Trading`；`TRADE_POSSESSION` 先写入待同意交易，`RESOLVE_TRADE_AGREEMENT` 同意后才结算 | `docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md`、`tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts` |
 | 发起方选择要给出的持有物，并直接点击地图上的同房间队友 token | 已覆盖 | `basic-setup-and-turn`；隐藏回归入口 `trade-and-agreement` | `betrayal-inventory-rope` -> `betrayal-room-occupant-hallway-1` | `tutorial.test.ts`、`evidence/betrayal-tutorial/30-山屋惊魂-教程-交易选择兔脚.jpg`、`31-山屋惊魂-教程-交易选择队友.jpg` |
@@ -115,12 +115,12 @@
 | 属性轨 | 读取当前属性、起始值、死亡端点和重复格位置 | `betrayal-current-traits` | 高频 / 非直觉 | `basic-setup-and-turn / trait-track-reading` | `evidence/betrayal-tutorial/36-山屋惊魂-教程-属性轨读法.jpg`；专项图见 `evidence/betrayal-core-interactions/trait-track-ui/` | 无 |
 | 剩余移动圆牌 | 读取本回合还剩几步 | `betrayal-moves-remaining` | 高频 | `basic-setup-and-turn / moves-remaining` | `evidence/betrayal-tutorial/02` | 无 |
 | 预兆 / 作祟进度 | 读取已发现预兆数和作祟触发状态 | `betrayal-haunt-risk-status`、`betrayal-haunt-risk-progress` | 高频 / 非直觉 | `basic-setup-and-turn`，细节走悬浮提示；预兆专题入口隐藏回归 | `evidence/betrayal-tutorial/39-山屋惊魂-教程-预兆作祟进度条.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` | 无 |
-| 持有区 | 查看与选择物品 / 预兆 | `betrayal-inventory-zone`、`betrayal-inventory-*` | 高频 | `basic-setup-and-turn`；交易和预兆专题入口隐藏回归 | `evidence/betrayal-tutorial/04-07`、`30`、`35` | 无 |
+| 持有区 | 查看与选择物品 / 预兆 | `betrayal-inventory-zone`、`betrayal-inventory-*` | 高频 | `basic-setup-and-turn`；交易和预兆专题入口隐藏回归 | `evidence/betrayal-tutorial/04`、`10-12`、`30`、`35` | 无 |
 | 房间主视区 | 看自己位置、队友、连通房间、探索目标 | `betrayal-room-board`、`betrayal-room-*` | 高频 | `basic-setup-and-turn`、攻击 / 怪物分支 | `evidence/betrayal-tutorial/03`、`09-12`、`22`、`27` | 无 |
 | 观察视角切换 | 点击队友后查看该队友属性 / 状态 | `betrayal-bottom-teammate-*` | 非直觉 | `basic-setup-and-turn / observe-teammate` | `evidence/betrayal-tutorial/37-山屋惊魂-教程-观察队友视角.jpg` | 无 |
 | 聚焦到我的房间 | 从观察队友或拖动画面后回到自己所在房间 | `betrayal-focus-self-room` | 非直觉 | `basic-setup-and-turn / focus-self-room` | `evidence/betrayal-tutorial/38-山屋惊魂-教程-聚焦回自己房间.jpg` | 无 |
-| 发现牌与单次确认 | 处理抽牌、获得、作祟检定等同屏结果，避免把内部记录拆成多个玩家动作 | `betrayal-latest-discovery`、`betrayal-discovery-continue` | 非直觉 | `basic-setup-and-turn`；预兆专题入口隐藏回归 | `evidence/betrayal-tutorial/40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg`、`42-山屋惊魂-教程-确认后回牌桌持有区.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` | 无 |
-| 骰盘 / 随机结算 | 显示骰子、合计、加值、可改骰入口和结果 | `betrayal-recent-roll-panel`、`betrayal-attack-roll-review`、`betrayal-exorcise-roll-review` | 高频 / 非直觉 | `basic-setup-and-turn`、`traitor-path` | `evidence/betrayal-tutorial/13-15`、`20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.jpg`、`55-山屋惊魂-教程-木乃伊攻击骰盘.jpg`；旧杰克截图 `23`、`28` 只作历史参考 | 无 |
+| 发现牌确认 / 自动推进 | 抽牌、获得、作祟检定等需要共同读牌时保留确认；事件骰在玩家主动投掷、书本和兔脚都完成且没有新选择后自动进入伤害分配 | `betrayal-latest-discovery`、`betrayal-discovery-continue`、`betrayal-damage-allocation-panel` | 非直觉 | `basic-setup-and-turn`；预兆专题入口隐藏回归 | 事件链：`evidence/betrayal-tutorial/09-16a`；预兆链：`40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg`、`42-山屋惊魂-教程-确认后回牌桌持有区.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` | 无 |
+| 骰盘 / 随机结算 | 显示骰子、合计、加值、可改骰入口、选中骰子和结果 | `betrayal-recent-roll-panel`、`betrayal-attack-roll-review`、`betrayal-exorcise-roll-review` | 高频 / 非直觉 | `basic-setup-and-turn`、`traitor-path` | `evidence/betrayal-tutorial/13-山屋惊魂-教程-点击兔脚后选择骰子.jpg`、`14-山屋惊魂-教程-兔脚选中改骰高亮.jpg`、`15-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg`、`20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.jpg`、`55-山屋惊魂-教程-木乃伊攻击骰盘.jpg`；旧杰克截图 `23`、`28` 只作历史参考 | 无 |
 | 只读规则 / 剧本入口 | 回看参考卡、英雄目标、叛徒目标、怪物目标 | `betrayal-reference-entry`、`betrayal-open-scenario` | 非直觉 | `basic-setup-and-turn`、`traitor-path` | `evidence/betrayal-tutorial/04`、`18-山屋惊魂-教程-打开木乃伊剧本目标页.jpg`、`44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg`；旧杰克截图 `26` 只作历史参考 | 无 |
 | 交易请求 / 同意 | 选择双方持有物并等待接收方同意 | `betrayal-action-trade`、`betrayal-trade-flow-banner`、`betrayal-trade-agreement-panel` | 高频 / 非直觉 | `basic-setup-and-turn`；交易专题入口隐藏回归 | `evidence/betrayal-tutorial/29-35` | 无 |
 | 作祟目标与特殊行动 | 作祟后按剧本目标执行找真名、学驱逐法术、驱逐木乃伊；叛徒帮助木乃伊完成女孩 + 圣符 / 指环目标；怪物行动按规则移动、攻击和偷取 | `betrayal-open-scenario`、`betrayal-action-use`、`betrayal-room-board`、`betrayal-action-monster*`、`betrayal-mummy-reward-banner` | 非直觉 | `basic-setup-and-turn`、`traitor-path`；专题入口隐藏回归 | `evidence/betrayal-tutorial/17-21`、`45-47`、`49-57` | 当前只承诺默认首剧本「木乃伊横行」；更多剧本仍未承诺 |
@@ -137,6 +137,6 @@
 ## 当前建议
 
 1. 继续保持“真实页面 + 真实命令 + 可见章节不重复”的教程策略，不回退到教程专用壳层。
-   2. 玩家链路截图必须保持游玩顺序：主线是基础行动 -> 属性轨 / 观察 / 聚焦 / 预兆进度 -> 可探索盖着房间 / 发现牌 -> 事件结算 -> 玩家结束初始回合 -> 队友回合 -> 预兆同屏单次确认 -> 再次探索 -> 真实作祟检定 -> 目标改变；叛徒视角是叛徒目标 -> 木乃伊怪物移动 / 攻击 / 偷取 -> 叛徒交付女孩和圣符 -> 木乃伊叛徒终局。
+2. 玩家链路截图必须保持游玩顺序：主线是基础行动 -> 属性轨 / 观察 / 聚焦 / 预兆进度 -> 可探索盖着房间 / 发现牌 -> 事件结算（事件触发、投掷、查看书本牌面、使用书本、兔脚选择骰子、重掷后自动进入伤害分配）-> 玩家结束初始回合 -> 队友回合 -> 预兆同屏单次确认 -> 再次探索 -> 真实作祟检定 -> 目标改变；叛徒视角是叛徒目标 -> 木乃伊怪物移动 / 攻击 / 偷取 -> 叛徒交付女孩和圣符 -> 木乃伊叛徒终局。
 3. 下一轮若扩教程，优先处理更多剧本或旧杰克兼容分支是否翻正为可见教程，不再重复基础移动 / 探索 / 驱逐 / 叛徒交付目标 / 木乃伊怪物行动。
 4. 任何教程新增章节都先补重复机制归并表、玩家因果链、真实锚点与最小 E2E，再扩文案。

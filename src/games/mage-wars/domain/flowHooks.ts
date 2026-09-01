@@ -87,6 +87,27 @@ function allPlayersReady(core: MageWarsCore, readyPlayerIds: string[]): boolean 
     return core.playerOrder.every((playerId) => readyPlayerIds.includes(playerId));
 }
 
+function createPhaseWindowCompletedEvent(
+    playerId: string,
+    phase: MageWarsPhase,
+    readyPlayerIds: string[],
+    sourceCommandType: string,
+    timestamp: number,
+    nextActorId?: string,
+): MageWarsEvent {
+    return {
+        type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+        payload: {
+            playerId,
+            phase,
+            readyPlayerIds,
+            ...(nextActorId ? { nextActorId } : {}),
+        },
+        sourceCommandType,
+        timestamp,
+    };
+}
+
 function updatePhaseControl(
     state: Parameters<NonNullable<FlowHooks<MageWarsCore>['onPhaseExit']>>[0]['state'],
     patch: Partial<MageWarsCore>,
@@ -543,6 +564,7 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
 
         if (phase === 'deployment' || phase === 'initiativeQuickcast') {
             const ready = resolveReadyPlayerIds(state.core, command.playerId);
+            const timestamp = command.timestamp ?? 0;
             if (!allPlayersReady(state.core, ready)) {
                 const nextPlayerId = getOpponentId(state.core, command.playerId);
                 return {
@@ -551,6 +573,14 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                         phaseReadyPlayerIds: ready,
                         phaseActorId: nextPlayerId,
                     }),
+                    events: [createPhaseWindowCompletedEvent(
+                        command.playerId,
+                        phase,
+                        ready,
+                        command.type,
+                        timestamp,
+                        nextPlayerId,
+                    )],
                 };
             }
 
@@ -559,6 +589,13 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                     phaseReadyPlayerIds: [],
                     phaseActorId: state.core.currentPlayerId,
                 }),
+                events: [createPhaseWindowCompletedEvent(
+                    command.playerId,
+                    phase,
+                    ready,
+                    command.type,
+                    timestamp,
+                )],
             };
         }
 

@@ -422,7 +422,7 @@ function HomeV2ReviewsPanel({
 
 function getDescriptionExcerpt(description: string) {
     const normalized = description.replace(/\s+/g, ' ').trim();
-    const firstSentence = normalized.split(/(?<=[。！？!?.])/)[0]?.trim();
+    const firstSentence = normalized.match(/^[\s\S]*?[。！？!?.]/)?.[0]?.trim();
     if (firstSentence && firstSentence.length >= 12) {
         return firstSentence;
     }

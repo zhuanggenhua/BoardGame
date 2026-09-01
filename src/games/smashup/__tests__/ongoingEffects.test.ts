@@ -12,6 +12,7 @@ import {
     registerTrigger,
     registerBaseScoringSuppression,
     registerCardAbilitySuppression,
+    registerDataDrivenOngoingLifecycles,
     registerPodOngoingAliases,
     collectTriggers,
     clearOngoingEffectRegistry,
@@ -159,6 +160,14 @@ describe('持续效果拦截框架', () => {
 
             const ids = getRegisteredOngoingEffectIds();
             expect(ids.protectionIds.has('time_travelers_stasis_field_pod')).toBe(true);
+        });
+
+        test('声明 lifecycle 的持续行动卡不能被手写同 ID 回合边界触发器抢入口', () => {
+            registerTrigger('time_travelers_stasis_field', 'onTurnStart', () => []);
+
+            expect(() => registerDataDrivenOngoingLifecycles()).toThrow(
+                'Ongoing lifecycle trigger for time_travelers_stasis_field::onTurnStart must be data-driven',
+            );
         });
 
         test('同一状态连续查询卡牌压制时复用已计算结果', () => {

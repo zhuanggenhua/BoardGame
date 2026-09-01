@@ -209,6 +209,14 @@ async function expectMageWarsArenaFreeViewport(
         if (!viewportRect || !shellRect || !contentRect) return null;
         const tolerance = 2;
         return {
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight,
+            shellLeft: shellRect.left,
+            shellTop: shellRect.top,
+            shellRight: shellRect.right,
+            shellBottom: shellRect.bottom,
+            shellWidth: shellRect.width,
+            shellHeight: shellRect.height,
             shellRatio: shellRect.width / shellRect.height,
             contentWidth: contentRect.width,
             contentHeight: contentRect.height,
@@ -221,9 +229,18 @@ async function expectMageWarsArenaFreeViewport(
         };
     });
     expect(dragAudit, '竞技场拖拽验收必须能读取视窗和地图内容尺寸').not.toBeNull();
-    expect(dragAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用牌桌地图层').toBeGreaterThan(1.7);
-    expect(dragAudit!.contentWidth, '地图内容必须宽于视窗，拖拽才是在查看大场景').toBeGreaterThan(dragAudit!.viewportWidth);
-    expect(dragAudit!.contentHeight, '地图内容必须高于视窗，拖拽才是在查看大场景').toBeGreaterThan(dragAudit!.viewportHeight);
+    expect(Math.abs(dragAudit!.shellLeft), '竞技场视窗左边必须贴齐屏幕，不能藏在 16:9 安全壳里').toBeLessThanOrEqual(1);
+    expect(Math.abs(dragAudit!.shellTop), '竞技场视窗上边必须贴齐屏幕，不能藏在 16:9 安全壳里').toBeLessThanOrEqual(1);
+    expect(dragAudit!.shellRight, '竞技场视窗右边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(dragAudit!.windowWidth - 1);
+    expect(dragAudit!.shellBottom, '竞技场视窗下边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(dragAudit!.windowHeight - 1);
+    expect(dragAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用整块牌桌地图层').toBeGreaterThan(1.7);
+    expect(dragAudit!.contentWidth, '地图内容宽度不能小于视窗，否则会露出外层黑框').toBeGreaterThanOrEqual(dragAudit!.viewportWidth - 2);
+    expect(dragAudit!.contentHeight, '地图内容高度不能小于视窗，否则会露出外层黑框').toBeGreaterThanOrEqual(dragAudit!.viewportHeight - 2);
+    expect(
+        dragAudit!.contentWidth > dragAudit!.viewportWidth + 2
+        || dragAudit!.contentHeight > dragAudit!.viewportHeight + 2,
+        '地图内容至少一轴必须大于视窗，拖拽才是在查看可移动大场景',
+    ).toBe(true);
     expect(dragAudit!.contentCoversViewport, '拖拽后地图内容仍必须覆盖视窗，不能露出外层黑框').toBe(true);
 
     if (options.dragScreenshotPath) {
@@ -390,8 +407,17 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.document.scrollWidth).toBeLessThanOrEqual(layoutAudit.viewport.width + 2);
     expect(layoutAudit.document.scrollHeight).toBeLessThanOrEqual(layoutAudit.viewport.height + 2);
     expect(layoutAudit.rects.arenaStage, 'arenaStage must render as the draggable map scene').not.toBeNull();
-    expect(layoutAudit.rects.arenaStage!.width, 'arenaStage must be wider than the camera viewport').toBeGreaterThan(layoutAudit.rects.arenaViewport!.width);
-    expect(layoutAudit.rects.arenaStage!.height, 'arenaStage must be taller than the camera viewport').toBeGreaterThan(layoutAudit.rects.arenaViewport!.height);
+    expect(layoutAudit.rects.arenaStage!.width, 'arenaStage must not be narrower than the camera viewport').toBeGreaterThanOrEqual(layoutAudit.rects.arenaViewport!.width - 2);
+    expect(layoutAudit.rects.arenaStage!.height, 'arenaStage must not be shorter than the camera viewport').toBeGreaterThanOrEqual(layoutAudit.rects.arenaViewport!.height - 2);
+    expect(
+        layoutAudit.rects.arenaStage!.width > layoutAudit.rects.arenaViewport!.width + 2
+        || layoutAudit.rects.arenaStage!.height > layoutAudit.rects.arenaViewport!.height + 2,
+        'arenaStage must exceed the camera viewport on at least one axis',
+    ).toBe(true);
+    expect(layoutAudit.rects.arenaViewport!.x, 'arena viewport must start at the screen left edge').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.arenaViewport!.y, 'arena viewport must start at the screen top edge').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.arenaViewport!.width, 'arena viewport must fill the wide desktop width').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 2);
+    expect(layoutAudit.rects.arenaViewport!.height, 'arena viewport must fill the wide desktop height').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 2);
 
     const screenBoundRects = [
         ['board', layoutAudit.rects.board],

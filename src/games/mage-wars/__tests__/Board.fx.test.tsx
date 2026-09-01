@@ -336,14 +336,11 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.queryByTestId('mage-wars-board')).not.toBeNull();
     });
 
-    it('automatically starts the turn from reset without requiring an end-turn click', async () => {
+    it('does not dispatch a local reset advance from the Board mount layer', () => {
         const props = boardProps(undefined, '0', { phase: 'reset' });
         renderBoardWithProviders(<MageWarsBoard {...props} />);
 
-        await waitFor(() => {
-            expect(props.dispatch).toHaveBeenCalledWith(FLOW_COMMANDS.ADVANCE_PHASE, {});
-        });
-        expect(props.dispatch).toHaveBeenCalledTimes(1);
+        expect(props.dispatch).not.toHaveBeenCalledWith(FLOW_COMMANDS.ADVANCE_PHASE, {});
     });
 
     it('plays summon FX when the confirmed online state arrives during reconcile', async () => {
@@ -1192,13 +1189,16 @@ describe('MageWarsBoard browse interactions', () => {
         await waitFor(() => {
             expect(content.style.transform).toContain('translate(80px, 35px)');
         });
+        const scaleBeforeWheel = Number(content.style.transform.match(/scale\(([^)]+)\)/)?.[1] ?? '0');
+        expect(scaleBeforeWheel).toBeGreaterThan(0);
 
         await act(async () => {
             fireEvent.wheel(viewport, { deltaY: -100, clientX: 50, clientY: 50 });
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('scale(1.22');
+            const scaleAfterWheel = Number(content.style.transform.match(/scale\(([^)]+)\)/)?.[1] ?? '0');
+            expect(scaleAfterWheel).toBeGreaterThan(scaleBeforeWheel);
         });
 
         const firstCard = container.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id]');

@@ -108,6 +108,7 @@ type DisneyPromptContext = {
         | 'moveCountersTarget'
         | 'baseDrawCounters'
         | 'baseDrawOwnMinions'
+        | 'baseTempPowerOtherPlayers'
         | 'discardThenDestroyLowPower'
         | 'mode'
         | 'destroyOngoing'
@@ -129,6 +130,8 @@ type DisneyPromptContext = {
     targetMinion?: MinionChoice;
     destinationBaseIndex?: number;
     sourceMinion?: MinionChoice & { counters?: number };
+    sourceCardUid?: string;
+    sourceBaseIndex?: number;
     sourceDefId?: string;
     sourceKind?: 'action' | 'nonAction';
     requireOwnTarget?: boolean;
@@ -707,6 +710,22 @@ function resolvePromptChoice(
             const baseIndex = (value as BaseChoice).baseIndex;
             const count = state.core.bases[baseIndex]?.minions.filter(minion => minion.controller === context.playerId).length ?? 0;
             return { events: buildStandardDrawEvents(state, context.playerId, count, random, timestamp) };
+        }
+        case 'baseTempPowerOtherPlayers': {
+            const baseIndex = (value as BaseChoice).baseIndex;
+            const base = state.core.bases[baseIndex];
+            if (!base) return { events: [] };
+            return {
+                events: base.minions
+                    .filter(minion => minion.controller !== context.playerId)
+                    .map(minion => addTempPower(minion.uid, baseIndex, context.amount ?? -1, context.reason, timestamp, {
+                        sourcePlayerId: context.playerId,
+                        ...(context.sourceCardUid !== undefined ? { sourceCardUid: context.sourceCardUid } : {}),
+                        sourceDefId: context.reason,
+                        sourceControllerId: context.playerId,
+                        sourceBaseIndex: context.sourceBaseIndex,
+                    })),
+            };
         }
         case 'discardThenDestroyLowPower': {
             const cardChoice = value as CardChoice;
@@ -1392,6 +1411,21 @@ function sven(ctx: AbilityContext): AbilityResult {
 }
 
 function elsaTalent(ctx: AbilityContext): AbilityResult {
+    if (ctx.matchState && ctx.targetBaseIndex === undefined) {
+        return runPrompt({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceId: 'frozen_elsa',
+            title: '艾莎：选择基地',
+            kind: 'baseTempPowerOtherPlayers',
+            bases: ctx.state.bases.map((_base, baseIndex) => ({ baseIndex, label: currentBaseName(ctx.state, baseIndex) })),
+            amount: -1,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            reason: 'frozen_elsa',
+        });
+    }
     const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
     const base = ctx.state.bases[baseIndex];
     if (!base) return { events: [] };

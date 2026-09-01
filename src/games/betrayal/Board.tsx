@@ -5907,6 +5907,7 @@ const resolveBetrayalHouseD6Face = (pip: number): number => {
 type RecentRollRerollSelection = {
   promptLabel: string;
   allowedDieIndices?: readonly number[];
+  selectedDieIndex?: number | null;
   getDieActionLabel: (dieIndex: number) => string;
   onSelectDie: (dieIndex: number) => void;
 };
@@ -6402,17 +6403,21 @@ function BetrayalHouseDice3DGroup({
             const targetCircleSize = resolveBetrayalRerollTargetCircleSize(
               target.layout,
             );
+            const isSelectedRerollTarget =
+              rerollSelection.selectedDieIndex === target.dieIndex;
             return (
               <div
                 key={`${roll.id}-reroll-target-${target.dieIndex}`}
                 role="button"
                 tabIndex={0}
+                aria-pressed={isSelectedRerollTarget}
                 aria-label={rerollSelection.getDieActionLabel(target.dieIndex)}
                 title={rerollSelection.getDieActionLabel(target.dieIndex)}
                 data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
                 data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
                 data-reroll-target-source={target.source}
                 data-reroll-target-shape="circle"
+                data-reroll-target-selected={isSelectedRerollTarget ? "true" : "false"}
                 className="group pointer-events-auto absolute outline-none"
                 style={{
                   left:
@@ -6427,7 +6432,7 @@ function BetrayalHouseDice3DGroup({
                   height: `${targetCircleSize}px`,
                   transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
                   transformOrigin: "center center",
-                  clipPath: "circle(50% at 50% 50%)",
+                  borderRadius: "9999px",
                 }}
                 onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
                 onKeyDown={(event) => {
@@ -6440,7 +6445,20 @@ function BetrayalHouseDice3DGroup({
                 <span
                   aria-hidden="true"
                   data-highlight-shape="circle"
-                  className="pointer-events-none absolute inset-0 rounded-full border-2 border-[#f2d27f] bg-[radial-gradient(circle,rgba(242,210,127,0.16),rgba(242,210,127,0.03)_60%,rgba(242,210,127,0)_78%)] shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_18px_rgba(242,210,127,0.28)] transition group-hover:shadow-[0_0_0_1px_rgba(23,16,8,0.96),0_0_22px_rgba(242,210,127,0.38)]"
+                  data-reroll-target-selected-ring={isSelectedRerollTarget ? "true" : "false"}
+                  className="pointer-events-none absolute rounded-full transition"
+                  style={{
+                    inset: isSelectedRerollTarget ? "-7px" : "0",
+                    border: isSelectedRerollTarget
+                      ? "4px solid #fff1a8"
+                      : "2px solid #f2d27f",
+                    background: isSelectedRerollTarget
+                      ? "radial-gradient(circle, rgba(255,241,168,0.28), rgba(255,241,168,0.08) 58%, rgba(255,241,168,0) 76%)"
+                      : "radial-gradient(circle, rgba(242,210,127,0.16), rgba(242,210,127,0.03) 60%, rgba(242,210,127,0) 78%)",
+                    boxShadow: isSelectedRerollTarget
+                      ? "0 0 0 2px rgba(23,16,8,0.96), 0 0 0 7px rgba(255,241,168,0.52), 0 0 30px rgba(255,241,168,0.82), inset 0 0 16px rgba(255,241,168,0.36)"
+                      : "0 0 0 1px rgba(23,16,8,0.96), 0 0 18px rgba(242,210,127,0.28)",
+                  }}
                 />
               </div>
             );
@@ -10406,6 +10424,7 @@ export default function BetrayalBoard({
       ? {
           promptLabel: t("board.inventory.rollRerollItem"),
           allowedDieIndices: selectedCardRecentRollRerollDieIndices,
+          selectedDieIndex: previewState.selectedRollModifierDieIndex,
           getDieActionLabel: (dieIndex: number) =>
             t("board.inventory.rerollDie", { index: dieIndex + 1 }),
           onSelectDie: (dieIndex: number) => {
@@ -10446,17 +10465,6 @@ export default function BetrayalBoard({
     selectedRollModifierCardId,
     selectedRollModifierDieIndex,
   ]);
-  const finalizePendingEventRoll = React.useCallback(() => {
-    const pending = core.pendingEventRollResolution;
-    if (!pending) {
-      return;
-    }
-    dispatchCommand(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL, {
-      rollId: pending.rollId,
-    }, {
-      allowDuringVisualBusy: true,
-    });
-  }, [core.pendingEventRollResolution, dispatchCommand]);
   const rollModifierCardIds = new Set(
     actionInventoryCards
       .filter((card) =>
@@ -12237,40 +12245,54 @@ export default function BetrayalBoard({
     },
     [],
   );
+  const pendingEventRollPlayerId =
+    core.pendingEventRollResolution?.playerId ?? null;
+  const pendingEventRollRequiresAcknowledgement =
+    core.pendingEventRollResolution?.requiresAcknowledgement ?? null;
+  const pendingEventRollRollId =
+    core.pendingEventRollResolution?.rollId ?? null;
   React.useEffect(() => {
-    const pending = core.pendingEventRollResolution;
-    const rollId = core.recentRoll?.id;
+    const rollId = core.recentRoll?.id ?? null;
     const displayKey = coreRecentRollDisplayKey;
+    const tutorialIsTeachingEventRollModifier =
+      isTutorialActive &&
+      (tutorialStep?.id === "view-book" ||
+        tutorialStep?.id === "use-book" ||
+        tutorialStep?.id === "use-rabbit-foot");
     if (
-      viewerPlayerId !== pending?.playerId ||
-      pending?.requiresAcknowledgement !== false ||
+      viewerPlayerId !== pendingEventRollPlayerId ||
+      pendingEventRollRequiresAcknowledgement !== false ||
+      tutorialIsTeachingEventRollModifier ||
       !rollId ||
+      !pendingEventRollRollId ||
       settledRecentRollId !== displayKey ||
-      core.recentRoll?.id !== pending.rollId
+      rollId !== pendingEventRollRollId
     ) {
       return undefined;
     }
     const timer = window.setTimeout(() => {
       if (
-        core.pendingEventRollResolution?.requiresAcknowledgement === false &&
-        core.pendingEventRollResolution.rollId === core.recentRoll?.id
+        pendingEventRollRequiresAcknowledgement === false &&
+        pendingEventRollRollId === rollId
       ) {
         dispatchCommand(
           BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-          { rollId: core.pendingEventRollResolution.rollId },
+          { rollId: pendingEventRollRollId },
           { allowDuringVisualBusy: true },
         );
       }
     }, 1400);
     return () => window.clearTimeout(timer);
   }, [
-    core.pendingEventRollResolution?.playerId,
-    core.pendingEventRollResolution?.requiresAcknowledgement,
-    core.pendingEventRollResolution?.rollId,
     core.recentRoll?.id,
     coreRecentRollDisplayKey,
     dispatchCommand,
+    isTutorialActive,
+    pendingEventRollPlayerId,
+    pendingEventRollRequiresAcknowledgement,
+    pendingEventRollRollId,
     settledRecentRollId,
+    tutorialStep?.id,
     viewerPlayerId,
   ]);
   React.useEffect(() => {

@@ -2074,7 +2074,7 @@ export function parseMageWarsObjectAttackProfiles(
         const rangeKind = resolveObjectAttackRangeKind(segment);
         if (!diceMatch || !actionKind || !rangeKind) continue;
 
-        const nameMatch = /^(?<attackName>[^：]+)：/.exec(segment);
+        const nameMatch = /^([^：]+)：/.exec(segment);
         const range = rangeKind === 'ranged'
             ? parseMageWarsRange(segment)
             : undefined;
@@ -2086,7 +2086,7 @@ export function parseMageWarsObjectAttackProfiles(
             pierce: resolveMageWarsAttackLinePierce(segment),
             strikeCount: resolveMageWarsObjectAttackStrikeCount(segment),
             damageTypes: parseMageWarsDamageTypesFromText(segment),
-            attackName: nameMatch?.groups?.attackName?.trim(),
+            attackName: nameMatch?.[1]?.trim(),
             actionKind,
             rangeKind,
             range,

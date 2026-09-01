@@ -7285,11 +7285,11 @@
       "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
     },
     "time_travelers_stasis_field": {
-      "name": "静滞立场",
+      "name": "静滞力场",
       "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
     },
     "time_travelers_stasis_field_pod": {
-      "name": "静滞立场",
+      "name": "静滞力场",
       "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
     },
     "time_travelers_time_raider": {

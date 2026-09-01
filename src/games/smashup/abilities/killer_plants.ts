@@ -818,7 +818,7 @@ export function registerKillerPlantAbilities(): void {
     });
     // entangled: 有己方随从的基地上的随从不收回可被移动?
     registerProtection('killer_plant_entangled', 'move', killerPlantEntangledChecker);
-    // entangled: 控制者回合开始时消灭本卡
+    // entangled: 到期离场由卡牌定义里的 lifecycle 统一注册，不在能力文件手写回合边界触发。
 
     // weed_eater_pod: 控制者回合开始后获得 +2 力量（通过 metadata 标记 + PowerModifier）
     registerTrigger('killer_plant_weed_eater_pod', 'onTurnStart', killerPlantWeedEaterPodTrigger, {
