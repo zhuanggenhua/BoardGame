@@ -139,14 +139,6 @@ describe('Betrayal 教程配置', () => {
             'confirm-omen-card',
             'omen-confirmation-review',
             'omen-haunt-risk-track',
-            'setup-trade',
-            'choose-trade-item',
-            'choose-trade-target',
-            'choose-trade-return',
-            'send-trade-request',
-            'request-waiting',
-            'accept-trade-request',
-            'trade-review',
             'setup-ready-to-banish',
             'help-entry',
             'haunt-actions',
@@ -182,9 +174,6 @@ describe('Betrayal 教程配置', () => {
         ]);
         expect(manifest?.steps.find((step) => step.id === 'confirm-omen-card')?.allowedCommands).toEqual([
             'ACKNOWLEDGE_CARD_RESOLUTION',
-        ]);
-        expect(manifest?.steps.find((step) => step.id === 'send-trade-request')?.allowedCommands).toEqual([
-            'TRADE_POSSESSION',
         ]);
         expect(manifest?.steps.find((step) => step.id === 'banish-mummy')?.allowedCommands).toEqual([
             'BANISH_MUMMY',
@@ -635,10 +624,14 @@ describe('Betrayal 教程配置', () => {
         const basicSteps = zhCNLocale.tutorial.basicSetup.steps;
         expect(zhCNLocale.tutorial.mainPath.title).toContain('主线教程');
         expect(zhCNLocale.tutorial.mainPath.description).toContain('预兆确认');
+        expect(zhCNLocale.tutorial.mainPath.description).toContain('事件处理');
         expect(zhCNLocale.tutorial.mainPath.description).toContain('驱逐木乃伊');
+        expect(zhCNLocale.tutorial.mainPath.description).not.toContain('交易');
         expect(enLocale.tutorial.mainPath.title).toContain('Main Tutorial');
         expect(enLocale.tutorial.mainPath.description).toContain('omen confirmation');
+        expect(enLocale.tutorial.mainPath.description).toContain('event resolution');
         expect(enLocale.tutorial.mainPath.description).toContain('banishing the Mummy');
+        expect(enLocale.tutorial.mainPath.description).not.toContain('trading');
         expect(zhCNLocale.tutorial.basicSetup.description).toContain('按任意顺序');
         expect(zhCNLocale.tutorial.basicSetup.description).toContain('探索新房间会结束你的回合');
         expect(enLocale.tutorial.basicSetup.description).toContain('in any order');

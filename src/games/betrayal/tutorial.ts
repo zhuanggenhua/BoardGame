@@ -419,7 +419,6 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
                 ? { ...step, id: 'omen-haunt-risk-track' }
                 : step
         )),
-        ...BETRAYAL_TRADE_AND_AGREEMENT.steps,
         ...BETRAYAL_HAUNT_ACTIONS_AND_FINISH.steps,
     ],
 };
