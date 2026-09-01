@@ -6469,7 +6469,7 @@ function BetrayalHouseDice3DGroup({
                     style={{
                       inset: "3px",
                       border: "2px solid #fff1a8",
-                      background: "transparent",
+                      backgroundColor: "transparent",
                       boxShadow:
                         "0 0 0 1px rgba(23,16,8,0.86), 0 0 14px rgba(255,241,168,0.62), inset 0 0 10px rgba(255,241,168,0.18)",
                     }}
