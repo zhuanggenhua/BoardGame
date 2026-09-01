@@ -348,6 +348,8 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
             board: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]')),
             arenaStage: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]')),
             arenaViewport: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]')),
+            hudAnchorLayer: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-hud-anchor-layer"]')),
+            bottomViewportGrid: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]')),
             lifeToggle: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]')),
             selfHud: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]')),
             opponentHud: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]')),
@@ -390,6 +392,13 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
                 scrollHeight: document.documentElement.scrollHeight,
             },
             rects,
+            hudAnchorLayoutSource: document
+                .querySelector<HTMLElement>('[data-testid="mage-wars-hud-anchor-layer"]')
+                ?.getAttribute('data-mage-wars-layout-source') ?? null,
+            bottomGridLayoutSource: document
+                .querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]')
+                ?.getAttribute('data-mage-wars-layout-source') ?? null,
+            legacyScaledHudLayerCount: document.querySelectorAll('[data-mage-wars-layout-source="desktop-scaled"]').length,
             categoryButtons,
             arenaStageCenterDelta,
             lifeToggleLeftGap,
@@ -422,6 +431,8 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     const screenBoundRects = [
         ['board', layoutAudit.rects.board],
         ['arenaViewport', layoutAudit.rects.arenaViewport],
+        ['hudAnchorLayer', layoutAudit.rects.hudAnchorLayer],
+        ['bottomViewportGrid', layoutAudit.rects.bottomViewportGrid],
         ['lifeToggle', layoutAudit.rects.lifeToggle],
         ['selfHud', layoutAudit.rects.selfHud],
         ['opponentHud', layoutAudit.rects.opponentHud],
@@ -445,6 +456,14 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
         expect(rect!.right, `${name} right`).toBeLessThanOrEqual(layoutAudit.viewport.width + 1);
         expect(rect!.bottom, `${name} bottom`).toBeLessThanOrEqual(layoutAudit.viewport.height + 1);
     });
+    expect(layoutAudit.hudAnchorLayoutSource).toBe('viewport-anchored');
+    expect(layoutAudit.bottomGridLayoutSource).toBe('viewport-grid-anchored');
+    expect(layoutAudit.legacyScaledHudLayerCount).toBe(0);
+    expect(layoutAudit.rects.hudAnchorLayer!.x, 'HUD 锚点层必须贴齐屏幕左边，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.hudAnchorLayer!.y, 'HUD 锚点层必须贴齐屏幕顶部，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.hudAnchorLayer!.right, 'HUD 锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 1);
+    expect(layoutAudit.rects.hudAnchorLayer!.bottom, 'HUD 锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
+    expect(layoutAudit.rects.bottomViewportGrid!.bottom, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底边').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
     layoutAudit.categoryButtons.forEach((category) => {
         expect(category.rect, `${category.id} category tab`).not.toBeNull();
         expect(category.rect!.width).toBeGreaterThanOrEqual(44);
@@ -460,12 +479,13 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.lifeToggleLeftGap).not.toBeNull();
     expect(layoutAudit.lifeToggleLeftGap!).toBeGreaterThanOrEqual(0);
     expect(layoutAudit.lifeToggleLeftGap!).toBeLessThanOrEqual(160);
-    const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
-    const desktopScale = Math.min(
-        layoutAudit.viewport.width / 1920,
-        layoutAudit.viewport.height / 1080,
-    );
-    expect(layoutAudit.rects.spellbookShelf!.width).toBeLessThanOrEqual(76.25 * rootFontSize * desktopScale + 4);
+    expect(Math.abs(layoutAudit.rects.selfHud!.bottom - layoutAudit.rects.preparedArea!.bottom)).toBeLessThanOrEqual(3);
+    expect(Math.abs(layoutAudit.rects.spellbookShelf!.bottom - layoutAudit.rects.preparedArea!.bottom)).toBeLessThanOrEqual(3);
+    expect(Math.abs(layoutAudit.rects.firstSpellbookCard!.bottom - layoutAudit.rects.preparedCard!.bottom)).toBeLessThanOrEqual(3);
+    expect(Math.abs(layoutAudit.rects.selfHud!.bottom - layoutAudit.rects.preparedCard!.bottom)).toBeLessThanOrEqual(3);
+    expect(layoutAudit.rects.selfHud!.x).toBeLessThanOrEqual(20);
+    expect(layoutAudit.rects.spellbookShelf!.x).toBeGreaterThanOrEqual(layoutAudit.rects.selfHud!.right - 2);
+    expect(layoutAudit.rects.spellbookShelf!.x - layoutAudit.rects.selfHud!.right).toBeLessThanOrEqual(36);
     expect(layoutAudit.pageRailGap).not.toBeNull();
     expect(layoutAudit.pageRailGap!).toBeGreaterThanOrEqual(0);
     expect(layoutAudit.pageRailGap!).toBeLessThanOrEqual(160);
@@ -991,6 +1011,7 @@ test.describe('Mage Wars foundation runtime board', () => {
             const arenaStage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
             const arenaViewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
             const boardRoot = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+            const hudAnchorLayer = document.querySelector<HTMLElement>('[data-testid="mage-wars-hud-anchor-layer"]');
             const lifeToggle = document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]');
             const arenaImage = document.querySelector<HTMLImageElement>('img[alt="法师战争标准竞技场"]');
             const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
@@ -1126,6 +1147,13 @@ test.describe('Mage Wars foundation runtime board', () => {
                 viewportHeight: window.innerHeight,
                 arenaStage: toRect(arenaStage),
                 arenaViewport: toRect(arenaViewport),
+                hudAnchorLayer: toRect(hudAnchorLayer),
+                bottomViewportGrid: toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]')),
+                hudAnchorLayoutSource: hudAnchorLayer?.getAttribute('data-mage-wars-layout-source') ?? null,
+                bottomGridLayoutSource: document
+                    .querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]')
+                    ?.getAttribute('data-mage-wars-layout-source') ?? null,
+                legacyScaledHudLayerCount: document.querySelectorAll('[data-mage-wars-layout-source="desktop-scaled"]').length,
                 lifeToggle: lifeToggle
                     ? {
                         rect: toRect(lifeToggle),
@@ -1175,6 +1203,11 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.preparedCard).not.toBeNull();
         expect(desktopLayoutAudit.spellbookCard).not.toBeNull();
         expect(desktopLayoutAudit.arenaStage).not.toBeNull();
+        expect(desktopLayoutAudit.hudAnchorLayer).not.toBeNull();
+        expect(desktopLayoutAudit.hudAnchorLayoutSource).toBe('viewport-anchored');
+        expect(desktopLayoutAudit.bottomViewportGrid).not.toBeNull();
+        expect(desktopLayoutAudit.bottomGridLayoutSource).toBe('viewport-grid-anchored');
+        expect(desktopLayoutAudit.legacyScaledHudLayerCount).toBe(0);
         expect(desktopLayoutAudit.lifeToggle).not.toBeNull();
         expect(desktopLayoutAudit.lifeToggle!.pressed).toBe('true');
         expect(desktopLayoutAudit.lifeToggle!.lifeVisible).toBe('true');
@@ -1243,6 +1276,11 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.legalMoveZoneCount).toBeGreaterThan(0);
         expect(desktopLayoutAudit.preparedArea!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 36);
         expect(desktopLayoutAudit.preparedCard!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 44);
+        expect(desktopLayoutAudit.hudAnchorLayer!.x, 'HUD 锚点层必须贴齐屏幕左边，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.y, 'HUD 锚点层必须贴齐屏幕顶部，不能套 16:9 安全壳').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.right, 'HUD 锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
+        expect(desktopLayoutAudit.hudAnchorLayer!.bottom, 'HUD 锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
+        expect(desktopLayoutAudit.bottomViewportGrid!.bottom, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
         expect(desktopLayoutAudit.arenaViewport).not.toBeNull();
         expect(desktopLayoutAudit.arenaViewport!.x, '地图视窗必须贴齐屏幕左边，不能再被 16:9 安全框限制').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 安全框限制').toBeLessThanOrEqual(1);
@@ -1287,13 +1325,16 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(Math.abs(zone.rect!.width - desktopLayoutAudit.arenaStage!.width * 0.25)).toBeLessThanOrEqual(2);
             expect(Math.abs(zone.rect!.height - desktopLayoutAudit.arenaStage!.height / 3)).toBeLessThanOrEqual(2);
         });
-        expect(Math.abs(desktopLayoutAudit.opponentHud!.x - 1648)).toBeLessThanOrEqual(8);
-        expect(Math.abs(desktopLayoutAudit.opponentHud!.y - 70)).toBeLessThanOrEqual(8);
-        expect(Math.abs(desktopLayoutAudit.opponentHud!.width - 248)).toBeLessThanOrEqual(4);
-        expect(Math.abs(desktopLayoutAudit.spellbookCard!.x - 374)).toBeLessThanOrEqual(8);
-        expect(Math.abs(desktopLayoutAudit.spellbookCard!.y - 797)).toBeLessThanOrEqual(8);
-        expect(Math.abs(desktopLayoutAudit.discardPile!.x - 1724)).toBeLessThanOrEqual(10);
-        expect(Math.abs(desktopLayoutAudit.discardPile!.y - 546)).toBeLessThanOrEqual(10);
+        expect(desktopLayoutAudit.opponentHud!.right).toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 36);
+        expect(desktopLayoutAudit.opponentHud!.y).toBeLessThanOrEqual(80);
+        expect(desktopLayoutAudit.selfHud!.x).toBeLessThanOrEqual(20);
+        expect(Math.abs(desktopLayoutAudit.selfHud!.bottom - desktopLayoutAudit.preparedArea!.bottom)).toBeLessThanOrEqual(3);
+        expect(Math.abs(desktopLayoutAudit.spellbookShelf!.bottom - desktopLayoutAudit.preparedArea!.bottom)).toBeLessThanOrEqual(3);
+        expect(Math.abs(desktopLayoutAudit.spellbookCard!.bottom - desktopLayoutAudit.preparedCard!.bottom)).toBeLessThanOrEqual(3);
+        expect(Math.abs(desktopLayoutAudit.selfHud!.bottom - desktopLayoutAudit.preparedCard!.bottom)).toBeLessThanOrEqual(3);
+        expect(desktopLayoutAudit.spellbookShelf!.x).toBeGreaterThanOrEqual(desktopLayoutAudit.selfHud!.right - 2);
+        expect(desktopLayoutAudit.spellbookShelf!.x - desktopLayoutAudit.selfHud!.right).toBeLessThanOrEqual(36);
+        expect(desktopLayoutAudit.discardPile!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 44);
         expect(Math.abs(desktopLayoutAudit.preparedCard!.height - 224)).toBeLessThanOrEqual(2);
         expect(Math.abs(desktopLayoutAudit.spellbookCard!.height - 224)).toBeLessThanOrEqual(2);
         expect(Math.abs(desktopLayoutAudit.preparedCard!.width - 158)).toBeLessThanOrEqual(2);
