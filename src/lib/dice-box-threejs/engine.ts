@@ -31,6 +31,7 @@ export interface DiceBoxStyleProfile {
     cameraZoom?: number;
     strength?: number;
     iterationLimit?: number;
+    projectedLayoutMargin?: number;
 }
 
 export interface DiceBoxDieSkin {
@@ -348,7 +349,7 @@ export class DiceBoxThreeEngine {
             canvas.dataset.skinsReady = skinsReady ? 'true' : 'false';
         }
         if (settled) {
-            this.renderFrame();
+            this.finalizeSettledFrame();
         }
     }
 
@@ -376,6 +377,102 @@ export class DiceBoxThreeEngine {
         const renderer = this.box.renderer as DiceBoxRendererLike | undefined;
         renderer?.clear?.();
         renderer?.render?.(this.box.scene, this.box.camera);
+    }
+
+    private finalizeSettledFrame(): void {
+        this.renderFrame();
+        this.nudgeDiceIntoProjectedMargins();
+    }
+
+    private nudgeDiceIntoProjectedMargins(): void {
+        const margin = this.styleProfile.projectedLayoutMargin ?? 0;
+        const canvas = this.box.renderer?.domElement;
+        const camera = this.box.camera;
+        const canvasWidth = canvas?.clientWidth || canvas?.width || 0;
+        const canvasHeight = canvas?.clientHeight || canvas?.height || 0;
+        if (margin <= 0 || !canvas || !camera || canvasWidth <= 0 || canvasHeight <= 0) return;
+
+        let didNudge = false;
+        for (let pass = 0; pass < 3; pass += 1) {
+            let didNudgeThisPass = false;
+            for (let index = 0; index < this.box.diceList.length; index += 1) {
+                const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+                const layout = this.getProjectedLayout(index, index);
+                if (!die || !layout) continue;
+
+                const width = layout.visualWidth ?? layout.width;
+                const height = layout.visualHeight ?? layout.height;
+                const left = layout.x - width / 2;
+                const right = layout.x + width / 2;
+                const top = layout.y - height / 2;
+                const bottom = layout.y + height / 2;
+                let dx = 0;
+                let dy = 0;
+                if (left < margin) {
+                    dx = margin - left;
+                } else if (right > canvasWidth - margin) {
+                    dx = canvasWidth - margin - right;
+                }
+                if (top < margin) {
+                    dy = margin - top;
+                } else if (bottom > canvasHeight - margin) {
+                    dy = canvasHeight - margin - bottom;
+                }
+                if (Math.abs(dx) < 0.25 && Math.abs(dy) < 0.25) continue;
+                if (!this.translateDieByScreenDelta(die, layout, dx, dy, canvasWidth, canvasHeight)) continue;
+                didNudge = true;
+                didNudgeThisPass = true;
+            }
+            if (!didNudgeThisPass) break;
+        }
+        if (didNudge) {
+            this.renderFrame();
+        }
+    }
+
+    private translateDieByScreenDelta(
+        die: DiceBoxDieWithBody,
+        layout: DiceBoxProjectedLayout,
+        dx: number,
+        dy: number,
+        canvasWidth: number,
+        canvasHeight: number,
+    ): boolean {
+        const camera = this.box.camera;
+        if (!camera) return false;
+
+        const dieDepth = new Vector3(die.position.x, die.position.y, die.position.z).project(camera).z;
+        const from = new Vector3(
+            (layout.x / canvasWidth) * 2 - 1,
+            1 - (layout.y / canvasHeight) * 2,
+            dieDepth,
+        ).unproject(camera);
+        const to = new Vector3(
+            ((layout.x + dx) / canvasWidth) * 2 - 1,
+            1 - ((layout.y + dy) / canvasHeight) * 2,
+            dieDepth,
+        ).unproject(camera);
+        const delta = to.sub(from);
+        if (!Number.isFinite(delta.x) || !Number.isFinite(delta.y) || !Number.isFinite(delta.z)) {
+            return false;
+        }
+
+        const nextPosition = {
+            x: die.position.x + delta.x,
+            y: die.position.y + delta.y,
+            z: die.position.z + delta.z,
+        };
+        this.setVector(die.position, nextPosition);
+        if (die.body) {
+            this.setVector(die.body.position, nextPosition);
+            this.setVector(die.body.velocity, { x: 0, y: 0, z: 0 });
+            this.setVector(die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+            die.body.aabbNeedsUpdate = true;
+            die.body.sleep?.();
+        }
+        die.updateMatrixWorld?.(true);
+        this.box.scene?.updateMatrixWorld?.(true);
+        return true;
     }
 
     getDebugSnapshot(): unknown {
@@ -669,7 +766,7 @@ export class DiceBoxThreeEngine {
         await this.box.roll(createNotation(values));
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
-        this.renderFrame();
+        this.finalizeSettledFrame();
     }
 
     async restoreValues(values: number[]): Promise<void> {
@@ -688,14 +785,18 @@ export class DiceBoxThreeEngine {
         if (indices.length === 0) return;
         const lockedSnapshots = this.captureDieTransforms(lockedIndices);
         this.freezeDice(lockedSnapshots);
+        let shouldFinalize = false;
         try {
             await this.box.reroll(indices);
             this.restoreDieTransforms(lockedSnapshots, true);
             this.applyValues(values, indices, true);
             this.applyCurrentSkins();
-            this.renderFrame();
+            shouldFinalize = true;
         } finally {
             this.restoreDieTransforms(lockedSnapshots, false);
+            if (shouldFinalize) {
+                this.finalizeSettledFrame();
+            }
         }
     }
 
@@ -707,13 +808,13 @@ export class DiceBoxThreeEngine {
     syncValues(values: number[]): void {
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
-        this.renderFrame();
+        this.finalizeSettledFrame();
     }
 
     syncSettledValues(values: number[]): void {
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
-        this.renderFrame();
+        this.finalizeSettledFrame();
     }
 
     previewValues(values: number[], indices?: number[]): void {
@@ -1028,6 +1129,7 @@ export class DiceBoxThreeEngine {
         });
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
+        this.finalizeSettledFrame();
     }
 
     private applyPrimarySkinToDicePreset(): boolean {

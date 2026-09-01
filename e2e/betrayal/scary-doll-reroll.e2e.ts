@@ -200,7 +200,7 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
-    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
+    await expectUnifiedEventRollConfirmButton(page, "返回牌桌");
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -221,7 +221,8 @@ test.describe("山屋惊魂恐怖玩偶重掷完整链路", () => {
       "scary-doll",
     );
     expect(finalState?.usedCardIdsThisTurn).toContain("scary-doll");
-    expect(finalState?.currentExplorer.traits.knowledge).toBe(3);
+    expect(finalState?.pendingEventRollResolution).toBeNull();
+    expect(finalState?.currentExplorer.traits.knowledge).toBe(4);
     expect(finalState?.currentExplorer.traits.speed).toBe(4);
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),

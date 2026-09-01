@@ -46,6 +46,7 @@ import {
 } from './domain/ids';
 import {
     MAGE_WARS_COMMANDS,
+    MAGE_WARS_MAX_PREPARED_SPELLS,
     type MageWarsArenaObjectState,
     type MageWarsCastSpellCommand,
     type MageWarsCore,
@@ -104,6 +105,9 @@ const MAGE_WARS_ARENA_ASSET_WIDTH = 3210;
 const MAGE_WARS_ARENA_ASSET_HEIGHT = 2407;
 const MAGE_WARS_ARENA_WORLD_WIDTH = 1920;
 const MAGE_WARS_ARENA_WORLD_HEIGHT = MAGE_WARS_ARENA_WORLD_WIDTH * (MAGE_WARS_ARENA_ASSET_HEIGHT / MAGE_WARS_ARENA_ASSET_WIDTH);
+const MAGE_WARS_MIN_CAMERA_BOTTOM_UI_INSET = 292;
+const MAGE_WARS_CAMERA_BOTTOM_UI_INSET_RATIO = 0.28;
+const MAGE_WARS_MAX_CAMERA_BOTTOM_UI_INSET_RATIO = 0.45;
 
 type MageWarsMagnifiedPreview = {
     previewRef: CardPreviewRef;
@@ -1770,10 +1774,13 @@ function SpellbookShelf({
         if (!planning) return;
         onSelectedCardIdsChange((current) => {
             const selectedCount = current.filter((id) => id === cardId).length;
-            if (selectedCount > 0 && (selectedCount >= Math.min(copyCount, 2) || current.length >= 2)) {
+            if (selectedCount > 0 && (
+                selectedCount >= Math.min(copyCount, MAGE_WARS_MAX_PREPARED_SPELLS)
+                || current.length >= MAGE_WARS_MAX_PREPARED_SPELLS
+            )) {
                 return current.filter((id) => id !== cardId);
             }
-            if (current.length >= 2) return current;
+            if (current.length >= MAGE_WARS_MAX_PREPARED_SPELLS) return current;
             return [...current, cardId];
         });
     };
@@ -1879,7 +1886,7 @@ function PreparedSpellsDock({
     onInspectCard?: (cardId: number, label?: string) => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    const preparedIds = player.preparedSpellCardIds.slice(0, 2);
+    const preparedIds = player.preparedSpellCardIds.slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
     const canSelectSpell = canAct && canCast && CAST_PHASES.has(phase);
 
     return (
@@ -1896,7 +1903,7 @@ function PreparedSpellsDock({
                 })}
             </div>
             <div className="flex flex-row-reverse justify-end gap-[0.875rem] pl-6 pr-1.5">
-                {[0, 1].map((slot) => (
+                {Array.from({ length: MAGE_WARS_MAX_PREPARED_SPELLS }, (_, slot) => (
                     <PreparedSpellCard
                         key={`${player.id}-prepared-desktop-${slot}`}
                         cardId={preparedIds[slot]}
@@ -1931,6 +1938,7 @@ function TurnStatusDock({
     phase,
     compact = false,
     planSpellCount = 0,
+    planSpellTotal = MAGE_WARS_MAX_PREPARED_SPELLS,
     onPlanSpells,
 }: {
     dispatch: Props['dispatch'];
@@ -1938,6 +1946,7 @@ function TurnStatusDock({
     phase: MageWarsPhase;
     compact?: boolean;
     planSpellCount?: number;
+    planSpellTotal?: number;
     onPlanSpells?: () => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -1946,7 +1955,7 @@ function TurnStatusDock({
     const buttonTestId = planningActionActive ? 'mage-wars-plan-spells' : 'mage-wars-turn-end';
     const tutorialId = planningActionActive ? 'mw-plan-spells' : 'mw-turn-end';
     const actionLabel = planningActionActive
-        ? t('spellbook.planSelected', { count: planSpellCount })
+        ? t('spellbook.planSelected', { count: planSpellCount, total: planSpellTotal })
         : t(resolvePhaseAdvanceActionLabelKey(phase));
 
     return (
@@ -1978,6 +1987,7 @@ function TurnStatusDock({
                 data-tutorial-id={tutorialId}
                 data-main-action-mode={planningActionActive ? 'plan-spells' : 'advance-phase'}
                 data-main-action-phase={phase}
+                data-plan-progress={planningActionActive ? `${planSpellCount}/${planSpellTotal}` : undefined}
             >
                 {actionLabel}
             </button>
@@ -3399,6 +3409,15 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
     const [magnifiedPreview, setMagnifiedPreview] = useState<MageWarsMagnifiedPreview | null>(null);
     const viewport = useRuntimeViewport();
+    const cameraFitInsets = useMemo(() => ({
+        bottom: Math.min(
+            Math.max(
+                MAGE_WARS_MIN_CAMERA_BOTTOM_UI_INSET,
+                Math.round(viewport.height * MAGE_WARS_CAMERA_BOTTOM_UI_INSET_RATIO),
+            ),
+            Math.round(viewport.height * MAGE_WARS_MAX_CAMERA_BOTTOM_UI_INSET_RATIO),
+        ),
+    }), [viewport.height]);
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
     const players = core.playerOrder.map((id) => core.players[id]).filter(Boolean);
@@ -4296,7 +4315,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     initialScale={1}
                     minScale={1}
                     maxScale={2.6}
-                    baseScaleMode="cover"
+                    baseScaleMode="contain"
+                    fitInsets={cameraFitInsets}
                     containerTestId="mage-wars-arena-viewport"
                     contentTestId="mage-wars-arena-viewport-content"
                     scaleTestId="mage-wars-arena-viewport-scale"
@@ -4439,7 +4459,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                                 player={viewingPlayer}
                                 current={viewingPlayer.id === phaseActorId}
                                 self
-                                compact={shouldCompactPlayerHud}
+                                compact
                                 visualDamage={getVisualPlayerDamage(viewingPlayer)}
                                 onInspect={() => handleInspectMage(viewingPlayer)}
                             />
@@ -4466,6 +4486,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                             disabled={!canAdvance}
                             phase={phase}
                             planSpellCount={selectedPlanningSpellCardIds.length}
+                            planSpellTotal={MAGE_WARS_MAX_PREPARED_SPELLS}
                             onPlanSpells={canSubmitSelectedPlanningSpells ? planSelectedSpells : undefined}
                         />
                     </div>

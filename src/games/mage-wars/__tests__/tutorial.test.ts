@@ -188,6 +188,7 @@ describe('mage-wars tutorial', () => {
             'prepare-opponent-spells',
             'prepared-and-hidden',
             'deploy-wolf',
+            'wolf-summoned',
             'rouse-wolf',
             'pass-your-deployment',
             'opponent-deploy',
@@ -227,6 +228,12 @@ describe('mage-wars tutorial', () => {
         expect(rouseWolf?.advanceOnEvents).toContainEqual({
             type: MAGE_WARS_EVENTS.ARENA_OBJECT_ROUSED,
             match: { ownerId: '0' },
+        });
+
+        const wolfSummoned = MageWarsTutorial.steps.find((step) => step.id === 'wolf-summoned');
+        expect(wolfSummoned).toMatchObject({
+            infoStep: true,
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
         });
 
         const passYourDeployment = MageWarsTutorial.steps.find((step) => step.id === 'pass-your-deployment');

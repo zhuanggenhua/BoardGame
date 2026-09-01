@@ -10,30 +10,36 @@ import {
     waitForTestHarness,
 } from '../helpers/common';
 
-const SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial';
+const SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial-flow-sync';
 const INTRO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00-intro-board-and-win.png`;
 const DRAGGED_MAP_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00b-dragged-map-full-viewport.png`;
 const HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/01-read-mage-hud-life-mana-channeling.png`;
 const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-channel-result-mana-increased.png`;
-const PLAN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-plan-spells.png`;
-const SUMMON_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-summon-target-zone-highlight.png`;
-const WOLF_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-roused-wolf-ready.png`;
-const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-opponent-discard-reading.png`;
-const QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-skip-initiative-quickcast.png`;
-const MOVE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-wolf-moved-to-a2.png`;
-const WALL_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-wall-prepared.png`;
-const WALL_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-wall-edge-target-highlight.png`;
-const WALL_CARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-wall-card-on-edge.png`;
-const WALL_LOS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-wall-line-of-sight-and-passage.png`;
-const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-guard-action-dock.png`;
-const GUARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-guard-token-result.png`;
-const HEALING_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-healing-light-action-dock.png`;
-const HEALING_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-healing-target-highlight.png`;
-const HEALING_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-healing-result-life-readout.png`;
-const LIFE_TOGGLE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-life-toggle-all-readouts.png`;
-const RESTORE_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-restore-action-dock.png`;
-const RESTORE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-restore-burn-target-highlight.png`;
-const RESTORE_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/21-restore-burn-removed.png`;
+const PLAN_ONE_OF_TWO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-plan-selected-one-of-two.png`;
+const PLAN_TWO_OF_TWO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-plan-selected-two-of-two-confirm.png`;
+const PREPARED_HIDDEN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-prepared-and-hidden.png`;
+const SUMMON_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-summon-target-zone-highlight.png`;
+const WOLF_SUMMONED_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-wolf-summoned-not-ready.png`;
+const ROUSE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-rouse-target-wolf-highlight.png`;
+const WOLF_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-roused-wolf-ready-and-end-deployment.png`;
+const OPPONENT_DEPLOY_PROMPT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-opponent-deploy-prompt.png`;
+const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-opponent-spell-result-and-discard-reading.png`;
+const OPPONENT_PASS_DEPLOYMENT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-opponent-pass-deployment.png`;
+const QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-skip-initiative-quickcast.png`;
+const MOVE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-wolf-moved-to-a2.png`;
+const WALL_READY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-wall-prepared.png`;
+const WALL_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-wall-edge-target-highlight.png`;
+const WALL_CARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-wall-card-on-edge.png`;
+const WALL_LOS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-wall-line-of-sight-and-passage.png`;
+const GUARD_SOURCE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-guard-action-dock.png`;
+const GUARD_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-guard-token-result.png`;
+const HEALING_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/21-healing-light-action-dock.png`;
+const HEALING_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/22-healing-target-highlight.png`;
+const HEALING_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/23-healing-result-life-readout.png`;
+const LIFE_TOGGLE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/24-life-toggle-all-readouts.png`;
+const RESTORE_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/25-restore-action-dock.png`;
+const RESTORE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/26-restore-burn-target-highlight.png`;
+const RESTORE_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/27-restore-burn-removed.png`;
 
 const GUARD_CLERIC_OBJECT_ID = 'mw-tutorial-guard-cleric';
 const HEALING_CLERIC_OBJECT_ID = 'mw-tutorial-healing-cleric';
@@ -238,15 +244,36 @@ async function setArenaViewportPoseForScreenshot(page: Page): Promise<ArenaViewp
 
         const originalStyle = content.getAttribute('style');
         const transform = content.style.transform || '';
-        const currentScale = Number(transform.match(/scale\(([^)]+)\)/)?.[1] ?? '1');
-        const targetScale = Math.max(0.7, currentScale * 1.12);
         const viewportRect = viewport.getBoundingClientRect();
-        const maxOffsetX = Math.max(0, ((content.offsetWidth * targetScale) - viewportRect.width) / 2);
-        const maxOffsetY = Math.max(0, ((content.offsetHeight * targetScale) - viewportRect.height) / 2);
-        const targetX = -Math.min(180, Math.max(1, maxOffsetX * 0.72));
-        const targetY = -Math.min(120, Math.max(1, maxOffsetY * 0.62));
-
         content.style.transition = 'none';
+        content.style.transform = 'translate(0px, 0px) scale(1)';
+        const baseContentRect = content.getBoundingClientRect();
+        const currentScale = Number(transform.match(/scale\(([^)]+)\)/)?.[1] ?? '1');
+        const minCoverScale = Math.max(
+            (viewportRect.width + 16) / Math.max(1, baseContentRect.width),
+            (viewportRect.height + 16) / Math.max(1, baseContentRect.height),
+        );
+        const targetScale = Math.min(2.6, Math.max(1.08, minCoverScale, currentScale * 1.12));
+        const maxOffsetX = Math.max(0, ((baseContentRect.width * targetScale) - viewportRect.width) / 2);
+        const maxOffsetY = Math.max(0, ((baseContentRect.height * targetScale) - viewportRect.height) / 2);
+        let targetX = -Math.min(180, Math.max(1, maxOffsetX * 0.72));
+        let targetY = -Math.min(120, Math.max(1, maxOffsetY * 0.62));
+
+        content.style.transform = `translate(${targetX}px, ${targetY}px) scale(${targetScale})`;
+        const draggedRect = content.getBoundingClientRect();
+        if (draggedRect.left > viewportRect.left + 2) {
+            targetX -= draggedRect.left - viewportRect.left + 8;
+        }
+        if (draggedRect.right < viewportRect.right - 2) {
+            targetX += viewportRect.right - draggedRect.right + 8;
+        }
+        if (draggedRect.top > viewportRect.top + 2) {
+            targetY -= draggedRect.top - viewportRect.top + 8;
+        }
+        if (draggedRect.bottom < viewportRect.bottom - 2) {
+            targetY += viewportRect.bottom - draggedRect.bottom + 8;
+        }
+
         content.style.transform = `translate(${targetX}px, ${targetY}px) scale(${targetScale})`;
         content.setAttribute('data-e2e-direct-viewport-pose', 'dragged-map-full-viewport');
 
@@ -368,15 +395,23 @@ test.describe('Mage Wars tutorial', () => {
         await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
         await clickTutorialTarget(page, 'mw-spellbook-category-creature');
         await clickTutorialSpellbookCard(page, 2819);
+        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '1/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('1/2');
+        await screenshot(page, PLAN_ONE_OF_TWO_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-spellbook-category-incantation');
         await clickTutorialSpellbookCard(page, 3403);
-        await screenshot(page, PLAN_SCREENSHOT_PATH);
+        await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '2/2');
+        await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('2/2');
+        await screenshot(page, PLAN_TWO_OF_TWO_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-plan-spells');
         await waitForTutorialStep(page, 'prepared-and-hidden');
         await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.preparedSpellCardIds).toEqual([
             2819,
             3403,
         ]);
+        await expect(page.locator('[data-tutorial-id="mw-prepared-card-2819"]')).toBeVisible({ timeout: 10_000 });
+        await expect(page.locator('[data-tutorial-id="mw-prepared-card-3403"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, PREPARED_HIDDEN_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'deploy-wolf');
@@ -384,15 +419,20 @@ test.describe('Mage Wars tutorial', () => {
         await expect(page.locator('[data-tutorial-id="mw-zone-a3"][data-legal-target-zone="true"]')).toBeVisible({ timeout: 10_000 });
         await screenshot(page, SUMMON_TARGET_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-zone-a3');
-        await waitForTutorialStep(page, 'rouse-wolf');
+        await waitForTutorialStep(page, 'wolf-summoned');
         await expect.poll(async () => {
             const state = await readMageWarsState(page);
             const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
             return { zoneId: wolf?.zoneId ?? null, actionReady: wolf?.actionReady ?? null };
         }, { timeout: 15_000 }).toEqual({ zoneId: 'a3', actionReady: false });
+        await expect(page.locator('[data-tutorial-id="mw-field-object-2819"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, WOLF_SUMMONED_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
 
+        await waitForTutorialStep(page, 'rouse-wolf');
         await clickTutorialTarget(page, 'mw-prepared-card-3403');
         await expect(page.locator('[data-tutorial-id="mw-field-object-2819"][data-field-card-role="target"]')).toBeVisible({ timeout: 10_000 });
+        await screenshot(page, ROUSE_TARGET_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-field-object-2819');
         await waitForTutorialStep(page, 'pass-your-deployment', 45_000);
         await expect.poll(async () => {
@@ -425,6 +465,7 @@ test.describe('Mage Wars tutorial', () => {
             phase: 'deployment',
             phaseActorId: '1',
         });
+        await screenshot(page, OPPONENT_DEPLOY_PROMPT_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'opponent-attack-spell');
@@ -459,6 +500,7 @@ test.describe('Mage Wars tutorial', () => {
             phase: 'initiativeQuickcast',
             phaseActorId: '0',
         });
+        await screenshot(page, OPPONENT_PASS_DEPLOYMENT_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'skip-initiative-quickcast', 45_000);

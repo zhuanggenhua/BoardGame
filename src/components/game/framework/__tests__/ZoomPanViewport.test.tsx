@@ -124,6 +124,33 @@ describe('ZoomPanViewport', () => {
         });
     });
 
+    it('can fit the default camera inside provided content insets', async () => {
+        render(
+            <ZoomPanViewport
+                initialScale={1}
+                minScale={1}
+                maxScale={3}
+                baseScaleMode="contain"
+                fitInsets={{ bottom: 100 }}
+                containerTestId="viewport"
+                contentTestId="content"
+            >
+                <div>map</div>
+            </ZoomPanViewport>,
+        );
+
+        const viewport = screen.getByTestId('viewport');
+        const content = screen.getByTestId('content');
+        mockElementBox(viewport, { width: 400, height: 300 });
+        mockElementBox(content, { width: 400, height: 300 });
+        await refreshMeasuredSizes();
+
+        await waitFor(() => {
+            expect(content.style.transform).toContain('translate(0px, -50px)');
+            expect(content.style.transform).toContain('scale(0.666');
+        });
+    });
+
     it('only handles the same pan target instruction once', async () => {
         const { rerender } = render(
             <ZoomPanViewport

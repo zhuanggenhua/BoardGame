@@ -189,25 +189,30 @@ async function expectMageWarsArenaFreeViewport(
     await expect(viewport).toBeVisible({ timeout: 5_000 });
     await expect(content).toBeVisible({ timeout: 5_000 });
 
-    const beforeTransform = await content.evaluate((element) => (element as HTMLElement).style.transform);
-    const box = await viewport.boundingBox();
-    expect(box, '竞技场自由视窗必须有可操作区域').not.toBeNull();
-    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box!.x + box!.width / 2 + 120, box!.y + box!.height / 2 + 60, { steps: 4 });
-    await page.mouse.up();
-    await expect.poll(async () => content.evaluate((element) => (element as HTMLElement).style.transform))
-        .not.toBe(beforeTransform);
-
-    const dragAudit = await page.evaluate(() => {
+    const defaultAudit = await page.evaluate(() => {
         const viewportElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
         const shellElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-shell"]');
         const contentElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        const bottomGridElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]');
+        const arenaZones = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]'));
         const viewportRect = viewportElement?.getBoundingClientRect();
         const shellRect = shellElement?.getBoundingClientRect();
         const contentRect = contentElement?.getBoundingClientRect();
+        const bottomGridRect = bottomGridElement?.getBoundingClientRect();
         if (!viewportRect || !shellRect || !contentRect) return null;
         const tolerance = 2;
+        const zoneDetails = arenaZones.map((zone) => {
+            const rect = zone.getBoundingClientRect();
+            return {
+                zoneId: zone.getAttribute('data-testid')?.replace('mage-wars-arena-zone-', '') ?? '',
+                insideViewport: rect.left >= viewportRect.left - tolerance
+                    && rect.top >= viewportRect.top - tolerance
+                    && rect.right <= viewportRect.right + tolerance
+                    && rect.bottom <= viewportRect.bottom + tolerance,
+                aboveBottomUi: !bottomGridRect || rect.bottom <= bottomGridRect.top + tolerance,
+            };
+        });
+        const scaleMatch = contentElement.style.transform.match(/scale\(([^)]+)\)/);
         return {
             windowWidth: window.innerWidth,
             windowHeight: window.innerHeight,
@@ -220,6 +225,57 @@ async function expectMageWarsArenaFreeViewport(
             shellRatio: shellRect.width / shellRect.height,
             contentWidth: contentRect.width,
             contentHeight: contentRect.height,
+            contentRatio: contentRect.width / contentRect.height,
+            viewportWidth: viewportRect.width,
+            viewportHeight: viewportRect.height,
+            transform: contentElement.style.transform,
+            scale: scaleMatch ? Number(scaleMatch[1]) : 1,
+            zoneIds: zoneDetails.map((zone) => zone.zoneId).sort(),
+            zonesOutsideViewport: zoneDetails.filter((zone) => !zone.insideViewport).map((zone) => zone.zoneId),
+            zonesBehindBottomUi: zoneDetails.filter((zone) => !zone.aboveBottomUi).map((zone) => zone.zoneId),
+        };
+    });
+    expect(defaultAudit, '默认地图验收必须能读取视窗、地图和区域尺寸').not.toBeNull();
+    expect(Math.abs(defaultAudit!.shellLeft), '竞技场视窗左边必须贴齐屏幕，不能藏在 16:9 内框里').toBeLessThanOrEqual(1);
+    expect(Math.abs(defaultAudit!.shellTop), '竞技场视窗上边必须贴齐屏幕，不能藏在 16:9 内框里').toBeLessThanOrEqual(1);
+    expect(defaultAudit!.shellRight, '竞技场视窗右边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(defaultAudit!.windowWidth - 1);
+    expect(defaultAudit!.shellBottom, '竞技场视窗下边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(defaultAudit!.windowHeight - 1);
+    expect(defaultAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用整块牌桌地图层').toBeGreaterThan(1.7);
+    expect(Math.abs(defaultAudit!.contentRatio - 4 / 3), '默认地图必须保持正式竞技场比例').toBeLessThanOrEqual(0.01);
+    expect(defaultAudit!.zoneIds).toEqual(['a1', 'a2', 'a3', 'b1', 'b2', 'b3', 'c1', 'c2', 'c3', 'd1', 'd2', 'd3']);
+    expect(defaultAudit!.zonesOutsideViewport, '默认缩放必须让 12 个正式区域都在真实视口内').toEqual([]);
+    expect(defaultAudit!.zonesBehindBottomUi, '默认缩放必须让 12 个正式区域不被底部玩家状态、法术书牌列和计划区遮住').toEqual([]);
+
+    await viewport.hover();
+    for (let wheelIndex = 0; wheelIndex < 14; wheelIndex += 1) {
+        await page.mouse.wheel(0, -240);
+    }
+    await expect.poll(async () => content.evaluate((element) => {
+        const transform = (element as HTMLElement).style.transform;
+        const match = transform.match(/scale\(([^)]+)\)/);
+        return match ? Number(match[1]) : 1;
+    })).toBeGreaterThan(defaultAudit!.scale);
+
+    const beforeDragTransform = await content.evaluate((element) => (element as HTMLElement).style.transform);
+    const box = await viewport.boundingBox();
+    expect(box, '竞技场自由视窗必须有可操作区域').not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width / 2 + 120, box!.y + box!.height / 2 + 60, { steps: 4 });
+    await page.mouse.up();
+    await expect.poll(async () => content.evaluate((element) => (element as HTMLElement).style.transform))
+        .not.toBe(beforeDragTransform);
+
+    const zoomedDragAudit = await page.evaluate(() => {
+        const viewportElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const contentElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        const viewportRect = viewportElement?.getBoundingClientRect();
+        const contentRect = contentElement?.getBoundingClientRect();
+        if (!viewportRect || !contentRect) return null;
+        const tolerance = 2;
+        return {
+            contentWidth: contentRect.width,
+            contentHeight: contentRect.height,
             viewportWidth: viewportRect.width,
             viewportHeight: viewportRect.height,
             contentCoversViewport: contentRect.left <= viewportRect.left + tolerance
@@ -228,35 +284,15 @@ async function expectMageWarsArenaFreeViewport(
                 && contentRect.bottom >= viewportRect.bottom - tolerance,
         };
     });
-    expect(dragAudit, '竞技场拖拽验收必须能读取视窗和地图内容尺寸').not.toBeNull();
-    expect(Math.abs(dragAudit!.shellLeft), '竞技场视窗左边必须贴齐屏幕，不能藏在 16:9 内框里').toBeLessThanOrEqual(1);
-    expect(Math.abs(dragAudit!.shellTop), '竞技场视窗上边必须贴齐屏幕，不能藏在 16:9 内框里').toBeLessThanOrEqual(1);
-    expect(dragAudit!.shellRight, '竞技场视窗右边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(dragAudit!.windowWidth - 1);
-    expect(dragAudit!.shellBottom, '竞技场视窗下边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(dragAudit!.windowHeight - 1);
-    expect(dragAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用整块牌桌地图层').toBeGreaterThan(1.7);
-    expect(dragAudit!.contentWidth, '地图内容宽度不能小于视窗，否则会露出外层黑框').toBeGreaterThanOrEqual(dragAudit!.viewportWidth - 2);
-    expect(dragAudit!.contentHeight, '地图内容高度不能小于视窗，否则会露出外层黑框').toBeGreaterThanOrEqual(dragAudit!.viewportHeight - 2);
-    expect(
-        dragAudit!.contentWidth > dragAudit!.viewportWidth + 2
-        || dragAudit!.contentHeight > dragAudit!.viewportHeight + 2,
-        '地图内容至少一轴必须大于视窗，拖拽才是在查看可移动大场景',
-    ).toBe(true);
-    expect(dragAudit!.contentCoversViewport, '拖拽后地图内容仍必须覆盖视窗，不能露出外层黑框').toBe(true);
+    expect(zoomedDragAudit, '放大拖拽后必须能读取视窗和地图内容尺寸').not.toBeNull();
+    expect(zoomedDragAudit!.contentWidth, '放大后地图内容宽度不能小于视窗，否则会露出外层黑框').toBeGreaterThanOrEqual(zoomedDragAudit!.viewportWidth - 2);
+    expect(zoomedDragAudit!.contentHeight, '放大后地图内容高度不能小于视窗，否则会露出外层黑框').toBeGreaterThanOrEqual(zoomedDragAudit!.viewportHeight - 2);
+    expect(zoomedDragAudit!.contentCoversViewport, '放大拖拽后地图内容仍必须覆盖视窗，不能露出外层黑框').toBe(true);
 
     if (options.dragScreenshotPath) {
         await mkdir(dirname(options.dragScreenshotPath), { recursive: true });
         await page.screenshot({ path: options.dragScreenshotPath, fullPage: false });
     }
-
-    await viewport.hover();
-    for (let wheelIndex = 0; wheelIndex < 8; wheelIndex += 1) {
-        await page.mouse.wheel(0, -240);
-    }
-    await expect.poll(async () => content.evaluate((element) => {
-        const transform = (element as HTMLElement).style.transform;
-        const match = transform.match(/scale\(([^)]+)\)/);
-        return match ? Number(match[1]) : 1;
-    })).toBeGreaterThan(1);
 
     if (!verifySpellbookInspectAfterDrag) {
         const arenaHotZoneAudit = await page.evaluate(() => {
@@ -372,6 +408,20 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
             pressed: document.querySelector<HTMLElement>(`[data-testid="mage-wars-spellbook-category-${id}"]`)
                 ?.getAttribute('aria-pressed') ?? null,
         }));
+        const arenaZones = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]'))
+            .map((zone) => {
+                const rect = toRect(zone);
+                return {
+                    zoneId: zone.getAttribute('data-testid')?.replace('mage-wars-arena-zone-', '') ?? null,
+                    rect,
+                    insideViewport: Boolean(rect
+                        && rect.x >= -2
+                        && rect.y >= -2
+                        && rect.right <= window.innerWidth + 2
+                        && rect.bottom <= window.innerHeight + 2),
+                    aboveBottomUi: Boolean(rects.bottomViewportGrid == null || (rect && rect.bottom <= rects.bottomViewportGrid.y + 2)),
+                };
+            });
         const boardCenterX = rects.board ? rects.board.x + rects.board.width / 2 : null;
         const arenaStageCenterDelta = rects.arenaStage && boardCenterX != null
             ? Math.abs(rects.arenaStage.x + rects.arenaStage.width / 2 - boardCenterX)
@@ -400,6 +450,7 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
                 ?.getAttribute('data-mage-wars-layout-source') ?? null,
             legacyScaledHudLayerCount: document.querySelectorAll('[data-mage-wars-layout-source="desktop-scaled"]').length,
             categoryButtons,
+            arenaZones,
             arenaStageCenterDelta,
             lifeToggleLeftGap,
             pageRailGap,
@@ -416,17 +467,20 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.document.scrollWidth).toBeLessThanOrEqual(layoutAudit.viewport.width + 2);
     expect(layoutAudit.document.scrollHeight).toBeLessThanOrEqual(layoutAudit.viewport.height + 2);
     expect(layoutAudit.rects.arenaStage, 'arenaStage must render as the draggable map scene').not.toBeNull();
-    expect(layoutAudit.rects.arenaStage!.width, 'arenaStage must not be narrower than the camera viewport').toBeGreaterThanOrEqual(layoutAudit.rects.arenaViewport!.width - 2);
-    expect(layoutAudit.rects.arenaStage!.height, 'arenaStage must not be shorter than the camera viewport').toBeGreaterThanOrEqual(layoutAudit.rects.arenaViewport!.height - 2);
-    expect(
-        layoutAudit.rects.arenaStage!.width > layoutAudit.rects.arenaViewport!.width + 2
-        || layoutAudit.rects.arenaStage!.height > layoutAudit.rects.arenaViewport!.height + 2,
-        'arenaStage must exceed the camera viewport on at least one axis',
-    ).toBe(true);
+    expect(layoutAudit.rects.arenaStage!.width, '默认地图内容必须可见').toBeGreaterThan(0);
+    expect(layoutAudit.rects.arenaStage!.height, '默认地图内容必须可见').toBeGreaterThan(0);
+    expect(Math.abs(layoutAudit.rects.arenaStage!.width / layoutAudit.rects.arenaStage!.height - 4 / 3), '默认地图必须保持正式竞技场比例').toBeLessThanOrEqual(0.01);
     expect(layoutAudit.rects.arenaViewport!.x, 'arena viewport must start at the screen left edge').toBeLessThanOrEqual(1);
     expect(layoutAudit.rects.arenaViewport!.y, 'arena viewport must start at the screen top edge').toBeLessThanOrEqual(1);
     expect(layoutAudit.rects.arenaViewport!.width, 'arena viewport must fill the wide desktop width').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 2);
     expect(layoutAudit.rects.arenaViewport!.height, 'arena viewport must fill the wide desktop height').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 2);
+    expect(layoutAudit.rects.arenaStage!.x, '默认地图左边必须在真实视口内').toBeGreaterThanOrEqual(-1);
+    expect(layoutAudit.rects.arenaStage!.y, '默认地图上边必须在真实视口内').toBeGreaterThanOrEqual(-1);
+    expect(layoutAudit.rects.arenaStage!.right, '默认地图右边必须在真实视口内').toBeLessThanOrEqual(layoutAudit.viewport.width + 1);
+    expect(layoutAudit.rects.arenaStage!.bottom, '默认地图底边不能压到底部玩家状态、法术书牌列和计划区').toBeLessThanOrEqual(layoutAudit.rects.bottomViewportGrid!.y + 2);
+    expect(layoutAudit.arenaZones.map((zone) => zone.zoneId).sort()).toEqual(['a1', 'a2', 'a3', 'b1', 'b2', 'b3', 'c1', 'c2', 'c3', 'd1', 'd2', 'd3']);
+    expect(layoutAudit.arenaZones.filter((zone) => !zone.insideViewport).map((zone) => zone.zoneId), '默认缩放必须能看到全部 12 个区域').toEqual([]);
+    expect(layoutAudit.arenaZones.filter((zone) => !zone.aboveBottomUi).map((zone) => zone.zoneId), '默认缩放下区域不能被底部 UI 遮挡').toEqual([]);
 
     const screenBoundRects = [
         ['board', layoutAudit.rects.board],
@@ -882,7 +936,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveText('选 2');
         const planSpellsButton = page.getByTestId('mage-wars-plan-spells');
         await expect(planSpellsButton).toBeVisible({ timeout: 5_000 });
-        await expect(planSpellsButton).toHaveText('确认计划（2张）');
+        await expect(planSpellsButton).toHaveText('确认计划 2/2');
+        await expect(planSpellsButton).toHaveAttribute('data-plan-progress', '2/2');
         await expect(planSpellsButton).toHaveAttribute('data-main-action-mode', 'plan-spells');
         await expect.poll(() => planSpellsButton.evaluate((button) => ({
             whiteSpace: getComputedStyle(button).whiteSpace,
@@ -1166,6 +1221,11 @@ test.describe('Mage Wars foundation runtime board', () => {
                 selfHud: toRect(selfHud),
                 opponentHud: toRect(opponentHud),
                 mageHudHintCards: mageHudHintCards.map((hintCard) => ({
+                    owner: hintCard.closest('[data-testid="mage-wars-mage-hud-self"]')
+                        ? 'self'
+                        : hintCard.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                            ? 'opponent'
+                            : 'unknown',
                     rect: toRect(hintCard),
                     aspectRatio: (() => {
                         const rect = hintCard.getBoundingClientRect();
@@ -1226,8 +1286,13 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.effectDice).toHaveLength(0);
         desktopLayoutAudit.mageHudHintCards.forEach((hintCard) => {
             expect(hintCard.rect).not.toBeNull();
-            expect(hintCard.rect!.height).toBeGreaterThan(150);
-            expect(hintCard.rect!.width).toBeGreaterThan(100);
+            if (hintCard.owner === 'self') {
+                expect(hintCard.rect!.height).toBeGreaterThanOrEqual(64);
+                expect(hintCard.rect!.width).toBeGreaterThanOrEqual(40);
+            } else {
+                expect(hintCard.rect!.height).toBeGreaterThan(150);
+                expect(hintCard.rect!.width).toBeGreaterThan(100);
+            }
             expect(hintCard.aspectRatio).not.toBeNull();
             expect(Math.abs(hintCard.aspectRatio! - mageCardAspectRatio)).toBeLessThanOrEqual(0.003);
             expect(hintCard.previewKind).toBe('card');
@@ -1286,13 +1351,10 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.arenaViewport!.right, '地图视窗必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
         expect(desktopLayoutAudit.arenaViewport!.bottom, '地图视窗必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
-        expect(desktopLayoutAudit.arenaStage!.width, '地图内容宽度不能小于视窗').toBeGreaterThanOrEqual(desktopLayoutAudit.arenaViewport!.width - 2);
-        expect(desktopLayoutAudit.arenaStage!.height, '地图内容高度不能小于视窗').toBeGreaterThanOrEqual(desktopLayoutAudit.arenaViewport!.height - 2);
-        expect(
-            desktopLayoutAudit.arenaStage!.width > desktopLayoutAudit.arenaViewport!.width + 2
-            || desktopLayoutAudit.arenaStage!.height > desktopLayoutAudit.arenaViewport!.height + 2,
-            '地图内容至少一轴必须大于视窗，才能形成真正可拖拽大场景',
-        ).toBe(true);
+        expect(desktopLayoutAudit.arenaStage!.x, '默认地图左边必须在真实视口内').toBeGreaterThanOrEqual(-1);
+        expect(desktopLayoutAudit.arenaStage!.y, '默认地图上边必须在真实视口内').toBeGreaterThanOrEqual(-1);
+        expect(desktopLayoutAudit.arenaStage!.right, '默认地图右边必须在真实视口内').toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth + 1);
+        expect(desktopLayoutAudit.arenaStage!.bottom, '默认地图底边不能压到底部玩家状态、法术书牌列和计划区').toBeLessThanOrEqual(desktopLayoutAudit.bottomViewportGrid!.y + 2);
         expect(Math.abs(
             desktopLayoutAudit.arenaStage!.width / desktopLayoutAudit.arenaStage!.height
             - 4 / 3,
@@ -1316,6 +1378,17 @@ test.describe('Mage Wars foundation runtime board', () => {
             c3: { column: 2, row: 2 },
             d3: { column: 3, row: 2 },
         } as const;
+        expect(desktopLayoutAudit.arenaZones.map((zone) => zone.zoneId).sort()).toEqual(Object.keys(expectedArenaZones).sort());
+        expect(desktopLayoutAudit.arenaZones.filter((zone) => (
+            !zone.rect
+            || zone.rect.x < -2
+            || zone.rect.y < -2
+            || zone.rect.right > desktopLayoutAudit.viewportWidth + 2
+            || zone.rect.bottom > desktopLayoutAudit.viewportHeight + 2
+        )).map((zone) => zone.zoneId), '默认缩放必须能看到全部 12 个区域').toEqual([]);
+        expect(desktopLayoutAudit.arenaZones.filter((zone) => (
+            !zone.rect || zone.rect.bottom > desktopLayoutAudit.bottomViewportGrid!.y + 2
+        )).map((zone) => zone.zoneId), '默认缩放下区域不能被底部玩家状态、法术书牌列和计划区遮挡').toEqual([]);
         desktopLayoutAudit.arenaZones.forEach((zone) => {
             expect(zone.rect).not.toBeNull();
             const expected = zone.zoneId ? expectedArenaZones[zone.zoneId as keyof typeof expectedArenaZones] : undefined;
@@ -1569,15 +1642,14 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '2');
         const planSpellsButton = page.getByTestId('mage-wars-plan-spells');
         await expect(planSpellsButton).toBeVisible({ timeout: 5_000 });
-        await expect(planSpellsButton).toHaveText('确认计划（2张）');
+        await expect(planSpellsButton).toHaveText('确认计划 2/2');
+        await expect(planSpellsButton).toHaveAttribute('data-plan-progress', '2/2');
         await page.screenshot({ path: DESKTOP_2560_SCREENSHOT_PATH, fullPage: false });
 
         await expectMageWarsArenaFreeViewport(page, {
             verifySpellbookInspectAfterDrag: false,
-            dragScreenshotPath: 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged-before-zoom.png',
+            dragScreenshotPath: DESKTOP_2560_DRAGGED_MAP_SCREENSHOT_PATH,
         });
-        await mkdir(dirname(DESKTOP_2560_DRAGGED_MAP_SCREENSHOT_PATH), { recursive: true });
-        await page.screenshot({ path: DESKTOP_2560_DRAGGED_MAP_SCREENSHOT_PATH, fullPage: false });
         await assertNoFatalFrontendErrors([{ label: 'mage-wars-2560x1304', diagnostics }]);
     });
 

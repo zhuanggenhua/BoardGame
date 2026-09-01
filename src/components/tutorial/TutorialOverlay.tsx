@@ -711,8 +711,14 @@ export const TutorialOverlay: React.FC = () => {
     return null;
   }
 
-  // 在智能回合期间不显示遮罩层 - 让智能方静默移动
-  if (currentStep.aiActions && currentStep.aiActions.length > 0) {
+  const isPureAiStep =
+    currentStep.aiActions &&
+    currentStep.aiActions.length > 0 &&
+    !currentStep.requireAction &&
+    !currentStep.infoStep;
+
+  // 纯自动步骤不显示遮罩层；若当前玩家仍需操作/阅读，浮层必须继续出现。
+  if (isPureAiStep) {
     return null;
   }
 

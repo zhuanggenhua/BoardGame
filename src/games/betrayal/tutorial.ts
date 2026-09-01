@@ -143,6 +143,14 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             viewAs: '0',
         },
         {
+            id: 'discovery-card-type',
+            content: 'game-betrayal:tutorial.basicSetup.steps.discoveryCardType',
+            highlightTarget: 'betrayal-latest-discovery',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
             id: 'roll-event',
             content: 'game-betrayal:tutorial.basicSetup.steps.rollEvent',
             highlightTarget: 'betrayal-event-roll-start',
@@ -236,17 +244,6 @@ const BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK: TutorialManifest = {
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION],
-            aiActions: [
-                {
-                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
-                    playerId: '1',
-                },
-                {
-                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
-                    playerId: '2',
-                },
-            ],
-            autoAdvanceAfterAi: false,
             advanceOnEvents: [{ type: 'CARD_RESOLUTION_ACKNOWLEDGED', match: { playerId: '0', remainingCount: 0 } }],
             viewAs: '0',
         },

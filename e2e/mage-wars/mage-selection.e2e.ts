@@ -682,7 +682,8 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     await expect(runtimeSpellbookCard).toHaveAttribute('data-selected-count', '1');
     await runtimeSpellbookCard.click();
     await expect(runtimeSpellbookCard).toHaveAttribute('data-selected-count', '2');
-    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划（2张）');
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划 2/2');
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '2/2');
     await page.getByTestId('mage-wars-plan-spells').click();
     await expect.poll(async () => {
         const state = await readMageWarsState(page);

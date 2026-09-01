@@ -1,0 +1,151 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "确认计划必须显示 x/y 槽位进度，而不是只显示已选张数。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言确认按钮 data-plan-progress 依次为 1/2 和 2/2",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png"
+      ]
+    },
+    {
+      "requirement": "截图 5 到 6 不能跳步；确认计划、准备牌、召唤、未就绪、唤醒目标和唤醒结果必须有连续过渡。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-prepared-and-hidden.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-summon-target-zone-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-wolf-summoned-not-ready.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png"
+      ]
+    },
+    {
+      "requirement": "不能突然完成部署；己方让过、对手部署提示、对手结算和对手让过必须可见。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-opponent-deploy-prompt.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-spell-result-and-discard-reading.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-pass-deployment.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-skip-initiative-quickcast.png"
+      ]
+    },
+    {
+      "requirement": "教程和实际游戏流程同步：聚魔自动结算、计划、部署、目标选择、让过和移动都走正式牌桌入口。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts => 1 passed",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-wolf-moved-to-a2.png"
+      ]
+    },
+    {
+      "requirement": "端到端截图不能隐藏关键玩家流程；只允许隐藏非流程 FAB，不能隐藏 HUD、阶段按钮、出牌、目标、提示卡或地图。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 使用 tutorial-flow-sync 截图链",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-opponent-deploy-prompt.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-skip-initiative-quickcast.png"
+      ]
+    },
+    {
+      "requirement": "地图拖拽后的证据必须证明整张牌桌视口可自由查看，不是一个小框里的百分比位移。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00b-dragged-map-full-viewport.png",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 对拖拽后 viewport 与 content 几何做断言"
+      ]
+    },
+    {
+      "requirement": "无职责的“正式竞技场”标题不能出现在正式牌桌首帧。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言 mage-wars-board 不包含“正式竞技场”",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png"
+      ]
+    },
+    {
+      "requirement": "最终图组中的关键牌面、法术、单位、状态、目标高亮和教程提示均真实渲染，不是空白壳层。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wall-card-on-edge.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-restore-burn-removed.png"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/01-labeled-00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/02-labeled-00b-dragged-map-full-viewport.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/03-labeled-01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/04-labeled-02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/05-labeled-03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/06-labeled-04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/07-labeled-05-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/08-labeled-06-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/09-labeled-07-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/10-labeled-08-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/11-labeled-09-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/12-labeled-10-opponent-deploy-prompt.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/13-labeled-11-opponent-spell-result-and-discard-reading.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/14-labeled-12-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/15-labeled-13-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/16-labeled-14-wolf-moved-to-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/17-labeled-15-wall-prepared.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/18-labeled-16-wall-edge-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/19-labeled-17-wall-card-on-edge.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/20-labeled-18-wall-line-of-sight-and-passage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/21-labeled-19-guard-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/22-labeled-20-guard-token-result.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/23-labeled-21-healing-light-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/24-labeled-22-healing-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/25-labeled-23-healing-result-life-readout.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/26-labeled-24-life-toggle-all-readouts.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/27-labeled-25-restore-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/28-labeled-26-restore-burn-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260901-flow-sync-v2/29-labeled-27-restore-burn-removed.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00b-dragged-map-full-viewport.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-opponent-deploy-prompt.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-spell-result-and-discard-reading.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-wolf-moved-to-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-wall-prepared.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wall-edge-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wall-card-on-edge.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-wall-line-of-sight-and-passage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-guard-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-guard-token-result.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-healing-light-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-healing-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-healing-result-life-readout.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-life-toggle-all-readouts.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-restore-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-restore-burn-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-restore-burn-removed.png"
+  ]
+}

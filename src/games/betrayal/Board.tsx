@@ -5864,6 +5864,7 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
   cameraZoom: 0.9,
   strength: 0.58,
   iterationLimit: 900,
+  projectedLayoutMargin: 18,
   customColorset: {
     name: "betrayal-house-aged-bone",
     foreground: "#2b2418",
@@ -6400,7 +6401,7 @@ function BetrayalHouseDice3DGroup({
           className="pointer-events-none absolute inset-0 z-20"
         >
           {selectableDiceTargets.map((target) => {
-            const targetCircleSize = resolveBetrayalRerollTargetCircleSize(
+            const targetBoxSize = resolveBetrayalRerollTargetCircleSize(
               target.layout,
             );
             const isSelectedRerollTarget =
@@ -6416,7 +6417,7 @@ function BetrayalHouseDice3DGroup({
                 data-testid={`betrayal-house-dice-reroll-target-${target.dieIndex}`}
                 data-reroll-target-rotate-z={target.layout.rotateZ.toFixed(4)}
                 data-reroll-target-source={target.source}
-                data-reroll-target-shape="circle"
+                data-reroll-target-shape="die-face"
                 data-reroll-target-selected={isSelectedRerollTarget ? "true" : "false"}
                 className="group pointer-events-auto absolute outline-none"
                 style={{
@@ -6428,11 +6429,11 @@ function BetrayalHouseDice3DGroup({
                     target.source === "fallback-projection"
                       ? target.fallbackStyle.top
                       : `${target.layout.y}px`,
-                  width: `${targetCircleSize}px`,
-                  height: `${targetCircleSize}px`,
+                  width: `${targetBoxSize}px`,
+                  height: `${targetBoxSize}px`,
                   transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
                   transformOrigin: "center center",
-                  borderRadius: "9999px",
+                  borderRadius: "10px",
                 }}
                 onClick={() => rerollSelection.onSelectDie(target.dieIndex)}
                 onKeyDown={(event) => {
@@ -6444,22 +6445,36 @@ function BetrayalHouseDice3DGroup({
                 </span>
                 <span
                   aria-hidden="true"
-                  data-highlight-shape="circle"
-                  data-reroll-target-selected-ring={isSelectedRerollTarget ? "true" : "false"}
+                  data-reroll-target-candidate-underline="true"
                   className="pointer-events-none absolute rounded-full transition"
                   style={{
-                    inset: isSelectedRerollTarget ? "-7px" : "0",
-                    border: isSelectedRerollTarget
-                      ? "4px solid #fff1a8"
-                      : "2px solid #f2d27f",
-                    background: isSelectedRerollTarget
-                      ? "radial-gradient(circle, rgba(255,241,168,0.28), rgba(255,241,168,0.08) 58%, rgba(255,241,168,0) 76%)"
-                      : "radial-gradient(circle, rgba(242,210,127,0.16), rgba(242,210,127,0.03) 60%, rgba(242,210,127,0) 78%)",
+                    left: "22%",
+                    right: "22%",
+                    bottom: "4px",
+                    height: isSelectedRerollTarget ? "4px" : "3px",
+                    backgroundColor: isSelectedRerollTarget
+                      ? "#fff1a8"
+                      : "rgba(242,210,127,0.78)",
                     boxShadow: isSelectedRerollTarget
-                      ? "0 0 0 2px rgba(23,16,8,0.96), 0 0 0 7px rgba(255,241,168,0.52), 0 0 30px rgba(255,241,168,0.82), inset 0 0 16px rgba(255,241,168,0.36)"
-                      : "0 0 0 1px rgba(23,16,8,0.96), 0 0 18px rgba(242,210,127,0.28)",
+                      ? "0 0 0 1px rgba(23,16,8,0.82), 0 0 12px rgba(255,241,168,0.70)"
+                      : "0 0 0 1px rgba(23,16,8,0.76), 0 0 8px rgba(242,210,127,0.30)",
                   }}
                 />
+                {isSelectedRerollTarget ? (
+                  <span
+                    aria-hidden="true"
+                    data-highlight-shape="die-face"
+                    data-reroll-target-selected-border="true"
+                    className="pointer-events-none absolute rounded-[10px] transition"
+                    style={{
+                      inset: "3px",
+                      border: "2px solid #fff1a8",
+                      background: "transparent",
+                      boxShadow:
+                        "0 0 0 1px rgba(23,16,8,0.86), 0 0 14px rgba(255,241,168,0.62), inset 0 0 10px rgba(255,241,168,0.18)",
+                    }}
+                  />
+                ) : null}
               </div>
             );
           })}
@@ -12898,7 +12913,7 @@ export default function BetrayalBoard({
     resolutionId: string;
   } | null>(null);
   const startPendingDiscoveryGainVisual = React.useCallback(
-    (onComplete: () => void) => {
+    (onComplete?: () => void) => {
     const pendingGain = pendingDiscoveryGainVisualRef.current;
     if (!pendingGain) {
       return false;
@@ -13024,9 +13039,8 @@ export default function BetrayalBoard({
         acknowledge();
         return;
       }
-      if (!startPendingDiscoveryGainVisual(acknowledge)) {
-        acknowledge();
-      }
+      startPendingDiscoveryGainVisual();
+      acknowledge();
       return;
     }
     handleDismissLatestDiscovery();

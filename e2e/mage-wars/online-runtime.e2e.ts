@@ -3170,7 +3170,8 @@ async function selectNamedSpellbookCards(page: Page, names: string[]) {
 
 async function planNamedSpells(page: Page, names: string[]) {
     await selectNamedSpellbookCards(page, names);
-    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`确认计划（${names.length}张）`);
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`确认计划 ${names.length}/2`);
+    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', `${names.length}/2`);
     await page.getByTestId('mage-wars-plan-spells').click({ timeout: 3_000, noWaitAfter: true });
 }
 
@@ -4312,7 +4313,8 @@ test.describe('Mage Wars formal online runtime', () => {
             await match.hostPage.getByRole('button', { name: '全部', exact: true }).click();
             await selectNamedSpellbookCard(match.hostPage, '丛林灰狼');
             await selectNamedSpellbookCard(match.hostPage, '荒野呼唤');
-            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划（2张）');
+            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划 2/2');
+            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '2/2');
             await match.hostPage.getByTestId('mage-wars-plan-spells').click();
 
             await match.guestPage.getByRole('button', { name: '全部', exact: true }).click();
@@ -4390,7 +4392,8 @@ test.describe('Mage Wars formal online runtime', () => {
             ]);
             await match.guestPage.getByRole('button', { name: '全部', exact: true }).click();
             await selectNamedSpellbookCard(match.guestPage, '圣光之柱');
-            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划（1张）');
+            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划 1/2');
+            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '1/2');
             await match.guestPage.getByTestId('mage-wars-plan-spells').click();
             await advanceToReadyFieldObjectAction(match, '0', 'a3', 2819, '丛林灰狼', [
                 { label: 'host', diagnostics: hostDiagnostics },

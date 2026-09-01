@@ -605,6 +605,15 @@ export function createSafeOmenPendingResolutionTutorialCore(): BetrayalCore {
   if (core.pendingCardResolutionQueue.length !== 1) {
     throw new Error("山屋教程预兆确认夹具应只保留一次同屏确认");
   }
+  const [pendingResolution] = core.pendingCardResolutionQueue;
+  if (!pendingResolution || pendingResolution.playerId !== "0") {
+    throw new Error("山屋教程预兆确认夹具必须由触发玩家确认");
+  }
+  core.pendingCardResolutionQueue = [{
+    ...pendingResolution,
+    requiredPlayerIds: ["0"],
+    acknowledgedPlayerIds: [],
+  }];
 
   return core;
 }

@@ -1084,7 +1084,8 @@
         "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
         "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
         "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, connect one of its doorways to the unexplored doorway.",
-        "confirmRoomPlacement": "Rotate the new room so one doorway connects to the unexplored doorway, then choose Confirm Placement. Resolve its text and symbol after placement; your turn ends when the exploration is complete.",
+        "confirmRoomPlacement": "Rotate the new room so one doorway connects to the unexplored doorway, then choose Confirm Placement. After placement, read the room symbol; it decides which kind of discovery card is revealed.",
+        "discoveryCardType": "This room has an Event symbol, so it revealed an Event card. Item symbols reveal Item cards, and Omen symbols reveal Omen cards. Read the card kind and face before resolving its instruction.",
         "rollEvent": "The Event card is public. Click Roll Event to make the Might check on this card; the dice and event result stay on the table for every player to read.",
         "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
         "rabbitFootResult": "Rabbit's Foot has finished the reroll. The Event card and dice were already visible during this public roll; when there is no new choice, the game moves into damage allocation.",
@@ -1093,11 +1094,11 @@
     },
     "omenConfirmation": {
       "title": "Omen: Haunt Roll",
-      "description": "When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
+      "description": "A room with an Omen symbol reveals an Omen card. When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
       "steps": {
-        "setupOmenConfirmation": "When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
+        "setupOmenConfirmation": "A room with an Omen symbol reveals an Omen card. When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
         "hauntRiskTrack": "The highlighted slot shows the number of Omens discovered. The haunt roll uses the total number of Omens held by all players; on a result of 5+, the haunt begins.",
-        "confirmOmenCard": "When you draw an Omen, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins. After this roll is complete, press Confirm to continue.",
+        "confirmOmenCard": "This Omen card came from an Omen symbol. When you draw an Omen, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins. After this roll is complete, press Confirm to continue.",
         "review": "The haunt roll was below 5+; you now possess the Omen, and the haunt has not begun."
       }
     },

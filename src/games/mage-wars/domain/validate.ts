@@ -5,6 +5,7 @@ import {
     type MageWarsConfigSpellCard,
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS } from './commands';
+import { MAGE_WARS_MAX_PREPARED_SPELLS } from './constants';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from './types';
 import {
     areAdjacentZones,
@@ -885,7 +886,7 @@ export function validateCommand(
         case MAGE_WARS_COMMANDS.PLAN_SPELLS: {
             const spellCardIds = command.payload.spellCardIds;
             if (phase !== 'planning') return invalid('wrongPhase');
-            if (spellCardIds.length > 2) return invalid('tooManyPreparedSpells');
+            if (spellCardIds.length > MAGE_WARS_MAX_PREPARED_SPELLS) return invalid('tooManyPreparedSpells');
             if (!spellCardIds.every((spellCardId) => hasSpellbookCard(player, spellCardId))) {
                 return invalid('spellNotInPresetSpellbook');
             }

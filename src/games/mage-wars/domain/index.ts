@@ -153,3 +153,7 @@ export {
     MAGE_WARS_COMMANDS,
     MAGE_WARS_EVENTS,
 } from './types';
+
+export {
+    MAGE_WARS_MAX_PREPARED_SPELLS,
+} from './constants';

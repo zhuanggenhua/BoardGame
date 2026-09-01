@@ -16,6 +16,7 @@ import {
     createMummyMonsterMoveReadyTutorialCore,
     createMummyReadyToBanishTutorialCore,
     createMummyTraitorVictoryReadyTutorialCore,
+    createSafeOmenPendingResolutionTutorialCore,
 } from '../testing/firstScenarioTestUtils';
 
 const collectPlayerText = (value: unknown): string[] => {
@@ -127,6 +128,7 @@ describe('Betrayal 教程配置', () => {
             'move-to-hallway',
             'explore-upper',
             'confirm-room-placement',
+            'discovery-card-type',
             'roll-event',
             'view-book',
             'use-book',
@@ -164,6 +166,8 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'focus-self-room')?.highlightTarget).toBe('betrayal-focus-self-room');
         expect(manifest?.steps.find((step) => step.id === 'haunt-risk-track')?.highlightTarget).toBe('betrayal-haunt-risk-status');
         expect(manifest?.steps.find((step) => step.id === 'confirm-room-placement')?.highlightTarget).toBe('betrayal-room-placement-confirm');
+        expect(manifest?.steps.find((step) => step.id === 'discovery-card-type')?.highlightTarget).toBe('betrayal-latest-discovery');
+        expect(manifest?.steps.find((step) => step.id === 'discovery-card-type')?.infoStep).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'view-book')?.highlightTarget).toBe('betrayal-inventory-omen-book-magnify');
         expect(manifest?.steps.find((step) => step.id === 'view-book')?.infoStep).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
@@ -298,6 +302,12 @@ describe('Betrayal 教程配置', () => {
         const setupStep = manifest?.steps.find((step) => step.id === 'setup-omen-confirmation');
         expect(setupStep?.aiActions).toHaveLength(1);
         expect(setupStep?.aiActions?.[0]?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
+        const omenCore = createSafeOmenPendingResolutionTutorialCore();
+        expect(omenCore.pendingCardResolutionQueue[0]).toMatchObject({
+            playerId: '0',
+            requiredPlayerIds: ['0'],
+            acknowledgedPlayerIds: [],
+        });
 
         expect(manifest?.steps.find((step) => step.id === 'haunt-risk-track')?.highlightTarget).toBe('betrayal-haunt-risk-status');
         expect(manifest?.steps.find((step) => step.id === 'confirm-omen-card')?.highlightTarget).toBe('betrayal-latest-discovery');
@@ -310,11 +320,8 @@ describe('Betrayal 教程配置', () => {
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
             ['ACKNOWLEDGE_CARD_RESOLUTION'],
         ]);
-        expect(actionSteps[0]?.aiActions).toEqual([
-            { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1' },
-            { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '2' },
-        ]);
-        expect(actionSteps[0]?.autoAdvanceAfterAi).toBe(false);
+        expect(actionSteps[0]?.aiActions).toBeUndefined();
+        expect(actionSteps[0]?.autoAdvanceAfterAi).toBeUndefined();
         expect(actionSteps[0]?.advanceOnEvents).toEqual([
             { type: 'CARD_RESOLUTION_ACKNOWLEDGED', match: { playerId: '0', remainingCount: 0 } },
         ]);
@@ -623,6 +630,8 @@ describe('Betrayal 教程配置', () => {
     it('中文教程文案会聚焦玩家能理解的规则动作与结果', () => {
         const officialOmenRuleZh = '抽到预兆卡时，大声朗读，把它放在自己面前并获得。然后进行作祟检定：按所有玩家持有的预兆总数掷骰；若作祟检定结果为 5+，作祟开始。';
         const officialOmenRuleEn = 'When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.';
+        const omenSymbolBridgeZh = '带预兆符号的房间会翻出预兆牌。';
+        const omenSymbolBridgeEn = 'A room with an Omen symbol reveals an Omen card.';
         const basicSteps = zhCNLocale.tutorial.basicSetup.steps;
         expect(zhCNLocale.tutorial.mainPath.title).toContain('主线教程');
         expect(zhCNLocale.tutorial.mainPath.description).toContain('预兆确认');
@@ -634,10 +643,10 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.description).toContain('探索新房间会结束你的回合');
         expect(enLocale.tutorial.basicSetup.description).toContain('in any order');
         expect(enLocale.tutorial.basicSetup.description).toContain('Discovering a new room ends your turn');
-        expect(zhCNLocale.tutorial.omenConfirmation.description).toBe(officialOmenRuleZh);
-        expect(zhCNLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(officialOmenRuleZh);
-        expect(enLocale.tutorial.omenConfirmation.description).toBe(officialOmenRuleEn);
-        expect(enLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(officialOmenRuleEn);
+        expect(zhCNLocale.tutorial.omenConfirmation.description).toBe(`${omenSymbolBridgeZh}${officialOmenRuleZh}`);
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(`${omenSymbolBridgeZh}${officialOmenRuleZh}`);
+        expect(enLocale.tutorial.omenConfirmation.description).toBe(`${omenSymbolBridgeEn} ${officialOmenRuleEn}`);
+        expect(enLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(`${omenSymbolBridgeEn} ${officialOmenRuleEn}`);
         expect(zhCNLocale.tutorial.basicSetup.steps.setupRuntime).toContain('基础回合');
         expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('现在是你的回合');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitsAndSpeed).toContain('速度');
@@ -665,6 +674,11 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('未探索走廊');
         expect(zhCNLocale.tutorial.basicSetup.steps.confirmRoomPlacement).toContain('确认放置');
+        expect(zhCNLocale.tutorial.basicSetup.steps.confirmRoomPlacement).toContain('房间符号');
+        expect(basicSteps.discoveryCardType).toContain('事件符号');
+        expect(basicSteps.discoveryCardType).toContain('事件牌');
+        expect(basicSteps.discoveryCardType).toContain('物品牌');
+        expect(basicSteps.discoveryCardType).toContain('预兆牌');
         expect(basicSteps.rollEvent).not.toContain('兔脚');
         expect(basicSteps.rollEvent).not.toContain('伤害');
         expect(basicSteps.useBook).not.toContain('兔脚');
@@ -682,6 +696,8 @@ describe('Betrayal 教程配置', () => {
         expect(basicSteps.finish).not.toContain('改用知识重新投骰');
         expect(basicSteps.finish).not.toContain('兔脚');
         expect([
+            [basicSteps.confirmRoomPlacement, basicSteps.discoveryCardType],
+            [basicSteps.discoveryCardType, basicSteps.rollEvent],
             [basicSteps.rollEvent, basicSteps.viewBook],
             [basicSteps.viewBook, basicSteps.useBook],
             [basicSteps.useBook, basicSteps.useRabbitFoot],
@@ -692,8 +708,12 @@ describe('Betrayal 教程配置', () => {
             return previousSentences.filter((sentence) => current.includes(sentence));
         })).toEqual([]);
         expect(zhCNLocale.tutorial.omenConfirmation.title).toContain('预兆');
+        expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('预兆符号');
+        expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('翻出预兆牌');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('5+');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('预兆符号');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('翻出的预兆牌');
         expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('点“确认”');
         expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('所有玩家持有的预兆总数');
         expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('5+');

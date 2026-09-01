@@ -1961,6 +1961,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(latestDiscovery).toBeVisible();
     await expect(page.getByTestId("betrayal-discovery-panel-main")).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "预兆符号",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "翻出的预兆牌",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "所有玩家持有的预兆总数",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText("5+");
@@ -2340,10 +2346,29 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(roomPlacementConfirm).toBeEnabled();
     await saveScreenshot(page, STEP_08);
     await roomPlacementConfirm.click();
-    await waitForStep(page, "roll-event", 30000);
+    await waitForStep(page, "discovery-card-type", 30000);
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "事件符号",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "翻出事件牌",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "物品牌",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "预兆牌",
+    );
     await expect(page.getByTestId("betrayal-event-roll-start")).toBeVisible();
     await expect(page.getByTestId("betrayal-event-roll-start")).toBeEnabled();
     await saveScreenshot(page, STEP_09);
+    await clickNext(page);
+    await waitForStep(page, "roll-event", 30000);
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "点击“投掷事件”",
+    );
+    await expect(page.getByTestId("betrayal-event-roll-start")).toBeVisible();
+    await expect(page.getByTestId("betrayal-event-roll-start")).toBeEnabled();
     await page.getByTestId("betrayal-event-roll-start").click();
     await waitForStep(page, "view-book", 30000);
     const tutorialOverlayCard = page.getByTestId("tutorial-overlay-card");
@@ -2715,13 +2740,45 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(rerollTargetDie).toHaveAttribute("role", "button");
     await expect(rerollTargetDie).toHaveAttribute(
       "data-reroll-target-shape",
-      "circle",
+      "die-face",
     );
     const rerollTargetBox = await rerollTargetDie.boundingBox();
     expect(
       Math.round(rerollTargetBox?.width ?? 0),
-      "选骰命中区必须是正圆，不是横竖不等的矩形",
+      "选骰命中区必须贴合骰面比例，不是旁路数字按钮",
     ).toBe(Math.round(rerollTargetBox?.height ?? 0));
+    const readUnselectedRerollTargetVisual = () => rerollTargetDie.evaluate((node) => {
+      const target = node as HTMLElement;
+      const underline = target.querySelector(
+        '[data-reroll-target-candidate-underline="true"]',
+      ) as HTMLElement | null;
+      const selectedBorder = target.querySelector(
+        '[data-reroll-target-selected-border="true"]',
+      ) as HTMLElement | null;
+      const underlineStyle = underline ? getComputedStyle(underline) : null;
+      const targetRect = target.getBoundingClientRect();
+      const underlineRect = underline?.getBoundingClientRect();
+      return {
+        underlineExists: Boolean(underline),
+        selectedBorderExists: Boolean(selectedBorder),
+        targetWidth: targetRect.width,
+        underlineWidth: underlineRect?.width ?? 0,
+        underlineHeight: underlineRect?.height ?? 0,
+        underlineBottom: underlineStyle?.bottom ?? "",
+        underlineBackgroundColor: underlineStyle?.backgroundColor ?? "",
+      };
+    });
+    const unselectedVisual = await readUnselectedRerollTargetVisual();
+    expect(unselectedVisual.underlineExists).toBe(true);
+    expect(
+      unselectedVisual.selectedBorderExists,
+      "未选中骰子不能套完整外圈，只保留底部候选描边",
+    ).toBe(false);
+    expect(
+      unselectedVisual.underlineWidth,
+      "候选底部描边应该短于骰子本体，避免看成外圈",
+    ).toBeLessThan(unselectedVisual.targetWidth * 0.7);
+    expect(unselectedVisual.underlineHeight).toBeGreaterThanOrEqual(2);
     const rerollTargetRotateZ = Number(
       await rerollTargetDie.getAttribute("data-reroll-target-rotate-z"),
     );
@@ -2755,19 +2812,30 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(rerollTargetDie).toHaveAttribute("aria-pressed", "true");
     const readSelectedRerollTargetVisual = () => rerollTargetDie.evaluate((node) => {
       const target = node as HTMLElement;
-      const ring = target.querySelector(
-        '[data-reroll-target-selected-ring="true"]',
+      const underline = target.querySelector(
+        '[data-reroll-target-candidate-underline="true"]',
       ) as HTMLElement | null;
-      const ringStyle = ring ? getComputedStyle(ring) : null;
+      const selectedBorder = target.querySelector(
+        '[data-reroll-target-selected-border="true"]',
+      ) as HTMLElement | null;
+      const selectedBorderStyle = selectedBorder
+        ? getComputedStyle(selectedBorder)
+        : null;
+      const underlineStyle = underline ? getComputedStyle(underline) : null;
       const targetRect = target.getBoundingClientRect();
-      const ringRect = ring?.getBoundingClientRect();
+      const borderRect = selectedBorder?.getBoundingClientRect();
+      const underlineRect = underline?.getBoundingClientRect();
       return {
-        ringExists: Boolean(ring),
+        selectedBorderExists: Boolean(selectedBorder),
+        selectedShape: selectedBorder?.dataset.highlightShape ?? null,
         targetWidth: targetRect.width,
-        ringWidth: ringRect?.width ?? 0,
-        borderTopWidth: ringStyle?.borderTopWidth ?? "",
-        borderTopColor: ringStyle?.borderTopColor ?? "",
-        boxShadow: ringStyle?.boxShadow ?? "",
+        borderWidth: borderRect?.width ?? 0,
+        underlineHeight: underlineRect?.height ?? 0,
+        underlineBackgroundColor: underlineStyle?.backgroundColor ?? "",
+        borderTopWidth: selectedBorderStyle?.borderTopWidth ?? "",
+        borderTopColor: selectedBorderStyle?.borderTopColor ?? "",
+        borderRadius: selectedBorderStyle?.borderTopLeftRadius ?? "",
+        boxShadow: selectedBorderStyle?.boxShadow ?? "",
       };
     });
     await expect
@@ -2775,10 +2843,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         async () => {
           const visual = await readSelectedRerollTargetVisual();
           return (
-            visual.ringExists &&
-            visual.ringWidth > visual.targetWidth + 10 &&
-            Number.parseFloat(visual.borderTopWidth) >= 4 &&
+            visual.selectedBorderExists &&
+            visual.selectedShape === "die-face" &&
+            visual.borderWidth <= visual.targetWidth &&
+            Number.parseFloat(visual.borderTopWidth) >= 2 &&
             visual.borderTopColor === "rgb(255, 241, 168)" &&
+            visual.underlineBackgroundColor === "rgb(255, 241, 168)" &&
             visual.boxShadow.includes("255, 241, 168")
           );
         },
@@ -2787,13 +2857,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       .toBe(true);
     const selectedRerollTargetVisual =
       await readSelectedRerollTargetVisual();
-    expect(selectedRerollTargetVisual.ringExists).toBe(true);
+    expect(selectedRerollTargetVisual.selectedBorderExists).toBe(true);
+    expect(selectedRerollTargetVisual.selectedShape).toBe("die-face");
     expect(
-      selectedRerollTargetVisual.ringWidth,
-      "选中的骰子必须有比普通命中区更醒目的外扩金色圆环",
-    ).toBeGreaterThan(selectedRerollTargetVisual.targetWidth + 10);
-    expect(Number.parseFloat(selectedRerollTargetVisual.borderTopWidth)).toBeGreaterThanOrEqual(4);
+      selectedRerollTargetVisual.borderWidth,
+      "选中描边必须贴在骰子本体内侧，不能外扩成大圆环",
+    ).toBeLessThanOrEqual(selectedRerollTargetVisual.targetWidth);
+    expect(Number.parseFloat(selectedRerollTargetVisual.borderTopWidth)).toBeGreaterThanOrEqual(2);
     expect(selectedRerollTargetVisual.borderTopColor).toBe("rgb(255, 241, 168)");
+    expect(selectedRerollTargetVisual.underlineBackgroundColor).toBe("rgb(255, 241, 168)");
     expect(selectedRerollTargetVisual.boxShadow).toContain("255, 241, 168");
     const rollModifierConfirm = page.getByTestId("betrayal-roll-modifier-confirm");
     await expect(rollModifierConfirm).toBeVisible();

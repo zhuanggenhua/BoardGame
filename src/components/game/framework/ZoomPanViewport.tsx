@@ -21,6 +21,13 @@ interface ElementSize {
     height: number;
 }
 
+export interface ZoomPanViewportFitInsets {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+}
+
 export interface ZoomPanViewportPosition {
     x: number;
     y: number;
@@ -83,6 +90,7 @@ export interface ZoomPanViewportProps {
     minScale?: number;
     maxScale?: number;
     baseScaleMode?: 'contain' | 'cover';
+    fitInsets?: ZoomPanViewportFitInsets;
     dragBoundsPaddingRatioY?: number;
     panBoundsMode?: 'content' | 'free';
     interactionDisabled?: boolean;
@@ -116,6 +124,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     minScale = 0.5,
     maxScale = 3,
     baseScaleMode = 'contain',
+    fitInsets,
     dragBoundsPaddingRatioY = 0,
     panBoundsMode = 'content',
     interactionDisabled = false,
@@ -167,6 +176,16 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const isControlled = controlledViewport != null && onControlledViewportChange != null;
     const activeZoomLevel = controlledViewport?.zoomLevel ?? zoomLevel;
     const activePosition = controlledViewport?.position ?? position;
+    const fitInsetTop = Math.max(0, fitInsets?.top ?? 0);
+    const fitInsetRight = Math.max(0, fitInsets?.right ?? 0);
+    const fitInsetBottom = Math.max(0, fitInsets?.bottom ?? 0);
+    const fitInsetLeft = Math.max(0, fitInsets?.left ?? 0);
+    const fitAvailableWidth = Math.max(1, containerSize.width - fitInsetLeft - fitInsetRight);
+    const fitAvailableHeight = Math.max(1, containerSize.height - fitInsetTop - fitInsetBottom);
+    const fitCenterOffset = {
+        x: (fitInsetLeft - fitInsetRight) / 2,
+        y: (fitInsetTop - fitInsetBottom) / 2,
+    };
 
     const setContainerNode = useCallback((node: HTMLDivElement | null) => {
         containerRef.current = node;
@@ -193,14 +212,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         && contentSize.height > 0
         ? baseScaleMode === 'cover'
             ? Math.max(
-                containerSize.width / contentSize.width,
-                containerSize.height / contentSize.height,
+                fitAvailableWidth / contentSize.width,
+                fitAvailableHeight / contentSize.height,
             )
             : Math.min(
                 1,
                 Math.min(
-                    containerSize.width / contentSize.width,
-                    containerSize.height / contentSize.height,
+                    fitAvailableWidth / contentSize.width,
+                    fitAvailableHeight / contentSize.height,
                 ),
             )
         : 1;
@@ -280,15 +299,15 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
         const scaledWidth = contentSize.width * nextScale;
         const scaledHeight = contentSize.height * nextScale;
-        const maxOffsetX = Math.max(0, (scaledWidth - containerSize.width) / 2);
-        const extraPaddingY = containerSize.height * dragBoundsPaddingRatioY;
-        const maxOffsetY = Math.max(0, (scaledHeight - containerSize.height) / 2 + extraPaddingY);
+        const maxOffsetX = Math.max(0, (scaledWidth - fitAvailableWidth) / 2);
+        const extraPaddingY = fitAvailableHeight * dragBoundsPaddingRatioY;
+        const maxOffsetY = Math.max(0, (scaledHeight - fitAvailableHeight) / 2 + extraPaddingY);
 
         return {
-            x: Math.min(maxOffsetX, Math.max(-maxOffsetX, x)),
-            y: Math.min(maxOffsetY, Math.max(-maxOffsetY, y)),
+            x: fitCenterOffset.x + Math.min(maxOffsetX, Math.max(-maxOffsetX, x - fitCenterOffset.x)),
+            y: fitCenterOffset.y + Math.min(maxOffsetY, Math.max(-maxOffsetY, y - fitCenterOffset.y)),
         };
-    }, [containerSize.height, containerSize.width, contentSize.height, contentSize.width, dragBoundsPaddingRatioY, panBoundsMode, scale]);
+    }, [containerSize.height, containerSize.width, contentSize.height, contentSize.width, dragBoundsPaddingRatioY, fitAvailableHeight, fitAvailableWidth, fitCenterOffset.x, fitCenterOffset.y, panBoundsMode, scale]);
 
     const clampViewportState = useCallback((nextViewport: ZoomPanViewportState): ZoomPanViewportState => {
         const nextZoomLevel = clampZoomLevel(nextViewport.zoomLevel);
@@ -338,21 +357,21 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
     const resolveZoomPosition = useCallback((nextZoomLevel: number, pointer?: TouchPoint) => {
         if (!pointer || !getZoomAnchorPosition) {
-            return activePosition;
+            return clampedPosition;
         }
         const containerRect = containerRef.current?.getBoundingClientRect();
         if (!containerRect || containerRect.width <= 0 || containerRect.height <= 0) {
-            return activePosition;
+            return clampedPosition;
         }
         return getZoomAnchorPosition({
-            position: activePosition,
+            position: clampedPosition,
             zoomLevel: activeZoomLevel,
             nextZoomLevel,
             pointer,
             containerRect,
             coordinateSize,
         });
-    }, [activePosition, activeZoomLevel, coordinateSize, getZoomAnchorPosition]);
+    }, [activeZoomLevel, clampedPosition, coordinateSize, getZoomAnchorPosition]);
 
     useEffect(() => {
         const container = containerRef.current;

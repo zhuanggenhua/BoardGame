@@ -2908,6 +2908,7 @@ describe('MageWarsBoard spellbook planning UI', () => {
 
         const planButton = screen.getByTestId('mage-wars-plan-spells');
         expect(planButton.getAttribute('data-main-action-mode')).toBe('plan-spells');
+        expect(planButton.getAttribute('data-plan-progress')).toBe('2/2');
         expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(planButton);
         expect(screen.getByTestId('mage-wars-desktop-spellbook-shelf')).not.toContainElement(planButton);
         expect(screen.queryByTestId('mage-wars-turn-end')).toBeNull();

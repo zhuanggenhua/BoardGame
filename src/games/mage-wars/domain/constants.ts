@@ -1,0 +1,1 @@
+export const MAGE_WARS_MAX_PREPARED_SPELLS = 2;

@@ -27,8 +27,8 @@ const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/01-幸运硬币重掷前最近
 const COIN_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-幸运硬币只允许选择空白骰重掷.jpg`;
 const COIN_DIE_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-幸运硬币选中空白骰等待确认使用.jpg`;
 const BLANK_REROLL_DAMAGE_SCREENSHOT = `${EVIDENCE_DIR}/04-幸运硬币重投仍空白进入精神伤害.jpg`;
-const DAMAGE_RESOLVED_SCREENSHOT = `${EVIDENCE_DIR}/05-精神伤害收口后仍等待确认最终结果.jpg`;
-const EVENT_ROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-确认最终结果后结算事件分支.jpg`;
+const DAMAGE_RESOLVED_SCREENSHOT = `${EVIDENCE_DIR}/05-精神伤害收口后返回牌桌可见.jpg`;
+const EVENT_ROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-返回牌桌后结算事件分支.jpg`;
 
 function createLuckyCoinRerollCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -185,7 +185,7 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-house-dice-reroll-target-0"),
-    ).toHaveAttribute("data-reroll-target-shape", "circle");
+    ).toHaveAttribute("data-reroll-target-shape", "die-face");
     await expect(
       page.getByTestId("betrayal-house-dice-reroll-target-1"),
       "幸运硬币不能开放非空白骰",
@@ -195,7 +195,7 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-house-dice-reroll-target-2"),
-    ).toHaveAttribute("data-reroll-target-shape", "circle");
+    ).toHaveAttribute("data-reroll-target-shape", "die-face");
     await expectEventRollWorkbenchReadable(page, "幸运硬币选中后", {
       expectedEventFrameIndex: "24",
     });
@@ -266,7 +266,15 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
       playerId: "0",
     });
 
-    await page.getByTestId("betrayal-damage-allocation-trait-sanity").click();
+    await page
+      .getByTestId("betrayal-damage-allocation-trait-sanity-increase")
+      .click();
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-trait-sanity"),
+    ).toHaveAttribute("data-damage-selected-count", "1");
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-trait-sanity-selected-count"),
+    ).toHaveText("1");
     await expect(page.getByTestId("betrayal-damage-allocation-confirm")).toBeEnabled();
     await page.getByTestId("betrayal-damage-allocation-confirm").click();
     await expect(damagePanel).toHaveCount(0);
@@ -296,7 +304,11 @@ test.describe("山屋惊魂幸运硬币重掷完整链路", () => {
       page.getByTestId("betrayal-rabbit-foot-dice"),
       "幸运硬币重掷后选骰层必须清空",
     ).toHaveCount(0);
-    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
+    await expect(page.getByTestId("betrayal-event-roll-finalize")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-roll-waiting")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-discovery-continue")).toHaveText(
+      "返回牌桌",
+    );
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await saveScreenshot(page, DAMAGE_RESOLVED_SCREENSHOT);
 

@@ -310,6 +310,13 @@ export const MageWarsTutorial: TutorialManifest = {
             advanceOnEvents: [{ type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED }],
         },
         {
+            id: 'wolf-summoned',
+            content: 'game-mage-wars:tutorial.steps.wolfSummoned',
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
             id: 'rouse-wolf',
             content: 'game-mage-wars:tutorial.steps.rouseWolf',
             highlightTarget: `mw-prepared-card-${ROUSE_THE_BEAST_CARD_ID}`,

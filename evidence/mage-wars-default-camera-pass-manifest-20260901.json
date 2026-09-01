@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "默认缩放效果接近旧版概览，玩家开局能看见正式 4x3 的全部 12 个区域。",
+      "status": "PASS",
+      "evidence": [
+        "E2E: e2e/mage-wars/foundation-board-runtime.e2e.ts 用例 2560x1304 真实入口验证放大镜悬浮、宽屏布局和地图自由查看通过。",
+        "截图: D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png"
+      ]
+    },
+    {
+      "requirement": "默认地图不被底部玩家属性、法术书牌列和计划区域遮挡，三块底部 UI 按真实视口底边对齐。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言: 12 个区域都在真实视口内，且区域底边均高于底部玩家状态、法术书牌列和计划区。",
+        "AI 图面审计: 默认截图中玩家属性、法术书牌列、确认计划按钮和已计划法术槽共享底部基线。"
+      ]
+    },
+    {
+      "requirement": "不再使用 16:9 内框、安全壳或自造 UI 摆放范围；界面按类似 Unity Canvas 的真实视口九宫格/边缘/中轴锚点对齐。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言: 地图视窗和玩家界面锚点层均贴齐真实屏幕边缘，旧的 desktop-scaled 内框数量为 0。",
+        "规范来源: .spec/knowledge/standards/ui-change-gates.md 开放场景不套比例框；.spec/knowledge/standards/ui-responsive-layout.md 场景层与界面锚点。"
+      ]
+    },
+    {
+      "requirement": "放大后仍能拖拽查看地图，地图内容、格子、实体和热区在同一场景层里移动，拖拽后不露外层黑框。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言: 滚轮放大后缩放值增加，真实鼠标拖拽后 transform 变化，放大拖拽后地图内容覆盖整个视窗。",
+        "截图: D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-20260901-default-camera/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-20260901-default-camera/01-labeled-e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-20260901-default-camera/02-labeled-e2e-desktop-2560x1304-map-dragged.png"
+  ],
+  "rawImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

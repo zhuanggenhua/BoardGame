@@ -27,8 +27,8 @@ const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/01-兔脚重掷前最近投骰
 const RABBIT_FOOT_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-兔脚本体已选中.jpg`;
 const DIE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/03-选择具体骰子高亮.jpg`;
 const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/04-选中骰子等待确认使用.jpg`;
-const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷后统一确认按钮可见.jpg`;
-const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-统一确认后结算.jpg`;
+const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷后结果可见返回牌桌.jpg`;
+const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-返回牌桌后事件结果已应用.jpg`;
 
 function createRabbitFootRerollCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -177,12 +177,12 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expect(rerollTargetDie).toHaveAttribute("role", "button");
     await expect(rerollTargetDie).toHaveAttribute(
       "data-reroll-target-shape",
-      "circle",
+      "die-face",
     );
     const targetBox = await rerollTargetDie.boundingBox();
     expect(
       Math.round(targetBox?.width ?? 0),
-      "选骰命中区必须是贴合骰子的正圆，不是旁路数字按钮",
+      "选骰命中区必须贴合骰面比例，不是旁路数字按钮",
     ).toBe(Math.round(targetBox?.height ?? 0));
     await expectEventRollWorkbenchReadable(page, "兔脚选骰目标高亮后", {
       expectedEventFrameIndex: "24",
@@ -217,7 +217,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await expect(page.getByTestId("betrayal-discovery-detail")).toContainText(
       "获得 1 点知识",
     );
-    await expectUnifiedEventRollConfirmButton(page, "确认 2/3");
+    await expectUnifiedEventRollConfirmButton(page, "返回牌桌");
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
@@ -236,7 +236,8 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     expect(finalState?.recentRoll?.lastRabbitFootRerollDieIndex).toBe(1);
     expect(finalState?.recentRoll?.consumedRabbitFootCardIds).toContain("rope");
     expect(finalState?.usedCardIdsThisTurn).toContain("rope");
-    expect(finalState?.currentExplorer.traits.knowledge).toBe(3);
+    expect(finalState?.pendingEventRollResolution).toBeNull();
+    expect(finalState?.currentExplorer.traits.knowledge).toBe(4);
     expect(finalState?.currentExplorer.traits.speed).toBe(4);
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
