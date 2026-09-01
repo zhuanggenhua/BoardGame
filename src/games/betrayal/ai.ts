@@ -2091,6 +2091,9 @@ function buildBetrayalAiLegalActions(
     if (eventRollStartActions.length > 0) {
         return eventRollStartActions;
     }
+    if (state.core.pendingEventRollStart) {
+        return [];
+    }
 
     const eventRollFinalizationActions = buildEventRollFinalizationActions(validate, state, args.playerId);
     if (eventRollFinalizationActions.length > 0) {

@@ -5,8 +5,9 @@ import { BIG_HERO_6_CARDS } from '../../data/factions/big_hero_6';
 import { FROZEN_CARDS } from '../../data/factions/frozen';
 import { LION_KING_CARDS } from '../../data/factions/lion_king';
 import { MULAN_CARDS } from '../../data/factions/mulan';
+import { moveMinion } from '../../domain/abilityHelpers';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
-import { fireTriggers, getModifiedBaseVp, isMinionProtected } from '../../domain/ongoingEffects';
+import { fireTriggers, getModifiedBaseVp, interceptEvent, isMinionProtected } from '../../domain/ongoingEffects';
 import type { AbilityTag } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { runCommand } from '../testRunner';
@@ -518,6 +519,27 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(skipped.success, skipped.error).toBe(true);
         expect(skipped.finalState.core.players['0'].hand).toEqual([]);
         expect(skipped.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-low-power', 'second-low-power']);
+
+        const pickedResult = invokeRegisteredAbilityContract('frozen_sven', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'sven',
+            defId: 'frozen_sven',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 27,
+        });
+        const picked = respondToPromptOption(
+            { ...pickedResult.matchState!, core: applyEvents(core, pickedResult.events) },
+            option => option.value?.cardUid === 'second-low-power',
+            '斯文回收目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(picked.success, picked.error).toBe(true);
+        expect(picked.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['second-low-power']);
+        expect(picked.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['first-low-power']);
     });
 
     it('冰雪奇缘：你想堆雪人吗必须从牌库和弃牌堆合并候选中选择至多两张', () => {
@@ -636,18 +658,23 @@ describe('迪士尼四派系代表性玩法行为', () => {
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase({
-                defId: 'base_ice_palace',
-                minions: [
-                    makeMinion('anna', 'frozen_anna', '1', 4),
-                ],
-                ongoingActions: [{ uid: 'port', defId: 'frozen_frozen_port', ownerId: '1' }],
-            })],
+            bases: [
+                makeBase({
+                    defId: 'base_ice_palace',
+                    minions: [
+                        makeMinion('anna', 'frozen_anna', '1', 4),
+                    ],
+                    ongoingActions: [{ uid: 'port', defId: 'frozen_frozen_port', ownerId: '1' }],
+                }),
+                makeBase('test_base_2'),
+            ],
         });
         const anna = core.bases[0].minions[0];
 
         expect(isMinionProtected(core, anna, 0, '0', 'affect', { sourceKind: 'action' })).toBe(false);
         expect(isMinionProtected(core, anna, 0, '0', 'move', { sourceKind: 'action' })).toBe(true);
+        expect(interceptEvent(core, moveMinion('anna', 'frozen_anna', 0, 1, 'enemy_move', 48, undefined, { sourcePlayerId: '0' }))).toBeNull();
+        expect(interceptEvent(core, moveMinion('anna', 'frozen_anna', 0, 1, 'own_move', 49, undefined, { sourcePlayerId: '1' }))).toBeUndefined();
 
         const played = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.PLAY_MINION,
@@ -673,6 +700,15 @@ describe('迪士尼四派系代表性玩法行为', () => {
         const protectedAnna = withKristoff.bases[0].minions[0];
         expect(isMinionProtected(withKristoff, protectedAnna, 0, '0', 'affect', { sourceKind: 'action' })).toBe(true);
         expect(isMinionProtected(withKristoff, protectedAnna, 0, '1', 'affect', { sourceKind: 'action' })).toBe(false);
+
+        const withKristoffBoost = makeState({
+            bases: [makeBase('base_arendelle', [
+                makeMinion('friendly-anna', 'frozen_anna', '1', 4),
+                makeMinion('boosted-kristoff', 'frozen_kristoff', '1', 4),
+            ])],
+        });
+        const boostedKristoff = withKristoffBoost.bases[0].minions.find(minion => minion.uid === 'boosted-kristoff');
+        expect(boostedKristoff ? getEffectivePower(withKristoffBoost, boostedKristoff, 0) : undefined).toBe(6);
     });
 
     it('冰雪奇缘：阿伦黛尔只在基地计分 VP 奖励时给最多角色玩家额外 1 VP', () => {

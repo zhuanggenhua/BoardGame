@@ -613,11 +613,14 @@ function executeCommand(
         }
 
         case SU_COMMANDS.REACTION_PASS: {
+            const payload = command.payload && typeof command.payload === 'object'
+                ? command.payload as { reason?: ReactionPassRequestedEvent['payload']['reason'] }
+                : {};
             const event: ReactionPassRequestedEvent = {
                 type: SU_EVENTS.REACTION_PASS_REQUESTED,
                 payload: {
                     playerId: command.playerId,
-                    reason: command.payload.reason,
+                    reason: payload.reason ?? 'player_pass',
                 },
                 sourceCommandType: command.type,
                 timestamp: now,

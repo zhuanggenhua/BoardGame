@@ -989,6 +989,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(imageAudit.images.some((image) => image.alt === '法师战争标准竞技场' && image.rect.width > 0 && image.rect.height > 0)).toBe(true);
         const desktopLayoutAudit = await page.evaluate(() => {
             const arenaStage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+            const arenaViewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
             const boardRoot = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
             const lifeToggle = document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]');
             const arenaImage = document.querySelector<HTMLImageElement>('img[alt="法师战争标准竞技场"]');
@@ -1122,7 +1123,9 @@ test.describe('Mage Wars foundation runtime board', () => {
             });
             return {
                 viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
                 arenaStage: toRect(arenaStage),
+                arenaViewport: toRect(arenaViewport),
                 lifeToggle: lifeToggle
                     ? {
                         rect: toRect(lifeToggle),
@@ -1240,13 +1243,18 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.legalMoveZoneCount).toBeGreaterThan(0);
         expect(desktopLayoutAudit.preparedArea!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 36);
         expect(desktopLayoutAudit.preparedCard!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 44);
-        expect(Math.abs(desktopLayoutAudit.arenaStage!.y - 30)).toBeLessThanOrEqual(4);
-        expect(Math.abs(desktopLayoutAudit.arenaStage!.height - 799)).toBeLessThanOrEqual(6);
-        expect(Math.abs(
-            desktopLayoutAudit.arenaStage!.x
-            + desktopLayoutAudit.arenaStage!.width / 2
-            - desktopLayoutAudit.viewportWidth / 2,
-        )).toBeLessThanOrEqual(2);
+        expect(desktopLayoutAudit.arenaViewport).not.toBeNull();
+        expect(desktopLayoutAudit.arenaViewport!.x, '地图视窗必须贴齐屏幕左边，不能再被 16:9 安全框限制').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 安全框限制').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.arenaViewport!.right, '地图视窗必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
+        expect(desktopLayoutAudit.arenaViewport!.bottom, '地图视窗必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
+        expect(desktopLayoutAudit.arenaStage!.width, '地图内容宽度不能小于视窗').toBeGreaterThanOrEqual(desktopLayoutAudit.arenaViewport!.width - 2);
+        expect(desktopLayoutAudit.arenaStage!.height, '地图内容高度不能小于视窗').toBeGreaterThanOrEqual(desktopLayoutAudit.arenaViewport!.height - 2);
+        expect(
+            desktopLayoutAudit.arenaStage!.width > desktopLayoutAudit.arenaViewport!.width + 2
+            || desktopLayoutAudit.arenaStage!.height > desktopLayoutAudit.arenaViewport!.height + 2,
+            '地图内容至少一轴必须大于视窗，才能形成真正可拖拽大场景',
+        ).toBe(true);
         expect(Math.abs(
             desktopLayoutAudit.arenaStage!.width / desktopLayoutAudit.arenaStage!.height
             - 4 / 3,

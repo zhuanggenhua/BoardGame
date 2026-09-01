@@ -250,6 +250,39 @@ describe('响应窗口跳过逻辑', () => {
         expect(getSmashUpReactionWindowPresentation(passResult.finalState)?.activePlayerId).toBe('1');
     });
 
+    it('su:reaction_pass 缺少原因时应按玩家让过推进 live ReactionSession', () => {
+        const runner = createRunner(() => startSmashUpReactionSession(
+            makeMatchState(makeState({
+                players: { '0': makePlayer('0'), '1': makePlayer('1') },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+            })),
+            {
+                frameId: 'score-after:missing-pass-reason',
+                frameKind: 'score-after',
+                phase: 'optional',
+                activePlayerId: '0',
+                currentPlayerId: '0',
+                responseWindowType: 'afterScoring',
+            },
+        ));
+
+        const passResult = runner.dispatch(SU_COMMANDS.REACTION_PASS, {
+            playerId: '0',
+        });
+
+        expect(passResult.success).toBe(true);
+        expect(passResult.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.REACTION_PASS_REQUESTED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                reason: 'player_pass',
+            }),
+        }));
+        expect(getReactionSession(passResult.finalState)?.activePlayerId).toBe('1');
+        expect(getReactionSession(passResult.finalState)?.passedPlayerIds).toEqual(['0']);
+    });
+
     it('su:reaction_pass 只能由 live ReactionSession 当前响应者发出', () => {
         const runner = createRunner(() => startSmashUpReactionSession(
             makeMatchState(makeState({

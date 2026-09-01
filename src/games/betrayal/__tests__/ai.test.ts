@@ -298,6 +298,66 @@ describe('小黑屋本地 AI', () => {
         }]);
     });
 
+    test('事件待投骰缺少非当前 AI 座位时，watchdog 应代触发者投骰而不是推进当前 AI 阶段', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        activateTestExplorer(core, '1');
+        core.pendingEventRollStart = {
+            playerId: '2',
+            roomId: 'frontier-ground-east-south',
+            sourceTitle: '着火的人',
+        };
+        const state = stateOf(core, 'betrayal-ai-event-roll-start-recovery');
+        state.sys.phase = 'preHaunt';
+
+        const currentPlayerActions = buildActions(state, '1');
+        expect(currentPlayerActions.map((action) => action.kind)).not.toContain(BETRAYAL_AI_ACTION_KINDS.EXPLORE_ROOM);
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig,
+            gameId: 'betrayal',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('2');
+        expect(candidate?.resolution.action.commands).toEqual([{
+            type: BETRAYAL_COMMANDS.ROLL_EVENT,
+            payload: { sourceTitle: '着火的人' },
+        }]);
+    });
+
+    test('事件待投骰缺少真人座位时，watchdog 不应替当前 AI 探索或强推阶段', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        activateTestExplorer(core, '1');
+        core.pendingEventRollStart = {
+            playerId: '2',
+            roomId: 'frontier-ground-east-south',
+            sourceTitle: '着火的人',
+        };
+        const state = stateOf(core, 'betrayal-human-event-roll-start-recovery');
+        state.sys.phase = 'preHaunt';
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'human' },
+            },
+            seatStates: {},
+            engineConfig,
+            gameId: 'betrayal',
+        });
+
+        expect(candidate).toBeNull();
+    });
+
     test('事件骰确认缺少真人座位时，watchdog 不应替当前 AI 强推阶段', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.pendingEventRollResolution = {

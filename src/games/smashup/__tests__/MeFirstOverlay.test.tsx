@@ -376,7 +376,7 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         fireEvent.click(screen.getByTestId('me-first-pass-button'));
 
         expect(onSelectCard).toHaveBeenCalledWith(null);
-        expect(dispatch).toHaveBeenCalledWith(SU_COMMANDS.REACTION_PASS);
+        expect(dispatch).toHaveBeenCalledWith(SU_COMMANDS.REACTION_PASS, { reason: 'player_pass' });
         expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
     });
 

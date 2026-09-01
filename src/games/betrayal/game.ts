@@ -3130,6 +3130,9 @@ function resolvePendingEventRollResolutionRequiredPlayerIds(
     core: Pick<BetrayalCore, 'playerIds'>,
     resolution: BetrayalPendingEventRollResolutionState,
 ): string[] {
+    if (resolution.requiresAcknowledgement === false) {
+        return [resolution.playerId];
+    }
     const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
     if (configuredPlayerIds.length > 0) {
         return configuredPlayerIds;
@@ -3150,8 +3153,34 @@ function isPendingEventRollResolutionFullyAcknowledged(
     resolution: BetrayalPendingEventRollResolutionState,
     acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(resolution),
 ): boolean {
+    if (resolution.requiresAcknowledgement === false) {
+        return true;
+    }
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution);
     return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
+}
+
+function eventRollResolutionNeedsAcknowledgement(
+    resolution: Pick<
+        BetrayalPendingEventRollResolutionState,
+        | 'nextPendingEventChoice'
+        | 'hauntRevealResolution'
+        | 'hauntTraitorResolution'
+        | 'dustSetup'
+        | 'magicCameraSetup'
+        | 'helpingHandsSetup'
+        | 'uponReflectionSetup'
+    >,
+): boolean {
+    return Boolean(
+        resolution.nextPendingEventChoice
+        || resolution.hauntRevealResolution
+        || resolution.hauntTraitorResolution
+        || resolution.dustSetup
+        || resolution.magicCameraSetup
+        || resolution.helpingHandsSetup
+        || resolution.uponReflectionSetup,
+    );
 }
 
 function resolveRecentRollRequiredPlayerIds(
@@ -15567,6 +15596,19 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     if (cardResolutionAcknowledgement) {
         return cardResolutionAcknowledgement;
     }
+    if (command.type === BETRAYAL_COMMANDS.ROLL_EVENT) {
+        const pending = core.pendingEventRollStart;
+        if (!pending) {
+            return { valid: false, error: '当前没有等待投掷的事件。' };
+        }
+        if (pending.playerId !== command.playerId) {
+            return { valid: false, error: '只有触发事件的玩家可以投掷。' };
+        }
+        if (command.payload.sourceTitle && command.payload.sourceTitle !== pending.sourceTitle) {
+            return { valid: false, error: '当前事件已经改变。' };
+        }
+        return { valid: true };
+    }
     if (core.pendingEventChoice) {
         return { valid: false, error: '请先处理当前事件。' };
     }
@@ -15871,19 +15913,6 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             }
             if (!canPlayerAcknowledgeRecentRoll(core, command.playerId)) {
                 return { valid: false, error: '你已经确认过当前投骰结果。' };
-            }
-            return { valid: true };
-        }
-        case BETRAYAL_COMMANDS.ROLL_EVENT: {
-            const pending = core.pendingEventRollStart;
-            if (!pending) {
-                return { valid: false, error: '当前没有等待投掷的事件。' };
-            }
-            if (pending.playerId !== command.playerId) {
-                return { valid: false, error: '只有触发事件的玩家可以投掷。' };
-            }
-            if (command.payload.sourceTitle && command.payload.sourceTitle !== pending.sourceTitle) {
-                return { valid: false, error: '当前事件已经改变。' };
             }
             return { valid: true };
         }
@@ -20941,14 +20970,24 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 && core.recentRoll
                 && event.payload.eventEffect
             ) {
+                const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
+                    hauntRevealResolution: event.payload.hauntRevealResolution,
+                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
+                    dustSetup: event.payload.dustSetup,
+                    magicCameraSetup: event.payload.magicCameraSetup,
+                    helpingHandsSetup: event.payload.helpingHandsSetup,
+                    uponReflectionSetup: event.payload.uponReflectionSetup,
+                });
                 core.pendingEventRollResolution = {
                     rollId: core.recentRoll.id,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.discovery.title,
-                    requiredPlayerIds: [...core.playerIds],
+                    requiredPlayerIds: requiresAcknowledgement
+                        ? [...core.playerIds]
+                        : [event.payload.playerId],
                     acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(event.payload.eventEffect),
-                    requiresAcknowledgement: true,
+                    requiresAcknowledgement,
                     deathPrevention: event.payload.deathPrevention
                         ? {
                             ...event.payload.deathPrevention,
@@ -21220,17 +21259,29 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             ) {
                 const pendingEffect = event.payload.eventEffect
                     ?? event.payload.nextPendingEventChoice!.effect;
+                const nextPendingEventChoice = event.payload.nextPendingEventChoice
+                    ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
+                    : undefined;
+                const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
+                    nextPendingEventChoice,
+                    hauntRevealResolution: event.payload.hauntRevealResolution,
+                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
+                    dustSetup: event.payload.dustSetup,
+                    magicCameraSetup: event.payload.magicCameraSetup,
+                    helpingHandsSetup: event.payload.helpingHandsSetup,
+                    uponReflectionSetup: event.payload.uponReflectionSetup,
+                });
                 core.pendingEventRollResolution = {
                     rollId: core.recentRoll.id,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.sourceTitle,
-                    requiredPlayerIds: [...core.playerIds],
+                    requiredPlayerIds: requiresAcknowledgement
+                        ? [...core.playerIds]
+                        : [event.payload.playerId],
                     acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(pendingEffect),
-                    requiresAcknowledgement: true,
-                    nextPendingEventChoice: event.payload.nextPendingEventChoice
-                        ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
-                        : undefined,
+                    requiresAcknowledgement,
+                    nextPendingEventChoice,
                     deathPrevention: event.payload.deathPrevention
                         ? {
                             ...event.payload.deathPrevention,
@@ -21771,17 +21822,29 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             }
             core.latestDiscovery = eventDiscovery;
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
-            core.pendingEventRollResolution = event.payload.eventEffect || event.payload.nextPendingEventChoice
-                ? {
+            if (event.payload.eventEffect || event.payload.nextPendingEventChoice) {
+                const nextPendingEventChoice = event.payload.nextPendingEventChoice
+                    ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
+                    : undefined;
+                const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
+                    nextPendingEventChoice,
+                    hauntRevealResolution: event.payload.hauntRevealResolution,
+                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
+                    dustSetup: event.payload.dustSetup,
+                    magicCameraSetup: event.payload.magicCameraSetup,
+                    helpingHandsSetup: event.payload.helpingHandsSetup,
+                    uponReflectionSetup: event.payload.uponReflectionSetup,
+                });
+                core.pendingEventRollResolution = {
                     rollId: event.payload.rollId,
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.sourceTitle,
-                    requiredPlayerIds: [event.payload.playerId],
+                    requiredPlayerIds: requiresAcknowledgement
+                        ? [...core.playerIds]
+                        : [event.payload.playerId],
                     acknowledgedPlayerIds: [],
                     effect: cloneUseEffect(event.payload.eventEffect ?? event.payload.nextPendingEventChoice!.effect),
-                    nextPendingEventChoice: event.payload.nextPendingEventChoice
-                        ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
-                        : undefined,
+                    nextPendingEventChoice,
                     deathPrevention: event.payload.deathPrevention
                         ? {
                             ...event.payload.deathPrevention,
@@ -21790,9 +21853,32 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                             traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
                         }
                         : undefined,
-                    requiresAcknowledgement: false,
-                }
-                : null;
+                    hauntTriggered: event.payload.hauntTriggered,
+                    hauntCardNumber: event.payload.hauntCardNumber,
+                    hauntTriggerLabel: event.payload.hauntTriggerLabel,
+                    hauntTraitorPlayerId: event.payload.hauntTraitorPlayerId,
+                    hauntRevealResolution: event.payload.hauntRevealResolution
+                        ? { ...event.payload.hauntRevealResolution }
+                        : undefined,
+                    hauntTraitorResolution: event.payload.hauntTraitorResolution
+                        ? cloneHauntTraitorResolution(event.payload.hauntTraitorResolution) ?? undefined
+                        : undefined,
+                    dustSetup: event.payload.dustSetup ? cloneDustRuntimeState(event.payload.dustSetup) : undefined,
+                    magicCameraSetup: event.payload.magicCameraSetup
+                        ? cloneMagicCameraRuntimeState(event.payload.magicCameraSetup)
+                        : undefined,
+                    helpingHandsSetup: event.payload.helpingHandsSetup
+                        ? cloneHelpingHandsRuntimeState(event.payload.helpingHandsSetup)
+                        : undefined,
+                    uponReflectionSetup: event.payload.uponReflectionSetup
+                        ? cloneUponReflectionRuntimeState(event.payload.uponReflectionSetup)
+                        : undefined,
+                    hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
+                    requiresAcknowledgement,
+                };
+            } else {
+                core.pendingEventRollResolution = null;
+            }
             core.turnEndedByDiscovery = true;
             const synced = syncCurrentExplorerProjection(core);
             return {
@@ -24744,20 +24830,43 @@ const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
     };
 };
 
+const resolveBetrayalPendingEventRollStartRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => {
+    const core = args.state.core as Partial<Pick<BetrayalCore, 'pendingEventRollStart'>> | undefined;
+    const pending = core?.pendingEventRollStart;
+    if (!pending) {
+        return null;
+    }
+
+    return {
+        playerId: pending.playerId,
+        fingerprintHint: `event-roll-start:${pending.playerId}:${args.phase}:${pending.roomId}:${pending.sourceTitle}`,
+        attemptSuffix: `event-roll-start:${pending.playerId}:${pending.sourceTitle}`,
+        command: {
+            type: BETRAYAL_COMMANDS.ROLL_EVENT,
+            payload: { sourceTitle: pending.sourceTitle },
+        },
+    };
+};
+
 const resolveBetrayalSeatLegalOnlyRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
 }) => (
-    resolveBetrayalPendingEventRollResolutionRecovery(args)
+    resolveBetrayalPendingEventRollStartRecovery(args)
+    ?? resolveBetrayalPendingEventRollResolutionRecovery(args)
     ?? resolveBetrayalPendingCardResolutionRecovery(args)
 );
 
 const shouldSuppressBetrayalActiveTurnRecovery = (args: {
     state: MatchState<unknown>;
 }) => {
-    const core = args.state.core as Partial<Pick<BetrayalCore, 'pendingCardResolutionQueue' | 'pendingEventRollResolution'>> | undefined;
+    const core = args.state.core as Partial<Pick<BetrayalCore, 'pendingCardResolutionQueue' | 'pendingEventRollResolution' | 'pendingEventRollStart'>> | undefined;
     return Boolean(
         core?.pendingCardResolutionQueue?.length
+        || core?.pendingEventRollStart
         || core?.pendingEventRollResolution,
     );
 };

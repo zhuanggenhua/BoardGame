@@ -90,10 +90,10 @@ import { getMageWarsPlayerSpellbookEntries } from './domain/spellbook';
 
 type Props = GameBoardProps<MageWarsCore>;
 
-const MAGE_WARS_DESIGN_WIDTH = 1920;
-const MAGE_WARS_DESIGN_HEIGHT = 1080;
 const MAGE_WARS_ARENA_ASSET_WIDTH = 3210;
 const MAGE_WARS_ARENA_ASSET_HEIGHT = 2407;
+const MAGE_WARS_ARENA_WORLD_WIDTH = 1920;
+const MAGE_WARS_ARENA_WORLD_HEIGHT = MAGE_WARS_ARENA_WORLD_WIDTH * (MAGE_WARS_ARENA_ASSET_HEIGHT / MAGE_WARS_ARENA_ASSET_WIDTH);
 
 type MageWarsMagnifiedPreview = {
     previewRef: CardPreviewRef;
@@ -4199,19 +4199,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             mageId: player.mageId,
         });
     };
-    const rootFontSize = typeof document !== 'undefined'
-        ? Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-        : 16;
-    const liveViewportWidth = typeof window !== 'undefined' ? window.innerWidth : viewport.width;
-    const liveViewportHeight = typeof window !== 'undefined' ? window.innerHeight : viewport.height;
-    const rootRemScale = isLandscapeMobileViewport ? 1 : rootFontSize / 16;
-    const desktopLayoutScale = isLandscapeMobileViewport
-        ? 1
-        : Math.min(
-            liveViewportWidth / MAGE_WARS_DESIGN_WIDTH,
-            liveViewportHeight / MAGE_WARS_DESIGN_HEIGHT,
-        );
-    const desktopVisualScale = desktopLayoutScale / rootRemScale;
     return (
         <div
             className="relative h-full min-h-0 w-full overflow-hidden text-stone-100"
@@ -4243,10 +4230,10 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     contentTestId="mage-wars-arena-viewport-content"
                     scaleTestId="mage-wars-arena-viewport-scale"
                     className="flex h-full w-full items-center justify-center"
-                    contentClassName="relative"
+                    contentClassName="relative shrink-0"
                     contentStyle={{
-                        width: MAGE_WARS_ARENA_ASSET_WIDTH + 'px',
-                        height: MAGE_WARS_ARENA_ASSET_HEIGHT + 'px',
+                        width: MAGE_WARS_ARENA_WORLD_WIDTH + 'px',
+                        height: MAGE_WARS_ARENA_WORLD_HEIGHT + 'px',
                     }}
                     ariaLabel={t('arena.standardArenaAlt')}
                 >
@@ -4303,33 +4290,10 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 </ZoomPanViewport>
             </div>
             <div
-                className="pointer-events-none absolute z-20"
-                style={isLandscapeMobileViewport
-                    ? { inset: 0 }
-                    : {
-                        width: 'min(100vw, 177.7778vh)',
-                        height: 'min(100vh, 56.25vw)',
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        aspectRatio: '16 / 9',
-                    }}
+                className="pointer-events-none absolute inset-0 z-20"
+                data-testid={isLandscapeMobileViewport ? 'mage-wars-mobile-desktop-mirror-layer' : 'mage-wars-hud-anchor-layer'}
+                data-mage-wars-layout-source={isLandscapeMobileViewport ? 'desktop-mirror' : 'viewport-anchored'}
             >
-                <div
-                    className="absolute inset-0"
-                    data-testid={isLandscapeMobileViewport ? 'mage-wars-mobile-desktop-mirror-layer' : undefined}
-                    data-mage-wars-layout-source={isLandscapeMobileViewport ? 'desktop-mirror' : 'desktop-scaled'}
-                    style={isLandscapeMobileViewport
-                        ? undefined
-                        : {
-                            width: `${MAGE_WARS_DESIGN_WIDTH * rootRemScale}px`,
-                            height: `${MAGE_WARS_DESIGN_HEIGHT * rootRemScale}px`,
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) scale(${desktopVisualScale})`,
-                            transformOrigin: 'center center',
-                        }}
-                >
             <MageWarsLifeToggle
                 pressed={showBoardLifeTotals}
                 onToggle={() => setShowBoardLifeTotals((value) => !value)}
@@ -4367,7 +4331,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onCancel={() => setPendingMageAbilityStatusTargetObjectId(null)}
             />
 
-            <aside className="pointer-events-none absolute bottom-[5.125rem] left-11 z-20 w-[17rem]">
+            <aside className="pointer-events-none absolute bottom-4 left-4 z-20 w-[17rem]">
                 <div className="pointer-events-auto">
                     {viewingPlayer ? (
                         <MageHud
@@ -4426,7 +4390,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 </aside>
             ) : null}
             {viewingPlayer ? (
-                <aside className="pointer-events-none absolute bottom-[3.2rem] left-[18.25rem] right-[30rem] z-20">
+                <aside className="pointer-events-none absolute bottom-4 left-[18.25rem] right-[30rem] z-20">
                     <SpellbookShelf
                         player={viewingPlayer}
                         phase={phase}
@@ -4438,7 +4402,6 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     />
                 </aside>
             ) : null}
-                </div>
             </div>
             <MagnifyOverlay
                 isOpen={magnifiedPreview != null}
