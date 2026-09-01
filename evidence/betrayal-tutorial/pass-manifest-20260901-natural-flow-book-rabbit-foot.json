@@ -34,10 +34,10 @@
       ]
     },
     {
-      "requirement": "兔脚选择骰子时选中效果必须明显，且物品确认按钮与事件确认按钮样式统一。",
+      "requirement": "历史清单：兔脚选择骰子时选中效果必须明显，且物品确认按钮与事件确认按钮样式统一；当前验收以 v2 清单为准。",
       "status": "PASS",
       "evidence": [
-        "14-山屋惊魂-教程-兔脚选中改骰高亮.jpg 显示目标骰子外扩金色选中环。",
+        "本清单保留旧截图证据；当前口径已由 pass-manifest-20260901-natural-flow-book-rabbit-foot-v2.json 替代，要求候选态底部弱描边、选中态贴合骰面本体描边。",
         "E2E 断言兔脚确认按钮使用统一确认按钮样式，并断言已选骰子的 aria-pressed/data-reroll-target-selected 状态。"
       ]
     },
@@ -134,7 +134,7 @@
     "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot\\56-labeled-03-pc-房间主视区-current.png"
   ],
   "notes": [
-    "本清单用于 2026-09-01 小黑屋教程自然流程、书本、兔脚和事件确认语义重构后的最终用户可见图组。",
-    "旧 pass-manifest-20260829/20260830/20260831 只保留为历史证据，不作为本轮 PASS 图组。"
+    "本清单已被 pass-manifest-20260901-natural-flow-book-rabbit-foot-v2.json 替代，只保留为历史证据。",
+    "旧 pass-manifest-20260829/20260830/20260831 以及本清单不作为当前用户可见 PASS 图组。"
   ]
 }

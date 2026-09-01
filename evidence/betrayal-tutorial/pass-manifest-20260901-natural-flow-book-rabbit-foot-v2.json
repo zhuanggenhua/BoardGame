@@ -1,0 +1,146 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-01T19:25:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "通用教程规范必须约束跨游戏流程，不只给山屋惊魂单游戏打补丁。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md 现在要求类型/图标/区域属性到结果必须先过桥，并要求相邻截图逐帧有过渡动作。",
+        ".spec/knowledge/standards/e2e-verification.md 现在要求流程截图相邻编号之间必须有真实玩家输入、规则触发、系统自动结算或可见等待状态。",
+        ".spec/knowledge/standards/ui-change-gates.md 现在要求候选态和选中态分层：候选只弱提示，选中必须贴合对象本体。"
+      ]
+    },
+    {
+      "requirement": "默认主线必须按自然玩家流程教学：房间类型/符号 -> 翻出对应类型牌 -> 处理牌，不能从作祟目标突兀跳入。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/tutorial.ts 的默认主线移除了交易插段，顺序为基础读局、移动探索、事件、预兆确认、作祟英雄目标和英雄终局。",
+        "full-tutorial-flow-sequence.json 第 16-25 张说明事件符号到事件牌、投掷事件、书本/兔脚介入、伤害分配、再切到预兆符号示例。",
+        "full-tutorial-flow-sequence.json 第 28 张才进入作祟后英雄目标，并在 transition 中说明已由预兆风险承接到作祟已触发视角。"
+      ]
+    },
+    {
+      "requirement": "书本必须在事件触发并点击投掷事件后教学：先查看书本牌面，再使用书本本体，不需要额外确认。",
+      "status": "PASS",
+      "evidence": [
+        "09-山屋惊魂-教程-事件牌公开与投掷入口.jpg 显示事件牌已经公开，并出现投掷事件入口。",
+        "10-山屋惊魂-教程-事件骰出现与书本可查看.jpg 显示事件骰已经出现，教程高亮书本查看入口。",
+        "11-山屋惊魂-教程-书本牌面查看.jpg 显示书本牌面；12-山屋惊魂-教程-书本使用后知识改骰结果.jpg 显示使用后改为知识检定。"
+      ]
+    },
+    {
+      "requirement": "确认语义必须保留“让相关玩家看清/响应/授权”的目的，但无新增响应、选择或授权时不能机械全员确认。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md 明确确认不按主动/被动机械决定，而按结果展示后是否仍有观看确认、响应、选择或授权裁定。",
+        "16-山屋惊魂-教程-自动进入伤害分配.jpg 显示兔脚重投后自动进入伤害分配，没有确认 1/3。",
+        "40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg 保留预兆牌阅读后的单次确认，因为它承接预兆获得和作祟检定。"
+      ]
+    },
+    {
+      "requirement": "骰子选择视觉必须分层：未选中不要套环，候选态用底部弱描边，选中态用贴合骰面本体描边高亮。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts 断言未选候选只有 data-reroll-target-candidate-underline，没有 selected border。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts 断言选中后 selectedShape 为 die-face，selected border 与骰面本体贴合。",
+        "13-山屋惊魂-教程-点击兔脚后选择骰子.jpg 和 14-山屋惊魂-教程-兔脚选中改骰高亮.jpg 覆盖候选态到选中态。"
+      ]
+    },
+    {
+      "requirement": "24 -> 25 以及其它相邻截图必须有过渡解释，不能用截图跳变冒充自然教学。",
+      "status": "PASS",
+      "evidence": [
+        "full-tutorial-flow-sequence.json 每个 item 都有中文 transition；第 25 张明确说明从事件结算收口切到第二类房间符号示例，不冒充上一张事件牌直接结果。",
+        "第 27 -> 28 张 transition 明确由预兆风险说明进入作祟已触发英雄视角，避免突然出现主目标变化。"
+      ]
+    },
+    {
+      "requirement": "物品确认按钮和事件确认按钮样式必须统一。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/Board.tsx 的物品重掷确认、事件确认和交易确认复用同一确认按钮样式变量 BETRAYAL_CONFIRM_BUTTON_CLASS。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts 覆盖兔脚确认按钮和事件/牌面确认按钮样式。"
+      ]
+    },
+    {
+      "requirement": "完整流程截图必须重新端到端生成，并用中文顺序标记图组打开。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts => 9 passed, 2 skipped；截图刷新时间约 2026-09-01 19:21-19:23。",
+        "_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2 包含 00-sequence-index.png 和 56 张中文标记步骤图。",
+        "非展示型图片完整性检查确认 57 张 PNG 存在、非空且不是纯色空图。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\01-labeled-00-山屋惊魂-教程-章节目录.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\02-labeled-01-山屋惊魂-教程-恶兆前动作区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\03-labeled-36-山屋惊魂-教程-属性轨读法.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\04-labeled-02-山屋惊魂-教程-剩余移动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\05-labeled-03-山屋惊魂-教程-房间主视区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\06-labeled-37-山屋惊魂-教程-观察队友视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\07-labeled-37a-山屋惊魂-教程-切到第二名队友视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\08-labeled-37b-山屋惊魂-教程-再次点队友返回上一视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\09-labeled-38-山屋惊魂-教程-聚焦回自己房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\10-labeled-39-山屋惊魂-教程-预兆作祟进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\11-labeled-04-山屋惊魂-教程-持有区与帮助入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\12-labeled-05-山屋惊魂-教程-移动入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\13-labeled-06-山屋惊魂-教程-移动到门厅后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\14-labeled-07-山屋惊魂-教程-探索目标房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\15-labeled-08-山屋惊魂-教程-确认放置新房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\16-labeled-09-山屋惊魂-教程-事件牌公开与投掷入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\17-labeled-10-山屋惊魂-教程-事件骰出现与书本可查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\18-labeled-11-山屋惊魂-教程-书本牌面查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\19-labeled-12-山屋惊魂-教程-书本使用后知识改骰结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\20-labeled-13-山屋惊魂-教程-点击兔脚后选择骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\21-labeled-14-山屋惊魂-教程-兔脚选中改骰高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\22-labeled-15-山屋惊魂-教程-兔脚重投完成骰盘正常.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\23-labeled-16-山屋惊魂-教程-自动进入伤害分配.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\24-labeled-16a-山屋惊魂-教程-伤害分配完成后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\25-labeled-40-山屋惊魂-教程-同屏确认预兆与作祟检定.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\26-labeled-42-山屋惊魂-教程-确认后回牌桌持有区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\27-labeled-43-山屋惊魂-教程-确认后预兆进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\28-labeled-17-山屋惊魂-教程-木乃伊作祟目标改变.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\29-labeled-18-山屋惊魂-教程-打开木乃伊剧本目标页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\30-labeled-19-山屋惊魂-教程-驱逐木乃伊前因果说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\31-labeled-20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\32-labeled-21-山屋惊魂-教程-驱逐木乃伊成功后的终局页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\33-labeled-44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\34-labeled-45-山屋惊魂-教程-叛徒拾起女孩前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\35-labeled-46-山屋惊魂-教程-女孩交给木乃伊前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\36-labeled-47-山屋惊魂-教程-圣符交给木乃伊前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\37-labeled-48-山屋惊魂-教程-木乃伊叛徒胜利.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\38-labeled-49-山屋惊魂-教程-木乃伊怪物回合开始前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\39-labeled-50-山屋惊魂-教程-木乃伊移动骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\40-labeled-51-山屋惊魂-教程-木乃伊瞬移目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\41-labeled-52-山屋惊魂-教程-木乃伊拾起女孩结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\42-labeled-53-山屋惊魂-教程-木乃伊同房必须先攻击.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\43-labeled-54-山屋惊魂-教程-木乃伊攻击目标高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\44-labeled-55-山屋惊魂-教程-木乃伊攻击骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\45-labeled-56-山屋惊魂-教程-木乃伊偷取奖励入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\46-labeled-57-山屋惊魂-教程-木乃伊偷走地图结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\47-labeled-29-山屋惊魂-教程-交易同房间说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\48-labeled-30-山屋惊魂-教程-交易选择兔脚.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\49-labeled-31-山屋惊魂-教程-交易选择队友.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\50-labeled-32-山屋惊魂-教程-交易选择对方地图.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\51-labeled-33-山屋惊魂-教程-交易请求等待同意.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\52-labeled-34-山屋惊魂-教程-交易接收方同意.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\53-labeled-35-山屋惊魂-教程-交易后互换结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\54-labeled-01-手机横屏-教程移动入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\55-labeled-05-pc-移动入口-current.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260901-natural-flow-book-rabbit-foot-v2\\56-labeled-03-pc-房间主视区-current.png"
+  ],
+  "notes": [
+    "本清单只用于 2026-09-01 小黑屋教程自然流程、书本、兔脚、确认语义和通用规范回代后的最终用户可见图组。",
+    "旧 pass-manifest-20260829/20260830/20260831 以及 pass-manifest-20260901-natural-flow-book-rabbit-foot.json 只保留为历史证据，不作为本轮 PASS 图组。"
+  ]
+}
