@@ -442,6 +442,7 @@ function resolveAngelicCloak(customCtx: CustomActionContext): DiceThroneEvent[] 
     if (!die || !ctx.defenderId) return [];
     const params = (action.params ?? {}) as Record<string, unknown>;
     const bladeDamage = Number(params.blade ?? 0);
+    const wingShield = Number(params.wing ?? 0);
     const crossShield = Number(params.cross ?? 0);
     const shieldShield = Number(params.shield ?? 0);
     const events: DiceThroneEvent[] = [];
@@ -449,8 +450,11 @@ function resolveAngelicCloak(customCtx: CustomActionContext): DiceThroneEvent[] 
     if (die.face === FACE.BLADE) {
         events.push(...attackDamageEvents(customCtx, ctx.defenderId, bladeDamage, timestamp, true));
     } else if (die.face === FACE.WING) {
-        const event = grantTokenEvent(state, attackerId, TOKEN_IDS.FLIGHT, 1, sourceAbilityId, timestamp);
-        if (event) events.push(event);
+        events.push({
+            type: 'DAMAGE_SHIELD_GRANTED',
+            payload: { targetId: attackerId, value: wingShield, sourceId: sourceAbilityId, preventStatus: false },
+            ...eventSource(sourceAbilityId, timestamp, 'ABILITY_EFFECT'),
+        } as DiceThroneEvent);
     } else if (die.face === FACE.CROSS) {
         events.push({
             type: 'DAMAGE_SHIELD_GRANTED',

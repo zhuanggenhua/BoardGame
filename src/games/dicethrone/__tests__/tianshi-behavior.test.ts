@@ -1645,10 +1645,10 @@ describe('炽天使领域行为', () => {
 
     it.each([
         { value: 1, expectedDamage: 2 },
-        { value: 4, expectedFlight: 1 },
+        { value: 4, expectedShield: 1 },
         { value: 5, expectedShield: 2 },
         { value: 6, expectedShield: 3 },
-    ])('天使斗篷普通防御骰面 $value 落到正确的防御结果', ({ value, expectedDamage, expectedFlight, expectedShield }) => {
+    ])('天使斗篷普通防御骰面 $value 落到正确的防御结果', ({ value, expectedDamage, expectedShield }) => {
         const state = createTianshiState();
         state.sys.phase = 'defensiveRoll';
         state.core.pendingAttack = {
@@ -1690,12 +1690,11 @@ describe('炽天使领域行为', () => {
                 payload: expect.objectContaining({ targetId: '1', amount: expectedDamage, unblockable: true }),
             }));
         }
-        if (expectedFlight !== undefined) {
-            expect(settled.events).toContainEqual(expect.objectContaining({
-                type: 'TOKEN_GRANTED',
-                payload: expect.objectContaining({ targetId: '0', tokenId: TOKEN_IDS.FLIGHT, amount: expectedFlight }),
-            }));
-        }
+        expect(settled.events.some(event => (
+            event.type === 'TOKEN_GRANTED'
+            && event.payload.targetId === '0'
+            && event.payload.tokenId === TOKEN_IDS.FLIGHT
+        ))).toBe(false);
         if (expectedShield !== undefined) {
             expect(settled.events).toContainEqual(expect.objectContaining({
                 type: 'DAMAGE_SHIELD_GRANTED',
@@ -1874,6 +1873,7 @@ describe('炽天使领域行为', () => {
 
     it.each([
         { defenseRoll: 1, expectedCounterDamage: 2, expectedShield: undefined, expectedHpLoss: 8 },
+        { defenseRoll: 4, expectedCounterDamage: undefined, expectedShield: 1, expectedHpLoss: 7 },
         { defenseRoll: 5, expectedCounterDamage: undefined, expectedShield: 2, expectedHpLoss: 6 },
         { defenseRoll: 6, expectedCounterDamage: undefined, expectedShield: 3, expectedHpLoss: 5 },
     ])('僧侣 8 点攻击经过天使斗篷骰面 $defenseRoll 后应按防御结果扣血', ({

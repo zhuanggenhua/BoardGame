@@ -47,6 +47,8 @@ description: "BoardGame 教程/新手引导流程。用于 tutorial/onboarding�
 
 开工时先执行 [`tutorial-design`](../../knowledge/standards/tutorial-design.md) 的正式流程同源审计：阶段顺序、自动推进条件、玩家决策、系统结算和对手行为必须与正式对局共用同一入口。只有明确标记为机制练习的步骤才能使用预设局面，不能用隐藏步骤或教程专属命令掩盖正式流程缺陷。
 
+用户连续指出教程跳步骤、内容被移走、相邻步骤复读、确认语义反复出错或 UI 承接不一致时，先回到 [`tutorial-design`](../../knowledge/standards/tutorial-design.md) 的教程内容总账和 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md) 的玩家任务与元素职责总账，补齐覆盖和职责裁决后再继续改实现；不得继续按单个步骤、单个按钮或单张截图逐点补丁式推进。
+
 ### 2. 先文案，后实现
 
 - 文案方向未锁定前，不改 `tutorial.ts`、语言包、测试或 E2E。

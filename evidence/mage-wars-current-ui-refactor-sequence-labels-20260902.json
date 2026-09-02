@@ -1,0 +1,35 @@
+{
+  "title": "Mage Wars UI 回归修复验收图组（2026-09-02）",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+      "label": "1920 实际牌桌：HUD 完整、同格单位上下排列",
+      "transition": "起点：真实入口进入 Mage Wars 牌桌；法师属性 UI 不是操作态 compact，同格双方单位按上下席位分区。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+      "label": "教程计划 1/2：第一张法术进入计划槽",
+      "transition": "玩家点击第一张计划法术后，草稿牌显示在右侧计划槽，不用法术书源牌小标签表达已选。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+      "label": "教程计划 2/2：两张不同法术进入两个计划槽",
+      "transition": "玩家点击第二张计划法术后，两个计划槽分别显示真实法术牌，确认按钮只负责提交。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-planning-hover.png",
+      "label": "2560 宽屏计划态：卡牌放大入口仍可见",
+      "transition": "宽屏计划状态下，法术书、计划槽、HUD 和卡牌放大图标同时可见。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+      "label": "2560 宽屏牌桌：整屏布局不再缩成小框",
+      "transition": "宽屏实际牌桌保持整屏锚点；去掉无职责标题，属性 UI 保持完整读数。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png",
+      "label": "2560 拖拽后地图：放大地图覆盖整屏视窗",
+      "transition": "地图放大拖拽后覆盖整个牌桌视窗，拖拽对象是地图层，不是受限小框或整个页面 UI。"
+    }
+  ]
+}

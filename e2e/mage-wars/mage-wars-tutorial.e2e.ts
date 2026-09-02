@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir, rm } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
@@ -12,7 +12,6 @@ import {
 
 const SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial-flow-sync';
 const INTRO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00-intro-board-and-win.png`;
-const DRAGGED_MAP_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/00b-dragged-map-full-viewport.png`;
 const HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/01-read-mage-hud-life-mana-channeling.png`;
 const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-channel-result-mana-increased.png`;
 const PLAN_ONE_OF_TWO_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-plan-selected-one-of-two.png`;
@@ -40,6 +39,37 @@ const LIFE_TOGGLE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/24-life-toggle-all-readou
 const RESTORE_BUTTON_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/25-restore-action-dock.png`;
 const RESTORE_TARGET_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/26-restore-burn-target-highlight.png`;
 const RESTORE_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/27-restore-burn-removed.png`;
+
+const TUTORIAL_FLOW_SCREENSHOT_PATHS = [
+    INTRO_SCREENSHOT_PATH,
+    HUD_SCREENSHOT_PATH,
+    CHANNEL_RESULT_SCREENSHOT_PATH,
+    PLAN_ONE_OF_TWO_SCREENSHOT_PATH,
+    PLAN_TWO_OF_TWO_SCREENSHOT_PATH,
+    PREPARED_HIDDEN_SCREENSHOT_PATH,
+    SUMMON_TARGET_SCREENSHOT_PATH,
+    WOLF_SUMMONED_SCREENSHOT_PATH,
+    ROUSE_TARGET_SCREENSHOT_PATH,
+    WOLF_READY_SCREENSHOT_PATH,
+    OPPONENT_DEPLOY_PROMPT_SCREENSHOT_PATH,
+    DISCARD_SCREENSHOT_PATH,
+    OPPONENT_PASS_DEPLOYMENT_SCREENSHOT_PATH,
+    QUICKCAST_PASS_SCREENSHOT_PATH,
+    MOVE_SCREENSHOT_PATH,
+    WALL_READY_SCREENSHOT_PATH,
+    WALL_TARGET_SCREENSHOT_PATH,
+    WALL_CARD_SCREENSHOT_PATH,
+    WALL_LOS_SCREENSHOT_PATH,
+    GUARD_SOURCE_SCREENSHOT_PATH,
+    GUARD_RESULT_SCREENSHOT_PATH,
+    HEALING_BUTTON_SCREENSHOT_PATH,
+    HEALING_TARGET_SCREENSHOT_PATH,
+    HEALING_RESULT_SCREENSHOT_PATH,
+    LIFE_TOGGLE_SCREENSHOT_PATH,
+    RESTORE_BUTTON_SCREENSHOT_PATH,
+    RESTORE_TARGET_SCREENSHOT_PATH,
+    RESTORE_RESULT_SCREENSHOT_PATH,
+];
 
 const GUARD_CLERIC_OBJECT_ID = 'mw-tutorial-guard-cleric';
 const HEALING_CLERIC_OBJECT_ID = 'mw-tutorial-healing-cleric';
@@ -76,36 +106,6 @@ type MageWarsTutorialState = {
         }>;
     };
 };
-
-type RectSnapshot = {
-    left: number;
-    top: number;
-    right: number;
-    bottom: number;
-    width: number;
-    height: number;
-};
-
-type ArenaViewportPoseSnapshot = {
-    originalStyle: string | null;
-    transform: string;
-    board: RectSnapshot;
-    viewport: RectSnapshot;
-    content: RectSnapshot;
-    selfHud: RectSnapshot;
-    bottomGrid: RectSnapshot;
-};
-
-function assertRectsNearlyEqual(
-    actual: RectSnapshot,
-    expected: RectSnapshot,
-    tolerancePx: number,
-) {
-    expect(Math.abs(actual.left - expected.left)).toBeLessThanOrEqual(tolerancePx);
-    expect(Math.abs(actual.top - expected.top)).toBeLessThanOrEqual(tolerancePx);
-    expect(Math.abs(actual.right - expected.right)).toBeLessThanOrEqual(tolerancePx);
-    expect(Math.abs(actual.bottom - expected.bottom)).toBeLessThanOrEqual(tolerancePx);
-}
 
 async function prepareMageWarsTutorialContext(context: BrowserContext, page: Page) {
     await initContext(context, {
@@ -195,11 +195,37 @@ async function clickTutorialTarget(page: Page, tutorialId: string) {
     await target.click({ timeout: 5_000 });
 }
 
-async function clickTutorialObject(page: Page, objectId: string) {
+async function clickVisibleTutorialObjectPoint(page: Page, objectId: string) {
     const target = page.locator(`[data-tutorial-object-id="mw-arena-object-${objectId}"]`).first();
     await expect(target).toBeVisible({ timeout: 15_000 });
     await expect(target).toBeEnabled({ timeout: 10_000 });
-    await target.click({ timeout: 5_000 });
+    const clickablePoint = await target.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const candidateRatios = [
+            { x: 0.16, y: 0.5 },
+            { x: 0.84, y: 0.5 },
+            { x: 0.5, y: 0.5 },
+            { x: 0.24, y: 0.28 },
+            { x: 0.24, y: 0.72 },
+            { x: 0.76, y: 0.28 },
+            { x: 0.76, y: 0.72 },
+        ];
+        for (const ratio of candidateRatios) {
+            const x = rect.left + rect.width * ratio.x;
+            const y = rect.top + rect.height * ratio.y;
+            const hit = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-tutorial-object-id]');
+            if (hit === element) {
+                return { x, y };
+            }
+        }
+        return null;
+    });
+    expect(clickablePoint, `${objectId} 必须有露出且可点击的教程对象区域`).not.toBeNull();
+    await page.mouse.click(clickablePoint!.x, clickablePoint!.y);
+}
+
+async function clickTutorialObject(page: Page, objectId: string) {
+    await clickVisibleTutorialObjectPoint(page, objectId);
 }
 
 async function clickTutorialSpellbookCard(page: Page, cardId: number) {
@@ -223,83 +249,29 @@ async function screenshot(page: Page, path: string) {
     await page.screenshot({ path, fullPage: false });
 }
 
-async function setArenaViewportPoseForScreenshot(page: Page): Promise<ArenaViewportPoseSnapshot> {
-    return page.evaluate(() => {
-        const toRect = (rect: DOMRect): RectSnapshot => ({
-            left: rect.left,
-            top: rect.top,
-            right: rect.right,
-            bottom: rect.bottom,
-            width: rect.width,
-            height: rect.height,
-        });
-        const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
-        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
-        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
-        const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
-        const bottomGrid = document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]');
-        if (!board || !viewport || !content || !selfHud || !bottomGrid) {
-            throw new Error('Mage Wars 拖拽地图截图缺少必要视口或 HUD 节点');
-        }
-
-        const originalStyle = content.getAttribute('style');
-        const transform = content.style.transform || '';
-        const viewportRect = viewport.getBoundingClientRect();
-        content.style.transition = 'none';
-        content.style.transform = 'translate(0px, 0px) scale(1)';
-        const baseContentRect = content.getBoundingClientRect();
-        const currentScale = Number(transform.match(/scale\(([^)]+)\)/)?.[1] ?? '1');
-        const minCoverScale = Math.max(
-            (viewportRect.width + 16) / Math.max(1, baseContentRect.width),
-            (viewportRect.height + 16) / Math.max(1, baseContentRect.height),
-        );
-        const targetScale = Math.min(2.6, Math.max(1.08, minCoverScale, currentScale * 1.12));
-        const maxOffsetX = Math.max(0, ((baseContentRect.width * targetScale) - viewportRect.width) / 2);
-        const maxOffsetY = Math.max(0, ((baseContentRect.height * targetScale) - viewportRect.height) / 2);
-        let targetX = -Math.min(180, Math.max(1, maxOffsetX * 0.72));
-        let targetY = -Math.min(120, Math.max(1, maxOffsetY * 0.62));
-
-        content.style.transform = `translate(${targetX}px, ${targetY}px) scale(${targetScale})`;
-        const draggedRect = content.getBoundingClientRect();
-        if (draggedRect.left > viewportRect.left + 2) {
-            targetX -= draggedRect.left - viewportRect.left + 8;
-        }
-        if (draggedRect.right < viewportRect.right - 2) {
-            targetX += viewportRect.right - draggedRect.right + 8;
-        }
-        if (draggedRect.top > viewportRect.top + 2) {
-            targetY -= draggedRect.top - viewportRect.top + 8;
-        }
-        if (draggedRect.bottom < viewportRect.bottom - 2) {
-            targetY += viewportRect.bottom - draggedRect.bottom + 8;
-        }
-
-        content.style.transform = `translate(${targetX}px, ${targetY}px) scale(${targetScale})`;
-        content.setAttribute('data-e2e-direct-viewport-pose', 'dragged-map-full-viewport');
-
-        return {
-            originalStyle,
-            transform: content.style.transform,
-            board: toRect(board.getBoundingClientRect()),
-            viewport: toRect(viewport.getBoundingClientRect()),
-            content: toRect(content.getBoundingClientRect()),
-            selfHud: toRect(selfHud.getBoundingClientRect()),
-            bottomGrid: toRect(bottomGrid.getBoundingClientRect()),
-        };
-    });
+function basename(path: string) {
+    return path.slice(path.lastIndexOf('/') + 1);
 }
 
-async function restoreArenaViewportPose(page: Page, originalStyle: string | null) {
-    await page.evaluate((style) => {
-        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
-        if (!content) return;
-        if (style === null) {
-            content.removeAttribute('style');
-        } else {
-            content.setAttribute('style', style);
-        }
-        content.removeAttribute('data-e2e-direct-viewport-pose');
-    }, originalStyle);
+async function readPlanningDrafts(page: Page) {
+    return page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]')
+        .evaluateAll((cards) => cards
+            .map((card) => ({
+                sourceCardId: card.getAttribute('data-source-card-id'),
+                planSlotIndex: card.getAttribute('data-plan-slot-index'),
+            }))
+            .sort((left, right) => String(left.planSlotIndex).localeCompare(String(right.planSlotIndex))));
+}
+
+async function assertTutorialScreenshotEvidenceSet() {
+    const actual = (await readdir(SCREENSHOT_DIR, { withFileTypes: true }))
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.png'))
+        .map((entry) => entry.name)
+        .sort();
+    const expected = TUTORIAL_FLOW_SCREENSHOT_PATHS.map(basename).sort();
+
+    expect(actual, '教程主流程截图必须只包含 00-27 的 28 张当前流程图，不能混入拖拽/诊断/旧图').toEqual(expected);
+    expect(actual.filter((name) => /drag|dragged|zoom|map/i.test(name)), '教程主流程截图不得混入地图拖拽/缩放专项图').toEqual([]);
 }
 
 async function assertAllVisibleImagesLoaded(page: Page) {
@@ -332,6 +304,7 @@ async function assertAllVisibleImagesLoaded(page: Page) {
 test.describe('Mage Wars tutorial', () => {
     test('单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术', async ({ context, page }) => {
         test.setTimeout(240_000);
+        await rm(SCREENSHOT_DIR, { recursive: true, force: true });
         const diagnostics = await openMageWarsTutorial(context, page);
 
         await waitForTutorialStep(page, 'intro', 60_000);
@@ -339,35 +312,6 @@ test.describe('Mage Wars tutorial', () => {
         await expect(page.getByTestId('mage-wars-board')).not.toContainText('正式竞技场');
         await assertAllVisibleImagesLoaded(page);
         await screenshot(page, INTRO_SCREENSHOT_PATH);
-        const hudBeforeMapPose = await page.evaluate(() => {
-            const toRect = (rect: DOMRect): RectSnapshot => ({
-                left: rect.left,
-                top: rect.top,
-                right: rect.right,
-                bottom: rect.bottom,
-                width: rect.width,
-                height: rect.height,
-            });
-            const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
-            const bottomGrid = document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]');
-            if (!selfHud || !bottomGrid) throw new Error('Mage Wars 拖拽地图截图缺少 HUD 锚点');
-            return {
-                selfHud: toRect(selfHud.getBoundingClientRect()),
-                bottomGrid: toRect(bottomGrid.getBoundingClientRect()),
-            };
-        });
-        const draggedMapPose = await setArenaViewportPoseForScreenshot(page);
-        expect(draggedMapPose.transform).toContain('translate(');
-        expect(draggedMapPose.transform).toContain('scale(');
-        assertRectsNearlyEqual(draggedMapPose.viewport, draggedMapPose.board, 2);
-        expect(draggedMapPose.content.left).toBeLessThanOrEqual(draggedMapPose.viewport.left + 2);
-        expect(draggedMapPose.content.top).toBeLessThanOrEqual(draggedMapPose.viewport.top + 2);
-        expect(draggedMapPose.content.right).toBeGreaterThanOrEqual(draggedMapPose.viewport.right - 2);
-        expect(draggedMapPose.content.bottom).toBeGreaterThanOrEqual(draggedMapPose.viewport.bottom - 2);
-        assertRectsNearlyEqual(draggedMapPose.selfHud, hudBeforeMapPose.selfHud, 1);
-        assertRectsNearlyEqual(draggedMapPose.bottomGrid, hudBeforeMapPose.bottomGrid, 1);
-        await screenshot(page, DRAGGED_MAP_SCREENSHOT_PATH);
-        await restoreArenaViewportPose(page, draggedMapPose.originalStyle);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'self-hud');
@@ -384,6 +328,8 @@ test.describe('Mage Wars tutorial', () => {
 
         await waitForTutorialStep(page, 'channel-result');
         await expect.poll(async () => (await readMageWarsState(page)).core?.players?.['0']?.mana).toBe(20);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
+            .toHaveCount(0);
         await screenshot(page, CHANNEL_RESULT_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
@@ -397,11 +343,37 @@ test.describe('Mage Wars tutorial', () => {
         await clickTutorialSpellbookCard(page, 2819);
         await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '1/2');
         await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('1/2');
+        await expect(page.locator('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2819"]')
+            .getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
+            .toHaveCount(1);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2819"]'))
+            .toHaveCount(1);
+        expect(await readPlanningDrafts(page)).toEqual([
+            { sourceCardId: '2819', planSlotIndex: '1' },
+        ]);
         await screenshot(page, PLAN_ONE_OF_TWO_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-spellbook-category-incantation');
         await clickTutorialSpellbookCard(page, 3403);
         await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '2/2');
         await expect(page.getByTestId('mage-wars-plan-spells')).toContainText('2/2');
+        await expect(page.locator('[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="3403"]')
+            .getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
+            .toHaveCount(2);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2819"]'))
+            .toHaveCount(1);
+        await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="3403"]'))
+            .toHaveCount(1);
+        await expect.poll(async () => page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]')
+            .evaluateAll((cards) => cards
+                .map((card) => card.getAttribute('data-source-card-id'))
+                .filter(Boolean)
+                .sort())).toEqual(['2819', '3403']);
+        expect(await readPlanningDrafts(page)).toEqual([
+            { sourceCardId: '2819', planSlotIndex: '1' },
+            { sourceCardId: '3403', planSlotIndex: '2' },
+        ]);
         await screenshot(page, PLAN_TWO_OF_TWO_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-plan-spells');
         await waitForTutorialStep(page, 'prepared-and-hidden');
@@ -644,6 +616,7 @@ test.describe('Mage Wars tutorial', () => {
             (await readMageWarsState(page)).core?.objects?.[BURNING_CLERIC_OBJECT_ID]?.statusTokens?.burn ?? 0
         ), { timeout: 15_000 }).toBe(0);
         await screenshot(page, RESTORE_RESULT_SCREENSHOT_PATH);
+        await assertTutorialScreenshotEvidenceSet();
 
         await assertNoFatalFrontendErrors([{ label: 'mage-wars-tutorial-natural-flow', diagnostics }]);
     });

@@ -1,0 +1,145 @@
+{
+  "title": "Mage Wars 教程主流程截图顺序（2026-09-02）",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+      "label": "教程入口：正式牌桌与胜利条件可见",
+      "transition": "起点：从 Mage Wars 教程真实入口进入，不显示无职责的正式竞技场标题。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+      "label": "读取己方法师属性与聚魔说明",
+      "transition": "从入口提示进入读局；属性、法力和聚魔说明仍是完整 HUD，不被教程态压小。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+      "label": "聚魔自动结算：法力增加",
+      "transition": "系统自动执行聚魔结果，玩家不需要手动点结束回合来完成聚魔。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+      "label": "确认计划前：第一张法术进入计划槽",
+      "transition": "玩家点击第一张计划法术；已选结果显示在计划槽位，不靠法术书小标签。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+      "label": "确认计划前：两张法术进入两个计划槽",
+      "transition": "玩家点击第二张计划法术；两个计划槽分别显示待确认的真实法术牌。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-prepared-and-hidden.png",
+      "label": "计划已确认：己方准备牌可见",
+      "transition": "点击确认计划后，草稿转为己方准备牌，对手计划信息仍保持隐藏。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-summon-target-zone-highlight.png",
+      "label": "召唤灰狼：合法区域高亮",
+      "transition": "选择丛林灰狼后，地图上出现真实可点召唤区域。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-wolf-summoned-not-ready.png",
+      "label": "灰狼已召唤：单位落入场上格子",
+      "transition": "点击目标区域后，灰狼进入场上但尚未就绪。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+      "label": "点醒灰狼：灰狼本体成为目标",
+      "transition": "选择点醒法术后，目标高亮贴在灰狼本体上。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png",
+      "label": "灰狼就绪：己方部署可收口",
+      "transition": "点击灰狼后，灰狼就绪并出现己方部署让过入口。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-opponent-deploy-prompt.png",
+      "label": "对手部署提示：等待对手动作",
+      "transition": "己方让过部署后，流程进入对手部署提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-spell-result-and-discard-reading.png",
+      "label": "对手法术结算：弃牌信息可读",
+      "transition": "对手动作结算后，玩家可读取公开弃牌和结果。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-pass-deployment.png",
+      "label": "对手部署收口：进入下一窗口",
+      "transition": "对手部署结束后，流程推进到后续快速施法窗口。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-skip-initiative-quickcast.png",
+      "label": "快速施法窗口：玩家真实让过",
+      "transition": "该阶段是独立窗口，必须由当前阶段按钮真实推进，不能合并成隐藏操作。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-wolf-moved-to-a2.png",
+      "label": "灰狼移动：单位从行动进入目标格",
+      "transition": "玩家点击灰狼和相邻区域后，灰狼移动到 A2。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-wall-prepared.png",
+      "label": "墙体法术已准备：来源牌可见",
+      "transition": "进入墙体教学前，墙体来源牌处于准备区。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wall-edge-target-highlight.png",
+      "label": "选择墙体边：边界目标高亮",
+      "transition": "选择墙体法术后，合法边界目标在地图上高亮。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wall-card-on-edge.png",
+      "label": "墙体落边：墙卡显示在目标边",
+      "transition": "点击目标边后，墙体卡牌直接落在地图边界上。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-wall-line-of-sight-and-passage.png",
+      "label": "墙体效果：视线与通行说明可读",
+      "transition": "墙体落位后，教程解释视线与通行影响。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-guard-action-dock.png",
+      "label": "守卫动作：守卫入口可见",
+      "transition": "进入守卫教学，当前可执行入口显示在动作区。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-guard-token-result.png",
+      "label": "守卫结果：守卫标记贴合单位",
+      "transition": "点击守卫动作后，守卫状态作为单位结果显示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-healing-light-action-dock.png",
+      "label": "治疗之光：法术动作入口可见",
+      "transition": "进入治疗教学，治疗法术来源和动作入口同时可见。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-healing-target-highlight.png",
+      "label": "治疗目标：目标单位高亮",
+      "transition": "选择治疗动作后，合法治疗目标以本体高亮承接。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-healing-result-life-readout.png",
+      "label": "治疗结果：生命读数更新",
+      "transition": "点击目标后，生命读数显示治疗结果。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-life-toggle-all-readouts.png",
+      "label": "生命读数切换：全场血量可读",
+      "transition": "切换生命显示后，玩家能同时读取关键对象生命值。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-restore-action-dock.png",
+      "label": "复原术：动作入口可见",
+      "transition": "进入复原术教学，复原术来源和动作入口同时可见。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-restore-burn-target-highlight.png",
+      "label": "复原术目标：燃烧状态可选",
+      "transition": "选择复原术后，带燃烧状态的目标被明确高亮。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-restore-burn-removed.png",
+      "label": "复原术结果：燃烧移除",
+      "transition": "点击目标后，燃烧状态被移除，教程主流程收口。"
+    }
+  ]
+}

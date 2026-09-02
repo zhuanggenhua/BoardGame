@@ -27,6 +27,7 @@ import {
     createTokenResponseRequestedEvent,
     getUsableTokenAmountForTiming,
     maybeCreateDamageResponseEvent,
+    applyExistingDamagePreventionToPendingDamage,
 } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler, resolveRollDieSettlement } from './effects';
@@ -705,11 +706,14 @@ export function executeTokenCommand(
                 ) || hasBeforeDamageReceivedCard(state, pendingDamage.targetPlayerId) || hasNyraRedirect;
                 if (hasDefenderResponse) {
                     // 切换到防御方响应
-                    const newPendingDamage: PendingDamage = {
+                    const newPendingDamage: PendingDamage = applyExistingDamagePreventionToPendingDamage(state, {
                         ...pendingDamage,
                         responseType: 'beforeDamageReceived',
                         responderId: pendingDamage.targetPlayerId,
-                    };
+                    }, {
+                        bypassShields: pendingDamage.unblockable,
+                        isUltimateDamage: state.pendingAttack?.isUltimate === true,
+                    });
                     const tokenResponseEvent = createTokenResponseRequestedEvent(newPendingDamage, timestamp);
                     events.push(tokenResponseEvent);
                     break;

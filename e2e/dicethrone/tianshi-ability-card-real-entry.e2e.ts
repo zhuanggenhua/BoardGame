@@ -184,6 +184,11 @@ const expectRightTrayDiceDefinitions = async (
     }
 };
 
+const expectVisiblePlayerHp = async (page: Page, playerId: string, hp: number): Promise<void> => {
+    const panel = page.getByRole('region', { name: new RegExp(`player-${playerId} 面板`) });
+    await expect(panel.getByText(String(hp), { exact: true }).first()).toBeVisible({ timeout: 10000 });
+};
+
 const advancePhase = async (page: Page, playerId = '0'): Promise<void> => {
     const button = page.locator('[data-tutorial-id="advance-phase-button"]');
     if (
@@ -202,6 +207,29 @@ const passResponseWindowIfVisible = async (page: Page): Promise<void> => {
     if (!await passButton.isVisible({ timeout: 1500 }).catch(() => false)) return;
     await expect(passButton).toBeEnabled({ timeout: 5000 });
     await passButton.click({ force: true });
+};
+
+const skipTokenResponseInteractionIfPresent = async (page: Page, game: GameTestContext): Promise<boolean> => {
+    const state = await readState(game);
+    const interaction = state.sys?.interaction?.current;
+    if (interaction?.kind !== 'dt:token-response') return false;
+
+    const responderId = typeof interaction.playerId === 'string'
+        ? interaction.playerId
+        : typeof state.core?.pendingDamage?.responderId === 'string'
+            ? state.core.pendingDamage.responderId
+            : '0';
+    const pendingDamageId = typeof state.core?.pendingDamage?.id === 'string'
+        ? state.core.pendingDamage.id
+        : undefined;
+    await dispatchCommand(
+        page,
+        'SKIP_TOKEN_RESPONSE',
+        responderId,
+        pendingDamageId ? { pendingDamageId } : {},
+    );
+    await page.waitForTimeout(250);
+    return true;
 };
 
 const dismissAttackShowcaseIfVisible = async (page: Page): Promise<void> => {
@@ -233,6 +261,9 @@ const advanceAttackToCloseout = async (page: Page, game: GameTestContext): Promi
         // 攻击方响应”。每一轮都先处理当前可见的真实跳过入口，再推进
         // 对应玩家的阶段，直到领域状态真正清掉 pendingAttack。
         await passResponseWindowIfVisible(page);
+        if (await skipTokenResponseInteractionIfPresent(page, game)) {
+            continue;
+        }
         state = await readState(game);
         const pendingAfterPass = state.core?.pendingAttack;
         if (!pendingAfterPass) {
@@ -289,6 +320,89 @@ const advanceAttackToCloseout = async (page: Page, game: GameTestContext): Promi
     })}`);
 };
 
+const advanceUntilPlayerOffensiveRoll = async (
+    page: Page,
+    game: GameTestContext,
+    playerId: string,
+): Promise<void> => {
+    for (let attempt = 0; attempt < 18; attempt += 1) {
+        await dismissAttackShowcaseIfVisible(page);
+        await passResponseWindowIfVisible(page);
+        const state = await readState(game);
+        if (
+            state.sys?.phase === 'offensiveRoll'
+            && state.core?.activePlayerId === playerId
+            && !state.core?.pendingAttack
+            && !state.sys?.interaction?.current
+        ) {
+            return;
+        }
+        if (state.sys?.interaction?.current) {
+            await page.waitForTimeout(250);
+            continue;
+        }
+        await advancePhase(page, state.core?.activePlayerId ?? playerId);
+        await page.waitForTimeout(300);
+    }
+
+    const finalState = await readState(game);
+    throw new Error(`未能推进到玩家 ${playerId} 的进攻掷骰阶段：${JSON.stringify({
+        phase: finalState.sys?.phase,
+        activePlayerId: finalState.core?.activePlayerId,
+        pendingAttack: finalState.core?.pendingAttack ?? null,
+        interaction: finalState.sys?.interaction?.current ?? null,
+    })}`);
+};
+
+const startMonkFistTechniqueAttackAgainstTianshi = async (
+    page: Page,
+    game: GameTestContext,
+): Promise<void> => {
+    await setDiceThroneBonusDiceValues(page, [1, 1, 1, 1, 1]);
+    await dispatchCommand(page, 'ROLL_DICE', '1');
+    await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice), undefined, { timeout: 10000 });
+    await expect.poll(async () => (
+        (await readState(game)).core?.dice?.slice(0, 5).map((die: JsonRecord) => die.value) ?? []
+    ), { timeout: 10000 }).toEqual([1, 1, 1, 1, 1]);
+    await dispatchCommand(page, 'CONFIRM_ROLL', '1');
+    await dispatchCommand(page, 'SELECT_ABILITY', '1', { abilityId: 'fist-technique-5' });
+    await expect.poll(async () => {
+        const state = await readState(game);
+        return {
+            phase: state.sys?.phase ?? null,
+            pendingAttack: state.core?.pendingAttack ?? null,
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        phase: 'offensiveRoll',
+        pendingAttack: {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'fist-technique-5',
+            isDefendable: true,
+        },
+    });
+    await dismissAttackShowcaseIfVisible(page);
+    await advancePhase(page, '1');
+    await expect.poll(async () => {
+        const state = await readState(game);
+        return {
+            phase: state.sys?.phase ?? null,
+            activePlayerId: state.core?.activePlayerId ?? null,
+            pendingAttack: state.core?.pendingAttack ?? null,
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        phase: 'defensiveRoll',
+        activePlayerId: '1',
+        pendingAttack: {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'fist-technique-5',
+            defenseAbilityId: 'angelic-cloak',
+        },
+    });
+    await dismissAttackShowcaseIfVisible(page);
+};
+
 const dragHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
     const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(card).toBeVisible({ timeout: 10000 });
@@ -322,7 +436,9 @@ const selectPlayerTarget = async (page: Page, playerId: string): Promise<void> =
 };
 
 const selectChoicePlayer = async (page: Page, playerId: string): Promise<void> => {
-    const choiceButton = page.locator('#modal-root').getByRole('button', { name: new RegExp(`^玩家 ${playerId}$`) });
+    const choiceButton = page.locator('#modal-root').getByRole('button', {
+        name: playerId === '0' ? /^(玩家 0|炽天使)$/ : /^(玩家 1|武僧)$/,
+    });
     await expect(choiceButton).toBeVisible({ timeout: 10000 });
     await choiceButton.click();
 };
@@ -477,6 +593,143 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
             .toBe(1);
         await game.screenshot('tianshi-holy-radiance-after-closeout', testInfo);
     });
+
+    for (const scenario of [
+        { name: '有6免伤', values: [6, 1], expectedHp: 50, expectedEvaded: true },
+        { name: '无6继续受伤', values: [2, 5], expectedHp: 43, expectedEvaded: false },
+    ]) {
+        test(`飞升真实获得飞行后，应能在防御伤害响应中使用飞行并${scenario.name}`, async ({ page, game }, testInfo) => {
+            const flightSourceCardId = 'card-tianshi-ascension';
+            await setupTianshiScene(game, {
+                phase: 'main1',
+                hand: [flightSourceCardId],
+                cp: 10,
+                opponentHp: 50,
+                disableLocalAiAutomation: true,
+            });
+
+            await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveCount(0);
+            await dragHandCardToPlay(page, flightSourceCardId);
+            await expectCardConsumed(game, flightSourceCardId, 9);
+            await expect.poll(async () => (await readState(game)).sys?.interaction?.current?.data?.type ?? null, { timeout: 10000 })
+                .toBe('selectPlayer');
+            await selectPlayerTarget(page, '0');
+            await expect.poll(async () => {
+                const state = await readState(game);
+                return {
+                    flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? 0,
+                    cp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.CP] ?? null,
+                    tianshiHp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    monkHp: state.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    interaction: state.sys?.interaction?.current ?? null,
+                    pendingAttack: state.core?.pendingAttack ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                flight: 1,
+                cp: 9,
+                tianshiHp: 50,
+                monkHp: 50,
+                interaction: null,
+                pendingAttack: null,
+            });
+            const flightTokenAfterSource = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
+            await expect(flightTokenAfterSource).toBeVisible({ timeout: 10000 });
+            await waitForDiceThroneVisualIdle(page);
+            await game.screenshot(`tianshi-flight-defense-chain-01-real-source-${scenario.name}`, testInfo);
+
+            await advanceUntilPlayerOffensiveRoll(page, game, '1');
+            await startMonkFistTechniqueAttackAgainstTianshi(page, game);
+            await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
+            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1, '0');
+            await expect.poll(async () => {
+                const state = await readState(game);
+                const rollDiceCount = state.core?.rollDiceCount ?? 0;
+                return {
+                    phase: state.sys?.phase ?? null,
+                    rollDiceCount,
+                    definitionIds: state.core?.dice?.slice(0, rollDiceCount).map((die: JsonRecord) => die.definitionId) ?? [],
+                    pendingAttack: state.core?.pendingAttack ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                rollDiceCount: 1,
+                definitionIds: ['tianshi-dice'],
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                    defenseAbilityId: 'angelic-cloak',
+                },
+            });
+
+            const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
+            const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
+            await setDiceThroneBonusDiceValues(page, [4]);
+            await expect(rollButton).toBeEnabled({ timeout: 5000 });
+            await rollButton.click();
+            await expect.poll(async () => (await readState(game)).core?.dice?.[0]?.value ?? null, { timeout: 10000 }).toBe(4);
+            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1, '0');
+            await game.screenshot(`tianshi-flight-defense-chain-02-defense-die-${scenario.name}`, testInfo);
+            await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+            await confirmButton.click();
+            await page.getByRole('button', { name: /结束防御|End Defense/i }).first().click();
+
+            await expect.poll(async () => {
+                const state = await readState(game);
+                return {
+                    interactionKind: state.sys?.interaction?.current?.kind ?? null,
+                    pendingDamage: state.core?.pendingDamage?.currentDamage ?? null,
+                    flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({
+                interactionKind: 'dt:token-response',
+                pendingDamage: 7,
+                flight: 1,
+            });
+
+            const responseWindow = page.getByTestId('dicethrone-response-window-hint');
+            const flightTokenInResponse = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
+            await expect(responseWindow).toBeVisible({ timeout: 10000 });
+            await expect(flightTokenInResponse).toBeVisible({ timeout: 10000 });
+            await expect(flightTokenInResponse).toHaveAttribute('data-token-clickable', 'true', { timeout: 10000 });
+            await game.screenshot(`tianshi-flight-defense-chain-03-response-ready-${scenario.name}`, testInfo);
+
+            await setDiceThroneBonusDiceValues(page, scenario.values);
+            await flightTokenInResponse.click();
+            await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 2, '0');
+            await game.screenshot(`tianshi-flight-defense-chain-04-flight-bonus-confirm-${scenario.name}`, testInfo);
+            await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
+
+            if (!scenario.expectedEvaded) {
+                await expect.poll(async () => (await readState(game)).core?.pendingDamage?.currentDamage ?? null, { timeout: 10000 })
+                    .toBe(7);
+                const passResponse = page.getByRole('button', { name: /^(跳过|Pass)$/i }).first();
+                await expect(passResponse).toBeEnabled({ timeout: 10000 });
+                await passResponse.click();
+            }
+
+            await expect.poll(async () => {
+                const state = await readState(game);
+                return {
+                    hp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? 0,
+                    pendingAttack: state.core?.pendingAttack ?? null,
+                    pendingDamage: state.core?.pendingDamage ?? null,
+                    pendingSettlement: state.core?.pendingBonusDiceSettlement ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                hp: scenario.expectedHp,
+                flight: 0,
+                pendingAttack: null,
+                pendingDamage: null,
+                pendingSettlement: null,
+            });
+            await expectVisiblePlayerHp(page, '0', scenario.expectedHp);
+            await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveCount(0);
+            await waitForDiceThroneVisualIdle(page);
+            await game.screenshot(`tianshi-flight-defense-chain-05-final-${scenario.name}`, testInfo);
+        });
+    }
 
     test('无上之力应从真实技能槽位结算飞行、神圣降临、眩光和攻击', async ({ page, game }, testInfo) => {
         await setupTianshiScene(game, {
@@ -745,7 +998,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-angelic-cloak-after-closeout', testInfo);
     });
 
-    test('天使斗篷投出双翼后，真实防御链会先授予飞行并等待响应后收口', async ({ page, game }, testInfo) => {
+    test('天使斗篷投出双翼后，真实防御链应防止 1 点伤害且不授予飞行', async ({ page, game }, testInfo) => {
         await setupTianshiScene(game, {
             phase: 'defensiveRoll',
             dice: [1, 2, 3, 4, 5],
@@ -794,91 +1047,24 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
 
         await expect(page.getByRole('button', { name: /结束防御|End Defense/i }).first()).toBeEnabled({ timeout: 5000 });
         await page.getByRole('button', { name: /结束防御|End Defense/i }).first().click();
-        const passResponse = page.getByRole('button', { name: /^(跳过|Pass)$/i }).first();
-        await expect(passResponse).toBeEnabled({ timeout: 5000 });
-        await passResponse.click();
         await expect.poll(async () => {
             const state = await readState(game);
             return {
                 phase: state.sys?.phase ?? null,
                 pendingAttack: state.core?.pendingAttack ?? null,
+                pendingDamage: state.core?.pendingDamage ?? null,
                 tianshiHp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? null,
             };
-        }, { timeout: 10000 }).toEqual({ phase: 'main2', pendingAttack: null, tianshiHp: 42, flight: 1 });
-        await game.screenshot('tianshi-angelic-cloak-wing-grants-flight', testInfo);
+        }, { timeout: 10000 }).toEqual({ phase: 'main2', pendingAttack: null, pendingDamage: null, tianshiHp: 43, flight: 0 });
+        await expectVisiblePlayerHp(page, '0', 43);
+        await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveCount(0);
+        await game.screenshot('tianshi-angelic-cloak-wing-prevents-1-damage', testInfo);
     });
 
-    test('天使斗篷双翼取得飞行后，飞行奖励骰有6免伤、无6承受8点原攻击都应从真实防御链收口', async ({ page, game }, testInfo) => {
-        for (const scenario of [
-            { name: '有6免伤', flightDice: [6, 1], expectedHp: 50, expectedEvaded: true },
-            { name: '无6承受8点原攻击', flightDice: [2, 5], expectedHp: 42, expectedEvaded: false },
-        ]) {
-            await setupTianshiScene(game, {
-                phase: 'defensiveRoll',
-                dice: [1, 2, 3, 4, 5],
-                currentPlayer: '1',
-                currentPlayerIndex: 1,
-                disableLocalAiAutomation: true,
-                pendingAttack: {
-                    attackerId: '1',
-                    defenderId: '0',
-                    sourceAbilityId: 'fist-technique-5',
-                    isDefendable: true,
-                    damage: 8,
-                },
-                extra: {
-                    rollCount: 0,
-                    rollLimit: 1,
-                    rollDiceCount: 0,
-                    rollConfirmed: false,
-                },
-            });
-            await dismissAttackShowcaseIfVisible(page);
-            await clickAbilitySlot(page, 'meditate', 'angelic-cloak');
-            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 1);
-            await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
-            await page.evaluate(() => window.__BG_TEST_HARNESS__?.dice.setValues([4]));
-            await page.locator('[data-tutorial-id="dice-roll-button"]').click();
-            await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
-            await page.getByRole('button', { name: /结束防御|End Defense/i }).first().click();
-
-            const flightToken = page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`);
-            await expect(flightToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 10000 });
-            await setDiceThroneBonusDiceValues(page, scenario.flightDice);
-            await flightToken.click();
-            await expectRightTrayBonusDiceConfirmation(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
-            await expectRightTrayDiceDefinitions(page, 'tianshi-dice', 2, '0');
-            await game.screenshot(`tianshi-angelic-cloak-wing-flight-bonus-${scenario.name}`, testInfo);
-            await settleCurrentBonusDice(page, () => readState(game), { sourceAbilityId: TOKEN_IDS.FLIGHT });
-
-            if (!scenario.expectedEvaded) {
-                const passResponse = page.getByRole('button', { name: /^(跳过|Pass)$/i }).first();
-                await expect(passResponse).toBeEnabled({ timeout: 10000 });
-                await passResponse.click();
-            }
-
-            await expect.poll(async () => {
-                const state = await readState(game);
-                return {
-                    hp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
-                    flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? null,
-                    pendingAttack: state.core?.pendingAttack ?? null,
-                    pendingDamage: state.core?.pendingDamage ?? null,
-                };
-            }, { timeout: 10000 }).toEqual({
-                hp: scenario.expectedHp,
-                flight: 0,
-                pendingAttack: null,
-                pendingDamage: null,
-            });
-            await waitForDiceThroneVisualIdle(page);
-            await game.screenshot(`tianshi-angelic-cloak-wing-flight-final-${scenario.name}`, testInfo);
-        }
-    });
-
-    test('天使斗篷防御骰 5 和 6 应从真实防御链分别减免 2 与 3 点伤害', async ({ page, game }, testInfo) => {
+    test('天使斗篷防御骰 4、5 和 6 应从真实防御链分别减免 1、2 与 3 点伤害', async ({ page, game }, testInfo) => {
         for (const { defenseFace, preventedDamage, expectedHp } of [
+            { defenseFace: 4, preventedDamage: 1, expectedHp: 43 },
             { defenseFace: 5, preventedDamage: 2, expectedHp: 44 },
             { defenseFace: 6, preventedDamage: 3, expectedHp: 45 },
         ]) {
@@ -921,20 +1107,25 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
                 ));
                 return {
                     hp: state.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                    flight: state.core?.players?.['0']?.tokens?.[TOKEN_IDS.FLIGHT] ?? null,
                     pendingAttack: state.core?.pendingAttack ?? null,
                     actualDamage: mainDamage?.payload?.actualDamage ?? null,
                 };
             }, { timeout: 10000 }).toEqual({
                 hp: expectedHp,
+                flight: 0,
                 pendingAttack: null,
                 actualDamage: 8 - preventedDamage,
             });
             await waitForDiceThroneVisualIdle(page);
+            await expectVisiblePlayerHp(page, '0', expectedHp);
+            await expect(page.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveCount(0);
             await game.screenshot(`tianshi-angelic-cloak-defense-shield-${defenseFace}-final`, testInfo);
         }
     });
 
-    test('消耗飞行 Token 的临时奖励骰应显示右侧确认，确认后回到正式进攻骰', async ({ page, game }, testInfo) => {
+    test('代表态：已有飞行 Token 的临时奖励骰应显示右侧确认，确认后回到正式进攻骰', async ({ page, game }, testInfo) => {
+        // 这里直接预置已有飞行 Token，只验证消费链；不证明 Token 在本用例中由规则动作自然获得。
         await setupTianshiScene(game, {
             phase: 'offensiveRoll',
             dice: [1, 1, 1, 4, 5],
@@ -995,7 +1186,8 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-flight-token-right-tray-after-confirm-return-main-dice', testInfo);
     });
 
-    test('防御响应窗口中飞行临时骰确认后，抬一手应继续命中正式防御骰', async ({ page, game }, testInfo) => {
+    test('分段代表态：已有飞行 Token 的防御临时骰确认后，抬一手应继续命中正式防御骰', async ({ page, game }, testInfo) => {
+        // 这里预置已有飞行 Token，并桥接到防御确认后的响应窗口；不证明 Token 来源。
         await setupTianshiScene(game, {
             phase: 'defensiveRoll',
             dice: [3, 3, 3, 3, 3],
@@ -1013,6 +1205,7 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
                 damage: 5,
             },
         });
+        // 桥接代表态：手动构造防御后响应窗口，避免把前置阶段误写成完整自然链。
         await page.evaluate(() => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
@@ -1086,34 +1279,35 @@ test.describe('DiceThrone 炽天使技能与专属卡真实入口', () => {
         await game.screenshot('tianshi-defense-flight-after-confirm-give-hand-targets-defense-dice', testInfo);
     });
 
-    test('防御掷骰阶段的伤害响应弹窗应允许立即使用飞行并免除当前伤害', async ({ page, game }, testInfo) => {
+    test('分段代表态：已有飞行 Token 在伤害响应中有 6 免伤、无 6 继续受伤', async ({ page, game }, testInfo) => {
         for (const scenario of [
             { name: '有6免伤', values: [6, 1], expectedHp: 50, expectedEvaded: true },
             { name: '无6继续受伤', values: [2, 5], expectedHp: 43, expectedEvaded: false },
         ]) {
-        await setupTianshiScene(game, {
-            phase: 'defensiveRoll',
-            tokens: { [TOKEN_IDS.FLIGHT]: 1 },
-            pendingAttack: {
-                attackerId: '1',
-                defenderId: '0',
-                sourceAbilityId: 'holy-blade-3',
-                isDefendable: true,
-                damage: 7,
-            },
-            extra: {
-                pendingDamage: {
-                    id: 'tianshi-flight-response',
-                    sourcePlayerId: '1',
-                    targetPlayerId: '0',
-                    originalDamage: 7,
-                    currentDamage: 7,
-                    responseType: 'beforeDamageReceived',
-                    responderId: '0',
-                    isFullyEvaded: false,
+            // 这里把已有飞行 Token 和待处理伤害作为合法起点预置，只验证响应消费链。
+            await setupTianshiScene(game, {
+                phase: 'defensiveRoll',
+                tokens: { [TOKEN_IDS.FLIGHT]: 1 },
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                    sourceAbilityId: 'holy-blade-3',
+                    isDefendable: true,
+                    damage: 7,
                 },
-            },
-        });
+                extra: {
+                    pendingDamage: {
+                        id: 'tianshi-flight-response',
+                        sourcePlayerId: '1',
+                        targetPlayerId: '0',
+                        originalDamage: 7,
+                        currentDamage: 7,
+                        responseType: 'beforeDamageReceived',
+                        responderId: '0',
+                        isFullyEvaded: false,
+                    },
+                },
+            });
         await dismissAttackShowcaseIfVisible(page);
         const seededState = await readState(game);
         const pendingDamage = seededState.core?.pendingDamage as JsonRecord;

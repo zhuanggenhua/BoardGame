@@ -1062,11 +1062,11 @@
   },
   "tutorial": {
     "mainPath": {
-      "title": "Main Tutorial: Explore to Hero Victory",
-      "description": "Start before the haunt, then naturally move through movement, exploration, event resolution, omen confirmation, the hero goal, banishing the Mummy, and the hero ending."
+      "title": "Main Tutorial: Core Turn",
+      "description": "Start before the haunt and naturally move through one core turn: movement, same-room trading, exploration, event resolution, Book use, Rabbit's Foot reroll, and damage allocation."
     },
     "basicSetup": {
-      "title": "Core Turn: Use, Move, Explore",
+      "title": "Core Turn: Move, Trade, Explore, Use",
       "description": "Before the haunt begins, you may move, discover a new room, trade Items and Omens with an explorer in the same room, and take special actions in any order. Discovering a new room ends your turn.",
       "steps": {
         "setupRuntime": "Before the haunt begins, learn one core turn: move to a room, discover a new room, reveal a discovery card, and see how the turn closes.",
@@ -1083,8 +1083,9 @@
         "useBook": "Now use the Book itself. After you spend 1 Sanity, this Event check rerolls with Knowledge.",
         "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
         "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
-        "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, connect one of its doorways to the unexplored doorway.",
-        "confirmRoomPlacement": "Rotate the new room so one doorway connects to the unexplored doorway, then choose Confirm Placement. After placement, read the room symbol; it decides which kind of discovery card is revealed.",
+        "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, first read the room tile and the connecting doorway.",
+        "rotateRoomPlacement": "Rotate the new room and choose an orientation that connects one doorway to the current unexplored doorway.",
+        "confirmRoomPlacement": "The orientation is selected. Choose Confirm Placement; only after placement do you resolve the room text and symbol.",
         "discoveryCardType": "This room has an Event symbol, so it revealed an Event card. Item symbols reveal Item cards, and Omen symbols reveal Omen cards. Read the card kind and face before resolving its instruction.",
         "rollEvent": "The Event card is public. Click Roll Event to make the Might check on this card; the dice and event result stay on the table for every player to read.",
         "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
@@ -1107,13 +1108,14 @@
       "description": "Trade Items and Omens with an explorer in the same room; the trade completes only when both explorers agree.",
       "steps": {
         "setupTrade": "On your turn, you can trade Items and Omens with an explorer in the same room, as long as both explorers agree. The trade can be unequal, and either side may only give or only take.",
-        "chooseTradeItem": "Select Rabbit's Foot in your inventory first. A trade can give without taking; nothing moves until both explorers agree.",
+        "startTrade": "You have moved into the same Hallway as your teammate. Click Trade first to enter trade selection, then choose which possessions each side gives.",
+        "chooseTradeItem": "Select the Medical Kit in your inventory as the item you give. Keep the Book and Rabbit's Foot for the later Event roll.",
         "chooseTradeTarget": "Select the teammate in the same room. You can give or take Items and Omens; click the card you want.",
-        "chooseTradeReturn": "To have the teammate give the Map, click the Map in that explorer's inventory. You can also propose a trade where only Rabbit's Foot is given.",
+        "chooseTradeReturn": "To have the teammate give the Map, click the Map in that explorer's inventory. You can also propose a trade where only the Medical Kit is given.",
         "sendTradeRequest": "After choosing what each side gives or takes, click Propose Trade. The receiver must agree before the trade completes.",
         "requestWaiting": "Both explorers must agree; nothing moves while the receiver has not chosen.",
         "acceptTradeRequest": "The receiver confirms the trade: Accept Trade completes it, while Decline leaves both inventories unchanged.",
-        "tradeReview": "The trade is complete: Map enters the requester inventory and Rabbit's Foot enters the teammate inventory."
+        "tradeReview": "The trade is complete: Map enters the requester inventory, the Medical Kit enters the teammate inventory, and the Book plus Rabbit's Foot stay ready for the later Event."
       }
     },
     "hauntActions": {

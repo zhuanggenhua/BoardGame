@@ -504,6 +504,10 @@ describe('MageWarsBoard FX wiring', () => {
 
         const leftSeatCard = screen.getByText('左席位山猫').closest('[data-testid="mage-wars-zone-field-card"]');
         const rightSeatCard = screen.getByText('右席位骑士').closest('[data-testid="mage-wars-zone-field-card"]');
+        const laneGroup = leftSeatCard?.closest('[data-testid="mage-wars-zone-ownership-lanes"]');
+        expect(laneGroup?.getAttribute('data-layout-axis')).toBe('vertical');
+        expect(laneGroup?.className).toContain('grid-rows');
+        expect(laneGroup?.className).not.toContain('grid-cols-[minmax(0,1fr)_minmax(0,1fr)]');
         expect(leftSeatCard?.closest('[data-lane-owner-side]')?.getAttribute('data-lane-owner-side')).toBe('seat-left');
         expect(rightSeatCard?.closest('[data-lane-owner-side]')?.getAttribute('data-lane-owner-side')).toBe('seat-right');
         expect(leftSeatCard?.getAttribute('data-owner-side')).toBe('seat-left');
@@ -2870,6 +2874,8 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
         expect(initialMainAction.textContent).toBe('actions.passPlanning');
         expect(screen.queryByTestId('mage-wars-plan-spells')).toBeNull();
+        expect(screen.getByTestId('mage-wars-mage-hud-self').getAttribute('data-mage-wars-hud-density')).toBe('full');
+        expect(screen.getByTestId('mage-wars-mage-hud-opponent').getAttribute('data-mage-wars-hud-density')).toBe('full');
 
         const tanglevine = container.querySelector<HTMLElement>(
             '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2224"]',
@@ -2900,11 +2906,20 @@ describe('MageWarsBoard spellbook planning UI', () => {
 
         fireEvent.click(tanglevine!);
         expect(tanglevine?.getAttribute('data-selected-count')).toBe('1');
-        expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')?.textContent).toBe('已选');
+        expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')).toBeNull();
+        expect(container.querySelectorAll('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2224"]'))
+            .toHaveLength(1);
 
         fireEvent.click(tanglevine!);
         expect(tanglevine?.getAttribute('data-selected-count')).toBe('2');
-        expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')?.textContent).toBe('选 2');
+        expect(tanglevine?.querySelector('[data-testid="mage-wars-spellbook-selected-count"]')).toBeNull();
+        expect(screen.getByTestId('mage-wars-mage-hud-self').getAttribute('data-mage-wars-hud-density')).toBe('full');
+        expect(screen.getByTestId('mage-wars-mage-hud-opponent').getAttribute('data-mage-wars-hud-density')).toBe('full');
+        const draftSlots = Array.from(container.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2224"]',
+        ));
+        expect(draftSlots).toHaveLength(2);
+        expect(draftSlots.map((slot) => slot.getAttribute('data-plan-slot-index')).sort()).toEqual(['1', '2']);
 
         const planButton = screen.getByTestId('mage-wars-plan-spells');
         expect(planButton.getAttribute('data-main-action-mode')).toBe('plan-spells');

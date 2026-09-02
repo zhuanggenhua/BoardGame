@@ -1,61 +1,290 @@
 {
-  "title": "山屋惊魂教程完整流程截图",
+  "title": "山屋惊魂教程流程截图：主线与专题分组",
   "items": [
-    {"path": "00-山屋惊魂-教程-章节目录.jpg", "label": "教程目录：选择主线教程", "transition": "起点：从教程目录进入真实主线"},
-    {"path": "01-山屋惊魂-教程-恶兆前动作区.jpg", "label": "主线：回合开始与行动区", "transition": "进入主线后，先认识当前回合和可用行动"},
-    {"path": "36-山屋惊魂-教程-属性轨读法.jpg", "label": "主线：读取属性轨", "transition": "从回合行动转到首局必须读懂的属性、当前值和骷髅标记"},
-    {"path": "02-山屋惊魂-教程-剩余移动.jpg", "label": "主线：查看剩余移动力", "transition": "读懂属性后，确认本回合还剩多少移动力"},
-    {"path": "03-山屋惊魂-教程-房间主视区.jpg", "label": "主线：查看房间与地图", "transition": "从移动力转到地图上的相邻房间和当前房间"},
-    {"path": "37-山屋惊魂-教程-观察队友视角.jpg", "label": "主线：观察队友视角", "transition": "在公开地图上查看另一名探险者的位置和状态"},
-    {"path": "37a-山屋惊魂-教程-切到第二名队友视角.jpg", "label": "主线：切换到另一名队友", "transition": "继续观察另一名队友的视角信息"},
-    {"path": "37b-山屋惊魂-教程-再次点队友返回上一视角.jpg", "label": "主线：返回上一视角", "transition": "从队友视角回到上一名探险者"},
-    {"path": "38-山屋惊魂-教程-聚焦回自己房间.jpg", "label": "主线：聚焦自己的房间", "transition": "结束观察后，回到自己的房间继续行动"},
-    {"path": "39-山屋惊魂-教程-预兆作祟进度条.jpg", "label": "主线：读取预兆作祟进度", "transition": "从地图读数转到预兆数量和作祟风险"},
-    {"path": "04-山屋惊魂-教程-持有区与帮助入口.jpg", "label": "主线：查看持有区与帮助入口", "transition": "认识常驻区域，并知道持有物和帮助入口在哪里"},
-    {"path": "05-山屋惊魂-教程-移动入口.jpg", "label": "自然主链：点击移动", "transition": "读完基础信息后，从当前回合的真实移动入口继续"},
-    {"path": "06-山屋惊魂-教程-移动到门厅后.jpg", "label": "自然主链：移动到门厅", "transition": "移动到相邻房间后，门厅成为可探索目标"},
-    {"path": "07-山屋惊魂-教程-探索目标房间.jpg", "label": "自然主链：选择探索房间", "transition": "从移动结果进入探索当前房间"},
-    {"path": "08-山屋惊魂-教程-确认放置新房间.jpg", "label": "自然主链：确认放置房间牌", "transition": "探索未知房间后，先确认房间牌的放置位置"},
-    {"path": "09-山屋惊魂-教程-事件牌公开与投掷入口.jpg", "label": "自然主链：房间符号翻出事件牌", "transition": "房间放置完成后，先看到房间的事件符号如何对应翻出事件牌，再进入投掷事件"},
-    {"path": "10-山屋惊魂-教程-事件骰出现与书本可查看.jpg", "label": "自然主链：事件骰出现，先查看书本", "transition": "点击投掷事件后，骰面和事件结果公开；先从书本放大按钮读牌面"},
-    {"path": "11-山屋惊魂-教程-书本牌面查看.jpg", "label": "自然主链：查看书本牌面", "transition": "打开书本牌面，确认它可以介入这次非战斗检定"},
-    {"path": "12-山屋惊魂-教程-书本使用后知识改骰结果.jpg", "label": "自然主链：使用书本改为知识检定", "transition": "关闭牌面后点击书本本体，消耗神志并把这次事件检定改为知识"},
-    {"path": "13-山屋惊魂-教程-点击兔脚后选择骰子.jpg", "label": "自然主链：点击兔脚选择骰子", "transition": "在结果仍公开时使用兔脚，并进入具体骰子选择"},
-    {"path": "14-山屋惊魂-教程-兔脚选中改骰高亮.jpg", "label": "自然主链：选中要重掷的骰子", "transition": "选择目标骰子后，骰子本体描边高亮和确认使用兔脚按钮同时出现"},
-    {"path": "15-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg", "label": "自然主链：兔脚重掷完成", "transition": "确认后完成重掷，保留正常尺寸的最终公开骰面"},
-    {"path": "16-山屋惊魂-教程-自动进入伤害分配.jpg", "label": "自然主链：自动进入伤害分配", "transition": "重掷结果展示结束后自动进入伤害分配，不要求逐人确认事件骰"},
-    {"path": "16a-山屋惊魂-教程-伤害分配完成后.jpg", "label": "自然主链：完成伤害分配", "transition": "选择承受伤害的属性并确认，本次事件结算收口"},
-    {"path": "40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg", "label": "预兆承接：预兆符号翻出预兆牌", "transition": "事件结算收口后，切到第二类房间符号示例：先显示预兆符号翻出的预兆牌，再处理作祟检定；这是新的房间类型示例，不能当作上一张事件牌的直接结果"},
-    {"path": "42-山屋惊魂-教程-确认后回牌桌持有区.jpg", "label": "预兆专题：确认后回到牌桌", "transition": "完成唯一确认后回到牌桌，预兆进入持有区"},
-    {"path": "43-山屋惊魂-教程-确认后预兆进度条.jpg", "label": "预兆专题：确认后读取风险轨", "transition": "回到牌桌后再次读取预兆风险进度"},
-    {"path": "17-山屋惊魂-教程-木乃伊作祟目标改变.jpg", "label": "英雄线：作祟后目标改变", "transition": "预兆风险说明之后，进入作祟已触发的英雄视角：目标和阶段已经从探索大宅切换为完成剧本胜利条件"},
-    {"path": "18-山屋惊魂-教程-打开木乃伊剧本目标页.jpg", "label": "英雄线：打开剧本目标页", "transition": "作祟开始后，先查看当前剧本的胜负目标和敌方情报"},
-    {"path": "19-山屋惊魂-教程-驱逐木乃伊前因果说明.jpg", "label": "英雄线：驱逐前的因果说明", "transition": "根据剧本目标进入驱逐木乃伊的正式行动"},
-    {"path": "20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.jpg", "label": "英雄线：驱逐木乃伊骰盘", "transition": "从目标说明进入真实的神志对抗投骰"},
-    {"path": "21-山屋惊魂-教程-驱逐木乃伊成功后的终局页.jpg", "label": "英雄线：驱逐成功终局", "transition": "投骰结果满足目标后显示真实终局"},
-    {"path": "44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg", "label": "叛徒视角：打开木乃伊目标页", "transition": "切换到叛徒视角，读取私有剧本目标"},
-    {"path": "45-山屋惊魂-教程-叛徒拾起女孩前.jpg", "label": "叛徒视角：拾起女孩前", "transition": "根据剧本目标开始执行叛徒行动"},
-    {"path": "46-山屋惊魂-教程-女孩交给木乃伊前.jpg", "label": "叛徒视角：把女孩交给木乃伊", "transition": "拾起女孩后，继续完成交付条件"},
-    {"path": "47-山屋惊魂-教程-圣符交给木乃伊前.jpg", "label": "叛徒视角：把圣符交给木乃伊", "transition": "完成第二个目标物的交付前置"},
-    {"path": "48-山屋惊魂-教程-木乃伊叛徒胜利.jpg", "label": "叛徒视角：目标完成并获胜", "transition": "两个目标都完成后进入叛徒胜利终局"},
-    {"path": "49-山屋惊魂-教程-木乃伊怪物回合开始前.jpg", "label": "怪物视角：木乃伊回合开始", "transition": "进入怪物分支，先认识木乃伊回合入口"},
-    {"path": "50-山屋惊魂-教程-木乃伊移动骰盘.jpg", "label": "怪物视角：木乃伊移动投骰", "transition": "从回合入口进入木乃伊移动骰盘"},
-    {"path": "51-山屋惊魂-教程-木乃伊瞬移目标.jpg", "label": "怪物视角：按结果选择瞬移目标", "transition": "根据移动骰结果选择合法目标房间"},
-    {"path": "52-山屋惊魂-教程-木乃伊拾起女孩结果.jpg", "label": "怪物视角：木乃伊拾起女孩", "transition": "移动到目标后产生拾起女孩的可见结果"},
-    {"path": "53-山屋惊魂-教程-木乃伊同房必须先攻击.jpg", "label": "怪物视角：同房间必须先攻击", "transition": "同房间存在英雄时，进入攻击前置"},
-    {"path": "54-山屋惊魂-教程-木乃伊攻击目标高亮.jpg", "label": "怪物视角：选择攻击目标", "transition": "从攻击前置选择具体英雄目标"},
-    {"path": "55-山屋惊魂-教程-木乃伊攻击骰盘.jpg", "label": "怪物视角：木乃伊攻击骰盘", "transition": "目标确定后进入真实攻击投骰"},
-    {"path": "56-山屋惊魂-教程-木乃伊偷取奖励入口.jpg", "label": "怪物视角：攻击后的奖励入口", "transition": "攻击结果满足条件后出现偷取奖励入口"},
-    {"path": "57-山屋惊魂-教程-木乃伊偷走地图结果.jpg", "label": "怪物视角：偷取地图结果", "transition": "选择奖励后显示木乃伊偷走地图的最终结果"},
-    {"path": "29-山屋惊魂-教程-交易同房间说明.jpg", "label": "补充链：同房间交易规则", "transition": "主线和叛徒 / 怪物目标链结束后，补充展示作祟前常用但不承接主目标变化的交易流程"},
-    {"path": "30-山屋惊魂-教程-交易选择兔脚.jpg", "label": "补充链：选择自己的持有物", "transition": "从交易规则进入选择要交出的持有物"},
-    {"path": "31-山屋惊魂-教程-交易选择队友.jpg", "label": "补充链：选择同房间队友", "transition": "选择交易对象并确认对方在同一房间"},
-    {"path": "32-山屋惊魂-教程-交易选择对方地图.jpg", "label": "补充链：选择对方持有物", "transition": "继续在对方视角区域选择接收的持有物"},
-    {"path": "33-山屋惊魂-教程-交易请求等待同意.jpg", "label": "补充链：等待接收方同意", "transition": "提交交易请求后，流程停在接收方回应窗口"},
-    {"path": "34-山屋惊魂-教程-交易接收方同意.jpg", "label": "补充链：接收方同意", "transition": "接收方明确同意交易"},
-    {"path": "35-山屋惊魂-教程-交易后互换结果.jpg", "label": "补充链：互换完成", "transition": "双方同意后，持有物完成互换并回到牌桌"},
-    {"path": "../../test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程移动入口.png", "label": "移动端：横屏教程移动入口", "transition": "补充验收：同一教程入口在手机横屏下保持可操作"},
-    {"path": "../../test-results/evidence-screenshots/betrayal/pc-regression-current/05-pc-移动入口-current.png", "label": "PC：移动入口布局回归", "transition": "补充验收：PC 布局不被手机横屏样式改写"},
-    {"path": "../../test-results/evidence-screenshots/betrayal/pc-regression-current/03-pc-房间主视区-current.png", "label": "PC：房间主视区布局回归", "transition": "补充验收：PC 房间主视区和三类牌堆保持可读"}
+    {
+      "path": "evidence/betrayal-tutorial/00-山屋惊魂-教程-章节目录.jpg",
+      "label": "主线 00：教程目录",
+      "transition": "起点：从目录进入普通玩家主线；目录只额外暴露叛徒视角章节"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/01-山屋惊魂-教程-回合目标与行动区.jpg",
+      "label": "主线 01：回合目标与行动区",
+      "transition": "进入主线后先认识当前回合目标、当前玩家和可用行动"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/02-山屋惊魂-教程-属性轨读法.jpg",
+      "label": "主线 02：读取属性轨",
+      "transition": "从当前回合转到首局必须读懂的速度、属性格和骷髅标记"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/03-山屋惊魂-教程-剩余移动.jpg",
+      "label": "主线 03：剩余移动力",
+      "transition": "读懂速度后，确认本回合还能移动几步"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/04-山屋惊魂-教程-房间主视区.jpg",
+      "label": "主线 04：房间与地图",
+      "transition": "从移动力转到地图，看到当前房间、相邻房间和可探索方向"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/05-山屋惊魂-教程-观察队友视角.jpg",
+      "label": "主线 05：观察队友",
+      "transition": "在公开地图上点击队友，切换到队友公开信息视角"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/06-山屋惊魂-教程-切到第二名队友视角.jpg",
+      "label": "主线 06：切到第二名队友",
+      "transition": "继续点击另一名队友，证明同一观察入口可切换不同玩家"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/07-山屋惊魂-教程-再次点队友返回上一视角.jpg",
+      "label": "主线 07：返回上一队友视角",
+      "transition": "再次点击队友，回到上一名被观察玩家，证明观察态可恢复"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/08-山屋惊魂-教程-聚焦回自己房间.jpg",
+      "label": "主线 08：聚焦回自己",
+      "transition": "结束观察，点击聚焦自己房间，回到当前玩家行动语境"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/09-山屋惊魂-教程-预兆作祟进度条.jpg",
+      "label": "主线 09：预兆风险读法",
+      "transition": "行动前先读取预兆数量和作祟风险；这里只教读法，不跳入作祟后目标"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/10-山屋惊魂-教程-持有区与帮助入口.jpg",
+      "label": "主线 10：持有区与帮助入口",
+      "transition": "认识当前持有物和规则帮助入口，为后面的交易、书本、兔脚做铺垫"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/11-山屋惊魂-教程-移动入口.jpg",
+      "label": "主线 11：点击移动",
+      "transition": "读局完成后，从正式动作栏的移动入口开始行动"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/12-山屋惊魂-教程-移动到门厅后.jpg",
+      "label": "主线 12：移动到门厅",
+      "transition": "点击相邻房间后，角色移动到队友同房间，交易入口变得有意义"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg",
+      "label": "主线 13：同房间交易说明",
+      "transition": "移动到队友同房间后，教程自然进入交易规则和双方同意条件"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/14-山屋惊魂-教程-交易选择急救包.jpg",
+      "label": "主线 14：选择给出的急救包",
+      "transition": "点击交易后，选择自己的急救包；书本和兔脚保留给后续事件骰教学"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/15-山屋惊魂-教程-交易选择队友.jpg",
+      "label": "主线 15：选择同房间队友",
+      "transition": "选完给出物后，点击地图上的同房间队友作为交易对象"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/16-山屋惊魂-教程-交易选择对方地图.jpg",
+      "label": "主线 16：选择对方地图",
+      "transition": "在对方持有区选择地图，形成双方交换草稿"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+      "label": "主线 17：等待接收方同意",
+      "transition": "发出交易请求后，流程停在接收方回应窗口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/18-山屋惊魂-教程-交易接收方同意.jpg",
+      "label": "主线 18：接收方同意",
+      "transition": "切到接收方视角，同意按钮复用同一确认按钮语法"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/19-山屋惊魂-教程-交易后互换结果.jpg",
+      "label": "主线 19：交易互换完成",
+      "transition": "双方同意后急救包与地图互换，书本和兔脚仍留给后续事件使用"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/20-山屋惊魂-教程-探索目标房间.jpg",
+      "label": "主线 20：选择探索房间",
+      "transition": "交易收口后继续本回合，从正式探索入口选择未知房间"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/21-山屋惊魂-教程-翻出房间朝向选择.jpg",
+      "label": "主线 21：翻出房间朝向选择",
+      "transition": "探索未知门位后，先看到新房间牌面、连接走廊和旋转控件"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/22-山屋惊魂-教程-旋转后确认放置新房间.jpg",
+      "label": "主线 22：旋转后确认放置",
+      "transition": "玩家旋转选择房间朝向后，再确认放置已选方向"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/23-山屋惊魂-教程-事件牌公开与投掷入口.jpg",
+      "label": "主线 23：房间符号翻出事件牌",
+      "transition": "确认放置后，房间事件符号对应翻出事件牌，并出现投掷事件入口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/24-山屋惊魂-教程-事件骰出现与书本可查看.jpg",
+      "label": "主线 24：事件骰出现，书本可查看",
+      "transition": "点击投掷事件后，骰面和事件结果公开；此时先查看书本牌面"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/25-山屋惊魂-教程-书本牌面查看.jpg",
+      "label": "主线 25：查看书本牌面",
+      "transition": "打开书本牌面，确认它可介入这次非战斗检定"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/26-山屋惊魂-教程-书本使用后知识改骰结果.jpg",
+      "label": "主线 26：使用书本改成知识检定",
+      "transition": "关闭牌面后点击书本本体，扣除神志并把本次事件检定改为知识"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/27-山屋惊魂-教程-点击兔脚后选择骰子.jpg",
+      "label": "主线 27：点击兔脚选择骰子",
+      "transition": "书本生效后，使用兔脚进入具体骰子选择；候选态只显示底部弱描边"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/28-山屋惊魂-教程-兔脚选中改骰高亮.jpg",
+      "label": "主线 28：选中要重掷的骰子",
+      "transition": "点击目标骰子后，选中态升级为贴合骰面本体的高亮描边，并出现确认使用兔脚"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/29-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg",
+      "label": "主线 29：兔脚重掷完成",
+      "transition": "确认使用兔脚后展示重掷结果，骰子保持正常尺寸，不膨胀成异常大骰"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/30-山屋惊魂-教程-自动进入伤害分配.jpg",
+      "label": "主线 30：自动进入伤害分配",
+      "transition": "重掷结果已公开且无新增响应/选择/授权，所以不再逐人确认，自动进入伤害分配"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/31-山屋惊魂-教程-伤害分配完成后.jpg",
+      "label": "主线 31：伤害分配完成",
+      "transition": "选择承受伤害的属性并确认，本次事件结算收口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-omen-confirmation/01-预兆牌确认与作祟检定.jpg",
+      "label": "专题：预兆牌确认与作祟检定",
+      "transition": "这是独立预兆专题，不冒充上一张事件牌的自然后果；它演示第三类发现牌和一次必要确认"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-omen-confirmation/02-确认后回牌桌持有区.jpg",
+      "label": "专题：预兆确认后回牌桌",
+      "transition": "预兆牌确认后进入持有区，并回到牌桌"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-omen-confirmation/03-确认后预兆进度条.jpg",
+      "label": "专题：预兆进度更新",
+      "transition": "回到牌桌后再次读取预兆风险进度"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/01-木乃伊作祟目标改变.jpg",
+      "label": "代表态：作祟后英雄目标改变",
+      "transition": "这是作祟后英雄代表态，不属于普通主线；只证明已作祟状态下目标如何改变"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/02-打开木乃伊剧本目标页.jpg",
+      "label": "代表态：打开英雄剧本目标页",
+      "transition": "作祟已触发后，英雄可打开剧本阅读胜负目标"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/03-驱逐木乃伊前因果说明.jpg",
+      "label": "代表态：驱逐木乃伊前",
+      "transition": "根据英雄剧本目标，进入驱逐木乃伊的正式行动"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/04-驱逐木乃伊神志对抗骰盘.jpg",
+      "label": "代表态：驱逐木乃伊骰盘",
+      "transition": "从驱逐行动进入真实神志对抗投骰"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/05-驱逐木乃伊成功后的终局页.jpg",
+      "label": "代表态：英雄驱逐成功终局",
+      "transition": "驱逐结果满足条件后显示英雄胜利终局"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/01-叛徒打开木乃伊剧本目标页.jpg",
+      "label": "叛徒视角 01：打开叛徒剧本目标页",
+      "transition": "叛徒视角因私密目标单独成章，先读取叛徒剧本目标"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/02-叛徒拾起女孩前.jpg",
+      "label": "叛徒视角 02：拾起女孩前",
+      "transition": "根据叛徒目标，开始处理女孩与木乃伊的交付链"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/03-女孩交给木乃伊前.jpg",
+      "label": "叛徒视角 03：女孩交给木乃伊前",
+      "transition": "拾起女孩后，下一步把女孩交给木乃伊"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/04-圣符交给木乃伊前.jpg",
+      "label": "叛徒视角 04：圣符交给木乃伊前",
+      "transition": "女孩交付后继续交付圣符，推进叛徒胜利条件"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/05-木乃伊叛徒胜利.jpg",
+      "label": "叛徒视角 05：叛徒胜利",
+      "transition": "目标物完成交付后，进入叛徒胜利终局"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/01-木乃伊怪物回合开始前.jpg",
+      "label": "怪物专题 01：木乃伊回合开始",
+      "transition": "这是隐藏怪物专题，不属于普通玩家主线；用于证明怪物回合入口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/02-木乃伊移动骰盘.jpg",
+      "label": "怪物专题 02：木乃伊移动投骰",
+      "transition": "从怪物回合入口进入木乃伊移动骰盘"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/03-木乃伊瞬移目标.jpg",
+      "label": "怪物专题 03：选择瞬移目标",
+      "transition": "根据移动骰结果选择合法目标房间"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/04-木乃伊拾起女孩结果.jpg",
+      "label": "怪物专题 04：拾起女孩结果",
+      "transition": "木乃伊移动到目标后，显示拾起女孩的可见结果"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/05-木乃伊同房必须先攻击.jpg",
+      "label": "怪物专题 05：同房必须先攻击",
+      "transition": "当木乃伊与英雄同房时，规则要求先进入攻击"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/06-木乃伊攻击目标高亮.jpg",
+      "label": "怪物专题 06：选择攻击目标",
+      "transition": "点击攻击入口后，目标高亮贴合地图上的英雄本体"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/07-木乃伊攻击骰盘.jpg",
+      "label": "怪物专题 07：木乃伊攻击骰盘",
+      "transition": "选定目标后进入真实攻击投骰"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/08-木乃伊偷取奖励入口.jpg",
+      "label": "怪物专题 08：偷取奖励入口",
+      "transition": "攻击结果满足条件后出现偷取奖励入口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/09-木乃伊偷走地图结果.jpg",
+      "label": "怪物专题 09：偷走地图结果",
+      "transition": "选择奖励后，地图归属变化并收口"
+    },
+    {
+      "path": "test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程移动入口.png",
+      "label": "补充：手机横屏教程移动入口",
+      "transition": "补充验收：同一教程入口在手机横屏下保持可操作"
+    },
+    {
+      "path": "test-results/evidence-screenshots/betrayal/pc-regression-current/05-pc-移动入口-current.png",
+      "label": "补充：PC 移动入口布局回归",
+      "transition": "补充验收：PC 布局不被手机横屏样式改写"
+    },
+    {
+      "path": "test-results/evidence-screenshots/betrayal/pc-regression-current/03-pc-房间主视区-current.png",
+      "label": "补充：PC 房间主视区布局回归",
+      "transition": "补充验收：PC 房间主视区和三类牌堆保持可读"
+    }
   ]
 }

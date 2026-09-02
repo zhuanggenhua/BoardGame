@@ -565,6 +565,19 @@ export interface PendingDamage {
         sourceId?: string;
         sourceName?: string;
     }>;
+    /** 已在进入响应窗口时按同一伤害防止规则预提交，收口时 reducer 只消费结果不二次扣盾。 */
+    preventionCommitted?: boolean;
+    /** 进入响应窗口前已经命中的护盾消费计划，用于最终扣血和日志追溯同一响应事务。 */
+    shieldsConsumed?: Array<{
+        sourceId: string;
+        shieldIndex?: number;
+        value?: number;
+        reductionPercent?: number;
+        absorbed: number;
+        pendingDamageId?: string;
+        preventionOpportunityId?: string;
+        resolutionFrameId?: string;
+    }>;
     /** 当前响应窗口内各 token 已累计消耗的数量 */
     tokenUsageTotals?: Record<string, number>;
     /** 需要等响应窗口收口后再发出的附加伤害（如武士反击） */

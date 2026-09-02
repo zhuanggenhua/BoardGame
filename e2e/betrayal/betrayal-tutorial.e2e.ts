@@ -17,63 +17,64 @@ import { MOBILE_LANDSCAPE_REFERENCE_VIEWPORT } from "../../src/shared/referenceV
 
 const EVIDENCE_DIR = resolve(process.cwd(), "evidence/betrayal-tutorial");
 const STEP_00 = `${EVIDENCE_DIR}/00-山屋惊魂-教程-章节目录.jpg`;
-const STEP_01 = `${EVIDENCE_DIR}/01-山屋惊魂-教程-恶兆前动作区.jpg`;
-const STEP_02 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-剩余移动.jpg`;
-const STEP_03 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-房间主视区.jpg`;
-const STEP_04 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-持有区与帮助入口.jpg`;
-const STEP_05 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-移动入口.jpg`;
-const STEP_06 = `${EVIDENCE_DIR}/06-山屋惊魂-教程-移动到门厅后.jpg`;
-const STEP_07 = `${EVIDENCE_DIR}/07-山屋惊魂-教程-探索目标房间.jpg`;
-const STEP_08 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-确认放置新房间.jpg`;
-const STEP_09 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-事件牌公开与投掷入口.jpg`;
-const STEP_10 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-事件骰出现与书本可查看.jpg`;
-const STEP_11 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-书本牌面查看.jpg`;
-const STEP_12 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-书本使用后知识改骰结果.jpg`;
-const STEP_13 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
-const STEP_14 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
-const STEP_15 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg`;
-const STEP_16 = `${EVIDENCE_DIR}/16-山屋惊魂-教程-自动进入伤害分配.jpg`;
-const STEP_16A = `${EVIDENCE_DIR}/16a-山屋惊魂-教程-伤害分配完成后.jpg`;
-const STEP_17 = `${EVIDENCE_DIR}/17-山屋惊魂-教程-木乃伊作祟目标改变.jpg`;
-const STEP_18 = `${EVIDENCE_DIR}/18-山屋惊魂-教程-打开木乃伊剧本目标页.jpg`;
-const STEP_19 = `${EVIDENCE_DIR}/19-山屋惊魂-教程-驱逐木乃伊前因果说明.jpg`;
-const STEP_20 = `${EVIDENCE_DIR}/20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.jpg`;
-const STEP_21 = `${EVIDENCE_DIR}/21-山屋惊魂-教程-驱逐木乃伊成功后的终局页.jpg`;
-const STEP_22 = `${EVIDENCE_DIR}/22-山屋惊魂-教程-英雄攻击叛徒前.jpg`;
-const STEP_23 = `${EVIDENCE_DIR}/23-山屋惊魂-教程-英雄攻击叛徒骰盘.jpg`;
-const STEP_26 = `${EVIDENCE_DIR}/26-山屋惊魂-教程-杰克之灵目标页.jpg`;
-const STEP_27 = `${EVIDENCE_DIR}/27-山屋惊魂-教程-杰克之灵攻击英雄前.jpg`;
-const STEP_28 = `${EVIDENCE_DIR}/28-山屋惊魂-教程-杰克之灵攻击骰盘.jpg`;
-const STEP_29 = `${EVIDENCE_DIR}/29-山屋惊魂-教程-交易同房间说明.jpg`;
-const STEP_30 = `${EVIDENCE_DIR}/30-山屋惊魂-教程-交易选择兔脚.jpg`;
-const STEP_31 = `${EVIDENCE_DIR}/31-山屋惊魂-教程-交易选择队友.jpg`;
-const STEP_32 = `${EVIDENCE_DIR}/32-山屋惊魂-教程-交易选择对方地图.jpg`;
-const STEP_33 = `${EVIDENCE_DIR}/33-山屋惊魂-教程-交易请求等待同意.jpg`;
-const STEP_34 = `${EVIDENCE_DIR}/34-山屋惊魂-教程-交易接收方同意.jpg`;
-const STEP_35 = `${EVIDENCE_DIR}/35-山屋惊魂-教程-交易后互换结果.jpg`;
-const STEP_36 = `${EVIDENCE_DIR}/36-山屋惊魂-教程-属性轨读法.jpg`;
-const STEP_37 = `${EVIDENCE_DIR}/37-山屋惊魂-教程-观察队友视角.jpg`;
-const STEP_37A = `${EVIDENCE_DIR}/37a-山屋惊魂-教程-切到第二名队友视角.jpg`;
-const STEP_37B = `${EVIDENCE_DIR}/37b-山屋惊魂-教程-再次点队友返回上一视角.jpg`;
-const STEP_38 = `${EVIDENCE_DIR}/38-山屋惊魂-教程-聚焦回自己房间.jpg`;
-const STEP_39 = `${EVIDENCE_DIR}/39-山屋惊魂-教程-预兆作祟进度条.jpg`;
-const STEP_40 = `${EVIDENCE_DIR}/40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg`;
-const STEP_42 = `${EVIDENCE_DIR}/42-山屋惊魂-教程-确认后回牌桌持有区.jpg`;
-const STEP_43 = `${EVIDENCE_DIR}/43-山屋惊魂-教程-确认后预兆进度条.jpg`;
-const STEP_44 = `${EVIDENCE_DIR}/44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg`;
-const STEP_45 = `${EVIDENCE_DIR}/45-山屋惊魂-教程-叛徒拾起女孩前.jpg`;
-const STEP_46 = `${EVIDENCE_DIR}/46-山屋惊魂-教程-女孩交给木乃伊前.jpg`;
-const STEP_47 = `${EVIDENCE_DIR}/47-山屋惊魂-教程-圣符交给木乃伊前.jpg`;
-const STEP_48 = `${EVIDENCE_DIR}/48-山屋惊魂-教程-木乃伊叛徒胜利.jpg`;
-const STEP_49 = `${EVIDENCE_DIR}/49-山屋惊魂-教程-木乃伊怪物回合开始前.jpg`;
-const STEP_50 = `${EVIDENCE_DIR}/50-山屋惊魂-教程-木乃伊移动骰盘.jpg`;
-const STEP_51 = `${EVIDENCE_DIR}/51-山屋惊魂-教程-木乃伊瞬移目标.jpg`;
-const STEP_52 = `${EVIDENCE_DIR}/52-山屋惊魂-教程-木乃伊拾起女孩结果.jpg`;
-const STEP_53 = `${EVIDENCE_DIR}/53-山屋惊魂-教程-木乃伊同房必须先攻击.jpg`;
-const STEP_54 = `${EVIDENCE_DIR}/54-山屋惊魂-教程-木乃伊攻击目标高亮.jpg`;
-const STEP_55 = `${EVIDENCE_DIR}/55-山屋惊魂-教程-木乃伊攻击骰盘.jpg`;
-const STEP_56 = `${EVIDENCE_DIR}/56-山屋惊魂-教程-木乃伊偷取奖励入口.jpg`;
-const STEP_57 = `${EVIDENCE_DIR}/57-山屋惊魂-教程-木乃伊偷走地图结果.jpg`;
+const STEP_01 = `${EVIDENCE_DIR}/01-山屋惊魂-教程-回合目标与行动区.jpg`;
+const STEP_02 = `${EVIDENCE_DIR}/03-山屋惊魂-教程-剩余移动.jpg`;
+const STEP_03 = `${EVIDENCE_DIR}/04-山屋惊魂-教程-房间主视区.jpg`;
+const STEP_04 = `${EVIDENCE_DIR}/10-山屋惊魂-教程-持有区与帮助入口.jpg`;
+const STEP_05 = `${EVIDENCE_DIR}/11-山屋惊魂-教程-移动入口.jpg`;
+const STEP_06 = `${EVIDENCE_DIR}/12-山屋惊魂-教程-移动到门厅后.jpg`;
+const STEP_07 = `${EVIDENCE_DIR}/20-山屋惊魂-教程-探索目标房间.jpg`;
+const STEP_08 = `${EVIDENCE_DIR}/21-山屋惊魂-教程-翻出房间朝向选择.jpg`;
+const STEP_09 = `${EVIDENCE_DIR}/22-山屋惊魂-教程-旋转后确认放置新房间.jpg`;
+const STEP_10 = `${EVIDENCE_DIR}/23-山屋惊魂-教程-事件牌公开与投掷入口.jpg`;
+const STEP_11 = `${EVIDENCE_DIR}/24-山屋惊魂-教程-事件骰出现与书本可查看.jpg`;
+const STEP_12 = `${EVIDENCE_DIR}/25-山屋惊魂-教程-书本牌面查看.jpg`;
+const STEP_13 = `${EVIDENCE_DIR}/26-山屋惊魂-教程-书本使用后知识改骰结果.jpg`;
+const STEP_14 = `${EVIDENCE_DIR}/27-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
+const STEP_15 = `${EVIDENCE_DIR}/28-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
+const STEP_16 = `${EVIDENCE_DIR}/29-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg`;
+const STEP_16A = `${EVIDENCE_DIR}/30-山屋惊魂-教程-自动进入伤害分配.jpg`;
+const STEP_16B = `${EVIDENCE_DIR}/31-山屋惊魂-教程-伤害分配完成后.jpg`;
+const STEP_17 = `${EVIDENCE_DIR}/representative-hero-haunt/01-木乃伊作祟目标改变.jpg`;
+const STEP_18 = `${EVIDENCE_DIR}/representative-hero-haunt/02-打开木乃伊剧本目标页.jpg`;
+const STEP_19 = `${EVIDENCE_DIR}/representative-hero-haunt/03-驱逐木乃伊前因果说明.jpg`;
+const STEP_20 = `${EVIDENCE_DIR}/representative-hero-haunt/04-驱逐木乃伊神志对抗骰盘.jpg`;
+const STEP_21 = `${EVIDENCE_DIR}/representative-hero-haunt/05-驱逐木乃伊成功后的终局页.jpg`;
+const STEP_22 = `${EVIDENCE_DIR}/topic-hero-attack/01-英雄攻击叛徒前.jpg`;
+const STEP_23 = `${EVIDENCE_DIR}/topic-hero-attack/02-英雄攻击叛徒骰盘.jpg`;
+const STEP_26 = `${EVIDENCE_DIR}/topic-jack-spirit/01-杰克之灵目标页.jpg`;
+const STEP_27 = `${EVIDENCE_DIR}/topic-jack-spirit/02-杰克之灵攻击英雄前.jpg`;
+const STEP_28 = `${EVIDENCE_DIR}/topic-jack-spirit/03-杰克之灵攻击骰盘.jpg`;
+const STEP_29 = `${EVIDENCE_DIR}/13-山屋惊魂-教程-交易同房间说明.jpg`;
+const STEP_30 = `${EVIDENCE_DIR}/14-山屋惊魂-教程-交易选择急救包.jpg`;
+const STEP_31 = `${EVIDENCE_DIR}/15-山屋惊魂-教程-交易选择队友.jpg`;
+const STEP_32 = `${EVIDENCE_DIR}/16-山屋惊魂-教程-交易选择对方地图.jpg`;
+const STEP_33 = `${EVIDENCE_DIR}/17-山屋惊魂-教程-交易请求等待同意.jpg`;
+const STEP_34 = `${EVIDENCE_DIR}/18-山屋惊魂-教程-交易接收方同意.jpg`;
+const STEP_35 = `${EVIDENCE_DIR}/19-山屋惊魂-教程-交易后互换结果.jpg`;
+const STEP_36 = `${EVIDENCE_DIR}/02-山屋惊魂-教程-属性轨读法.jpg`;
+const STEP_37 = `${EVIDENCE_DIR}/05-山屋惊魂-教程-观察队友视角.jpg`;
+const STEP_37A = `${EVIDENCE_DIR}/06-山屋惊魂-教程-切到第二名队友视角.jpg`;
+const STEP_37B = `${EVIDENCE_DIR}/07-山屋惊魂-教程-再次点队友返回上一视角.jpg`;
+const STEP_38 = `${EVIDENCE_DIR}/08-山屋惊魂-教程-聚焦回自己房间.jpg`;
+const STEP_39 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-预兆作祟进度条.jpg`;
+const STEP_40 = `${EVIDENCE_DIR}/topic-omen-confirmation/01-预兆牌确认与作祟检定.jpg`;
+const STEP_42 = `${EVIDENCE_DIR}/topic-omen-confirmation/02-确认后回牌桌持有区.jpg`;
+const STEP_43 = `${EVIDENCE_DIR}/topic-omen-confirmation/03-确认后预兆进度条.jpg`;
+const STEP_44 = `${EVIDENCE_DIR}/traitor-path/01-叛徒打开木乃伊剧本目标页.jpg`;
+const STEP_45 = `${EVIDENCE_DIR}/traitor-path/02-叛徒拾起女孩前.jpg`;
+const STEP_46 = `${EVIDENCE_DIR}/traitor-path/03-女孩交给木乃伊前.jpg`;
+const STEP_47 = `${EVIDENCE_DIR}/traitor-path/04-圣符交给木乃伊前.jpg`;
+const STEP_48 = `${EVIDENCE_DIR}/traitor-path/05-木乃伊叛徒胜利.jpg`;
+const STEP_49 = `${EVIDENCE_DIR}/topic-mummy-monster/01-木乃伊怪物回合开始前.jpg`;
+const STEP_50 = `${EVIDENCE_DIR}/topic-mummy-monster/02-木乃伊移动骰盘.jpg`;
+const STEP_51 = `${EVIDENCE_DIR}/topic-mummy-monster/03-木乃伊瞬移目标.jpg`;
+const STEP_52 = `${EVIDENCE_DIR}/topic-mummy-monster/04-木乃伊拾起女孩结果.jpg`;
+const STEP_53 = `${EVIDENCE_DIR}/topic-mummy-monster/05-木乃伊同房必须先攻击.jpg`;
+const STEP_54 = `${EVIDENCE_DIR}/topic-mummy-monster/06-木乃伊攻击目标高亮.jpg`;
+const STEP_55 = `${EVIDENCE_DIR}/topic-mummy-monster/07-木乃伊攻击骰盘.jpg`;
+const STEP_56 = `${EVIDENCE_DIR}/topic-mummy-monster/08-木乃伊偷取奖励入口.jpg`;
+const STEP_57 = `${EVIDENCE_DIR}/topic-mummy-monster/09-木乃伊偷走地图结果.jpg`;
 const TECHNICAL_ASSET_GATE_STEP = `${EVIDENCE_DIR}/技术证据-山屋惊魂-教程-素材加载门禁.jpg`;
 const MOBILE_EVIDENCE_DIR = resolve(
   process.cwd(),
@@ -277,6 +278,24 @@ const waitForStableIncomingTradeAgreement = async (
       pendingRequester: "0",
       pendingTarget: "1",
     });
+};
+
+const expectBetrayalConfirmButtonVisual = async (
+  button: Locator,
+  label: string,
+) => {
+  await expect(button, `${label} 必须使用山屋惊魂统一确认按钮底色`).toHaveCSS(
+    "background-color",
+    "rgb(214, 181, 109)",
+  );
+  await expect(button, `${label} 必须使用山屋惊魂统一确认按钮边框色`).toHaveCSS(
+    "border-top-color",
+    "rgb(214, 181, 109)",
+  );
+  await expect(button, `${label} 不能保留另一套圆角确认样式`).toHaveCSS(
+    "border-radius",
+    "0px",
+  );
 };
 
 const waitForHauntRuntime = async (
@@ -1572,7 +1591,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ]);
   });
 
-  test("[tutorial-main] 教程路由会从真实运行时主入口开始，并复用真实终局", async ({
+  test("[tutorial-main] 教程路由只暴露主线和叛徒视角，主线入口不伪装作祟后代表态", async ({
     page,
     context,
   }) => {
@@ -1781,6 +1800,31 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("betrayal-reference-overlay")).toBeHidden();
     await saveScreenshot(page, STEP_04);
 
+    await clickNext(page);
+    await waitForStep(page, "open-move-targets");
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "点“移动”",
+    );
+    await expect(
+      page.getByTestId("betrayal-runtime-header-grid"),
+    ).not.toContainText(/作祟中|Haunt/i);
+
+    assertNoFatalFrontendErrors([{ label: "betrayal-tutorial", diagnostics }]);
+  });
+
+  test("[haunt-representative] 作祟后代表态会打开剧本并驱逐木乃伊", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context, { skipTutorial: false });
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-tutorial-haunt-representative",
+    );
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await warmBetrayalFrontend(context);
     await page.goto("/play/betrayal/tutorial/haunt-actions-and-finish", {
       waitUntil: "domcontentloaded",
     });
@@ -1929,7 +1973,9 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toBeHidden();
     await saveScreenshot(page, STEP_21);
 
-    assertNoFatalFrontendErrors([{ label: "betrayal-tutorial", diagnostics }]);
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-tutorial-haunt-representative", diagnostics },
+    ]);
   });
 
   test("[omen-confirm] 预兆教程会按规则解释作祟检定并保留一次确认", async ({
@@ -2056,16 +2102,24 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await saveScreenshot(page, STEP_29);
 
     await clickNext(page);
+    await waitForStep(page, "start-trade");
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "点“交易”",
+    );
+    await page.getByTestId("betrayal-action-trade").click();
+    await expect(page.getByTestId("betrayal-trade-flow-banner")).toBeVisible();
+
+    await clickNext(page);
     await waitForStep(page, "choose-trade-item");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "兔脚",
+      "急救包",
     );
-    await expect(page.getByTestId("betrayal-inventory-rope")).toBeVisible();
-    await page.getByTestId("betrayal-inventory-rope").click();
+    await expect(page.getByTestId("betrayal-inventory-medical-kit")).toBeVisible();
+    await page.getByTestId("betrayal-inventory-medical-kit").click();
     await expect(
       page.getByTestId("betrayal-selected-inventory-card-name"),
-    ).toContainText("兔脚");
-    await expect(page.getByTestId("betrayal-inventory-rope")).toHaveAttribute(
+    ).toContainText("急救包");
+    await expect(page.getByTestId("betrayal-inventory-medical-kit")).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -2080,9 +2134,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toBeVisible();
     await expect(teammateToken).toHaveAttribute("data-direct-target", "true");
     await page.getByTestId("betrayal-room-occupant-hallway-1").click();
-    await expect(page.getByTestId("betrayal-trade-status")).toContainText(
-      "可交易给",
-    );
     await expect(
       page.getByTestId("betrayal-trade-return-selector"),
     ).toBeVisible();
@@ -2111,7 +2162,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
       "未主动选择对方物品时，交易摘要只列己方给出物",
-    ).toContainText(/你给出.*兔脚/);
+    ).toContainText(/你给出.*急救包/);
     await expect(
       page.getByTestId("betrayal-trade-flow-target-step"),
     ).toContainText("提出交易");
@@ -2129,7 +2180,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await page.getByTestId("betrayal-trade-return-card-map").click();
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toContainText(/你给出.*兔脚.*对方给出.*地图/);
+    ).toContainText(/你给出.*急救包.*对方给出.*地图/);
     await expect(
       page.getByTestId("betrayal-trade-return-card-map-selected-outline"),
     ).toBeVisible();
@@ -2148,7 +2199,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toContainText("等待");
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toContainText(/你给出.*兔脚.*对方给出.*地图/);
+    ).toContainText(/你给出.*急救包.*对方给出.*地图/);
     await expect(
       page.getByTestId("betrayal-trade-agreement-panel"),
     ).toHaveCount(0);
@@ -2158,7 +2209,11 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStableIncomingTradeAgreement(page);
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toContainText(/给出.*兔脚.*你给出.*地图/);
+    ).toContainText(/给出.*急救包.*你给出.*地图/);
+    await expectBetrayalConfirmButtonVisual(
+      page.getByTestId("betrayal-trade-agreement-accept"),
+      "交易接收方同意按钮",
+    );
     await saveScreenshot(page, STEP_34);
 
     await waitForStableIncomingTradeAgreement(page);
@@ -2166,7 +2221,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForStep(page, "trade-review", 30000);
     await expect(
       page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText(/同意交易|兔脚|地图/);
+    ).toContainText(/同意交易|急救包|地图/);
     await expect(
       page.getByTestId("betrayal-trade-agreement-panel"),
     ).toHaveCount(0);
@@ -2203,28 +2258,30 @@ test.describe("山屋惊魂教程最小真实链路", () => {
                 ?.find((explorer) => explorer.playerId === "1")
                 ?.inventory?.map((item) => item.name) ?? [];
             return {
+              currentHasMedicalKit: currentInventory.includes("急救包"),
               currentHasRabbitFoot: currentInventory.includes("兔脚"),
               currentHasBook: currentInventory.includes("书本"),
               currentHasMap: currentInventory.includes("地图"),
+              teammateHasMedicalKit: teammateInventory.includes("急救包"),
               teammateHasMap: teammateInventory.includes("地图"),
               teammateHasSkull: teammateInventory.includes("头骨"),
-              teammateHasRabbitFoot: teammateInventory.includes("兔脚"),
               pendingTradeAgreement: state?.core?.pendingTradeAgreement ?? null,
             };
           }),
         {
           message:
-            "交易教程必须在接收方同意后双向转移：发起方得到地图，队友得到兔脚",
+            "交易教程必须在接收方同意后双向转移：发起方得到地图，队友得到急救包，书本和兔脚仍留在发起方",
           timeout: 10000,
         },
       )
       .toMatchObject({
-        currentHasRabbitFoot: false,
+        currentHasMedicalKit: false,
+        currentHasRabbitFoot: true,
         currentHasBook: true,
         currentHasMap: true,
+        teammateHasMedicalKit: true,
         teammateHasMap: false,
         teammateHasSkull: true,
-        teammateHasRabbitFoot: true,
         pendingTradeAgreement: null,
       });
     await saveScreenshot(page, STEP_35);
@@ -2300,8 +2357,135 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-room-latest-feedback"),
     ).toContainText("移动到门厅");
-    await waitForStep(page, "explore-upper");
+    await waitForStep(page, "start-trade");
     await saveScreenshot(page, STEP_06);
+
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "点“交易”",
+    );
+    await page.getByTestId("betrayal-action-trade").click();
+    await expect(page.getByTestId("betrayal-trade-flow-banner")).toBeVisible();
+    await clickNext(page);
+
+    await waitForStep(page, "choose-trade-item");
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "急救包",
+    );
+    await page.getByTestId("betrayal-inventory-medical-kit").click();
+    await expect(
+      page.getByTestId("betrayal-selected-inventory-card-name"),
+    ).toContainText("急救包");
+    await saveScreenshot(page, STEP_30);
+    await clickNext(page);
+
+    await waitForStep(page, "choose-trade-target");
+    const basicTradeTeammate = page.getByTestId(
+      "betrayal-room-occupant-hallway-1",
+    );
+    await expect(basicTradeTeammate).toBeVisible();
+    await basicTradeTeammate.click();
+    await expect(
+      page.getByTestId("betrayal-trade-return-selector"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-trade-flow-item-step"),
+    ).toContainText(/你给出.*急救包/);
+    await saveScreenshot(page, STEP_31);
+    await clickNext(page);
+
+    await waitForStep(page, "choose-trade-return");
+    await page.getByTestId("betrayal-trade-return-card-map").click();
+    await expect(
+      page.getByTestId("betrayal-trade-flow-item-step"),
+    ).toContainText(/你给出.*急救包.*对方给出.*地图/);
+    await saveScreenshot(page, STEP_32);
+    await clickNext(page);
+
+    await waitForStep(page, "send-trade-request");
+    await expectTradeConfirmAnchoredToFlow(page);
+    await page.getByTestId("betrayal-action-trade").click();
+    await waitForStep(page, "request-waiting", 30000);
+    await waitForTradeAgreementState(page, "waiting");
+    await saveScreenshot(page, STEP_33);
+    await clickNext(page);
+
+    await waitForStableIncomingTradeAgreement(page);
+    await expect(
+      page.getByTestId("betrayal-trade-flow-item-step"),
+    ).toContainText(/给出.*急救包.*你给出.*地图/);
+    await expectBetrayalConfirmButtonVisual(
+      page.getByTestId("betrayal-trade-agreement-accept"),
+      "主线交易接收方同意按钮",
+    );
+    await saveScreenshot(page, STEP_34);
+    await page.getByTestId("betrayal-trade-agreement-accept").click();
+    await waitForStep(page, "trade-review", 30000);
+    await expect(
+      page.getByTestId("betrayal-room-latest-feedback"),
+    ).toContainText(/同意交易|急救包|地图/);
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const state = (
+              window as unknown as {
+                __BG_TEST_HARNESS__?: {
+                  state?: {
+                    get?: () => {
+                      core?: {
+                        currentExplorer?: {
+                          inventory?: Array<{ name: string }>;
+                        };
+                        otherExplorers?: Array<{
+                          playerId: string;
+                          inventory?: Array<{ name: string }>;
+                        }>;
+                        pendingTradeAgreement?: unknown | null;
+                      };
+                    };
+                  };
+                };
+              }
+            ).__BG_TEST_HARNESS__?.state?.get?.();
+            const currentInventory =
+              state?.core?.currentExplorer?.inventory?.map(
+                (item) => item.name,
+              ) ?? [];
+            const teammateInventory =
+              state?.core?.otherExplorers
+                ?.find((explorer) => explorer.playerId === "1")
+                ?.inventory?.map((item) => item.name) ?? [];
+            return {
+              currentHasMedicalKit: currentInventory.includes("急救包"),
+              currentHasRabbitFoot: currentInventory.includes("兔脚"),
+              currentHasBook: currentInventory.includes("书本"),
+              currentHasMap: currentInventory.includes("地图"),
+              teammateHasMedicalKit: teammateInventory.includes("急救包"),
+              teammateHasMap: teammateInventory.includes("地图"),
+              teammateHasSkull: teammateInventory.includes("头骨"),
+              pendingTradeAgreement: state?.core?.pendingTradeAgreement ?? null,
+            };
+          }),
+        {
+          message:
+            "基础教程主线交易后必须保留书本/兔脚，并把急救包换成地图再继续探索",
+          timeout: 10000,
+        },
+      )
+      .toMatchObject({
+        currentHasMedicalKit: false,
+        currentHasRabbitFoot: true,
+        currentHasBook: true,
+        currentHasMap: true,
+        teammateHasMedicalKit: true,
+        teammateHasMap: false,
+        teammateHasSkull: true,
+        pendingTradeAgreement: null,
+      });
+    await saveScreenshot(page, STEP_35);
+    await clickNext(page);
+
+    await waitForStep(page, "explore-upper");
     await expect(page.getByTestId("betrayal-action-explore")).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "再选择出口",
@@ -2328,15 +2512,43 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await exploreTargetRoom.click();
     const roomPlacementPanel = page.getByTestId("betrayal-room-placement-panel");
     await expect(roomPlacementPanel).toBeVisible({ timeout: 10000 });
+    const tutorialOverlayCard = page.getByTestId("tutorial-overlay-card");
+    await waitForStep(page, "rotate-room-placement");
+    await expect(tutorialOverlayCard).toContainText("旋转新房间");
+    await expect(tutorialOverlayCard).toContainText("朝向");
+    const rotateRoomPlacementRight = page.getByTestId(
+      "betrayal-room-placement-rotate-right",
+    );
+    await expect(rotateRoomPlacementRight).toBeVisible();
+    await expect(rotateRoomPlacementRight).toBeEnabled();
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-room-placement-rotate-right",
+    );
+    const initialOrientation = await roomPlacementPanel.getAttribute(
+      "data-room-orientation-turns",
+    );
+    await saveScreenshot(page, STEP_08);
+    await rotateRoomPlacementRight.click();
+    await expect
+      .poll(
+        () => roomPlacementPanel.getAttribute("data-room-orientation-turns"),
+        { timeout: 3000 },
+      )
+      .not.toBe(initialOrientation);
     await waitForStep(page, "confirm-room-placement");
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+    await expect(tutorialOverlayCard).toContainText(
       "确认放置",
     );
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+    await expect(tutorialOverlayCard).toContainText(
       "结算房间文字和符号",
     );
     const roomPlacementConfirm = page.getByTestId("betrayal-room-placement-confirm");
     await expect(roomPlacementConfirm).toBeVisible();
+    await expectBetrayalConfirmButtonVisual(
+      roomPlacementConfirm,
+      "房间放置确认按钮",
+    );
     const roomTileAdjustmentOption = page
       .getByTestId("betrayal-room-tile-adjustment-option")
       .first();
@@ -2344,7 +2556,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       await roomTileAdjustmentOption.click();
     }
     await expect(roomPlacementConfirm).toBeEnabled();
-    await saveScreenshot(page, STEP_08);
+    await saveScreenshot(page, STEP_09);
     await roomPlacementConfirm.click();
     await waitForStep(page, "discovery-card-type", 30000);
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
@@ -2361,7 +2573,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(page.getByTestId("betrayal-event-roll-start")).toBeVisible();
     await expect(page.getByTestId("betrayal-event-roll-start")).toBeEnabled();
-    await saveScreenshot(page, STEP_09);
+    await saveScreenshot(page, STEP_10);
     await clickNext(page);
     await waitForStep(page, "roll-event", 30000);
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
@@ -2371,7 +2583,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("betrayal-event-roll-start")).toBeEnabled();
     await page.getByTestId("betrayal-event-roll-start").click();
     await waitForStep(page, "view-book", 30000);
-    const tutorialOverlayCard = page.getByTestId("tutorial-overlay-card");
     await expect(tutorialOverlayCard).toContainText("放大按钮");
     await expect(tutorialOverlayCard).toContainText("读它的牌面");
     await expect(tutorialOverlayCard).not.toContainText("使用书本本体");
@@ -2399,7 +2610,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expectVisiblePhysicalDiceBox(discoveryRollPanel);
     await waitForPhysicalDiceSettled(discoveryRollPanel);
-    await saveScreenshot(page, STEP_10);
+    await saveScreenshot(page, STEP_11);
 
     await page.getByTestId("betrayal-inventory-omen-book-magnify").click();
     const bookPreviewBeforeUse = page.getByTestId(
@@ -2410,7 +2621,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       bookPreviewBeforeUse.getByTestId("betrayal-inventory-preview-card-shell"),
     ).toBeVisible();
     await expectInventoryPreviewCardReadable(bookPreviewBeforeUse);
-    await saveScreenshot(page, STEP_11);
+    await saveScreenshot(page, STEP_12);
     await bookPreviewBeforeUse.click({ position: { x: 8, y: 8 } });
     await expect(
       page.getByTestId("betrayal-inventory-preview-overlay"),
@@ -2724,7 +2935,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         }),
       )
       .toBe(true);
-    await saveScreenshot(page, STEP_12);
+    await saveScreenshot(page, STEP_13);
     await rabbitFootCard.click();
     const rabbitFootDice = page.getByTestId("betrayal-rabbit-foot-dice");
     await expect(rabbitFootDice).toBeVisible();
@@ -2802,7 +3013,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("骰面合计");
     await expect(discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("加值");
     await expectTutorialNextDoesNotStealRollModifierFocus(page);
-    await saveScreenshot(page, STEP_13);
+    await saveScreenshot(page, STEP_14);
     await setHarnessRandomQueue(page, [0.99]);
     await rerollTargetDie.click();
     await expect(rerollTargetDie).toHaveAttribute(
@@ -2879,7 +3090,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "border-radius",
       "0px",
     );
-    await saveScreenshot(page, STEP_14);
+    await saveScreenshot(page, STEP_15);
     await rollModifierConfirm.click();
     await expect(rabbitFootDice).toHaveCount(0);
     await waitForStep(page, "rabbit-foot-result", 10000);
@@ -2954,7 +3165,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       finalDiceGeometry.maxProjectedFaceSize,
       "兔脚重投完成图里的单颗骰子投影不能异常放大",
     ).toBeLessThanOrEqual(54);
-    await saveScreenshot(page, STEP_15);
+    await saveScreenshot(page, STEP_16);
     await waitForStep(page, "finish", 10000);
     await expect(tutorialOverlayCard).toContainText("承受 1 点物理伤害");
     await expect(tutorialOverlayCard).not.toContainText("兔脚");
@@ -3006,7 +3217,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-damage-allocation-amount"),
     ).toContainText("分配 1 点物理伤害");
-    await saveScreenshot(page, STEP_16);
+    await saveScreenshot(page, STEP_16A);
     await page.waitForTimeout(500);
     const damageTraitIncrease = page.getByTestId(
       "betrayal-damage-allocation-trait-speed-increase",
@@ -3038,7 +3249,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       .toBe(false);
     await expect(damageAllocationPanel).toBeHidden({ timeout: 10000 });
     await page.waitForTimeout(300);
-    await saveScreenshot(page, STEP_16A);
+    await saveScreenshot(page, STEP_16B);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-tutorial-move-explore-use", diagnostics },

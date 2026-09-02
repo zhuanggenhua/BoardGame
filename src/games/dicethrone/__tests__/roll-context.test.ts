@@ -258,6 +258,7 @@ describe('DiceThrone 单槽当前骰区', () => {
             phase: 'offensiveRoll',
         });
         expect(firstContext?.dice.map((die) => die.value)).toEqual([1, 2, 3, 4, 5]);
+        expect(firstContext?.dice.map((die) => die.ownerId)).toEqual(['0', '0', '0', '0', '0']);
         expect(firstContext).not.toHaveProperty('coveredPreviousRollRef');
 
         const second = roll(first, [6, 5, 4, 3, 2]);
@@ -313,6 +314,7 @@ describe('DiceThrone 单槽当前骰区', () => {
                 dice: [createDie(0, 1), createDie(1, 1), createDie(2, 1)],
             }),
         };
+        expect(state.currentRollContext?.dice.map((die) => die.ownerId)).toEqual(['1', '1', '1']);
 
         const modified = reduce(state, {
             type: 'DIE_MODIFIED',

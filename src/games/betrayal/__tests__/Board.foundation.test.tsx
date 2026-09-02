@@ -5048,16 +5048,20 @@ describe('Betrayal Board foundation', () => {
         const initialOrientation = screen
             .getByTestId('betrayal-room-placement-panel')
             .getAttribute('data-room-orientation-turns');
-        expect(screen.getByTestId('betrayal-room-placement-rotate-right')).not.toBeDisabled();
+        const rotateRightButton = screen.getByTestId('betrayal-room-placement-rotate-right');
+        expect(rotateRightButton).toHaveAttribute('data-tutorial-id', 'betrayal-room-placement-rotate-right');
+        expect(rotateRightButton).not.toBeDisabled();
 
-        fireEvent.click(screen.getByTestId('betrayal-room-placement-rotate-right'));
+        fireEvent.click(rotateRightButton);
 
         const selectedOrientation = screen
             .getByTestId('betrayal-room-placement-panel')
             .getAttribute('data-room-orientation-turns');
         expect(selectedOrientation).not.toBe(initialOrientation);
 
-        fireEvent.click(screen.getByTestId('betrayal-room-placement-confirm'));
+        const roomPlacementConfirm = screen.getByTestId('betrayal-room-placement-confirm');
+        expectEventRollConfirmButtonStyle(roomPlacementConfirm);
+        fireEvent.click(roomPlacementConfirm);
 
         expect(dispatch).toHaveBeenCalledWith(
             BETRAYAL_COMMANDS.EXPLORE_ROOM,

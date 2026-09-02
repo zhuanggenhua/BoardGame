@@ -1,0 +1,51 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "天使斗篷双翼 4 不授予飞行 Token，而是抵挡 1 点伤害。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E: 天使斗篷投出双翼后，真实防御链应防止 1 点伤害且不授予飞行 (passed)",
+        "截图 02: 炽天使生命 50 到 43，buff/token 栏没有飞行 Token。"
+      ]
+    },
+    {
+      "requirement": "天使斗篷防御阶段使用炽天使自己的普通防御骰，当前投掷数量为 1。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言右侧骰盘当前 data-definition-id 为 tianshi-dice，骰子数量为 1。",
+        "截图 01: 右侧实际骰盘只有 1 颗骰，旁边 1-6 竖排是炽天使提示板规则说明。"
+      ]
+    },
+    {
+      "requirement": "天使斗篷骰面 4、5、6 在真实防御链分别抵挡 1、2、3 点伤害。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E: 天使斗篷防御骰 4、5 和 6 应从真实防御链分别减免 1、2 与 3 点伤害 (passed)",
+        "截图 02/03/04: 原攻击 8 点分别实际扣 7、6、5，最终生命分别为 43、44、45。"
+      ]
+    },
+    {
+      "requirement": "不为解释截图擅自新增骰盘数量 UI；本轮只修规则录入、实现、测试和证据。",
+      "status": "PASS",
+      "evidence": [
+        "未修改 DiceTray 可见结构；旧骰盘数量标题相关命中已清空。",
+        "规范已回代到数据录入主源，要求同图技能表与 Token/提示说明分开建合同。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-angelic-cloak-defense-final-2026-09-01-v2/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-angelic-cloak-defense-final-2026-09-01-v2/01-labeled-tianshi-angelic-cloak-normal-defense-roll.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-angelic-cloak-defense-final-2026-09-01-v2/02-labeled-tianshi-angelic-cloak-wing-prevents-1-damage.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-angelic-cloak-defense-final-2026-09-01-v2/03-labeled-tianshi-angelic-cloak-defense-shield-5-final.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-angelic-cloak-defense-final-2026-09-01-v2/04-labeled-tianshi-angelic-cloak-defense-shield-6-final.png"
+  ]
+}

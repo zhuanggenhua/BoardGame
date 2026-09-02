@@ -1,0 +1,348 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-01T17:18:12.300Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "规则源已核对，房间探索顺序是翻出房间、旋转朝向、确认放置、再触发房间文字和发现牌",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/rule/山屋惊魂小黑屋第三版规则汉化整理.md#6.1/#12/#13",
+        "docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md",
+        "evidence/betrayal-tutorial/room-rotation-flow-self-audit-20260902.md"
+      ]
+    },
+    {
+      "requirement": "主线截图没有跳过旋转房间 UI",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/20-山屋惊魂-教程-探索目标房间.jpg",
+        "evidence/betrayal-tutorial/21-山屋惊魂-教程-翻出房间朝向选择.jpg",
+        "evidence/betrayal-tutorial/22-山屋惊魂-教程-旋转后确认放置新房间.jpg",
+        "evidence/betrayal-tutorial/23-山屋惊魂-教程-事件牌公开与投掷入口.jpg"
+      ]
+    },
+    {
+      "requirement": "通用教程和 UI 规范已回代规则时序、中间决策 UI 和自动后果合并边界",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md",
+        ".spec/knowledge/standards/ui-change-gates.md",
+        ".spec/knowledge/standards/e2e-verification.md",
+        "npm run spec:lint -> OK"
+      ]
+    },
+    {
+      "requirement": "当前工作树完整教程 E2E 和自审门槛已通过",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts -> 10 passed, 2 skipped",
+        "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -> 16 passed",
+        "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t 探索放置面板会把玩家选择的新房间朝向交给正式探索命令 -> 1 passed",
+        "node --max-old-space-size=8192 .\\node_modules\\eslint\\bin\\eslint.js src\\games\\betrayal\\Board.tsx src\\games\\betrayal\\tutorial.ts src\\games\\betrayal\\__tests__\\tutorial.test.ts src\\games\\betrayal\\__tests__\\Board.foundation.test.tsx e2e\\betrayal\\betrayal-tutorial.e2e.ts -> 0 errors, 7 warnings",
+        "npm run audit:evidence:selfcheck -- evidence/betrayal-tutorial/room-rotation-flow-self-audit-20260902.md -> OK",
+        "node scripts/verify/open-verified-image.mjs --pass-manifest evidence/betrayal-tutorial/pass-manifest-20260902-room-rotation-self-audit.json --viewer pureref --dry-run --latest evidence/betrayal-tutorial/_labeled-for-pureref-20260902-room-rotation-self-audit -> OK"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\01-labeled-00-山屋惊魂-教程-章节目录.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\02-labeled-01-山屋惊魂-教程-回合目标与行动区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\03-labeled-02-山屋惊魂-教程-属性轨读法.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\04-labeled-03-山屋惊魂-教程-剩余移动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\05-labeled-04-山屋惊魂-教程-房间主视区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\06-labeled-05-山屋惊魂-教程-观察队友视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\07-labeled-06-山屋惊魂-教程-切到第二名队友视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\08-labeled-07-山屋惊魂-教程-再次点队友返回上一视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\09-labeled-08-山屋惊魂-教程-聚焦回自己房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\10-labeled-09-山屋惊魂-教程-预兆作祟进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\11-labeled-10-山屋惊魂-教程-持有区与帮助入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\12-labeled-11-山屋惊魂-教程-移动入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\13-labeled-12-山屋惊魂-教程-移动到门厅后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\14-labeled-13-山屋惊魂-教程-交易同房间说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\15-labeled-14-山屋惊魂-教程-交易选择急救包.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\16-labeled-15-山屋惊魂-教程-交易选择队友.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\17-labeled-16-山屋惊魂-教程-交易选择对方地图.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\18-labeled-17-山屋惊魂-教程-交易请求等待同意.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\19-labeled-18-山屋惊魂-教程-交易接收方同意.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\20-labeled-19-山屋惊魂-教程-交易后互换结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\21-labeled-20-山屋惊魂-教程-探索目标房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\22-labeled-21-山屋惊魂-教程-翻出房间朝向选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\23-labeled-22-山屋惊魂-教程-旋转后确认放置新房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\24-labeled-23-山屋惊魂-教程-事件牌公开与投掷入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\25-labeled-24-山屋惊魂-教程-事件骰出现与书本可查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\26-labeled-25-山屋惊魂-教程-书本牌面查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\27-labeled-26-山屋惊魂-教程-书本使用后知识改骰结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\28-labeled-27-山屋惊魂-教程-点击兔脚后选择骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\29-labeled-28-山屋惊魂-教程-兔脚选中改骰高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\30-labeled-29-山屋惊魂-教程-兔脚重投完成骰盘正常.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\31-labeled-30-山屋惊魂-教程-自动进入伤害分配.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\32-labeled-31-山屋惊魂-教程-伤害分配完成后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\33-labeled-01-预兆牌确认与作祟检定.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\34-labeled-02-确认后回牌桌持有区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\35-labeled-03-确认后预兆进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\36-labeled-01-木乃伊作祟目标改变.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\37-labeled-02-打开木乃伊剧本目标页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\38-labeled-03-驱逐木乃伊前因果说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\39-labeled-04-驱逐木乃伊神志对抗骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\40-labeled-05-驱逐木乃伊成功后的终局页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\41-labeled-01-叛徒打开木乃伊剧本目标页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\42-labeled-02-叛徒拾起女孩前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\43-labeled-03-女孩交给木乃伊前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\44-labeled-04-圣符交给木乃伊前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\45-labeled-05-木乃伊叛徒胜利.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\46-labeled-01-木乃伊怪物回合开始前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\47-labeled-02-木乃伊移动骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\48-labeled-03-木乃伊瞬移目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\49-labeled-04-木乃伊拾起女孩结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\50-labeled-05-木乃伊同房必须先攻击.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\51-labeled-06-木乃伊攻击目标高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\52-labeled-07-木乃伊攻击骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\53-labeled-08-木乃伊偷取奖励入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\54-labeled-09-木乃伊偷走地图结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\55-labeled-01-手机横屏-教程移动入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\56-labeled-05-pc-移动入口-current.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\57-labeled-03-pc-房间主视区-current.png"
+  ],
+  "imageDetails": [
+    {
+      "index": 0,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\00-sequence-index.png"
+    },
+    {
+      "index": 1,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\01-labeled-00-山屋惊魂-教程-章节目录.png"
+    },
+    {
+      "index": 2,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\02-labeled-01-山屋惊魂-教程-回合目标与行动区.png"
+    },
+    {
+      "index": 3,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\03-labeled-02-山屋惊魂-教程-属性轨读法.png"
+    },
+    {
+      "index": 4,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\04-labeled-03-山屋惊魂-教程-剩余移动.png"
+    },
+    {
+      "index": 5,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\05-labeled-04-山屋惊魂-教程-房间主视区.png"
+    },
+    {
+      "index": 6,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\06-labeled-05-山屋惊魂-教程-观察队友视角.png"
+    },
+    {
+      "index": 7,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\07-labeled-06-山屋惊魂-教程-切到第二名队友视角.png"
+    },
+    {
+      "index": 8,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\08-labeled-07-山屋惊魂-教程-再次点队友返回上一视角.png"
+    },
+    {
+      "index": 9,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\09-labeled-08-山屋惊魂-教程-聚焦回自己房间.png"
+    },
+    {
+      "index": 10,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\10-labeled-09-山屋惊魂-教程-预兆作祟进度条.png"
+    },
+    {
+      "index": 11,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\11-labeled-10-山屋惊魂-教程-持有区与帮助入口.png"
+    },
+    {
+      "index": 12,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\12-labeled-11-山屋惊魂-教程-移动入口.png"
+    },
+    {
+      "index": 13,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\13-labeled-12-山屋惊魂-教程-移动到门厅后.png"
+    },
+    {
+      "index": 14,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\14-labeled-13-山屋惊魂-教程-交易同房间说明.png"
+    },
+    {
+      "index": 15,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\15-labeled-14-山屋惊魂-教程-交易选择急救包.png"
+    },
+    {
+      "index": 16,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\16-labeled-15-山屋惊魂-教程-交易选择队友.png"
+    },
+    {
+      "index": 17,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\17-labeled-16-山屋惊魂-教程-交易选择对方地图.png"
+    },
+    {
+      "index": 18,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\18-labeled-17-山屋惊魂-教程-交易请求等待同意.png"
+    },
+    {
+      "index": 19,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\19-labeled-18-山屋惊魂-教程-交易接收方同意.png"
+    },
+    {
+      "index": 20,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\20-labeled-19-山屋惊魂-教程-交易后互换结果.png"
+    },
+    {
+      "index": 21,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\21-labeled-20-山屋惊魂-教程-探索目标房间.png"
+    },
+    {
+      "index": 22,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\22-labeled-21-山屋惊魂-教程-翻出房间朝向选择.png"
+    },
+    {
+      "index": 23,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\23-labeled-22-山屋惊魂-教程-旋转后确认放置新房间.png"
+    },
+    {
+      "index": 24,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\24-labeled-23-山屋惊魂-教程-事件牌公开与投掷入口.png"
+    },
+    {
+      "index": 25,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\25-labeled-24-山屋惊魂-教程-事件骰出现与书本可查看.png"
+    },
+    {
+      "index": 26,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\26-labeled-25-山屋惊魂-教程-书本牌面查看.png"
+    },
+    {
+      "index": 27,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\27-labeled-26-山屋惊魂-教程-书本使用后知识改骰结果.png"
+    },
+    {
+      "index": 28,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\28-labeled-27-山屋惊魂-教程-点击兔脚后选择骰子.png"
+    },
+    {
+      "index": 29,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\29-labeled-28-山屋惊魂-教程-兔脚选中改骰高亮.png"
+    },
+    {
+      "index": 30,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\30-labeled-29-山屋惊魂-教程-兔脚重投完成骰盘正常.png"
+    },
+    {
+      "index": 31,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\31-labeled-30-山屋惊魂-教程-自动进入伤害分配.png"
+    },
+    {
+      "index": 32,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\32-labeled-31-山屋惊魂-教程-伤害分配完成后.png"
+    },
+    {
+      "index": 33,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\33-labeled-01-预兆牌确认与作祟检定.png"
+    },
+    {
+      "index": 34,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\34-labeled-02-确认后回牌桌持有区.png"
+    },
+    {
+      "index": 35,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\35-labeled-03-确认后预兆进度条.png"
+    },
+    {
+      "index": 36,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\36-labeled-01-木乃伊作祟目标改变.png"
+    },
+    {
+      "index": 37,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\37-labeled-02-打开木乃伊剧本目标页.png"
+    },
+    {
+      "index": 38,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\38-labeled-03-驱逐木乃伊前因果说明.png"
+    },
+    {
+      "index": 39,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\39-labeled-04-驱逐木乃伊神志对抗骰盘.png"
+    },
+    {
+      "index": 40,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\40-labeled-05-驱逐木乃伊成功后的终局页.png"
+    },
+    {
+      "index": 41,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\41-labeled-01-叛徒打开木乃伊剧本目标页.png"
+    },
+    {
+      "index": 42,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\42-labeled-02-叛徒拾起女孩前.png"
+    },
+    {
+      "index": 43,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\43-labeled-03-女孩交给木乃伊前.png"
+    },
+    {
+      "index": 44,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\44-labeled-04-圣符交给木乃伊前.png"
+    },
+    {
+      "index": 45,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\45-labeled-05-木乃伊叛徒胜利.png"
+    },
+    {
+      "index": 46,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\46-labeled-01-木乃伊怪物回合开始前.png"
+    },
+    {
+      "index": 47,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\47-labeled-02-木乃伊移动骰盘.png"
+    },
+    {
+      "index": 48,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\48-labeled-03-木乃伊瞬移目标.png"
+    },
+    {
+      "index": 49,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\49-labeled-04-木乃伊拾起女孩结果.png"
+    },
+    {
+      "index": 50,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\50-labeled-05-木乃伊同房必须先攻击.png"
+    },
+    {
+      "index": 51,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\51-labeled-06-木乃伊攻击目标高亮.png"
+    },
+    {
+      "index": 52,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\52-labeled-07-木乃伊攻击骰盘.png"
+    },
+    {
+      "index": 53,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\53-labeled-08-木乃伊偷取奖励入口.png"
+    },
+    {
+      "index": 54,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\54-labeled-09-木乃伊偷走地图结果.png"
+    },
+    {
+      "index": 55,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\55-labeled-01-手机横屏-教程移动入口.png"
+    },
+    {
+      "index": 56,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\56-labeled-05-pc-移动入口-current.png"
+    },
+    {
+      "index": 57,
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260902-room-rotation-self-audit\\57-labeled-03-pc-房间主视区-current.png"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 {
-  "verdict": "PASS",
+  "verdict": "SUPERSEDED",
+  "supersededBy": "evidence/mage-wars-tutorial/pass-manifest-20260902-flow-sync-v3.json",
+  "supersededReason": "旧 v2 图组把 00b 拖拽姿态图混入教程主流程序号；当前教程端到端最终图组改用 v3，只保留 00-27 主流程截图。",
   "scope": "current-user-request",
   "display": {
     "purpose": "final-user-visible-delivery",

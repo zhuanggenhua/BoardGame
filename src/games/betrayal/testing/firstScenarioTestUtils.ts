@@ -559,9 +559,19 @@ export function createStartedFirstScenarioTutorialCore(
 ): BetrayalCore {
   const core = createStartedFirstScenarioCore(playerIds);
   setFixtureExplorerInventory(core, "0", [
+    { id: "medical-kit", name: "急救包", kind: "item" },
     { id: "rope", name: "兔脚", kind: "item" },
     { id: "omen-book", name: "书本", kind: "omen" },
   ]);
+  setFixtureExplorerInventory(core, "1", [
+    { id: "map", name: "地图", kind: "item" },
+    { id: "skull", name: "头骨", kind: "omen" },
+  ]);
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === "1"
+      ? { ...explorer, roomId: "hallway" }
+      : explorer,
+  );
   core.usedCardIdsThisTurn = [];
   return applyBasicTutorialEventRoomDiscoveryOrder(
     applyTutorialDiscoveryOrder(core),
@@ -1711,6 +1721,7 @@ export function createTradeReadyCore(): BetrayalCore {
     ...core.currentExplorer,
     roomId: "hallway",
     inventory: [
+      { id: "medical-kit", name: "急救包", kind: "item" },
       { id: "rope", name: "兔脚", kind: "item" },
       { id: "omen-book", name: "书本", kind: "omen" },
     ],
@@ -1719,7 +1730,10 @@ export function createTradeReadyCore(): BetrayalCore {
     {
       ...teammate,
       roomId: "hallway",
-      inventory: [],
+      inventory: [
+        { id: "map", name: "地图", kind: "item" },
+        { id: "skull", name: "头骨", kind: "omen" },
+      ],
     },
     {
       ...traitor,
@@ -1728,6 +1742,9 @@ export function createTradeReadyCore(): BetrayalCore {
   ];
   core.activeRoomId = "hallway";
   core.currentExplorerInventory = [...core.currentExplorer.inventory];
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map(
+    (card) => card.id,
+  );
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
   core.recommendedAction = "trade";
   core.usedCardIdsThisTurn = [];

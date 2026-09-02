@@ -121,13 +121,14 @@
 4. 首剧本当前已补真的关键规则包括：`Study the Exorcism` 失败造成 `2 Mental damage`，`Exorcise Jack's Spirit` 失败对每个英雄造成 `1 Physical damage`，`Knowledge of Jack` 的调查改成真实知识投骰，叛徒揭示时会先回满属性再获得 `+2 Might / +2 Speed`，死掉的叛徒会改由 `Jack's Spirit` 接管回合，且此后攻击英雄时会按 `Jack's Spirit` 的房间与 `Might 5` 结算；当 `Jack's Spirit` 回到尸体所在房间时，叛徒会恢复肉身并移除 spirit。交易、调查杰克、研究法阵和英雄攻击叛徒也已补真实页面 E2E，不再只停留在领域单测或命令注入。
 5. `HAUNT_ATTACK` 也已经从“命中即秒杀”改成正式对攻：英雄打叛徒、叛徒打英雄都按 `Might` 对掷，按点差造成 `Physical damage`，平手不受伤；`Knowledge of Jack` 的 `+2` 只在英雄攻击叛徒时生效。
 6. 当前 `game.ts` 已从 `START_FIRST_SCENARIO / COMPLETE_FIRST_SCENARIO` 收成通用 `START_SCENARIO / COMPLETE_SCENARIO` 入口；后续第二个及更多剧本必须继续走同一条配置通道，不再回退到首剧本专名命令。
-7. 教程已重构为 2 个玩家可见章节，并通过本轮真实教程验证：
+7. 教程当前按“基础主线 + 叛徒视角”收口，作祟后英雄 / 怪物内容不再伪装成普通玩家主线：
    - `src/games/betrayal/tutorial.ts` 已导出 `TutorialCollection`
    - 默认教程是 `basic-setup-and-turn`
    - 当前可见教程已压成 2 个章节：`basic-setup-and-turn`、`traitor-path`
-   - `basic-setup-and-turn` 是普通玩家主线，合并基础回合、预兆确认和真实探索触发作祟；本轮收口到看到目标改变，作祟后的找真名、学法术和驱逐另行承接
+   - `basic-setup-and-turn` 是普通玩家主线，合并作祟前读局、移动、同房间交易、探索、事件牌、事件骰、书本牌面查看、书本使用、兔脚选骰重掷和伤害分配；不包含作祟后目标或驱逐木乃伊代表态
    - `traitor-path` 是唯一额外章节，合并叛徒目标、木乃伊怪物行动、偷取奖励和女孩 + 圣符 / 指环胜利链
    - `move-explore-use`、`omen-confirmation-and-haunt-risk`、`trade-and-agreement`、`haunt-actions-and-finish`、`mummy-monster-actions`、`crimson-jack-objective`、`hero-attack-path`、`jack-spirit-path` 仅保留为隐藏兼容 / 专题回归入口
+   - 若以后要把作祟后英雄目标纳入普通玩家主线，必须从作祟前通过真实探索抽到预兆、完成作祟检定并看到作祟触发后再进入，不得把已作祟快照接在基础回合后面
    - `src/games/manifest.client.generated.tsx` 已生成 `loadTutorial3`
    - `Board.tsx` 已把角色选择、动作区、持有区、房间区、帮助入口和终局挂上真实 `data-tutorial-id`
    - `e2e/betrayal/betrayal-tutorial.e2e.ts` 的 `tutorial-main`、`mummy-traitor-path` 和 `mummy-monster-actions` 已通过，截图证据位于 `evidence/betrayal-tutorial/`

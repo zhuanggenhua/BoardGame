@@ -3,7 +3,7 @@ import { diceThroneFlowHooks } from '../domain/flowHooks';
 import { TOKEN_IDS } from '../domain/ids';
 import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
-import { createPendingDamage, finalizeTokenResponse } from '../domain/tokenResponse';
+import { createPendingDamage, finalizeTokenResponse, maybeCreateDamageResponseEvent } from '../domain/tokenResponse';
 import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import { createHeroMatchup, createInitializedState, createQueuedRandom, fixedRandom } from './test-utils';
 
@@ -74,6 +74,73 @@ describe('Token 响应正式结算边界', () => {
         expect(state.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 5);
         expect(damageEvent?.payload.actualDamage).toBe(5);
         expect(state.pendingAttack?.resolvedDamage).toBe(5);
+    });
+
+    it('防御方受伤响应窗口应先反映已有护盾，并在收口时只消费一次护盾', () => {
+        const match = createHeroMatchup('monk', 'tianshi')(['0', '1'], createQueuedRandom([1]));
+        let state = match.core;
+        state.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'fist-technique-5',
+            isDefendable: true,
+            damage: 8,
+        };
+        state.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.players['1'].tokens[TOKEN_IDS.FLIGHT] = 1;
+        state.players['1'].damageShields = [
+            { value: 1, sourceId: 'angelic-cloak', preventStatus: false },
+        ];
+
+        const responseEvent = maybeCreateDamageResponseEvent({
+            state,
+            attackerId: '0',
+            sourceAbilityId: 'fist-technique-5',
+            timestamp: 40,
+            damageEvent: ev('DAMAGE_DEALT', {
+                targetId: '1',
+                amount: 8,
+                actualDamage: 8,
+                sourceAbilityId: 'fist-technique-5',
+                sourcePlayerId: '0',
+                damageScope: 'attack',
+            }) as Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }>,
+        });
+
+        expect(responseEvent?.payload.pendingDamage).toMatchObject({
+            originalDamage: 8,
+            currentDamage: 7,
+            preventionCommitted: true,
+            shieldsConsumed: [
+                expect.objectContaining({
+                    sourceId: 'angelic-cloak',
+                    absorbed: 1,
+                    pendingDamageId: expect.any(String),
+                }),
+            ],
+        });
+
+        state = reduce(state, responseEvent!);
+        const events = finalizeTokenResponse(state.pendingDamage!, state, 41);
+        const damageEvent = events.find((event): event is Extract<DiceThroneEvent, { type: 'DAMAGE_DEALT' }> => event.type === 'DAMAGE_DEALT');
+
+        expect(damageEvent?.payload).toMatchObject({
+            amount: 8,
+            actualDamage: 7,
+            preventionCommitted: true,
+            shieldsConsumed: [
+                expect.objectContaining({
+                    sourceId: 'angelic-cloak',
+                    absorbed: 1,
+                }),
+            ],
+        });
+
+        for (const event of events) state = reduce(state, event);
+
+        expect(state.players['1'].resources[RESOURCE_IDS.HP]).toBe(43);
+        expect(state.players['1'].damageShields).toEqual([]);
+        expect(state.pendingAttack?.resolvedDamage).toBe(7);
     });
 });
 

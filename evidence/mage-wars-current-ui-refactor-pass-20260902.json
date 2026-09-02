@@ -1,0 +1,93 @@
+{
+  "verdict": "SUPERSEDED",
+  "supersededBy": "evidence/mage-wars-tutorial/pass-manifest-20260902-flow-sync-v3.json",
+  "supersededReason": "该 broad UI 图组包含地图拖拽专项图；当前用户要求教程主流程端到端自审，不需要拖拽截图，因此最终用户展示改用只含 28 张教程主流程图的 v3 清单。",
+  "scope": "historical-ui-layout-evidence",
+  "supersedes": [
+    "evidence/mage-wars-current-ui-refactor-pass-20260901.json"
+  ],
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "法师属性 UI / HUD 不能因为选中、确认计划或教程步骤自动缩成小版；桌面真实牌桌必须保持完整属性卡、生命、法力、聚魔和放大入口。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：桌面 HUD compact 条件已收窄为移动横屏，操作态不再触发 compact。",
+        "src/games/mage-wars/__tests__/Board.fx.test.tsx：断言 self/opponent HUD density 均为 full。",
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts \"真实入口加载正式牌桌素材并落桌面验收截图\"：2026-09-02 复跑通过，1 passed。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png"
+      ]
+    },
+    {
+      "requirement": "确认计划不能用法术书源牌上的小标签表达已选；玩家选中的计划草稿必须直接进入计划槽位。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：计划阶段准备区渲染 planning draft card，并带 plan slot index。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts：03 截图前断言计划草稿数量为 1，04 截图前断言计划草稿数量为 2 且来源为两张不同法术。",
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts \"单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术\"：2026-09-02 复跑通过，1 passed。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png"
+      ]
+    },
+    {
+      "requirement": "同格双方单位 / 法师必须按当前 Mage Wars 基线上下分区显示，不能横向挤成看不清的小片。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：同格 owner lanes 使用 vertical layout axis 和 grid rows。",
+        "src/games/mage-wars/__tests__/Board.fx.test.tsx：断言 ownership lanes 为 vertical 且不使用双列横排。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言同格双方单位垂直距离大于水平距离，并检查最小可读尺寸。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png"
+      ]
+    },
+    {
+      "requirement": "地图拖拽 / 缩放必须是整屏牌桌视窗能力，不是一个受限小框；HUD、手牌、计划槽不跟随地图拖拽。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：宽屏用例断言地图视窗贴齐屏幕、滚轮缩放增加、拖拽改变地图 transform、放大后内容覆盖视窗。",
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts \"2560x1304 真实入口验证放大镜悬浮、宽屏布局和地图自由查看\"：2026-09-02 复跑通过，1 passed。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png"
+      ]
+    },
+    {
+      "requirement": "无职责的“正式竞技场”标题必须删除；桌面 / 教程真实入口不应再显示该标题。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts：教程 intro 断言 mage-wars-board 不包含“正式竞技场”。",
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts \"单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术\"：2026-09-02 复跑通过，1 passed。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png"
+      ]
+    },
+    {
+      "requirement": "通用规范需要覆盖这类问题：主信息不因操作态降级、选择结果落目标槽位、多实体布局要验方向和尺寸、截图不能隐藏流程。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-ux.md：已补通用 UI/UX 不变量。",
+        ".spec/knowledge/standards/ui-change-gates.md：已补 UI 改动门禁和 E2E 截图门禁。",
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md：Mage Wars 用户原话作为专项 drift-check，不作为第二套通用规范。",
+        "npm run spec:lint：2026-09-02 复跑通过，spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/01-labeled-e2e-desktop-board.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/02-labeled-03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/03-labeled-04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/04-labeled-e2e-desktop-2560x1304-planning-hover.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/05-labeled-e2e-desktop-2560x1304-board.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260902/_labeled-for-pureref/06-labeled-e2e-desktop-2560x1304-map-dragged.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-planning-hover.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

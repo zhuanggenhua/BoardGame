@@ -90,13 +90,17 @@ export const createMainRollContext = (
     const kind = getRollContextKindFromPhase(phase);
     const ownerPlayerId = options.ownerPlayerId ?? inferRollOwnerId(state, phase);
     const id = `roll:${kind}:${ownerPlayerId}:${state.rollCount}`;
+    const dice = (options.dice ?? getLegacyActiveDice(state)).map((die) => ({
+        ...die,
+        ownerId: die.ownerId ?? ownerPlayerId,
+    }));
 
     return {
         id,
         kind,
         ownerPlayerId,
         phase,
-        dice: options.dice ?? getLegacyActiveDice(state),
+        dice,
         status: state.rollConfirmed ? 'settling' : 'open',
         policy: defaultPolicy('owner'),
         settlement: {

@@ -1300,7 +1300,7 @@
       "tianshi.flight": "飞行：投 2 骰；任一结果为 6 时触发本阶段效果",
       "tianshi.dazzle": "眩光：本次攻击掷骰结果为 {{value}}",
       "tianshi.triumphantReturn": "凯旋归来：炽炎剑 +1、双翼 +2、十字 +3；圣洁吊坠使攻击不可防御",
-      "tianshi.angelicCloak": "天使斗篷：根据骰面反击、获得飞行或抵挡伤害",
+      "tianshi.angelicCloak": "天使斗篷：根据骰面反击或抵挡伤害",
       "tianshi.holyStrike": "圣击：每个炽炎剑使本次攻击伤害 +1；圣洁吊坠施加眩光",
       "tianshi.angelicTactics": "天使战术：炽炎剑 +3 伤害；双翼获得飞行；十字获得净化；圣洁吊坠获得神圣降临",
       "tianshi.supremeHoliness": "至高圣洁：圣洁吊坠获得 2 飞行和 2 净化，否则抽 1 张牌"
@@ -4536,18 +4536,18 @@
     },
     "angelic-cloak": {
       "name": "天使斗篷",
-      "description": "防御投掷 1 骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。",
-      "effects": { "resolve": "根据防御奖励骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" }
+      "description": "防御投掷 1 骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3。",
+      "effects": { "resolve": "根据防御骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3。" }
     },
     "angelic-cloak-2": {
       "name": "天使斗篷 II",
-      "description": "防御投掷 1 骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。",
-      "effects": { "resolve": "根据防御奖励骰：炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" }
+      "description": "防御投掷 1 骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。",
+      "effects": { "resolve": "根据防御骰：炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" }
     },
     "angelic-cloak-3": {
       "name": "天使斗篷 III",
-      "description": "防御投掷 1 骰：炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。",
-      "effects": { "resolve": "根据防御奖励骰：炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" }
+      "description": "防御投掷 1 骰：炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。",
+      "effects": { "resolve": "根据防御骰：炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" }
     },
     "heavenly-severing": {
       "name": "天堂断腕斩",
@@ -5662,8 +5662,8 @@
     "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "神圣惩戒 II / 神圣指令", "description": "上区：神圣惩戒 II；下区：治疗 1 点，并对一名对手造成 4 点不可防御伤害。" },
     "upgrade-tianshi-divine-purification-2": { "name": "神圣净化 II", "description": "升级神圣净化：对手伤害提升至 6 点，自己治疗提升至 5 点。" },
     "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "天使长之志 II / 神之庇佑", "description": "上区：天使长之志 II；下区：选择一名玩家获得 2 个净化和 2 个飞行。" },
-    "upgrade-tianshi-angelic-cloak-3": { "name": "天使斗篷 III", "description": "防御投掷 1 骰；炽炎剑反击 3，双翼获得飞行，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" },
-    "upgrade-tianshi-angelic-cloak-2": { "name": "天使斗篷 II", "description": "防御投掷 1 骰；炽炎剑反击 2，双翼获得飞行，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" },
+    "upgrade-tianshi-angelic-cloak-3": { "name": "天使斗篷 III", "description": "防御投掷 1 骰；炽炎剑反击 3，双翼抵挡 2，十字抵挡 3，圣洁吊坠抵挡 4；可重投 1 次。" },
+    "upgrade-tianshi-angelic-cloak-2": { "name": "天使斗篷 II", "description": "防御投掷 1 骰；炽炎剑反击 2，双翼抵挡 1，十字抵挡 2，圣洁吊坠抵挡 3；可重投 1 次。" },
     "upgrade-tianshi-triumphant-return-2": { "name": "凯旋归来 II", "description": "小顺子造成 8 点伤害；奖励骰：炽炎剑 +1、双翼 +2、十字 +3、圣洁吊坠使攻击不可防御。" },
     "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "圣洁光辉 II / 起飞", "description": "上区：圣洁光辉 II；下区：选择一名玩家获得飞行，并对其造成 3 点不可防御伤害。" },
     "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "圣刃 III / 智天使 II", "description": "上区：圣刃 III；下区：获得飞行、净化和神圣降临。" },

@@ -1,0 +1,68 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "测试目标必须是炽天使在防御/受伤响应中使用真实已有的飞行 Token。",
+      "status": "PASS",
+      "evidence": [
+        "当前重跑 Playwright：2/2 通过，标题为“飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤/无6继续受伤”。",
+        "两条链路均从真实手牌打出飞升并选择炽天使自己，Buff 栏出现飞行 Token 后再进入武僧攻击、防御骰和伤害响应。"
+      ]
+    },
+    {
+      "requirement": "不能把天使斗篷双翼当作飞行来源；天使斗篷 4/5/6 必须按防御减伤结算。",
+      "status": "PASS",
+      "evidence": [
+        "当前重跑 Playwright：天使斗篷防御骰 4、5 和 6 用例 1/1 通过。",
+        "独立回归证明原攻击 8，防御骰 4/5/6 后最终生命分别为 43/44/45。"
+      ]
+    },
+    {
+      "requirement": "有 6 分支必须显示右侧飞行奖励骰确认，确认后免伤并消耗飞行 Token。",
+      "status": "PASS",
+      "evidence": [
+        "v2 图 04 显示右侧 2 颗飞行奖励骰和确认按钮。",
+        "v2 图 05 显示生命保持 50，飞行 Token 已消耗，伤害响应清空。"
+      ]
+    },
+    {
+      "requirement": "无 6 分支必须显示右侧飞行奖励骰确认，确认后继续伤害结算并正常收口。",
+      "status": "PASS",
+      "evidence": [
+        "v2 图 09 显示右侧 2 颗飞行奖励骰和确认按钮。",
+        "v2 图 10 显示生命 50 到 43，飞行 Token 已消耗。"
+      ]
+    },
+    {
+      "requirement": "展示图片必须来自当前重跑，不使用旧图、失败图、预置代表态图或产品 UI 改造图。",
+      "status": "PASS",
+      "evidence": [
+        "原始截图时间为 2026-09-02 01:20-01:23，来自当前工作树 E2E 重跑。",
+        "v2 标号只存在于展示副本，不修改游戏 UI。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/01-labeled-tianshi-flight-defense-chain-01-real-source-有6免伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/02-labeled-tianshi-flight-defense-chain-02-defense-die-有6免伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/03-labeled-tianshi-flight-defense-chain-03-response-ready-有6免伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/04-labeled-tianshi-flight-defense-chain-04-flight-bonus-confirm-有6免伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/05-labeled-tianshi-flight-defense-chain-05-final-有6免伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/06-labeled-tianshi-flight-defense-chain-01-real-source-无6继续受伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/07-labeled-tianshi-flight-defense-chain-02-defense-die-无6继续受伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/08-labeled-tianshi-flight-defense-chain-03-response-ready-无6继续受伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/09-labeled-tianshi-flight-defense-chain-04-flight-bonus-confirm-无6继续受伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/10-labeled-tianshi-flight-defense-chain-05-final-无6继续受伤.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/11-labeled-tianshi-angelic-cloak-defense-shield-4-final.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/12-labeled-tianshi-angelic-cloak-defense-shield-5-final.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-defense-response-final-2026-09-02-v2/13-labeled-tianshi-angelic-cloak-defense-shield-6-final.png"
+  ]
+}

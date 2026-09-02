@@ -1,0 +1,45 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "飞行 Token 必须有真实规则来源测试，不能用预置 Token 冒充来源。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E: 圣洁光辉、无上之力、天使长之志、天使战术、神圣裁决、飞升均从真实技能槽或真实手牌路径获得飞行。",
+        "本清单不包含任何“代表态：已有飞行 Token”的预置消费链截图。"
+      ]
+    },
+    {
+      "requirement": "天使斗篷双翼不是飞行来源。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E: 天使斗篷投出双翼后，真实防御链应防止 1 点伤害且不授予飞行 (passed)。",
+        "天使斗篷防御截图组另行验证：骰面 4 最终生命 43，飞行 Token 数量为 0。"
+      ]
+    },
+    {
+      "requirement": "展示给用户的飞行来源图片必须来自当前运行、当前入口和当前工作树。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/dicethrone/tianshi-ability-card-real-entry.e2e.ts \"飞行\": 10 passed。",
+        "截图生成时间为 2026-09-01 22:15-22:16，来自同一真实入口 E2E 文件。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/01-labeled-tianshi-holy-radiance-after-closeout.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/02-labeled-tianshi-supreme-power-after-closeout.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/03-labeled-tianshi-archangel-resolve-after-closeout.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/04-labeled-tianshi-angelic-tactics-card-after-closeout.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/05-labeled-tianshi-divine-arbitration-purify-choice.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-flight-source-final-2026-09-01-v1/06-labeled-tianshi-ascension-card-after-target.png"
+  ]
+}

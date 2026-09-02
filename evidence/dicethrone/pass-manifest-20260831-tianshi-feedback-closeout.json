@@ -1,38 +1,32 @@
 {
-  "verdict": "PASS",
-  "scope": "current-user-request",
+  "verdict": "REVISE",
+  "scope": "invalidated-historical-evidence",
+  "invalidatedAt": "2026-09-01",
+  "reason": "旧清单把天使斗篷投出双翼解释为获得飞行 Token；角色板/录入合同复核后确认双翼应抵挡伤害，不授予飞行 Token。",
   "display": {
-    "purpose": "final-user-visible-delivery",
-    "trigger": "user-requested-open",
-    "viewer": "pureref",
-    "finalPassBeforeOpen": true
+    "purpose": "historical-invalidated-record",
+    "trigger": "do-not-open-as-pass",
+    "viewer": "none",
+    "finalPassBeforeOpen": false
   },
   "requirements": [
     {
       "requirement": "天使斗篷投出双翼后获得飞行，真实防御链等待响应并正常收口",
-      "status": "PASS",
+      "status": "REVISE",
       "evidence": [
-        "E2E: 天使斗篷投出双翼后，真实防御链会先授予飞行并等待响应后收口 (1 passed)"
+        "该要求本身已判定为错误规则口径；不得作为 PASS 图组或反馈收口依据。"
       ]
     },
     {
-      "requirement": "防御掷骰阶段可使用飞行，奖励骰确认后免除当前伤害且不再卡在待确认状态",
-      "status": "PASS",
+      "requirement": "已有飞行 Token 的防御响应奖励骰确认链",
+      "status": "UNCHANGED",
       "evidence": [
-        "E2E: 防御掷骰阶段的伤害响应弹窗应允许立即使用飞行并免除当前伤害 (1 passed)",
-        "最终状态: flight=0, hp=50, pendingDamage=null, defensiveFlightActivated=true"
-      ]
-    },
-    {
-      "requirement": "飞行奖励骰没有 6 时，确认后继续进入伤害响应，点击跳过后正常扣除 7 点伤害并收口",
-      "status": "PASS",
-      "evidence": [
-        "E2E 同一真实入口分支: [2,5]，右侧确认按钮出现",
-        "最终状态: hp=43, pendingDamage=null, defensiveFlightActivated=false"
+        "飞行 Token 仍是独立 Token，可由其它炽天使技能或卡牌获得；但这条链不能再归因于天使斗篷投出双翼。"
       ]
     }
   ],
-  "images": [
+  "images": [],
+  "invalidatedImages": [
     "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/00-sequence-index.png",
     "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/01-labeled-tianshi-flight-token-response-bonus-dice-有6免伤.png",
     "test-results/evidence-screenshots/dicethrone/tianshi-feedback-closeout/_labeled-for-pureref-v2/02-labeled-tianshi-flight-token-response-right-tray-settled-有6免伤.png",

@@ -1527,7 +1527,7 @@ function ExplorerFigureToken({
 
   return (
     <span
-      className={`relative inline-flex ${sizeClass.root} items-center justify-center`}
+      className={`pointer-events-none relative inline-flex ${sizeClass.root} items-center justify-center`}
       data-testid={`${testIdPrefix}-${explorer.playerId}`}
       data-player-id={explorer.playerId}
       data-explorer-id={explorer.explorerId}
@@ -1577,7 +1577,7 @@ function ExplorerFigureToken({
         />
       )}
       <span
-        className={`relative z-10 flex ${sizeClass.frame} items-center justify-center overflow-hidden bg-transparent`}
+        className={`pointer-events-none relative z-10 flex ${sizeClass.frame} items-center justify-center overflow-hidden bg-transparent`}
         data-testid={`${testIdPrefix}-surface-${explorer.playerId}`}
         style={{
           clipPath: tokenShape,
@@ -1588,7 +1588,7 @@ function ExplorerFigureToken({
             src={tokenAsset}
             locale={locale}
             alt={label}
-            className={sizeClass.officialImage}
+            className={`pointer-events-none ${sizeClass.officialImage}`}
             draggable={false}
           />
         ) : (
@@ -1658,7 +1658,7 @@ function MonsterBoardToken({
 
   return (
     <span
-      className={`relative inline-flex items-center justify-center transition ${
+      className={`pointer-events-none relative inline-flex items-center justify-center transition ${
         isStunned ? "-rotate-12 opacity-80 grayscale" : ""
       }`}
       style={{ width: tokenFrameSize, height: tokenFrameSize }}
@@ -1710,7 +1710,7 @@ function MonsterBoardToken({
         />
       )}
       <span
-        className="relative z-10 flex items-center justify-center overflow-hidden bg-[rgba(16,11,8,0.28)]"
+        className="pointer-events-none relative z-10 flex items-center justify-center overflow-hidden bg-[rgba(16,11,8,0.28)]"
         style={{
           width: tokenSurfaceSize,
           height: tokenSurfaceSize,
@@ -1726,9 +1726,9 @@ function MonsterBoardToken({
           className={
             hasOfficialToken
               ? isMummyToken
-                ? "h-full w-full scale-100 object-contain brightness-125 contrast-125 saturate-110"
-                : "h-full w-full scale-[1.18] object-cover brightness-110 saturate-110"
-              : "h-full w-full scale-[1.08] object-cover brightness-125 saturate-125"
+                ? "pointer-events-none h-full w-full scale-100 object-contain brightness-125 contrast-125 saturate-110"
+                : "pointer-events-none h-full w-full scale-[1.18] object-cover brightness-110 saturate-110"
+              : "pointer-events-none h-full w-full scale-[1.08] object-cover brightness-125 saturate-125"
           }
           draggable={false}
         />
@@ -1976,7 +1976,7 @@ function GirlBoardToken({
     attachedTo === "room" ? 68 : isMummyAttachment ? 25 : 60;
   const unit = (
     <span
-      className={`block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[2px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_8px_rgba(255,216,154,0.38)]" : "p-[5px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
+      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[2px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_8px_rgba(255,216,154,0.38)]" : "p-[5px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
       style={{ width: tokenSizePx, height: tokenSizePx }}
       data-testid={unitTestId}
       data-token-attachment={attachedTo}
@@ -1991,7 +1991,7 @@ function GirlBoardToken({
           locale={effectiveLocale}
           alt=""
           draggable={false}
-          className="h-full w-full scale-[1.34] object-contain brightness-0 contrast-150"
+          className="pointer-events-none h-full w-full scale-[1.34] object-contain brightness-0 contrast-150"
         />
       ) : (
         <svg
@@ -2063,7 +2063,7 @@ function GirlBoardToken({
       }
       aria-label={label}
       title={label}
-      className="relative inline-flex items-center justify-center"
+      className="pointer-events-none relative inline-flex items-center justify-center"
     >
       {unit}
     </span>
@@ -8377,7 +8377,13 @@ export default function BetrayalBoard({
   React.useEffect(() => {
     setPreviewState((previousState) => {
       const nextInitialState = createInitialPreviewState(baseCore);
-      if (baseCore.recommendedAction === "trade") {
+      const hasActiveTradeDraft =
+        previousState.tradeSelectionTouched ||
+        previousState.selectedTradeTargetPlayerId !== null ||
+        previousState.selectedTradeGiveCardIds.length > 0 ||
+        previousState.selectedDogTradeCardIds.length > 0 ||
+        previousState.selectedTradeReturnCardIds.length > 0;
+      if (baseCore.recommendedAction === "trade" || hasActiveTradeDraft) {
         if (
           baseCore.pendingTradeAgreement ||
           baseCore.tradeUsedThisTurnPlayerIds.includes(
@@ -8426,18 +8432,9 @@ export default function BetrayalBoard({
                   nextTargetInventoryIds.has(cardId) &&
                   !usedCardIds.has(cardId),
               );
-        const nextSelectedInventoryCardId =
-          previousState.selectedInventoryCardId &&
-          nextSelectedTradeGiveCardIds.includes(
-            previousState.selectedInventoryCardId,
-          )
-            ? previousState.selectedInventoryCardId
-            : nextSelectedTradeGiveCardIds[
-                nextSelectedTradeGiveCardIds.length - 1
-              ] ?? null;
         return {
           ...nextInitialState,
-          selectedInventoryCardId: nextSelectedInventoryCardId,
+          selectedInventoryCardId: null,
           selectedTradeTargetPlayerId: nextSelectedTradeTargetPlayerId,
           selectedTradeGiveCardIds: nextSelectedTradeGiveCardIds,
           selectedDogTradeCardIds: nextSelectedDogTradeCardIds,
@@ -13810,11 +13807,17 @@ export default function BetrayalBoard({
         pendingRoomOrientationTurns: nextOrientation,
         pendingRoomTileAdjustment: null,
       }));
+      if (isTutorialActive && tutorialStep?.id === "rotate-room-placement") {
+        nextStep("auto");
+      }
     },
     [
+      isTutorialActive,
+      nextStep,
       pendingRoomOrientationOptions,
       pendingRoomPlacementPreview,
       selectedRoomOrientationTurns,
+      tutorialStep?.id,
     ],
   );
 
@@ -14562,6 +14565,7 @@ export default function BetrayalBoard({
     if (!tradeSelectionReady) {
       setPreviewState((previousState) => ({
         ...previousState,
+        interactionMode: "default",
         tradeSelectionTouched: true,
       }));
       return;
@@ -15091,6 +15095,7 @@ export default function BetrayalBoard({
       }
       return {
         ...previousState,
+        interactionMode: "default",
         selectedDogTradeCardIds: Array.from(selected),
         tradeSelectionTouched: true,
       };
@@ -15108,8 +15113,8 @@ export default function BetrayalBoard({
       const selectedTradeGiveCardIds = Array.from(selected);
       return {
         ...previousState,
-        selectedInventoryCardId:
-          selectedTradeGiveCardIds[selectedTradeGiveCardIds.length - 1] ?? null,
+        interactionMode: "default",
+        selectedInventoryCardId: null,
         selectedTradeGiveCardIds,
         selectedInventoryTargetPlayerId: null,
         selectedInventoryTargetRoomId: null,
@@ -15131,6 +15136,7 @@ export default function BetrayalBoard({
       }
       return {
         ...previousState,
+        interactionMode: "default",
         selectedTradeReturnCardIds: Array.from(selected),
         tradeSelectionTouched: true,
       };
@@ -15341,6 +15347,33 @@ export default function BetrayalBoard({
         return;
       }
       if (
+        isTradeOrLootTargetSelectionActive &&
+        (activeTradeTargets.some(
+          (target) => target.playerId === explorer.playerId,
+        ) ||
+          corpseLootTargets.some(
+            (target) => target.playerId === explorer.playerId,
+          ))
+      ) {
+        setPreviewState((previousState) => ({
+          ...previousState,
+          interactionMode: "default",
+          selectedInventoryTargetPlayerId: null,
+          selectedTradeTargetPlayerId: explorer.playerId,
+          selectedTradeReturnCardIds:
+            previousState.selectedTradeTargetPlayerId === explorer.playerId
+              ? previousState.selectedTradeReturnCardIds
+              : [],
+          selectedCorpseLootCardId: corpseLootTargets.some(
+            (target) => target.playerId === explorer.playerId,
+          )
+            ? null
+            : previousState.selectedCorpseLootCardId,
+          tradeSelectionTouched: true,
+        }));
+        return;
+      }
+      if (
         selectedInventoryUseEffectMode === "healTraits" &&
         healTargetExplorers.some(
           (target) => target.playerId === explorer.playerId,
@@ -15358,30 +15391,6 @@ export default function BetrayalBoard({
       ) {
         handleSelectActiveMaskTargetToken(explorer.playerId);
         return;
-      }
-      if (
-        isTradeOrLootTargetSelectionActive &&
-        (activeTradeTargets.some(
-          (target) => target.playerId === explorer.playerId,
-        ) ||
-          corpseLootTargets.some(
-            (target) => target.playerId === explorer.playerId,
-          ))
-      ) {
-        setPreviewState((previousState) => ({
-          ...previousState,
-          selectedTradeTargetPlayerId: explorer.playerId,
-          selectedTradeReturnCardIds:
-            previousState.selectedTradeTargetPlayerId === explorer.playerId
-              ? previousState.selectedTradeReturnCardIds
-              : [],
-          selectedCorpseLootCardId: corpseLootTargets.some(
-            (target) => target.playerId === explorer.playerId,
-          )
-            ? null
-            : previousState.selectedCorpseLootCardId,
-          tradeSelectionTouched: true,
-        }));
       }
   }
 
@@ -19610,13 +19619,13 @@ export default function BetrayalBoard({
                                           key={occupant.playerId}
                                           type="button"
                                           className={`relative outline-none transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d1b05f] ${
-                                            canSelectRoomFocusAction
+                                            canSelectRoom
                                               ? "pointer-events-none cursor-default"
                                               : "pointer-events-auto cursor-pointer hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)]"
                                           }`}
                                           data-testid={`betrayal-room-occupant-${room.id}-${occupant.playerId}`}
                                           tabIndex={
-                                            canSelectRoomFocusAction
+                                            canSelectRoom
                                               ? -1
                                               : undefined
                                           }
@@ -19901,7 +19910,11 @@ export default function BetrayalBoard({
                                         <button
                                           key={monster.id}
                                           type="button"
-                                          className="pointer-events-auto relative cursor-pointer border-0 bg-transparent p-0 outline-none transition hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d1b05f]"
+                                          className={`relative border-0 bg-transparent p-0 outline-none transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d1b05f] ${
+                                            canSelectRoom
+                                              ? "pointer-events-none cursor-default"
+                                              : "pointer-events-auto cursor-pointer hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)]"
+                                          }`}
                                           data-testid={`betrayal-room-monster-${room.id}-${monster.id}`}
                                           data-monster-status={monsterStatus}
                                           data-token-asset={
@@ -19909,6 +19922,9 @@ export default function BetrayalBoard({
                                             monster.portraitAsset
                                           }
                                           data-monster-detail-entry="true"
+                                          tabIndex={
+                                            canSelectRoom ? -1 : undefined
+                                          }
                                           title={`${monster.name} · ${monsterTraitSummary}`}
                                           aria-label={t(
                                             "board.monster.openDetails",
@@ -20336,6 +20352,7 @@ export default function BetrayalBoard({
                                 <button
                                   type="button"
                                   data-testid="betrayal-room-placement-rotate-right"
+                                  data-tutorial-id="betrayal-room-placement-rotate-right"
                                   onClick={() => handleRotateRoomPlacement(1)}
                                   disabled={
                                     pendingRoomOrientationOptions.length < 2
@@ -20358,7 +20375,7 @@ export default function BetrayalBoard({
                             >
                               {t("board.rooms.cancelPlacement")}
                             </button>
-                            <button
+                            <BetrayalConfirmButton
                               type="button"
                               data-testid="betrayal-room-placement-confirm"
                               data-tutorial-id="betrayal-room-placement-confirm"
@@ -20373,10 +20390,10 @@ export default function BetrayalBoard({
                                   ? pendingRoomPlacementAdjustmentText ?? undefined
                                   : undefined
                               }
-                              className="min-h-[38px] rounded-[7px] border border-[#f4cf77] bg-[#d2a84e] px-2 text-[12px] font-black text-[#1e1609] shadow-[0_6px_14px_rgba(0,0,0,0.28),inset_0_-2px_0_rgba(60,38,12,0.24)] transition hover:bg-[#e0bb63] disabled:cursor-not-allowed disabled:border-[rgba(238,204,126,0.32)] disabled:bg-[rgba(238,204,126,0.16)] disabled:text-[#b9a372] disabled:shadow-none disabled:hover:bg-[rgba(238,204,126,0.16)]"
+                              className="min-h-[38px] px-2 shadow-[0_6px_14px_rgba(0,0,0,0.28),inset_0_-2px_0_rgba(60,38,12,0.24)] disabled:shadow-none"
                             >
                               {t("board.rooms.confirmPlacement")}
-                            </button>
+                            </BetrayalConfirmButton>
                           </div>
                         </div>
                       );
@@ -21024,17 +21041,17 @@ export default function BetrayalBoard({
                           data-testid="betrayal-trade-agreement-panel"
                           className="flex items-center gap-2"
                         >
-                          <button
+                          <BetrayalConfirmButton
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               handleResolveTradeAgreement(true);
                             }}
                             data-testid="betrayal-trade-agreement-accept"
-                            className={`${betrayalConfirmButtonClass} min-w-[112px] px-5 text-[15px] shadow-[0_0_16px_rgba(215,193,111,0.22)]`}
+                            className="min-w-[112px] px-5 text-[15px] shadow-[0_0_16px_rgba(215,193,111,0.22)]"
                           >
                             {t("board.status.tradeAgreementAccept")}
-                          </button>
+                          </BetrayalConfirmButton>
                           <button
                             type="button"
                             onClick={(event) => {
@@ -22355,14 +22372,14 @@ export default function BetrayalBoard({
                       >
                         {isPendingTradeForViewer ? (
                           <>
-                            <button
+                            <BetrayalConfirmButton
                               type="button"
                               onClick={() => handleResolveTradeAgreement(true)}
                               data-testid="betrayal-mobile-trade-agreement-accept"
-                              className="min-h-[36px] flex-1 rounded-[8px] border border-[#d7c16f] bg-[rgba(215,193,111,0.20)] px-2 text-[12px] font-black text-[#fff4ba]"
+                              className="flex-1 px-2 text-[12px]"
                             >
                               {t("board.status.tradeAgreementAccept")}
-                            </button>
+                            </BetrayalConfirmButton>
                             <button
                               type="button"
                               onClick={() => handleResolveTradeAgreement(false)}

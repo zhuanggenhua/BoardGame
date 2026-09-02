@@ -141,6 +141,36 @@ async function visibleDesktopSpellbookCardIds(page: Page): Promise<string[]> {
         .filter((cardId): cardId is string => cardId != null));
 }
 
+async function clickVisibleMageWarsFieldCard(page: Page, objectId: string) {
+    const card = page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`);
+    await expect(card).toBeVisible({ timeout: 5_000 });
+    const clickablePoint = await card.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const candidateRatios = [
+            { x: 0.16, y: 0.5 },
+            { x: 0.84, y: 0.5 },
+            { x: 0.5, y: 0.5 },
+            { x: 0.24, y: 0.28 },
+            { x: 0.24, y: 0.72 },
+            { x: 0.76, y: 0.28 },
+            { x: 0.76, y: 0.72 },
+        ];
+
+        for (const ratio of candidateRatios) {
+            const x = rect.left + rect.width * ratio.x;
+            const y = rect.top + rect.height * ratio.y;
+            const hit = document.elementFromPoint(x, y)
+                ?.closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+            if (hit === element) {
+                return { x, y };
+            }
+        }
+        return null;
+    });
+    expect(clickablePoint, `${objectId} 必须有露出且可点击的牌面区域`).not.toBeNull();
+    await page.mouse.click(clickablePoint!.x, clickablePoint!.y);
+}
+
 async function expectMageWarsDefaultBrowseInteractions(page: Page) {
     const shelf = page.getByTestId('mage-wars-desktop-spellbook-shelf');
     await expect(shelf).toBeVisible({ timeout: 5_000 });
@@ -847,6 +877,7 @@ async function applyMageWarsCombatFocusState(page: Page) {
 test.describe('Mage Wars foundation runtime board', () => {
     test('真实入口加载正式牌桌素材并落桌面验收截图', async ({ context, page }) => {
         test.setTimeout(90_000);
+        await page.setViewportSize({ width: 1920, height: 1080 });
         const diagnostics = await openMageWarsBoard(context, page, 'mage-wars-foundation-runtime-board');
         const defaultMageLayout = await page.evaluate(() => Array.from(
             document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-mage-entity"]'),
@@ -863,6 +894,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                 playerId: mage.dataset.playerId ?? null,
                 mageId: mage.dataset.mageId ?? null,
                 zoneId: mage.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]')?.dataset.testid ?? null,
+                laneAxis: laneGroup?.dataset.layoutAxis ?? null,
                 ownerSide: lane?.dataset.laneOwnerSide ?? null,
                 lanePlayerId: lane?.dataset.lanePlayerId ?? null,
                 laneCount: lanes.length,
@@ -876,6 +908,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         defaultMageLayout.forEach((mage) => {
             expect(mage.zoneId).not.toBeNull();
             expect(mage.ownerSide).not.toBeNull();
+            expect(mage.laneAxis).toBe('vertical');
             expect(mage.ownerSide).toBe(mage.playerId === '0' ? 'seat-left' : 'seat-right');
             expect(mage.lanePlayerId).toBe(mage.playerId);
             expect(mage.laneCount).toBe(2);
@@ -914,9 +947,9 @@ test.describe('Mage Wars foundation runtime board', () => {
         });
         expect(copyCountPlacement).not.toBeNull();
         expect(Math.abs(copyCountPlacement!.badgeCenterX - copyCountPlacement!.cardCenterX)).toBeLessThanOrEqual(2);
-        expect(Math.abs(copyCountPlacement!.badgeCenterY - copyCountPlacement!.cardBottom)).toBeLessThanOrEqual(2);
         expect(copyCountPlacement!.badgeTop).toBeLessThan(copyCountPlacement!.cardBottom);
-        expect(copyCountPlacement!.badgeBottom).toBeGreaterThan(copyCountPlacement!.cardBottom);
+        expect(copyCountPlacement!.badgeBottom).toBeLessThanOrEqual(copyCountPlacement!.cardBottom);
+        expect(copyCountPlacement!.badgeBottom).toBeGreaterThanOrEqual(copyCountPlacement!.cardBottom - 6);
         expect(copyCountPlacement!.rowOverflowY).not.toBe('hidden');
 
         const duplicateInspectButton = duplicateSpellbookCard.locator('xpath=..').getByTestId('mage-wars-card-inspect-button');
@@ -931,9 +964,20 @@ test.describe('Mage Wars foundation runtime board', () => {
 
         await duplicateSpellbookCard.click();
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '1');
+        await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
+        const oneDraftSlot = page.locator(
+            `[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="${duplicateSpellbookCardInfo.cardId}"]`,
+        );
+        await expect(oneDraftSlot).toHaveCount(1);
         await duplicateSpellbookCard.click();
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '2');
-        await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveText('选 2');
+        await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
+        const draftSlots = page.locator(
+            `[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="${duplicateSpellbookCardInfo.cardId}"]`,
+        );
+        await expect(draftSlots).toHaveCount(2);
+        expect((await draftSlots.evaluateAll((slots) => slots.map((slot) => slot.getAttribute('data-plan-slot-index')).sort())))
+            .toEqual(['1', '2']);
         const planSpellsButton = page.getByTestId('mage-wars-plan-spells');
         await expect(planSpellsButton).toBeVisible({ timeout: 5_000 });
         await expect(planSpellsButton).toHaveText('确认计划 2/2');
@@ -1003,7 +1047,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(page.getByTestId('mage-wars-desktop-settlement-overlay')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-dice-tray')).toHaveCount(0);
         await expect(page.getByText('掷骰预备')).toHaveCount(0);
-        await page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-red-angel"]').click();
+        await clickVisibleMageWarsFieldCard(page, 'mw-test-red-angel');
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-red-angel"][data-field-card-role="source"]')).toBeVisible();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-blue-angel"][data-field-card-role="target"]')).toBeVisible();
         const guardActionButton = page.getByTestId('mage-wars-selected-unit-guard');
@@ -1143,8 +1187,13 @@ test.describe('Mage Wars foundation runtime board', () => {
                     previewKind: occupant.dataset.magePreviewKind,
                     uiRole: occupant.dataset.mageUiRole,
                     ownerSide: ownershipLane?.dataset.laneOwnerSide ?? null,
+                    laneAxis: ownershipLane
+                        ?.closest<HTMLElement>('[data-testid="mage-wars-zone-ownership-lanes"]')
+                        ?.dataset.layoutAxis ?? null,
                     rect: toRect(occupant),
                     aspectRatio: rect.height > 0 ? rect.width / rect.height : null,
+                    centerX,
+                    centerY,
                     zoneTestId: zone?.getAttribute('data-testid') ?? null,
                     centerInsideZone: zoneRect
                         ? centerX >= zoneRect.left
@@ -1220,6 +1269,8 @@ test.describe('Mage Wars foundation runtime board', () => {
                 arenaZones: arenaZoneDetails,
                 selfHud: toRect(selfHud),
                 opponentHud: toRect(opponentHud),
+                selfHudDensity: selfHud?.dataset.mageWarsHudDensity ?? null,
+                opponentHudDensity: opponentHud?.dataset.mageWarsHudDensity ?? null,
                 mageHudHintCards: mageHudHintCards.map((hintCard) => ({
                     owner: hintCard.closest('[data-testid="mage-wars-mage-hud-self"]')
                         ? 'self'
@@ -1273,6 +1324,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.lifeToggle!.lifeVisible).toBe('true');
         expect(desktopLayoutAudit.selfHud).not.toBeNull();
         expect(desktopLayoutAudit.opponentHud).not.toBeNull();
+        expect(desktopLayoutAudit.selfHudDensity).toBe('full');
+        expect(desktopLayoutAudit.opponentHudDensity).toBe('full');
         expect(desktopLayoutAudit.mageHudHintCards).toHaveLength(2);
         const mageCardAspectRatio = (4096 / 7) / (3302 / 4);
         expect(desktopLayoutAudit.opponentPreparedMirror).not.toBeNull();
@@ -1286,13 +1339,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.effectDice).toHaveLength(0);
         desktopLayoutAudit.mageHudHintCards.forEach((hintCard) => {
             expect(hintCard.rect).not.toBeNull();
-            if (hintCard.owner === 'self') {
-                expect(hintCard.rect!.height).toBeGreaterThanOrEqual(64);
-                expect(hintCard.rect!.width).toBeGreaterThanOrEqual(40);
-            } else {
-                expect(hintCard.rect!.height).toBeGreaterThan(150);
-                expect(hintCard.rect!.width).toBeGreaterThan(100);
-            }
+            expect(hintCard.rect!.height).toBeGreaterThan(150);
+            expect(hintCard.rect!.width).toBeGreaterThan(100);
             expect(hintCard.aspectRatio).not.toBeNull();
             expect(Math.abs(hintCard.aspectRatio! - mageCardAspectRatio)).toBeLessThanOrEqual(0.003);
             expect(hintCard.previewKind).toBe('card');
@@ -1312,7 +1360,16 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(occupant.overlapsSpellbookShelf).toBe(false);
             expect(occupant.previewKind).toBe('portrait');
             expect(occupant.uiRole).toBe('mage-battle-entity');
+            expect(occupant.laneAxis).toBe('vertical');
+            expect(occupant.rect!.height).toBeGreaterThan(85);
         });
+        const warlockEntity = desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice');
+        const priestessEntity = desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice');
+        expect(warlockEntity?.rect).not.toBeNull();
+        expect(priestessEntity?.rect).not.toBeNull();
+        const mageVerticalSeparation = Math.abs((warlockEntity?.centerY ?? 0) - (priestessEntity?.centerY ?? 0));
+        const mageHorizontalSeparation = Math.abs((warlockEntity?.centerX ?? 0) - (priestessEntity?.centerX ?? 0));
+        expect(mageVerticalSeparation, '同格双方单位 / 法师必须上下分区，不得横向挤成小片').toBeGreaterThan(mageHorizontalSeparation);
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.zoneTestId).toBe('mage-wars-arena-zone-a2');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.zoneTestId).toBe('mage-wars-arena-zone-a2');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.ownerSide).toBe('seat-left');
@@ -1428,17 +1485,17 @@ test.describe('Mage Wars foundation runtime board', () => {
         ]);
         desktopLayoutAudit.fieldCards.forEach((card) => {
             expect(card.rect).not.toBeNull();
-            expect(card.rect!.width).toBeGreaterThan(44);
-            expect(card.rect!.width).toBeLessThan(56);
-            expect(card.rect!.height).toBeGreaterThan(64);
-            expect(card.rect!.height).toBeLessThan(73);
+            expect(card.rect!.width).toBeGreaterThan(60);
+            expect(card.rect!.width).toBeLessThan(72);
+            expect(card.rect!.height).toBeGreaterThan(84);
+            expect(card.rect!.height).toBeLessThan(100);
             expect(card.aspectRatio).toBeGreaterThan(0.70);
             expect(card.aspectRatio).toBeLessThan(0.72);
             expect(card.zoneCoverage).toBeGreaterThanOrEqual(0.85);
             expect(card.maxOtherZoneCoverage).toBeLessThanOrEqual(0.15);
         });
         await applyMageWarsCombatFocusState(page);
-        await page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-red-angel"]').click();
+        await clickVisibleMageWarsFieldCard(page, 'mw-test-focus-red-angel');
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-red-angel"][data-field-card-role="source"]')).toBeVisible();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-blue-archer"][data-field-card-role="target"]')).toBeVisible();
         const focusGuardActionButton = page.getByTestId('mage-wars-selected-unit-guard');
@@ -1547,7 +1604,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                 && rect.height > 0
                 && Number.parseFloat(getComputedStyle(dice).opacity) >= 0.65;
         }, undefined, { timeout: 5_000 });
-        await page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-blue-archer"][data-field-card-role="target"]').click();
+        await clickVisibleMageWarsFieldCard(page, 'mw-test-focus-blue-archer');
         await attackDiceVisibleFrame;
         await expect.poll(async () => page.evaluate(() => {
             const state = (window as Window & {
@@ -1638,8 +1695,13 @@ test.describe('Mage Wars foundation runtime board', () => {
 
         await duplicateSpellbookCard.click();
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '1');
+        await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
         await duplicateSpellbookCard.click();
         await expect(duplicateSpellbookCard).toHaveAttribute('data-selected-count', '2');
+        await expect(duplicateSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
+        await expect(page.locator(
+            `[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="${duplicateSpellbookCardInfo.cardId}"]`,
+        )).toHaveCount(2);
         const planSpellsButton = page.getByTestId('mage-wars-plan-spells');
         await expect(planSpellsButton).toBeVisible({ timeout: 5_000 });
         await expect(planSpellsButton).toHaveText('确认计划 2/2');

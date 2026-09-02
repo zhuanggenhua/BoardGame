@@ -1232,7 +1232,7 @@
       "tianshi.flight": "Flight: roll 2 dice; a 6 on either die activates this phase's effect",
       "tianshi.dazzle": "Dazzle: this attack roll result is {{value}}",
       "tianshi.triumphantReturn": "Triumphant Return: Blade +1, Wing +2, Cross +3; Holy Pendant makes the attack undefendable",
-      "tianshi.angelicCloak": "Angelic Cloak: counterattack, gain Flight, or prevent damage based on the die face",
+      "tianshi.angelicCloak": "Angelic Cloak: counterattack or prevent damage based on the die face",
       "tianshi.holyStrike": "Holy Strike: each Blade adds +1 attack damage; Holy Pendant inflicts Dazzle",
       "tianshi.angelicTactics": "Angelic Tactics: Blade +3 damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival",
       "tianshi.supremeHoliness": "Supreme Holiness: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card"
@@ -4440,18 +4440,18 @@
     },
     "angelic-cloak": {
       "name": "Angelic Cloak",
-      "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once.",
-      "effects": { "resolve": "Resolve the defensive bonus die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once." }
+      "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3.",
+      "effects": { "resolve": "Resolve the defensive die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3." }
     },
     "angelic-cloak-2": {
       "name": "Angelic Cloak II",
-      "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once.",
-      "effects": { "resolve": "Resolve the defensive bonus die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once." }
+      "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once.",
+      "effects": { "resolve": "Resolve the defensive die: Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once." }
     },
     "angelic-cloak-3": {
       "name": "Angelic Cloak III",
-      "description": "Defensive roll 1 die: Blade counterattacks for 3, Wing gains Flight, Cross prevents 3, Holy Pendant prevents 4; reroll once.",
-      "effects": { "resolve": "Resolve the defensive bonus die: Blade counterattacks for 3, Wing gains Flight, Cross prevents 3, Holy Pendant prevents 4; reroll once." }
+      "description": "Defensive roll 1 die: Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once.",
+      "effects": { "resolve": "Resolve the defensive die: Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once." }
     },
     "heavenly-severing": {
       "name": "Heavenly Severing",
@@ -5587,8 +5587,8 @@
     "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "Divine Punishment II / Divine Command", "description": "Top: Divine Punishment II. Bottom: heal 1, then deal 4 undefendable damage to an opponent." },
     "upgrade-tianshi-divine-purification-2": { "name": "Divine Purification II", "description": "Upgrade Divine Purification: increase the damage to 6 and the self-heal to 5." },
     "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "Archangel Resolve II / Divine Protection", "description": "Top: Archangel Resolve II. Bottom: choose a player to gain 2 Purify and 2 Flight." },
-    "upgrade-tianshi-angelic-cloak-3": { "name": "Angelic Cloak III", "description": "Defensive roll 1 die; Blade counterattacks for 3, Wing gains Flight, Cross prevents 3, Holy Pendant prevents 4; reroll once." },
-    "upgrade-tianshi-angelic-cloak-2": { "name": "Angelic Cloak II", "description": "Defensive roll 1 die; Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once." },
+    "upgrade-tianshi-angelic-cloak-3": { "name": "Angelic Cloak III", "description": "Defensive roll 1 die; Blade counterattacks for 3, Wing prevents 2, Cross prevents 3, Holy Pendant prevents 4; reroll once." },
+    "upgrade-tianshi-angelic-cloak-2": { "name": "Angelic Cloak II", "description": "Defensive roll 1 die; Blade counterattacks for 2, Wing prevents 1, Cross prevents 2, Holy Pendant prevents 3; reroll once." },
     "upgrade-tianshi-triumphant-return-2": { "name": "Triumphant Return II", "description": "Small Straight deals 8 damage; bonus die: Blade +1, Wing +2, Cross +3, Holy Pendant makes the attack undefendable." },
     "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "Holy Radiance II / Takeoff", "description": "Top: Holy Radiance II. Bottom: choose a player to gain Flight and take 3 undefendable damage." },
      "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "Holy Blade III / Cherub II", "description": "Top: Holy Blade III. Bottom: gain Flight, Purify and Divine Arrival." },

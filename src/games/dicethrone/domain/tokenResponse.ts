@@ -32,7 +32,11 @@ import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 import { getTokenStackLimit } from './rules';
 import { isPurifiableDebuffId } from './statusRemoval';
 import { getRemainingArtificerBotActivations, isArtificerBotTokenId } from './artificerBots';
-import { estimateDiceThroneDamageAfterExistingPrevention } from './damagePreventionCommit';
+import {
+    commitDiceThroneDamagePrevention,
+    estimateDiceThroneDamageAfterExistingPrevention,
+} from './damagePreventionCommit';
+import { buildDiceThroneTokenResponseFrameIdFromPendingDamageId } from './timingOpportunityIdentities';
 
 function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerId, tokenId: string): number | undefined {
     return isArtificerBotTokenId(tokenId)
@@ -248,6 +252,17 @@ export function hasDebuffs(state: DiceThroneCore, playerId: PlayerId): boolean {
     return removableDebuffIds.some(id => (playerStatusEffects[id] ?? 0) > 0 || (playerTokens[id] ?? 0) > 0);
 }
 
+function buildPendingDamageId(
+    sourcePlayerId: PlayerId,
+    targetPlayerId: PlayerId,
+    damage: number,
+    sourceAbilityId: string | undefined,
+    timestamp: number = 0,
+): string {
+    const normalizedSource = sourceAbilityId ?? 'none';
+    return `damage-${timestamp}-${sourcePlayerId}-${targetPlayerId}-${normalizedSource}-${damage}`;
+}
+
 // ============================================================================
 // Token 响应窗口创建
 // ============================================================================
@@ -266,16 +281,17 @@ export function createPendingDamage(
     damageScope?: 'attack' | 'direct',
     unblockable?: boolean,
     deferredTokenGrants?: PendingDamage['deferredTokenGrants'],
+    committedPrevention?: Pick<PendingDamage, 'preventionCommitted' | 'shieldsConsumed'> & { currentDamage?: number },
 ): PendingDamage {
     const responderId = responseType === 'beforeDamageDealt' ? sourcePlayerId : targetPlayerId;
-    const normalizedSource = sourceAbilityId ?? 'none';
+    const currentDamage = Math.max(0, committedPrevention?.currentDamage ?? damage);
     
     return {
-        id: `damage-${timestamp}-${sourcePlayerId}-${targetPlayerId}-${normalizedSource}-${damage}`,
+        id: buildPendingDamageId(sourcePlayerId, targetPlayerId, damage, sourceAbilityId, timestamp),
         sourcePlayerId,
         targetPlayerId,
         originalDamage: damage,
-        currentDamage: damage,
+        currentDamage,
         sourceAbilityId,
         damageScope,
         ...(unblockable ? { unblockable: true } : {}),
@@ -284,6 +300,56 @@ export function createPendingDamage(
         responderId,
         isFullyEvaded: false,
         ...(initialModifiers && initialModifiers.length > 0 ? { modifiers: initialModifiers } : {}),
+        ...(committedPrevention?.preventionCommitted ? { preventionCommitted: true } : {}),
+        ...(committedPrevention?.shieldsConsumed?.length ? { shieldsConsumed: committedPrevention.shieldsConsumed } : {}),
+    };
+}
+
+function buildShieldModifiers(
+    shieldsConsumed: NonNullable<PendingDamage['shieldsConsumed']>,
+): NonNullable<PendingDamage['modifiers']> {
+    return shieldsConsumed
+        .filter(consumption => consumption.absorbed > 0)
+        .map(consumption => ({
+            type: 'shield' as const,
+            value: -consumption.absorbed,
+            sourceId: consumption.sourceId,
+        }));
+}
+
+export function applyExistingDamagePreventionToPendingDamage(
+    state: DiceThroneCore,
+    pendingDamage: PendingDamage,
+    options?: { bypassShields?: boolean; isUltimateDamage?: boolean },
+): PendingDamage {
+    if (
+        pendingDamage.responseType !== 'beforeDamageReceived'
+        || pendingDamage.preventionCommitted === true
+        || pendingDamage.currentDamage <= 0
+    ) {
+        return pendingDamage;
+    }
+
+    const resolutionFrameId = buildDiceThroneTokenResponseFrameIdFromPendingDamageId(pendingDamage.id);
+    const preventionCommit = commitDiceThroneDamagePrevention({
+        state,
+        targetId: pendingDamage.targetPlayerId,
+        incomingDamage: pendingDamage.currentDamage,
+        bypassShields: options?.bypassShields,
+        isUltimateDamage: options?.isUltimateDamage,
+        resolutionFrameId,
+    });
+    if (preventionCommit.shieldsConsumed.length === 0) return pendingDamage;
+
+    return {
+        ...pendingDamage,
+        currentDamage: preventionCommit.remainingDamage,
+        preventionCommitted: true,
+        shieldsConsumed: preventionCommit.shieldsConsumed,
+        modifiers: [
+            ...(pendingDamage.modifiers ?? []),
+            ...buildShieldModifiers(preventionCommit.shieldsConsumed),
+        ],
     };
 }
 
@@ -407,7 +473,9 @@ export function maybeCreateDamageResponseEvent(params: {
     const responseType = tokenResponseType === 'attackerBoost'
         ? 'beforeDamageDealt'
         : 'beforeDamageReceived';
-    const pendingDamage = createPendingDamage(
+    const pendingDamage = applyExistingDamagePreventionToPendingDamage(
+        state,
+        createPendingDamage(
         attackerId,
         dmgTargetId,
         dmgAmount,
@@ -418,6 +486,11 @@ export function maybeCreateDamageResponseEvent(params: {
         damageScope,
         isUnblockable,
         dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
+        ),
+        {
+            bypassShields,
+            isUltimateDamage: state.pendingAttack?.isUltimate === true,
+        },
     );
     return createTokenResponseRequestedEvent(pendingDamage, timestamp);
 }
@@ -841,7 +914,7 @@ export function finalizeTokenResponse(
             type: 'DAMAGE_DEALT',
             payload: {
                 targetId: pendingDamage.targetPlayerId,
-                amount: pendingDamage.currentDamage,
+                amount: pendingDamage.preventionCommitted ? pendingDamage.originalDamage : pendingDamage.currentDamage,
                 actualDamage,
                 sourceAbilityId: pendingDamage.sourceAbilityId,
                 sourcePlayerId: pendingDamage.sourcePlayerId,
@@ -849,6 +922,8 @@ export function finalizeTokenResponse(
                 ...(pendingDamage.unblockable ? { unblockable: true } : {}),
                 ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
                 modifiers: pendingDamage.modifiers,
+                ...(pendingDamage.preventionCommitted ? { preventionCommitted: true } : {}),
+                ...(pendingDamage.shieldsConsumed?.length ? { shieldsConsumed: pendingDamage.shieldsConsumed } : {}),
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,

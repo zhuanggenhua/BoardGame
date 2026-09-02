@@ -1,58 +1,39 @@
 {
-  "verdict": "PASS",
-  "scope": "current-user-request",
+  "verdict": "REVISE",
+  "scope": "invalidated-historical-evidence",
+  "invalidatedAt": "2026-09-01",
+  "reason": "旧清单要求“天使斗篷投双翼后飞行 Token 出现在 buff 栏”，该要求与角色板规则不符。双翼应抵挡 1 点伤害，不能生成飞行 Token。",
   "display": {
-    "purpose": "final-user-visible-delivery",
-    "trigger": "user-requested-open",
-    "viewer": "pureref",
-    "finalPassBeforeOpen": true
+    "purpose": "historical-invalidated-record",
+    "trigger": "do-not-open-as-pass",
+    "viewer": "none",
+    "finalPassBeforeOpen": false
   },
   "requirements": [
     {
-      "requirement": "自然链必须包含天使斗篷投出双翼后、飞行 Token 已在左侧 buff/token 栏出现且尚未消耗的中间帧。",
-      "status": "PASS",
+      "requirement": "天使斗篷投出双翼后应抵挡 1 点伤害，且不授予飞行 Token。",
+      "status": "REVISE",
       "evidence": [
-        "e2e/dicethrone/tianshi-ability-card-real-entry.e2e.ts 先点击真实天使斗篷防御技能，控制骰面为 4，再结束防御进入响应，不是直接调用飞行效果。",
-        "原始截图 tianshi-angelic-cloak-wing-grants-flight.jpg 对应状态断言：炽天使生命 42，飞行 Token = 1，pendingAttack 已收口。",
-        "标记图组第 02 张能看到左侧 buff/token 栏蓝色飞行 Token 显示 1/3，之后第 03/05 张才是点击飞行 Token 后进入右侧奖励骰确认。"
+        "需要由新的真实入口 E2E 和当前截图组替代旧图；旧图组不得再作为 PASS 证据。"
       ]
     },
     {
       "requirement": "撤掉擅自新增的骰盘数量标题，不把解释性追问实现成产品 UI 改造。",
-      "status": "PASS",
+      "status": "UNCHANGED",
       "evidence": [
-        "rg 未再命中 surfaceLabel / dice-tray-surface-label / trayLabel / expectedSurfaceLabel。",
-        "src/games/dicethrone/ui/DiceTray.tsx 只保留隐藏测试锚点 data-definition-id，不渲染数量标题。",
-        "public/locales/zh-CN/game-dicethrone.json 与 public/locales/en/game-dicethrone.json JSON 解析通过。"
+        "该要求与天使斗篷规则纠正无冲突，但本清单不再作为最终 PASS 展示清单。"
       ]
     },
     {
-      "requirement": "07 图的很多骰面要能解释为提示卡说明，不是防御阶段实际掷了很多颗骰。",
-      "status": "PASS",
+      "requirement": "飞行 Token 响应窗口有 6 / 无 6 两条分支。",
+      "status": "UNCHANGED",
       "evidence": [
-        "当前 01 图中右侧竖排 1-6 位于炽天使帮助卡内部，是天使斗篷骰面说明。",
-        "当前 07 图对应圣洁吊坠减伤收口，右侧骰盘只承接本次真实防御骰结果。"
-      ]
-    },
-    {
-      "requirement": "天使斗篷防御阶段使用炽天使自己的骰子，不显示成对方骰。",
-      "status": "PASS",
-      "evidence": [
-        "e2e/dicethrone/tianshi-ability-card-real-entry.e2e.ts 对右侧骰盘断言 data-definition-id = tianshi-dice。",
-        "npx playwright 真实入口天使斗篷 6 条用例全部通过。"
-      ]
-    },
-    {
-      "requirement": "飞行奖励骰有 6 和无 6 两个反馈分支都从真实防御链收口。",
-      "status": "PASS",
-      "evidence": [
-        "有 6 分支：右侧奖励骰确认后免除当前伤害。",
-        "无 6 分支：右侧奖励骰确认后不免伤，继续响应跳过后正常结算伤害。",
-        "防御骰 5/6 分支：真实防御链分别走十字和圣洁吊坠减伤收口。"
+        "该链路只适用于玩家已通过其它合法来源持有飞行 Token 的场景，不能归因于天使斗篷骰面 4。"
       ]
     }
   ],
-  "images": [
+  "images": [],
+  "invalidatedImages": [
     "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-defense-dice-explain-final-2026-09-01-v5/00-sequence-index.png",
     "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-defense-dice-explain-final-2026-09-01-v5/01-labeled-tianshi-angelic-cloak-normal-defense-roll.png",
     "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/_labeled-for-pureref/tianshi-defense-dice-explain-final-2026-09-01-v5/02-labeled-tianshi-angelic-cloak-wing-grants-flight.png",

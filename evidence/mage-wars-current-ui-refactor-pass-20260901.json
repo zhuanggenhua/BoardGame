@@ -1,0 +1,86 @@
+{
+  "verdict": "SUPERSEDED",
+  "supersededBy": "evidence/mage-wars-tutorial/pass-manifest-20260902-flow-sync-v3.json",
+  "supersededReason": "旧图组把 foundation Board 基础验证图、拖拽姿态图和教程图混在同一最终展示序列中；当前教程端到端验收改用只含教程主流程的 v3 图组。",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "桌面 Mage Wars 属性 / HUD 不因计划、目标选择、教程或压力态自动缩成低可读小版",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts '真实入口加载正式牌桌素材并落桌面验收截图'：通过",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-default-mage-space.png",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言 self/opponent HUD density 均为 full，提示卡尺寸保持可读"
+      ]
+    },
+    {
+      "requirement": "确认计划不能用小标签表达已选，已选法术必须直接进入计划槽位并显示 x/y 进度",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-spellbook-copy-selection.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts 与 e2e/mage-wars/mage-wars-tutorial.e2e.ts：断言源法术书卡无 selected-count 小标签，计划槽存在 1/2 与 2/2 草稿牌"
+      ]
+    },
+    {
+      "requirement": "同格双方单位 / 法师按上下分区承载，单位不能被横向压缩到不可读，仍要有真实可点击区域",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-default-mage-space.png",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言 ownership lanes 为 vertical，法师高度大于 85px，单位牌宽高提升到可读阈值，外露区域可真实点击"
+      ]
+    },
+    {
+      "requirement": "地图拖拽后展示的是整页自由视窗姿态，不是固定比例小框；HUD / 法术书 / 计划区不跟随地图拖动",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00b-dragged-map-full-viewport.png",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言地图视窗贴齐真实屏幕边缘，放大拖拽后内容覆盖视窗，热区仍在同一坐标父层"
+      ]
+    },
+    {
+      "requirement": "教程计划到部署之间必须有真实过渡截图，不能从确认计划突然跳到完成部署",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-prepared-and-hidden.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-summon-target-zone-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-wolf-summoned-not-ready.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png",
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts '单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术'：通过"
+      ]
+    },
+    {
+      "requirement": "通用规范必须沉淀本轮可迁移规则：主信息不能因操作态降级、选择结果进目标槽位、多实体密排先保可读尺寸、E2E 不隐藏独立步骤",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-ux.md",
+        ".spec/knowledge/standards/ui-change-gates.md",
+        ".spec/knowledge/standards/e2e-verification.md",
+        ".spec/knowledge/standards/tutorial-design.md",
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md",
+        "npm run spec:lint：通过"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/01-labeled-e2e-desktop-default-mage-space.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/02-labeled-e2e-spellbook-copy-selection.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/03-labeled-00b-dragged-map-full-viewport.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/04-labeled-03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/05-labeled-04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/06-labeled-05-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/07-labeled-06-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/08-labeled-07-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/09-labeled-08-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/current-ui-refactor-20260901/_labeled-final/10-labeled-09-roused-wolf-ready-and-end-deployment.png"
+  ]
+}

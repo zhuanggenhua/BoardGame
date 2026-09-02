@@ -1,0 +1,68 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "测试目标必须是炽天使在防御/受伤响应中使用真实已有的飞行 Token。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E: 飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤 (passed)",
+        "真实入口 E2E: 飞升真实获得飞行后，应能在防御伤害响应中使用飞行并无6继续受伤 (passed)",
+        "两条链路均先从真实手牌打出飞升，选择炽天使自己，buff 栏出现飞行 Token 后再进入对方攻击和防御响应。"
+      ]
+    },
+    {
+      "requirement": "不能把天使斗篷双翼当作飞行来源；天使斗篷 4/5/6 必须按防御减伤结算。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E: 天使斗篷防御骰 4、5 和 6 应从真实防御链分别减免 1、2 与 3 点伤害 (passed)",
+        "防御骰 4 后待处理伤害为 7，防御骰 5/6 分别最终生命为 44/45。"
+      ]
+    },
+    {
+      "requirement": "有 6 分支必须显示右侧奖励骰确认，确认后免伤并消耗飞行 Token。",
+      "status": "PASS",
+      "evidence": [
+        "截图 04 显示飞行奖励骰 [6,1] 在右侧骰盘等待确认。",
+        "截图 05 显示最终生命保持 50，飞行 Token 不再留在 buff 栏，待处理伤害清空。"
+      ]
+    },
+    {
+      "requirement": "无 6 分支必须显示右侧奖励骰确认，确认后继续伤害结算并正常收口。",
+      "status": "PASS",
+      "evidence": [
+        "截图 04 显示飞行奖励骰 [2,5] 在右侧骰盘等待确认。",
+        "截图 05 显示防御骰 4 已先抵挡 1 点，原 8 点攻击最终扣 7 点，生命从 50 到 43，飞行 Token 已消耗。"
+      ]
+    },
+    {
+      "requirement": "展示图片必须是当前运行的原始整页截图，不使用旧图、标注图、局部裁图或代表态截图。",
+      "status": "PASS",
+      "evidence": [
+        "本清单图片均来自 2026-09-02 00:10-00:13 的当前工作树 E2E 运行。",
+        "未打开 2026-09-01 的旧标注图，也未使用失败截图。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤/tianshi-flight-defense-chain-01-real-source-有6免伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤/tianshi-flight-defense-chain-02-defense-die-有6免伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤/tianshi-flight-defense-chain-03-response-ready-有6免伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤/tianshi-flight-defense-chain-04-flight-bonus-confirm-有6免伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并有6免伤/tianshi-flight-defense-chain-05-final-有6免伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并无6继续受伤/tianshi-flight-defense-chain-01-real-source-无6继续受伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并无6继续受伤/tianshi-flight-defense-chain-02-defense-die-无6继续受伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并无6继续受伤/tianshi-flight-defense-chain-03-response-ready-无6继续受伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并无6继续受伤/tianshi-flight-defense-chain-04-flight-bonus-confirm-无6继续受伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/飞升真实获得飞行后，应能在防御伤害响应中使用飞行并无6继续受伤/tianshi-flight-defense-chain-05-final-无6继续受伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/天使斗篷防御骰-4、5-和-6-应从真实防御链分别减免-1、2-与-3-点伤害/tianshi-angelic-cloak-defense-shield-4-final.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/天使斗篷防御骰-4、5-和-6-应从真实防御链分别减免-1、2-与-3-点伤害/tianshi-angelic-cloak-defense-shield-5-final.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tianshi-ability-card-real-entry.e2e/天使斗篷防御骰-4、5-和-6-应从真实防御链分别减免-1、2-与-3-点伤害/tianshi-angelic-cloak-defense-shield-6-final.jpg"
+  ]
+}
