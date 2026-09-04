@@ -122,4 +122,73 @@ describe('DiceBoxThreeEngine', () => {
         expect(box.DiceFactory.materials_cache).toEqual({});
     });
 
+    it('重掷预览从第一帧开始计时，避免第一帧晚到时直接跳到结束态', async () => {
+        const originalRequestAnimationFrame = window.requestAnimationFrame;
+        const originalCancelAnimationFrame = window.cancelAnimationFrame;
+        const originalSetTimeout = window.setTimeout;
+        const originalClearTimeout = window.clearTimeout;
+        const frames: FrameRequestCallback[] = [];
+        window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+            frames.push(callback);
+            return frames.length;
+        });
+        window.cancelAnimationFrame = vi.fn();
+        window.setTimeout = vi.fn(() => 1) as unknown as typeof window.setTimeout;
+        window.clearTimeout = vi.fn();
+
+        try {
+            const die = {
+                position: { x: 1, y: 2, z: 3 },
+                rotation: { x: 0, y: 0, z: 0 },
+                updateMatrixWorld: vi.fn(),
+                body: {
+                    position: { x: 1, y: 2, z: 3 },
+                    velocity: { x: 0, y: 0, z: 0 },
+                    angularVelocity: { x: 0, y: 0, z: 0 },
+                    aabbNeedsUpdate: false,
+                },
+            };
+            const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
+                box: { diceList: [typeof die] };
+                styleProfile: { baseScale: number };
+                renderFrame: ReturnType<typeof vi.fn>;
+                syncDiceHighlightShells: ReturnType<typeof vi.fn>;
+            };
+            engine.box = { diceList: [die] };
+            engine.styleProfile = { baseScale: 64 };
+            engine.renderFrame = vi.fn();
+            engine.syncDiceHighlightShells = vi.fn();
+
+            let resolved = false;
+            const preview = engine.playRerollLaunchPreview([0], 1000).then(() => {
+                resolved = true;
+            });
+
+            expect(frames).toHaveLength(1);
+            frames.shift()?.(5000);
+            await Promise.resolve();
+
+            expect(resolved).toBe(false);
+            expect(die.position.z).toBeGreaterThan(3);
+            const firstVisibleZ = die.position.z;
+
+            frames.shift()?.(5500);
+            await Promise.resolve();
+
+            expect(resolved).toBe(false);
+            expect(die.position.z).toBeGreaterThan(firstVisibleZ);
+
+            frames.shift()?.(6000);
+            await preview;
+
+            expect(resolved).toBe(true);
+            expect(die.position.z).toBeCloseTo(3);
+        } finally {
+            window.requestAnimationFrame = originalRequestAnimationFrame;
+            window.cancelAnimationFrame = originalCancelAnimationFrame;
+            window.setTimeout = originalSetTimeout;
+            window.clearTimeout = originalClearTimeout;
+        }
+    });
+
 });

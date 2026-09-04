@@ -1,0 +1,163 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "generatedAt": "2026-09-04T17:55:41.340Z",
+  "title": "山屋惊魂教程全流程截图（2026-09-05 本轮 E2E）",
+  "requirements": [
+    {
+      "requirement": "教程流程必须按真实自然流程承接，主线截图不得混入失败图、debug 图或不相关 PC/mobile 辅助图。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 命令通过：11 passed, 2 skipped；失败截图未进入本清单。",
+        "本轮源截图清单 sequence-labels-20260905-full-tutorial-flow.json 共 70 张，标注输出目录共 71 张（含索引）。",
+        "最终图组按主线、预兆确认专题、自然作祟主线、英雄代表态、叛徒视角章节、木乃伊怪物专题分段标注。"
+      ]
+    },
+    {
+      "requirement": "书本必须在事件骰出现后教学：先触发事件、点击投掷、看到骰盘，再查看书本牌面并使用书本。",
+      "status": "PASS",
+      "evidence": [
+        "主线截图 23-26：事件牌公开与投掷入口、事件骰出现与书本可查看、书本牌面查看、书本使用后知识改骰结果。",
+        "E2E 断言 view-book 步骤要求书本放大按钮、事件骰盘和发现面板同时可见。"
+      ]
+    },
+    {
+      "requirement": "兔脚重掷必须有可见过程，选骰态和选中态可区分，重投完成后骰盘不能异常放大。",
+      "status": "PASS",
+      "evidence": [
+        "主线截图 27-30：点击兔脚后选择骰子、兔脚选中改骰高亮、兔脚重投动画进行中、兔脚重投完成骰盘正常。",
+        "E2E 已断言重掷过程帧来自物理骰重掷运动态，并检查最终骰盘投影尺寸不超过阈值。"
+      ]
+    },
+    {
+      "requirement": "主动投骰或重掷后的普通结果不再要求每个玩家逐个确认；只有需要共同阅读、响应、选择或授权时才保留多人确认。",
+      "status": "PASS",
+      "evidence": [
+        "最近投骰默认确认者已改为投骰玩家本人；书本/兔脚自动结算后不再生成全员二次确认。",
+        "自然作祟截图 15-16 显示寻找真名检定成功后一次确认回到可结束回合牌桌。",
+        "E2E [haunt-natural] 已通过，之前的 data-recent-roll-required-count=3 卡点已变为 1。"
+      ]
+    },
+    {
+      "requirement": "点击空白不能绕过关键事件、最近投骰、物品使用或伤害分配；流程必须进入下一真实入口。",
+      "status": "PASS",
+      "evidence": [
+        "相关 Board 单测通过：攻击投骰、驱魔投骰、事件骰待确认时点击书本，均验证空白不能关闭关键结果层。",
+        "主线截图 31-32 证明重掷结果自动进入伤害分配并完成分配后才收口。"
+      ]
+    },
+    {
+      "requirement": "作祟教学优先常规英雄自然流程；叛徒、怪物和代表态拆成明确专题或独立章节，不伪装成主线连续截图。",
+      "status": "PASS",
+      "evidence": [
+        "自然作祟主线截图 01-16：队友按正式流程翻预兆触发作祟，当前玩家阅读英雄书、找真名并回到牌桌。",
+        "叛徒视角章节截图 01-05 和木乃伊怪物专题截图 01-09 均在标注索引中写成独立分段。"
+      ]
+    },
+    {
+      "requirement": "交易流程继续保留：选择己方持有物、选择同房队友、选择对方物品、提交后等待正式自动同意。",
+      "status": "PASS",
+      "evidence": [
+        "主线截图 13-18 覆盖交易说明、选择急救包、选择队友、选择对方地图、等待同意和自动同意公开结果。",
+        "E2E 交易教程通过，并断言交易后急救包与地图归属改变。"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/betrayal-mummy-haunt.test.ts src/games/betrayal/__tests__/Board.foundation.test.tsx src/games/betrayal/__tests__/tutorial.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"寻找木乃伊真名|ACKNOWLEDGE_RECENT_ROLL|roll-continue|确认 0/1|确认 0/3|hauntActionTraitCheck|木乃伊攻击奖励\"",
+      "result": "PASS: 3 files, 4 tests passed, 224 skipped"
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/betrayal-possessions-and-recent-roll-rerolls.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"事件骰出现后使用书本\"",
+      "result": "PASS: 1 test passed, 47 skipped"
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"攻击投骰结果|驱魔投骰结果|事件骰待确认时点击书本\"",
+      "result": "PASS: 3 tests passed, 189 skipped"
+    },
+    {
+      "command": "& { $env:PW_E2E_SERVICE_REUSE=\"isolated\"; node scripts/infra/run-e2e-single.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts }",
+      "result": "PASS: 11 passed, 2 skipped"
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\01-labeled-00-山屋惊魂-教程-章节目录.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\02-labeled-01-山屋惊魂-教程-回合目标与行动区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\03-labeled-02-山屋惊魂-教程-属性轨读法.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\04-labeled-03-山屋惊魂-教程-剩余移动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\05-labeled-04-山屋惊魂-教程-房间主视区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\06-labeled-05-山屋惊魂-教程-观察队友视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\07-labeled-06-山屋惊魂-教程-切到第二名队友视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\08-labeled-07-山屋惊魂-教程-再次点队友返回上一视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\09-labeled-08-山屋惊魂-教程-聚焦回自己房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\10-labeled-09-山屋惊魂-教程-预兆作祟进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\11-labeled-10-山屋惊魂-教程-持有区与帮助入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\12-labeled-11-山屋惊魂-教程-移动入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\13-labeled-12-山屋惊魂-教程-移动到门厅后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\14-labeled-13-山屋惊魂-教程-交易同房间说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\15-labeled-14-山屋惊魂-教程-交易选择急救包.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\16-labeled-15-山屋惊魂-教程-交易选择队友.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\17-labeled-16-山屋惊魂-教程-交易选择对方地图.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\18-labeled-17-山屋惊魂-教程-交易请求等待同意.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\19-labeled-18-山屋惊魂-教程-交易自动同意公开结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\20-labeled-20-山屋惊魂-教程-探索目标房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\21-labeled-21-山屋惊魂-教程-翻出房间朝向选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\22-labeled-22-山屋惊魂-教程-旋转后确认放置新房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\23-labeled-23-山屋惊魂-教程-事件牌公开与投掷入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\24-labeled-24-山屋惊魂-教程-事件骰出现与书本可查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\25-labeled-25-山屋惊魂-教程-书本牌面查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\26-labeled-26-山屋惊魂-教程-书本使用后知识改骰结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\27-labeled-27-山屋惊魂-教程-点击兔脚后选择骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\28-labeled-28-山屋惊魂-教程-兔脚选中改骰高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\29-labeled-29-山屋惊魂-教程-兔脚重投动画进行中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\30-labeled-30-山屋惊魂-教程-兔脚重投完成骰盘正常.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\31-labeled-31-山屋惊魂-教程-自动进入伤害分配.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\32-labeled-32-山屋惊魂-教程-伤害分配完成后.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\33-labeled-01-预兆牌确认与作祟检定.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\34-labeled-02-确认后回牌桌持有区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\35-labeled-03-确认后预兆进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\36-labeled-01-自然流程起点结束当前回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\37-labeled-02-交给队友一回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\38-labeled-03-等待队友一探索预兆房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\39-labeled-04-队友一获得指环未触发.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\40-labeled-05-队友二翻出狗未触发.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\41-labeled-06-狗确认后回到当前玩家.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\42-labeled-07-再次结束当前回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\43-labeled-08-队友一翻出面具触发作祟.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\44-labeled-09-当前玩家自动打开英雄开场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\45-labeled-10-继续后阅读英雄胜利条件.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\46-labeled-11-关闭剧本书后进入作祟牌桌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\47-labeled-12-作祟后回看英雄目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\48-labeled-13-作祟后等待队友结束回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\49-labeled-14-轮到英雄寻找木乃伊真名.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\50-labeled-15-寻找真名知识检定成功.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\51-labeled-16-确认后回到牌桌可结束回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\52-labeled-01-木乃伊作祟目标改变.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\53-labeled-02-打开木乃伊剧本目标页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\54-labeled-03-驱逐木乃伊前因果说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\55-labeled-04-驱逐木乃伊神志对抗骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\56-labeled-05-驱逐木乃伊成功后的终局页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\57-labeled-01-叛徒打开木乃伊剧本目标页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\58-labeled-02-叛徒拾起女孩前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\59-labeled-03-女孩交给木乃伊前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\60-labeled-04-圣符交给木乃伊前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\61-labeled-05-木乃伊叛徒胜利.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\62-labeled-01-木乃伊怪物回合开始前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\63-labeled-02-木乃伊移动骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\64-labeled-03-木乃伊瞬移目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\65-labeled-04-木乃伊拾起女孩结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\66-labeled-05-木乃伊同房必须先攻击.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\67-labeled-06-木乃伊攻击目标高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\68-labeled-07-木乃伊攻击骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\69-labeled-08-木乃伊偷取奖励入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-full-tutorial-flow\\70-labeled-09-木乃伊偷走地图结果.png"
+  ]
+}

@@ -9,6 +9,7 @@ import type {
 import { inferMonsterDefinitionId } from './monsterReadModel';
 import { resolveInventoryEffectId } from './possessionEffects';
 import { getAllExplorers, getExplorersInTurnOrder } from './explorerReadModel';
+import { roomDistanceByLayout } from './roomMapModel';
 
 const DUST_RESEARCH_ROOM_VISUAL_IDS = new Set<BetrayalRoomVisualId>([
     'laboratory',
@@ -72,6 +73,27 @@ export function shouldDeadTraitorControlJackSpirit(core: BetrayalCore, playerId:
         && core.scenarioRuntime.jackSpiritReleased
         && Boolean(core.scenarioRuntime.jackSpiritRoomId)
     );
+}
+
+export function resolveJackSpiritSpawnRoomId(core: BetrayalCore, corpseRoomId: string): string {
+    const corpseRoom = core.rooms.find((room) => room.id === corpseRoomId);
+    const discoveredRooms = core.rooms.filter((room) => room.state === 'discovered');
+    const omenRooms = discoveredRooms.filter((room) => room.discoveryReward === 'omen');
+    const candidateRooms = omenRooms.length > 0 ? omenRooms : discoveredRooms;
+
+    if (!corpseRoom || candidateRooms.length === 0) {
+        return corpseRoomId;
+    }
+
+    const sortedCandidates = [...candidateRooms].sort((left, right) => {
+        const distanceDelta = roomDistanceByLayout(right, corpseRoom) - roomDistanceByLayout(left, corpseRoom);
+        if (distanceDelta !== 0) {
+            return distanceDelta;
+        }
+        return left.id.localeCompare(right.id);
+    });
+
+    return sortedCandidates[0]?.id ?? corpseRoomId;
 }
 
 export function shouldDeadPlayerControlFeverish(core: BetrayalCore, playerId: string): boolean {

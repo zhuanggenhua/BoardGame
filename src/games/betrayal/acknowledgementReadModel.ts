@@ -57,7 +57,7 @@ export function resolvePendingEventRollResolutionRequiredPlayerIds(
     if (configuredPlayerIds.length > 0) {
         return configuredPlayerIds;
     }
-    return core.playerIds.length > 0 ? [...core.playerIds] : [resolution.playerId];
+    return [resolution.playerId];
 }
 
 export function resolvePendingEventRollResolutionAcknowledgedPlayerIds(
@@ -93,7 +93,45 @@ export function eventRollResolutionNeedsAcknowledgement(
         | 'uponReflectionSetup'
     >,
 ): boolean {
-    return resolution.requiresAcknowledgement !== false;
+    if (resolution.requiresAcknowledgement !== undefined) {
+        return resolution.requiresAcknowledgement;
+    }
+    return Boolean(
+        resolution.nextPendingEventChoice
+        || resolution.hauntRevealResolution
+        || resolution.hauntTraitorResolution
+        || resolution.dustSetup
+        || resolution.magicCameraSetup
+        || resolution.helpingHandsSetup
+        || resolution.uponReflectionSetup,
+    );
+}
+
+export function eventRollResolutionNeedsSharedAcknowledgement(
+    resolution: Pick<
+        BetrayalPendingEventRollResolutionState,
+        | 'requiresAcknowledgement'
+        | 'nextPendingEventChoice'
+        | 'hauntRevealResolution'
+        | 'hauntTraitorResolution'
+        | 'dustSetup'
+        | 'magicCameraSetup'
+        | 'helpingHandsSetup'
+        | 'uponReflectionSetup'
+    >,
+): boolean {
+    if (!eventRollResolutionNeedsAcknowledgement(resolution)) {
+        return false;
+    }
+    return Boolean(
+        resolution.nextPendingEventChoice
+        || resolution.hauntRevealResolution
+        || resolution.hauntTraitorResolution
+        || resolution.dustSetup
+        || resolution.magicCameraSetup
+        || resolution.helpingHandsSetup
+        || resolution.uponReflectionSetup,
+    );
 }
 
 export function resolveRecentRollRequiredPlayerIds(
@@ -104,7 +142,7 @@ export function resolveRecentRollRequiredPlayerIds(
     if (configuredPlayerIds.length > 0) {
         return configuredPlayerIds;
     }
-    return core.playerIds.length > 0 ? [...core.playerIds] : [recentRoll.playerId];
+    return [recentRoll.playerId];
 }
 
 export function resolveRecentRollAcknowledgedPlayerIds(
@@ -157,6 +195,7 @@ export function resolveAcknowledgeableRecentRoll(
         return null;
     }
     const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
+        'eventRolledDamage',
         'mysticElevator',
         'attackRoll',
         'hauntActionTraitCheck',

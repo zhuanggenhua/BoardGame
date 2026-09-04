@@ -10,6 +10,10 @@ import Board from '../Board';
 import { resolveBetrayalRerollTargetBoxSize } from '../recentRollPresentation';
 import { canUseRabbitFootForRecentRoll } from '../possessionActionReadModel';
 import {
+    resolvePendingEventRollResolutionRequiredPlayerIds,
+    resolveRecentRollRequiredPlayerIds,
+} from '../acknowledgementReadModel';
+import {
     resolveExplorableRoomSlots,
     resolveRoomPlacementPreview,
 } from '../roomDiscoveryModel';
@@ -114,7 +118,7 @@ function expectEventRollConfirmButtonStyle(button: HTMLElement) {
 }
 
 describe('Betrayal dice reroll hit targets', () => {
-    it('物理骰重掷可点区保留手感，但可见高亮交给 Three.js 骰体描边', () => {
+    it('物理骰重掷可点区贴合骰面，避免透明热区重叠抢命中', () => {
         const layout = {
             id: 2,
             x: 500,
@@ -135,8 +139,33 @@ describe('Betrayal dice reroll hit targets', () => {
         const visibleMax = Math.max(56, 52);
         const transparentHitBoxPadding = (size - visibleMax) / 2;
 
-        expect(size).toBe(60);
-        expect(transparentHitBoxPadding).toBe(2);
+        expect(size).toBe(56);
+        expect(transparentHitBoxPadding).toBe(0);
+    });
+
+    it('物理骰较小时透明命中区最多只弱外扩，不冒充候选高亮', () => {
+        const layout = {
+            id: 1,
+            x: 500,
+            y: 300,
+            width: 42,
+            height: 42,
+            visualWidth: 31.98,
+            visualHeight: 31.98,
+            minX: 484.01,
+            maxX: 515.99,
+            minY: 284.01,
+            maxY: 315.99,
+            rotateX: 0.2,
+            rotateY: 0.1,
+            rotateZ: 0.38,
+        };
+        const size = resolveBetrayalRerollTargetBoxSize(layout);
+        const visibleMax = Math.max(layout.visualWidth, layout.visualHeight);
+        const transparentHitBoxPadding = (size - visibleMax) / 2;
+
+        expect(size).toBeCloseTo(39.48, 2);
+        expect(transparentHitBoxPadding).toBeLessThanOrEqual(4);
     });
 });
 
@@ -237,6 +266,55 @@ vi.mock('../../../lib/audio/useGameAudio', () => ({
     useGameAudio: vi.fn(),
 }));
 
+vi.mock('../../../lib/dice-physics/DiceBoxPhysicsSource', async () => {
+    const ReactActual = await vi.importActual<typeof import('react')>('react');
+    const actual = await vi.importActual<typeof import('../../../lib/dice-physics/DiceBoxPhysicsSource')>(
+        '../../../lib/dice-physics/DiceBoxPhysicsSource',
+    );
+
+    const TestDiceBoxPhysicsSource = (
+        props: React.ComponentProps<typeof actual.DiceBoxPhysicsSource>,
+    ) => {
+        const motionKey = props.motion.type === 'settled' ? 'settled' : `${props.motion.type}:${props.motion.id}`;
+        const diceKey = props.dice.map((die) => `${die.id}:${die.value}:${die.isKept ? '1' : '0'}`).join('|');
+        ReactActual.useEffect(() => {
+            let active = true;
+            const markSettled = () => {
+                if (active) {
+                    props.onSettledChange?.(true);
+                }
+            };
+            markSettled();
+            const timer = window.setTimeout(markSettled, 0);
+            const retryTimer = window.setInterval(markSettled, 50);
+            const stopRetryTimer = window.setTimeout(() => {
+                window.clearInterval(retryTimer);
+            }, 1000);
+            return () => {
+                active = false;
+                window.clearTimeout(timer);
+                window.clearInterval(retryTimer);
+                window.clearTimeout(stopRetryTimer);
+            };
+        }, [diceKey, motionKey, props.onSettledChange]);
+
+        return ReactActual.createElement(actual.DiceBoxPhysicsSource, {
+            ...props,
+            onSettledChange: (settled: boolean) => {
+                props.onSettledChange?.(settled);
+                if (!settled) {
+                    window.setTimeout(() => props.onSettledChange?.(true), 0);
+                }
+            },
+        });
+    };
+
+    return {
+        ...actual,
+        DiceBoxPhysicsSource: TestDiceBoxPhysicsSource,
+    };
+});
+
 type BoardHarnessProps = {
     initialCore: ReturnType<typeof createBetrayalFoundationCore>;
     playerID?: string;
@@ -265,11 +343,10 @@ function acknowledgeRemainingEventRollPlayers(
             break;
         }
         const pendingResolution = completedCore.pendingEventRollResolution;
-        const requiredPlayerIds = pendingResolution.requiredPlayerIds?.length
-            ? pendingResolution.requiredPlayerIds
-            : completedCore.playerIds.length > 0
-                ? completedCore.playerIds
-                : [pendingResolution.playerId];
+        const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(
+            completedCore,
+            pendingResolution,
+        );
         const acknowledgedPlayerIds = new Set(pendingResolution.acknowledgedPlayerIds ?? []);
         const nextPlayerId = requiredPlayerIds.find((requiredPlayerId) => !acknowledgedPlayerIds.has(requiredPlayerId));
         if (!nextPlayerId) {
@@ -303,11 +380,7 @@ function acknowledgeRemainingRecentRollPlayers(
             break;
         }
         const recentRoll = completedCore.recentRoll;
-        const requiredPlayerIds = recentRoll.requiredPlayerIds?.length
-            ? recentRoll.requiredPlayerIds
-            : completedCore.playerIds.length > 0
-                ? completedCore.playerIds
-                : [recentRoll.playerId];
+        const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(completedCore, recentRoll);
         const acknowledgedPlayerIds = new Set(recentRoll.acknowledgedPlayerIds ?? []);
         const nextPlayerId = requiredPlayerIds.find((requiredPlayerId) => !acknowledgedPlayerIds.has(requiredPlayerId));
         if (!nextPlayerId) {
@@ -714,8 +787,6 @@ async function confirmPendingRoomPlacement(options: { confirmEventRoll?: boolean
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-discovery-continue')).toBeEnabled();
         });
-        const eventRollConfirm = screen.queryByTestId('betrayal-roll-continue');
-        const eventRollFinalize = screen.queryByTestId('betrayal-event-roll-finalize');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
     } else if (eventRollStart) {
         await waitFor(() => {
@@ -801,17 +872,29 @@ function setNextBoardDiscoveryRoom(
 
 function expectSingleEventEffectResolutionStep(...expectedTexts: string[]) {
     expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
-    finalizeEventRollIfVisible();
+    if (!screen.queryByTestId('betrayal-discovery-resolution-steps')) {
+        finalizeEventRollIfVisible();
+    }
     const resolutionSteps = expectDiscoveryResolutionLedgerTraceOnly(1);
     expect(resolutionSteps).toHaveLength(1);
     expect(resolutionSteps[0]).toHaveTextContent('事件效果');
     for (const text of expectedTexts) {
         expect(resolutionSteps[0]).toHaveTextContent(text);
     }
-    const discoveryContinue = screen.queryByTestId('betrayal-discovery-continue');
-        if (discoveryContinue && /确认|已确认/.test(discoveryContinue.textContent ?? '')) {
-            expect(discoveryContinue).toHaveTextContent(/确认|已确认/);
-        }
+    let discoveryContinue = screen.queryByTestId('betrayal-discovery-continue');
+    if (discoveryContinue && /确认|已确认/.test(discoveryContinue.textContent ?? '')) {
+        expect(discoveryContinue).toHaveTextContent(/确认|已确认/);
+    }
+    finalizeEventRollIfVisible();
+    discoveryContinue = screen.queryByTestId('betrayal-discovery-continue');
+    if (
+        discoveryContinue
+        && discoveryContinue.getAttribute('data-pending-card-resolution-id')
+        && !discoveryContinue.hasAttribute('disabled')
+        && /确认/.test(discoveryContinue.textContent ?? '')
+    ) {
+        fireEvent.click(discoveryContinue);
+    }
 }
 
 async function expectEventDamageAllocation(
@@ -820,6 +903,10 @@ async function expectEventDamageAllocation(
     expectedTraits: string[],
     sourceOwner: 'panel' | 'discovery-card' = 'panel',
 ) {
+    const rollContinue = screen.queryByTestId('betrayal-roll-continue');
+    if (rollContinue && !rollContinue.hasAttribute('disabled')) {
+        fireEvent.click(rollContinue);
+    }
     await waitFor(() => {
         expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();
     }, { timeout: 12000 });
@@ -5415,9 +5502,9 @@ describe('Betrayal Board foundation', () => {
         expect(alienGeometrySteps[0]).toHaveTextContent('事件效果');
         expect(alienGeometrySteps[0]).toHaveTextContent('知识 +1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/4');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-confirmed-count', '0');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-required-count', '4');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-required-count', '1');
         expect(screen.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await waitFor(() => {
@@ -5847,6 +5934,12 @@ describe('Betrayal Board foundation', () => {
             summary: '即时生效',
             detail: '知识检定 0：失去 1 点知识；知识 -1',
             tone: 'warning',
+            resolutionSteps: [{
+                id: 'event-effect-墙中低语',
+                kind: 'event-effect',
+                text: '事件效果：知识检定 0：失去 1 点知识；知识 -1',
+                deckKind: 'event',
+            }],
         };
         core.latestDiscoveryOwnerPlayerId = '0';
         core.pendingEventRollResolution = {
@@ -5881,10 +5974,10 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-rabbit-foot-dice')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
         expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/4');
+        expect(screen.queryByTestId('betrayal-discovery-continue')).not.toBeInTheDocument();
     });
 
-    it('别人触发的事件投骰采用全员确认，观看方确认一票后点击空白仍不能关闭发现面板', () => {
+    it('别人触发的普通事件投骰只要求触发者确认，观看方点击空白仍不能关闭发现面板', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2']);
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -5928,7 +6021,7 @@ describe('Betrayal Board foundation', () => {
             kind: 'event',
             title: '墙中低语',
             summary: '等待投骰结算',
-            detail: '知识检定 2：等待全员确认最终结果',
+            detail: '知识检定 2：等待触发者确认最终结果',
             tone: 'accent',
         };
         core.latestDiscoveryOwnerPlayerId = '0';
@@ -5948,22 +6041,23 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-recent-roll-actor')).toHaveTextContent('由 测试玩家 触发');
         expect(screen.queryByTestId('betrayal-event-roll-finalize')).not.toBeInTheDocument();
         const eventRollConfirm = screen.getByTestId('betrayal-discovery-continue');
-        expect(eventRollConfirm).toHaveTextContent('确认 0/3');
+        expect(eventRollConfirm).toHaveTextContent('确认 0/1');
         expectEventRollConfirmButtonStyle(eventRollConfirm);
+        expect(eventRollConfirm).toBeDisabled();
 
         fireEvent.click(eventRollConfirm);
 
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('已确认 1/3');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
         expect(screen.getByTestId('betrayal-discovery-continue')).toBeDisabled();
 
         fireEvent.click(discoveryPanel);
 
         expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('已确认 1/3');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
     });
 
-    it('别人触发的事件投骰确认一票后，横屏角落继续按钮不能关闭发现面板', async () => {
+    it('别人触发的普通事件投骰在横屏观看方不能被误确认或空白关闭', async () => {
         const originalInnerWidthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
         const originalInnerHeightDescriptor = Object.getOwnPropertyDescriptor(window, 'innerHeight');
         const originalVisualViewportDescriptor = Object.getOwnPropertyDescriptor(window, 'visualViewport');
@@ -6015,7 +6109,7 @@ describe('Betrayal Board foundation', () => {
                 kind: 'event',
                 title: '墙中低语',
                 summary: '等待投骰结算',
-                detail: '知识检定 2：等待全员确认最终结果',
+                detail: '知识检定 2：等待触发者确认最终结果',
                 tone: 'accent',
             };
             core.latestDiscoveryOwnerPlayerId = '0';
@@ -6033,15 +6127,15 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
             await waitFor(() => {
-                expect(screen.getByTestId('betrayal-discovery-continue')).not.toBeDisabled();
+                expect(screen.getByTestId('betrayal-discovery-continue')).toBeDisabled();
             });
 
             const eventRollConfirm = screen.getByTestId('betrayal-discovery-continue');
-            expect(eventRollConfirm).toHaveTextContent('确认 0/3');
+            expect(eventRollConfirm).toHaveTextContent('确认 0/1');
             expectEventRollConfirmButtonStyle(eventRollConfirm);
             fireEvent.click(eventRollConfirm);
 
-            expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('已确认 1/3');
+            expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
             expect(screen.getByTestId('betrayal-discovery-continue')).toBeDisabled();
         } finally {
             if (originalInnerWidthDescriptor) {
@@ -6411,7 +6505,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-action-endTurn')).toBeInTheDocument();
     });
 
-    it('攻击投骰结果必须方形按钮全员确认，当前玩家确认后显示已确认进度且空白不能关闭', () => {
+    it('攻击投骰结果必须方形按钮确认，投骰者确认后退场且空白不能关闭', async () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const defender = core.otherExplorers[0]!;
         core.currentExplorer = {
@@ -6458,20 +6552,19 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-attack-roll-review'));
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
         const confirmButton = screen.getByTestId('betrayal-roll-continue');
-        expect(confirmButton).toHaveTextContent('确认 0/4');
+        expect(confirmButton).toHaveTextContent('确认 0/1');
         expect(confirmButton).toHaveAttribute('data-recent-roll-confirmed-count', '0');
-        expect(confirmButton).toHaveAttribute('data-recent-roll-required-count', '4');
+        expect(confirmButton).toHaveAttribute('data-recent-roll-required-count', '1');
         expectEventRollConfirmButtonStyle(confirmButton);
         fireEvent.click(backdrop);
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
         fireEvent.click(confirmButton);
-        expect(screen.getByTestId('betrayal-roll-continue')).toHaveTextContent('已确认 1/4');
-        expect(screen.getByTestId('betrayal-roll-continue')).toBeDisabled();
-        fireEvent.click(backdrop);
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        });
     });
 
-    it('驱魔投骰结果也走全员确认按钮，不能靠空白关闭', async () => {
+    it('驱魔投骰结果也走统一确认按钮，不能靠空白关闭', async () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -6508,7 +6601,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-exorcise-roll-continue')).not.toBeInTheDocument();
         const confirmButton = screen.getByTestId('betrayal-roll-continue');
-        expect(confirmButton).toHaveTextContent('确认 0/4');
+        expect(confirmButton).toHaveTextContent('确认 0/1');
         expectEventRollConfirmButtonStyle(confirmButton);
         fireEvent.click(backdrop);
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
@@ -8439,7 +8532,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('抽取一张物品卡');
         expectSingleEventEffectResolutionStep('抽取一张物品卡');
         await waitFor(() => {
-            expect(screen.getByTestId('betrayal-inventory-camera-shell')).toBeInTheDocument();
+            expect(within(screen.getByTestId('betrayal-inventory-row-item')).getByText('魔法相机')).toBeInTheDocument();
         }, { timeout: 20000 });
         rewardView.unmount();
 
@@ -8478,7 +8571,7 @@ describe('Betrayal Board foundation', () => {
         );
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('神志检定');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 2');
-        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到 1 颗骰子的精神伤害');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到一颗骰子的精神伤害');
         expectSingleEventEffectResolutionStep('受到一颗骰子的精神伤害');
     });
 
@@ -8896,10 +8989,10 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('神志检定');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 2');
+        expectSingleEventEffectResolutionStep('放置到入口大厅');
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-room-id', 'entrance-hall');
         }, { timeout: 20000 });
-        expectSingleEventEffectResolutionStep('放置到入口大厅');
         moveView.unmount();
 
         const damageCore = createBetrayalFoundationCore(['0', '1', '2', '3']);
@@ -8939,12 +9032,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('神志检定');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 0');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到一颗骰子的物理伤害和一颗骰子的精神伤害');
-        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到 1 颗骰子的物理伤害');
-        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到 1 颗骰子的精神伤害');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('重新投掷 1 颗骰子，按合计值分配物理伤害');
+        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('重新投掷 1 颗骰子，按合计值分配精神伤害');
         expectSingleEventEffectResolutionStep(
             '受到一颗骰子的物理伤害和一颗骰子的精神伤害',
-            '受到 1 颗骰子的物理伤害',
-            '受到 1 颗骰子的精神伤害',
+            '重新投掷 1 颗骰子，按合计值分配物理伤害',
+            '重新投掷 1 颗骰子，按合计值分配精神伤害',
         );
     });
 
@@ -9035,6 +9128,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rule-subtotal', '0');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('受到一颗骰子的精神伤害');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('重新投掷 1 颗骰子');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/1');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
 
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveAttribute(
@@ -9086,7 +9181,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-recent-roll-effect-damage')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-recent-roll-breakdown')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-damage-allocation-panel')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('betrayal-roll-continue')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-roll-continue')).toHaveTextContent('确认 0/1');
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
 
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();
@@ -9098,9 +9194,9 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveTextContent('无线电广播');
         expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveAttribute(
             'data-visible-source-owner',
-            'panel',
+            'discovery-card',
         );
-        expect(screen.getByTestId('betrayal-damage-allocation-source')).not.toHaveClass('sr-only');
+        expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveClass('sr-only');
 
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-knowledge-increase'));
         fireEvent.click(screen.getByTestId('betrayal-damage-allocation-trait-sanity-increase'));
@@ -9172,7 +9268,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('抽取一张物品卡');
         expectSingleEventEffectResolutionStep('抽取一张物品卡');
         await waitFor(() => {
-            expect(screen.getByTestId('betrayal-inventory-camera-shell')).toBeInTheDocument();
+            expect(within(screen.getByTestId('betrayal-inventory-row-item')).getByText('魔法相机')).toBeInTheDocument();
         }, { timeout: 12000 });
         rewardView.unmount();
 
@@ -9864,10 +9960,8 @@ describe('Betrayal Board foundation', () => {
             'data-visible-dice-source',
             'event-rolled-damage',
         );
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('受到一颗骰子的精神伤害');
-        await waitFor(() => {
-            expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();
-        }, { timeout: 12000 });
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('造成 2 点精神伤害');
+        await expectEventDamageAllocation('轮到约拿了', '分配 2 点精神伤害', ['知识', '神志'], 'discovery-card');
     });
 
     it('游魂待选事件会在真实页面同时要求选择埋葽物品和奖励属性', () => {
@@ -10003,8 +10097,10 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('aria-label', expect.stringContaining('肉质苔癣'));
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('投 2 颗骰子');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('总点数 4');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 0/4');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-confirmed-count', '0');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-event-roll-required-count', '4');
+        expect(screen.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '肉质苔癣');
@@ -10514,6 +10610,9 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-roll-continue')).toHaveTextContent('确认 0/1');
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-roll-continue')).toBeEnabled();
+        });
         fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-damage-allocation-panel')).toBeInTheDocument();

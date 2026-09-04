@@ -1,5 +1,8 @@
 import type { RandomFn } from '../../engine/types';
-import { eventRollResolutionNeedsAcknowledgement } from './acknowledgementReadModel';
+import {
+    eventRollResolutionNeedsAcknowledgement,
+    eventRollResolutionNeedsSharedAcknowledgement,
+} from './acknowledgementReadModel';
 import { findExplorerByPlayerId } from './explorerReadModel';
 import {
     cloneDustRuntimeState,
@@ -230,7 +233,7 @@ export function applyBetrayalEventRollReplacementState(
     const nextPendingEventChoice = replacement.nextPendingEventChoice
         ? cloneEventRollReplacementPendingChoice(replacement.nextPendingEventChoice)
         : undefined;
-    const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
+    const acknowledgementContext = {
         nextPendingEventChoice,
         hauntRevealResolution: replacement.hauntRevealResolution,
         hauntTraitorResolution: replacement.hauntTraitorResolution,
@@ -238,10 +241,12 @@ export function applyBetrayalEventRollReplacementState(
         magicCameraSetup: replacement.magicCameraSetup,
         helpingHandsSetup: replacement.helpingHandsSetup,
         uponReflectionSetup: replacement.uponReflectionSetup,
-    });
+    };
+    const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement(acknowledgementContext);
+    const needsSharedAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement(acknowledgementContext);
     core.pendingEventRollResolution = {
         ...pending,
-        requiredPlayerIds: requiresAcknowledgement
+        requiredPlayerIds: needsSharedAcknowledgement && core.playerIds.length > 0
             ? [...core.playerIds]
             : [pending.playerId],
         acknowledgedPlayerIds: [],

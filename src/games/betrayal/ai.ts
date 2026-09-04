@@ -19,6 +19,7 @@ import {
     resolveInventoryEffectId,
     resolveUseEffect,
 } from './possessionEffects';
+import { resolvePendingEventRollResolutionRequiredPlayerIds } from './acknowledgementReadModel';
 import { BETRAYAL_AI_MINIMUM_VISIBLE_STEP_DELAY_MS } from './visualTiming';
 
 interface BetrayalAiInventoryCard {
@@ -2010,11 +2011,9 @@ function buildEventRollFinalizationActions(
         });
         return action ? [action] : [];
     }
-    const requiredPlayerIds = pending?.requiredPlayerIds?.length
-        ? pending.requiredPlayerIds
-        : pending
-            ? state.core.playerIds
-            : [];
+    const requiredPlayerIds = pending
+        ? resolvePendingEventRollResolutionRequiredPlayerIds(state.core, pending)
+        : [];
     const acknowledgedPlayerIds = pending?.acknowledgedPlayerIds ?? [];
     if (!pending || !requiredPlayerIds.includes(playerId) || acknowledgedPlayerIds.includes(playerId)) {
         return [];

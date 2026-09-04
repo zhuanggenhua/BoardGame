@@ -10,8 +10,7 @@ import {
   saveScreenshot,
   setHarnessRandomQueue,
   waitForBetrayalPageReady,
-  expectPhysicalDiceRerollMotionVisible,
-  waitForPhysicalDiceRerollMotion,
+  armPhysicalDiceRerollMotionCapture,
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
 import { BETRAYAL_COMMANDS } from "../../src/games/betrayal/game";
@@ -3998,14 +3997,19 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "0px",
     );
     await saveScreenshot(page, STEP_15);
-    const rerollMotionVisible = expectPhysicalDiceRerollMotionVisible(
+    const rerollMotionCapture = await armPhysicalDiceRerollMotionCapture(
       discoveryRollPanel,
-      { dieIndex: 1, sampleMs: 120 },
+      { dieIndex: 1 },
     );
-    await rollModifierConfirm.click();
-    await expect(rabbitFootDice).toHaveCount(0);
-    await rerollMotionVisible;
-    await saveScreenshot(page, STEP_15A);
+    try {
+      const rerollMotionVisible = rerollMotionCapture.expectVisible();
+      await rollModifierConfirm.click();
+      await expect(rabbitFootDice).toHaveCount(0);
+      await rerollMotionVisible;
+      await saveScreenshot(page, STEP_15A);
+    } finally {
+      await rerollMotionCapture.stop();
+    }
     await expect
       .poll(async () =>
         discoveryRollPanel
@@ -4094,10 +4098,11 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.locator('[data-testid^="betrayal-room-explore-target-"]'),
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-discovery-panel")).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-discovery-card-front-atlas"),
-    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    const damageAllocationPanel = page.getByTestId(
+      "betrayal-damage-allocation-panel",
+    );
+    await expect(damageAllocationPanel).toBeVisible({ timeout: 15000 });
     const finalDiscoveryState = await page.evaluate(() => {
       const state = (
         window as unknown as {
@@ -4130,10 +4135,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       hasPendingEventRollResolution: false,
       currentRoomName: "厨房",
     });
-    const damageAllocationPanel = page.getByTestId(
-      "betrayal-damage-allocation-panel",
-    );
-    await expect(damageAllocationPanel).toBeVisible({ timeout: 15000 });
     await expect(
       page.getByTestId("betrayal-damage-allocation-amount"),
     ).toContainText("分配 1 点物理伤害");

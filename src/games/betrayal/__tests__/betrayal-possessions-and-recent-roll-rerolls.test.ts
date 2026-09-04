@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { resolveBetrayalHauntSpecialActionStatus } from '../hauntSpecialActionReadModel';
 import {
     acknowledgePendingCardResolutions,
-    acknowledgePendingEventRollResolution,
     applyBetrayalCommand,
     BETRAYAL_FIXED_RANDOM,
     createBetrayalCommand,
@@ -387,13 +386,18 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([2, 0, 0]);
-        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: -1 });
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
+            requiresAcknowledgement: false,
+        });
+        expect(core.usedCardIdsThisTurn).toContain('rope');
 
         core = finalizePendingEventRollForTest(core);
-        expect(core.pendingEventRollResolution).toBeNull();
+
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper - 1);
         expect(core.currentExplorer.traits.knowledge).toBe(2);
-        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(core.recentRoll?.dice).toEqual([2, 0, 0]);
+        expect(core.pendingEventRollResolution).toBeNull();
 
         const secondUse = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -402,7 +406,7 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
         expect(secondUse.valid).toBe(false);
     });
 
-it('兔脚重掷事件骰后，只在确认最终结果时结算最终分支', () => {
+it('兔脚重掷事件骰后，普通最终分支会等待展示结束再自动结算', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -465,6 +469,16 @@ it('兔脚重掷事件骰后，只在确认最终结果时结算最终分支', (
         expect(core.latestDiscovery?.detail).toContain('知识检定 2');
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
+            requiresAcknowledgement: false,
+        });
+
+        core = finalizePendingEventRollForTest(core);
+
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold - 1);
+        expect(core.currentExplorer.traits.knowledge).toBe(2);
+        expect(core.pendingEventRollResolution).toBeNull();
 
         core.recentRoll = {
             ...core.recentRoll!,
@@ -473,8 +487,13 @@ it('兔脚重掷事件骰后，只在确认最终结果时结算最终分支', (
             latestLabel: '被低语扰乱，失去 1 点知识',
         };
         core.pendingEventRollResolution = {
-            ...core.pendingEventRollResolution!,
+            rollId: core.recentRoll!.id,
+            playerId: '0',
+            sourceTitle: '墙中低语',
             effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+            requiredPlayerIds: ['0'],
+            acknowledgedPlayerIds: [],
+            requiresAcknowledgement: false,
         };
         core.currentExplorer.traits.knowledge = 3;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -494,16 +513,19 @@ it('兔脚重掷事件骰后，只在确认最终结果时结算最终分支', (
         expect(core.latestDiscovery?.detail).toContain('获得 1 点知识');
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
-        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: 1 });
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
+            requiresAcknowledgement: false,
+        });
 
         core = finalizePendingEventRollForTest(core);
 
-        expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeCrossThreshold + 1);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.pendingEventRollResolution).toBeNull();
     });
 
-it('恐怖玩偶重掷事件属性检定后，确认前不结算、确认后才应用最终分支', () => {
+it('恐怖玩偶重掷事件属性检定后，普通最终分支会等待展示结束再自动结算', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -574,11 +596,17 @@ it('恐怖玩偶重掷事件属性检定后，确认前不结算、确认后才�
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([2, 2, 2]);
         expect(core.usedCardIdsThisTurn).toContain('scary-doll');
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
+            requiresAcknowledgement: false,
+        });
 
-        core = acknowledgePendingEventRollResolution(core, 100, BETRAYAL_FIXED_RANDOM);
-        expect(core.pendingEventRollResolution).toBeNull();
+        core = finalizePendingEventRollForTest(core);
+
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeScaryDoll + 1);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.recentRoll?.dice).toEqual([2, 2, 2]);
+        expect(core.pendingEventRollResolution).toBeNull();
 
         const secondUse = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -853,16 +881,21 @@ it('兔脚可以重掷刚刚事件固定投骰，并回写原事件分支结算'
         expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
         expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling);
         expect(core.recentRoll?.dice).toEqual([2, 0]);
-        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'sanity', amount: -1 });
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'sanity', amount: -1 },
+            requiresAcknowledgement: false,
+        });
+        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
+        expect(core.usedCardIdsThisTurn).toContain('rope');
 
         core = finalizePendingEventRollForTest(core);
+
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling - 1);
         expect(core.pendingEventRollResolution).toBeNull();
         expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
-        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling - 1);
-        expect(core.usedCardIdsThisTurn).toContain('rope');
     });
 
-it('兔脚可以重掷标本剥制力量检定，并在最终确认时只应用新分支', () => {
+it('兔脚可以重掷标本剥制力量检定，并在展示结束后只应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -919,13 +952,20 @@ it('兔脚可以重掷标本剥制力量检定，并在最终确认时只应用�
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
-
-        core = finalizePendingEventRollForTest(core);
-        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'sanity', amount: 1 },
+            requiresAcknowledgement: false,
+        });
         expect(core.currentExplorer.traits.might).toBe(4);
-        expect(core.currentExplorer.traits.sanity).toBe(5);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
         expect(core.usedCardIdsThisTurn).toContain('rope');
+
+        core = finalizePendingEventRollForTest(core);
+
+        expect(core.currentExplorer.traits.sanity).toBe(5);
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.currentExplorer.traits.might).toBe(4);
+        expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
     });
 
 it('事件骰出现后使用书本会立即支付神志并按知识重新投骰，展示结束后自动结算', () => {
@@ -990,21 +1030,21 @@ it('事件骰出现后使用书本会立即支付神志并按知识重新投骰�
         expect(core.pendingEventRollResolution).toMatchObject({
             rollId: core.recentRoll?.id,
             sourceTitle: '标本剥制',
-            requiredPlayerIds: core.playerIds,
-            requiresAcknowledgement: true,
+            requiredPlayerIds: ['0'],
+            requiresAcknowledgement: false,
             effect: { mode: 'trait', trait: 'sanity', amount: 1 },
         });
         expect(core.latestDiscovery?.title).toBe('标本剥制');
         expect(core.latestDiscovery?.detail).toContain('知识检定');
 
-        core = acknowledgePendingEventRollResolution(core, 102, BETRAYAL_FIXED_RANDOM);
+        core = finalizePendingEventRollForTest(core, BETRAYAL_FIXED_RANDOM);
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeBook);
         expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
-it('兔脚重掷电话铃声时会在最终确认时应用新分支', () => {
+it('兔脚重掷电话铃声时会在展示结束后应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1057,16 +1097,22 @@ it('兔脚重掷电话铃声时会在最终确认时应用新分支', () => {
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(4);
-
-        core = finalizePendingEventRollForTest(core);
-        expect(core.pendingEventRollResolution).toBeNull();
-        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll + 1);
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
+            requiresAcknowledgement: false,
+        });
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.usedCardIdsThisTurn).toContain('rope');
+
+        core = finalizePendingEventRollForTest(core);
+
+        expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforePhoneReroll + 1);
+        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(core.pendingEventRollResolution).toBeNull();
+        expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
-it('兔脚重掷小机器人时会在最终确认时应用新分支', () => {
+it('兔脚重掷小机器人时会在展示结束后应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1110,7 +1156,7 @@ it('兔脚重掷小机器人时会在最终确认时应用新分支', () => {
             '0',
             { cardId: 'rope', dieIndex: 0 },
             100,
-            createBetrayalScriptedRandom(1),
+            createBetrayalScriptedRandom(1, 3),
             false,
         );
 
@@ -1122,8 +1168,14 @@ it('兔脚重掷小机器人时会在最终确认时应用新分支', () => {
         expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotReroll);
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.speed).toBe(4);
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical' },
+            requiresAcknowledgement: false,
+        });
+        expect(core.pendingDamageAllocation).toBeNull();
 
-        core = finalizePendingEventRollForTest(core, createBetrayalScriptedRandom(3));
+        core = finalizePendingEventRollForTest(core);
+
         expect(core.pendingEventRollResolution).toBeNull();
         expectPendingDamageForTest(core, {
             sourceTitle: '小机器人',

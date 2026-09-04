@@ -6,13 +6,14 @@ import type {
   BetrayalRecentRollState,
 } from "./game";
 import {
+  resolvePendingEventRollResolutionRequiredPlayerIds,
   resolveRecentRollAcknowledgedPlayerIds,
   resolveRecentRollRequiredPlayerIds,
 } from "./acknowledgementReadModel";
 import { resolvePlayerName } from "./playerPresentation";
 
-const BETRAYAL_REROLL_TARGET_HIT_PADDING = 2;
 const BETRAYAL_REROLL_TARGET_MIN_HIT_SIZE = 42;
+const BETRAYAL_REROLL_TARGET_MAX_HIT_PADDING = 3.75;
 
 export type EventRollConfirmationPresentation = {
   requiredPlayerIds: string[];
@@ -102,13 +103,9 @@ export function resolveEventRollConfirmationPresentation(
   viewerPlayerId: string,
 ): EventRollConfirmationPresentation {
   const pendingResolution = core.pendingEventRollResolution;
-  const requiredPlayerIds = pendingResolution?.requiredPlayerIds?.length
-    ? pendingResolution.requiredPlayerIds
-    : pendingResolution
-      ? core.playerIds.length > 0
-        ? core.playerIds
-        : [pendingResolution.playerId]
-      : [];
+  const requiredPlayerIds = pendingResolution
+    ? resolvePendingEventRollResolutionRequiredPlayerIds(core, pendingResolution)
+    : [];
   const acknowledgedPlayerIds =
     pendingResolution?.acknowledgedPlayerIds ?? [];
   const confirmedCount = requiredPlayerIds.filter((playerId) =>
@@ -139,8 +136,10 @@ export function resolveBetrayalRerollTargetBoxSize(
   const visibleWidth = layout.visualWidth ?? layout.width;
   const visibleHeight = layout.visualHeight ?? layout.height;
   const longestVisibleSide = Math.max(visibleWidth, visibleHeight);
+  const paddedVisibleSize =
+    longestVisibleSide + BETRAYAL_REROLL_TARGET_MAX_HIT_PADDING * 2;
   return Math.max(
-    BETRAYAL_REROLL_TARGET_MIN_HIT_SIZE,
-    longestVisibleSide + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2,
+    longestVisibleSide,
+    Math.min(BETRAYAL_REROLL_TARGET_MIN_HIT_SIZE, paddedVisibleSize),
   );
 }

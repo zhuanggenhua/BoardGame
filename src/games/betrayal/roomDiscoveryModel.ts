@@ -15,10 +15,17 @@ import {
     type BetrayalRoomEdge,
     type BetrayalRoomFloor,
 } from './scenarioConfig';
+import {
+    BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
+} from './possessionEffects';
+import { isAttackWeaponCard } from './attackRules';
+import { moveExplorerTraitSteps } from './traitTrackModel';
 import type {
     BetrayalBuriedRoomTileSummary,
     BetrayalCore,
     BetrayalDeckKind,
+    BetrayalDiscoveryResolutionStep,
+    BetrayalInventoryCard,
     BetrayalRoomDiscoveryDeckEntry,
     BetrayalRoomDrawResolution,
     BetrayalRoomNode,
@@ -28,6 +35,12 @@ import type {
 } from './game';
 
 type RoomTemplate = BetrayalRoomDiscoveryTemplate;
+type BetrayalRoomDiscoveryEffect = NonNullable<BetrayalRoomDiscoveryTemplate['discoveryEffect']>;
+
+export type BetrayalRoomDiscoveryCards = {
+    roomDiscoveryCards?: BetrayalInventoryCard[];
+    buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+};
 
 export const BETRAYAL_ROOM_FLOORS: BetrayalRoomFloor[] = ['ground', 'upper', 'basement'];
 
@@ -891,6 +904,228 @@ function roomDiscoveryEntryMatchesSelectedRoom(
     return entry.floor === selectedRoom.floor
         && entry.room.visualId === selectedRoom.visualId
         && entry.room.name === selectedRoom.name;
+}
+
+export function applyRoomDiscoveryEffect(core: BetrayalCore, effect: BetrayalRoomDiscoveryEffect | undefined): void {
+    if (effect === 'gainSanity1') {
+        moveExplorerTraitSteps(core.currentExplorer, 'sanity', 1);
+        return;
+    }
+    if (effect === 'gainKnowledge1') {
+        moveExplorerTraitSteps(core.currentExplorer, 'knowledge', 1);
+        return;
+    }
+    if (effect === 'gainMight1') {
+        moveExplorerTraitSteps(core.currentExplorer, 'might', 1);
+        return;
+    }
+    if (effect === 'gainSpeed1') {
+        moveExplorerTraitSteps(core.currentExplorer, 'speed', 1);
+    }
+}
+
+function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInventoryCard | null; buriedCards: BetrayalInventoryCard[] } {
+    const itemDeck = core.possessionOrderByKind.item;
+    if (itemDeck.length === 0) {
+        return { weapon: null, buriedCards: [] };
+    }
+    const revealedCards: BetrayalInventoryCard[] = [];
+    for (let index = 0; index < itemDeck.length; index += 1) {
+        const template = itemDeck[index]!;
+        const card = {
+            id: `${template.id}-armory-${core.exploreIndex}-${index}`,
+            name: template.name,
+            kind: template.kind,
+        };
+        revealedCards.push(card);
+        if (isAttackWeaponCard(card)) {
+            return {
+                weapon: card,
+                buriedCards: revealedCards.slice(0, -1),
+            };
+        }
+    }
+    return { weapon: null, buriedCards: revealedCards };
+}
+
+export function resolveRoomDiscoveryCards(
+    core: BetrayalCore,
+    effect: BetrayalRoomDiscoveryEffect | undefined,
+): BetrayalRoomDiscoveryCards {
+    if (effect !== 'drawUntilWeapon') {
+        return {};
+    }
+    const result = createDrawnCardsUntilWeapon(core);
+    return {
+        roomDiscoveryCards: result.weapon ? [result.weapon] : [],
+        buriedRoomDiscoveryCards: result.buriedCards,
+    };
+}
+
+export function createRoomDiscoveryEffectResolutionSteps(
+    roomName: string,
+    effect: BetrayalRoomDiscoveryEffect | undefined,
+): BetrayalDiscoveryResolutionStep[] {
+    const label = (() => {
+        switch (effect) {
+            case 'gainSanity1':
+                return `${TRAIT_LABEL.sanity} +1`;
+            case 'gainKnowledge1':
+                return `${TRAIT_LABEL.knowledge} +1`;
+            case 'gainMight1':
+                return `${TRAIT_LABEL.might} +1`;
+            case 'gainSpeed1':
+                return `${TRAIT_LABEL.speed} +1`;
+            case 'placeObstacleToken':
+                return '放置障碍物标记';
+            default:
+                return null;
+        }
+    })();
+    return label
+        ? [{
+            id: `room-effect-${effect}`,
+            kind: 'room-effect',
+            text: `房间效果：${roomName}，${label}`,
+        }]
+        : [];
+}
+
+export function getRoomDiscoveryRewardNames(
+    roomDiscoveryCards: BetrayalRoomDiscoveryCards,
+): { gained: string[]; buried: string[] } {
+    return {
+        gained: roomDiscoveryCards.roomDiscoveryCards?.map((card) => card.name) ?? [],
+        buried: roomDiscoveryCards.buriedRoomDiscoveryCards?.map((card) => card.name) ?? [],
+    };
+}
+
+export function createRoomDiscoveryCardResolutionSteps(
+    roomName: string,
+    roomDiscoveryCards: BetrayalRoomDiscoveryCards,
+): BetrayalDiscoveryResolutionStep[] {
+    const rewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
+    return [
+        ...rewardNames.buried.map((name, index) => ({
+            id: `buried-room-discovery-card-${roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id ?? index}`,
+            kind: 'buried-room-discovery-card' as const,
+            text: `展示后埋葬${name}`,
+            deckKind: 'item' as const,
+            cardId: roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id,
+        })),
+        ...rewardNames.gained.map((name, index) => ({
+            id: `room-discovery-card-${roomDiscoveryCards.roomDiscoveryCards?.[index]?.id ?? index}`,
+            kind: 'room-discovery-card' as const,
+            text: `${roomName}获得${name}`,
+            deckKind: 'item' as const,
+            cardId: roomDiscoveryCards.roomDiscoveryCards?.[index]?.id,
+        })),
+    ];
+}
+
+export function formatRoomDiscoveryRewardDetailParts(
+    roomName: string,
+    roomDiscoveryCards: BetrayalRoomDiscoveryCards,
+): string[] {
+    const rewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
+    return [
+        rewardNames.buried.length > 0
+            ? `展示后埋葬${rewardNames.buried.join('、')}`
+            : null,
+        rewardNames.gained.length > 0
+            ? `${roomName}获得${rewardNames.gained.join('、')}`
+            : null,
+    ].filter((part): part is string => Boolean(part));
+}
+
+export type BetrayalRoomExploredPlacementPayload = {
+    roomId: string;
+    room: Pick<
+        BetrayalRoomNode,
+        | 'name'
+        | 'hint'
+        | 'tags'
+        | 'discoveryReward'
+        | 'visualId'
+        | 'doorways'
+        | 'backVisualId'
+        | 'orientationTurns'
+        | 'discoveryEffect'
+        | 'endTurnEffect'
+        | 'enterEffect'
+    >;
+    roomTileAdjustment?: BetrayalRoomTileAdjustmentSelection;
+};
+
+export function applyBetrayalRoomExploredPlacementState(
+    core: BetrayalCore,
+    payload: BetrayalRoomExploredPlacementPayload,
+): void {
+    if (payload.roomTileAdjustment) {
+        const adjustedRooms = materializeRoomsAfterTileAdjustment(core.rooms, payload.roomTileAdjustment);
+        if (adjustedRooms) {
+            core.rooms = adjustedRooms;
+        }
+    }
+
+    const targetRoom = core.rooms.find((room) => room.id === payload.roomId);
+    if (targetRoom) {
+        targetRoom.name = payload.room.name;
+        targetRoom.hint = payload.room.hint;
+        targetRoom.tags = [...payload.room.tags];
+        targetRoom.state = 'discovered';
+        targetRoom.discoveryReward = payload.room.discoveryReward;
+        targetRoom.visualId = payload.room.visualId;
+        targetRoom.doorways = payload.room.doorways.map((doorway) => ({ ...doorway }));
+        targetRoom.backVisualId = payload.room.backVisualId;
+        targetRoom.discoveryEffect = payload.room.discoveryEffect;
+        targetRoom.endTurnEffect = payload.room.endTurnEffect;
+        targetRoom.enterEffect = payload.room.enterEffect;
+        targetRoom.entryRoomId = core.activeRoomId;
+        const reverseDoorway = core.rooms
+            .find((room) => room.id === core.activeRoomId)
+            ?.doorways.find((doorway) => doorway.connectsToRoomId === targetRoom.id);
+        targetRoom.entryEdge = reverseDoorway?.edge ?? targetRoom.doorways[0]?.edge ?? 'west';
+        targetRoom.orientationTurns = payload.room.orientationTurns;
+        const connectionEdge = resolveOppositeRoomEdge(targetRoom.entryEdge);
+        let connectedToEntry = false;
+        targetRoom.doorways = targetRoom.doorways.map((doorway) => {
+            if (doorway.connectsToRoomId === core.activeRoomId) {
+                connectedToEntry = true;
+                return doorway;
+            }
+            if (!connectedToEntry && doorway.edge === connectionEdge && !doorway.connectsToRoomId) {
+                connectedToEntry = true;
+                return {
+                    ...doorway,
+                    connectsToRoomId: core.activeRoomId,
+                };
+            }
+            return doorway;
+        });
+        if (!connectedToEntry) {
+            targetRoom.doorways = [
+                ...targetRoom.doorways,
+                {
+                    edge: connectionEdge,
+                    connectsToRoomId: core.activeRoomId,
+                },
+            ];
+        }
+        const newlyConnectedIds = targetRoom.doorways
+            .map((doorway) => doorway.connectsToRoomId)
+            .filter((roomId): roomId is string => Boolean(roomId));
+        targetRoom.connectedRoomIds = Array.from(new Set([
+            ...targetRoom.connectedRoomIds,
+            ...newlyConnectedIds,
+        ]));
+        if (payload.room.discoveryEffect === 'placeObstacleToken') {
+            targetRoom.markerTokens = Array.from(new Set([...(targetRoom.markerTokens ?? []), 'obstacle']));
+        }
+    }
+
+    core.currentExplorer.roomId = payload.roomId;
+    core.rooms = refreshExplorableRoomSlots(core.rooms);
 }
 
 export function applyRoomDrawResolutionToCore(

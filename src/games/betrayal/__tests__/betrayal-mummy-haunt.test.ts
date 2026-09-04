@@ -938,11 +938,10 @@ it('木乃伊攻击造成 2 点以上伤害后可选择偷取女孩或物品代�
         });
     });
 
-it('木乃伊攻击奖励阶段的攻击骰盘必须由本局玩家各确认一次，不能由一人代替全员确认', () => {
+it('木乃伊攻击奖励阶段的攻击骰盘由投骰者确认后进入奖励，不能要求全员逐个确认', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
         const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
-        const remainingPlayerIds = core.playerIds.filter((playerId) => playerId !== traitorId);
         const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
         const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)!.roomId;
         activateTestExplorer(core, traitorId);
@@ -979,29 +978,12 @@ it('木乃伊攻击奖励阶段的攻击骰盘必须由本局玩家各确认一�
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, heroId, {}),
-        )).toMatchObject({ valid: true });
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
-
-        expect(core.recentRoll).toMatchObject({
-            kind: 'attackRoll',
-            requiredPlayerIds: core.playerIds,
-            acknowledgedPlayerIds: [traitorId],
-        });
-        expect(BetrayalDomain.validate(
-            { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {}),
         )).toMatchObject({
             valid: false,
-            error: '你已经确认过当前投骰结果。',
+            error: '只有需要确认的玩家可以确认当前投骰结果。',
         });
-        for (const playerId of remainingPlayerIds) {
-            expect(BetrayalDomain.validate(
-                { core, sys: {} as never },
-                createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, playerId, {}),
-            )).toMatchObject({ valid: true });
-            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, playerId, {});
-        }
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
 
         expect(core.recentRoll).toBeNull();
         expect(resolveMummyPendingAttackReward(core)).toMatchObject({

@@ -1317,6 +1317,348 @@ export const waitForPhysicalDiceRerollMotion = async (
     .toBe("rerolling");
 };
 
+type PhysicalDiceRerollMotionCapture = {
+  expectVisible: () => Promise<void>;
+  stop: () => Promise<void>;
+};
+
+export const armPhysicalDiceRerollMotionCapture = async (
+  rollPanel: Locator,
+  options: {
+    dieIndex?: number;
+    timeout?: number;
+    minRotationShiftRad?: number;
+    minPositionShiftPx?: number;
+  } = {},
+): Promise<PhysicalDiceRerollMotionCapture> => {
+  const dieIndex = options.dieIndex ?? 0;
+  const minRotationShiftRad = options.minRotationShiftRad ?? 0.08;
+  const minPositionShiftPx = options.minPositionShiftPx ?? 0.75;
+  const key = `reroll-motion-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  await rollPanel.evaluate(
+    (
+      node,
+      captureOptions: {
+        key: string;
+        dieIndex: number;
+        minRotationShiftRad: number;
+        minPositionShiftPx: number;
+      },
+    ) => {
+      type Motion = {
+        x: number;
+        y: number;
+        z: number;
+        rotateX: number;
+        rotateY: number;
+        rotateZ: number;
+      };
+      type DebugDie = { motion?: Motion | null };
+      type DebugSnapshot = { dice?: DebugDie[] };
+      type Sample = {
+        at: number;
+        motionType: string;
+        motionId: string;
+        settled: string;
+        engineReady: string;
+        engineFailure: string;
+        activeCanvasTestId?: string;
+        motion: Motion | null;
+        motions: Array<Motion | null>;
+      };
+      type Capture = {
+        stopped: boolean;
+        frameId: number | null;
+        timerId: number | null;
+        samples: Sample[];
+        latestVisibleEvidence: unknown;
+      };
+      const pageWindow = window as typeof window & {
+        __betrayalDiceRerollMotionCaptures?: Record<string, Capture>;
+        __diceBoxThreeDebug?: Record<string, () => DebugSnapshot | null>;
+      };
+      const initialPanel = node as HTMLElement;
+      pageWindow.__betrayalDiceRerollMotionCaptures =
+        pageWindow.__betrayalDiceRerollMotionCaptures ?? {};
+
+      const readSample = (now: number): Sample => {
+        const source =
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-house-dice-physics-source"]',
+          ) ??
+          initialPanel.querySelector<HTMLElement>(
+            '[data-testid="betrayal-house-dice-physics-source"]',
+          );
+        const panel =
+          source?.closest<HTMLElement>(
+            '[data-testid="betrayal-recent-roll-panel"], [data-testid="betrayal-discovery-panel"]',
+          ) ?? initialPanel;
+        const group =
+          panel.querySelector<HTMLElement>(
+            '[data-testid="betrayal-house-dice-3d-group"]',
+          ) ??
+          document.querySelector<HTMLElement>(
+            '[data-testid="betrayal-house-dice-3d-group"]',
+          );
+        const debugRegistry = pageWindow.__diceBoxThreeDebug ?? {};
+        const canvases = Array.from(panel.querySelectorAll("canvas")).filter(
+          (canvas): canvas is HTMLCanvasElement =>
+            canvas instanceof HTMLCanvasElement,
+        );
+        const activeCanvas =
+          canvases.find((canvas) => {
+            const testId = canvas.dataset.testid;
+            return Boolean(
+              testId && typeof debugRegistry[testId] === "function",
+            );
+          }) ??
+          canvases[0] ??
+          null;
+        const activeCanvasTestId =
+          activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+        const snapshot = activeCanvasTestId
+          ? (debugRegistry[activeCanvasTestId]?.() ?? null)
+          : null;
+        const motions =
+          snapshot?.dice?.map((die) => die.motion ?? null) ?? [];
+        return {
+          at: now,
+          motionType: source?.dataset.diceMotionType ?? "",
+          motionId: source?.dataset.diceMotionId ?? "",
+          settled: source?.dataset.diceSettled ?? "",
+          engineReady: source?.dataset.diceEngineReady ?? "",
+          engineFailure: source?.dataset.diceEngineFailure ?? "",
+          activeCanvasTestId,
+          motion: motions[captureOptions.dieIndex] ?? null,
+          motions,
+        };
+      };
+
+      const capture: Capture = {
+        stopped: false,
+        frameId: null,
+        timerId: null,
+        samples: [],
+        latestVisibleEvidence: null,
+      };
+      const clearScheduledStep = () => {
+        if (capture.frameId !== null) {
+          window.cancelAnimationFrame(capture.frameId);
+          capture.frameId = null;
+        }
+        if (capture.timerId !== null) {
+          window.clearTimeout(capture.timerId);
+          capture.timerId = null;
+        }
+      };
+      const scheduleStep = () => {
+        capture.frameId = window.requestAnimationFrame(step);
+        capture.timerId = window.setTimeout(() => step(performance.now()), 33);
+      };
+      const step = (now: number) => {
+        if (capture.stopped) return;
+        clearScheduledStep();
+        const sample = readSample(now);
+        const previous = capture.samples.at(-1) ?? null;
+        capture.samples.push(sample);
+        if (capture.samples.length > 180) {
+          capture.samples.shift();
+        }
+        const sampleIsRerolling =
+          sample.motionType === "reroll" && sample.settled === "false";
+        const positionShift = previous?.motion && sample.motion
+          ? Math.hypot(
+            sample.motion.x - previous.motion.x,
+            sample.motion.y - previous.motion.y,
+            sample.motion.z - previous.motion.z,
+          )
+          : 0;
+        const rotationShift = previous?.motion && sample.motion
+          ? Math.max(
+            Math.abs(sample.motion.rotateX - previous.motion.rotateX),
+            Math.abs(sample.motion.rotateY - previous.motion.rotateY),
+            Math.abs(sample.motion.rotateZ - previous.motion.rotateZ),
+          )
+          : 0;
+        const shiftedDice = sample.motions.map((motion, index) => {
+          const previousMotion = previous?.motions[index] ?? null;
+          if (!previousMotion || !motion) {
+            return { index, positionShift: 0, rotationShift: 0 };
+          }
+          return {
+            index,
+            positionShift: Math.hypot(
+              motion.x - previousMotion.x,
+              motion.y - previousMotion.y,
+              motion.z - previousMotion.z,
+            ),
+            rotationShift: Math.max(
+              Math.abs(motion.rotateX - previousMotion.rotateX),
+              Math.abs(motion.rotateY - previousMotion.rotateY),
+              Math.abs(motion.rotateZ - previousMotion.rotateZ),
+            ),
+          };
+        });
+        if (
+          sampleIsRerolling &&
+          (positionShift >= captureOptions.minPositionShiftPx ||
+            rotationShift >= captureOptions.minRotationShiftRad)
+        ) {
+          capture.latestVisibleEvidence = {
+            detectedAt: now,
+            positionShift,
+            rotationShift,
+            shiftedDice,
+            before: previous,
+            after: sample,
+          };
+        }
+        scheduleStep();
+      };
+      scheduleStep();
+      pageWindow.__betrayalDiceRerollMotionCaptures[captureOptions.key] =
+        capture;
+    },
+    { key, dieIndex, minRotationShiftRad, minPositionShiftPx },
+  );
+
+  const readCaptureState = async () =>
+    rollPanel.page().evaluate((captureKey) => {
+      const pageWindow = window as typeof window & {
+        __betrayalDiceRerollMotionCaptures?: Record<
+          string,
+          {
+            samples: Array<{
+              at: number;
+              motionType: string;
+              motionId: string;
+              settled: string;
+              engineReady: string;
+              engineFailure: string;
+              activeCanvasTestId?: string;
+              motion: unknown;
+              motions: unknown[];
+            }>;
+            latestVisibleEvidence: { detectedAt?: number } | null;
+          }
+        >;
+      };
+      const capture =
+        pageWindow.__betrayalDiceRerollMotionCaptures?.[captureKey];
+      if (!capture) {
+        return { status: "missing" as const };
+      }
+      const now = performance.now();
+      const latest = capture.samples.at(-1) ?? null;
+      const rerollingSamples = capture.samples.filter(
+        (sample) =>
+          sample.motionType === "reroll" && sample.settled === "false",
+      );
+      const shiftedDiceSummary = rerollingSamples.flatMap((sample, sampleIndex) => {
+        const previous = rerollingSamples[sampleIndex - 1] ?? null;
+        if (!previous) return [];
+        return sample.motions.map((motion, index) => {
+          const previousMotion = previous.motions[index] as
+            | {
+              x: number;
+              y: number;
+              z: number;
+              rotateX: number;
+              rotateY: number;
+              rotateZ: number;
+            }
+            | null
+            | undefined;
+          const currentMotion = motion as
+            | {
+              x: number;
+              y: number;
+              z: number;
+              rotateX: number;
+              rotateY: number;
+              rotateZ: number;
+            }
+            | null
+            | undefined;
+          if (!previousMotion || !currentMotion) {
+            return { index, positionShift: 0, rotationShift: 0 };
+          }
+          return {
+            index,
+            positionShift: Math.hypot(
+              currentMotion.x - previousMotion.x,
+              currentMotion.y - previousMotion.y,
+              currentMotion.z - previousMotion.z,
+            ),
+            rotationShift: Math.max(
+              Math.abs(currentMotion.rotateX - previousMotion.rotateX),
+              Math.abs(currentMotion.rotateY - previousMotion.rotateY),
+              Math.abs(currentMotion.rotateZ - previousMotion.rotateZ),
+            ),
+          };
+        });
+      });
+      const recentVisible =
+        capture.latestVisibleEvidence &&
+        typeof capture.latestVisibleEvidence.detectedAt === "number" &&
+        now - capture.latestVisibleEvidence.detectedAt <= 3500 &&
+        latest?.motionType === "reroll" &&
+        latest?.settled === "false";
+      return {
+        status: recentVisible ? "visible-reroll-motion" : "waiting",
+        now,
+        latest,
+        sampleCount: capture.samples.length,
+        rerollingSampleCount: rerollingSamples.length,
+        shiftedDiceSummary,
+        rerollingSamples: rerollingSamples.slice(0, 8),
+        latestVisibleEvidence: capture.latestVisibleEvidence,
+        recentSamples: capture.samples.slice(-8),
+      };
+    }, key);
+
+  return {
+    expectVisible: async () => {
+      await expect
+        .poll(
+          async () => {
+            const state = await readCaptureState();
+            return state.status === "visible-reroll-motion"
+              ? "visible-reroll-motion"
+              : JSON.stringify(state);
+          },
+          {
+            timeout: options.timeout ?? 7000,
+            intervals: [40, 60, 80, 120],
+          },
+        )
+        .toBe("visible-reroll-motion");
+    },
+    stop: async () => {
+      await rollPanel.page().evaluate((captureKey) => {
+        const pageWindow = window as typeof window & {
+          __betrayalDiceRerollMotionCaptures?: Record<
+            string,
+            { stopped: boolean; frameId: number | null; timerId: number | null }
+          >;
+        };
+        const capture =
+          pageWindow.__betrayalDiceRerollMotionCaptures?.[captureKey];
+        if (!capture) return;
+        capture.stopped = true;
+        if (capture.frameId !== null) {
+          window.cancelAnimationFrame(capture.frameId);
+        }
+        if (capture.timerId !== null) {
+          window.clearTimeout(capture.timerId);
+        }
+        delete pageWindow.__betrayalDiceRerollMotionCaptures?.[captureKey];
+      }, key);
+    },
+  };
+};
+
 export const expectPhysicalDiceRerollMotionVisible = async (
   rollPanel: Locator,
   options: {

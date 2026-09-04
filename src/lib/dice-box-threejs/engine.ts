@@ -1041,9 +1041,32 @@ export class DiceBoxThreeEngine {
 
         const lift = Math.max(5, Math.min(8, (this.styleProfile.baseScale ?? 64) * 0.1));
         const lateral = Math.max(2, Math.min(4, (this.styleProfile.baseScale ?? 64) * 0.05));
-        const startAt = performance.now();
+        const firstVisibleProgress = 0.18;
         await new Promise<void>((resolve) => {
+            let startAt: number | null = null;
+            let frameId: number | null = null;
+            let timerId: number | null = null;
+            let completed = false;
+            const clearScheduledStep = () => {
+                if (frameId !== null) {
+                    window.cancelAnimationFrame(frameId);
+                    frameId = null;
+                }
+                if (timerId !== null) {
+                    window.clearTimeout(timerId);
+                    timerId = null;
+                }
+            };
+            const scheduleStep = () => {
+                frameId = window.requestAnimationFrame(step);
+                timerId = window.setTimeout(() => step(performance.now()), 33);
+            };
             const step = (now: number) => {
+                if (completed) return;
+                clearScheduledStep();
+                if (startAt === null) {
+                    startAt = now - Math.max(1, durationMs) * firstVisibleProgress;
+                }
                 const duration = Math.max(1, durationMs);
                 const progress = Math.min(1, Math.max(0, (now - startAt) / duration));
                 const pulse = Math.sin(progress * Math.PI);
@@ -1074,12 +1097,13 @@ export class DiceBoxThreeEngine {
                 this.syncDiceHighlightShells();
                 this.renderFrame();
                 if (progress >= 1) {
+                    completed = true;
                     resolve();
                     return;
                 }
-                window.requestAnimationFrame(step);
+                scheduleStep();
             };
-            window.requestAnimationFrame(step);
+            scheduleStep();
         });
     }
 

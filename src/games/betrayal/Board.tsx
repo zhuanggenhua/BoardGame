@@ -5241,7 +5241,7 @@ export default function BetrayalBoard({
           { allowDuringVisualBusy: true },
         );
       }
-    }, 1400);
+    }, 2400);
     return () => window.clearTimeout(timer);
   }, [
     core.recentRoll?.id,
@@ -5904,12 +5904,14 @@ export default function BetrayalBoard({
       ...previousState,
       dismissedLatestDiscoveryKey: latestDiscoveryKey,
       dismissedRecentRollId:
-        latestDiscoveryRecentRoll?.sourceTitle === latestDiscoveryTitle
+        latestDiscoveryRecentRoll?.sourceTitle === latestDiscoveryTitle &&
+        latestDiscoveryRecentRoll.kind !== "eventRolledDamage"
           ? latestDiscoveryRecentRollDisplayKey
           : previousState.dismissedRecentRollId,
     }));
   }, [
     latestDiscoveryKey,
+    latestDiscoveryRecentRoll?.kind,
     latestDiscoveryRecentRoll?.sourceTitle,
     latestDiscoveryRecentRollDisplayKey,
     latestDiscoveryTitle,
@@ -10470,7 +10472,8 @@ export default function BetrayalBoard({
                       ) : null}
                     </div>
                     ) : null}
-                    {(isPhoneLandscapeLayout &&
+                    {core.pendingEventRollResolution?.requiresAcknowledgement === false ||
+                    (isPhoneLandscapeLayout &&
                       shouldShowLatestDiscoveryRoll &&
                       latestDiscoveryRecentRoll &&
                       rollModifierActionSlot) ||
@@ -10491,7 +10494,7 @@ export default function BetrayalBoard({
                             >
                               {t("board.discovery.rollEvent")}
                             </button>
-                          ) : core.pendingEventRollResolution?.requiresAcknowledgement === false ? null : renderLatestDiscoveryContinueButton(
+                          ) : renderLatestDiscoveryContinueButton(
                             "bottom",
                             `pointer-events-auto min-w-[132px] shrink-0 ${betrayalConfirmButtonClass}`,
                             { disabledWhilePendingRoll: true },
