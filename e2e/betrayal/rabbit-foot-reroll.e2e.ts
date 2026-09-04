@@ -436,12 +436,13 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     });
     await saveScreenshot(page, REROLL_SELECTED_SCREENSHOT);
 
-    await page.getByTestId("betrayal-roll-modifier-confirm").click();
-    await expectPhysicalDiceRerollMotionVisible(rollPanel, {
+    const rerollMotionVisible = expectPhysicalDiceRerollMotionVisible(rollPanel, {
       dieIndex: 1,
       sampleMs: 80,
     });
+    await page.getByTestId("betrayal-roll-modifier-confirm").click();
     await expect(rabbitFootDice).toBeHidden();
+    await rerollMotionVisible;
     await saveScreenshot(page, REROLL_MOTION_SCREENSHOT);
     await expect
       .poll(async () =>
