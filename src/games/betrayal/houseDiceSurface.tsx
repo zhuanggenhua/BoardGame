@@ -86,7 +86,7 @@ export function BetrayalHouseDice3DGroup({
   const previousRerollDiceSignature = previousRerollDice?.join(",") ?? "";
   const previousRerollPhysicalFaces = React.useMemo(
     () => (previousRerollDice ?? []).map(resolveBetrayalHouseD6Face),
-    [previousRerollDice, previousRerollDiceSignature],
+    [previousRerollDice],
   );
   const diceMotion = React.useMemo(
     () => {
