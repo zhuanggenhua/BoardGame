@@ -34,6 +34,7 @@ const criticalImageResolverLoaderMap = new Map<string, () => Promise<CriticalIma
 
 export const GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS = 15000;
 export const SLOW_DEVICE_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS = 45000;
+export const DEVELOPMENT_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS = 120000;
 
 type LoadGameImplementationOptions = {
     includeTutorial?: boolean;
@@ -51,6 +52,7 @@ type GameImplementationTimeoutRuntimeOptions = {
         deviceMemory?: number;
         hardwareConcurrency?: number;
     } | undefined;
+    isDevelopmentRuntime?: boolean;
     isNativeAndroid?: boolean;
     isCoarsePointer?: boolean;
     isTestMode?: boolean;
@@ -126,6 +128,7 @@ export const resolveGameImplementationLoadTimeoutMs = (
             ? Boolean((window as Window & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__)
             : false
     );
+    const isDevelopmentRuntime = options.isDevelopmentRuntime ?? Boolean(import.meta.env?.DEV);
     const isNativeAndroid = options.isNativeAndroid ?? isNativeAndroidRuntime();
     const isCoarsePointer = options.isCoarsePointer ?? safeMatchMedia('(pointer: coarse)').matches;
     const isMobileWidth = typeof runtimeWindow?.innerWidth === 'number'
@@ -143,9 +146,13 @@ export const resolveGameImplementationLoadTimeoutMs = (
         ? runtimeNavigator.hardwareConcurrency <= 4
         : false;
 
+    if (isDevelopmentRuntime) {
+        return DEVELOPMENT_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS;
+    }
+
     if (
         isTestMode
-        || 
+        ||
         isNativeAndroid
         || isCoarsePointer
         || isMobileWidth

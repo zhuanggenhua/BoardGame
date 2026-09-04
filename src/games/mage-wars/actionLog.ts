@@ -34,6 +34,7 @@ import type {
     MageWarsSpellCastResolvedEvent,
     MageWarsSpellDirectDamageRolledEvent,
     MageWarsSpellHealingRolledEvent,
+    MageWarsObjectSpellPlannedEvent,
     MageWarsSpellPushResolvedEvent,
     MageWarsSpellTeleportResolvedEvent,
     MageWarsStatusTokenPlacedEvent,
@@ -45,6 +46,7 @@ import { getMageWarsSpellCardName, getMageWarsSpellCardPreviewRef } from './ui/c
 
 export const ACTION_ALLOWLIST = [
     MAGE_WARS_COMMANDS.PLAN_SPELLS,
+    MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL,
     MAGE_WARS_COMMANDS.CAST_SPELL,
     MAGE_WARS_COMMANDS.USE_MAGE_ABILITY,
     MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
@@ -60,6 +62,7 @@ export const ACTION_ALLOWLIST = [
 
 export const UNDO_ALLOWLIST = [
     MAGE_WARS_COMMANDS.PLAN_SPELLS,
+    MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL,
     MAGE_WARS_COMMANDS.CAST_SPELL,
     MAGE_WARS_COMMANDS.USE_MAGE_ABILITY,
     MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
@@ -182,6 +185,13 @@ export function formatMageWarsActionEntry({
                     segments.push(buildSpellCardSegment(spellCardId));
                 });
                 pushEntry(entries, event.type, payload.playerId, entryTimestamp, segments, index);
+                break;
+            }
+            case MAGE_WARS_EVENTS.OBJECT_SPELL_PLANNED: {
+                const payload = (event as MageWarsObjectSpellPlannedEvent).payload;
+                pushEntry(entries, event.type, payload.ownerId, entryTimestamp, [
+                    i18nSeg('actionLog.objectSpellPlanned', { objectId: payload.objectId }),
+                ], index);
                 break;
             }
             case MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED: {

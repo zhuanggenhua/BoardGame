@@ -1,0 +1,86 @@
+{
+  "verdict": "RETRACTED",
+  "scope": "invalidated-current-user-request",
+  "retractedReason": "该清单错误地把“同阵营上下排列”验成了重叠压叠，并且把已经独立收工的地图拖拽专题图重新打包展示。2026-09-02 用户指出后撤销，禁止作为 PASS 清单或用户开图入口复用。",
+  "display": {
+    "purpose": "retracted-record-not-for-display",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": false
+  },
+  "requirements": [
+    {
+      "requirement": "同格布局必须是复合轴：每个格子先按固定席位左右分 lane，同席位多个单位在各自 lane 内上下分行排列；不得重叠压叠。",
+      "status": "RETRACTED",
+      "evidence": [
+        "撤销原因：该证据把上下排列实现成了重叠压叠和只露角可点击，不符合用户要求。",
+        "src/games/mage-wars/Board.tsx：后续已删除 absolute / transform / 负 margin 压叠路径，改为 lane 内普通纵向分行和 overflow 访问。",
+        "src/games/mage-wars/__tests__/Board.fx.test.tsx：断言 owner lane 为 horizontal、lane stack 为 vertical，并验证同席位两张牌落在同一 lane。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言 a2 压力态下每侧 5 张单位 + 1 名法师，左右 lane 水平分离、同侧卡牌中心纵向分布大于横向分布，且所有牌仍在所属格子内并能点击。",
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts \"真实入口加载正式牌桌素材并落桌面验收截图\"：2026-09-02 复跑通过，1 passed。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png"
+      ]
+    },
+    {
+      "requirement": "教程讲对手信息可读时，必须高亮并断言对手弃牌堆，不能用自己的弃牌堆冒充对方公开信息。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：新增对手弃牌堆承接物，带 ownerRole=opponent 和独立 tutorial id。",
+        "src/games/mage-wars/tutorial.ts：discard-reading 的高亮目标改为 mw-opponent-discard。",
+        "public/locales/zh-CN/game-mage-wars.json：弃牌教学文案改为“现在看对手弃牌堆”，并说明公开弃牌与未公开计划法术的区别。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts：断言自己的弃牌堆仍是 self、对手弃牌堆是 opponent、owner id 为 1，并显示“对手弃牌 2”。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-spell-result-and-discard-reading.png"
+      ]
+    },
+    {
+      "requirement": "快速施法必须按规则真相源表达为规则时机窗口，不得写成响应，也不得写成任意时刻无阶段出牌。",
+      "status": "PASS",
+      "evidence": [
+        "docs/games/mage-wars/tech-selection.md：行动环节包含优先快速施法、生物行动、最终快速施法。",
+        "docs/games/mage-wars/design/reference/step1-runtime-board-saturated-ui-design.md：快速施法可在指定时机插入，主动作区表达“现在可快速施法 / 可跳过 / 已用”。",
+        "src/games/mage-wars/domain/core-types.ts 与 src/games/mage-wars/domain/validate.ts：规则模型含 initiativeQuickcast / finalQuickcast，并把 quickcast 限定在快速施法阶段。",
+        "public/locales/zh-CN/game-mage-wars.json：教程文案明确“快速施法是规则给出的施法时机，不是响应，也不是任意时刻出牌”。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts：断言快速施法步骤文案包含“不是响应”，并在 initiativeQuickcast 阶段让过当前窗口。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-pass-deployment.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-skip-initiative-quickcast.png"
+      ]
+    },
+    {
+      "requirement": "地图自由查看必须使用全屏牌桌视窗，拖拽后截图不能证明成一个受限小框。",
+      "status": "RETRACTED_FROM_THIS_DISPLAY",
+      "evidence": [
+        "撤销原因：地图拖拽是已独立收工专题，本轮用户没有要求重新打开拖拽截图；该图不应混入本轮展示。"
+      ]
+    },
+    {
+      "requirement": "通用规范必须回代这类错误：复合布局不能只验一个轴；教程文案必须绑定当前视角、owner 和真实承接物；时机词必须先按阶段、窗口、响应、任意时刻分型。",
+      "status": "RETRACTED",
+      "evidence": [
+        "撤销原因：原清单仍使用“堆叠”措辞，容易诱导成重叠压叠；后续规范已改为同阵营上下分行排列，容量不足用 overflow 承接。",
+        ".spec/knowledge/standards/ui-ux.md：补充多阵营 / 多席位同格时分开裁定阵营分区轴与同阵营排列轴。",
+        ".spec/knowledge/standards/ui-change-gates.md：补充复合 lane 必须分别证明 owner lane 轴、lane 内排列轴、owner 稳定性、最小可读尺寸和 overflow 策略。",
+        ".spec/knowledge/standards/tutorial-design.md：补充教程文案必须绑定当前画面的真实视角、owner 和承接物。",
+        ".spec/knowledge/standards/rule-driven-interaction-design.md：补充阶段、阶段窗口、响应 / 打断窗口、任意时刻动作必须先分型再设计 UI。",
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md：把本次 Mage Wars 用户纠偏作为专项 drift-check，不作为第二套通用规范正文。",
+        "npm run spec:lint：2026-09-02 复跑通过，spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [],
+  "sourceImages": [],
+  "retractedImages": [
+    "test-results/evidence-screenshots/mage-wars/current-request-20260902-lane-discard-quickcast-map/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/current-request-20260902-lane-discard-quickcast-map/01-labeled-e2e-desktop-board.png",
+    "test-results/evidence-screenshots/mage-wars/current-request-20260902-lane-discard-quickcast-map/02-labeled-11-opponent-spell-result-and-discard-reading.png",
+    "test-results/evidence-screenshots/mage-wars/current-request-20260902-lane-discard-quickcast-map/03-labeled-12-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/current-request-20260902-lane-discard-quickcast-map/04-labeled-13-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/current-request-20260902-lane-discard-quickcast-map/05-labeled-e2e-desktop-2560x1304-map-dragged.png"
+  ],
+  "retractedSourceImages": [
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-spell-result-and-discard-reading.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

@@ -3,6 +3,7 @@
 > 目的：当 `feat/game-betrayal` 准备回 `main` 时，先锁定“哪些内容以当前专项 worktree 为真相源，哪些内容必须做双边内容归并”，避免把冲突处理退化成纯文本选边。
 > 当前实施现场：`D:\gongzuo\webgame\BoardGame\.worktrees\betrayal`
 > 当前分支：`feat/game-betrayal`
+> 2026-09-02 测试入口迁移：本文历史验证命令保留当时原貌；原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口。新增山屋惊魂首剧本领域回归时，必须选择对应 `src/games/betrayal/__tests__/betrayal-*.test.ts` owner 或新建 owner，公共夹具在 `src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`。
 
 ## 当前结论
 

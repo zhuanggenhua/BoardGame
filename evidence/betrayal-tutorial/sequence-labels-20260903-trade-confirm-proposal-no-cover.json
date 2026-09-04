@@ -1,0 +1,35 @@
+{
+  "title": "山屋惊魂交易教程：确认方案并等待队友同意",
+  "items": [
+    {
+      "path": "evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg",
+      "label": "交易起点：同房间且双方持有物可见",
+      "transition": "起点：当前玩家与队友在同一房间，先看清可交换的持有物"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/14-山屋惊魂-教程-交易选择急救包.jpg",
+      "label": "选择己方持有物：急救包",
+      "transition": "从 01 点击自己的急救包，进入交易候选选择"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/15-山屋惊魂-教程-交易选择队友.jpg",
+      "label": "选择交易对象：同房间队友",
+      "transition": "从 02 选择队友作为接收方，确认交易发生在同房间角色之间"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/16-山屋惊魂-教程-交易选择对方地图.jpg",
+      "label": "选择对方持有物：地图",
+      "transition": "从 03 点击队友持有的地图，形成双方交换方案"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+      "label": "确认交易方案：等待队友同意",
+      "transition": "从 04 点击确认并请求同意，当前玩家只提交方案，不代队友确认"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg",
+      "label": "公开结果：队友同意后物品互换",
+      "transition": "从 05 队友按正式交易回应自动同意，回到当前玩家视角查看交换结果"
+    }
+  ]
+}

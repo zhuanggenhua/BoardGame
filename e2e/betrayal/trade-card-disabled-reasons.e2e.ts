@@ -145,8 +145,8 @@ test.describe('山屋惊魂交易牌面禁用原因', () => {
         await page.getByTestId('betrayal-trade-return-card-map').click({ force: true });
         await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-trade-return-card-skull'), '对方未用头骨仍可作为给回对象').toBeEnabled();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText(/你给出.*书本/);
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).not.toContainText('对方给出 地图');
+        await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-item-step"]')).toContainText(/你给出.*书本/);
+        await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-item-step"]')).not.toContainText('对方给出 地图');
         await expect.poll(() => readTradeDisabledState(page), {
             message: '普通交易对方已用牌必须禁用并保留可读原因',
             timeout: 10000,

@@ -1,0 +1,110 @@
+{
+  "title": "法师战争真实 4273 教程端到端截图",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+      "label": "进入教程：牌桌、法师面板和胜利目标",
+      "transition": "起点：真实 4273 页面进入法师战争教程"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+      "label": "读局：查看生命、法力和聚魔",
+      "transition": "从开场提示进入当前法师状态读取"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+      "label": "聚魔结果：法力自动增加",
+      "transition": "执行聚魔后承接资源变化，不要求玩家手动结束回合"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-click-creature-category.png",
+      "label": "计划：点击生物分类",
+      "transition": "进入法术书，当前步骤只要求切到生物分类"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-next-page-wolf-visible.png",
+      "label": "计划：翻到丛林灰狼可见页",
+      "transition": "目标生物不在当前页，因此这一步才需要翻页"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-plan-wolf-in-slot-one-of-two.png",
+      "label": "计划：丛林灰狼进入第一个计划槽",
+      "transition": "点击卡牌本体后不是放大，而是加入计划槽"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-click-incantation-category-rouse-visible.png",
+      "label": "计划：点击咒语分类后兽性觉醒已可见",
+      "transition": "目标咒语已经可见，因此不再保留错误翻页步骤"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-plan-rouse-in-slot-two-of-two-confirm.png",
+      "label": "计划：兽性觉醒进入第二个计划槽并可确认",
+      "transition": "第二张牌进入计划槽，下一步才确认计划"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-prepared-and-hidden.png",
+      "label": "计划完成：两张准备牌变为隐藏状态",
+      "transition": "确认计划后进入部署前的准备结果"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-summon-target-zone-highlight.png",
+      "label": "部署：选择召唤区域",
+      "transition": "选择丛林灰狼后，高亮真实可部署区域"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-wolf-summoned-not-ready.png",
+      "label": "部署结果：丛林灰狼已召唤但未就绪",
+      "transition": "完成召唤后承接单位状态"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-rouse-target-wolf-highlight.png",
+      "label": "部署：兽性觉醒选择丛林灰狼为目标",
+      "transition": "选择兽性觉醒后，高亮当前可合法指定的目标"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-roused-wolf-ready-and-end-deployment.png",
+      "label": "部署完成：丛林灰狼就绪并结束部署",
+      "transition": "兽性觉醒结算后，单位进入可行动状态"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-opponent-public-view-toggle-highlight.png",
+      "label": "公开信息：切到对方公开视角",
+      "transition": "教程要读对方公开弃牌堆，因此先切换视角"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-opponent-public-view-same-discard-pile.png",
+      "label": "公开信息：查看对方弃牌堆",
+      "transition": "视角切换后，教程文案和当前画面对象一致"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-back-to-self-view.png",
+      "label": "公开信息：返回自己视角",
+      "transition": "看完对方公开信息后回到自己的操作视角"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-skip-initiative-quickcast.png",
+      "label": "快速施法窗口：真实跳过当前窗口",
+      "transition": "当前没有要释放的快速法术，教程展示真实跳过动作"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wolf-moved-to-a2.png",
+      "label": "行动：丛林灰狼移动到 A2",
+      "transition": "进入行动后选择单位并完成一次真实移动"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png",
+      "label": "1366×768：点击卡牌本体加入计划槽",
+      "transition": "压力态验证计划槽不被遮挡，卡牌本体点击触发计划"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png",
+      "label": "1366×768：点击计划槽草稿牌取消计划",
+      "transition": "点击计划槽本体后草稿消失，不必回点原卡牌"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png",
+      "label": "1366×768：取消后重新选择卡牌",
+      "transition": "重新点击卡牌后计划槽恢复，证明取消不是死路"
+    }
+  ]
+}

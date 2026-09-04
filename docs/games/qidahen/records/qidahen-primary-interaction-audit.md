@@ -443,7 +443,7 @@
     - `armament`
     - `tactic`
     - `silver`
-- `src/games/qidahen/__tests__/payment-selection.test.ts`
+- `src/games/qidahen/__tests__/qidahen-setup-card-source.test.ts`
   - 升级军备相关断言也是通过测试里手动补 `cardKind/armamentId` 来验证“识别军备牌目标”
 
 ### 审查结论

@@ -2,10 +2,12 @@ import { expect, test, type Page } from '@playwright/test';
 import {
     BETRAYAL_COMMANDS,
     createBetrayalMonsterFromDefinition,
-    resolveBetrayalMonsterMoveTargetRooms,
-    resolveBetrayalMonsterMovementGroups,
     type BetrayalCore,
 } from '../../src/games/betrayal/game';
+import {
+    resolveBetrayalMonsterMoveTargetRooms,
+    resolveBetrayalMonsterMovementGroups,
+} from '../../src/games/betrayal/monsterActionReadModel';
 import {
     applyBetrayalCommand,
     createBetrayalScriptedRandom,

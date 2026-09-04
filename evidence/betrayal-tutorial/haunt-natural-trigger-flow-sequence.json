@@ -1,0 +1,85 @@
+{
+  "title": "山屋惊魂教程：多数英雄视角自然触发作祟并找真名",
+  "items": [
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/01-自然流程起点结束当前回合.jpg",
+      "label": "自然作祟 01：作祟前自然起点",
+      "transition": "起点是作祟前；当前玩家没有预兆，教程先说明这段只教多数英雄视角。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/02-交给队友一回合.jpg",
+      "label": "自然作祟 02：当前玩家结束自己的回合",
+      "transition": "从 01 到 02 仍是当前玩家自己的权限；点击结束回合，把正式回合交给队友 1。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/03-等待队友一探索预兆房间.jpg",
+      "label": "自然作祟 03：等待队友 1 的公开结果",
+      "transition": "当前玩家不代操作队友；队友 1 按正式命令探索预兆房间，当前玩家只看公开结果。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/04-队友一获得指环未触发.jpg",
+      "label": "自然作祟 04：第一张预兆未触发",
+      "transition": "队友 1 获得指环，1 颗作祟骰低于 5+；回合自然交给队友 2。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/05-队友二翻出狗未触发.jpg",
+      "label": "自然作祟 05：第二张预兆仍未触发",
+      "transition": "队友 2 按正式命令移动并探索，翻出狗；2 颗作祟骰仍未达到 5+。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/06-狗确认后回到当前玩家.jpg",
+      "label": "自然作祟 06：狗确认后回到当前玩家",
+      "transition": "队友 2 看清狗和骰面后确认，未触发作祟；回合自然回到当前玩家。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/07-再次结束当前回合.jpg",
+      "label": "自然作祟 07：当前玩家再次交回合",
+      "transition": "当前玩家第二次只执行自己的结束回合；教程不要求玩家替队友移动、探索或确认。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/08-队友一翻出面具触发作祟.jpg",
+      "label": "自然作祟 08：队友 1 第三张预兆触发作祟",
+      "transition": "队友 1 继续正式探索，翻出面具；全员已有 3 张预兆，所以掷 3 颗作祟骰并触发作祟。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/09-当前玩家自动打开英雄开场.jpg",
+      "label": "自然作祟 09：当前玩家自动打开英雄开场",
+      "transition": "队友 1 是揭秘者并成为叛徒；当前玩家仍是多数英雄视角，所以系统打开英雄剧本书。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/10-继续后阅读英雄胜利条件.jpg",
+      "label": "自然作祟 10：英雄读本继续到胜利条件",
+      "transition": "在英雄剧本书内点击继续，看到寻找真名、学习驱逐法术和驱逐木乃伊的英雄目标。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/11-关闭剧本书后进入作祟牌桌.jpg",
+      "label": "自然作祟 11：关闭读本回到作祟牌桌",
+      "transition": "合上英雄剧本书后，牌桌状态已经进入作祟中，下一步可以继续从牌桌操作。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/12-作祟后回看英雄目标.jpg",
+      "label": "自然作祟 12：作祟后回看英雄目标",
+      "transition": "从作祟牌桌点击剧本入口，重新打开英雄目标；叛徒目标不混进默认主线。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/13-作祟后等待队友结束回合.jpg",
+      "label": "自然作祟 13：等待队友 2 结束回合",
+      "transition": "关闭回看页后，教程只展示队友按正式流程结束公开回合，当前玩家不代操作。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/14-轮到英雄寻找木乃伊真名.jpg",
+      "label": "自然作祟 14：轮到当前英雄找真名",
+      "transition": "队友 2 结束回合后，轮序回到当前玩家；他仍在图书馆，可以执行寻找木乃伊真名。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/15-寻找真名知识检定成功.jpg",
+      "label": "自然作祟 15：知识检定成功并显示结果",
+      "transition": "当前玩家点击寻找木乃伊真名，正式投骰成功，英雄取得第 1 枚知识标记。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/16-确认后回到牌桌可结束回合.jpg",
+      "label": "自然作祟 16：确认后回到结束回合入口",
+      "transition": "确认找真名结果后，投骰层退场；本回合作祟目标步骤已用完，下一真实入口是结束回合。"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "最终证据必须来自真实浏览器连接 http://127.0.0.1:4273/，不能换成测试端口或旧截图。",
+      "status": "PASS",
+      "evidence": [
+        "node temp/mage-wars-4273-real-browser-plan-click.mjs 直接连接 http://127.0.0.1:4273/play/mage-wars/tutorial?realBrowserPlanClick=1。",
+        "real-browser-4273-plan-click-report.json 记录 browserVersion=152.0.7977.75，viewport=1366×768。"
+      ]
+    },
+    {
+      "requirement": "1366×768 下不得再把 HUD、法术书和计划区整体缩小适配。",
+      "status": "PASS",
+      "evidence": [
+        "real-browser-4273-plan-click-report.json 记录 uiScale=1.000000。",
+        "同一报告记录 visibleCardCount=6，hudDensity=full，法术书卡牌高度约 170.1px。"
+      ]
+    },
+    {
+      "requirement": "底部必须留少量安全空隙，并且不能形成大空带。",
+      "status": "PASS",
+      "evidence": [
+        "real-browser-4273-plan-click-report.json 记录 bottomGap≈8px。",
+        "同一报告记录 bottomGrid 仍在真实 1366×768 视口内。"
+      ]
+    },
+    {
+      "requirement": "卡牌放大镜和卡牌本体点击必须分工正确。",
+      "status": "PASS",
+      "evidence": [
+        "同一真实浏览器报告记录 inspectIconOnlyOpensMagnify.status=PASS，点击放大镜只打开卡牌大图且计划草稿不变。",
+        "同一真实浏览器报告记录 cardBodyClickPlansInsteadOfMagnifying.status=PASS，点击灰狼卡牌本体后计划槽变为 1/2。"
+      ]
+    },
+    {
+      "requirement": "计划槽、确认计划按钮、法术书和 HUD 在真实浏览器截图中不能互相挡住。",
+      "status": "PASS",
+      "evidence": [
+        "real-browser-4273-plan-click-report.json 记录 spellbook-prepared、spellbook-plan-button、hud-spellbook 均不相交。",
+        "同一报告记录确认计划按钮和计划槽中心点命中自身，planAreaUnblocked.status=PASS。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/_labeled-for-pureref-20260904/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/_labeled-for-pureref-20260904/01-labeled-00-4273-1366-before-card-click.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/_labeled-for-pureref-20260904/02-labeled-01-4273-1366-inspect-icon-opens-only.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/_labeled-for-pureref-20260904/03-labeled-02-4273-1366-card-body-click-plan-1of2.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/00-4273-1366-before-card-click.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/01-4273-1366-inspect-icon-opens-only.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/02-4273-1366-card-body-click-plan-1of2.png"
+  ],
+  "report": "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click-1366-current/real-browser-4273-plan-click-report.json"
+}

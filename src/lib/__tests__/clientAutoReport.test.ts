@@ -746,6 +746,24 @@ describe('clientAutoReport', () => {
         expect(getFeedbackFetchCalls()).toHaveLength(0);
     });
 
+    it('ResizeObserver 循环通知会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('resize-observer-loop-noise', {
+            content: '[auto][window.error] ResizeObserver loop completed with undelivered notifications.',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'summonerwars',
+            gameName: 'summonerwars',
+            errorName: 'Error',
+            errorMessage: 'ResizeObserver loop completed with undelivered notifications.',
+            errorSource: 'window.error',
+        });
+
+        expect(getFeedbackFetchCalls()).toHaveLength(0);
+    });
+
     it('匿名页面级注入脚本的全局未定义噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         window.history.replaceState({}, '', '/?homeStyle=classic');

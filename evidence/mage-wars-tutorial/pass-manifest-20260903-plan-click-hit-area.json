@@ -1,0 +1,66 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "计划阶段点击法术书卡牌本体必须真实进入计划槽，不能变成放大。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 使用卡牌中心点真实鼠标点击，并用 elementFromPoint 断言命中法术书卡牌本体。",
+        "同一用例断言点击卡面后 mage-wars-card-magnify-overlay 保持 hidden，mage-wars-plan-spells 进度从 0/2 变为 1/2，再变为 2/2。",
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts => 2 passed。"
+      ]
+    },
+    {
+      "requirement": "放大必须走独立放大镜入口，且不能改变计划数量或规则状态。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言计划态卡牌带 mage-wars-card-inspect-button 和 svg 图标。",
+        "同一用例先点击放大镜，断言只打开 mage-wars-card-magnify-overlay，关闭后 readPlanningDrafts 仍为空，再点击卡面本体完成计划。"
+      ]
+    },
+    {
+      "requirement": "计划槽和确认计划按钮不能被教程卡、HUD、法术书溢出或透明层挡住。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 的 expectPlanControlsUnblocked 对确认计划按钮和每个计划槽中心点执行 elementFromPoint 前景断言。",
+        "同一断言检查教程卡片与确认计划按钮 / 计划槽没有视觉相交。",
+        "1366x768 压力态截图 test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png 已由 E2E 生成。"
+      ]
+    },
+    {
+      "requirement": "窄视口适配不得隐藏 HUD 或主流程控件，只能让法术书分页收敛避免溢出。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx 根据当前视口把法术书每页可见牌数从 6 张收敛到 5 / 4 / 3 张，未隐藏 HUD、计划槽、确认按钮、地图或教程卡。",
+        "1366x768 E2E 断言 mage-wars-desktop-spellbook-shelf 的 data-visible-card-count 为 3，且计划槽与确认按钮仍可点击可见。"
+      ]
+    },
+    {
+      "requirement": "通用规范必须明确禁止假触发和命中错误区域的点击验收。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/e2e-verification.md 新增真实点击命中区域门禁。",
+        ".spec/knowledge/standards/ui-change-gates.md 新增主操作与检视分区门禁。",
+        "npm run spec:lint => spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-for-pureref-20260903-plan-click-hit-area/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-for-pureref-20260903-plan-click-hit-area/01-labeled-03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-for-pureref-20260903-plan-click-hit-area/02-labeled-04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-for-pureref-20260903-plan-click-hit-area/03-labeled-00-1366-plan-card-body-click-one-of-two.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png"
+  ]
+}

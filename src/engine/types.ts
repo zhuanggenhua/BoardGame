@@ -349,6 +349,8 @@ export interface TutorialAiAction {
     payload?: unknown;
     /** 覆盖执行者 playerId（教程模式下默认使用 coreCurrentPlayer，此字段可强制指定） */
     playerId?: string;
+    /** 该自动命令会改运行态；消费 AI / 进入下一步前必须等 Board 同步到新状态 */
+    waitForBoardSyncAfter?: boolean;
 }
 
 export interface TutorialStepSnapshot {
@@ -377,6 +379,13 @@ export interface TutorialStepSnapshot {
     randomPolicy?: TutorialRandomPolicy;
     aiActions?: TutorialAiAction[];
     /**
+     * Delay before tutorial-authored automatic actions run.
+     *
+     * Used when the current visible step must stay readable before an AI/system
+     * action advances public state.
+     */
+    aiDelayMs?: number;
+    /**
      * AI actions 执行完成后是否自动推进。
      *
      * 默认保持旧行为：没有 advanceOnEvents 的 AI 步骤会自动推进。
@@ -398,7 +407,8 @@ export interface TutorialStepSnapshot {
      *
      * 设置后，MatchRoom 会自动切换 debugPlayerID 到指定玩家。
      * 步骤结束（推进到下一步）时，MatchRoom 自动恢复到玩家自己的视角（'0'）。
-     * 适用于"对手回合"等需要展示对手视角的步骤。
+     * 只适用于只读观察或明确独立的视角章节；不得用于在当前玩家自然主线中
+     * 让玩家代替其它座位执行正式操作。
      */
     viewAs?: string;
 }

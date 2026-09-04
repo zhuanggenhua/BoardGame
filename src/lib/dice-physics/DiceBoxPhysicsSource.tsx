@@ -5,7 +5,9 @@ import {
     type DiceBoxDieSkin,
     type DiceBoxStyleProfile,
 } from '../dice-box-threejs/engine';
-import type { DicePhysicsRendererMode, DicePhysicsState } from './types';
+import type { DicePhysicsHighlightState, DicePhysicsRendererMode, DicePhysicsState } from './types';
+
+const DICE_PHYSICS_HIGHLIGHT_RENDERER = 'threejs-backside-shader-shell';
 
 export interface DicePhysicsDieInput {
     id: number;
@@ -23,6 +25,7 @@ export interface DiceBoxPhysicsSourceProps {
     motion: DiceBoxPhysicsMotion;
     styleProfile?: DiceBoxStyleProfile;
     dieSkins?: Array<DiceBoxDieSkin | null>;
+    highlightedDice?: DicePhysicsHighlightState[];
     requireDieSkins?: boolean;
     rendererMode?: DicePhysicsRendererMode;
     canvasTestId?: string;
@@ -39,6 +42,7 @@ export function DiceBoxPhysicsSource({
     motion,
     styleProfile,
     dieSkins,
+    highlightedDice = [],
     requireDieSkins = false,
     rendererMode = 'physics-only',
     canvasTestId,
@@ -102,6 +106,20 @@ export function DiceBoxPhysicsSource({
     }, []);
 
     const values = React.useMemo(() => dice.map((die) => die.value), [dice]);
+    const diceHighlightsForEngine = React.useMemo(
+        () =>
+            highlightedDice
+                .map((highlight) => {
+                    const dieIndex = dice.findIndex((die) => die.id === highlight.dieId);
+                    if (dieIndex < 0) return null;
+                    return {
+                        ...highlight,
+                        dieIndex,
+                    };
+                })
+                .filter((highlight): highlight is DicePhysicsHighlightState => Boolean(highlight)),
+        [dice, highlightedDice],
+    );
     const valuesKey = React.useMemo(() => values.join(','), [values]);
     const rollingIndices = React.useMemo(
         () => dice
@@ -275,6 +293,12 @@ export function DiceBoxPhysicsSource({
             });
         }
     }, [dieSkins, engineVersion, requiredDieSkinsReady]);
+
+    React.useEffect(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        engine.setDiceHighlights(diceHighlightsForEngine);
+    }, [diceHighlightsForEngine, engineVersion]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -481,6 +505,14 @@ export function DiceBoxPhysicsSource({
             data-dice-engine-ready={engineReady ? 'true' : 'false'}
             data-dice-engine-failure={engineFailureMessage || undefined}
             data-dice-skins-ready={requiredDieSkinsReady ? 'true' : 'false'}
+            data-dice-highlight-renderer={diceHighlightsForEngine.length > 0 ? DICE_PHYSICS_HIGHLIGHT_RENDERER : 'none'}
+            data-dice-highlight-count={diceHighlightsForEngine.length}
+            data-dice-highlight-candidate-count={
+                diceHighlightsForEngine.filter((highlight) => highlight.variant === 'candidate').length
+            }
+            data-dice-highlight-selected-count={
+                diceHighlightsForEngine.filter((highlight) => highlight.variant === 'selected').length
+            }
             data-dice-container-size-ready={containerSizeReady ? 'true' : 'false'}
             data-dice-motion-type={motion.type}
             data-dice-motion-id={motion.type === 'settled' ? undefined : motion.id}

@@ -1777,6 +1777,50 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('线上反馈 6a98e4b5：transfer-status 合法动作应能执行并关闭交互', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.PROTECT] = 1;
+        state.core.players['1'].tokens[TOKEN_IDS.PROTECT] = 0;
+
+        const interaction: InteractionDescriptor = {
+            id: 'dt-interaction-card-transfer-status-feedback',
+            playerId: '1',
+            sourceCardId: 'card-transfer-status',
+            type: 'selectStatus',
+            titleKey: 'interaction.selectStatusToTransfer',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['0', '1'],
+            transferConfig: {},
+        };
+        injectPendingInteraction(state, interaction);
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+        const transferProtect = actions.find((action) => {
+            const command = action.commands[0];
+            return action.kind === 'interaction-transfer-status'
+                && command?.type === 'TRANSFER_STATUS'
+                && (command.payload as { fromPlayerId?: string; toPlayerId?: string; statusId?: string })?.fromPlayerId === '0'
+                && (command.payload as { fromPlayerId?: string; toPlayerId?: string; statusId?: string })?.toPlayerId === '1'
+                && (command.payload as { fromPlayerId?: string; toPlayerId?: string; statusId?: string })?.statusId === TOKEN_IDS.PROTECT;
+        });
+
+        expect(transferProtect).toBeDefined();
+        const result = tryCmd(state, cmd('TRANSFER_STATUS', '1', {
+            fromPlayerId: '0',
+            toPlayerId: '1',
+            statusId: TOKEN_IDS.PROTECT,
+        }));
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(0);
+        expect(result.state.core.players['1'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+        expect(result.state.sys.interaction?.current).toBeUndefined();
+    });
+
 
     it('本地 AI 在 selectTargetStatus 交互里会把已选中的己方减益转给更脆弱的敌人', async () => {
         const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);

@@ -1,0 +1,71 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-02T12:39:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "可选骰子的方框必须清晰可见。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/山屋惊魂-兔脚重掷完整链路/02-兔脚本体已选中.jpg：点选兔脚后，每颗可重掷骰子都有完整金色方框。",
+        "e2e/betrayal/betrayalTestHelpers.ts：断言未选候选框存在、边线宽度至少 2px、金色边线和外发光可见。"
+      ]
+    },
+    {
+      "requirement": "可选方框不能遮挡骰子，并且必须贴边、不能和骰子产生大间隙。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/Board.tsx：外层为透明点击热区，内层可见框使用 content-box；内容区等于 Three.js 骰子投影尺寸，边线画在内容区外侧。",
+        "e2e/betrayal/betrayalTestHelpers.ts：断言投影边界为 projected-bounds、frame gap 为 0、outline 为 0、内容区宽高与真实投影差值不超过 2px、可见框外缘到点击区余量不超过 2px。",
+        "evidence/山屋惊魂-兔脚重掷完整链路/03-选择具体骰子高亮.jpg：候选方框贴在骰子外缘，骰面数字仍清楚可见。"
+      ]
+    },
+    {
+      "requirement": "选中后高亮必须清晰可见、不遮挡骰子。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/Board.tsx：选中态使用 3px 明亮外置边框，候选框与选中框互斥，不叠双框。",
+        "e2e/betrayal/betrayalTestHelpers.ts：断言选中态 selectedBorderExists=true、candidateBoxExists=false、边线至少 3px、明亮颜色 rgb(255, 241, 168)、透明背景。",
+        "evidence/山屋惊魂-兔脚重掷完整链路/04-选中骰子等待确认使用.jpg：选中骰子高亮清晰，骰子本体和确认按钮同时可见。"
+      ]
+    },
+    {
+      "requirement": "兔脚改骰子必须端到端跑通。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/betrayal/rabbit-foot-reroll.e2e.ts：1 passed，生成 01-06 当前流程截图。",
+        "npm run test:e2e:file -- e2e/betrayal/betrayal-tutorial.e2e.ts \"移动探索教程会使用持有物、整张房间牌移动并探索出发现牌\"：1 passed，教程同路径也通过。",
+        "evidence/山屋惊魂-兔脚重掷完整链路/01-兔脚重掷前最近投骰可见.jpg 到 06-返回牌桌后事件结果已应用.jpg：覆盖重掷前、点兔脚、选骰、确认、结果、回牌桌。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\01-labeled-01-兔脚重掷前最近投骰可见.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\02-labeled-02-兔脚本体已选中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\03-labeled-03-选择具体骰子高亮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\04-labeled-04-选中骰子等待确认使用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\05-labeled-05-重掷后结果可见返回牌桌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\_labeled-rabbit-foot-reroll-20260902-final\\06-labeled-06-返回牌桌后事件结果已应用.png"
+  ],
+  "originalImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\01-兔脚重掷前最近投骰可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\02-兔脚本体已选中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\03-选择具体骰子高亮.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\04-选中骰子等待确认使用.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\05-重掷后结果可见返回牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-兔脚重掷完整链路\\06-返回牌桌后事件结果已应用.jpg"
+  ],
+  "validation": [
+    "npm run typecheck",
+    "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native -t \"物理骰重掷可点区\"",
+    "npm run test:e2e:file -- e2e/betrayal/rabbit-foot-reroll.e2e.ts",
+    "npm run test:e2e:file -- e2e/betrayal/betrayal-tutorial.e2e.ts \"移动探索教程会使用持有物、整张房间牌移动并探索出发现牌\""
+  ]
+}

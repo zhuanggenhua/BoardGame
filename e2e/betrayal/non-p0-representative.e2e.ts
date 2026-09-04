@@ -4,10 +4,12 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
 import {
     BETRAYAL_COMMANDS,
-    resolveBetrayalMonsterMovementGroups,
     type BetrayalCore,
-    type BetrayalMonsterMovementRollGroupResult,
 } from '../../src/games/betrayal/game';
+import {
+    resolveBetrayalMonsterMovementGroups,
+    type BetrayalMonsterMovementRollGroupResult,
+} from '../../src/games/betrayal/monsterActionReadModel';
 import {
     applyBetrayalCommand,
     createBetrayalScriptedRandom,

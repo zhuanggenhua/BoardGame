@@ -1,0 +1,86 @@
+{
+  "verdict": "REVOKED",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "summary": "已撤销：用户指出最终图组没有直接显示本轮用来宣称通过的全部关键事实；只把 E2E 断言写进 PASS 清单但不让用户可见图承载，属于证据遗漏，不能作为最终验收。",
+  "verifiedAt": "2026-09-03T21:07:00+08:00",
+  "requirements": [
+    {
+      "requirement": "不再把交易流程写成多出来的“提出交易”步骤；玩家看到的是确认已选方案并请求接收方同意。",
+      "status": "PASS",
+      "evidence": [
+        "rg -n \"提出交易|点提出交易|Propose Trade|proposed a trade|Trade proposed|提出后|可提出交易\" public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json src/games/betrayal e2e/betrayal 无匹配。",
+        "public/locales/zh-CN/game-betrayal.json:282 使用“确认并请求同意”。",
+        "public/locales/zh-CN/game-betrayal.json:1137 说明这一步只提交已选好的交易方案。"
+      ]
+    },
+    {
+      "requirement": "当前玩家不能代替队友确认交易；提交方案后应等待队友用正式回应自动同意，再回到公开结果。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/tutorial.ts:618-631 在等待步骤后由 playerId=1 通过正式 RESOLVE_TRADE_AGREEMENT 自动回应。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:424-466 断言 trade-review 时没有接收方同意/拒绝面板，pending 交易已清空。",
+        "node scripts/infra/run-e2e-single.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts \"交易教程会选双方持有物、提交方案后等待队友正式自动同意\" -> 1 passed (24.8s)。"
+      ]
+    },
+    {
+      "requirement": "交易教程关键步骤的教程卡不能遮挡要点的按钮、物品牌、队友、对方物品、等待横幅或结果反馈。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:310-374 新增教程卡与目标主体重叠/中心遮挡断言。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3020-3179 在每张交易截图前分别断言交易按钮、急救包、队友、地图、等待横幅和结果反馈未被教程卡遮挡。",
+        "evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg 到 18-山屋惊魂-教程-交易自动同意公开结果.jpg 均来自本次 E2E 运行后的整屏原图。"
+      ]
+    },
+    {
+      "requirement": "交易确认按钮复用同一游戏的确认按钮视觉语法，不再保留一套单独样式。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/Board.tsx:13914 和 src/games/betrayal/Board.tsx:15129 为桌面/移动交易确认按钮标记 data-trade-confirm-role=\"proposal-submit\"。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:1381-1453 断言交易确认按钮使用统一确认按钮类、稳定位置和 proposal-submit 角色。",
+        "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"交易|trade\" -> 2 files passed, 11 tests passed。"
+      ]
+    },
+    {
+      "requirement": "教程起手持有物不能误显示“下回合”，交易结果必须真实落位。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3020-3032 断言急救包、兔脚、书本起手持有物均不含“下回合”。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3171-3179 断言交易自动同意后公开结果可见。",
+        "src/games/betrayal/__tests__/Board.foundation.test.tsx:3858-3870 覆盖教程起手持有物不会误显示为下回合才可用。"
+      ]
+    },
+    {
+      "requirement": "最终展示图必须是当前验收范围内的有序标注图，且标注说明不得覆盖原始截图像素。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/sequence-labels-20260903-trade-confirm-proposal-no-cover.json 按 6 张交易流程图建立当前范围顺序。",
+        "py -3 .spec/skills/show-image-to-user/scripts/label-image-sequence.py --overwrite --out-dir evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover --manifest evidence/betrayal-tutorial/sequence-labels-20260903-trade-confirm-proposal-no-cover.json 成功。",
+        "尺寸核对：6 张原图均为 1600x900，6 张标注图均为 1600x1044，说明栏在外扩画布，不覆盖游戏画面。",
+        "npm run spec:lint -> spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/01-labeled-13-山屋惊魂-教程-交易同房间说明.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/02-labeled-14-山屋惊魂-教程-交易选择急救包.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/03-labeled-15-山屋惊魂-教程-交易选择队友.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/04-labeled-16-山屋惊魂-教程-交易选择对方地图.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/05-labeled-17-山屋惊魂-教程-交易请求等待同意.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-confirm-proposal-20260903-no-cover/06-labeled-18-山屋惊魂-教程-交易自动同意公开结果.png"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/14-山屋惊魂-教程-交易选择急救包.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/15-山屋惊魂-教程-交易选择队友.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/16-山屋惊魂-教程-交易选择对方地图.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+  ]
+}

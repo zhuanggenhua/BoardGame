@@ -1,0 +1,70 @@
+{
+  "verdict": "REVOKED",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "summary": "已撤销：这份清单打开的是顶栏覆盖截图内容的旧标注副本，不能作为真实最终验收图组。交易自动同意和起手物品断言只能保留为候选证据，必须重新生成无遮挡图组并补齐遮挡验收后才能重新 PASS。",
+  "revokedAt": "2026-09-03T19:30:00+08:00",
+  "revocationReason": "用户指出最终截图被标注/界面遮挡且流程观感不真实；覆盖原始截图内容的标注副本不符合当前项目截图验收规范。",
+  "requirements": [
+    {
+      "requirement": "提出交易后不能卡在需要当前玩家切视角或代队友确认的状态。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3011-3029 通过真实按钮提出交易，进入等待态后没有接收方同意面板，再等待自动同意进入 trade-review。",
+        "test-results/playwright-artifacts/.last-run.json 显示最新 Playwright 运行 status=passed。",
+        "evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+        "evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+      ]
+    },
+    {
+      "requirement": "当前玩家自然主线不得要求操作队友、切换座位或点击接收方确认。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3020-3028 断言接收方交易确认面板不存在，流程由自动正式回应推进。",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3030-3088 断言交易结果已经落位，待处理交易清空。",
+        "evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+        "evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+      ]
+    },
+    {
+      "requirement": "教程起手持有物不应显示“下回合”，该提示只用于本回合新获得且暂不可用的持有物。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:2910-2918 断言急救包、兔脚、书本均不包含“下回合”。",
+        "src/games/betrayal/__tests__/Board.foundation.test.tsx:3856-3868 覆盖教程起手持有物不会误显示为下回合才可用。",
+        "evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg"
+      ]
+    },
+    {
+      "requirement": "交易结果必须真实落位：当前玩家得到地图，队友得到急救包，书本和兔脚仍保留给后续事件使用。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts:3030-3088 断言当前玩家失去急救包、保留兔脚和书本、得到地图；队友得到急救包并失去地图。",
+        "public/locales/zh-CN/game-betrayal.json:1139 教程结果文案同步说明队友已同意，地图/急救包互换，书本和兔脚保留。",
+        "evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/01-labeled-13-山屋惊魂-教程-交易同房间说明.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/02-labeled-14-山屋惊魂-教程-交易选择急救包.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/03-labeled-15-山屋惊魂-教程-交易选择队友.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/04-labeled-16-山屋惊魂-教程-交易选择对方地图.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/05-labeled-17-山屋惊魂-教程-交易请求等待同意.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-trade-auto-accept-20260903/06-labeled-18-山屋惊魂-教程-交易自动同意公开结果.png"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/14-山屋惊魂-教程-交易选择急救包.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/15-山屋惊魂-教程-交易选择队友.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/16-山屋惊魂-教程-交易选择对方地图.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+  ]
+}

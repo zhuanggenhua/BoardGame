@@ -44,6 +44,7 @@ metadata:
 | [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：Choice Request、权限、响应窗口和 AI 合法动作——新游戏、卡牌效果和特殊响应设计时查 |
 | [`rule-contract-audit.md`](standards/rule-contract-audit.md) | 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查 |
 | [`shared-refactor-guard.md`](standards/shared-refactor-guard.md) | 共享重构护栏：共享层影响面、代表场景和防误伤验收——改公共代码时查 |
+| [`code-design.md`](standards/code-design.md) | 代码设计原则、设计模式选择和反模式预防规范：写业务代码、拆职责、加抽象或审查反模式时查 |
 | [`testing-audit-core-principles.md`](standards/testing-audit-core-principles.md) | 历史归档：旧测试审计原则分卷，当前只作兼容入口——旧链接命中时查 |
 | [`testing-audit-d1-power-modifier-subject.md`](standards/testing-audit-d1-power-modifier-subject.md) | 历史归档：旧力量修正主语 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |
 | [`testing-audit-d48-ui-rendering.md`](standards/testing-audit-d48-ui-rendering.md) | 历史归档：旧 UI 渲染 D 分卷，只作旧链接兼容——旧 evidence 对账时查 |

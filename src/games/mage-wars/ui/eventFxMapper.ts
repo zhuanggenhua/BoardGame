@@ -156,7 +156,7 @@ export function mapMageWarsEventToFx(
         const payload = event.payload;
         const source = resolveZoneCell(core, payload.fromZoneId);
         const target = resolveZoneCell(core, payload.toZoneId);
-        if (!target) return null;
+        if (!source || !target) return null;
 
         return {
             sourceEventId: entry.id,
@@ -174,6 +174,57 @@ export function mapMageWarsEventToFx(
                 targetObjectId: payload.targetObjectId,
                 fromZoneId: payload.fromZoneId,
                 toZoneId: payload.toZoneId,
+            },
+        };
+    }
+
+    if (event.type === MAGE_WARS_EVENTS.MAGE_MOVED) {
+        const payload = event.payload;
+        const source = resolveZoneCell(core, payload.fromZoneId);
+        const target = resolveZoneCell(core, payload.toZoneId);
+        if (!source || !target) return null;
+
+        return {
+            sourceEventId: entry.id,
+            cue: MW_FX.MOVE,
+            ctx: {
+                cell: target,
+                intensity: 'normal',
+            },
+            params: {
+                source,
+                playerId: payload.playerId,
+                targetPlayerId: payload.playerId,
+                fromZoneId: payload.fromZoneId,
+                toZoneId: payload.toZoneId,
+                movementMode: 'normal',
+            },
+        };
+    }
+
+    if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED) {
+        const payload = event.payload;
+        const source = resolveZoneCell(core, payload.fromZoneId);
+        const target = resolveZoneCell(core, payload.toZoneId);
+        if (!source || !target) return null;
+
+        return {
+            sourceEventId: entry.id,
+            cue: MW_FX.MOVE,
+            ctx: {
+                cell: target,
+                intensity: payload.movementMode === 'teleport' ? 'strong' : 'normal',
+            },
+            params: {
+                source,
+                ownerId: payload.ownerId,
+                objectId: payload.objectId,
+                targetObjectId: payload.objectId,
+                fromZoneId: payload.fromZoneId,
+                toZoneId: payload.toZoneId,
+                movementMode: payload.movementMode ?? 'normal',
+                actionCost: payload.actionCost,
+                sourceAbilityId: payload.sourceAbilityId,
             },
         };
     }
@@ -209,7 +260,7 @@ export function mapMageWarsEventToFx(
         const payload = event.payload;
         const source = resolveZoneCell(core, payload.fromZoneId);
         const target = resolveZoneCell(core, payload.toZoneId);
-        if (!target) return null;
+        if (!source || !target) return null;
 
         return {
             sourceEventId: entry.id,

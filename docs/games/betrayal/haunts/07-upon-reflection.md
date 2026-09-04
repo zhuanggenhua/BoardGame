@@ -1,6 +1,7 @@
 # 作祟 7 交互子账本：Upon Reflection
 
 > 状态：`contract-ready`。这是无叛徒合作解谜，核心是作祟揭秘者沉默、秘密组合和镜像怪物压力。
+> 2026-09-02 测试入口迁移：原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口；Upon Reflection 领域回归当前归 `src/games/betrayal/__tests__/betrayal-event-card-resolution.test.ts`，公共夹具在 `src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`。下方 2026-07 历史验证命令保留原貌，不再作为新增测试入口。
 
 ## 0. 2026-07-29 领域补证状态
 

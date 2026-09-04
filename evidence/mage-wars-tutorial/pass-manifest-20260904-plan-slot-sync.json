@@ -1,0 +1,120 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "计划阶段点击法术书卡牌本体必须执行计划动作，不得被放大检视抢走。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 中 1366x768 用例真实点击丛林灰狼卡牌本体后，计划草稿进入第一个计划槽，放大层保持隐藏。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png 显示卡牌本体点击后计划槽出现草稿牌。"
+      ]
+    },
+    {
+      "requirement": "点击计划槽里的草稿牌本体必须取消计划，不得强迫玩家回点原法术书卡牌。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx 的计划槽草稿牌绑定 onPlanningDraftRemove，草稿牌本体点击会移除对应槽位。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 中 1366x768 用例真实点击计划槽草稿牌后，草稿数量归零、确认计划按钮消失、放大层保持隐藏。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png 显示取消后的计划槽状态。"
+      ]
+    },
+    {
+      "requirement": "计划槽取消后必须能重新从原卡牌选择，计划进度和槽位状态同步恢复。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 中 1366x768 用例取消后重新点击丛林灰狼卡牌，计划草稿回到第一个计划槽，确认进度恢复为 1/2。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png 显示重新选择后的计划槽状态。"
+      ]
+    },
+    {
+      "requirement": "教程计划步骤必须和当前真实 UI 一一对应：这一步是什么就是什么，不把多次点击和后续效果塞进一张提示卡。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 将计划阶段拆为生物分类、翻页找丛林灰狼、选择丛林灰狼、咒语分类、选择兽性觉醒、确认计划等真实步骤。",
+        "public/locales/zh-CN/game-mage-wars.json 和 public/locales/en/game-mage-wars.json 的计划步骤文案均为单一动作句，不再包含一串“再 / 然后 / 接着”的复合操作。",
+        "src/games/mage-wars/__tests__/tutorial.test.ts 断言这些步骤的高亮目标、允许目标和文案均为单步单目标。"
+      ]
+    },
+    {
+      "requirement": "咒语分类后的教程步骤必须同步当前真实页面：兽性觉醒已经可见时，不得再保留错误的翻页步骤。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 已删除 plan-incantation-next-page，点击咒语分类后直接进入 plan-select-rouse。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 主流程用例断言点击咒语分类后等待 plan-select-rouse，并截图 test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-click-incantation-category-rouse-visible.png。",
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts 通过，2 passed。"
+      ]
+    },
+    {
+      "requirement": "通用教程规范必须防止动态列表、分页和历史路径再次和真实页面脱节。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md 已补充“动态列表不写死历史路径”，要求目标已可见时不得保留翻页 / 筛选 / 查找步骤。",
+        ".spec/skills/tutorial-workflow/SKILL.md 已把动态集合步骤是否匹配当前真实页面加入文案自检。",
+        "npm run spec:lint 通过。"
+      ]
+    },
+    {
+      "requirement": "本轮最终图组必须来自当前代码当前 E2E，不混入失败截图、旧专题图或地图拖拽诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 主流程用例重新生成 18 张 tutorial-flow-sync 截图，并由 assertTutorialScreenshotEvidenceSet 校验截图集合。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 1366x768 用例重新生成 3 张 tutorial-plan-click-responsive 截图，覆盖计划、取消和重新选择。",
+        "npx vitest run src/games/mage-wars/__tests__/tutorial.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 通过，5 tests passed。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/01-labeled-00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/02-labeled-01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/03-labeled-02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/04-labeled-03-plan-click-creature-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/05-labeled-04-plan-next-page-wolf-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/06-labeled-05-plan-wolf-in-slot-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/07-labeled-06-plan-click-incantation-category-rouse-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/08-labeled-07-plan-rouse-in-slot-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/09-labeled-08-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/10-labeled-09-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/11-labeled-10-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/12-labeled-11-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/13-labeled-12-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/14-labeled-13-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/15-labeled-14-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/16-labeled-15-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/17-labeled-16-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/18-labeled-17-wolf-moved-to-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/19-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/20-labeled-01-1366-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-current-plan-slot-final/_labeled-for-pureref-20260904-plan-slot-sync/21-labeled-02-1366-plan-card-reselect-after-slot-cancel.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-click-creature-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-next-page-wolf-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-plan-wolf-in-slot-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-click-incantation-category-rouse-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-plan-rouse-in-slot-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wolf-moved-to-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png"
+  ]
+}

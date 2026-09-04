@@ -1,0 +1,70 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-02T20:40:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "只展示前面已收口之后的剩余后半段，不混入 00-22 前置流程、拖拽地图诊断图、旧图组或全量图组。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars-tutorial/sequence-labels-20260902-heal-restore-segment.json lists only screenshots 23-29",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment contains 00-sequence-index.png and 01-07 labeled images only"
+      ]
+    },
+    {
+      "requirement": "后半段按端到端承接顺序展示：治疗入口、治疗目标、治疗结果、生命读数常显、复原术入口、燃烧目标、燃烧移除结果。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-healing-light-action-dock.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-healing-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-healing-result-life-readout.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-life-toggle-all-readouts.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-restore-action-dock.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/28-restore-burn-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/29-restore-burn-removed.png"
+      ]
+    },
+    {
+      "requirement": "治疗链路覆盖动作入口、目标选择和结算后生命读数，不用单张最终态隐藏中间操作。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-healing-light-action-dock.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-healing-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-healing-result-life-readout.png"
+      ]
+    },
+    {
+      "requirement": "复原术链路覆盖动作入口、燃烧目标选择和燃烧移除结果，不把状态结果误写成提前点击目标。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-restore-action-dock.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/28-restore-burn-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/29-restore-burn-removed.png"
+      ]
+    },
+    {
+      "requirement": "图片来自当前教程 E2E 运行，不是历史图、失败图或辅助诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts \"单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术\" => 1 passed",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync screenshots 23-29 were last written at 2026/9/2 20:19"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/01-labeled-23-healing-light-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/02-labeled-24-healing-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/03-labeled-25-healing-result-life-readout.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/04-labeled-26-life-toggle-all-readouts.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/05-labeled-27-restore-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/06-labeled-28-restore-burn-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-heal-restore-segment/07-labeled-29-restore-burn-removed.png"
+  ]
+}

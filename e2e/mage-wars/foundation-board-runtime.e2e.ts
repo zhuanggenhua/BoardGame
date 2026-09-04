@@ -13,6 +13,7 @@ const SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-
 const DEFAULT_MAGE_SPACE_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-default-mage-space.png';
 const SPELLBOOK_COPY_SELECTION_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-spellbook-copy-selection.png';
 const ATTACK_SETTLEMENT_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-attack-settlement.png';
+const SIX_PER_SIDE_LANE_WRAP_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-six-per-side-lane-wrap.png';
 const MOBILE_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png';
 const DESKTOP_2560_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png';
 const DESKTOP_2560_PLANNING_HOVER_SCREENSHOT_PATH = 'test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-planning-hover.png';
@@ -144,6 +145,13 @@ async function visibleDesktopSpellbookCardIds(page: Page): Promise<string[]> {
 async function clickVisibleMageWarsFieldCard(page: Page, objectId: string) {
     const card = page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`);
     await expect(card).toBeVisible({ timeout: 5_000 });
+    await card.evaluate((element) => {
+        const lane = element.closest<HTMLElement>('[data-lane-owner-side]');
+        if (lane) {
+            lane.scrollTop = element.offsetTop - (lane.clientHeight / 2) + (element.clientHeight / 2);
+        }
+        element.scrollIntoView({ block: 'center', inline: 'center' });
+    });
     const clickablePoint = await card.evaluate((element) => {
         const rect = element.getBoundingClientRect();
         const candidateRatios = [
@@ -169,6 +177,192 @@ async function clickVisibleMageWarsFieldCard(page: Page, objectId: string) {
     });
     expect(clickablePoint, `${objectId} 必须有露出且可点击的牌面区域`).not.toBeNull();
     await page.mouse.click(clickablePoint!.x, clickablePoint!.y);
+}
+
+async function captureMageWarsSixPerSideLaneWrapScreenshot(page: Page) {
+    await expect(page.getByTestId('mage-wars-selected-ability-action-dock')).toHaveCount(0);
+    await expect(page.getByTestId('mage-wars-selected-unit-guard')).toHaveCount(0);
+
+    const laneWrapAudit = await page.evaluate(() => {
+        const toRect = (element: HTMLElement | null) => {
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+                right: rect.right,
+                bottom: rect.bottom,
+            };
+        };
+
+        return {
+            selectedActionDockCount: document.querySelectorAll('[data-testid="mage-wars-selected-ability-action-dock"]').length,
+            selectedGuardActionCount: document.querySelectorAll('[data-testid="mage-wars-selected-unit-guard"]').length,
+            lanes: Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-ownership-lanes"]'))
+                .flatMap((laneGroup) => Array.from(laneGroup.querySelectorAll<HTMLElement>('[data-lane-owner-side]')).map((lane) => {
+                    const style = window.getComputedStyle(lane);
+                    return {
+                        zoneId: laneGroup.dataset.zoneId ?? null,
+                        ownerSide: lane.dataset.laneOwnerSide ?? null,
+                        laneAxis: laneGroup.dataset.layoutAxis ?? null,
+                        stackAxis: lane.dataset.laneStackAxis ?? null,
+                        overflowMode: lane.dataset.laneOverflowMode ?? null,
+                        maxRows: lane.dataset.laneMaxRows == null ? null : Number(lane.dataset.laneMaxRows),
+                        className: lane.className,
+                        overflowX: style.overflowX,
+                        overflowY: style.overflowY,
+                        rect: toRect(lane),
+                        fieldCardCount: lane.querySelectorAll('[data-testid="mage-wars-zone-field-card"]').length,
+                        mageEntityCount: lane.querySelectorAll('[data-testid="mage-wars-zone-mage-entity"]').length,
+                        items: Array.from(lane.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-lane-item"]')).map((item) => {
+                            const itemStyle = window.getComputedStyle(item);
+                            return {
+                                kind: item.dataset.laneItemKind ?? null,
+                                index: item.dataset.laneItemIndex == null ? null : Number(item.dataset.laneItemIndex),
+                                ownerSide: lane.dataset.laneOwnerSide ?? null,
+                                position: itemStyle.position,
+                                marginTop: itemStyle.marginTop,
+                                transform: itemStyle.transform,
+                                rect: toRect(item),
+                            };
+                        }),
+                    };
+                }))
+                .filter((lane) => lane.zoneId === 'a2' && lane.items.length > 0),
+            fieldCards: Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-field-card"]')).map((card) => {
+                const rect = card.getBoundingClientRect();
+                const zone = card.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]');
+                return {
+                    ownerSide: card.dataset.ownerSide ?? null,
+                    zoneId: zone?.getAttribute('data-testid')?.replace('mage-wars-arena-zone-', '') ?? null,
+                    rect: toRect(card),
+                    centerX: rect.x + rect.width / 2,
+                    centerY: rect.y + rect.height / 2,
+                    aspectRatio: rect.height > 0 ? rect.width / rect.height : null,
+                };
+            }).filter((card) => card.zoneId === 'a2'),
+        };
+    });
+
+    expect(laneWrapAudit.selectedActionDockCount).toBe(0);
+    expect(laneWrapAudit.selectedGuardActionCount).toBe(0);
+    expect(laneWrapAudit.fieldCards).toHaveLength(10);
+    expect(laneWrapAudit.fieldCards.filter((card) => card.ownerSide === 'seat-left')).toHaveLength(5);
+    expect(laneWrapAudit.fieldCards.filter((card) => card.ownerSide === 'seat-right')).toHaveLength(5);
+    expect(laneWrapAudit.lanes).toHaveLength(2);
+    expect(laneWrapAudit.lanes).toMatchObject([
+        {
+            zoneId: 'a2',
+            ownerSide: 'seat-left',
+            laneAxis: 'horizontal',
+            stackAxis: 'vertical',
+            overflowMode: 'wrap-columns',
+            maxRows: 3,
+            fieldCardCount: 5,
+            mageEntityCount: 1,
+        },
+        {
+            zoneId: 'a2',
+            ownerSide: 'seat-right',
+            laneAxis: 'horizontal',
+            stackAxis: 'vertical',
+            overflowMode: 'wrap-columns',
+            maxRows: 3,
+            fieldCardCount: 5,
+            mageEntityCount: 1,
+        },
+    ]);
+
+    type LaneItemRectAudit = {
+        rect: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            right: number;
+            bottom: number;
+        } | null;
+    };
+    const groupByApproximateColumn = <T extends LaneItemRectAudit>(items: T[]) => {
+        const columns: T[][] = [];
+        [...items]
+            .filter((item) => item.rect != null)
+            .sort((left, right) => left.rect!.x - right.rect!.x || left.rect!.y - right.rect!.y)
+            .forEach((item) => {
+                const centerX = item.rect!.x + item.rect!.width / 2;
+                const existingColumn = columns.find((column) => {
+                    const first = column[0];
+                    if (!first?.rect) return false;
+                    const firstCenterX = first.rect.x + first.rect.width / 2;
+                    return Math.abs(firstCenterX - centerX) <= 8;
+                });
+                if (existingColumn) {
+                    existingColumn.push(item);
+                } else {
+                    columns.push([item]);
+                }
+            });
+        return columns;
+    };
+    const hasVisibleOverlap = (left: LaneItemRectAudit, right: LaneItemRectAudit) => {
+        if (!left.rect || !right.rect) return false;
+        return left.rect.x < right.rect.right - 1
+            && left.rect.right > right.rect.x + 1
+            && left.rect.y < right.rect.bottom - 1
+            && left.rect.bottom > right.rect.y + 1;
+    };
+    const leftOwnerLane = laneWrapAudit.lanes.find((lane) => lane.ownerSide === 'seat-left');
+    const rightOwnerLane = laneWrapAudit.lanes.find((lane) => lane.ownerSide === 'seat-right');
+    expect(leftOwnerLane?.rect).not.toBeNull();
+    expect(rightOwnerLane?.rect).not.toBeNull();
+    const leftOwnerLaneCenterX = leftOwnerLane!.rect!.x + leftOwnerLane!.rect!.width / 2;
+    const rightOwnerLaneCenterX = rightOwnerLane!.rect!.x + rightOwnerLane!.rect!.width / 2;
+    expect(rightOwnerLaneCenterX - leftOwnerLaneCenterX, '同格必须先左右分 owner lane').toBeGreaterThan(40);
+
+    laneWrapAudit.lanes.forEach((lane) => {
+        expect(lane.className, `${lane.ownerSide} 压力态必须使用列换行布局`).toContain('grid-flow-col');
+        expect(lane.overflowY, `${lane.ownerSide} 不得再用纵向滚动吞掉第 4+ 个单位`).toBe('visible');
+        expect(lane.items).toHaveLength(6);
+        lane.items.forEach((item) => {
+            expect(item.rect, `${lane.ownerSide} 每个单位必须有可见矩形`).not.toBeNull();
+            expect(item.position, `${lane.ownerSide} lane item 不得 absolute 压叠`).not.toBe('absolute');
+            expect(item.transform, `${lane.ownerSide} lane item 不得 transform 错位压叠`).toBe('none');
+            expect(Number.parseFloat(item.marginTop), `${lane.ownerSide} lane item 不得用负 margin 压叠`).toBeGreaterThanOrEqual(0);
+        });
+        const columns = groupByApproximateColumn(lane.items);
+        expect(columns, `${lane.ownerSide} 六个单位必须自动换成两列`).toHaveLength(2);
+        columns.forEach((column) => {
+            expect(column.length, `${lane.ownerSide} 每列最多三个单位`).toBeLessThanOrEqual(3);
+            const sortedColumn = [...column].sort((left, right) => left.rect!.y - right.rect!.y);
+            sortedColumn.slice(1).forEach((item, index) => {
+                const previous = sortedColumn[index];
+                expect(item.rect!.y, `${lane.ownerSide} 同列单位必须上下排列且不重叠`).toBeGreaterThanOrEqual(previous.rect!.bottom - 1);
+            });
+        });
+    });
+
+    const allLaneItems = laneWrapAudit.lanes.flatMap((lane) => lane.items);
+    allLaneItems.forEach((item, index) => {
+        allLaneItems.slice(index + 1).forEach((other) => {
+            expect(hasVisibleOverlap(item, other), '双方各六个单位不得互相重叠').toBe(false);
+        });
+    });
+    laneWrapAudit.fieldCards.forEach((card) => {
+        expect(card.rect).not.toBeNull();
+        expect(card.rect!.width).toBeGreaterThan(60);
+        expect(card.rect!.width).toBeLessThan(72);
+        expect(card.rect!.height).toBeGreaterThan(84);
+        expect(card.rect!.height).toBeLessThan(100);
+        expect(card.aspectRatio).toBeGreaterThan(0.70);
+        expect(card.aspectRatio).toBeLessThan(0.72);
+    });
+
+    await mkdir(dirname(SIX_PER_SIDE_LANE_WRAP_SCREENSHOT_PATH), { recursive: true });
+    await page.screenshot({ path: SIX_PER_SIDE_LANE_WRAP_SCREENSHOT_PATH, fullPage: false });
+
+    return laneWrapAudit;
 }
 
 async function expectMageWarsDefaultBrowseInteractions(page: Page) {
@@ -547,7 +741,9 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.rects.hudAnchorLayer!.y, '玩家界面锚点层必须贴齐屏幕顶部，不能套 16:9 内框').toBeLessThanOrEqual(1);
     expect(layoutAudit.rects.hudAnchorLayer!.right, '玩家界面锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 1);
     expect(layoutAudit.rects.hudAnchorLayer!.bottom, '玩家界面锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
-    expect(layoutAudit.rects.bottomViewportGrid!.bottom, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底边').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
+    const bottomViewportGridGap = layoutAudit.viewport.height - layoutAudit.rects.bottomViewportGrid!.bottom;
+    expect(bottomViewportGridGap, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底部，并保留少量安全空隙').toBeGreaterThanOrEqual(6);
+    expect(bottomViewportGridGap, '底部玩家状态、法术书牌列和计划区不能被整体上移成底部空带').toBeLessThanOrEqual(16);
     layoutAudit.categoryButtons.forEach((category) => {
         expect(category.rect, `${category.id} category tab`).not.toBeNull();
         expect(category.rect!.width).toBeGreaterThanOrEqual(44);
@@ -887,6 +1083,7 @@ test.describe('Mage Wars foundation runtime board', () => {
             const lanes = laneGroup
                 ? Array.from(laneGroup.querySelectorAll<HTMLElement>('[data-lane-owner-side]')).map((entry) => ({
                     ownerSide: entry.dataset.laneOwnerSide ?? null,
+                    stackAxis: entry.dataset.laneStackAxis ?? null,
                     mageEntityCount: entry.querySelectorAll('[data-testid="mage-wars-zone-mage-entity"]').length,
                 }))
                 : [];
@@ -896,6 +1093,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                 zoneId: mage.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]')?.dataset.testid ?? null,
                 laneAxis: laneGroup?.dataset.layoutAxis ?? null,
                 ownerSide: lane?.dataset.laneOwnerSide ?? null,
+                laneStackAxis: lane?.dataset.laneStackAxis ?? null,
                 lanePlayerId: lane?.dataset.lanePlayerId ?? null,
                 laneCount: lanes.length,
                 ownLaneMageCount: lanes.find((entry) => entry.ownerSide === lane?.dataset.laneOwnerSide)?.mageEntityCount ?? 0,
@@ -908,7 +1106,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         defaultMageLayout.forEach((mage) => {
             expect(mage.zoneId).not.toBeNull();
             expect(mage.ownerSide).not.toBeNull();
-            expect(mage.laneAxis).toBe('vertical');
+            expect(mage.laneAxis).toBe('horizontal');
+            expect(mage.laneStackAxis).toBe('vertical');
             expect(mage.ownerSide).toBe(mage.playerId === '0' ? 'seat-left' : 'seat-right');
             expect(mage.lanePlayerId).toBe(mage.playerId);
             expect(mage.laneCount).toBe(2);
@@ -1047,6 +1246,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(page.getByTestId('mage-wars-desktop-settlement-overlay')).toHaveCount(0);
         await expect(page.getByTestId('mage-wars-dice-tray')).toHaveCount(0);
         await expect(page.getByText('掷骰预备')).toHaveCount(0);
+        await captureMageWarsSixPerSideLaneWrapScreenshot(page);
         await clickVisibleMageWarsFieldCard(page, 'mw-test-red-angel');
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-red-angel"][data-field-card-role="source"]')).toBeVisible();
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-blue-angel"][data-field-card-role="target"]')).toBeVisible();
@@ -1057,7 +1257,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(guardActionButton).toHaveAttribute('data-action-placement', 'source-card-below');
         await expect(guardActionButton.locator('img')).toHaveCount(0);
         await expect(guardActionButton.locator('svg')).toHaveCount(0);
-        await expect(guardActionButton).toContainText(/进行守卫|guard/i);
+        await expect(guardActionButton).toContainText(/守卫|guard/i);
+        await expect(guardActionButton).not.toContainText('进行守卫');
         const selectedAbilityButton = page.locator('[data-testid^="mage-wars-selected-object-ability-"]').first();
         await expect(selectedAbilityButton).toBeVisible();
         await expect(selectedAbilityButton).toHaveAttribute('data-ability-visual', 'text-action');
@@ -1130,8 +1331,48 @@ test.describe('Mage Wars foundation runtime board', () => {
                 .flatMap((laneGroup) => Array.from(laneGroup.querySelectorAll<HTMLElement>('[data-lane-owner-side]')).map((lane) => ({
                     zoneId: laneGroup.dataset.zoneId ?? null,
                     ownerSide: lane.dataset.laneOwnerSide ?? null,
+                    laneAxis: laneGroup.dataset.layoutAxis ?? null,
+                    stackAxis: lane.dataset.laneStackAxis ?? null,
+                    overflowMode: lane.dataset.laneOverflowMode ?? null,
+                    maxRows: lane.dataset.laneMaxRows == null ? null : Number(lane.dataset.laneMaxRows),
+                    className: lane.className,
+                    overflowX: getComputedStyle(lane).overflowX,
+                    overflowY: getComputedStyle(lane).overflowY,
+                    rect: (() => {
+                        const rect = lane.getBoundingClientRect();
+                        return {
+                            x: rect.x,
+                            y: rect.y,
+                            width: rect.width,
+                            height: rect.height,
+                            right: rect.right,
+                            bottom: rect.bottom,
+                        };
+                    })(),
+                    scrollHeight: lane.scrollHeight,
+                    clientHeight: lane.clientHeight,
                     fieldCardCount: lane.querySelectorAll('[data-testid="mage-wars-zone-field-card"]').length,
                     mageEntityCount: lane.querySelectorAll('[data-testid="mage-wars-zone-mage-entity"]').length,
+                    items: Array.from(lane.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-lane-item"]')).map((item) => {
+                        const style = window.getComputedStyle(item);
+                        const rect = item.getBoundingClientRect();
+
+                        return {
+                            kind: item.dataset.laneItemKind ?? null,
+                            index: item.dataset.laneItemIndex == null ? null : Number(item.dataset.laneItemIndex),
+                            position: style.position,
+                            marginTop: style.marginTop,
+                            transform: style.transform,
+                            rect: {
+                                x: rect.x,
+                                y: rect.y,
+                                width: rect.width,
+                                height: rect.height,
+                                right: rect.right,
+                                bottom: rect.bottom,
+                            },
+                        };
+                    }),
                 })));
             const settlementOverlay = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-settlement-overlay"]');
             const settlementAttackDice = Array.from(
@@ -1173,6 +1414,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                 const rect = occupant.getBoundingClientRect();
                 const zoneRect = zone?.getBoundingClientRect();
                 const ownershipLane = occupant.closest<HTMLElement>('[data-lane-owner-side]');
+                const ownershipLaneRect = ownershipLane?.getBoundingClientRect();
                 const sameZoneFieldCards = zone
                     ? Array.from(zone.querySelectorAll<HTMLElement>('[data-testid="mage-wars-zone-field-card"]'))
                     : [];
@@ -1190,6 +1432,7 @@ test.describe('Mage Wars foundation runtime board', () => {
                     laneAxis: ownershipLane
                         ?.closest<HTMLElement>('[data-testid="mage-wars-zone-ownership-lanes"]')
                         ?.dataset.layoutAxis ?? null,
+                    laneStackAxis: ownershipLane?.dataset.laneStackAxis ?? null,
                     rect: toRect(occupant),
                     aspectRatio: rect.height > 0 ? rect.width / rect.height : null,
                     centerX,
@@ -1200,6 +1443,12 @@ test.describe('Mage Wars foundation runtime board', () => {
                             && centerX <= zoneRect.right
                             && centerY >= zoneRect.top
                             && centerY <= zoneRect.bottom
+                        : false,
+                    centerInsideLaneViewport: ownershipLaneRect
+                        ? centerX >= ownershipLaneRect.left
+                            && centerX <= ownershipLaneRect.right
+                            && centerY >= ownershipLaneRect.top
+                            && centerY <= ownershipLaneRect.bottom
                         : false,
                     topTestId: topElement?.closest<HTMLElement>('[data-testid]')?.dataset.testid ?? null,
                     overlapsSameZoneFieldCard: sameZoneFieldCards.some((fieldCard) => overlaps(occupant, fieldCard)),
@@ -1234,8 +1483,12 @@ test.describe('Mage Wars foundation runtime board', () => {
                     ownerSide: card.dataset.ownerSide ?? null,
                     role: card.dataset.fieldCardRole ?? null,
                     zoneId: zone?.getAttribute('data-testid')?.replace('mage-wars-arena-zone-', '') ?? null,
+                    laneAxis: card.closest<HTMLElement>('[data-testid="mage-wars-zone-ownership-lanes"]')?.dataset.layoutAxis ?? null,
+                    laneStackAxis: card.closest<HTMLElement>('[data-lane-owner-side]')?.dataset.laneStackAxis ?? null,
                     rect: toRect(card),
                     aspectRatio: cardRect.height > 0 ? cardRect.width / cardRect.height : null,
+                    centerX: cardRect.x + cardRect.width / 2,
+                    centerY: cardRect.y + cardRect.height / 2,
                     zoneCoverage: cardArea > 0 ? ownZoneArea / cardArea : 0,
                     maxOtherZoneCoverage,
                     visualDamage: Number(card.dataset.visualDamage ?? 0),
@@ -1355,27 +1608,27 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(occupant.rect).not.toBeNull();
             expect(occupant.aspectRatio).not.toBeNull();
             expect(Math.abs(occupant.aspectRatio! - mageCardAspectRatio)).toBeLessThanOrEqual(0.003);
-            expect(occupant.centerInsideZone).toBe(true);
-            expect(occupant.overlapsSameZoneFieldCard).toBe(false);
             expect(occupant.overlapsSpellbookShelf).toBe(false);
             expect(occupant.previewKind).toBe('portrait');
             expect(occupant.uiRole).toBe('mage-battle-entity');
-            expect(occupant.laneAxis).toBe('vertical');
+            expect(occupant.laneAxis).toBe('horizontal');
+            expect(occupant.laneStackAxis).toBe('vertical');
             expect(occupant.rect!.height).toBeGreaterThan(85);
         });
         const warlockEntity = desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice');
         const priestessEntity = desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice');
         expect(warlockEntity?.rect).not.toBeNull();
         expect(priestessEntity?.rect).not.toBeNull();
-        const mageVerticalSeparation = Math.abs((warlockEntity?.centerY ?? 0) - (priestessEntity?.centerY ?? 0));
-        const mageHorizontalSeparation = Math.abs((warlockEntity?.centerX ?? 0) - (priestessEntity?.centerX ?? 0));
-        expect(mageVerticalSeparation, '同格双方单位 / 法师必须上下分区，不得横向挤成小片').toBeGreaterThan(mageHorizontalSeparation);
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.zoneTestId).toBe('mage-wars-arena-zone-a2');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.zoneTestId).toBe('mage-wars-arena-zone-a2');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.ownerSide).toBe('seat-left');
         expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.ownerSide).toBe('seat-right');
-        expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'warlock_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
-        expect(desktopLayoutAudit.zoneMageEntities.find((occupant) => occupant.mageId === 'priestess_apprentice')?.topTestId).toBe('mage-wars-zone-mage-entity');
+        desktopLayoutAudit.zoneMageEntities
+            .filter((occupant) => occupant.centerInsideLaneViewport)
+            .forEach((occupant) => {
+                expect(occupant.centerInsideZone).toBe(true);
+                expect(occupant.topTestId).toBe('mage-wars-zone-mage-entity');
+            });
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageOverlay)).toBe(true);
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageValueBadge === false)).toBe(true);
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.lifeVisible === 'true')).toBe(true);
@@ -1396,13 +1649,15 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.sourceZoneCount).toBe(1);
         expect(desktopLayoutAudit.legalTargetZoneCount).toBeGreaterThan(0);
         expect(desktopLayoutAudit.legalMoveZoneCount).toBeGreaterThan(0);
-        expect(desktopLayoutAudit.preparedArea!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 36);
-        expect(desktopLayoutAudit.preparedCard!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 44);
+        expect(desktopLayoutAudit.preparedArea!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 8);
+        expect(desktopLayoutAudit.preparedCard!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 8);
         expect(desktopLayoutAudit.hudAnchorLayer!.x, '玩家界面锚点层必须贴齐屏幕左边，不能套 16:9 内框').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.hudAnchorLayer!.y, '玩家界面锚点层必须贴齐屏幕顶部，不能套 16:9 内框').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.hudAnchorLayer!.right, '玩家界面锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
         expect(desktopLayoutAudit.hudAnchorLayer!.bottom, '玩家界面锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
-        expect(desktopLayoutAudit.bottomViewportGrid!.bottom, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
+        const desktopBottomViewportGridGap = desktopLayoutAudit.viewportHeight - desktopLayoutAudit.bottomViewportGrid!.bottom;
+        expect(desktopBottomViewportGridGap, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底部，并保留少量安全空隙').toBeGreaterThanOrEqual(6);
+        expect(desktopBottomViewportGridGap, '底部玩家状态、法术书牌列和计划区不能被整体上移成底部空带').toBeLessThanOrEqual(16);
         expect(desktopLayoutAudit.arenaViewport).not.toBeNull();
         expect(desktopLayoutAudit.arenaViewport!.x, '地图视窗必须贴齐屏幕左边，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
@@ -1479,21 +1734,131 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.fieldCards.filter((card) => card.role === 'target').length).toBeGreaterThan(0);
         expect(desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === 'seat-left')).toHaveLength(5);
         expect(desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === 'seat-right')).toHaveLength(5);
-        expect(desktopLayoutAudit.ownershipLanes).toEqual([
-            { zoneId: 'a2', ownerSide: 'seat-left', fieldCardCount: 5, mageEntityCount: 1 },
-            { zoneId: 'a2', ownerSide: 'seat-right', fieldCardCount: 5, mageEntityCount: 1 },
+        expect(desktopLayoutAudit.ownershipLanes).toHaveLength(2);
+        expect(desktopLayoutAudit.ownershipLanes).toMatchObject([
+            {
+                zoneId: 'a2',
+                ownerSide: 'seat-left',
+                laneAxis: 'horizontal',
+                stackAxis: 'vertical',
+                overflowMode: 'wrap-columns',
+                maxRows: 3,
+                fieldCardCount: 5,
+                mageEntityCount: 1,
+            },
+            {
+                zoneId: 'a2',
+                ownerSide: 'seat-right',
+                laneAxis: 'horizontal',
+                stackAxis: 'vertical',
+                overflowMode: 'wrap-columns',
+                maxRows: 3,
+                fieldCardCount: 5,
+                mageEntityCount: 1,
+            },
         ]);
+        const leftOwnerLane = desktopLayoutAudit.ownershipLanes.find((lane) => lane.ownerSide === 'seat-left');
+        const rightOwnerLane = desktopLayoutAudit.ownershipLanes.find((lane) => lane.ownerSide === 'seat-right');
+        expect(leftOwnerLane?.rect).not.toBeNull();
+        expect(rightOwnerLane?.rect).not.toBeNull();
+        const leftOwnerLaneCenterX = leftOwnerLane!.rect!.x + leftOwnerLane!.rect!.width / 2;
+        const rightOwnerLaneCenterX = rightOwnerLane!.rect!.x + rightOwnerLane!.rect!.width / 2;
+        const ownerLaneHorizontalSeparation = rightOwnerLaneCenterX - leftOwnerLaneCenterX;
+        const ownerLaneVerticalSeparation = Math.abs(
+            (rightOwnerLane!.rect!.y + rightOwnerLane!.rect!.height / 2)
+            - (leftOwnerLane!.rect!.y + leftOwnerLane!.rect!.height / 2),
+        );
+        expect(ownerLaneHorizontalSeparation, '同格必须先按席位左右分 lane，不能回到整体上下分区').toBeGreaterThan(ownerLaneVerticalSeparation);
+        type LaneItemRectAudit = {
+            rect: {
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+                right: number;
+                bottom: number;
+            };
+        };
+        const groupByApproximateColumn = <T extends LaneItemRectAudit>(items: T[]) => {
+            const columns: T[][] = [];
+            [...items]
+                .sort((left, right) => left.rect.x - right.rect.x || left.rect.y - right.rect.y)
+                .forEach((item) => {
+                    const centerX = item.rect.x + item.rect.width / 2;
+                    const existingColumn = columns.find((column) => {
+                        const first = column[0];
+                        if (!first) return false;
+                        const firstCenterX = first.rect.x + first.rect.width / 2;
+                        return Math.abs(firstCenterX - centerX) <= 8;
+                    });
+                    if (existingColumn) {
+                        existingColumn.push(item);
+                    } else {
+                        columns.push([item]);
+                    }
+                });
+            return columns;
+        };
+        const hasVisibleOverlap = (left: LaneItemRectAudit, right: LaneItemRectAudit) => (
+            left.rect.x < right.rect.right - 1
+            && left.rect.right > right.rect.x + 1
+            && left.rect.y < right.rect.bottom - 1
+            && left.rect.bottom > right.rect.y + 1
+        );
+        desktopLayoutAudit.ownershipLanes.forEach((lane) => {
+            expect(lane.className, `${lane.ownerSide} 压力态必须使用列换行布局`).toContain('grid-flow-col');
+            expect(lane.overflowMode).toBe('wrap-columns');
+            expect(lane.maxRows).toBe(3);
+            expect(lane.overflowY, `${lane.ownerSide} 不得再用纵向滚动吞掉第 4+ 个单位`).toBe('visible');
+            expect(lane.items).toHaveLength(6);
+            lane.items.forEach((item) => {
+                expect(item.position, `${lane.ownerSide} lane item 不得 absolute 压叠`).not.toBe('absolute');
+                expect(item.transform, `${lane.ownerSide} lane item 不得 transform 错位压叠`).toBe('none');
+                expect(Number.parseFloat(item.marginTop), `${lane.ownerSide} lane item 不得用负 margin 压叠`).toBeGreaterThanOrEqual(0);
+            });
+            lane.items.forEach((item, index) => {
+                lane.items.slice(index + 1).forEach((other) => {
+                    expect(hasVisibleOverlap(item, other), `${lane.ownerSide} 同阵营单位不得互相重叠`).toBe(false);
+                });
+            });
+            const columns = groupByApproximateColumn(lane.items);
+            expect(columns, `${lane.ownerSide} 六个单位必须自动换成两列`).toHaveLength(2);
+            columns.forEach((column) => {
+                expect(column.length, `${lane.ownerSide} 每列最多三个单位`).toBeLessThanOrEqual(3);
+                const sortedColumn = [...column].sort((left, right) => left.rect.y - right.rect.y);
+                sortedColumn.slice(1).forEach((item, index) => {
+                    const previous = sortedColumn[index];
+                    expect(item.rect.y, `${lane.ownerSide} 同列单位必须上下排列且不重叠`).toBeGreaterThanOrEqual(previous.rect.bottom - 1);
+                });
+            });
+        });
         desktopLayoutAudit.fieldCards.forEach((card) => {
             expect(card.rect).not.toBeNull();
+            expect(card.laneAxis).toBe('horizontal');
+            expect(card.laneStackAxis).toBe('vertical');
             expect(card.rect!.width).toBeGreaterThan(60);
             expect(card.rect!.width).toBeLessThan(72);
             expect(card.rect!.height).toBeGreaterThan(84);
             expect(card.rect!.height).toBeLessThan(100);
             expect(card.aspectRatio).toBeGreaterThan(0.70);
             expect(card.aspectRatio).toBeLessThan(0.72);
-            expect(card.zoneCoverage).toBeGreaterThanOrEqual(0.85);
-            expect(card.maxOtherZoneCoverage).toBeLessThanOrEqual(0.15);
         });
+        const fieldCardsBySide = ['seat-left', 'seat-right'].map((ownerSide) => ({
+            ownerSide,
+            cards: desktopLayoutAudit.fieldCards.filter((card) => card.ownerSide === ownerSide),
+        }));
+        fieldCardsBySide.forEach(({ ownerSide, cards }) => {
+            const centerXRange = Math.max(...cards.map((card) => card.centerX)) - Math.min(...cards.map((card) => card.centerX));
+            const centerYRange = Math.max(...cards.map((card) => card.centerY)) - Math.min(...cards.map((card) => card.centerY));
+            expect(centerYRange, `${ownerSide} 同阵营多个单位必须在自己的 lane 内上下排列`).toBeGreaterThan(centerXRange);
+        });
+        const leftLaneCenterX = desktopLayoutAudit.fieldCards
+            .filter((card) => card.ownerSide === 'seat-left')
+            .reduce((total, card) => total + card.centerX, 0) / 5;
+        const rightLaneCenterX = desktopLayoutAudit.fieldCards
+            .filter((card) => card.ownerSide === 'seat-right')
+            .reduce((total, card) => total + card.centerX, 0) / 5;
+        expect(rightLaneCenterX - leftLaneCenterX, '左右席位 lane 必须在同格内水平分离').toBeGreaterThan(40);
         await applyMageWarsCombatFocusState(page);
         await clickVisibleMageWarsFieldCard(page, 'mw-test-focus-red-angel');
         await expect(page.locator('[data-testid="mage-wars-zone-field-card"][data-object-id="mw-test-focus-red-angel"][data-field-card-role="source"]')).toBeVisible();
@@ -1505,7 +1870,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(focusGuardActionButton).toHaveAttribute('data-action-placement', 'source-card-below');
         await expect(focusGuardActionButton.locator('img')).toHaveCount(0);
         await expect(focusGuardActionButton.locator('svg')).toHaveCount(0);
-        await expect(focusGuardActionButton).toContainText(/进行守卫|guard/i);
+        await expect(focusGuardActionButton).toContainText(/守卫|guard/i);
+        await expect(focusGuardActionButton).not.toContainText('进行守卫');
         await expect(page.getByTestId('mage-wars-desktop-settlement-overlay')).toHaveCount(0);
         const combatFocusAudit = await page.evaluate(() => {
             const zone = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-zone-a2"]')?.getBoundingClientRect();

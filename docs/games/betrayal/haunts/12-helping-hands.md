@@ -1,6 +1,7 @@
 # 作祟 12 交互子账本：The House is Hungry / Helping Hands
 
 > 状态：`monster-turn-runtime-e2e-verified-representative`。这是自由混战与巨魔手怪物回合代表链，当前证明领域层 setup / 控制权、Board 组件里的伤害 / 偷牌选择、援手攻击奖励伤害待分配面板、巨魔手移动 / 单手攻击 / 合击 / 结束怪物回合入口、巨魔手攻击伤害待分配面板，以及真实牌桌入口中的力量攻击奖励选择、同房双巨魔手“第1只 / 第2只力量 5 单手攻击 + 力量 8 合击”并列入口、巨魔手力量 8 合击后的伤害分配、巨魔手移动目标高亮、移动后反馈、明确结束巨魔手回合、护符换手控制权和无人持护符跳过提示；不外推为完整自然怪物回合全排列、完整终局或全部作祟完成。
+> 2026-09-02 测试入口迁移：原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口；Helping Hands 领域回归当前归 `betrayal-helping-hands-haunt.test.ts` 与 `betrayal-monster-actions-and-camera-haunt.test.ts`，交易控制权边界可落到 `betrayal-trade-dog-mask-and-elevator.test.ts`，公共夹具在 `helpers/firstScenarioRuntimeHarness.ts`。下方 2026-07 历史验证命令保留原貌，不再作为新增测试入口。
 
 ## 1. 源段锁定
 

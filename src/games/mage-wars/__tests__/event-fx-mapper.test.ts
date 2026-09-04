@@ -416,6 +416,76 @@ describe('mage-wars event FX mapper', () => {
         });
     });
 
+    it('maps ordinary mage movement to a leftward same-row move cue', () => {
+        const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+
+        const instruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.MAGE_MOVED,
+            payload: {
+                playerId: '0',
+                fromZoneId: ARENA_ZONE_IDS.C2,
+                toZoneId: ARENA_ZONE_IDS.B2,
+            },
+            timestamp: 9,
+        }), core);
+
+        expect(instruction).toMatchObject({
+            cue: MW_FX.MOVE,
+            ctx: {
+                cell: getArenaCell(core, ARENA_ZONE_IDS.B2),
+                intensity: 'normal',
+            },
+            params: {
+                source: getArenaCell(core, ARENA_ZONE_IDS.C2),
+                playerId: '0',
+                targetPlayerId: '0',
+                fromZoneId: ARENA_ZONE_IDS.C2,
+                toZoneId: ARENA_ZONE_IDS.B2,
+                movementMode: 'normal',
+            },
+        });
+        expect(instruction?.params?.source).toMatchObject({
+            row: instruction.ctx.cell?.row,
+            col: expect.any(Number),
+        });
+        expect((instruction?.params?.source as { col: number }).col).toBeGreaterThan(instruction?.ctx.cell?.col ?? Number.POSITIVE_INFINITY);
+    });
+
+    it('maps ordinary arena object movement to a leftward same-row move cue', () => {
+        const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+
+        const instruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED,
+            payload: {
+                ownerId: '0',
+                objectId: 'mwobj-left-moving-cat',
+                fromZoneId: ARENA_ZONE_IDS.C2,
+                toZoneId: ARENA_ZONE_IDS.B2,
+                movementMode: 'normal',
+            },
+            timestamp: 10,
+        }), core);
+
+        expect(instruction).toMatchObject({
+            cue: MW_FX.MOVE,
+            ctx: {
+                cell: getArenaCell(core, ARENA_ZONE_IDS.B2),
+                intensity: 'normal',
+            },
+            params: {
+                source: getArenaCell(core, ARENA_ZONE_IDS.C2),
+                ownerId: '0',
+                objectId: 'mwobj-left-moving-cat',
+                targetObjectId: 'mwobj-left-moving-cat',
+                fromZoneId: ARENA_ZONE_IDS.C2,
+                toZoneId: ARENA_ZONE_IDS.B2,
+                movementMode: 'normal',
+            },
+        });
+        expect((instruction?.params?.source as { row: number }).row).toBe(instruction?.ctx.cell?.row);
+        expect((instruction?.params?.source as { col: number }).col).toBeGreaterThan(instruction?.ctx.cell?.col ?? Number.POSITIVE_INFINITY);
+    });
+
     it('maps healing roll events to a visible healing impact cue at the healed object', () => {
         const objectId = 'mwobj-0-wounded-cat';
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);

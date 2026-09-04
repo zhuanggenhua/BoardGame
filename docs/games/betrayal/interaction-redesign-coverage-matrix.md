@@ -4,6 +4,7 @@
 > 当前状态：design draft。全量规则逐条账本见 `docs/games/betrayal/full-rule-interaction-redesign.md`。
 > 真相源：`src/games/betrayal/rule/山屋惊魂小黑屋第三版规则汉化整理.md`、`docs/games/betrayal/master-spec-view.md`、当前 `src/games/betrayal/*` 实现审计。
 > 2026-07-29 口径修正：本文中历史段落出现的“当前 23 张事件 / 当前 12 张物品 / 当前 23 张运行持有牌”只代表当时的代表链证据，不再是当前整牌库数量口径。当前整牌库 S0 入口以 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md` 和 `evidence/betrayal/full-audit/full-deck-scope-audit.md` 为准：43 事件 / 22 物品 / 9 预兆；当前运行持有牌全集为 34 张。
+> 2026-09-02 测试入口迁移：原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口；新增领域回归必须选择对应 `src/games/betrayal/__tests__/betrayal-*.test.ts` owner 或新建 owner，公共夹具在 `src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`。本文历史段落中的旧命令保留原貌，不再作为新增测试入口。
 
 ## 0. 本轮前提锁定
 

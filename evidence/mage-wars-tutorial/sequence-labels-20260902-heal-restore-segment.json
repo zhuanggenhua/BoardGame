@@ -1,0 +1,40 @@
+{
+  "title": "Mage Wars 教程后半截图（23-29：治疗、生命读数、复原术）",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-healing-light-action-dock.png",
+      "label": "治疗入口：阿希拉牧师使用治疗之光",
+      "transition": "起点：前面的移动、墙体和守卫段已收口；现在从阿希拉牧师的行动条进入治疗段。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-healing-target-highlight.png",
+      "label": "治疗目标：受伤野性山猫高亮",
+      "transition": "选择治疗之光后，教程高亮当前可被治疗的受伤生物。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-healing-result-life-readout.png",
+      "label": "治疗结果：伤害降低并显示生命读数",
+      "transition": "点击受伤野性山猫后，治疗结算，画面展示伤害变化和生命读数。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-life-toggle-all-readouts.png",
+      "label": "生命读数：眼睛按钮切换全场常显",
+      "transition": "治疗结果读完后，教程展示左上眼睛按钮如何切换全场生命读数常显。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-restore-action-dock.png",
+      "label": "复原术入口：女祭司法师能力",
+      "transition": "生命读数说明后，流程进入女祭司法师的复原术动作入口。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/28-restore-burn-target-highlight.png",
+      "label": "复原术目标：选择带燃烧标记的阿希拉牧师",
+      "transition": "选择复原术后，教程高亮带燃烧标记的阿希拉牧师作为目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/29-restore-burn-removed.png",
+      "label": "复原术结果：燃烧标记移除",
+      "transition": "点击目标后，复原术结算，燃烧标记从阿希拉牧师身上移除。"
+    }
+  ]
+}

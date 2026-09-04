@@ -1,0 +1,81 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-02T11:45:00.000+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "只打开用户要求的原标注 34 之后后续图，不再打开 34 之前的主线截图",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/post34-segmented-display-sequence.json",
+        "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/00-sequence-index.png"
+      ]
+    },
+    {
+      "requirement": "原标注 35 到 36 的跳变不得伪装成自然端到端承接",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/post34-segmented-display-sequence.json item 3 transition",
+        "docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md",
+        ".spec/knowledge/standards/tutorial-design.md",
+        ".spec/knowledge/standards/e2e-verification.md"
+      ]
+    },
+    {
+      "requirement": "后续图组必须补上真实作祟触发桥接：作祟前预兆压力、预兆房间、狗预兆、4 骰作祟检定、叛徒读本开场、叛徒目标、作祟牌桌回看",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-trigger-bridge/01-作祟前已有三张预兆.jpg",
+        "evidence/betrayal-tutorial/haunt-trigger-bridge/09-作祟后回看叛徒目标.jpg",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts [haunt-bridge]"
+      ]
+    },
+    {
+      "requirement": "英雄代表态、叛徒胜利链、怪物专题必须显式分段，不能连续编号成同一条自然主线",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/post34-segmented-display-sequence.json",
+        "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/00-sequence-index.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/01-labeled-02-确认后回牌桌持有区.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/02-labeled-03-确认后预兆进度条.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/03-labeled-01-作祟前已有三张预兆.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/04-labeled-02-选择将翻出预兆的房间.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/05-labeled-03-预兆房间朝向选择.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/06-labeled-04-确认放置后将翻预兆.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/07-labeled-05-狗预兆与作祟检定结果.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/08-labeled-06-确认后自动打开叛徒开场.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/09-labeled-07-继续后阅读叛徒胜利条件.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/10-labeled-08-关闭剧本书后进入作祟牌桌.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/11-labeled-09-作祟后回看叛徒目标.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/12-labeled-01-木乃伊作祟目标改变.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/13-labeled-02-打开木乃伊剧本目标页.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/14-labeled-03-驱逐木乃伊前因果说明.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/15-labeled-04-驱逐木乃伊神志对抗骰盘.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/16-labeled-05-驱逐木乃伊成功后的终局页.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/17-labeled-01-叛徒打开木乃伊剧本目标页.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/18-labeled-02-叛徒拾起女孩前.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/19-labeled-03-女孩交给木乃伊前.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/20-labeled-04-圣符交给木乃伊前.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/21-labeled-05-木乃伊叛徒胜利.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/22-labeled-01-木乃伊怪物回合开始前.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/23-labeled-02-木乃伊移动骰盘.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/24-labeled-03-木乃伊瞬移目标.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/25-labeled-04-木乃伊拾起女孩结果.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/26-labeled-05-木乃伊同房必须先攻击.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/27-labeled-06-木乃伊攻击目标高亮.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/28-labeled-07-木乃伊攻击骰盘.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/29-labeled-08-木乃伊偷取奖励入口.png",
+    "evidence/betrayal-tutorial/_labeled-post34-segmented-20260902-v2/30-labeled-09-木乃伊偷走地图结果.png"
+  ]
+}

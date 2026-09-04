@@ -1,0 +1,52 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "同格单位不用重叠；每个格子先按左右 owner lane 区分双方，同阵营在自己的 lane 内上下排列。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：packed 压力态 owner lane 使用普通 grid 排列，不使用 absolute、transform 或负 margin 压叠。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言 A2 格子存在左右两个 owner lane，laneGroup 为 horizontal，lane 内 stackAxis 为 vertical。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-six-per-side-lane-wrap.png：当前代码真实入口截图显示双方实体位于同一格内，并按左右阵营分区。"
+      ]
+    },
+    {
+      "requirement": "一列最多三个，超过自动换列；双方各六个单位时，每边显示为 2 列 × 3 行。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：packed owner lane 使用 grid-rows-3 / grid-flow-col，并标记 data-lane-max-rows=3、data-lane-overflow-mode=wrap-columns。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言每个 owner lane 有 6 个 lane item、自动分成 2 列、每列不超过 3 个。",
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts \"真实入口加载正式牌桌素材并落桌面验收截图\"：2026-09-02 复跑通过，1 passed。"
+      ]
+    },
+    {
+      "requirement": "单位不能被压扁、不能被动作按钮或浮层遮挡；截图必须是无选中态压力图。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：截图前断言 mage-wars-selected-ability-action-dock 和 mage-wars-selected-unit-guard 都不存在。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言场上单位牌宽度在 60-72px、高度在 84-100px、宽高比在 0.70-0.72，防止压扁。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-six-per-side-lane-wrap.png：AI 自审确认无动作栏遮挡、无重叠、卡牌比例正常。"
+      ]
+    },
+    {
+      "requirement": "通用规范同步：这类多实体布局以后不能用只露角、重叠、压缩或单列滚动吞掉第 4+ 个单位来冒充通过。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-ux.md：补充同一 lane 可见预算允许多列时，优先定义每列容量并显式换列。",
+        ".spec/knowledge/standards/ui-change-gates.md：补充基线定义每列容量时，E2E 必须断言列数、每列数量、同列 / 跨列不重叠和无操作浮层遮挡。",
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md 与 docs/games/mage-wars/design/reference/user-correction-traceability-ledger.md：同步 Mage Wars 桌面基线为每列最多 3 个，双方各 6 个时每边 2 列 × 3 行。",
+        "npm run spec:lint：2026-09-02 复跑通过，spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-six-per-side-lane-wrap.png"
+  ]
+}

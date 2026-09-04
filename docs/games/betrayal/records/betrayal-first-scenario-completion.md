@@ -2,7 +2,7 @@
 
 > 对象：第一剧本 `赤红杰克归来（Crimson Jack Returns）`
 > 目的：把“已经真实跑通到哪”和“还没被真实证据证明到哪”分开，避免把局部通过误说成整剧本已完整完成。
-> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`src/games/betrayal/__tests__/Board.foundation.test.tsx`、`src/games/betrayal/__tests__/tutorial.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/first-scenario-core-interactions.e2e.ts`、`e2e/betrayal/first-scenario-jack-spirit-movement-roll.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/山屋惊魂-首剧本核心交互/`、`evidence/betrayal-first-scenario-jack-spirit-movement-roll/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
+> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/betrayal-crimson-jack-haunt-and-endgame.test.ts`、`src/games/betrayal/__tests__/betrayal-combat-weapons-and-items.test.ts`、`src/games/betrayal/__tests__/betrayal-jack-spirit-and-feverish-monsters.test.ts`、`src/games/betrayal/__tests__/betrayal-jack-revival-corpse-loot-and-haunt-risk.test.ts`、`src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`、`src/games/betrayal/__tests__/Board.foundation.test.tsx`、`src/games/betrayal/__tests__/tutorial.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/first-scenario-core-interactions.e2e.ts`、`e2e/betrayal/first-scenario-jack-spirit-movement-roll.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/山屋惊魂-首剧本核心交互/`、`evidence/betrayal-first-scenario-jack-spirit-movement-roll/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
 
 ## 当前结论
 
@@ -147,7 +147,8 @@
 ### 8. 杰克之灵（Jack's Spirit）死叛徒回合 Speed 3 移动骰
 
 - 证据：
-  - `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`
+  - `src/games/betrayal/__tests__/betrayal-jack-spirit-and-feverish-monsters.test.ts`
+  - `src/games/betrayal/__tests__/betrayal-jack-revival-corpse-loot-and-haunt-risk.test.ts`
   - `e2e/betrayal/first-scenario-jack-spirit-movement-roll.e2e.ts`
   - `evidence/betrayal-first-scenario-jack-spirit-movement-roll/`
 - 已证明：
@@ -160,7 +161,7 @@
 
 ### 1. Haunt 触发与第一剧本起跑
 
-- 证据：`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`
+- 证据：`src/games/betrayal/__tests__/betrayal-crimson-jack-haunt-and-endgame.test.ts`、`src/games/betrayal/__tests__/betrayal-haunt-risk-and-dynamic-exploration.test.ts`
 - 已证明：
   - 第三次恶兆且 `haunt roll` 达标后进入真实 `haunt`；
   - 最后一张恶兆会自动触发 `haunt`；

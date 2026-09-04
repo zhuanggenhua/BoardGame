@@ -1,0 +1,40 @@
+{
+  "title": "Mage Wars 教程下一段截图（16-22：移动、墙体、守卫）",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wolf-moved-to-a2.png",
+      "label": "生物行动：丛林灰狼移动到 A2",
+      "transition": "起点：承接先手快速施法让过后，玩家进入生物行动并完成移动。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wall-prepared.png",
+      "label": "墙体续段起点：准备区选择荆棘之墙",
+      "transition": "移动教学收口后进入墙体续段，玩家从准备区选择墙体法术。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-wall-edge-target-highlight.png",
+      "label": "墙体目标：合法边界高亮",
+      "transition": "选择荆棘之墙后，画面高亮两格之间的合法墙体边界，不是整格目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-wall-card-on-edge.png",
+      "label": "墙体结果：墙牌落在边界上",
+      "transition": "点击边界后，荆棘之墙结算，源墙牌显示在对应边界上。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-wall-line-of-sight-and-passage.png",
+      "label": "墙体读法：视线阻挡与通行伤害",
+      "transition": "墙体落位后，教程说明该边界如何影响视线和穿越时机。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-guard-action-dock.png",
+      "label": "守卫动作：行动条只显示规则短名“守卫”",
+      "transition": "进入守卫续段后，玩家点击阿希拉牧师，屏幕中下行动条出现“守卫”按钮。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-guard-token-result.png",
+      "label": "守卫结果：守卫标记出现在单位下方",
+      "transition": "点击守卫后，动作结算完成，守卫标记作为结果状态显示在单位牌面正下方。"
+    }
+  ]
+}

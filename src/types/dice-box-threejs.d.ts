@@ -251,3 +251,55 @@ declare module '@3d-dice/dice-box-threejs' {
         swapDiceFace(die: DiceBoxDie, value: number): void;
     }
 }
+
+declare module '@3d-dice/dice-box-threejs/node_modules/three/build/three.module.js' {
+    export type ColorRepresentation = number | string;
+
+    export const BackSide: number;
+    export const LinearFilter: number;
+    export const LinearMipmapLinearFilter: number;
+    export const SRGBColorSpace: string;
+
+    export class Color {
+        constructor(value?: ColorRepresentation);
+        set(value: ColorRepresentation): this;
+    }
+
+    export class Vector3 {
+        constructor(x?: number, y?: number, z?: number);
+        x: number;
+        y: number;
+        z: number;
+        add(value: Vector3): this;
+        sub(value: Vector3): this;
+        lengthSq(): number;
+        normalize(): this;
+        project(camera: unknown): this;
+        unproject(camera: unknown): this;
+    }
+
+    export class ShaderMaterial {
+        constructor(parameters?: {
+            name?: string;
+            uniforms?: Record<string, { value: unknown }>;
+            vertexShader?: string;
+            fragmentShader?: string;
+            side?: number;
+            transparent?: boolean;
+            depthTest?: boolean;
+            depthWrite?: boolean;
+            toneMapped?: boolean;
+        });
+        name: string;
+        type: string;
+        uniforms: Record<string, { value: unknown }>;
+        opacity: number;
+        transparent: boolean;
+        side: number;
+        depthTest: boolean;
+        depthWrite: boolean;
+        toneMapped: boolean;
+        needsUpdate: boolean;
+        dispose(): void;
+    }
+}

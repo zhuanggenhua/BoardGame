@@ -2,7 +2,7 @@
 
 本文件只列 AI 修复必须锁住的测试事实。新增测试优先补到现有相关文件，不新建散落模板文件：
 
-- 引擎 watchdog：`src/engine/transport/__tests__/server.test.ts`。
+- 引擎 watchdog：按行为合同选择 `src/engine/transport/__tests__/onlineAiWatchdog*.test.ts`、`src/engine/transport/__tests__/onlineAiImmediateServerAi.test.ts` 或 `src/engine/transport/__tests__/onlineAiUnsatisfiableInteractionRecovery.test.ts`。
 - 游戏基础命令：`src/games/<gameId>/__tests__/basic-commands-coverage.test.ts`。
 - 交互 / 响应窗口：对应游戏现有 prompt / response / interaction 测试。
 - 阶段链路：对应游戏现有 flow / phase / command-chain 测试。

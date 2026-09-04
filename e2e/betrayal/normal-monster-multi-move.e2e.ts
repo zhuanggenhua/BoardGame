@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { BetrayalCore } from '../../src/games/betrayal/game';
 import {
     resolveBetrayalMonsterMoveTargetRooms,
     resolveBetrayalMonsterMovementGroups,
-    type BetrayalCore,
     type BetrayalMonsterMovementRollGroupResult,
-} from '../../src/games/betrayal/game';
+} from '../../src/games/betrayal/monsterActionReadModel';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,

@@ -15,7 +15,7 @@ import {
 const EVIDENCE_DIR = 'evidence/betrayal-the-dust-dog-trade-sickness-split';
 const INITIAL_SCREENSHOT = `${EVIDENCE_DIR}/01-灰尘交易入口默认交换疾病.jpg`;
 const CARD_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-选中狗交易持有物.jpg`;
-const TARGET_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-狗交易目标选中后按钮变为提出交易.jpg`;
+const TARGET_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-狗交易目标选中后按钮变为确认交易方案.jpg`;
 const REQUEST_SENT_SCREENSHOT = `${EVIDENCE_DIR}/04-狗交易请求等待同意且未进入疾病交换.jpg`;
 const SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/05-狗交易同意后结算且未生成疾病交换.jpg`;
 const TEST_URL = '/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&seed=the-dust-dog-trade-sickness-split';
@@ -107,8 +107,8 @@ test('灰尘态下选中狗交易目标后不会被交换疾病入口抢走', as
 
     await page.getByTestId('betrayal-dog-trade-card-medical-kit').click();
     await expect(page.getByTestId('betrayal-dog-trade-card-medical-kit-selected-outline'), '急救包被选作狗交易给出物时必须有选中外框').toBeVisible();
-    await expect(page.getByTestId('betrayal-action-trade'), '只选中狗交易牌但未选远距目标时不能直接提出交易').toContainText('交易');
-    await expect(page.getByTestId('betrayal-action-trade'), '只选中狗交易牌但未选远距目标时不能提前进入提出交易态').not.toContainText('提出交易');
+    await expect(page.getByTestId('betrayal-action-trade'), '只选中狗交易牌但未选远距目标时不能直接确认交易方案').toContainText('交易');
+    await expect(page.getByTestId('betrayal-action-trade'), '只选中狗交易牌但未选远距目标时不能提前进入确认交易方案态').not.toContainText('提交方案');
     await expect.poll(() => readDustDogTradeSplitState(page)).toMatchObject({
         pendingTradeAgreement: null,
         pendingSicknessExchange: null,
@@ -119,13 +119,13 @@ test('灰尘态下选中狗交易目标后不会被交换疾病入口抢走', as
     await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0'), '狗交易目标必须从地图上的远距队友 token 本体选择').toBeVisible();
     await expect(page.getByTestId('betrayal-room-occupant-target-outline-upper-landing-0'), '狗交易目标高亮必须贴合远距队友 token').toHaveAttribute('data-highlight-shape', 'pentagon');
     await page.getByTestId('betrayal-room-occupant-upper-landing-0').click();
-    await expect(page.getByTestId('betrayal-action-trade'), '狗交易牌和远距目标都已选中后，底部按钮必须切为提出交易').toContainText('提出交易');
+    await expect(page.getByTestId('betrayal-action-trade'), '狗交易牌和远距目标都已选中后，底部按钮必须切为确认交易方案').toContainText('提交方案');
     await expect(page.getByTestId('betrayal-action-trade')).toBeEnabled();
     await saveScreenshot(page, TARGET_SELECTED_SCREENSHOT);
 
     await page.getByTestId('betrayal-action-trade').click();
     await expect.poll(() => readDustDogTradeSplitState(page), {
-        message: '点击提出交易后必须生成狗交易请求，而不是进入疾病交换等待态',
+        message: '点击提交交易方案后必须生成狗交易请求，而不是进入疾病交换等待态',
         timeout: 10000,
     }).toMatchObject({
         activePlayerId: '0',

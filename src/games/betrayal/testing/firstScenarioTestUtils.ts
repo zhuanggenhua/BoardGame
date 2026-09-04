@@ -4,14 +4,16 @@ import {
   BetrayalDomain,
   EXPLORER_CATALOG,
   createBetrayalMonsterFromDefinition,
-  resolveBetrayalMonsterMovementGroups,
-  resolveBetrayalMonsterMoveTargetRooms,
   type BetrayalCommand,
   type BetrayalCommandMap,
   type BetrayalCore,
-  type BetrayalMonsterMovementRollGroupResult,
   type BetrayalTraitKey,
 } from "../game";
+import {
+  resolveBetrayalMonsterMoveTargetRooms,
+  resolveBetrayalMonsterMovementGroups,
+  type BetrayalMonsterMovementRollGroupResult,
+} from "../monsterActionReadModel";
 import {
   BETRAYAL_DISCOVERY_POOLS,
   resolveBetrayalRoomDiscoverySymbol,
@@ -619,11 +621,176 @@ export function createSafeOmenPendingResolutionTutorialCore(): BetrayalCore {
   if (!pendingResolution || pendingResolution.playerId !== "0") {
     throw new Error("山屋教程预兆确认夹具必须由触发玩家确认");
   }
-  core.pendingCardResolutionQueue = [{
-    ...pendingResolution,
-    requiredPlayerIds: ["0"],
-    acknowledgedPlayerIds: [],
-  }];
+  if (pendingResolution.requiredPlayerIds.length !== 1 || pendingResolution.requiredPlayerIds[0] !== "0") {
+    throw new Error("山屋教程预兆确认夹具必须使用真实触发玩家单人确认");
+  }
+  if (pendingResolution.acknowledgedPlayerIds.length !== 0) {
+    throw new Error("山屋教程预兆确认夹具不能提前确认");
+  }
+
+  return core;
+}
+
+function pickNaturalHauntTriggerOmenOrder(): BetrayalCore["possessionOrderByKind"]["omen"] {
+  const orderedOmenIds = ["ring", "dog", "mask"];
+  const orderedOmens = orderedOmenIds.map((id) => {
+    const omen = BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((candidate) => candidate.id === id);
+    if (!omen) {
+      throw new Error(`山屋教程自然作祟流程缺少预兆牌：${id}`);
+    }
+    return { ...omen };
+  });
+  const orderedOmenIdSet = new Set(orderedOmenIds);
+  return [
+    ...orderedOmens,
+    ...BETRAYAL_DISCOVERY_POOLS.possessions.omen
+      .filter((omen) => !orderedOmenIdSet.has(omen.id))
+      .map((omen) => ({ ...omen })),
+  ];
+}
+
+export function createNaturalHauntTriggerTutorialCore(): BetrayalCore {
+  const core = applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(["0", "1", "2"]));
+  core.drawOrder = ["omen"];
+  core.possessionOrderByKind.omen = pickNaturalHauntTriggerOmenOrder();
+  core.deckCounts.omen = core.possessionOrderByKind.omen.length;
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "observatory") },
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "conservatory") },
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "graveyard") },
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "ballroom") },
+  ]);
+  setFixtureDiscoveredRoomVisual(core, "upper-west", "upper", "library");
+  core.currentExplorer.roomId = "upper-west";
+  core.activeRoomId = "upper-west";
+  core.usedCardIdsThisTurn = [];
+  core.recommendedAction = "endTurn";
+
+  if (core.phase !== "preHaunt" || core.scenarioRuntime.hauntTriggered) {
+    throw new Error("山屋教程自然作祟流程必须从作祟前开始");
+  }
+  if (core.latestDiscovery) {
+    throw new Error("山屋教程自然作祟流程不能提前翻出预兆牌");
+  }
+  if (core.pendingCardResolutionQueue.length !== 0) {
+    throw new Error("山屋教程自然作祟流程不能提前存在预兆确认");
+  }
+  const startingOmenCount = [core.currentExplorer, ...core.otherExplorers]
+    .flatMap((explorer) => explorer.inventory)
+    .filter((card) => card.kind === "omen").length;
+  if (startingOmenCount !== 0) {
+    throw new Error("山屋教程自然作祟流程不能直接发放预兆牌");
+  }
+
+  return core;
+}
+
+export function createNaturalHauntTriggerPendingResolutionTutorialCore(): BetrayalCore {
+  let core = createNaturalHauntTriggerTutorialCore();
+  const hauntTriggerRandom = createBetrayalScriptedRandom(1, 3, 3, 3, 3, 3);
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.END_TURN,
+    "0",
+    {},
+    100,
+    hauntTriggerRandom,
+    false,
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.EXPLORE_ROOM,
+    "1",
+    { roomId: "ground-east" },
+    101,
+    hauntTriggerRandom,
+    false,
+  );
+  core = acknowledgePendingCardResolution(core, "1");
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.END_TURN,
+    "1",
+    {},
+    102,
+    hauntTriggerRandom,
+    false,
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+    "2",
+    { roomId: "ground-east" },
+    103,
+    hauntTriggerRandom,
+    false,
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.EXPLORE_ROOM,
+    "2",
+    { roomId: "frontier-ground-east-east" },
+    104,
+    hauntTriggerRandom,
+    false,
+  );
+  core = acknowledgePendingCardResolution(core, "2");
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.END_TURN,
+    "2",
+    {},
+    105,
+    hauntTriggerRandom,
+    false,
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.END_TURN,
+    "0",
+    {},
+    106,
+    hauntTriggerRandom,
+    false,
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.EXPLORE_ROOM,
+    "1",
+    { roomId: "frontier-ground-east-south" },
+    107,
+    hauntTriggerRandom,
+    false,
+  );
+
+  if (core.phase !== "haunt" || !core.scenarioRuntime.hauntTriggered) {
+    throw new Error("山屋教程自然作祟流程未进入作祟");
+  }
+  if (core.latestDiscovery?.kind !== "omen" || core.latestDiscovery.title !== "面具") {
+    throw new Error("山屋教程自然作祟流程必须由队友翻出第三张面具预兆");
+  }
+  if (core.recentRoll?.kind !== "hauntRoll") {
+    throw new Error("山屋教程自然作祟流程必须保留作祟检定骰面");
+  }
+  if (core.recentRoll.dice.length !== 3) {
+    throw new Error("山屋教程自然作祟流程必须由第三张自然预兆掷 3 颗骰触发");
+  }
+  if (core.scenarioRuntime.traitorPlayerId !== "1") {
+    throw new Error("山屋教程自然作祟流程必须让触发作祟的队友成为叛徒");
+  }
+  if (core.pendingCardResolutionQueue.length !== 1) {
+    throw new Error("山屋教程自然作祟流程必须只保留一次同屏确认");
+  }
+  const [pendingResolution] = core.pendingCardResolutionQueue;
+  if (!pendingResolution || pendingResolution.playerId !== "1") {
+    throw new Error("山屋教程自然作祟流程必须由触发玩家确认");
+  }
+  if (pendingResolution.requiredPlayerIds.length !== 1 || pendingResolution.requiredPlayerIds[0] !== "1") {
+    throw new Error("山屋教程自然作祟流程必须使用真实触发玩家单人确认");
+  }
+  if (pendingResolution.acknowledgedPlayerIds.length !== 0) {
+    throw new Error("山屋教程自然作祟流程不能提前确认");
+  }
 
   return core;
 }

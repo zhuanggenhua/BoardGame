@@ -1,0 +1,85 @@
+{
+  "title": "Mage Wars 教程前半截图（00-15）",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+      "label": "开场：胜利条件与基础牌桌",
+      "transition": "起点：进入 Mage Wars 教程，先读胜利条件、法师状态和牌桌主区域。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+      "label": "己方法师面板：生命、法力、聚魔",
+      "transition": "从开场继续读己方 HUD，确认基础资源和行动标记在哪里。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+      "label": "聚魔结果：法力增加",
+      "transition": "系统结算准备阶段后，法力按聚魔值增加，教程进入计划前读数。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+      "label": "计划法术：已放入第一个计划槽",
+      "transition": "玩家从法术书选择第一张法术，草稿直接显示在计划槽位里。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+      "label": "计划确认：两个计划槽均有来源牌",
+      "transition": "第二张计划法术进入槽位后，确认按钮显示 2/2 可提交。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-prepared-and-hidden.png",
+      "label": "双方计划后：己方可见、对手仍隐藏",
+      "transition": "确认计划后，己方准备区显示牌面，对手计划仍以卡背表示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-summon-target-zone-highlight.png",
+      "label": "召唤目标：选择丛林灰狼落点",
+      "transition": "从准备区选择丛林灰狼后，棋盘高亮合法召唤区域。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-wolf-summoned-not-ready.png",
+      "label": "召唤结果：丛林灰狼进场未就绪",
+      "transition": "点击合法区域后，灰狼出现在兽王所在区域，行动标记仍未就绪。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+      "label": "兽性觉醒：选择刚召唤的灰狼",
+      "transition": "从准备区选择兽性觉醒后，教程让玩家点击场上的丛林灰狼。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png",
+      "label": "觉醒结果：灰狼行动标记就绪",
+      "transition": "兽性觉醒结算后，灰狼可行动，玩家结束本次部署窗口。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-opponent-deploy-prompt.png",
+      "label": "对手部署：等待对手正式流程推进",
+      "transition": "玩家结束部署后，对手通过正式对局流程施放法术。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-public-view-toggle-highlight.png",
+      "label": "对手公开视角入口：点击对手 HUD 眼睛",
+      "transition": "对手结算公开法术后，教程高亮对手面板左上角眼睛入口。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-public-view-same-discard-pile.png",
+      "label": "对手公开弃牌：同一个弃牌槽切到对手",
+      "transition": "点击眼睛后，同一个弃牌区显示对手公开弃牌，不新增平行弃牌 UI。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-back-to-self-view.png",
+      "label": "返回自己视角：上方居中返回按钮",
+      "transition": "读完对手弃牌后，页面上方居中显示返回自己视角按钮。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-opponent-pass-deployment.png",
+      "label": "返回后推进：对手完成部署",
+      "transition": "点击返回自己视角后，弃牌槽恢复己方 owner，正式流程进入快速施法前置。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-skip-initiative-quickcast.png",
+      "label": "先手快速施法：玩家选择让过窗口",
+      "transition": "对手部署完成后，轮到玩家决定是否使用先手快速施法窗口。"
+    }
+  ]
+}

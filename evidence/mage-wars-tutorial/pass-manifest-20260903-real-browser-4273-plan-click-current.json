@@ -1,0 +1,61 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "最终证据必须来自用户指定的 http://127.0.0.1:4273/ 真实入口，不能换成测试端口或旧截图。",
+      "status": "PASS",
+      "evidence": [
+        "node temp/mage-wars-4273-real-browser-plan-click.mjs 直接连接 http://127.0.0.1:4273/play/mage-wars/tutorial?realBrowserPlanClick=1，没有自启临时 Vite 端口。",
+        "real-browser-4273-plan-click-report.json 记录 route=http://127.0.0.1:4273/play/mage-wars/tutorial?realBrowserPlanClick=1，browserVersion=152.0.7977.75。"
+      ]
+    },
+    {
+      "requirement": "桌面窄宽压力态按 1920×1080 同构比例缩放，法术书核心承载量保持 6 张，不靠减少卡牌数量适配。",
+      "status": "PASS",
+      "evidence": [
+        "real-browser-4273-plan-click-report.json 记录真实浏览器 viewport=1463×724、devicePixelRatio=1.75、visibleCardCount=6、uiScale=0.670370。",
+        "src/games/mage-wars/Board.tsx 将桌面 UI 放入 1920×1080 同源视觉比例面，并固定 MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT=6。"
+      ]
+    },
+    {
+      "requirement": "截图前可见卡牌必须是真实牌面，不能是灰色 shimmer / 空白壳层。",
+      "status": "PASS",
+      "evidence": [
+        "temp/mage-wars-4273-real-browser-plan-click.mjs 的截图函数在每次 page.screenshot 前检查 [data-card-atlas-frame=true] 和 .atlas-shimmer。",
+        "同一脚本对可见图集牌面执行图片加载和像素差异审计；未加载、灰壳或低差异时会失败，本次命令输出 status=PASS。"
+      ]
+    },
+    {
+      "requirement": "点击卡牌放大镜只打开放大层，不能改变计划草稿；点击卡牌本体必须真实进入计划槽，不能误触放大。",
+      "status": "PASS",
+      "evidence": [
+        "real-browser-4273-plan-click-report.json 记录 inspectIconOnlyOpensMagnify.status=PASS，draftsBeforeInspect=[] 且 draftsAfterInspect=[]，magnifyContentCardId=2819。",
+        "real-browser-4273-plan-click-report.json 记录 cardBodyClickPlansInsteadOfMagnifying.status=PASS，卡牌本体中心命中 mage-wars-desktop-spellbook-card，draftsAfterWolf=[sourceCardId 2819, planSlotIndex 1]。"
+      ]
+    },
+    {
+      "requirement": "计划槽和确认计划按钮不能被教程卡、HUD、法术书溢出或透明层挡住。",
+      "status": "PASS",
+      "evidence": [
+        "real-browser-4273-plan-click-report.json 记录 planAreaUnblocked.status=PASS。",
+        "同一报告记录确认计划按钮和计划槽位中心 elementFromPoint 命中自身，overlappingCards=[]。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click/02-4273-card-body-click-plan-1of2.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click/00-4273-before-card-click.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click/01-4273-inspect-icon-opens-only.png",
+    "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click/02-4273-card-body-click-plan-1of2.png"
+  ],
+  "report": "test-results/evidence-screenshots/mage-wars/real-browser-4273-plan-click/real-browser-4273-plan-click-report.json"
+}

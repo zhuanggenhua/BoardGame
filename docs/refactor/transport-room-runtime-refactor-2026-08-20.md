@@ -21,7 +21,7 @@
 - `src/engine/transport/server.ts` 本轮开始约 5611 行，当前约 1807 行。
 - socket route、连接 / 断线生命周期、房间注册表 / load 构造、卸载编排、命令失败收口、stale 拒绝、成功命令收口、batch 收口、setup 状态构造和测试 / 管理状态注入已迁出。
 - `server.ts` 仍保留广播 / gameover 外部 adapter、健康检查 / 启停和部分命令入口组装；不能宣称重构完成。
-- `src/engine/transport/__tests__/server.test.ts` 仍是集中测试文件，约 30682 行；测试侧还需要继续拆合同。
+- 原集中测试文件 `src/engine/transport/__tests__/server.test.ts` 已退出正式入口；传输同步、命令权限、反馈训练和在线 AI watchdog 合同已按 owner 拆到 `src/engine/transport/__tests__/server-*.test.ts` 与 `src/engine/transport/__tests__/onlineAi*.test.ts`。
 - 具体游戏的大模块问题只登记为后续候选，不并入本轮 transport runtime 重构。
 
 ## 目标形态
@@ -88,7 +88,7 @@ TrainingDataCapture
 ## 下一批切口
 
 1. 继续瘦 `server.ts`：广播 / gameover 外部 adapter、健康检查 / 启停、剩余命令入口组装。
-2. 继续拆 `server.test.ts`：把私有方法式断言迁到模块合同测试。
+2. 继续按 owner 瘦 transport 相关测试：把仍穿透私有方法的断言迁到对应模块合同测试。
 3. 房间运行时边界完成后，再评估单游戏大模块；不要把游戏专项重构混进 transport 主线。
 
 ## 禁止路线
@@ -103,7 +103,7 @@ TrainingDataCapture
 
 | 风险 | 验证 |
 | --- | --- |
-| 权威命令 / batch / queue | 模块直测 + `server.test.ts` 代表命令链 |
+| 权威命令 / batch / queue | 模块直测 + `server-command-authority.test.ts` 代表命令链 |
 | 房间 lifecycle | registry / connection / unload 模块直测 + server 定向 |
 | 在线 AI recovery | recovery 模块直测 + server 定向 + 代表真实 E2E |
 | 反馈 / 训练数据 | reporter / diagnostics / capture 模块直测 |
@@ -112,7 +112,7 @@ TrainingDataCapture
 最新有效摘要：
 
 - transport 模块测试 suite 已通过。
-- `server.test.ts` 定向与完整代表集已通过。
+- transport server 拆分后的定向代表集已通过。
 - 代表在线 AI 真实 E2E 已通过。
 - 定向 `eslint` 已通过。
 - `tsconfig.server.json` 的 `tsc --noEmit` 仍命中既有历史类型错误，当前不作为本轮完成门禁。

@@ -1085,8 +1085,8 @@ describe('小黑屋本地 AI', () => {
         const nextState = applyAiResolution(state, resolution);
         expect(nextState.core.pendingTradeAgreement).toBeNull();
         expect(nextState.core.activePlayerId).toBeNull();
-        expect(nextState.core.currentExplorer.inventory.map((card) => card.id)).toEqual(['omen-book']);
-        expect(nextState.core.otherExplorers.find((explorer) => explorer.playerId === '1')?.inventory.map((card) => card.id)).toEqual(['rope']);
+        expect(nextState.core.currentExplorer.inventory.map((card) => card.id)).toEqual(['medical-kit', 'omen-book']);
+        expect(nextState.core.otherExplorers.find((explorer) => explorer.playerId === '1')?.inventory.map((card) => card.id)).toEqual(['map', 'skull', 'rope']);
     });
 
     test('AI 会选择尸体上的具体持有物并完成搜刮', async () => {

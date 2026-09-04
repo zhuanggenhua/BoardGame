@@ -53,15 +53,16 @@
 | 开放式设计 / 场地直选优先 | 用代理面板、问号块、目标摘要替代真实对象 | `ui-design-pipeline` 开放式直选裁决；`ui-change-gates.md` 0.0 / 0.0D | 合法目标在棋盘格 / 场上卡 / token 本体高亮，代理 UI 仅在有规则理由时出现 | covered |
 | 玩家提示挂角色头像，不挂场地 | 把“选择目标 / 行动中”做成卡在地图顶部或中央的提示条，会让玩家误以为竞技场本体是提示载体 | `mage-wars-ui-design-memory` 用户原话反思表；`ui-design-pipeline` 开放式直选裁决 | 当前玩家提示在法师头像 / 角色 HUD；竞技场只承接区域语义、来源 / 合法目标高亮、骰子、token 和结果反馈 | covered |
 | 法师提示卡和代表法师本人的卡不是一个东西 | 把 HUD 提示卡、竞技场法师实体和详情层混用，会导致提示挂错层、战场实体职责被 UI 壳替代，且 E2E 用含混命名把错误固化 | `mage-wars-ui-design-memory` 法师对象职责与 v80 基线裁定；TTS / atlas 证据：`mages-core-atlas.json` 中 `2600/2605/2606/2603` 是密集文字法师规则 / 提示卡，`2601/2604/2607/2602` 是人物 / 肖像 frame | 规则对象覆盖矩阵必须拆 `法师战场实体 / 法师本体`、`玩家 / 法师规则提示卡`、`法师规则 / 提示卡详情` 三行；当前 v80 基线采用“竞技场人物本体 + 玩家 HUD 规则提示卡”。未来改布局时，只验是否继续拆清职责并避免图面混淆，不把 v80 坐标当全局硬规。 | current-baseline-v80 |
-| 召唤师本身也是单位，必须和同格单位放一起 | 法师虽有 `mageZoneId` 却被单独渲染到另一层，导致同格时不进入双方单位的归属带和容量预算 | `design-system/game-ui/MASTER.md` 4.14；`mage-wars-ui-design-memory` 1.6 | 压力态把双方各一名法师和五个生物放入同格；棋盘只渲染一组稳定归属带，当前桌面基线为上下分区，法师和同方单位共享同一尺寸预算，不在其它格子留副本 | covered-by-runtime-e2e |
+| 召唤师本身也是单位，必须和同格单位放一起 | 法师虽有 `mageZoneId` 却被单独渲染到另一层，导致同格时不进入双方单位的归属带和容量预算 | `design-system/game-ui/MASTER.md` 4.14；`mage-wars-ui-design-memory` 1.6 | 压力态把双方各一名法师和五个生物放入同格；棋盘只渲染一组稳定归属带，当前桌面基线为复合轴：先按固定席位左右分 lane，同席位法师和单位在各自 lane 内上下分行排列；每个 owner lane 一列最多 3 个，双方各 6 个时每边 2 列 × 3 行；不得重叠、压扁或先用滚动隐藏 | covered-by-runtime-e2e |
 | 场地里的红框牌密密麻麻写满了字是提示卡 | 把密集文字法师规则 / 提示卡当作场地本体，玩家会以为竞技场里摆的是说明书，不是法师本人 | `mage-wars-ui-design-memory` 1.6；`rule-to-ui-element-list.md` 法师 atlas 与 UI 元素清单 | 截图检查不得只看 role 名，要看图面是否把密集文字提示 / 参考卡误画成竞技场实体；当前 v80 基线用人物可识别素材承载场地本体。 | covered-by-v80 |
 | 规则提示卡和玩家卡图的位置错了，应该交换 | v79 只把场地从密集规则卡改成人物本体，但玩家 HUD 仍是人物卡图；这只修了一半，仍没有执行用户反复强调的当前稿交换方案 | `mage-wars-ui-design-memory` 1.6；`rule-to-ui-element-list.md` v80 基线复核 | 当前 v80 基线：场地格子 = 人物 / 肖像法师本体；玩家 HUD = 密集文字规则提示卡。它是 Mage Wars 当前稿的已定设计，不是下个游戏的固定模板。 | current-baseline-v80 |
 | 地图是最下层，不要躲着地图 | 把底图当不可遮挡矩形，导致牌区拥挤 | `ui-design-pipeline` 层级模型；`ui-change-gates.md` 0.0D | 底图拆成必须保护的规则热区和可覆盖纹理区；牌区可开放 overlay 覆盖低权重石砖 | covered |
 | UI 是分层，不只是分布局 | 只看几何不重叠，玩家视角仍拥挤 | `ui-design-pipeline` 分层先于分区；`ui-audit-loop` 玩家视角审计 | 审计要看背景层、对象层、主交互 overlay、结算 overlay、辅助 HUD，不只看 DOM 几何 | covered |
 | 右下 / 底部空白必须有职责 | 删除 UI 后留下死空，不把空间还给主对象 | `mage-wars-ui-design-memory` 底部空间裁决；`ui-design-pipeline` 空白职责 | 右下和底边若空着，必须承载法术书、已计划、弃牌堆、分页、回合结束或结算预留 | covered |
 | 属性 UI 只改位置不等于允许缩小 | 操作态自动 compact 或误传 compact 会让玩家 HUD / 属性 UI 变成小版，背离用户只授权调整位置的范围 | `ui-change-gates.md` 主信息压缩必须证明收益；`mage-wars-ui-design-memory` 用户原话反思表 | Mage Wars 桌面 Board 中玩家 HUD 默认保持完整尺寸；选中法术、单位、确认计划、目标选择和教程步骤不得触发桌面 compact。E2E / 单测要查 HUD 密度仍为 full。 | covered-by-current-runtime-e2e |
+| 1366×768 不允许靠整体缩小适配 | 为了让底部三块不遮挡，把 1920×1080 桌面 UI 层整体缩到约 0.71，会让 HUD、法术书和计划槽一起变小，玩家看到的是低可读压缩版而不是比例适配 | `ui-responsive-layout.md` 桌面压力态响应式主源；`ui-change-gates.md` 响应式改动不降级主信息；`mage-wars-ui-design-memory` 用户原话反思表 | 1366×768 下桌面 UI 层不整体缩放；HUD 保持 full；法术书仍显示 6 张；计划草稿进入 2 个计划槽；底部只留约 8px 安全空隙；法术书、HUD、计划区和确认按钮不相交且可点击。 | covered-by-current-runtime-e2e |
 | 确认计划已选结果必须直接进计划槽 | 用卡面 `已选` / `选 N` 小标签表达计划草稿，玩家看不到牌最终放到哪个计划槽 | `ui-change-gates.md` 草稿结果进入目标槽位；`mage-wars-ui-design-memory` 用户原话反思表 | 计划阶段点击法术书卡后，右侧两个计划槽位直接显示草稿法术牌；源法术书卡只保留选中描边，不再显示已选角标。教程截图 1/2、2/2 必须覆盖确认前槽位。 | covered-by-current-runtime-e2e |
-| 同格单位上下排列且保持可读尺寸 | 左右 lane / 横向 wrap 会把单位和法师实体挤小，看起来像横着排的小片 | `ui-change-gates.md` 多实体布局要验方向和尺寸；`mage-wars-ui-design-memory` 用户原话反思表 | 同格双方实体当前桌面基线用上下分区；E2E 必须查 lane 轴向和实体尺寸，不能只查 owner 正确或对象存在。 | covered-by-current-runtime-e2e |
+| 同格单位先左右分阵营，同阵营上下分行且保持可读尺寸 | 把用户的“上下排列”误解成双方整体上下分区、横向 wrap、缩小卡片或重叠压叠，都会让单位归属和可读性错误 | `ui-change-gates.md` 多实体布局要验方向和尺寸；`mage-wars-ui-design-memory` 用户原话反思表 | 同格双方实体当前桌面基线用复合轴：owner lane 为左右，同 owner 实体排列轴为上下分行；每列最多 3 个，超过自动换列；E2E 必须查两个轴、列数、每列数量、实体尺寸、同侧和跨列不重叠、无动作浮层遮挡，不能只查 owner 正确或对象存在。 | covered-by-current-runtime-e2e |
 | 分页按钮保持原样，页码不要占大空间 | 改错对象，把按钮样式也改了 | `mage-wars-ui-design-memory` 分页专项裁决 | 按钮样式、方向、位置保持用户认可形态；页码轻量附属于法术书浏览，不撑大栏 | covered |
 | 标签放左侧 | 分类标签挤占底部牌列 / 页码空间 | `mage-wars-ui-design-memory` 法术书裁决；设计 README v66 后裁定 | 分类标签在法术书左侧，不能压缩卡牌可读尺寸 | covered |
 | 骰子、token 不能省略 | 为了干净删掉规则信息 | `mage-wars-ui-design-memory` 用户原话反思；`rule-to-ui-element-list.md` 规则对象矩阵 | 攻击骰、效果骰、燃烧 token、守卫 / 行动 token 在饱和态可见；伤害状态在受伤对象本体上用受伤遮罩 + 贴宿主剩余 / 总生命读数可见，不强制物理伤害 token 图 | covered |
@@ -79,6 +80,9 @@
 | 对手计划放左上形成对称 | 隐藏计划法术挂到错误边栏 | `step1-runtime-board-saturated-ui-design.md` 对手计划镜像；`mage-wars-ui-design-memory` | 对手已计划只显示卡背 / 数量，位于左上，和己方计划槽形成席位镜像 | covered |
 | 弃牌堆放右侧竖向空位，不能小过头 | 归档入口过小、放错位或抢位 | `mage-wars-ui-design-memory` 弃牌裁决；设计 README v73-v75 裁定 | 弃牌堆位于用户标注右侧空位，尺寸低权重但可识别，不压计划 / 回合结束 / 对手状态 | covered |
 | 弃牌堆规则上能看就显示正面 | 公开归档被误画成隐藏信息 | 规则 `page_015.md`；`ui-design-pipeline` 公开归档；`mage-wars-ui-design-memory` | 弃牌堆显示紧凑顶牌正面 / 半露正面 + 数量；点击可展开完整公开弃牌 | covered |
+| 看对方弃牌要切换视角，不是新增对手弃牌 UI | 在己方视角新增 `mw-opponent-discard` / `mage-wars-opponent-discard-pile` 会复制第二套同类 owner UI，玩家看到的是临时面板，不是成熟游戏里的公开视角切换 | `ui-ux.md` 组件来源；`ui-change-gates.md` 视角切换复用原槽位；`tutorial-design.md` 真实视角和 owner；`e2e-verification.md` 视角切换 / 观察他人公开信息；`mage-wars-ui-design-memory` 用户原话反思表 | Mage Wars 教程必须点击对手 HUD 左上眼睛进入对手公开视角；同一个 `mw-discard` 显示对手弃牌并带 owner 断言；返回自己视角后同槽位恢复己方弃牌；代码和 E2E 负向断言旧平行对手弃牌锚点不存在 | covered-by-current-runtime-e2e |
+| 返回自己视角要用大杀四方同类居中视角横幅 | 把返回入口放左上角会把“正在看谁的公开区”降级成局部按钮，而不是成熟游戏里的整页视角状态 | `ui-change-gates.md` 同类视觉先对照成熟样本；`mage-wars-ui-design-memory` 用户原话反思表；Smash Up `opponent_view` 横幅实现 | Mage Wars 对手公开视角横幅必须位于上方居中，按钮组水平居中；E2E 量 `mage-wars-public-view-banner` 外壳和内层按钮组中心，不再允许 `left-16 top-4` 式局部摆放 | covered-by-current-runtime-e2e |
+| 守卫动作按钮不能写成“进行守卫”长解释 | 守卫标记是行动结算后的状态；把动作栏按钮写成“进行守卫”并在教程里再解释“不是技能或目标”，说明按钮和教程没有直接服从规则原文 | `tutorial-design.md` 文案来自规则和当前画面；`ui-change-gates.md` 规则动作不加自造解释；规则书 `page_013.md` / `page_031.md` / `page_045.md` | 动作栏只写规则短名“守卫”；教程引用规则书关于快速行动和守卫标记的原文，UI 独有句只说明点阿希拉牧师和屏幕中下行动条；守卫标记只在结果态显示在单位下方 | covered-by-current-runtime-e2e |
 | 卡背只用于隐藏信息 | 用卡背误导公开内容未知 | 规则 `page_015.md`；隐藏结界 `page_020.md`；设计合同隐藏信息边界 | 卡背只用于对手已计划、未公开法术书、隐性结界；公开弃牌不用卡背 | covered |
 | 避免边框 / 容器感 / 普通蓝圆 | 壳层和粗糙程序化对象抢走游戏主体 | `ui-design-pipeline` 框体职责与 programmatic UI；`ui-ux.md` 开放式主舞台 | 不出现厚边框、封闭大卡片、无语义黑影、普通蓝圆效果骰；自制 UI 必须有材质和来源裁定 | covered |
 | 地图不能套两层，外面不应再有一圈 | 16:9 牌桌壳、4:3 地图视窗和圆角 / 渐变暗带叠加后，玩家会把桌面留白误认成第二张棋盘；只证明 transform 变化仍可能只是框内平移 | `ui-change-gates.md` 地图 / 棋盘视窗可自由查看、开放场景不套比例框；`board-coordinate-contract.md` 完整 4x3 坐标合同；本轮真实入口截图复核 | 地图视窗铺满真实牌桌地图层，正式 4x3 原图作为同一坐标父容器里的大场景；玩家状态、法术书牌列、计划确认区和已计划法术不得留在 16:9 内框或自造摆放范围内，必须按类似 Unity Canvas 的真实视口九宫格锚点对齐；不得再叠加无职责圆角、阴影、左右暗带、上下渐变圈或外层黑带；默认缩放看全 12 区域且不压底部三块可见主对象，放大 / 拖拽后地图覆盖视窗、对象热区贴竞技场，底部三块可见主对象同一基线 | covered-by-current-runtime-audit |
@@ -95,6 +99,8 @@
 | 规则到 UI 再到实现不能只看最后一张图 | 规则对象、交互职责和用户纠正项在实现时被遗漏 | `mage-wars-ui-design-memory` 规则到 UI 到实现执行顺序；`generated-design-implementation.md` | 实现前必须重新锁规则对象、唯一实体锚点、主交互链，并逐条把本账本映射到真实 Board/UI 承载位置 | covered |
 | 设计稿到实现不能漏掉纠正项 | 只按最后一张图的大致布局实现，容易重新漏骰子、token、公开弃牌堆正面、分页样式或规则术语 | `generated-design-implementation`；`.spec/knowledge/standards/generated-design-implementation.md`；`board-layout-contract.md` | 真实 Board/UI 实现前必须逐项消费本账本；实现截图必须回答每个用户纠正项在图面中的承载、是否可读、是否被省略或误改 | covered |
 | 不允许自创未经验证的战棋主交互 | 把单位行动做成全局按钮栏、把结算做成常驻骰盘，脱离正常战棋的单位直选和攻击因果 | `design-system/game-ui/source-families.md` 的“棋盘对象 / 位置直选”“事件驱动主舞台结算”；`design-system/games/mage-wars.md` 的战术单位适配 | 验收图必须同时证明：法师和生物本体可选；合法移动 / 攻击候选只在棋盘；守卫仅在选中单位附近；无常驻动作栏或骰盘；真实攻击事件才短暂出现骰子 | covered-by-runtime-e2e |
+| 点击计划槽也要能去掉计划 | 计划草稿已经进入目标槽位，但旧交互只允许回点法术书原卡取消，玩家会被迫回到原列表找同一张牌 | `ui-ux.md` 可逆选择由结果槽位承接；`ui-change-gates.md` 可逆选择验结果槽位；`mage-wars-ui-design-memory` 用户原话反思表 | 计划阶段点击已计划槽位里的草稿牌本体会删除该槽位草稿；确认按钮进度回退；重新点法术书原卡可恢复；点放大镜只打开检视且不改变计划数量 | covered-by-current-runtime-e2e |
+| 计划教程一步就讲当前一步 | 把分类、翻页、选两张牌、确认计划和后续法术效果塞进一张教程卡，会让文案、高亮、真实点击和截图过渡对不上 | `tutorial-design.md` 单步只承接当前输入或结果；`tutorial-workflow` 文案自检；`mage-wars-ui-design-memory` 用户原话反思表 | 计划段必须按真实动作拆为分类、翻页、选牌、分类、翻页、选牌、确认；每步只有一个高亮 / allowed target；语言包短句不得提前写多个后续点击；E2E 图组保留 1/2 和 2/2 槽位事实 | covered-by-current-runtime-e2e |
 
 ## 当前下一稿 / 实现截图送验前最低勾选
 
@@ -119,10 +125,14 @@
 - [ ] 点名 Hearthstone 或其它成熟组牌参考后，送验前必须附正反对照：参考有而 Mage Wars 没有的逐项说明缺失理由；Mage Wars 有而参考没有的逐项说明保留理由；解释不了的 UI 已删除、折叠或降权。
 - [ ] 法术书 6 张可读，计划牌与法术书同尺寸，分页按钮样式未被误改。
 - [ ] 桌面 HUD / 属性 UI 在计划、选中、目标选择和教程步骤中保持完整尺寸；没有因操作态自动 compact。
+- [ ] 1366×768 桌面压力态没有整层 UI 缩小：HUD 为 full，法术书 6 张、2 个计划槽、确认按钮和底部约 8px 空隙同时可见、不相交、可点击。
 - [ ] 确认计划前，已选法术牌直接进入己方计划槽位；法术书卡面没有 `已选` / `选 N` 小标签或角标替代槽位。
-- [ ] 同格双方单位 / 法师实体按当前桌面基线上下分区，尺寸可读；E2E 同时覆盖轴向和最小尺寸。
+- [ ] 计划槽里的草稿牌本体可点击取消该槽位计划，进度和草稿数组同步回退；重新点击法术书原卡能恢复；槽位放大镜只检视，不改变计划。
+- [ ] 计划教程段每张卡只对应当前真实动作：分类、翻页、选牌、分类、翻页、选牌、确认分别有独立高亮 / allowed target / 截图，文案不提前串多个后续操作或后续法术效果。
+- [ ] 同格双方单位 / 法师实体按当前桌面基线左右分 owner lane；同 owner 单位上下分行、不重叠、尺寸可读；每列最多 3 个、超过自动换列，双方各 6 个时每边 2 列 × 3 行；E2E 同时覆盖两个轴向、列数、每列数量、最小尺寸、非重叠和无动作浮层遮挡。
 - [ ] 对手计划在左上卡背，己方计划在己方槽位，二者席位镜像成立。
 - [ ] 弃牌堆在右侧竖向空位，显示正面半露 + 数量，点击语义是公开检视。
+- [ ] 查看对手公开弃牌通过对手公开视角切换复用同一个弃牌槽；不存在 `mw-opponent-discard` / `mage-wars-opponent-discard-pile` 或平行对手弃牌 UI。
 - [ ] 攻击骰、效果骰、伤害状态 / 伤害数值、燃烧 token、守卫 / 行动 token 未省略；墙体法术结算后边界上显示源墙法术正式牌面 / 墙牌，不退化成泛化墙条；伤害不强制物理 token 图，但必须贴受伤对象本体并以受伤遮罩 + 生命读数可读，不出现通用护盾 / 爱心或右下角圆形数字球。
 - [ ] 设计稿 / 真实 Board/UI 截图是饱和交互态，不是空开局或只证明页面可运行的技术截图。
 - [ ] 当前动作由来源对象和棋盘 / 场上对象本体承接，合法目标高亮，不出现无授权常驻确认。

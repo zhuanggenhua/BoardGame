@@ -2,7 +2,7 @@ import type { BoardBurstPresetName } from '../../../components/common/animations
 import type { ImpactEffects } from '../../../components/common/animations/ImpactContainer';
 import type { SummonColorTheme } from '../../../components/common/animations/SummonEffect';
 
-type MageWarsTravelFxKind = 'attack' | 'push' | 'teleport';
+type MageWarsTravelFxKind = 'attack' | 'push' | 'teleport' | 'move';
 type MageWarsTravelFxTuning = {
     pathPaddingCells: number;
     pathMinSizeCells: number;
@@ -30,6 +30,10 @@ export const MAGE_WARS_FX_TIMING = {
     pushSameCellImpactMs: 80,
     pushTravelCompleteMs: 3_300,
     pushSameCellCompleteMs: 780,
+    moveTravelImpactMs: 900,
+    moveSameCellImpactMs: 80,
+    moveTravelCompleteMs: 1_150,
+    moveSameCellCompleteMs: 420,
     directDamageCompleteMs: 850,
 } as const;
 
@@ -94,6 +98,15 @@ export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTr
         targetBurstOverflow: 2.2,
         targetBurstSizeClassName: 'relative h-28 w-28',
     },
+    move: {
+        pathPaddingCells: 0.8,
+        pathMinSizeCells: 1.25,
+        sourceWakeSizeClassName: 'relative h-12 w-12',
+        sourceWakeOverflow: 1.2,
+        midBurstOverflow: 1.35,
+        sourceWakePreset: 'sparks',
+        midBurstPreset: 'sparks',
+    },
 } as const;
 
 export const MAGE_WARS_DIRECT_DAMAGE_FX_TUNING = {
@@ -118,6 +131,7 @@ export function resolveMageWarsSummonColor(objectKind: unknown): SummonColorThem
 
 export function mageWarsFxColors(kind: MageWarsTravelFxKind, strong = false): string[] {
     if (kind === 'attack') return ['#fff7ed', '#fca5a5', '#ef4444', '#7f1d1d'];
+    if (kind === 'move') return ['#ecfeff', '#a5f3fc', '#22d3ee', '#0e7490'];
     if (kind === 'push') return ['#e0f2fe', '#bae6fd', '#38bdf8', '#0369a1'];
     return strong
         ? ['#fff7ed', '#fde68a', '#f59e0b', '#7c2d12']

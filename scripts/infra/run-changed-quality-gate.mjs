@@ -130,10 +130,10 @@ const DICETHRONE_SYNC_BLOCKER_PATTERNS = [
 ];
 const DICETHRONE_SYNC_BLOCKER_TESTS = [
   {
-    label: 'BLOCKER: DiceThrone sync transport contract',
-    reason: '王权同步/旧状态兼容链路改动，强制回归 state:sync、playerView 与 legacy state 包装合同',
-    target: 'src/engine/transport/__tests__/server.test.ts',
-    testNamePattern: 'dicethrone sync',
+    label: 'BLOCKER: DiceThrone transport state sync contract',
+    reason: '王权同步/旧状态兼容链路改动，强制回归 state:sync 与 playerView 过滤合同',
+    target: 'src/engine/transport/__tests__/server-lifecycle-sync.test.ts',
+    testNamePattern: 'sync 发出的 state:sync',
     vitestArgs: FAST_VITEST_ARGS,
   },
   {

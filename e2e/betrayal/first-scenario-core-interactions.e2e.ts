@@ -156,6 +156,7 @@ async function assertTradeActionBarKeepsButtons(
         boxShadow: style.boxShadow,
         hasVisibleShadow: hasVisibleShadow(style.boxShadow),
         borderWidth: style.borderTopWidth,
+        progressVisible: element.getAttribute("data-trade-progress-visible") ?? "",
         text: element.textContent?.replace(/\s+/g, " ").trim() ?? "",
         rect: {
           left: rect.left,
@@ -181,7 +182,10 @@ async function assertTradeActionBarKeepsButtons(
     const buttonsStayInRoomPanelLayer = actionButtons.every((button) =>
       Boolean(button.closest('[data-testid="betrayal-room-panel"]')),
     );
-    const actionButtonStyles = actionButtons.map((button) => {
+    const actionButtonStyles = actionButtons
+      .filter((button) => !button.closest('[data-testid="betrayal-trade-flow-banner"]'))
+      .filter((button) => !button.closest('[data-testid="betrayal-trade-action-panel"]'))
+      .map((button) => {
       const style = window.getComputedStyle(button);
       return {
         id: button.getAttribute("data-testid") ?? "",
@@ -196,16 +200,20 @@ async function assertTradeActionBarKeepsButtons(
 
     return {
       tradeButton: styleOf('[data-testid="betrayal-action-trade"]'),
+      ordinaryTradeButton: styleOf(
+        '[data-testid="betrayal-action-trade"]:not([data-trade-confirm-placement="bottom-action-panel"])',
+      ),
       flowBanner: styleOf('[data-testid="betrayal-trade-flow-banner"]'),
       flowBannerExists: Boolean(
         document.querySelector('[data-testid="betrayal-trade-flow-banner"]'),
       ),
-      itemStepExists: Boolean(
-        document.querySelector('[data-testid="betrayal-trade-flow-item-step"]'),
+      bannerStatusText: document.querySelector('[data-testid="betrayal-trade-banner-status"]')?.textContent?.replace(/\s+/g, " ").trim() ?? "",
+      itemStepInsideBanner: Boolean(
+        document.querySelector('[data-testid="betrayal-trade-flow-banner"] [data-testid="betrayal-trade-flow-item-step"]'),
       ),
-      targetStepExists: Boolean(
+      targetStepInsideBanner: Boolean(
         document.querySelector(
-          '[data-testid="betrayal-trade-flow-target-step"]',
+          '[data-testid="betrayal-trade-flow-banner"] [data-testid="betrayal-trade-flow-target-step"]',
         ),
       ),
       actionCount: actionButtons.length,
@@ -217,7 +225,7 @@ async function assertTradeActionBarKeepsButtons(
     };
   });
 
-  expect(metrics.tradeButton, "交易按钮必须保留在底部动作条里").not.toBeNull();
+  expect(metrics.tradeButton, "交易或提交方案按钮必须保留在底部动作区").not.toBeNull();
   expect(
     metrics.skeletonActionBarExists,
     "底部按钮不能再用 ActionBarSkeleton 生成整排骨架容器",
@@ -234,27 +242,47 @@ async function assertTradeActionBarKeepsButtons(
     metrics.buttonsStayInRoomPanelLayer,
     "动作按钮必须留在牌桌主面板内，不能退回页面外层动作区",
   ).toBe(true);
-  expect(metrics.flowBannerExists, "交易态必须保留醒目的请求/同意提示条").toBe(
+  expect(metrics.flowBannerExists, "交易态必须保留一行交易状态").toBe(
     true,
   );
   expect(
+    metrics.flowBanner!.progressVisible,
+    "交易横幅只能承载 status-only 状态，不能恢复方案详情面板",
+  ).toBe("status-only");
+  expect(
+    metrics.bannerStatusText,
+    "交易横幅只显示当前状态，不复写交易方案",
+  ).toMatch(/选择交易方案|交易方案已选好|等.+同意|发来交易/);
+  expect(
+    metrics.flowBanner!.text,
+    "交易横幅不能重复展示双方给出物",
+  ).not.toMatch(/给出|兔脚|书本|急救包|地图/);
+  expect(
     metrics.flowBanner!.backgroundColor,
-    "交易流程提示必须有可辨认的深色压场",
-  ).toBe("rgba(18, 17, 13, 0.78)");
+    "交易横幅应是轻量压场，不能恢复厚重提示牌",
+  ).toBe("rgba(18, 17, 13, 0.52)");
   expect(
     metrics.flowBanner!.backgroundImage,
     "交易流程提示不应额外叠复杂背景图",
   ).toBe("none");
   expect(
     metrics.flowBanner!.borderWidth,
-    "交易流程提示必须有边界以突出同意步骤",
+    "交易横幅必须保留细边界以提示状态归属",
   ).toBe("1px");
   expect(
     metrics.flowBanner!.hasVisibleShadow,
     "交易流程提示必须有轻量阴影，避免继续不明显",
   ).toBe(true);
-  expect(metrics.itemStepExists, "交易提示必须显示对象选择步骤").toBe(true);
-  expect(metrics.targetStepExists, "交易提示必须显示目标/确认步骤").toBe(true);
+  expect(
+    metrics.flowBanner!.rect.height,
+    "交易横幅必须保持单行轻量高度，不能恢复大横幅",
+  ).toBeLessThanOrEqual(48);
+  expect(
+    metrics.flowBanner!.rect.width,
+    "交易横幅必须保持轻量摘要宽度，不能横向铺满主舞台",
+  ).toBeLessThanOrEqual(680);
+  expect(metrics.itemStepInsideBanner, "顶部横幅不能渲染对象选择步骤").toBe(false);
+  expect(metrics.targetStepInsideBanner, "顶部横幅不能渲染目标/确认步骤").toBe(false);
   expect(
     metrics.actionCount,
     "交易态仍应保留一组原动作按钮",
@@ -287,13 +315,25 @@ async function assertTradeActionBarKeepsButtons(
       "none",
     );
   }
-  expect(metrics.tradeButton!.text, "交易按钮必须显示原动作文案").toContain(
-    "交易",
-  );
-  expect(
-    metrics.tradeButton!.rect.width,
-    "交易按钮必须保持可点击尺寸",
-  ).toBeGreaterThanOrEqual(80);
+  if (metrics.ordinaryTradeButton) {
+    expect(
+      metrics.ordinaryTradeButton.text,
+      "未形成方案时普通交易按钮必须保留原动作文案",
+    ).toContain("交易");
+    expect(
+      metrics.ordinaryTradeButton.rect.width,
+      "普通交易按钮必须保持可点击尺寸",
+    ).toBeGreaterThanOrEqual(80);
+  } else {
+    expect(
+      metrics.tradeButton!.text,
+      "形成方案后底部主按钮应接管为提交方案",
+    ).toContain("提交方案");
+    expect(
+      metrics.tradeButton!.rect.width,
+      "提交方案按钮必须保持可点击尺寸",
+    ).toBeGreaterThanOrEqual(80);
+  }
 }
 
 async function assertSelectedInventoryCardHasVisibleOutline(
@@ -415,15 +455,17 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       "同房间可交易对象：1人",
     );
     await expect(page.getByText("请选择交易目标")).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-trade-flow-banner")).toContainText(
-      "交易：选择持有物和同房间玩家",
+    await expect(page.getByTestId("betrayal-trade-flow-banner")).toHaveAttribute(
+      "data-trade-progress-visible",
+      "status-only",
     );
     await expect(
-      page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toBeVisible();
+      page.getByTestId("betrayal-trade-banner-status"),
+    ).toContainText("选择交易方案");
     await expect(
-      page.getByTestId("betrayal-trade-flow-target-step"),
-    ).toContainText("先选物品和目标");
+      page.locator('[data-testid="betrayal-trade-flow-banner"] [data-testid="betrayal-trade-flow-item-step"]'),
+      "顶部交易横幅不能复写选择步骤",
+    ).toHaveCount(0);
     await expect(page.getByText("首剧本开始：恶兆前探索")).toBeHidden();
     await expect(page.getByTestId("betrayal-room-focus-target")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-room-trade-shortcut")).toHaveCount(
@@ -469,12 +511,14 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       "可交易给",
     );
     await expect(page.getByTestId("betrayal-trade-status")).toContainText(
-      /丽贝卡·艾伦博士|AI 2 号位|玩家 2|2 号位/,
+      /安妮塔·赫南德兹|丽贝卡·艾伦博士|AI 2 号位|玩家 2|2 号位/,
     );
     await expect(
-      page.getByTestId("betrayal-trade-flow-target-step"),
-      "确认前必须明确进入提出交易阶段",
-    ).toContainText("提出交易");
+      page.locator(
+        '[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-target-step"]',
+      ),
+      "确认前必须明确进入确认交易方案阶段",
+    ).toContainText("提交方案");
     await assertTradeLayoutDoesNotCoverMap(page);
     await assertTradeActionBarKeepsButtons(page);
     await assertSelectedInventoryCardHasVisibleOutline(page);
@@ -537,7 +581,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       )
       .toMatchObject({
         currentInventory: expect.arrayContaining(["兔脚"]),
-        teammateInventory: [],
+        teammateInventory: expect.arrayContaining(["地图", "头骨"]),
         activePlayerId: "1",
         pendingTarget: "1",
         pendingCards: ["rope"],

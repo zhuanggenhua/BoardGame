@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useTutorial } from "../../contexts/TutorialContext";
 import { playSound } from "../../lib/audio/useGameAudio";
 import { AudioManager } from "../../lib/audio/AudioManager";
-import { UI_Z_INDEX } from "../../core";
+import { HudPortal, UI_Z_INDEX } from "../../core";
 import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 
@@ -454,22 +454,49 @@ export const TutorialOverlay: React.FC = () => {
       }
 
       if (!rect || isCenterPosition) {
+        const targetlessMaxWidth = Math.max(
+          240,
+          viewportWidth - safeArea.left - safeArea.right - 24,
+        );
+        const baseTargetlessStyle: React.CSSProperties = {
+          position: "fixed",
+          zIndex: UI_Z_INDEX.tutorial,
+          maxWidth: targetlessMaxWidth,
+        };
+        const targetlessStyle: React.CSSProperties =
+          !rect && position === "top"
+            ? {
+                ...baseTargetlessStyle,
+                top: safeArea.top + 24,
+                left: "50%",
+                transform: "translateX(-50%)",
+              }
+            : !rect && position === "left"
+              ? {
+                  ...baseTargetlessStyle,
+                  left: safeArea.left + 24,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }
+              : !rect && position === "right"
+                ? {
+                    ...baseTargetlessStyle,
+                    right: safeArea.right + 24,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  }
+                : {
+                    ...baseTargetlessStyle,
+                    bottom: isBottomConfirmStep
+                      ? bottomConfirmInset
+                      : safeArea.bottom + 24,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                  };
         commitTooltipLayout({
-          style: {
-            position: "fixed",
-            bottom: isBottomConfirmStep
-              ? bottomConfirmInset
-              : safeArea.bottom + 24,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: UI_Z_INDEX.tutorial,
-            maxWidth: Math.max(
-              240,
-              viewportWidth - safeArea.left - safeArea.right - 24,
-            ),
-          },
+          style: targetlessStyle,
           arrowClass: "hidden",
-          placement: isCenterPosition ? "center" : "floating",
+          placement: isCenterPosition ? "center" : (position ?? "floating"),
         });
         return;
       }
@@ -754,7 +781,7 @@ export const TutorialOverlay: React.FC = () => {
     : undefined;
   const showHighlightFrame = currentStep.highlightFrame !== "none";
 
-  return (
+  const overlay = (
     <div
       className="fixed inset-0 pointer-events-none"
       style={{ zIndex: UI_Z_INDEX.tutorial }}
@@ -880,4 +907,6 @@ export const TutorialOverlay: React.FC = () => {
       </div>
     </div>
   );
+
+  return <HudPortal>{overlay}</HudPortal>;
 };

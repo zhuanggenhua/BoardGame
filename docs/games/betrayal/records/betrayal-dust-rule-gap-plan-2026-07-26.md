@@ -1,6 +1,7 @@
 # 作祟 3「灰尘」规则补漏计划与进度表
 
 > 2026-07-29 接续裁定：本文是作祟 3「灰尘」专项规则补漏计划，不是发现牌整牌库主合同。正文里的“当前 23 张运行事件牌 / 当前 12 张物品牌 / 当前 23 张运行持有牌”等口径只属于当时灰尘剧本交叉补证现场；当前整牌库数量和 S0/S1/S2 缺口以 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md` 为准：43 张事件、22 张物品、9 张预兆。
+> 2026-09-02 测试入口迁移：本文历史验证命令保留当时原貌；原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口。新增山屋惊魂首剧本领域回归时，必须选择对应 `src/games/betrayal/__tests__/betrayal-*.test.ts` owner 或新建 owner，公共夹具在 `src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`。
 
 目标状态：complete
 当前目标：补齐作祟 3「灰尘」在当前事件牌、物品牌、预兆牌范围内暴露的规则缺口。

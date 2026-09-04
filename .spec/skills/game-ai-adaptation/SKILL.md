@@ -122,7 +122,7 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 
 ## 测试落点
 
-- 引擎 / watchdog 优先补 `src/engine/transport/__tests__/server.test.ts` 或最近相关测试。
+- 引擎 / watchdog 按行为合同补到 `src/engine/transport/__tests__/onlineAiWatchdog*.test.ts`、`src/engine/transport/__tests__/onlineAiImmediateServerAi.test.ts`、`src/engine/transport/__tests__/onlineAiUnsatisfiableInteractionRecovery.test.ts`、`src/engine/transport/__tests__/server-lifecycle-sync.test.ts` 或最近相关测试；禁止回到旧集中测试文件追加。
 - 游戏层 AI 优先补 `src/games/<gameId>/__tests__/basic-commands-coverage.test.ts`、`flow.test.ts` 或同名 prompt / response / interaction 测试。
 - 不新建无关散测试文件；先补最相关现有测试。
 

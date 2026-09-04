@@ -1,0 +1,92 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-02T22:43:52.6621224+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "10、12 以及同类读本截图必须能直接看到教程提示；教程卡不得只在 DOM 中存在，也不得被剧本读本盖住。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts -> expectTutorialCardInForeground 在 09/10/12 截图前通过",
+        "src/components/tutorial/TutorialOverlay.tsx -> TutorialOverlay 通过 HudPortal 脱离 modal-root stacking context",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/10-继续后阅读英雄胜利条件.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/12-作祟后回看英雄目标.jpg"
+      ]
+    },
+    {
+      "requirement": "教程卡不能压住读本继续按钮；读本内点击继续后才能进入英雄胜利条件页。",
+      "status": "PASS",
+      "evidence": [
+        "src/components/tutorial/TutorialOverlay.tsx -> 无高亮目标且 position=top 时真正置顶，底部读本按钮可点击",
+        "node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts -g \"haunt-natural\" -> 1 passed",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/09-当前玩家自动打开英雄开场.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/10-继续后阅读英雄胜利条件.jpg"
+      ]
+    },
+    {
+      "requirement": "默认教程主线必须优先多数英雄视角；叛徒、私密目标和少数身份不作为默认主线第一视角。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md",
+        "src/games/betrayal/tutorial.ts -> haunt-natural-trigger-flow viewAs=0，多数英雄视角",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/09-当前玩家自动打开英雄开场.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/12-作祟后回看英雄目标.jpg"
+      ]
+    },
+    {
+      "requirement": "作祟自然触发教程必须从当前玩家自己的回合起跑；当前玩家不能切座位或代替队友移动、探索、确认或结束回合。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow-sequence.json",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/01-自然流程起点结束当前回合.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/07-再次结束当前回合.jpg",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts -> currentPlayer、hauntState、预兆归属断言通过"
+      ]
+    },
+    {
+      "requirement": "用户展示图组必须只包含这次当前运行生成的自然作祟流程，连续编号可逐帧承接，不能混入旧 v2、代表态或失败诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/*.jpg -> 12 张，LastWriteTime 2026-09-02 22:41:03 至 22:41:24",
+        "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3 -> 本轮新标注图组",
+        "evidence/betrayal-tutorial/pass-manifest-20260902-haunt-natural-trigger-flow-v3.json -> images 仅引用 v3 标注图"
+      ]
+    },
+    {
+      "requirement": "当前工作树真实浏览器 E2E 和相关窄测试必须通过。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/vitest-cli-safe.mjs run src/components/tutorial/__tests__/TutorialOverlay.aiActions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -> 2 passed",
+        "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -> 17 passed",
+        "npm run spec:lint -> spec-lint: OK",
+        "node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts -g \"haunt-natural\" -> 1 passed"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/00-sequence-index.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/01-labeled-01-自然流程起点结束当前回合.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/02-labeled-02-交给队友一回合.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/03-labeled-03-等待队友一探索预兆房间.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/04-labeled-04-队友一获得指环未触发.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/05-labeled-05-队友二翻出狗未触发.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/06-labeled-06-狗确认后回到当前玩家.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/07-labeled-07-再次结束当前回合.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/08-labeled-08-队友一翻出面具触发作祟.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/09-labeled-09-当前玩家自动打开英雄开场.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/10-labeled-10-继续后阅读英雄胜利条件.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/11-labeled-11-关闭剧本书后进入作祟牌桌.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v3/12-labeled-12-作祟后回看英雄目标.png"
+  ],
+  "notes": [
+    "本清单只用于 2026-09-02 小黑屋教程 10/12 教程卡可见性返工后的最终用户可见图组。",
+    "旧 v2 图组已被用户指出失败；本清单只引用 v3 标注图和 22:41 新原图。",
+    "09/10/12 的前景可见由 expectTutorialCardInForeground 在截图前断言，读本继续按钮可点击由同一 E2E 完整通过证明。"
+  ]
+}

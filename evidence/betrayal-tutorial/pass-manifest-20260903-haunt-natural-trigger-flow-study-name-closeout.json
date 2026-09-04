@@ -1,0 +1,96 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-03T01:03:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "作祟自然触发教程必须按真实流程承接：当前玩家结束自己的回合，队友行动作为公开结果推进，再由第三张预兆自然触发作祟。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts -> [haunt-natural] 1 passed",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow-sequence.json -> 16 items",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/01-自然流程起点结束当前回合.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/08-队友一翻出面具触发作祟.jpg"
+      ]
+    },
+    {
+      "requirement": "当前玩家不能代操作队友；P1/P2 的移动、探索、确认和结束回合只能作为正式命令推进后的公开结果展示。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/tutorial.ts -> haunt-natural-trigger-flow viewAs=0，只有当前玩家自己的结束回合和找真名是 requireAction",
+        "src/games/betrayal/__tests__/tutorial.test.ts -> 禁止 viewAs=1/2 的 requireAction 或 allowedCommands",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/03-等待队友一探索预兆房间.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/13-作祟后等待队友结束回合.jpg"
+      ]
+    },
+    {
+      "requirement": "默认主线必须优先多数英雄视角；触发作祟后先显示英雄剧本书，叛徒目标不混入默认主线第一视角。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/__tests__/tutorial.test.ts -> 断言英雄书可见、叛徒书不可见",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts -> 09/10/12 截图前断言英雄剧本书与教程卡前景可见",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/09-当前玩家自动打开英雄开场.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/12-作祟后回看英雄目标.jpg"
+      ]
+    },
+    {
+      "requirement": "教程不能把结果面板当结束；找真名结果确认后必须退场到下一真实可操作入口。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/betrayal-tutorial.e2e.ts -> 15 截图保留找真名结果面板，16 截图断言 recentRollKind=null 且结束回合按钮可见可用",
+        "src/games/betrayal/__tests__/tutorial.test.ts -> 确认后 knowledgeTokenCount=1、banishmentSpellLearned=false、recommendedAction=endTurn",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/15-寻找真名知识检定成功.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/16-确认后回到牌桌可结束回合.jpg"
+      ]
+    },
+    {
+      "requirement": "学习驱逐法术不能接在本段同回合自然链里；它需要后续合法持书回合或代表态专题，不能用旧 17/18 图冒充连续流程。",
+      "status": "PASS",
+      "evidence": [
+        "docs/games/betrayal/haunts/01-mummy-rampage.md -> 英雄目标步骤和每名英雄每回合一个步骤规则",
+        "docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md -> 自然链只覆盖找真名和结束回合入口，学习驱逐法术降回后续合法回合 / 代表态专题",
+        "src/games/betrayal/__tests__/tutorial.test.ts -> learn-mummy-banishment 在确认后 active=false、canUse=false",
+        "public/locales/zh-CN/game-betrayal.json -> heroStudyNameCloseout 明确后续合法持书回合再学习驱逐法术"
+      ]
+    },
+    {
+      "requirement": "本轮图组必须只包含当前运行生成的 16 张自然作祟流程截图和 00 索引图，不混入旧 v2/v3、代表态或诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/*.jpg -> 16 张，LastWriteTime 2026-09-03 00:58:52 至 00:59:18",
+        "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/*.png -> 17 张，含 00 索引和 01-16 标注图",
+        "evidence/betrayal-tutorial/pass-manifest-20260903-haunt-natural-trigger-flow-study-name-closeout.json -> images 仅引用本轮新标注图"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/01-labeled-01-自然流程起点结束当前回合.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/02-labeled-02-交给队友一回合.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/03-labeled-03-等待队友一探索预兆房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/04-labeled-04-队友一获得指环未触发.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/05-labeled-05-队友二翻出狗未触发.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/06-labeled-06-狗确认后回到当前玩家.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/07-labeled-07-再次结束当前回合.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/08-labeled-08-队友一翻出面具触发作祟.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/09-labeled-09-当前玩家自动打开英雄开场.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/10-labeled-10-继续后阅读英雄胜利条件.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/11-labeled-11-关闭剧本书后进入作祟牌桌.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/12-labeled-12-作祟后回看英雄目标.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/13-labeled-13-作祟后等待队友结束回合.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/14-labeled-14-轮到英雄寻找木乃伊真名.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/15-labeled-15-寻找真名知识检定成功.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260903-study-name-closeout/16-labeled-16-确认后回到牌桌可结束回合.png"
+  ],
+  "notes": [
+    "本清单只用于本轮小黑屋教程后续流程重构后的用户可见图组。",
+    "旧 17/18 学习驱逐法术连续图不再属于自然链；学习驱逐法术需后续合法持书回合或代表态专题。",
+    "本轮 PASS 基于当前工作树重跑 E2E 和 2026-09-03 00:58-00:59 新截图。"
+  ]
+}

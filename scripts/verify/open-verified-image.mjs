@@ -39,6 +39,58 @@ const isImageFile = (filePath) => IMAGE_EXTENSIONS.has(path.extname(filePath).to
 const isVideoFile = (filePath) => VIDEO_EXTENSIONS.has(path.extname(filePath).toLowerCase());
 const isMediaFile = (filePath) => MEDIA_EXTENSIONS.has(path.extname(filePath).toLowerCase());
 
+const readImageDimensions = (filePath) => {
+    const buffer = readFileSync(filePath);
+
+    if (
+        buffer.length >= 24
+        && buffer[0] === 0x89
+        && buffer[1] === 0x50
+        && buffer[2] === 0x4e
+        && buffer[3] === 0x47
+    ) {
+        return {
+            width: buffer.readUInt32BE(16),
+            height: buffer.readUInt32BE(20),
+        };
+    }
+
+    if (buffer.length >= 4 && buffer[0] === 0xff && buffer[1] === 0xd8) {
+        let offset = 2;
+        while (offset + 9 < buffer.length) {
+            while (offset < buffer.length && buffer[offset] !== 0xff) {
+                offset += 1;
+            }
+            while (offset < buffer.length && buffer[offset] === 0xff) {
+                offset += 1;
+            }
+            if (offset >= buffer.length) break;
+            const marker = buffer[offset];
+            offset += 1;
+            if (marker === 0xd8 || marker === 0xd9 || marker === 0x01) {
+                continue;
+            }
+            if (offset + 2 > buffer.length) break;
+            const length = buffer.readUInt16BE(offset);
+            if (length < 2 || offset + length > buffer.length) break;
+            const isStartOfFrame =
+                (marker >= 0xc0 && marker <= 0xc3)
+                || (marker >= 0xc5 && marker <= 0xc7)
+                || (marker >= 0xc9 && marker <= 0xcb)
+                || (marker >= 0xcd && marker <= 0xcf);
+            if (isStartOfFrame && length >= 7) {
+                return {
+                    height: buffer.readUInt16BE(offset + 3),
+                    width: buffer.readUInt16BE(offset + 5),
+                };
+            }
+            offset += length;
+        }
+    }
+
+    return null;
+};
+
 const collectMedia = (dirPath) => {
     const results = [];
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
@@ -242,6 +294,44 @@ const validatePureRefSequence = (imagePaths) => {
 
 const normalizeForCompare = (targetPath) => path.resolve(targetPath).toLowerCase();
 
+const validateLabeledImagesPreserveSourcePixels = (manifest, imagePaths, viewer) => {
+    if (viewer !== 'pureref' || imagePaths.length <= 1) {
+        return;
+    }
+
+    const labeledImages = imagePaths.filter((imagePath) => /^\d{2}-labeled-.+\.png$/i.test(path.basename(imagePath)));
+    const sourceImages = Array.isArray(manifest.sourceImages) ? manifest.sourceImages : [];
+    if (labeledImages.length === 0 || sourceImages.length === 0) {
+        return;
+    }
+    if (sourceImages.length !== labeledImages.length) {
+        throw new Error(`拒绝打开：PASS 清单 sourceImages 数量必须与 NN-labeled-* 图片数量一致，避免标注图和原图错配。sourceImages=${sourceImages.length}, labeled=${labeledImages.length}`);
+    }
+
+    for (const [index, sourceImage] of sourceImages.entries()) {
+        const sourcePath = path.resolve(sourceImage);
+        const labeledPath = labeledImages[index];
+        if (!existsSync(sourcePath)) {
+            throw new Error(`拒绝打开：PASS 清单 sourceImages 中的原图不存在，无法证明标注没有覆盖截图内容: ${sourcePath}`);
+        }
+        const sourceDimensions = readImageDimensions(sourcePath);
+        const labeledDimensions = readImageDimensions(labeledPath);
+        if (!sourceDimensions || !labeledDimensions) {
+            throw new Error(`拒绝打开：无法读取标注图或原图尺寸，不能证明标注没有覆盖截图内容: ${sourcePath} / ${labeledPath}`);
+        }
+        if (
+            labeledDimensions.width < sourceDimensions.width
+            || labeledDimensions.height < sourceDimensions.height
+            || (
+                labeledDimensions.width === sourceDimensions.width
+                && labeledDimensions.height === sourceDimensions.height
+            )
+        ) {
+            throw new Error(`拒绝打开：第 ${index + 1} 张标注图没有给原图留出额外说明区，疑似把标题/说明压在截图内容上。原图=${sourceDimensions.width}x${sourceDimensions.height}, 标注图=${labeledDimensions.width}x${labeledDimensions.height}`);
+        }
+    }
+};
+
 const validatePassManifest = (manifestPath, imagePaths, viewer) => {
     if (!manifestPath) {
         throw new Error('拒绝打开：缺少 --pass-manifest。本脚本只接受“本轮用户要求逐项达标”的清单，不接受口头确认或泛化 UI PASS。');
@@ -304,6 +394,7 @@ const validatePassManifest = (manifestPath, imagePaths, viewer) => {
     if (missingImages.length > 0) {
         throw new Error(`拒绝打开：本次打开的图片/视频不在 PASS 清单 media/images 中: ${missingImages.join(', ')}`);
     }
+    validateLabeledImagesPreserveSourcePixels(manifest, imagePaths, viewer);
 
     console.log(`PASS_MANIFEST=${resolvedManifestPath}`);
 };

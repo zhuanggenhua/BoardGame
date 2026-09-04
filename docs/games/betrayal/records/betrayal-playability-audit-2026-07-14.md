@@ -1,6 +1,7 @@
 # 山屋惊魂可玩性与端到端审计（2026-07-14）
 
 > 2026-07-29 接续裁定：本文是旧可玩性 / 端到端审计入口，正文里的“当前 23 张事件牌”“12 张发现池物品”“23 张运行持有牌”等说法只代表当时首剧本与页面链路现场，不是当前整牌库数量口径。当前发现牌整牌库主合同是 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md`：43 张事件、22 张物品、9 张预兆；本文不得作为阻止 S0 合同层继续补证的理由，也不得作为整牌库完成或当前 UI/E2E/截图验收证据。
+> 2026-09-02 测试入口迁移：本文历史验证命令保留当时原貌；原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口。新增山屋惊魂首剧本领域回归时，必须选择对应 `src/games/betrayal/__tests__/betrayal-*.test.ts` owner 或新建 owner，公共夹具在 `src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`。
 
 ## 本轮前提
 

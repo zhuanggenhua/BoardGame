@@ -1,0 +1,85 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "Mage Wars 基础教程当前不再分章节或隐藏续段，只保留一个 catalog 入口和一条基础自然主线。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 只导出 mage-wars-basic 一个 catalog 入口，未设置 nextTutorialId。",
+        "src/games/mage-wars/__tests__/tutorial.test.ts 断言教程 stepIds 不包含 setup-*、wall-purpose、guard-rule、healing-rule、burn-rule。"
+      ]
+    },
+    {
+      "requirement": "教程文案不再承诺墙体、守卫、治疗、燃烧或复原术代表态内容。",
+      "status": "PASS",
+      "evidence": [
+        "public/locales/zh-CN/game-mage-wars.json 的 catalog.description 和 finish 只描述首局读局、聚魔、计划、召唤、公开弃牌、快速施法窗口和移动。",
+        "public/locales/en/game-mage-wars.json 同步删除 placed wall、guarded、healed、removed Burn 等完成承诺。"
+      ]
+    },
+    {
+      "requirement": "E2E 图组必须只展示 00-16 的连续自然主线，不混入专题、代表态或拖拽/缩放诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts 通过，结果为 1 passed。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync 当前只有 17 张 00-16 原始截图。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 的 assertTutorialScreenshotEvidenceSet 拦截 wall/guard/heal/restore/burn/transition 代表态截图。"
+      ]
+    },
+    {
+      "requirement": "当前代码和项目规范结构校验通过。",
+      "status": "PASS",
+      "evidence": [
+        "npx vitest run src/games/mage-wars/__tests__/tutorial.test.ts --reporter=dot 通过，5 tests passed。",
+        "npm run typecheck 通过，tsc --noEmit 无错误。",
+        "npm run spec:lint 通过，spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/01-labeled-00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/02-labeled-01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/03-labeled-02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/04-labeled-03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/05-labeled-04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/06-labeled-05-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/07-labeled-06-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/08-labeled-07-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/09-labeled-08-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/10-labeled-09-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/11-labeled-10-opponent-deploy-prompt.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/12-labeled-11-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/13-labeled-12-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/14-labeled-13-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/15-labeled-14-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/16-labeled-15-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260903-single-natural-flow-00-16/17-labeled-16-wolf-moved-to-a2.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-opponent-deploy-prompt.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wolf-moved-to-a2.png"
+  ]
+}

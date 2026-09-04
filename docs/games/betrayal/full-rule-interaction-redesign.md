@@ -3,6 +3,7 @@
 > 目的：按规则逐条重拆 `betrayal`，保证后续实现不是从现有代码倒推规则，而是从规则细节落到玩家交互、状态真相、命令 / 事件、UI 承接和验证证据。
 > 当前状态：design ledger。本文不直接实施代码。
 > 2026-07-29 口径修正：本文中历史段落出现的“当前 23 张事件 / 当前 12 张物品 / 当前 23 张运行持有牌”只代表当时的代表链证据，不再是当前整牌库数量口径。当前整牌库 S0 入口以 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md` 和 `evidence/betrayal/full-audit/full-deck-scope-audit.md` 为准：43 事件 / 22 物品 / 9 预兆；当前运行持有牌全集为 34 张。
+> 2026-09-02 测试入口迁移：原 `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 已退出正式入口；新增领域回归必须选择对应 `src/games/betrayal/__tests__/betrayal-*.test.ts` owner 或新建 owner，公共夹具在 `src/games/betrayal/__tests__/helpers/firstScenarioRuntimeHarness.ts`。本文历史段落中的旧命令保留原貌，不再作为新增测试入口。
 
 ## 0. 真相源与完成口径
 

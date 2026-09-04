@@ -293,6 +293,8 @@ function MageWarsTravelPath({
     kind,
     strong = false,
     quality,
+    showSourceWake,
+    showMidBurst,
 }: {
     source?: FxCellCoord;
     target: FxCellCoord;
@@ -303,9 +305,11 @@ function MageWarsTravelPath({
     sourceAnchorId?: string;
     targetAnchorId?: string;
     getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push' | 'teleport';
+    kind: 'push' | 'teleport' | 'move';
     strong?: boolean;
     quality: FxQuality;
+    showSourceWake?: boolean;
+    showMidBurst?: boolean;
 }) {
     if (!source || sameCell(source, target)) return null;
     const tuning = MAGE_WARS_TRAVEL_FX_TUNING[kind];
@@ -328,9 +332,9 @@ function MageWarsTravelPath({
             intensity={strong ? 'strong' : 'normal'}
             quality={quality}
             color={color}
-            travelDurationMs={MAGE_WARS_FX_TIMING.projectileTravelMs}
-            showSourceWake
-            showMidBurst
+            travelDurationMs={kind === 'move' ? MAGE_WARS_FX_TIMING.moveTravelImpactMs : MAGE_WARS_FX_TIMING.projectileTravelMs}
+            showSourceWake={showSourceWake ?? true}
+            showMidBurst={showMidBurst ?? true}
             sourceWakeTestId={`mage-wars-fx-${kind}-source-wake`}
             sourceBurstTestId={`mage-wars-fx-${kind}-source-burst`}
             travelTestId={`mage-wars-fx-${kind}-travel`}
@@ -493,6 +497,51 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
                 quality={quality}
             />
         </>
+    );
+};
+
+export const MovementRenderer: React.FC<FxRendererProps> = ({
+    event,
+    getCellPosition,
+    onComplete,
+    onImpact,
+}) => {
+    const cell = event.ctx.cell;
+    const source = event.params?.source as FxCellCoord | undefined;
+    const targetAnchorId = stringifyAnchorId(
+        event.params?.targetObjectId
+        ?? event.params?.targetPlayerId
+        ?? event.params?.objectId,
+    );
+    const sourceAnchorId = targetAnchorId;
+    const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
+    const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
+    const hasTravel = Boolean(source && cell && !sameCell(source, cell));
+    useTimedImpactAndComplete(
+        cell,
+        onImpact,
+        onComplete,
+        hasTravel ? MAGE_WARS_FX_TIMING.moveTravelImpactMs : MAGE_WARS_FX_TIMING.moveSameCellImpactMs,
+        hasTravel ? MAGE_WARS_FX_TIMING.moveTravelCompleteMs : MAGE_WARS_FX_TIMING.moveSameCellCompleteMs,
+    );
+
+    if (!cell) return null;
+    const quality = resolveEventQuality(event);
+
+    return (
+        <MageWarsTravelPath
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            sourceAnchorId={sourceAnchorId}
+            targetAnchorId={targetAnchorId}
+            getCellPosition={getCellPosition}
+            kind="move"
+            quality={quality}
+            showSourceWake={false}
+            showMidBurst={false}
+        />
     );
 };
 

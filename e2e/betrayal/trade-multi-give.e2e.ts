@@ -57,11 +57,11 @@ test('真实页面普通同房交易支持发起方一次给出多张持有物',
 
     await page.getByTestId('betrayal-room-occupant-hallway-1').click();
     await expect(page.getByTestId('betrayal-trade-return-selector'), '选中同房间队友后必须显示对方持有物').toBeVisible();
-    await expect(page.getByTestId('betrayal-trade-flow-item-step'), '未选对方物品前摘要必须列出两张己方给出物').toContainText(/你给出.*兔脚.*书本/);
+    await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-item-step"]'), '未选对方物品前摘要必须列出两张己方给出物').toContainText(/你给出.*兔脚.*书本/);
     await saveScreenshot(page, MULTI_GIVE_SELECTED_SCREENSHOT);
 
     await page.getByTestId('betrayal-trade-return-card-map').click();
-    await expect(page.getByTestId('betrayal-trade-flow-item-step'), '选择对方地图后摘要必须同时显示两张给出物和地图').toContainText(/你给出.*兔脚.*书本.*对方给出.*地图/);
+    await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-item-step"]'), '选择对方地图后摘要必须同时显示两张给出物和地图').toContainText(/你给出.*兔脚.*书本.*对方给出.*地图/);
     await saveScreenshot(page, MULTI_GIVE_RETURN_SELECTED_SCREENSHOT);
 
     await page.getByTestId('betrayal-action-trade').click();
@@ -94,7 +94,7 @@ test('真实页面普通同房交易支持发起方一次给出多张持有物',
             rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
         };
     }), {
-        message: '提出交易后必须等待接收方同意，双方持有物暂不转移',
+        message: '提交交易方案后必须等待接收方同意，双方持有物暂不转移',
         timeout: 10000,
     }).toMatchObject({
         currentInventory: expect.arrayContaining(['兔脚', '书本']),

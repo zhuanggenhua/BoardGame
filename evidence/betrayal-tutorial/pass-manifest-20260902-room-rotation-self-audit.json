@@ -1,5 +1,8 @@
 {
-  "verdict": "PASS",
+  "verdict": "SUPERSEDED",
+  "supersededAt": "2026-09-02T00:00:00.000+08:00",
+  "supersededBy": "evidence/betrayal-tutorial/pass-manifest-20260902-post34-segmented-display.json",
+  "supersededReason": "旧清单混入 34 之后的专题 / 代表态图，35-labeled-03 到 36-labeled-01 缺少真实作祟触发桥接，不能再作为后续流程连续展示依据。",
   "scope": "current-user-request",
   "createdAt": "2026-09-01T17:18:12.300Z",
   "display": {

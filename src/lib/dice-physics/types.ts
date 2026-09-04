@@ -32,6 +32,17 @@ export interface DicePhysicsState {
     value: number | null;
 }
 
+export type DicePhysicsHighlightVariant = 'candidate' | 'selected';
+
+export interface DicePhysicsHighlightState {
+    dieId: number;
+    dieIndex?: number;
+    variant: DicePhysicsHighlightVariant;
+    color?: number | string;
+    scale?: number;
+    opacity?: number;
+}
+
 export type DicePhysicsRendererMode = 'debug-visible' | 'physics-only';
 
 export interface DiceRendererContract<TDie> {

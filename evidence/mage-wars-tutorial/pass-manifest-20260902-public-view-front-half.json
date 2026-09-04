@@ -1,0 +1,86 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-02T20:22:57.9531427+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "只展示教程前半图组，不混入墙体、守卫、治疗、复原术后半段，也不混入拖拽地图诊断图或旧图。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars-tutorial/sequence-labels-20260902-public-view-front-half.json contains only screenshots 00-15 from test-results/evidence-screenshots/mage-wars/tutorial-flow-sync",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half contains 00-sequence-index.png and 01-16 labeled images only"
+      ]
+    },
+    {
+      "requirement": "返回自己视角按大杀四方同类视角语法显示为上方居中横幅，不再放左上角。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx uses inset-x-0 flex justify-center on data-testid=mage-wars-public-view-banner",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts asserts shell and inner panel center near viewport center",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-back-to-self-view.png"
+      ]
+    },
+    {
+      "requirement": "看对方弃牌通过切换对手公开视角完成，同一个弃牌槽切 owner，不新增平行对手弃牌 UI。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts asserts mw-discard owner self -> opponent -> self",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts asserts mw-opponent-discard and mage-wars-opponent-discard-pile are absent",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-opponent-public-view-same-discard-pile.png"
+      ]
+    },
+    {
+      "requirement": "守卫动作按钮和教程操作句不再写成“进行守卫”；按钮只写规则动作短名“守卫”，守卫标记只作为结算后状态显示。",
+      "status": "PASS",
+      "evidence": [
+        "public/locales/zh-CN/game-mage-wars.json actions.guardCreature is 守卫",
+        "public/locales/zh-CN/game-mage-wars.json tutorial.guard.steps.guardCleric says click “守卫” only",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts asserts guard button text is 守卫 or Guard and not 进行守卫",
+        "npx vitest run src/games/mage-wars/__tests__/Board.fx.test.tsx src/games/mage-wars/__tests__/tutorial.test.ts --reporter=dot => 61 passed"
+      ]
+    },
+    {
+      "requirement": "通用规范已回代：规则原文优先，UI 独有说明只补必要操作；结算后状态不得命名成点击前技能或目标。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md adds the rule/action/status wording constraint",
+        ".spec/knowledge/standards/ui-change-gates.md adds rule-action button wording constraint",
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md and docs/games/mage-wars/design/reference/user-correction-traceability-ledger.md record this as drift-check evidence",
+        "npm run spec:lint => spec-lint: OK"
+      ]
+    },
+    {
+      "requirement": "当前工作树真实入口重新跑过教程 E2E，截图来自本轮当前运行。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts \"单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术\" => 1 passed",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync images last written at 2026/9/2 20:18-20:19"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/01-labeled-00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/02-labeled-01-read-mage-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/03-labeled-02-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/04-labeled-03-plan-selected-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/05-labeled-04-plan-selected-two-of-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/06-labeled-05-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/07-labeled-06-summon-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/08-labeled-07-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/09-labeled-08-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/10-labeled-09-roused-wolf-ready-and-end-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/11-labeled-10-opponent-deploy-prompt.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/12-labeled-11-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/13-labeled-12-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/14-labeled-13-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/15-labeled-14-opponent-pass-deployment.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-public-view-front-half/16-labeled-15-skip-initiative-quickcast.png"
+  ]
+}

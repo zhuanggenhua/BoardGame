@@ -1,11 +1,11 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { GameModeProvider } from '../../../contexts/GameModeContext';
+import { GameModeProvider, type GameMode } from '../../../contexts/GameModeContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import { TutorialProvider } from '../../../contexts/TutorialContext';
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../../../engine/hooks/EventStreamRollbackContext';
-import { resetFxFrameClockForTests, type FxBus, type FxEvent } from '../../../engine/fx';
+import { resetFxFrameClockForTests, type FxAnchorSnapshot, type FxBus, type FxEvent } from '../../../engine/fx';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
@@ -29,12 +29,13 @@ import {
     AttackImpactRenderer,
     DamageImpactRenderer,
     HealingImpactRenderer,
+    MovementRenderer,
     SpellPushRenderer,
     SpellTeleportRenderer,
     SummonRenderer,
 } from '../ui/fxRenderers';
 import { mageWarsFxRegistry } from '../ui/fxSetup';
-import { useMageWarsGameEvents } from '../ui/useGameEvents';
+import { MAGE_WARS_ARENA_FX_SURFACE_ID, useMageWarsGameEvents } from '../ui/useGameEvents';
 
 vi.mock('react-i18next', () => ({
     initReactI18next: { type: '3rdParty', init: vi.fn() },
@@ -85,12 +86,16 @@ vi.mock('../../../components/common/animations/BurstParticles', () => ({
 
 vi.mock('../../../components/common/animations/ConeBlast', () => ({
     ConeBlast: ({
+        start,
+        end,
         intensity,
         quality,
         durationMs,
         motionEasing,
         color,
     }: {
+        start?: { xPct?: number; yPct?: number };
+        end?: { xPct?: number; yPct?: number };
         intensity?: string;
         quality?: string;
         durationMs?: number;
@@ -99,6 +104,10 @@ vi.mock('../../../components/common/animations/ConeBlast', () => ({
     }) => (
         <div
             data-testid="mock-cone-blast"
+            data-start-x={String(start?.xPct ?? '')}
+            data-start-y={String(start?.yPct ?? '')}
+            data-end-x={String(end?.xPct ?? '')}
+            data-end-y={String(end?.yPct ?? '')}
             data-intensity={intensity ?? ''}
             data-quality={quality ?? ''}
             data-duration-ms={String(durationMs ?? '')}
@@ -263,6 +272,30 @@ const getCellPosition = (row: number, col: number) => ({
     height: 33.3333,
 });
 
+function anchorSnapshot(
+    anchorId: string,
+    anchorKind: FxAnchorSnapshot['anchorKind'],
+    box: FxAnchorSnapshot['box'],
+): FxAnchorSnapshot {
+    return {
+        surfaceId: MAGE_WARS_ARENA_FX_SURFACE_ID,
+        anchorId,
+        anchorKind,
+        entityRef: anchorId,
+        box,
+        center: {
+            xPct: box.left + box.width / 2,
+            yPct: box.top + box.height / 2,
+        },
+        size: {
+            widthPct: box.width,
+            heightPct: box.height,
+        },
+        capturedAt: 1,
+        mode: 'spawn-snapshot',
+    };
+}
+
 function renderFxRenderer(
     renderer: ReactElement,
 ) {
@@ -273,10 +306,10 @@ function renderFxRenderer(
     );
 }
 
-function withBoardProviders(board: ReactElement): ReactElement {
+function withBoardProviders(board: ReactElement, mode: GameMode = 'test'): ReactElement {
     return (
         <ToastProvider>
-            <GameModeProvider mode="test">
+            <GameModeProvider mode={mode}>
                 <TutorialProvider>
                     {board}
                 </TutorialProvider>
@@ -285,8 +318,8 @@ function withBoardProviders(board: ReactElement): ReactElement {
     );
 }
 
-function renderBoardWithProviders(board: ReactElement) {
-    return render(withBoardProviders(board));
+function renderBoardWithProviders(board: ReactElement, mode?: GameMode) {
+    return render(withBoardProviders(board, mode));
 }
 
 function visibleDesktopSpellbookCardIds(container: HTMLElement): string[] {
@@ -341,6 +374,112 @@ describe('MageWarsBoard FX wiring', () => {
         renderBoardWithProviders(<MageWarsBoard {...props} />);
 
         expect(props.dispatch).not.toHaveBeenCalledWith(FLOW_COMMANDS.ADVANCE_PHASE, {});
+    });
+
+    it('uses the moved target previous anchor as relocation FX source instead of the caster', async () => {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const targetBefore = creatureObject('mwobj-push-left-target', '1', 2909, '被推目标', ARENA_ZONE_IDS.C2);
+        const beforeCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [targetBefore.id]: targetBefore,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.C2
+                    ? { ...zone, objectIds: [targetBefore.id] }
+                    : zone
+            )),
+        };
+        const targetAfter: MageWarsArenaObjectState = {
+            ...targetBefore,
+            zoneId: ARENA_ZONE_IDS.B2,
+        };
+        const afterCore: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [targetAfter.id]: targetAfter,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.B2
+                    ? { ...zone, objectIds: [targetAfter.id] }
+                    : zone
+            )),
+        };
+        const beforeTargetSnapshot = anchorSnapshot(targetBefore.id, 'entity', {
+            left: 62,
+            top: 40,
+            width: 8,
+            height: 10,
+        });
+        const afterTargetSnapshot = anchorSnapshot(targetAfter.id, 'entity', {
+            left: 37,
+            top: 40,
+            width: 8,
+            height: 10,
+        });
+        const casterSnapshot = anchorSnapshot('0', 'player', {
+            left: 10,
+            top: 74,
+            width: 8,
+            height: 10,
+        });
+        let renderPhase: 'before' | 'after' = 'before';
+        const resolveFxAnchorSnapshot = vi.fn((anchor: { anchorId?: string; anchorKind?: string } | string | undefined | null) => {
+            const anchorId = typeof anchor === 'string' ? anchor : anchor?.anchorId;
+            const anchorKind = typeof anchor === 'string' ? undefined : anchor?.anchorKind;
+            if (anchorId === targetBefore.id && anchorKind === 'entity') {
+                return renderPhase === 'before' ? beforeTargetSnapshot : afterTargetSnapshot;
+            }
+            if (anchorId === '0' && anchorKind === 'player') {
+                return casterSnapshot;
+            }
+            return null;
+        });
+        const fxBus = createRecordingFxBus(['fx-push-left']);
+        const beforeG = boardProps(beforeCore).G;
+        const { rerender } = renderHook(
+            ({ currentG }) => useMageWarsGameEvents({ G: currentG, fxBus, resolveFxAnchorSnapshot }),
+            { initialProps: { currentG: beforeG } },
+        );
+
+        renderPhase = 'after';
+        const afterG = boardProps(afterCore, '0', {
+            eventStream: {
+                entries: [
+                    {
+                        id: 1,
+                        event: {
+                            type: MAGE_WARS_EVENTS.SPELL_PUSH_RESOLVED,
+                            payload: {
+                                playerId: '0',
+                                spellCardId: 1711,
+                                sourceAbilityId: 'mw.spell.1711',
+                                targetObjectId: targetBefore.id,
+                                fromZoneId: ARENA_ZONE_IDS.C2,
+                                toZoneId: ARENA_ZONE_IDS.B2,
+                            },
+                            timestamp: 1,
+                        },
+                    },
+                ],
+                maxEntries: 200,
+                nextId: 2,
+            },
+        }).G;
+
+        act(() => {
+            rerender({ currentG: afterG });
+        });
+        await act(async () => {});
+
+        expect(fxBus.push).toHaveBeenCalledTimes(1);
+        const pushed = fxBus.activeEffects[0];
+        expect(pushed.cue).toBe('mage-wars.spell.push');
+        expect((pushed.params?.sourceSnapshot as FxAnchorSnapshot | undefined)?.anchorId).toBe(targetBefore.id);
+        expect((pushed.params?.targetSnapshot as FxAnchorSnapshot | undefined)?.anchorId).toBe(targetBefore.id);
+        expect((pushed.params?.sourceSnapshot as FxAnchorSnapshot | undefined)?.box.top).toBe(40);
+        expect((pushed.params?.targetSnapshot as FxAnchorSnapshot | undefined)?.box.top).toBe(40);
+        expect((pushed.params?.sourceSnapshot as FxAnchorSnapshot | undefined)?.anchorId).not.toBe('0');
     });
 
     it('plays summon FX when the confirmed online state arrives during reconcile', async () => {
@@ -483,19 +622,62 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.getAllByTestId('mock-card-preview').some((node) => node.textContent === '野性山猫')).toBe(true);
     });
 
+    it('uses public view switching for opponent discard instead of rendering a second discard pile', async () => {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const core: MageWarsCore = {
+            ...baseCore,
+            players: {
+                ...baseCore.players,
+                '0': {
+                    ...baseCore.players['0'],
+                    discardSpellCardIds: [3403],
+                },
+                '1': {
+                    ...baseCore.players['1'],
+                    discardSpellCardIds: [1706, 2811],
+                },
+            },
+        };
+
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(core, '0')} />);
+
+        const board = screen.getByTestId('mage-wars-board');
+        const discardPile = screen.getByTestId('mage-wars-discard-pile');
+        expect(screen.queryByTestId('mage-wars-opponent-discard-pile')).toBeNull();
+        expect(discardPile.getAttribute('data-discard-owner-role')).toBe('self');
+        expect(discardPile.getAttribute('data-discard-owner-id')).toBe('0');
+        expect(board.getAttribute('data-mage-wars-public-view-player-id')).toBe('0');
+
+        fireEvent.click(screen.getByTestId('mage-wars-observe-player-button'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('mage-wars-board').getAttribute('data-mage-wars-public-view-player-id')).toBe('1');
+            expect(screen.getByTestId('mage-wars-board').getAttribute('data-mage-wars-public-view-role')).toBe('opponent');
+            expect(screen.getByTestId('mage-wars-discard-pile').getAttribute('data-discard-owner-role')).toBe('opponent');
+            expect(screen.getByTestId('mage-wars-discard-pile').getAttribute('data-discard-owner-id')).toBe('1');
+        });
+        const publicViewBanner = screen.getByTestId('mage-wars-public-view-banner');
+        expect(publicViewBanner.className).toContain('inset-x-0');
+        expect(publicViewBanner.className).toContain('justify-center');
+        expect(publicViewBanner.className).not.toContain('left-16');
+        expect(screen.queryByTestId('mage-wars-opponent-discard-pile')).toBeNull();
+    });
+
     it('keeps same-zone ownership lanes anchored to fixed seats instead of viewer perspective', () => {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const leftSeatObject = creatureObject('mwobj-left-cat', '0', 2906, '左席位山猫', ARENA_ZONE_IDS.A2);
+        const leftSeatSupport = creatureObject('mwobj-left-wolf', '0', 2819, '左席位灰狼', ARENA_ZONE_IDS.A2);
         const rightSeatObject = creatureObject('mwobj-right-knight', '1', 2909, '右席位骑士', ARENA_ZONE_IDS.A2);
         const core: MageWarsCore = {
             ...baseCore,
             objects: {
                 [leftSeatObject.id]: leftSeatObject,
+                [leftSeatSupport.id]: leftSeatSupport,
                 [rightSeatObject.id]: rightSeatObject,
             },
             arena: baseCore.arena.map((zone) => (
                 zone.id === ARENA_ZONE_IDS.A2
-                    ? { ...zone, objectIds: [leftSeatObject.id, rightSeatObject.id] }
+                    ? { ...zone, objectIds: [leftSeatObject.id, leftSeatSupport.id, rightSeatObject.id] }
                     : zone
             )),
         };
@@ -503,15 +685,69 @@ describe('MageWarsBoard FX wiring', () => {
         renderBoardWithProviders(<MageWarsBoard {...boardProps(core, '1')} />);
 
         const leftSeatCard = screen.getByText('左席位山猫').closest('[data-testid="mage-wars-zone-field-card"]');
+        const leftSeatSupportCard = screen.getByText('左席位灰狼').closest('[data-testid="mage-wars-zone-field-card"]');
         const rightSeatCard = screen.getByText('右席位骑士').closest('[data-testid="mage-wars-zone-field-card"]');
         const laneGroup = leftSeatCard?.closest('[data-testid="mage-wars-zone-ownership-lanes"]');
-        expect(laneGroup?.getAttribute('data-layout-axis')).toBe('vertical');
-        expect(laneGroup?.className).toContain('grid-rows');
-        expect(laneGroup?.className).not.toContain('grid-cols-[minmax(0,1fr)_minmax(0,1fr)]');
-        expect(leftSeatCard?.closest('[data-lane-owner-side]')?.getAttribute('data-lane-owner-side')).toBe('seat-left');
-        expect(rightSeatCard?.closest('[data-lane-owner-side]')?.getAttribute('data-lane-owner-side')).toBe('seat-right');
+        const leftLane = leftSeatCard?.closest('[data-lane-owner-side]');
+        const rightLane = rightSeatCard?.closest('[data-lane-owner-side]');
+        expect(laneGroup?.getAttribute('data-layout-axis')).toBe('horizontal');
+        expect(laneGroup?.getAttribute('data-owner-lane-axis')).toBe('horizontal');
+        expect(laneGroup?.className).toContain('grid-cols-[minmax(0,1fr)_minmax(0,1fr)]');
+        expect(laneGroup?.className).not.toContain('grid-rows');
+        expect(leftLane?.getAttribute('data-lane-owner-side')).toBe('seat-left');
+        expect(leftLane?.getAttribute('data-lane-stack-axis')).toBe('vertical');
+        expect(leftLane?.querySelectorAll('[data-testid="mage-wars-zone-field-card"]')).toHaveLength(2);
+        expect(leftSeatSupportCard?.closest('[data-lane-owner-side]')).toBe(leftLane);
+        expect(rightLane?.getAttribute('data-lane-owner-side')).toBe('seat-right');
+        expect(rightLane?.getAttribute('data-lane-stack-axis')).toBe('vertical');
+        expect(rightLane?.querySelectorAll('[data-testid="mage-wars-zone-field-card"]')).toHaveLength(1);
         expect(leftSeatCard?.getAttribute('data-owner-side')).toBe('seat-left');
+        expect(leftSeatSupportCard?.getAttribute('data-owner-side')).toBe('seat-left');
         expect(rightSeatCard?.getAttribute('data-owner-side')).toBe('seat-right');
+    });
+
+    it('anchors concrete arena-object tutorial highlights on the real clickable field card', async () => {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const targetObject = creatureObject('mwobj-left-cleric-burn', '0', 2819, '燃烧牧师', ARENA_ZONE_IDS.A2);
+        const core: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                [targetObject.id]: targetObject,
+            },
+            arena: baseCore.arena.map((zone) => (
+                zone.id === ARENA_ZONE_IDS.A2
+                    ? { ...zone, objectIds: [targetObject.id] }
+                    : zone
+            )),
+        };
+        const tutorialStep = {
+            id: 'burn-rule',
+            content: 'burn-rule',
+            highlightTarget: `mw-arena-object-${targetObject.id}`,
+        };
+
+        renderBoardWithProviders(
+            <MageWarsBoard
+                {...boardProps(core, '0', {
+                    tutorial: {
+                        active: true,
+                        manifestId: 'mage-wars-board-test',
+                        stepIndex: 0,
+                        steps: [tutorialStep],
+                        step: tutorialStep,
+                    },
+                })}
+            />,
+            'tutorial',
+        );
+
+        const targetCard = screen.getByText('燃烧牧师')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        await waitFor(() => {
+            expect(targetCard?.getAttribute('data-tutorial-id')).toBe(`mw-arena-object-${targetObject.id}`);
+        });
+        expect(targetCard?.getAttribute('data-tutorial-object-id')).toBe(`mw-arena-object-${targetObject.id}`);
+        expect(targetCard?.querySelector(`[data-tutorial-id="mw-arena-object-${targetObject.id}"]`)).toBeNull();
     });
 
     it('buffers arena object damage until attack impact', async () => {
@@ -1130,6 +1366,64 @@ describe('MageWarsBoard FX wiring', () => {
 
             act(() => {
                 advanceSharedFxClockDelay(2600);
+            });
+            expect(onImpact).toHaveBeenCalledTimes(1);
+        } finally {
+            resetFxFrameClockForTests();
+            vi.useRealTimers();
+        }
+    });
+
+    it('renders ordinary movement left along the mover anchor row', () => {
+        vi.useFakeTimers();
+        const onImpact = vi.fn();
+        const onComplete = vi.fn();
+        const event: FxEvent = {
+            id: 'fx-move-left',
+            cue: 'mage-wars.move',
+            ctx: { cell: { row: 1, col: 1 }, intensity: 'normal' },
+            params: {
+                source: { row: 1, col: 2 },
+                objectId: 'mwobj-left-moving-cat',
+                targetObjectId: 'mwobj-left-moving-cat',
+                sourceSnapshot: anchorSnapshot('mwobj-left-moving-cat', 'entity', {
+                    left: 62,
+                    top: 40,
+                    width: 8,
+                    height: 10,
+                }),
+                targetSnapshot: anchorSnapshot('mwobj-left-moving-cat', 'entity', {
+                    left: 37,
+                    top: 40,
+                    width: 8,
+                    height: 10,
+                }),
+            },
+        };
+
+        try {
+            renderFxRenderer(
+                <MovementRenderer
+                    event={event}
+                    getCellPosition={getCellPosition}
+                    onImpact={onImpact}
+                    onComplete={onComplete}
+                />,
+            );
+
+            const travel = screen.getByTestId('mage-wars-fx-move-travel');
+            const cone = screen.getByTestId('mock-cone-blast');
+            expect(travel.getAttribute('data-source-row')).toBe('1');
+            expect(travel.getAttribute('data-target-row')).toBe('1');
+            expect(travel.getAttribute('data-source-col')).toBe('2');
+            expect(travel.getAttribute('data-target-col')).toBe('1');
+            expect(travel.getAttribute('data-source-snapshot-anchor-id')).toBe('mwobj-left-moving-cat');
+            expect(travel.getAttribute('data-target-snapshot-anchor-id')).toBe('mwobj-left-moving-cat');
+            expect(Number(cone.getAttribute('data-start-x'))).toBeGreaterThan(Number(cone.getAttribute('data-end-x')));
+            expect(cone.getAttribute('data-start-y')).toBe(cone.getAttribute('data-end-y'));
+
+            act(() => {
+                advanceSharedFxClockDelay(900);
             });
             expect(onImpact).toHaveBeenCalledTimes(1);
         } finally {
@@ -2868,7 +3162,17 @@ describe('MageWarsBoard spellbook planning UI', () => {
             />,
         );
 
-        fireEvent.click(screen.getByTestId('mage-wars-spellbook-next-page'));
+        let tanglevine = container.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2224"]',
+        );
+        for (let pageIndex = 0; pageIndex < 6 && !tanglevine; pageIndex += 1) {
+            const nextPage = screen.getByTestId('mage-wars-spellbook-next-page') as HTMLButtonElement;
+            if (nextPage.disabled) break;
+            fireEvent.click(nextPage);
+            tanglevine = container.querySelector<HTMLElement>(
+                '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2224"]',
+            );
+        }
         const initialMainAction = screen.getByTestId('mage-wars-turn-end');
         expect(screen.getByTestId('mage-wars-turn-end-dock')).toContainElement(initialMainAction);
         expect(initialMainAction.getAttribute('data-main-action-mode')).toBe('advance-phase');
@@ -2877,9 +3181,6 @@ describe('MageWarsBoard spellbook planning UI', () => {
         expect(screen.getByTestId('mage-wars-mage-hud-self').getAttribute('data-mage-wars-hud-density')).toBe('full');
         expect(screen.getByTestId('mage-wars-mage-hud-opponent').getAttribute('data-mage-wars-hud-density')).toBe('full');
 
-        const tanglevine = container.querySelector<HTMLElement>(
-            '[data-testid="mage-wars-desktop-spellbook-card"][data-source-card-id="2224"]',
-        );
         expect(tanglevine).not.toBeNull();
         expect(tanglevine?.getAttribute('data-copy-count')).toBe('3');
         const copyCountBadge = tanglevine?.querySelector<HTMLElement>('[data-testid="mage-wars-spellbook-copy-count"]');

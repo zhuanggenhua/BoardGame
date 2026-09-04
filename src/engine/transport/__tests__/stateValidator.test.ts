@@ -5,7 +5,7 @@
  * Property 4: 验证器列出所有错误
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import fc from 'fast-check';
 import { validateMatchState, deepMerge, type ValidationError } from '../stateValidator';
 import type { MatchState } from '../../types';

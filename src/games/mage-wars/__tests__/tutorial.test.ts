@@ -3,22 +3,13 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
-import type { Command, MatchState, RandomFn, TutorialAiAction, TutorialManifest } from '../../../engine/types';
+import type { Command, MatchState, RandomFn, TutorialManifest } from '../../../engine/types';
 import { engineConfig } from '../game';
 import MageWarsTutorialCatalog, {
-    MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID,
-    MAGE_WARS_TUTORIAL_GUARD_CLERIC_OBJECT_ID,
-    MAGE_WARS_TUTORIAL_HEALING_CLERIC_OBJECT_ID,
-    MAGE_WARS_TUTORIAL_WOUNDED_BOBCAT_OBJECT_ID,
-    MageWarsGuardTutorial,
-    MageWarsHealingTutorial,
-    MageWarsRestoreAndBurnTutorial,
     MageWarsTutorial,
-    MageWarsWallAndLineOfSightTutorial,
 } from '../tutorial';
 import { MageWarsDomain, MAGE_WARS_COMMANDS, MAGE_WARS_EVENTS } from '../domain';
 import type { MageWarsCommand, MageWarsCore } from '../domain/types';
-import { MAGE_WARS_MAGE_ABILITY_IDS, MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS } from '../domain/ids';
 
 const playerIds = ['0', '1'];
 const JUNGLE_WOLF_CARD_ID = 2819;
@@ -27,8 +18,6 @@ const ASYRAN_CLERIC_CARD_ID = 2811;
 const PILLAR_OF_LIGHT_CARD_ID = 1706;
 const PLAYER_ZERO_WOLF_OBJECT_ID = 'mwobj-0-2819-1';
 const PLAYER_ONE_CLERIC_OBJECT_ID = 'mwobj-1-2811-1';
-const THORNS_WALL_CARD_ID = 25700;
-const WALL_EDGE_A3_B3 = 'a3-b3';
 
 const fixedRandom: RandomFn = {
     random: () => 0.5,
@@ -85,29 +74,6 @@ function runCommand(
     return result.state;
 }
 
-function runTutorialAiActions(
-    state: MatchState<MageWarsCore>,
-    actions: readonly TutorialAiAction[] | undefined,
-): MatchState<MageWarsCore> {
-    // 模拟运行时机制练习 setup 步骤的显式标记：夹具推进阶段时不触发正式自动流程。
-    state = {
-        ...state,
-        sys: {
-            ...state.sys,
-            tutorial: {
-                ...state.sys.tutorial,
-                active: true,
-                step: { id: 'mechanism-setup', content: '', skipAutomaticFlow: true },
-            },
-        },
-    };
-    return (actions ?? []).reduce((nextState, action) => runCommand(nextState, {
-        type: action.commandType,
-        playerId: action.playerId ?? nextState.core.currentPlayerId,
-        payload: action.payload ?? {},
-    }), state);
-}
-
 const advancePhaseCommand = (playerId: string): Command<typeof FLOW_COMMANDS.ADVANCE_PHASE, Record<string, never>> => ({
     type: FLOW_COMMANDS.ADVANCE_PHASE,
     playerId,
@@ -124,49 +90,18 @@ const castSpellCommand = (
 });
 
 describe('mage-wars tutorial', () => {
-    it('exports the basic flow and mechanism practice tutorials without hiding entries', () => {
+    it('exports one visible tutorial entry without hidden continuation chapters', () => {
         expect(MageWarsTutorialCatalog.defaultTutorialId).toBe('mage-wars-basic');
-        expect(Object.keys(MageWarsTutorialCatalog.tutorials)).toEqual([
-            'mage-wars-basic',
-            'mage-wars-wall-and-line-of-sight',
-            'mage-wars-guard',
-            'mage-wars-healing',
-            'mage-wars-restore-and-burn',
-        ]);
+        expect(Object.keys(MageWarsTutorialCatalog.tutorials)).toEqual(['mage-wars-basic']);
         expect(Object.values(MageWarsTutorialCatalog.tutorials).map((entry) => entry.hiddenFromCatalog)).toEqual([
             undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
         ]);
-        expect(Object.entries(MageWarsTutorialCatalog.tutorials)
-            .filter(([, entry]) => entry.hiddenFromCatalog !== true)
-            .map(([tutorialId]) => tutorialId)).toEqual([
-            'mage-wars-basic',
-            'mage-wars-wall-and-line-of-sight',
-            'mage-wars-guard',
-            'mage-wars-healing',
-            'mage-wars-restore-and-burn',
-        ]);
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-basic'].nextTutorialId)
-            .toBe('mage-wars-wall-and-line-of-sight');
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-wall-and-line-of-sight'].nextTutorialId)
-            .toBe('mage-wars-guard');
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-guard'].nextTutorialId)
-            .toBe('mage-wars-healing');
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-healing'].nextTutorialId)
-            .toBe('mage-wars-restore-and-burn');
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-restore-and-burn'].nextTutorialId)
-            .toBeUndefined();
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-wall-and-line-of-sight'].manifest)
-            .toBe(MageWarsWallAndLineOfSightTutorial);
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-guard'].manifest)
-            .toBe(MageWarsGuardTutorial);
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-healing'].manifest)
-            .toBe(MageWarsHealingTutorial);
-        expect(MageWarsTutorialCatalog.tutorials['mage-wars-restore-and-burn'].manifest)
-            .toBe(MageWarsRestoreAndBurnTutorial);
+        expect(MageWarsTutorialCatalog.tutorials['mage-wars-basic']).toMatchObject({
+            titleKey: 'tutorial.catalog.basic.title',
+            descriptionKey: 'tutorial.catalog.basic.description',
+            manifest: MageWarsTutorial,
+        });
+        expect(MageWarsTutorialCatalog.tutorials['mage-wars-basic'].nextTutorialId).toBeUndefined();
     });
 
     it('defines a basic Beastmaster apprentice flow with stable anchors and commands', () => {
@@ -184,22 +119,42 @@ describe('mage-wars tutorial', () => {
             'opponent-hud',
             'stage',
             'channel-result',
-            'plan-wolf',
+            'plan-open-creature-category',
+            'plan-creature-next-page',
+            'plan-select-wolf',
+            'plan-open-incantation-category',
+            'plan-select-rouse',
+            'plan-confirm',
             'prepare-opponent-spells',
             'prepared-and-hidden',
-            'deploy-wolf',
+            'deploy-select-wolf',
+            'deploy-target-zone',
             'wolf-summoned',
-            'rouse-wolf',
+            'rouse-select-spell',
+            'rouse-target-wolf',
             'pass-your-deployment',
-            'opponent-deploy',
-            'opponent-attack-spell',
+            'opponent-deployment-results',
+            'opponent-public-view',
             'discard-reading',
+            'back-to-self-view',
             'opponent-pass-deployment',
             'skip-initiative-quickcast',
             'opponent-pass-initiative-quickcast',
-            'move-wolf',
+            'move-select-wolf',
+            'move-target-zone',
             'finish',
         ]);
+        expect(stepIds.filter((stepId) => stepId.startsWith('setup-'))).toEqual([]);
+        expect(stepIds).not.toEqual(expect.arrayContaining([
+            'opponent-deploy',
+            'opponent-attack-spell',
+        ]));
+        expect(stepIds).not.toEqual(expect.arrayContaining([
+            'wall-purpose',
+            'guard-rule',
+            'healing-rule',
+            'burn-rule',
+        ]));
 
         const commandCoverage = new Set(MageWarsTutorial.steps.flatMap((step) => step.allowedCommands ?? []));
         expect([...commandCoverage]).toEqual(expect.arrayContaining([
@@ -209,24 +164,65 @@ describe('mage-wars tutorial', () => {
             MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
         ]));
 
-        const planWolf = MageWarsTutorial.steps.find((step) => step.id === 'plan-wolf');
-        expect(planWolf?.allowedTargets).toEqual(expect.arrayContaining([
-            'mw-spellbook-category-creature',
-            'mw-spellbook-next-page',
-            `mw-spellbook-card-${JUNGLE_WOLF_CARD_ID}`,
-            'mw-spellbook-category-incantation',
-            `mw-spellbook-card-${ROUSE_THE_BEAST_CARD_ID}`,
-            'mw-plan-spells',
-        ]));
+        const planningSteps = [
+            ['plan-open-creature-category', 'mw-spellbook-category-creature'],
+            ['plan-creature-next-page', 'mw-spellbook-next-page'],
+            ['plan-select-wolf', `mw-spellbook-card-${JUNGLE_WOLF_CARD_ID}`],
+            ['plan-open-incantation-category', 'mw-spellbook-category-incantation'],
+            ['plan-select-rouse', `mw-spellbook-card-${ROUSE_THE_BEAST_CARD_ID}`],
+        ] as const;
+        for (const [stepId, targetId] of planningSteps) {
+            const step = MageWarsTutorial.steps.find((item) => item.id === stepId);
+            expect(step, `${stepId} should exist`).toMatchObject({
+                requireAction: true,
+                highlightTarget: targetId,
+                allowedCommands: [],
+                allowedTargets: [targetId],
+            });
+        }
 
-        const rouseWolf = MageWarsTutorial.steps.find((step) => step.id === 'rouse-wolf');
-        expect(rouseWolf).toMatchObject({
+        const planConfirm = MageWarsTutorial.steps.find((step) => step.id === 'plan-confirm');
+        expect(planConfirm).toMatchObject({
             requireAction: true,
-            highlightTarget: `mw-prepared-card-${ROUSE_THE_BEAST_CARD_ID}`,
-            allowedCommands: [MAGE_WARS_COMMANDS.CAST_SPELL],
+            highlightTarget: 'mw-plan-spells',
+            allowedCommands: [MAGE_WARS_COMMANDS.PLAN_SPELLS],
+            allowedTargets: ['mw-plan-spells'],
         });
-        expect(rouseWolf?.advanceOnEvents).toContainEqual({
+        expect(planConfirm?.advanceOnEvents).toContainEqual({
+            type: MAGE_WARS_EVENTS.SPELLS_PLANNED,
+            match: { playerId: '0' },
+        });
+
+        const singleTargetActionSteps = [
+            ['deploy-select-wolf', `mw-prepared-card-${JUNGLE_WOLF_CARD_ID}`, MAGE_WARS_COMMANDS.CAST_SPELL],
+            ['deploy-target-zone', 'mw-zone-a3', MAGE_WARS_COMMANDS.CAST_SPELL],
+            ['rouse-select-spell', `mw-prepared-card-${ROUSE_THE_BEAST_CARD_ID}`, MAGE_WARS_COMMANDS.CAST_SPELL],
+            ['rouse-target-wolf', `mw-field-object-${JUNGLE_WOLF_CARD_ID}`, MAGE_WARS_COMMANDS.CAST_SPELL],
+            ['move-select-wolf', `mw-field-object-${JUNGLE_WOLF_CARD_ID}`, MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT],
+            ['move-target-zone', 'mw-zone-a2', MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT],
+        ] as const;
+        for (const [stepId, targetId, commandType] of singleTargetActionSteps) {
+            const step = MageWarsTutorial.steps.find((item) => item.id === stepId);
+            expect(step, `${stepId} should exist`).toMatchObject({
+                requireAction: true,
+                highlightTarget: targetId,
+                allowedCommands: [commandType],
+                allowedTargets: [targetId],
+            });
+        }
+
+        const deployTargetZone = MageWarsTutorial.steps.find((step) => step.id === 'deploy-target-zone');
+        expect(deployTargetZone?.advanceOnEvents).toContainEqual({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+        });
+        const rouseTargetWolf = MageWarsTutorial.steps.find((step) => step.id === 'rouse-target-wolf');
+        expect(rouseTargetWolf?.advanceOnEvents).toContainEqual({
             type: MAGE_WARS_EVENTS.ARENA_OBJECT_ROUSED,
+            match: { ownerId: '0' },
+        });
+        const moveTargetZone = MageWarsTutorial.steps.find((step) => step.id === 'move-target-zone');
+        expect(moveTargetZone?.advanceOnEvents).toContainEqual({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED,
             match: { ownerId: '0' },
         });
 
@@ -249,6 +245,41 @@ describe('mage-wars tutorial', () => {
             match: { playerId: '0', phase: 'deployment' },
         });
 
+        const pureAutomaticStepIds = [
+            'prepare-opponent-spells',
+            'opponent-deployment-results',
+            'opponent-pass-deployment',
+            'opponent-pass-initiative-quickcast',
+        ];
+        for (const stepId of pureAutomaticStepIds) {
+            const step = MageWarsTutorial.steps.find((item) => item.id === stepId);
+            expect(step, `${stepId} should exist`).toBeDefined();
+            expect(step?.aiActions?.length, `${stepId} should be driven by formal AI/system actions`).toBeGreaterThan(0);
+            expect(step?.requireAction, `${stepId} must not ask the current player to act`).toBeUndefined();
+            expect(step?.infoStep, `${stepId} must not stop as a visible tutorial page`).toBeUndefined();
+            expect(step?.autoAdvanceAfterAi, `${stepId} must auto-advance after its actions`).not.toBe(false);
+        }
+
+        const opponentDeploymentResults = MageWarsTutorial.steps.find((step) => step.id === 'opponent-deployment-results');
+        expect(opponentDeploymentResults?.aiActions).toEqual([
+            expect.objectContaining({
+                commandType: MAGE_WARS_COMMANDS.CAST_SPELL,
+                playerId: '1',
+                payload: expect.objectContaining({
+                    spellCardId: ASYRAN_CLERIC_CARD_ID,
+                    targetZoneId: 'd1',
+                }),
+            }),
+            expect.objectContaining({
+                commandType: MAGE_WARS_COMMANDS.CAST_SPELL,
+                playerId: '1',
+                payload: expect.objectContaining({
+                    spellCardId: PILLAR_OF_LIGHT_CARD_ID,
+                    targetObjectId: PLAYER_ONE_CLERIC_OBJECT_ID,
+                }),
+            }),
+        ]);
+
         const skipInitiativeQuickcast = MageWarsTutorial.steps.find((step) => step.id === 'skip-initiative-quickcast');
         expect(skipInitiativeQuickcast).toMatchObject({
             requireAction: true,
@@ -267,13 +298,19 @@ describe('mage-wars tutorial', () => {
             'mw-self-hud',
             'mw-opponent-hud',
             'mw-stage',
-            'mw-spellbook',
+            'mw-spellbook-category-creature',
+            'mw-spellbook-category-incantation',
+            'mw-spellbook-next-page',
+            'mw-plan-spells',
             'mw-opponent-prepared',
+            'mw-opponent-view-toggle',
             'mw-discard',
+            'mw-back-to-self-view',
             `mw-prepared-card-${JUNGLE_WOLF_CARD_ID}`,
             `mw-prepared-card-${ROUSE_THE_BEAST_CARD_ID}`,
             `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
         ]));
+        expect(MageWarsTutorial.steps.map((step) => step.highlightTarget)).not.toContain('mw-opponent-discard');
     });
 
     it('has localized tutorial text and no implementation-facing wording', () => {
@@ -323,13 +360,43 @@ describe('mage-wars tutorial', () => {
             'chapter teaches',
             'chapter covered',
             'five-chapter',
+            'opponent casts asyran cleric',
+            'pillar of light: attack',
             '点击“回合结束”',
             'click “end turn”',
+            '对手施放阿希拉牧师',
+            '圣光之柱：攻击',
         ];
         const tutorialText = locales.flatMap((locale) => flattenStrings(locale.tutorial)).join('\n').toLowerCase();
         for (const term of forbiddenTerms) {
             expect(tutorialText).not.toContain(term.toLowerCase());
         }
+
+        const zhLocale = loadLocale('zh-CN') as { actions?: { guardCreature?: string } };
+        const enLocale = loadLocale('en');
+        const singleActionStepTexts = [
+            ['planOpenCreatureCategory', '点击“生物”分类。', 'Click the Creature category.'],
+            ['planCreatureNextPage', '点击下一页，找到“丛林灰狼”。', 'Click the next page to find Jungle Wolf.'],
+            ['planSelectWolf', '点击“丛林灰狼”卡牌本体，把它放进第一个计划槽。', 'Click the Jungle Wolf card body to put it into the first prepared slot.'],
+            ['planOpenIncantationCategory', '点击“咒语”分类。', 'Click the Incantation category.'],
+            ['planSelectRouse', '点击“兽性觉醒”卡牌本体，把它放进第二个计划槽。', 'Click the Rouse the Beast card body to put it into the second prepared slot.'],
+            ['planConfirm', '点击“确认计划 2/2”提交本回合计划。', 'Click “Confirm prep 2/2” to submit this round\'s plan.'],
+            ['deploySelectWolf', '点击准备区的“丛林灰狼”。', 'Click Jungle Wolf in your prepared spells.'],
+            ['deployTargetZone', '点击兽王所在区域。', 'Click the Beastmaster\'s zone.'],
+            ['rouseSelectSpell', '点击准备区的“兽性觉醒”。', 'Click Rouse the Beast in your prepared spells.'],
+            ['rouseTargetWolf', '点击场上的“丛林灰狼”。', 'Click Jungle Wolf in the arena.'],
+            ['moveSelectWolf', '点击场上的“丛林灰狼”。', 'Click Jungle Wolf in the arena.'],
+            ['moveTargetZone', '点击相邻区域移动。', 'Click an adjacent zone to move.'],
+        ] as const;
+        for (const [key, zhText, enText] of singleActionStepTexts) {
+            expect(resolveLocaleKey(zhLocale, `game-mage-wars:tutorial.steps.${key}`)).toBe(zhText);
+            expect(resolveLocaleKey(enLocale, `game-mage-wars:tutorial.steps.${key}`)).toBe(enText);
+            expect(zhText).not.toMatch(/然后|接着|再点击|再选择|再确认/);
+            expect(enText.toLowerCase()).not.toMatch(/and then|then click|then select|then confirm/);
+        }
+        expect(zhLocale.actions?.guardCreature).toBe('守卫');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.finish'))
+            .toBe('你已经走过首局读局、聚魔、计划、召唤、唤醒、公开弃牌、快速施法窗口和一次生物移动。基础教程完成。');
     });
 
     it('keeps the tutorial command chain legal through rousing and moving Jungle Wolf', () => {
@@ -431,172 +498,6 @@ describe('mage-wars tutorial', () => {
         });
     });
 
-    it('keeps the wall tutorial setup and wall cast legal through the formal wall edge UI contract', () => {
-        const setupStep = MageWarsWallAndLineOfSightTutorial.steps.find((step) => step.id === 'setup-wall-position');
-        let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
-        state = { ...state, sys: { ...state.sys, phase: 'deployment' } };
-
-        expect(state.sys.phase).toBe('deployment');
-        expect(state.core.phaseActorId).toBe('0');
-        expect(state.core.players['0'].preparedSpellCardIds).toEqual([THORNS_WALL_CARD_ID]);
-        expect(state.core.players['0'].mana).toBe(20);
-
-        const castWallStep = MageWarsWallAndLineOfSightTutorial.steps.find((step) => step.id === 'cast-thorns-wall');
-        expect(castWallStep).toMatchObject({
-            requireAction: true,
-            allowedCommands: [MAGE_WARS_COMMANDS.CAST_SPELL],
-            allowedTargets: [
-                `mw-prepared-card-${THORNS_WALL_CARD_ID}`,
-                `mw-wall-edge-${WALL_EDGE_A3_B3}`,
-            ],
-        });
-        expect(castWallStep?.advanceOnEvents).toEqual([{ type: MAGE_WARS_EVENTS.WALL_SUMMONED }]);
-
-        state = runCommand(state, castSpellCommand('0', {
-            spellCardId: THORNS_WALL_CARD_ID,
-            manaCost: 5,
-            targetWallEdgeId: WALL_EDGE_A3_B3,
-        }));
-
-        expect(state.core.walls[WALL_EDGE_A3_B3]).toMatchObject({
-            edgeId: WALL_EDGE_A3_B3,
-            sourceSpellCardId: THORNS_WALL_CARD_ID,
-            blocksLineOfSight: true,
-            passageDamage: { amount: 3 },
-        });
-        expect(state.core.players['0'].discardSpellCardIds).toContain(THORNS_WALL_CARD_ID);
-    });
-
-    it('keeps the guard continuation command legal', () => {
-        const setupStep = MageWarsGuardTutorial.steps.find((step) => step.id === 'setup-guard-board');
-        let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
-        state = { ...state, sys: { ...state.sys, phase: 'creatureAction' } };
-        expect(state.sys.phase).toBe('creatureAction');
-        expect(state.core.phaseActorId).toBe('0');
-        expect(state.core.players['0']).toMatchObject({
-            mageId: 'priestess_apprentice',
-            mana: 20,
-            actionReady: true,
-        });
-        expect(Object.keys(state.core.objects)).toEqual(expect.arrayContaining([
-            MAGE_WARS_TUTORIAL_GUARD_CLERIC_OBJECT_ID,
-            MAGE_WARS_TUTORIAL_HEALING_CLERIC_OBJECT_ID,
-            MAGE_WARS_TUTORIAL_WOUNDED_BOBCAT_OBJECT_ID,
-            MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID,
-        ]));
-
-        state = runCommand(state, {
-            type: MAGE_WARS_COMMANDS.GUARD,
-            playerId: '0',
-            payload: { objectId: MAGE_WARS_TUTORIAL_GUARD_CLERIC_OBJECT_ID },
-        });
-        expect(state.core.objects[MAGE_WARS_TUTORIAL_GUARD_CLERIC_OBJECT_ID]).toMatchObject({
-            guarding: true,
-            actionReady: false,
-        });
-
-        const commandCoverage = new Set(MageWarsGuardTutorial.steps.flatMap((step) => step.allowedCommands ?? []));
-        expect([...commandCoverage]).toEqual([MAGE_WARS_COMMANDS.GUARD]);
-    });
-
-    it('keeps the healing continuation command and life-readout step legal', () => {
-        const setupStep = MageWarsHealingTutorial.steps.find((step) => step.id === 'setup-healing-board');
-        let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
-        state = { ...state, sys: { ...state.sys, phase: 'creatureAction' } };
-
-        expect(state.sys.phase).toBe('creatureAction');
-        expect(state.core.phaseActorId).toBe('0');
-        expect(state.core.players['0']).toMatchObject({
-            mageId: 'priestess_apprentice',
-            mana: 20,
-            actionReady: true,
-        });
-        expect(Object.keys(state.core.objects)).toEqual(expect.arrayContaining([
-            MAGE_WARS_TUTORIAL_HEALING_CLERIC_OBJECT_ID,
-            MAGE_WARS_TUTORIAL_WOUNDED_BOBCAT_OBJECT_ID,
-        ]));
-
-        const bobcatDamageBefore = state.core.objects[MAGE_WARS_TUTORIAL_WOUNDED_BOBCAT_OBJECT_ID].damage;
-        state = runCommand(state, {
-            type: MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY,
-            playerId: '0',
-            payload: {
-                objectId: MAGE_WARS_TUTORIAL_HEALING_CLERIC_OBJECT_ID,
-                abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
-                manaCost: 0,
-                targetObjectId: MAGE_WARS_TUTORIAL_WOUNDED_BOBCAT_OBJECT_ID,
-            },
-        });
-        expect(state.core.objects[MAGE_WARS_TUTORIAL_HEALING_CLERIC_OBJECT_ID].actionReady).toBe(false);
-        expect(state.core.objects[MAGE_WARS_TUTORIAL_WOUNDED_BOBCAT_OBJECT_ID].damage).toBeLessThan(bobcatDamageBefore);
-        expect(state.core.players['0'].actionReady).toBe(true);
-
-        expect(MageWarsHealingTutorial.steps.map((step) => step.id)).toEqual([
-            'setup-healing-board',
-            'healing-rule',
-            'heal-wounded-bobcat',
-            'healing-result-and-life-readout',
-            'life-toggle',
-        ]);
-        const commandCoverage = new Set(MageWarsHealingTutorial.steps.flatMap((step) => step.allowedCommands ?? []));
-        expect([...commandCoverage]).toEqual([MAGE_WARS_COMMANDS.USE_ARENA_OBJECT_ABILITY]);
-    });
-
-    it('keeps the restore and burn continuation command legal', () => {
-        const setupStep = MageWarsRestoreAndBurnTutorial.steps.find((step) => step.id === 'setup-restore-board');
-        let state = runTutorialAiActions(setupState(), setupStep?.aiActions);
-        state = { ...state, sys: { ...state.sys, phase: 'creatureAction' } };
-        state = {
-            ...state,
-            core: {
-                ...state.core,
-                objects: {
-                    ...state.core.objects,
-                    [MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID]: {
-                        ...state.core.objects[MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID],
-                        statusTokens: { [STATUS_TOKEN_IDS.BURN]: 1 },
-                    },
-                },
-            },
-        };
-
-        expect(state.sys.phase).toBe('creatureAction');
-        expect(state.core.phaseActorId).toBe('0');
-        expect(state.core.players['0']).toMatchObject({
-            mageId: 'priestess_apprentice',
-            mana: 20,
-            actionReady: true,
-        });
-        expect(state.core.objects[MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID].statusTokens[STATUS_TOKEN_IDS.BURN])
-            .toBe(1);
-
-        state = runCommand(state, {
-            type: MAGE_WARS_COMMANDS.USE_MAGE_ABILITY,
-            playerId: '0',
-            payload: {
-                abilityId: MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_STANDARD,
-                manaCost: 2,
-                targetObjectId: MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID,
-                statusTokenIds: [STATUS_TOKEN_IDS.BURN],
-            },
-        });
-        expect(state.core.objects[MAGE_WARS_TUTORIAL_BURNING_CLERIC_OBJECT_ID].statusTokens[STATUS_TOKEN_IDS.BURN] ?? 0)
-            .toBe(0);
-        expect(state.core.players['0']).toMatchObject({
-            mana: 18,
-            actionReady: false,
-        });
-
-        expect(MageWarsRestoreAndBurnTutorial.steps.map((step) => step.id)).toEqual([
-            'setup-restore-board',
-            'burn-rule',
-            'restore-burning-cleric',
-            'restore-result',
-        ]);
-        const commandCoverage = new Set(MageWarsRestoreAndBurnTutorial.steps.flatMap((step) => step.allowedCommands ?? []));
-        expect([...commandCoverage]).toEqual([MAGE_WARS_COMMANDS.USE_MAGE_ABILITY]);
-    });
-
     it('keeps Board.tsx tutorial anchors available for the manifest targets', () => {
         const boardSource = fs.readFileSync(path.join(process.cwd(), 'src', 'games', 'mage-wars', 'Board.tsx'), 'utf8');
         for (const anchor of [
@@ -605,7 +506,9 @@ describe('mage-wars tutorial', () => {
             'mw-self-hud',
             'mw-opponent-hud',
             'mw-opponent-prepared',
+            'mw-opponent-view-toggle',
             'mw-discard',
+            'mw-back-to-self-view',
             'mw-spellbook',
             'mw-plan-spells',
             'mw-prepared',
@@ -630,15 +533,19 @@ describe('mage-wars tutorial', () => {
         ]) {
             expect(boardSource).toContain(anchor);
         }
+        expect(boardSource).not.toContain('mw-opponent-discard');
+        expect(boardSource).not.toContain('mage-wars-opponent-discard-pile');
         const highlightTargets = allTutorialManifests()
             .flatMap((manifest) => manifest.steps.map((step) => step.highlightTarget))
             .filter((target): target is string => Boolean(target));
         expect(highlightTargets).toEqual(expect.arrayContaining([
-            `mw-wall-card-${THORNS_WALL_CARD_ID}`,
-            `mw-arena-object-${MAGE_WARS_TUTORIAL_GUARD_CLERIC_OBJECT_ID}`,
-            `mw-arena-object-${MAGE_WARS_TUTORIAL_HEALING_CLERIC_OBJECT_ID}`,
-            'mw-life-toggle',
-            'mw-mage-entity-0',
+            'mw-board',
+            'mw-self-hud',
+            'mw-opponent-view-toggle',
+            'mw-discard',
+            `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
         ]));
+        expect(highlightTargets.some((target) => target.includes('mw-wall-card-'))).toBe(false);
+        expect(highlightTargets.some((target) => target.includes('mw-arena-object-mw-tutorial-'))).toBe(false);
     });
 });

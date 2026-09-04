@@ -10,7 +10,7 @@
  */
 
 import fc from 'fast-check';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GameTransportServer } from '../server';
 import type { GameEngineConfig } from '../engineConfig';
 import type {
@@ -23,7 +23,7 @@ import type {
 } from '../storage';
 
 // ============================================================================
-// Mock 类（与 server.test.ts 保持一致）
+// Mock 类（增量同步集成测试自有夹具）
 // ============================================================================
 
 type EventHandler = (...args: unknown[]) => void | Promise<void>;
@@ -243,19 +243,6 @@ const createMutableEngineConfig = (): GameEngineConfig => ({
             const c = core as { currentPlayer: string; counter: number };
             return { ...c, counter: c.counter + 1 };
         },
-    },
-    systems: [],
-});
-
-/** 创建一个不修改状态的引擎配置（用于测试空 diff） */
-const createNoopEngineConfig = (): GameEngineConfig => ({
-    gameId: 'test-game',
-    domain: {
-        gameId: 'test-game',
-        setup: () => ({ currentPlayer: '0' }),
-        validate: () => ({ valid: true }),
-        execute: () => [],
-        reduce: (core: unknown) => core,
     },
     systems: [],
 });

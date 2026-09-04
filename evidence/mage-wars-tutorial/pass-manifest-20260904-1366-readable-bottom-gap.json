@@ -1,0 +1,56 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "1366×768 桌面压力态不得为了适配把 Mage Wars 底部 UI 整体缩小。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 的 1366×768 用例断言 data-mage-wars-desktop-ui-scale 为 1.000000。",
+        "src/games/mage-wars/Board.tsx 已移除 1920×1080 设计层整体 scale，桌面 UI 层改为真实视口锚点。"
+      ]
+    },
+    {
+      "requirement": "1366×768 下仍保持完整 HUD、6 张法术书、2 个计划槽和确认计划按钮可见可点。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 的 expectMageWars1366ReadableViewport 断言 HUD 为 full、法术书可见卡数为 6、计划草稿牌可见且核心卡高达到可读阈值。",
+        "同一用例真实点击法术书卡面后，计划草稿进入右侧计划槽，确认计划按钮没有被遮挡。"
+      ]
+    },
+    {
+      "requirement": "底部主交互只保留少量安全空隙，不能贴边裁切，也不能形成大空带。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言底部空隙在 6px 到 16px 之间，当前截图对应 8px。",
+        "src/games/mage-wars/Board.tsx 将底部安全空隙同步给默认地图相机避让，避免地图压到底部 HUD / 法术书 / 计划区。"
+      ]
+    },
+    {
+      "requirement": "法术书、HUD、计划区和确认按钮在 1366×768 下不得互相重叠。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言 spellbook-prepared、spellbook-plan-button、hud-spellbook 均不重叠。",
+        "最终整屏截图 test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png 来自当前代码当前入口。"
+      ]
+    },
+    {
+      "requirement": "项目通用规范必须防止同类问题再次用整层缩小冒充响应式。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-responsive-layout.md 已明确开放式场景桌面 UI 不默认使用整层视觉比例面压缩。",
+        ".spec/knowledge/standards/ui-change-gates.md 已补充响应式改动不降级主信息的验收门槛。",
+        "npm run spec:lint 通过。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png"
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "title": "山屋惊魂教程后续流程：从原标注 34 开始",
+  "items": [
+    {
+      "path": "evidence/betrayal-tutorial/topic-omen-confirmation/02-确认后回牌桌持有区.jpg",
+      "label": "原标注 34：预兆确认后回牌桌",
+      "transition": "从预兆牌确认动作进入持有区回看；这里不再打开原标注 33 之前的前置图"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-omen-confirmation/03-确认后预兆进度条.jpg",
+      "label": "原标注 35：预兆进度更新",
+      "transition": "确认预兆后回到牌桌，读取已发现预兆数和作祟风险轨"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/01-作祟前已有三张预兆.jpg",
+      "label": "作祟桥接 01：已有三张预兆",
+      "transition": "分段起点：承接作祟前已有 3 张预兆的合法局面，不把原标注 35 伪装成直接进入作祟"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/02-选择将翻出预兆的房间.jpg",
+      "label": "作祟桥接 02：选择预兆房间入口",
+      "transition": "玩家点击探索后，选择入口大厅旁的未探索房间"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/03-预兆房间朝向选择.jpg",
+      "label": "作祟桥接 03：看见预兆符号房间",
+      "transition": "点击未探索房间后翻出观测台，房间牌显示预兆符号并进入朝向选择"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/04-确认放置后将翻预兆.jpg",
+      "label": "作祟桥接 04：确认房间放置",
+      "transition": "玩家旋转房间使走廊相连后，确认放置，下一步才按预兆符号翻牌"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/05-狗预兆与作祟检定结果.jpg",
+      "label": "作祟桥接 05：狗预兆与 4 骰作祟检定",
+      "transition": "房间放置后翻出狗预兆；按全员 4 张预兆投骰，结果达到 5+"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/06-确认后自动打开叛徒开场.jpg",
+      "label": "作祟桥接 06：自动打开叛徒开场",
+      "transition": "触发者读完狗预兆和作祟骰结果后确认，作祟开始并打开触发者的叛徒剧本开场"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/07-继续后阅读叛徒胜利条件.jpg",
+      "label": "作祟桥接 07：继续到叛徒胜利条件",
+      "transition": "在剧本开场页点击继续，进入叛徒目标页，读取女孩、圣符或指环、石棺的胜利条件"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/08-关闭剧本书后进入作祟牌桌.jpg",
+      "label": "作祟桥接 08：回到作祟中牌桌",
+      "transition": "合上剧本书后回到牌桌，顶部状态变为作祟中，剧本入口保留可回看"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-trigger-bridge/09-作祟后回看叛徒目标.jpg",
+      "label": "作祟桥接 09：回看叛徒目标",
+      "transition": "从作祟牌桌点击剧本入口，重新打开本阵营的叛徒目标页"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/01-木乃伊作祟目标改变.jpg",
+      "label": "英雄代表态 01：作祟后英雄分段起点",
+      "transition": "这里是英雄视角代表态分段，不承接前一张叛徒目标；用于展示英雄方作祟后目标"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/02-打开木乃伊剧本目标页.jpg",
+      "label": "英雄代表态 02：打开英雄剧本目标页",
+      "transition": "作祟后英雄目标出现，玩家打开英雄剧本书阅读胜负条件"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/03-驱逐木乃伊前因果说明.jpg",
+      "label": "英雄代表态 03：驱逐木乃伊前",
+      "transition": "读完英雄目标后，回到牌桌看到驱逐木乃伊行动入口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/04-驱逐木乃伊神志对抗骰盘.jpg",
+      "label": "英雄代表态 04：驱逐木乃伊骰盘",
+      "transition": "选择驱逐目标后进入神志对抗投骰"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/representative-hero-haunt/05-驱逐木乃伊成功后的终局页.jpg",
+      "label": "英雄代表态 05：英雄胜利终局",
+      "transition": "驱逐成功后进入英雄胜利终局"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/01-叛徒打开木乃伊剧本目标页.jpg",
+      "label": "叛徒章节 01：打开叛徒剧本目标页",
+      "transition": "叛徒胜利链是单独章节起点，不承接英雄代表态终局"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/02-叛徒拾起女孩前.jpg",
+      "label": "叛徒章节 02：拾起女孩前",
+      "transition": "根据叛徒目标，开始处理女孩与木乃伊交付链"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/03-女孩交给木乃伊前.jpg",
+      "label": "叛徒章节 03：女孩交给木乃伊前",
+      "transition": "叛徒拾起女孩后，下一步把女孩交给木乃伊"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/04-圣符交给木乃伊前.jpg",
+      "label": "叛徒章节 04：圣符交给木乃伊前",
+      "transition": "女孩交付后继续交付圣符，推进叛徒胜利条件"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/traitor-path/05-木乃伊叛徒胜利.jpg",
+      "label": "叛徒章节 05：叛徒胜利",
+      "transition": "目标物完成交付后进入叛徒胜利终局"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/01-木乃伊怪物回合开始前.jpg",
+      "label": "怪物专题 01：木乃伊回合开始",
+      "transition": "怪物专题是隐藏回归起点，不承接叛徒胜利终局"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/02-木乃伊移动骰盘.jpg",
+      "label": "怪物专题 02：木乃伊移动投骰",
+      "transition": "从怪物回合入口进入木乃伊移动骰盘"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/03-木乃伊瞬移目标.jpg",
+      "label": "怪物专题 03：选择瞬移目标",
+      "transition": "根据移动骰结果选择合法目标房间"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/04-木乃伊拾起女孩结果.jpg",
+      "label": "怪物专题 04：拾起女孩结果",
+      "transition": "木乃伊移动到女孩所在房间后拾起女孩"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/05-木乃伊同房必须先攻击.jpg",
+      "label": "怪物专题 05：同房必须先攻击",
+      "transition": "木乃伊与英雄同房后，先进入攻击要求"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/06-木乃伊攻击目标高亮.jpg",
+      "label": "怪物专题 06：攻击目标高亮",
+      "transition": "从攻击要求进入目标选择，高亮同房英雄"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/07-木乃伊攻击骰盘.jpg",
+      "label": "怪物专题 07：木乃伊攻击骰盘",
+      "transition": "选择攻击目标后进入木乃伊攻击投骰"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/08-木乃伊偷取奖励入口.jpg",
+      "label": "怪物专题 08：偷取奖励入口",
+      "transition": "攻击结果满足奖励条件后出现偷取入口"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/09-木乃伊偷走地图结果.jpg",
+      "label": "怪物专题 09：偷取结果",
+      "transition": "选择奖励后，地图从英雄持有区转到木乃伊奖励结果"
+    }
+  ]
+}

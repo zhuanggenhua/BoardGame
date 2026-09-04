@@ -1,18 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { BetrayalCore } from '../../src/games/betrayal/game';
 import {
     resolveBetrayalMonsterMoveTargetRooms,
     resolveBetrayalMonsterMovementGroups,
-    type BetrayalCore,
     type BetrayalMonsterMovementRollGroupResult,
-} from '../../src/games/betrayal/game';
+} from '../../src/games/betrayal/monsterActionReadModel';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
     createFirstScenarioHauntRuntimeCore,
+    expectBetrayalTransitionTargetsLocator,
     initBetrayalContext,
     injectCore,
+    readLocatorClientRect,
     saveScreenshot,
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
@@ -218,9 +220,28 @@ test.describe('山屋惊魂普通怪物路径预览真实入口', () => {
         await expect(monsterToken).toHaveAttribute('data-direct-target', 'true');
         await monsterToken.click();
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.targetRoomId}`)).toBeVisible();
+        const monsterMoveSourceToken = page.getByTestId(`betrayal-monster-board-token-${NORMAL_MONSTER_ID}`);
+        await expect(monsterMoveSourceToken).toBeVisible();
+        const monsterMoveSourceRect = await readLocatorClientRect(monsterMoveSourceToken);
         await saveScreenshot(page, TARGET_SCREENSHOT);
 
         await targetRoom.click();
+        const transitionBlocker = page.getByTestId('betrayal-visual-transition-blocker');
+        await expect(transitionBlocker).toBeVisible();
+        await expect(transitionBlocker).toHaveAttribute('data-transition-kind', 'monster-move');
+        await expect(transitionBlocker).toHaveAttribute(
+            'data-transition-target-testid',
+            `betrayal-room-monster-${fixture.targetRoomId}-${NORMAL_MONSTER_ID}`,
+        );
+        const targetMonsterToken = page.getByTestId(`betrayal-room-monster-${fixture.targetRoomId}-${NORMAL_MONSTER_ID}`);
+        await expect(targetMonsterToken).toHaveCount(1);
+        await expect(targetMonsterToken).toHaveAttribute('data-visual-transition-anchor-hidden', 'true');
+        await expectBetrayalTransitionTargetsLocator(
+            page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
+            targetMonsterToken,
+            '山屋惊魂普通怪物移动动画',
+            { sourceRect: monsterMoveSourceRect },
+        );
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(
             new RegExp(`测试怪物.*移动到${fixture.targetRoomName}`),
         );
@@ -229,6 +250,7 @@ test.describe('山屋惊魂普通怪物路径预览真实入口', () => {
             monsterRoomId: fixture.targetRoomId,
             moveRemaining: 0,
         });
+        await expect(transitionBlocker).toHaveCount(0);
         await saveScreenshot(page, MOVED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-normal-monster-move-target', diagnostics }]);

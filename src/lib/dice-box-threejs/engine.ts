@@ -1,8 +1,18 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
-import { LinearFilter, LinearMipmapLinearFilter, SRGBColorSpace, Vector3 } from 'three';
+import {
+    BackSide,
+    Color,
+    LinearFilter,
+    LinearMipmapLinearFilter,
+    SRGBColorSpace,
+    ShaderMaterial,
+    Vector3,
+} from '@3d-dice/dice-box-threejs/node_modules/three/build/three.module.js';
 import type { DiceBoxConfig, DiceBoxDie, DiceBoxMaterialInstance } from '@3d-dice/dice-box-threejs';
 
 import type {
+    DicePhysicsHighlightState,
+    DicePhysicsHighlightVariant,
     DicePhysicsMotionSnapshot,
     DicePhysicsProjectedLayout,
     DicePhysicsRendererMode,
@@ -32,6 +42,7 @@ export interface DiceBoxStyleProfile {
     strength?: number;
     iterationLimit?: number;
     projectedLayoutMargin?: number;
+    projectedLayoutMinGap?: number;
 }
 
 export interface DiceBoxDieSkin {
@@ -130,6 +141,25 @@ type DiceBoxSurfaceObject = {
     traverse?: (visitor: (object: DiceBoxSurfaceObject) => void) => void;
 };
 
+type DiceBoxHighlightMaterial = ShaderMaterial & {
+    uniforms: {
+        uColor: { value: Color };
+        uOpacity: { value: number };
+    };
+};
+
+type DiceBoxHighlightMesh = DiceBoxSurfaceObject & {
+    clone?: (recursive?: boolean) => DiceBoxHighlightMesh;
+    position: DiceBoxVectorLike;
+    quaternion?: DiceBoxQuaternionLike;
+    rotation: DiceBoxVectorLike;
+    scale: DiceBoxVectorLike;
+    renderOrder: number;
+    frustumCulled?: boolean;
+    updateMatrixWorld?: (force?: boolean) => void;
+    material: DiceBoxHighlightMaterial;
+};
+
 type DiceBoxDieTransformSnapshot = {
     position: { x: number; y: number; z: number };
     quaternion: { x: number; y: number; z: number; w: number };
@@ -141,6 +171,47 @@ type DiceBoxWorldBounds = {
     width: number;
     height: number;
 };
+
+type DiceBoxHighlightShell = {
+    dieId: number;
+    dieIndex: number;
+    sourceDie: DiceBoxDie;
+    variant: DicePhysicsHighlightVariant;
+    mesh: DiceBoxHighlightMesh;
+    material: DiceBoxHighlightMaterial;
+    scale: number;
+    opacity: number;
+    color: DiceBoxColorRepresentation;
+};
+
+type DiceBoxColorRepresentation = number | string;
+
+const DICE_HIGHLIGHT_RENDERER = 'threejs-backside-shader-shell';
+const DEFAULT_DICE_HIGHLIGHT_COLORS: Record<DicePhysicsHighlightVariant, number> = {
+    candidate: 0x00e7ff,
+    selected: 0xffd447,
+};
+const DEFAULT_DICE_HIGHLIGHT_SCALE: Record<DicePhysicsHighlightVariant, number> = {
+    candidate: 1.075,
+    selected: 1.095,
+};
+const DEFAULT_DICE_HIGHLIGHT_OPACITY: Record<DicePhysicsHighlightVariant, number> = {
+    candidate: 1,
+    selected: 1,
+};
+const DICE_HIGHLIGHT_VERTEX_SHADER = `
+void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+const DICE_HIGHLIGHT_FRAGMENT_SHADER = `
+uniform vec3 uColor;
+uniform float uOpacity;
+
+void main() {
+    gl_FragColor = vec4(uColor, uOpacity);
+}
+`;
 
 const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     id: 'default-green-felt',
@@ -242,6 +313,8 @@ export class DiceBoxThreeEngine {
     private activePresetSkinId: string | null = null;
     private worldBounds: DiceBoxWorldBounds = { width: 0, height: 0 };
     private transparentSurfaceHiddenObjects: string[] = [];
+    private diceHighlights: DicePhysicsHighlightState[] = [];
+    private diceHighlightShells = new Map<number, DiceBoxHighlightShell>();
 
     private constructor(
         box: InstanceType<typeof DiceBoxModule>,
@@ -299,6 +372,7 @@ export class DiceBoxThreeEngine {
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
         }
+        engine.updateCanvasHighlightDiagnostics();
         engine.applySurfaceVisibility();
         if (typeof window !== 'undefined' && config?.canvasTestId) {
             const debugWindow = window as unknown as {
@@ -353,6 +427,18 @@ export class DiceBoxThreeEngine {
         }
     }
 
+    setDiceHighlights(highlights: DicePhysicsHighlightState[]): void {
+        this.diceHighlights = highlights
+            .map((highlight) => ({
+                ...highlight,
+                dieIndex: this.resolveHighlightDieIndex(highlight),
+            }))
+            .filter((highlight) => typeof highlight.dieIndex === 'number' && highlight.dieIndex >= 0);
+        this.syncDiceHighlightShells();
+        this.updateCanvasHighlightDiagnostics();
+        this.renderFrame();
+    }
+
     renderFrame(): void {
         this.box.diceList.forEach((die) => {
             const dieWithBody = die as DiceBoxDieWithBody;
@@ -371,6 +457,7 @@ export class DiceBoxThreeEngine {
             });
             die.updateMatrixWorld?.(true);
         });
+        this.syncDiceHighlightShells();
         this.box.scene?.updateMatrixWorld?.(true);
         this.box.camera?.updateProjectionMatrix?.();
         this.box.camera?.updateMatrixWorld?.(true);
@@ -382,6 +469,87 @@ export class DiceBoxThreeEngine {
     private finalizeSettledFrame(): void {
         this.renderFrame();
         this.nudgeDiceIntoProjectedMargins();
+        this.separateProjectedDice();
+        this.nudgeDiceIntoProjectedMargins();
+    }
+
+    private separateProjectedDice(): void {
+        const minGap = this.styleProfile.projectedLayoutMinGap ?? 0;
+        const canvas = this.box.renderer?.domElement;
+        const canvasWidth = canvas?.clientWidth || canvas?.width || 0;
+        const canvasHeight = canvas?.clientHeight || canvas?.height || 0;
+        if (minGap <= 0 || !canvas || canvasWidth <= 0 || canvasHeight <= 0 || this.box.diceList.length < 2) return;
+
+        let didNudge = false;
+        const maxPasses = 6;
+        for (let pass = 0; pass < maxPasses; pass += 1) {
+            const layouts = this.box.diceList.map((_, index) => this.getProjectedLayout(index, index));
+            const deltas = this.box.diceList.map(() => ({ x: 0, y: 0 }));
+
+            for (let leftIndex = 0; leftIndex < layouts.length; leftIndex += 1) {
+                const left = layouts[leftIndex];
+                if (!left) continue;
+                const leftWidth = left.visualWidth ?? left.width;
+                const leftHeight = left.visualHeight ?? left.height;
+                for (let rightIndex = leftIndex + 1; rightIndex < layouts.length; rightIndex += 1) {
+                    const right = layouts[rightIndex];
+                    if (!right) continue;
+                    const rightWidth = right.visualWidth ?? right.width;
+                    const rightHeight = right.visualHeight ?? right.height;
+                    const dx = left.x - right.x;
+                    const dy = left.y - right.y;
+                    const requiredX = (leftWidth + rightWidth) / 2 + minGap;
+                    const requiredY = (leftHeight + rightHeight) / 2 + minGap;
+                    const overlapX = requiredX - Math.abs(dx);
+                    const overlapY = requiredY - Math.abs(dy);
+                    if (overlapX <= 0 || overlapY <= 0) continue;
+
+                    const resolveOnX = overlapX <= overlapY;
+                    const direction = resolveOnX
+                        ? (dx === 0 ? (leftIndex < rightIndex ? -1 : 1) : Math.sign(dx))
+                        : (dy === 0 ? (leftIndex < rightIndex ? -1 : 1) : Math.sign(dy));
+                    const correction = Math.min(34, (resolveOnX ? overlapX : overlapY) / 2 + 0.75);
+                    if (resolveOnX) {
+                        deltas[leftIndex].x += direction * correction;
+                        deltas[rightIndex].x -= direction * correction;
+                    } else {
+                        deltas[leftIndex].y += direction * correction;
+                        deltas[rightIndex].y -= direction * correction;
+                    }
+                }
+            }
+
+            let didNudgeThisPass = false;
+            for (let index = 0; index < this.box.diceList.length; index += 1) {
+                const delta = deltas[index];
+                const layout = layouts[index];
+                const die = this.box.diceList[index] as DiceBoxDieWithBody | undefined;
+                if (!die || !layout || !delta) continue;
+                const distance = Math.hypot(delta.x, delta.y);
+                if (distance < 0.25) continue;
+                const maxStep = 28;
+                const scale = distance > maxStep ? maxStep / distance : 1;
+                if (!this.translateDieByScreenDelta(
+                    die,
+                    layout,
+                    delta.x * scale,
+                    delta.y * scale,
+                    canvasWidth,
+                    canvasHeight,
+                )) continue;
+                didNudge = true;
+                didNudgeThisPass = true;
+            }
+
+            if (didNudgeThisPass) {
+                this.renderFrame();
+            } else {
+                break;
+            }
+        }
+        if (didNudge) {
+            this.renderFrame();
+        }
     }
 
     private nudgeDiceIntoProjectedMargins(): void {
@@ -535,9 +703,40 @@ export class DiceBoxThreeEngine {
                             }
                             : null,
                     }))
-                    : [],
+                : [],
             })),
             transparentSurfaceHiddenObjects: this.transparentSurfaceHiddenObjects,
+            diceHighlightRenderer: DICE_HIGHLIGHT_RENDERER,
+            diceHighlights: this.diceHighlights.map((highlight) => ({
+                dieId: highlight.dieId,
+                dieIndex: this.resolveHighlightDieIndex(highlight),
+                variant: highlight.variant,
+                color: highlight.color ?? DEFAULT_DICE_HIGHLIGHT_COLORS[highlight.variant],
+                scale: this.resolveHighlightScale(highlight),
+                opacity: this.resolveHighlightOpacity(highlight),
+            })),
+            diceHighlightShells: Array.from(this.diceHighlightShells.values()).map((shell) => ({
+                dieId: shell.dieId,
+                dieIndex: shell.dieIndex,
+                variant: shell.variant,
+                renderer: DICE_HIGHLIGHT_RENDERER,
+                visible: shell.mesh.visible,
+                name: shell.mesh.name,
+                scale: shell.scale,
+                opacity: shell.material.opacity,
+                materialType: shell.material.type,
+                materialSide: shell.material.side,
+                depthTest: shell.material.depthTest,
+                depthWrite: shell.material.depthWrite,
+                transparent: shell.material.transparent,
+                shaderOpacity: shell.material.uniforms.uOpacity.value,
+                renderOrder: shell.mesh.renderOrder,
+                position: {
+                    x: shell.mesh.position.x,
+                    y: shell.mesh.position.y,
+                    z: shell.mesh.position.z,
+                },
+            })),
             dice: this.box.diceList.map((die, index) => {
                 const dieWithBody = die as DiceBoxDieWithBody;
                 if (!die.geometry.boundingBox) {
@@ -655,7 +854,9 @@ export class DiceBoxThreeEngine {
     }
 
     clear(): void {
+        this.clearDiceHighlightShells();
         this.box.clearDice();
+        this.updateCanvasHighlightDiagnostics();
     }
 
     destroy(): void {
@@ -672,6 +873,7 @@ export class DiceBoxThreeEngine {
             }
         }
         this.debugSnapshotReader = null;
+        this.clearDiceHighlightShells();
         this.box.clearDice();
         this.disposeSceneResources();
         this.box.renderer?.dispose?.();
@@ -700,6 +902,8 @@ export class DiceBoxThreeEngine {
             canvas.dataset.physicsWorldHeight = String(Math.round(worldHeight));
             canvas.dataset.cameraZoom = String(this.styleProfile.cameraZoom ?? 1);
         }
+        this.syncDiceHighlightShells();
+        this.updateCanvasHighlightDiagnostics();
     }
 
     private applyCameraProfile(): void {
@@ -766,6 +970,7 @@ export class DiceBoxThreeEngine {
         await this.box.roll(createNotation(values));
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
+        this.syncDiceHighlightShells();
         this.finalizeSettledFrame();
     }
 
@@ -802,23 +1007,29 @@ export class DiceBoxThreeEngine {
 
     async removeDice(indices: number[]): Promise<void> {
         if (indices.length === 0) return;
+        indices.forEach((index) => this.removeDiceHighlightShell(index));
         await this.box.remove(indices);
+        this.syncDiceHighlightShells();
+        this.updateCanvasHighlightDiagnostics();
     }
 
     syncValues(values: number[]): void {
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
+        this.syncDiceHighlightShells();
         this.finalizeSettledFrame();
     }
 
     syncSettledValues(values: number[]): void {
         this.applyValues(values, undefined, true);
         this.applyCurrentSkins();
+        this.syncDiceHighlightShells();
         this.finalizeSettledFrame();
     }
 
     previewValues(values: number[], indices?: number[]): void {
         this.applyValues(values, indices, false);
+        this.syncDiceHighlightShells();
     }
 
     ensureValues(values: number[]): void {
@@ -1044,6 +1255,199 @@ export class DiceBoxThreeEngine {
             this.setVector(die.body.angularVelocity, { x: 0, y: 0, z: 0 });
         }
         die.updateMatrixWorld?.(true);
+    }
+
+    private resolveHighlightDieIndex(highlight: DicePhysicsHighlightState): number {
+        if (typeof highlight.dieIndex === 'number' && Number.isFinite(highlight.dieIndex)) {
+            return Math.floor(highlight.dieIndex);
+        }
+        return Math.floor(highlight.dieId - 1);
+    }
+
+    private resolveHighlightScale(highlight: DicePhysicsHighlightState): number {
+        const scale = typeof highlight.scale === 'number'
+            ? highlight.scale
+            : DEFAULT_DICE_HIGHLIGHT_SCALE[highlight.variant];
+        return Number.isFinite(scale) && scale > 1 ? scale : DEFAULT_DICE_HIGHLIGHT_SCALE[highlight.variant];
+    }
+
+    private resolveHighlightOpacity(highlight: DicePhysicsHighlightState): number {
+        const opacity = typeof highlight.opacity === 'number'
+            ? highlight.opacity
+            : DEFAULT_DICE_HIGHLIGHT_OPACITY[highlight.variant];
+        if (!Number.isFinite(opacity)) return DEFAULT_DICE_HIGHLIGHT_OPACITY[highlight.variant];
+        return Math.max(0.08, Math.min(1, opacity));
+    }
+
+    private syncDiceHighlightShells(): void {
+        const desired = new Map<number, DicePhysicsHighlightState>();
+        for (const highlight of this.diceHighlights) {
+            const dieIndex = this.resolveHighlightDieIndex(highlight);
+            if (dieIndex < 0) continue;
+            desired.set(dieIndex, { ...highlight, dieIndex });
+        }
+
+        for (const dieIndex of Array.from(this.diceHighlightShells.keys())) {
+            if (!desired.has(dieIndex)) {
+                this.removeDiceHighlightShell(dieIndex);
+            }
+        }
+
+        for (const [dieIndex, highlight] of desired.entries()) {
+            const die = this.box.diceList[dieIndex];
+            if (!die) {
+                this.removeDiceHighlightShell(dieIndex);
+                continue;
+            }
+
+            let shell = this.diceHighlightShells.get(dieIndex);
+            if (!shell || shell.sourceDie !== die) {
+                this.removeDiceHighlightShell(dieIndex);
+                shell = this.createDiceHighlightShell(die, dieIndex, highlight);
+                this.diceHighlightShells.set(dieIndex, shell);
+            }
+
+            this.configureDiceHighlightShell(shell, highlight);
+            this.syncDiceHighlightShellTransform(shell, die);
+        }
+        this.updateCanvasHighlightDiagnostics();
+    }
+
+    private createDiceHighlightShell(
+        die: DiceBoxDie,
+        dieIndex: number,
+        highlight: DicePhysicsHighlightState,
+    ): DiceBoxHighlightShell {
+        const color = (highlight.color ?? DEFAULT_DICE_HIGHLIGHT_COLORS[highlight.variant]) as DiceBoxColorRepresentation;
+        const opacity = this.resolveHighlightOpacity(highlight);
+        const material = this.createDiceHighlightMaterial(color, opacity);
+        const mesh = (die as DiceBoxHighlightMesh).clone?.(false);
+        if (!mesh) {
+            throw new Error('DiceBox highlight shell requires cloneable dice mesh');
+        }
+        mesh.name = `dice-highlight-shell-${dieIndex}-${highlight.variant}`;
+        mesh.material = material;
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 100 + dieIndex;
+        (mesh as { body?: unknown }).body = undefined;
+        (this.box.scene as { add?: (object: unknown) => void }).add?.(mesh);
+        return {
+            dieId: highlight.dieId,
+            dieIndex,
+            sourceDie: die,
+            variant: highlight.variant,
+            mesh,
+            material,
+            scale: this.resolveHighlightScale(highlight),
+            opacity,
+            color,
+        };
+    }
+
+    private createDiceHighlightMaterial(color: DiceBoxColorRepresentation, opacity: number): DiceBoxHighlightMaterial {
+        const material = new ShaderMaterial({
+            name: 'DiceHighlightShellMaterial',
+            uniforms: {
+                uColor: { value: new Color(color) },
+                uOpacity: { value: opacity },
+            },
+            vertexShader: DICE_HIGHLIGHT_VERTEX_SHADER,
+            fragmentShader: DICE_HIGHLIGHT_FRAGMENT_SHADER,
+            side: BackSide,
+            transparent: true,
+            depthTest: true,
+            depthWrite: false,
+            toneMapped: false,
+        }) as DiceBoxHighlightMaterial;
+        material.opacity = opacity;
+        return material;
+    }
+
+    private configureDiceHighlightMaterial(
+        material: DiceBoxHighlightMaterial,
+        color: DiceBoxColorRepresentation,
+        opacity: number,
+    ): void {
+        material.name = 'DiceHighlightShellMaterial';
+        material.uniforms.uColor.value.set(color);
+        material.uniforms.uOpacity.value = opacity;
+        material.opacity = opacity;
+        material.transparent = true;
+        material.side = BackSide;
+        material.depthTest = true;
+        material.depthWrite = false;
+        material.toneMapped = false;
+        material.needsUpdate = true;
+    }
+
+    private configureDiceHighlightShell(
+        shell: DiceBoxHighlightShell,
+        highlight: DicePhysicsHighlightState,
+    ): void {
+        const color = (highlight.color ?? DEFAULT_DICE_HIGHLIGHT_COLORS[highlight.variant]) as DiceBoxColorRepresentation;
+        const scale = this.resolveHighlightScale(highlight);
+        const opacity = this.resolveHighlightOpacity(highlight);
+        shell.dieId = highlight.dieId;
+        shell.variant = highlight.variant;
+        shell.scale = scale;
+        shell.opacity = opacity;
+        shell.color = color;
+        shell.mesh.name = `dice-highlight-shell-${shell.dieIndex}-${highlight.variant}`;
+        shell.mesh.visible = true;
+        this.configureDiceHighlightMaterial(shell.material, color, opacity);
+    }
+
+    private syncDiceHighlightShellTransform(shell: DiceBoxHighlightShell, die: DiceBoxDie): void {
+        this.setVector(shell.mesh.position, {
+            x: die.position.x,
+            y: die.position.y,
+            z: die.position.z,
+        });
+        const dieQuaternion = die.quaternion as DiceBoxQuaternionLike | undefined;
+        if (dieQuaternion) {
+            this.setQuaternion(shell.mesh.quaternion as DiceBoxQuaternionLike, {
+                x: dieQuaternion.x ?? 0,
+                y: dieQuaternion.y ?? 0,
+                z: dieQuaternion.z ?? 0,
+                w: dieQuaternion.w ?? 1,
+            });
+        } else {
+            shell.mesh.rotation.set(die.rotation.x, die.rotation.y, die.rotation.z);
+        }
+        shell.mesh.scale.set(
+            (die.scale?.x ?? 1) * shell.scale,
+            (die.scale?.y ?? 1) * shell.scale,
+            (die.scale?.z ?? 1) * shell.scale,
+        );
+        shell.mesh.updateMatrixWorld(true);
+    }
+
+    private removeDiceHighlightShell(dieIndex: number): void {
+        const shell = this.diceHighlightShells.get(dieIndex);
+        if (!shell) return;
+        (this.box.scene as { remove?: (object: unknown) => void }).remove?.(shell.mesh);
+        shell.material.dispose();
+        this.diceHighlightShells.delete(dieIndex);
+    }
+
+    private clearDiceHighlightShells(): void {
+        for (const dieIndex of Array.from(this.diceHighlightShells.keys())) {
+            this.removeDiceHighlightShell(dieIndex);
+        }
+    }
+
+    private updateCanvasHighlightDiagnostics(): void {
+        const canvas = this.box.renderer?.domElement;
+        if (!canvas) return;
+        const candidateCount = this.diceHighlights.filter((highlight) => highlight.variant === 'candidate').length;
+        const selectedCount = this.diceHighlights.filter((highlight) => highlight.variant === 'selected').length;
+        canvas.dataset.diceHighlightRenderer = this.diceHighlights.length > 0 ? DICE_HIGHLIGHT_RENDERER : 'none';
+        canvas.dataset.diceHighlightCount = String(this.diceHighlights.length);
+        canvas.dataset.diceHighlightShellCount = String(this.diceHighlightShells.size);
+        canvas.dataset.diceHighlightCandidateCount = String(candidateCount);
+        canvas.dataset.diceHighlightSelectedCount = String(selectedCount);
     }
 
     private setVector(vector: DiceBoxVectorLike | undefined, value: { x: number; y: number; z: number }): void {

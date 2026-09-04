@@ -141,6 +141,19 @@ describe('mage-wars familiar and spawn-point spellcasting', () => {
         expect(planned.success).toBe(true);
         expect(planned.state.core.players['0'].preparedSpellCardIds).toEqual([]);
         expect(planned.state.core.objects[familiar.id].preparedSpellCardId).toBe(spellCardId);
+        expect(planned.state.sys.undo.snapshots).toHaveLength(1);
+        const objectSpellLogEntry = planned.state.sys.actionLog.entries.find((entry) => (
+            entry.kind === MAGE_WARS_EVENTS.OBJECT_SPELL_PLANNED
+        ));
+        expect(objectSpellLogEntry?.segments).toEqual([
+            expect.objectContaining({
+                type: 'i18n',
+                key: 'actionLog.objectSpellPlanned',
+                params: { objectId: familiar.id },
+            }),
+        ]);
+        expect(JSON.stringify(objectSpellLogEntry?.segments)).not.toContain(String(spellCardId));
+        expect(JSON.stringify(objectSpellLogEntry?.segments)).not.toContain('cardId');
         expect(MageWarsDomain.validate(stateFor(planned.state.core, 'deployment'), {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',

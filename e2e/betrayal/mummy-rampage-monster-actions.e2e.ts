@@ -3,13 +3,15 @@ import { existsSync, readdirSync, unlinkSync } from 'node:fs';
 import sharp from 'sharp';
 import {
     BETRAYAL_COMMANDS,
-    resolveBetrayalMonsterMoveTargetRooms,
-    resolveBetrayalMonsterMovementGroups,
     resolveExplorableRoomSlots,
     resolveNextRoomDiscoveryDeckKind,
     type BetrayalCore,
-    type BetrayalMonsterMovementRollGroupResult,
 } from '../../src/games/betrayal/game';
+import {
+    resolveBetrayalMonsterMoveTargetRooms,
+    resolveBetrayalMonsterMovementGroups,
+    type BetrayalMonsterMovementRollGroupResult,
+} from '../../src/games/betrayal/monsterActionReadModel';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     DEFAULT_BETRAYAL_SCENARIO_CARD_ID,
@@ -24,9 +26,11 @@ import {
     createMedicalKitUseReadyRuntimeCore,
     createRuntimeCore,
     dispatchHarnessCommand,
+    expectBetrayalTransitionTargetsLocator,
     expectVisiblePhysicalDiceBox,
     initBetrayalContext,
     injectCore,
+    readLocatorClientRect,
     saveScreenshot,
     setHarnessRandomQueue,
     waitForBetrayalPageReady,
@@ -2052,7 +2056,9 @@ const exerciseMummyGoldenManualTrade = async (
 
     await page.getByTestId('betrayal-action-trade').click();
     await expect(page.getByTestId('betrayal-trade-flow-banner')).toBeVisible();
-    await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText('交易：选择持有物和同房间玩家');
+    await expect(page.getByTestId('betrayal-trade-flow-banner')).toHaveAttribute('data-trade-progress-visible', 'status-only');
+    await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('选择交易方案');
+    await expect(page.locator('[data-testid="betrayal-trade-flow-banner"] [data-testid="betrayal-trade-flow-item-step"]'), '顶部交易横幅不能复写选择步骤').toHaveCount(0);
     const teammateTarget = page.getByTestId('betrayal-room-occupant-hallway-1');
     await expect(teammateTarget).toHaveAttribute('data-direct-target', 'true');
     await expect(page.getByTestId('betrayal-room-occupant-target-outline-hallway-1')).toHaveAttribute('data-highlight-color', 'green');
@@ -2062,7 +2068,8 @@ const exerciseMummyGoldenManualTrade = async (
 
     await teammateTarget.click();
     await expect(page.getByTestId('betrayal-trade-status')).toContainText('可交易给');
-    await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText(/选择自己或对方持有物|选择/);
+    await expect(page.getByTestId('betrayal-trade-banner-status')).toContainText('选择交易方案');
+    await expect(page.getByTestId('betrayal-trade-action-panel'), '只选队友但未选持有物时不能形成交易方案').toHaveCount(0);
     await expect(page.getByTestId('betrayal-trade-return-selector')).toBeVisible();
     await expect(page.getByTestId('betrayal-trade-return-card-map')).toBeVisible();
     if (screenshots.targetSelected) {
@@ -2071,8 +2078,8 @@ const exerciseMummyGoldenManualTrade = async (
 
     await page.getByTestId('betrayal-inventory-rope').click();
     await page.getByTestId('betrayal-trade-return-card-map').click();
-    await expect(page.getByTestId('betrayal-trade-flow-item-step')).toContainText(/你给出.*兔脚.*对方给出.*地图/);
-    await expect(page.getByTestId('betrayal-trade-flow-target-step')).toContainText('提出交易');
+    await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-item-step"]')).toContainText(/你给出.*兔脚.*对方给出.*地图/);
+    await expect(page.locator('[data-testid="betrayal-trade-action-panel"] [data-testid="betrayal-trade-flow-target-step"]')).toContainText('提交方案');
     await expect(page.getByTestId('betrayal-action-trade')).toBeEnabled();
     if (screenshots.selectionReady) {
         await saveScreenshot(page, screenshots.selectionReady);
@@ -2141,6 +2148,11 @@ const moveMummyThroughRealRoomTarget = async (
     if (screenshots.targetReady) {
         await saveScreenshot(page, screenshots.targetReady);
     }
+    await switchRoomMapToFloor(page, source.floor);
+    const sourceToken = page.getByTestId(`betrayal-room-monster-${source.roomId}-${MUMMY_MONSTER_ID}`);
+    await expect(sourceToken).toBeVisible();
+    const sourceRect = await readLocatorClientRect(sourceToken);
+    await switchRoomMapToFloor(page, target.floor);
     await page.getByTestId(`betrayal-room-${target.roomId}`).click({ position: { x: 12, y: 12 } });
     const transitionBlocker = page.getByTestId('betrayal-visual-transition-blocker');
     const transitionKind = await transitionBlocker
@@ -2148,7 +2160,19 @@ const moveMummyThroughRealRoomTarget = async (
         .catch(() => null);
     if (transitionKind !== null) {
         expect(transitionKind).toBe('monster-move');
-        await expect(transitionBlocker).toHaveAttribute('data-transition-target-testid', `betrayal-room-${target.roomId}`);
+        await expect(transitionBlocker).toHaveAttribute(
+            'data-transition-target-testid',
+            `betrayal-room-monster-${target.roomId}-${MUMMY_MONSTER_ID}`,
+        );
+        const targetToken = page.getByTestId(`betrayal-room-monster-${target.roomId}-${MUMMY_MONSTER_ID}`);
+        await expect(targetToken).toHaveCount(1);
+        await expect(targetToken).toHaveAttribute('data-visual-transition-anchor-hidden', 'true');
+        await expectBetrayalTransitionTargetsLocator(
+            page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
+            targetToken,
+            '山屋惊魂木乃伊移动动画',
+            { sourceRect },
+        );
     }
     await expect.poll(() => readMummyActionState(page)).toMatchObject({
         mummyRoomId: target.roomId,
@@ -2240,8 +2264,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             entryReady: goldenFlowProcessScreenshot(12, '主动交易前-交易入口可见但目标未高亮'),
             targetReady: goldenFlowProcessScreenshot(13, '主动点交易后-同房目标绿色高亮'),
             targetSelected: goldenFlowProcessScreenshot(14, '点同房目标后-交易提示和对方持有物'),
-            selectionReady: goldenFlowProcessScreenshot(15, '选择双方持有物后-提出交易可用'),
-            requestSent: goldenFlowProcessScreenshot(16, '提出交易后-等待接收方同意'),
+            selectionReady: goldenFlowProcessScreenshot(15, '选择双方持有物后-确认交易方案可用'),
+            requestSent: goldenFlowProcessScreenshot(16, '提交交易方案后-等待接收方同意'),
             settled: goldenFlowProcessScreenshot(17, '同意交易后-双方持有物结算'),
         });
 
@@ -2973,13 +2997,25 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(page.getByTestId(`betrayal-room-monster-move-target-${fixture.girlRoomId}`)).toBeVisible();
         await saveScreenshot(page, MOVE_TARGET_SCREENSHOT);
 
+        const mummyMoveSourceRect = await readLocatorClientRect(mummyToken);
         await page.getByTestId(`betrayal-room-${fixture.girlRoomId}`).click();
         const transitionBlocker = page.getByTestId('betrayal-visual-transition-blocker');
         await expect(transitionBlocker).toBeVisible();
         await expect(transitionBlocker).toHaveAttribute('data-transition-kind', 'monster-move');
-        await expect(transitionBlocker).toHaveAttribute('data-transition-target-testid', `betrayal-room-${fixture.girlRoomId}`);
+        await expect(transitionBlocker).toHaveAttribute(
+            'data-transition-target-testid',
+            `betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`,
+        );
+        const movingTargetMummyToken = page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`);
+        await expect(movingTargetMummyToken).toHaveCount(1);
+        await expect(movingTargetMummyToken).toHaveAttribute('data-visual-transition-anchor-hidden', 'true');
+        await expectBetrayalTransitionTargetsLocator(
+            page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
+            movingTargetMummyToken,
+            '山屋惊魂木乃伊向女孩房间移动动画',
+            { sourceRect: mummyMoveSourceRect },
+        );
         await expect(page.getByTestId(`betrayal-room-monster-${fixture.mummyRoomId}-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
-        await expect(page.getByTestId(`betrayal-room-monster-${fixture.girlRoomId}-${MUMMY_MONSTER_ID}`)).toHaveCount(0);
         await expect.poll(() => readMummyActionState(page)).toMatchObject({
             mummyRoomId: fixture.girlRoomId,
         });

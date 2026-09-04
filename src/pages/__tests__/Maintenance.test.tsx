@@ -1307,8 +1307,9 @@ describe('resolveGameImplementationLoadTimeoutMs', () => {
         vi.resetModules();
     });
 
-    it('桌面维持 15000ms，慢设备放宽到 45000ms', async () => {
+    it('生产桌面维持 15000ms，开发冷启动和慢设备放宽超时', async () => {
         const {
+            DEVELOPMENT_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS,
             GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS,
             SLOW_DEVICE_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS,
             resolveGameImplementationLoadTimeoutMs,
@@ -1321,9 +1322,22 @@ describe('resolveGameImplementationLoadTimeoutMs', () => {
                 deviceMemory: 8,
                 hardwareConcurrency: 8,
             },
+            isDevelopmentRuntime: false,
             isNativeAndroid: false,
             isCoarsePointer: false,
         })).toBe(GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS);
+
+        expect(resolveGameImplementationLoadTimeoutMs({
+            windowObject: { innerWidth: 1440 },
+            navigatorObject: {
+                connection: { effectiveType: '4g', saveData: false },
+                deviceMemory: 8,
+                hardwareConcurrency: 8,
+            },
+            isDevelopmentRuntime: true,
+            isNativeAndroid: false,
+            isCoarsePointer: false,
+        })).toBe(DEVELOPMENT_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS);
 
         expect(resolveGameImplementationLoadTimeoutMs({
             windowObject: { innerWidth: 390 },
@@ -1332,6 +1346,7 @@ describe('resolveGameImplementationLoadTimeoutMs', () => {
                 deviceMemory: 4,
                 hardwareConcurrency: 4,
             },
+            isDevelopmentRuntime: false,
             isNativeAndroid: false,
             isCoarsePointer: true,
         })).toBe(SLOW_DEVICE_GAME_IMPLEMENTATION_LOAD_TIMEOUT_MS);
@@ -1343,6 +1358,7 @@ describe('resolveGameImplementationLoadTimeoutMs', () => {
                 deviceMemory: 8,
                 hardwareConcurrency: 8,
             },
+            isDevelopmentRuntime: false,
             isNativeAndroid: false,
             isCoarsePointer: false,
             isTestMode: true,

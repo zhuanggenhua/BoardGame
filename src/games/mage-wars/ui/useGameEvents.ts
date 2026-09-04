@@ -8,6 +8,7 @@ import type { MatchState } from '../../../engine/types';
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsEvent } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { mapMageWarsEventToFx } from './eventFxMapper';
+import { MW_FX } from './fxCues';
 
 interface UseMageWarsGameEventsParams {
     G: MatchState<MageWarsCore>;
@@ -225,22 +226,106 @@ function anchorRef(anchorId: unknown, anchorKind: FxAnchorRef['anchorKind']): Fx
         : null;
 }
 
+function anchorSnapshotCacheKey(anchorKind: FxAnchorRef['anchorKind'], anchorId: string): string {
+    return `${anchorKind}:${anchorId}`;
+}
+
+function isFxAnchorSnapshot(value: unknown): value is FxAnchorSnapshot {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as Partial<FxAnchorSnapshot>;
+    return typeof candidate.surfaceId === 'string'
+        && typeof candidate.anchorId === 'string'
+        && typeof candidate.anchorKind === 'string'
+        && candidate.box != null
+        && typeof candidate.box.left === 'number'
+        && typeof candidate.box.top === 'number'
+        && typeof candidate.box.width === 'number'
+        && typeof candidate.box.height === 'number';
+}
+
+function getRelocationMovedAnchor(event: MageWarsEvent): Pick<FxAnchorRef, 'anchorId' | 'anchorKind'> | null {
+    if (event.type === MAGE_WARS_EVENTS.MAGE_MOVED) {
+        return { anchorId: event.payload.playerId, anchorKind: 'player' };
+    }
+    if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED) {
+        return { anchorId: event.payload.objectId, anchorKind: 'entity' };
+    }
+    if (event.type === MAGE_WARS_EVENTS.SPELL_PUSH_RESOLVED) {
+        if (event.payload.targetObjectId) return { anchorId: event.payload.targetObjectId, anchorKind: 'entity' };
+        if (event.payload.targetPlayerId) return { anchorId: event.payload.targetPlayerId, anchorKind: 'player' };
+    }
+    if (event.type === MAGE_WARS_EVENTS.SPELL_TELEPORT_RESOLVED) {
+        return { anchorId: event.payload.targetObjectId, anchorKind: 'entity' };
+    }
+    return null;
+}
+
+function attachRelocationSourceSnapshot(
+    event: MageWarsEvent,
+    instruction: ReturnType<typeof mapMageWarsEventToFx>,
+    previousAnchorSnapshots: Map<string, FxAnchorSnapshot>,
+): ReturnType<typeof mapMageWarsEventToFx> {
+    if (!instruction) return instruction;
+    const movedAnchor = getRelocationMovedAnchor(event);
+    if (!movedAnchor) return instruction;
+    const params = instruction.params ?? {};
+    if (isFxAnchorSnapshot(params.sourceSnapshot)) return instruction;
+    const sourceSnapshot = previousAnchorSnapshots.get(anchorSnapshotCacheKey(movedAnchor.anchorKind, movedAnchor.anchorId));
+    if (!sourceSnapshot) return instruction;
+
+    return {
+        ...instruction,
+        ctx: {
+            ...instruction.ctx,
+            sourceSnapshot,
+        },
+        params: {
+            ...params,
+            sourceSnapshot,
+        },
+    };
+}
+
+function captureCoreAnchorSnapshots(
+    core: MageWarsCore,
+    resolveFxAnchorSnapshot?: UseMageWarsGameEventsParams['resolveFxAnchorSnapshot'],
+): Map<string, FxAnchorSnapshot> {
+    const snapshots = new Map<string, FxAnchorSnapshot>();
+    if (!resolveFxAnchorSnapshot) return snapshots;
+
+    for (const playerId of Object.keys(core.players)) {
+        const snapshot = resolveFxAnchorSnapshot(anchorRef(playerId, 'player'));
+        if (snapshot) snapshots.set(anchorSnapshotCacheKey('player', playerId), snapshot);
+    }
+    for (const objectId of Object.keys(core.objects)) {
+        const snapshot = resolveFxAnchorSnapshot(anchorRef(objectId, 'entity'));
+        if (snapshot) snapshots.set(anchorSnapshotCacheKey('entity', objectId), snapshot);
+    }
+
+    return snapshots;
+}
+
 function resolveInstructionSnapshots(
     instruction: ReturnType<typeof mapMageWarsEventToFx>,
     resolveFxAnchorSnapshot?: UseMageWarsGameEventsParams['resolveFxAnchorSnapshot'],
 ): ReturnType<typeof mapMageWarsEventToFx> {
     if (!instruction || !resolveFxAnchorSnapshot) return instruction;
     const params = instruction.params ?? {};
+    const explicitSourceSnapshot = isFxAnchorSnapshot(params.sourceSnapshot) ? params.sourceSnapshot : null;
+    const explicitTargetSnapshot = isFxAnchorSnapshot(params.targetSnapshot) ? params.targetSnapshot : null;
+    const relocationCue = instruction.cue === MW_FX.MOVE
+        || instruction.cue === MW_FX.SPELL_PUSH
+        || instruction.cue === MW_FX.SPELL_TELEPORT;
     const sourceAnchor = anchorRef(
-        params.sourceObjectId ?? params.attackerId ?? params.playerId,
+        params.sourceObjectId ?? params.attackerId ?? (relocationCue ? undefined : params.playerId),
         params.sourceObjectId ? 'entity' : 'player',
     );
     const targetAnchor = anchorRef(
         params.objectId ?? params.targetObjectId ?? params.targetPlayerId ?? params.defenderId ?? params.targetId,
         params.objectId || params.targetObjectId || params.targetId ? 'entity' : 'player',
     );
-    const sourceSnapshot = sourceAnchor ? resolveFxAnchorSnapshot(sourceAnchor) : null;
-    const targetSnapshot = targetAnchor ? resolveFxAnchorSnapshot(targetAnchor) : null;
+    const sourceSnapshot = explicitSourceSnapshot ?? (sourceAnchor ? resolveFxAnchorSnapshot(sourceAnchor) : null);
+    const targetSnapshot = explicitTargetSnapshot ?? (targetAnchor ? resolveFxAnchorSnapshot(targetAnchor) : null);
 
     return {
         ...instruction,
@@ -264,6 +349,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
     const fxImpactMapRef = useRef(new Map<string, string[]>());
     const scheduledHeldFxRef = useRef(new Set<FxFrameSubscription>());
     const previousCoreRef = useRef(G.core);
+    const anchorSnapshotCacheRef = useRef(new Map<string, FxAnchorSnapshot>());
     const damageBuffer = useVisualStateBuffer();
     const visualEntityBuffer = useVisualEntityBuffer<MageWarsArenaObjectState>();
     const [debug, setDebug] = useState<UseMageWarsGameEventsResult['debug']>(() => ({
@@ -307,6 +393,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             visualEntityBuffer.clear();
         }
         if (newEntries.length === 0) {
+            anchorSnapshotCacheRef.current = captureCoreAnchorSnapshots(G.core, resolveFxAnchorSnapshot);
             previousCoreRef.current = G.core;
             let cancelled = false;
             queueMicrotask(() => {
@@ -340,6 +427,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
         const damageTargets = collectDamageFreezeEntries(events, G.core, previousCore);
         const heldObjectCandidates = collectDefeatedObjectHoldCandidates(events, G.core, previousCore);
         const visualCore = addHeldObjectCandidatesToCore(G.core, heldObjectCandidates);
+        const previousAnchorSnapshots = anchorSnapshotCacheRef.current;
         damageBuffer.freezeBatch(damageTargets.entries);
 
         const pushFxInstruction = (
@@ -373,7 +461,11 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             if (event.type === 'DAMAGE_DEALT' && drivenDamageTargetIds.has(event.payload.targetId)) {
                 continue;
             }
-            const instruction = mapMageWarsEventToFx(entry, visualCore);
+            const instruction = attachRelocationSourceSnapshot(
+                event,
+                mapMageWarsEventToFx(entry, visualCore),
+                previousAnchorSnapshots,
+            );
             if (!instruction) continue;
             fxCues.push(instruction.cue);
             const releaseKeys = getDamageReleaseKeysForEvent(event, damageTargets.targetKeys, drivenDamageTargetIds);
@@ -419,6 +511,7 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             ));
         });
         previousCoreRef.current = G.core;
+        anchorSnapshotCacheRef.current = captureCoreAnchorSnapshots(G.core, resolveFxAnchorSnapshot);
         return () => {
             cancelled = true;
         };

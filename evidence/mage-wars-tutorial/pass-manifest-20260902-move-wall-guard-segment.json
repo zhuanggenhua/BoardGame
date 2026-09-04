@@ -1,0 +1,67 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-02T20:29:30.4749798+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "只展示前半之后的下一段，不混入 00-15 前半，也不混入 23-29 治疗、生命读数常显、复原术后续段。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars-tutorial/sequence-labels-20260902-move-wall-guard-segment.json lists only screenshots 16-22",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment contains 00-sequence-index.png and 01-07 labeled images only"
+      ]
+    },
+    {
+      "requirement": "下一段按端到端承接顺序展示：快速施法让过后进入生物移动，再进入墙体，再进入守卫。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wolf-moved-to-a2.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wall-prepared.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-guard-action-dock.png"
+      ]
+    },
+    {
+      "requirement": "墙体链路覆盖来源、合法边界、结算落位和视线/通行读法，不只截最终结果。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-wall-prepared.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-wall-edge-target-highlight.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-wall-card-on-edge.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-wall-line-of-sight-and-passage.png"
+      ]
+    },
+    {
+      "requirement": "守卫链路覆盖动作入口和结算后状态：按钮只写规则短名“守卫”，守卫标记在结果态出现在单位下方。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-guard-action-dock.png",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-guard-token-result.png",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts asserts the guard action button text is 守卫 or Guard and not 进行守卫"
+      ]
+    },
+    {
+      "requirement": "图片来自本轮当前教程 E2E 运行，不是旧图、诊断图或其它测试文件截图。",
+      "status": "PASS",
+      "evidence": [
+        "npm run test:e2e:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts \"单入口教程按玩家流程覆盖读局、计划、召唤、墙体、守卫、治疗和复原术\" => 1 passed",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync screenshots 16-22 were last written at 2026/9/2 20:19"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/01-labeled-16-wolf-moved-to-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/02-labeled-17-wall-prepared.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/03-labeled-18-wall-edge-target-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/04-labeled-19-wall-card-on-edge.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/05-labeled-20-wall-line-of-sight-and-passage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/06-labeled-21-guard-action-dock.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260902-move-wall-guard-segment/07-labeled-22-guard-token-result.png"
+  ]
+}

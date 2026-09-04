@@ -4,8 +4,10 @@ import {
   attachPageDiagnostics,
 } from "../helpers/common";
 import {
+  expectBetrayalTransitionTargetsLocator,
   initBetrayalContext,
   injectCore,
+  readLocatorClientRect,
   saveScreenshot,
   waitForBetrayalPageReady,
   warmBetrayalFrontend,
@@ -336,6 +338,13 @@ test.describe("山屋惊魂基本流程", () => {
     if (!firstMoveSourceRoomId) {
       throw new Error("山屋移动动画测试缺少移动前源房间");
     }
+    const firstMoveSourceToken = page.getByTestId(
+      `betrayal-room-occupant-${firstMoveSourceRoomId}-0`,
+    );
+    await expect(firstMoveSourceToken).toBeVisible();
+    const firstMoveSourceRect = await readLocatorClientRect(
+      firstMoveSourceToken,
+    );
 
     await page.getByTestId("betrayal-action-move").click();
     await expect(page.getByTestId("betrayal-action-move")).toContainText(
@@ -355,7 +364,24 @@ test.describe("山屋惊魂基本流程", () => {
     );
     await expect(moveTransitionBlocker).toHaveAttribute(
       "data-transition-target-testid",
-      "betrayal-room-hallway",
+      "betrayal-room-occupant-hallway-0",
+    );
+    const firstMoveTargetToken = page.getByTestId(
+      "betrayal-room-occupant-hallway-0",
+    );
+    await expect(firstMoveTargetToken).toHaveCount(1);
+    await expect(firstMoveTargetToken).toHaveAttribute(
+      "data-visual-transition-anchor-hidden",
+      "true",
+    );
+    const firstMoveTransition = page.locator(
+      '[data-testid^="betrayal-visual-transition-transition-"]',
+    );
+    await expectBetrayalTransitionTargetsLocator(
+      firstMoveTransition,
+      firstMoveTargetToken,
+      "山屋惊魂向左移动动画",
+      { sourceRect: firstMoveSourceRect },
     );
     await expect(
       page.getByTestId("betrayal-visual-transition-explorer-token-0"),
@@ -426,6 +452,12 @@ test.describe("山屋惊魂基本流程", () => {
     await expect(
       page.getByTestId("betrayal-room-occupant-entrance-hall-0"),
     ).toBeVisible();
+    const directMoveSourceToken = page.getByTestId(
+      "betrayal-room-occupant-entrance-hall-0",
+    );
+    const directMoveSourceRect = await readLocatorClientRect(
+      directMoveSourceToken,
+    );
 
     await page.getByTestId("betrayal-action-move").click();
     await expect(page.getByTestId("betrayal-action-move")).toContainText(
@@ -436,9 +468,34 @@ test.describe("山屋惊魂基本流程", () => {
     await saveScreenshot(page, DIRECT_MOVE_MODE_SCREENSHOT);
 
     await page.getByTestId("betrayal-room-hallway").click();
-    await expect(
-      page.getByTestId("betrayal-room-occupant-hallway-0"),
-    ).toBeVisible();
+    const directMoveTransitionBlocker = page.getByTestId(
+      "betrayal-visual-transition-blocker",
+    );
+    await expect(directMoveTransitionBlocker).toBeVisible();
+    await expect(directMoveTransitionBlocker).toHaveAttribute(
+      "data-transition-kind",
+      "explorer-move",
+    );
+    await expect(directMoveTransitionBlocker).toHaveAttribute(
+      "data-transition-target-testid",
+      "betrayal-room-occupant-hallway-0",
+    );
+    const directMoveTargetToken = page.getByTestId(
+      "betrayal-room-occupant-hallway-0",
+    );
+    await expect(directMoveTargetToken).toHaveCount(1);
+    await expect(directMoveTargetToken).toHaveAttribute(
+      "data-visual-transition-anchor-hidden",
+      "true",
+    );
+    await expectBetrayalTransitionTargetsLocator(
+      page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
+      directMoveTargetToken,
+      "山屋惊魂运行时向左移动动画",
+      { sourceRect: directMoveSourceRect },
+    );
+    await expect(directMoveTransitionBlocker).toHaveCount(0);
+    await expect(directMoveTargetToken).toBeVisible();
     await expect(page.getByTestId("betrayal-action-move")).toContainText(
       "取消移动",
     );

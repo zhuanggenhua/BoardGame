@@ -1,18 +1,22 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-    resolveBetrayalMonsterMovementGroups,
-    resolveMoveTargetRooms as resolveBetrayalMoveTargetRooms,
     type BetrayalCore,
-    type BetrayalMonsterMovementRollGroupResult,
 } from '../../src/games/betrayal/game';
+import {
+    resolveBetrayalMonsterMoveTargetRooms,
+    resolveBetrayalMonsterMovementGroups,
+    type BetrayalMonsterMovementRollGroupResult,
+} from '../../src/games/betrayal/monsterActionReadModel';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
     createJackSpiritMovementRollReadyRuntimeCore,
+    expectBetrayalTransitionTargetsLocator,
     initBetrayalContext,
     injectCore,
+    readLocatorClientRect,
     saveScreenshot,
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
@@ -95,13 +99,14 @@ const readJackSpiritMoveState = async (page: Page): Promise<{
             };
         }).__BG_TEST_HARNESS__?.state?.get?.();
         const core = state?.core;
+        const jackSpiritMoveRemaining =
+            core?.scenarioRuntime?.monsterTurn?.moveRemainingById?.['jack-spirit'] ??
+            core?.movesRemaining ??
+            null;
         return {
             currentPlayer: core?.currentPlayer,
             jackSpiritRoomId: core?.scenarioRuntime?.jackSpiritRoomId ?? null,
-            jackSpiritMoveRemaining:
-                core?.movesRemaining ??
-                core?.scenarioRuntime?.monsterTurn?.moveRemainingById?.['jack-spirit'] ??
-                null,
+            jackSpiritMoveRemaining,
         };
     });
 
@@ -152,7 +157,7 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物路径预览', () => {
         if (!initialJackSpiritFloor) {
             throw new Error('山屋 E2E 夹具缺少杰克之灵所在楼层');
         }
-        const target = resolveBetrayalMoveTargetRooms(preparedCore)[0];
+        const target = resolveBetrayalMonsterMoveTargetRooms(preparedCore, 'jack-spirit')[0];
         if (!target) {
             throw new Error('山屋 E2E 夹具缺少杰克之灵移动目标房间');
         }
@@ -165,10 +170,10 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物路径预览', () => {
             jackSpiritMoveRemaining: 2,
         });
 
-        await expect(page.getByTestId('betrayal-action-monsterMove')).toHaveCount(0);
-        const moveAction = page.getByTestId('betrayal-action-move');
-        await expect(moveAction).toBeVisible();
-        await expect(moveAction).toContainText('移动');
+        const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
+        await expect(monsterMoveAction).toBeVisible();
+        await expect(monsterMoveAction).toContainText('移动杰克之灵');
+        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
         await ensureFloorVisible(page, initialJackSpiritFloor);
         const jackSpiritToken = page.getByTestId(`betrayal-room-monster-${initialJackSpiritMonsterRoomId}-jack-spirit`);
         await expect(jackSpiritToken).toBeVisible();
@@ -177,12 +182,19 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物路径预览', () => {
         await expect(page.locator('[data-testid^="betrayal-room-monster-move-target-"]')).toHaveCount(0);
         await saveScreenshot(page, READY_SCREENSHOT);
 
-        await moveAction.click();
-        await expect(moveAction).toContainText('取消移动');
+        await monsterMoveAction.click();
+        await expect(monsterMoveAction).toContainText('取消移动');
+        await ensureFloorVisible(page, initialJackSpiritFloor);
+        await expect(jackSpiritToken).toHaveAttribute('data-direct-target', 'true');
+        await jackSpiritToken.click();
         await ensureFloorVisible(page, target.floor);
         const targetRoom = page.getByTestId(`betrayal-room-${targetRoomId}`);
         await expect(targetRoom).toBeVisible();
         await expect(targetRoom).toBeEnabled();
+        await expect(page.getByTestId(`betrayal-room-monster-move-target-${targetRoomId}`)).toBeVisible();
+        const jackSpiritMoveSourceToken = page.getByTestId('betrayal-monster-board-token-jack-spirit');
+        await expect(jackSpiritMoveSourceToken).toBeVisible();
+        const jackSpiritSourceRect = await readLocatorClientRect(jackSpiritMoveSourceToken);
         await saveScreenshot(page, TARGET_SCREENSHOT);
 
         await targetRoom.click();
@@ -191,7 +203,19 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物路径预览', () => {
         await expect(transitionBlocker).toHaveAttribute('data-transition-kind', 'monster-move');
         await expect(transitionBlocker).toHaveAttribute(
             'data-transition-target-testid',
-            `betrayal-room-${targetRoomId}`,
+            `betrayal-room-monster-${targetRoomId}-jack-spirit`,
+        );
+        const jackSpiritTargetToken = page.getByTestId(`betrayal-room-monster-${targetRoomId}-jack-spirit`);
+        await expect(jackSpiritTargetToken).toHaveCount(1);
+        await expect(jackSpiritTargetToken).toHaveAttribute(
+            'data-visual-transition-anchor-hidden',
+            'true',
+        );
+        await expectBetrayalTransitionTargetsLocator(
+            page.locator('[data-testid^="betrayal-visual-transition-transition-"]'),
+            jackSpiritTargetToken,
+            '山屋惊魂杰克之灵移动动画',
+            { sourceRect: jackSpiritSourceRect },
         );
         await expect(page.getByTestId('betrayal-board')).toHaveAttribute('data-betrayal-visual-busy', 'true');
         await expect.poll(() => readJackSpiritMoveState(page)).toMatchObject({
@@ -200,10 +224,9 @@ test.describe('山屋惊魂第一剧本杰克之灵怪物路径预览', () => {
             jackSpiritMoveRemaining: 1,
         });
         await expect(page.getByTestId(`betrayal-room-monster-${initialJackSpiritMonsterRoomId}-jack-spirit`)).toHaveCount(0);
-        await expect(page.getByTestId(`betrayal-room-monster-${targetRoomId}-jack-spirit`)).toHaveCount(0);
         await saveScreenshot(page, `${EVIDENCE_DIR}/03a-杰克之灵移动动画中.jpg`);
         await expect(transitionBlocker).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/杰克之灵.*游荡到/);
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/杰克之灵.*移动到/);
         await expect(page.getByTestId(`betrayal-room-monster-${initialJackSpiritMonsterRoomId}-jack-spirit`)).toHaveCount(0);
         await expect(page.getByTestId(`betrayal-room-monster-${targetRoomId}-jack-spirit`)).toBeVisible();
         await expect.poll(() => readJackSpiritMoveState(page)).toMatchObject({

@@ -170,6 +170,15 @@ const shouldAdvance = (events: GameEvent[], advanceOnEvents?: TutorialEventMatch
     return advanceOnEvents.some((matcher) => events.some((event) => isEventMatch(event, matcher)));
 };
 
+const isAuthoredTutorialAiAction = (tutorial: TutorialState | undefined, command: Command): boolean => {
+    if (!tutorial?.active || command.skipValidation !== true) return false;
+    const aiActions = tutorial.step?.aiActions ?? tutorial.aiActions ?? [];
+    return aiActions.some((action) => (
+        action.commandType === command.type
+        && (!action.playerId || action.playerId === command.playerId)
+    ));
+};
+
 const buildManifestFromState = (
     tutorial: TutorialState,
     fallbackManifest?: TutorialManifest,
@@ -246,6 +255,8 @@ const shouldBlockCommand = (tutorial: TutorialState | undefined, command: Comman
     if (!tutorial?.active) return false;
     // 系统命令不拦截（SYS_ 前缀，包括 CHEAT 命令和教程命令）
     if (command.type?.startsWith('SYS_')) return false;
+    // manifest 明确声明的教程 AI 动作属于系统推进，不是玩家手动输入。
+    if (isAuthoredTutorialAiAction(tutorial, command)) return false;
 
     // 白名单模式：只允许列出的命令
     if (tutorial.step?.allowedCommands) {

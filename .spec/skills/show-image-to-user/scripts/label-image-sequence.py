@@ -184,8 +184,9 @@ def draw_labeled_image(
     transition_font = load_font(max(20, min(30, int(banner_height * 0.22))))
     small_font = load_font(max(14, min(21, int(banner_height * 0.15))))
 
-    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
+    canvas = Image.new("RGBA", (width, height + banner_height), (17, 24, 39, 255))
+    canvas.alpha_composite(image, (0, banner_height))
+    draw = ImageDraw.Draw(canvas)
     draw.rectangle((0, 0, width, banner_height), fill=(17, 24, 39, 220))
     draw.rectangle((0, banner_height - 4, width, banner_height), fill=(37, 99, 235, 255))
 
@@ -225,7 +226,7 @@ def draw_labeled_image(
     source_text = truncate_to_width(draw, f"原图: {image_path.name}", small_font, max_label_width)
     draw.text((label_x, banner_height - 30), source_text, fill=(209, 213, 219, 255), font=small_font)
 
-    labeled = Image.alpha_composite(image, overlay).convert("RGB")
+    labeled = canvas.convert("RGB")
     labeled.save(out_path, format="PNG", optimize=True)
 
 

@@ -139,6 +139,15 @@ function isGenericScriptErrorNoise(payload: ClientAutoReportPayload): boolean {
     return /^script error\.?$/.test(normalizedMessage);
 }
 
+function isResizeObserverLoopNoise(payload: ClientAutoReportPayload): boolean {
+    if ((payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE) !== 'client-window-error') {
+        return false;
+    }
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    return normalizedMessage === 'resizeobserver loop completed with undelivered notifications.'
+        || normalizedMessage === 'resizeobserver loop limit exceeded';
+}
+
 function isCapacitorPluginNotImplementedNoise(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim().toLowerCase();
     return /^"?(app|capacitorupdater)"? plugin is not implemented on android$/.test(normalizedMessage);
@@ -284,6 +293,9 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isGenericScriptErrorNoise(payload)) {
+        return true;
+    }
+    if (isResizeObserverLoopNoise(payload)) {
         return true;
     }
     if (isStaleChunkError(new Error(normalizedMessage || normalizedName))) {

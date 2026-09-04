@@ -12,11 +12,6 @@ import type {
 } from '../../engine/types';
 import { createCheatSystem } from '../../engine/systems';
 import {
-    resolveEntityRelation,
-    type EntityRelation,
-    type EntitySideId,
-} from '../../engine/primitives';
-import {
     BETRAYAL_ACTION_LOG_ALLOWLIST,
     BETRAYAL_UNDO_ALLOWLIST,
     formatBetrayalActionEntry,
@@ -24,7 +19,167 @@ import {
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import { createBetrayalAiRuntime } from './ai';
 import { BETRAYAL_COMMANDS } from './commands';
+import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
+import {
+    normalizeBetrayalDiceCount,
+    rollBetrayalDicePips,
+    rollBetrayalPip,
+} from './diceRules';
+import {
+    canPlayerAcknowledgeRecentRoll,
+    eventRollResolutionNeedsAcknowledgement,
+    isPendingCardResolutionFullyAcknowledged,
+    isPendingEventRollResolutionFullyAcknowledged,
+    isRecentRollFullyAcknowledged,
+    resolveAcknowledgeableRecentRoll,
+    resolvePendingCardResolutionAcknowledgedPlayerIds,
+    resolvePendingCardResolutionRequiredPlayerIds,
+    resolvePendingEventRollResolutionAcknowledgedPlayerIds,
+    resolvePendingEventRollResolutionRequiredPlayerIds,
+    resolvePendingTurnEndRoll,
+    resolveRecentRollAcknowledgedPlayerIds,
+    resolveRecentRollRequiredPlayerIds,
+    resolveRoomExploredCardResolutionRequiredPlayerIds,
+} from './acknowledgementReadModel';
+import {
+    resolveBloodFromStoneSelectedExtraStoneCherubPlacements,
+    resolveBloodFromStoneSetupPlacementPlan,
+    type BetrayalBloodFromStoneSetupPlacement,
+} from './bloodFromStoneSetupReadModel';
+import {
+    applyBetrayalCorpseLootedState,
+    createBetrayalCorpseLootedPayload,
+    resolveCorpseLootTargets,
+    type BetrayalCorpseLootCommandPayload,
+    type BetrayalCorpseLootedPayload,
+} from './deathStateReadModel';
+import { resolveBetrayalHauntRisk } from './hauntProgress';
+import {
+    MUMMY_GIRL_STEAL_CARD_ID,
+    resolveHelpingHandsPendingAttackReward,
+    resolveHelpingHandsStealableCards,
+    resolveHelpingHandsTrollHandAttackOptions,
+    resolveHelpingHandsTrollHandMoveCost,
+    resolveHelpingHandsTrollHandMoveOptions,
+    resolveMummyGirlStealCard,
+    resolveMummyPendingAttackReward,
+    resolveMummyStealableCards,
+    type BetrayalHelpingHandsAttackRewardChoice,
+    type BetrayalMummyAttackRewardChoice,
+} from './hauntAttackRewardReadModel';
+import {
+    resolveBetrayalHauntSetupQueue,
+    resolveHauntSetupQueueWithEntryStatus,
+    type BetrayalHauntSetupQueueEntry,
+    type BetrayalHauntSetupQueueEntryId,
+} from './hauntSetupModel';
+import {
+    cloneHauntFirstPlayerResolution,
+    cloneHauntTraitorResolution,
+    resolveHauntFirstPlayerResolutionForTrigger,
+    resolveHauntTraitorResolutionForTrigger,
+    type BetrayalHauntFirstPlayerResolution,
+    type BetrayalHauntTraitorResolution,
+} from './hauntTraitorResolutionModel';
+import {
+    canCureTheDust,
+    canSearchForCure,
+    canSmashMagicCamera,
+    canTakeMagicCameraPhoto,
+    hasUsedHauntSpecialActionThisTurn,
+    resolveBloodFromStonePeekabooSelection,
+    validateHauntSpecialActionBudget,
+} from './hauntSpecialActionReadModel';
+import {
+    findFeverishMonster,
+    findHelpingHandsTrollHand,
+    findMagicCameraHolderPlayerId,
+    findMummyMonster,
+    findPhantomPhotographer,
+    findStrangeAmuletHolder,
+    hasBloodFromStoneMirror,
+    hasLivingHeroWithBookInRoom,
+    hasOmenBook,
+    HELPING_HANDS_STRANGE_AMULET_EFFECT_ID,
+    isBetrayalLibraryRoom,
+    isBloodFromStoneHaunt,
+    isCrimsonJackHaunt,
+    isDustHaunt,
+    isHelpingHandsHaunt,
+    isMagicCameraHaunt,
+    isMummyHaunt,
+    isMummyMonster,
+    isMummyNameStudyRoom,
+    isStrangeAmuletCard,
+    isStoneCherubMonster,
+    isUponReflectionHaunt,
+    isBetrayalPlayerControllingMonster,
+    resolveControlledRoomId,
+    resolveHelpingHandsControllerPlayerId,
+    resolveLivingHeroExplorers,
+    shouldDeadPlayerControlFeverish,
+    shouldDeadTraitorControlJackSpirit,
+} from './hauntScenarioReadModel';
+import {
+    canPlayerControlStandardMonsterTurn,
+    cloneBloodFromStoneMonsterTurnRuntimeState,
+    cloneMonsterMovementRollGroupResult,
+    cloneMonsterTurnRuntimeState,
+    createBloodFromStoneTurnStartVisibility,
+    createBetrayalMonsterMovementRollGroupResult,
+    createInitialMonsterTurnRuntimeState,
+    hasMummyTeleportMoveAvailable,
+    resolveBetrayalMonsterMoveCost,
+    resolveBetrayalMonsterMoveTargetRooms,
+    resolveBetrayalMonsterMovementGroups,
+    resolveBetrayalMonsterMovementRollGroupPreview,
+    resolveBetrayalMonsterTurnStartResolutionPreview,
+    resolveBetrayalNormalMonsterAttackTargets,
+    resolveBloodFromStoneGazeDamageRolls,
+    resolveBloodFromStoneMonsterTurnEndPreview,
+    resolveBloodFromStoneMonsterTurnStatus,
+    resolveBloodFromStoneNewLineOfSightDamageRoll,
+    resolveBloodFromStoneTurnStartVisibleStoneCherubIds,
+    resolveHelpingHandsMonsterTurnStatus,
+    resolveMagicCameraPhantomAttackTargets,
+    resolveMonsterAttackCommand,
+    resolveStoneCherubMoveRemainingAfterMove,
+    type BetrayalBloodFromStoneGazeDamageRoll,
+    type BetrayalBloodFromStoneMonsterTurnRuntimeState,
+    type BetrayalMonsterMovementRollGroupResult,
+    type BetrayalMonsterTurnRuntimeState,
+} from './monsterActionReadModel';
+import {
+    canUseBetrayalPossessionThisTurn,
+    canUseBookForPendingEventRoll,
+    canUseHolySymbolForDiscovery,
+    canUseIdolToSkipEvent,
+    canUseRabbitFootForRecentRoll,
+    canUseSkeletonKeyForMove,
+    resolveRabbitFootCard,
+    resolveRecentRollRerollCommandDieIndices,
+    resolveRecentRollRerollItemCard,
+    resolveRecentRollRerollItemRule,
+    resolveSkeletonKeyCardId,
+    resolveTurnStartInventoryCardIds,
+    clearPendingExtraTurnAfterCurrentTurn,
+    isOwnDeathPreventionRerollWindow,
+    validateBetrayalPossessionSpecialActionCommand,
+    validateBetrayalRecentRollRerollItemCommand,
+} from './possessionActionReadModel';
+import { resolveBetrayalRoomSpecialActionStatus } from './roomActionReadModel';
+import {
+    moveMysticElevatorRoom,
+    resolveMysticElevatorDestination,
+    resolveMysticElevatorEffect,
+    type BetrayalRoomEnterEffect,
+    type BetrayalRoomEnterEffectResult,
+} from './roomEnterEffectModel';
 import { readBetrayalScenarioId } from './roomSetup';
+import {
+    canUseBetrayalTraitorPowers,
+    isBetrayalDamagingRoomEndTurnEffect,
+} from './traitorPowerRules';
 import {
     BETRAYAL_SCENARIO_CARD_IDS,
     BETRAYAL_DISCOVERY_POOLS,
@@ -34,11 +189,8 @@ import {
     DEFAULT_BETRAYAL_SCENARIO_CARD_ID,
     DEFAULT_BETRAYAL_SCENARIO_ID,
     getBetrayalScenarioCardCandidate,
-    isBetrayalEventRuntimeSupported,
     isBetrayalOptionalHauntRollRuntimeSupported,
     isBetrayalScenarioCardId,
-    isImplementedBetrayalHauntCardNumber,
-    resolveBetrayalRoomDiscoverySymbol,
     resolveBetrayalHauntRevealResolution,
     resolveImplementedScenarioIdForCard,
     type BetrayalDeckKind as ConfigDeckKind,
@@ -50,7 +202,6 @@ import {
     type BetrayalEventSeed,
     type BetrayalInventoryKind as ConfigInventoryKind,
     type BetrayalInventorySeed,
-    type BetrayalExplorerTraitTrackSeed,
     type BetrayalMonsterSeed,
     type BetrayalRecommendedAction as ConfigRecommendedAction,
     type BetrayalRoomDiscoverySymbol,
@@ -62,19 +213,157 @@ import {
     type BetrayalTraitKey as ConfigTraitKey,
 } from './scenarioConfig';
 import {
-    POSSESSION_USE_EFFECTS as USE_EFFECTS,
+    BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
+    applyAdjacentRoomChoiceToEffect,
+    applyChosenTraitToEffect,
+    applyGeneralDamageTraitsToEffect,
+    applyRoomTargetChoiceToEffect,
+    cloneUseEffect,
+    effectAllowsAdjacentRoomChoice,
+    effectAllowsChosenTrait,
+    effectAllowsGeneralDamageTraits,
+    effectAllowsRoomTargetChoice,
+    effectHasUnresolvedChosenTraitChoice,
+    effectHasUnresolvedGeneralDamageChoice,
+    effectHasUnresolvedTraitChoice,
+    effectNeedsAdjacentRoomChoice,
+    effectNeedsRoomTargetChoice,
+    effectNeedsTraitChoice,
+    eventEffectNeedsPendingEventChoice,
+    formatEffectLabel,
+    isWarningEventEffect,
     resolveInventoryEffectId,
     resolveUseEffect,
     type PossessionUseEffectProfile,
     type UseEffectProfile,
 } from './possessionEffects';
 import {
+    applyItemChoiceToEffect,
+    effectAllowsItemChoice,
+} from './possessionItemChoiceModel';
+import {
+    resolveBetrayalPossessionUsedPayload,
+    type BetrayalPossessionUseCommandPayload,
+} from './possessionUseResolution';
+import { applyBetrayalPossessionUsedState } from './possessionUseState';
+import {
+    DRAW_POOL,
+    buryPossessionCardToBottom,
+    cloneInventoryCard,
+    clonePossessionOrderByKind,
+    removePossessionCardFromDeck,
+    restorePossessionCardToBottom,
+    restorePossessionCardToTop,
+} from './possessionDeckModel';
+import {
+    EVENT_POOL,
+    buryEventCardToBottom,
+    cloneEventTemplate,
+    countDrawnCards,
+    removeEventCardForUponReflectionHint,
+    resolveEvent,
+} from './eventDeckModel';
+import {
     createBetrayalMonsterFromDefinition,
-    getBetrayalMonsterDefinition,
-    type BetrayalMonsterDefinition,
     type BetrayalMonsterDefinitionId,
-    type BetrayalMonsterDefinitionTraitKey,
 } from './domain/monsterDefinitions';
+import {
+    resolveBetrayalMonsterDamageOutcome,
+    resolveMonsterDefaultAttackTrait,
+    resolveMonsterStatusKind,
+    resolveMonsterTrait,
+    type BetrayalMonsterDamageOutcome,
+} from './monsterReadModel';
+import {
+    findExplorerByPlayerId,
+    getAllExplorers,
+    getExplorersInTurnOrder,
+    resolveExplorerRoom,
+    resolveTurnStartSpeed,
+} from './explorerReadModel';
+import {
+    applyGeneralDamage,
+    applyTraitLoss,
+    BETRAYAL_TRAIT_KEYS,
+    buildTraitTracksFromTemplate,
+    buildTraitTracksFromValues,
+    cloneTraitTracks,
+    damageTraitsAreAssignable,
+    healExplorerTraitToStart,
+    moveExplorerTraitSteps,
+    normalizeExplorerTraitTracks,
+    resolveTraitDamageAssignableSteps,
+    setExplorerTraitPosition,
+    setExplorerTraitsFromValues,
+} from './traitTrackModel';
+import {
+    cloneBetrayalRoom,
+    formatRoomTargetList,
+    refreshExplorableRoomSlots,
+    isStraightLineVisible,
+    resolveOppositeRoomEdge,
+    roomTileAdjustmentSelectionsMatch,
+    roomDistanceByLayout,
+} from './roomMapModel';
+import {
+    resolveBetrayalMoveCost,
+    resolveMoveTargetRooms,
+} from './movementReadModel';
+import {
+    ROOM_DISCOVERY_DECK_POOL,
+    applyRoomDrawResolutionToCore,
+    canConnectDoorwaysToEntry,
+    cloneBuriedRoomTileSummary,
+    cloneRoomDiscoveryDeckEntry,
+    cloneRoomDrawResolution,
+    cloneRoomTemplate,
+    groupRoomDiscoveryDeckByFloor,
+    hasAvailableDiscoveryDeckCard,
+    isRoomOrientationTurns,
+    makeRoomDiscoveryDeckFromFloorPools,
+    materializeRoomsAfterTileAdjustment,
+    orientDoorwaysForPlacement,
+    resolveCurrentRoomDiscoveryDeck,
+    resolveExplorableRoomSlots,
+    resolveNextExplorableRoomSlot,
+    resolveRoomDraw,
+    resolveRoomPlacementContext,
+    resolveRoomPlacementOrientationOptions,
+    resolveRoomTemplateDiscoveryDeckKind,
+    resolveRoomTileAdjustmentOptionsForPlacement,
+} from './roomDiscoveryModel';
+import {
+    formatAttackRangeLabel,
+    isAttackTargetInWeaponRange,
+    isAttackWeaponCard,
+    isDynamiteCardId,
+    isDynamiteTargetRoom,
+    resolveAttackWeaponEffect,
+    resolveDefenseExtraDiceWhenAttacked,
+    resolveDynamiteInventoryCard,
+    resolveFailedAttackDamage,
+    resolveFailedAttackDamageForWeaponCard,
+} from './attackRules';
+import {
+    applyBetrayalTradeAcceptedState,
+    canUseDogForTrade,
+    clearBetrayalPendingTradeAgreement,
+    createBetrayalPendingTradeAgreement,
+    createBetrayalTradeRequestedPayload,
+    resolveBetrayalTradeAgreementEventPayload,
+    resolveBetrayalTradeCardStatus,
+    resolveDogTradeTargets,
+    resolveTradeCardIds,
+    resolveTradeTargets,
+    type BetrayalTradeAcceptedPayload,
+    type BetrayalTradeDeclinedPayload,
+    type BetrayalTradePossessionCommandPayload,
+    type BetrayalTradeRequestedPayload,
+} from './trade';
+import {
+    resolveNextLivingPlayerIdInTurnOrder,
+    rotateToNextLivingPlayer,
+} from './turnOrderReadModel';
 
 export { resolveUseEffect } from './possessionEffects';
 export { resolveInventoryEffectId } from './possessionEffects';
@@ -97,7 +386,6 @@ export type { BetrayalRoomEdge, BetrayalRoomVisualId, BetrayalRoomFloor };
 export type BetrayalPhase = 'characterSelect' | 'preHaunt' | 'haunt' | 'endgame';
 export type BetrayalRecommendedAction = ConfigRecommendedAction;
 type BetrayalRoomEndTurnEffect = NonNullable<BetrayalRoomDiscoveryTemplate['endTurnEffect']>;
-type BetrayalRoomEnterEffect = 'mysticElevator';
 type BetrayalRoomDiscoveryEffect = NonNullable<BetrayalRoomDiscoveryTemplate['discoveryEffect']>;
 export type BetrayalRoomMarkerToken = 'obstacle' | 'secretPassage' | 'blessing';
 type BetrayalHauntAttackTarget =
@@ -108,11 +396,9 @@ type BetrayalHauntAttackTarget =
     | 'troll-hand'
     | 'dynamite-room';
 
-const HELPING_HANDS_STRANGE_AMULET_CARD_ID = 'strange-amulet';
+const HELPING_HANDS_STRANGE_AMULET_CARD_ID = HELPING_HANDS_STRANGE_AMULET_EFFECT_ID;
 const BROOCH_CARD_ID = 'brooch';
 const TOOTH_NECKLACE_CARD_ID = 'tooth-necklace';
-const MYSTERIOUS_STOPWATCH_CARD_ID = 'mysterious-stopwatch';
-const DYNAMITE_CARD_ID = 'dynamite';
 const HELPING_HANDS_STRANGE_AMULET_CARD: BetrayalInventoryCard = {
     id: HELPING_HANDS_STRANGE_AMULET_CARD_ID,
     name: '奇异护符',
@@ -122,14 +408,6 @@ const HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS = [
     'betrayal/tokens/monsters/troll-right-hand',
     'betrayal/tokens/monsters/troll-left-hand',
 ] as const;
-const MAGIC_CAMERA_PHANTOM_PHOTOGRAPHER_TRAITS = {
-    might: 4,
-    speed: 1,
-    sanity: 6,
-    knowledge: 2,
-    damage: 1,
-};
-
 export interface BetrayalInventoryCard {
     id: string;
     name: string;
@@ -188,28 +466,6 @@ export interface BetrayalMonsterSummary {
 
 export type BetrayalMonsterStatusKind = 'active' | 'stunned' | 'killed';
 
-export type BetrayalMonsterDamageOutcomeKind =
-    | 'none'
-    | 'stunned'
-    | 'killed'
-    | 'resisted';
-
-export interface BetrayalMonsterDamageOutcome {
-    monsterId: string;
-    name: string;
-    damageAmount: number;
-    damageTrait: BetrayalTraitKey;
-    previousStatus: BetrayalMonsterStatusKind;
-    nextStatus: BetrayalMonsterStatusKind;
-    kind: BetrayalMonsterDamageOutcomeKind;
-    canBeStunned: boolean;
-    stunned: boolean;
-    killed: boolean;
-    removedFromHouse: boolean;
-    logLabel: string;
-    ruleNote: string;
-}
-
 interface BetrayalDynamiteExplorerRoll {
     playerId: string;
     displayName: string;
@@ -257,196 +513,6 @@ export interface BetrayalMonsterStatusSummary {
     ruleNotes: string[];
 }
 
-export interface BetrayalMonsterTurnStartStatus {
-    monsterId: string;
-    name: string;
-    status: BetrayalMonsterStatusKind;
-    nextStatus: BetrayalMonsterStatusKind;
-    canStartTurn: boolean;
-    mustFlipStunnedSideUp: boolean;
-    mustSkipTurn: boolean;
-    canRollMovement: boolean;
-    canAttack: boolean;
-    reason: string | null;
-}
-
-export type BetrayalMonsterTurnStartResolutionStatus =
-    | 'ready'
-    | 'missing-monster'
-    | 'already-resolved';
-
-export type BetrayalMonsterTurnStartResolutionContractGap =
-    | 'formal-command'
-    | 'ui-token-flip'
-    | 'movement-roll-command';
-
-export interface BetrayalMonsterTurnStartResolutionPreview {
-    active: boolean;
-    canResolve: boolean;
-    resolutionStatus: BetrayalMonsterTurnStartResolutionStatus;
-    monsterId: string;
-    name: string | null;
-    status: BetrayalMonsterStatusKind | null;
-    nextStatus: BetrayalMonsterStatusKind | null;
-    willFlipStunnedSideUp: boolean;
-    willRemoveStunnedMarker: boolean;
-    willSkipTurn: boolean;
-    willStartTurn: boolean;
-    willRollMovement: boolean;
-    willOpenAttackWindow: boolean;
-    movementGroupId: string | null;
-    movementDiceCount: number | null;
-    minimumMoveAllowance: number | null;
-    contractGaps: BetrayalMonsterTurnStartResolutionContractGap[];
-    previewOnly: true;
-    reason: string | null;
-}
-
-export interface BetrayalMonsterMovementGroup {
-    groupId: string;
-    monsterName: string;
-    monsterIds: string[];
-    speed: number;
-    diceCount: number;
-    rollOnceForGroup: true;
-    minimumMoveAllowance: number;
-}
-
-export type BetrayalMonsterMovementRollGroupContractGap =
-    | 'formal-command'
-    | 'movement-allowance-write'
-    | 'path-preview-ui';
-
-export interface BetrayalMonsterMovementRollGroupPreview {
-    active: boolean;
-    canRoll: boolean;
-    groupId: string | null;
-    monsterName: string | null;
-    monsterIds: string[];
-    speed: number | null;
-    diceCount: number | null;
-    rollOnceForGroup: boolean;
-    minimumMoveAllowance: number | null;
-    willWriteMoveAllowanceForMonsterIds: string[];
-    contractGaps: BetrayalMonsterMovementRollGroupContractGap[];
-    previewOnly: true;
-    reason: string | null;
-}
-
-export interface BetrayalMonsterMovementRollGroupResult {
-    groupId: string;
-    monsterName: string;
-    monsterIds: string[];
-    playerId: string;
-    speed: number;
-    diceCount: number;
-    dice: number[];
-    total: number;
-    moveAllowance: number;
-    rollOnceForGroup: true;
-    minimumMoveAllowance: number;
-}
-
-export interface BetrayalMonsterTurnRuntimeState {
-    resolvedStartMonsterIds: string[];
-    skippedMonsterIdsThisTurn: string[];
-    attackedMonsterIdsThisTurn: string[];
-    movedMonsterIdsThisTurn: string[];
-    movementRollsByGroupId: Record<string, BetrayalMonsterMovementRollGroupResult>;
-    moveRemainingById: Record<string, number>;
-}
-
-export interface BetrayalMonsterActionSet {
-    monsterId: string;
-    name: string;
-    status: BetrayalMonsterStatusKind;
-    roomId: string | null;
-    canMove: boolean;
-    moveTargetRoomIds: string[];
-    canAttack: boolean;
-    defaultAttackTrait: BetrayalTraitKey;
-    usesNormalAttackRules: boolean;
-    canHoldPossessions: boolean;
-    canHoldOmens: boolean;
-    canUsePossessionActions: boolean;
-    canExploreNewRooms: boolean;
-    canDiscoverRoomTiles: boolean;
-    canIgnoreDamagingRoomEffects: boolean;
-    scenarioSpecificOverridesMayApply: true;
-    reason: string | null;
-    ruleNotes: string[];
-}
-
-export type BetrayalMonsterActionSlotKind =
-    | 'turn-start'
-    | 'movement-roll'
-    | 'move'
-    | 'attack'
-    | 'end-turn';
-
-export type BetrayalMonsterActionSlotCommand =
-    | typeof BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
-    | typeof BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP
-    | typeof BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
-    | typeof BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
-    | typeof BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN
-    | typeof BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
-    | typeof BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK
-    | typeof BETRAYAL_COMMANDS.HAUNT_ATTACK;
-
-export type BetrayalMonsterActionSlotContractGap =
-    | 'ui-token-flip'
-    | 'path-preview-ui'
-    | 'attack-target-ui'
-    | 'scenario-specific-attack';
-
-export interface BetrayalMonsterActionSlot {
-    id: string;
-    kind: BetrayalMonsterActionSlotKind;
-    label: string;
-    command: BetrayalMonsterActionSlotCommand;
-    monsterId: string | null;
-    groupId: string | null;
-    enabled: boolean;
-    reason: string | null;
-    targetRoomIds: string[];
-    moveRemaining: number | null;
-    moveCost: number | null;
-    defaultAttackTrait: BetrayalTraitKey | null;
-    contractGaps: BetrayalMonsterActionSlotContractGap[];
-}
-
-export interface BetrayalMonsterActionPanelReadModel {
-    active: boolean;
-    monsterIds: string[];
-    movementGroupIds: string[];
-    slots: BetrayalMonsterActionSlot[];
-    contractGaps: BetrayalMonsterActionSlotContractGap[];
-    reason: string | null;
-}
-
-export interface BetrayalBloodFromStoneMonsterTurnEndPreview {
-    active: boolean;
-    canEnd: boolean;
-    controllerPlayerId: string | null;
-    nextPlayerId: string | null;
-    visibleStoneCherubCountsByPlayerId: Record<string, number>;
-    reason: string | null;
-}
-
-export interface BetrayalNormalMonsterAttackTargetReadModel {
-    monsterId: string;
-    monsterName: string;
-    roomId: string | null;
-    defaultAttackTrait: BetrayalTraitKey;
-    targetPlayerIds: string[];
-    targetLabels: string[];
-    usesNormalAttackRules: true;
-    canResolveWithExistingCommand: boolean;
-    reason: string | null;
-    contractGaps: BetrayalMonsterActionSlotContractGap[];
-}
-
 export interface BetrayalCorpseSummary {
     playerId: string;
     explorerId: string;
@@ -469,68 +535,6 @@ export interface BetrayalDeathStateSummary {
     deadExplorerPlayerIds: string[];
     corpseLootedThisTurnPlayerIds: string[];
     corpses: BetrayalCorpseSummary[];
-    ruleNotes: string[];
-}
-
-export type BetrayalHauntTokenInstanceKind =
-    | 'room-marker'
-    | 'haunt-objective'
-    | 'haunt-resource'
-    | 'monster'
-    | 'corpse'
-    | 'sickness';
-
-export type BetrayalHauntTokenInstanceVisibility =
-    | 'public'
-    | 'owner-only';
-
-export type BetrayalHauntTokenInstanceSource =
-    | 'base-rule'
-    | 'room-effect'
-    | 'haunt-contract'
-    | 'monster-box'
-    | 'death-rule';
-
-export interface BetrayalHauntTokenInstanceSummary {
-    id: string;
-    kind: BetrayalHauntTokenInstanceKind;
-    label: string;
-    labelKey?: string;
-    roomId: string | null;
-    roomName: string | null;
-    ownerPlayerId: string | null;
-    ownerName: string | null;
-    visibility: BetrayalHauntTokenInstanceVisibility;
-    visibleToPlayerIds: string[];
-    value: number | null;
-    valueHidden: boolean;
-    asset: string | null;
-    status: string | null;
-    source: BetrayalHauntTokenInstanceSource;
-    representativeOnly: boolean;
-    ruleNotes: string[];
-}
-
-export type BetrayalEndgameTextStatus = 'inactive' | 'representative-only' | 'available' | 'missing-contract';
-export type BetrayalEndgamePolicyStatus = 'inactive' | 'missing-contract' | 'scenario-specific';
-
-export interface BetrayalEndgameReadModel {
-    active: boolean;
-    phase: BetrayalPhase;
-    hauntId: BetrayalEndgameResult['hauntId'] | null;
-    hauntTitle: string | null;
-    outcome: BetrayalScenarioOutcome | null;
-    winningSideLabel: string | null;
-    winnerPlayerIds: string[];
-    winnerNames: string[];
-    traitorPlayerId: string | null;
-    ifYouWinTextId: string | null;
-    ifYouWinTextStatus: BetrayalEndgameTextStatus;
-    ifYouWinTextAvailable: boolean;
-    needsIfYouWinTextSource: boolean;
-    simultaneousCompletionPolicyStatus: BetrayalEndgamePolicyStatus;
-    tiePolicyStatus: BetrayalEndgamePolicyStatus;
-    representativeOnly: boolean;
     ruleNotes: string[];
 }
 
@@ -706,18 +710,6 @@ interface BetrayalRoomEndTurnEffectResult {
     speedRollPassiveBonus?: number;
     physicalDamage?: number;
     ignoredByTraitorPower?: boolean;
-}
-
-interface BetrayalRoomEnterEffectResult {
-    kind: BetrayalRoomEnterEffect;
-    playerId: string;
-    roomId: string;
-    roomName: string;
-    rollTotal: number;
-    dice: number[];
-    destinationRoomId: string;
-    destinationRoomName: string;
-    destinationFloor: BetrayalRoomFloor;
 }
 
 interface BetrayalRolledDamageResult {
@@ -1084,28 +1076,6 @@ export interface BetrayalMummyRuntimeState {
     requiredOmenIds: string[];
 }
 
-export interface BetrayalMummyAttackRewardChoice {
-    id: string;
-    controllerPlayerId: string;
-    monsterId: string;
-    monsterName: string;
-    defenderPlayerId: string;
-    damageToHero: number;
-    defenderTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
-    stealableCardIds: string[];
-}
-
-export interface BetrayalHelpingHandsAttackRewardChoice {
-    id: string;
-    attackerPlayerId: string;
-    defenderPlayerId: string;
-    damageToDefender: number;
-    damageKind: 'physical' | 'mental';
-    attackerRoll: number;
-    defenderRoll: number;
-    defenderTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
-}
-
 export interface BetrayalHelpingHandsRuntimeState {
     strangeAmuletCardId: string;
     strangeAmuletFoundDuringSetup: boolean;
@@ -1118,41 +1088,6 @@ export interface BetrayalHelpingHandsRuntimeState {
     trollHandMoveRemainingById: Record<string, number>;
     trollHandAttackUsedIdsThisTurn: string[];
     pendingAttackReward?: BetrayalHelpingHandsAttackRewardChoice;
-}
-
-export interface BetrayalHelpingHandsMonsterTurnStatus {
-    active: boolean;
-    controllerPlayerId: string | null;
-    monsterTurnAfterPlayerId: string | null;
-    trollHandIds: string[];
-    moveAllowance: number;
-    moveDice: number[];
-    moveRemainingById: Record<string, number>;
-    reason: string | null;
-}
-
-export interface BetrayalBloodFromStoneMonsterTurnRuntimeState {
-    monsterTurnAfterPlayerId: string | null;
-    activeMonsterTurn: boolean;
-    monsterTurnControllerPlayerId: string | null;
-}
-
-export interface BetrayalBloodFromStoneMonsterTurnStatus {
-    active: boolean;
-    controllerPlayerId: string | null;
-    monsterTurnAfterPlayerId: string | null;
-    stoneCherubIds: string[];
-    reason: string | null;
-}
-
-export interface BetrayalHelpingHandsTrollHandAttackOption {
-    id: string;
-    label: string;
-    trollHandIds: string[];
-    roomId: string;
-    might: number;
-    combined: boolean;
-    targetPlayerIds: string[];
 }
 
 export interface BetrayalDustSicknessSwapResult {
@@ -1169,26 +1104,6 @@ interface BetrayalDustEndTurnResult {
     damageTraits?: BetrayalTraitKey[];
     defeatedPlayerId?: string;
     feverishPlayerId?: string;
-}
-
-interface BetrayalBloodFromStoneGazeDamageRoll {
-    playerId: string;
-    explorerName: string;
-    visibleStoneCherubIds: string[];
-    dice: number[];
-    amount: number;
-}
-
-export interface BetrayalBloodFromStonePeekabooOption {
-    id: string;
-    sameRoomMonsterId: string;
-    sameRoomMonsterName: string;
-    sameRoomId: string;
-    sameRoomName: string;
-    lineOfSightMonsterId: string;
-    lineOfSightMonsterName: string;
-    lineOfSightRoomId: string;
-    lineOfSightRoomName: string;
 }
 
 export interface BetrayalUponReflectionSecretCombination {
@@ -1267,374 +1182,6 @@ export interface BetrayalScenarioRuntimeStatus {
     magicCamera?: BetrayalMagicCameraRuntimeState;
     mummy?: BetrayalMummyRuntimeState;
     uponReflection?: BetrayalUponReflectionRuntimeState;
-}
-
-export interface BetrayalHauntRiskStatus {
-    omenCount: number;
-    requestedRollOmenCount: number;
-    nextRollDiceCount: number;
-    threshold: number;
-    hauntStarted: boolean;
-    nextOmenAutomatic: boolean;
-    omenDeckRemaining: number;
-}
-
-export type BetrayalNumberTrackKind =
-    | 'haunt-risk'
-    | 'haunt-objective'
-    | 'haunt-resource';
-
-export type BetrayalNumberTrackSource =
-    | 'base-rule'
-    | 'haunt-contract';
-
-export interface BetrayalNumberTrackStatus {
-    id: string;
-    kind: BetrayalNumberTrackKind;
-    label: string;
-    labelKey?: string;
-    value: number;
-    min: number;
-    max: number;
-    targetValue: number | null;
-    currentLabel: string;
-    targetLabel: string | null;
-    statusLabel: string;
-    progressPercent: number;
-    source: BetrayalNumberTrackSource;
-    representativeOnly: boolean;
-}
-
-export type BetrayalHauntType = 'no-traitor' | 'one-traitor' | 'hidden-traitor' | 'free-for-all';
-
-export type BetrayalHauntTraitorSelectionPolicy =
-    | 'haunt-revealer'
-    | 'hidden-traitor'
-    | 'no-traitor'
-    | 'free-for-all'
-    | 'left-of-revealer'
-    | 'oldest-character'
-    | 'highest-speed'
-    | 'lowest-sanity-excluding-revealer'
-    | 'highest-knowledge'
-    | 'lowest-sanity'
-    | 'highest-knowledge-excluding-revealer'
-    | 'most-omens'
-    | 'highest-might'
-    | 'magic-camera-owner'
-    | 'event-defined';
-
-export type BetrayalHauntTraitorTieBreak =
-    | 'none'
-    | 'turn-order-after-revealer'
-    | 'left-of-revealer'
-    | 'event-card'
-    | 'source-contract-pending';
-
-export interface BetrayalHauntTraitorResolution {
-    hauntCardNumber: number | null;
-    policy: BetrayalHauntTraitorSelectionPolicy;
-    traitorPlayerId: string | null;
-    teamModel: BetrayalHauntType;
-    reasonLabel: string;
-    candidatePlayerIds: string[];
-    excludedPlayerIds: string[];
-    tieBreak: BetrayalHauntTraitorTieBreak;
-    representativeOnly: boolean;
-}
-
-export interface BetrayalTraitorVolunteerInteraction {
-    active: boolean;
-    designatedTraitorPlayerId: string | null;
-    volunteerCandidatePlayerIds: string[];
-    triggerCardHolderPlayerId: string | null;
-    triggerCardId: string | null;
-    requiresPositionSwap: boolean;
-    requiresTriggerCardTransfer: boolean;
-    reason: string | null;
-}
-
-export type BetrayalTraitorVolunteerResolutionDecision =
-    | 'designated-accepts'
-    | 'volunteer-replaces'
-    | 'no-volunteer';
-
-export type BetrayalTraitorVolunteerResolutionStatus =
-    | 'ready'
-    | 'not-applicable'
-    | 'missing-volunteer'
-    | 'invalid-volunteer';
-
-export type BetrayalTraitorVolunteerResolutionContractGap =
-    | 'formal-command'
-    | 'reveal-ui'
-    | 'traitor-boost-reconciliation'
-    | 'first-player-reconciliation'
-    | 'haunt-setup-reconciliation';
-
-export interface BetrayalTraitorVolunteerResolutionInput {
-    decision: BetrayalTraitorVolunteerResolutionDecision;
-    volunteerPlayerId?: string | null;
-}
-
-export interface BetrayalTraitorVolunteerRoleChangePreview {
-    playerId: string;
-    fromSide: 'hero' | 'traitor';
-    toSide: 'hero' | 'traitor';
-}
-
-export interface BetrayalTraitorVolunteerPositionSwapPreview {
-    required: boolean;
-    designatedTraitorPlayerId: string | null;
-    volunteerPlayerId: string | null;
-    fromRoomByPlayerId: Record<string, string>;
-    toRoomByPlayerId: Record<string, string>;
-}
-
-export interface BetrayalTraitorVolunteerTriggerCardTransferPreview {
-    required: boolean;
-    cardId: string | null;
-    fromPlayerId: string | null;
-    toPlayerId: string | null;
-    holderAlreadyCorrect: boolean;
-}
-
-export interface BetrayalTraitorVolunteerResolutionPreview {
-    active: boolean;
-    canResolve: boolean;
-    status: BetrayalTraitorVolunteerResolutionStatus;
-    decision: BetrayalTraitorVolunteerResolutionDecision;
-    designatedTraitorPlayerId: string | null;
-    volunteerPlayerId: string | null;
-    resultingTraitorPlayerId: string | null;
-    roleChanges: BetrayalTraitorVolunteerRoleChangePreview[];
-    positionSwap: BetrayalTraitorVolunteerPositionSwapPreview;
-    triggerCardTransfer: BetrayalTraitorVolunteerTriggerCardTransferPreview;
-    requiresTraitorBoostReconciliation: boolean;
-    requiresFirstPlayerReconciliation: boolean;
-    requiresHauntSetupReconciliation: boolean;
-    contractGaps: BetrayalTraitorVolunteerResolutionContractGap[];
-    previewOnly: true;
-    reason: string | null;
-}
-
-export type BetrayalHauntFirstPlayerPolicy =
-    | 'left-of-traitor'
-    | 'left-of-revealer'
-    | 'current-player'
-    | 'source-contract-pending';
-
-export interface BetrayalHauntFirstPlayerResolution {
-    hauntCardNumber: number | null;
-    policy: BetrayalHauntFirstPlayerPolicy;
-    anchorPlayerId: string;
-    nextPlayerId: string;
-    reasonLabel: string;
-    representativeOnly: boolean;
-}
-
-export type BetrayalHauntRevealPublicStepId =
-    | 'heroes-intro'
-    | 'heroes-setup'
-    | 'traitor-intro'
-    | 'traitor-setup';
-
-export interface BetrayalHauntRevealPublicStep {
-    id: BetrayalHauntRevealPublicStepId;
-    side: 'heroes' | 'traitor';
-    kind: 'intro' | 'setup';
-}
-
-export type BetrayalHauntSetupQueueEntryId =
-    | 'assign-revealer-traitor'
-    | 'traitor-remains-in-game'
-    | 'heal-and-boost-traitor'
-    | 'prepare-jack-spirit-tokens'
-    | 'place-mummy-and-sarcophagus'
-    | 'place-girl-token'
-    | 'prepare-mummy-knowledge-tokens'
-    | 'monster-card-left-of-traitor'
-    | 'first-player-left-of-traitor'
-    | 'announce-hidden-traitor'
-    | 'deal-secret-sickness-tokens'
-    | 'recover-strange-amulet'
-    | 'place-troll-hands'
-    | 'monster-card-left-of-revealer'
-    | 'prepare-research-tokens'
-    | 'first-player-left-of-revealer'
-    | 'mirror-revealer-falls-silent'
-    | 'deal-secret-mirror-combination'
-    | 'place-mirror-beings'
-    | 'place-phantom-photographers'
-    | 'recover-magic-camera'
-    | 'deal-hero-essence-tokens'
-    | 'announce-no-traitor'
-    | 'place-stone-cherubs-on-explorers'
-    | 'place-additional-stone-cherubs';
-
-export type BetrayalHauntSetupQueueEntryStatus =
-    | 'resolved'
-    | 'manual-check';
-
-export interface BetrayalHauntSetupQueueEntry {
-    id: BetrayalHauntSetupQueueEntryId;
-    side: 'all' | 'heroes' | 'traitor';
-    status: BetrayalHauntSetupQueueEntryStatus;
-}
-
-export type BetrayalHauntSetupProgressStatus =
-    | 'inactive'
-    | 'resolved'
-    | 'manual-check-required';
-
-export interface BetrayalHauntSetupProgressSummary {
-    active: boolean;
-    hauntCardNumber: number | null;
-    status: BetrayalHauntSetupProgressStatus;
-    entries: BetrayalHauntSetupQueueEntry[];
-    totalCount: number;
-    resolvedCount: number;
-    manualCheckCount: number;
-    manualCheckEntryIds: BetrayalHauntSetupQueueEntryId[];
-    needsFormalConfirmationCommand: boolean;
-    representativeOnly: boolean;
-    ruleNotes: string[];
-}
-
-export type BetrayalHauntSetupCommandPreviewStatus =
-    | 'inactive'
-    | 'ready'
-    | 'manual-check-required'
-    | 'unknown-haunt';
-
-export type BetrayalHauntSetupCommandPreviewAction =
-    | 'assign-traitor'
-    | 'confirm-state'
-    | 'assign-first-player'
-    | 'announce-hidden-role'
-    | 'deal-secret-tokens'
-    | 'recover-card'
-    | 'place-monster-tokens'
-    | 'prepare-token-pool'
-    | 'confirm-reference-placement';
-
-export type BetrayalHauntSetupCommandPreviewGap =
-    | 'formal-command'
-    | 'ui-confirmation'
-    | 'reference-card-ui'
-    | 'token-placement-command'
-    | 'room-selection'
-    | 'secret-visibility'
-    | 'communication-limitation'
-    | 'full-haunt-definition';
-
-export interface BetrayalHauntSetupCommandPreview {
-    entryId: BetrayalHauntSetupQueueEntryId;
-    side: BetrayalHauntSetupQueueEntry['side'];
-    queueStatus: BetrayalHauntSetupQueueEntryStatus;
-    action: BetrayalHauntSetupCommandPreviewAction;
-    label: string;
-    targetPlayerIds: string[];
-    targetRoomIds: string[];
-    targetCardIds: string[];
-    targetMonsterIds: string[];
-    targetLabels: string[];
-    alreadyApplied: boolean;
-    canConfirmFromCurrentState: boolean;
-    requiresManualConfirmation: boolean;
-    evidence: string[];
-    contractGaps: BetrayalHauntSetupCommandPreviewGap[];
-    previewOnly: true;
-}
-
-export interface BetrayalHauntSetupCommandPreviewSummary {
-    active: boolean;
-    hauntCardNumber: number | null;
-    status: BetrayalHauntSetupCommandPreviewStatus;
-    previews: BetrayalHauntSetupCommandPreview[];
-    readyCount: number;
-    manualCheckCount: number;
-    manualCheckEntryIds: BetrayalHauntSetupQueueEntryId[];
-    needsFormalConfirmationCommand: boolean;
-    representativeOnly: boolean;
-    ruleNotes: string[];
-}
-
-export type BetrayalBloodFromStoneSetupPlacementSource =
-    | 'explorer-tile'
-    | 'extra-out-of-sight'
-    | 'extra-player-choice';
-
-export interface BetrayalBloodFromStoneSetupPlacement {
-    monsterId: string;
-    roomId: string;
-    roomName: string;
-    source: BetrayalBloodFromStoneSetupPlacementSource;
-    playerId?: string;
-    index: number;
-}
-
-export interface BetrayalBloodFromStoneSetupPlacementPlan {
-    active: boolean;
-    additionalStoneCherubCount: number;
-    totalRequiredStoneCherubCount: number;
-    placedStoneCherubCount: number;
-    explorerPlacements: BetrayalBloodFromStoneSetupPlacement[];
-    automaticExtraPlacements: BetrayalBloodFromStoneSetupPlacement[];
-    playerChoicePlacements: BetrayalBloodFromStoneSetupPlacement[];
-    placements: BetrayalBloodFromStoneSetupPlacement[];
-    pendingPlayerChoiceCount: number;
-    playerChoiceCandidateRoomIds: string[];
-    legalRoomIds: string[];
-    canFullyAutoPlace: boolean;
-    ruleNotes: string[];
-}
-
-export interface BetrayalHauntSecretBoundary {
-    heroBookVisibleTo: 'heroes' | 'all';
-    traitorBookVisibleTo: 'traitor' | 'none';
-    revealOnUse: boolean;
-}
-
-export interface BetrayalHauntRevealProtocol {
-    active: boolean;
-    hauntCardNumber: number | null;
-    hauntType: BetrayalHauntType;
-    publicSteps: BetrayalHauntRevealPublicStep[];
-    setupQueue: BetrayalHauntSetupQueueEntry[];
-    secretBoundary: BetrayalHauntSecretBoundary;
-}
-
-export type BetrayalReferenceCardId =
-    | 'player-reference-front'
-    | 'player-reference-back'
-    | 'heroes-book'
-    | 'traitor-book'
-    | 'monster-reference-card';
-
-export type BetrayalReferenceCardKind =
-    | 'base-reference'
-    | 'scenario-book'
-    | 'monster-reference';
-
-export type BetrayalReferenceCardVisibility =
-    | 'all'
-    | 'heroes'
-    | 'traitor'
-    | 'none';
-
-export interface BetrayalReferenceCardAccessSummary {
-    id: BetrayalReferenceCardId;
-    kind: BetrayalReferenceCardKind;
-    label: string;
-    active: boolean;
-    visibleTo: BetrayalReferenceCardVisibility;
-    viewerPlayerId: string | null;
-    viewerSide: 'hero' | 'traitor' | 'free-for-all' | null;
-    viewerCanOpen: boolean;
-    source: 'base-rule' | 'haunt-protocol' | 'monster-box';
-    representativeOnly: boolean;
-    reason: string | null;
 }
 
 export interface BetrayalCore {
@@ -1723,22 +1270,16 @@ export type BetrayalCommandMap = {
         roomTileAdjustment?: BetrayalRoomTileAdjustmentSelection;
     };
     [BETRAYAL_COMMANDS.ROLL_EVENT]: { sourceTitle?: string };
-    [BETRAYAL_COMMANDS.USE_POSSESSION]: {
-        cardId?: string;
-        targetPlayerId?: string;
-        targetRoomId?: string;
-        targetRoomIdsByTokenId?: Record<string, string>;
-        replacementRollTotal?: number;
-    };
+    [BETRAYAL_COMMANDS.USE_POSSESSION]: BetrayalPossessionUseCommandPayload;
     [BETRAYAL_COMMANDS.USE_RABBIT_FOOT]: { cardId?: string; dieIndex?: number };
     [BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM]: { cardId?: string; dieIndex?: number };
     [BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL]: { rollId?: string };
     [BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE]: { accept?: boolean; trait?: BetrayalTraitKey; traits?: BetrayalTraitKey[]; targetRoomId?: string; cardId?: string };
     [BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION]: { resolutionId?: string };
     [BETRAYAL_COMMANDS.USE_ROOM_EFFECT]: Record<string, never>;
-    [BETRAYAL_COMMANDS.TRADE_POSSESSION]: { cardId?: string; cardIds?: string[]; targetCardIds?: string[]; targetPlayerId?: string; useDog?: boolean };
+    [BETRAYAL_COMMANDS.TRADE_POSSESSION]: BetrayalTradePossessionCommandPayload;
     [BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT]: { accept: boolean };
-    [BETRAYAL_COMMANDS.LOOT_CORPSE]: { sourcePlayerId?: string; cardId?: string };
+    [BETRAYAL_COMMANDS.LOOT_CORPSE]: BetrayalCorpseLootCommandPayload;
     [BETRAYAL_COMMANDS.END_TURN]: Record<string, never>;
     [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL]: Record<string, never>;
     [BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL]: Record<string, never>;
@@ -2094,10 +1635,10 @@ type BetrayalEvent =
         logText: string;
     }>
     | GameEvent<typeof EVENTS.ROOM_EFFECT_USED, { playerId: string; effect: BetrayalRoomEnterEffectResult; logText: string }>
-    | GameEvent<typeof EVENTS.POSSESSION_TRADE_REQUESTED, { playerId: string; targetPlayerId: string; cardId: string; cardIds?: string[]; targetCardIds?: string[]; sourceCardId?: string; useDog?: boolean; logText: string }>
-    | GameEvent<typeof EVENTS.POSSESSION_TRADED, { playerId: string; targetPlayerId: string; cardId: string; cardIds?: string[]; targetCardIds?: string[]; sourceCardId?: string; logText: string }>
-    | GameEvent<typeof EVENTS.POSSESSION_TRADE_DECLINED, { playerId: string; targetPlayerId: string; cardIds: string[]; targetCardIds?: string[]; logText: string }>
-    | GameEvent<typeof EVENTS.CORPSE_LOOTED, { playerId: string; sourcePlayerId: string; cardId: string; logText: string }>
+    | GameEvent<typeof EVENTS.POSSESSION_TRADE_REQUESTED, BetrayalTradeRequestedPayload>
+    | GameEvent<typeof EVENTS.POSSESSION_TRADED, BetrayalTradeAcceptedPayload>
+    | GameEvent<typeof EVENTS.POSSESSION_TRADE_DECLINED, BetrayalTradeDeclinedPayload>
+    | GameEvent<typeof EVENTS.CORPSE_LOOTED, BetrayalCorpseLootedPayload>
     | GameEvent<typeof EVENTS.TURN_ENDED, BetrayalTurnEndedPayload>
     | GameEvent<typeof EVENTS.RECENT_ROLL_ACKNOWLEDGED, {
         playerId: string;
@@ -2562,25 +2103,6 @@ interface BetrayalHauntRollResult {
 
 const DRAW_ORDER: BetrayalDeckKind[] = [...BETRAYAL_DISCOVERY_POOLS.drawOrder];
 
-const DRAW_POOL: Record<Exclude<BetrayalDeckKind, 'event'>, BetrayalInventoryCard[]> = {
-    item: BETRAYAL_DISCOVERY_POOLS.possessions.item.map((card) => ({ ...card })),
-    omen: BETRAYAL_DISCOVERY_POOLS.possessions.omen.map((card) => ({ ...card })),
-};
-
-type BetrayalPossessionDeckKind = Exclude<BetrayalDeckKind, 'event'>;
-
-const BETRAYAL_ROOM_FLOORS: BetrayalRoomFloor[] = ['ground', 'upper', 'basement'];
-
-const ROOM_DISCOVERY_POOL: Record<BetrayalRoomNode['floor'], RoomTemplate[]> = {
-    ground: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.map((room) => ({ ...room, tags: [...room.tags] })),
-    upper: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.map((room) => ({ ...room, tags: [...room.tags] })),
-    basement: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.map((room) => ({ ...room, tags: [...room.tags] })),
-};
-
-const ROOM_DISCOVERY_DECK_POOL: BetrayalRoomDiscoveryDeckEntry[] = BETRAYAL_ROOM_FLOORS.flatMap((floor) => (
-    ROOM_DISCOVERY_POOL[floor].map((room) => ({ floor, room }))
-));
-
 const TRAIT_CHECK_PASSIVE_BONUSES: Record<string, Partial<Record<BetrayalTraitKey, number>>> = {
     'omen-book': { knowledge: 1 },
     skull: { knowledge: 1 },
@@ -2600,19 +2122,6 @@ const EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID: Record<string, number> = {
     lantern: 2,
 };
 
-type RecentRollRerollItemMode = 'single-die' | 'all-trait-check-dice' | 'blank-trait-check-dice';
-
-interface RecentRollRerollItemRule {
-    label: string;
-    mode: RecentRollRerollItemMode;
-}
-
-const RECENT_ROLL_REROLL_ITEM_RULES_BY_CARD_ID: Record<string, RecentRollRerollItemRule> = {
-    rope: { label: '兔脚', mode: 'single-die' },
-    'scary-doll': { label: '恐怖玩偶', mode: 'all-trait-check-dice' },
-    'lucky-coin': { label: '幸运硬币', mode: 'blank-trait-check-dice' },
-};
-
 const PHYSICAL_DAMAGE_REDUCTION_BY_CARD_ID: Record<string, number> = {
     armor: 1,
 };
@@ -2621,156 +2130,11 @@ const MENTAL_DAMAGE_REDUCTION_BY_CARD_ID: Record<string, number> = {
     radio: 1,
 };
 
-const DEFENSE_EXTRA_DICE_WHEN_ATTACKED_BY_CARD_ID: Record<string, number> = {
-    'leather-jacket': 1,
-};
-
 const DEATH_PREVENTION_ROLL_CARDS_BY_ID: Record<string, { dice: number; minTotal: number }> = {
     skull: { dice: 3, minTotal: 4 },
 };
 
-const ATTACK_ROLL_BONUS_WEAPONS_BY_CARD_ID: Record<string, number> = {
-    'hunting-knife': 1,
-};
-
-const ATTACK_EXTRA_DICE_WEAPONS_BY_CARD_ID: Record<string, number> = {
-    dagger: 2,
-    chainsaw: 1,
-};
-
-const ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID: Record<string, number> = {
-    dagger: 1,
-};
-
-const ATTACK_TRAIT_WEAPONS_BY_CARD_ID: Partial<Record<string, BetrayalTraitKey>> = {
-    crossbow: 'speed',
-    gun: 'speed',
-    ring: 'sanity',
-};
-
-const ATTACK_DAMAGE_KIND_WEAPONS_BY_CARD_ID: Record<string, 'physical' | 'mental'> = {
-    ring: 'mental',
-};
-
-const LINE_OF_SIGHT_ATTACK_WEAPON_CARD_IDS = new Set([
-    'gun',
-]);
-
-const ADJACENT_ROOM_ATTACK_WEAPON_CARD_IDS = new Set([
-    'crossbow',
-]);
-
-const DYNAMITE_ATTACK_WEAPON_CARD_IDS = new Set([
-    DYNAMITE_CARD_ID,
-]);
-
-const NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS = new Set([
-    'crossbow',
-    'gun',
-]);
-
-const ATTACK_WEAPON_CARD_IDS = new Set([
-    ...Object.keys(ATTACK_ROLL_BONUS_WEAPONS_BY_CARD_ID),
-    ...Object.keys(ATTACK_EXTRA_DICE_WEAPONS_BY_CARD_ID),
-    ...Object.keys(ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID),
-    ...Object.keys(ATTACK_TRAIT_WEAPONS_BY_CARD_ID),
-    ...Object.keys(ATTACK_DAMAGE_KIND_WEAPONS_BY_CARD_ID),
-    ...LINE_OF_SIGHT_ATTACK_WEAPON_CARD_IDS,
-    ...ADJACENT_ROOM_ATTACK_WEAPON_CARD_IDS,
-    ...DYNAMITE_ATTACK_WEAPON_CARD_IDS,
-]);
-
-type AttackWeaponRangeKind = 'same-room' | 'same-or-adjacent-room' | 'line-of-sight';
-
 const MUMMY_WEDDING_OMEN_CARD_IDS = new Set(['holy-symbol', 'ring']);
-const MUMMY_GIRL_STEAL_CARD_ID = 'mummy-girl-token';
-
-const EVENT_POOL: EventTemplate[] = BETRAYAL_DISCOVERY_POOLS.events
-    .filter(isBetrayalEventRuntimeSupported)
-    .map((event) => ({
-        ...event,
-        effect: event.effect ? { ...event.effect } : undefined,
-        roll: event.roll
-            ? {
-                ...event.roll,
-                branches: event.roll.branches.map((branch) => ({
-                    ...branch,
-                    effect: { ...branch.effect },
-                })),
-            }
-            : undefined,
-    }));
-
-export const BETRAYAL_INITIAL_DECK_COUNTS: Record<BetrayalDeckKind, number> = {
-    ...BETRAYAL_SHARED_PRE_HAUNT_SETUP.initialDeckCounts,
-    event: EVENT_POOL.length,
-};
-
-function cloneRoomTemplate(template: RoomTemplate): RoomTemplate {
-    return {
-        ...template,
-        tags: [...template.tags],
-        doorways: [...template.doorways],
-    };
-}
-
-function cloneRoomDiscoveryDeckEntry(entry: BetrayalRoomDiscoveryDeckEntry): BetrayalRoomDiscoveryDeckEntry {
-    return {
-        floor: entry.floor,
-        room: cloneRoomTemplate(entry.room),
-    };
-}
-
-function cloneBuriedRoomTileSummary(summary: BetrayalBuriedRoomTileSummary): BetrayalBuriedRoomTileSummary {
-    return { ...summary };
-}
-
-function cloneRoomDrawResolution(resolution: BetrayalRoomDrawResolution): BetrayalRoomDrawResolution {
-    return {
-        requestedFloor: resolution.requestedFloor,
-        selectedRoom: resolution.selectedRoom ? { ...resolution.selectedRoom } : null,
-        buriedRoomTiles: resolution.buriedRoomTiles.map(cloneBuriedRoomTileSummary),
-        exhausted: resolution.exhausted,
-        requiresTileAdjustment: resolution.requiresTileAdjustment,
-        usedUnifiedDeck: resolution.usedUnifiedDeck,
-    };
-}
-
-function groupRoomDiscoveryDeckByFloor(
-    deck: BetrayalRoomDiscoveryDeckEntry[],
-): Record<BetrayalRoomFloor, RoomTemplate[]> {
-    return {
-        ground: deck.filter((entry) => entry.floor === 'ground').map((entry) => cloneRoomTemplate(entry.room)),
-        upper: deck.filter((entry) => entry.floor === 'upper').map((entry) => cloneRoomTemplate(entry.room)),
-        basement: deck.filter((entry) => entry.floor === 'basement').map((entry) => cloneRoomTemplate(entry.room)),
-    };
-}
-
-function makeRoomDiscoveryDeckFromFloorPools(
-    pools: Record<BetrayalRoomFloor, RoomTemplate[]>,
-): BetrayalRoomDiscoveryDeckEntry[] {
-    return BETRAYAL_ROOM_FLOORS.flatMap((floor) => (
-        pools[floor].map((room) => ({ floor, room: cloneRoomTemplate(room) }))
-    ));
-}
-
-function roomDiscoveryDeckMatchesFloorPools(core: BetrayalCore): boolean {
-    const deck = core.roomDiscoveryDeck ?? [];
-    return BETRAYAL_ROOM_FLOORS.every((floor) => (
-        deck
-            .filter((entry) => entry.floor === floor)
-            .map((entry) => entry.room.visualId)
-            .join('|') === core.roomDiscoveryOrderByFloor[floor].map((room) => room.visualId).join('|')
-    ));
-}
-
-function resolveCurrentRoomDiscoveryDeck(core: BetrayalCore): BetrayalRoomDiscoveryDeckEntry[] {
-    return (
-        core.roomDiscoveryDeck?.length && roomDiscoveryDeckMatchesFloorPools(core)
-            ? core.roomDiscoveryDeck
-            : makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor)
-    ).map(cloneRoomDiscoveryDeckEntry);
-}
 
 function makeTileStackSearchRoomSummary(
     entry: BetrayalRoomDiscoveryDeckEntry,
@@ -2913,141 +2277,8 @@ export function applyBetrayalTileStackSearch(
     };
 }
 
-function summarizeBuriedRoomTile(
-    entry: BetrayalRoomDiscoveryDeckEntry,
-    reason: BetrayalBuriedRoomTileSummary['reason'],
-): BetrayalBuriedRoomTileSummary {
-    return {
-        floor: entry.floor,
-        name: entry.room.name,
-        visualId: entry.room.visualId,
-        reason,
-    };
-}
-
 function resolveRoomEndTurnEffect(room: BetrayalRoomNode | null | undefined): BetrayalRoomEndTurnEffect | undefined {
     return room?.state === 'discovered' ? room.endTurnEffect : undefined;
-}
-
-function cloneEventTemplate(event: EventTemplate): EventTemplate {
-    return {
-        ...event,
-        effect: event.effect ? cloneUseEffect(event.effect) : undefined,
-        roll: event.roll
-            ? {
-                ...event.roll,
-                branches: event.roll.branches.map((branch) => ({
-                    ...branch,
-                    effect: cloneUseEffect(branch.effect),
-                })),
-            }
-            : undefined,
-    };
-}
-
-function cloneUseEffect(effect: UseEffectProfile): UseEffectProfile {
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map(cloneUseEffect),
-        };
-    }
-    if (effect.mode === 'optionalEventRoll') {
-        return {
-            ...effect,
-            roll: {
-                ...effect.roll,
-                branches: effect.roll.branches.map((branch) => ({
-                    ...branch,
-                    effect: cloneUseEffect(branch.effect),
-                })),
-            },
-        };
-    }
-    if (effect.mode === 'optionalEffect') {
-        return {
-            ...effect,
-            acceptEffect: cloneUseEffect(effect.acceptEffect),
-        };
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return {
-            ...effect,
-            acceptEffect: cloneUseEffect(effect.acceptEffect),
-            declineEffect: cloneUseEffect(effect.declineEffect),
-        };
-    }
-    if (effect.mode === 'optionalHauntRoll') {
-        return {
-            ...effect,
-            failureEffect: cloneUseEffect(effect.failureEffect),
-            skippedOrStartedEffect: cloneUseEffect(effect.skippedOrStartedEffect),
-        };
-    }
-    if (effect.mode === 'traitRoll') {
-        return {
-            ...effect,
-            branches: effect.branches.map((branch) => ({
-                ...branch,
-                effect: cloneUseEffect(branch.effect),
-            })),
-        };
-    }
-    if (effect.mode === 'chooseTraitRoll') {
-        return {
-            ...effect,
-            allowedTraits: [...effect.allowedTraits],
-            branches: effect.branches.map((branch) => ({
-                ...branch,
-                effect: cloneUseEffect(branch.effect),
-            })),
-        };
-    }
-    if (effect.mode === 'allTraitChecks') {
-        return {
-            ...effect,
-            traits: [...effect.traits],
-            results: effect.results?.map((result) => ({
-                ...result,
-                dice: [...result.dice],
-            })),
-            allPassEffect: cloneUseEffect(effect.allPassEffect),
-        };
-    }
-    if (effect.mode === 'generalDamage') {
-        return { ...effect, traits: [...effect.traits] };
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        return {
-            ...effect,
-            allowedTraits: [...effect.allowedTraits],
-            selectedTraits: effect.selectedTraits ? [...effect.selectedTraits] : undefined,
-        };
-    }
-    if (effect.mode === 'chosenTrait') {
-        return { ...effect, allowedTraits: [...effect.allowedTraits] };
-    }
-    if (effect.mode === 'healChosenTrait') {
-        return { ...effect, allowedTraits: [...effect.allowedTraits] };
-    }
-    if (effect.mode === 'rolledDamage') {
-        return { ...effect, rolls: effect.rolls ? [...effect.rolls] : undefined };
-    }
-    if (effect.mode === 'drawPossession') {
-        return {
-            ...effect,
-            drawnCard: effect.drawnCard ? { ...effect.drawnCard } : undefined,
-        };
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
-        return {
-            ...effect,
-            requiredIfDiscoveredVisualIds: effect.requiredIfDiscoveredVisualIds
-                ? [...effect.requiredIfDiscoveredVisualIds]
-                : undefined,
-        };
-    }
-    return { ...effect };
 }
 
 function cloneDiscoverySummary(discovery: BetrayalDiscoverySummary): BetrayalDiscoverySummary {
@@ -3055,6 +2286,32 @@ function cloneDiscoverySummary(discovery: BetrayalDiscoverySummary): BetrayalDis
         ...discovery,
         resolutionSteps: discovery.resolutionSteps?.map((step) => ({ ...step })),
     };
+}
+
+function buildDiscoveryResolutionStepKey(step: BetrayalDiscoveryResolutionStep): string {
+    return step.id;
+}
+
+function mergePreviousDiscoveryResolutionSteps(
+    previousDiscovery: BetrayalDiscoverySummary | null,
+    discovery: BetrayalDiscoverySummary,
+): void {
+    if (
+        previousDiscovery?.kind !== discovery.kind
+        || previousDiscovery.title !== discovery.title
+        || !previousDiscovery.resolutionSteps?.length
+    ) {
+        return;
+    }
+    const mergedSteps = [
+        ...previousDiscovery.resolutionSteps,
+        ...(discovery.resolutionSteps ?? []),
+    ];
+    const mergedStepByKey = new Map<string, BetrayalDiscoveryResolutionStep>();
+    for (const step of mergedSteps) {
+        mergedStepByKey.set(buildDiscoveryResolutionStepKey(step), step);
+    }
+    discovery.resolutionSteps = Array.from(mergedStepByKey.values(), (step) => ({ ...step }));
 }
 
 function clonePendingCardResolution(
@@ -3072,30 +2329,6 @@ function clonePendingCardResolution(
             ? resolution.processCards.map((card) => ({ ...card }))
             : undefined,
     };
-}
-
-function resolvePendingCardResolutionRequiredPlayerIds(
-    resolution: BetrayalPendingCardResolutionState,
-): string[] {
-    const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
-    return configuredPlayerIds.length > 0 ? configuredPlayerIds : [resolution.playerId];
-}
-
-function resolvePendingCardResolutionAcknowledgedPlayerIds(
-    resolution: BetrayalPendingCardResolutionState,
-): string[] {
-    return Array.from(new Set(
-        resolution.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
-    ));
-}
-
-function isPendingCardResolutionFullyAcknowledged(
-    core: Pick<BetrayalCore, 'playerIds'>,
-    resolution: BetrayalPendingCardResolutionState,
-    acknowledgedPlayerIds = resolvePendingCardResolutionAcknowledgedPlayerIds(resolution),
-): boolean {
-    const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
-    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
 function acknowledgeEventEffectCardResolution(
@@ -3124,91 +2357,6 @@ function acknowledgeEventEffectCardResolution(
                 ? []
                 : [{ ...resolution, requiredPlayerIds, acknowledgedPlayerIds }];
         });
-}
-
-function resolvePendingEventRollResolutionRequiredPlayerIds(
-    core: Pick<BetrayalCore, 'playerIds'>,
-    resolution: BetrayalPendingEventRollResolutionState,
-): string[] {
-    if (resolution.requiresAcknowledgement === false) {
-        return [resolution.playerId];
-    }
-    const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
-    if (configuredPlayerIds.length > 0) {
-        return configuredPlayerIds;
-    }
-    return core.playerIds.length > 0 ? [...core.playerIds] : [resolution.playerId];
-}
-
-function resolvePendingEventRollResolutionAcknowledgedPlayerIds(
-    resolution: BetrayalPendingEventRollResolutionState,
-): string[] {
-    return Array.from(new Set(
-        resolution.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
-    ));
-}
-
-function isPendingEventRollResolutionFullyAcknowledged(
-    core: Pick<BetrayalCore, 'playerIds'>,
-    resolution: BetrayalPendingEventRollResolutionState,
-    acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(resolution),
-): boolean {
-    if (resolution.requiresAcknowledgement === false) {
-        return true;
-    }
-    const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution);
-    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
-}
-
-function eventRollResolutionNeedsAcknowledgement(
-    resolution: Pick<
-        BetrayalPendingEventRollResolutionState,
-        | 'nextPendingEventChoice'
-        | 'hauntRevealResolution'
-        | 'hauntTraitorResolution'
-        | 'dustSetup'
-        | 'magicCameraSetup'
-        | 'helpingHandsSetup'
-        | 'uponReflectionSetup'
-    >,
-): boolean {
-    return Boolean(
-        resolution.nextPendingEventChoice
-        || resolution.hauntRevealResolution
-        || resolution.hauntTraitorResolution
-        || resolution.dustSetup
-        || resolution.magicCameraSetup
-        || resolution.helpingHandsSetup
-        || resolution.uponReflectionSetup,
-    );
-}
-
-function resolveRecentRollRequiredPlayerIds(
-    core: Pick<BetrayalCore, 'playerIds'>,
-    recentRoll: BetrayalRecentRollState,
-): string[] {
-    const configuredPlayerIds = recentRoll.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
-    if (configuredPlayerIds.length > 0) {
-        return configuredPlayerIds;
-    }
-    return core.playerIds.length > 0 ? [...core.playerIds] : [recentRoll.playerId];
-}
-
-function resolveRecentRollAcknowledgedPlayerIds(
-    recentRoll: BetrayalRecentRollState,
-): string[] {
-    return Array.from(new Set(
-        recentRoll.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
-    ));
-}
-
-function isRecentRollFullyAcknowledged(
-    core: Pick<BetrayalCore, 'playerIds'>,
-    recentRoll: BetrayalRecentRollState,
-    acknowledgedPlayerIds = resolveRecentRollAcknowledgedPlayerIds(recentRoll),
-): boolean {
-    const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
-    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
 function isPendingCardResolutionStepKind(
@@ -3386,248 +2534,6 @@ function withEventChoiceResolutionStep(discovery: BetrayalDiscoverySummary): Bet
     };
 }
 
-function effectNeedsTraitChoice(effect: UseEffectProfile): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some(effectNeedsTraitChoice);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectNeedsTraitChoice(effect.acceptEffect) || effectNeedsTraitChoice(effect.declineEffect);
-    }
-    return effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait' || effect.mode === 'generalDamageChoice';
-}
-
-function effectHasUnresolvedTraitChoice(effect: UseEffectProfile): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some(effectHasUnresolvedTraitChoice);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectHasUnresolvedTraitChoice(effect.acceptEffect) || effectHasUnresolvedTraitChoice(effect.declineEffect);
-    }
-    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
-        return !effect.chosenTrait;
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        return !effect.selectedTraits || effect.selectedTraits.length !== effect.amount;
-    }
-    return false;
-}
-
-function effectHasUnresolvedChosenTraitChoice(effect: UseEffectProfile): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some(effectHasUnresolvedChosenTraitChoice);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectHasUnresolvedChosenTraitChoice(effect.acceptEffect) || effectHasUnresolvedChosenTraitChoice(effect.declineEffect);
-    }
-    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
-        return !effect.chosenTrait;
-    }
-    return false;
-}
-
-function effectHasUnresolvedGeneralDamageChoice(effect: UseEffectProfile): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some(effectHasUnresolvedGeneralDamageChoice);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectHasUnresolvedGeneralDamageChoice(effect.acceptEffect) || effectHasUnresolvedGeneralDamageChoice(effect.declineEffect);
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        return !effect.selectedTraits || effect.selectedTraits.length !== effect.amount;
-    }
-    return false;
-}
-
-function effectNeedsAdjacentRoomChoice(effect: UseEffectProfile): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some(effectNeedsAdjacentRoomChoice);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectNeedsAdjacentRoomChoice(effect.acceptEffect) || effectNeedsAdjacentRoomChoice(effect.declineEffect);
-    }
-    return effect.mode === 'placeExplorerInAdjacentRoom' && !effect.targetRoomId;
-}
-
-function effectNeedsRoomTargetChoice(effect: UseEffectProfile): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some(effectNeedsRoomTargetChoice);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectNeedsRoomTargetChoice(effect.acceptEffect) || effectNeedsRoomTargetChoice(effect.declineEffect);
-    }
-    return (
-        (
-            effect.mode === 'placeSecretPassageToken'
-            || effect.mode === 'placeExplorerInDiscoveredRoomByFloor'
-        )
-        && Boolean(effect.targetRoomScope)
-        && !effect.targetRoomId
-    );
-}
-
-function eventEffectNeedsPendingEventChoice(effect: UseEffectProfile | undefined): boolean {
-    if (!effect) {
-        return false;
-    }
-    return effect.mode === 'optionalEventRoll'
-        || effect.mode === 'optionalEffect'
-        || effect.mode === 'optionalItemEffect'
-        || effect.mode === 'optionalHauntRoll'
-        || effect.mode === 'chooseTraitRoll'
-        || effect.mode === 'traitRoll'
-        || effectHasUnresolvedTraitChoice(effect)
-        || effectNeedsAdjacentRoomChoice(effect)
-        || effectNeedsRoomTargetChoice(effect)
-        || (
-            effect.mode === 'allTraitChecks'
-            && Boolean(effect.results?.every((result) => result.passed))
-            && effectHasUnresolvedTraitChoice(effect.allPassEffect)
-        );
-}
-
-function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffectProfile, targetRoomId: string): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some((childEffect) => effectAllowsRoomTargetChoice(core, childEffect, targetRoomId));
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectAllowsRoomTargetChoice(core, effect.acceptEffect, targetRoomId)
-            || effectAllowsRoomTargetChoice(core, effect.declineEffect, targetRoomId);
-    }
-    if (
-        (
-            effect.mode !== 'placeSecretPassageToken'
-            && effect.mode !== 'placeExplorerInDiscoveredRoomByFloor'
-        )
-        || !effect.targetRoomScope
-    ) {
-        return false;
-    }
-    const targetRoom = core.rooms.find((room) => room.id === targetRoomId);
-    if (!targetRoom || targetRoom.state !== 'discovered') {
-        return false;
-    }
-    if (effect.mode === 'placeSecretPassageToken' && targetRoom.markerTokens?.includes('secretPassage')) {
-        return false;
-    }
-    const requiredRoom = effect.requiredIfDiscoveredVisualIds?.length
-        ? core.rooms.find((room) => (
-            room.state === 'discovered' && effect.requiredIfDiscoveredVisualIds!.includes(room.visualId)
-        ))
-        : null;
-    if (requiredRoom) {
-        return targetRoom.id === requiredRoom.id;
-    }
-    if (effect.targetRoomScope === 'anyDiscovered') {
-        return true;
-    }
-    if (effect.targetRoomScope === 'anyOtherDiscovered') {
-        return targetRoom.id !== core.currentExplorer.roomId;
-    }
-    if (effect.targetRoomScope === 'groundDiscovered') {
-        return targetRoom.floor === 'ground';
-    }
-    if (effect.targetRoomScope === 'basementDiscovered') {
-        return targetRoom.floor === 'basement';
-    }
-    const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
-    if (effect.targetRoomScope === 'groundOrBasementDiscovered') {
-        return targetRoom.floor === 'ground' || targetRoom.floor === 'basement';
-    }
-    if (effect.targetRoomScope === 'sameFloorDiscovered') {
-        return Boolean(currentRoom && targetRoom.floor === currentRoom.floor);
-    }
-    if (effect.targetRoomScope === 'differentFloorDiscovered') {
-        return Boolean(currentRoom && targetRoom.floor !== currentRoom.floor);
-    }
-    return false;
-}
-
-function effectAllowsAdjacentRoomChoice(core: BetrayalCore, targetRoomId: string): boolean {
-    const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
-    const targetRoom = core.rooms.find((room) => room.id === targetRoomId);
-    if (!currentRoom || !targetRoom || targetRoom.state !== 'discovered') {
-        return false;
-    }
-    return resolveConnectedRoomIds(core.rooms, currentRoom.id).has(targetRoom.id);
-}
-
-function effectAllowsChosenTrait(effect: UseEffectProfile, trait: BetrayalTraitKey): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some((childEffect) => effectAllowsChosenTrait(childEffect, trait));
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectAllowsChosenTrait(effect.acceptEffect, trait) || effectAllowsChosenTrait(effect.declineEffect, trait);
-    }
-    if (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
-        return effect.allowedTraits.includes(trait);
-    }
-    return false;
-}
-
-function resolveTraitDamageAssignableSteps(
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    options: { allowSkull?: boolean } = {},
-): number {
-    normalizeExplorerTraitTracks(explorer);
-    const track = explorer.traitTracks[trait];
-    const floorPosition = options.allowSkull ? track.skullPosition : track.criticalPosition;
-    return Math.max(0, track.position - floorPosition);
-}
-
-function damageTraitsAreAssignable(
-    explorer: BetrayalExplorerSummary,
-    traits: BetrayalTraitKey[],
-    options: { allowSkull?: boolean } = {},
-): boolean {
-    const counts = new Map<BetrayalTraitKey, number>();
-    for (const trait of traits) {
-        counts.set(trait, (counts.get(trait) ?? 0) + 1);
-    }
-    return [...counts.entries()].every(([trait, count]) => (
-        count <= resolveTraitDamageAssignableSteps(explorer, trait, options)
-    ));
-}
-
-function resolvePossessionUseCostUnavailableReason(
-    explorer: BetrayalExplorerSummary,
-    effect: PossessionUseEffectProfile,
-    cardName: string,
-): string | null {
-    if (
-        effect.mode === 'nextNonCombatTraitReplacement'
-        && resolveTraitDamageAssignableSteps(explorer, 'sanity') < effect.sanityCost
-    ) {
-        return `神志不足，不能支付${cardName}的 ${effect.sanityCost} 点神志。`;
-    }
-    return null;
-}
-
-function effectAllowsGeneralDamageTraits(
-    effect: UseEffectProfile,
-    traits: BetrayalTraitKey[] | undefined,
-    explorer?: BetrayalExplorerSummary,
-    options: { allowSkull?: boolean } = {},
-): boolean {
-    if (effect.mode === 'compound') {
-        return effect.effects.some((childEffect) => effectAllowsGeneralDamageTraits(childEffect, traits, explorer, options));
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return effectAllowsGeneralDamageTraits(effect.acceptEffect, traits, explorer, options)
-            || effectAllowsGeneralDamageTraits(effect.declineEffect, traits, explorer, options);
-    }
-    if (effect.mode !== 'generalDamageChoice') {
-        return false;
-    }
-    if (!traits || traits.length !== effect.amount) {
-        return false;
-    }
-    if (!traits.every((trait) => effect.allowedTraits.includes(trait))) {
-        return false;
-    }
-    return explorer ? damageTraitsAreAssignable(explorer, traits, options) : true;
-}
-
 function resolveChooseTraitRollPreviewEffect(
     core: BetrayalCore,
     effect: Extract<UseEffectProfile, { mode: 'chooseTraitRoll' }>,
@@ -3636,165 +2542,6 @@ function resolveChooseTraitRollPreviewEffect(
     const previewRollTotal = resolveNonCombatTraitCheckValue(core, core.currentExplorer, selectedTrait);
     const previewBranch = resolveEventBranch(effect.branches, previewRollTotal);
     return applyChosenTraitToEffect(cloneUseEffect(previewBranch.effect), selectedTrait);
-}
-
-function applyAdjacentRoomChoiceToEffect(
-    core: BetrayalCore,
-    effect: UseEffectProfile,
-    targetRoomId?: string,
-): UseEffectProfile {
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map((childEffect) => applyAdjacentRoomChoiceToEffect(core, childEffect, targetRoomId)),
-        };
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return {
-            ...effect,
-            acceptEffect: applyAdjacentRoomChoiceToEffect(core, effect.acceptEffect, targetRoomId),
-            declineEffect: applyAdjacentRoomChoiceToEffect(core, effect.declineEffect, targetRoomId),
-        };
-    }
-    if (
-        effect.mode === 'placeExplorerInAdjacentRoom'
-        && targetRoomId
-        && effectAllowsAdjacentRoomChoice(core, targetRoomId)
-    ) {
-        const targetRoom = core.rooms.find((room) => room.id === targetRoomId)!;
-        return { ...effect, targetRoomId, targetRoomName: targetRoom.name };
-    }
-    return effect;
-}
-
-function applyRoomTargetChoiceToEffect(
-    core: BetrayalCore,
-    effect: UseEffectProfile,
-    targetRoomId?: string,
-): UseEffectProfile {
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map((childEffect) => applyRoomTargetChoiceToEffect(core, childEffect, targetRoomId)),
-        };
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return {
-            ...effect,
-            acceptEffect: applyRoomTargetChoiceToEffect(core, effect.acceptEffect, targetRoomId),
-            declineEffect: applyRoomTargetChoiceToEffect(core, effect.declineEffect, targetRoomId),
-        };
-    }
-    if (
-        (
-            effect.mode === 'placeSecretPassageToken'
-            || effect.mode === 'placeExplorerInDiscoveredRoomByFloor'
-        )
-        && targetRoomId
-        && effectAllowsRoomTargetChoice(core, effect, targetRoomId)
-    ) {
-        const targetRoom = core.rooms.find((room) => room.id === targetRoomId)!;
-        return { ...effect, targetRoomId, targetRoomName: targetRoom.name };
-    }
-    return effect;
-}
-
-function applyChosenTraitToEffect(effect: UseEffectProfile, trait?: BetrayalTraitKey): UseEffectProfile {
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map((childEffect) => applyChosenTraitToEffect(childEffect, trait)),
-        };
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return {
-            ...effect,
-            acceptEffect: applyChosenTraitToEffect(effect.acceptEffect, trait),
-            declineEffect: applyChosenTraitToEffect(effect.declineEffect, trait),
-        };
-    }
-    if (
-        trait
-        && (effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait')
-        && effect.allowedTraits.includes(trait)
-    ) {
-        return { ...effect, chosenTrait: trait };
-    }
-    return effect;
-}
-
-function applyGeneralDamageTraitsToEffect(
-    effect: UseEffectProfile,
-    traits?: BetrayalTraitKey[],
-): UseEffectProfile {
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map((childEffect) => applyGeneralDamageTraitsToEffect(childEffect, traits)),
-        };
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return {
-            ...effect,
-            acceptEffect: applyGeneralDamageTraitsToEffect(effect.acceptEffect, traits),
-            declineEffect: applyGeneralDamageTraitsToEffect(effect.declineEffect, traits),
-        };
-    }
-    if (
-        effect.mode === 'generalDamageChoice'
-        && traits
-        && traits.length === effect.amount
-        && traits.every((trait) => effect.allowedTraits.includes(trait))
-    ) {
-        return { ...effect, selectedTraits: [...traits] };
-    }
-    return effect;
-}
-
-function eventInventoryCardMatchesFilter(
-    card: BetrayalInventoryCard,
-    filter: Extract<UseEffectProfile, { mode: 'optionalItemEffect' }>['itemFilter'],
-): boolean {
-    if (card.kind !== 'item') {
-        return false;
-    }
-    if (filter === 'nonWeaponItem') {
-        return !ATTACK_WEAPON_CARD_IDS.has(resolveInventoryEffectId(card.id));
-    }
-    return true;
-}
-
-function effectAllowsItemChoice(core: BetrayalCore, effect: UseEffectProfile, cardId: string | undefined): boolean {
-    if (!cardId) {
-        return false;
-    }
-    if (effect.mode === 'compound') {
-        return effect.effects.some((childEffect) => effectAllowsItemChoice(core, childEffect, cardId));
-    }
-    if (effect.mode !== 'optionalItemEffect') {
-        return false;
-    }
-    return core.currentExplorer.inventory.some((card) => (
-        card.id === cardId && eventInventoryCardMatchesFilter(card, effect.itemFilter)
-    ));
-}
-
-function applyItemChoiceToEffect(core: BetrayalCore, effect: UseEffectProfile, cardId?: string): UseEffectProfile {
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map((childEffect) => applyItemChoiceToEffect(core, childEffect, cardId)),
-        };
-    }
-    if (effect.mode !== 'optionalItemEffect' || !cardId || !effectAllowsItemChoice(core, effect, cardId)) {
-        return effect;
-    }
-    const card = core.currentExplorer.inventory.find((candidate) => candidate.id === cardId)!;
-    return {
-        ...effect,
-        selectedCardId: card.id,
-        selectedCardName: card.name,
-    };
 }
 
 function createShuffledDiscoveryState(random: RandomFn) {
@@ -3818,202 +2565,6 @@ const DEFAULT_BETRAYAL_RANDOM: RandomFn = {
     shuffle: (array) => [...array],
 };
 
-const BETRAYAL_DICE_POOL_SIZE = 8;
-
-function normalizeBetrayalDiceCount(count: number): number {
-    return Math.min(BETRAYAL_DICE_POOL_SIZE, Math.max(0, Math.floor(count)));
-}
-
-const TRAIT_LABEL: Record<BetrayalTraitKey, string> = {
-    might: '力量',
-    speed: '速度',
-    knowledge: '知识',
-    sanity: '神志',
-};
-
-const BETRAYAL_TRAIT_KEYS: BetrayalTraitKey[] = ['might', 'speed', 'knowledge', 'sanity'];
-
-function buildDefaultTraitTrack(trackId: string, startValue: number): BetrayalTraitTrackState {
-    const normalizedStart = Math.max(2, Math.round(startValue));
-    const lowMid = Math.max(1, normalizedStart - 1);
-    const highMid = normalizedStart + 1;
-    const values = [
-        1,
-        lowMid,
-        lowMid,
-        normalizedStart,
-        highMid,
-        highMid,
-        highMid + 1,
-        highMid + 2,
-    ];
-    const startPosition = 3;
-    return {
-        trackId,
-        values,
-        position: startPosition,
-        startPosition,
-        criticalPosition: 0,
-        skullPosition: -1,
-        maxPosition: values.length - 1,
-    };
-}
-
-function buildTraitTrackFromSeed(
-    trackId: string,
-    seed: BetrayalExplorerTraitTrackSeed,
-    fallbackStartValue: number,
-): BetrayalTraitTrackState {
-    if (seed.values.length === 0) {
-        return buildDefaultTraitTrack(trackId, fallbackStartValue);
-    }
-    const values = [...seed.values];
-    const maxPosition = values.length - 1;
-    const startPosition = Math.max(0, Math.min(maxPosition, seed.startPosition));
-    return {
-        trackId,
-        values,
-        position: startPosition,
-        startPosition,
-        criticalPosition: 0,
-        skullPosition: -1,
-        maxPosition,
-    };
-}
-
-function cloneTraitTrack(track: BetrayalTraitTrackState): BetrayalTraitTrackState {
-    return { ...track, values: [...track.values] };
-}
-
-function cloneTraitTracks(tracks: BetrayalTraitTrackMap): BetrayalTraitTrackMap {
-    return Object.fromEntries(
-        BETRAYAL_TRAIT_KEYS.map((trait) => [trait, cloneTraitTrack(tracks[trait])]),
-    ) as BetrayalTraitTrackMap;
-}
-
-function traitValueAtPosition(track: BetrayalTraitTrackState, position = track.position): number {
-    if (position <= track.skullPosition) {
-        return 0;
-    }
-    const clampedPosition = Math.max(track.criticalPosition, Math.min(track.maxPosition, position));
-    return track.values[clampedPosition] ?? track.values[track.criticalPosition] ?? 1;
-}
-
-function buildTraitTracksFromValues(
-    explorerId: string,
-    values: Record<BetrayalTraitKey, number>,
-): BetrayalTraitTrackMap {
-    return Object.fromEntries(
-        BETRAYAL_TRAIT_KEYS.map((trait) => [
-            trait,
-            buildDefaultTraitTrack(`${explorerId}-${trait}`, values[trait]),
-        ]),
-    ) as BetrayalTraitTrackMap;
-}
-
-function buildTraitTracksFromTemplate(template: BetrayalExplorerTemplate): BetrayalTraitTrackMap {
-    return Object.fromEntries(
-        BETRAYAL_TRAIT_KEYS.map((trait) => [
-            trait,
-            buildTraitTrackFromSeed(
-                `${template.explorerId}-${trait}`,
-                template.traitTracks[trait],
-                template.traits[trait],
-            ),
-        ]),
-    ) as BetrayalTraitTrackMap;
-}
-
-function positionForTraitValue(track: BetrayalTraitTrackState, value: number): number {
-    if (value <= 0) {
-        return track.skullPosition;
-    }
-    const exactPositions = track.values
-        .map((trackValue, index) => ({ trackValue, index }))
-        .filter(({ trackValue }) => trackValue === value)
-        .map(({ index }) => index);
-    if (exactPositions.length > 0) {
-        return exactPositions.reduce((best, index) => (
-            Math.abs(index - track.startPosition) < Math.abs(best - track.startPosition)
-                ? index
-                : best
-        ), exactPositions[0]!);
-    }
-    return track.values.reduce((best, trackValue, index) => {
-        const bestValue = track.values[best] ?? trackValue;
-        return Math.abs(trackValue - value) < Math.abs(bestValue - value) ? index : best;
-    }, track.criticalPosition);
-}
-
-function traitTrackContainsValue(track: BetrayalTraitTrackState, value: number): boolean {
-    return value <= 0 || track.values.includes(value);
-}
-
-function normalizeExplorerTraitTracks(explorer: BetrayalExplorerSummary): void {
-    const currentTracks = explorer.traitTracks ?? buildTraitTracksFromValues(explorer.explorerId, explorer.traits);
-    const normalizedTracks = {} as BetrayalTraitTrackMap;
-    for (const trait of BETRAYAL_TRAIT_KEYS) {
-        const existingTrack = currentTracks[trait]
-            ?? buildDefaultTraitTrack(`${explorer.explorerId}-${trait}`, explorer.traits[trait]);
-        let track = cloneTraitTrack(existingTrack);
-        const derivedValue = traitValueAtPosition(track);
-        if (explorer.traits[trait] !== derivedValue) {
-            track = traitTrackContainsValue(track, explorer.traits[trait])
-                ? track
-                : buildDefaultTraitTrack(`${explorer.explorerId}-${trait}`, explorer.traits[trait]);
-            track.position = positionForTraitValue(track, explorer.traits[trait]);
-        }
-        normalizedTracks[trait] = track;
-        explorer.traits[trait] = traitValueAtPosition(track);
-    }
-    explorer.traitTracks = normalizedTracks;
-}
-
-function syncExplorerTraitValue(explorer: BetrayalExplorerSummary, trait: BetrayalTraitKey): void {
-    explorer.traits[trait] = traitValueAtPosition(explorer.traitTracks[trait]);
-}
-
-function moveExplorerTraitSteps(
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    steps: number,
-    options: { allowSkull?: boolean } = {},
-): void {
-    normalizeExplorerTraitTracks(explorer);
-    const track = explorer.traitTracks[trait];
-    const minPosition = options.allowSkull ? track.skullPosition : track.criticalPosition;
-    track.position = Math.max(minPosition, Math.min(track.maxPosition, track.position + steps));
-    syncExplorerTraitValue(explorer, trait);
-}
-
-function healExplorerTraitToStart(explorer: BetrayalExplorerSummary, trait: BetrayalTraitKey): void {
-    normalizeExplorerTraitTracks(explorer);
-    const track = explorer.traitTracks[trait];
-    if (track.position < track.startPosition) {
-        track.position = track.startPosition;
-        syncExplorerTraitValue(explorer, trait);
-    }
-}
-
-function setExplorerTraitPosition(
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    position: number,
-): void {
-    normalizeExplorerTraitTracks(explorer);
-    const track = explorer.traitTracks[trait];
-    track.position = Math.max(track.skullPosition, Math.min(track.maxPosition, position));
-    syncExplorerTraitValue(explorer, trait);
-}
-
-function setExplorerTraitsFromValues(
-    explorer: BetrayalExplorerSummary,
-    traits: Record<BetrayalTraitKey, number>,
-): void {
-    explorer.traits = { ...traits };
-    normalizeExplorerTraitTracks(explorer);
-}
-
 const nowEvent = <TType extends string, TPayload>(
     type: TType,
     payload: TPayload,
@@ -4023,136 +2574,6 @@ const nowEvent = <TType extends string, TPayload>(
     payload,
     timestamp,
 });
-
-function cloneInventoryCard(card: BetrayalInventoryCard): BetrayalInventoryCard {
-    return { ...card };
-}
-
-function countDrawnCards(core: BetrayalCore, kind: BetrayalDeckKind): number {
-    return Math.max(0, BETRAYAL_INITIAL_DECK_COUNTS[kind] - core.deckCounts[kind]);
-}
-
-function clonePossessionOrderByKind(
-    order: Record<BetrayalPossessionDeckKind, BetrayalInventoryCard[]>,
-): Record<BetrayalPossessionDeckKind, BetrayalInventoryCard[]> {
-    return {
-        item: order.item.map(cloneInventoryCard),
-        omen: order.omen.map(cloneInventoryCard),
-    };
-}
-
-function findPossessionDeckIndex(
-    core: BetrayalCore,
-    kind: BetrayalPossessionDeckKind,
-    cardId: string,
-): number {
-    const effectId = resolveInventoryEffectId(cardId);
-    return core.possessionOrderByKind[kind].findIndex((card) => resolveInventoryEffectId(card.id) === effectId);
-}
-
-function removePossessionCardFromDeck(
-    core: BetrayalCore,
-    kind: BetrayalPossessionDeckKind,
-    cardId: string,
-): void {
-    const deck = [...core.possessionOrderByKind[kind]];
-    const index = findPossessionDeckIndex(core, kind, cardId);
-    if (index >= 0) {
-        deck.splice(index, 1);
-        core.possessionOrderByKind = {
-            ...core.possessionOrderByKind,
-            [kind]: deck,
-        };
-    }
-    core.deckCounts[kind] = Math.max(0, core.deckCounts[kind] - 1);
-}
-
-function buryPossessionCardToBottom(
-    core: BetrayalCore,
-    kind: BetrayalPossessionDeckKind,
-    cardId: string,
-): void {
-    const deck = [...core.possessionOrderByKind[kind]];
-    const index = findPossessionDeckIndex(core, kind, cardId);
-    if (index < 0) {
-        return;
-    }
-    const [card] = deck.splice(index, 1);
-    if (card) {
-        deck.push(card);
-    }
-    core.possessionOrderByKind = {
-        ...core.possessionOrderByKind,
-        [kind]: deck,
-    };
-}
-
-function restorePossessionCardToTop(
-    core: BetrayalCore,
-    kind: BetrayalPossessionDeckKind,
-    card: BetrayalInventoryCard,
-): void {
-    const effectId = resolveInventoryEffectId(card.id);
-    if (core.possessionOrderByKind[kind].some((deckCard) => resolveInventoryEffectId(deckCard.id) === effectId)) {
-        core.deckCounts[kind] += 1;
-        return;
-    }
-    core.possessionOrderByKind = {
-        ...core.possessionOrderByKind,
-        [kind]: [{ id: effectId, name: card.name, kind }, ...core.possessionOrderByKind[kind]],
-    };
-    core.deckCounts[kind] += 1;
-}
-
-function restorePossessionCardToBottom(
-    core: BetrayalCore,
-    kind: BetrayalPossessionDeckKind,
-    card: BetrayalInventoryCard,
-): void {
-    const effectId = resolveInventoryEffectId(card.id);
-    if (core.possessionOrderByKind[kind].some((deckCard) => resolveInventoryEffectId(deckCard.id) === effectId)) {
-        return;
-    }
-    core.possessionOrderByKind = {
-        ...core.possessionOrderByKind,
-        [kind]: [...core.possessionOrderByKind[kind], { ...card, id: effectId, kind }],
-    };
-    core.deckCounts[kind] += 1;
-}
-
-function buryEventCardToBottom(core: BetrayalCore, eventName: string): void {
-    if (core.eventOrder.length <= 1) {
-        return;
-    }
-    const deck = core.eventOrder.map(cloneEventTemplate);
-    const index = Math.max(0, deck.findIndex((eventCard) => eventCard.name === eventName));
-    const [eventCard] = deck.splice(index, 1);
-    if (eventCard) {
-        deck.push(eventCard);
-    }
-    core.eventOrder = deck;
-}
-
-function removeEventCardForUponReflectionHint(core: BetrayalCore, eventName: string): void {
-    const index = core.eventOrder.findIndex((eventCard) => eventCard.name === eventName);
-    if (index < 0) {
-        return;
-    }
-    const deck = core.eventOrder.map(cloneEventTemplate);
-    deck.splice(index, 1);
-    core.eventOrder = deck;
-    core.deckCounts.event = Math.max(0, core.deckCounts.event - 1);
-}
-
-function cloneRoom(room: BetrayalRoomNode): BetrayalRoomNode {
-    return {
-        ...room,
-        connectedRoomIds: [...room.connectedRoomIds],
-        tags: [...room.tags],
-        doorways: room.doorways.map((doorway) => ({ ...doorway })),
-        markerTokens: room.markerTokens ? [...room.markerTokens] : undefined,
-    };
-}
 
 function cloneExplorer(explorer: BetrayalExplorerSummary): BetrayalExplorerSummary {
     const cloned = {
@@ -4190,27 +2611,6 @@ function cloneDustRuntimeState(dust: BetrayalDustRuntimeState): BetrayalDustRunt
         pendingSicknessExchange: dust.pendingSicknessExchange
             ? { ...dust.pendingSicknessExchange }
             : undefined,
-    };
-}
-
-function createInitialMonsterTurnRuntimeState(): BetrayalMonsterTurnRuntimeState {
-    return {
-        resolvedStartMonsterIds: [],
-        skippedMonsterIdsThisTurn: [],
-        attackedMonsterIdsThisTurn: [],
-        movedMonsterIdsThisTurn: [],
-        movementRollsByGroupId: {},
-        moveRemainingById: {},
-    };
-}
-
-function cloneMonsterMovementRollGroupResult(
-    result: BetrayalMonsterMovementRollGroupResult,
-): BetrayalMonsterMovementRollGroupResult {
-    return {
-        ...result,
-        monsterIds: [...result.monsterIds],
-        dice: [...result.dice],
     };
 }
 
@@ -4322,28 +2722,6 @@ function clonePendingDamageAllocation(
     };
 }
 
-function cloneMonsterTurnRuntimeState(
-    monsterTurn: BetrayalMonsterTurnRuntimeState | null | undefined,
-): BetrayalMonsterTurnRuntimeState {
-    if (!monsterTurn) {
-        return createInitialMonsterTurnRuntimeState();
-    }
-    const movementRollsByGroupId = monsterTurn.movementRollsByGroupId ?? {};
-    return {
-        resolvedStartMonsterIds: [...(monsterTurn.resolvedStartMonsterIds ?? [])],
-        skippedMonsterIdsThisTurn: [...(monsterTurn.skippedMonsterIdsThisTurn ?? [])],
-        attackedMonsterIdsThisTurn: [...(monsterTurn.attackedMonsterIdsThisTurn ?? [])],
-        movedMonsterIdsThisTurn: [...(monsterTurn.movedMonsterIdsThisTurn ?? [])],
-        movementRollsByGroupId: Object.fromEntries(
-            Object.entries(movementRollsByGroupId).map(([groupId, result]) => [
-                groupId,
-                cloneMonsterMovementRollGroupResult(result),
-            ]),
-        ),
-        moveRemainingById: { ...(monsterTurn.moveRemainingById ?? {}) },
-    };
-}
-
 function cloneMagicCameraRuntimeState(magicCamera: BetrayalMagicCameraRuntimeState): BetrayalMagicCameraRuntimeState {
     return {
         cameraDestroyed: magicCamera.cameraDestroyed,
@@ -4427,7 +2805,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         eventOrder: core.eventOrder.map(cloneEventTemplate),
         deckCounts: { ...core.deckCounts },
         discardCounts: { ...core.discardCounts },
-        rooms: core.rooms.map(cloneRoom),
+        rooms: core.rooms.map(cloneBetrayalRoom),
         usedCardIdsThisTurn: [...core.usedCardIdsThisTurn],
         tradeUsedThisTurnPlayerIds: [...core.tradeUsedThisTurnPlayerIds],
         turnStartInventoryCardIds: [...core.turnStartInventoryCardIds],
@@ -4473,7 +2851,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                         drawnCards: core.recentRoll.eventEffectSnapshot.drawnCards.map(cloneInventoryCard),
                     }
                     : undefined,
-                roomsBeforeRoll: core.recentRoll.roomsBeforeRoll?.map(cloneRoom),
+                roomsBeforeRoll: core.recentRoll.roomsBeforeRoll?.map(cloneBetrayalRoom),
                 roomEndTurn: core.recentRoll.roomEndTurn
                     ? {
                         ...core.recentRoll.roomEndTurn,
@@ -4548,17 +2926,6 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
             stats: { ...core.endgameResult.stats },
         } : null,
     };
-}
-
-function resolveControlledRoomId(core: BetrayalCore, explorer: BetrayalExplorerSummary): string {
-    if (shouldDeadTraitorControlJackSpirit(core, explorer.playerId) && core.scenarioRuntime.jackSpiritRoomId) {
-        return core.scenarioRuntime.jackSpiritRoomId;
-    }
-    const feverish = findFeverishMonster(core, explorer.playerId);
-    if (shouldDeadPlayerControlFeverish(core, explorer.playerId) && feverish) {
-        return feverish.roomId;
-    }
-    return explorer.roomId;
 }
 
 function syncCurrentExplorerProjection(core: BetrayalCore): BetrayalCore {
@@ -4799,17 +3166,6 @@ function templateByExplorerId(explorerId: string): BetrayalExplorerTemplate | un
     return EXPLORER_CATALOG.find((template) => template.explorerId === explorerId);
 }
 
-function getAllExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return [core.currentExplorer, ...core.otherExplorers];
-}
-
-function getExplorersInTurnOrder(core: BetrayalCore): BetrayalExplorerSummary[] {
-    const explorerByPlayerId = new Map(getAllExplorers(core).map((explorer) => [explorer.playerId, explorer]));
-    return core.playerIds
-        .map((playerId) => explorerByPlayerId.get(playerId))
-        .filter((explorer): explorer is BetrayalExplorerSummary => Boolean(explorer));
-}
-
 function replaceExplorers(
     core: BetrayalCore,
     explorers: BetrayalExplorerSummary[],
@@ -4836,17 +3192,6 @@ function buildScenarioExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
         );
     });
 }
-
-function findExplorerByPlayerId(core: BetrayalCore, playerId: string): BetrayalExplorerSummary | null {
-    return getAllExplorers(core).find((explorer) => explorer.playerId === playerId) ?? null;
-}
-
-const DUST_RESEARCH_ROOM_VISUAL_IDS = new Set<BetrayalRoomVisualId>([
-    'laboratory',
-    'operatingTheatre',
-    'observatory',
-    'kitchen',
-]);
 
 function resolveMummyGirlStartingRoomId(core: BetrayalCore, mummyRoomId: string): string | null {
     const mummyRoom = core.rooms.find((room) => room.id === mummyRoomId);
@@ -4922,35 +3267,6 @@ function setupMummyHaunt(core: BetrayalCore, traitorPlayerId: string | null): Be
         createBetrayalMonsterFromDefinition('mummy', mummy.mummyMonsterId, mummy.sarcophagusRoomId),
     ];
     return mummy;
-}
-
-function isMummyHaunt(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntCardNumber === 1
-        && core.scenarioRuntime.hauntScenarioCardId === 'mummy-rampage'
-        && Boolean(core.scenarioRuntime.mummy);
-}
-
-function hasOmenBook(explorer: BetrayalExplorerSummary | null | undefined): boolean {
-    return Boolean(explorer?.inventory.some((card) => (
-        card.kind === 'omen'
-        && (
-            resolveInventoryEffectId(card.id) === 'omen-book'
-            || card.name === '书本'
-            || card.name.toLowerCase() === 'book'
-        )
-    )));
-}
-
-function isMummyMonster(core: BetrayalCore, monsterOrId: BetrayalMonsterSummary | string | null | undefined): boolean {
-    if (!isMummyHaunt(core) || !monsterOrId) {
-        return false;
-    }
-    const mummyId = core.scenarioRuntime.mummy?.mummyMonsterId ?? 'mummy';
-    const monster = typeof monsterOrId === 'string'
-        ? core.monsters.find((item) => item.id === monsterOrId)
-        : monsterOrId;
-    return Boolean(monster && (monster.id === mummyId || monster.definitionId === 'mummy'));
 }
 
 function isOmenStillInDeck(core: BetrayalCore, effectId: string): boolean {
@@ -5056,43 +3372,6 @@ function findMummyWeddingOmenCard(
     return cards[0] ?? null;
 }
 
-function findMummyMonster(core: BetrayalCore): BetrayalMonsterSummary | null {
-    const mummyId = core.scenarioRuntime.mummy?.mummyMonsterId ?? 'mummy';
-    return core.monsters.find((monster) => monster.id === mummyId || monster.definitionId === 'mummy') ?? null;
-}
-
-function resolveMummyGirlStealCard(): BetrayalInventoryCard {
-    return {
-        id: MUMMY_GIRL_STEAL_CARD_ID,
-        name: '女孩',
-        kind: 'omen',
-    };
-}
-
-export function resolveMummyStealableCards(
-    core: BetrayalCore,
-    defenderPlayerId: string,
-): BetrayalInventoryCard[] {
-    if (!isMummyHaunt(core)) {
-        return [];
-    }
-    const defender = findExplorerByPlayerId(core, defenderPlayerId);
-    if (!defender) {
-        return [];
-    }
-    const cards = defender.inventory.filter((card) => card.kind === 'item' || card.kind === 'omen');
-    const mummy = core.scenarioRuntime.mummy;
-    return mummy?.girlHolderPlayerId === defenderPlayerId
-        ? [...cards, resolveMummyGirlStealCard()]
-        : cards;
-}
-
-export function resolveMummyPendingAttackReward(core: BetrayalCore): BetrayalMummyAttackRewardChoice | null {
-    return isMummyHaunt(core)
-        ? core.scenarioRuntime.mummy?.pendingAttackReward ?? null
-        : null;
-}
-
 function resolveMummyForcedDamageTraits(
     explorer: BetrayalExplorerSummary,
     amount: number,
@@ -5106,46 +3385,6 @@ function resolveMummyForcedDamageTraits(
     sequence.push(...repeatTraitForDamage('speed', speedDamage));
     sequence.push(...repeatTraitForDamage('might', mightDamage));
     return sequence;
-}
-
-function resolveMummyMovementRollThisTurn(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalMonsterMovementRollGroupResult | null {
-    if (!isMummyMonster(core, monsterId)) {
-        return null;
-    }
-    return Object.values(core.scenarioRuntime.monsterTurn?.movementRollsByGroupId ?? {})
-        .find((result) => result.monsterIds.includes(monsterId)) ?? null;
-}
-
-function hasMummyTeleportMoveAvailable(core: BetrayalCore, monsterId: string): boolean {
-    const roll = resolveMummyMovementRollThisTurn(core, monsterId);
-    return Boolean(
-        roll
-        && roll.total <= 1
-        && !(core.scenarioRuntime.monsterTurn?.movedMonsterIdsThisTurn ?? []).includes(monsterId),
-    );
-}
-
-function resolveMummySameRoomAttackTargets(
-    core: BetrayalCore,
-    monster: BetrayalMonsterSummary,
-): BetrayalExplorerSummary[] {
-    if (!isMummyMonster(core, monster)) {
-        return [];
-    }
-    return getAllExplorers(core).filter((explorer) => (
-        resolveExplorerSide(core, explorer.playerId) === 'hero'
-        && explorer.roomId === monster.roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-}
-
-function mustMummyAttackBeforeMoving(core: BetrayalCore, monster: BetrayalMonsterSummary): boolean {
-    return isMummyMonster(core, monster)
-        && !monsterAttackedThisTurn(core, monster.id)
-        && resolveMummySameRoomAttackTargets(core, monster).length > 0;
 }
 
 function collectMummyGirlByExplorerIfPresent(
@@ -5189,21 +3428,6 @@ function collectMummyGirlByMummyIfPresent(
     mummy.girlHolderPlayerId = null;
     mummy.girlHeldByMummy = true;
     return true;
-}
-
-function isMummyNameStudyRoom(core: BetrayalCore, roomId: string): boolean {
-    const room = core.rooms.find((item) => item.id === roomId);
-    const mummy = core.scenarioRuntime.mummy;
-    return Boolean(
-        room
-        && mummy
-        && (
-            room.id === mummy.sarcophagusRoomId
-            || room.visualId === 'study'
-            || room.visualId === 'library'
-            || ['研究室', '书房', '图书馆'].includes(room.name)
-        ),
-    );
 }
 
 function createMummyEndgameResult(core: BetrayalCore, outcome: 'survivors' | 'traitor'): BetrayalEndgameResult {
@@ -5303,16 +3527,6 @@ function createDustRuntimeState(core: BetrayalCore, random: RandomFn): BetrayalD
     };
 }
 
-function isDustHaunt(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntCardNumber === 3
-        && Boolean(core.scenarioRuntime.dust);
-}
-
-function findFeverishMonster(core: BetrayalCore, playerId: string): BetrayalMonsterSummary | null {
-    return core.monsters.find((monster) => monster.id === `feverish-${playerId}`) ?? null;
-}
-
 function buryExplorerPossessionsToBottom(core: BetrayalCore, explorer: BetrayalExplorerSummary): void {
     if (explorer.inventory.length === 0) {
         return;
@@ -5366,76 +3580,6 @@ function buryDustDeadTraitorPossessions(
     if (explorer) {
         buryExplorerPossessionsToBottom(core, explorer);
     }
-}
-
-function shouldDeadPlayerControlFeverish(core: BetrayalCore, playerId: string): boolean {
-    return Boolean(
-        isDustHaunt(core)
-        && core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
-        && core.scenarioRuntime.dust?.feverishPlayerIds.includes(playerId)
-        && findFeverishMonster(core, playerId),
-    );
-}
-
-function canPlayerControlStandardMonsterTurn(core: BetrayalCore, playerId: string): boolean {
-    return Boolean(
-        shouldDeadPlayerControlFeverish(core, playerId)
-        || (
-            isUponReflectionHaunt(core)
-            && core.scenarioRuntime.uponReflection?.revealerPlayerId === playerId
-        )
-        || (
-            Boolean(core.scenarioRuntime.traitorPlayerId)
-            && core.scenarioRuntime.traitorPlayerId === playerId
-        ),
-    );
-}
-
-function isDustResearchRoom(room: BetrayalRoomNode | undefined): boolean {
-    return Boolean(
-        room
-        && room.state === 'discovered'
-        && (
-            DUST_RESEARCH_ROOM_VISUAL_IDS.has(room.visualId)
-            || ['实验室', '手术室', '观测台', '观象台', '厨房'].includes(room.name)
-        ),
-    );
-}
-
-export function canSearchForCure(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const dust = core.scenarioRuntime.dust;
-    const room = core.rooms.find((item) => item.id === actor.roomId);
-    return Boolean(
-        isDustHaunt(core)
-        && dust
-        && room?.state === 'discovered'
-        && room.discoveryReward === 'omen'
-        && !dust.researchRoomIds.includes(room.id),
-    );
-}
-
-export function canCureTheDust(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const dust = core.scenarioRuntime.dust;
-    const room = core.rooms.find((item) => item.id === actor.roomId);
-    return Boolean(
-        isDustHaunt(core)
-        && dust
-        && room
-        && (dust.researchRoomIds.includes(room.id) || isDustResearchRoom(room)),
-    );
-}
-
-function resolveNextLivingPlayerIdInTurnOrder(core: BetrayalCore, fromPlayerId: string): string | null {
-    const livingExplorers = getExplorersInTurnOrder(core).filter((explorer) => (
-        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    if (livingExplorers.length <= 1) {
-        return null;
-    }
-    const currentIndex = livingExplorers.findIndex((explorer) => explorer.playerId === fromPlayerId);
-    const nextExplorer = livingExplorers[(currentIndex + 1 + livingExplorers.length) % livingExplorers.length]
-        ?? livingExplorers[0]!;
-    return nextExplorer.playerId === fromPlayerId ? null : nextExplorer.playerId;
 }
 
 function resolveDustSicknessSwap(
@@ -5540,7 +3684,7 @@ function resolveFeverishMonsterMovementRoll(
     if (!feverish) {
         return null;
     }
-    const dice = rollDicePips(random, feverish.speed);
+    const dice = rollBetrayalDicePips(random, feverish.speed);
     const total = dice.reduce((sum, pip) => sum + pip, 0);
     return {
         monsterId: feverish.id,
@@ -5626,16 +3770,6 @@ function applyDustEventEffectDeathIfNeeded(core: BetrayalCore): void {
     }
 }
 
-function isHelpingHandsHaunt(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntCardNumber === 12
-        && Boolean(core.scenarioRuntime.helpingHands);
-}
-
-function isStrangeAmuletCard(card: BetrayalInventoryCard): boolean {
-    return resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID;
-}
-
 function cloneHelpingHandsRuntimeState(helpingHands: BetrayalHelpingHandsRuntimeState): BetrayalHelpingHandsRuntimeState {
     return {
         strangeAmuletCardId: helpingHands.strangeAmuletCardId,
@@ -5655,32 +3789,6 @@ function cloneHelpingHandsRuntimeState(helpingHands: BetrayalHelpingHandsRuntime
             }
             : undefined,
     };
-}
-
-function cloneBloodFromStoneMonsterTurnRuntimeState(
-    bloodFromStone: BetrayalBloodFromStoneMonsterTurnRuntimeState | null | undefined,
-): BetrayalBloodFromStoneMonsterTurnRuntimeState | undefined {
-    return bloodFromStone
-        ? {
-            monsterTurnAfterPlayerId: bloodFromStone.monsterTurnAfterPlayerId,
-            activeMonsterTurn: bloodFromStone.activeMonsterTurn,
-            monsterTurnControllerPlayerId: bloodFromStone.monsterTurnControllerPlayerId,
-        }
-        : undefined;
-}
-
-function findStrangeAmuletHolder(core: BetrayalCore): { playerId: string; card: BetrayalInventoryCard } | null {
-    for (const explorer of getAllExplorers(core)) {
-        const card = explorer.inventory.find(isStrangeAmuletCard);
-        if (card) {
-            return { playerId: explorer.playerId, card };
-        }
-    }
-    return null;
-}
-
-export function resolveHelpingHandsControllerPlayerId(core: BetrayalCore): string | null {
-    return findStrangeAmuletHolder(core)?.playerId ?? null;
 }
 
 function removeStrangeAmuletFromItemDeck(core: BetrayalCore): void {
@@ -5752,154 +3860,12 @@ function setupHelpingHandsHaunt(core: BetrayalCore, revealerPlayerId: string): B
     };
 }
 
-export function resolveHelpingHandsMonsterTurnStatus(core: BetrayalCore): BetrayalHelpingHandsMonsterTurnStatus {
-    const helpingHands = core.scenarioRuntime.helpingHands;
-    if (!isHelpingHandsHaunt(core) || !helpingHands) {
-        return {
-            active: false,
-            controllerPlayerId: null,
-            monsterTurnAfterPlayerId: null,
-            trollHandIds: [],
-            moveAllowance: 0,
-            moveDice: [],
-            moveRemainingById: {},
-            reason: '当前不是第12号作祟《援手》。',
-        };
-    }
-    const amuletHolderPlayerId = resolveHelpingHandsControllerPlayerId(core);
-    const controllerPlayerId = helpingHands.activeMonsterTurn
-        ? helpingHands.monsterTurnControllerPlayerId
-        : amuletHolderPlayerId;
-    return {
-        active: helpingHands.activeMonsterTurn && Boolean(controllerPlayerId),
-        controllerPlayerId,
-        monsterTurnAfterPlayerId: helpingHands.monsterTurnAfterPlayerId,
-        trollHandIds: [...helpingHands.trollHandIds],
-        moveAllowance: helpingHands.trollHandMoveAllowance,
-        moveDice: [...helpingHands.trollHandMoveDice],
-        moveRemainingById: { ...helpingHands.trollHandMoveRemainingById },
-        reason: helpingHands.activeMonsterTurn
-            ? (controllerPlayerId ? null : '当前巨魔手回合没有有效控制者。')
-            : amuletHolderPlayerId
-                ? '等待揭秘者结束回合后开始巨魔手怪物回合。'
-                : '无人持有奇异护符，巨魔手怪物回合跳过。',
-    };
-}
-
-export function resolveHelpingHandsStealableCards(
-    core: BetrayalCore,
-    defenderPlayerId: string,
-): BetrayalInventoryCard[] {
-    const defender = findExplorerByPlayerId(core, defenderPlayerId);
-    return defender
-        ? defender.inventory.filter((card) => card.kind === 'item' || card.kind === 'omen')
-        : [];
-}
-
-export function resolveHelpingHandsPendingAttackReward(
-    core: BetrayalCore,
-): BetrayalHelpingHandsAttackRewardChoice | null {
-    return isHelpingHandsHaunt(core)
-        ? core.scenarioRuntime.helpingHands?.pendingAttackReward ?? null
-        : null;
-}
-
-export function resolveHelpingHandsTrollHandAttackOptions(
-    core: BetrayalCore,
-): BetrayalHelpingHandsTrollHandAttackOption[] {
-    const status = resolveHelpingHandsMonsterTurnStatus(core);
-    if (!status.active || !core.scenarioRuntime.helpingHands) {
-        return [];
-    }
-    const usedIds = new Set(core.scenarioRuntime.helpingHands.trollHandAttackUsedIdsThisTurn);
-    const trollHands = status.trollHandIds
-        .map((id) => core.monsters.find((monster) => monster.id === id) ?? null)
-        .filter((monster): monster is BetrayalMonsterSummary => Boolean(monster))
-        .filter((monster) => !usedIds.has(monster.id));
-    const livingExplorers = getAllExplorers(core).filter((explorer) => (
-        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    const options = trollHands.map((monster) => ({
-        id: monster.id,
-        label: monster.name,
-        trollHandIds: [monster.id],
-        roomId: monster.roomId,
-        might: monster.might,
-        combined: false,
-        targetPlayerIds: livingExplorers
-            .filter((explorer) => explorer.roomId === monster.roomId)
-            .map((explorer) => explorer.playerId),
-    }));
-    if (
-        trollHands.length === 2
-        && trollHands[0]!.roomId === trollHands[1]!.roomId
-    ) {
-        options.push({
-            id: 'combined-troll-hands',
-            label: '巨魔手合击',
-            trollHandIds: trollHands.map((monster) => monster.id),
-            roomId: trollHands[0]!.roomId,
-            might: 8,
-            combined: true,
-            targetPlayerIds: livingExplorers
-                .filter((explorer) => explorer.roomId === trollHands[0]!.roomId)
-                .map((explorer) => explorer.playerId),
-        });
-    }
-    return options.filter((option) => option.targetPlayerIds.length > 0);
-}
-
-function findHelpingHandsTrollHand(
-    core: BetrayalCore,
-    monsterId: string | undefined,
-): BetrayalMonsterSummary | null {
-    if (!monsterId || !core.scenarioRuntime.helpingHands?.trollHandIds.includes(monsterId)) {
-        return null;
-    }
-    return core.monsters.find((monster) => monster.id === monsterId) ?? null;
-}
-
-function resolveHelpingHandsTrollHandMoveCost(
-    core: BetrayalCore,
-    monsterId: string,
-): number {
-    const monster = findHelpingHandsTrollHand(core, monsterId);
-    if (!monster) {
-        return 0;
-    }
-    const sharesRoomWithLivingExplorer = getAllExplorers(core).some((explorer) => (
-        explorer.roomId === monster.roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    return sharesRoomWithLivingExplorer ? 2 : 1;
-}
-
-export function resolveHelpingHandsTrollHandMoveOptions(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalRoomNode[] {
-    const status = resolveHelpingHandsMonsterTurnStatus(core);
-    const monster = findHelpingHandsTrollHand(core, monsterId);
-    if (!status.active || !monster) {
-        return [];
-    }
-    const moveCost = resolveHelpingHandsTrollHandMoveCost(core, monster.id);
-    if ((status.moveRemainingById[monster.id] ?? 0) < moveCost) {
-        return [];
-    }
-    const connectedRoomIds = resolveConnectedRoomIds(core.rooms, monster.roomId);
-    return core.rooms.filter((room) => (
-        room.state === 'discovered'
-        && connectedRoomIds.has(room.id)
-    ));
-}
-
 function createHelpingHandsMonsterTurnStartedEvent(
     controllerPlayerId: string,
     random: RandomFn,
     timestamp: number,
 ): GameEvent<typeof EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, BetrayalHelpingHandsMonsterTurnStartedPayload> {
-    const moveDice = rollDicePips(random, 3);
+    const moveDice = rollBetrayalDicePips(random, 3);
     const moveAllowance = Math.max(1, moveDice.reduce((sum, pip) => sum + pip, 0));
     return nowEvent(EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, {
         controllerPlayerId,
@@ -5948,23 +3914,6 @@ function completeHelpingHandsSoloVictoryIfNeeded(core: BetrayalCore, timestamp: 
     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
         result: createHelpingHandsEndgameResult(core, winner.playerId),
     }, timestamp));
-}
-
-function isMagicCameraHaunt(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntCardNumber === 33
-        && Boolean(core.scenarioRuntime.magicCamera);
-}
-
-function hasMagicCamera(explorer: BetrayalExplorerSummary | null | undefined): boolean {
-    return Boolean(explorer?.inventory.some((card) => resolveInventoryEffectId(card.id) === 'camera'));
-}
-
-function findMagicCameraHolderPlayerId(core: BetrayalCore): string | null {
-    if (core.scenarioRuntime.magicCamera?.cameraDestroyed) {
-        return null;
-    }
-    return resolveMagicCameraOwnerPlayerId(core);
 }
 
 function resolvePhantomPhotographerCount(playerCount: number): number {
@@ -6084,13 +4033,6 @@ function setupUponReflectionHaunt(core: BetrayalCore): void {
     ];
 }
 
-function isUponReflectionHaunt(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntCardNumber === 7
-        && core.scenarioRuntime.hauntScenarioCardId === 'upon-reflection'
-        && Boolean(core.scenarioRuntime.uponReflection);
-}
-
 function shouldSkipEventSymbolForUponReflection(core: BetrayalCore): boolean {
     return isUponReflectionHaunt(core);
 }
@@ -6156,32 +4098,6 @@ function roomMatchesUponReflectionSecret(
         || (secret.roomVisualId ? room.visualId === secret.roomVisualId : false);
 }
 
-function canBreakMirrorCurse(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    return Boolean(
-        isUponReflectionHaunt(core)
-        && core.scenarioRuntime.uponReflection?.secretCombination
-        && actor.playerId !== core.scenarioRuntime.hauntRevealerPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId)
-        && actor.inventory.some((card) => card.kind === 'omen')
-    );
-}
-
-function isExplorerTargetableByMonsters(core: BetrayalCore, explorer: BetrayalExplorerSummary): boolean {
-    if (core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)) {
-        return false;
-    }
-    if (
-        isUponReflectionHaunt(core)
-        && explorer.playerId === (
-            core.scenarioRuntime.uponReflection?.revealerPlayerId
-            ?? core.scenarioRuntime.hauntRevealerPlayerId
-        )
-    ) {
-        return false;
-    }
-    return true;
-}
-
 function resolveUponReflectionHintEvent(core: BetrayalCore, eventName: string | undefined): EventTemplate | null {
     const requestedEventName = eventName?.trim();
     if (!requestedEventName) {
@@ -6224,291 +4140,10 @@ function createUponReflectionEndgameResult(core: BetrayalCore, outcome: 'survivo
     };
 }
 
-function resolveExplorerRoom(core: BetrayalCore, explorer: BetrayalExplorerSummary | null): BetrayalRoomNode | null {
-    return explorer ? core.rooms.find((room) => room.id === explorer.roomId) ?? null : null;
-}
-
-function canTraitorSeeMagicCameraTarget(
-    core: BetrayalCore,
-    traitor: BetrayalExplorerSummary,
-    target: BetrayalExplorerSummary,
-): boolean {
-    if (traitor.roomId === target.roomId) {
-        return true;
-    }
-    if (!hasMagicCamera(traitor) || core.scenarioRuntime.magicCamera?.cameraDestroyed) {
-        return false;
-    }
-    const traitorRoom = resolveExplorerRoom(core, traitor);
-    const targetRoom = resolveExplorerRoom(core, target);
-    return Boolean(traitorRoom && targetRoom && isStraightLineVisible(traitorRoom, targetRoom, core.rooms));
-}
-
-export function resolveMagicCameraPhotoTargets(core: BetrayalCore, actor: BetrayalExplorerSummary): BetrayalExplorerSummary[] {
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (!isMagicCameraHaunt(core) || !magicCamera || actor.playerId !== core.scenarioRuntime.traitorPlayerId) {
-        return [];
-    }
-    return getAllExplorers(core).filter((explorer) => (
-        explorer.playerId !== actor.playerId
-        && explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        && magicCamera.heroEssencePlayerIds.includes(explorer.playerId)
-        && canTraitorSeeMagicCameraTarget(core, actor, explorer)
-    ));
-}
-
-export function canTakeMagicCameraPhoto(
-    core: BetrayalCore,
-    actor: BetrayalExplorerSummary,
-    targetPlayerId?: string,
-): boolean {
-    return !core.usedCardIdsThisTurn.includes('take-photo')
-        && resolveMagicCameraPhotoTargets(core, actor).some((target) => (
-            !targetPlayerId || target.playerId === targetPlayerId
-        ));
-}
-
-export function canSmashMagicCamera(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    const traitor = core.scenarioRuntime.traitorPlayerId
-        ? findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId)
-        : null;
-    return Boolean(
-        isMagicCameraHaunt(core)
-        && magicCamera
-        && !magicCamera.cameraDestroyed
-        && actor.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId)
-        && traitor
-        && traitor.roomId === actor.roomId
-        && (magicCamera.cameraHolderPlayerId === traitor.playerId || hasMagicCamera(traitor))
-        && !core.usedCardIdsThisTurn.includes('smash-magic-camera'),
-    );
-}
-
-function findPhantomPhotographer(core: BetrayalCore, monsterId: string | undefined): BetrayalMonsterSummary | null {
-    if (!monsterId || !core.scenarioRuntime.magicCamera?.phantomPhotographerIds.includes(monsterId)) {
-        return null;
-    }
-    return core.monsters.find((monster) => monster.id === monsterId) ?? null;
-}
-
-function resolveMonsterAttackCommand(core: BetrayalCore, monsterId: string): BetrayalMonsterActionSlotCommand {
-    if (monsterId === 'jack-spirit') {
-        return BETRAYAL_COMMANDS.HAUNT_ATTACK;
-    }
-    if (findPhantomPhotographer(core, monsterId)) {
-        return BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK;
-    }
-    if (findHelpingHandsTrollHand(core, monsterId)) {
-        return BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK;
-    }
-    return BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO;
-}
-
-function resolveMonsterTrait(monster: BetrayalMonsterSummary, trait: BetrayalTraitKey): number {
-    return trait === 'might'
-        ? monster.might
-        : trait === 'speed'
-            ? monster.speed
-            : trait === 'sanity'
-                ? monster.sanity ?? monster.might
-                : monster.knowledge ?? monster.might;
-}
-
-function inferMonsterDefinitionId(monster: BetrayalMonsterSummary): BetrayalMonsterDefinitionId | null {
-    if (monster.definitionId) {
-        return monster.definitionId;
-    }
-    if (monster.id === 'jack-spirit') {
-        return 'crimson-jack-spirit';
-    }
-    if (monster.id === 'mummy' || monster.name === '木乃伊') {
-        return 'mummy';
-    }
-    if (monster.id.startsWith('feverish-') || monster.name === '狂热病患') {
-        return 'dust-feverish-patient';
-    }
-    if (monster.id.startsWith('troll-hand-') || monster.name === '巨魔手') {
-        return 'helping-hands-troll-hand';
-    }
-    if (monster.id.startsWith('phantom-photographer-') || monster.name === '幻影摄影师') {
-        return 'magic-camera-phantom-photographer';
-    }
-    if (monster.name === '石像小天使') {
-        return 'blood-from-stone-stone-cherub';
-    }
-    if (monster.name === '恶魔地产经纪人') {
-        return 'free-the-realtor-demon-realtor';
-    }
-    if (monster.name === '镜中怪物') {
-        return 'upon-reflection-mirror-being';
-    }
-    if (monster.name === '管家') {
-        return 'housekeeping-housekeeper';
-    }
-    return null;
-}
-
-function resolveMonsterDefinition(monster: BetrayalMonsterSummary): BetrayalMonsterDefinition | null {
-    return getBetrayalMonsterDefinition(inferMonsterDefinitionId(monster));
-}
-
-function monsterCanBeStunned(monster: BetrayalMonsterSummary): boolean {
-    const definition = resolveMonsterDefinition(monster);
-    if (definition) {
-        return definition.canBeStunned;
-    }
-    return !monster.id.startsWith('troll-hand-') && monster.id !== 'jack-spirit';
-}
-
-function monsterCanBeAttacked(monster: BetrayalMonsterSummary): boolean {
-    return resolveMonsterDefinition(monster)?.canBeAttacked ?? true;
-}
-
-function monsterCanAttack(monster: BetrayalMonsterSummary): boolean {
-    return resolveMonsterDefinition(monster)?.canAttack ?? true;
-}
-
-function resolveMonsterDefaultAttackTrait(monster: BetrayalMonsterSummary): BetrayalTraitKey {
-    return (resolveMonsterDefinition(monster)?.defaultAttackTrait ?? 'might') as BetrayalTraitKey;
-}
-
 function resolveAttackDamageKind(attackTrait: BetrayalTraitKey): 'physical' | 'mental' {
     return attackTrait === 'sanity' || attackTrait === 'knowledge'
         ? 'mental'
         : 'physical';
-}
-
-function monsterKilledByDamageTrait(
-    monster: BetrayalMonsterSummary,
-    trait: BetrayalTraitKey,
-): boolean {
-    const definition = resolveMonsterDefinition(monster);
-    return Boolean(
-        definition?.killedByDamageTraits?.includes(trait as BetrayalMonsterDefinitionTraitKey),
-    );
-}
-
-function resolveMonsterStatusKind(core: BetrayalCore, monsterId: string): BetrayalMonsterStatusKind {
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (magicCamera?.killedPhantomPhotographerIds.includes(monsterId)) {
-        return 'killed';
-    }
-    if (magicCamera?.stunnedPhantomPhotographerIds.includes(monsterId)) {
-        return 'stunned';
-    }
-    const genericStatus = core.scenarioRuntime.monsterStatusesById?.[monsterId];
-    if (genericStatus) {
-        return genericStatus;
-    }
-    return 'active';
-}
-
-export function resolveBetrayalMonsterDamageOutcome(
-    core: BetrayalCore,
-    monsterId: string,
-    params: {
-        damageAmount: number;
-        damageTrait: BetrayalTraitKey;
-    },
-): BetrayalMonsterDamageOutcome | null {
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    if (!monster) {
-        return null;
-    }
-    const damageAmount = Math.max(0, params.damageAmount);
-    const previousStatus = resolveMonsterStatusKind(core, monsterId);
-    const canBeStunned = monsterCanBeStunned(monster);
-    const canBeAttacked = monsterCanBeAttacked(monster);
-    const isPhantomPhotographer = core.scenarioRuntime.magicCamera?.phantomPhotographerIds.includes(monsterId) ?? false;
-    if (damageAmount <= 0 || previousStatus !== 'active') {
-        return {
-            monsterId,
-            name: monster.name,
-            damageAmount,
-            damageTrait: params.damageTrait,
-            previousStatus,
-            nextStatus: previousStatus,
-            kind: 'none',
-            canBeStunned,
-            stunned: false,
-            killed: previousStatus === 'killed',
-            removedFromHouse: previousStatus === 'killed',
-            logLabel: '未伤到怪物',
-            ruleNote: previousStatus === 'active'
-                ? '攻击没有造成正数伤害，怪物状态不变。'
-                : '该怪物当前不是可受伤的正面状态，状态不变。',
-        };
-    }
-    if (!canBeAttacked) {
-        return {
-            monsterId,
-            name: monster.name,
-            damageAmount,
-            damageTrait: params.damageTrait,
-            previousStatus,
-            nextStatus: previousStatus,
-            kind: 'resisted',
-            canBeStunned,
-            stunned: false,
-            killed: false,
-            removedFromHouse: false,
-            logLabel: `${monster.name}不能被攻击`,
-            ruleNote: resolveMonsterDefinition(monster)?.ruleNotes[0]
-                ?? '该怪物规则明确不能被普通攻击。',
-        };
-    }
-    if (!canBeStunned) {
-        return {
-            monsterId,
-            name: monster.name,
-            damageAmount,
-            damageTrait: params.damageTrait,
-            previousStatus,
-            nextStatus: previousStatus,
-            kind: 'resisted',
-            canBeStunned,
-            stunned: false,
-            killed: false,
-            removedFromHouse: false,
-            logLabel: `${monster.name}不能被击晕`,
-            ruleNote: '该怪物规则明确不能被击晕，受伤成功也不会翻为击晕面。',
-        };
-    }
-    if (monsterKilledByDamageTrait(monster, params.damageTrait) || (isPhantomPhotographer && params.damageTrait === 'might')) {
-        return {
-            monsterId,
-            name: monster.name,
-            damageAmount,
-            damageTrait: params.damageTrait,
-            previousStatus,
-            nextStatus: 'killed',
-            kind: 'killed',
-            canBeStunned,
-            stunned: false,
-            killed: true,
-            removedFromHouse: true,
-            logLabel: `击杀${monster.name}`,
-            ruleNote: '幻影摄影师受到力量伤害时被杀死并移出房子。',
-        };
-    }
-    return {
-        monsterId,
-        name: monster.name,
-        damageAmount,
-        damageTrait: params.damageTrait,
-        previousStatus,
-        nextStatus: 'stunned',
-        kind: 'stunned',
-        canBeStunned,
-        stunned: true,
-        killed: false,
-        removedFromHouse: false,
-        logLabel: `击晕${monster.name}`,
-        ruleNote: '怪物受到非杀死型正数伤害时翻为击晕面。',
-    };
 }
 
 function applyBetrayalMonsterDamageOutcome(
@@ -6557,274 +4192,6 @@ function flipStunnedMonsterSideUp(core: BetrayalCore, monsterId: string): void {
     }
 }
 
-function monsterTurnStartResolvedThisTurn(core: BetrayalCore, monsterId: string): boolean {
-    return core.scenarioRuntime.monsterTurn?.resolvedStartMonsterIds?.includes(monsterId) ?? false;
-}
-
-function monsterSkippedThisTurn(core: BetrayalCore, monsterId: string): boolean {
-    return core.scenarioRuntime.monsterTurn?.skippedMonsterIdsThisTurn?.includes(monsterId) ?? false;
-}
-
-function monsterAttackedThisTurn(core: BetrayalCore, monsterId: string): boolean {
-    return core.scenarioRuntime.monsterTurn?.attackedMonsterIdsThisTurn?.includes(monsterId) ?? false;
-}
-
-function isBloodFromStoneHaunt(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntCardNumber === 5;
-}
-
-function isUponReflectionMirrorBeingMonster(monster: BetrayalMonsterSummary): boolean {
-    return inferMonsterDefinitionId(monster) === 'upon-reflection-mirror-being';
-}
-
-function isStoneCherubMonster(monster: BetrayalMonsterSummary): boolean {
-    return inferMonsterDefinitionId(monster) === 'blood-from-stone-stone-cherub';
-}
-
-function resolveDiscoveredRoomGraphDistances(
-    rooms: BetrayalRoomNode[],
-    sourceRoomId: string,
-): Map<string, number> {
-    const sourceRoom = rooms.find((room) => room.id === sourceRoomId && room.state === 'discovered');
-    if (!sourceRoom) {
-        return new Map();
-    }
-    const distances = new Map<string, number>([[sourceRoom.id, 0]]);
-    const queue = [sourceRoom.id];
-    while (queue.length > 0) {
-        const roomId = queue.shift()!;
-        const nextDistance = (distances.get(roomId) ?? 0) + 1;
-        for (const connectedRoomId of resolveConnectedRoomIds(rooms, roomId)) {
-            const connectedRoom = rooms.find((room) => room.id === connectedRoomId && room.state === 'discovered');
-            if (!connectedRoom || distances.has(connectedRoom.id)) {
-                continue;
-            }
-            distances.set(connectedRoom.id, nextDistance);
-            queue.push(connectedRoom.id);
-        }
-    }
-    return distances;
-}
-
-function resolveUponReflectionTargetExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return getAllExplorers(core).filter((explorer) => {
-        if (!isExplorerTargetableByMonsters(core, explorer)) {
-            return false;
-        }
-        const room = core.rooms.find((candidate) => candidate.id === resolveControlledRoomId(core, explorer));
-        return room?.state === 'discovered';
-    });
-}
-
-function resolveUponReflectionMirrorBeingMoveTargetRooms(
-    core: BetrayalCore,
-    monster: BetrayalMonsterSummary,
-    connectedRooms: BetrayalRoomNode[],
-): BetrayalRoomNode[] {
-    if (!isUponReflectionHaunt(core) || !isUponReflectionMirrorBeingMonster(monster)) {
-        return connectedRooms;
-    }
-    const targetExplorers = resolveUponReflectionTargetExplorers(core);
-    if (targetExplorers.length === 0) {
-        return [];
-    }
-    const sourceDistances = resolveDiscoveredRoomGraphDistances(core.rooms, monster.roomId);
-    const targetDistances = targetExplorers
-        .map((explorer) => ({
-            explorer,
-            distance: sourceDistances.get(resolveControlledRoomId(core, explorer)) ?? null,
-        }))
-        .filter((entry): entry is { explorer: BetrayalExplorerSummary; distance: number } => entry.distance !== null);
-    if (targetDistances.length === 0) {
-        return connectedRooms;
-    }
-    const nearestDistance = Math.min(...targetDistances.map((entry) => entry.distance));
-    if (nearestDistance <= 0) {
-        return [];
-    }
-    const nearestTargetRoomIds = new Set(
-        targetDistances
-            .filter((entry) => entry.distance === nearestDistance)
-            .map((entry) => resolveControlledRoomId(core, entry.explorer)),
-    );
-    const towardNearestExplorers = connectedRooms.filter((room) => {
-        const distancesFromCandidate = resolveDiscoveredRoomGraphDistances(core.rooms, room.id);
-        return [...nearestTargetRoomIds].some((targetRoomId) => {
-            const targetDistance = distancesFromCandidate.get(targetRoomId);
-            return targetDistance !== undefined && targetDistance < nearestDistance;
-        });
-    });
-    return towardNearestExplorers;
-}
-
-function resolveLivingHeroRooms(core: BetrayalCore): BetrayalRoomNode[] {
-    return resolveLivingHeroExplorers(core)
-        .map((explorer) => core.rooms.find((room) => room.id === resolveControlledRoomId(core, explorer)))
-        .filter((room): room is BetrayalRoomNode => Boolean(room && room.state === 'discovered'));
-}
-
-function resolveLivingHeroExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return getExplorersInTurnOrder(core)
-        .filter((explorer) => (
-            explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-            && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        ));
-}
-
-function isRoomInAnyLivingHeroLineOfSight(core: BetrayalCore, roomId: string): boolean {
-    const room = core.rooms.find((candidate) => candidate.id === roomId && candidate.state === 'discovered');
-    if (!room) {
-        return false;
-    }
-    return resolveLivingHeroRooms(core).some((heroRoom) => isStraightLineVisible(room, heroRoom, core.rooms));
-}
-
-function resolveBloodFromStoneAdditionalStoneCherubCount(playerCount: number): number {
-    return Math.max(3, Math.min(6, playerCount));
-}
-
-function compareBloodFromStoneSetupRooms(left: BetrayalRoomNode, right: BetrayalRoomNode): number {
-    const floorOrder: Record<BetrayalRoomFloor, number> = { ground: 0, upper: 1, basement: 2 };
-    const floorDelta = floorOrder[left.floor] - floorOrder[right.floor];
-    if (floorDelta !== 0) {
-        return floorDelta;
-    }
-    const yDelta = left.y - right.y;
-    if (yDelta !== 0) {
-        return yDelta;
-    }
-    const xDelta = left.x - right.x;
-    if (xDelta !== 0) {
-        return xDelta;
-    }
-    return left.id.localeCompare(right.id);
-}
-
-function createBloodFromStoneSetupPlacement(
-    monsterId: string,
-    room: BetrayalRoomNode,
-    source: BetrayalBloodFromStoneSetupPlacementSource,
-    index: number,
-    playerId?: string,
-): BetrayalBloodFromStoneSetupPlacement {
-    return {
-        monsterId,
-        roomId: room.id,
-        roomName: room.name,
-        source,
-        playerId,
-        index,
-    };
-}
-
-function parseBloodFromStoneExtraStoneCherubIndex(monsterId: string): number | null {
-    const match = /^stone-cherub-extra-(\d+)$/.exec(monsterId);
-    if (!match) {
-        return null;
-    }
-    const index = Number(match[1]);
-    return Number.isInteger(index) && index > 0 ? index : null;
-}
-
-function resolveBloodFromStonePlayerChoicePlacements(
-    core: BetrayalCore,
-    roomById: Map<string, BetrayalRoomNode>,
-    automaticExtraPlacementCount: number,
-): BetrayalBloodFromStoneSetupPlacement[] {
-    return core.monsters
-        .map((monster) => {
-            if (!isStoneCherubMonster(monster)) {
-                return null;
-            }
-            const index = parseBloodFromStoneExtraStoneCherubIndex(monster.id);
-            const room = roomById.get(monster.roomId);
-            if (!index || index <= automaticExtraPlacementCount || !room) {
-                return null;
-            }
-            return createBloodFromStoneSetupPlacement(
-                monster.id,
-                room,
-                'extra-player-choice',
-                index,
-            );
-        })
-        .filter((placement): placement is BetrayalBloodFromStoneSetupPlacement => Boolean(placement))
-        .sort((left, right) => left.index - right.index || left.monsterId.localeCompare(right.monsterId));
-}
-
-export function resolveBloodFromStoneSetupPlacementPlan(
-    core: BetrayalCore,
-): BetrayalBloodFromStoneSetupPlacementPlan {
-    const active = isBloodFromStoneHaunt(core);
-    const livingHeroes = active ? resolveLivingHeroExplorers(core) : [];
-    const additionalStoneCherubCount = active
-        ? resolveBloodFromStoneAdditionalStoneCherubCount(core.playerIds.length)
-        : 0;
-    const discoveredRooms = active
-        ? [...core.rooms]
-            .filter((room) => room.state === 'discovered')
-            .sort(compareBloodFromStoneSetupRooms)
-        : [];
-    const roomById = new Map(discoveredRooms.map((room) => [room.id, room]));
-    const explorerPlacements = livingHeroes
-        .map((explorer, index) => {
-            const room = roomById.get(resolveControlledRoomId(core, explorer));
-            return room
-                ? createBloodFromStoneSetupPlacement(
-                    `stone-cherub-explorer-${explorer.playerId}`,
-                    room,
-                    'explorer-tile',
-                    index + 1,
-                    explorer.playerId,
-                )
-                : null;
-        })
-        .filter((placement): placement is BetrayalBloodFromStoneSetupPlacement => Boolean(placement));
-    const outOfSightRooms = discoveredRooms.filter((room) => !isRoomInAnyLivingHeroLineOfSight(core, room.id));
-    const automaticExtraPlacements = outOfSightRooms
-        .slice(0, additionalStoneCherubCount)
-        .map((room, index) => createBloodFromStoneSetupPlacement(
-            `stone-cherub-extra-${index + 1}`,
-            room,
-            'extra-out-of-sight',
-            index + 1,
-        ));
-    const playerChoicePlacements = resolveBloodFromStonePlayerChoicePlacements(
-        core,
-        roomById,
-        automaticExtraPlacements.length,
-    );
-    const pendingPlayerChoiceCount = Math.max(
-        0,
-        additionalStoneCherubCount - automaticExtraPlacements.length - playerChoicePlacements.length,
-    );
-    const placements = [...explorerPlacements, ...automaticExtraPlacements, ...playerChoicePlacements];
-    return {
-        active,
-        additionalStoneCherubCount,
-        totalRequiredStoneCherubCount: livingHeroes.length + additionalStoneCherubCount,
-        placedStoneCherubCount: placements.length,
-        explorerPlacements,
-        automaticExtraPlacements,
-        playerChoicePlacements,
-        placements,
-        pendingPlayerChoiceCount,
-        playerChoiceCandidateRoomIds: pendingPlayerChoiceCount > 0 ? discoveredRooms.map((room) => room.id) : [],
-        legalRoomIds: discoveredRooms.map((room) => room.id),
-        canFullyAutoPlace: active && pendingPlayerChoiceCount === 0,
-        ruleNotes: active
-            ? [
-                '每名存活英雄所在房间先各放置 1 个石像小天使。',
-                '额外石像小天使数量按玩家数取 3/4/5/6。',
-                pendingPlayerChoiceCount > 0
-                    ? '不在英雄视线内的房间不足，剩余石像小天使必须由玩家选择屋内合法房间放置。'
-                    : '额外石像小天使均已自动放在不在英雄视线内的房间。',
-            ]
-            : ['当前不是第5号作祟《顽石之血》，没有石像小天使 setup 放置计划。'],
-    };
-}
-
 function setupBloodFromStoneHaunt(core: BetrayalCore): void {
     const plan = resolveBloodFromStoneSetupPlacementPlan(core);
     core.monsters = [
@@ -6842,41 +4209,6 @@ function setupBloodFromStoneHaunt(core: BetrayalCore): void {
         monsterTurnAfterPlayerId: core.scenarioRuntime.hauntRevealerPlayerId ?? core.currentPlayer,
         activeMonsterTurn: false,
         monsterTurnControllerPlayerId: null,
-    };
-}
-
-export function resolveBloodFromStoneMonsterTurnStatus(
-    core: BetrayalCore,
-): BetrayalBloodFromStoneMonsterTurnStatus {
-    const stoneCherubIds = core.monsters
-        .filter((monster) => isStoneCherubMonster(monster))
-        .map((monster) => monster.id);
-    if (!isBloodFromStoneHaunt(core)) {
-        return {
-            active: false,
-            controllerPlayerId: null,
-            monsterTurnAfterPlayerId: null,
-            stoneCherubIds,
-            reason: '当前不是第5号作祟《顽石之血》。',
-        };
-    }
-    const runtime = core.scenarioRuntime.bloodFromStone;
-    const monsterTurnAfterPlayerId = runtime?.monsterTurnAfterPlayerId
-        ?? core.scenarioRuntime.hauntRevealerPlayerId
-        ?? null;
-    const controllerPlayerId = runtime?.activeMonsterTurn
-        ? runtime.monsterTurnControllerPlayerId
-        : monsterTurnAfterPlayerId;
-    return {
-        active: Boolean(runtime?.activeMonsterTurn && controllerPlayerId && stoneCherubIds.length > 0),
-        controllerPlayerId: controllerPlayerId ?? null,
-        monsterTurnAfterPlayerId,
-        stoneCherubIds,
-        reason: runtime?.activeMonsterTurn
-            ? (controllerPlayerId ? null : '石像小天使怪物回合没有有效控制者。')
-            : stoneCherubIds.length > 0
-                ? '等待揭秘者结束回合后开始石像小天使怪物回合。'
-                : '当前宅邸中没有石像小天使。',
     };
 }
 
@@ -6923,202 +4255,6 @@ function startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
         recommendedAction: 'endTurn',
         activityLog: appendActivity(syncedCore, '石像小天使怪物回合开始。', 'warning'),
     };
-}
-
-function shouldStoneCherubSkipMovementFromLineOfSight(core: BetrayalCore, monster: BetrayalMonsterSummary): boolean {
-    return isBloodFromStoneHaunt(core)
-        && isStoneCherubMonster(monster)
-        && isRoomInAnyLivingHeroLineOfSight(core, monster.roomId);
-}
-
-function resolveStoneCherubClosestHeroDistance(core: BetrayalCore, room: BetrayalRoomNode): number | null {
-    const heroRooms = resolveLivingHeroRooms(core);
-    if (heroRooms.length === 0) {
-        return null;
-    }
-    return Math.min(...heroRooms.map((heroRoom) => roomDistanceByLayout(room, heroRoom)));
-}
-
-function resolveStoneCherubMoveTargetRooms(
-    core: BetrayalCore,
-    monster: BetrayalMonsterSummary,
-    connectedRooms: BetrayalRoomNode[],
-): BetrayalRoomNode[] {
-    if (!isBloodFromStoneHaunt(core) || !isStoneCherubMonster(monster)) {
-        return connectedRooms;
-    }
-    const sourceRoom = core.rooms.find((room) => room.id === monster.roomId && room.state === 'discovered');
-    if (!sourceRoom) {
-        return [];
-    }
-    const sourceDistance = resolveStoneCherubClosestHeroDistance(core, sourceRoom);
-    if (sourceDistance === null) {
-        return connectedRooms;
-    }
-    const towardClosestHero = connectedRooms.filter((room) => {
-        const targetDistance = resolveStoneCherubClosestHeroDistance(core, room);
-        return targetDistance !== null && targetDistance < sourceDistance;
-    });
-    return towardClosestHero.length > 0 ? towardClosestHero : connectedRooms;
-}
-
-function resolveStoneCherubMoveRemainingAfterMove(
-    core: BetrayalCore,
-    monster: BetrayalMonsterSummary,
-    targetRoomId: string,
-    moveRemainingAfterCost: number,
-): number {
-    if (
-        isBloodFromStoneHaunt(core)
-        && isStoneCherubMonster(monster)
-        && isRoomInAnyLivingHeroLineOfSight(core, targetRoomId)
-    ) {
-        return 0;
-    }
-    return moveRemainingAfterCost;
-}
-
-function resolveStoneCherubsInHeroLineOfSight(
-    core: BetrayalCore,
-    hero: BetrayalExplorerSummary,
-): BetrayalMonsterSummary[] {
-    const heroRoom = resolveExplorerRoom(core, hero);
-    if (!heroRoom || heroRoom.state !== 'discovered') {
-        return [];
-    }
-    return core.monsters.filter((monster) => {
-        if (!isStoneCherubMonster(monster) || resolveMonsterStatusKind(core, monster.id) === 'killed') {
-            return false;
-        }
-        const monsterRoom = core.rooms.find((room) => room.id === monster.roomId && room.state === 'discovered');
-        return Boolean(monsterRoom && isStraightLineVisible(monsterRoom, heroRoom, core.rooms));
-    });
-}
-
-function resolveStoneCherubsInLineOfSightFromRoom(
-    core: BetrayalCore,
-    roomId: string,
-): BetrayalMonsterSummary[] {
-    const heroRoom = core.rooms.find((room) => room.id === roomId && room.state === 'discovered');
-    if (!heroRoom) {
-        return [];
-    }
-    return core.monsters.filter((monster) => {
-        if (!isStoneCherubMonster(monster) || resolveMonsterStatusKind(core, monster.id) === 'killed') {
-            return false;
-        }
-        const monsterRoom = core.rooms.find((room) => room.id === monster.roomId && room.state === 'discovered');
-        return Boolean(monsterRoom && isStraightLineVisible(monsterRoom, heroRoom, core.rooms));
-    });
-}
-
-function isBloodFromStoneMirrorCard(card: BetrayalInventoryCard): boolean {
-    const normalizedId = card.id.trim().toLowerCase();
-    const normalizedName = card.name.trim().toLowerCase();
-    return normalizedId === 'mirror'
-        || normalizedName === 'mirror'
-        || card.name.includes('镜');
-}
-
-function hasBloodFromStoneMirror(explorer: BetrayalExplorerSummary): boolean {
-    return explorer.inventory.some(isBloodFromStoneMirrorCard);
-}
-
-function resolveActiveStoneCherubMonster(core: BetrayalCore, monsterId: string | undefined): BetrayalMonsterSummary | null {
-    if (!monsterId) {
-        return null;
-    }
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    if (!monster || !isStoneCherubMonster(monster) || resolveMonsterStatusKind(core, monster.id) === 'killed') {
-        return null;
-    }
-    return monster;
-}
-
-export function resolveBloodFromStonePeekabooOptions(
-    core: BetrayalCore,
-    playerId = core.currentExplorer.playerId,
-): BetrayalBloodFromStonePeekabooOption[] {
-    if (!isBloodFromStoneHaunt(core)) {
-        return [];
-    }
-    const actor = findExplorerByPlayerId(core, playerId);
-    if (
-        !actor
-        || actor.playerId === core.scenarioRuntime.traitorPlayerId
-        || core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId)
-    ) {
-        return [];
-    }
-    const actorRoomId = resolveControlledRoomId(core, actor);
-    const actorRoom = core.rooms.find((room) => room.id === actorRoomId && room.state === 'discovered');
-    if (!actorRoom) {
-        return [];
-    }
-    const activeStoneCherubs = core.monsters.filter((monster) => (
-        isStoneCherubMonster(monster)
-        && resolveMonsterStatusKind(core, monster.id) !== 'killed'
-        && core.rooms.some((room) => room.id === monster.roomId && room.state === 'discovered')
-    ));
-    const sameRoomStoneCherubs = activeStoneCherubs.filter((monster) => monster.roomId === actorRoom.id);
-    const options: BetrayalBloodFromStonePeekabooOption[] = [];
-    for (const sameRoomStoneCherub of sameRoomStoneCherubs) {
-        for (const lineOfSightStoneCherub of activeStoneCherubs) {
-            if (lineOfSightStoneCherub.id === sameRoomStoneCherub.id) {
-                continue;
-            }
-            if (!isBetrayalRoomInLineOfSight(core, actorRoom.id, lineOfSightStoneCherub.roomId)) {
-                continue;
-            }
-            const lineOfSightRoom = core.rooms.find((room) => room.id === lineOfSightStoneCherub.roomId);
-            if (!lineOfSightRoom) {
-                continue;
-            }
-            options.push({
-                id: `${sameRoomStoneCherub.id}->${lineOfSightStoneCherub.id}`,
-                sameRoomMonsterId: sameRoomStoneCherub.id,
-                sameRoomMonsterName: sameRoomStoneCherub.name,
-                sameRoomId: actorRoom.id,
-                sameRoomName: actorRoom.name,
-                lineOfSightMonsterId: lineOfSightStoneCherub.id,
-                lineOfSightMonsterName: lineOfSightStoneCherub.name,
-                lineOfSightRoomId: lineOfSightRoom.id,
-                lineOfSightRoomName: lineOfSightRoom.name,
-            });
-        }
-    }
-    return options;
-}
-
-function resolveBloodFromStonePeekabooSelection(
-    core: BetrayalCore,
-    actor: BetrayalExplorerSummary,
-    sameRoomMonsterId: string | undefined,
-    lineOfSightMonsterId: string | undefined,
-): { option: BetrayalBloodFromStonePeekabooOption | null; reason: string | null } {
-    if (!sameRoomMonsterId || !lineOfSightMonsterId) {
-        return { option: null, reason: '玩躲猫猫必须选择同房间石像小天使和视线内另一只石像小天使。' };
-    }
-    const sameRoomMonster = resolveActiveStoneCherubMonster(core, sameRoomMonsterId);
-    const lineOfSightMonster = resolveActiveStoneCherubMonster(core, lineOfSightMonsterId);
-    if (!sameRoomMonster || !lineOfSightMonster || sameRoomMonster.id === lineOfSightMonster.id) {
-        return { option: null, reason: '玩躲猫猫必须选择两只不同的活跃石像小天使。' };
-    }
-    const actorRoomId = resolveControlledRoomId(core, actor);
-    if (sameRoomMonster.roomId !== actorRoomId) {
-        return { option: null, reason: '第一只石像小天使必须与当前英雄同房间。' };
-    }
-    if (!isBetrayalRoomInLineOfSight(core, actorRoomId, lineOfSightMonster.roomId)) {
-        return { option: null, reason: '第二只石像小天使必须在当前英雄视线内。' };
-    }
-    const option = resolveBloodFromStonePeekabooOptions(core, actor.playerId)
-        .find((item) => (
-            item.sameRoomMonsterId === sameRoomMonster.id
-            && item.lineOfSightMonsterId === lineOfSightMonster.id
-        )) ?? null;
-    return option
-        ? { option, reason: null }
-        : { option: null, reason: '当前没有合法的玩躲猫猫目标组合。' };
 }
 
 function removeBloodFromStoneStoneCherubs(core: BetrayalCore, monsterIds: string[]): void {
@@ -7201,932 +4337,6 @@ function completeBloodFromStoneHauntVictoryIfNeeded(core: BetrayalCore, timestam
     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
         result: createBloodFromStoneEndgameResult(core, 'haunt'),
     }, timestamp));
-}
-
-function createBloodFromStoneTurnStartVisibility(
-    core: BetrayalCore,
-): Record<string, string[]> {
-    if (!isBloodFromStoneHaunt(core)) {
-        return {};
-    }
-    return Object.fromEntries(
-        resolveLivingHeroExplorers(core).map((hero) => [
-            hero.playerId,
-            resolveStoneCherubsInHeroLineOfSight(core, hero).map((monster) => monster.id),
-        ]),
-    );
-}
-
-function resolveBloodFromStoneTurnStartVisibleStoneCherubIds(
-    core: BetrayalCore,
-    playerId: string,
-): string[] {
-    const stored = core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId?.[playerId];
-    if (stored) {
-        return [...stored];
-    }
-    const hero = findExplorerByPlayerId(core, playerId);
-    return hero ? resolveStoneCherubsInHeroLineOfSight(core, hero).map((monster) => monster.id) : [];
-}
-
-function resolveBloodFromStoneNewLineOfSightDamageRoll(
-    core: BetrayalCore,
-    playerId: string,
-    targetRoomId: string,
-    random: RandomFn,
-): BetrayalBloodFromStoneGazeDamageRoll | null {
-    if (
-        !isBloodFromStoneHaunt(core)
-        || core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn?.includes(playerId)
-    ) {
-        return null;
-    }
-    const hero = resolveLivingHeroExplorers(core).find((explorer) => explorer.playerId === playerId);
-    if (!hero) {
-        return null;
-    }
-    const turnStartVisibleStoneCherubIds = new Set(
-        resolveBloodFromStoneTurnStartVisibleStoneCherubIds(core, playerId),
-    );
-    const newlyVisibleStoneCherubs = resolveStoneCherubsInLineOfSightFromRoom(core, targetRoomId)
-        .filter((monster) => !turnStartVisibleStoneCherubIds.has(monster.id));
-    if (newlyVisibleStoneCherubs.length === 0) {
-        return null;
-    }
-    const dice = rollDicePips(random, 2);
-    return {
-        playerId: hero.playerId,
-        explorerName: hero.displayName,
-        visibleStoneCherubIds: newlyVisibleStoneCherubs.map((monster) => monster.id),
-        dice,
-        amount: dice.reduce((sum, pip) => sum + pip, 0),
-    };
-}
-
-function resolveBloodFromStoneGazeDamageRolls(
-    core: BetrayalCore,
-    random: RandomFn,
-): BetrayalBloodFromStoneGazeDamageRoll[] {
-    if (!isBloodFromStoneHaunt(core)) {
-        return [];
-    }
-    return resolveLivingHeroExplorers(core)
-        .map((hero) => {
-            const visibleStoneCherubs = resolveStoneCherubsInHeroLineOfSight(core, hero);
-            const dice = rollDicePips(random, visibleStoneCherubs.length);
-            return {
-                playerId: hero.playerId,
-                explorerName: hero.displayName,
-                visibleStoneCherubIds: visibleStoneCherubs.map((monster) => monster.id),
-                dice,
-                amount: dice.reduce((sum, pip) => sum + pip, 0),
-            };
-        })
-        .filter((roll) => roll.visibleStoneCherubIds.length > 0);
-}
-
-function buildMonsterStatusSummary(input: {
-    monsterId: string;
-    name: string;
-    roomId: string | null;
-    might: number;
-    speed: number;
-    sanity?: number | null;
-    knowledge?: number | null;
-    damage: number;
-    status: BetrayalMonsterStatusKind;
-    canBeStunned: boolean;
-    canBeAttacked?: boolean;
-    canAttack?: boolean;
-    defaultAttackTrait?: BetrayalTraitKey;
-    removedFromHouse?: boolean;
-    definitionRuleNotes?: readonly string[];
-}): BetrayalMonsterStatusSummary {
-    const stunned = input.status === 'stunned';
-    const killed = input.status === 'killed';
-    const canAttack = input.canAttack ?? true;
-    const canBeAttacked = input.canBeAttacked ?? true;
-    const ruleNotes = [
-        '怪物使用固定属性，不使用探索者属性轨。',
-        canAttack ? null : '该怪物规则明确不会发动攻击。',
-        canBeAttacked ? null : '该怪物不能被普通攻击。',
-        input.canBeStunned ? '受伤时通常翻为击晕面。' : '该怪物不能被击晕。',
-        stunned ? '已击晕的怪物不会减缓英雄移动。' : null,
-        killed ? '已杀死的怪物从房子中移除。' : null,
-        '怪物不能持有物品或预兆，也不能探索新板块。',
-        ...(input.definitionRuleNotes ?? []),
-    ].filter((note): note is string => Boolean(note));
-    return {
-        monsterId: input.monsterId,
-        name: input.name,
-        roomId: input.roomId,
-        traits: {
-            might: input.might,
-            speed: input.speed,
-            sanity: input.sanity ?? null,
-            knowledge: input.knowledge ?? null,
-            usesTraitTrack: false,
-        },
-        damage: input.damage,
-        status: input.status,
-        canBeStunned: input.canBeStunned,
-        stunned,
-        killed,
-        removedFromHouse: input.removedFromHouse ?? false,
-        slowsHeroMovement: input.status === 'active',
-        canAttack,
-        canBeAttacked,
-        canHoldPossessions: false,
-        canExploreNewRooms: false,
-        defaultAttackTrait: input.defaultAttackTrait ?? 'might',
-        ruleNotes,
-    };
-}
-
-export function resolveBetrayalMonsterStatuses(core: BetrayalCore): BetrayalMonsterStatusSummary[] {
-    const liveStatuses = core.monsters.map((monster) => {
-        const status = resolveMonsterStatusKind(core, monster.id);
-        const definition = resolveMonsterDefinition(monster);
-        return buildMonsterStatusSummary({
-            monsterId: monster.id,
-            name: monster.name,
-            roomId: status === 'killed' ? null : monster.roomId,
-            might: monster.might,
-            speed: monster.speed,
-            sanity: monster.sanity,
-            knowledge: monster.knowledge,
-            damage: monster.damage,
-            status,
-            canBeStunned: monsterCanBeStunned(monster),
-            canBeAttacked: monsterCanBeAttacked(monster),
-            canAttack: monsterCanAttack(monster),
-            defaultAttackTrait: resolveMonsterDefaultAttackTrait(monster),
-            removedFromHouse: status === 'killed',
-            definitionRuleNotes: definition?.ruleNotes,
-        });
-    });
-    const liveMonsterIds = new Set(core.monsters.map((monster) => monster.id));
-    const killedPhotographerStatuses = (core.scenarioRuntime.magicCamera?.killedPhantomPhotographerIds ?? [])
-        .filter((monsterId) => !liveMonsterIds.has(monsterId))
-        .map((monsterId) => buildMonsterStatusSummary({
-            monsterId,
-            name: '幻影摄影师',
-            roomId: null,
-            ...MAGIC_CAMERA_PHANTOM_PHOTOGRAPHER_TRAITS,
-            status: 'killed',
-            canBeStunned: true,
-            canBeAttacked: true,
-            canAttack: true,
-            defaultAttackTrait: 'sanity',
-            removedFromHouse: true,
-            definitionRuleNotes: getBetrayalMonsterDefinition('magic-camera-phantom-photographer')?.ruleNotes,
-        }));
-    return [...liveStatuses, ...killedPhotographerStatuses];
-}
-
-export function resolveBetrayalMonsterTurnStartStatus(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalMonsterTurnStartStatus | null {
-    const monsterStatus = resolveBetrayalMonsterStatuses(core)
-        .find((status) => status.monsterId === monsterId);
-    if (!monsterStatus) {
-        return null;
-    }
-    if (monsterStatus.killed) {
-        return {
-            monsterId: monsterStatus.monsterId,
-            name: monsterStatus.name,
-            status: 'killed',
-            nextStatus: 'killed',
-            canStartTurn: false,
-            mustFlipStunnedSideUp: false,
-            mustSkipTurn: true,
-            canRollMovement: false,
-            canAttack: false,
-            reason: '该怪物已被杀死并移出房子，不能开始怪物回合。',
-        };
-    }
-    if (monsterStatus.stunned) {
-        return {
-            monsterId: monsterStatus.monsterId,
-            name: monsterStatus.name,
-            status: 'stunned',
-            nextStatus: 'active',
-            canStartTurn: false,
-            mustFlipStunnedSideUp: true,
-            mustSkipTurn: true,
-            canRollMovement: false,
-            canAttack: false,
-            reason: '怪物回合开始时该怪物已被击晕，翻回正面并结束该怪物的本次回合。',
-        };
-    }
-    if (monsterSkippedThisTurn(core, monsterId)) {
-        return {
-            monsterId: monsterStatus.monsterId,
-            name: monsterStatus.name,
-            status: 'active',
-            nextStatus: 'active',
-            canStartTurn: false,
-            mustFlipStunnedSideUp: false,
-            mustSkipTurn: true,
-            canRollMovement: false,
-            canAttack: false,
-            reason: '该怪物本回合已跳过，不能再次移动或攻击。',
-        };
-    }
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    if (monster && shouldStoneCherubSkipMovementFromLineOfSight(core, monster)) {
-        return {
-            monsterId: monsterStatus.monsterId,
-            name: monsterStatus.name,
-            status: 'active',
-            nextStatus: 'active',
-            canStartTurn: false,
-            mustFlipStunnedSideUp: false,
-            mustSkipTurn: true,
-            canRollMovement: false,
-            canAttack: false,
-            reason: '石像小天使在英雄视线内开始怪物回合，本回合不移动。',
-        };
-    }
-    const attackedThisTurn = monsterAttackedThisTurn(core, monsterId);
-    const canAttack = monsterStatus.canAttack && !attackedThisTurn;
-    return {
-        monsterId: monsterStatus.monsterId,
-        name: monsterStatus.name,
-        status: 'active',
-        nextStatus: 'active',
-        canStartTurn: true,
-        mustFlipStunnedSideUp: false,
-        mustSkipTurn: false,
-        canRollMovement: true,
-        canAttack,
-        reason: attackedThisTurn ? '该怪物本回合已经攻击过。' : null,
-    };
-}
-
-export function resolveBetrayalMonsterTurnStartResolutionPreview(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalMonsterTurnStartResolutionPreview {
-    const turnStartStatus = resolveBetrayalMonsterTurnStartStatus(core, monsterId);
-    if (!turnStartStatus) {
-        return {
-            active: false,
-            canResolve: false,
-            resolutionStatus: 'missing-monster',
-            monsterId,
-            name: null,
-            status: null,
-            nextStatus: null,
-            willFlipStunnedSideUp: false,
-            willRemoveStunnedMarker: false,
-            willSkipTurn: false,
-            willStartTurn: false,
-            willRollMovement: false,
-            willOpenAttackWindow: false,
-            movementGroupId: null,
-            movementDiceCount: null,
-            minimumMoveAllowance: null,
-            contractGaps: [],
-            previewOnly: true,
-            reason: '当前宅邸中找不到该怪物。',
-        };
-    }
-
-    if (monsterTurnStartResolvedThisTurn(core, monsterId)) {
-        return {
-            active: true,
-            canResolve: false,
-            resolutionStatus: 'already-resolved',
-            monsterId,
-            name: turnStartStatus.name,
-            status: turnStartStatus.status,
-            nextStatus: turnStartStatus.nextStatus,
-            willFlipStunnedSideUp: false,
-            willRemoveStunnedMarker: false,
-            willSkipTurn: false,
-            willStartTurn: false,
-            willRollMovement: false,
-            willOpenAttackWindow: false,
-            movementGroupId: null,
-            movementDiceCount: null,
-            minimumMoveAllowance: null,
-            contractGaps: [],
-            previewOnly: true,
-            reason: '该怪物本回合开始步骤已处理。',
-        };
-    }
-
-    const movementGroup = resolveBetrayalMonsterMovementGroups(core)
-        .find((group) => group.monsterIds.includes(monsterId)) ?? null;
-    const contractGaps: BetrayalMonsterTurnStartResolutionContractGap[] = [];
-    if (turnStartStatus.mustFlipStunnedSideUp) {
-        contractGaps.push('ui-token-flip');
-    }
-
-    return {
-        active: true,
-        canResolve: true,
-        resolutionStatus: 'ready',
-        monsterId,
-        name: turnStartStatus.name,
-        status: turnStartStatus.status,
-        nextStatus: turnStartStatus.nextStatus,
-        willFlipStunnedSideUp: turnStartStatus.mustFlipStunnedSideUp,
-        willRemoveStunnedMarker: turnStartStatus.mustFlipStunnedSideUp,
-        willSkipTurn: turnStartStatus.mustSkipTurn,
-        willStartTurn: turnStartStatus.canStartTurn,
-        willRollMovement: turnStartStatus.canRollMovement,
-        willOpenAttackWindow: turnStartStatus.canAttack,
-        movementGroupId: movementGroup?.groupId ?? null,
-        movementDiceCount: movementGroup?.diceCount ?? null,
-        minimumMoveAllowance: movementGroup?.minimumMoveAllowance ?? null,
-        contractGaps,
-        previewOnly: true,
-        reason: turnStartStatus.reason,
-    };
-}
-
-export function resolveBetrayalMonsterMovementGroups(core: BetrayalCore): BetrayalMonsterMovementGroup[] {
-    const groups = new Map<string, BetrayalMonsterMovementGroup>();
-    for (const monster of core.monsters) {
-        const turnStartStatus = resolveBetrayalMonsterTurnStartStatus(core, monster.id);
-        if (!turnStartStatus?.canRollMovement || monsterSkippedThisTurn(core, monster.id)) {
-            continue;
-        }
-        const groupId = `${monster.name}:${monster.speed}`;
-        const existing = groups.get(groupId);
-        if (existing) {
-            existing.monsterIds = [...existing.monsterIds, monster.id];
-            continue;
-        }
-        groups.set(groupId, {
-            groupId,
-            monsterName: monster.name,
-            monsterIds: [monster.id],
-            speed: monster.speed,
-            diceCount: monster.speed,
-            rollOnceForGroup: true,
-            minimumMoveAllowance: isMummyMonster(core, monster) ? 0 : 1,
-        });
-    }
-    return Array.from(groups.values());
-}
-
-export function resolveBetrayalMonsterMovementRollGroupPreview(
-    core: BetrayalCore,
-    groupId: string,
-): BetrayalMonsterMovementRollGroupPreview {
-    const existingRoll = core.scenarioRuntime.monsterTurn?.movementRollsByGroupId?.[groupId] ?? null;
-    const group = resolveBetrayalMonsterMovementGroups(core)
-        .find((candidate) => candidate.groupId === groupId) ?? null;
-    if (existingRoll) {
-        return {
-            active: true,
-            canRoll: false,
-            groupId,
-            monsterName: existingRoll.monsterName,
-            monsterIds: [...existingRoll.monsterIds],
-            speed: existingRoll.speed,
-            diceCount: existingRoll.diceCount,
-            rollOnceForGroup: existingRoll.rollOnceForGroup,
-            minimumMoveAllowance: existingRoll.minimumMoveAllowance,
-            willWriteMoveAllowanceForMonsterIds: [],
-            contractGaps: ['path-preview-ui'],
-            previewOnly: true,
-            reason: '该怪物移动骰组本回合已掷骰。',
-        };
-    }
-    if (!group) {
-        return {
-            active: false,
-            canRoll: false,
-            groupId,
-            monsterName: null,
-            monsterIds: [],
-            speed: null,
-            diceCount: null,
-            rollOnceForGroup: false,
-            minimumMoveAllowance: null,
-            willWriteMoveAllowanceForMonsterIds: [],
-            contractGaps: [],
-            previewOnly: true,
-            reason: '当前没有可行动的同类型怪物移动骰组。',
-        };
-    }
-
-    return {
-        active: true,
-        canRoll: true,
-        groupId: group.groupId,
-        monsterName: group.monsterName,
-        monsterIds: [...group.monsterIds],
-        speed: group.speed,
-        diceCount: group.diceCount,
-        rollOnceForGroup: group.rollOnceForGroup,
-        minimumMoveAllowance: group.minimumMoveAllowance,
-        willWriteMoveAllowanceForMonsterIds: [...group.monsterIds],
-        contractGaps: ['path-preview-ui'],
-        previewOnly: true,
-        reason: null,
-    };
-}
-
-export function createBetrayalMonsterMovementRollGroupResult(
-    core: BetrayalCore,
-    groupId: string,
-    playerId: string,
-    random: RandomFn,
-): BetrayalMonsterMovementRollGroupResult | null {
-    const preview = resolveBetrayalMonsterMovementRollGroupPreview(core, groupId);
-    if (!preview.canRoll || !preview.monsterName || preview.speed === null || preview.diceCount === null || preview.minimumMoveAllowance === null) {
-        return null;
-    }
-    const dice = rollDicePips(random, preview.diceCount);
-    const total = dice.reduce((sum, pip) => sum + pip, 0);
-    return {
-        groupId,
-        monsterName: preview.monsterName,
-        monsterIds: [...preview.monsterIds],
-        playerId,
-        speed: preview.speed,
-        diceCount: preview.diceCount,
-        dice,
-        total,
-        moveAllowance: Math.max(preview.minimumMoveAllowance, total),
-        rollOnceForGroup: true,
-        minimumMoveAllowance: preview.minimumMoveAllowance,
-    };
-}
-
-export function resolveBetrayalMonsterTurnRuntimeState(
-    core: BetrayalCore,
-): BetrayalMonsterTurnRuntimeState {
-    return cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
-}
-
-export function resolveBetrayalMonsterMoveCost(
-    core: BetrayalCore,
-    monsterId: string,
-): number {
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    if (!monster) {
-        return 0;
-    }
-    const sharesRoomWithLivingHero = getAllExplorers(core).some((explorer) => (
-        resolveControlledRoomId(core, explorer) === monster.roomId
-        && isExplorerTargetableByMonsters(core, explorer)
-        && resolveExplorerSide(core, explorer.playerId) === 'hero'
-    ));
-    return sharesRoomWithLivingHero ? 2 : 1;
-}
-
-export function resolveBetrayalMonsterMoveTargetRooms(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalRoomNode[] {
-    const turnStartStatus = resolveBetrayalMonsterTurnStartStatus(core, monsterId);
-    if (!turnStartStatus?.canStartTurn || !turnStartStatus.canRollMovement) {
-        return [];
-    }
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    if (!monster) {
-        return [];
-    }
-    const sourceRoom = core.rooms.find((room) => room.id === monster.roomId);
-    if (!sourceRoom || sourceRoom.state !== 'discovered') {
-        return [];
-    }
-    if (mustMummyAttackBeforeMoving(core, monster)) {
-        return [];
-    }
-    if (hasMummyTeleportMoveAvailable(core, monster.id)) {
-        return core.rooms.filter((room) => (
-            room.state === 'discovered'
-            && room.id !== sourceRoom.id
-        ));
-    }
-    const connectedRoomIds = resolveConnectedRoomIds(core.rooms, sourceRoom.id);
-    const connectedRooms = core.rooms.filter((room) => (
-        room.state === 'discovered'
-        && room.id !== sourceRoom.id
-        && connectedRoomIds.has(room.id)
-    ));
-    const stoneCherubTargets = resolveStoneCherubMoveTargetRooms(core, monster, connectedRooms);
-    return resolveUponReflectionMirrorBeingMoveTargetRooms(core, monster, stoneCherubTargets);
-}
-
-export function resolveBetrayalMonsterActionSet(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalMonsterActionSet | null {
-    const monsterStatus = resolveBetrayalMonsterStatuses(core)
-        .find((status) => status.monsterId === monsterId);
-    const turnStartStatus = resolveBetrayalMonsterTurnStartStatus(core, monsterId);
-    if (!monsterStatus || !turnStartStatus) {
-        return null;
-    }
-    const moveTargetRoomIds = resolveBetrayalMonsterMoveTargetRooms(core, monsterId)
-        .map((room) => room.id);
-    const isMummyActionSet = isMummyMonster(core, monsterId);
-    return {
-        monsterId: monsterStatus.monsterId,
-        name: monsterStatus.name,
-        status: monsterStatus.status,
-        roomId: monsterStatus.roomId,
-        canMove: turnStartStatus.canRollMovement && moveTargetRoomIds.length > 0,
-        moveTargetRoomIds,
-        canAttack: turnStartStatus.canAttack,
-        defaultAttackTrait: monsterStatus.defaultAttackTrait,
-        usesNormalAttackRules: turnStartStatus.canAttack,
-        canHoldPossessions: isMummyActionSet,
-        canHoldOmens: isMummyActionSet,
-        canUsePossessionActions: false,
-        canExploreNewRooms: false,
-        canDiscoverRoomTiles: false,
-        canIgnoreDamagingRoomEffects: turnStartStatus.canStartTurn,
-        scenarioSpecificOverridesMayApply: true,
-        reason: turnStartStatus.reason,
-        ruleNotes: isMummyActionSet
-            ? [
-                '木乃伊只用力量攻击；同房有英雄且能攻击时必须先攻击。',
-                '木乃伊可携带/偷取物品和预兆，但物件不改变木乃伊固定属性。',
-                '木乃伊移动骰为 0 或 1 时，可瞬移到任意已发现房间；不能探索新房间。',
-                '怪物可忽略伤害性房间效果；作祟专属规则仍可覆盖该默认口径。',
-            ]
-            : [
-                '怪物默认使用力量进行正常攻击，除非作祟另有说明。',
-                '怪物不能持有物品或预兆，也不能探索新房间。',
-                '怪物可忽略伤害性房间效果；作祟专属规则仍可覆盖该默认口径。',
-            ],
-    };
-}
-
-export function resolveBetrayalMonsterActionSets(core: BetrayalCore): BetrayalMonsterActionSet[] {
-    return resolveBetrayalMonsterStatuses(core)
-        .map((status) => resolveBetrayalMonsterActionSet(core, status.monsterId))
-        .filter((actionSet): actionSet is BetrayalMonsterActionSet => Boolean(actionSet));
-}
-
-function resolveBloodFromStoneHasEnabledMonsterAction(core: BetrayalCore): boolean {
-    const stoneCherubIds = new Set(core.monsters
-        .filter((monster) => isStoneCherubMonster(monster))
-        .map((monster) => monster.id));
-    if (!isBloodFromStoneHaunt(core) || stoneCherubIds.size === 0) {
-        return false;
-    }
-    if (resolveBetrayalMonsterStatuses(core)
-        .some((status) => stoneCherubIds.has(status.monsterId)
-            && resolveBetrayalMonsterTurnStartResolutionPreview(core, status.monsterId).canResolve)) {
-        return true;
-    }
-    if (resolveBetrayalMonsterMovementGroups(core).some((group) => (
-        group.monsterIds.some((monsterId) => stoneCherubIds.has(monsterId))
-        && resolveBetrayalMonsterMovementRollGroupPreview(core, group.groupId).canRoll
-    ))) {
-        return true;
-    }
-    return resolveBetrayalMonsterActionSets(core).some((actionSet) => {
-        if (!stoneCherubIds.has(actionSet.monsterId)) {
-            return false;
-        }
-        const moveCost = actionSet.status === 'active'
-            ? resolveBetrayalMonsterMoveCost(core, actionSet.monsterId)
-            : 0;
-        const moveRemaining = core.scenarioRuntime.monsterTurn.moveRemainingById[actionSet.monsterId] ?? 0;
-        const canMoveNow = actionSet.canMove
-            && actionSet.moveTargetRoomIds.length > 0
-            && moveCost > 0
-            && moveRemaining >= moveCost;
-        return canMoveNow || actionSet.canAttack;
-    });
-}
-
-export function resolveBloodFromStoneMonsterTurnEndPreview(
-    core: BetrayalCore,
-): BetrayalBloodFromStoneMonsterTurnEndPreview {
-    const stoneCherubIds = core.monsters
-        .filter((monster) => isStoneCherubMonster(monster))
-        .map((monster) => monster.id);
-    if (!isBloodFromStoneHaunt(core)) {
-        return {
-            active: false,
-            canEnd: false,
-            controllerPlayerId: null,
-            nextPlayerId: null,
-            visibleStoneCherubCountsByPlayerId: {},
-            reason: '当前不是石像小天使作祟。',
-        };
-    }
-    if (stoneCherubIds.length === 0) {
-        return {
-            active: false,
-            canEnd: false,
-            controllerPlayerId: core.currentPlayer,
-            nextPlayerId: null,
-            visibleStoneCherubCountsByPlayerId: {},
-            reason: '当前宅邸中没有石像小天使。',
-        };
-    }
-    const monsterTurnStatus = resolveBloodFromStoneMonsterTurnStatus(core);
-    if (!monsterTurnStatus.active) {
-        return {
-            active: false,
-            canEnd: false,
-            controllerPlayerId: monsterTurnStatus.controllerPlayerId,
-            nextPlayerId: null,
-            visibleStoneCherubCountsByPlayerId: {},
-            reason: monsterTurnStatus.reason,
-        };
-    }
-    if (resolveBloodFromStoneHasEnabledMonsterAction(core)) {
-        return {
-            active: true,
-            canEnd: false,
-            controllerPlayerId: monsterTurnStatus.controllerPlayerId,
-            nextPlayerId: null,
-            visibleStoneCherubCountsByPlayerId: {},
-            reason: '请先完成石像小天使还能处理的开回合或移动。',
-        };
-    }
-    const visibleStoneCherubCountsByPlayerId = Object.fromEntries(
-        resolveLivingHeroExplorers(core)
-            .map((hero) => [hero.playerId, resolveStoneCherubsInHeroLineOfSight(core, hero).length] as const)
-            .filter(([, count]) => count > 0),
-    );
-    return {
-        active: true,
-        canEnd: true,
-        controllerPlayerId: monsterTurnStatus.controllerPlayerId,
-        nextPlayerId: monsterTurnStatus.controllerPlayerId
-            ? rotateToNextLivingPlayer(core, monsterTurnStatus.controllerPlayerId)
-            : null,
-        visibleStoneCherubCountsByPlayerId,
-        reason: null,
-    };
-}
-
-export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalMonsterActionPanelReadModel {
-    const monsterStatuses = resolveBetrayalMonsterStatuses(core);
-    if (core.phase !== 'haunt') {
-        return {
-            active: false,
-            monsterIds: monsterStatuses.map((status) => status.monsterId),
-            movementGroupIds: [],
-            slots: [],
-            contractGaps: [],
-            reason: '作祟开始前没有怪物动作槽。',
-        };
-    }
-    if (monsterStatuses.length === 0) {
-        return {
-            active: false,
-            monsterIds: [],
-            movementGroupIds: [],
-            slots: [],
-            contractGaps: [],
-            reason: '当前宅邸中没有怪物。',
-        };
-    }
-    if (isBloodFromStoneHaunt(core) && !resolveBloodFromStoneMonsterTurnStatus(core).active) {
-        return {
-            active: false,
-            monsterIds: monsterStatuses.map((status) => status.monsterId),
-            movementGroupIds: [],
-            slots: [],
-            contractGaps: [],
-            reason: resolveBloodFromStoneMonsterTurnStatus(core).reason,
-        };
-    }
-    const helpingHandsMonsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
-    const isMonsterActionControllerTurn = isBloodFromStoneHaunt(core)
-        ? resolveBloodFromStoneMonsterTurnStatus(core).active
-            && resolveBloodFromStoneMonsterTurnStatus(core).controllerPlayerId === core.currentPlayer
-        : isHelpingHandsHaunt(core)
-            ? helpingHandsMonsterTurnStatus.active
-                && helpingHandsMonsterTurnStatus.controllerPlayerId === core.currentPlayer
-            : canPlayerControlStandardMonsterTurn(core, core.currentPlayer);
-    if (!isMonsterActionControllerTurn) {
-        return {
-            active: false,
-            monsterIds: monsterStatuses.map((status) => status.monsterId),
-            movementGroupIds: [],
-            slots: [],
-            contractGaps: [],
-            reason: '当前是玩家回合，等待怪物控制者回合后才能处理怪物动作。',
-        };
-    }
-
-    const movementGroups = resolveBetrayalMonsterMovementGroups(core);
-    const actionSets = resolveBetrayalMonsterActionSets(core);
-    const slots: BetrayalMonsterActionSlot[] = [];
-
-    for (const status of monsterStatuses) {
-        const preview = resolveBetrayalMonsterTurnStartResolutionPreview(core, status.monsterId);
-        if (!preview.active) {
-            continue;
-        }
-        slots.push({
-            id: `turn-start:${status.monsterId}`,
-            kind: 'turn-start',
-            label: `${status.name}开回合`,
-            command: BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
-            monsterId: status.monsterId,
-            groupId: null,
-            enabled: preview.canResolve,
-            reason: preview.reason,
-            targetRoomIds: [],
-            moveRemaining: null,
-            moveCost: null,
-            defaultAttackTrait: null,
-            contractGaps: preview.contractGaps.filter(
-                (gap): gap is BetrayalMonsterActionSlotContractGap => gap === 'ui-token-flip',
-            ),
-        });
-    }
-
-    for (const group of movementGroups) {
-        const preview = resolveBetrayalMonsterMovementRollGroupPreview(core, group.groupId);
-        slots.push({
-            id: `movement-roll:${group.groupId}`,
-            kind: 'movement-roll',
-            label: `${group.monsterName}移动骰`,
-            command: BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
-            monsterId: null,
-            groupId: group.groupId,
-            enabled: preview.canRoll,
-            reason: preview.reason,
-            targetRoomIds: [],
-            moveRemaining: null,
-            moveCost: null,
-            defaultAttackTrait: null,
-            contractGaps: preview.contractGaps.filter(
-                (gap): gap is BetrayalMonsterActionSlotContractGap => gap === 'path-preview-ui',
-            ),
-        });
-    }
-
-    for (const actionSet of actionSets) {
-        const targetRoomIds = [...actionSet.moveTargetRoomIds];
-        const moveCost = actionSet.status === 'active'
-            ? resolveBetrayalMonsterMoveCost(core, actionSet.monsterId)
-            : 0;
-        const moveRemaining = core.scenarioRuntime.monsterTurn.moveRemainingById[actionSet.monsterId] ?? 0;
-        const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, actionSet.monsterId);
-        const hasMoveAllowance = (moveRemaining >= moveCost && moveCost > 0) || canMummyTeleportNow;
-        const canMoveNow = actionSet.canMove && targetRoomIds.length > 0 && hasMoveAllowance;
-        const mustAttackBeforeMoving = isMummyMonster(core, actionSet.monsterId) && mustMummyAttackBeforeMoving(
-            core,
-            core.monsters.find((monster) => monster.id === actionSet.monsterId)!,
-        );
-        const moveReason = actionSet.reason
-            ?? (mustAttackBeforeMoving
-                ? '木乃伊与英雄同房且尚未攻击，必须先攻击。'
-                : !actionSet.canMove
-                    ? '该怪物当前不能移动。'
-                    : targetRoomIds.length === 0
-                        ? '该怪物没有已发现的移动目标。'
-                    : !hasMoveAllowance
-                        ? '请先为该怪物所属类型掷移动骰，或移动点不足以离开当前房间。'
-                        : null);
-        slots.push({
-            id: `move:${actionSet.monsterId}`,
-            kind: 'move',
-            label: `${actionSet.name}移动`,
-            command: BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
-            monsterId: actionSet.monsterId,
-            groupId: null,
-            enabled: canMoveNow,
-            reason: canMoveNow ? null : moveReason,
-            targetRoomIds,
-            moveRemaining,
-            moveCost,
-            defaultAttackTrait: null,
-            contractGaps: ['path-preview-ui'],
-        });
-
-        const attackCommand = resolveMonsterAttackCommand(core, actionSet.monsterId);
-        const attackContractGaps: BetrayalMonsterActionSlotContractGap[] = attackCommand === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
-            || attackCommand === BETRAYAL_COMMANDS.HAUNT_ATTACK
-            || attackCommand === BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
-            || attackCommand === BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK
-            ? ['attack-target-ui']
-            : ['attack-target-ui', 'scenario-specific-attack'];
-        slots.push({
-            id: `attack:${actionSet.monsterId}`,
-            kind: 'attack',
-            label: `${actionSet.name}攻击`,
-            command: attackCommand,
-            monsterId: actionSet.monsterId,
-            groupId: null,
-            enabled: actionSet.canAttack,
-            reason: actionSet.canAttack ? null : actionSet.reason ?? '该怪物当前不能攻击。',
-            targetRoomIds: [],
-            moveRemaining: null,
-            moveCost: null,
-            defaultAttackTrait: actionSet.defaultAttackTrait,
-            contractGaps: attackContractGaps,
-        });
-    }
-
-    const bloodFromStoneMonsterTurnEnd = resolveBloodFromStoneMonsterTurnEndPreview(core);
-    if (bloodFromStoneMonsterTurnEnd.active) {
-        slots.push({
-            id: 'end-turn:blood-from-stone',
-            kind: 'end-turn',
-            label: '结束石像小天使怪物回合',
-            command: BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN,
-            monsterId: null,
-            groupId: null,
-            enabled: bloodFromStoneMonsterTurnEnd.canEnd,
-            reason: bloodFromStoneMonsterTurnEnd.reason,
-            targetRoomIds: [],
-            moveRemaining: null,
-            moveCost: null,
-            defaultAttackTrait: null,
-            contractGaps: [],
-        });
-    }
-
-    return {
-        active: slots.length > 0,
-        monsterIds: monsterStatuses.map((status) => status.monsterId),
-        movementGroupIds: movementGroups.map((group) => group.groupId),
-        slots,
-        contractGaps: uniqueBetrayalStrings(slots.flatMap((slot) => slot.contractGaps)) as BetrayalMonsterActionSlotContractGap[],
-        reason: slots.length > 0 ? null : '当前没有可显示的怪物动作槽。',
-    };
-}
-
-export function resolveMagicCameraPhantomAttackTargets(
-    core: BetrayalCore,
-    monster: BetrayalMonsterSummary,
-): BetrayalExplorerSummary[] {
-    const room = core.rooms.find((item) => item.id === monster.roomId);
-    if (!room) {
-        return [];
-    }
-    return getAllExplorers(core).filter((explorer) => {
-        if (
-            explorer.playerId === core.scenarioRuntime.traitorPlayerId
-            || core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        ) {
-            return false;
-        }
-        const explorerRoom = resolveExplorerRoom(core, explorer);
-        return Boolean(explorerRoom && isStraightLineVisible(room, explorerRoom, core.rooms));
-    });
-}
-
-export function resolveBetrayalNormalMonsterAttackTargets(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalNormalMonsterAttackTargetReadModel | null {
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    const actionSet = resolveBetrayalMonsterActionSet(core, monsterId);
-    if (!monster || !actionSet) {
-        return null;
-    }
-    if (!actionSet.canAttack || !monster.roomId) {
-        return {
-            monsterId,
-            monsterName: actionSet.name,
-            roomId: monster.roomId,
-            defaultAttackTrait: actionSet.defaultAttackTrait,
-            targetPlayerIds: [],
-            targetLabels: [],
-            usesNormalAttackRules: true,
-            canResolveWithExistingCommand: false,
-            reason: actionSet.reason ?? '该怪物当前不能攻击。',
-            contractGaps: ['attack-target-ui'],
-        };
-    }
-    const targetExplorers = getAllExplorers(core).filter((explorer) => (
-        resolveControlledRoomId(core, explorer) === monster.roomId
-        && isExplorerTargetableByMonsters(core, explorer)
-        && resolveExplorerSide(core, explorer.playerId) === 'hero'
-    ));
-    const attackCommand = resolveMonsterAttackCommand(core, monsterId);
-    const canResolveWithExistingCommand = attackCommand === BETRAYAL_COMMANDS.HAUNT_ATTACK
-        || attackCommand === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO;
-    return {
-        monsterId,
-        monsterName: actionSet.name,
-        roomId: monster.roomId,
-        defaultAttackTrait: actionSet.defaultAttackTrait,
-        targetPlayerIds: targetExplorers.map((explorer) => explorer.playerId),
-        targetLabels: targetExplorers.map((explorer) => explorer.displayName),
-        usesNormalAttackRules: true,
-        canResolveWithExistingCommand,
-        reason: targetExplorers.length > 0
-            ? null
-            : '当前房间没有可攻击的存活英雄。',
-        contractGaps: canResolveWithExistingCommand
-            ? []
-            : ['scenario-specific-attack'],
-    };
 }
 
 function resolveMagicCameraEndTurn(core: BetrayalCore): string[] {
@@ -8242,7 +4452,7 @@ function resolveDustEndTurn(core: BetrayalCore, random: RandomFn): BetrayalDustE
     if (swaps.length > 0 || alreadyExchanged) {
         return { swaps };
     }
-    const damageDice = rollDicePips(random, 2);
+    const damageDice = rollBetrayalDicePips(random, 2);
     const damageAmount = damageDice.reduce((sum, pip) => sum + pip, 0);
     const damageTraits: BetrayalTraitKey[] = ['might', 'speed', 'knowledge', 'sanity'];
     return {
@@ -8251,126 +4461,6 @@ function resolveDustEndTurn(core: BetrayalCore, random: RandomFn): BetrayalDustE
         damageAmount,
         damageTraits,
     };
-}
-
-function resolveTurnStartInventoryCardIds(core: BetrayalCore, playerId = core.currentExplorer.playerId): string[] {
-    return findExplorerByPlayerId(core, playerId)?.inventory.map((card) => card.id) ?? [];
-}
-
-function resolveTurnStartSpeed(core: BetrayalCore, playerId = core.currentExplorer.playerId): number {
-    const explorer = findExplorerByPlayerId(core, playerId) ?? core.currentExplorer;
-    return Math.max(0, explorer.traits.speed);
-}
-
-function canUseMysteriousStopwatch(core: BetrayalCore): boolean {
-    return core.phase === 'haunt' && core.scenarioRuntime.hauntTriggered;
-}
-
-function clearPendingExtraTurnAfterCurrentTurn(
-    core: BetrayalCore,
-    previousPlayerId: string,
-): BetrayalExtraTurnAfterCurrentTurnState | null {
-    const pending = core.pendingExtraTurnAfterCurrentTurn;
-    if (!pending || pending.playerId === previousPlayerId) {
-        return null;
-    }
-    return { ...pending };
-}
-
-export interface BetrayalPossessionSpecialActionStatus {
-    sourceKind: 'possession';
-    sourceId: string;
-    sourceName: string;
-    effectId: string;
-    active: boolean;
-    canUse: boolean;
-    usedThisTurn: boolean;
-    availableAtTurnStart: boolean;
-    receivedThisTurn: boolean;
-    reason: string | null;
-}
-
-export function resolveBetrayalPossessionSpecialActionStatus(
-    core: BetrayalCore,
-    cardId: string | undefined,
-    playerId = core.currentExplorer.playerId,
-): BetrayalPossessionSpecialActionStatus {
-    const explorer = findExplorerByPlayerId(core, playerId) ?? core.currentExplorer;
-    const card = cardId ? explorer.inventory.find((item) => item.id === cardId) : undefined;
-    const sourceId = cardId ?? '';
-    const effectId = resolveInventoryEffectId(sourceId);
-    const active = Boolean(card && Object.prototype.hasOwnProperty.call(USE_EFFECTS, effectId));
-    const effect = active ? USE_EFFECTS[effectId] : null;
-    const usedThisTurn = Boolean(cardId && core.usedCardIdsThisTurn.includes(cardId));
-    const receivedThisTurn = Boolean(
-        cardId
-        && (core.receivedCardIdsThisTurnByPlayerId[playerId] ?? []).includes(cardId),
-    );
-    const availableAtTurnStart = Boolean(cardId && core.turnStartInventoryCardIds.includes(cardId));
-    let reason: string | null = null;
-    if (!card) {
-        reason = '当前没有可使用持有物。';
-    } else if (!active) {
-        reason = '该持有物没有主动使用效果。';
-    } else if (effectId === MYSTERIOUS_STOPWATCH_CARD_ID && !canUseMysteriousStopwatch(core)) {
-        reason = '神秘秒表只能在作祟开始后使用。';
-    } else if (effectId === MYSTERIOUS_STOPWATCH_CARD_ID && core.pendingExtraTurnAfterCurrentTurn?.playerId === playerId) {
-        reason = '神秘秒表的额外行动已经待结算。';
-    } else if (usedThisTurn) {
-        reason = '该持有物本回合已经使用。';
-    } else if (!availableAtTurnStart || receivedThisTurn) {
-        reason = '本回合新获得的持有物不能立刻使用。';
-    } else if (effect) {
-        reason = resolvePossessionUseCostUnavailableReason(explorer, effect, card?.name ?? sourceId);
-    }
-
-    return {
-        sourceKind: 'possession',
-        sourceId,
-        sourceName: card?.name ?? sourceId,
-        effectId,
-        active,
-        canUse: reason === null,
-        usedThisTurn,
-        availableAtTurnStart,
-        receivedThisTurn,
-        reason,
-    };
-}
-
-function canUsePossessionThisTurn(core: BetrayalCore, cardId: string): boolean {
-    return resolveBetrayalPossessionSpecialActionStatus(core, cardId).canUse;
-}
-
-export function canUseBookForPendingEventRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
-    const pending = core.pendingEventRollResolution;
-    const recentRoll = core.recentRoll;
-    if (
-        !pending
-        || !recentRoll
-        || pending.rollId !== recentRoll.id
-        || pending.playerId !== playerId
-        || recentRoll.playerId !== playerId
-        || recentRoll.kind !== 'eventTraitCheck'
-        || !recentRoll.trait
-        || !recentRoll.branchThresholds?.length
-    ) {
-        return false;
-    }
-    const owner = findExplorerByPlayerId(core, playerId);
-    const candidates = owner?.inventory.filter((card) => (
-        resolveUseEffect(card)?.mode === 'nextNonCombatTraitReplacement'
-    )) ?? [];
-    const card = cardId
-        ? candidates.find((candidate) => candidate.id === cardId)
-        : candidates[0];
-    const effect = card ? resolveUseEffect(card) : null;
-    return Boolean(
-        card
-        && effect?.mode === 'nextNonCombatTraitReplacement'
-        && recentRoll.trait !== effect.replacementTrait
-        && resolveBetrayalPossessionSpecialActionStatus(core, card.id, playerId).canUse,
-    );
 }
 
 function createBookPendingEventRollReplacement(
@@ -8479,434 +4569,6 @@ function createBookPendingEventRollReplacement(
     };
 }
 
-export interface BetrayalRoomSpecialActionStatus {
-    sourceKind: 'roomEffect';
-    sourceId: BetrayalRoomEnterEffect | '';
-    sourceName: string;
-    active: boolean;
-    canUse: boolean;
-    usedThisTurn: boolean;
-    availableInCurrentRoom: boolean;
-    phaseEligible: boolean;
-    turnEndedByDiscovery: boolean;
-    reason: string | null;
-}
-
-export function resolveBetrayalRoomSpecialActionStatus(core: BetrayalCore): BetrayalRoomSpecialActionStatus {
-    const currentRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    const sourceId = currentRoom?.enterEffect ?? '';
-    const phaseEligible = core.phase === 'preHaunt' || core.phase === 'haunt';
-    const availableInCurrentRoom = Boolean(
-        currentRoom?.state === 'discovered'
-        && sourceId === 'mysticElevator',
-    );
-    const usedThisTurn = Boolean(
-        sourceId
-        && core.scenarioRuntime.usedRoomEffectIdsThisTurn.includes(sourceId),
-    );
-    const turnEndedByDiscovery = core.turnEndedByDiscovery;
-    let reason: string | null = null;
-    if (!phaseEligible) {
-        reason = '当前阶段不能使用房间效果。';
-    } else if (!availableInCurrentRoom) {
-        reason = '当前房间没有可使用的房间效果。';
-    } else if (turnEndedByDiscovery) {
-        reason = '探索新房间后本回合已结束。';
-    } else if (usedThisTurn) {
-        reason = '该房间效果本回合已经使用。';
-    }
-
-    return {
-        sourceKind: 'roomEffect',
-        sourceId,
-        sourceName: currentRoom?.name ?? sourceId,
-        active: availableInCurrentRoom,
-        canUse: reason === null,
-        usedThisTurn,
-        availableInCurrentRoom,
-        phaseEligible,
-        turnEndedByDiscovery,
-        reason,
-    };
-}
-
-export type BetrayalTraitorPowerCurrentTrigger =
-    | 'none'
-    | 'damaging-room-effect'
-    | 'mandatory-room-effect'
-    | 'event-symbol';
-
-export interface BetrayalTraitorPowerStatus {
-    playerId: string;
-    active: boolean;
-    isTraitor: boolean;
-    currentRoomId: string | null;
-    currentRoomName: string | null;
-    currentRoomEndTurnEffect: BetrayalRoomEndTurnEffect | null;
-    canIgnoreDamagingTileEffects: boolean;
-    canIgnoreEventSymbols: boolean;
-    mustResolveMandatoryTileEffects: boolean;
-    currentTrigger: BetrayalTraitorPowerCurrentTrigger;
-    reason: string | null;
-}
-
-function isBetrayalDamagingRoomEndTurnEffect(effect: BetrayalRoomEndTurnEffect | undefined): boolean {
-    return effect === 'physicalDamage1' || effect === 'speedCheckFallToBasement';
-}
-
-function isBetrayalMandatoryRoomEffect(room: BetrayalRoomNode | undefined): boolean {
-    return room?.endTurnEffect === 'moveToBasementLanding' || room?.enterEffect === 'mysticElevator';
-}
-
-function canUseBetrayalTraitorPowers(core: BetrayalCore, playerId: string): boolean {
-    return core.phase === 'haunt'
-        && core.scenarioRuntime.hauntTriggered
-        && core.scenarioRuntime.traitorPlayerId === playerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId);
-}
-
-export function resolveBetrayalTraitorPowerStatus(
-    core: BetrayalCore,
-    playerId = core.currentExplorer.playerId,
-): BetrayalTraitorPowerStatus {
-    const actor = findExplorerByPlayerId(core, playerId);
-    const currentRoomId = actor?.roomId ?? null;
-    const currentRoom = currentRoomId
-        ? core.rooms.find((room) => room.id === currentRoomId)
-        : undefined;
-    const isTraitor = core.scenarioRuntime.traitorPlayerId === playerId;
-    const active = canUseBetrayalTraitorPowers(core, playerId);
-    const currentRoomEndTurnEffect = currentRoom?.endTurnEffect ?? null;
-    const damagingRoomEffect = isBetrayalDamagingRoomEndTurnEffect(currentRoom?.endTurnEffect);
-    const mandatoryRoomEffect = isBetrayalMandatoryRoomEffect(currentRoom);
-    const nextDeckKind = resolveNextRoomDiscoveryDeckKind(core);
-    const eventSymbolTrigger = active
-        && nextDeckKind === 'event'
-        && resolveExplorableRoomSlots(core).length > 0;
-    const currentTrigger: BetrayalTraitorPowerCurrentTrigger = !active
-        ? 'none'
-        : damagingRoomEffect
-            ? 'damaging-room-effect'
-            : mandatoryRoomEffect
-                ? 'mandatory-room-effect'
-                : eventSymbolTrigger
-                    ? 'event-symbol'
-                    : 'none';
-    const reason = active
-        ? null
-        : !isTraitor
-            ? '当前探索者不是叛徒。'
-            : core.phase !== 'haunt' || !core.scenarioRuntime.hauntTriggered
-                ? '叛徒能力只在作祟开始后生效。'
-                : '叛徒已经死亡，不能使用叛徒能力。';
-
-    return {
-        playerId,
-        active,
-        isTraitor,
-        currentRoomId,
-        currentRoomName: currentRoom?.name ?? null,
-        currentRoomEndTurnEffect,
-        canIgnoreDamagingTileEffects: active,
-        canIgnoreEventSymbols: active,
-        mustResolveMandatoryTileEffects: active && mandatoryRoomEffect,
-        currentTrigger,
-        reason,
-    };
-}
-
-export type BetrayalHauntSpecialActionId =
-    | 'learn-about-jack'
-    | 'study-exorcism'
-    | 'exorcise-jack'
-    | 'study-mummy-name'
-    | 'learn-mummy-banishment'
-    | 'banish-mummy'
-    | 'search-for-cure'
-    | 'cure-the-dust'
-    | 'sickness-exchange'
-    | 'take-photo'
-    | 'smash-magic-camera'
-    | 'play-peekaboo'
-    | 'break-mirror-curse';
-
-interface BetrayalHauntSpecialActionDefinition {
-    sourceName: string;
-    commandType: BetrayalCommandType;
-}
-
-const HAUNT_SPECIAL_ACTION_DEFINITIONS: Record<BetrayalHauntSpecialActionId, BetrayalHauntSpecialActionDefinition> = {
-    'learn-about-jack': {
-        sourceName: '调查杰克',
-        commandType: BETRAYAL_COMMANDS.LEARN_ABOUT_JACK,
-    },
-    'study-exorcism': {
-        sourceName: '研究驱魔法阵',
-        commandType: BETRAYAL_COMMANDS.STUDY_EXORCISM,
-    },
-    'exorcise-jack': {
-        sourceName: '驱魔',
-        commandType: BETRAYAL_COMMANDS.EXORCISE_JACK,
-    },
-    'study-mummy-name': {
-        sourceName: '寻找木乃伊真名',
-        commandType: BETRAYAL_COMMANDS.STUDY_MUMMY_NAME,
-    },
-    'learn-mummy-banishment': {
-        sourceName: '学习驱逐法术',
-        commandType: BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT,
-    },
-    'banish-mummy': {
-        sourceName: '驱逐木乃伊',
-        commandType: BETRAYAL_COMMANDS.BANISH_MUMMY,
-    },
-    'search-for-cure': {
-        sourceName: '寻找解药',
-        commandType: BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
-    },
-    'cure-the-dust': {
-        sourceName: '治愈灰尘',
-        commandType: BETRAYAL_COMMANDS.CURE_THE_DUST,
-    },
-    'sickness-exchange': {
-        sourceName: '交换疾病标记',
-        commandType: BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
-    },
-    'take-photo': {
-        sourceName: '拍照',
-        commandType: BETRAYAL_COMMANDS.TAKE_PHOTO,
-    },
-    'smash-magic-camera': {
-        sourceName: '砸毁魔法相机',
-        commandType: BETRAYAL_COMMANDS.SMASH_MAGIC_CAMERA,
-    },
-    'play-peekaboo': {
-        sourceName: '玩躲猫猫',
-        commandType: BETRAYAL_COMMANDS.PLAY_PEEKABOO,
-    },
-    'break-mirror-curse': {
-        sourceName: '破咒',
-        commandType: BETRAYAL_COMMANDS.BREAK_MIRROR_CURSE,
-    },
-};
-
-export interface BetrayalHauntSpecialActionStatus {
-    sourceKind: 'hauntAction';
-    sourceId: string;
-    sourceName: string;
-    commandType: BetrayalCommandType | null;
-    active: boolean;
-    canUse: boolean;
-    usedThisTurn: boolean;
-    phaseEligible: boolean;
-    actorAlive: boolean;
-    reason: string | null;
-}
-
-function isBetrayalHauntSpecialActionId(actionId: string): actionId is BetrayalHauntSpecialActionId {
-    return Object.prototype.hasOwnProperty.call(HAUNT_SPECIAL_ACTION_DEFINITIONS, actionId);
-}
-
-function hasLivingSameRoomExplorer(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    return getAllExplorers(core).some((explorer) => (
-        explorer.playerId !== actor.playerId
-        && explorer.roomId === actor.roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-}
-
-function canLearnAboutJack(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const isTraitor = core.scenarioRuntime.traitorPlayerId === actor.playerId;
-    return Boolean(
-        core.scenarioRuntime.hauntCardNumber === 1
-        && !isTraitor
-        && isBetrayalLibraryRoom(core.rooms.find((room) => room.id === actor.roomId))
-        && getAllExplorers(core).some((explorer) => (
-            explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-            && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-            && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(explorer.playerId)
-        )),
-    );
-}
-
-function canStudyExorcism(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const isTraitor = core.scenarioRuntime.traitorPlayerId === actor.playerId;
-    return Boolean(
-        core.scenarioRuntime.hauntCardNumber === 1
-        && !isTraitor
-        && core.rooms.find((room) => room.id === actor.roomId)?.discoveryReward === 'event',
-    );
-}
-
-function canExorciseJack(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const isTraitor = core.scenarioRuntime.traitorPlayerId === actor.playerId;
-    return Boolean(
-        core.scenarioRuntime.hauntCardNumber === 1
-        && !isTraitor
-        && core.scenarioRuntime.jackSpiritReleased
-        && actor.roomId === core.scenarioRuntime.jackSpiritRoomId,
-    );
-}
-
-function isLivingMummyHero(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    return isMummyHaunt(core)
-        && actor.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId);
-}
-
-function hasLivingHeroWithBookInRoom(core: BetrayalCore, roomId: string): boolean {
-    return getAllExplorers(core).some((explorer) => (
-        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        && explorer.roomId === roomId
-        && hasOmenBook(explorer)
-    ));
-}
-
-function canStudyMummyName(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const mummy = core.scenarioRuntime.mummy;
-    return Boolean(
-        mummy
-        && isLivingMummyHero(core, actor)
-        && mummy.knowledgeTokenCount < 1
-        && !mummy.trueNameFound
-        && isMummyNameStudyRoom(core, actor.roomId),
-    );
-}
-
-function canLearnMummyBanishment(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const mummy = core.scenarioRuntime.mummy;
-    return Boolean(
-        mummy
-        && isLivingMummyHero(core, actor)
-        && mummy.trueNameFound
-        && !mummy.banishmentSpellLearned
-        && mummy.knowledgeTokenCount < 2
-        && hasOmenBook(actor),
-    );
-}
-
-function canBanishMummy(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const mummy = core.scenarioRuntime.mummy;
-    const monster = findMummyMonster(core);
-    return Boolean(
-        mummy
-        && monster
-        && isLivingMummyHero(core, actor)
-        && mummy.knowledgeTokenCount >= 2
-        && mummy.banishmentSpellLearned
-        && actor.roomId === monster.roomId
-        && hasLivingHeroWithBookInRoom(core, monster.roomId),
-    );
-}
-
-function canSmashMagicCameraIgnoringBudget(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    const traitor = core.scenarioRuntime.traitorPlayerId
-        ? findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId)
-        : null;
-    return Boolean(
-        isMagicCameraHaunt(core)
-        && magicCamera
-        && !magicCamera.cameraDestroyed
-        && actor.playerId !== core.scenarioRuntime.traitorPlayerId
-        && traitor
-        && traitor.roomId === actor.roomId
-        && (magicCamera.cameraHolderPlayerId === traitor.playerId || hasMagicCamera(traitor))
-    );
-}
-
-function resolveBetrayalHauntSpecialActionActive(
-    core: BetrayalCore,
-    actionId: BetrayalHauntSpecialActionId,
-    actor: BetrayalExplorerSummary,
-): boolean {
-    switch (actionId) {
-        case 'learn-about-jack':
-            return canLearnAboutJack(core, actor);
-        case 'study-exorcism':
-            return canStudyExorcism(core, actor);
-        case 'exorcise-jack':
-            return canExorciseJack(core, actor);
-        case 'study-mummy-name':
-            return canStudyMummyName(core, actor);
-        case 'learn-mummy-banishment':
-            return canLearnMummyBanishment(core, actor);
-        case 'banish-mummy':
-            return canBanishMummy(core, actor);
-        case 'search-for-cure':
-            return canSearchForCure(core, actor);
-        case 'cure-the-dust':
-            return canCureTheDust(core, actor);
-        case 'sickness-exchange':
-            return isDustHaunt(core) && hasLivingSameRoomExplorer(core, actor);
-        case 'take-photo':
-            return resolveMagicCameraPhotoTargets(core, actor).length > 0;
-        case 'smash-magic-camera':
-            return canSmashMagicCameraIgnoringBudget(core, actor);
-        case 'play-peekaboo':
-            return resolveBloodFromStonePeekabooOptions(core, actor.playerId).length > 0;
-        case 'break-mirror-curse':
-            return canBreakMirrorCurse(core, actor);
-        default:
-            return false;
-    }
-}
-
-export function resolveBetrayalHauntSpecialActionStatus(
-    core: BetrayalCore,
-    actionId: string,
-    playerId = core.currentExplorer.playerId,
-): BetrayalHauntSpecialActionStatus {
-    const actor = findExplorerByPlayerId(core, playerId) ?? core.currentExplorer;
-    const definition = isBetrayalHauntSpecialActionId(actionId)
-        ? HAUNT_SPECIAL_ACTION_DEFINITIONS[actionId]
-        : null;
-    const phaseEligible = core.phase === 'haunt';
-    const actorAlive = !core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId);
-    const usedThisTurn = core.usedCardIdsThisTurn.includes(actionId);
-    const active = Boolean(
-        definition
-        && phaseEligible
-        && actorAlive
-        && resolveBetrayalHauntSpecialActionActive(core, actionId as BetrayalHauntSpecialActionId, actor),
-    );
-    let reason: string | null = null;
-    if (!definition) {
-        reason = '未知作祟特殊行动。';
-    } else if (!phaseEligible) {
-        reason = '作祟前不能使用作祟特殊行动。';
-    } else if (!actorAlive) {
-        reason = '死亡探索者不能使用作祟特殊行动。';
-    } else if (usedThisTurn) {
-        reason = '该作祟特殊行动本回合已经使用。';
-    } else if (!active) {
-        reason = '当前没有满足条件的作祟特殊行动。';
-    }
-
-    return {
-        sourceKind: 'hauntAction',
-        sourceId: actionId,
-        sourceName: definition?.sourceName ?? actionId,
-        commandType: definition?.commandType ?? null,
-        active,
-        canUse: reason === null,
-        usedThisTurn,
-        phaseEligible,
-        actorAlive,
-        reason,
-    };
-}
-
-function validateHauntSpecialActionBudget(
-    core: BetrayalCore,
-    actionId: BetrayalHauntSpecialActionId,
-    actor: BetrayalExplorerSummary,
-): ValidationResult | null {
-    const status = resolveBetrayalHauntSpecialActionStatus(core, actionId, actor.playerId);
-    return status.canUse ? null : { valid: false, error: status.reason ?? '当前不能使用该作祟特殊行动。' };
-}
-
 function healExplorerToTemplate(explorer: BetrayalExplorerSummary): void {
     const template = templateByExplorerId(explorer.explorerId);
     if (!template) {
@@ -8943,32 +4605,6 @@ function healTraitorForHaunt(explorer: BetrayalExplorerSummary, playerCount: num
 
 function reviveTraitorFromJackSpirit(explorer: BetrayalExplorerSummary): void {
     healExplorerToTemplate(explorer);
-}
-
-function resolveMagicCameraOwnerPlayerId(core: BetrayalCore): string | null {
-    return getAllExplorers(core)
-        .find((explorer) => explorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'camera'))
-        ?.playerId ?? null;
-}
-
-function shouldDeadTraitorControlJackSpirit(core: BetrayalCore, playerId: string): boolean {
-    return (
-        core.scenarioRuntime.traitorPlayerId === playerId
-        && core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
-        && core.scenarioRuntime.jackSpiritReleased
-        && Boolean(core.scenarioRuntime.jackSpiritRoomId)
-    );
-}
-
-function isPlayerControllingMonster(core: BetrayalCore, playerId: string): boolean {
-    return shouldDeadTraitorControlJackSpirit(core, playerId)
-        || shouldDeadPlayerControlFeverish(core, playerId);
-}
-
-function isOwnDeathPreventionRerollWindow(core: BetrayalCore, playerId: string): boolean {
-    return core.recentRoll?.kind === 'deathPrevention'
-        && core.recentRoll.playerId === playerId
-        && Boolean(core.recentRoll.deathPrevention);
 }
 
 function findJackSpirit(core: BetrayalCore): BetrayalMonsterSummary | null {
@@ -9023,7 +4659,7 @@ function rollDeathPrevention(random: RandomFn, explorer: BetrayalExplorerSummary
         return null;
     }
     const config = DEATH_PREVENTION_ROLL_CARDS_BY_ID[cardId]!;
-    const dice = rollDicePips(random, config.dice);
+    const dice = rollBetrayalDicePips(random, config.dice);
     const rollTotal = dice.reduce((sum, pip) => sum + pip, 0);
     return {
         playerId: explorer.playerId,
@@ -9054,25 +4690,6 @@ function formatDeathPreventionLog(deathPrevention: {
     return deathPrevention.prevented
         ? `；${cardName}投出 ${deathPrevention.rollTotal}，阻止死亡并将所有属性调至濒死`
         : `；${cardName}投出 ${deathPrevention.rollTotal}，正常死亡`;
-}
-
-function cloneHauntTraitorResolution(
-    resolution: BetrayalHauntTraitorResolution | null | undefined,
-): BetrayalHauntTraitorResolution | null {
-    if (!resolution) {
-        return null;
-    }
-    return {
-        ...resolution,
-        candidatePlayerIds: [...resolution.candidatePlayerIds],
-        excludedPlayerIds: [...resolution.excludedPlayerIds],
-    };
-}
-
-function cloneHauntFirstPlayerResolution(
-    resolution: BetrayalHauntFirstPlayerResolution | null | undefined,
-): BetrayalHauntFirstPlayerResolution | null {
-    return resolution ? { ...resolution } : null;
 }
 
 function cloneUponReflectionRuntimeState(
@@ -9241,21 +4858,6 @@ function applyDeathPreventionRerollOutcome(
     };
 }
 
-function rotateToNextLivingPlayer(core: BetrayalCore, currentPlayerId: string): string {
-    const turnEligibleExplorers = getExplorersInTurnOrder(core).filter((explorer) => (
-        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        || shouldDeadTraitorControlJackSpirit(core, explorer.playerId)
-        || shouldDeadPlayerControlFeverish(core, explorer.playerId)
-    ));
-    if (turnEligibleExplorers.length === 0) {
-        return currentPlayerId;
-    }
-    const currentIndex = turnEligibleExplorers.findIndex((explorer) => explorer.playerId === currentPlayerId);
-    const nextExplorer = turnEligibleExplorers[(currentIndex + 1 + turnEligibleExplorers.length) % turnEligibleExplorers.length]
-        ?? turnEligibleExplorers[0]!;
-    return nextExplorer.playerId;
-}
-
 function ensureLibraryPresent(core: BetrayalCore): void {
     const existingLibrary = core.rooms.find((room) => room.name === '图书馆');
     if (existingLibrary) {
@@ -9271,877 +4873,6 @@ function ensureLibraryPresent(core: BetrayalCore): void {
     }
 }
 
-export function isBetrayalLibraryRoom(room: BetrayalRoomNode | undefined): boolean {
-    return room?.name === '图书馆' || room?.visualId === 'library';
-}
-
-export function resolveBetrayalOmenCount(core: BetrayalCore): number {
-    return Math.max(0, getAllExplorers(core).reduce((total, explorer) => (
-        total + explorer.inventory.filter((item) => item.kind === 'omen').length
-    ), 0));
-}
-
-export function resolveBetrayalHauntRisk(
-    core: BetrayalCore,
-    options: { additionalOmenCount?: number } = {},
-): BetrayalHauntRiskStatus {
-    const omenCount = resolveBetrayalOmenCount(core);
-    const additionalOmenCount = Math.max(0, options.additionalOmenCount ?? 0);
-    const requestedRollOmenCount = omenCount + additionalOmenCount;
-    const nextRollOmenCount = omenCount + Math.max(1, additionalOmenCount);
-    return {
-        omenCount,
-        requestedRollOmenCount,
-        nextRollDiceCount: normalizeBetrayalDiceCount(nextRollOmenCount),
-        threshold: core.scenarioRuntime.hauntRollThreshold,
-        hauntStarted: core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered,
-        nextOmenAutomatic: core.phase === 'preHaunt'
-            && !core.scenarioRuntime.hauntTriggered
-            && core.deckCounts.omen <= 1,
-        omenDeckRemaining: core.deckCounts.omen,
-    };
-}
-
-function clampBetrayalNumberTrackProgress(value: number, min: number, max: number): number {
-    if (max <= min) {
-        return value >= max ? 100 : 0;
-    }
-    const progress = ((value - min) / (max - min)) * 100;
-    return Math.max(0, Math.min(100, Math.round(progress)));
-}
-
-function resolveBetrayalHauntRiskNumberTrack(core: BetrayalCore): BetrayalNumberTrackStatus {
-    const risk = resolveBetrayalHauntRisk(core);
-    const maxOmenCount = BETRAYAL_INITIAL_DECK_COUNTS.omen;
-    const progressPercent = clampBetrayalNumberTrackProgress(risk.omenCount, 0, maxOmenCount);
-    return {
-        id: 'haunt-risk',
-        kind: 'haunt-risk',
-        label: '预兆状态',
-        labelKey: 'board.status.hauntRiskLabel',
-        value: risk.omenCount,
-        min: 0,
-        max: maxOmenCount,
-        targetValue: maxOmenCount,
-        currentLabel: `预兆 ${risk.omenCount}`,
-        targetLabel: '牌堆末张',
-        statusLabel: risk.hauntStarted
-            ? '作祟已开始'
-            : risk.nextOmenAutomatic
-                ? '再抽预兆即作祟'
-                : '预兆已发现',
-        progressPercent,
-        source: 'base-rule',
-        representativeOnly: false,
-    };
-}
-
-export function resolveBetrayalNumberTracks(core: BetrayalCore): BetrayalNumberTrackStatus[] {
-    const tracks: BetrayalNumberTrackStatus[] = [
-        resolveBetrayalHauntRiskNumberTrack(core),
-    ];
-    if (core.phase !== 'haunt' || !core.scenarioRuntime.hauntTriggered) {
-        return tracks;
-    }
-    if (core.scenarioRuntime.hauntCardNumber === 1 && core.scenarioRuntime.mummy) {
-        const value = core.scenarioRuntime.mummy.knowledgeTokenCount;
-        tracks.push({
-            id: 'mummy-knowledge-tokens',
-            kind: 'haunt-objective',
-            label: '知识标记',
-            labelKey: 'board.status.mummyKnowledgeTokensLabel',
-            value,
-            min: 0,
-            max: 2,
-            targetValue: 2,
-            currentLabel: `${value}/2`,
-            targetLabel: '2 枚知识标记',
-            statusLabel: value >= 2
-                ? '驱逐法术已就绪'
-                : value >= 1
-                    ? '继续学习驱逐法术'
-                    : '寻找木乃伊真名',
-            progressPercent: clampBetrayalNumberTrackProgress(value, 0, 2),
-            source: 'haunt-contract',
-            representativeOnly: true,
-        });
-    } else if (core.scenarioRuntime.hauntCardNumber === 1) {
-        const value = core.scenarioRuntime.exorcismCircleRoomIds.length;
-        tracks.push({
-            id: 'crimson-jack-exorcism-circles',
-            kind: 'haunt-objective',
-            label: '驱魔圈',
-            labelKey: 'board.status.exorcismCirclesLabel',
-            value,
-            min: 0,
-            max: 2,
-            targetValue: 2,
-            currentLabel: `${value}/2`,
-            targetLabel: '2 个驱魔圈',
-            statusLabel: value >= 2 ? '驱魔圈已就绪' : '继续研究驱魔',
-            progressPercent: clampBetrayalNumberTrackProgress(value, 0, 2),
-            source: 'haunt-contract',
-            representativeOnly: true,
-        });
-    }
-    if (core.scenarioRuntime.hauntCardNumber === 3 && core.scenarioRuntime.dust) {
-        const value = core.scenarioRuntime.dust.researchRoomIds.length;
-        tracks.push({
-            id: 'dust-research-tokens',
-            kind: 'haunt-objective',
-            label: '研究 token',
-            labelKey: 'board.status.dustResearchTokensLabel',
-            value,
-            min: 0,
-            max: 8,
-            targetValue: 8,
-            currentLabel: `${value}/8`,
-            targetLabel: '治愈检定加值',
-            statusLabel: `治愈检定 +${value * 2}`,
-            progressPercent: clampBetrayalNumberTrackProgress(value, 0, 8),
-            source: 'haunt-contract',
-            representativeOnly: true,
-        });
-    }
-    if (core.scenarioRuntime.hauntCardNumber === 33 && core.scenarioRuntime.magicCamera) {
-        const magicCamera = core.scenarioRuntime.magicCamera;
-        const photographerCount = magicCamera.phantomPhotographerIds.length;
-        const killedPhotographerCount = magicCamera.killedPhantomPhotographerIds.length;
-        tracks.push({
-            id: 'magic-camera-hero-objective',
-            kind: 'haunt-objective',
-            label: '英雄目标',
-            labelKey: 'board.status.magicCameraHeroObjectiveLabel',
-            value: killedPhotographerCount + (magicCamera.cameraDestroyed ? 1 : 0),
-            min: 0,
-            max: photographerCount + 1,
-            targetValue: photographerCount + 1,
-            currentLabel: `${killedPhotographerCount}/${photographerCount}`,
-            targetLabel: '摄影师全灭 + 相机摧毁',
-            statusLabel: magicCamera.cameraDestroyed
-                ? '相机已摧毁'
-                : '相机未摧毁',
-            progressPercent: clampBetrayalNumberTrackProgress(
-                killedPhotographerCount + (magicCamera.cameraDestroyed ? 1 : 0),
-                0,
-                photographerCount + 1,
-            ),
-            source: 'haunt-contract',
-            representativeOnly: true,
-        });
-        const capturedEssenceCount = magicCamera.capturedEssencePlayerIds.length;
-        const totalEssenceCount = magicCamera.heroEssencePlayerIds.length + capturedEssenceCount;
-        tracks.push({
-            id: 'magic-camera-essence-captured',
-            kind: 'haunt-resource',
-            label: 'Essence',
-            labelKey: 'board.status.magicCameraEssenceLabel',
-            value: capturedEssenceCount,
-            min: 0,
-            max: totalEssenceCount,
-            targetValue: totalEssenceCount,
-            currentLabel: `${capturedEssenceCount}/${totalEssenceCount}`,
-            targetLabel: '英雄 Essence',
-            statusLabel: capturedEssenceCount > 0 ? '叛徒已夺取 Essence' : 'Essence 仍在英雄手上',
-            progressPercent: clampBetrayalNumberTrackProgress(capturedEssenceCount, 0, totalEssenceCount),
-            source: 'haunt-contract',
-            representativeOnly: true,
-        });
-    }
-    return tracks;
-}
-
-const BETRAYAL_HERO_PUBLIC_HAUNT_STEPS: BetrayalHauntRevealPublicStep[] = [
-    { id: 'heroes-intro', side: 'heroes', kind: 'intro' },
-    { id: 'heroes-setup', side: 'heroes', kind: 'setup' },
-];
-
-const BETRAYAL_TRAITOR_PUBLIC_HAUNT_STEPS: BetrayalHauntRevealPublicStep[] = [
-    { id: 'traitor-intro', side: 'traitor', kind: 'intro' },
-    { id: 'traitor-setup', side: 'traitor', kind: 'setup' },
-];
-
-const CRIMSON_JACK_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
-    { id: 'assign-revealer-traitor', side: 'all', status: 'resolved' },
-    { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
-    { id: 'heal-and-boost-traitor', side: 'traitor', status: 'resolved' },
-    { id: 'monster-card-left-of-traitor', side: 'all', status: 'manual-check' },
-    { id: 'prepare-jack-spirit-tokens', side: 'all', status: 'manual-check' },
-    { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
-];
-
-const MUMMY_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
-    { id: 'assign-revealer-traitor', side: 'all', status: 'resolved' },
-    { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
-    { id: 'place-mummy-and-sarcophagus', side: 'all', status: 'resolved' },
-    { id: 'place-girl-token', side: 'all', status: 'resolved' },
-    { id: 'prepare-mummy-knowledge-tokens', side: 'heroes', status: 'manual-check' },
-    { id: 'monster-card-left-of-traitor', side: 'all', status: 'manual-check' },
-    { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
-];
-
-const DUST_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
-    { id: 'announce-hidden-traitor', side: 'all', status: 'resolved' },
-    { id: 'deal-secret-sickness-tokens', side: 'all', status: 'resolved' },
-    { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
-    { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
-    { id: 'prepare-research-tokens', side: 'all', status: 'manual-check' },
-];
-
-const HELPING_HANDS_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
-    { id: 'recover-strange-amulet', side: 'all', status: 'resolved' },
-    { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
-    { id: 'place-troll-hands', side: 'all', status: 'resolved' },
-    { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
-];
-
-const UPON_REFLECTION_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
-    { id: 'announce-no-traitor', side: 'all', status: 'resolved' },
-    { id: 'mirror-revealer-falls-silent', side: 'all', status: 'manual-check' },
-    { id: 'deal-secret-mirror-combination', side: 'all', status: 'manual-check' },
-    { id: 'place-mirror-beings', side: 'all', status: 'resolved' },
-    { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
-    { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
-];
-
-const MAGIC_CAMERA_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
-    { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
-    { id: 'place-phantom-photographers', side: 'traitor', status: 'resolved' },
-    { id: 'recover-magic-camera', side: 'traitor', status: 'resolved' },
-    { id: 'deal-hero-essence-tokens', side: 'heroes', status: 'resolved' },
-    { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
-];
-
-function createBloodFromStoneHauntSetupQueue(core: BetrayalCore): BetrayalHauntSetupQueueEntry[] {
-    const plan = resolveBloodFromStoneSetupPlacementPlan(core);
-    return [
-        { id: 'announce-no-traitor', side: 'all', status: 'resolved' },
-        { id: 'place-stone-cherubs-on-explorers', side: 'all', status: 'resolved' },
-        {
-            id: 'place-additional-stone-cherubs',
-            side: 'all',
-            status: plan.pendingPlayerChoiceCount > 0 ? 'manual-check' : 'resolved',
-        },
-        { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
-        { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
-    ];
-}
-
-function cloneHauntSetupQueue(queue: BetrayalHauntSetupQueueEntry[]): BetrayalHauntSetupQueueEntry[] {
-    return queue.map((entry) => ({ ...entry }));
-}
-
-function resolveHauntSetupQueueWithEntryStatus(
-    core: BetrayalCore,
-    entryId: BetrayalHauntSetupQueueEntryId,
-    status: BetrayalHauntSetupQueueEntryStatus,
-): BetrayalHauntSetupQueueEntry[] {
-    const existingQueue = core.scenarioRuntime.hauntSetupQueue.length > 0
-        ? core.scenarioRuntime.hauntSetupQueue
-        : resolveBetrayalHauntSetupQueue(core);
-    return existingQueue.map((entry) => (
-        entry.id === entryId ? { ...entry, status } : { ...entry }
-    ));
-}
-
-export function resolveBetrayalHauntSetupQueue(core: BetrayalCore): BetrayalHauntSetupQueueEntry[] {
-    if (core.phase !== 'haunt' || !core.scenarioRuntime.hauntTriggered) {
-        return [];
-    }
-    const existingQueue = core.scenarioRuntime.hauntSetupQueue ?? [];
-    if (existingQueue.length > 0) {
-        return cloneHauntSetupQueue(existingQueue);
-    }
-    switch (core.scenarioRuntime.hauntCardNumber) {
-        case 1:
-            return cloneHauntSetupQueue(
-                core.scenarioRuntime.hauntScenarioCardId === 'mummy-rampage'
-                    ? MUMMY_HAUNT_SETUP_QUEUE
-                    : CRIMSON_JACK_HAUNT_SETUP_QUEUE,
-            );
-        case 3:
-            return cloneHauntSetupQueue(DUST_HAUNT_SETUP_QUEUE);
-        case 5:
-            return cloneHauntSetupQueue(createBloodFromStoneHauntSetupQueue(core));
-        case 7:
-            return cloneHauntSetupQueue(UPON_REFLECTION_HAUNT_SETUP_QUEUE);
-        case 12:
-            return cloneHauntSetupQueue(HELPING_HANDS_HAUNT_SETUP_QUEUE);
-        case 33:
-            return cloneHauntSetupQueue(MAGIC_CAMERA_HAUNT_SETUP_QUEUE);
-        default:
-            return [];
-    }
-}
-
-export function resolveBetrayalHauntSetupProgress(core: BetrayalCore): BetrayalHauntSetupProgressSummary {
-    const active = core.phase === 'haunt' && core.scenarioRuntime.hauntTriggered;
-    const entries = active ? resolveBetrayalHauntSetupQueue(core) : [];
-    const resolvedEntries = entries.filter((entry) => entry.status === 'resolved');
-    const manualCheckEntries = entries.filter((entry) => entry.status === 'manual-check');
-    return {
-        active,
-        hauntCardNumber: active ? core.scenarioRuntime.hauntCardNumber : null,
-        status: !active
-            ? 'inactive'
-            : manualCheckEntries.length > 0
-                ? 'manual-check-required'
-                : 'resolved',
-        entries,
-        totalCount: entries.length,
-        resolvedCount: resolvedEntries.length,
-        manualCheckCount: manualCheckEntries.length,
-        manualCheckEntryIds: manualCheckEntries.map((entry) => entry.id),
-        needsFormalConfirmationCommand: active && manualCheckEntries.length > 0,
-        representativeOnly: active && (
-            core.scenarioRuntime.hauntResolutionRepresentativeOnly
-            || ![1, 3, 5, 7, 12, 33].includes(core.scenarioRuntime.hauntCardNumber ?? -1)
-        ),
-        ruleNotes: active
-            ? [
-                'setup 进度读模型只汇总当前队列状态，不执行 setup。',
-                'manual-check 表示仍缺正式确认命令、UI 承接或逐作祟自动放置实现。',
-            ]
-            : ['作祟尚未开始，没有 setup 队列。'],
-    };
-}
-
-function uniqueBetrayalStrings(values: Array<string | null | undefined>): string[] {
-    return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
-}
-
-function formatBetrayalPlayerTargetLabel(core: BetrayalCore, playerId: string): string {
-    const explorer = findExplorerByPlayerId(core, playerId);
-    return explorer ? `${explorer.displayName}（玩家${playerId}）` : `玩家${playerId}`;
-}
-
-function formatBetrayalRoomTargetLabel(core: BetrayalCore, roomId: string): string {
-    const room = core.rooms.find((candidate) => candidate.id === roomId);
-    return room ? `${room.name}（${roomId}）` : roomId;
-}
-
-function formatBetrayalMonsterTargetLabel(core: BetrayalCore, monsterId: string): string {
-    const monster = core.monsters.find((candidate) => candidate.id === monsterId);
-    return monster ? `${monster.name}（${monsterId}）` : monsterId;
-}
-
-function createBetrayalHauntSetupCommandPreview(
-    core: BetrayalCore,
-    entry: BetrayalHauntSetupQueueEntry,
-): BetrayalHauntSetupCommandPreview {
-    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
-    const revealerPlayerId = core.scenarioRuntime.hauntRevealerPlayerId;
-    const firstPlayerId = core.scenarioRuntime.nextHauntPlayerId
-        ?? core.scenarioRuntime.hauntFirstPlayerResolution?.nextPlayerId
-        ?? null;
-    const hasFormalSetupConfirmation =
-        core.scenarioRuntime.hauntCardNumber === 3
-        && (
-            entry.id === 'monster-card-left-of-revealer'
-            || entry.id === 'prepare-research-tokens'
-        );
-    const baseGaps: BetrayalHauntSetupCommandPreviewGap[] =
-        hasFormalSetupConfirmation ? [] : ['formal-command', 'ui-confirmation'];
-    let action: BetrayalHauntSetupCommandPreviewAction = 'confirm-state';
-    let label = entry.id;
-    let targetPlayerIds: string[] = [];
-    let targetRoomIds: string[] = [];
-    let targetCardIds: string[] = [];
-    let targetMonsterIds: string[] = [];
-    let targetLabels: string[] = [];
-    let evidence: string[] = [];
-    let extraGaps: BetrayalHauntSetupCommandPreviewGap[] = [];
-
-    switch (entry.id) {
-        case 'assign-revealer-traitor':
-            action = 'assign-traitor';
-            label = '确认作祟揭秘者成为叛徒';
-            targetPlayerIds = uniqueBetrayalStrings([traitorPlayerId ?? revealerPlayerId]);
-            evidence = traitorPlayerId
-                ? [`${formatBetrayalPlayerTargetLabel(core, traitorPlayerId)}已写入叛徒状态。`]
-                : ['当前没有公开叛徒玩家。'];
-            break;
-        case 'traitor-remains-in-game':
-            action = 'confirm-state';
-            label = '确认叛徒仍留在游戏中';
-            targetPlayerIds = uniqueBetrayalStrings([traitorPlayerId]);
-            evidence = traitorPlayerId
-                ? [`${formatBetrayalPlayerTargetLabel(core, traitorPlayerId)}仍是存活探索者。`]
-                : ['当前作祟没有公开叛徒。'];
-            break;
-        case 'heal-and-boost-traitor':
-            action = 'confirm-state';
-            label = '确认叛徒治疗和强化已应用';
-            targetPlayerIds = uniqueBetrayalStrings([traitorPlayerId]);
-            evidence = traitorPlayerId
-                ? [`${formatBetrayalPlayerTargetLabel(core, traitorPlayerId)}的作祟强化由当前属性轨状态承接。`]
-                : ['没有可确认的公开叛徒强化目标。'];
-            break;
-        case 'announce-no-traitor':
-            action = 'confirm-state';
-            label = '公开确认本作祟没有叛徒';
-            evidence = ['顽石之血是合作作祟，当前运行态没有叛徒玩家。'];
-            break;
-        case 'place-stone-cherubs-on-explorers': {
-            action = 'place-monster-tokens';
-            label = '每名探索者所在房间各放 1 个石像小天使';
-            const plan = resolveBloodFromStoneSetupPlacementPlan(core);
-            targetPlayerIds = plan.explorerPlacements
-                .map((placement) => placement.playerId)
-                .filter((playerId): playerId is string => Boolean(playerId));
-            targetRoomIds = plan.explorerPlacements.map((placement) => placement.roomId);
-            targetMonsterIds = plan.explorerPlacements.map((placement) => placement.monsterId);
-            evidence = plan.explorerPlacements.length > 0
-                ? [`已按探索者位置放置 ${plan.explorerPlacements.length} 个石像小天使。`]
-                : ['尚未能从当前探索者位置派生石像小天使放置。'];
-            extraGaps = ['token-placement-command'];
-            break;
-        }
-        case 'place-additional-stone-cherubs': {
-            action = 'place-monster-tokens';
-            label = '额外石像小天使优先放在英雄视线外';
-            const plan = resolveBloodFromStoneSetupPlacementPlan(core);
-            targetRoomIds = plan.automaticExtraPlacements.map((placement) => placement.roomId);
-            targetMonsterIds = plan.automaticExtraPlacements.map((placement) => placement.monsterId);
-            evidence = [
-                `按玩家数需要额外 ${plan.additionalStoneCherubCount} 个石像小天使。`,
-                plan.automaticExtraPlacements.length > 0
-                    ? `已自动放到视线外房间：${targetRoomIds.map((roomId) => formatBetrayalRoomTargetLabel(core, roomId)).join('、')}。`
-                    : '当前没有足够的视线外房间可自动放置。',
-                plan.pendingPlayerChoiceCount > 0
-                    ? `还剩 ${plan.pendingPlayerChoiceCount} 个必须由玩家在屋内合法房间中选择放置。`
-                    : '额外石像小天使均已满足视线外优先放置。',
-            ];
-            extraGaps = plan.pendingPlayerChoiceCount > 0
-                ? ['token-placement-command', 'room-selection']
-                : ['token-placement-command'];
-            break;
-        }
-        case 'place-mummy-and-sarcophagus': {
-            action = 'place-monster-tokens';
-            label = '放置木乃伊和石棺';
-            const mummy = core.scenarioRuntime.mummy;
-            if (mummy) {
-                targetRoomIds = [mummy.sarcophagusRoomId];
-                targetMonsterIds = [mummy.mummyMonsterId];
-                evidence = [
-                    `木乃伊和石棺已放在${formatBetrayalRoomTargetLabel(core, mummy.sarcophagusRoomId)}。`,
-                ];
-            } else {
-                evidence = ['木乃伊 setup 状态尚未写入。'];
-            }
-            extraGaps = ['token-placement-command'];
-            break;
-        }
-        case 'place-girl-token': {
-            action = 'place-monster-tokens';
-            label = '放置女孩标记';
-            const mummy = core.scenarioRuntime.mummy;
-            targetRoomIds = uniqueBetrayalStrings([mummy?.girlRoomId]);
-            evidence = mummy?.girlRoomId
-                ? [`女孩标记已放在${formatBetrayalRoomTargetLabel(core, mummy.girlRoomId)}。`]
-                : ['当前没有可放置女孩标记的已发现房间，需人工确认。'];
-            extraGaps = ['token-placement-command', 'room-selection'];
-            break;
-        }
-        case 'prepare-mummy-knowledge-tokens':
-            action = 'prepare-token-pool';
-            label = '准备 2 枚知识标记';
-            evidence = [
-                `当前英雄已取得 ${core.scenarioRuntime.mummy?.knowledgeTokenCount ?? 0}/2 枚知识标记。`,
-            ];
-            extraGaps = ['token-placement-command'];
-            break;
-        case 'prepare-jack-spirit-tokens':
-            action = 'prepare-token-pool';
-            label = '准备杰克之灵和驱魔相关 token';
-            targetRoomIds = [...core.scenarioRuntime.exorcismCircleRoomIds];
-            evidence = targetRoomIds.length > 0
-                ? [`已放置驱魔圈：${targetRoomIds.map((roomId) => formatBetrayalRoomTargetLabel(core, roomId)).join('、')}。`]
-                : ['驱魔圈和杰克之灵 token 仍需 setup 确认。'];
-            extraGaps = ['token-placement-command', 'room-selection'];
-            break;
-        case 'monster-card-left-of-traitor':
-            action = 'confirm-reference-placement';
-            label = '把怪物参考卡放在叛徒左侧';
-            targetPlayerIds = uniqueBetrayalStrings([traitorPlayerId]);
-            evidence = targetPlayerIds.length > 0
-                ? [`参考卡锚点：${targetPlayerIds.map((playerId) => formatBetrayalPlayerTargetLabel(core, playerId)).join('、')}。`]
-                : ['没有可用于摆放怪物参考卡的公开叛徒锚点。'];
-            extraGaps = ['reference-card-ui'];
-            break;
-        case 'monster-card-left-of-revealer':
-            action = 'confirm-reference-placement';
-            label = '把怪物参考卡放在作祟揭秘者左侧';
-            targetPlayerIds = uniqueBetrayalStrings([revealerPlayerId]);
-            evidence = targetPlayerIds.length > 0
-                ? [`参考卡锚点：${targetPlayerIds.map((playerId) => formatBetrayalPlayerTargetLabel(core, playerId)).join('、')}。`]
-                : ['没有可用于摆放怪物参考卡的揭秘者锚点。'];
-            extraGaps = ['reference-card-ui'];
-            break;
-        case 'first-player-left-of-traitor':
-            action = 'assign-first-player';
-            label = '确认叛徒左侧玩家先行动';
-            targetPlayerIds = uniqueBetrayalStrings([firstPlayerId]);
-            evidence = firstPlayerId
-                ? [`作祟首玩家已解析为${formatBetrayalPlayerTargetLabel(core, firstPlayerId)}。`]
-                : ['作祟首玩家仍未写入运行态。'];
-            break;
-        case 'first-player-left-of-revealer':
-            action = 'assign-first-player';
-            label = '确认作祟揭秘者左侧玩家先行动';
-            targetPlayerIds = uniqueBetrayalStrings([firstPlayerId]);
-            evidence = firstPlayerId
-                ? [`作祟首玩家已解析为${formatBetrayalPlayerTargetLabel(core, firstPlayerId)}。`]
-                : ['作祟首玩家仍未写入运行态。'];
-            break;
-        case 'announce-hidden-traitor':
-            action = 'announce-hidden-role';
-            label = '公开说明本局存在隐藏叛徒';
-            evidence = ['隐藏叛徒身份不进公开叛徒书入口，只保留各自秘密信息边界。'];
-            extraGaps = ['secret-visibility'];
-            break;
-        case 'deal-secret-sickness-tokens': {
-            action = 'deal-secret-tokens';
-            label = '秘密分发疾病 token';
-            const sicknessByPlayerId = core.scenarioRuntime.dust?.sicknessTokensByPlayerId ?? {};
-            targetPlayerIds = core.playerIds.filter((playerId) => (sicknessByPlayerId[playerId]?.length ?? 0) > 0);
-            evidence = targetPlayerIds.length > 0
-                ? [`已给 ${targetPlayerIds.length} 名玩家各自分发隐藏疾病 token。`]
-                : ['疾病 token 尚未分发到玩家。'];
-            extraGaps = ['secret-visibility'];
-            break;
-        }
-        case 'prepare-research-tokens': {
-            action = 'prepare-token-pool';
-            label = '准备研究 token 池';
-            targetRoomIds = [...(core.scenarioRuntime.dust?.researchRoomIds ?? [])];
-            evidence = targetRoomIds.length > 0
-                ? [`已放置研究 token：${targetRoomIds.map((roomId) => formatBetrayalRoomTargetLabel(core, roomId)).join('、')}。`]
-                : ['研究 token 池仍需 setup 确认，后续由寻找解药行动放置到对应房间。'];
-            extraGaps = ['token-placement-command', 'room-selection'];
-            break;
-        }
-        case 'mirror-revealer-falls-silent':
-            action = 'confirm-state';
-            label = '确认作祟揭秘者倒伏并保持镜中沉默';
-            targetPlayerIds = uniqueBetrayalStrings([revealerPlayerId]);
-            evidence = revealerPlayerId
-                ? [`作祟揭秘者：${formatBetrayalPlayerTargetLabel(core, revealerPlayerId)}。`]
-                : ['作祟揭秘者仍未写入运行态。'];
-            extraGaps = ['communication-limitation', 'ui-confirmation'];
-            break;
-        case 'deal-secret-mirror-combination':
-            action = 'deal-secret-tokens';
-            label = '秘密记录 Trait / Omen / Room 组合';
-            targetPlayerIds = uniqueBetrayalStrings([revealerPlayerId]);
-            if (core.scenarioRuntime.uponReflection?.secretCombination) {
-                evidence = ['秘密组合已写入作祟揭秘者私密状态。'];
-                extraGaps = ['secret-visibility'];
-            } else {
-                evidence = ['正确属性、预兆和房间组合仍需私密状态与可见性接入。'];
-                extraGaps = ['secret-visibility', 'full-haunt-definition'];
-            }
-            break;
-        case 'place-mirror-beings': {
-            action = 'place-monster-tokens';
-            label = '在入口大厅放置镜中怪物';
-            targetMonsterIds = core.monsters
-                .filter((monster) => monster.definitionId === 'upon-reflection-mirror-being')
-                .map((monster) => monster.id);
-            targetRoomIds = uniqueBetrayalStrings(targetMonsterIds.map((monsterId) => (
-                core.monsters.find((monster) => monster.id === monsterId)?.roomId
-            )));
-            evidence = targetMonsterIds.length > 0
-                ? [`已放置镜中怪物：${targetMonsterIds.map((monsterId) => formatBetrayalMonsterTargetLabel(core, monsterId)).join('、')}。`]
-                : ['镜中怪物尚未放置。'];
-            extraGaps = ['token-placement-command'];
-            break;
-        }
-        case 'recover-strange-amulet': {
-            action = 'recover-card';
-            label = '找出奇异护符并交给持有人';
-            const amuletHolder = findStrangeAmuletHolder(core);
-            targetPlayerIds = uniqueBetrayalStrings([amuletHolder?.playerId]);
-            targetCardIds = [HELPING_HANDS_STRANGE_AMULET_CARD_ID];
-            evidence = [
-                amuletHolder
-                    ? `奇异护符当前由${formatBetrayalPlayerTargetLabel(core, amuletHolder.playerId)}持有。`
-                    : '奇异护符当前没有持有人。',
-                core.scenarioRuntime.helpingHands?.strangeAmuletFoundDuringSetup
-                    ? '奇异护符是在 setup 中从物品牌堆找出。'
-                    : '奇异护符已在玩家持有区，setup 不应从牌堆重复拿取。',
-            ];
-            break;
-        }
-        case 'place-troll-hands': {
-            action = 'place-monster-tokens';
-            label = '放置两只巨魔手';
-            targetMonsterIds = [...(core.scenarioRuntime.helpingHands?.trollHandIds ?? [])];
-            targetRoomIds = uniqueBetrayalStrings(targetMonsterIds.map((monsterId) => (
-                core.monsters.find((monster) => monster.id === monsterId)?.roomId
-            )));
-            evidence = targetMonsterIds.length > 0
-                ? [`已放置巨魔手：${targetMonsterIds.map((monsterId) => formatBetrayalMonsterTargetLabel(core, monsterId)).join('、')}。`]
-                : ['巨魔手尚未放置。'];
-            extraGaps = ['token-placement-command'];
-            break;
-        }
-        case 'place-phantom-photographers': {
-            action = 'place-monster-tokens';
-            label = '放置幻影摄影师';
-            targetMonsterIds = [...(core.scenarioRuntime.magicCamera?.phantomPhotographerIds ?? [])];
-            targetRoomIds = uniqueBetrayalStrings(targetMonsterIds.map((monsterId) => (
-                core.monsters.find((monster) => monster.id === monsterId)?.roomId
-            )));
-            evidence = targetMonsterIds.length > 0
-                ? [`已放置幻影摄影师：${targetMonsterIds.map((monsterId) => formatBetrayalMonsterTargetLabel(core, monsterId)).join('、')}。`]
-                : ['幻影摄影师尚未放置。'];
-            extraGaps = ['token-placement-command'];
-            break;
-        }
-        case 'recover-magic-camera': {
-            action = 'recover-card';
-            label = '找出魔法相机并交给叛徒';
-            const cameraHolderPlayerId = core.scenarioRuntime.magicCamera?.cameraHolderPlayerId
-                ?? findMagicCameraHolderPlayerId(core);
-            targetPlayerIds = uniqueBetrayalStrings([cameraHolderPlayerId]);
-            targetCardIds = ['camera'];
-            evidence = cameraHolderPlayerId
-                ? [`魔法相机当前由${formatBetrayalPlayerTargetLabel(core, cameraHolderPlayerId)}持有。`]
-                : ['魔法相机当前没有持有人，需要人工确认。'];
-            break;
-        }
-        case 'deal-hero-essence-tokens':
-            action = 'deal-secret-tokens';
-            label = '给每名英雄分发 Essence token';
-            targetPlayerIds = [...(core.scenarioRuntime.magicCamera?.heroEssencePlayerIds ?? [])];
-            evidence = targetPlayerIds.length > 0
-                ? [`已给 ${targetPlayerIds.length} 名英雄分发 Essence token。`]
-                : ['英雄 Essence token 尚未分发。'];
-            break;
-        default:
-            extraGaps = ['full-haunt-definition'];
-            evidence = ['该 setup 步骤还没有逐作祟命令预览合同。'];
-            break;
-    }
-
-    targetLabels = uniqueBetrayalStrings([
-        ...targetLabels,
-        ...targetPlayerIds.map((playerId) => formatBetrayalPlayerTargetLabel(core, playerId)),
-        ...targetRoomIds.map((roomId) => formatBetrayalRoomTargetLabel(core, roomId)),
-        ...targetCardIds,
-        ...targetMonsterIds.map((monsterId) => formatBetrayalMonsterTargetLabel(core, monsterId)),
-    ]);
-
-    return {
-        entryId: entry.id,
-        side: entry.side,
-        queueStatus: entry.status,
-        action,
-        label,
-        targetPlayerIds,
-        targetRoomIds,
-        targetCardIds,
-        targetMonsterIds,
-        targetLabels,
-        alreadyApplied: entry.status === 'resolved',
-        canConfirmFromCurrentState: entry.status === 'resolved',
-        requiresManualConfirmation: entry.status === 'manual-check',
-        evidence,
-        contractGaps: uniqueBetrayalStrings([
-            ...baseGaps,
-            ...extraGaps,
-        ]) as BetrayalHauntSetupCommandPreviewGap[],
-        previewOnly: true,
-    };
-}
-
-export function resolveBetrayalHauntSetupCommandPreviews(
-    core: BetrayalCore,
-): BetrayalHauntSetupCommandPreviewSummary {
-    const active = core.phase === 'haunt' && core.scenarioRuntime.hauntTriggered;
-    const entries = active ? resolveBetrayalHauntSetupQueue(core) : [];
-    const previews = entries.map((entry) => createBetrayalHauntSetupCommandPreview(core, entry));
-    const manualCheckEntryIds = previews
-        .filter((preview) => preview.requiresManualConfirmation)
-        .map((preview) => preview.entryId);
-    const status: BetrayalHauntSetupCommandPreviewStatus = !active
-        ? 'inactive'
-        : previews.length === 0
-            ? 'unknown-haunt'
-            : manualCheckEntryIds.length > 0
-                ? 'manual-check-required'
-                : 'ready';
-    return {
-        active,
-        hauntCardNumber: active ? core.scenarioRuntime.hauntCardNumber : null,
-        status,
-        previews,
-        readyCount: previews.filter((preview) => preview.canConfirmFromCurrentState).length,
-        manualCheckCount: manualCheckEntryIds.length,
-        manualCheckEntryIds,
-        needsFormalConfirmationCommand: active && previews.length > 0,
-        representativeOnly: active && (
-            core.scenarioRuntime.hauntResolutionRepresentativeOnly
-            || ![1, 3, 5, 7, 12, 33].includes(core.scenarioRuntime.hauntCardNumber ?? -1)
-        ),
-        ruleNotes: active
-            ? [
-                'setup 命令预览只列出后续正式命令应确认或写入的对象，不直接修改状态。',
-                'resolved 只表示当前运行态已有证据，仍需要正式确认命令和 UI 承接才能关闭 setup。',
-                'manual-check 表示仍缺 token 放置、参考卡摆放、房间选择或秘密可见性等人工步骤。',
-            ]
-            : ['作祟尚未开始，没有 setup 命令预览。'],
-    };
-}
-
-function resolveBetrayalHauntType(core: BetrayalCore): BetrayalHauntType {
-    if (!core.scenarioRuntime.hauntTriggered || core.phase !== 'haunt') {
-        return 'one-traitor';
-    }
-    if (core.scenarioRuntime.hauntTraitorResolution) {
-        return core.scenarioRuntime.hauntTraitorResolution.teamModel;
-    }
-    return core.scenarioRuntime.traitorPlayerId ? 'one-traitor' : 'hidden-traitor';
-}
-
-export function resolveBetrayalHauntRevealProtocol(core: BetrayalCore): BetrayalHauntRevealProtocol {
-    const active = core.phase === 'haunt' && core.scenarioRuntime.hauntTriggered;
-    const hauntType = resolveBetrayalHauntType(core);
-    const hasTraitorBook = active && hauntType === 'one-traitor';
-    return {
-        active,
-        hauntCardNumber: core.scenarioRuntime.hauntCardNumber,
-        hauntType,
-        publicSteps: active
-            ? [
-                ...BETRAYAL_HERO_PUBLIC_HAUNT_STEPS,
-                ...(hasTraitorBook ? BETRAYAL_TRAITOR_PUBLIC_HAUNT_STEPS : []),
-            ]
-            : [],
-        setupQueue: active ? resolveBetrayalHauntSetupQueue(core) : [],
-        secretBoundary: {
-            heroBookVisibleTo: hauntType === 'one-traitor' ? 'heroes' : 'all',
-            traitorBookVisibleTo: hasTraitorBook ? 'traitor' : 'none',
-            revealOnUse: true,
-        },
-    };
-}
-
-function normalizeBetrayalReferenceViewerSide(
-    side: BetrayalExplorerSide,
-): BetrayalReferenceCardAccessSummary['viewerSide'] {
-    if (side?.startsWith('free-for-all:')) {
-        return 'free-for-all';
-    }
-    return side;
-}
-
-function canViewerOpenBetrayalReferenceCard(
-    visibleTo: BetrayalReferenceCardVisibility,
-    viewerSide: BetrayalReferenceCardAccessSummary['viewerSide'],
-): boolean {
-    switch (visibleTo) {
-        case 'all':
-            return true;
-        case 'heroes':
-            return viewerSide === 'hero';
-        case 'traitor':
-            return viewerSide === 'traitor';
-        case 'none':
-        default:
-            return false;
-    }
-}
-
-function createBetrayalReferenceCardAccessSummary(
-    input: Omit<BetrayalReferenceCardAccessSummary, 'viewerCanOpen'>,
-): BetrayalReferenceCardAccessSummary {
-    return {
-        ...input,
-        viewerCanOpen: input.active
-            && canViewerOpenBetrayalReferenceCard(input.visibleTo, input.viewerSide),
-    };
-}
-
-export function resolveBetrayalReferenceCardAccess(
-    core: BetrayalCore,
-    viewerPlayerId: string | null = core.currentPlayer,
-): BetrayalReferenceCardAccessSummary[] {
-    const protocol = resolveBetrayalHauntRevealProtocol(core);
-    const viewerSide = viewerPlayerId
-        ? normalizeBetrayalReferenceViewerSide(resolveExplorerSide(core, viewerPlayerId))
-        : null;
-    const baseInput = {
-        viewerPlayerId,
-        viewerSide,
-        representativeOnly: false,
-    };
-    const references: BetrayalReferenceCardAccessSummary[] = [
-        createBetrayalReferenceCardAccessSummary({
-            ...baseInput,
-            id: 'player-reference-front',
-            kind: 'base-reference',
-            label: '玩家参考卡正面',
-            active: true,
-            visibleTo: 'all',
-            source: 'base-rule',
-            reason: null,
-        }),
-        createBetrayalReferenceCardAccessSummary({
-            ...baseInput,
-            id: 'player-reference-back',
-            kind: 'base-reference',
-            label: '玩家参考卡背面',
-            active: true,
-            visibleTo: 'all',
-            source: 'base-rule',
-            reason: null,
-        }),
-        createBetrayalReferenceCardAccessSummary({
-            ...baseInput,
-            id: 'heroes-book',
-            kind: 'scenario-book',
-            label: '英雄剧本书',
-            active: protocol.active,
-            visibleTo: protocol.active ? protocol.secretBoundary.heroBookVisibleTo : 'none',
-            source: 'haunt-protocol',
-            representativeOnly: protocol.active,
-            reason: protocol.active
-                ? '按作祟揭示协议决定英雄书可见范围。'
-                : '作祟尚未开始，不能打开作祟剧本书。',
-        }),
-        createBetrayalReferenceCardAccessSummary({
-            ...baseInput,
-            id: 'traitor-book',
-            kind: 'scenario-book',
-            label: '叛徒剧本书',
-            active: protocol.active && protocol.secretBoundary.traitorBookVisibleTo !== 'none',
-            visibleTo: protocol.active ? protocol.secretBoundary.traitorBookVisibleTo : 'none',
-            source: 'haunt-protocol',
-            representativeOnly: protocol.active,
-            reason: protocol.active && protocol.secretBoundary.traitorBookVisibleTo !== 'none'
-                ? '按作祟揭示协议决定叛徒书只给叛徒查看。'
-                : '该作祟当前没有公开叛徒书入口，避免泄露隐藏身份或不存在的秘密段落。',
-        }),
-        createBetrayalReferenceCardAccessSummary({
-            ...baseInput,
-            id: 'monster-reference-card',
-            kind: 'monster-reference',
-            label: '怪物参考卡',
-            active: protocol.active && core.monsters.length > 0,
-            visibleTo: protocol.active && core.monsters.length > 0 ? 'all' : 'none',
-            source: 'monster-box',
-            representativeOnly: protocol.active,
-            reason: core.monsters.length > 0
-                ? '当前作祟已有怪物运行态，怪物参考卡可公开查看。'
-                : '当前宅邸还没有怪物运行态。',
-        }),
-    ];
-    return references;
-}
-
 function rollTrait(random: RandomFn, value: number): number {
     let total = 0;
     for (let index = 0; index < normalizeBetrayalDiceCount(value); index += 1) {
@@ -10150,175 +4881,13 @@ function rollTrait(random: RandomFn, value: number): number {
     return total;
 }
 
-function rollDicePips(random: RandomFn, count: number): number[] {
-    return Array.from({ length: normalizeBetrayalDiceCount(count) }, () => rollBetrayalPip(random));
-}
-
-function resolveAttackWeaponEffect(
-    explorer: BetrayalExplorerSummary,
-    weaponCardId: string | undefined,
-): {
-    card: BetrayalInventoryCard;
-    bonus: number;
-    extraDice: number;
-    speedCost: number;
-    attackTrait: BetrayalTraitKey;
-    damageKind: 'physical' | 'mental';
-    rangeKind: AttackWeaponRangeKind;
-    attackerTakesDamageOnFailure: boolean;
-} | null {
-    if (!weaponCardId) {
-        return null;
-    }
-    const card = explorer.inventory.find((item) => item.id === weaponCardId);
-    if (!card) {
-        return null;
-    }
-    const effectId = resolveInventoryEffectId(card.id);
-    const bonus = ATTACK_ROLL_BONUS_WEAPONS_BY_CARD_ID[effectId] ?? 0;
-    const extraDice = ATTACK_EXTRA_DICE_WEAPONS_BY_CARD_ID[effectId] ?? 0;
-    const speedCost = ATTACK_SPEED_COST_WEAPONS_BY_CARD_ID[effectId] ?? 0;
-    const attackTrait = ATTACK_TRAIT_WEAPONS_BY_CARD_ID[effectId] ?? 'might';
-    const damageKind = ATTACK_DAMAGE_KIND_WEAPONS_BY_CARD_ID[effectId] ?? 'physical';
-    const rangeKind = LINE_OF_SIGHT_ATTACK_WEAPON_CARD_IDS.has(effectId)
-        ? 'line-of-sight'
-        : ADJACENT_ROOM_ATTACK_WEAPON_CARD_IDS.has(effectId)
-            ? 'same-or-adjacent-room'
-            : 'same-room';
-    const attackerTakesDamageOnFailure = !NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS.has(effectId);
-    return bonus > 0
-        || extraDice > 0
-        || speedCost > 0
-        || attackTrait !== 'might'
-        || damageKind !== 'physical'
-        || rangeKind !== 'same-room'
-        || !attackerTakesDamageOnFailure
-        ? {
-            card,
-            bonus,
-            extraDice,
-            speedCost,
-            attackTrait,
-            damageKind,
-            rangeKind,
-            attackerTakesDamageOnFailure,
-        }
-        : null;
-}
-
-function isDynamiteCardId(cardId: string | undefined): boolean {
-    return Boolean(cardId && DYNAMITE_ATTACK_WEAPON_CARD_IDS.has(resolveInventoryEffectId(cardId)));
-}
-
-function resolveDynamiteInventoryCard(
-    explorer: BetrayalExplorerSummary,
-    weaponCardId: string | undefined,
-): BetrayalInventoryCard | null {
-    if (!isDynamiteCardId(weaponCardId)) {
-        return null;
-    }
-    return explorer.inventory.find((card) => card.id === weaponCardId && isDynamiteCardId(card.id)) ?? null;
-}
-
-export function resolveAttackWeaponCards(core: BetrayalCore): BetrayalInventoryCard[] {
-    return resolveAttackWeaponCardStatuses(core)
-        .filter((status) => status.canUse)
-        .map((status) => status.card);
-}
-
-export interface BetrayalAttackWeaponCardStatus {
-    card: BetrayalInventoryCard;
-    canUse: boolean;
-    usedThisTurn: boolean;
-    availableAtTurnStart: boolean;
-    reason: string | null;
-}
-
-export function resolveAttackWeaponCardStatuses(core: BetrayalCore): BetrayalAttackWeaponCardStatus[] {
-    return core.currentExplorer.inventory.flatMap((card) => {
-        if (!resolveAttackWeaponEffect(core.currentExplorer, card.id) && !isDynamiteCardId(card.id)) {
-            return [];
-        }
-        const availableAtTurnStart = core.turnStartInventoryCardIds.includes(card.id);
-        const usedThisTurn = core.usedCardIdsThisTurn.includes(card.id);
-        let reason: string | null = null;
-        if (!availableAtTurnStart) {
-            reason = '本回合新获得的武器不能立刻使用。';
-        } else if (usedThisTurn) {
-            reason = '这把武器本回合已经使用。';
-        }
-
-        return [{
-            card,
-            canUse: reason === null,
-            usedThisTurn,
-            availableAtTurnStart,
-            reason,
-        }];
-    });
-}
-
-export function resolveBetrayalAttackTargetPlayerIds(
-    core: BetrayalCore,
-    weaponCardId?: string | null,
-): {
-    traitorPlayerId: string | null;
-    heroPlayerIds: string[];
-} {
-    if (core.phase !== 'haunt') {
-        return { traitorPlayerId: null, heroPlayerIds: [] };
-    }
-    const actor = core.currentExplorer;
-    const isTraitor = core.scenarioRuntime.traitorPlayerId === actor.playerId;
-    const actorRoomId = resolveControlledRoomId(core, actor);
-    const weaponEffect = weaponCardId ? resolveAttackWeaponEffect(actor, weaponCardId) : null;
-    if (weaponCardId && !weaponEffect) {
-        return { traitorPlayerId: null, heroPlayerIds: [] };
-    }
-
-    if (isHelpingHandsHaunt(core)) {
-        return {
-            traitorPlayerId: null,
-            heroPlayerIds: getAllExplorers(core)
-                .filter((explorer) => (
-                    explorer.playerId !== actor.playerId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && isAttackTargetInWeaponRange(core, actorRoomId, explorer.roomId, weaponEffect)
-                ))
-                .map((explorer) => explorer.playerId),
-        };
-    }
-
-    const traitor = core.scenarioRuntime.traitorPlayerId
-        ? findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId)
-        : null;
-    const traitorPlayerId = !isTraitor
-        && traitor
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(traitor.playerId)
-        && isAttackTargetInWeaponRange(core, actorRoomId, traitor.roomId, weaponEffect)
-        ? traitor.playerId
-        : null;
-    const heroPlayerIds = isTraitor
-        ? getAllExplorers(core)
-            .filter((explorer) => (
-                explorer.playerId !== actor.playerId
-                && explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-                && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                && isAttackTargetInWeaponRange(core, actorRoomId, explorer.roomId, weaponEffect)
-            ))
-            .map((explorer) => explorer.playerId)
-        : [];
-
-    return { traitorPlayerId, heroPlayerIds };
-}
-
 function rollAttackWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
 ): { total: number; dice: number[]; passiveBonus: number } {
     const trait = weaponEffect?.attackTrait ?? 'might';
-    const dice = rollDicePips(random, explorer.traits[trait] + (weaponEffect?.extraDice ?? 0));
+    const dice = rollBetrayalDicePips(random, explorer.traits[trait] + (weaponEffect?.extraDice ?? 0));
     const passiveBonus = weaponEffect?.bonus ?? 0;
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
@@ -10336,54 +4905,6 @@ function rollAttackDefense(
     const trait = weaponEffect?.attackTrait ?? fallbackTrait;
     const extraDice = resolveDefenseExtraDiceWhenAttacked(explorer);
     return rollTrait(random, explorer.traits[trait] + extraDice);
-}
-
-function resolveDefenseExtraDiceWhenAttacked(explorer: BetrayalExplorerSummary): number {
-    return explorer.inventory.reduce((total, card) => (
-        total + (DEFENSE_EXTRA_DICE_WHEN_ATTACKED_BY_CARD_ID[resolveInventoryEffectId(card.id)] ?? 0)
-    ), 0);
-}
-
-function isAttackTargetInWeaponRange(
-    core: BetrayalCore,
-    actorRoomId: string,
-    targetRoomId: string,
-    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
-): boolean {
-    if (actorRoomId === targetRoomId) {
-        return true;
-    }
-    if (weaponEffect?.rangeKind === 'line-of-sight') {
-        return isBetrayalRoomInLineOfSight(core, actorRoomId, targetRoomId);
-    }
-    if (weaponEffect?.rangeKind === 'same-or-adjacent-room') {
-        return resolveConnectedRoomIds(core.rooms, actorRoomId).has(targetRoomId);
-    }
-    return false;
-}
-
-function isDynamiteTargetRoom(core: BetrayalCore, actorRoomId: string, targetRoomId: string): boolean {
-    return actorRoomId === targetRoomId || resolveConnectedRoomIds(core.rooms, actorRoomId).has(targetRoomId);
-}
-
-function resolveFailedAttackDamage(
-    defenderRoll: number,
-    attackerRoll: number,
-    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
-): number {
-    return weaponEffect?.attackerTakesDamageOnFailure === false
-        ? 0
-        : Math.max(0, defenderRoll - attackerRoll);
-}
-
-function formatAttackRangeLabel(weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>): string {
-    if (weaponEffect?.rangeKind === 'line-of-sight') {
-        return '同板块或视线内';
-    }
-    if (weaponEffect?.rangeKind === 'same-or-adjacent-room') {
-        return '同板块或相邻板块';
-    }
-    return '同板块';
 }
 
 function applyAttackDamage(
@@ -10468,7 +4989,7 @@ function rollTraitCheckWithDice(
     trait: BetrayalTraitKey,
     core?: BetrayalCore,
 ): { total: number; dice: number[]; passiveBonus: number } {
-    const dice = rollDicePips(random, resolveTraitCheckValue(explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
+    const dice = rollBetrayalDicePips(random, resolveTraitCheckValue(explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
     const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
@@ -10505,7 +5026,7 @@ function rollNonCombatTraitCheckWithDice(
             passiveBonus,
         };
     }
-    const dice = rollDicePips(random, resolveNonCombatTraitCheckValue(core, explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
+    const dice = rollBetrayalDicePips(random, resolveNonCombatTraitCheckValue(core, explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
         dice,
@@ -10538,7 +5059,7 @@ function rollEventTraitCheckWithDice(
         : resolveTraitCheckValue(explorer, trait))
         + resolveEventTraitCheckExtraDice(explorer)
         + resolveRoomBlessingExtraDice(core, explorer);
-    const dice = rollDicePips(random, diceCount);
+    const dice = rollBetrayalDicePips(random, diceCount);
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
         dice,
@@ -10582,7 +5103,7 @@ function clearNextNonCombatTraitRollReplacementsForPlayer(
 }
 
 function rollEventFixedDice(random: RandomFn, diceCount: number): { total: number; dice: number[]; passiveBonus: number } {
-    const dice = rollDicePips(random, diceCount);
+    const dice = rollBetrayalDicePips(random, diceCount);
     return {
         total: dice.reduce((sum, pip) => sum + pip, 0),
         dice,
@@ -10595,116 +5116,6 @@ function resolveEventBranch(branches: NonNullable<EventTemplate['roll']>['branch
         .sort((left, right) => right.min - left.min)
         .find((branch) => rollTotal >= branch.min)
         ?? branches[branches.length - 1]!;
-}
-
-function resolveRabbitFootCard(core: BetrayalCore, cardId?: string, playerId = core.currentExplorer.playerId): BetrayalInventoryCard | null {
-    const owner = findExplorerByPlayerId(core, playerId);
-    const cards = owner?.inventory.filter((card) => resolveInventoryEffectId(card.id) === 'rope') ?? [];
-    if (cardId) {
-        return cards.find((card) => card.id === cardId) ?? null;
-    }
-    return cards[0] ?? null;
-}
-
-function resolveRecentRollRerollItemRule(cardId: string): RecentRollRerollItemRule | null {
-    return RECENT_ROLL_REROLL_ITEM_RULES_BY_CARD_ID[resolveInventoryEffectId(cardId)] ?? null;
-}
-
-function resolveRecentRollRerollItemCard(
-    core: BetrayalCore,
-    cardId?: string,
-    playerId = core.currentExplorer.playerId,
-): BetrayalInventoryCard | null {
-    const owner = findExplorerByPlayerId(core, playerId);
-    const cards = owner?.inventory.filter((card) => Boolean(resolveRecentRollRerollItemRule(card.id))) ?? [];
-    if (cardId) {
-        return cards.find((card) => card.id === cardId) ?? null;
-    }
-    return cards[0] ?? null;
-}
-
-function isRecentTraitCheckRoll(recentRoll: BetrayalRecentRollState): boolean {
-    return recentRoll.kind === 'eventTraitCheck'
-        || recentRoll.kind === 'roomEndTurnTraitCheck';
-}
-
-function recentRollAllowsRerollItem(recentRoll: BetrayalRecentRollState, rule: RecentRollRerollItemRule): boolean {
-    if (recentRoll.kind === 'eventRolledDamage') {
-        return false;
-    }
-    if (rule.mode === 'single-die') {
-        return recentRoll.kind !== 'monsterMoveRoll' && recentRoll.kind !== 'hauntRoll';
-    }
-    return isRecentTraitCheckRoll(recentRoll);
-}
-
-export function resolveRecentRollRerollSelectableDieIndices(
-    recentRoll: BetrayalRecentRollState,
-    cardId: string,
-): number[] {
-    const rule = resolveRecentRollRerollItemRule(cardId);
-    if (!rule || !recentRollAllowsRerollItem(recentRoll, rule)) {
-        return [];
-    }
-    if (rule.mode === 'blank-trait-check-dice') {
-        return recentRoll.dice
-            .map((pip, dieIndex) => (pip === 0 ? dieIndex : -1))
-            .filter((dieIndex) => dieIndex >= 0);
-    }
-    return recentRoll.dice.map((_, dieIndex) => dieIndex);
-}
-
-function resolveRecentRollRerollCommandDieIndices(
-    recentRoll: BetrayalRecentRollState,
-    cardId: string,
-    dieIndex = 0,
-): number[] {
-    const rule = resolveRecentRollRerollItemRule(cardId);
-    if (!rule || !recentRollAllowsRerollItem(recentRoll, rule)) {
-        return [];
-    }
-    if (rule.mode === 'single-die') {
-        return Number.isInteger(dieIndex) && dieIndex >= 0 && dieIndex < recentRoll.dice.length
-            ? [dieIndex]
-            : [];
-    }
-    if (rule.mode === 'blank-trait-check-dice') {
-        return recentRoll.dice
-            .map((pip, index) => (pip === 0 ? index : -1))
-            .filter((index) => index >= 0);
-    }
-    return recentRoll.dice.map((_, index) => index);
-}
-
-export function canUseRecentRollRerollItemForRecentRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
-    const card = resolveRecentRollRerollItemCard(core, cardId, playerId);
-    const rule = card ? resolveRecentRollRerollItemRule(card.id) : null;
-    const eventRollStillAwaitingFinalization = isEventRecentRoll(core.recentRoll)
-        ? core.pendingEventRollResolution?.rollId === core.recentRoll.id
-        : true;
-    const receivedThisTurn = core.receivedCardIdsThisTurnByPlayerId[playerId] ?? [];
-    const existedAtRollWindowStart = core.recentRoll?.kind === 'roomEndTurnTraitCheck'
-        || core.recentRoll?.kind === 'deathPrevention'
-        ? !receivedThisTurn.includes(card?.id ?? '')
-        : core.turnStartInventoryCardIds.includes(card?.id ?? '');
-    return Boolean(
-        card
-        && rule
-        && core.recentRoll
-        && recentRollAllowsRerollItem(core.recentRoll, rule)
-        && eventRollStillAwaitingFinalization
-        && core.recentRoll.playerId === playerId
-        && !core.recentRoll.consumedRabbitFootCardIds.includes(card.id)
-        && existedAtRollWindowStart
-        && !receivedThisTurn.includes(card.id)
-        && !core.usedCardIdsThisTurn.includes(card.id)
-        && resolveRecentRollRerollSelectableDieIndices(core.recentRoll, card.id).length > 0,
-    );
-}
-
-export function canUseRabbitFootForRecentRoll(core: BetrayalCore, playerId: string, cardId?: string): boolean {
-    const card = resolveRabbitFootCard(core, cardId, playerId);
-    return card ? canUseRecentRollRerollItemForRecentRoll(core, playerId, card.id) : false;
 }
 
 function resolveToothNecklaceCard(explorer: BetrayalExplorerSummary): BetrayalInventoryCard | null {
@@ -10816,10 +5227,11 @@ function resolveAttackRerollOutcome(
             : { outcome: 'wound', latestLabel: '未压制杰克之灵' };
     }
     const damageToDefender = Math.max(0, nextAttackRoll - attack.defenderRoll);
-    const damageToAttacker = attack.weaponCardId
-        && NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS.has(resolveInventoryEffectId(attack.weaponCardId))
-        ? 0
-        : Math.max(0, attack.defenderRoll - nextAttackRoll);
+    const damageToAttacker = resolveFailedAttackDamageForWeaponCard(
+        attack.defenderRoll,
+        nextAttackRoll,
+        attack.weaponCardId,
+    );
     if (nextAttackRoll === attack.defenderRoll) {
         return { outcome: 'no-damage', latestLabel: '平手无伤害' };
     }
@@ -11160,31 +5572,6 @@ function createBloodFromStoneNewLineOfSightDamageAllocation(
     });
 }
 
-function applyTraitLoss(
-    explorer: BetrayalExplorerSummary,
-    traits: BetrayalTraitKey[],
-    amount: number,
-    options: { allowSkull?: boolean } = {},
-): number {
-    let remaining = Math.max(0, amount);
-    let applied = 0;
-    for (let index = 0; index < traits.length && remaining > 0; index += 1) {
-        const trait = traits[index]!;
-        normalizeExplorerTraitTracks(explorer);
-        const track = explorer.traitTracks[trait];
-        const minPosition = options.allowSkull ? track.skullPosition : track.criticalPosition;
-        const reducible = Math.max(0, track.position - minPosition);
-        if (reducible <= 0) {
-            continue;
-        }
-        const delta = Math.min(reducible, remaining);
-        moveExplorerTraitSteps(explorer, trait, -delta, options);
-        remaining -= delta;
-        applied += delta;
-    }
-    return applied;
-}
-
 function applyPhysicalDamage(
     explorer: BetrayalExplorerSummary,
     amount: number,
@@ -11227,25 +5614,6 @@ function resolveBroochDamageReplacement(
             cardName: card.name,
         }
         : undefined;
-}
-
-function applyGeneralDamage(
-    explorer: BetrayalExplorerSummary,
-    amount: number,
-    selectedTraits: BetrayalTraitKey[],
-    options: { allowSkull?: boolean } = {},
-): number {
-    let remaining = Math.max(0, amount);
-    let applied = 0;
-    for (const trait of selectedTraits) {
-        if (remaining <= 0) {
-            break;
-        }
-        const traitLoss = applyTraitLoss(explorer, [trait], 1, options);
-        remaining -= traitLoss;
-        applied += traitLoss;
-    }
-    return applied;
 }
 
 type EventDamageDeathPreview = {
@@ -11556,7 +5924,7 @@ function applyEventEffect(
         if (!effect.rolls && !random) {
             throw new Error('rolledDamage requires random');
         }
-        const damageRolls = effect.rolls ?? rollDicePips(random!, effect.dice);
+        const damageRolls = effect.rolls ?? rollBetrayalDicePips(random!, effect.dice);
         nextSnapshot.damageRolls.push(...damageRolls);
         const amount = damageRolls.reduce((sum, pip) => sum + pip, 0);
         const deferred = options?.deferRolledDamageAllocation;
@@ -11848,13 +6216,9 @@ function materializeEventEffect(
         if (!materializeRandomResults) {
             return cloneUseEffect(effect);
         }
-        return { ...effect, rolls: rollDicePips(random, effect.dice) };
+        return { ...effect, rolls: rollBetrayalDicePips(random, effect.dice) };
     }
     return { ...effect };
-}
-
-function isAttackWeaponCard(card: BetrayalInventoryCard): boolean {
-    return ATTACK_WEAPON_CARD_IDS.has(resolveInventoryEffectId(card.id));
 }
 
 function applyRoomDiscoveryEffect(core: BetrayalCore, effect: BetrayalRoomDiscoveryEffect | undefined): void {
@@ -12091,647 +6455,6 @@ function countExorcismCirclesInRegion(core: BetrayalCore, roomId: string): numbe
     }).length;
 }
 
-const FIXED_LINK_ROOM_IDS_BY_VISUAL_ID: Partial<Record<BetrayalRoomVisualId, string>> = {
-    secretStaircase: 'hallway',
-};
-
-const FIXED_LINK_TARGET_VISUAL_IDS_BY_VISUAL_ID: Partial<Record<BetrayalRoomVisualId, BetrayalRoomVisualId>> = {
-    graveyard: 'undergroundCavern',
-    undergroundCavern: 'graveyard',
-    gallery: 'ballroom',
-};
-
-function resolveFixedLinkTargetRoomId(rooms: BetrayalRoomNode[], room: BetrayalRoomNode): string | null {
-    const fixedTargetRoomId = FIXED_LINK_ROOM_IDS_BY_VISUAL_ID[room.visualId];
-    if (fixedTargetRoomId) {
-        return fixedTargetRoomId;
-    }
-    const fixedTargetVisualId = FIXED_LINK_TARGET_VISUAL_IDS_BY_VISUAL_ID[room.visualId];
-    if (!fixedTargetVisualId) {
-        return null;
-    }
-    return rooms.find((item) => item.state === 'discovered' && item.visualId === fixedTargetVisualId)?.id ?? null;
-}
-
-function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set<string> {
-    const room = rooms.find((item) => item.id === roomId);
-    if (!room) {
-        return new Set();
-    }
-    const connectedIds = new Set(
-        room.doorways
-            .map((doorway) => doorway.connectsToRoomId)
-            .filter((targetRoomId): targetRoomId is string => Boolean(targetRoomId)),
-    );
-    if (room.state === 'discovered') {
-        const fixedTargetRoomId = resolveFixedLinkTargetRoomId(rooms, room);
-        if (fixedTargetRoomId) {
-            connectedIds.add(fixedTargetRoomId);
-        }
-        if (room.markerTokens?.includes('secretPassage')) {
-            for (const secretPassageRoom of rooms) {
-                if (
-                    secretPassageRoom.id !== room.id
-                    && secretPassageRoom.state === 'discovered'
-                    && secretPassageRoom.markerTokens?.includes('secretPassage')
-                ) {
-                    connectedIds.add(secretPassageRoom.id);
-                }
-            }
-        }
-    }
-    for (const sourceRoom of rooms) {
-        if (sourceRoom.state !== 'discovered') {
-            continue;
-        }
-        const fixedTargetRoomId = resolveFixedLinkTargetRoomId(rooms, sourceRoom);
-        if (fixedTargetRoomId === room.id) {
-            connectedIds.add(sourceRoom.id);
-        }
-    }
-    return connectedIds;
-}
-
-function oppositeEdge(edge: BetrayalRoomEdge): BetrayalRoomEdge {
-    switch (edge) {
-        case 'north':
-            return 'south';
-        case 'east':
-            return 'west';
-        case 'south':
-            return 'north';
-        case 'west':
-        default:
-            return 'east';
-    }
-}
-
-function rotateEdge(edge: BetrayalRoomEdge, turns: 0 | 1 | 2 | 3): BetrayalRoomEdge {
-    const edges: BetrayalRoomEdge[] = ['north', 'east', 'south', 'west'];
-    const index = edges.indexOf(edge);
-    return edges[(index + turns + edges.length) % edges.length]!;
-}
-
-function resolveDoorwayConnectionEdge(fromRoom: BetrayalRoomNode, targetRoomId: string): BetrayalRoomEdge | null {
-    return fromRoom.doorways.find((doorway) => doorway.connectsToRoomId === targetRoomId)?.edge ?? null;
-}
-
-function orientDoorwaysToEntry(
-    templateDoorways: BetrayalRoomEdge[],
-    entryEdge: BetrayalRoomEdge,
-): { doorways: BetrayalRoomDoorway[]; orientationTurns: 0 | 1 | 2 | 3 } {
-    const requiredEdge = oppositeEdge(entryEdge);
-    const baseEdge = templateDoorways[0] ?? requiredEdge;
-    const edges: BetrayalRoomEdge[] = ['north', 'east', 'south', 'west'];
-    const turns = ((edges.indexOf(requiredEdge) - edges.indexOf(baseEdge) + edges.length) % edges.length) as 0 | 1 | 2 | 3;
-    return {
-        doorways: templateDoorways.map((edge) => ({ edge: rotateEdge(edge, turns) })),
-        orientationTurns: turns,
-    };
-}
-
-function isRoomOrientationTurns(value: unknown): value is 0 | 1 | 2 | 3 {
-    return value === 0 || value === 1 || value === 2 || value === 3;
-}
-
-const ROOM_ORIENTATION_TURN_OPTIONS = [0, 1, 2, 3] as const;
-
-function orientDoorwaysByTurns(
-    templateDoorways: BetrayalRoomEdge[],
-    orientationTurns: 0 | 1 | 2 | 3,
-): BetrayalRoomDoorway[] {
-    return templateDoorways.map((edge) => ({ edge: rotateEdge(edge, orientationTurns) }));
-}
-
-function canConnectDoorwaysToEntry(
-    templateDoorways: BetrayalRoomEdge[],
-    entryEdge: BetrayalRoomEdge,
-    orientationTurns: 0 | 1 | 2 | 3,
-): boolean {
-    const requiredEdge = oppositeEdge(entryEdge);
-    return orientDoorwaysByTurns(templateDoorways, orientationTurns).some((doorway) => doorway.edge === requiredEdge);
-}
-
-interface RoomPlacementContext {
-    slot: BetrayalRoomNode;
-    entryRoomId: string | null;
-    entryEdge: BetrayalRoomEdge;
-}
-
-function resolveRoomPlacementContext(core: BetrayalCore, slot: BetrayalRoomNode): RoomPlacementContext {
-    const entryRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    const entryEdge = (
-        entryRoom
-            ? resolveDoorwayConnectionEdge(entryRoom, slot.id)
-            : null
-    ) ?? slot.entryEdge ?? slot.doorways[0]?.edge ?? 'west';
-    return {
-        slot,
-        entryRoomId: entryRoom?.id ?? null,
-        entryEdge,
-    };
-}
-
-function materializeRoomsAfterPlacement(
-    core: BetrayalCore,
-    placement: RoomPlacementContext,
-    roomTemplate: RoomTemplate,
-    orientationTurns: 0 | 1 | 2 | 3,
-): BetrayalRoomNode[] {
-    const placedRoom = cloneRoom(placement.slot);
-    placedRoom.name = roomTemplate.name;
-    placedRoom.hint = roomTemplate.hint;
-    placedRoom.tags = [...roomTemplate.tags];
-    placedRoom.state = 'discovered';
-    placedRoom.discoveryReward = null;
-    placedRoom.visualId = roomTemplate.visualId;
-    placedRoom.backVisualId = placement.slot.backVisualId;
-    placedRoom.discoveryEffect = roomTemplate.discoveryEffect;
-    placedRoom.endTurnEffect = roomTemplate.endTurnEffect;
-    placedRoom.enterEffect = roomTemplate.enterEffect;
-    placedRoom.entryRoomId = placement.entryRoomId ?? core.activeRoomId;
-    placedRoom.entryEdge = placement.entryEdge;
-    placedRoom.orientationTurns = orientationTurns;
-    const connectionEdge = oppositeEdge(placement.entryEdge);
-    let connectedToEntry = false;
-    placedRoom.doorways = orientDoorwaysByTurns(roomTemplate.doorways, orientationTurns).map((doorway) => {
-        if (!connectedToEntry && doorway.edge === connectionEdge) {
-            connectedToEntry = true;
-            return {
-                ...doorway,
-                connectsToRoomId: core.activeRoomId,
-            };
-        }
-        return doorway;
-    });
-    if (!connectedToEntry) {
-        placedRoom.doorways = [
-            ...placedRoom.doorways,
-            {
-                edge: connectionEdge,
-                connectsToRoomId: core.activeRoomId,
-            },
-        ];
-    }
-    placedRoom.connectedRoomIds = Array.from(new Set([
-        ...placedRoom.connectedRoomIds,
-        core.activeRoomId,
-    ]));
-
-    return refreshExplorableRoomSlots([
-        ...core.rooms.filter((room) => room.id !== placement.slot.id).map(cloneRoom),
-        placedRoom,
-    ]);
-}
-
-function placementLeavesFloorOpen(
-    core: BetrayalCore,
-    placement: RoomPlacementContext,
-    roomTemplate: RoomTemplate,
-    orientationTurns: 0 | 1 | 2 | 3,
-): boolean {
-    return materializeRoomsAfterPlacement(core, placement, roomTemplate, orientationTurns)
-        .some((room) => room.state === 'unexplored' && room.floor === placement.slot.floor);
-}
-
-function addOrientationTurns(
-    baseTurns: 0 | 1 | 2 | 3,
-    addedTurns: 0 | 1 | 2 | 3,
-): 0 | 1 | 2 | 3 {
-    return ((baseTurns + addedTurns) % 4) as 0 | 1 | 2 | 3;
-}
-
-function roomTileAdjustmentSelectionsMatch(
-    left: BetrayalRoomTileAdjustmentSelection,
-    right: BetrayalRoomTileAdjustmentSelection,
-): boolean {
-    return left.roomId === right.roomId
-        && left.x === right.x
-        && left.y === right.y
-        && left.entryRoomId === right.entryRoomId
-        && left.entryEdge === right.entryEdge
-        && left.orientationTurns === right.orientationTurns;
-}
-
-function countOpenDoorwaysOnFloor(rooms: BetrayalRoomNode[], floor: BetrayalRoomFloor): number {
-    return rooms.filter((room) => room.state === 'unexplored' && room.floor === floor).length;
-}
-
-function discoveredRoomsOnFloorStayConnected(rooms: BetrayalRoomNode[], floor: BetrayalRoomFloor): boolean {
-    const discoveredRoomIds = rooms
-        .filter((room) => room.state === 'discovered' && room.floor === floor)
-        .map((room) => room.id);
-    if (discoveredRoomIds.length <= 1) {
-        return true;
-    }
-    const remaining = new Set(discoveredRoomIds);
-    const queue = [discoveredRoomIds[0]!];
-    remaining.delete(queue[0]!);
-    while (queue.length > 0) {
-        const roomId = queue.shift()!;
-        for (const connectedRoomId of resolveConnectedRoomIds(rooms, roomId)) {
-            const connectedRoom = rooms.find((room) => room.id === connectedRoomId);
-            if (connectedRoom?.floor === floor && remaining.delete(connectedRoomId)) {
-                queue.push(connectedRoomId);
-            }
-        }
-        for (const sourceRoom of rooms) {
-            if (
-                sourceRoom.floor === floor
-                && sourceRoom.state === 'discovered'
-                && resolveConnectedRoomIds(rooms, sourceRoom.id).has(roomId)
-                && remaining.delete(sourceRoom.id)
-            ) {
-                queue.push(sourceRoom.id);
-            }
-        }
-    }
-    return remaining.size === 0;
-}
-
-function removeRoomConnection(room: BetrayalRoomNode, targetRoomId: string): BetrayalRoomNode {
-    return {
-        ...room,
-        connectedRoomIds: room.connectedRoomIds.filter((roomId) => roomId !== targetRoomId),
-        doorways: room.doorways.map((doorway) => (
-            doorway.connectsToRoomId === targetRoomId
-                ? {
-                    edge: doorway.edge,
-                    leadsToFloor: doorway.leadsToFloor,
-                    note: doorway.note,
-                }
-                : { ...doorway }
-        )),
-    };
-}
-
-function connectRoomToAdjustedTile(
-    room: BetrayalRoomNode,
-    adjustedRoomId: string,
-    edge: BetrayalRoomEdge,
-): BetrayalRoomNode {
-    let connected = false;
-    const doorways = room.doorways.map((doorway) => {
-        if (doorway.edge !== edge) {
-            return { ...doorway };
-        }
-        connected = true;
-        return {
-            ...doorway,
-            connectsToRoomId: adjustedRoomId,
-        };
-    });
-    if (!connected) {
-        doorways.push({
-            edge,
-            connectsToRoomId: adjustedRoomId,
-        });
-    }
-    return {
-        ...room,
-        connectedRoomIds: Array.from(new Set([...room.connectedRoomIds, adjustedRoomId])),
-        doorways,
-    };
-}
-
-function materializeRoomsAfterTileAdjustment(
-    rooms: BetrayalRoomNode[],
-    selection: BetrayalRoomTileAdjustmentSelection,
-): BetrayalRoomNode[] | null {
-    const roomToAdjust = rooms.find((room) => room.id === selection.roomId && room.state === 'discovered');
-    const entryRoom = rooms.find((room) => room.id === selection.entryRoomId && room.state === 'discovered');
-    if (
-        !roomToAdjust
-        || !entryRoom
-        || roomToAdjust.floor !== entryRoom.floor
-        || roomToAdjust.doorways.some((doorway) => doorway.leadsToFloor)
-    ) {
-        return null;
-    }
-
-    const targetVector = ROOM_EDGE_VECTOR[selection.entryEdge];
-    const expectedX = entryRoom.x + targetVector.x;
-    const expectedY = entryRoom.y + targetVector.y;
-    if (selection.x !== expectedX || selection.y !== expectedY) {
-        return null;
-    }
-
-    const discoveredRooms = rooms
-        .filter((room) => room.state === 'discovered')
-        .map(cloneRoom);
-    const remainingRooms = discoveredRooms
-        .filter((room) => room.id !== roomToAdjust.id)
-        .map((room) => removeRoomConnection(room, roomToAdjust.id));
-    const occupiedPosition = remainingRooms.some((room) => (
-        room.floor === roomToAdjust.floor
-        && room.x === selection.x
-        && room.y === selection.y
-    ));
-    if (occupiedPosition) {
-        return null;
-    }
-
-    const adjustedDoorways = orientDoorwaysByTurns(
-        roomToAdjust.doorways.map((doorway) => doorway.edge),
-        selection.orientationTurns,
-    );
-    const connectionEdge = oppositeEdge(selection.entryEdge);
-    let connectedToEntry = false;
-    const adjustedRoom: BetrayalRoomNode = {
-        ...cloneRoom(roomToAdjust),
-        x: selection.x,
-        y: selection.y,
-        entryRoomId: selection.entryRoomId,
-        entryEdge: selection.entryEdge,
-        orientationTurns: addOrientationTurns(roomToAdjust.orientationTurns, selection.orientationTurns),
-        connectedRoomIds: [selection.entryRoomId],
-        doorways: adjustedDoorways.map((doorway) => {
-            if (!connectedToEntry && doorway.edge === connectionEdge) {
-                connectedToEntry = true;
-                return {
-                    ...doorway,
-                    connectsToRoomId: selection.entryRoomId,
-                };
-            }
-            return doorway;
-        }),
-    };
-    if (!connectedToEntry) {
-        return null;
-    }
-
-    const withEntryConnection = remainingRooms.map((room) => (
-        room.id === selection.entryRoomId
-            ? connectRoomToAdjustedTile(room, roomToAdjust.id, selection.entryEdge)
-            : room
-    ));
-
-    return refreshExplorableRoomSlots([...withEntryConnection, adjustedRoom]);
-}
-
-function resolveRoomTileAdjustmentOptionsForPlacement(
-    core: BetrayalCore,
-    roomTemplate: RoomTemplate,
-    placement: RoomPlacementContext,
-    placementOrientationTurns: 0 | 1 | 2 | 3,
-): BetrayalRoomTileAdjustmentOption[] {
-    const discoveredRooms = core.rooms.filter((room) => room.state === 'discovered' && room.floor === placement.slot.floor);
-    const occupiedPositions = new Set(
-        discoveredRooms.map((room) => `${room.floor}:${room.x}:${room.y}`),
-    );
-    const options: BetrayalRoomTileAdjustmentOption[] = [];
-    const seen = new Set<string>();
-
-    for (const roomToAdjust of discoveredRooms) {
-        if (
-            roomToAdjust.id === core.activeRoomId
-            || roomToAdjust.doorways.some((doorway) => doorway.leadsToFloor)
-        ) {
-            continue;
-        }
-        const positionsWithoutAdjustedRoom = new Set(occupiedPositions);
-        positionsWithoutAdjustedRoom.delete(`${roomToAdjust.floor}:${roomToAdjust.x}:${roomToAdjust.y}`);
-        const entryRooms = discoveredRooms.filter((room) => room.id !== roomToAdjust.id);
-        for (const entryRoom of entryRooms) {
-            for (const entryEdge of Object.keys(ROOM_EDGE_VECTOR) as BetrayalRoomEdge[]) {
-                const vector = ROOM_EDGE_VECTOR[entryEdge];
-                const x = entryRoom.x + vector.x;
-                const y = entryRoom.y + vector.y;
-                if (
-                    positionsWithoutAdjustedRoom.has(`${roomToAdjust.floor}:${x}:${y}`)
-                    || (x === placement.slot.x && y === placement.slot.y)
-                ) {
-                    continue;
-                }
-                for (const orientationTurns of ROOM_ORIENTATION_TURN_OPTIONS) {
-                    if (!canConnectDoorwaysToEntry(
-                        roomToAdjust.doorways.map((doorway) => doorway.edge),
-                        entryEdge,
-                        orientationTurns,
-                    )) {
-                        continue;
-                    }
-                    const selection: BetrayalRoomTileAdjustmentSelection = {
-                        roomId: roomToAdjust.id,
-                        x,
-                        y,
-                        entryRoomId: entryRoom.id,
-                        entryEdge,
-                        orientationTurns,
-                    };
-                    const adjustedRooms = materializeRoomsAfterTileAdjustment(core.rooms, selection);
-                    if (!adjustedRooms || !discoveredRoomsOnFloorStayConnected(adjustedRooms, placement.slot.floor)) {
-                        continue;
-                    }
-                    const adjustedCore = { ...core, rooms: adjustedRooms };
-                    const adjustedSlot = adjustedRooms.find((room) => room.id === placement.slot.id && room.state === 'unexplored')
-                        ?? adjustedRooms.find((room) => (
-                            room.state === 'unexplored'
-                            && room.floor === placement.slot.floor
-                            && room.x === placement.slot.x
-                            && room.y === placement.slot.y
-                        ));
-                    if (!adjustedSlot) {
-                        continue;
-                    }
-                    const adjustedPlacement = resolveRoomPlacementContext(adjustedCore, adjustedSlot);
-                    if (!canConnectDoorwaysToEntry(roomTemplate.doorways, adjustedPlacement.entryEdge, placementOrientationTurns)) {
-                        continue;
-                    }
-                    const roomsAfterPlacement = materializeRoomsAfterPlacement(
-                        adjustedCore,
-                        adjustedPlacement,
-                        roomTemplate,
-                        placementOrientationTurns,
-                    );
-                    const openDoorwayCount = countOpenDoorwaysOnFloor(roomsAfterPlacement, placement.slot.floor);
-                    if (openDoorwayCount <= 0) {
-                        continue;
-                    }
-                    const key = `${selection.roomId}:${selection.x}:${selection.y}:${selection.entryRoomId}:${selection.entryEdge}:${selection.orientationTurns}`;
-                    if (seen.has(key)) {
-                        continue;
-                    }
-                    seen.add(key);
-                    options.push({
-                        ...selection,
-                        roomName: roomToAdjust.name,
-                        fromX: roomToAdjust.x,
-                        fromY: roomToAdjust.y,
-                        entryRoomName: entryRoom.name,
-                        openDoorwayCount,
-                    });
-                }
-            }
-        }
-    }
-
-    return options;
-}
-
-function resolveRoomPlacementOrientationOptions(
-    core: BetrayalCore,
-    roomTemplate: RoomTemplate,
-    placement: RoomPlacementContext,
-    requireOpenFrontier: boolean,
-): { orientationTurns: 0 | 1 | 2 | 3; doorways: BetrayalRoomDoorway[] }[] {
-    return ROOM_ORIENTATION_TURN_OPTIONS
-        .filter((orientationTurns) => (
-            canConnectDoorwaysToEntry(roomTemplate.doorways, placement.entryEdge, orientationTurns)
-            && (
-                !requireOpenFrontier
-                || placementLeavesFloorOpen(core, placement, roomTemplate, orientationTurns)
-            )
-        ))
-        .map((orientationTurns) => ({
-            orientationTurns,
-            doorways: orientDoorwaysByTurns(roomTemplate.doorways, orientationTurns),
-        }));
-}
-
-function orientDoorwaysForPlacement(
-    templateDoorways: BetrayalRoomEdge[],
-    entryEdge: BetrayalRoomEdge,
-    requestedOrientationTurns?: 0 | 1 | 2 | 3,
-): { doorways: BetrayalRoomDoorway[]; orientationTurns: 0 | 1 | 2 | 3 } {
-    if (
-        isRoomOrientationTurns(requestedOrientationTurns)
-        && canConnectDoorwaysToEntry(templateDoorways, entryEdge, requestedOrientationTurns)
-    ) {
-        return {
-            doorways: orientDoorwaysByTurns(templateDoorways, requestedOrientationTurns),
-            orientationTurns: requestedOrientationTurns,
-        };
-    }
-    return orientDoorwaysToEntry(templateDoorways, entryEdge);
-}
-
-const ROOM_EDGE_VECTOR: Record<BetrayalRoomEdge, { x: number; y: number }> = {
-    north: { x: 0, y: -1 },
-    east: { x: 1, y: 0 },
-    south: { x: 0, y: 1 },
-    west: { x: -1, y: 0 },
-};
-
-const STARTING_FRONTIER_SLOT_IDS: Record<string, Partial<Record<BetrayalRoomEdge, string>>> = {
-    'upper-landing': {
-        north: 'upper-north',
-        west: 'upper-west',
-    },
-    hallway: {
-        north: 'ground-north',
-        south: 'ground-south',
-    },
-    'entrance-hall': {
-        east: 'ground-east',
-    },
-    'basement-landing': {
-        east: 'basement-east',
-        south: 'basement-south',
-    },
-};
-
-function resolveBackVisualId(floor: BetrayalRoomFloor): Extract<BetrayalRoomVisualId, 'backUpper' | 'backGround' | 'backBasement'> {
-    if (floor === 'upper') {
-        return 'backUpper';
-    }
-    if (floor === 'basement') {
-        return 'backBasement';
-    }
-    return 'backGround';
-}
-
-function createFrontierSlotId(fromRoom: BetrayalRoomNode, edge: BetrayalRoomEdge): string {
-    return STARTING_FRONTIER_SLOT_IDS[fromRoom.id]?.[edge] ?? `frontier-${fromRoom.id}-${edge}`;
-}
-
-function refreshExplorableRoomSlots(rooms: BetrayalRoomNode[]): BetrayalRoomNode[] {
-    const discoveredRooms = rooms
-        .filter((room) => room.state === 'discovered')
-        .map(cloneRoom);
-    const discoveredIds = new Set(discoveredRooms.map((room) => room.id));
-
-    for (const room of discoveredRooms) {
-        room.connectedRoomIds = room.connectedRoomIds.filter((roomId) => discoveredIds.has(roomId));
-        room.doorways = room.doorways.map((doorway) => (
-            doorway.connectsToRoomId && !discoveredIds.has(doorway.connectsToRoomId)
-                ? {
-                    edge: doorway.edge,
-                    leadsToFloor: doorway.leadsToFloor,
-                    note: doorway.note,
-                }
-                : { ...doorway }
-        ));
-    }
-
-    const occupiedPositions = new Set(discoveredRooms.map((room) => `${room.floor}:${room.x}:${room.y}`));
-    const frontierSlots: BetrayalRoomNode[] = [];
-
-    for (const room of discoveredRooms) {
-        for (const doorway of room.doorways) {
-            if (doorway.connectsToRoomId || doorway.leadsToFloor) {
-                continue;
-            }
-            const vector = ROOM_EDGE_VECTOR[doorway.edge];
-            const x = room.x + vector.x;
-            const y = room.y + vector.y;
-            const positionKey = `${room.floor}:${x}:${y}`;
-            if (occupiedPositions.has(positionKey)) {
-                const neighbor = discoveredRooms.find((item) => item.floor === room.floor && item.x === x && item.y === y);
-                const neighborDoorway = neighbor?.doorways.find((item) => item.edge === oppositeEdge(doorway.edge));
-                if (neighbor && neighborDoorway) {
-                    doorway.connectsToRoomId = neighbor.id;
-                    neighborDoorway.connectsToRoomId = room.id;
-                    room.connectedRoomIds = Array.from(new Set([...room.connectedRoomIds, neighbor.id]));
-                    neighbor.connectedRoomIds = Array.from(new Set([...neighbor.connectedRoomIds, room.id]));
-                }
-                continue;
-            }
-
-            const existingSlot = frontierSlots.find((slot) => slot.floor === room.floor && slot.x === x && slot.y === y);
-            if (existingSlot) {
-                doorway.connectsToRoomId = existingSlot.id;
-                room.connectedRoomIds = Array.from(new Set([...room.connectedRoomIds, existingSlot.id]));
-                if (!existingSlot.doorways.some((slotDoorway) => slotDoorway.connectsToRoomId === room.id)) {
-                    existingSlot.doorways = [
-                        ...existingSlot.doorways,
-                        { edge: oppositeEdge(doorway.edge), connectsToRoomId: room.id },
-                    ];
-                    existingSlot.connectedRoomIds = Array.from(new Set([...existingSlot.connectedRoomIds, room.id]));
-                }
-                continue;
-            }
-
-            const backVisualId = resolveBackVisualId(room.floor);
-            const slot: BetrayalRoomNode = {
-                id: createFrontierSlotId(room, doorway.edge),
-                name: '未探索',
-                floor: room.floor,
-                x,
-                y,
-                connectedRoomIds: [room.id],
-                entryRoomId: room.id,
-                entryEdge: doorway.edge,
-                orientationTurns: 0,
-                state: 'unexplored',
-                hint: `等待从${room.name}翻出房间`,
-                tags: ['待翻出'],
-                discoveryReward: null,
-                visualId: backVisualId,
-                doorways: [
-                    { edge: oppositeEdge(doorway.edge), connectsToRoomId: room.id },
-                ],
-                backVisualId,
-            };
-            doorway.connectsToRoomId = slot.id;
-            room.connectedRoomIds = Array.from(new Set([...room.connectedRoomIds, slot.id]));
-            frontierSlots.push(slot);
-            occupiedPositions.add(positionKey);
-        }
-    }
-
-    return [...discoveredRooms, ...frontierSlots];
-}
 
 function createInitialRoomLayout(seeds: BetrayalRoomSeed[]): BetrayalRoomNode[] {
     const discoveredSeedIds = new Set(seeds.filter((room) => room.state === 'discovered').map((room) => room.id));
@@ -12755,10 +6478,6 @@ function createInitialRoomLayout(seeds: BetrayalRoomSeed[]): BetrayalRoomNode[] 
     return refreshExplorableRoomSlots(discoveredRooms);
 }
 
-function roomDistanceByLayout(a: BetrayalRoomNode, b: BetrayalRoomNode): number {
-    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
-
 function resolveJackSpiritSpawnRoomId(core: BetrayalCore, corpseRoomId: string): string {
     const corpseRoom = core.rooms.find((room) => room.id === corpseRoomId);
     const discoveredRooms = core.rooms.filter((room) => room.state === 'discovered');
@@ -12780,175 +6499,6 @@ function resolveJackSpiritSpawnRoomId(core: BetrayalCore, corpseRoomId: string):
     return sortedCandidates[0]?.id ?? corpseRoomId;
 }
 
-function isStraightLineVisible(a: BetrayalRoomNode, b: BetrayalRoomNode, rooms: BetrayalRoomNode[]): boolean {
-    if (a.floor !== b.floor) {
-        return false;
-    }
-    if (a.x !== b.x && a.y !== b.y) {
-        return false;
-    }
-    const candidates = rooms.filter((room) => room.floor === a.floor && room.state === 'discovered');
-    if (a.x === b.x) {
-        const [start, end] = a.y < b.y ? [a.y, b.y] : [b.y, a.y];
-        for (let y = start; y <= end; y += 1) {
-            if (!candidates.some((room) => room.x === a.x && room.y === y)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    const [start, end] = a.x < b.x ? [a.x, b.x] : [b.x, a.x];
-    for (let x = start; x <= end; x += 1) {
-        if (!candidates.some((room) => room.x === x && room.y === a.y)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-export function isBetrayalRoomInLineOfSight(core: BetrayalCore, sourceRoomId: string, targetRoomId: string): boolean {
-    const sourceRoom = core.rooms.find((room) => room.id === sourceRoomId && room.state === 'discovered');
-    const targetRoom = core.rooms.find((room) => room.id === targetRoomId && room.state === 'discovered');
-    return Boolean(sourceRoom && targetRoom && isStraightLineVisible(sourceRoom, targetRoom, core.rooms));
-}
-
-export function resolveBetrayalLineOfSightRoomIds(core: BetrayalCore, sourceRoomId: string): string[] {
-    return core.rooms
-        .filter((room) => room.state === 'discovered' && isBetrayalRoomInLineOfSight(core, sourceRoomId, room.id))
-        .map((room) => room.id);
-}
-
-function rollBetrayalPip(random: RandomFn): number {
-    return Math.max(0, Math.min(2, random.d(3) - 1));
-}
-
-function rollMysticElevatorWithDice(random: RandomFn): { total: number; dice: number[] } {
-    const dice = [rollBetrayalPip(random), rollBetrayalPip(random)];
-    return {
-        total: dice.reduce((sum, pip) => sum + pip, 0),
-        dice,
-    };
-}
-
-function resolveMysticElevatorAllowedFloors(rollTotal: number): BetrayalRoomFloor[] {
-    if (rollTotal >= 4) {
-        return ['upper', 'ground', 'basement'];
-    }
-    if (rollTotal === 3) {
-        return ['upper'];
-    }
-    if (rollTotal === 2) {
-        return ['ground'];
-    }
-    return ['basement'];
-}
-
-export function canUseMysticElevator(core: BetrayalCore): boolean {
-    return resolveBetrayalRoomSpecialActionStatus(core).canUse;
-}
-
-function resolveMysticElevatorDestination(core: BetrayalCore, rollTotal: number): BetrayalRoomNode | null {
-    const allowedFloors = new Set(resolveMysticElevatorAllowedFloors(rollTotal));
-    return core.rooms
-        .filter((room) => room.state === 'unexplored' && allowedFloors.has(room.floor))
-        .sort((left, right) => {
-            const floorDelta = resolveMysticElevatorAllowedFloors(rollTotal).indexOf(left.floor)
-                - resolveMysticElevatorAllowedFloors(rollTotal).indexOf(right.floor);
-            if (floorDelta !== 0) {
-                return floorDelta;
-            }
-            return left.id.localeCompare(right.id);
-        })[0] ?? null;
-}
-
-function resolveMysticElevatorEffect(core: BetrayalCore, random: RandomFn): BetrayalRoomEnterEffectResult | null {
-    const currentRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    if (!currentRoom || currentRoom.enterEffect !== 'mysticElevator') {
-        return null;
-    }
-    const roll = rollMysticElevatorWithDice(random);
-    const destination = resolveMysticElevatorDestination(core, roll.total);
-    if (!destination) {
-        return null;
-    }
-    return {
-        kind: 'mysticElevator',
-        playerId: core.currentExplorer.playerId,
-        roomId: currentRoom.id,
-        roomName: currentRoom.name,
-        rollTotal: roll.total,
-        dice: roll.dice,
-        destinationRoomId: destination.id,
-        destinationRoomName: destination.name,
-        destinationFloor: destination.floor,
-    };
-}
-
-function detachMysticElevator(rooms: BetrayalRoomNode[], elevatorRoomId: string): BetrayalRoomNode[] {
-    return rooms.map((room) => {
-        const nextRoom = cloneRoom(room);
-        if (nextRoom.id === elevatorRoomId) {
-            return nextRoom;
-        }
-        nextRoom.connectedRoomIds = nextRoom.connectedRoomIds.filter((roomId) => roomId !== elevatorRoomId);
-        nextRoom.doorways = nextRoom.doorways.map((doorway) => (
-            doorway.connectsToRoomId === elevatorRoomId
-                ? {
-                    edge: doorway.edge,
-                    leadsToFloor: doorway.leadsToFloor,
-                    note: doorway.note,
-                }
-                : doorway
-        ));
-        return nextRoom;
-    });
-}
-
-function moveMysticElevatorRoom(
-    rooms: BetrayalRoomNode[],
-    effect: BetrayalRoomEnterEffectResult,
-): BetrayalRoomNode[] {
-    const destinationSlot = rooms.find((room) => room.id === effect.destinationRoomId);
-    const elevator = rooms.find((room) => room.id === effect.roomId);
-    if (!destinationSlot || !elevator) {
-        return rooms;
-    }
-    const entryRoomId = destinationSlot.connectedRoomIds[0] ?? destinationSlot.doorways[0]?.connectsToRoomId;
-    const entryRoom = entryRoomId ? rooms.find((room) => room.id === entryRoomId) : null;
-    const entryEdge = entryRoom
-        ? resolveDoorwayConnectionEdge(entryRoom, destinationSlot.id) ?? destinationSlot.entryEdge ?? destinationSlot.doorways[0]?.edge ?? 'west'
-        : destinationSlot.entryEdge ?? destinationSlot.doorways[0]?.edge ?? 'west';
-    const baseEdges = Array.from(new Set(elevator.doorways.map((doorway) => doorway.edge)));
-    const oriented = orientDoorwaysToEntry(baseEdges, entryEdge);
-    const detachedRooms = detachMysticElevator(rooms, elevator.id)
-        .filter((room) => room.id !== destinationSlot.id);
-
-    return refreshExplorableRoomSlots(detachedRooms.map((room) => {
-        if (room.id !== elevator.id) {
-            return room;
-        }
-        return {
-            ...room,
-            floor: destinationSlot.floor,
-            x: destinationSlot.x,
-            y: destinationSlot.y,
-            entryRoomId,
-            entryEdge,
-            orientationTurns: oriented.orientationTurns,
-            doorways: [
-                ...oriented.doorways,
-                ...(entryRoomId
-                    ? [{
-                        edge: oppositeEdge(entryEdge),
-                        connectsToRoomId: entryRoomId,
-                    }]
-                    : []),
-            ],
-            connectedRoomIds: entryRoomId ? [entryRoomId] : [],
-        };
-    }));
-}
-
 function resolveHauntRoll(
     core: BetrayalCore,
     deckKind: BetrayalDeckKind,
@@ -12968,7 +6518,7 @@ function resolveHauntRoll(
             automatic: true,
         };
     }
-    const dice = rollDicePips(random, hauntRisk.nextRollDiceCount);
+    const dice = rollBetrayalDicePips(random, hauntRisk.nextRollDiceCount);
     const total = dice.reduce((sum, pip) => sum + pip, 0);
     return {
         dice,
@@ -12998,559 +6548,6 @@ function resolveHauntRevealResolutionForTrigger(
     });
 }
 
-interface BetrayalHauntTraitorPolicyModel {
-    policy: BetrayalHauntTraitorSelectionPolicy;
-    teamModel: BetrayalHauntType;
-    reasonLabel: string;
-    traitKey?: BetrayalTraitKey;
-    excludeRevealer?: boolean;
-}
-
-function resolveHauntTraitorPolicyModel(
-    hauntCardNumber: number | null,
-    eventSelection?: 'current-explorer' | 'magic-camera-owner',
-): BetrayalHauntTraitorPolicyModel {
-    if (eventSelection === 'magic-camera-owner') {
-        return {
-            policy: 'magic-camera-owner',
-            teamModel: 'one-traitor',
-            reasonLabel: '魔法相机持有者；没有持有者时为作祟揭秘者',
-        };
-    }
-    if (eventSelection === 'current-explorer') {
-        return {
-            policy: 'haunt-revealer',
-            teamModel: 'one-traitor',
-            reasonLabel: '作祟揭秘者',
-        };
-    }
-
-    switch (hauntCardNumber) {
-        case 2:
-        case 3:
-        case 6:
-            return { policy: 'hidden-traitor', teamModel: 'hidden-traitor', reasonLabel: '隐藏叛徒' };
-        case 4:
-        case 5:
-        case 7:
-        case 8:
-            return { policy: 'no-traitor', teamModel: 'no-traitor', reasonLabel: '无叛徒' };
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-            return { policy: 'free-for-all', teamModel: 'free-for-all', reasonLabel: '自由混战' };
-        case 14:
-        case 22:
-        case 25:
-        case 44:
-            return { policy: 'left-of-revealer', teamModel: 'one-traitor', reasonLabel: '作祟揭秘者左侧玩家' };
-        case 20:
-            return { policy: 'oldest-character', teamModel: 'one-traitor', reasonLabel: '年龄最大角色' };
-        case 24:
-            return { policy: 'highest-speed', teamModel: 'one-traitor', reasonLabel: '速度最高', traitKey: 'speed' };
-        case 30:
-            return {
-                policy: 'lowest-sanity-excluding-revealer',
-                teamModel: 'one-traitor',
-                reasonLabel: '最低神志，排除作祟揭秘者',
-                traitKey: 'sanity',
-                excludeRevealer: true,
-            };
-        case 33:
-            return {
-                policy: 'magic-camera-owner',
-                teamModel: 'one-traitor',
-                reasonLabel: '事件指定：魔法相机持有者；没有持有者时为作祟揭秘者',
-            };
-        case 34:
-            return { policy: 'highest-knowledge', teamModel: 'one-traitor', reasonLabel: '最高知识', traitKey: 'knowledge' };
-        case 36:
-            return { policy: 'lowest-sanity', teamModel: 'one-traitor', reasonLabel: '最低神志', traitKey: 'sanity' };
-        case 39:
-            return {
-                policy: 'highest-knowledge-excluding-revealer',
-                teamModel: 'one-traitor',
-                reasonLabel: '最高知识，排除作祟揭秘者',
-                traitKey: 'knowledge',
-                excludeRevealer: true,
-            };
-        case 43:
-            return { policy: 'most-omens', teamModel: 'one-traitor', reasonLabel: '持有预兆最多' };
-        case 48:
-            return { policy: 'highest-might', teamModel: 'one-traitor', reasonLabel: '最高力量', traitKey: 'might' };
-        default:
-            return { policy: 'haunt-revealer', teamModel: 'one-traitor', reasonLabel: '作祟揭秘者' };
-    }
-}
-
-function orderExplorersAfterPlayer(
-    explorers: BetrayalExplorerSummary[],
-    playerId: string,
-): BetrayalExplorerSummary[] {
-    if (explorers.length === 0) {
-        return [];
-    }
-    const currentIndex = explorers.findIndex((explorer) => explorer.playerId === playerId);
-    if (currentIndex < 0) {
-        return [...explorers];
-    }
-    return [
-        ...explorers.slice(currentIndex + 1),
-        ...explorers.slice(0, currentIndex + 1),
-    ];
-}
-
-function chooseExplorerByTrait(
-    explorers: BetrayalExplorerSummary[],
-    traitKey: BetrayalTraitKey,
-    mode: 'highest' | 'lowest',
-): { traitorPlayerId: string | null; candidatePlayerIds: string[] } {
-    if (explorers.length === 0) {
-        return { traitorPlayerId: null, candidatePlayerIds: [] };
-    }
-    const values = explorers.map((explorer) => explorer.traits[traitKey] ?? 0);
-    const targetValue = mode === 'highest'
-        ? Math.max(...values)
-        : Math.min(...values);
-    const candidatePlayerIds = explorers
-        .filter((explorer) => (explorer.traits[traitKey] ?? 0) === targetValue)
-        .map((explorer) => explorer.playerId);
-    return {
-        traitorPlayerId: candidatePlayerIds[0] ?? null,
-        candidatePlayerIds,
-    };
-}
-
-function chooseExplorerWithMostOmens(
-    explorers: BetrayalExplorerSummary[],
-): { traitorPlayerId: string | null; candidatePlayerIds: string[] } {
-    if (explorers.length === 0) {
-        return { traitorPlayerId: null, candidatePlayerIds: [] };
-    }
-    const omenCounts = explorers.map((explorer) => ({
-        playerId: explorer.playerId,
-        count: explorer.inventory.filter((card) => card.kind === 'omen').length,
-    }));
-    const maxCount = Math.max(...omenCounts.map((entry) => entry.count));
-    const candidatePlayerIds = omenCounts
-        .filter((entry) => entry.count === maxCount)
-        .map((entry) => entry.playerId);
-    return {
-        traitorPlayerId: candidatePlayerIds[0] ?? null,
-        candidatePlayerIds,
-    };
-}
-
-function resolveHauntTraitorResolutionForTrigger(
-    core: BetrayalCore,
-    hauntCardNumber: number | null,
-    hauntRevealerPlayerId: string,
-    options: {
-        explicitTraitorPlayerId?: string | null;
-        eventSelection?: 'current-explorer' | 'magic-camera-owner';
-        revealRepresentativeOnly?: boolean;
-    } = {},
-): BetrayalHauntTraitorResolution {
-    const policyModel = resolveHauntTraitorPolicyModel(hauntCardNumber, options.eventSelection);
-    const allExplorers = getExplorersInTurnOrder(core);
-    const orderedAfterRevealer = orderExplorersAfterPlayer(allExplorers, hauntRevealerPlayerId);
-    const allPlayerIds = allExplorers.map((explorer) => explorer.playerId);
-    const excludedPlayerIds = policyModel.excludeRevealer ? [hauntRevealerPlayerId] : [];
-    const eligibleExplorers = orderedAfterRevealer.filter((explorer) => !excludedPlayerIds.includes(explorer.playerId));
-    const representativeOnly = options.revealRepresentativeOnly === true
-        || hauntCardNumber === null
-        || !isImplementedBetrayalHauntCardNumber(hauntCardNumber);
-
-    if (policyModel.teamModel === 'no-traitor') {
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId: null,
-            teamModel: policyModel.teamModel,
-            reasonLabel: policyModel.reasonLabel,
-            candidatePlayerIds: [],
-            excludedPlayerIds,
-            tieBreak: 'none',
-            representativeOnly,
-        };
-    }
-
-    if (policyModel.teamModel === 'hidden-traitor' || policyModel.teamModel === 'free-for-all') {
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId: null,
-            teamModel: policyModel.teamModel,
-            reasonLabel: policyModel.reasonLabel,
-            candidatePlayerIds: policyModel.teamModel === 'hidden-traitor' ? allPlayerIds : [],
-            excludedPlayerIds,
-            tieBreak: 'none',
-            representativeOnly,
-        };
-    }
-
-    if (policyModel.policy === 'magic-camera-owner') {
-        const traitorPlayerId = options.explicitTraitorPlayerId
-            ?? resolveMagicCameraOwnerPlayerId(core)
-            ?? hauntRevealerPlayerId;
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId,
-            teamModel: policyModel.teamModel,
-            reasonLabel: policyModel.reasonLabel,
-            candidatePlayerIds: traitorPlayerId ? [traitorPlayerId] : [],
-            excludedPlayerIds,
-            tieBreak: 'event-card',
-            representativeOnly,
-        };
-    }
-
-    if (policyModel.policy === 'left-of-revealer') {
-        const traitorPlayerId = options.explicitTraitorPlayerId ?? eligibleExplorers[0]?.playerId ?? null;
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId,
-            teamModel: policyModel.teamModel,
-            reasonLabel: policyModel.reasonLabel,
-            candidatePlayerIds: traitorPlayerId ? [traitorPlayerId] : [],
-            excludedPlayerIds,
-            tieBreak: 'left-of-revealer',
-            representativeOnly,
-        };
-    }
-
-    if (policyModel.policy === 'oldest-character') {
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId: options.explicitTraitorPlayerId ?? null,
-            teamModel: policyModel.teamModel,
-            reasonLabel: `${policyModel.reasonLabel}（角色年龄数据待接入）`,
-            candidatePlayerIds: allPlayerIds,
-            excludedPlayerIds,
-            tieBreak: 'source-contract-pending',
-            representativeOnly: true,
-        };
-    }
-
-    if (policyModel.policy === 'most-omens') {
-        const choice = chooseExplorerWithMostOmens(eligibleExplorers);
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId: options.explicitTraitorPlayerId ?? choice.traitorPlayerId,
-            teamModel: policyModel.teamModel,
-            reasonLabel: policyModel.reasonLabel,
-            candidatePlayerIds: choice.candidatePlayerIds,
-            excludedPlayerIds,
-            tieBreak: 'turn-order-after-revealer',
-            representativeOnly,
-        };
-    }
-
-    if (policyModel.traitKey) {
-        const mode = policyModel.policy.startsWith('lowest') ? 'lowest' : 'highest';
-        const choice = chooseExplorerByTrait(eligibleExplorers, policyModel.traitKey, mode);
-        return {
-            hauntCardNumber,
-            policy: policyModel.policy,
-            traitorPlayerId: options.explicitTraitorPlayerId ?? choice.traitorPlayerId,
-            teamModel: policyModel.teamModel,
-            reasonLabel: policyModel.reasonLabel,
-            candidatePlayerIds: choice.candidatePlayerIds,
-            excludedPlayerIds,
-            tieBreak: 'turn-order-after-revealer',
-            representativeOnly,
-        };
-    }
-
-    return {
-        hauntCardNumber,
-        policy: policyModel.policy,
-        traitorPlayerId: options.explicitTraitorPlayerId ?? hauntRevealerPlayerId,
-        teamModel: policyModel.teamModel,
-        reasonLabel: policyModel.reasonLabel,
-        candidatePlayerIds: [hauntRevealerPlayerId],
-        excludedPlayerIds,
-        tieBreak: 'none',
-        representativeOnly,
-    };
-}
-
-export function resolveBetrayalTraitorVolunteerInteraction(
-    core: BetrayalCore,
-): BetrayalTraitorVolunteerInteraction {
-    const resolution = core.scenarioRuntime.hauntTraitorResolution;
-    const designatedTraitorPlayerId = resolution?.traitorPlayerId ?? core.scenarioRuntime.traitorPlayerId ?? null;
-    const triggerCardId = core.scenarioRuntime.triggeringOmenId ?? null;
-    const triggerCardHolderPlayerId = triggerCardId
-        ? getAllExplorers(core)
-            .find((explorer) => explorer.inventory.some((card) => card.id === triggerCardId))
-            ?.playerId ?? null
-        : null;
-    const base = {
-        designatedTraitorPlayerId,
-        triggerCardHolderPlayerId,
-        triggerCardId,
-        requiresPositionSwap: false,
-        requiresTriggerCardTransfer: false,
-    };
-
-    if (core.phase !== 'haunt') {
-        return {
-            ...base,
-            active: false,
-            volunteerCandidatePlayerIds: [],
-            reason: '作祟开始后才需要处理叛徒替代。',
-        };
-    }
-    if (!resolution) {
-        return {
-            ...base,
-            active: false,
-            volunteerCandidatePlayerIds: [],
-            reason: '当前还没有叛徒判定结果。',
-        };
-    }
-    if (resolution.teamModel !== 'one-traitor') {
-        return {
-            ...base,
-            active: false,
-            volunteerCandidatePlayerIds: [],
-            reason: '只有一名公开叛徒的作祟才使用自愿替代叛徒流程。',
-        };
-    }
-    if (!designatedTraitorPlayerId) {
-        return {
-            ...base,
-            active: false,
-            volunteerCandidatePlayerIds: [],
-            reason: '当前没有可替代的指定叛徒。',
-        };
-    }
-
-    const volunteerCandidatePlayerIds = getAllExplorers(core)
-        .filter((explorer) => explorer.playerId !== designatedTraitorPlayerId)
-        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
-        .map((explorer) => explorer.playerId);
-    return {
-        active: volunteerCandidatePlayerIds.length > 0,
-        designatedTraitorPlayerId,
-        volunteerCandidatePlayerIds,
-        triggerCardHolderPlayerId,
-        triggerCardId,
-        requiresPositionSwap: true,
-        requiresTriggerCardTransfer: Boolean(triggerCardId),
-        reason: volunteerCandidatePlayerIds.length > 0
-            ? null
-            : '没有其他存活探索者可以自愿替代叛徒。',
-    };
-}
-
-export function resolveBetrayalTraitorVolunteerResolutionPreview(
-    core: BetrayalCore,
-    input: BetrayalTraitorVolunteerResolutionInput,
-): BetrayalTraitorVolunteerResolutionPreview {
-    const interaction = resolveBetrayalTraitorVolunteerInteraction(core);
-    const designatedTraitorPlayerId = interaction.designatedTraitorPlayerId;
-    const basePositionSwap: BetrayalTraitorVolunteerPositionSwapPreview = {
-        required: false,
-        designatedTraitorPlayerId,
-        volunteerPlayerId: input.volunteerPlayerId ?? null,
-        fromRoomByPlayerId: {},
-        toRoomByPlayerId: {},
-    };
-    const baseTriggerCardTransfer: BetrayalTraitorVolunteerTriggerCardTransferPreview = {
-        required: false,
-        cardId: interaction.triggerCardId,
-        fromPlayerId: interaction.triggerCardHolderPlayerId,
-        toPlayerId: null,
-        holderAlreadyCorrect: false,
-    };
-    const base = {
-        decision: input.decision,
-        designatedTraitorPlayerId,
-        volunteerPlayerId: input.volunteerPlayerId ?? null,
-        resultingTraitorPlayerId: designatedTraitorPlayerId,
-        roleChanges: [],
-        positionSwap: basePositionSwap,
-        triggerCardTransfer: baseTriggerCardTransfer,
-        requiresTraitorBoostReconciliation: false,
-        requiresFirstPlayerReconciliation: false,
-        requiresHauntSetupReconciliation: false,
-        contractGaps: ['formal-command', 'reveal-ui'] as BetrayalTraitorVolunteerResolutionContractGap[],
-        previewOnly: true as const,
-    };
-    const applicable = core.phase === 'haunt'
-        && core.scenarioRuntime.hauntTraitorResolution?.teamModel === 'one-traitor'
-        && Boolean(designatedTraitorPlayerId);
-
-    if (!applicable) {
-        return {
-            ...base,
-            active: false,
-            canResolve: false,
-            status: 'not-applicable',
-            reason: interaction.reason ?? '当前作祟不使用自愿替代叛徒流程。',
-        };
-    }
-
-    if (input.decision === 'designated-accepts' || input.decision === 'no-volunteer') {
-        return {
-            ...base,
-            active: true,
-            canResolve: true,
-            status: 'ready',
-            reason: null,
-        };
-    }
-
-    if (!input.volunteerPlayerId) {
-        return {
-            ...base,
-            active: true,
-            canResolve: false,
-            status: 'missing-volunteer',
-            reason: '需要先选择一名自愿替代叛徒的探索者。',
-        };
-    }
-
-    if (!interaction.volunteerCandidatePlayerIds.includes(input.volunteerPlayerId)) {
-        return {
-            ...base,
-            active: true,
-            canResolve: false,
-            status: 'invalid-volunteer',
-            reason: '该玩家不在可自愿替代叛徒列表。',
-        };
-    }
-
-    const designatedTraitor = findExplorerByPlayerId(core, designatedTraitorPlayerId!);
-    const volunteer = findExplorerByPlayerId(core, input.volunteerPlayerId);
-    if (!designatedTraitor || !volunteer) {
-        return {
-            ...base,
-            active: true,
-            canResolve: false,
-            status: 'invalid-volunteer',
-            reason: '当前宅邸中找不到指定叛徒或自愿者。',
-        };
-    }
-
-    const firstPlayerResolution = core.scenarioRuntime.hauntFirstPlayerResolution;
-    const triggerCardTransferRequired = Boolean(
-        interaction.triggerCardId
-        && interaction.triggerCardHolderPlayerId !== input.volunteerPlayerId,
-    );
-
-    return {
-        ...base,
-        active: true,
-        canResolve: true,
-        status: 'ready',
-        volunteerPlayerId: input.volunteerPlayerId,
-        resultingTraitorPlayerId: input.volunteerPlayerId,
-        roleChanges: [
-            {
-                playerId: designatedTraitorPlayerId!,
-                fromSide: 'traitor',
-                toSide: 'hero',
-            },
-            {
-                playerId: input.volunteerPlayerId,
-                fromSide: 'hero',
-                toSide: 'traitor',
-            },
-        ],
-        positionSwap: {
-            required: true,
-            designatedTraitorPlayerId,
-            volunteerPlayerId: input.volunteerPlayerId,
-            fromRoomByPlayerId: {
-                [designatedTraitorPlayerId!]: designatedTraitor.roomId,
-                [input.volunteerPlayerId]: volunteer.roomId,
-            },
-            toRoomByPlayerId: {
-                [designatedTraitorPlayerId!]: volunteer.roomId,
-                [input.volunteerPlayerId]: designatedTraitor.roomId,
-            },
-        },
-        triggerCardTransfer: {
-            required: triggerCardTransferRequired,
-            cardId: interaction.triggerCardId,
-            fromPlayerId: interaction.triggerCardHolderPlayerId,
-            toPlayerId: input.volunteerPlayerId,
-            holderAlreadyCorrect: interaction.triggerCardHolderPlayerId === input.volunteerPlayerId,
-        },
-        requiresTraitorBoostReconciliation: true,
-        requiresFirstPlayerReconciliation: firstPlayerResolution?.policy === 'left-of-traitor',
-        requiresHauntSetupReconciliation: true,
-        contractGaps: [
-            'formal-command',
-            'reveal-ui',
-            'traitor-boost-reconciliation',
-            ...(firstPlayerResolution?.policy === 'left-of-traitor'
-                ? ['first-player-reconciliation' as const]
-                : []),
-            'haunt-setup-reconciliation',
-        ],
-        reason: null,
-    };
-}
-
-interface BetrayalHauntFirstPlayerPolicyModel {
-    policy: BetrayalHauntFirstPlayerPolicy;
-    reasonLabel: string;
-}
-
-function resolveHauntFirstPlayerPolicyModel(
-    hauntCardNumber: number | null,
-): BetrayalHauntFirstPlayerPolicyModel {
-    switch (hauntCardNumber) {
-        case 1:
-        case 33:
-            return { policy: 'left-of-traitor', reasonLabel: '叛徒左侧玩家先行动' };
-        case 3:
-        case 5:
-        case 7:
-        case 12:
-            return { policy: 'left-of-revealer', reasonLabel: '作祟揭秘者左侧玩家先行动' };
-        default:
-            return { policy: 'source-contract-pending', reasonLabel: '作祟首玩家合同待接入' };
-    }
-}
-
-function resolveHauntFirstPlayerResolutionForTrigger(
-    core: BetrayalCore,
-    hauntCardNumber: number | null,
-    hauntRevealerPlayerId: string,
-    hauntTraitorResolution: BetrayalHauntTraitorResolution,
-    options: { revealRepresentativeOnly?: boolean } = {},
-): BetrayalHauntFirstPlayerResolution {
-    const policyModel = resolveHauntFirstPlayerPolicyModel(hauntCardNumber);
-    const representativeOnly = options.revealRepresentativeOnly === true
-        || hauntCardNumber === null
-        || !isImplementedBetrayalHauntCardNumber(hauntCardNumber);
-    const anchorPlayerId = policyModel.policy === 'left-of-traitor'
-        ? hauntTraitorResolution.traitorPlayerId ?? hauntRevealerPlayerId
-        : hauntRevealerPlayerId;
-    const nextPlayerId = policyModel.policy === 'current-player'
-        ? anchorPlayerId
-        : rotateToNextLivingPlayer(core, anchorPlayerId);
-
-    return {
-        hauntCardNumber,
-        policy: policyModel.policy,
-        anchorPlayerId,
-        nextPlayerId,
-        reasonLabel: policyModel.reasonLabel,
-        representativeOnly,
-    };
-}
-
 function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: number; label: string; effect: UseEffectProfile }[] {
     return [
         {
@@ -13566,1123 +6563,12 @@ function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: nu
     ];
 }
 
-export function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
-    const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    if (!activeRoom) {
-        return [];
-    }
-    if (
-        shouldDeadTraitorControlJackSpirit(core, core.currentExplorer.playerId)
-        || shouldDeadPlayerControlFeverish(core, core.currentExplorer.playerId)
-    ) {
-        return core.rooms.filter((room) => (
-            room.state === 'discovered'
-            && room.id !== activeRoom.id
-            && roomDistanceByLayout(room, activeRoom) === 1
-        ));
-    }
-    const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
-    return core.rooms.filter((room) => room.state === 'discovered' && connectedIds.has(room.id));
-}
-
-function resolveMoveCostFromRoom(room: BetrayalRoomNode | undefined): number {
-    return room?.markerTokens?.includes('obstacle') ? 2 : 1;
-}
-
-function isHauntRuntimeStarted(core: BetrayalCore): boolean {
-    return core.phase === 'haunt'
-        || core.scenarioRuntime.hauntTriggered
-        || core.scenarioRuntime.hauntCardNumber !== null;
-}
-
-type BetrayalExplorerSide = 'traitor' | 'hero' | `free-for-all:${string}` | null;
-export type BetrayalEntityRelation = EntityRelation;
-export type BetrayalEntitySideId = EntitySideId;
-
-export type BetrayalEntityRef =
-    | { kind: 'explorer'; playerId: string }
-    | { kind: 'monster'; monsterId: string }
-    | { kind: 'side'; sideId: BetrayalEntitySideId | null | undefined };
-
-function resolveExplorerSide(core: BetrayalCore, playerId: string): BetrayalExplorerSide {
-    const teamModel = core.scenarioRuntime.hauntTraitorResolution?.teamModel;
-    if (teamModel === 'free-for-all') {
-        return `free-for-all:${playerId}`;
-    }
-    if (teamModel === 'no-traitor') {
-        return 'hero';
-    }
-    const dustTraitors = core.scenarioRuntime.dust?.permanentTraitorPlayerIds ?? [];
-    if (dustTraitors.length > 0) {
-        return dustTraitors.includes(playerId) ? 'traitor' : 'hero';
-    }
-    if (!core.scenarioRuntime.traitorPlayerId) {
-        return null;
-    }
-    return core.scenarioRuntime.traitorPlayerId === playerId ? 'traitor' : 'hero';
-}
-
-function toBetrayalEntitySideId(side: BetrayalExplorerSide): BetrayalEntitySideId | null {
-    if (side === 'hero') {
-        return 'heroes';
-    }
-    return side;
-}
-
-export function resolveBetrayalExplorerSideId(
-    core: BetrayalCore,
-    playerId: string,
-): BetrayalEntitySideId | null {
-    return toBetrayalEntitySideId(resolveExplorerSide(core, playerId));
-}
-
-export function resolveBetrayalMonsterSideId(
-    core: BetrayalCore,
-    monsterId: string,
-): BetrayalEntitySideId | null {
-    if (!isHauntRuntimeStarted(core)) {
-        return null;
-    }
-    const monster = core.monsters.find((item) => item.id === monsterId);
-    if (!monster) {
-        return null;
-    }
-    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
-    if (traitorPlayerId && resolveExplorerSide(core, traitorPlayerId) === 'traitor') {
-        return 'traitor';
-    }
-    return 'monsters';
-}
-
-export function resolveBetrayalEntitySideId(
-    core: BetrayalCore,
-    entity: BetrayalEntityRef,
-): BetrayalEntitySideId | null {
-    switch (entity.kind) {
-        case 'explorer':
-            return resolveBetrayalExplorerSideId(core, entity.playerId);
-        case 'monster':
-            return resolveBetrayalMonsterSideId(core, entity.monsterId);
-        case 'side':
-            return entity.sideId ?? null;
-        default:
-            return null;
-    }
-}
-
-function getBetrayalEntityId(entity: BetrayalEntityRef): string | null {
-    switch (entity.kind) {
-        case 'explorer':
-            return `explorer:${entity.playerId}`;
-        case 'monster':
-            return `monster:${entity.monsterId}`;
-        case 'side':
-            return entity.sideId ? `side:${entity.sideId}` : null;
-        default:
-            return null;
-    }
-}
-
-export function resolveBetrayalEntityRelation(
-    core: BetrayalCore,
-    actor: BetrayalEntityRef,
-    target: BetrayalEntityRef,
-): BetrayalEntityRelation {
-    return resolveEntityRelation({
-        actorEntityId: getBetrayalEntityId(actor),
-        actorSideId: resolveBetrayalEntitySideId(core, actor),
-        targetEntityId: getBetrayalEntityId(target),
-        targetSideId: resolveBetrayalEntitySideId(core, target),
-        defaultRelation: 'enemy',
-    });
-}
-
-export function resolveBetrayalMonsterRelationToExplorer(
-    core: BetrayalCore,
-    monsterId: string,
-    explorerPlayerId: string,
-): BetrayalEntityRelation {
-    return resolveBetrayalEntityRelation(
-        core,
-        { kind: 'monster', monsterId },
-        { kind: 'explorer', playerId: explorerPlayerId },
-    );
-}
-
-function hasEnemyExplorerObstacle(core: BetrayalCore, roomId: string, playerId: string): boolean {
-    if (!isHauntRuntimeStarted(core)) {
-        return false;
-    }
-    const actorSide = resolveExplorerSide(core, playerId);
-    if (!actorSide) {
-        return false;
-    }
-    return getAllExplorers(core).some((explorer) => (
-        explorer.playerId !== playerId
-        && explorer.roomId === roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        && resolveExplorerSide(core, explorer.playerId) !== actorSide
-    ));
-}
-
-function hasMonsterObstacle(core: BetrayalCore, roomId: string, playerId: string): boolean {
-    if (!isHauntRuntimeStarted(core) || core.monsters.length === 0) {
-        return false;
-    }
-    return resolveExplorerSide(core, playerId) === 'hero'
-        && core.monsters.some((monster) => monster.roomId === roomId);
-}
-
-export function resolveBetrayalMoveCost(core: BetrayalCore, playerId = core.currentExplorer.playerId): number {
-    const actor = getAllExplorers(core).find((explorer) => explorer.playerId === playerId) ?? core.currentExplorer;
-    const actorRoom = core.rooms.find((room) => room.id === actor.roomId);
-    const baseCost = resolveMoveCostFromRoom(actorRoom);
-    if (
-        actorRoom
-        && (
-            hasEnemyExplorerObstacle(core, actorRoom.id, playerId)
-            || hasMonsterObstacle(core, actorRoom.id, playerId)
-        )
-    ) {
-        return Math.max(baseCost, 2);
-    }
-    return baseCost;
-}
-
-function resolveMoveCost(core: BetrayalCore): number {
-    return resolveBetrayalMoveCost(core);
-}
-
-export function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomNode | null {
-    if (core.phase !== 'preHaunt' && core.phase !== 'haunt') {
-        return null;
-    }
-    const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    if (!activeRoom) {
-        return null;
-    }
-    const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
-    return core.rooms.find((room) => room.state === 'unexplored' && connectedIds.has(room.id)) ?? null;
-}
-
-export function resolveExplorableRoomSlots(core: BetrayalCore): BetrayalRoomNode[] {
-    if (core.phase !== 'preHaunt' && core.phase !== 'haunt') {
-        return [];
-    }
-    const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
-    if (!activeRoom) {
-        return [];
-    }
-    const connectedIds = resolveConnectedRoomIds(core.rooms, activeRoom.id);
-    return core.rooms.filter((room) => room.state === 'unexplored' && connectedIds.has(room.id));
-}
-
-export function resolveRoomTileAdjustmentOptions(
-    core: BetrayalCore,
-    options: { roomId?: string; orientationTurns?: 0 | 1 | 2 | 3; useHolySymbol?: boolean } = {},
-): BetrayalRoomTileAdjustmentOption[] {
-    const explorableSlots = resolveExplorableRoomSlots(core);
-    const slot = options.roomId
-        ? explorableSlots.find((room) => room.id === options.roomId) ?? null
-        : explorableSlots[0] ?? null;
-    if (!slot) {
-        return [];
-    }
-    const placement = resolveRoomPlacementContext(core, slot);
-    const roomDraw = resolveRoomDraw(core, slot.floor, {
-        useHolySymbol: options.useHolySymbol && canUseHolySymbolForDiscovery(core),
-        placement,
-    });
-    if (!roomDraw.roomTemplate || !roomDraw.resolution.requiresTileAdjustment) {
-        return [];
-    }
-    const defaultPlacement = orientDoorwaysToEntry(roomDraw.roomTemplate.doorways, placement.entryEdge);
-    const orientationTurns = options.orientationTurns ?? defaultPlacement.orientationTurns;
-    if (!isRoomOrientationTurns(orientationTurns)) {
-        return [];
-    }
-    return resolveRoomTileAdjustmentOptionsForPlacement(
-        core,
-        roomDraw.roomTemplate,
-        placement,
-        orientationTurns,
-    );
-}
-
-export function resolveRoomPlacementPreview(
-    core: BetrayalCore,
-    options: { roomId?: string; useHolySymbol?: boolean } = {},
-): BetrayalRoomPlacementPreview | null {
-    const explorableSlots = resolveExplorableRoomSlots(core);
-    const slot = options.roomId
-        ? explorableSlots.find((room) => room.id === options.roomId) ?? null
-        : explorableSlots[0] ?? null;
-    if (!slot) {
-        return null;
-    }
-    const placement = resolveRoomPlacementContext(core, slot);
-    const roomDraw = resolveRoomDraw(core, slot.floor, {
-        useHolySymbol: options.useHolySymbol && canUseHolySymbolForDiscovery(core),
-        placement,
-    });
-    const skippedRoomTemplate = roomDraw.skippedRoomTemplate;
-    const roomTemplate = roomDraw.roomTemplate;
-    if (!roomTemplate) {
-        return null;
-    }
-    const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
-    const defaultPlacement = orientDoorwaysToEntry(roomTemplate.doorways, placement.entryEdge);
-    const orientationOptions = resolveRoomPlacementOrientationOptions(
-        core,
-        roomTemplate,
-        placement,
-        roomDraw.selectedRoomRequiresOpenFrontier,
-    );
-    const defaultOrientationTurns = orientationOptions.some((option) => option.orientationTurns === defaultPlacement.orientationTurns)
-        ? defaultPlacement.orientationTurns
-        : orientationOptions[0]?.orientationTurns ?? defaultPlacement.orientationTurns;
-    const defaultDoorways = orientationOptions.find((option) => option.orientationTurns === defaultOrientationTurns)?.doorways
-        ?? defaultPlacement.doorways;
-    const tileAdjustmentOptions = roomDraw.resolution.requiresTileAdjustment
-        ? resolveRoomTileAdjustmentOptionsForPlacement(core, roomTemplate, placement, defaultOrientationTurns)
-        : [];
-
-    return {
-        slotId: slot.id,
-        floor: slot.floor,
-        entryRoomId: placement.entryRoomId,
-        entryEdge: placement.entryEdge,
-        deckKind,
-        skippedRoomName: skippedRoomTemplate?.name,
-        buriedRoomNames: roomDraw.resolution.buriedRoomTiles.map((room) => room.name),
-        room: {
-            name: roomTemplate.name,
-            hint: roomTemplate.hint,
-            tags: roomTemplate.tags,
-            discoveryReward: deckKind,
-            visualId: roomTemplate.visualId,
-            doorways: defaultDoorways,
-            backVisualId: slot.backVisualId,
-            orientationTurns: defaultOrientationTurns,
-            discoveryEffect: roomTemplate.discoveryEffect,
-            endTurnEffect: roomTemplate.endTurnEffect,
-            enterEffect: roomTemplate.enterEffect,
-        },
-        orientationOptions,
-        defaultOrientationTurns,
-        requiresTileAdjustment: roomDraw.resolution.requiresTileAdjustment,
-        tileAdjustmentOptions,
-    };
-}
-
-export function resolveTradeTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return core.otherExplorers.filter((explorer) => (
-        explorer.roomId === core.activeRoomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-}
-
-export function canUseDogForTrade(core: BetrayalCore): boolean {
-    const dog = core.currentExplorer.inventory.find((card) => resolveInventoryEffectId(card.id) === 'dog');
-    return Boolean(
-        dog
-        && core.turnStartInventoryCardIds.some((cardId) => resolveInventoryEffectId(cardId) === 'dog')
-        && !core.usedCardIdsThisTurn.includes(dog.id),
-    );
-}
-
-function resolveDogTradeSourceCardId(core: BetrayalCore): string | null {
-    return core.currentExplorer.inventory.find((card) => resolveInventoryEffectId(card.id) === 'dog')?.id ?? null;
-}
-
-export function resolveDogTradeTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
-    if (!canUseDogForTrade(core)) {
-        return [];
-    }
-    const sourceRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
-    if (!sourceRoom) {
-        return [];
-    }
-    return core.otherExplorers.filter((explorer) => {
-        if (core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)) {
-            return false;
-        }
-        const targetRoom = core.rooms.find((room) => room.id === explorer.roomId);
-        return Boolean(targetRoom && roomDistanceByLayout(sourceRoom, targetRoom) <= 4);
-    });
-}
-
-export interface BetrayalTradeCardStatus {
-    sourceKind: 'trade';
-    cardId: string;
-    cardName: string;
-    ownerPlayerId: string;
-    ownerRole: 'requester' | 'target';
-    exists: boolean;
-    canTrade: boolean;
-    usedThisTurn: boolean;
-    reservedAsTradeSource: boolean;
-    reason: string | null;
-}
-
-export function resolveBetrayalTradeCardStatus(
-    core: BetrayalCore,
-    cardId: string,
-    options: {
-        ownerPlayerId?: string;
-        ownerRole?: 'requester' | 'target';
-        useDogTrade?: boolean;
-    } = {},
-): BetrayalTradeCardStatus {
-    const ownerPlayerId = options.ownerPlayerId ?? core.currentExplorer.playerId;
-    const ownerRole = options.ownerRole ?? 'requester';
-    const owner = findExplorerByPlayerId(core, ownerPlayerId);
-    const card = owner?.inventory.find((item) => item.id === cardId);
-    const usedThisTurn = core.usedCardIdsThisTurn.includes(cardId);
-    const reservedAsTradeSource = Boolean(
-        options.useDogTrade
-        && ownerRole === 'requester'
-        && resolveInventoryEffectId(cardId) === 'dog',
-    );
-    let reason: string | null = null;
-    if (!card) {
-        reason = ownerRole === 'target' ? '交易对象没有这件持有物。' : '当前探索者没有这件持有物。';
-    } else if (reservedAsTradeSource || usedThisTurn) {
-        reason = '本回合已经使用过的持有物不能交易。';
-    }
-
-    return {
-        sourceKind: 'trade',
-        cardId,
-        cardName: card?.name ?? cardId,
-        ownerPlayerId,
-        ownerRole,
-        exists: Boolean(card),
-        canTrade: reason === null,
-        usedThisTurn,
-        reservedAsTradeSource,
-        reason,
-    };
-}
-
-function resolveTradeCardIds(core: BetrayalCore, payload: BetrayalCommandMap[typeof BETRAYAL_COMMANDS.TRADE_POSSESSION]): string[] {
-    const cardIds = payload.cardIds?.length ? payload.cardIds : [payload.cardId].filter(Boolean);
-    return Array.from(new Set(cardIds)) as string[];
-}
-
-function formatTradePossessionSummary(
-    requesterName: string,
-    targetName: string,
-    cards: BetrayalInventoryCard[],
-    targetCards: BetrayalInventoryCard[],
-): string {
-    const parts: string[] = [];
-    if (cards.length > 0) {
-        parts.push(`${requesterName}给出${cards.map((card) => card.name).join('、')}`);
-    }
-    if (targetCards.length > 0) {
-        parts.push(`${targetName}给出${targetCards.map((card) => card.name).join('、')}`);
-    }
-    return parts.join('，');
-}
-
-export function resolveCorpseLootTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
-    return core.otherExplorers.filter((explorer) => (
-        explorer.roomId === core.activeRoomId
-        && core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        && explorer.inventory.length > 0
-        && !core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn.includes(explorer.playerId)
-    ));
-}
-
-export function resolveBetrayalDeathStateSummary(core: BetrayalCore): BetrayalDeathStateSummary {
-    const deadPlayerIds = new Set(core.scenarioRuntime.deadExplorerPlayerIds);
-    const lootedThisTurnPlayerIds = new Set(core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn);
-    const currentExplorerCanLoot = !deadPlayerIds.has(core.currentExplorer.playerId);
-    const corpses = getAllExplorers(core)
-        .filter((explorer) => deadPlayerIds.has(explorer.playerId))
-        .map((explorer): BetrayalCorpseSummary => {
-            const room = core.rooms.find((candidate) => candidate.id === explorer.roomId);
-            const lootedThisTurn = lootedThisTurnPlayerIds.has(explorer.playerId);
-            const sameRoomAsCurrentExplorer = explorer.roomId === core.activeRoomId;
-            const canBeLootedByCurrentExplorer = currentExplorerCanLoot
-                && explorer.playerId !== core.currentExplorer.playerId
-                && sameRoomAsCurrentExplorer
-                && explorer.inventory.length > 0
-                && !lootedThisTurn;
-            return {
-                playerId: explorer.playerId,
-                explorerId: explorer.explorerId,
-                displayName: explorer.displayName,
-                roomId: explorer.roomId,
-                roomName: room?.name ?? null,
-                shouldLayTokenFlat: true,
-                inventory: explorer.inventory.map(cloneInventoryCard),
-                itemCount: explorer.inventory.filter((card) => card.kind === 'item').length,
-                omenCount: explorer.inventory.filter((card) => card.kind === 'omen').length,
-                lootedThisTurn,
-                canBeLootedByCurrentExplorer,
-                lootableCardIds: canBeLootedByCurrentExplorer
-                    ? explorer.inventory.map((card) => card.id)
-                    : [],
-                ruleNotes: [
-                    '死亡探索者保留在死亡房间作为尸体。',
-                    '尸体上的物品和预兆保留在尸体旁边，存活同房间探索者每回合可拿一张。',
-                ],
-            };
-        });
-    return {
-        hauntDeathRulesActive: isHauntRuntimeStarted(core),
-        livingExplorerPlayerIds: getAllExplorers(core)
-            .filter((explorer) => !deadPlayerIds.has(explorer.playerId))
-            .map((explorer) => explorer.playerId),
-        deadExplorerPlayerIds: [...core.scenarioRuntime.deadExplorerPlayerIds],
-        corpseLootedThisTurnPlayerIds: [...core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn],
-        corpses,
-        ruleNotes: [
-            '作祟开始后探索者才会死亡；作祟前只能降到临界。',
-            '死亡后立牌应倒在所在房间，持有物保留并可被同房间存活探索者搜刮。',
-            '作祟专属死亡用途、变怪物或特殊胜负仍以对应作祟说明覆盖。',
-        ],
-    };
-}
-
-function formatBetrayalRoomMarkerTokenLabel(token: BetrayalRoomMarkerToken): string {
-    switch (token) {
-        case 'obstacle':
-            return '障碍物';
-        case 'secretPassage':
-            return '秘密通道';
-        case 'blessing':
-            return '祝福';
-        default:
-            return token;
-    }
-}
-
-function createBetrayalHauntTokenInstance(
-    core: BetrayalCore,
-    token: Omit<BetrayalHauntTokenInstanceSummary, 'visibleToPlayerIds'> & { visibleToPlayerIds?: string[] },
-): BetrayalHauntTokenInstanceSummary {
-    return {
-        ...token,
-        visibleToPlayerIds: token.visibleToPlayerIds ?? [...core.playerIds],
-    };
-}
-
-export function resolveBetrayalHauntTokenInstances(core: BetrayalCore): BetrayalHauntTokenInstanceSummary[] {
-    const tokens: BetrayalHauntTokenInstanceSummary[] = [];
-    const roomById = new Map(core.rooms.map((room) => [room.id, room]));
-
-    for (const room of core.rooms) {
-        for (const markerToken of room.markerTokens ?? []) {
-            tokens.push(createBetrayalHauntTokenInstance(core, {
-                id: `room-marker-${room.id}-${markerToken}`,
-                kind: 'room-marker',
-                label: formatBetrayalRoomMarkerTokenLabel(markerToken),
-                roomId: room.id,
-                roomName: room.name,
-                ownerPlayerId: null,
-                ownerName: null,
-                visibility: 'public',
-                value: null,
-                valueHidden: false,
-                asset: null,
-                status: 'placed',
-                source: markerToken === 'obstacle'
-                    ? 'room-effect'
-                    : markerToken === 'blessing'
-                        ? 'event-effect'
-                        : 'base-rule',
-                representativeOnly: false,
-                ruleNotes: markerToken === 'obstacle'
-                    ? ['障碍物所在房间的离开移动成本提高。']
-                    : markerToken === 'blessing'
-                        ? ['祝福所在房间的属性检定额外增加 1 颗骰子。']
-                        : ['秘密通道标记之间按规则视为额外相连。'],
-            }));
-        }
-    }
-
-    const mummy = core.scenarioRuntime.mummy;
-    if (mummy) {
-        const sarcophagusRoom = roomById.get(mummy.sarcophagusRoomId);
-        tokens.push(createBetrayalHauntTokenInstance(core, {
-            id: 'mummy-sarcophagus',
-            kind: 'haunt-objective',
-            label: '石棺',
-            labelKey: 'board.hauntTokens.sarcophagus',
-            roomId: mummy.sarcophagusRoomId,
-            roomName: sarcophagusRoom?.name ?? null,
-            ownerPlayerId: null,
-            ownerName: null,
-            visibility: 'public',
-            value: null,
-            valueHidden: false,
-            asset: null,
-            status: 'placed',
-            source: 'haunt-contract',
-            representativeOnly: true,
-            ruleNotes: ['1 号作祟「木乃伊横行」：石棺是木乃伊目标返回地点。'],
-        }));
-        const girlHolder = mummy.girlHolderPlayerId
-            ? findExplorerByPlayerId(core, mummy.girlHolderPlayerId)
-            : null;
-        const mummyMonster = mummy.girlHeldByMummy ? findMummyMonster(core) : null;
-        const girlTokenRoomId = mummy.girlHeldByMummy
-            ? (mummyMonster?.roomId ?? mummy.sarcophagusRoomId)
-            : girlHolder?.roomId ?? mummy.girlRoomId;
-        if (girlTokenRoomId) {
-            const girlRoom = roomById.get(girlTokenRoomId);
-            tokens.push(createBetrayalHauntTokenInstance(core, {
-                id: 'mummy-girl-token',
-                kind: 'haunt-resource',
-                label: '女孩',
-                labelKey: 'board.hauntTokens.girl',
-                roomId: girlTokenRoomId,
-                roomName: girlRoom?.name ?? null,
-                ownerPlayerId: girlHolder?.playerId ?? null,
-                ownerName: girlHolder?.displayName ?? (mummy.girlHeldByMummy ? '木乃伊' : null),
-                visibility: 'public',
-                value: null,
-                valueHidden: false,
-                asset: 'betrayal/tokens/haunts/mummy-girl.svg',
-                status: mummy.girlHeldByMummy ? 'held-by-mummy' : girlHolder ? 'held-by-player' : 'placed',
-                source: 'haunt-contract',
-                representativeOnly: true,
-                ruleNotes: ['1 号作祟「木乃伊横行」：女孩预兆旁置后由公开 SVG token 代表；被探索者或木乃伊持有时仍公开追踪。'],
-            }));
-        }
-    }
-
-    for (const roomId of core.scenarioRuntime.exorcismCircleRoomIds) {
-        const room = roomById.get(roomId);
-        tokens.push(createBetrayalHauntTokenInstance(core, {
-            id: `crimson-jack-exorcism-circle-${roomId}`,
-            kind: 'haunt-objective',
-            label: '驱魔圈',
-            labelKey: 'board.hauntTokens.exorcismCircle',
-            roomId,
-            roomName: room?.name ?? null,
-            ownerPlayerId: null,
-            ownerName: null,
-            visibility: 'public',
-            value: null,
-            valueHidden: false,
-            asset: null,
-            status: 'placed',
-            source: 'haunt-contract',
-            representativeOnly: true,
-            ruleNotes: ['1 号作祟代表链：驱魔圈是英雄目标进度地点。'],
-        }));
-    }
-
-    const dust = core.scenarioRuntime.dust;
-    if (dust) {
-        for (const [playerId, sicknessTokens] of Object.entries(dust.sicknessTokensByPlayerId)) {
-            const owner = findExplorerByPlayerId(core, playerId);
-            for (const sicknessToken of sicknessTokens) {
-                tokens.push(createBetrayalHauntTokenInstance(core, {
-                    id: `dust-sickness-${playerId}-${sicknessToken.id}`,
-                    kind: 'sickness',
-                    label: '疾病标记',
-                    labelKey: 'board.hauntTokens.sickness',
-                    roomId: null,
-                    roomName: null,
-                    ownerPlayerId: playerId,
-                    ownerName: owner?.displayName ?? null,
-                    visibility: 'owner-only',
-                    visibleToPlayerIds: [playerId],
-                    value: sicknessToken.value,
-                    valueHidden: sicknessToken.value === null,
-                    asset: null,
-                    status: dust.permanentTraitorPlayerIds.includes(playerId) ? 'permanent-traitor' : 'held',
-                    source: 'haunt-contract',
-                    representativeOnly: true,
-                    ruleNotes: [
-                        '3 号作祟代表链：疾病标记数字只对持有者本人可见。',
-                        '玩家视图已把其他玩家的疾病标记数字遮蔽为 null。',
-                    ],
-                }));
-            }
-        }
-        for (const roomId of dust.researchRoomIds) {
-            const room = roomById.get(roomId);
-            tokens.push(createBetrayalHauntTokenInstance(core, {
-                id: `dust-research-token-${roomId}`,
-                kind: 'haunt-objective',
-                label: '研究 token',
-                labelKey: 'board.hauntTokens.researchToken',
-                roomId,
-                roomName: room?.name ?? null,
-                ownerPlayerId: null,
-                ownerName: null,
-                visibility: 'public',
-                value: null,
-                valueHidden: false,
-                asset: null,
-                status: 'placed',
-                source: 'haunt-contract',
-                representativeOnly: true,
-                ruleNotes: ['3 号作祟代表链：研究 token 会提高治愈检定加值。'],
-            }));
-        }
-    }
-
-    const monsterById = new Map(core.monsters.map((monster) => [monster.id, monster]));
-    for (const monsterStatus of resolveBetrayalMonsterStatuses(core)) {
-        const monster = monsterById.get(monsterStatus.monsterId);
-        const room = monsterStatus.roomId ? roomById.get(monsterStatus.roomId) : undefined;
-        tokens.push(createBetrayalHauntTokenInstance(core, {
-            id: `monster-${monsterStatus.monsterId}`,
-            kind: 'monster',
-            label: monsterStatus.name,
-            roomId: monsterStatus.roomId,
-            roomName: room?.name ?? null,
-            ownerPlayerId: null,
-            ownerName: null,
-            visibility: 'public',
-            value: null,
-            valueHidden: false,
-            asset: monster?.tokenAsset ?? null,
-            status: monsterStatus.status,
-            source: 'monster-box',
-            representativeOnly: true,
-            ruleNotes: [
-                ...monsterStatus.ruleNotes,
-                '怪物 token 目录来自现有怪物运行态；完整 50 个作祟怪物放置仍需逐作祟接入。',
-            ],
-        }));
-    }
-
-    for (const corpse of resolveBetrayalDeathStateSummary(core).corpses) {
-        tokens.push(createBetrayalHauntTokenInstance(core, {
-            id: `corpse-${corpse.playerId}`,
-            kind: 'corpse',
-            label: `${corpse.displayName}尸体`,
-            roomId: corpse.roomId,
-            roomName: corpse.roomName,
-            ownerPlayerId: corpse.playerId,
-            ownerName: corpse.displayName,
-            visibility: 'public',
-            value: corpse.itemCount + corpse.omenCount,
-            valueHidden: false,
-            asset: null,
-            status: corpse.lootedThisTurn ? 'looted-this-turn' : 'lootable',
-            source: 'death-rule',
-            representativeOnly: false,
-            ruleNotes: [
-                ...corpse.ruleNotes,
-                '尸体 token 目录只表达死亡探索者倒伏和可搜刮状态，不删除死亡角色。',
-            ],
-        }));
-    }
-
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (magicCamera) {
-        for (const playerId of magicCamera.heroEssencePlayerIds) {
-            const owner = findExplorerByPlayerId(core, playerId);
-            tokens.push(createBetrayalHauntTokenInstance(core, {
-                id: `magic-camera-essence-hero-${playerId}`,
-                kind: 'haunt-resource',
-                label: 'Essence',
-                labelKey: 'board.hauntTokens.essence',
-                roomId: owner?.roomId ?? null,
-                roomName: owner ? roomById.get(owner.roomId)?.name ?? null : null,
-                ownerPlayerId: playerId,
-                ownerName: owner?.displayName ?? null,
-                visibility: 'public',
-                value: null,
-                valueHidden: false,
-                asset: null,
-                status: 'held-by-hero',
-                source: 'haunt-contract',
-                representativeOnly: true,
-                ruleNotes: ['33 号作祟代表链：英雄 Essence 是叛徒需要夺取的作祟资源。'],
-            }));
-        }
-        for (const playerId of magicCamera.capturedEssencePlayerIds) {
-            const owner = findExplorerByPlayerId(core, playerId);
-            tokens.push(createBetrayalHauntTokenInstance(core, {
-                id: `magic-camera-essence-captured-${playerId}`,
-                kind: 'haunt-resource',
-                label: 'Essence',
-                labelKey: 'board.hauntTokens.essence',
-                roomId: null,
-                roomName: null,
-                ownerPlayerId: playerId,
-                ownerName: owner?.displayName ?? null,
-                visibility: 'public',
-                value: null,
-                valueHidden: false,
-                asset: null,
-                status: 'captured-by-traitor',
-                source: 'haunt-contract',
-                representativeOnly: true,
-                ruleNotes: ['33 号作祟代表链：已夺取 Essence 计入叛徒资源进度。'],
-            }));
-        }
-    }
-
-    return tokens;
-}
-
-function formatBetrayalOutcomeLabel(outcome: BetrayalScenarioOutcome): string {
-    switch (outcome) {
-        case 'survivors':
-            return '英雄';
-        case 'traitor':
-            return '叛徒';
-        case 'solo':
-            return '单人赢家';
-        case 'haunt':
-            return '作祟';
-        default:
-            return outcome;
-    }
-}
-
-function isBetrayalIfYouWinTextAvailable(result: BetrayalEndgameResult): boolean {
-    return (result.hauntId === 'the-dust' || result.hauntId === 'mummy-rampage') && (
-        result.outcome === 'survivors' || result.outcome === 'traitor'
-    );
-}
-
-function formatBetrayalIfYouWinSourceNote(result: BetrayalEndgameResult, available: boolean): string {
-    if (!available) {
-        return 'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。';
-    }
-    if (result.hauntId === 'mummy-rampage') {
-        return '木乃伊 If You Win 胜利文本已接入。';
-    }
-    if (result.hauntId === 'the-dust') {
-        return '灰尘 If You Win 胜利文本已接入。';
-    }
-    return 'If You Win 原文已接入。';
-}
-
-export function resolveBetrayalEndgameReadModel(core: BetrayalCore): BetrayalEndgameReadModel {
-    const result = core.endgameResult;
-    if (core.phase !== 'endgame' || !result) {
-        return {
-            active: false,
-            phase: core.phase,
-            hauntId: null,
-            hauntTitle: null,
-            outcome: null,
-            winningSideLabel: null,
-            winnerPlayerIds: [],
-            winnerNames: [],
-            traitorPlayerId: null,
-            ifYouWinTextId: null,
-            ifYouWinTextStatus: 'inactive',
-            ifYouWinTextAvailable: false,
-            needsIfYouWinTextSource: false,
-            simultaneousCompletionPolicyStatus: 'inactive',
-            tiePolicyStatus: 'inactive',
-            representativeOnly: false,
-            ruleNotes: [
-                '当前还没有进入终局，不应展示 If You Win 胜利文本。',
-            ],
-        };
-    }
-
-    const explorers = getAllExplorers(core);
-    const winnerNames = result.winners.map((playerId) => (
-        explorers.find((explorer) => explorer.playerId === playerId)?.displayName ?? playerId
-    ));
-    const hasDustSpecificEndgamePolicy = result.hauntId === 'the-dust';
-    const hasIfYouWinText = isBetrayalIfYouWinTextAvailable(result);
-    return {
-        active: true,
-        phase: core.phase,
-        hauntId: result.hauntId,
-        hauntTitle: result.hauntTitle,
-        outcome: result.outcome,
-        winningSideLabel: formatBetrayalOutcomeLabel(result.outcome),
-        winnerPlayerIds: [...result.winners],
-        winnerNames,
-        traitorPlayerId: result.traitorPlayerId || null,
-        ifYouWinTextId: `${result.hauntId}.${result.outcome}.if-you-win`,
-        ifYouWinTextStatus: hasIfYouWinText ? 'available' : 'representative-only',
-        ifYouWinTextAvailable: hasIfYouWinText,
-        needsIfYouWinTextSource: !hasIfYouWinText,
-        simultaneousCompletionPolicyStatus: hasDustSpecificEndgamePolicy ? 'scenario-specific' : 'missing-contract',
-        tiePolicyStatus: hasDustSpecificEndgamePolicy ? 'scenario-specific' : 'missing-contract',
-        representativeOnly: true,
-        ruleNotes: [
-            '终局结果已记录胜方和获胜玩家。',
-            formatBetrayalIfYouWinSourceNote(result, hasIfYouWinText),
-            hasDustSpecificEndgamePolicy
-                ? '灰尘按当前完成的结算事件收口：治愈成功立即英雄胜利；全员感染或死亡只在交换、伤害或死亡事件结算后触发叛徒胜利。'
-                : '同时达成、平局或共享胜利处理仍需逐作祟合同接入。',
-            '当前只证明代表作祟终局读模型，不代表 50 个作祟终局全部完成。',
-        ],
-    };
-}
-
-function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
-    return Array.from(new Set(rooms.map((room) => room.name))).join(' / ');
-}
-
 const DECK_KIND_LABEL: Record<BetrayalDeckKind, string> = {
     event: '事件',
     item: '物品',
     omen: '预兆',
 };
 
-function roomDiscoverySymbolToDeckKind(symbol: BetrayalRoomDiscoverySymbol): BetrayalDeckKind | null {
-    return symbol === 'none' ? null : symbol;
-}
-
-function resolveRoomTemplateDiscoveryDeckKind(roomTemplate: RoomTemplate): BetrayalDeckKind | null {
-    return roomDiscoverySymbolToDeckKind(resolveBetrayalRoomDiscoverySymbol(roomTemplate));
-}
-
-function hasAvailableDiscoveryDeckCard(core: BetrayalCore, deckKind: BetrayalDeckKind): boolean {
-    if (core.deckCounts[deckKind] <= 0) {
-        return false;
-    }
-    if (deckKind === 'event') {
-        return core.eventOrder.length > 0;
-    }
-    return core.possessionOrderByKind[deckKind].length > 0;
-}
-
-interface ResolvedRoomDraw {
-    roomTemplate: RoomTemplate | null;
-    skippedRoomTemplate: RoomTemplate | null;
-    selectedRoomRequiresOpenFrontier: boolean;
-    resolution: BetrayalRoomDrawResolution;
-}
-
-interface ResolveRoomDrawOptions {
-    useHolySymbol?: boolean;
-    placement?: RoomPlacementContext;
-}
-
-function makeSelectedRoomSummary(
-    entry: BetrayalRoomDiscoveryDeckEntry,
-): NonNullable<BetrayalRoomDrawResolution['selectedRoom']> {
-    return {
-        floor: entry.floor,
-        name: entry.room.name,
-        visualId: entry.room.visualId,
-    };
-}
-
-function resolveLegacyRoomDraw(
-    core: BetrayalCore,
-    floor: BetrayalRoomFloor,
-    options: ResolveRoomDrawOptions = {},
-): ResolvedRoomDraw {
-    const pool = core.roomDiscoveryOrderByFloor[floor];
-    const discoveredCount = core.rooms.filter((room) => room.floor === floor && room.state === 'discovered' && !room.startingTile).length;
-    const orderedEntries = pool.map((_, offset) => ({
-        floor,
-        room: cloneRoomTemplate(pool[(discoveredCount + offset) % pool.length]!),
-    }));
-    const buriedRoomTiles: BetrayalBuriedRoomTileSummary[] = [];
-    let skippedRoomTemplate: RoomTemplate | null = null;
-    let selectedEntry: BetrayalRoomDiscoveryDeckEntry | null = null;
-    let selectedRoomRequiresOpenFrontier = false;
-    let requiresTileAdjustment = false;
-
-    for (let index = 0; index < orderedEntries.length; index += 1) {
-        const entry = orderedEntries[index]!;
-        if (options.useHolySymbol && !skippedRoomTemplate) {
-            skippedRoomTemplate = cloneRoomTemplate(entry.room);
-            buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'holySymbol'));
-            continue;
-        }
-        const hasLaterSameFloor = orderedEntries.slice(index + 1).some((candidate) => candidate.floor === floor);
-        if (options.placement) {
-            const connectionOptions = resolveRoomPlacementOrientationOptions(core, entry.room, options.placement, false);
-            const openFrontierOptions = resolveRoomPlacementOrientationOptions(core, entry.room, options.placement, true);
-            if (connectionOptions.length === 0) {
-                buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'sealedRegion'));
-                continue;
-            }
-            if (openFrontierOptions.length === 0) {
-                if (hasLaterSameFloor) {
-                    buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'sealedRegion'));
-                    continue;
-                }
-                requiresTileAdjustment = true;
-            }
-        }
-        selectedEntry = entry;
-        selectedRoomRequiresOpenFrontier = Boolean(options.placement && hasLaterSameFloor);
-        break;
-    }
-
-    return {
-        roomTemplate: selectedEntry ? cloneRoomTemplate(selectedEntry.room) : null,
-        skippedRoomTemplate,
-        selectedRoomRequiresOpenFrontier,
-        resolution: {
-            requestedFloor: floor,
-            selectedRoom: selectedEntry ? makeSelectedRoomSummary(selectedEntry) : null,
-            buriedRoomTiles,
-            exhausted: !selectedEntry,
-            requiresTileAdjustment,
-            usedUnifiedDeck: false,
-        },
-    };
-}
-
-function resolveRoomDraw(
-    core: BetrayalCore,
-    floor: BetrayalRoomFloor,
-    options: ResolveRoomDrawOptions = {},
-): ResolvedRoomDraw {
-    const deck = core.roomDiscoveryDeck?.length
-        ? core.roomDiscoveryDeck.map(cloneRoomDiscoveryDeckEntry)
-        : makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor);
-    if (!deck.length || !roomDiscoveryDeckMatchesFloorPools(core)) {
-        return resolveLegacyRoomDraw(core, floor, options);
-    }
-
-    const buriedRoomTiles: BetrayalBuriedRoomTileSummary[] = [];
-    let skippedRoomTemplate: RoomTemplate | null = null;
-    let selectedEntry: BetrayalRoomDiscoveryDeckEntry | null = null;
-    let selectedRoomRequiresOpenFrontier = false;
-    let requiresTileAdjustment = false;
-
-    for (let index = 0; index < deck.length; index += 1) {
-        const entry = deck[index]!;
-        if (entry.floor !== floor) {
-            buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'areaMismatch'));
-            continue;
-        }
-        if (options.useHolySymbol && !skippedRoomTemplate) {
-            skippedRoomTemplate = cloneRoomTemplate(entry.room);
-            buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'holySymbol'));
-            continue;
-        }
-        const hasLaterSameFloor = deck.slice(index + 1).some((candidate) => candidate.floor === floor);
-        if (options.placement) {
-            const connectionOptions = resolveRoomPlacementOrientationOptions(core, entry.room, options.placement, false);
-            const openFrontierOptions = resolveRoomPlacementOrientationOptions(core, entry.room, options.placement, true);
-            if (connectionOptions.length === 0) {
-                buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'sealedRegion'));
-                continue;
-            }
-            if (openFrontierOptions.length === 0) {
-                if (hasLaterSameFloor) {
-                    buriedRoomTiles.push(summarizeBuriedRoomTile(entry, 'sealedRegion'));
-                    continue;
-                }
-                requiresTileAdjustment = true;
-            }
-        }
-        selectedEntry = entry;
-        selectedRoomRequiresOpenFrontier = Boolean(options.placement && hasLaterSameFloor);
-        break;
-    }
-
-    return {
-        roomTemplate: selectedEntry ? cloneRoomTemplate(selectedEntry.room) : null,
-        skippedRoomTemplate,
-        selectedRoomRequiresOpenFrontier,
-        resolution: {
-            requestedFloor: floor,
-            selectedRoom: selectedEntry ? makeSelectedRoomSummary(selectedEntry) : null,
-            buriedRoomTiles,
-            exhausted: !selectedEntry,
-            requiresTileAdjustment,
-            usedUnifiedDeck: true,
-        },
-    };
-}
-
-export function resolveBetrayalRoomDrawResolution(
-    core: BetrayalCore,
-    floor: BetrayalRoomFloor,
-    options: { useHolySymbol?: boolean; roomId?: string } = {},
-): BetrayalRoomDrawResolution {
-    const slot = options.roomId
-        ? resolveExplorableRoomSlots(core).find((room) => room.id === options.roomId && room.floor === floor) ?? null
-        : null;
-    return cloneRoomDrawResolution(resolveRoomDraw(core, floor, {
-        useHolySymbol: options.useHolySymbol,
-        placement: slot ? resolveRoomPlacementContext(core, slot) : undefined,
-    }).resolution);
-}
-
-export function resolveNextRoomDiscoveryDeckKind(
-    core: BetrayalCore,
-    options: { roomId?: string; useHolySymbol?: boolean } = {},
-): BetrayalDeckKind | null {
-    const explorableSlots = resolveExplorableRoomSlots(core);
-    const slot = options.roomId
-        ? explorableSlots.find((room) => room.id === options.roomId) ?? null
-        : explorableSlots[0] ?? null;
-    if (!slot) {
-        return null;
-    }
-    const placement = resolveRoomPlacementContext(core, slot);
-    const roomDraw = resolveRoomDraw(core, slot.floor, {
-        useHolySymbol: options.useHolySymbol && canUseHolySymbolForDiscovery(core),
-        placement,
-    });
-    return roomDraw.roomTemplate ? resolveRoomTemplateDiscoveryDeckKind(roomDraw.roomTemplate) : null;
-}
-
-function roomDiscoveryEntryMatchesSelectedRoom(
-    entry: BetrayalRoomDiscoveryDeckEntry,
-    selectedRoom: NonNullable<BetrayalRoomDrawResolution['selectedRoom']>,
-): boolean {
-    return entry.floor === selectedRoom.floor
-        && entry.room.visualId === selectedRoom.visualId
-        && entry.room.name === selectedRoom.name;
-}
-
-function applyRoomDrawResolutionToCore(
-    core: BetrayalCore,
-    resolution: BetrayalRoomDrawResolution | undefined,
-): void {
-    if (!resolution) {
-        core.latestRoomDrawResolution = null;
-        return;
-    }
-    const clonedResolution = cloneRoomDrawResolution(resolution);
-    core.latestRoomDrawResolution = clonedResolution;
-    if (clonedResolution.buriedRoomTiles.length > 0) {
-        core.buriedRoomTiles = [
-            ...(core.buriedRoomTiles ?? []).map(cloneBuriedRoomTileSummary),
-            ...clonedResolution.buriedRoomTiles.map(cloneBuriedRoomTileSummary),
-        ];
-    }
-    if (!clonedResolution.usedUnifiedDeck || !clonedResolution.selectedRoom) {
-        return;
-    }
-
-    const deck = (core.roomDiscoveryDeck ?? makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor))
-        .map(cloneRoomDiscoveryDeckEntry);
-    const selectedIndex = deck.findIndex((entry) => roomDiscoveryEntryMatchesSelectedRoom(entry, clonedResolution.selectedRoom!));
-    if (selectedIndex < 0) {
-        return;
-    }
-    const buriedEntries = deck.slice(0, selectedIndex);
-    core.roomDiscoveryDeck = [
-        ...deck.slice(selectedIndex + 1),
-        ...buriedEntries,
-    ];
-    core.roomDiscoveryOrderByFloor = groupRoomDiscoveryDeckByFloor(core.roomDiscoveryDeck);
-}
-
-export function canUseHolySymbolForDiscovery(core: BetrayalCore): boolean {
-    return (core.phase === 'preHaunt' || core.phase === 'haunt')
-        && core.currentExplorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'holy-symbol')
-        && core.turnStartInventoryCardIds.some((cardId) => resolveInventoryEffectId(cardId) === 'holy-symbol');
-}
-
-export function canUseIdolToSkipEvent(core: BetrayalCore): boolean {
-    return (core.phase === 'preHaunt' || core.phase === 'haunt')
-        && core.currentExplorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'idol')
-        && core.turnStartInventoryCardIds.some((cardId) => resolveInventoryEffectId(cardId) === 'idol');
-}
 
 function resolveEventSymbolSkipMethod(
     core: BetrayalCore,
@@ -14722,25 +6608,6 @@ function createEventSymbolSkipChoice(
         declineLabel: '抽取事件牌',
         effect: { mode: 'none' },
     };
-}
-
-function resolveSkeletonKeyCardId(explorer: BetrayalExplorerSummary): string | null {
-    return explorer.inventory.find((card) => resolveInventoryEffectId(card.id) === 'lockpick-tool')?.id ?? null;
-}
-
-export function canUseSkeletonKeyForMove(core: BetrayalCore, targetRoomId: string): boolean {
-    const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
-    const targetRoom = core.rooms.find((room) => room.id === targetRoomId);
-    return Boolean(
-        resolveSkeletonKeyCardId(core.currentExplorer)
-        && core.movesRemaining > 0
-        && currentRoom
-        && targetRoom
-        && targetRoom.state === 'discovered'
-        && currentRoom.floor === targetRoom.floor
-        && roomDistanceByLayout(currentRoom, targetRoom) === 1
-        && !resolveConnectedRoomIds(core.rooms, currentRoom.id).has(targetRoom.id),
-    );
 }
 
 function createDrawnCardFromTemplate(
@@ -14787,10 +6654,6 @@ function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInve
         }
     }
     return { weapon: null, buriedCards: revealedCards };
-}
-
-function resolveEvent(core: BetrayalCore): EventTemplate {
-    return cloneEventTemplate(core.eventOrder[0]!);
 }
 
 function resolveEventRollResolution(
@@ -14874,153 +6737,20 @@ function resolveEventRollResolution(
     };
 }
 
-function isWarningEventEffect(effect: PossessionUseEffectProfile): boolean {
-    switch (effect.mode) {
-        case 'generalDamage':
-        case 'generalDamageChoice':
-        case 'rolledDamage':
-        case 'fixedDamage':
-            return true;
-        case 'trait':
-        case 'chosenTrait':
-            return effect.amount < 0;
-        case 'compound':
-            return effect.effects.some(isWarningEventEffect);
-        case 'placeExplorerInNextFloorStartingRoom':
-            return Boolean(effect.basementFallbackDamage);
-        case 'optionalItemEffect':
-            return isWarningEventEffect(effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
-        default:
-            return false;
-    }
-}
-
-function formatEffectLabel(effect: PossessionUseEffectProfile): string {
-    if (effect.mode === 'none') {
-        return '无事发生';
-    }
-    if (effect.mode === 'move') {
-        return `移动 ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
-    }
-    if (effect.mode === 'nextNonCombatTraitReplacement') {
-        return `下一次非战斗检定可用${TRAIT_LABEL[effect.replacementTrait]}替换`;
-    }
-    if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
-        return `下一次属性检定可用 ${effect.minTotal}-${effect.maxTotal} 的结果替代投骰`;
-    }
-    if (effect.mode === 'healTraits') {
-        return `治疗${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`;
-    }
-    if (effect.mode === 'placeExplorer') {
-        return '放置到任一已发现板块';
-    }
-    if (effect.mode === 'moveOthersInRoom') {
-        return '移动同板块其他探险者和怪物到相邻板块';
-    }
-    if (effect.mode === 'generalDamage') {
-        return `通用伤害 ${effect.amount}`;
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        const selected = effect.selectedTraits?.map((trait) => TRAIT_LABEL[trait]).join('、');
-        return selected
-            ? `通用伤害 ${effect.amount}（${selected}）`
-            : `通用伤害 ${effect.amount}`;
-    }
-    if (effect.mode === 'placeObstacleToken') {
-        return '放置障碍物';
-    }
-    if (effect.mode === 'placeSecretPassageToken') {
-        return `在${effect.targetRoomName ?? '当前板块'}放置秘密通道标志物`;
-    }
-    if (effect.mode === 'placeBlessingToken') {
-        return '放置祝福标志物';
-    }
-    if (effect.mode === 'rolledDamage') {
-        return `重新投掷 ${effect.dice} 颗骰子，按合计值分配${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
-    }
-    if (effect.mode === 'fixedDamage') {
-        return `受到 ${effect.amount} 点${effect.damageKind === 'physical' ? '物理' : '精神'}伤害`;
-    }
-    if (effect.mode === 'drawPossession') {
-        return `抽取一张${effect.kind === 'item' ? '物品' : '预兆'}卡`;
-    }
-    if (effect.mode === 'chosenTrait') {
-        const trait = effect.chosenTrait ?? effect.allowedTraits[0];
-        return `${trait ? TRAIT_LABEL[trait] : '任意属性'} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
-    }
-    if (effect.mode === 'healChosenTrait') {
-        const trait = effect.chosenTrait ?? effect.allowedTraits[0];
-        return `治疗${trait ? TRAIT_LABEL[trait] : '任意属性'}`;
-    }
-    if (effect.mode === 'placeExplorerInRoom') {
-        return `放置到${effect.roomName}`;
-    }
-    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
-        return `放置到${effect.roomName}`;
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
-        return `放置到${effect.roomNames.join('或')}`;
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
-        if (effect.targetRoomName) {
-            return `放置到${effect.targetRoomName}`;
-        }
-        const scopeLabelByTarget = {
-            anyDiscovered: '任意已发现板块',
-            groundDiscovered: '任意地面层板块',
-            basementDiscovered: '任意地下室板块',
-            groundOrBasementDiscovered: '任意地面层或地下室板块',
-            sameFloorDiscovered: '所在区域的任意板块',
-            differentFloorDiscovered: '不同区域的任意板块',
-        } satisfies Record<Extract<UseEffectProfile, { mode: 'placeExplorerInDiscoveredRoomByFloor' }>['targetRoomScope'], string>;
-        return `放置到${scopeLabelByTarget[effect.targetRoomScope]}`;
-    }
-    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
-        return '放置到下一楼层起始点';
-    }
-    if (effect.mode === 'placeExplorerInAdjacentRoom') {
-        return `放置到${effect.targetRoomName ?? '相邻板块'}`;
-    }
-    if (effect.mode === 'optionalEffect') {
-        return `可选择${effect.acceptLabel}`;
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        if (effect.selectedCardName) {
-            return `${effect.consumeAction === 'bury' ? '埋葬' : '弃置'}${effect.selectedCardName}；${formatEffectLabel(effect.acceptEffect)}`;
-        }
-        return `可选择${effect.acceptLabel}`;
-    }
-    if (effect.mode === 'optionalEventRoll') {
-        return `可选择${effect.acceptLabel}`;
-    }
-    if (effect.mode === 'optionalHauntRoll') {
-        return `可选择${effect.acceptLabel}`;
-    }
-    if (effect.mode === 'chooseTraitRoll') {
-        return effect.prompt;
-    }
-    if (effect.mode === 'traitRoll') {
-        return `${TRAIT_LABEL[effect.trait]}检定`;
-    }
-    if (effect.mode === 'allTraitChecks') {
-        return '每项属性各检定一次';
-    }
-    if (effect.mode === 'compound') {
-        return effect.effects.map(formatEffectLabel).join('；');
-    }
-    return `${TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
-}
-
 function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boolean; cardId?: string } = {}): BetrayalRecommendedAction {
     if (core.turnEndedByDiscovery) {
         return 'endTurn';
     }
     if (core.phase === 'haunt') {
+        if (hasUsedHauntSpecialActionThisTurn(core)) {
+            return 'endTurn';
+        }
         if (core.scenarioRuntime.jackSpiritReleased && core.scenarioRuntime.jackSpiritRoomId === core.activeRoomId) {
             return core.scenarioRuntime.exorcismCircleRoomIds.length >= 2 ? 'use' : 'move';
         }
         if (
-            isBetrayalLibraryRoom(core.rooms.find((room) => room.id === core.activeRoomId))
+            isCrimsonJackHaunt(core)
+            && isBetrayalLibraryRoom(core.rooms.find((room) => room.id === core.activeRoomId))
             && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)
         ) {
             return 'use';
@@ -15035,8 +6765,8 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
     const canTrade = core.currentExplorer.inventory.length > 0
         && (resolveTradeTargets(core).length > 0 || resolveDogTradeTargets(core).length > 0 || resolveCorpseLootTargets(core).length > 0);
     const cardId = options.cardId
-        ?? core.currentExplorer.inventory.find((card) => canUsePossessionThisTurn(core, card.id))?.id;
-    const canUse = Boolean(cardId && canUsePossessionThisTurn(core, cardId));
+        ?? core.currentExplorer.inventory.find((card) => canUseBetrayalPossessionThisTurn(core, card.id))?.id;
+    const canUse = Boolean(cardId && canUseBetrayalPossessionThisTurn(core, cardId));
 
     if (options.preferUse && canUse) return 'use';
     if (canMove) return 'move';
@@ -15071,7 +6801,7 @@ function resolveJackSpiritMonsterMovementRoll(
     if (!jackSpirit) {
         return null;
     }
-    const dice = rollDicePips(random, jackSpirit.speed);
+    const dice = rollBetrayalDicePips(random, jackSpirit.speed);
     const total = dice.reduce((sum, pip) => sum + pip, 0);
     return {
         monsterId: jackSpirit.id,
@@ -15138,58 +6868,6 @@ function resolveStalkThePreyTargets(core: BetrayalCore, actor: BetrayalExplorerS
 
 function isPlayersTurn(core: BetrayalCore, playerId: string): boolean {
     return core.currentPlayer === playerId;
-}
-
-function resolvePendingTurnEndRoll(core: BetrayalCore): BetrayalRecentRollState | null {
-    const recentRoll = core.recentRoll;
-    if (
-        !recentRoll
-        || recentRoll.playerId !== core.currentPlayer
-    ) {
-        return null;
-    }
-    if (recentRoll.kind === 'roomEndTurnTraitCheck' && recentRoll.roomEndTurn?.nextPlayerId) {
-        return recentRoll;
-    }
-    if (recentRoll.kind === 'deathPrevention' && recentRoll.deathPrevention?.nextPlayerId) {
-        return recentRoll;
-    }
-    return null;
-}
-
-function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRollState | null {
-    const recentRoll = core.recentRoll;
-    const currentDecisionPlayerIds = new Set(
-        [core.currentPlayer, core.activePlayerId].filter((playerId): playerId is string => Boolean(playerId)),
-    );
-    if (!recentRoll || !currentDecisionPlayerIds.has(recentRoll.playerId)) {
-        return null;
-    }
-    if (recentRoll.roomEndTurn?.nextPlayerId || recentRoll.deathPrevention?.nextPlayerId) {
-        return null;
-    }
-    const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
-        'mysticElevator',
-        'attackRoll',
-        'hauntActionTraitCheck',
-        'monsterMoveRoll',
-    ];
-    if (!acknowledgeableKinds.includes(recentRoll.kind)) {
-        return null;
-    }
-    return recentRoll;
-}
-
-function canPlayerAcknowledgeRecentRoll(core: BetrayalCore, playerId: string): boolean {
-    const recentRoll = resolveAcknowledgeableRecentRoll(core);
-    if (!recentRoll) {
-        return false;
-    }
-    const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
-    if (!requiredPlayerIds.includes(playerId)) {
-        return false;
-    }
-    return !resolveRecentRollAcknowledgedPlayerIds(recentRoll).includes(playerId);
 }
 
 function validateTurnEndRollAcknowledgement(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
@@ -15267,54 +6945,6 @@ function validateDamageAllocationResolution(core: BetrayalCore, command: Betraya
     }
     if (!damageTraitsAreAssignable(explorer, traits, { allowSkull: pending.allowSkull })) {
         return { valid: false, error: '不能把伤害分配到已锁定的属性。' };
-    }
-    return { valid: true };
-}
-
-type RecentRollRerollCommand = Extract<
-    BetrayalCommand,
-    { type: typeof BETRAYAL_COMMANDS.USE_RABBIT_FOOT | typeof BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM }
->;
-
-function isRecentRollRerollCommand(command: BetrayalCommand): command is RecentRollRerollCommand {
-    return command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
-        || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM;
-}
-
-function validateRecentRollRerollItemCommand(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
-    if (!isRecentRollRerollCommand(command)) {
-        return null;
-    }
-    if (isPlayerControllingMonster(core, command.playerId) && !isOwnDeathPreventionRerollWindow(core, command.playerId)) {
-        return { valid: false, error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。' };
-    }
-    const isLegacyRabbitFootCommand = command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT;
-    const card = isLegacyRabbitFootCommand
-        ? resolveRabbitFootCard(core, command.payload.cardId, command.playerId)
-        : resolveRecentRollRerollItemCard(core, command.payload.cardId, command.playerId);
-    if (!card) {
-        return {
-            valid: false,
-            error: isLegacyRabbitFootCommand ? '当前探索者没有兔脚。' : '当前探索者没有可用于最近投骰重掷的物品。',
-        };
-    }
-    const canUse = isLegacyRabbitFootCommand
-        ? canUseRabbitFootForRecentRoll(core, command.playerId, card.id)
-        : canUseRecentRollRerollItemForRecentRoll(core, command.playerId, card.id);
-    if (!canUse) {
-        return {
-            valid: false,
-            error: isLegacyRabbitFootCommand ? '当前没有可被兔脚重掷的最近投骰。' : '当前没有可被该物品重掷的最近投骰。',
-        };
-    }
-    const dieIndices = core.recentRoll
-        ? resolveRecentRollRerollCommandDieIndices(core.recentRoll, card.id, command.payload.dieIndex ?? 0)
-        : [];
-    if (dieIndices.length === 0) {
-        return {
-            valid: false,
-            error: isLegacyRabbitFootCommand ? '兔脚必须选择刚刚投过的一颗骰子。' : '该物品没有可重掷的骰子。',
-        };
     }
     return { valid: true };
 }
@@ -15580,7 +7210,12 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         return { valid: true };
     }
-    const recentRollRerollValidation = validateRecentRollRerollItemCommand(core, command);
+    const recentRollRerollValidation = command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+        || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
+        ? validateBetrayalRecentRollRerollItemCommand(core, command.playerId, command.payload, {
+            legacyRabbitFoot: command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+        })
+        : null;
     if (recentRollRerollValidation) {
         return recentRollRerollValidation;
     }
@@ -15654,7 +7289,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (payload.useSkeletonKey && canUseSkeletonKeyForMove(core, payload.roomId)) {
                 return { valid: true };
             }
-            if (core.movesRemaining < resolveMoveCost(core) || !targetRooms.has(payload.roomId)) {
+            if (core.movesRemaining < resolveBetrayalMoveCost(core) || !targetRooms.has(payload.roomId)) {
                 return { valid: false, error: '目标房间不可移动。' };
             }
             return { valid: true };
@@ -15741,104 +7376,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             return { valid: true };
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
-            const cardId = command.payload.cardId;
-            const actor = findExplorerByPlayerId(core, command.playerId);
-            const actionStatus = resolveBetrayalPossessionSpecialActionStatus(core, cardId, command.playerId);
-            if (!actor || !actionStatus.sourceId || !actor.inventory.some((card) => card.id === actionStatus.sourceId)) {
-                return { valid: false, error: actionStatus.reason ?? '当前没有可使用持有物。' };
-            }
-            if (!actionStatus.active) {
-                return { valid: false, error: actionStatus.reason ?? '该持有物没有主动使用效果。' };
-            }
-            const effect = USE_EFFECTS[actionStatus.effectId]!;
-            if (effect.mode === 'healTraits' && effect.target === 'selfOrSameRoomExplorer' && command.payload.targetPlayerId) {
-                const canTargetSelf = command.payload.targetPlayerId === actor.playerId;
-                const sameRoomTarget = getAllExplorers(core).some((explorer) => (
-                    explorer.playerId === command.payload.targetPlayerId
-                    && explorer.playerId !== actor.playerId
-                    && explorer.roomId === actor.roomId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                ));
-                if (!canTargetSelf && !sameRoomTarget) {
-                    return { valid: false, error: '急救包只能治疗自己或同板块的另一位探索者。' };
-                }
-            }
-            if (effect.mode === 'placeExplorer') {
-                const targetRoomId = command.payload.targetRoomId;
-                if (!targetRoomId || !core.rooms.some((room) => room.id === targetRoomId && room.state === 'discovered')) {
-                    const card = actor.inventory.find((item) => item.id === cardId);
-                    const cardName = card?.name ?? '该持有物';
-                    return { valid: false, error: `${cardName}只能把探索者放置到已发现板块。` };
-                }
-            }
-            if (effect.mode === 'moveOthersInRoom') {
-                const targetRoomId = command.payload.targetRoomId;
-                const currentRoom = core.rooms.find((room) => room.id === actor.roomId);
-                const targetRoomIdsByTokenId = command.payload.targetRoomIdsByTokenId ?? {};
-                const targetTokenIds = [
-                    ...getAllExplorers(core)
-                        .filter((explorer) => (
-                            explorer.playerId !== actor.playerId
-                            && explorer.roomId === actor.roomId
-                            && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                        ))
-                        .map((explorer) => explorer.playerId),
-                    ...core.monsters
-                        .filter((monster) => monster.roomId === actor.roomId)
-                        .map((monster) => monster.id),
-                ];
-                const hasOtherTargets = targetTokenIds.length > 0;
-                const requestedRoomIds = targetTokenIds.map((tokenId) => targetRoomIdsByTokenId[tokenId] ?? targetRoomId);
-                const hasTargetForEveryToken = requestedRoomIds.every(Boolean);
-                const connectedRoomIds = currentRoom ? resolveConnectedRoomIds(core.rooms, currentRoom.id) : new Set<string>();
-                const allTargetsValid = requestedRoomIds.every((roomId) => (
-                    Boolean(roomId)
-                    && core.rooms.some((room) => (
-                        room.id === roomId
-                        && room.state === 'discovered'
-                        && connectedRoomIds.has(room.id)
-                    ))
-                ));
-                const hasSameRoomExplorerTarget = getAllExplorers(core).some((explorer) => (
-                    explorer.playerId !== actor.playerId
-                    && explorer.roomId === actor.roomId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && Object.prototype.hasOwnProperty.call(targetRoomIdsByTokenId, explorer.playerId)
-                ));
-                const hasSameRoomMonsterTarget = core.monsters.some((monster) => (
-                    monster.roomId === actor.roomId
-                    && Object.prototype.hasOwnProperty.call(targetRoomIdsByTokenId, monster.id)
-                ));
-                const hasOnlySameRoomTokenKeys = Object.keys(targetRoomIdsByTokenId).every((tokenId) => (
-                    targetTokenIds.includes(tokenId)
-                ));
-                if (!hasOtherTargets) {
-                    return { valid: false, error: '当前板块没有可被面具移动的其他角色或怪物。' };
-                }
-                if (
-                    !currentRoom
-                    || !hasTargetForEveryToken
-                    || !allTargetsValid
-                    || !hasOnlySameRoomTokenKeys
-                    || (
-                        Object.keys(targetRoomIdsByTokenId).length > 0
-                        && !hasSameRoomExplorerTarget
-                        && !hasSameRoomMonsterTarget
-                    )
-                ) {
-                    return { valid: false, error: '面具只能把同板块其他角色移动到已发现的相邻板块。' };
-                }
-            }
-            if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
-                const selectedTotal = command.payload.replacementRollTotal;
-                if (!Number.isInteger(selectedTotal) || selectedTotal < effect.minTotal || selectedTotal > effect.maxTotal) {
-                    return { valid: false, error: `天使之羽必须选择 ${effect.minTotal}-${effect.maxTotal} 之间的整数作为投骰结果。` };
-                }
-            }
-            if (!actionStatus.canUse) {
-                return { valid: false, error: actionStatus.reason ?? '该持有物当前不能使用。' };
-            }
-            return { valid: true };
+            return validateBetrayalPossessionSpecialActionCommand(core, command.playerId, command.payload);
         }
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
             const actionStatus = resolveBetrayalRoomSpecialActionStatus(core);
@@ -15854,7 +7392,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (core.tradeUsedThisTurnPlayerIds.includes(core.currentExplorer.playerId)) {
                 return { valid: false, error: '本回合已经完成过交易。' };
             }
-            const cardIds = resolveTradeCardIds(core, command.payload);
+            const cardIds = resolveTradeCardIds(command.payload);
             const tradeTargets = command.payload.useDog ? resolveDogTradeTargets(core) : resolveTradeTargets(core);
             const targetPlayerId = command.payload.targetPlayerId;
             const targetCardIds = command.payload.targetCardIds ?? [];
@@ -16006,7 +7544,12 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     ) {
         return { valid: false, error: '请先选择木乃伊造成伤害或偷取物品/预兆。' };
     }
-    const recentRollRerollValidation = validateRecentRollRerollItemCommand(core, command);
+    const recentRollRerollValidation = command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
+        || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
+        ? validateBetrayalRecentRollRerollItemCommand(core, command.playerId, command.payload, {
+            legacyRabbitFoot: command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+        })
+        : null;
     if (recentRollRerollValidation) {
         if (core.pendingDamageAllocation && !isPendingDamageAllocationForAttackRoll(core)) {
             return { valid: false, error: '请先分配当前伤害。' };
@@ -16026,7 +7569,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         return cardResolutionAcknowledgement;
     }
     if (command.type === BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT) {
-        if (isPlayerControllingMonster(core, command.playerId)) {
+        if (isBetrayalPlayerControllingMonster(core, command.playerId)) {
             return { valid: false, error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。' };
         }
         return validatePreHauntAction({ ...state, core: { ...core, phase: 'preHaunt' } }, command);
@@ -16116,7 +7659,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     }
 
     if (
-        isPlayerControllingMonster(core, actor.playerId)
+        isBetrayalPlayerControllingMonster(core, actor.playerId)
         && (
             command.type === BETRAYAL_COMMANDS.USE_POSSESSION
             || command.type === BETRAYAL_COMMANDS.TRADE_POSSESSION
@@ -17187,7 +8730,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             return [nowEvent(EVENTS.EXPLORER_MOVED, {
                 playerId: command.playerId,
                 roomId: room.id,
-                moveCost: resolveMoveCost(core),
+                moveCost: resolveBetrayalMoveCost(core),
                 bloodFromStoneTurnStartVisibleStoneCherubIds,
                 bloodFromStoneNewLineOfSightDamageRoll,
                 logText: `${core.currentExplorer.displayName}移动到${room.name}`,
@@ -17905,60 +9448,16 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
-            const actor = findExplorerByPlayerId(core, command.playerId);
-            const card = actor?.inventory.find((item) => item.id === command.payload.cardId);
-            if (!card) {
-                return [];
-            }
-            const effect = resolveUseEffect(card);
-            if (!effect) {
-                throw new Error(`possession ${card.id} has no active use effect`);
-            }
-            const targetExplorer = effect.mode === 'healTraits' && effect.target === 'selfOrSameRoomExplorer'
-                ? (
-                    command.payload.targetPlayerId === actor.playerId
-                        ? actor
-                        : getAllExplorers(core).find((explorer) => explorer.playerId === command.payload.targetPlayerId)
-                )
-                : actor;
-            const eventRollReplacement = effect.mode === 'nextNonCombatTraitReplacement'
-                ? createBookPendingEventRollReplacement(
+            const eventPayload = resolveBetrayalPossessionUsedPayload(core, command.playerId, command.payload, {
+                createEventRollReplacement: (cardId) => createBookPendingEventRollReplacement(
                     core,
                     command.playerId,
-                    card.id,
+                    cardId,
                     random,
                     timestamp,
-                )
-                : null;
-            const actorName = actor.displayName;
-            const logText = effect.mode === 'move'
-                ? `${actorName}用${card.name}稳住路线，额外获得 ${effect.amount} 点移动`
-                : effect.mode === 'nextNonCombatTraitReplacement'
-                    ? eventRollReplacement
-                        ? `${actorName}使用${card.name}，失去 ${effect.sanityCost} 点神志；本次事件检定改用${TRAIT_LABEL[effect.replacementTrait]}重新投骰并结算`
-                        : `${actorName}使用${card.name}，失去 ${effect.sanityCost} 点神志；本回合下一次非战斗检定可用${TRAIT_LABEL[effect.replacementTrait]}替换`
-                    : effect.mode === 'nextNonCombatTraitRollTotalReplacement'
-                        ? `${actorName}埋葬${card.name}，下一次属性检定使用 ${command.payload.replacementRollTotal} 作为投骰结果`
-                        : effect.mode === 'extraTurnAfterTurnEnd'
-                            ? `${actorName}埋葬${card.name}，本回合结束后再进行一轮行动`
-                            : effect.mode === 'healTraits'
-                                ? `${actorName}埋葬${card.name}，治疗${targetExplorer?.displayName ?? actorName}的${effect.traits.map((trait) => TRAIT_LABEL[trait]).join('和')}`
-                                : effect.mode === 'placeExplorer'
-                                    ? `${actorName}埋葬${card.name}，放置到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '目标板块'}`
-                                    : effect.mode === 'moveOthersInRoom'
-                                        ? `${actorName}使用${card.name}，将同板块其他角色移动到${core.rooms.find((room) => room.id === command.payload.targetRoomId)?.name ?? '相邻板块'}`
-                                        : `${actorName}用${card.name}调整状态，${TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
-            return [nowEvent(EVENTS.POSSESSION_USED, {
-                playerId: command.playerId,
-                cardId: card.id,
-                effect,
-                targetPlayerId: targetExplorer?.playerId,
-                targetRoomId: command.payload.targetRoomId,
-                targetRoomIdsByTokenId: command.payload.targetRoomIdsByTokenId,
-                replacementRollTotal: command.payload.replacementRollTotal,
-                eventRollReplacement: eventRollReplacement ?? undefined,
-                logText,
-            }, timestamp)];
+                ),
+            });
+            return eventPayload ? [nowEvent(EVENTS.POSSESSION_USED, eventPayload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
         case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM: {
@@ -18324,7 +9823,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     }, timestamp)];
                 }
                 const hauntRisk = resolveBetrayalHauntRisk(core);
-                const dice = rollDicePips(random, hauntRisk.omenCount);
+                const dice = rollBetrayalDicePips(random, hauntRisk.omenCount);
                 const rollTotal = dice.reduce((sum, pip) => sum + pip, 0);
                 const hauntTriggered = rollTotal >= hauntRisk.threshold;
                 const dustSetup = hauntTriggered && pending.effect.successHauntId === 3
@@ -18726,98 +10225,23 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.TRADE_POSSESSION: {
-            const cardIds = resolveTradeCardIds(core, command.payload);
-            const targetCardIds = Array.from(new Set(command.payload.targetCardIds ?? []));
-            const cards = cardIds
-                .map((cardId) => core.currentExplorer.inventory.find((item) => item.id === cardId))
-                .filter((card): card is BetrayalInventoryCard => Boolean(card));
-            const tradeTargets = command.payload.useDog ? resolveDogTradeTargets(core) : resolveTradeTargets(core);
-            const target = tradeTargets.find((item) => item.playerId === command.payload.targetPlayerId)!;
-            const targetCards = targetCardIds
-                .map((cardId) => target.inventory.find((item) => item.id === cardId))
-                .filter((card): card is BetrayalInventoryCard => Boolean(card));
-            const dogSourceCardId = command.payload.useDog ? resolveDogTradeSourceCardId(core) ?? undefined : undefined;
-            const tradeRequestDetail = formatTradePossessionSummary(
-                core.currentExplorer.displayName,
-                target.displayName,
-                cards,
-                targetCards,
-            );
-            return [nowEvent(EVENTS.POSSESSION_TRADE_REQUESTED, {
-                playerId: command.playerId,
-                targetPlayerId: target.playerId,
-                cardId: cards[0]?.id ?? targetCards[0]!.id,
-                cardIds: cards.map((card) => card.id),
-                targetCardIds: targetCards.map((card) => card.id),
-                sourceCardId: dogSourceCardId,
-                useDog: command.payload.useDog,
-                logText: command.payload.useDog
-                    ? `${core.currentExplorer.displayName}请${target.displayName}同意用狗交易：${tradeRequestDetail}`
-                    : `${core.currentExplorer.displayName}请${target.displayName}同意交易：${tradeRequestDetail}`,
-            }, timestamp)];
+            const tradeRequestPayload = createBetrayalTradeRequestedPayload(core, command.playerId, command.payload);
+            return tradeRequestPayload
+                ? [nowEvent(EVENTS.POSSESSION_TRADE_REQUESTED, tradeRequestPayload, timestamp)]
+                : [];
         }
         case BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT: {
-            const pending = core.pendingTradeAgreement;
-            if (!pending) {
+            const tradeAgreementEvent = resolveBetrayalTradeAgreementEventPayload(core, command.payload.accept);
+            if (!tradeAgreementEvent) {
                 return [];
             }
-            const requester = findExplorerByPlayerId(core, pending.playerId) ?? core.currentExplorer;
-            const target = findExplorerByPlayerId(core, pending.targetPlayerId);
-            if (!target) {
-                return [];
-            }
-            const cards = pending.cardIds
-                .map((cardId) => requester.inventory.find((item) => item.id === cardId))
-                .filter((card): card is BetrayalInventoryCard => Boolean(card));
-            const targetCards = pending.targetCardIds
-                .map((cardId) => target.inventory.find((item) => item.id === cardId))
-                .filter((card): card is BetrayalInventoryCard => Boolean(card));
-            if (!command.payload.accept) {
-                return [nowEvent(EVENTS.POSSESSION_TRADE_DECLINED, {
-                    playerId: pending.playerId,
-                    targetPlayerId: pending.targetPlayerId,
-                    cardIds: [...pending.cardIds],
-                    targetCardIds: [...pending.targetCardIds],
-                    logText: `${target.displayName}拒绝了${requester.displayName}的交易请求`,
-                }, timestamp)];
-            }
-            if (cards.length !== pending.cardIds.length || targetCards.length !== pending.targetCardIds.length) {
-                return [nowEvent(EVENTS.POSSESSION_TRADE_DECLINED, {
-                    playerId: pending.playerId,
-                    targetPlayerId: pending.targetPlayerId,
-                    cardIds: [...pending.cardIds],
-                    targetCardIds: [...pending.targetCardIds],
-                    logText: `${requester.displayName}的交易请求已失效`,
-                }, timestamp)];
-            }
-            const tradeResultDetail = formatTradePossessionSummary(
-                requester.displayName,
-                target.displayName,
-                cards,
-                targetCards,
-            );
-            return [nowEvent(EVENTS.POSSESSION_TRADED, {
-                playerId: pending.playerId,
-                targetPlayerId: pending.targetPlayerId,
-                cardId: pending.cardIds[0] ?? pending.targetCardIds[0]!,
-                cardIds: [...pending.cardIds],
-                targetCardIds: [...pending.targetCardIds],
-                sourceCardId: pending.sourceCardId,
-                logText: pending.useDog
-                    ? `${target.displayName}同意交易，${requester.displayName}使用狗完成交易：${tradeResultDetail}`
-                    : `${target.displayName}同意交易：${tradeResultDetail}`,
-            }, timestamp)];
+            return tradeAgreementEvent.kind === 'accepted'
+                ? [nowEvent(EVENTS.POSSESSION_TRADED, tradeAgreementEvent.payload, timestamp)]
+                : [nowEvent(EVENTS.POSSESSION_TRADE_DECLINED, tradeAgreementEvent.payload, timestamp)];
         }
         case BETRAYAL_COMMANDS.LOOT_CORPSE: {
-            const corpseTargets = resolveCorpseLootTargets(core);
-            const source = corpseTargets.find((item) => item.playerId === command.payload.sourcePlayerId)!;
-            const card = source.inventory.find((item) => item.id === command.payload.cardId)!;
-            return [nowEvent(EVENTS.CORPSE_LOOTED, {
-                playerId: command.playerId,
-                sourcePlayerId: source.playerId,
-                cardId: card.id,
-                logText: `${core.currentExplorer.displayName}从${source.displayName}的尸体上拿走了${card.name}`,
-            }, timestamp)];
+            const corpseLootPayload = createBetrayalCorpseLootedPayload(core, command.playerId, command.payload);
+            return corpseLootPayload ? [nowEvent(EVENTS.CORPSE_LOOTED, corpseLootPayload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.END_TURN: {
             const roomEndTurnEffect = resolveEndTurnRoomEffect(core, random);
@@ -19094,7 +10518,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const monsterRolls = core.monsters
                     .filter((monster) => monster.roomId === targetRoom.id && resolveMonsterStatusKind(core, monster.id) === 'active')
                     .map((monster): BetrayalDynamiteMonsterRoll => {
-                        const dice = rollDicePips(random, resolveMonsterTrait(monster, 'speed'));
+                        const dice = rollBetrayalDicePips(random, resolveMonsterTrait(monster, 'speed'));
                         const total = dice.reduce((sum, pip) => sum + pip, 0);
                         const passed = total >= 4;
                         return {
@@ -19581,7 +11005,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const defenderTraitsBeforeDamage = { ...targetExplorer.traits };
                 const dustAttackRoll = feverish
                     ? {
-                        dice: rollDicePips(random, feverish.might),
+                        dice: rollBetrayalDicePips(random, feverish.might),
                         passiveBonus: 0,
                     }
                     : rollAttackWithDice(random, attacker, weaponEffect);
@@ -19749,7 +11173,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const defenderTraitsBeforeDamage = targetHero ? { ...targetHero.traits } : undefined;
                 const attackRoll = jackSpirit
                     ? (() => {
-                        const dice = rollDicePips(random, jackSpirit.might);
+                        const dice = rollBetrayalDicePips(random, jackSpirit.might);
                         return {
                             total: dice.reduce((sum, pip) => sum + pip, 0),
                             dice,
@@ -19977,21 +11401,12 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         }
         case BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS: {
             const plan = resolveBloodFromStoneSetupPlacementPlan(core);
-            const roomById = new Map(core.rooms.map((room) => [room.id, room]));
-            const startIndex = plan.automaticExtraPlacements.length + plan.playerChoicePlacements.length;
-            const placements = (command.payload.roomIds ?? [])
-                .map((roomId, index) => {
-                    const room = roomById.get(roomId);
-                    return room
-                        ? createBloodFromStoneSetupPlacement(
-                            `stone-cherub-extra-${startIndex + index + 1}`,
-                            room,
-                            'extra-player-choice',
-                            startIndex + index + 1,
-                        )
-                        : null;
-                })
-                .filter((placement): placement is BetrayalBloodFromStoneSetupPlacement => Boolean(placement));
+            const existingExtraPlacementCount = plan.automaticExtraPlacements.length + plan.playerChoicePlacements.length;
+            const placements = resolveBloodFromStoneSelectedExtraStoneCherubPlacements(
+                core,
+                command.payload.roomIds ?? [],
+                existingExtraPlacementCount,
+            );
             if (placements.length === 0) {
                 return [];
             }
@@ -20012,7 +11427,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }
             const attackTrait = resolveMonsterDefaultAttackTrait(monster);
             const damageKind = resolveAttackDamageKind(attackTrait);
-            const monsterDice = rollDicePips(random, resolveMonsterTrait(monster, attackTrait));
+            const monsterDice = rollBetrayalDicePips(random, resolveMonsterTrait(monster, attackTrait));
             const monsterRoll = monsterDice.reduce((sum, pip) => sum + pip, 0);
             const heroRoll = rollAttackDefense(random, target, null, attackTrait);
             const damageToHero = Math.max(0, monsterRoll - heroRoll);
@@ -20162,7 +11577,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [];
             }
             const defenderTraitsBeforeDamage = { ...target.traits };
-            const dice = rollDicePips(random, option.might);
+            const dice = rollBetrayalDicePips(random, option.might);
             const attackerRoll = dice.reduce((sum, pip) => sum + pip, 0);
             const defenderRoll = rollTrait(random, target.traits.might);
             const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
@@ -20336,7 +11751,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             if (!monster || !target) {
                 return [];
             }
-            const dice = rollDicePips(random, monster.sanity ?? 6);
+            const dice = rollBetrayalDicePips(random, monster.sanity ?? 6);
             const monsterRoll = dice.reduce((sum, pip) => sum + pip, 0);
             const heroRoll = rollTrait(random, target.traits.sanity);
             const damageToHero = Math.max(0, monsterRoll - heroRoll);
@@ -20369,7 +11784,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const mirrorBonus = hasBloodFromStoneMirror(actor) ? 2 : 0;
             const rollTotal = roll.total + mirrorBonus;
             const success = rollTotal >= 4;
-            const damageDice = success ? undefined : rollDicePips(random, 2);
+            const damageDice = success ? undefined : rollBetrayalDicePips(random, 2);
             const damageAmount = damageDice?.reduce((sum, pip) => sum + pip, 0);
             return [nowEvent(EVENTS.BLOOD_FROM_STONE_PEEKABOO_RESOLVED, {
                 playerId: actor.playerId,
@@ -20536,7 +11951,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [];
             }
             const heroRoll = rollTraitCheckWithDice(random, actor, 'sanity', core);
-            const mummyDice = rollDicePips(random, resolveMonsterTrait(mummy, 'sanity'));
+            const mummyDice = rollBetrayalDicePips(random, resolveMonsterTrait(mummy, 'sanity'));
             const mummyRoll = mummyDice.reduce((sum, pip) => sum + pip, 0);
             const success = heroRoll.total > mummyRoll;
             return [nowEvent(EVENTS.MUMMY_BANISHED, {
@@ -20778,7 +12193,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     ?.doorways.find((doorway) => doorway.connectsToRoomId === targetRoom.id);
                 targetRoom.entryEdge = reverseDoorway?.edge ?? targetRoom.doorways[0]?.edge ?? 'west';
                 targetRoom.orientationTurns = event.payload.room.orientationTurns;
-                const connectionEdge = oppositeEdge(targetRoom.entryEdge);
+                const connectionEdge = resolveOppositeRoomEdge(targetRoom.entryEdge);
                 let connectedToEntry = false;
                 targetRoom.doorways = targetRoom.doorways.map((doorway) => {
                     if (doorway.connectsToRoomId === core.activeRoomId) {
@@ -20837,7 +12252,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ? []
                 : createPendingCardResolutionQueue({
                     playerId: event.payload.playerId,
-                    requiredPlayerIds: core.playerIds,
+                    requiredPlayerIds: resolveRoomExploredCardResolutionRequiredPlayerIds(core, event),
                     roomId: event.payload.roomId,
                     timestamp: event.timestamp,
                     deckKind: event.payload.deckKind,
@@ -21199,16 +12614,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
                 : null;
             const nextDiscovery = cloneDiscoverySummary(eventChoiceDiscovery);
-            if (
-                previousDiscovery?.kind === nextDiscovery.kind
-                && previousDiscovery.title === nextDiscovery.title
-                && previousDiscovery.resolutionSteps?.length
-            ) {
-                nextDiscovery.resolutionSteps = [
-                    ...previousDiscovery.resolutionSteps.map((step) => ({ ...step })),
-                    ...(nextDiscovery.resolutionSteps ?? []).map((step) => ({ ...step })),
-                ];
-            }
+            mergePreviousDiscoveryResolutionSteps(previousDiscovery, nextDiscovery);
             core.latestDiscovery = nextDiscovery;
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
             if (event.payload.drawnEventCardNameToBury) {
@@ -21658,7 +13064,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     };
                 }
             } else if (recentRoll.kind === 'mysticElevator') {
-                const roomsBeforeRoll = recentRoll.roomsBeforeRoll?.map(cloneRoom);
+                const roomsBeforeRoll = recentRoll.roomsBeforeRoll?.map(cloneBetrayalRoom);
                 const roomId = recentRoll.roomId ?? core.currentExplorer.roomId;
                 const roomBeforeRoll = roomsBeforeRoll?.find((room) => room.id === roomId);
                 const destination = roomsBeforeRoll
@@ -21823,18 +13229,73 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             );
             const previousDiscovery = core.latestDiscovery;
             const eventDiscovery = cloneDiscoverySummary(event.payload.discovery);
-            if (
-                previousDiscovery?.kind === eventDiscovery.kind
-                && previousDiscovery.title === eventDiscovery.title
-                && previousDiscovery.resolutionSteps?.length
-            ) {
-                eventDiscovery.resolutionSteps = [
-                    ...previousDiscovery.resolutionSteps.map((step) => ({ ...step })),
-                    ...(eventDiscovery.resolutionSteps ?? []).map((step) => ({ ...step })),
-                ];
-            }
+            mergePreviousDiscoveryResolutionSteps(previousDiscovery, eventDiscovery);
             core.latestDiscovery = eventDiscovery;
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            const eventCardResolutionQueue = !event.payload.nextPendingEventChoice
+                && (eventDiscovery.resolutionSteps?.length ?? 0) > 1
+                ? createPendingCardResolutionQueue({
+                    playerId: event.payload.playerId,
+                    requiredPlayerIds: core.playerIds,
+                    roomId: core.currentExplorer.roomId,
+                    timestamp: event.timestamp,
+                    deckKind: 'event',
+                    discovery: eventDiscovery,
+                })
+                : [];
+            if (event.payload.eventEffect && eventCardResolutionQueue.length > 0) {
+                const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
+                    ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
+                    : null;
+                const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
+                    ? core.monsters.map(cloneMonster)
+                    : [];
+                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
+                const {
+                    eventEffectSnapshot,
+                    pendingRolledDamageAllocation,
+                } = applyEventEffectWithDeferredRolledDamage(
+                    core,
+                    event.payload.eventEffect,
+                    event.payload.sourceTitle,
+                    event.timestamp,
+                );
+                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
+                    applyImmediateEventDeathPreventionIfNeeded(
+                        core,
+                        event.payload.deathPrevention,
+                        event.timestamp,
+                        deathPreventionScenarioRuntimeBeforeDefeat,
+                        deathPreventionMonstersBeforeDefeat,
+                    );
+                }
+                const replacedWithDamageRoll = (
+                    pendingRolledDamageAllocation
+                    || !event.payload.deathPrevention?.dice.length
+                )
+                    ? setEventRolledDamageRecentRollFromSnapshot(
+                        core,
+                        eventEffectSnapshot,
+                        event.payload.sourceTitle,
+                        event.timestamp,
+                        sourceEventRollBeforeEffect,
+                    )
+                    : false;
+                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
+                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
+                }
+                core.pendingEventRollResolution = null;
+                core.pendingCardResolutionQueue = eventCardResolutionQueue;
+                core.turnEndedByDiscovery = true;
+                const pendingDamageAllocationAfterEventRoll = core.pendingDamageAllocation;
+                const synced = syncCurrentExplorerProjection(core);
+                return {
+                    ...synced,
+                    recommendedAction: pendingDamageAllocationAfterEventRoll ? 'endTurn' : resolveRecommendedAction(synced),
+                    activePlayerId: pendingDamageAllocationAfterEventRoll?.playerId ?? synced.activePlayerId,
+                    activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
+                };
+            }
             if (event.payload.eventEffect || event.payload.nextPendingEventChoice) {
                 const nextPendingEventChoice = event.payload.nextPendingEventChoice
                     ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
@@ -22121,84 +13582,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     activityLog: appendActivity(synced, event.payload.logText, 'accent'),
                 };
             }
-            if (event.payload.effect.mode === 'move') {
-                core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + event.payload.effect.amount));
-            } else if (event.payload.effect.mode === 'nextNonCombatTraitReplacement') {
-                const owner = findExplorerByPlayerId(core, event.payload.playerId) ?? core.currentExplorer;
-                applyTraitLoss(owner, ['sanity'], event.payload.effect.sanityCost);
-                core.nextNonCombatTraitReplacement = {
-                    playerId: event.payload.playerId,
-                    sourceCardId: event.payload.cardId,
-                    replacementTrait: event.payload.effect.replacementTrait,
-                };
-            } else if (event.payload.effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
-                const usedCard = core.currentExplorer.inventory.find((item) => item.id === event.payload.cardId);
-                if (event.payload.effect.consumeOnUse) {
-                    core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
-                }
-                core.nextNonCombatTraitRollTotalReplacement = {
-                    playerId: event.payload.playerId,
-                    sourceCardId: event.payload.cardId,
-                    sourceCardName: usedCard?.name ?? '天使之羽',
-                    selectedTotal: event.payload.replacementRollTotal ?? event.payload.effect.minTotal,
-                };
-            } else if (event.payload.effect.mode === 'healTraits') {
-                const target = event.payload.targetPlayerId && event.payload.targetPlayerId !== core.currentExplorer.playerId
-                    ? core.otherExplorers.find((explorer) => explorer.playerId === event.payload.targetPlayerId)
-                    : core.currentExplorer;
-                if (target) {
-                    healExplorerTraitsToTemplate(target, event.payload.effect.traits);
-                }
-                if (event.payload.effect.consumeOnUse) {
-                    core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
-                }
-            } else if (event.payload.effect.mode === 'placeExplorer') {
-                const targetRoom = core.rooms.find((room) => room.id === event.payload.targetRoomId && room.state === 'discovered');
-                if (targetRoom) {
-                    core.currentExplorer.roomId = targetRoom.id;
-                }
-                if (event.payload.effect.consumeOnUse) {
-                    core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
-                }
-            } else if (event.payload.effect.mode === 'extraTurnAfterTurnEnd') {
-                const usedCard = core.currentExplorer.inventory.find((item) => item.id === event.payload.cardId);
-                if (event.payload.effect.consumeOnUse) {
-                    core.currentExplorer.inventory = core.currentExplorer.inventory.filter((item) => item.id !== event.payload.cardId);
-                }
-                core.pendingExtraTurnAfterCurrentTurn = {
-                    playerId: event.payload.playerId,
-                    sourceCardId: event.payload.cardId,
-                    sourceCardName: usedCard?.name ?? '神秘秒表',
-                };
-            } else if (event.payload.effect.mode === 'moveOthersInRoom') {
-                const targetRoomIdsByTokenId = event.payload.targetRoomIdsByTokenId ?? {};
-                core.otherExplorers = core.otherExplorers.map((explorer) => {
-                    const targetRoomId = targetRoomIdsByTokenId[explorer.playerId] ?? event.payload.targetRoomId;
-                    const targetRoom = core.rooms.find((room) => room.id === targetRoomId && room.state === 'discovered');
-                    return explorer.roomId === core.currentExplorer.roomId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && targetRoom
-                        ? { ...explorer, roomId: targetRoom.id }
-                        : explorer;
-                });
-                core.monsters = core.monsters.map((monster) => {
-                    const targetRoomId = targetRoomIdsByTokenId[monster.id] ?? event.payload.targetRoomId;
-                    const targetRoom = core.rooms.find((room) => room.id === targetRoomId && room.state === 'discovered');
-                    return monster.roomId === core.currentExplorer.roomId && targetRoom
-                        ? { ...monster, roomId: targetRoom.id }
-                        : monster;
-                });
-            } else {
-                moveExplorerTraitSteps(
-                    core.currentExplorer,
-                    event.payload.effect.trait!,
-                    event.payload.effect.amount,
-                );
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-            core.latestDiscovery = null;
-            core.latestDiscoveryOwnerPlayerId = null;
-            core.latestRoomDrawResolution = null;
+            applyBetrayalPossessionUsedState(core, event.payload);
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,
@@ -22210,7 +13594,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (event.payload.effect.kind !== 'mysticElevator') {
                 return core;
             }
-            const roomsBeforeRoll = core.rooms.map(cloneRoom);
+            const roomsBeforeRoll = core.rooms.map(cloneBetrayalRoom);
             core.rooms = moveMysticElevatorRoom(core.rooms, event.payload.effect);
             core.currentExplorer.roomId = event.payload.effect.roomId;
             core.scenarioRuntime.usedRoomEffectIdsThisTurn = Array.from(new Set([
@@ -22240,55 +13624,14 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.POSSESSION_TRADED: {
-            const cardIds = event.payload.cardIds ?? [event.payload.cardId];
-            const targetCardIds = event.payload.targetCardIds ?? [];
-            const requester = findExplorerByPlayerId(core, event.payload.playerId);
-            const target = findExplorerByPlayerId(core, event.payload.targetPlayerId);
-            if (!requester || !target) {
+            const tradeResult = applyBetrayalTradeAcceptedState(core, event.payload);
+            if (!tradeResult) {
                 return core;
-            }
-            const cards = cardIds
-                .map((cardId) => requester.inventory.find((item) => item.id === cardId))
-                .filter((card): card is BetrayalInventoryCard => Boolean(card));
-            const targetCards = targetCardIds
-                .map((cardId) => target.inventory.find((item) => item.id === cardId))
-                .filter((card): card is BetrayalInventoryCard => Boolean(card));
-            if (cards.length !== cardIds.length || targetCards.length !== targetCardIds.length || (cards.length === 0 && targetCards.length === 0)) {
-                return core;
-            }
-            core.pendingTradeAgreement = null;
-            core.activePlayerId = null;
-            const transferredIds = new Set(cards.map((card) => card.id));
-            const receivedIds = new Set(targetCards.map((card) => card.id));
-            requester.inventory = [
-                ...requester.inventory.filter((item) => !transferredIds.has(item.id)),
-                ...targetCards.map(cloneInventoryCard),
-            ];
-            target.inventory = [
-                ...target.inventory.filter((item) => !receivedIds.has(item.id)),
-                ...cards.map(cloneInventoryCard),
-            ];
-            core.receivedCardIdsThisTurnByPlayerId = {
-                ...core.receivedCardIdsThisTurnByPlayerId,
-                [requester.playerId]: Array.from(new Set([
-                    ...(core.receivedCardIdsThisTurnByPlayerId[requester.playerId] ?? []),
-                    ...targetCards.map((card) => card.id),
-                ])),
-                [target.playerId]: Array.from(new Set([
-                    ...(core.receivedCardIdsThisTurnByPlayerId[target.playerId] ?? []),
-                    ...cards.map((card) => card.id),
-                ])),
-            };
-            if (event.payload.sourceCardId) {
-                core.usedCardIdsThisTurn = Array.from(new Set([
-                    ...core.usedCardIdsThisTurn,
-                    event.payload.sourceCardId,
-                ]));
             }
             const synced = syncCurrentExplorerProjection(core);
             const tradeUsedThisTurnPlayerIds = Array.from(new Set([
                 ...core.tradeUsedThisTurnPlayerIds,
-                requester.playerId,
+                tradeResult.requesterPlayerId,
             ]));
             return {
                 ...synced,
@@ -22298,46 +13641,28 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.POSSESSION_TRADE_REQUESTED: {
-            const cardIds = event.payload.cardIds ?? [event.payload.cardId];
+            core.pendingTradeAgreement = createBetrayalPendingTradeAgreement(event.payload, event.timestamp);
+            core.activePlayerId = event.payload.targetPlayerId;
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,
-                pendingTradeAgreement: {
-                    id: `trade-${event.payload.playerId}-${event.payload.targetPlayerId}-${event.timestamp}`,
-                    playerId: event.payload.playerId,
-                    targetPlayerId: event.payload.targetPlayerId,
-                    cardIds: [...cardIds],
-                    targetCardIds: [...(event.payload.targetCardIds ?? [])],
-                    useDog: event.payload.useDog,
-                    sourceCardId: event.payload.sourceCardId,
-                },
-                activePlayerId: event.payload.targetPlayerId,
                 recommendedAction: resolveRecommendedAction(synced),
                 activityLog: appendActivity(synced, event.payload.logText, 'accent'),
             };
         }
         case EVENTS.POSSESSION_TRADE_DECLINED: {
+            clearBetrayalPendingTradeAgreement(core);
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,
-                pendingTradeAgreement: null,
-                activePlayerId: null,
                 recommendedAction: resolveRecommendedAction(synced),
                 activityLog: appendActivity(synced, event.payload.logText, 'neutral'),
             };
         }
         case EVENTS.CORPSE_LOOTED: {
-            const source = core.otherExplorers.find((explorer) => explorer.playerId === event.payload.sourcePlayerId);
-            const card = source?.inventory.find((item) => item.id === event.payload.cardId);
-            if (!source || !card) {
+            if (!applyBetrayalCorpseLootedState(core, event.payload)) {
                 return core;
             }
-            source.inventory = source.inventory.filter((item) => item.id !== card.id);
-            core.currentExplorer.inventory = [...core.currentExplorer.inventory, cloneInventoryCard(card)];
-            core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = Array.from(new Set([
-                ...core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn,
-                source.playerId,
-            ]));
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,

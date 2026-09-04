@@ -1,0 +1,70 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "title": "山屋惊魂教程交易段当前通过图组",
+  "requirements": [
+    {
+      "requirement": "教程交易段必须按真实流程承接：同房间可交易 -> 点交易 -> 选己方给出物 -> 选同房队友 -> 选对方给出物 -> 提交方案 -> 等接收方同意 -> 公开转移结果。",
+      "status": "PASS",
+      "evidence": [
+        "E2E: node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts --grep \"交易教程会选双方持有物、提交方案后等待队友正式自动同意\" => 1 passed",
+        "screenshots: evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg through 18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+      ]
+    },
+    {
+      "requirement": "交易确认语义必须是双边提案：发起方提交方案后不转移持有物，接收方同意后才结算；教程不得要求当前玩家切视角或替队友点同意。",
+      "status": "PASS",
+      "evidence": [
+        "tutorial E2E asserts waiting state after proposal and no visible receiver agreement panel on the current player page",
+        "tutorial text: requestWaiting says receiver agrees through the formal trade response, without switching viewpoint or clicking for teammate"
+      ]
+    },
+    {
+      "requirement": "交易横幅必须简化：顶部只显示一行状态，方案详情和提交/同意/拒绝操作必须在底部同一操作层。",
+      "status": "PASS",
+      "evidence": [
+        "formal trade E2E: node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/first-scenario-trade-interaction.e2e.ts --grep \"交易|横幅|方案|同意\" => 6 passed",
+        "Board DOM contract: betrayal-trade-flow-banner uses data-trade-progress-visible=\"status-only\"; proposal details are under betrayal-trade-action-panel"
+      ]
+    },
+    {
+      "requirement": "教程卡不得遮挡本步骤要读或点击的交易主体，包括急救包、地图 token、对方持有物候选、提交方案按钮和等待横幅。",
+      "status": "PASS",
+      "evidence": [
+        "tutorial E2E expectTutorialCardDoesNotCoverTargets checks trade action, medical kit, teammate token, return selector, map card, trade banner",
+        "screenshot 14 was regenerated after moving choose-trade-item tooltip to the right of the inventory card"
+      ]
+    },
+    {
+      "requirement": "本轮展示图组必须只包含当前通过的交易截图，不混入旧的 18/19 或 29/35 历史图。",
+      "status": "PASS",
+      "evidence": [
+        "selected current files last written 2026-09-04 12:26:38-12:26:45",
+        "label sequence output contains exactly 00-sequence-index.png plus six NN-labeled images generated from the current six source screenshots"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "evidence/betrayal-tutorial/13-山屋惊魂-教程-交易同房间说明.jpg",
+    "evidence/betrayal-tutorial/14-山屋惊魂-教程-交易选择急救包.jpg",
+    "evidence/betrayal-tutorial/15-山屋惊魂-教程-交易选择队友.jpg",
+    "evidence/betrayal-tutorial/16-山屋惊魂-教程-交易选择对方地图.jpg",
+    "evidence/betrayal-tutorial/17-山屋惊魂-教程-交易请求等待同意.jpg",
+    "evidence/betrayal-tutorial/18-山屋惊魂-教程-交易自动同意公开结果.jpg"
+  ],
+  "images": [
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/00-sequence-index.png",
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/01-labeled-13-山屋惊魂-教程-交易同房间说明.png",
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/02-labeled-14-山屋惊魂-教程-交易选择急救包.png",
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/03-labeled-15-山屋惊魂-教程-交易选择队友.png",
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/04-labeled-16-山屋惊魂-教程-交易选择对方地图.png",
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/05-labeled-17-山屋惊魂-教程-交易请求等待同意.png",
+    "evidence/betrayal-tutorial/_labeled-trade-flow-20260904-1226/06-labeled-18-山屋惊魂-教程-交易自动同意公开结果.png"
+  ]
+}

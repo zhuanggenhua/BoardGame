@@ -63,8 +63,9 @@ describe('mage-wars foundation', () => {
         });
         expect(manifest.ai).toMatchObject({
             capture: true,
-            localAi: false,
+            localAi: true,
             remoteAi: false,
+            defaultLocalAiSeats: 'first-opponent',
         });
     });
 

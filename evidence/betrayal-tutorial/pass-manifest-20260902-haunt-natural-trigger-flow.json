@@ -1,0 +1,85 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-02T20:48:40.5692932+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "默认教程主线必须优先多数 / 常规视角；叛徒、私密读本和少数身份必须拆为独立章节、补充专题或分段证据。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md",
+        "docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md"
+      ]
+    },
+    {
+      "requirement": "作祟自然触发教程必须从当前玩家自己的回合起跑；当前玩家不能切座位或代替队友执行移动、探索、确认或结束回合。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/tutorial.ts",
+        "src/games/betrayal/testing/firstScenarioTestUtils.ts",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts"
+      ]
+    },
+    {
+      "requirement": "队友前置必须按正式命令自然推进为公开结果：队友 1 指环未触发，队友 2 狗未触发，回到当前玩家后再交回合，队友 1 面具和 3 颗作祟骰触发作祟。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/03-等待队友一探索预兆房间.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/04-队友一获得指环未触发.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/05-队友二翻出狗未触发.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/08-队友一翻出面具触发作祟.jpg"
+      ]
+    },
+    {
+      "requirement": "作祟公开后，当前玩家必须作为英雄自动打开英雄剧本书，继续页和回看页都不能显示叛徒剧本书。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/09-当前玩家自动打开英雄开场.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/10-继续后阅读英雄胜利条件.jpg",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/12-作祟后回看英雄目标.jpg"
+      ]
+    },
+    {
+      "requirement": "用户展示图组必须只包含本轮自然作祟后续流程，连续编号可逐帧承接，不能混入旧叛徒主线图、代表态图或失败诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow-sequence.json",
+        "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2",
+        "evidence/betrayal-tutorial/haunt-natural-trigger-flow/*.jpg -> 12 张"
+      ]
+    },
+    {
+      "requirement": "当前工作树的真实浏览器 E2E 必须通过，并重新生成本轮截图。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-command.mjs isolated e2e/betrayal/betrayal-tutorial.e2e.ts -g \"haunt-natural\" -> 1 passed",
+        "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -> 17 passed"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/00-sequence-index.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/01-labeled-01-自然流程起点结束当前回合.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/02-labeled-02-交给队友一回合.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/03-labeled-03-等待队友一探索预兆房间.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/04-labeled-04-队友一获得指环未触发.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/05-labeled-05-队友二翻出狗未触发.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/06-labeled-06-狗确认后回到当前玩家.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/07-labeled-07-再次结束当前回合.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/08-labeled-08-队友一翻出面具触发作祟.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/09-labeled-09-当前玩家自动打开英雄开场.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/10-labeled-10-继续后阅读英雄胜利条件.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/11-labeled-11-关闭剧本书后进入作祟牌桌.png",
+    "evidence/betrayal-tutorial/_labeled-haunt-natural-trigger-flow-20260902-v2/12-labeled-12-作祟后回看英雄目标.png"
+  ],
+  "notes": [
+    "本清单只用于 2026-09-02 小黑屋教程作祟自然触发重构后的最终用户可见图组。",
+    "默认主线现在是 P0 作为英雄观察队友自然触发作祟并阅读英雄书；叛徒书仍留在独立叛徒视角章节。"
+  ]
+}

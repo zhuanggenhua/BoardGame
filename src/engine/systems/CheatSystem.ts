@@ -88,6 +88,10 @@ export interface SetStatePayload<TCore> {
 export interface MergeStatePayload {
     /** 要合并到 core 的部分字段 */
     fields: Record<string, unknown>;
+    /** 可选设置当前系统阶段；不得通过 MERGE_STATE 覆盖教程进度等其它系统状态 */
+    sysFields?: {
+        phase?: string;
+    };
 }
 
 export interface DealCardByIndexPayload {
@@ -220,10 +224,14 @@ export function createCheatSystem<TCore>(
 
             if (command.type === CHEAT_COMMANDS.MERGE_STATE) {
                 const payload = command.payload as MergeStatePayload;
+                const nextSys = typeof payload.sysFields?.phase === 'string'
+                    ? { ...state.sys, phase: payload.sysFields.phase }
+                    : state.sys;
                 return {
                     halt: true,
                     state: {
                         ...state,
+                        sys: nextSys,
                         core: deepMerge(state.core as Record<string, unknown>, payload.fields) as TCore,
                     },
                 };

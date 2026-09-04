@@ -164,6 +164,48 @@ describe('CheatSystem', () => {
         expect(result?.state?.core.madnessDeck).toEqual(['special_madness']);
     });
 
+    it('MERGE_STATE 可以同步设置教程练习局面的当前阶段，但不覆盖教程进度', () => {
+        const system = createCheatSystem<TestCore>();
+        const state = createTestState({
+            players: {
+                '0': { statusEffects: {} },
+                '1': { statusEffects: {} },
+            },
+        });
+        const command: Command = {
+            type: CHEAT_COMMANDS.MERGE_STATE,
+            playerId: '0',
+            payload: {
+                fields: {
+                    players: {
+                        '0': {
+                            statusEffects: {
+                                focused: 1,
+                            },
+                        },
+                    },
+                },
+                sysFields: {
+                    phase: 'deployment',
+                    tutorial: { active: false },
+                },
+            },
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.state?.sys.phase).toBe('deployment');
+        expect(result?.state?.sys.tutorial).toEqual(state.sys.tutorial);
+        expect(result?.state?.core.players['0'].statusEffects.focused).toBe(1);
+    });
+
     it('MERGE_STATE: 深合并玩家字段时不应污染未点名的 madnessDeck 字符串数组', () => {
         const system = createCheatSystem<TestCore>({
             getResource: () => 0,

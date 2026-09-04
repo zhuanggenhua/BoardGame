@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'path';
+import type { BetrayalCore } from '../../src/games/betrayal/game';
 import {
     resolveBetrayalMonsterMovementGroups,
-    type BetrayalCore,
     type BetrayalMonsterMovementRollGroupResult,
-} from '../../src/games/betrayal/game';
+} from '../../src/games/betrayal/monsterActionReadModel';
 import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
 import {
     createFirstScenarioHauntCore,

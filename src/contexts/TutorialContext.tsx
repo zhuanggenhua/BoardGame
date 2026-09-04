@@ -333,7 +333,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // 首步（setup）零延迟执行 AI 动作，避免 CriticalImageGate 在 setup 阶段
         // 触发一次预加载后又因 phaseKey 变化触发第二次预加载。
         // 后续步骤保留 1s 延迟，给玩家阅读提示文本的时间。
-        const delay = tutorial.stepIndex === 0 ? 0 : 1000;
+        const delay = tutorial.step.aiDelayMs ?? (tutorial.stepIndex === 0 ? 0 : 1000);
 
         aiTimerRef.current = window.setTimeout(() => {
             aiTimerRef.current = undefined;
@@ -364,7 +364,12 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         const beforeBoardSyncVersion = boardSyncVersionRef.current;
                         const liveController = controllerRef.current ?? controller;
                         liveController.dispatchCommand(action.commandType, actionPayload);
-                        if (shouldYieldBetweenAiActions && i < aiActions.length - 1) {
+                        const isLastAiAction = i === aiActions.length - 1;
+                        const mustWaitForBoardSync = (
+                            (shouldYieldBetweenAiActions && !isLastAiAction)
+                            || action.waitForBoardSyncAfter === true
+                        );
+                        if (mustWaitForBoardSync) {
                             const didObserveBoardSync = await new Promise<boolean>((resolve) => {
                                 const startedAt = Date.now();
                                 const poll = () => {

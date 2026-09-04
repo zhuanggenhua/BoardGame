@@ -259,6 +259,74 @@ describe('TutorialSystem', () => {
         expect(result?.error).toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
     });
 
+    it('beforeCommand: infoStep 只放行当前步骤声明的教程 AI 动作', () => {
+        const manifest: TutorialManifest = {
+            id: 'tutorial-ai',
+            steps: [
+                {
+                    id: 'teammate-turn',
+                    content: 'watch teammate act',
+                    infoStep: true,
+                    aiActions: [
+                        { commandType: 'EXPLORE_ROOM', playerId: '1', payload: { roomId: 'r1' } },
+                    ],
+                },
+            ],
+        };
+        const state = createTestState();
+        const started = system.beforeCommand?.({
+            state,
+            command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        const authoredAi = system.beforeCommand?.({
+            state: started?.state ?? state,
+            command: {
+                type: 'EXPLORE_ROOM',
+                playerId: '1',
+                payload: { roomId: 'r1', _noSnapshot: true },
+                skipValidation: true,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+        expect(authoredAi).toBeUndefined();
+
+        const wrongPlayer = system.beforeCommand?.({
+            state: started?.state ?? state,
+            command: {
+                type: 'EXPLORE_ROOM',
+                playerId: '0',
+                payload: { roomId: 'r1', _noSnapshot: true },
+                skipValidation: true,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+        expect(wrongPlayer?.halt).toBe(true);
+        expect(wrongPlayer?.error).toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+
+        const unlistedAi = system.beforeCommand?.({
+            state: started?.state ?? state,
+            command: {
+                type: 'MOVE_TO_ROOM',
+                playerId: '1',
+                payload: { roomId: 'r2', _noSnapshot: true },
+                skipValidation: true,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+        expect(unlistedAi?.halt).toBe(true);
+        expect(unlistedAi?.error).toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+    });
+
     it('beforeCommand: allowedCommands 白名单外的命令被拦截', () => {
         const manifest: TutorialManifest = {
             id: 'whitelist',

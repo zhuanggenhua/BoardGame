@@ -259,6 +259,91 @@ export const saveScreenshot = async (page: Page, path: string) => {
   throw lastError;
 };
 
+export type BetrayalClientRectSnapshot = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+};
+
+export const readLocatorClientRect = async (
+  locator: Locator,
+): Promise<BetrayalClientRectSnapshot> =>
+  locator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+    };
+  });
+
+export const expectBetrayalTransitionTargetsLocator = async (
+  transition: Locator,
+  target: Locator,
+  label: string,
+  options: {
+    sourceRect?: BetrayalClientRectSnapshot;
+    maxCenterDelta?: number;
+  } = {},
+) => {
+  const maxCenterDelta = options.maxCenterDelta ?? 2;
+  const [transitionGeometry, targetRect] = await Promise.all([
+    transition.evaluate((element) => ({
+      sourceCenterX: Number(element.getAttribute("data-transition-source-center-x")),
+      sourceCenterY: Number(element.getAttribute("data-transition-source-center-y")),
+      targetCenterX: Number(element.getAttribute("data-transition-target-center-x")),
+      targetCenterY: Number(element.getAttribute("data-transition-target-center-y")),
+      deltaX: Number(element.getAttribute("data-transition-delta-x")),
+      deltaY: Number(element.getAttribute("data-transition-delta-y")),
+    })),
+    readLocatorClientRect(target),
+  ]);
+  expect(
+    Number.isFinite(transitionGeometry.targetCenterX) &&
+      Number.isFinite(transitionGeometry.targetCenterY),
+    `${label} 动画终点必须暴露可测量坐标`,
+  ).toBe(true);
+  expect(
+    Math.abs(transitionGeometry.targetCenterX - targetRect.centerX),
+    `${label} 动画终点 X 必须贴最终 token 中心`,
+  ).toBeLessThanOrEqual(maxCenterDelta);
+  expect(
+    Math.abs(transitionGeometry.targetCenterY - targetRect.centerY),
+    `${label} 动画终点 Y 必须贴最终 token 中心`,
+  ).toBeLessThanOrEqual(maxCenterDelta);
+
+  if (options.sourceRect) {
+    expect(
+      Math.abs(transitionGeometry.sourceCenterX - options.sourceRect.centerX),
+      `${label} 动画起点 X 必须贴移动前 token 中心`,
+    ).toBeLessThanOrEqual(maxCenterDelta);
+    expect(
+      Math.abs(transitionGeometry.sourceCenterY - options.sourceRect.centerY),
+      `${label} 动画起点 Y 必须贴移动前 token 中心`,
+    ).toBeLessThanOrEqual(maxCenterDelta);
+    expect(
+      Math.abs(
+        transitionGeometry.deltaX -
+          (targetRect.centerX - options.sourceRect.centerX),
+      ),
+      `${label} 动画 X 位移必须等于 token 中心到 token 中心`,
+    ).toBeLessThanOrEqual(maxCenterDelta);
+    expect(
+      Math.abs(
+        transitionGeometry.deltaY -
+          (targetRect.centerY - options.sourceRect.centerY),
+      ),
+      `${label} 动画 Y 位移必须等于 token 中心到 token 中心`,
+    ).toBeLessThanOrEqual(maxCenterDelta);
+  }
+};
+
 export async function readVisibleNonSrText(locator: Locator) {
   return locator.evaluate((root) => {
     const rootElement = root as HTMLElement;
@@ -422,6 +507,64 @@ export const expectEventRollWorkbenchReadable = async (
     const diceBoundaryStyle = diceBoundaryElement
       ? getComputedStyle(diceBoundaryElement)
       : null;
+    const diceCanvases = Array.from(
+      diceGroupElement?.querySelectorAll("canvas") ?? [],
+    ).filter(
+      (candidate): candidate is HTMLCanvasElement =>
+        candidate instanceof HTMLCanvasElement,
+    );
+    const debugRegistry =
+      (
+        window as typeof window & {
+          __diceBoxThreeDebug?: Record<string, () => unknown>;
+        }
+      ).__diceBoxThreeDebug ?? {};
+    const activeCanvas =
+      diceCanvases.find((canvas) => {
+        const testId = canvas.dataset.testid;
+        return Boolean(testId && typeof debugRegistry[testId] === "function");
+      }) ??
+      diceCanvases[0] ??
+      null;
+    const activeCanvasTestId =
+      activeCanvas?.dataset.testid ?? diceGroupElement?.dataset.diceDebugKey;
+    const diceDebugSnapshot = activeCanvasTestId
+      ? (debugRegistry[activeCanvasTestId]?.() as
+          | {
+              diceHighlights?: Array<{
+                dieId?: number;
+                dieIndex?: number;
+                variant?: string;
+                scale?: number;
+                opacity?: number;
+              }>;
+              diceHighlightShells?: Array<{
+                dieId?: number;
+                dieIndex?: number;
+                variant?: string;
+                renderer?: string;
+                visible?: boolean;
+                scale?: number;
+                opacity?: number;
+                materialType?: string;
+                materialSide?: number;
+                depthTest?: boolean;
+                depthWrite?: boolean;
+                transparent?: boolean;
+                shaderOpacity?: number;
+              }>;
+            }
+          | null
+          | undefined)
+      : null;
+    const diceHighlights = Array.isArray(diceDebugSnapshot?.diceHighlights)
+      ? diceDebugSnapshot.diceHighlights
+      : [];
+    const diceHighlightShells = Array.isArray(
+      diceDebugSnapshot?.diceHighlightShells,
+    )
+      ? diceDebugSnapshot.diceHighlightShells
+      : [];
     const resultBackgroundParts = resultStageStyle.backgroundColor
       .replace(/[^\d.,]/g, "")
       .split(",")
@@ -440,6 +583,62 @@ export const expectEventRollWorkbenchReadable = async (
       '[data-testid="betrayal-reroll-prompt-outside-dice"]',
     );
     const rerollLayer = optionalRectOf('[data-testid="betrayal-rabbit-foot-dice"]');
+    const rerollTargets = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-testid^="betrayal-house-dice-reroll-target-"]',
+      ),
+    )
+      .filter((target) => target.offsetParent !== null)
+      .map((target) => {
+        const rect = target.getBoundingClientRect();
+        const dieIndex = Number(
+          target.dataset.testid?.match(/-(\d+)$/)?.[1] ?? "NaN",
+        );
+        const candidateBox = target.querySelector<HTMLElement>(
+          '[data-reroll-target-candidate-box="true"]',
+        );
+        const selectedBorder = target.querySelector<HTMLElement>(
+          '[data-reroll-target-selected-border="true"]',
+        );
+        const visibleWidth = Number(target.dataset.rerollTargetVisualWidth);
+        const visibleHeight = Number(target.dataset.rerollTargetVisualHeight);
+        const boxSize = Number(target.dataset.rerollTargetBoxSize);
+        const visibleMax = Math.max(visibleWidth, visibleHeight);
+        const outlineGap = Number(target.dataset.rerollTargetOutlineGap);
+        const hitBoxPadding = (boxSize - visibleMax) / 2;
+        const webglHighlight =
+          diceHighlights.find((highlight) => highlight.dieIndex === dieIndex) ??
+          null;
+        const webglShell =
+          diceHighlightShells.find((shell) => shell.dieIndex === dieIndex) ??
+          null;
+        return {
+          testId: target.dataset.testid ?? "",
+          dieIndex,
+          selected: target.dataset.rerollTargetSelected === "true",
+          shape: target.dataset.rerollTargetShape ?? "",
+          highlightRenderer: target.dataset.rerollTargetHighlightRenderer ?? "",
+          visualLayer: target.dataset.rerollTargetVisualLayer ?? "",
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          centerX: rect.left + rect.width / 2,
+          centerY: rect.top + rect.height / 2,
+          targetWidth: rect.width,
+          targetHeight: rect.height,
+          boxSize,
+          visibleWidth,
+          visibleHeight,
+          visibleMax,
+          outlineGap,
+          hitBoxPadding,
+          candidateBoxExists: Boolean(candidateBox),
+          selectedBorderExists: Boolean(selectedBorder),
+          webglHighlight,
+          webglShell,
+        };
+      });
     let confirmHitTestId = "";
     if (confirm && confirmElement) {
       const hit = document.elementFromPoint(confirm.centerX, confirm.centerY);
@@ -469,7 +668,28 @@ export const expectEventRollWorkbenchReadable = async (
         outsidePromptElement && diceGroupElement?.contains(outsidePromptElement),
       ),
       rerollLayer,
+      rerollTargets,
       rerollLayerText: rerollLayerElement?.innerText.trim() ?? "",
+      rerollHighlightRenderer:
+        rerollLayerElement?.dataset.rerollHighlightRenderer ?? "",
+      rerollDomVisualBoxCount: rerollLayerElement
+        ? rerollLayerElement.querySelectorAll(
+            '[data-reroll-target-candidate-box="true"], [data-reroll-target-selected-border="true"]',
+          ).length
+        : 0,
+      diceHighlightDebugKey: activeCanvasTestId ?? "",
+      diceHighlightSourceRenderer:
+        dicePhysicsSourceElement.dataset.diceHighlightRenderer ?? "",
+      diceHighlightCanvasRenderer:
+        activeCanvas?.dataset.diceHighlightRenderer ?? "",
+      diceHighlightCount: diceHighlights.length,
+      diceHighlightShellCount: diceHighlightShells.length,
+      diceHighlightCandidateCount: diceHighlights.filter(
+        (highlight) => highlight.variant === "candidate",
+      ).length,
+      diceHighlightSelectedCount: diceHighlights.filter(
+        (highlight) => highlight.variant === "selected",
+      ).length,
       result: rectOf(
         '[data-testid="betrayal-discovery-panel"] [data-testid="betrayal-recent-roll-result-stage"]',
       ),
@@ -587,6 +807,175 @@ export const expectEventRollWorkbenchReadable = async (
       metrics.rerollLayerText,
       `${label}骰盘命中层只能承接真实骰子目标，不得再显示提示正文：${JSON.stringify(metrics)}`,
     ).not.toMatch(/选择要重掷的骰子|选择骰子/);
+    expect(
+      metrics.rerollTargets.length,
+      `${label}改骰选择态必须直接在每颗可改骰子上保留可点击热区：${JSON.stringify(metrics)}`,
+    ).toBeGreaterThan(0);
+    expect(
+      metrics.rerollHighlightRenderer,
+      `${label}兔脚改骰高亮必须由 Three.js 骰体描边承接，不能回到 DOM 方框：${JSON.stringify(metrics)}`,
+    ).toBe("threejs-backside-shader-shell");
+    expect(
+      metrics.diceHighlightSourceRenderer,
+      `${label}物理骰源必须声明 WebGL 高亮渲染器：${JSON.stringify(metrics)}`,
+    ).toBe("threejs-backside-shader-shell");
+    expect(
+      metrics.diceHighlightCanvasRenderer,
+      `${label}canvas 必须收到 WebGL 高亮状态：${JSON.stringify(metrics)}`,
+    ).toBe("threejs-backside-shader-shell");
+    expect(
+      metrics.rerollDomVisualBoxCount,
+      `${label}兔脚选骰层不得再渲染会遮挡骰子的 DOM 候选/选中边框：${JSON.stringify(metrics)}`,
+    ).toBe(0);
+    expect(
+      metrics.diceHighlightCount,
+      `${label}每个可选骰子都必须有一个 Three.js 高亮状态：${JSON.stringify(metrics)}`,
+    ).toBe(metrics.rerollTargets.length);
+    expect(
+      metrics.diceHighlightShellCount,
+      `${label}每个可选骰子都必须有一个真实 WebGL 外壳描边 mesh：${JSON.stringify(metrics)}`,
+    ).toBe(metrics.rerollTargets.length);
+    for (let leftIndex = 0; leftIndex < metrics.rerollTargets.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < metrics.rerollTargets.length; rightIndex += 1) {
+        const leftTarget = metrics.rerollTargets[leftIndex];
+        const rightTarget = metrics.rerollTargets[rightIndex];
+        const overlapWidth = Math.max(
+          0,
+          Math.min(leftTarget.right, rightTarget.right) -
+            Math.max(leftTarget.left, rightTarget.left),
+        );
+        const overlapHeight = Math.max(
+          0,
+          Math.min(leftTarget.bottom, rightTarget.bottom) -
+            Math.max(leftTarget.top, rightTarget.top),
+        );
+        expect(
+          overlapWidth * overlapHeight,
+          `${label}第 ${leftTarget.dieIndex + 1} 颗和第 ${rightTarget.dieIndex + 1} 颗改骰方框不能重叠：${JSON.stringify(metrics)}`,
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+    for (const target of metrics.rerollTargets) {
+      const evidence = JSON.stringify({ target, metrics });
+      expect(target.shape, `${label}改骰方框必须绑定骰子本体：${evidence}`).toBe(
+        "die-face",
+      );
+      expect(
+        target.highlightRenderer,
+        `${label}改骰高亮必须来自 Three.js 骰体描边，而不是 DOM 框：${evidence}`,
+      ).toBe("threejs-backside-shader-shell");
+      expect(
+        target.visualLayer,
+        `${label}DOM 层只能保留透明命中区，不能继续画可见框：${evidence}`,
+      ).toBe("transparent-hitbox-only");
+      expect(
+        Math.abs(target.targetWidth - target.targetHeight),
+        `${label}改骰命中区必须是方框，不得退成文字按钮或长条：${evidence}`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        target.visibleMax,
+        `${label}改骰方框必须来自真实 Three.js 骰子投影尺寸：${evidence}`,
+      ).toBeGreaterThan(0);
+      expect(
+        target.outlineGap,
+        `${label}改骰描边不能在 DOM 层制造离体空隙：${evidence}`,
+      ).toBe(0);
+      expect(
+        target.hitBoxPadding,
+        `${label}可点透明区可以比骰子本体略大，但不能把可见方框撑出大间隙：${evidence}`,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        target.hitBoxPadding,
+        `${label}透明命中区不能过大到让玩家误判归属：${evidence}`,
+      ).toBeLessThanOrEqual(4);
+      expect(
+        target.candidateBoxExists,
+        `${label}DOM 层不得保留候选边框：${evidence}`,
+      ).toBe(false);
+      expect(
+        target.selectedBorderExists,
+        `${label}DOM 层不得保留选中边框：${evidence}`,
+      ).toBe(false);
+      expect(
+        target.webglHighlight,
+        `${label}必须能从 Three.js 快照读到当前骰子的高亮状态：${evidence}`,
+      ).not.toBeNull();
+      expect(
+        target.webglShell,
+        `${label}必须能从 Three.js 场景读到当前骰子的描边外壳：${evidence}`,
+      ).not.toBeNull();
+      expect(
+        target.webglShell?.renderer,
+        `${label}描边外壳必须是 Three.js 背面外壳渲染器：${evidence}`,
+      ).toBe("threejs-backside-shader-shell");
+      expect(
+        target.webglShell?.visible,
+        `${label}描边外壳必须可见：${evidence}`,
+      ).toBe(true);
+      expect(
+        target.webglShell?.materialType,
+        `${label}描边外壳必须使用 Three.js ShaderMaterial，而不是 DOM/CSS 框或普通透明贴片：${evidence}`,
+      ).toBe("ShaderMaterial");
+      expect(
+        target.webglShell?.materialSide,
+        `${label}描边外壳必须用背面材质，只露骰子外缘不盖骰面：${evidence}`,
+      ).toBe(1);
+      expect(
+        target.webglShell?.depthWrite,
+        `${label}描边外壳不能写入深度，否则可能遮住骰子：${evidence}`,
+      ).toBe(false);
+      expect(
+        target.webglShell?.transparent,
+        `${label}描边外壳必须是透明材质，不能变成实心块：${evidence}`,
+      ).toBe(true);
+      expect(
+        target.webglShell?.shaderOpacity,
+        `${label}shader 透明度必须随候选/选中状态同步：${evidence}`,
+      ).toBe(target.webglShell?.opacity);
+      if (target.selected) {
+        expect(
+          target.webglHighlight?.variant,
+          `${label}选中骰子必须升级为 selected WebGL 高亮：${evidence}`,
+        ).toBe("selected");
+        expect(
+          target.webglShell?.variant,
+          `${label}选中骰子的外壳必须同步为 selected：${evidence}`,
+        ).toBe("selected");
+        expect(
+          target.webglShell?.scale,
+          `${label}选中描边要比候选态更清楚，但仍贴近骰子：${evidence}`,
+        ).toBeGreaterThanOrEqual(1.085);
+        expect(
+          target.webglShell?.scale,
+          `${label}选中描边不能外扩成离体大框：${evidence}`,
+        ).toBeLessThanOrEqual(1.105);
+        expect(
+          target.webglShell?.opacity,
+          `${label}选中描边必须清晰可见：${evidence}`,
+        ).toBeGreaterThanOrEqual(0.9);
+      } else {
+        expect(
+          target.webglHighlight?.variant,
+          `${label}未选骰子必须显示 candidate WebGL 高亮：${evidence}`,
+        ).toBe("candidate");
+        expect(
+          target.webglShell?.variant,
+          `${label}未选骰子的外壳必须同步为 candidate：${evidence}`,
+        ).toBe("candidate");
+        expect(
+          target.webglShell?.scale,
+          `${label}候选描边必须贴住骰子外缘且可见：${evidence}`,
+        ).toBeGreaterThanOrEqual(1.065);
+        expect(
+          target.webglShell?.scale,
+          `${label}候选描边不能外扩成离体大框：${evidence}`,
+        ).toBeLessThanOrEqual(1.085);
+        expect(
+          target.webglShell?.opacity,
+          `${label}候选描边不能弱到看不清：${evidence}`,
+        ).toBeGreaterThanOrEqual(0.98);
+      }
+    }
   }
   const workbenchRight = Math.max(
     metrics.card.right,
