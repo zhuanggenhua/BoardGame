@@ -7,7 +7,8 @@ import { DiceBoxPhysicsSource } from '../dice-physics/DiceBoxPhysicsSource';
 const createEngineMock = vi.fn();
 const settledMotion = { type: 'settled' } as const;
 const rollMotion = (id: string) => ({ type: 'roll', id }) as const;
-const rerollMotion = (id: string, dieIds: number[]) => ({ type: 'reroll', id, dieIds }) as const;
+const rerollMotion = (id: string, dieIds: number[], previousValues?: number[]) =>
+    ({ type: 'reroll', id, dieIds, previousValues }) as const;
 
 vi.mock('../dice-box-threejs/engine', () => ({
     DiceBoxThreeEngine: {
@@ -366,6 +367,57 @@ describe('DiceBoxPhysicsSource', () => {
 
         await waitFor(() => {
             expect(view.getByTestId('dice-box-physics-source')).toHaveAttribute('data-dice-settled', 'true');
+        });
+    });
+
+    it('重掷时会先恢复重掷前骰面再播放过程动画', async () => {
+        let finishPreview: (() => void) | undefined;
+        const preview = new Promise<void>((resolve) => {
+            finishPreview = resolve;
+        });
+        const restoreValues = vi.fn().mockResolvedValue(undefined);
+        const playRerollLaunchPreview = vi.fn().mockImplementation(() => preview);
+        const rerollToValues = vi.fn().mockResolvedValue(undefined);
+        const engineMock = {
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            setCanvasDiagnostics: vi.fn(),
+            setDieSkins: vi.fn(),
+            setDiceHighlights: vi.fn(),
+            getPhysicsState: vi.fn(),
+            hasDice: vi.fn().mockReturnValue(false),
+            rerollToValues,
+            playRerollLaunchPreview,
+            syncSettledValues: vi.fn(),
+            previewValues: vi.fn(),
+            clear: vi.fn(),
+            removeDice: vi.fn(),
+            restoreValues,
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+
+        render(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                motion={rerollMotion('visible-reroll-from-old-face', [7], [2])}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(playRerollLaunchPreview).toHaveBeenCalledTimes(1);
+        });
+        expect(restoreValues).toHaveBeenCalledWith([2]);
+        expect(
+            restoreValues.mock.invocationCallOrder[0],
+        ).toBeLessThan(playRerollLaunchPreview.mock.invocationCallOrder[0]);
+        expect(rerollToValues).not.toHaveBeenCalled();
+
+        await act(async () => {
+            finishPreview?.();
+        });
+
+        await waitFor(() => {
+            expect(rerollToValues).toHaveBeenCalledWith([0], [6], []);
         });
     });
 

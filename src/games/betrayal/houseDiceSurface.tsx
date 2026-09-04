@@ -82,6 +82,12 @@ export function BetrayalHouseDice3DGroup({
   const rerollingDieIndex = roll.lastRabbitFootRerollDieIndex ?? null;
   const rollMotionId = buildRecentRollDisplayKey(roll) ?? roll.id;
   const consumedRabbitFootSignature = roll.consumedRabbitFootCardIds.join(",");
+  const previousRerollDice = roll.lastRabbitFootRerollPreviousDice;
+  const previousRerollDiceSignature = previousRerollDice?.join(",") ?? "";
+  const previousRerollPhysicalFaces = React.useMemo(
+    () => (previousRerollDice ?? []).map(resolveBetrayalHouseD6Face),
+    [previousRerollDice, previousRerollDiceSignature],
+  );
   const diceMotion = React.useMemo(
     () => {
       if (rerollingDieIndex !== null) {
@@ -92,9 +98,14 @@ export function BetrayalHouseDice3DGroup({
             "rabbit-foot",
             rerollingDieIndex,
             consumedRabbitFootSignature,
+            previousRerollDiceSignature,
             diceSignature,
           ].join("::"),
           dieIds: [rerollingDieIndex + 1],
+          previousValues:
+            previousRerollPhysicalFaces.length === rollDice.length
+              ? previousRerollPhysicalFaces
+              : undefined,
         };
       }
       if (animateInitialRoll) {
@@ -106,7 +117,10 @@ export function BetrayalHouseDice3DGroup({
       animateInitialRoll,
       consumedRabbitFootSignature,
       diceSignature,
+      previousRerollDiceSignature,
+      previousRerollPhysicalFaces,
       rerollingDieIndex,
+      rollDice.length,
       roll.id,
       rollMotionId,
     ],
