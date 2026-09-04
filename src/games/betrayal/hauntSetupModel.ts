@@ -5,6 +5,10 @@ import type {
 import { findExplorerByPlayerId } from './explorerReadModel';
 import { resolveBloodFromStoneSetupPlacementPlan } from './bloodFromStoneSetupReadModel';
 import {
+    resolveBetrayalHauntRevealResolution,
+    type BetrayalHauntRevealResolution,
+} from './scenarioConfig';
+import {
     findMagicCameraHolderPlayerId,
     findStrangeAmuletHolder,
     HELPING_HANDS_STRANGE_AMULET_EFFECT_ID,
@@ -150,6 +154,18 @@ export interface BetrayalHauntRevealProtocol {
     publicSteps: BetrayalHauntRevealPublicStep[];
     setupQueue: BetrayalHauntSetupQueueEntry[];
     secretBoundary: BetrayalHauntSecretBoundary;
+}
+
+export function resolveHauntRevealResolutionForTrigger(
+    core: BetrayalCore,
+    triggeringCard: { id?: string | null; name?: string | null } | null | undefined,
+    hauntCardNumberOverride?: number,
+): BetrayalHauntRevealResolution {
+    return resolveBetrayalHauntRevealResolution({
+        scenarioCardId: core.proposedScenarioCardId,
+        triggeringOmen: triggeringCard,
+        hauntCardNumberOverride,
+    });
 }
 
 const SUPPORTED_SETUP_PREVIEW_HAUNT_CARD_NUMBERS = [1, 3, 5, 7, 12, 33];

@@ -641,9 +641,7 @@ export function StandardRecentRollOverlay({
       data-testid="betrayal-roll-result-backdrop"
       data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
       data-render-layer={isPhoneLandscapeLayout ? "hud-portal" : "board-stage"}
-      className={`${isPhoneLandscapeLayout ? "fixed inset-0" : "absolute inset-0 z-40"} ${
-        canDismissByBackdrop ? "pointer-events-auto" : "pointer-events-none"
-      }`}
+      className={`${isPhoneLandscapeLayout ? "fixed inset-0" : "absolute inset-0 z-40"} pointer-events-auto`}
       style={
         isPhoneLandscapeLayout
           ? {

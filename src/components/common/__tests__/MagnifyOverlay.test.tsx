@@ -28,4 +28,28 @@ describe('MagnifyOverlay', () => {
         fireEvent.click(closeButton);
         expect(onClose).toHaveBeenCalledTimes(1);
     });
+
+    it('can keep backdrop clicks from replacing the explicit close button', () => {
+        const onClose = vi.fn();
+
+        render(
+            <MagnifyOverlay
+                isOpen
+                onClose={onClose}
+                overlayTestId="shared-card-magnify-overlay"
+                closeLabel="关闭"
+                closeOnBackdrop={false}
+            >
+                <div data-testid="magnify-body">放大卡牌</div>
+            </MagnifyOverlay>,
+        );
+
+        const overlay = screen.getByTestId('shared-card-magnify-overlay');
+        expect(overlay).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        fireEvent.click(overlay);
+        expect(onClose).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByTestId('shared-card-magnify-overlay-close'));
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
 });

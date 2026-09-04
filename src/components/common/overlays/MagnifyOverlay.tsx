@@ -14,6 +14,7 @@ export const MagnifyOverlay = ({
   closeButtonClassName = "",
   overlayTestId,
   interactive = true,
+  closeOnBackdrop = true,
   zIndex = UI_Z_INDEX.magnify,
 }: {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const MagnifyOverlay = ({
   closeButtonClassName?: string;
   overlayTestId?: string;
   interactive?: boolean;
+  closeOnBackdrop?: boolean;
   zIndex?: number;
 }) => {
   const { t } = useTranslation("common");
@@ -43,11 +45,12 @@ export const MagnifyOverlay = ({
         zIndex,
         opacity: isOpen ? 1 : 0,
         pointerEvents: isOpen && interactive ? "auto" : "none",
-        visibility: isOpen ? "visible" : "hidden",
+      visibility: isOpen ? "visible" : "hidden",
       }}
       aria-hidden={!isOpen}
-      onClick={onClose}
+      onClick={closeOnBackdrop ? onClose : undefined}
       data-interaction-allow
+      data-backdrop-dismiss={closeOnBackdrop ? "enabled" : "disabled"}
       data-testid={overlayTestId}
     >
       {/* 外层 wrapper 不裁剪，让关闭按钮可见 */}

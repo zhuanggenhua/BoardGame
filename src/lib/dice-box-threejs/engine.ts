@@ -1005,6 +1005,120 @@ export class DiceBoxThreeEngine {
         }
     }
 
+    async playRerollLaunchPreview(indices: number[], durationMs: number): Promise<void> {
+        if (indices.length === 0) return;
+
+        type RerollPreviewSnapshot = {
+            die: DiceBoxDieWithBody & { rotation?: DiceBoxVectorLike; updateMatrixWorld?: (force?: boolean) => void };
+            position: { x: number; y: number; z: number };
+            rotation: { x: number; y: number; z: number } | null;
+            order: number;
+        };
+
+        const snapshots = indices
+            .map((index, order): RerollPreviewSnapshot | null => {
+                const die = this.box.diceList[index] as RerollPreviewSnapshot['die'] | undefined;
+                if (!die) return null;
+                return {
+                    die,
+                    position: {
+                        x: die.position.x,
+                        y: die.position.y,
+                        z: die.position.z,
+                    },
+                    rotation: die.rotation
+                        ? {
+                            x: die.rotation.x,
+                            y: die.rotation.y,
+                            z: die.rotation.z,
+                        }
+                        : null,
+                    order,
+                };
+            })
+            .filter((snapshot): snapshot is RerollPreviewSnapshot => Boolean(snapshot));
+        if (snapshots.length === 0) return;
+
+        const lift = Math.max(5, Math.min(8, (this.styleProfile.baseScale ?? 64) * 0.1));
+        const lateral = Math.max(2, Math.min(4, (this.styleProfile.baseScale ?? 64) * 0.05));
+        const startAt = performance.now();
+        await new Promise<void>((resolve) => {
+            const step = (now: number) => {
+                const duration = Math.max(1, durationMs);
+                const progress = Math.min(1, Math.max(0, (now - startAt) / duration));
+                const pulse = Math.sin(progress * Math.PI);
+                const spin = progress * Math.PI * 2;
+                for (const snapshot of snapshots) {
+                    const direction = snapshot.order % 2 === 0 ? -1 : 1;
+                    const nextPosition = {
+                        x: snapshot.position.x + direction * lateral * pulse,
+                        y: snapshot.position.y + lateral * 0.65 * pulse,
+                        z: snapshot.position.z + lift * pulse,
+                    };
+                    this.setVector(snapshot.die.position, nextPosition);
+                    if (snapshot.rotation && snapshot.die.rotation) {
+                        this.setVector(snapshot.die.rotation, {
+                            x: snapshot.rotation.x + spin * 0.62,
+                            y: snapshot.rotation.y + direction * spin * 0.48,
+                            z: snapshot.rotation.z + spin * 0.36,
+                        });
+                    }
+                    if (snapshot.die.body) {
+                        this.setVector(snapshot.die.body.position, nextPosition);
+                        this.setVector(snapshot.die.body.velocity, { x: 0, y: 0, z: 0 });
+                        this.setVector(snapshot.die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+                        snapshot.die.body.aabbNeedsUpdate = true;
+                    }
+                    snapshot.die.updateMatrixWorld?.(true);
+                }
+                this.syncDiceHighlightShells();
+                this.renderFrame();
+                if (progress >= 1) {
+                    resolve();
+                    return;
+                }
+                window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        });
+    }
+
+    previewRerollLaunch(indices: number[]): void {
+        if (indices.length === 0) return;
+        let didMove = false;
+        const lift = Math.max(5, Math.min(8, (this.styleProfile.baseScale ?? 64) * 0.1));
+        indices.forEach((index, order) => {
+            const die = this.box.diceList[index] as (DiceBoxDieWithBody & { rotation?: DiceBoxVectorLike }) | undefined;
+            if (!die) return;
+            const nextPosition = {
+                x: die.position.x + (order % 2 === 0 ? -3 : 3),
+                y: die.position.y + (order % 2 === 0 ? 2 : -2),
+                z: die.position.z + lift,
+            };
+            this.setVector(die.position, nextPosition);
+            if (die.rotation) {
+                this.setVector(die.rotation, {
+                    x: die.rotation.x + 0.22,
+                    y: die.rotation.y + 0.18,
+                    z: die.rotation.z + 0.12,
+                });
+            }
+            if (die.body) {
+                this.setVector(die.body.position, nextPosition);
+                this.setVector(die.body.velocity, { x: 0, y: 0, z: 0 });
+                this.setVector(die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+                die.body.type = 1;
+                die.body.wakeUp?.();
+                die.body.aabbNeedsUpdate = true;
+            }
+            die.updateMatrixWorld?.(true);
+            didMove = true;
+        });
+        if (didMove) {
+            this.renderFrame();
+        }
+    }
+
     async removeDice(indices: number[]): Promise<void> {
         if (indices.length === 0) return;
         indices.forEach((index) => this.removeDiceHighlightShell(index));

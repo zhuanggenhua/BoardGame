@@ -9,6 +9,7 @@ import {
 import type {
     BetrayalCore,
     BetrayalExplorerSummary,
+    BetrayalMonsterMovementRollResult,
     BetrayalMonsterStatusKind,
     BetrayalMonsterSummary,
     BetrayalRoomNode,
@@ -272,6 +273,15 @@ export function createInitialMonsterTurnRuntimeState(): BetrayalMonsterTurnRunti
         movedMonsterIdsThisTurn: [],
         movementRollsByGroupId: {},
         moveRemainingById: {},
+    };
+}
+
+export function cloneMonsterMovementRollResult(
+    result: BetrayalMonsterMovementRollResult,
+): BetrayalMonsterMovementRollResult {
+    return {
+        ...result,
+        dice: [...result.dice],
     };
 }
 

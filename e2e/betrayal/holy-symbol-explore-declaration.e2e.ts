@@ -7,6 +7,7 @@ import type { BetrayalCore } from "../../src/games/betrayal/game";
 import { BETRAYAL_DISCOVERY_POOLS } from "../../src/games/betrayal/scenarioConfig";
 import { createStartedFirstScenarioCore } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 import {
+  clickDiscoveryBackdropAndExpectStillVisible,
   initBetrayalContext,
   injectCore,
   saveScreenshot,
@@ -50,31 +51,14 @@ async function dismissDiscoveryPanel(page: Page) {
     await expect(discoveryPanel).toBeHidden({ timeout: 30000 });
     return;
   }
-  const blankPoint = await discoveryPanel.evaluate((panel) => {
-    const panelRect = panel.getBoundingClientRect();
-    const content = panel.querySelector(
-      '[data-testid="betrayal-discovery-panel-content"]',
-    );
-    const contentRect = content?.getBoundingClientRect();
-    const candidates = [
-      { x: panelRect.left + 16, y: panelRect.top + 16 },
-      { x: panelRect.right - 16, y: panelRect.top + 16 },
-      { x: panelRect.left + 16, y: panelRect.bottom - 16 },
-      { x: panelRect.right - 16, y: panelRect.bottom - 16 },
-    ];
-    return (
-      candidates.find(
-        (point) =>
-          !contentRect ||
-          point.x < contentRect.left ||
-          point.x > contentRect.right ||
-          point.y < contentRect.top ||
-          point.y > contentRect.bottom,
-      ) ?? { x: panelRect.left + 8, y: panelRect.top + 8 }
-    );
-  });
-  await page.mouse.click(blankPoint.x, blankPoint.y);
-  await expect(discoveryPanel).toBeHidden();
+  await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
+  await expect(
+    continueButton,
+    "发现牌浮层必须提供明确继续/确认按钮，不能靠点击空白关闭。",
+  ).toBeVisible();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
+  await expect(discoveryPanel).toBeHidden({ timeout: 30000 });
 }
 
 function roomByVisualId(floor: "upper", visualId: string) {

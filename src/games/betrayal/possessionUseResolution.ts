@@ -1,7 +1,12 @@
+import type { RandomFn } from '../../engine/types';
 import {
     findExplorerByPlayerId,
     getAllExplorers,
 } from './explorerReadModel';
+import {
+    createBookPendingEventRollReplacement,
+    type BetrayalEventRollReplacementResult,
+} from './eventRollReplacementModel';
 import type {
     BetrayalCore,
 } from './game';
@@ -19,7 +24,7 @@ export interface BetrayalPossessionUseCommandPayload {
     replacementRollTotal?: number;
 }
 
-export interface BetrayalPossessionUsedPayload<TEventRollReplacement = unknown> {
+export interface BetrayalPossessionUsedPayload<TEventRollReplacement = BetrayalEventRollReplacementResult> {
     playerId: string;
     cardId: string;
     effect: PossessionUseEffectProfile;
@@ -31,19 +36,15 @@ export interface BetrayalPossessionUsedPayload<TEventRollReplacement = unknown> 
     logText: string;
 }
 
-type CreatePossessionEventRollReplacement<TEventRollReplacement> = (
-    cardId: string,
-    effect: Extract<PossessionUseEffectProfile, { mode: 'nextNonCombatTraitReplacement' }>,
-) => TEventRollReplacement | null | undefined;
-
-export function resolveBetrayalPossessionUsedPayload<TEventRollReplacement>(
+export function resolveBetrayalPossessionUsedPayload(
     core: BetrayalCore,
     playerId: string,
     payload: BetrayalPossessionUseCommandPayload,
     options: {
-        createEventRollReplacement?: CreatePossessionEventRollReplacement<TEventRollReplacement>;
+        random?: RandomFn;
+        timestamp?: number;
     } = {},
-): BetrayalPossessionUsedPayload<TEventRollReplacement> | null {
+): BetrayalPossessionUsedPayload | null {
     const actor = findExplorerByPlayerId(core, playerId);
     const card = actor?.inventory.find((item) => item.id === payload.cardId);
     if (!card) {
@@ -61,7 +62,9 @@ export function resolveBetrayalPossessionUsedPayload<TEventRollReplacement>(
         )
         : actor;
     const eventRollReplacement = effect.mode === 'nextNonCombatTraitReplacement'
-        ? options.createEventRollReplacement?.(card.id, effect) ?? undefined
+        && options.random
+        && typeof options.timestamp === 'number'
+        ? createBookPendingEventRollReplacement(core, playerId, card.id, options.random, options.timestamp) ?? undefined
         : undefined;
     const actorName = actor.displayName;
     const logText = effect.mode === 'move'

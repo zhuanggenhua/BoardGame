@@ -1,7 +1,26 @@
 import type { BetrayalCore, BetrayalExplorerSummary, BetrayalRoomNode } from "./game";
+import { cloneInventoryCard } from "./possessionDeckModel";
+import {
+  buildTraitTracksFromValues,
+  cloneTraitTracks,
+  normalizeExplorerTraitTracks,
+} from "./traitTrackModel";
 
 export function getAllExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
   return [core.currentExplorer, ...core.otherExplorers];
+}
+
+export function cloneExplorerSummary(explorer: BetrayalExplorerSummary): BetrayalExplorerSummary {
+  const cloned = {
+    ...explorer,
+    traits: { ...explorer.traits },
+    traitTracks: explorer.traitTracks
+      ? cloneTraitTracks(explorer.traitTracks)
+      : buildTraitTracksFromValues(explorer.explorerId, explorer.traits),
+    inventory: explorer.inventory.map(cloneInventoryCard),
+  };
+  normalizeExplorerTraitTracks(cloned);
+  return cloned;
 }
 
 export function findExplorerByPlayerId(

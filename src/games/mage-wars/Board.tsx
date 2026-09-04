@@ -1427,7 +1427,7 @@ function ZoneFieldCard({
     const cardHeightClass = density === 'packed'
         ? 'h-[10.2rem]'
         : density === 'dense'
-            ? 'h-[8rem]'
+            ? 'h-[10.2rem]'
             : density === 'duel'
                 ? 'h-[8rem]'
                 : 'h-[11.95rem]';
@@ -2236,7 +2236,7 @@ function ZoneOccupant({
     const portraitHeightClass = density === 'packed'
         ? 'h-[10.2rem]'
         : density === 'dense'
-            ? 'h-[8rem]'
+            ? 'h-[10.2rem]'
             : density === 'duel'
                 ? 'h-[8rem]'
                 : crowded

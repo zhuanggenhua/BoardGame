@@ -6,6 +6,7 @@ import {
 } from '../helpers/common';
 import { createStartedFirstScenarioCore } from '../../src/games/betrayal/testing/firstScenarioTestUtils';
 import {
+    clickDiscoveryBackdropAndExpectStillVisible,
     expectVisiblePhysicalDiceBox,
     initBetrayalContext,
     injectCore,
@@ -33,25 +34,13 @@ const BOOK_DISMISSED_SCREENSHOT = `${OMEN_SAMPLE_EVIDENCE_DIR}/书本作祟判�
 
 const dismissDiscoveryPanel = async (page: Page) => {
     const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-    const blankPoint = await discoveryPanel.evaluate((panel) => {
-        const panelRect = panel.getBoundingClientRect();
-        const content = panel.querySelector('[data-testid="betrayal-discovery-panel-content"]');
-        const contentRect = content?.getBoundingClientRect();
-        const candidates = [
-            { x: panelRect.left + 16, y: panelRect.top + 16 },
-            { x: panelRect.right - 16, y: panelRect.top + 16 },
-            { x: panelRect.left + 16, y: panelRect.bottom - 16 },
-            { x: panelRect.right - 16, y: panelRect.bottom - 16 },
-        ];
-        const outsideContent = candidates.find((point) => !contentRect || (
-            point.x < contentRect.left
-            || point.x > contentRect.right
-            || point.y < contentRect.top
-            || point.y > contentRect.bottom
-        ));
-        return outsideContent ?? { x: panelRect.left + 8, y: panelRect.top + 8 };
-    });
-    await page.mouse.click(blankPoint.x, blankPoint.y);
+    await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
+    const continueButton = page.getByTestId('betrayal-discovery-continue');
+    await expect(
+        continueButton,
+        '发现牌浮层必须通过明确继续/确认按钮关闭，不能用空白点击关闭。',
+    ).toBeEnabled();
+    await continueButton.click();
     await expect(discoveryPanel).toBeHidden();
 };
 

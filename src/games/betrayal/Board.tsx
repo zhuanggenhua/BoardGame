@@ -5550,24 +5550,8 @@ export default function BetrayalBoard({
   );
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
-  const hasLatestDiscoveryPendingCardResolution = Boolean(
-    activePendingCardResolution &&
-      latestDiscovery &&
-      activePendingCardResolution.playerId === latestDiscoveryOwnerPlayerId &&
-      activePendingCardResolution.discoveryTitle === latestDiscovery.title,
-  );
-  const canDismissLatestDiscoveryByBackdrop =
-    !hasLatestDiscoveryPendingCardResolution &&
-    !core.pendingEventRollResolution &&
-    !pendingLatestDiscoveryEventRollStart &&
-    (!shouldShowLatestDiscoveryRoll || !canCurrentPlayerModifyLatestDiscoveryRoll);
-  const hasPendingAttackReward = Boolean(
-    mummyPendingReward || helpingHandsPendingReward,
-  );
-  const canDismissRecentRollByBackdrop =
-    !hasRecentRollModifier &&
-    !hasPendingAttackReward &&
-    !hasAcknowledgeableRecentRoll;
+  const canDismissLatestDiscoveryByBackdrop = false;
+  const canDismissRecentRollByBackdrop = false;
   const shouldGateDamageAllocationBehindRecentRoll = Boolean(
     pendingDamageAllocation &&
       core.recentRoll?.kind === "eventRolledDamage" &&
@@ -10538,11 +10522,7 @@ export default function BetrayalBoard({
                     }
                     className={`absolute inset-0 z-50 flex items-center justify-center px-4 py-12 ${
                       isPhoneLandscapeLayout ? "bg-[rgba(3,7,6,0.92)]" : ""
-                    } ${
-                      canDismissRecentRollByBackdrop
-                        ? "pointer-events-auto"
-                        : "pointer-events-none"
-                    }`}
+                    } pointer-events-auto`}
                     onClick={
                       canDismissRecentRollByBackdrop
                         ? isExorciseRollReview
@@ -14728,6 +14708,7 @@ export default function BetrayalBoard({
         <MagnifyOverlay
           isOpen={referenceOpen || scenarioReaderOpen}
           onClose={closeReferenceOverlay}
+          closeOnBackdrop={false}
           overlayTestId={
             scenarioReaderOpen
               ? "betrayal-scenario-reader-dialog"
@@ -15045,6 +15026,7 @@ export default function BetrayalBoard({
         <MagnifyOverlay
           isOpen={Boolean(previewRoom && previewRoomVisual)}
           onClose={() => setRoomPreviewId(null)}
+          closeOnBackdrop={false}
           overlayTestId="betrayal-room-preview-overlay"
           overlayClassName="bg-[rgba(3,6,5,0.76)] p-4 md:p-6"
           containerClassName="rounded-none overflow-visible bg-transparent"
@@ -15075,6 +15057,7 @@ export default function BetrayalBoard({
         <MagnifyOverlay
           isOpen={Boolean(previewInventoryCard)}
           onClose={() => setInventoryPreviewCardId(null)}
+          closeOnBackdrop={false}
           overlayTestId="betrayal-inventory-preview-overlay"
           overlayClassName="bg-[rgba(3,6,5,0.74)] p-4 md:p-6"
           containerClassName="rounded-none overflow-visible bg-transparent"

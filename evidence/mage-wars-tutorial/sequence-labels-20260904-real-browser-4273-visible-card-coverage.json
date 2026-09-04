@@ -1,0 +1,145 @@
+{
+  "title": "法师战争真实 4273 教程逐卡截图",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+      "label": "01 开场目标：屹立不倒的法师获胜",
+      "transition": "起点：真实 4273 教程进入牌桌"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-self-hud-life-mana-channeling.png",
+      "label": "02 自己面板：生命、法力、聚魔和行动标记",
+      "transition": "点击下一步后读取自己的基础读数"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-read-opponent-hud-hidden-plans.png",
+      "label": "03 对手面板：对手读数和隐藏计划牌",
+      "transition": "继续读取对手可公开看到的信息"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-read-round-stage.png",
+      "label": "04 回合阶段：准备环节到行动环节",
+      "transition": "从双方读数进入回合结构说明"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-channel-result-mana-increased.png",
+      "label": "05 聚魔结果：兽王法力增加",
+      "transition": "系统自动结算无决策准备步骤后显示聚魔结果"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-plan-open-creature-category.png",
+      "label": "06 计划入口：点击生物分类",
+      "transition": "进入计划阶段，当前只要求切换分类"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-creature-next-page-wolf-hidden.png",
+      "label": "07 计划翻页：点击下一页找丛林灰狼",
+      "transition": "生物分类已打开，目标还不在当前页"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-plan-select-wolf-visible.png",
+      "label": "08 计划选牌：点击丛林灰狼本体",
+      "transition": "翻页后目标卡牌可见，下一步点击卡牌本体"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-plan-wolf-in-slot-one-open-incantation-category.png",
+      "label": "09 计划第二类：灰狼已在槽位，点击咒语分类",
+      "transition": "第一张计划牌进入计划槽，继续选择第二张"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-plan-click-incantation-category-rouse-visible.png",
+      "label": "10 计划选咒语：点击兽性觉醒本体",
+      "transition": "咒语分类打开后兽性觉醒已经可见，不再翻页"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-plan-rouse-in-slot-two-confirm.png",
+      "label": "11 确认计划：两张牌进入计划槽后提交",
+      "transition": "第二张计划牌进入槽位，确认按钮变为可用"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-prepared-and-hidden.png",
+      "label": "12 准备结果：双方计划牌保持隐藏",
+      "transition": "确认计划后承接准备牌隐藏状态"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-deploy-select-wolf-prepared-card.png",
+      "label": "13 部署选牌：点击准备区丛林灰狼",
+      "transition": "从准备结果进入自己的第一张部署牌"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-deploy-target-zone-highlight.png",
+      "label": "14 部署目标：点击兽王所在区域",
+      "transition": "选中灰狼后显示合法召唤区域"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-wolf-summoned-not-ready.png",
+      "label": "15 召唤结果：灰狼进场但行动未就绪",
+      "transition": "点击区域后灰狼被召唤到场上"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-rouse-select-spell-prepared-card.png",
+      "label": "16 部署选咒语：点击准备区兽性觉醒",
+      "transition": "灰狼已在场，继续释放第二张准备法术"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-rouse-target-wolf-highlight.png",
+      "label": "17 选择目标：点击场上的丛林灰狼",
+      "transition": "选中兽性觉醒后，灰狼成为可选目标"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-pass-your-deployment-wolf-ready.png",
+      "label": "18 结束部署：灰狼就绪后点击结束部署",
+      "transition": "兽性觉醒结算后，灰狼行动标记就绪"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-opponent-public-view-toggle-highlight.png",
+      "label": "19 公开视角：点击对手面板眼睛",
+      "transition": "对手部署自动结算后，切到对手公开视角"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-opponent-public-view-same-discard-pile.png",
+      "label": "20 对手弃牌：同一弃牌区显示对手公开弃牌",
+      "transition": "视角切换后读取对手弃牌堆"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-back-to-self-view.png",
+      "label": "21 返回自己：点击返回自己视角",
+      "transition": "读完对手弃牌后回到自己的操作视角"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-skip-initiative-quickcast.png",
+      "label": "22 快速施法窗口：点击让过快速施法",
+      "transition": "回到自己视角后进入先手快速施法窗口"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-move-select-wolf.png",
+      "label": "23 生物行动：点击场上的丛林灰狼",
+      "transition": "双方让过快速施法后轮到自己的生物行动"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-move-target-zone-a2.png",
+      "label": "24 移动目标：点击相邻区域移动",
+      "transition": "选中灰狼后，相邻区域成为合法移动目标"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-finish-wolf-moved-to-a2.png",
+      "label": "25 完成教程：首局基础流程完成",
+      "transition": "点击相邻区域后灰狼移动到 A2，教程结束"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png",
+      "label": "1366 回归：点击卡牌本体加入计划槽",
+      "transition": "压力态验证卡牌本体触发计划而不是放大"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png",
+      "label": "1366 回归：点击计划槽草稿牌取消计划",
+      "transition": "点击槽位草稿牌后计划被移除"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png",
+      "label": "1366 回归：取消后重新选择卡牌",
+      "transition": "重新点击卡牌后计划槽恢复为 1/2"
+    }
+  ]
+}

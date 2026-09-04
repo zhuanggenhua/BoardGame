@@ -12,6 +12,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    clickDiscoveryBackdropAndExpectStillVisible,
     expectPhysicalDiceSeparated,
     expectVisiblePhysicalDiceBox,
     initBetrayalContext,
@@ -132,25 +133,15 @@ const dismissDiscoveryPanelIfVisible = async (page: Page) => {
         return;
     }
 
-    const blankPoint = await discoveryPanel.evaluate((panel) => {
-        const panelRect = panel.getBoundingClientRect();
-        const content = panel.querySelector('[data-testid="betrayal-discovery-panel-content"]');
-        const contentRect = content?.getBoundingClientRect();
-        const candidates = [
-            { x: panelRect.left + 16, y: panelRect.top + 16 },
-            { x: panelRect.right - 16, y: panelRect.top + 16 },
-            { x: panelRect.left + 16, y: panelRect.bottom - 16 },
-            { x: panelRect.right - 16, y: panelRect.bottom - 16 },
-        ];
-        return candidates.find((point) => !contentRect || (
-            point.x < contentRect.left
-            || point.x > contentRect.right
-            || point.y < contentRect.top
-            || point.y > contentRect.bottom
-        )) ?? { x: panelRect.left + 8, y: panelRect.top + 8 };
-    });
-    await page.mouse.click(blankPoint.x, blankPoint.y);
-    await expect(discoveryPanel).toBeHidden();
+    await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
+    const continueButton = discoveryPanel.getByTestId('betrayal-discovery-continue');
+    await expect(
+        continueButton,
+        '发现牌浮层必须通过明确继续/确认按钮关闭，不能用空白点击关闭。',
+    ).toBeVisible();
+    await expect(continueButton).toBeEnabled();
+    await continueButton.click();
+    await expect(discoveryPanel).toBeHidden({ timeout: 30000 });
 };
 
 const readCurrentCore = async (page: Page): Promise<BetrayalCore> => (

@@ -3827,7 +3827,12 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-inventory-rope-magnify'));
         expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
         expect(screen.getByTestId('betrayal-inventory-preview-card')).toHaveTextContent('兔脚');
+        fireEvent.click(screen.getByTestId('betrayal-inventory-preview-overlay'));
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).toBeVisible();
+        fireEvent.click(screen.getByTestId('betrayal-inventory-preview-overlay-close'));
+        expect(screen.getByTestId('betrayal-inventory-preview-overlay')).not.toBeVisible();
     });
 
     it('被动持有物选中后保留使用按钮禁用原因', () => {
@@ -6256,7 +6261,7 @@ describe('Betrayal Board foundation', () => {
         });
     });
 
-    it('普通投骰结果没有可改骰时点击空白关闭，点击骰盘内容不关闭', () => {
+    it('普通投骰结果没有可改骰时点击空白不关闭，只能用明确按钮关闭', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -6287,10 +6292,12 @@ describe('Betrayal Board foundation', () => {
         );
 
         const backdrop = screen.getByTestId('betrayal-roll-result-backdrop');
-        expect(backdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        expect(backdrop).toHaveAttribute('data-backdrop-dismiss', 'disabled');
         fireEvent.click(screen.getByTestId('betrayal-roll-result-dock'));
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
         fireEvent.click(backdrop);
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
         expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
     });
 

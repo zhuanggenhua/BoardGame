@@ -1,0 +1,84 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "当前玩家实际能看到的每张教程提示卡都必须有对应截图，不能用后一张结果图倒算覆盖上一句操作文案。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 当前共有 25 个玩家可见教程 step。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 主流程中 screenshotTutorialStep 对这 25 个 step 逐一截图，静态对账结果 missingVisibleScreenshots 为空。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/ 重新生成 00 到 24 共 25 张主流程截图，更新时间为 2026-09-04 16:02 至 16:04。"
+      ]
+    },
+    {
+      "requirement": "纯 AI / 系统自动桥接步骤可以不截图，但必须证明玩家看不到这些提示卡。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 当前共有 4 个纯自动桥接 step：prepare-opponent-spells、opponent-deployment-results、opponent-pass-deployment、opponent-pass-initiative-quickcast。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 对这 4 个 step 均有 expectTutorialStepNotVisible 断言，证明它们不进入玩家可见教程卡。"
+      ]
+    },
+    {
+      "requirement": "每张截图必须来自真实开发入口 http://127.0.0.1:4273/ 的当前运行，而不是旧图、隔离图或失败图。",
+      "status": "PASS",
+      "evidence": [
+        "已运行 npm run test:e2e:dev:file -- e2e/mage-wars/mage-wars-tutorial.e2e.ts，Playwright 输出明确为开发服务器模式 4273/18000。",
+        "真实 4273 E2E 最终结果为 2 passed (4.0m)。"
+      ]
+    },
+    {
+      "requirement": "计划槽回归仍必须覆盖：卡牌本体加入计划、点击计划槽取消、取消后重新选择。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 的 1366x768 用例继续覆盖卡牌本体点击、计划槽草稿牌点击取消和重新选择。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/ 重新生成 3 张回归截图，更新时间为 2026-09-04 16:05 左右。"
+      ]
+    },
+    {
+      "requirement": "通用规范必须防止以后再次把“关键截图覆盖”误报成“每句教程文案都有截图”。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md 已新增“玩家可见文案逐卡截图”，明确用户要求逐步截图、逐句确认或教程截图收口时，每张玩家可见教程卡都要有当前步骤截图。",
+        ".spec/skills/tutorial-workflow/SKILL.md 已在 E2E 与截图段引用该规则，要求纯自动桥接步骤证明不渲染提示卡。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/01-labeled-00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/02-labeled-01-read-self-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/03-labeled-02-read-opponent-hud-hidden-plans.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/04-labeled-03-read-round-stage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/05-labeled-04-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/06-labeled-05-plan-open-creature-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/07-labeled-06-plan-creature-next-page-wolf-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/08-labeled-07-plan-select-wolf-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/09-labeled-08-plan-wolf-in-slot-one-open-incantation-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/10-labeled-09-plan-click-incantation-category-rouse-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/11-labeled-10-plan-rouse-in-slot-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/12-labeled-11-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/13-labeled-12-deploy-select-wolf-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/14-labeled-13-deploy-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/15-labeled-14-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/16-labeled-15-rouse-select-spell-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/17-labeled-16-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/18-labeled-17-pass-your-deployment-wolf-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/19-labeled-18-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/20-labeled-19-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/21-labeled-20-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/22-labeled-21-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/23-labeled-22-move-select-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/24-labeled-23-move-target-zone-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/25-labeled-24-finish-wolf-moved-to-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/26-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/27-labeled-01-1366-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-real-browser-4273-visible-card-final/_labeled-for-pureref-20260904-visible-cards/28-labeled-02-1366-plan-card-reselect-after-slot-cancel.png"
+  ]
+}

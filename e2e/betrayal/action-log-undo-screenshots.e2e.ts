@@ -298,16 +298,9 @@ async function closeDiscoveryPanel(page: Page) {
     return;
   }
   const continueButton = page.getByTestId("betrayal-discovery-continue");
-  if (await continueButton.isVisible().catch(() => false)) {
-    await expect(continueButton).toBeEnabled();
-    await continueButton.click();
-  } else {
-    const blankPoint = await discoveryPanel.evaluate((panel) => {
-      const rect = panel.getBoundingClientRect();
-      return { x: rect.left + 16, y: rect.top + 16 };
-    });
-    await page.mouse.click(blankPoint.x, blankPoint.y);
-  }
+  await expect(continueButton).toBeVisible();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
   await expect(discoveryPanel).toHaveCount(0);
 }
 

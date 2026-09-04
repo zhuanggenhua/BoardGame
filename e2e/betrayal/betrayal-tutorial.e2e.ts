@@ -10,6 +10,8 @@ import {
   saveScreenshot,
   setHarnessRandomQueue,
   waitForBetrayalPageReady,
+  expectPhysicalDiceRerollMotionVisible,
+  waitForPhysicalDiceRerollMotion,
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
 import { BETRAYAL_COMMANDS } from "../../src/games/betrayal/game";
@@ -32,9 +34,10 @@ const STEP_12 = `${EVIDENCE_DIR}/25-山屋惊魂-教程-书本牌面查看.jpg`;
 const STEP_13 = `${EVIDENCE_DIR}/26-山屋惊魂-教程-书本使用后知识改骰结果.jpg`;
 const STEP_14 = `${EVIDENCE_DIR}/27-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
 const STEP_15 = `${EVIDENCE_DIR}/28-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
-const STEP_16 = `${EVIDENCE_DIR}/29-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg`;
-const STEP_16A = `${EVIDENCE_DIR}/30-山屋惊魂-教程-自动进入伤害分配.jpg`;
-const STEP_16B = `${EVIDENCE_DIR}/31-山屋惊魂-教程-伤害分配完成后.jpg`;
+const STEP_15A = `${EVIDENCE_DIR}/29-山屋惊魂-教程-兔脚重投动画进行中.jpg`;
+const STEP_16 = `${EVIDENCE_DIR}/30-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg`;
+const STEP_16A = `${EVIDENCE_DIR}/31-山屋惊魂-教程-自动进入伤害分配.jpg`;
+const STEP_16B = `${EVIDENCE_DIR}/32-山屋惊魂-教程-伤害分配完成后.jpg`;
 const STEP_17 = `${EVIDENCE_DIR}/representative-hero-haunt/01-木乃伊作祟目标改变.jpg`;
 const STEP_18 = `${EVIDENCE_DIR}/representative-hero-haunt/02-打开木乃伊剧本目标页.jpg`;
 const STEP_19 = `${EVIDENCE_DIR}/representative-hero-haunt/03-驱逐木乃伊前因果说明.jpg`;
@@ -2027,9 +2030,11 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     if (await readyRollBackdrop.isVisible({ timeout: 800 }).catch(() => false)) {
       await expect(readyRollBackdrop).toHaveAttribute(
         "data-backdrop-dismiss",
-        "enabled",
+        "disabled",
       );
       await readyRollBackdrop.click({ position: { x: 16, y: 16 } });
+      await expect(page.getByTestId("betrayal-recent-roll-panel")).toBeVisible();
+      await page.getByTestId("betrayal-roll-continue").click();
     }
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.2, 0.2, 0.2, 0.2, 0.2]);
@@ -3603,7 +3608,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toBeVisible();
     await expectInventoryPreviewCardReadable(bookPreviewBeforeUse);
     await saveScreenshot(page, STEP_12);
+    await expect(bookPreviewBeforeUse).toHaveAttribute(
+      "data-backdrop-dismiss",
+      "disabled",
+    );
     await bookPreviewBeforeUse.click({ position: { x: 8, y: 8 } });
+    await expect(
+      page.getByTestId("betrayal-inventory-preview-overlay"),
+    ).toBeVisible();
+    await page.getByTestId("betrayal-inventory-preview-overlay-close").click();
     await expect(
       page.getByTestId("betrayal-inventory-preview-overlay"),
     ).not.toBeVisible();
@@ -3985,8 +3998,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "0px",
     );
     await saveScreenshot(page, STEP_15);
+    const rerollMotionVisible = expectPhysicalDiceRerollMotionVisible(
+      discoveryRollPanel,
+      { dieIndex: 1, sampleMs: 120 },
+    );
     await rollModifierConfirm.click();
     await expect(rabbitFootDice).toHaveCount(0);
+    await rerollMotionVisible;
+    await saveScreenshot(page, STEP_15A);
     await expect
       .poll(async () =>
         discoveryRollPanel

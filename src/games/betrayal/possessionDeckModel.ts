@@ -28,6 +28,28 @@ export function clonePossessionOrderByKind(
     };
 }
 
+export function createDrawnCardFromTemplate(
+    core: BetrayalCore,
+    template: BetrayalInventoryCard,
+    options: { suffix?: string | number } = {},
+): BetrayalInventoryCard {
+    return {
+        id: `${template.id}-${options.suffix ?? core.exploreIndex}`,
+        name: template.name,
+        kind: template.kind,
+    };
+}
+
+export function createDrawnCard(
+    core: BetrayalCore,
+    kind: BetrayalPossessionDeckKind,
+    options: { additionalDrawnCount?: number } = {},
+): BetrayalInventoryCard {
+    const drawnCount = options.additionalDrawnCount ?? 0;
+    const template = core.possessionOrderByKind[kind][drawnCount % core.possessionOrderByKind[kind].length]!;
+    return createDrawnCardFromTemplate(core, template);
+}
+
 function findPossessionDeckIndex(
     core: BetrayalCore,
     kind: BetrayalPossessionDeckKind,

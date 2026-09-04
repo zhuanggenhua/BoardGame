@@ -944,11 +944,11 @@ export const expectEventRollWorkbenchReadable = async (
         expect(
           target.webglShell?.scale,
           `${label}选中描边要比候选态更清楚，但仍贴近骰子：${evidence}`,
-        ).toBeGreaterThanOrEqual(1.085);
+        ).toBeGreaterThanOrEqual(1.045);
         expect(
           target.webglShell?.scale,
           `${label}选中描边不能外扩成离体大框：${evidence}`,
-        ).toBeLessThanOrEqual(1.105);
+        ).toBeLessThanOrEqual(1.065);
         expect(
           target.webglShell?.opacity,
           `${label}选中描边必须清晰可见：${evidence}`,
@@ -964,16 +964,16 @@ export const expectEventRollWorkbenchReadable = async (
         ).toBe("candidate");
         expect(
           target.webglShell?.scale,
-          `${label}候选描边必须贴住骰子外缘且可见：${evidence}`,
-        ).toBeGreaterThanOrEqual(1.065);
+          `${label}候选描边必须是贴近骰子的弱候选态，不能像已选中：${evidence}`,
+        ).toBeGreaterThanOrEqual(1.025);
         expect(
           target.webglShell?.scale,
           `${label}候选描边不能外扩成离体大框：${evidence}`,
-        ).toBeLessThanOrEqual(1.085);
+        ).toBeLessThanOrEqual(1.045);
         expect(
           target.webglShell?.opacity,
           `${label}候选描边不能弱到看不清：${evidence}`,
-        ).toBeGreaterThanOrEqual(0.98);
+        ).toBeGreaterThanOrEqual(0.9);
       }
     }
   }
@@ -1281,6 +1281,183 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
     maxGroupDriftPx: 1,
     maxRotationShiftRad: 0.02,
   });
+};
+
+export const waitForPhysicalDiceRerollMotion = async (
+  rollPanel: Locator,
+  options: { timeout?: number } = {},
+) => {
+  const physicsSource = rollPanel.getByTestId(
+    "betrayal-house-dice-physics-source",
+  );
+  await expect
+    .poll(
+      async () => {
+        const [motionType, motionId, settled, engineReady, engineFailure] =
+          await Promise.all([
+            physicsSource.getAttribute("data-dice-motion-type"),
+            physicsSource.getAttribute("data-dice-motion-id"),
+            physicsSource.getAttribute("data-dice-settled"),
+            physicsSource.getAttribute("data-dice-engine-ready"),
+            physicsSource.getAttribute("data-dice-engine-failure"),
+          ]);
+        if (motionType === "reroll" && settled === "false") {
+          return "rerolling";
+        }
+        return JSON.stringify({
+          motionType,
+          motionId,
+          settled,
+          engineReady,
+          engineFailure,
+        });
+      },
+      { timeout: options.timeout ?? 7000 },
+    )
+    .toBe("rerolling");
+};
+
+export const expectPhysicalDiceRerollMotionVisible = async (
+  rollPanel: Locator,
+  options: {
+    dieIndex?: number;
+    timeout?: number;
+    sampleMs?: number;
+    minRotationShiftRad?: number;
+    minPositionShiftPx?: number;
+  } = {},
+) => {
+  const dieIndex = options.dieIndex ?? 0;
+  const sampleMs = options.sampleMs ?? 180;
+  const minRotationShiftRad = options.minRotationShiftRad ?? 0.08;
+  const minPositionShiftPx = options.minPositionShiftPx ?? 0.75;
+  const readSnapshot = async () =>
+    rollPanel.evaluate((node, selectedDieIndex) => {
+      type Motion = {
+        x: number;
+        y: number;
+        z: number;
+        rotateX: number;
+        rotateY: number;
+        rotateZ: number;
+      };
+      type DebugDie = { motion?: Motion | null };
+      type DebugSnapshot = { dice?: DebugDie[] };
+      const panel = node as HTMLElement;
+      const source = panel.querySelector<HTMLElement>(
+        '[data-testid="betrayal-house-dice-physics-source"]',
+      );
+      const group = panel.querySelector<HTMLElement>(
+        '[data-testid="betrayal-house-dice-3d-group"]',
+      );
+      const debugRegistry =
+        (
+          window as typeof window & {
+            __diceBoxThreeDebug?: Record<string, () => DebugSnapshot | null>;
+          }
+        ).__diceBoxThreeDebug ?? {};
+      const canvases = Array.from(panel.querySelectorAll("canvas")).filter(
+        (canvas): canvas is HTMLCanvasElement =>
+          canvas instanceof HTMLCanvasElement,
+      );
+      const activeCanvas =
+        canvases.find((canvas) => {
+          const testId = canvas.dataset.testid;
+          return Boolean(testId && typeof debugRegistry[testId] === "function");
+        }) ??
+        canvases[0] ??
+        null;
+      const activeCanvasTestId =
+        activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+      const snapshot = activeCanvasTestId
+        ? (debugRegistry[activeCanvasTestId]?.() ?? null)
+        : null;
+      const motion = snapshot?.dice?.[selectedDieIndex]?.motion ?? null;
+      return {
+        motionType: source?.dataset.diceMotionType ?? "",
+        settled: source?.dataset.diceSettled ?? "",
+        engineReady: source?.dataset.diceEngineReady ?? "",
+        engineFailure: source?.dataset.diceEngineFailure ?? "",
+        activeCanvasTestId,
+        motion,
+      };
+    }, dieIndex);
+
+  await expect
+    .poll(
+      async () => {
+        const before = await readSnapshot();
+        await rollPanel.page().waitForTimeout(sampleMs);
+        const after = await readSnapshot();
+        const positionShift = before.motion && after.motion
+          ? Math.hypot(
+            after.motion.x - before.motion.x,
+            after.motion.y - before.motion.y,
+            after.motion.z - before.motion.z,
+          )
+          : 0;
+        const rotationShift = before.motion && after.motion
+          ? Math.max(
+            Math.abs(after.motion.rotateX - before.motion.rotateX),
+            Math.abs(after.motion.rotateY - before.motion.rotateY),
+            Math.abs(after.motion.rotateZ - before.motion.rotateZ),
+          )
+          : 0;
+        const evidence = JSON.stringify({
+          dieIndex,
+          positionShift,
+          rotationShift,
+          before,
+          after,
+        });
+        const stayedInRerollWindow =
+          before.motionType === "reroll" &&
+          after.motionType === "reroll" &&
+          before.settled === "false" &&
+          after.settled === "false";
+        const hasVisibleMotion =
+          Boolean(before.motion && after.motion) &&
+          (positionShift >= minPositionShiftPx || rotationShift >= minRotationShiftRad);
+        return stayedInRerollWindow && hasVisibleMotion ? "visible-reroll-motion" : evidence;
+      },
+      {
+        timeout: options.timeout ?? 7000,
+        intervals: [40, 60, 80, 120],
+      },
+    )
+    .toBe("visible-reroll-motion");
+};
+
+export const clickDiscoveryBackdropAndExpectStillVisible = async (
+  page: Page,
+  discoveryPanel: Locator = page.getByTestId("betrayal-discovery-panel"),
+) => {
+  await expect(discoveryPanel).toBeVisible();
+  await expect(discoveryPanel).toHaveAttribute("data-backdrop-dismiss", "disabled");
+  const blankPoint = await discoveryPanel.evaluate((panel) => {
+    const panelRect = panel.getBoundingClientRect();
+    const content = panel.querySelector(
+      '[data-testid="betrayal-discovery-panel-content"]',
+    );
+    const contentRect = content?.getBoundingClientRect();
+    const candidates = [
+      { x: panelRect.left + 16, y: panelRect.top + 16 },
+      { x: panelRect.right - 16, y: panelRect.top + 16 },
+      { x: panelRect.left + 16, y: panelRect.bottom - 16 },
+      { x: panelRect.right - 16, y: panelRect.bottom - 16 },
+    ];
+    const outsideContent = candidates.find(
+      (point) =>
+        !contentRect ||
+        point.x < contentRect.left ||
+        point.x > contentRect.right ||
+        point.y < contentRect.top ||
+        point.y > contentRect.bottom,
+    );
+    return outsideContent ?? { x: panelRect.left + 8, y: panelRect.top + 8 };
+  });
+  await page.mouse.click(blankPoint.x, blankPoint.y);
+  await expect(discoveryPanel).toBeVisible();
 };
 
 export const expectPhysicalDiceStableAfterSettled = async (

@@ -8,6 +8,7 @@ import {
 import type { DicePhysicsHighlightState, DicePhysicsRendererMode, DicePhysicsState } from './types';
 
 const DICE_PHYSICS_HIGHLIGHT_RENDERER = 'threejs-backside-shader-shell';
+const REROLL_LAUNCH_VISIBLE_MS = 1200;
 
 export interface DicePhysicsDieInput {
     id: number;
@@ -232,6 +233,11 @@ export function DiceBoxPhysicsSource({
     const setSettledState = React.useCallback((nextSettled: boolean) => {
         const previousSettled = settledRef.current;
         settledRef.current = nextSettled;
+        const container = containerRef.current;
+        if (container) {
+            container.dataset.diceSettled = nextSettled ? 'true' : 'false';
+            container.dataset.diceVisualSettled = nextSettled ? 'true' : 'false';
+        }
         engineRef.current?.setCanvasDiagnostics({
             settled: nextSettled,
         });
@@ -411,7 +417,9 @@ export function DiceBoxPhysicsSource({
                 targetLockedIndices: number[],
             ) => {
                 activeMotionRef.current = { type: 'reroll', key };
+                setSettledState(false);
                 try {
+                    await engine.playRerollLaunchPreview(rerollIndices, REROLL_LAUNCH_VISIBLE_MS);
                     await engine.rerollToValues(rerollIndices, targetValues, targetLockedIndices);
                 } finally {
                     finalizeVisibleSettledDice(engine);

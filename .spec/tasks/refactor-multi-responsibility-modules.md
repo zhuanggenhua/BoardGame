@@ -62,9 +62,17 @@ status: in_progress
 - 已继续第四批运行时 owner 迁移：山屋惊魂持有物特殊行动命令合法性已归入 `src/games/betrayal/possessionActionReadModel.ts`，承载主动持有物可用性、治疗目标、放置目标、面具移动目标和天使之羽点数范围；`game.ts` 的命令校验分支只调用正式 owner，不再内联持有物目标检查。
 - 当前持有物特殊行动合法性验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`possessionActionReadModel.ts`、持有物 / 战斗 / 交易代表测试文件，0 errors；持有物重掷、战斗武器和交易面具代表回归 3 个文件 100 个用例通过。
 - 已继续第四批运行时 owner 迁移：山屋惊魂事件效果选择、目标房间 / 相邻房间选择、通用伤害选择和效果文案已归入 `src/games/betrayal/possessionEffects.ts`；可选物品效果的持有牌过滤与选择落点归入 `src/games/betrayal/possessionItemChoiceModel.ts`；`game.ts` 不再保留这些本地选择函数。
-- 已继续第四批运行时 owner 迁移：山屋惊魂持有物使用命令转事件载荷已归入 `src/games/betrayal/possessionUseResolution.ts`，普通持有物使用落状态已归入 `src/games/betrayal/possessionUseState.ts`；`game.ts` 的 `USE_POSSESSION` 分支只保留书本替换投骰回调和事件封装。
+- 已继续第四批运行时 owner 迁移：山屋惊魂持有物使用命令转事件载荷已归入 `src/games/betrayal/possessionUseResolution.ts`，普通持有物使用落状态已归入 `src/games/betrayal/possessionUseState.ts`，书本替换事件投骰生成与落状态已归入 `src/games/betrayal/eventRollReplacementModel.ts`；`game.ts` 的 `USE_POSSESSION` 分支只保留事件封装，`POSSESSION_USED` reducer 只保留 owner 调用、同步和日志收尾。
 - 已继续第四批运行时 owner 迁移：山屋惊魂属性损失和通用伤害分配已归入 `src/games/betrayal/traitTrackModel.ts`；交易请求 / 同意 / 拒绝事件载荷和交易状态转移已归入 `src/games/betrayal/trade.ts`；尸体搜刮事件载荷和尸体持有物转移已归入 `src/games/betrayal/deathStateReadModel.ts`。
 - 当前持有物 / 交易 / 尸体搜刮结算验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`trade.ts`、`deathStateReadModel.ts`、`possessionEffects.ts`、`possessionItemChoiceModel.ts`、`possessionUseResolution.ts`、`possessionUseState.ts`、`traitTrackModel.ts`、`possessionActionReadModel.ts` 和 4 个目标测试文件，0 errors；持有物、战斗物品、交易和尸体搜刮代表回归 4 个文件 114 个用例通过。
+- 已继续第四批运行时 owner 迁移：山屋惊魂房间效果事件载荷、神秘电梯落状态和兔脚重掷后的神秘电梯再落状态已归入 `src/games/betrayal/roomEnterEffectModel.ts`；`game.ts` 的 `USE_ROOM_EFFECT` / `ROOM_EFFECT_USED` 分支只保留命令事件封装、reducer 同步和日志收尾。
+- 当前房间效果结算验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`roomEnterEffectModel.ts`、`roomActionReadModel.ts`、电梯 / 终局代表测试文件，0 errors；负向扫描确认 `game.ts` 不再直接调用 `resolveMysticElevatorEffect`、`resolveMysticElevatorDestination`、`moveMysticElevatorRoom` 或本地拼 `BetrayalRoomEnterEffectResult`；神秘电梯和终局代表回归 2 个文件 47 个用例通过。
+- 已继续第四批运行时 owner 迁移：山屋惊魂属性检定 / 非战斗检定 / 事件检定投骰、持有物被动加成、相机属性替换、手电 / 提灯事件额外骰和祝福房间额外骰已归入 `src/games/betrayal/traitRollModel.ts`；`game.ts` 不再保留这些投骰规则常量或本地检定函数。
+- 当前属性投骰 owner 验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`traitRollModel.ts`、`roomEnterEffectModel.ts`、持有物重掷 / 终局 / 灰尘 / 木乃伊代表测试文件，0 errors；负向扫描确认 `game.ts` 不再定义 `TRAIT_CHECK_PASSIVE_BONUSES`、`TRAIT_CHECK_REPLACEMENTS_BY_CARD_ID`、`EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID` 或本地属性投骰函数；属性投骰相关代表回归 4 个文件 149 个用例通过。
+- 已继续第四批运行时 owner 迁移：山屋惊魂事件分支选择、固定骰事件投骰、全属性检定、事件效果随机结果物化和事件投骰结果构造已归入 `src/games/betrayal/eventRollModel.ts`；`game.ts` 只消费事件投骰结果，不再本地维护事件分支排序、事件骰结果构造或效果物化函数。
+- 当前事件投骰 owner 验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`eventRollModel.ts`、`traitRollModel.ts`、`possessionEffects.ts` 和事件 / 重掷 / 房间效果代表测试文件，0 errors；负向扫描确认 `game.ts` 不再定义 `rollEventFixedDice`、`resolveEventBranch`、`rollAllTraitChecks`、`materializeEventEffect`、`resolveEventRollResolution` 或 `MaterializeEventEffectOptions`；事件牌 / 重掷 / 房间文字代表回归 4 个文件 118 个用例通过。
+- 已继续第四批运行时 owner 迁移：山屋惊魂 Mummy / Dust / Helping Hands / Magic Camera / Upon Reflection / Blood From Stone 的作祟运行态创建、克隆和 setup 放置副作用已归入 `src/games/betrayal/hauntRuntimeSetupModel.ts`；作祟揭示触发解析已归入 `src/games/betrayal/hauntSetupModel.ts`；`game.ts` 不再保留这些 setup / clone / 书本替换旧函数，也不保留 `USE_POSSESSION` 的书本替换回调桥。
+- 当前作祟 runtime setup 与书本替换 owner 验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`eventRollReplacementModel.ts`、`hauntRuntimeSetupModel.ts`、`hauntSetupModel.ts`、`possessionUseResolution.ts`、`possessionUseState.ts`、`eventRollModel.ts`、`traitRollModel.ts` 和 `roomEnterEffectModel.ts`，0 errors；负向扫描确认 `game.ts` 不再定义作祟 setup / clone 旧函数、`BetrayalEventRollReplacementResult` 或 `createBookPendingEventRollReplacement`。
 - 已继续第四批运行时 owner 迁移：山屋惊魂怪物控制者判断已归入 `src/games/betrayal/hauntScenarioReadModel.ts`，死亡保护重掷窗口和最近投骰重掷物品命令合法性已归入 `src/games/betrayal/possessionActionReadModel.ts`；`game.ts` 不再保留本地重掷命令 validator 或怪物控制者本地判断。
 - 当前最近投骰重掷物品合法性验证：`npx tsc --noEmit --pretty false --incremental false` 通过；目标 ESLint 覆盖 `game.ts`、`possessionActionReadModel.ts`、`hauntScenarioReadModel.ts`、持有物重掷、灰尘死亡保护、灰尘战斗死亡和杰克之灵 / 狂热病患代表测试文件，0 errors；4 个代表回归文件 138 个用例通过。
 - 已继续第四批运行时 owner 迁移：山屋惊魂回合开始速度读模型已归入 `src/games/betrayal/explorerReadModel.ts`，回合开始持有物快照和神秘秒表额外行动清理已归入 `src/games/betrayal/possessionActionReadModel.ts`；`game.ts` 不再本地保存这些无副作用派生函数。
@@ -87,8 +95,8 @@ status: in_progress
 | A | 任务状态账本 | 进行中 | 本文件记录剩余 owner、负向验收和每批验证；未满足前不得删除任务卡或汇报完成。 |
 | B | 共享 / 单游戏测试 owner | 已完成 | 旧集中测试文件删除，测试按行为合同 owner 运行，公共夹具只做合法入口和通用断言。 |
 | C | `Board.tsx` 读模型和 UI 子区域 | 进行中 | 已迁出多个 presentation / surface owner；剩余 UI 区域触碰时不得回流读模型、资源映射、阵营关系或规则推导。 |
-| D | `game.ts` 读模型 owner | 进行中 | 已迁出交易、地图、移动目标 / 移动成本、房间发现 / 放置预览 / 抽房间 / 板块调整材料化、攻击武器 / 攻击目标、作祟进度、房间特殊行动、持有物特殊行动 / 重掷物品合法性、死亡保护重掷窗口、回合开始速度 / 持有物快照、神秘秒表额外行动清理、叛徒能力、阵营关系、怪物控制者判断、作祟类型 / 特殊行动状态、怪物行动 / 怪物回合、怪物受伤结果 / 状态摘要、顽石之血 setup 放置、作祟揭示 / setup 模型、参考卡访问权限、终局读模型、作祟攻击奖励 / 巨魔手移动选项、作祟叛徒 / 首玩家决议、持有物效果选择 / 物品选择、交易事件载荷和尸体搜刮等 owner；下一批优先事件选择结算与作祟 runtime 结算。 |
-| E | `game.ts` 规则结算 owner | 进行中 | 持有物使用事件生成 / 普通持有物落状态、交易结算和尸体搜刮已开始迁出；事件结算、房间发现事件生成 / reducer 编排、作祟 runtime、怪物行动、攻击 / 伤害仍必须按行为合同拆分。 |
+| D | `game.ts` 读模型 owner | 进行中 | 已迁出交易、地图、移动目标 / 移动成本、房间发现 / 放置预览 / 抽房间 / 板块调整材料化、攻击武器 / 攻击目标、作祟进度、房间特殊行动、持有物特殊行动 / 重掷物品合法性、死亡保护重掷窗口、回合开始速度 / 持有物快照、神秘秒表额外行动清理、叛徒能力、阵营关系、怪物控制者判断、作祟类型 / 特殊行动状态、怪物行动 / 怪物回合、怪物受伤结果 / 状态摘要、顽石之血 setup 放置、作祟揭示 / setup 模型、作祟运行态 setup / clone、参考卡访问权限、终局读模型、作祟攻击奖励 / 巨魔手移动选项、作祟叛徒 / 首玩家决议、持有物效果选择 / 物品选择、房间效果事件载荷 / 神秘电梯落状态、属性投骰规则、事件投骰结果构造、交易事件载荷和尸体搜刮等 owner；下一批优先事件选择结算与事件效果状态落地。 |
+| E | `game.ts` 规则结算 owner | 进行中 | 持有物使用事件生成 / 普通持有物落状态、书本替换投骰生成与落状态、房间效果事件生成 / 神秘电梯落状态、属性检定 / 非战斗检定 / 事件检定投骰、事件分支选择 / 随机效果物化、作祟 runtime setup、交易结算和尸体搜刮已开始迁出；事件效果状态落地、房间发现事件生成 / reducer 编排、怪物行动、攻击 / 伤害仍必须按行为合同拆分。 |
 | F | 负向入口守卫 | 进行中 | 每批迁移后检查旧集中测试和旧 `game.ts` 导出没有恢复；不得保留 wrapper / re-export。 |
 | G | 收口验证 | 待最终 | 完整收口前统一跑 TypeScript、目标 ESLint、`npm run spec:lint`、`git diff --check` 和代表性 Betrayal 回归。 |
 
@@ -137,7 +145,7 @@ status: in_progress
 2. 新增在线 AI 或 transport 回归时，按行为合同选择现有 owner 测试文件；没有正确 owner 时先建新 owner 文件，禁止恢复旧集中测试入口。
 3. 新增七大恨领域回归时，按开局与牌源、事件牌、剧本、支付、势力行动、运行时交互、调度战斗、战斗战术、野战撤退、城战围城、年轮、人物窗口、区域胜利规则选择现有 `qidahen-*.test.ts` owner；没有正确 owner 时先建新 owner 文件，禁止恢复旧 `payment-selection.test.ts`。
 4. 新增 Betrayal 首剧本领域回归时，按 foundation/setup/movement、room effects、event cards、mummy、dust、helping hands、blood from stone、monster actions、room text、trade、possessions/rerolls、crimson jack、haunt risk、jack spirit、combat weapons、corpse loot 等现有 `betrayal-*.test.ts` owner 选择入口；没有正确 owner 时先建新 owner 文件，禁止恢复旧 `firstScenarioRuntime.test.ts`。
-5. Betrayal 运行时先按读模型 / 命令校验 / 事件生成 / reducer / UI 区域逐块拆 owner；当前已迁出交易、地图、移动目标 / 移动成本、房间发现 / 放置读模型、攻击武器 / 攻击目标、作祟进度、房间特殊行动、叛徒能力、阵营关系、作祟特殊行动、怪物行动、顽石之血 setup 放置、作祟揭示 / setup 模型、作祟攻击奖励、作祟叛徒 / 首玩家决议、持有物效果选择 / 使用事件 / 普通落状态、交易结算和尸体搜刮；后续事件选择结算、书本替换投骰落状态、作祟 runtime 和剩余命令 reducer 必须先列成功语义、失败语义和消费者后再迁移。
+5. Betrayal 运行时先按读模型 / 命令校验 / 事件生成 / reducer / UI 区域逐块拆 owner；当前已迁出交易、地图、移动目标 / 移动成本、房间发现 / 放置读模型、攻击武器 / 攻击目标、作祟进度、房间特殊行动、叛徒能力、阵营关系、作祟特殊行动、怪物行动、顽石之血 setup 放置、作祟揭示 / setup 模型、作祟运行态 setup / clone、作祟攻击奖励、作祟叛徒 / 首玩家决议、持有物效果选择 / 使用事件 / 普通落状态、书本替换投骰生成与落状态、房间效果事件生成 / 神秘电梯落状态、属性投骰规则、事件投骰结果构造、交易结算和尸体搜刮；后续事件效果状态落地和剩余命令 reducer 必须先列成功语义、失败语义和消费者后再迁移。
 6. 后续若继续处理 Betrayal 更大运行时块，先重新列规则结算、读模型、UI 区域、调试面板和测试夹具消费者，不能把测试拆分方案机械套用到 `game.ts` 或 `Board.tsx`。
 
 ## 验收标准

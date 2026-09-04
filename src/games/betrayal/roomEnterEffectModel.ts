@@ -2,6 +2,7 @@ import type { RandomFn } from '../../engine/types';
 import { rollBetrayalPip } from './diceRules';
 import type {
     BetrayalCore,
+    BetrayalRecentRollState,
     BetrayalRoomNode,
 } from './game';
 import {
@@ -25,6 +26,12 @@ export interface BetrayalRoomEnterEffectResult {
     destinationRoomId: string;
     destinationRoomName: string;
     destinationFloor: BetrayalRoomFloor;
+}
+
+export interface BetrayalRoomEffectUsedPayload {
+    playerId: string;
+    effect: BetrayalRoomEnterEffectResult;
+    logText: string;
 }
 
 function rollMysticElevatorWithDice(random: RandomFn): { total: number; dice: number[] } {
@@ -88,6 +95,22 @@ export function resolveMysticElevatorEffect(
         destinationRoomId: destination.id,
         destinationRoomName: destination.name,
         destinationFloor: destination.floor,
+    };
+}
+
+export function createBetrayalRoomEffectUsedPayload(
+    core: BetrayalCore,
+    playerId: string,
+    random: RandomFn,
+): BetrayalRoomEffectUsedPayload | null {
+    const effect = resolveMysticElevatorEffect(core, random);
+    if (!effect) {
+        return null;
+    }
+    return {
+        playerId,
+        effect,
+        logText: `${core.currentExplorer.displayName}启动神秘电梯，投出 ${effect.rollTotal}，电梯移动到${effect.destinationRoomName}`,
     };
 }
 
@@ -157,4 +180,78 @@ export function moveMysticElevatorRoom(
             connectedRoomIds: entryRoomId ? [entryRoomId] : [],
         };
     }));
+}
+
+export function applyBetrayalRoomEffectUsedState(
+    core: BetrayalCore,
+    payload: BetrayalRoomEffectUsedPayload,
+    timestamp: number,
+): boolean {
+    if (payload.effect.kind !== 'mysticElevator') {
+        return false;
+    }
+    const roomsBeforeRoll = core.rooms.map(cloneBetrayalRoom);
+    core.rooms = moveMysticElevatorRoom(core.rooms, payload.effect);
+    core.currentExplorer.roomId = payload.effect.roomId;
+    core.scenarioRuntime.usedRoomEffectIdsThisTurn = Array.from(new Set([
+        ...core.scenarioRuntime.usedRoomEffectIdsThisTurn,
+        payload.effect.kind,
+    ]));
+    core.recentRoll = {
+        id: `${payload.playerId}-${payload.effect.kind}-${timestamp}`,
+        kind: 'mysticElevator',
+        playerId: payload.playerId,
+        sourceTitle: payload.effect.roomName,
+        dice: [...payload.effect.dice],
+        passiveBonus: 0,
+        latestLabel: `移动到${payload.effect.destinationRoomName}`,
+        roomId: payload.effect.roomId,
+        roomsBeforeRoll,
+        consumedRabbitFootCardIds: [],
+    };
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    core.latestRoomDrawResolution = null;
+    return true;
+}
+
+export function applyBetrayalMysticElevatorRecentRollRerollState(
+    core: BetrayalCore,
+    recentRoll: BetrayalRecentRollState,
+    nextRoll: BetrayalRecentRollState,
+    nextTotal: number,
+    cardId: string,
+): boolean {
+    const roomsBeforeRoll = recentRoll.roomsBeforeRoll?.map(cloneBetrayalRoom);
+    const roomId = recentRoll.roomId ?? core.currentExplorer.roomId;
+    const roomBeforeRoll = roomsBeforeRoll?.find((room) => room.id === roomId);
+    const destination = roomsBeforeRoll
+        ? resolveMysticElevatorDestination({ ...core, rooms: roomsBeforeRoll }, nextTotal)
+        : null;
+    if (!roomsBeforeRoll || !roomBeforeRoll || !destination) {
+        return false;
+    }
+    const nextEffect: BetrayalRoomEnterEffectResult = {
+        kind: 'mysticElevator',
+        playerId: recentRoll.playerId,
+        roomId,
+        roomName: roomBeforeRoll.name,
+        rollTotal: nextTotal,
+        dice: [...nextRoll.dice],
+        destinationRoomId: destination.id,
+        destinationRoomName: destination.name,
+        destinationFloor: destination.floor,
+    };
+    core.rooms = moveMysticElevatorRoom(roomsBeforeRoll, nextEffect);
+    core.currentExplorer.roomId = roomId;
+    core.recentRoll = {
+        ...nextRoll,
+        latestLabel: `移动到${destination.name}`,
+        roomsBeforeRoll,
+    };
+    core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, cardId];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    core.latestRoomDrawResolution = null;
+    return true;
 }

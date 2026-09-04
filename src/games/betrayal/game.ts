@@ -21,10 +21,35 @@ import { createBetrayalAiRuntime } from './ai';
 import { BETRAYAL_COMMANDS } from './commands';
 import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
 import {
-    normalizeBetrayalDiceCount,
+    resolveBetrayalEventChoiceResolvedPayload,
+    validateBetrayalEventChoiceResolution,
+} from './eventChoiceResolutionModel';
+import {
     rollBetrayalDicePips,
     rollBetrayalPip,
 } from './diceRules';
+import {
+    materializeEventEffect,
+    resolveEventBranch,
+    resolveEventRollResolution,
+    rollEventFixedDice,
+} from './eventRollModel';
+import {
+    applyBetrayalEventRollReplacementState,
+    type BetrayalEventRollReplacementResult,
+} from './eventRollReplacementModel';
+import {
+    activatePendingRolledDamageAllocation,
+    applyEventEffect,
+    applyEventEffectWithDeferredRolledDamage,
+    cloneRolledDamageResult,
+    cloneSourceEventRoll,
+    cloneSourceEventRollFromRecentRoll,
+    isEventRecentRoll,
+    resolveEventDamageDeathPrevention,
+    revertEventEffect,
+    setEventRolledDamageRecentRollFromSnapshot,
+} from './eventEffectResolutionModel';
 import {
     canPlayerAcknowledgeRecentRoll,
     eventRollResolutionNeedsAcknowledgement,
@@ -53,6 +78,23 @@ import {
     type BetrayalCorpseLootCommandPayload,
     type BetrayalCorpseLootedPayload,
 } from './deathStateReadModel';
+import {
+    applyAttackDamage,
+    applyMentalDamage,
+    applyPhysicalDamage,
+    applyStrangeAmuletPhysicalDamageBonus,
+    chainPendingDamageAllocations,
+    clonePendingDamageAllocation,
+    createPendingDamageAllocation,
+    formatDeathPreventionLog,
+    isExplorerDead,
+    resolveDamageAllocationAllowedTraits,
+    repeatTraitForDamage,
+    rollDeathPrevention,
+    setExplorerTraitsToDeathsDoor,
+    wouldExplorerDieFromAttackDamage,
+    wouldExplorerDieFromMentalDamage,
+} from './damageResolutionModel';
 import { resolveBetrayalHauntRisk } from './hauntProgress';
 import {
     MUMMY_GIRL_STEAL_CARD_ID,
@@ -69,10 +111,26 @@ import {
 } from './hauntAttackRewardReadModel';
 import {
     resolveBetrayalHauntSetupQueue,
+    resolveHauntRevealResolutionForTrigger,
     resolveHauntSetupQueueWithEntryStatus,
     type BetrayalHauntSetupQueueEntry,
     type BetrayalHauntSetupQueueEntryId,
 } from './hauntSetupModel';
+import {
+    cloneDustRuntimeState,
+    cloneHelpingHandsRuntimeState,
+    cloneMagicCameraRuntimeState,
+    cloneMummyRuntimeState,
+    cloneUponReflectionRuntimeState,
+    createDustRuntimeState,
+    createUponReflectionRuntimeState,
+    removeMagicCameraFromExplorer,
+    setupBloodFromStoneHaunt,
+    setupHelpingHandsHaunt,
+    setupMagicCameraHaunt,
+    setupMummyHaunt,
+    setupUponReflectionHaunt,
+} from './hauntRuntimeSetupModel';
 import {
     cloneHauntFirstPlayerResolution,
     cloneHauntTraitorResolution,
@@ -93,10 +151,8 @@ import {
 import {
     findFeverishMonster,
     findHelpingHandsTrollHand,
-    findMagicCameraHolderPlayerId,
     findMummyMonster,
     findPhantomPhotographer,
-    findStrangeAmuletHolder,
     hasBloodFromStoneMirror,
     hasLivingHeroWithBookInRoom,
     hasOmenBook,
@@ -110,7 +166,6 @@ import {
     isMummyHaunt,
     isMummyMonster,
     isMummyNameStudyRoom,
-    isStrangeAmuletCard,
     isStoneCherubMonster,
     isUponReflectionHaunt,
     isBetrayalPlayerControllingMonster,
@@ -123,6 +178,7 @@ import {
 import {
     canPlayerControlStandardMonsterTurn,
     cloneBloodFromStoneMonsterTurnRuntimeState,
+    cloneMonsterMovementRollResult,
     cloneMonsterMovementRollGroupResult,
     cloneMonsterTurnRuntimeState,
     createBloodFromStoneTurnStartVisibility,
@@ -169,17 +225,25 @@ import {
 } from './possessionActionReadModel';
 import { resolveBetrayalRoomSpecialActionStatus } from './roomActionReadModel';
 import {
-    moveMysticElevatorRoom,
-    resolveMysticElevatorDestination,
-    resolveMysticElevatorEffect,
+    applyBetrayalMysticElevatorRecentRollRerollState,
+    applyBetrayalRoomEffectUsedState,
+    createBetrayalRoomEffectUsedPayload,
     type BetrayalRoomEnterEffect,
-    type BetrayalRoomEnterEffectResult,
+    type BetrayalRoomEffectUsedPayload,
 } from './roomEnterEffectModel';
 import { readBetrayalScenarioId } from './roomSetup';
 import {
     canUseBetrayalTraitorPowers,
     isBetrayalDamagingRoomEndTurnEffect,
 } from './traitorPowerRules';
+import {
+    resolveNonCombatTraitCheckValue,
+    rollEventTraitCheckWithDice,
+    rollNonCombatTraitCheck,
+    rollNonCombatTraitCheckWithDice,
+    rollTrait,
+    rollTraitCheckWithDice,
+} from './traitRollModel';
 import {
     BETRAYAL_SCENARIO_CARD_IDS,
     BETRAYAL_DISCOVERY_POOLS,
@@ -191,7 +255,6 @@ import {
     getBetrayalScenarioCardCandidate,
     isBetrayalOptionalHauntRollRuntimeSupported,
     isBetrayalScenarioCardId,
-    resolveBetrayalHauntRevealResolution,
     resolveImplementedScenarioIdForCard,
     type BetrayalDeckKind as ConfigDeckKind,
     type BetrayalHauntRevealResolution,
@@ -246,14 +309,16 @@ import {
     type BetrayalPossessionUseCommandPayload,
 } from './possessionUseResolution';
 import { applyBetrayalPossessionUsedState } from './possessionUseState';
+import { resolveRecentRollTotal } from './recentRollPresentation';
 import {
     DRAW_POOL,
     buryPossessionCardToBottom,
     cloneInventoryCard,
     clonePossessionOrderByKind,
+    createDrawnCard,
+    createDrawnCardFromTemplate,
     removePossessionCardFromDeck,
     restorePossessionCardToBottom,
-    restorePossessionCardToTop,
 } from './possessionDeckModel';
 import {
     EVENT_POOL,
@@ -275,6 +340,7 @@ import {
     type BetrayalMonsterDamageOutcome,
 } from './monsterReadModel';
 import {
+    cloneExplorerSummary,
     findExplorerByPlayerId,
     getAllExplorers,
     getExplorersInTurnOrder,
@@ -286,14 +352,12 @@ import {
     applyTraitLoss,
     BETRAYAL_TRAIT_KEYS,
     buildTraitTracksFromTemplate,
-    buildTraitTracksFromValues,
     cloneTraitTracks,
     damageTraitsAreAssignable,
     healExplorerTraitToStart,
     moveExplorerTraitSteps,
     normalizeExplorerTraitTracks,
     resolveTraitDamageAssignableSteps,
-    setExplorerTraitPosition,
     setExplorerTraitsFromValues,
 } from './traitTrackModel';
 import {
@@ -396,18 +460,7 @@ type BetrayalHauntAttackTarget =
     | 'troll-hand'
     | 'dynamite-room';
 
-const HELPING_HANDS_STRANGE_AMULET_CARD_ID = HELPING_HANDS_STRANGE_AMULET_EFFECT_ID;
-const BROOCH_CARD_ID = 'brooch';
 const TOOTH_NECKLACE_CARD_ID = 'tooth-necklace';
-const HELPING_HANDS_STRANGE_AMULET_CARD: BetrayalInventoryCard = {
-    id: HELPING_HANDS_STRANGE_AMULET_CARD_ID,
-    name: '奇异护符',
-    kind: 'item',
-};
-const HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS = [
-    'betrayal/tokens/monsters/troll-right-hand',
-    'betrayal/tokens/monsters/troll-left-hand',
-] as const;
 export interface BetrayalInventoryCard {
     id: string;
     name: string;
@@ -859,27 +912,6 @@ export interface BetrayalPendingEventRollStartState {
     roomId: string;
     sourceTitle: string;
     eventDescription?: string;
-}
-
-interface BetrayalEventRollReplacementResult {
-    dice: number[];
-    passiveBonus: number;
-    total: number;
-    latestLabel: string;
-    effect: UseEffectProfile;
-    hauntRoll?: BetrayalPendingEventRollResolutionState['hauntRoll'];
-    nextPendingEventChoice?: BetrayalPendingEventChoiceState;
-    deathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
-    hauntTriggered?: boolean;
-    hauntCardNumber?: number;
-    hauntTriggerLabel?: string;
-    hauntTraitorPlayerId?: string | null;
-    hauntRevealResolution?: BetrayalHauntRevealResolution;
-    hauntTraitorResolution?: BetrayalHauntTraitorResolution;
-    dustSetup?: BetrayalDustRuntimeState;
-    magicCameraSetup?: BetrayalMagicCameraRuntimeState;
-    helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
-    uponReflectionSetup?: BetrayalUponReflectionRuntimeState;
 }
 
 export interface BetrayalMonsterMovementRollResult {
@@ -1634,7 +1666,7 @@ type BetrayalEvent =
         hauntRoll?: BetrayalPendingEventRollResolutionState['hauntRoll'];
         logText: string;
     }>
-    | GameEvent<typeof EVENTS.ROOM_EFFECT_USED, { playerId: string; effect: BetrayalRoomEnterEffectResult; logText: string }>
+    | GameEvent<typeof EVENTS.ROOM_EFFECT_USED, BetrayalRoomEffectUsedPayload>
     | GameEvent<typeof EVENTS.POSSESSION_TRADE_REQUESTED, BetrayalTradeRequestedPayload>
     | GameEvent<typeof EVENTS.POSSESSION_TRADED, BetrayalTradeAcceptedPayload>
     | GameEvent<typeof EVENTS.POSSESSION_TRADE_DECLINED, BetrayalTradeDeclinedPayload>
@@ -2077,21 +2109,6 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = BETRAYAL_EXPLORER_CA
 type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 
 type EventTemplate = BetrayalEventSeed;
-type EventEffectSnapshot = NonNullable<BetrayalRecentRollState['eventEffectSnapshot']>;
-
-type RolledDamageAllocationDeferral = {
-    sourceTitle: string;
-    timestamp: number;
-    allocations: BetrayalPendingDamageAllocationState[];
-};
-
-type ApplyEventEffectOptions = {
-    deferRolledDamageAllocation?: RolledDamageAllocationDeferral;
-};
-
-type MaterializeEventEffectOptions = {
-    materializeRandomResults?: boolean;
-};
 
 interface BetrayalHauntRollResult {
     dice: number[];
@@ -2102,37 +2119,6 @@ interface BetrayalHauntRollResult {
 }
 
 const DRAW_ORDER: BetrayalDeckKind[] = [...BETRAYAL_DISCOVERY_POOLS.drawOrder];
-
-const TRAIT_CHECK_PASSIVE_BONUSES: Record<string, Partial<Record<BetrayalTraitKey, number>>> = {
-    'omen-book': { knowledge: 1 },
-    skull: { knowledge: 1 },
-    dog: { speed: 1 },
-    mask: { speed: 1 },
-    'holy-symbol': { sanity: 1 },
-    ring: { sanity: 1 },
-    idol: { might: 1 },
-};
-
-const TRAIT_CHECK_REPLACEMENTS_BY_CARD_ID: Record<string, Partial<Record<BetrayalTraitKey, BetrayalTraitKey>>> = {
-    camera: { knowledge: 'sanity' },
-};
-
-const EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID: Record<string, number> = {
-    flashlight: 2,
-    lantern: 2,
-};
-
-const PHYSICAL_DAMAGE_REDUCTION_BY_CARD_ID: Record<string, number> = {
-    armor: 1,
-};
-
-const MENTAL_DAMAGE_REDUCTION_BY_CARD_ID: Record<string, number> = {
-    radio: 1,
-};
-
-const DEATH_PREVENTION_ROLL_CARDS_BY_ID: Record<string, { dice: number; minTotal: number }> = {
-    skull: { dice: 3, minTotal: 4 },
-};
 
 const MUMMY_WEDDING_OMEN_CARD_IDS = new Set(['holy-symbol', 'ring']);
 
@@ -2575,52 +2561,12 @@ const nowEvent = <TType extends string, TPayload>(
     timestamp,
 });
 
-function cloneExplorer(explorer: BetrayalExplorerSummary): BetrayalExplorerSummary {
-    const cloned = {
-        ...explorer,
-        traits: { ...explorer.traits },
-        traitTracks: explorer.traitTracks
-            ? cloneTraitTracks(explorer.traitTracks)
-            : buildTraitTracksFromValues(explorer.explorerId, explorer.traits),
-        inventory: explorer.inventory.map(cloneInventoryCard),
-    };
-    normalizeExplorerTraitTracks(cloned);
-    return cloned;
-}
-
 function cloneMonster(monster: BetrayalMonsterSummary): BetrayalMonsterSummary {
     return { ...monster };
 }
 
 function cloneMonsterSeed(monster: BetrayalMonsterSeed): BetrayalMonsterSummary {
     return { ...monster };
-}
-
-function cloneDustRuntimeState(dust: BetrayalDustRuntimeState): BetrayalDustRuntimeState {
-    return {
-        sicknessTokensByPlayerId: Object.fromEntries(
-            Object.entries(dust.sicknessTokensByPlayerId).map(([playerId, tokens]) => [
-                playerId,
-                tokens.map((token) => ({ ...token })),
-            ]),
-        ),
-        permanentTraitorPlayerIds: [...dust.permanentTraitorPlayerIds],
-        researchRoomIds: [...dust.researchRoomIds],
-        exchangedSicknessThisTurnPlayerIds: [...dust.exchangedSicknessThisTurnPlayerIds],
-        feverishPlayerIds: [...dust.feverishPlayerIds],
-        pendingSicknessExchange: dust.pendingSicknessExchange
-            ? { ...dust.pendingSicknessExchange }
-            : undefined,
-    };
-}
-
-function cloneMonsterMovementRollResult(
-    result: BetrayalMonsterMovementRollResult,
-): BetrayalMonsterMovementRollResult {
-    return {
-        ...result,
-        dice: [...result.dice],
-    };
 }
 
 function cloneRoomEndTurnEffectResult(
@@ -2705,51 +2651,6 @@ function clonePendingEventRollResolution(
     };
 }
 
-function clonePendingDamageAllocation(
-    pending: BetrayalPendingDamageAllocationState,
-): BetrayalPendingDamageAllocationState {
-    return {
-        ...pending,
-        allowedTraits: [...pending.allowedTraits],
-        damageReplacement: pending.damageReplacement ? { ...pending.damageReplacement } : undefined,
-        forcedTraitSequence: pending.forcedTraitSequence ? [...pending.forcedTraitSequence] : undefined,
-        traitsBeforeDamage: { ...pending.traitsBeforeDamage },
-        nextDamageAllocations: pending.nextDamageAllocations?.map(clonePendingDamageAllocation),
-        monsterMovementRoll: pending.monsterMovementRoll
-            ? cloneMonsterMovementRollResult(pending.monsterMovementRoll)
-            : pending.monsterMovementRoll,
-        skipBloodFromStoneMonsterTurnStart: pending.skipBloodFromStoneMonsterTurnStart,
-    };
-}
-
-function cloneMagicCameraRuntimeState(magicCamera: BetrayalMagicCameraRuntimeState): BetrayalMagicCameraRuntimeState {
-    return {
-        cameraDestroyed: magicCamera.cameraDestroyed,
-        cameraHolderPlayerId: magicCamera.cameraHolderPlayerId,
-        heroEssencePlayerIds: [...magicCamera.heroEssencePlayerIds],
-        capturedEssencePlayerIds: [...magicCamera.capturedEssencePlayerIds],
-        phantomPhotographerIds: [...magicCamera.phantomPhotographerIds],
-        killedPhantomPhotographerIds: [...magicCamera.killedPhantomPhotographerIds],
-        stunnedPhantomPhotographerIds: [...magicCamera.stunnedPhantomPhotographerIds],
-    };
-}
-
-function cloneMummyRuntimeState(mummy: BetrayalMummyRuntimeState): BetrayalMummyRuntimeState {
-    return {
-        ...mummy,
-        mummyCarriedOmenIds: [...mummy.mummyCarriedOmenIds],
-        mummyCarriedCards: mummy.mummyCarriedCards.map(cloneInventoryCard),
-        pendingAttackReward: mummy.pendingAttackReward
-            ? {
-                ...mummy.pendingAttackReward,
-                defenderTraitsBeforeDamage: { ...mummy.pendingAttackReward.defenderTraitsBeforeDamage },
-                stealableCardIds: [...mummy.pendingAttackReward.stealableCardIds],
-            }
-            : undefined,
-        requiredOmenIds: [...mummy.requiredOmenIds],
-    };
-}
-
 function cloneInventorySeed(card: BetrayalInventorySeed): BetrayalInventoryCard {
     return { ...card };
 }
@@ -2784,10 +2685,10 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         selectedExplorerByPlayerId: { ...core.selectedExplorerByPlayerId },
         readyPlayerIds: [...core.readyPlayerIds],
         turnStartSpeed: core.turnStartSpeed ?? core.currentExplorer.traits.speed ?? core.movesRemaining,
-        currentExplorer: cloneExplorer(core.currentExplorer),
+        currentExplorer: cloneExplorerSummary(core.currentExplorer),
         currentExplorerTraits: { ...core.currentExplorerTraits },
         currentExplorerInventory: core.currentExplorerInventory.map(cloneInventoryCard),
-        otherExplorers: core.otherExplorers.map(cloneExplorer),
+        otherExplorers: core.otherExplorers.map(cloneExplorerSummary),
         monsters: core.monsters.map(cloneMonster),
         drawOrder: [...core.drawOrder],
         roomDiscoveryDeck: (core.roomDiscoveryDeck ?? makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor))
@@ -3175,8 +3076,8 @@ function replaceExplorers(
     const nextOthers = explorers.filter((explorer) => explorer.playerId !== nextCurrent.playerId);
     return syncCurrentExplorerProjection({
         ...core,
-        currentExplorer: cloneExplorer(nextCurrent),
-        otherExplorers: nextOthers.map(cloneExplorer),
+        currentExplorer: cloneExplorerSummary(nextCurrent),
+        otherExplorers: nextOthers.map(cloneExplorerSummary),
     });
 }
 
@@ -3191,82 +3092,6 @@ function buildScenarioExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
             scenarioInventoryForExplorer(core.scenarioId, template.explorerId),
         );
     });
-}
-
-function resolveMummyGirlStartingRoomId(core: BetrayalCore, mummyRoomId: string): string | null {
-    const mummyRoom = core.rooms.find((room) => room.id === mummyRoomId);
-    if (!mummyRoom) {
-        return null;
-    }
-    const discoveredRooms = core.rooms.filter((room) => room.state === 'discovered' && room.id !== mummyRoom.id);
-    const sameFloorRooms = discoveredRooms
-        .filter((room) => room.floor === mummyRoom.floor)
-        .map((room) => ({
-            room,
-            distance: roomDistanceByLayout(mummyRoom, room),
-        }))
-        .sort((a, b) => b.distance - a.distance);
-    const farEnoughRoom = sameFloorRooms.find(({ distance }) => distance >= 5);
-    if (farEnoughRoom) {
-        return farEnoughRoom.room.id;
-    }
-    if (sameFloorRooms[0]) {
-        return sameFloorRooms[0].room.id;
-    }
-    const anyFloorRoom = discoveredRooms
-        .map((room) => ({
-            room,
-            distance: roomDistanceByLayout(mummyRoom, room),
-        }))
-        .sort((a, b) => b.distance - a.distance)[0];
-    return anyFloorRoom?.room.id ?? null;
-}
-
-function removeMummyGirlOmenFromExplorers(core: BetrayalCore): void {
-    const isGirlOmen = (card: BetrayalInventoryCard) => (
-        card.kind === 'omen'
-        && (
-            card.id === 'girl'
-            || card.id === 'omen-girl'
-            || card.name.includes('女孩')
-            || card.name.toLowerCase() === 'girl'
-        )
-    );
-    const explorers = getAllExplorers(core);
-    for (const explorer of explorers) {
-        explorer.inventory = explorer.inventory.filter((card) => !isGirlOmen(card));
-    }
-    core.currentExplorerInventory = core.currentExplorer.inventory.map(cloneInventoryCard);
-}
-
-function createMummyRuntimeState(core: BetrayalCore, traitorPlayerId: string | null): BetrayalMummyRuntimeState {
-    const traitor = traitorPlayerId ? findExplorerByPlayerId(core, traitorPlayerId) : null;
-    const sarcophagusRoomId = traitor?.roomId ?? core.activeRoomId;
-    const girlRoomId = resolveMummyGirlStartingRoomId(core, sarcophagusRoomId);
-    return {
-        mummyMonsterId: 'mummy',
-        sarcophagusRoomId,
-        girlRoomId,
-        girlHolderPlayerId: null,
-        girlHeldByMummy: false,
-        mummyCarriedOmenIds: [],
-        mummyCarriedCards: [],
-        knowledgeTokenCount: 0,
-        trueNameFound: false,
-        banishmentSpellLearned: false,
-        bookRequired: !getAllExplorers(core).some((explorer) => hasOmenBook(explorer)),
-        requiredOmenIds: ['omen-book', 'holy-symbol', 'ring'],
-    };
-}
-
-function setupMummyHaunt(core: BetrayalCore, traitorPlayerId: string | null): BetrayalMummyRuntimeState {
-    const mummy = createMummyRuntimeState(core, traitorPlayerId);
-    removeMummyGirlOmenFromExplorers(core);
-    core.monsters = [
-        ...core.monsters.filter((monster) => monster.id !== mummy.mummyMonsterId && monster.definitionId !== 'mummy'),
-        createBetrayalMonsterFromDefinition('mummy', mummy.mummyMonsterId, mummy.sarcophagusRoomId),
-    ];
-    return mummy;
 }
 
 function isOmenStillInDeck(core: BetrayalCore, effectId: string): boolean {
@@ -3495,36 +3320,6 @@ function resolveScenarioCompletedLog(core: BetrayalCore, result: BetrayalEndgame
         return '英雄破除镜中诅咒，作祟揭秘者回到现实';
     }
     return scenarioConfigById(core.scenarioId).logs.scenarioCompleted;
-}
-
-function createDustRuntimeState(core: BetrayalCore, random: RandomFn): BetrayalDustRuntimeState {
-    const playerIds = [...core.playerIds];
-    const sicknessOneCount = playerIds.length >= 6 ? 2 : 1;
-    const sicknessValues = [
-        ...Array.from({ length: sicknessOneCount }, () => 1),
-        ...Array.from({ length: Math.max(0, playerIds.length * 3 - sicknessOneCount) }, (_, index) => index + 2),
-    ];
-    const shuffledValues = random.shuffle(sicknessValues);
-    let cursor = 0;
-    const sicknessTokensByPlayerId = Object.fromEntries(
-        playerIds.map((playerId) => [
-            playerId,
-            Array.from({ length: 3 }, (_, tokenIndex) => ({
-                id: `sickness-${playerId}-${tokenIndex + 1}`,
-                value: shuffledValues[cursor++] ?? null,
-            })),
-        ]),
-    );
-    const permanentTraitorPlayerIds = playerIds.filter((playerId) => (
-        sicknessTokensByPlayerId[playerId]?.some((token) => token.value === 1)
-    ));
-    return {
-        sicknessTokensByPlayerId,
-        permanentTraitorPlayerIds,
-        researchRoomIds: [],
-        exchangedSicknessThisTurnPlayerIds: [],
-        feverishPlayerIds: [],
-    };
 }
 
 function buryExplorerPossessionsToBottom(core: BetrayalCore, explorer: BetrayalExplorerSummary): void {
@@ -3770,96 +3565,6 @@ function applyDustEventEffectDeathIfNeeded(core: BetrayalCore): void {
     }
 }
 
-function cloneHelpingHandsRuntimeState(helpingHands: BetrayalHelpingHandsRuntimeState): BetrayalHelpingHandsRuntimeState {
-    return {
-        strangeAmuletCardId: helpingHands.strangeAmuletCardId,
-        strangeAmuletFoundDuringSetup: helpingHands.strangeAmuletFoundDuringSetup,
-        trollHandIds: [...helpingHands.trollHandIds],
-        monsterTurnAfterPlayerId: helpingHands.monsterTurnAfterPlayerId,
-        activeMonsterTurn: helpingHands.activeMonsterTurn,
-        monsterTurnControllerPlayerId: helpingHands.monsterTurnControllerPlayerId,
-        trollHandMoveAllowance: helpingHands.trollHandMoveAllowance,
-        trollHandMoveDice: [...helpingHands.trollHandMoveDice],
-        trollHandMoveRemainingById: { ...helpingHands.trollHandMoveRemainingById },
-        trollHandAttackUsedIdsThisTurn: [...helpingHands.trollHandAttackUsedIdsThisTurn],
-        pendingAttackReward: helpingHands.pendingAttackReward
-            ? {
-                ...helpingHands.pendingAttackReward,
-                defenderTraitsBeforeDamage: { ...helpingHands.pendingAttackReward.defenderTraitsBeforeDamage },
-            }
-            : undefined,
-    };
-}
-
-function removeStrangeAmuletFromItemDeck(core: BetrayalCore): void {
-    const deck = [...core.possessionOrderByKind.item];
-    const index = deck.findIndex(isStrangeAmuletCard);
-    if (index < 0) {
-        return;
-    }
-    deck.splice(index, 1);
-    core.possessionOrderByKind = {
-        ...core.possessionOrderByKind,
-        item: deck,
-    };
-    core.deckCounts.item = Math.max(0, core.deckCounts.item - 1);
-}
-
-function ensureStrangeAmuletForHelpingHands(
-    core: BetrayalCore,
-    revealerPlayerId: string,
-): { cardId: string; foundDuringSetup: boolean } {
-    const existingHolder = findStrangeAmuletHolder(core);
-    if (existingHolder) {
-        return { cardId: existingHolder.card.id, foundDuringSetup: false };
-    }
-    const revealer = findExplorerByPlayerId(core, revealerPlayerId);
-    if (!revealer) {
-        return { cardId: HELPING_HANDS_STRANGE_AMULET_CARD_ID, foundDuringSetup: false };
-    }
-    const card = core.possessionOrderByKind.item.find(isStrangeAmuletCard)
-        ?? HELPING_HANDS_STRANGE_AMULET_CARD;
-    revealer.inventory = [
-        ...revealer.inventory.filter((item) => !isStrangeAmuletCard(item)),
-        cloneInventoryCard(card),
-    ];
-    removeStrangeAmuletFromItemDeck(core);
-    return { cardId: card.id, foundDuringSetup: true };
-}
-
-function createHelpingHandsTrollHands(): BetrayalMonsterSummary[] {
-    return [
-        { id: 'troll-hand-1', roomId: 'entrance-hall' },
-        { id: 'troll-hand-2', roomId: 'basement-landing' },
-    ].map((seed, index) => createBetrayalMonsterFromDefinition(
-        'helping-hands-troll-hand',
-        seed.id,
-        seed.roomId,
-        { tokenAsset: HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS[index] },
-    ));
-}
-
-function setupHelpingHandsHaunt(core: BetrayalCore, revealerPlayerId: string): BetrayalHelpingHandsRuntimeState {
-    const amulet = ensureStrangeAmuletForHelpingHands(core, revealerPlayerId);
-    const trollHands = createHelpingHandsTrollHands();
-    core.monsters = [
-        ...core.monsters.filter((monster) => !monster.id.startsWith('troll-hand-')),
-        ...trollHands,
-    ];
-    return {
-        strangeAmuletCardId: amulet.cardId,
-        strangeAmuletFoundDuringSetup: amulet.foundDuringSetup,
-        trollHandIds: trollHands.map((monster) => monster.id),
-        monsterTurnAfterPlayerId: revealerPlayerId,
-        activeMonsterTurn: false,
-        monsterTurnControllerPlayerId: null,
-        trollHandMoveAllowance: 0,
-        trollHandMoveDice: [],
-        trollHandMoveRemainingById: {},
-        trollHandAttackUsedIdsThisTurn: [],
-    };
-}
-
 function createHelpingHandsMonsterTurnStartedEvent(
     controllerPlayerId: string,
     random: RandomFn,
@@ -3916,160 +3621,8 @@ function completeHelpingHandsSoloVictoryIfNeeded(core: BetrayalCore, timestamp: 
     }, timestamp));
 }
 
-function resolvePhantomPhotographerCount(playerCount: number): number {
-    return Math.max(2, Math.min(5, playerCount));
-}
-
-function resolveMagicCameraPhantomRooms(core: BetrayalCore, count: number): BetrayalRoomNode[] {
-    const discovered = core.rooms.filter((room) => room.state === 'discovered');
-    const nonLanding = discovered.filter((room) => (
-        !room.startingTile
-        && !room.id.toLowerCase().includes('landing')
-        && !room.name.includes('落脚')
-        && !room.name.includes('入口')
-    ));
-    const candidates = nonLanding.length > 0 ? nonLanding : discovered.filter((room) => !room.startingTile);
-    const fallback = candidates.length > 0 ? candidates : discovered;
-    if (fallback.length === 0) {
-        return [];
-    }
-    return Array.from({ length: count }, (_, index) => fallback[index % fallback.length]!);
-}
-
-function createMagicCameraRuntimeState(core: BetrayalCore, traitorPlayerId: string | null): BetrayalMagicCameraRuntimeState {
-    const phantomCount = resolvePhantomPhotographerCount(core.playerIds.length);
-    const heroEssencePlayerIds = getAllExplorers(core)
-        .filter((explorer) => explorer.playerId !== traitorPlayerId)
-        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
-        .map((explorer) => explorer.playerId);
-    return {
-        cameraDestroyed: false,
-        cameraHolderPlayerId: findMagicCameraHolderPlayerId(core) ?? traitorPlayerId,
-        heroEssencePlayerIds,
-        capturedEssencePlayerIds: [],
-        phantomPhotographerIds: Array.from({ length: phantomCount }, (_, index) => `phantom-photographer-${index + 1}`),
-        killedPhantomPhotographerIds: [],
-        stunnedPhantomPhotographerIds: [],
-    };
-}
-
-function createMagicCameraPhantomPhotographers(core: BetrayalCore, magicCamera: BetrayalMagicCameraRuntimeState): BetrayalMonsterSummary[] {
-    const rooms = resolveMagicCameraPhantomRooms(core, magicCamera.phantomPhotographerIds.length);
-    return magicCamera.phantomPhotographerIds.map((id, index) => createBetrayalMonsterFromDefinition(
-        'magic-camera-phantom-photographer',
-        id,
-        rooms[index]?.id ?? core.activeRoomId,
-    ));
-}
-
-function removeMagicCameraFromExplorer(explorer: BetrayalExplorerSummary): void {
-    explorer.inventory = explorer.inventory.filter((card) => resolveInventoryEffectId(card.id) !== 'camera');
-}
-
-function ensureMagicCameraInTraitorInventory(core: BetrayalCore, traitorPlayerId: string | null): string | null {
-    const existingHolderId = findMagicCameraHolderPlayerId(core);
-    if (existingHolderId) {
-        return existingHolderId;
-    }
-    const traitor = traitorPlayerId ? findExplorerByPlayerId(core, traitorPlayerId) : null;
-    if (!traitor) {
-        return null;
-    }
-    const cameraSeed = core.possessionOrderByKind.item.find((card) => resolveInventoryEffectId(card.id) === 'camera')
-        ?? { id: 'camera', name: '魔法相机', kind: 'item' as const };
-    traitor.inventory = [
-        ...traitor.inventory.filter((card) => resolveInventoryEffectId(card.id) !== 'camera'),
-        cloneInventoryCard(cameraSeed),
-    ];
-    core.possessionOrderByKind.item = core.possessionOrderByKind.item
-        .filter((card) => resolveInventoryEffectId(card.id) !== 'camera');
-    return traitor.playerId;
-}
-
-function setupMagicCameraHaunt(core: BetrayalCore, traitorPlayerId: string | null): BetrayalMagicCameraRuntimeState {
-    const cameraHolderPlayerId = ensureMagicCameraInTraitorInventory(core, traitorPlayerId);
-    const runtime = createMagicCameraRuntimeState(core, traitorPlayerId);
-    runtime.cameraHolderPlayerId = cameraHolderPlayerId ?? runtime.cameraHolderPlayerId;
-    const existingPhantomIds = new Set(runtime.phantomPhotographerIds);
-    core.monsters = [
-        ...core.monsters.filter((monster) => !monster.id.startsWith('phantom-photographer-')),
-        ...createMagicCameraPhantomPhotographers(core, runtime),
-    ].filter((monster, index, list) => (
-        !monster.id.startsWith('phantom-photographer-')
-        || existingPhantomIds.has(monster.id)
-        || list.findIndex((item) => item.id === monster.id) === index
-    ));
-    return runtime;
-}
-
-function resolveUponReflectionMirrorBeingCount(playerCount: number): number {
-    if (playerCount >= 6) {
-        return 5;
-    }
-    if (playerCount >= 5) {
-        return 4;
-    }
-    if (playerCount >= 4) {
-        return 3;
-    }
-    return 2;
-}
-
-function setupUponReflectionHaunt(core: BetrayalCore): void {
-    const mirrorBeingCount = resolveUponReflectionMirrorBeingCount(core.playerIds.length);
-    const mirrorBeings = Array.from({ length: mirrorBeingCount }, (_, index) => (
-        createBetrayalMonsterFromDefinition(
-            'upon-reflection-mirror-being',
-            `mirror-being-${index + 1}`,
-            'entrance-hall',
-        )
-    ));
-    core.monsters = [
-        ...core.monsters.filter((monster) => (
-            monster.definitionId !== 'upon-reflection-mirror-being'
-            && !monster.id.startsWith('mirror-being-')
-        )),
-        ...mirrorBeings,
-    ];
-}
-
 function shouldSkipEventSymbolForUponReflection(core: BetrayalCore): boolean {
     return isUponReflectionHaunt(core);
-}
-
-function createUponReflectionRuntimeState(
-    core: BetrayalCore,
-    revealerPlayerId: string,
-    random: RandomFn,
-): BetrayalUponReflectionRuntimeState {
-    const trait = random.shuffle(BETRAYAL_TRAIT_KEYS)[0] ?? 'might';
-    const omen = random.shuffle(DRAW_POOL.omen.map(cloneInventoryCard))[0]
-        ?? { id: 'omen-book', name: '书本', kind: 'omen' as const };
-    const shuffledRoomDeck = random.shuffle(resolveCurrentRoomDiscoveryDeck(core));
-    const bottomRoomEntry = shuffledRoomDeck[shuffledRoomDeck.length - 1] ?? null;
-    const matchingDiscoveredRoom = bottomRoomEntry
-        ? core.rooms.find((room) => (
-            room.visualId === bottomRoomEntry.room.visualId
-            || room.name === bottomRoomEntry.room.name
-        ))
-        : null;
-    const fallbackRoom = matchingDiscoveredRoom
-        ?? core.rooms.find((room) => room.state === 'discovered')
-        ?? core.rooms[0]
-        ?? null;
-    return {
-        revealerPlayerId,
-        secretCombination: {
-            trait,
-            omenId: resolveInventoryEffectId(omen.id),
-            omenName: omen.name,
-            roomId: matchingDiscoveredRoom?.id ?? fallbackRoom?.id ?? null,
-            roomName: bottomRoomEntry?.room.name ?? fallbackRoom?.name ?? '未知房间',
-            roomVisualId: bottomRoomEntry?.room.visualId ?? fallbackRoom?.visualId,
-        },
-        breakAttempts: [],
-        hintedEvents: [],
-    };
 }
 
 function resolveUponReflectionOmenSelection(
@@ -4190,26 +3743,6 @@ function flipStunnedMonsterSideUp(core: BetrayalCore, monsterId: string): void {
         magicCamera.stunnedPhantomPhotographerIds = magicCamera.stunnedPhantomPhotographerIds
             .filter((id) => id !== monsterId);
     }
-}
-
-function setupBloodFromStoneHaunt(core: BetrayalCore): void {
-    const plan = resolveBloodFromStoneSetupPlacementPlan(core);
-    core.monsters = [
-        ...core.monsters.filter((monster) => (
-            !isStoneCherubMonster(monster)
-            && !monster.id.startsWith('stone-cherub-')
-        )),
-        ...plan.placements.map((placement) => createBetrayalMonsterFromDefinition(
-            'blood-from-stone-stone-cherub',
-            placement.monsterId,
-            placement.roomId,
-        )),
-    ];
-    core.scenarioRuntime.bloodFromStone = {
-        monsterTurnAfterPlayerId: core.scenarioRuntime.hauntRevealerPlayerId ?? core.currentPlayer,
-        activeMonsterTurn: false,
-        monsterTurnControllerPlayerId: null,
-    };
 }
 
 function startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
@@ -4463,131 +3996,12 @@ function resolveDustEndTurn(core: BetrayalCore, random: RandomFn): BetrayalDustE
     };
 }
 
-function createBookPendingEventRollReplacement(
-    core: BetrayalCore,
-    playerId: string,
-    cardId: string | undefined,
-    random: RandomFn,
-    timestamp: number,
-): BetrayalEventRollReplacementResult | null {
-    if (!canUseBookForPendingEventRoll(core, playerId, cardId)) {
-        return null;
-    }
-    const pending = core.pendingEventRollResolution;
-    const recentRoll = core.recentRoll;
-    const owner = findExplorerByPlayerId(core, playerId);
-    if (
-        !pending
-        || !recentRoll
-        || recentRoll.kind !== 'eventTraitCheck'
-        || !recentRoll.trait
-        || !recentRoll.branchThresholds?.length
-        || !owner
-    ) {
-        return null;
-    }
-    const candidates = owner.inventory.filter((card) => (
-        resolveUseEffect(card)?.mode === 'nextNonCombatTraitReplacement'
-    ));
-    const card = cardId
-        ? candidates.find((candidate) => candidate.id === cardId)
-        : candidates[0];
-    const effect = card ? resolveUseEffect(card) : null;
-    if (!card || effect?.mode !== 'nextNonCombatTraitReplacement') {
-        return null;
-    }
-    const replacementCore: BetrayalCore = {
-        ...core,
-        nextNonCombatTraitReplacement: {
-            playerId,
-            sourceCardId: card.id,
-            replacementTrait: effect.replacementTrait,
-        },
-    };
-    const roll = rollEventTraitCheckWithDice(random, owner, effect.replacementTrait, replacementCore);
-    const nextBranch = resolveEventBranch(recentRoll.branchThresholds, roll.total);
-    const nextEffect = materializeEventEffect(
-        nextBranch.effect,
-        random,
-        owner,
-        replacementCore,
-        { materializeRandomResults: false },
-    );
-    const nextPendingEventChoice = eventEffectNeedsPendingEventChoice(nextEffect)
-        ? {
-            id: `${pending.rollId}-book-${timestamp}`,
-            playerId: pending.playerId,
-            sourceTitle: pending.sourceTitle,
-            eventDescription: recentRoll.eventDescription,
-            effect: cloneUseEffect(nextEffect),
-        }
-        : undefined;
-    const pendingHauntRoll = pending.hauntRoll;
-    const hauntTriggered = pendingHauntRoll
-        ? roll.total >= pendingHauntRoll.threshold
-        : false;
-    const hauntRevealResolution = hauntTriggered
-        ? resolveHauntRevealResolutionForTrigger(
-            core,
-            { id: null, name: pendingHauntRoll?.successHauntTriggerLabel ?? recentRoll.sourceTitle },
-            pendingHauntRoll?.successHauntId,
-        )
-        : undefined;
-    const hauntTraitorResolution = hauntTriggered && hauntRevealResolution
-        ? resolveHauntTraitorResolutionForTrigger(
-            core,
-            hauntRevealResolution.hauntCardNumber,
-            playerId,
-            {
-                eventSelection: pendingHauntRoll?.successTraitorSelection,
-                revealRepresentativeOnly: hauntRevealResolution.representativeOnly,
-            },
-        )
-        : undefined;
-    return {
-        dice: [...roll.dice],
-        passiveBonus: roll.passiveBonus,
-        total: roll.total,
-        latestLabel: nextBranch.label,
-        effect: cloneUseEffect(nextEffect),
-        hauntRoll: pending.hauntRoll ? { ...pending.hauntRoll } : undefined,
-        nextPendingEventChoice,
-        hauntTriggered: pendingHauntRoll ? hauntTriggered : pending.hauntTriggered,
-        hauntCardNumber: hauntTriggered ? pendingHauntRoll?.successHauntId : undefined,
-        hauntTriggerLabel: hauntTriggered
-            ? pendingHauntRoll?.successHauntTriggerLabel ?? recentRoll.sourceTitle
-            : undefined,
-        hauntTraitorPlayerId: hauntTraitorResolution?.traitorPlayerId,
-        hauntRevealResolution,
-        hauntTraitorResolution,
-        dustSetup: hauntTriggered && pendingHauntRoll?.successHauntId === 3
-            ? createDustRuntimeState(core, random)
-            : undefined,
-        uponReflectionSetup: hauntTriggered && pendingHauntRoll?.successHauntId === 7
-            ? createUponReflectionRuntimeState(core, playerId, random)
-            : undefined,
-    };
-}
-
 function healExplorerToTemplate(explorer: BetrayalExplorerSummary): void {
     const template = templateByExplorerId(explorer.explorerId);
     if (!template) {
         return;
     }
     for (const trait of BETRAYAL_TRAIT_KEYS) {
-        healExplorerTraitToStart(explorer, trait);
-    }
-}
-
-function healExplorerTraitsToTemplate(
-    explorer: BetrayalExplorerSummary,
-    traits: BetrayalTraitKey[],
-): void {
-    const template = templateByExplorerId(explorer.explorerId);
-    if (!template) {
-        return;
-    }
-    for (const trait of traits) {
         healExplorerTraitToStart(explorer, trait);
     }
 }
@@ -4609,103 +4023,6 @@ function reviveTraitorFromJackSpirit(explorer: BetrayalExplorerSummary): void {
 
 function findJackSpirit(core: BetrayalCore): BetrayalMonsterSummary | null {
     return core.monsters.find((monster) => monster.id === 'jack-spirit') ?? null;
-}
-
-function wouldExplorerDieFromPhysicalDamage(explorer: BetrayalExplorerSummary, amount: number): boolean {
-    if (amount <= 0) {
-        return false;
-    }
-    const preview = cloneExplorer(explorer);
-    applyPhysicalDamage(preview, amount, { allowSkull: true });
-    return isExplorerDead(preview);
-}
-
-function wouldExplorerDieFromMentalDamage(explorer: BetrayalExplorerSummary, amount: number): boolean {
-    if (amount <= 0) {
-        return false;
-    }
-    const preview = cloneExplorer(explorer);
-    applyMentalDamage(preview, amount, { allowSkull: true });
-    return isExplorerDead(preview);
-}
-
-function wouldExplorerDieFromAttackDamage(
-    explorer: BetrayalExplorerSummary,
-    amount: number,
-    damageKind: 'physical' | 'mental',
-): boolean {
-    return damageKind === 'mental'
-        ? wouldExplorerDieFromMentalDamage(explorer, amount)
-        : wouldExplorerDieFromPhysicalDamage(explorer, amount);
-}
-
-function resolveDeathPreventionRollCardId(explorer: BetrayalExplorerSummary): string | null {
-    return explorer.inventory
-        .map((card) => resolveInventoryEffectId(card.id))
-        .find((cardId) => Boolean(DEATH_PREVENTION_ROLL_CARDS_BY_ID[cardId]))
-        ?? null;
-}
-
-function rollDeathPrevention(random: RandomFn, explorer: BetrayalExplorerSummary): {
-    playerId: string;
-    prevented: boolean;
-    rollTotal: number;
-    dice: number[];
-    minTotal: number;
-    cardId: string;
-} | null {
-    const cardId = resolveDeathPreventionRollCardId(explorer);
-    if (!cardId) {
-        return null;
-    }
-    const config = DEATH_PREVENTION_ROLL_CARDS_BY_ID[cardId]!;
-    const dice = rollBetrayalDicePips(random, config.dice);
-    const rollTotal = dice.reduce((sum, pip) => sum + pip, 0);
-    return {
-        playerId: explorer.playerId,
-        cardId,
-        dice,
-        minTotal: config.minTotal,
-        rollTotal,
-        prevented: rollTotal >= config.minTotal,
-    };
-}
-
-function setExplorerTraitsToDeathsDoor(explorer: BetrayalExplorerSummary): void {
-    normalizeExplorerTraitTracks(explorer);
-    for (const trait of BETRAYAL_TRAIT_KEYS) {
-        setExplorerTraitPosition(explorer, trait, explorer.traitTracks[trait].criticalPosition);
-    }
-}
-
-function formatDeathPreventionLog(deathPrevention: {
-    cardId: string;
-    rollTotal: number;
-    prevented: boolean;
-} | null | undefined): string {
-    if (!deathPrevention) {
-        return '';
-    }
-    const cardName = deathPrevention.cardId === 'skull' ? '头骨' : deathPrevention.cardId;
-    return deathPrevention.prevented
-        ? `；${cardName}投出 ${deathPrevention.rollTotal}，阻止死亡并将所有属性调至濒死`
-        : `；${cardName}投出 ${deathPrevention.rollTotal}，正常死亡`;
-}
-
-function cloneUponReflectionRuntimeState(
-    uponReflection: BetrayalUponReflectionRuntimeState,
-): BetrayalUponReflectionRuntimeState {
-    return {
-        revealerPlayerId: uponReflection.revealerPlayerId,
-        secretCombination: uponReflection.secretCombination
-            ? { ...uponReflection.secretCombination }
-            : null,
-        breakAttempts: uponReflection.breakAttempts.map((attempt) => ({
-            ...attempt,
-            dice: [...attempt.dice],
-        })),
-        hintedEvents: uponReflection.hintedEvents.map((hintedEvent) => ({ ...hintedEvent })),
-    };
 }
 
 function cloneScenarioRuntimeStatus(status: BetrayalScenarioRuntimeStatus): BetrayalScenarioRuntimeStatus {
@@ -4873,14 +4190,6 @@ function ensureLibraryPresent(core: BetrayalCore): void {
     }
 }
 
-function rollTrait(random: RandomFn, value: number): number {
-    let total = 0;
-    for (let index = 0; index < normalizeBetrayalDiceCount(value); index += 1) {
-        total += rollBetrayalPip(random);
-    }
-    return total;
-}
-
 function rollAttackWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
@@ -4905,18 +4214,6 @@ function rollAttackDefense(
     const trait = weaponEffect?.attackTrait ?? fallbackTrait;
     const extraDice = resolveDefenseExtraDiceWhenAttacked(explorer);
     return rollTrait(random, explorer.traits[trait] + extraDice);
-}
-
-function applyAttackDamage(
-    explorer: BetrayalExplorerSummary,
-    amount: number,
-    damageKind: 'physical' | 'mental',
-): void {
-    if (damageKind === 'mental') {
-        applyMentalDamage(explorer, amount, { allowSkull: true });
-        return;
-    }
-    applyPhysicalDamage(explorer, amount, { allowSkull: true });
 }
 
 function canDeferOrdinaryAttackDamageToDefender(
@@ -4945,126 +4242,6 @@ function isPendingDamageAllocationForAttackRoll(core: BetrayalCore): boolean {
 
 function resetExplorerTraits(explorer: BetrayalExplorerSummary, traits: BetrayalExplorerSummary['traits']): void {
     setExplorerTraitsFromValues(explorer, traits);
-}
-
-function resolveTraitRollPassiveBonus(explorer: BetrayalExplorerSummary, trait: BetrayalTraitKey): number {
-    const cardIds = new Set(explorer.inventory.map((card) => resolveInventoryEffectId(card.id)));
-    return [...cardIds].reduce((total, cardId) => total + (TRAIT_CHECK_PASSIVE_BONUSES[cardId]?.[trait] ?? 0), 0);
-}
-
-function resolveTraitCheckValue(explorer: BetrayalExplorerSummary, trait: BetrayalTraitKey): number {
-    const cardIds = new Set(explorer.inventory.map((card) => resolveInventoryEffectId(card.id)));
-    return [...cardIds].reduce((bestValue, cardId) => {
-        const replacementTrait = TRAIT_CHECK_REPLACEMENTS_BY_CARD_ID[cardId]?.[trait];
-        return replacementTrait
-            ? Math.max(bestValue, explorer.traits[replacementTrait])
-            : bestValue;
-    }, explorer.traits[trait]);
-}
-
-function resolveNonCombatTraitCheckValue(
-    core: BetrayalCore,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-): number {
-    const replacement = core.nextNonCombatTraitReplacement;
-    if (
-        replacement
-        && replacement.playerId === explorer.playerId
-        && trait !== replacement.replacementTrait
-    ) {
-        return Math.max(resolveTraitCheckValue(explorer, trait), explorer.traits[replacement.replacementTrait]);
-    }
-    return resolveTraitCheckValue(explorer, trait);
-}
-
-function resolveRoomBlessingExtraDice(core: BetrayalCore | undefined, explorer: BetrayalExplorerSummary): number {
-    const room = core?.rooms.find((candidate) => candidate.id === explorer.roomId);
-    return room?.markerTokens?.includes('blessing') ? 1 : 0;
-}
-
-function rollTraitCheckWithDice(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    core?: BetrayalCore,
-): { total: number; dice: number[]; passiveBonus: number } {
-    const dice = rollBetrayalDicePips(random, resolveTraitCheckValue(explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
-    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
-    return {
-        total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
-        dice,
-        passiveBonus,
-    };
-}
-
-function rollNonCombatTraitCheck(
-    random: RandomFn,
-    core: BetrayalCore,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-): number {
-    const rollTotalReplacement = core.nextNonCombatTraitRollTotalReplacement;
-    if (rollTotalReplacement?.playerId === explorer.playerId) {
-        return rollTotalReplacement.selectedTotal + resolveTraitRollPassiveBonus(explorer, trait);
-    }
-    return rollTrait(random, resolveNonCombatTraitCheckValue(core, explorer, trait) + resolveRoomBlessingExtraDice(core, explorer)) + resolveTraitRollPassiveBonus(explorer, trait);
-}
-
-function rollNonCombatTraitCheckWithDice(
-    random: RandomFn,
-    core: BetrayalCore,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-): { total: number; dice: number[]; passiveBonus: number } {
-    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
-    const rollTotalReplacement = core.nextNonCombatTraitRollTotalReplacement;
-    if (rollTotalReplacement?.playerId === explorer.playerId) {
-        return {
-            total: rollTotalReplacement.selectedTotal + passiveBonus,
-            dice: [rollTotalReplacement.selectedTotal],
-            passiveBonus,
-        };
-    }
-    const dice = rollBetrayalDicePips(random, resolveNonCombatTraitCheckValue(core, explorer, trait) + resolveRoomBlessingExtraDice(core, explorer));
-    return {
-        total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
-        dice,
-        passiveBonus,
-    };
-}
-
-function resolveEventTraitCheckExtraDice(explorer: BetrayalExplorerSummary): number {
-    const cardIds = new Set(explorer.inventory.map((card) => resolveInventoryEffectId(card.id)));
-    return [...cardIds].reduce((total, cardId) => total + (EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID[cardId] ?? 0), 0);
-}
-
-function rollEventTraitCheckWithDice(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    core?: BetrayalCore,
-): { total: number; dice: number[]; passiveBonus: number } {
-    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
-    const rollTotalReplacement = core?.nextNonCombatTraitRollTotalReplacement;
-    if (rollTotalReplacement?.playerId === explorer.playerId) {
-        return {
-            total: rollTotalReplacement.selectedTotal + passiveBonus,
-            dice: [rollTotalReplacement.selectedTotal],
-            passiveBonus,
-        };
-    }
-    const diceCount = (core
-        ? resolveNonCombatTraitCheckValue(core, explorer, trait)
-        : resolveTraitCheckValue(explorer, trait))
-        + resolveEventTraitCheckExtraDice(explorer)
-        + resolveRoomBlessingExtraDice(core, explorer);
-    const dice = rollBetrayalDicePips(random, diceCount);
-    return {
-        total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
-        dice,
-        passiveBonus,
-    };
 }
 
 function consumeNextNonCombatTraitReplacementAfterTraitRoll(
@@ -5102,22 +4279,6 @@ function clearNextNonCombatTraitRollReplacementsForPlayer(
     }
 }
 
-function rollEventFixedDice(random: RandomFn, diceCount: number): { total: number; dice: number[]; passiveBonus: number } {
-    const dice = rollBetrayalDicePips(random, diceCount);
-    return {
-        total: dice.reduce((sum, pip) => sum + pip, 0),
-        dice,
-        passiveBonus: 0,
-    };
-}
-
-function resolveEventBranch(branches: NonNullable<EventTemplate['roll']>['branches'], rollTotal: number) {
-    return [...branches]
-        .sort((left, right) => right.min - left.min)
-        .find((branch) => rollTotal >= branch.min)
-        ?? branches[branches.length - 1]!;
-}
-
 function resolveToothNecklaceCard(explorer: BetrayalExplorerSummary): BetrayalInventoryCard | null {
     return explorer.inventory.find((card) => resolveInventoryEffectId(card.id) === TOOTH_NECKLACE_CARD_ID) ?? null;
 }
@@ -5127,89 +4288,6 @@ function resolveDeathsDoorTraitGainChoices(explorer: BetrayalExplorerSummary): B
         const track = explorer.traitTracks[trait];
         return track.position === track.criticalPosition && track.position < track.maxPosition;
     });
-}
-
-function resolveRecentRollTotal(recentRoll: BetrayalRecentRollState): number {
-    return recentRoll.dice.reduce((sum, pip) => sum + pip, 0) + recentRoll.passiveBonus;
-}
-
-function isEventRecentRoll(recentRoll: BetrayalRecentRollState | null | undefined): recentRoll is BetrayalRecentRollState & { kind: BetrayalEventRollRecentKind } {
-    return recentRoll?.kind === 'eventTraitCheck' || recentRoll?.kind === 'eventDiceRoll';
-}
-
-function cloneRolledDamageResult(damage: BetrayalRolledDamageResult): BetrayalRolledDamageResult {
-    return {
-        ...damage,
-        rolls: [...damage.rolls],
-    };
-}
-
-function formatRolledDamageResultLabel(damageResults: BetrayalRolledDamageResult[]): string {
-    const labels = damageResults.map((damage) => {
-        const kindLabel = damage.damageKind === 'physical' ? '物理伤害' : '精神伤害';
-        return `造成 ${damage.appliedAmount} 点${kindLabel}`;
-    });
-    return labels.join('；');
-}
-
-function cloneSourceEventRoll(sourceRoll: BetrayalSourceEventRollState): BetrayalSourceEventRollState {
-    return {
-        ...sourceRoll,
-        dice: [...sourceRoll.dice],
-    };
-}
-
-function cloneSourceEventRollFromRecentRoll(
-    recentRoll: BetrayalRecentRollState | null | undefined,
-): BetrayalSourceEventRollState | undefined {
-    if (!isEventRecentRoll(recentRoll)) {
-        return undefined;
-    }
-    return {
-        id: recentRoll.id,
-        kind: recentRoll.kind,
-        playerId: recentRoll.playerId,
-        sourceTitle: recentRoll.sourceTitle,
-        eventDescription: recentRoll.eventDescription,
-        trait: recentRoll.trait,
-        rollLabel: recentRoll.rollLabel,
-        dice: [...recentRoll.dice],
-        passiveBonus: recentRoll.passiveBonus,
-        total: resolveRecentRollTotal(recentRoll),
-        latestLabel: recentRoll.latestLabel,
-    };
-}
-
-function setEventRolledDamageRecentRollFromSnapshot(
-    core: BetrayalCore,
-    snapshot: EventEffectSnapshot | undefined,
-    sourceTitle: string,
-    timestamp: number,
-    sourceEventRoll = cloneSourceEventRollFromRecentRoll(core.recentRoll),
-): boolean {
-    const damageResults = snapshot?.rolledDamageResults?.map(cloneRolledDamageResult) ?? [];
-    const dice = damageResults.flatMap((damage) => damage.rolls);
-    if (damageResults.length === 0 || dice.length === 0) {
-        return false;
-    }
-    const playerId = sourceEventRoll?.playerId ?? core.currentExplorer.playerId;
-    core.recentRoll = {
-        id: `${sourceEventRoll?.id ?? `${playerId}-${sourceTitle}`}-event-rolled-damage-${timestamp}`,
-        kind: 'eventRolledDamage',
-        playerId,
-        sourceTitle,
-        eventDescription: sourceEventRoll?.eventDescription,
-        rollLabel: '重新投掷的伤害骰',
-        dice,
-        passiveBonus: 0,
-        requiredPlayerIds: [playerId],
-        acknowledgedPlayerIds: [],
-        latestLabel: formatRolledDamageResultLabel(damageResults),
-        eventRolledDamageResults: damageResults,
-        sourceEventRoll: sourceEventRoll ? cloneSourceEventRoll(sourceEventRoll) : undefined,
-        consumedRabbitFootCardIds: [],
-    };
-    return true;
 }
 
 function resolveAttackRerollOutcome(
@@ -5245,249 +4323,6 @@ function resolveAttackRerollOutcome(
     };
 }
 
-function createEventEffectSnapshot(core: BetrayalCore): EventEffectSnapshot {
-    return {
-        traitsBeforeEffect: { ...core.currentExplorer.traits },
-        traitTracksBeforeEffect: cloneTraitTracks(core.currentExplorer.traitTracks),
-        roomIdBeforeEffect: core.currentExplorer.roomId,
-        possessionOrderByKindBeforeEffect: clonePossessionOrderByKind(core.possessionOrderByKind),
-        currentExplorerInventoryBeforeEffect: core.currentExplorer.inventory.map(cloneInventoryCard),
-        deckCountsBeforeEffect: { ...core.deckCounts },
-        damageRolls: [],
-        rolledDamageResults: [],
-        drawnCards: [],
-    };
-}
-
-function rollAllTraitChecks(
-    explorer: BetrayalExplorerSummary,
-    traits: BetrayalTraitKey[],
-    passMin: number,
-    random: RandomFn,
-    core?: BetrayalCore,
-): BetrayalAllTraitCheckResult[] {
-    return traits.map((trait) => {
-        const result = rollEventTraitCheckWithDice(random, explorer, trait, core);
-        return {
-            trait,
-            total: result.total,
-            dice: result.dice,
-            passiveBonus: result.passiveBonus,
-            passed: result.total >= passMin,
-        };
-    });
-}
-
-function snapshotEventEffect(core: BetrayalCore, snapshot: EventEffectSnapshot | undefined): EventEffectSnapshot {
-    return snapshot ?? createEventEffectSnapshot(core);
-}
-
-function revertEventSideEffects(core: BetrayalCore, effect: UseEffectProfile): void {
-    if (effect.mode === 'compound') {
-        for (const childEffect of [...effect.effects].reverse()) {
-            revertEventSideEffects(core, childEffect);
-        }
-        return;
-    }
-    if (effect.mode === 'placeObstacleToken') {
-        const room = core.rooms.find((item) => item.id === core.currentExplorer.roomId);
-        if (room?.markerTokens) {
-            room.markerTokens = room.markerTokens.filter((token) => token !== 'obstacle');
-        }
-    }
-}
-
-function revertEventEffect(core: BetrayalCore, effect: UseEffectProfile, snapshot?: EventEffectSnapshot): void {
-    if (snapshot) {
-        core.currentExplorer.traits = { ...snapshot.traitsBeforeEffect };
-        core.currentExplorer.traitTracks = cloneTraitTracks(snapshot.traitTracksBeforeEffect);
-        core.currentExplorer.roomId = snapshot.roomIdBeforeEffect;
-        core.currentExplorer.inventory = snapshot.currentExplorerInventoryBeforeEffect.map(cloneInventoryCard);
-        revertEventSideEffects(core, effect);
-        for (const drawnCard of snapshot.drawnCards) {
-            core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== drawnCard.id);
-        }
-        core.possessionOrderByKind = clonePossessionOrderByKind(snapshot.possessionOrderByKindBeforeEffect);
-        core.deckCounts = { ...snapshot.deckCountsBeforeEffect };
-        return;
-    }
-    if (effect.mode === 'none') {
-        return;
-    }
-    if (effect.mode === 'compound') {
-        for (const childEffect of [...effect.effects].reverse()) {
-            revertEventEffect(core, childEffect);
-        }
-        return;
-    }
-    if (effect.mode === 'placeObstacleToken') {
-        const room = core.rooms.find((item) => item.id === core.currentExplorer.roomId);
-        if (room?.markerTokens) {
-            room.markerTokens = room.markerTokens.filter((token) => token !== 'obstacle');
-        }
-        return;
-    }
-    if (effect.mode === 'move') {
-        core.movesRemaining = Math.max(0, core.movesRemaining - effect.amount);
-        return;
-    }
-    if (effect.mode === 'trait') {
-        moveExplorerTraitSteps(core.currentExplorer, effect.trait, -effect.amount);
-        return;
-    }
-    if (effect.mode === 'chosenTrait') {
-        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
-        if (appliedTrait) {
-            moveExplorerTraitSteps(core.currentExplorer, appliedTrait, -effect.amount);
-        }
-        return;
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        for (const trait of [...(effect.selectedTraits ?? effect.allowedTraits)].reverse()) {
-            moveExplorerTraitSteps(core.currentExplorer, trait, 1);
-        }
-        return;
-    }
-    if (effect.mode === 'healChosenTrait') {
-        return;
-    }
-    if (effect.mode === 'optionalEventRoll') {
-        return;
-    }
-    if (effect.mode === 'chooseTraitRoll') {
-        return;
-    }
-    if (effect.mode === 'traitRoll') {
-        return;
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return;
-    }
-    if (effect.mode === 'rolledDamage') {
-        return;
-    }
-    if (effect.mode === 'drawPossession') {
-        if (effect.drawnCard) {
-            core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== effect.drawnCard!.id);
-            restorePossessionCardToTop(core, effect.kind, effect.drawnCard);
-        }
-        return;
-    }
-    if (effect.mode === 'placeExplorerInRoom') {
-        return;
-    }
-    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
-        return;
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
-        return;
-    }
-    if (effect.mode === 'placeExplorerInAdjacentRoom') {
-        return;
-    }
-    for (const trait of [...effect.traits].reverse()) {
-        moveExplorerTraitSteps(core.currentExplorer, trait, Math.max(0, effect.amount));
-    }
-}
-
-function resolvePhysicalDamageReduction(explorer: BetrayalExplorerSummary): number {
-    const cardIds = new Set(explorer.inventory.map((card) => resolveInventoryEffectId(card.id)));
-    return [...cardIds].reduce((total, cardId) => total + (PHYSICAL_DAMAGE_REDUCTION_BY_CARD_ID[cardId] ?? 0), 0);
-}
-
-function resolveMentalDamageReduction(explorer: BetrayalExplorerSummary): number {
-    const cardIds = new Set(explorer.inventory.map((card) => resolveInventoryEffectId(card.id)));
-    return [...cardIds].reduce((total, cardId) => total + (MENTAL_DAMAGE_REDUCTION_BY_CARD_ID[cardId] ?? 0), 0);
-}
-
-function resolveDamageAllocationAllowedTraits(damageKind: BetrayalPendingDamageAllocationState['damageKind']): BetrayalTraitKey[] {
-    if (damageKind === 'physical') {
-        return ['might', 'speed'];
-    }
-    if (damageKind === 'mental') {
-        return ['knowledge', 'sanity'];
-    }
-    return ['might', 'speed', 'knowledge', 'sanity'];
-}
-
-function resolveReducedDamageAmount(
-    explorer: BetrayalExplorerSummary,
-    damageKind: BetrayalPendingDamageAllocationState['damageKind'],
-    amount: number,
-): number {
-    if (damageKind === 'physical') {
-        return Math.max(0, amount - resolvePhysicalDamageReduction(explorer));
-    }
-    if (damageKind === 'mental') {
-        return Math.max(0, amount - resolveMentalDamageReduction(explorer));
-    }
-    return Math.max(0, amount);
-}
-
-function resolveAssignableDamageAmount(
-    explorer: BetrayalExplorerSummary,
-    allowedTraits: BetrayalTraitKey[],
-    amount: number,
-    options: { allowSkull?: boolean } = {},
-): number {
-    const assignableSteps = allowedTraits.reduce(
-        (total, trait) => total + resolveTraitDamageAssignableSteps(explorer, trait, options),
-        0,
-    );
-    return Math.min(Math.max(0, amount), assignableSteps);
-}
-
-function createPendingDamageAllocation(params: {
-    id: string;
-    explorer: BetrayalExplorerSummary;
-    sourceTitle: string;
-    damageKind: BetrayalPendingDamageAllocationState['damageKind'];
-    amount: number;
-    allowSkull?: boolean;
-    forcedTraitSequence?: BetrayalTraitKey[];
-    nextPlayerId?: string;
-    nextDamageAllocations?: BetrayalPendingDamageAllocationState[];
-    monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
-    turnLogText?: string;
-    helpingHandsMonsterTurnControllerPlayerId?: string;
-    skipBloodFromStoneMonsterTurnStart?: boolean;
-}): BetrayalPendingDamageAllocationState | null {
-    const allowedTraits = resolveDamageAllocationAllowedTraits(params.damageKind);
-    const reducedAmount = resolveReducedDamageAmount(params.explorer, params.damageKind, params.amount);
-    const damageReductionAmount = Math.max(0, params.amount - reducedAmount);
-    const assignableAmount = resolveAssignableDamageAmount(
-        params.explorer,
-        allowedTraits,
-        reducedAmount,
-        { allowSkull: params.allowSkull },
-    );
-    if (assignableAmount <= 0) {
-        return null;
-    }
-    return {
-        id: params.id,
-        playerId: params.explorer.playerId,
-        sourceTitle: params.sourceTitle,
-        damageKind: params.damageKind,
-        amount: assignableAmount,
-        originalAmount: params.amount,
-        damageReductionAmount,
-        allowedTraits,
-        damageReplacement: resolveBroochDamageReplacement(params.explorer, params.damageKind),
-        forcedTraitSequence: params.forcedTraitSequence
-            ? [...params.forcedTraitSequence].slice(0, assignableAmount)
-            : undefined,
-        allowSkull: Boolean(params.allowSkull),
-        traitsBeforeDamage: { ...params.explorer.traits },
-        nextPlayerId: params.nextPlayerId,
-        nextDamageAllocations: params.nextDamageAllocations?.map(clonePendingDamageAllocation),
-        monsterMovementRoll: params.monsterMovementRoll,
-        turnLogText: params.turnLogText,
-        helpingHandsMonsterTurnControllerPlayerId: params.helpingHandsMonsterTurnControllerPlayerId,
-        skipBloodFromStoneMonsterTurnStart: params.skipBloodFromStoneMonsterTurnStart,
-    };
-}
-
 function createRecentRollRerollMentalDamageAllocation(
     core: BetrayalCore,
     playerId: string,
@@ -5508,19 +4343,6 @@ function createRecentRollRerollMentalDamageAllocation(
         amount,
         allowSkull: core.phase === 'haunt',
     });
-}
-
-function chainPendingDamageAllocations(
-    allocations: BetrayalPendingDamageAllocationState[],
-): BetrayalPendingDamageAllocationState | null {
-    const [first, ...rest] = allocations.map(clonePendingDamageAllocation);
-    if (!first) {
-        return null;
-    }
-    return {
-        ...first,
-        nextDamageAllocations: rest,
-    };
 }
 
 function createBloodFromStoneGazeDamageAllocationQueue(
@@ -5572,509 +4394,6 @@ function createBloodFromStoneNewLineOfSightDamageAllocation(
     });
 }
 
-function applyPhysicalDamage(
-    explorer: BetrayalExplorerSummary,
-    amount: number,
-    options: { allowSkull?: boolean } = {},
-): number {
-    const applied = applyTraitLoss(explorer, ['might', 'speed'], Math.max(0, amount - resolvePhysicalDamageReduction(explorer)), options);
-    if (applied > 0) {
-        applyStrangeAmuletPhysicalDamageBonus(explorer);
-    }
-    return applied;
-}
-
-function applyMentalDamage(
-    explorer: BetrayalExplorerSummary,
-    amount: number,
-    options: { allowSkull?: boolean } = {},
-): number {
-    return applyTraitLoss(explorer, ['knowledge', 'sanity'], Math.max(0, amount - resolveMentalDamageReduction(explorer)), options);
-}
-
-function applyStrangeAmuletPhysicalDamageBonus(explorer: BetrayalExplorerSummary): void {
-    const hasStrangeAmulet = explorer.inventory.some((card) => resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID);
-    if (hasStrangeAmulet) {
-        moveExplorerTraitSteps(explorer, 'sanity', 1, { allowSkull: true });
-    }
-}
-
-function resolveBroochDamageReplacement(
-    explorer: BetrayalExplorerSummary,
-    damageKind: BetrayalPendingDamageAllocationState['damageKind'],
-): BetrayalPendingDamageAllocationState['damageReplacement'] {
-    if (damageKind === 'general') {
-        return undefined;
-    }
-    const card = explorer.inventory.find((inventoryCard) => resolveInventoryEffectId(inventoryCard.id) === BROOCH_CARD_ID);
-    return card
-        ? {
-            kind: 'brooch-general-damage',
-            cardId: card.id,
-            cardName: card.name,
-        }
-        : undefined;
-}
-
-type EventDamageDeathPreview = {
-    amount: number;
-    kind: 'general' | 'physical' | 'mental';
-    traits: BetrayalTraitKey[];
-    traitsBeforeDamage: BetrayalExplorerSummary['traits'];
-};
-
-function repeatTraitForDamage(trait: BetrayalTraitKey, amount: number): BetrayalTraitKey[] {
-    return Array.from({ length: Math.max(0, amount) }, () => trait);
-}
-
-function resolveDirectTraitLossFromEventEffect(
-    effect: UseEffectProfile,
-): Omit<EventDamageDeathPreview, 'traitsBeforeDamage'> | null {
-    if (effect.mode === 'trait' && effect.amount < 0) {
-        return {
-            amount: Math.abs(effect.amount),
-            kind: 'general',
-            traits: repeatTraitForDamage(effect.trait, Math.abs(effect.amount)),
-        };
-    }
-    if (effect.mode === 'chosenTrait' && effect.amount < 0) {
-        const trait = effect.chosenTrait ?? effect.allowedTraits[0];
-        return trait
-            ? {
-                amount: Math.abs(effect.amount),
-                kind: 'general',
-                traits: repeatTraitForDamage(trait, Math.abs(effect.amount)),
-            }
-            : null;
-    }
-    if (effect.mode === 'allTraitChecks' && effect.results) {
-        const traits = effect.results.flatMap((result) => (
-            result.passed ? [] : repeatTraitForDamage(result.trait, effect.failAmount)
-        ));
-        return traits.length > 0
-            ? {
-                amount: traits.length,
-                kind: 'general',
-                traits,
-            }
-            : null;
-    }
-    return null;
-}
-
-function resolveDamageFromEventEffect(effect: UseEffectProfile): Omit<EventDamageDeathPreview, 'traitsBeforeDamage'> | null {
-    if (effect.mode === 'generalDamage') {
-        return { amount: effect.amount, kind: 'general', traits: [...effect.traits] };
-    }
-    if (effect.mode === 'generalDamageChoice' && effect.selectedTraits?.length === effect.amount) {
-        return { amount: effect.amount, kind: 'general', traits: [...effect.selectedTraits] };
-    }
-    if (effect.mode === 'rolledDamage') {
-        return {
-            amount: (effect.rolls ?? []).reduce((sum, pip) => sum + pip, 0),
-            kind: effect.damageKind,
-            traits: [],
-        };
-    }
-    if (effect.mode === 'fixedDamage') {
-        return {
-            amount: effect.amount,
-            kind: effect.damageKind,
-            traits: [],
-        };
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return resolveDamageFromEventEffect(effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
-    }
-    return null;
-}
-
-function applyEventDeathPreviewNonDamageEffect(
-    explorer: BetrayalExplorerSummary,
-    effect: UseEffectProfile,
-): void {
-    if (effect.mode === 'trait') {
-        moveExplorerTraitSteps(explorer, effect.trait, effect.amount, { allowSkull: true });
-        return;
-    }
-    if (effect.mode === 'chosenTrait') {
-        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
-        if (appliedTrait) {
-            moveExplorerTraitSteps(explorer, appliedTrait, effect.amount, { allowSkull: true });
-        }
-        return;
-    }
-    if (effect.mode === 'healChosenTrait') {
-        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
-        if (appliedTrait) {
-            healExplorerTraitsToTemplate(explorer, [appliedTrait]);
-        }
-        return;
-    }
-    if (effect.mode === 'allTraitChecks' && effect.results) {
-        const failedTraits = effect.results.filter((result) => !result.passed).map((result) => result.trait);
-        for (const trait of failedTraits) {
-            applyTraitLoss(explorer, [trait], effect.failAmount, { allowSkull: true });
-        }
-        return;
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        applyEventDeathPreviewNonDamageEffect(explorer, effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
-    }
-}
-
-function resolveEventDamageDeathPreview(
-    explorer: BetrayalExplorerSummary,
-    effect: UseEffectProfile,
-): EventDamageDeathPreview | undefined {
-    if (effect.mode === 'compound') {
-        for (const childEffect of effect.effects) {
-            const childPreview = resolveEventDamageDeathPreview(explorer, childEffect);
-            if (childPreview) {
-                return childPreview;
-            }
-        }
-        return undefined;
-    }
-    if (effect.mode === 'allTraitChecks' && effect.results?.every((result) => result.passed)) {
-        return resolveEventDamageDeathPreview(explorer, effect.allPassEffect);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return resolveEventDamageDeathPreview(explorer, effect.selectedCardId ? effect.acceptEffect : effect.declineEffect);
-    }
-    const damage = resolveDamageFromEventEffect(effect) ?? resolveDirectTraitLossFromEventEffect(effect);
-    if (damage) {
-        const traitsBeforeDamage = { ...explorer.traits };
-        if (damage.kind === 'general') {
-            applyGeneralDamage(explorer, damage.amount, damage.traits, { allowSkull: true });
-        } else {
-            applyAttackDamage(explorer, damage.amount, damage.kind);
-        }
-        return isExplorerDead(explorer)
-            ? { ...damage, traitsBeforeDamage }
-            : undefined;
-    }
-    applyEventDeathPreviewNonDamageEffect(explorer, effect);
-    return undefined;
-}
-
-function resolveEventDamageDeathPrevention(
-    core: BetrayalCore,
-    effect: UseEffectProfile,
-    random: RandomFn,
-) {
-    if (core.phase !== 'haunt') {
-        return undefined;
-    }
-    const deathPreview = cloneExplorer(core.currentExplorer);
-    const damage = resolveEventDamageDeathPreview(deathPreview, effect);
-    if (!damage) {
-        return undefined;
-    }
-    const deathPreventionRoll = rollDeathPrevention(random, core.currentExplorer);
-    return deathPreventionRoll
-        ? {
-            ...deathPreventionRoll,
-            damageAmount: damage.amount,
-            damageKind: damage.kind,
-            damageTraits: damage.traits,
-            traitsBeforeDamage: { ...damage.traitsBeforeDamage },
-        }
-        : undefined;
-}
-
-function applyEventEffect(
-    core: BetrayalCore,
-    effect: UseEffectProfile,
-    random?: RandomFn,
-    snapshot?: EventEffectSnapshot,
-    options?: ApplyEventEffectOptions,
-): EventEffectSnapshot | undefined {
-    if (effect.mode === 'none') {
-        return snapshot;
-    }
-    const nextSnapshot = snapshotEventEffect(core, snapshot);
-    if (effect.mode === 'compound') {
-        for (const childEffect of effect.effects) {
-            applyEventEffect(core, childEffect, random, nextSnapshot, options);
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeObstacleToken') {
-        const room = core.rooms.find((item) => item.id === core.currentExplorer.roomId);
-        if (room) {
-            room.markerTokens = Array.from(new Set([...(room.markerTokens ?? []), 'obstacle']));
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeSecretPassageToken') {
-        const roomId = effect.targetRoomId ?? core.currentExplorer.roomId;
-        const room = core.rooms.find((item) => item.id === roomId);
-        if (room) {
-            room.markerTokens = Array.from(new Set([...(room.markerTokens ?? []), 'secretPassage']));
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeBlessingToken') {
-        const room = core.rooms.find((item) => item.id === core.currentExplorer.roomId);
-        if (room) {
-            room.markerTokens = Array.from(new Set([...(room.markerTokens ?? []), 'blessing']));
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'move') {
-        core.movesRemaining = Math.min(5, Math.max(0, core.movesRemaining + effect.amount));
-        return nextSnapshot;
-    }
-    if (effect.mode === 'trait') {
-        moveExplorerTraitSteps(core.currentExplorer, effect.trait, effect.amount, { allowSkull: core.phase === 'haunt' });
-        return nextSnapshot;
-    }
-    if (effect.mode === 'chosenTrait') {
-        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
-        if (appliedTrait) {
-            moveExplorerTraitSteps(core.currentExplorer, appliedTrait, effect.amount, { allowSkull: core.phase === 'haunt' });
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'healChosenTrait') {
-        const appliedTrait = effect.chosenTrait ?? effect.allowedTraits[0];
-        if (appliedTrait) {
-            healExplorerTraitsToTemplate(core.currentExplorer, [appliedTrait]);
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        applyGeneralDamage(core.currentExplorer, effect.amount, effect.selectedTraits ?? effect.allowedTraits, { allowSkull: core.phase === 'haunt' });
-        return nextSnapshot;
-    }
-    if (effect.mode === 'fixedDamage') {
-        const deferred = options?.deferRolledDamageAllocation;
-        const pendingAllocation = deferred
-            ? createPendingDamageAllocation({
-                id: `event-fixed-damage-${core.currentExplorer.playerId}-${deferred.timestamp}-${deferred.allocations.length}`,
-                explorer: core.currentExplorer,
-                sourceTitle: deferred.sourceTitle,
-                damageKind: effect.damageKind,
-                amount: effect.amount,
-                allowSkull: core.phase === 'haunt',
-            })
-            : null;
-        if (pendingAllocation) {
-            deferred!.allocations.push(pendingAllocation);
-        } else if (!deferred) {
-            if (effect.damageKind === 'physical') {
-                applyPhysicalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
-            } else {
-                applyMentalDamage(core.currentExplorer, effect.amount, { allowSkull: core.phase === 'haunt' });
-            }
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'optionalEventRoll') {
-        return nextSnapshot;
-    }
-    if (effect.mode === 'optionalEffect') {
-        return nextSnapshot;
-    }
-    if (effect.mode === 'optionalHauntRoll') {
-        return nextSnapshot;
-    }
-    if (effect.mode === 'chooseTraitRoll') {
-        return nextSnapshot;
-    }
-    if (effect.mode === 'traitRoll') {
-        return nextSnapshot;
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        const selectedCard = effect.selectedCardId
-            ? core.currentExplorer.inventory.find((card) => card.id === effect.selectedCardId)
-            : null;
-        if (selectedCard) {
-            core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== selectedCard.id);
-            if (effect.consumeAction === 'bury') {
-                restorePossessionCardToBottom(core, selectedCard.kind, selectedCard);
-            }
-            applyEventEffect(core, effect.acceptEffect, random, nextSnapshot, options);
-        } else {
-            applyEventEffect(core, effect.declineEffect, random, nextSnapshot, options);
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'allTraitChecks') {
-        if (!effect.results && !random) {
-            throw new Error('allTraitChecks requires random');
-        }
-        const results = effect.results ?? rollAllTraitChecks(core.currentExplorer, effect.traits, effect.passMin, random!, core);
-        const failedTraits = results.filter((result) => !result.passed).map((result) => result.trait);
-        for (const trait of failedTraits) {
-            applyTraitLoss(core.currentExplorer, [trait], effect.failAmount, { allowSkull: core.phase === 'haunt' });
-        }
-        if (failedTraits.length === 0 && !effectHasUnresolvedTraitChoice(effect.allPassEffect)) {
-            applyEventEffect(core, effect.allPassEffect, random, nextSnapshot, options);
-        }
-        core.recentAllTraitCheck = {
-            sourceTitle: effect.name,
-            playerId: core.currentExplorer.playerId,
-            results,
-        };
-        return nextSnapshot;
-    }
-    if (effect.mode === 'rolledDamage') {
-        if (!effect.rolls && !random) {
-            throw new Error('rolledDamage requires random');
-        }
-        const damageRolls = effect.rolls ?? rollBetrayalDicePips(random!, effect.dice);
-        nextSnapshot.damageRolls.push(...damageRolls);
-        const amount = damageRolls.reduce((sum, pip) => sum + pip, 0);
-        const deferred = options?.deferRolledDamageAllocation;
-        const pendingAllocation = deferred
-            ? createPendingDamageAllocation({
-                id: `event-rolled-damage-${core.currentExplorer.playerId}-${deferred.timestamp}-${deferred.allocations.length}`,
-                explorer: core.currentExplorer,
-                sourceTitle: deferred.sourceTitle,
-                damageKind: effect.damageKind,
-                amount,
-                allowSkull: core.phase === 'haunt',
-            })
-            : null;
-        if (pendingAllocation) {
-            deferred!.allocations.push(pendingAllocation);
-        }
-        const appliedAmount = deferred
-            ? pendingAllocation?.amount ?? 0
-            : effect.damageKind === 'physical'
-                ? applyPhysicalDamage(core.currentExplorer, amount, { allowSkull: core.phase === 'haunt' })
-                : applyMentalDamage(core.currentExplorer, amount, { allowSkull: core.phase === 'haunt' });
-        nextSnapshot.rolledDamageResults.push({
-            damageKind: effect.damageKind,
-            rolls: [...damageRolls],
-            total: amount,
-            appliedAmount,
-        });
-        return nextSnapshot;
-    }
-    if (effect.mode === 'drawPossession') {
-        const drawnCard = effect.drawnCard
-            ? cloneInventoryCard(effect.drawnCard)
-            : createDrawnCard(core, effect.kind);
-        core.currentExplorer.inventory = [...core.currentExplorer.inventory, drawnCard];
-        removePossessionCardFromDeck(core, effect.kind, drawnCard.id);
-        nextSnapshot.drawnCards.push(drawnCard);
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeExplorerInRoom') {
-        core.currentExplorer.roomId = effect.roomId;
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
-        const targetRoom = core.rooms.find((room) => room.floor === effect.floor && room.startingTile);
-        if (targetRoom) {
-            core.currentExplorer.roomId = targetRoom.id;
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
-        const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
-        const targetFloor: BetrayalRoomFloor = currentRoom?.floor === 'upper'
-            ? 'ground'
-            : currentRoom?.floor === 'ground'
-                ? 'basement'
-                : effect.basementFallbackFloor;
-        const targetRoom = core.rooms.find((room) => room.floor === targetFloor && room.startingTile);
-        if (targetRoom) {
-            core.currentExplorer.roomId = targetRoom.id;
-        }
-        if (currentRoom?.floor === 'basement' && effect.basementFallbackDamage) {
-            const deferred = options?.deferRolledDamageAllocation;
-            const pendingAllocation = deferred
-                ? createPendingDamageAllocation({
-                    id: `event-floor-fallback-damage-${core.currentExplorer.playerId}-${deferred.timestamp}-${deferred.allocations.length}`,
-                    explorer: core.currentExplorer,
-                    sourceTitle: deferred.sourceTitle,
-                    damageKind: effect.basementFallbackDamage.damageKind,
-                    amount: effect.basementFallbackDamage.amount,
-                    allowSkull: core.phase === 'haunt',
-                })
-                : null;
-            if (pendingAllocation) {
-                deferred!.allocations.push(pendingAllocation);
-            } else if (!deferred) {
-                if (effect.basementFallbackDamage.damageKind === 'physical') {
-                    applyPhysicalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
-                } else {
-                    applyMentalDamage(core.currentExplorer, effect.basementFallbackDamage.amount, { allowSkull: core.phase === 'haunt' });
-                }
-            }
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
-        const targetRoom = core.rooms.find((room) => (
-            room.state === 'discovered' && effect.visualIds.includes(room.visualId)
-        ));
-        if (targetRoom) {
-            core.currentExplorer.roomId = targetRoom.id;
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
-        const targetRoom = effect.targetRoomId
-            ? core.rooms.find((room) => room.id === effect.targetRoomId && room.state === 'discovered')
-            : null;
-        if (targetRoom && effectAllowsRoomTargetChoice(core, effect, targetRoom.id)) {
-            core.currentExplorer.roomId = targetRoom.id;
-        }
-        return nextSnapshot;
-    }
-    if (effect.mode === 'placeExplorerInAdjacentRoom') {
-        const targetRoom = effect.targetRoomId
-            ? core.rooms.find((room) => room.id === effect.targetRoomId && room.state === 'discovered')
-            : null;
-        if (targetRoom && effectAllowsAdjacentRoomChoice(core, targetRoom.id)) {
-            core.currentExplorer.roomId = targetRoom.id;
-        }
-        return nextSnapshot;
-    }
-    applyGeneralDamage(core.currentExplorer, effect.amount, effect.traits, { allowSkull: core.phase === 'haunt' });
-    return nextSnapshot;
-}
-
-function applyEventEffectWithDeferredRolledDamage(
-    core: BetrayalCore,
-    effect: UseEffectProfile,
-    sourceTitle: string,
-    timestamp: number,
-): {
-    eventEffectSnapshot?: EventEffectSnapshot;
-    pendingRolledDamageAllocation: BetrayalPendingDamageAllocationState | null;
-} {
-    const rolledDamageAllocations: BetrayalPendingDamageAllocationState[] = [];
-    const eventEffectSnapshot = applyEventEffect(core, effect, undefined, undefined, {
-        deferRolledDamageAllocation: {
-            sourceTitle,
-            timestamp,
-            allocations: rolledDamageAllocations,
-        },
-    });
-    return {
-        eventEffectSnapshot,
-        pendingRolledDamageAllocation: chainPendingDamageAllocations(rolledDamageAllocations),
-    };
-}
-
-function activatePendingRolledDamageAllocation(
-    core: BetrayalCore,
-    pendingRolledDamageAllocation: BetrayalPendingDamageAllocationState | null,
-): boolean {
-    if (!pendingRolledDamageAllocation) {
-        return false;
-    }
-    core.pendingDamageAllocation = pendingRolledDamageAllocation;
-    core.activePlayerId = pendingRolledDamageAllocation.playerId;
-    return true;
-}
-
 function applyImmediateEventDeathPreventionIfNeeded(
     core: BetrayalCore,
     deathPrevention: BetrayalPendingEventRollResolutionState['deathPrevention'] | undefined,
@@ -6113,112 +4432,6 @@ function applyImmediateEventDeathPreventionIfNeeded(
     } else {
         applyDustEventEffectDeathIfNeeded(core);
     }
-}
-
-function materializeEventEffect(
-    effect: UseEffectProfile,
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    core?: BetrayalCore,
-    options: MaterializeEventEffectOptions = {},
-): UseEffectProfile {
-    const materializeRandomResults = options.materializeRandomResults ?? true;
-    if (effect.mode === 'compound') {
-        return {
-            ...effect,
-            effects: effect.effects.map((childEffect) => materializeEventEffect(childEffect, random, explorer, core, options)),
-        };
-    }
-    if (effect.mode === 'optionalEventRoll') {
-        return cloneUseEffect(effect);
-    }
-    if (effect.mode === 'optionalHauntRoll') {
-        return cloneUseEffect(effect);
-    }
-    if (effect.mode === 'chooseTraitRoll') {
-        return cloneUseEffect(effect);
-    }
-    if (effect.mode === 'traitRoll') {
-        return cloneUseEffect(effect);
-    }
-    if (effect.mode === 'optionalItemEffect') {
-        return cloneUseEffect(effect);
-    }
-    if (effect.mode === 'allTraitChecks') {
-        if (!materializeRandomResults) {
-            return cloneUseEffect(effect);
-        }
-        const results = rollAllTraitChecks(explorer, effect.traits, effect.passMin, random, core);
-        const hasFailure = results.some((result) => !result.passed);
-        return {
-            ...effect,
-            traits: [...effect.traits],
-            results,
-            recommendedAction: hasFailure ? 'endTurn' : effect.allPassEffect.recommendedAction,
-            allPassEffect: cloneUseEffect(effect.allPassEffect),
-        };
-    }
-    if (effect.mode === 'generalDamage') {
-        return { ...effect, traits: [...effect.traits] };
-    }
-    if (effect.mode === 'generalDamageChoice') {
-        return {
-            ...effect,
-            allowedTraits: [...effect.allowedTraits],
-            selectedTraits: effect.selectedTraits ? [...effect.selectedTraits] : undefined,
-        };
-    }
-    if (effect.mode === 'chosenTrait') {
-        return { ...effect, allowedTraits: [...effect.allowedTraits] };
-    }
-    if (effect.mode === 'healChosenTrait') {
-        return { ...effect, allowedTraits: [...effect.allowedTraits] };
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByVisualId') {
-        return {
-            ...effect,
-            visualIds: [...effect.visualIds],
-            roomNames: [...effect.roomNames],
-        };
-    }
-    if (effect.mode === 'placeExplorerInDiscoveredRoomByFloor') {
-        return { ...effect };
-    }
-    if (effect.mode === 'placeExplorerInFloorStartingRoom') {
-        return { ...effect };
-    }
-    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
-        const currentRoom = core?.rooms.find((room) => room.id === explorer.roomId);
-        if (currentRoom?.floor === 'basement' && effect.basementFallbackDamage) {
-            return {
-                mode: 'compound',
-                effects: [
-                    {
-                        ...effect,
-                        basementFallbackDamage: undefined,
-                    },
-                    {
-                        mode: 'fixedDamage',
-                        amount: effect.basementFallbackDamage.amount,
-                        damageKind: effect.basementFallbackDamage.damageKind,
-                        recommendedAction: effect.recommendedAction,
-                    },
-                ],
-                recommendedAction: effect.recommendedAction,
-            };
-        }
-        return { ...effect };
-    }
-    if (effect.mode === 'placeExplorerInAdjacentRoom') {
-        return { ...effect };
-    }
-    if (effect.mode === 'rolledDamage' && !effect.rolls) {
-        if (!materializeRandomResults) {
-            return cloneUseEffect(effect);
-        }
-        return { ...effect, rolls: rollBetrayalDicePips(random, effect.dice) };
-    }
-    return { ...effect };
 }
 
 function applyRoomDiscoveryEffect(core: BetrayalCore, effect: BetrayalRoomDiscoveryEffect | undefined): void {
@@ -6421,14 +4634,6 @@ function formatEndTurnRoomEffectLog(effect: BetrayalRoomEndTurnEffectResult, exp
     return `${explorerName}在${effect.roomName}速度检定 ${effect.speedRoll}，没有坠落`;
 }
 
-function isExplorerDead(explorer: BetrayalExplorerSummary): boolean {
-    normalizeExplorerTraitTracks(explorer);
-    return BETRAYAL_TRAIT_KEYS.some((trait) => {
-        const track = explorer.traitTracks[trait];
-        return track.position <= track.skullPosition;
-    });
-}
-
 function markDeadExplorer(core: BetrayalCore, playerId: string): void {
     if (core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)) {
         return;
@@ -6536,18 +4741,6 @@ function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): str
     return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
 }
 
-function resolveHauntRevealResolutionForTrigger(
-    core: BetrayalCore,
-    triggeringCard: { id?: string | null; name?: string | null } | null | undefined,
-    hauntCardNumberOverride?: number,
-): BetrayalHauntRevealResolution {
-    return resolveBetrayalHauntRevealResolution({
-        scenarioCardId: core.proposedScenarioCardId,
-        triggeringOmen: triggeringCard,
-        hauntCardNumberOverride,
-    });
-}
-
 function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: number; label: string; effect: UseEffectProfile }[] {
     return [
         {
@@ -6610,28 +4803,6 @@ function createEventSymbolSkipChoice(
     };
 }
 
-function createDrawnCardFromTemplate(
-    core: BetrayalCore,
-    template: BetrayalInventoryCard,
-    options: { suffix?: string | number } = {},
-): BetrayalInventoryCard {
-    return {
-        id: `${template.id}-${options.suffix ?? core.exploreIndex}`,
-        name: template.name,
-        kind: template.kind,
-    };
-}
-
-function createDrawnCard(
-    core: BetrayalCore,
-    kind: Exclude<BetrayalDeckKind, 'event'>,
-    options: { additionalDrawnCount?: number } = {},
-): BetrayalInventoryCard {
-    const drawnCount = options.additionalDrawnCount ?? 0;
-    const template = core.possessionOrderByKind[kind][drawnCount % core.possessionOrderByKind[kind].length]!;
-    return createDrawnCardFromTemplate(core, template);
-}
-
 function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInventoryCard | null; buriedCards: BetrayalInventoryCard[] } {
     const itemDeck = core.possessionOrderByKind.item;
     if (itemDeck.length === 0) {
@@ -6654,87 +4825,6 @@ function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInve
         }
     }
     return { weapon: null, buriedCards: revealedCards };
-}
-
-function resolveEventRollResolution(
-    core: BetrayalCore,
-    eventCard: EventTemplate,
-    random: RandomFn,
-): {
-    eventEffect: UseEffectProfile;
-    deathPrevention?: NonNullable<Extract<BetrayalEvent, { type: typeof EVENTS.EVENT_CHOICE_RESOLVED }>['payload']['deathPrevention']>;
-    eventRoll: NonNullable<Extract<BetrayalEvent, { type: typeof EVENTS.EVENT_CHOICE_RESOLVED }>['payload']['eventRoll']>;
-    nextPendingEventChoice?: BetrayalPendingEventChoiceState;
-    resolutionText: string;
-} {
-    if (!eventCard.roll) {
-        throw new Error(`event ${eventCard.name} has no roll to resolve`);
-    }
-    const eventRollKind = eventCard.roll.kind ?? 'trait';
-    const eventRollResult = eventRollKind === 'dice'
-        ? rollEventFixedDice(random, eventCard.roll.dice)
-        : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core);
-    const eventRollTotal = eventRollResult.total;
-    const eventBranch = resolveEventBranch(eventCard.roll.branches, eventRollTotal);
-    const eventEffect = eventBranch.effect;
-    const deferEventRollEffectRandomResults = true;
-    const materializedEventEffect = materializeEventEffect(
-        eventEffect,
-        random,
-        core.currentExplorer,
-        core,
-        { materializeRandomResults: !deferEventRollEffectRandomResults },
-    );
-    const deathPrevention = deferEventRollEffectRandomResults
-        ? undefined
-        : resolveEventDamageDeathPrevention(core, materializedEventEffect, random);
-    const eventRollLabel = eventRollKind === 'dice'
-        ? eventCard.roll.label
-        : `${TRAIT_LABEL[eventCard.roll.trait]}检定`;
-    const resolutionText = `${eventRollLabel} ${eventRollTotal}：${eventBranch.label}；${formatEffectLabel(materializedEventEffect)}`;
-    const nextPendingEventChoice = eventEffectNeedsPendingEventChoice(materializedEventEffect)
-        ? {
-            id: `${core.pendingEventRollStart?.playerId ?? core.currentExplorer.playerId}-${eventCard.name}-choice`,
-            playerId: core.pendingEventRollStart?.playerId ?? core.currentExplorer.playerId,
-            sourceTitle: eventCard.name,
-            eventDescription: eventCard.description,
-            sourceKind: 'event' as const,
-            acceptLabel: materializedEventEffect.mode === 'optionalEventRoll'
-                || materializedEventEffect.mode === 'optionalEffect'
-                || materializedEventEffect.mode === 'optionalItemEffect'
-                || materializedEventEffect.mode === 'optionalHauntRoll'
-                ? materializedEventEffect.acceptLabel
-                : undefined,
-            declineLabel: materializedEventEffect.mode === 'optionalEventRoll'
-                || materializedEventEffect.mode === 'optionalEffect'
-                || materializedEventEffect.mode === 'optionalItemEffect'
-                || materializedEventEffect.mode === 'optionalHauntRoll'
-                ? materializedEventEffect.declineLabel
-                : undefined,
-            effect: cloneUseEffect(materializedEventEffect),
-        } satisfies BetrayalPendingEventChoiceState
-        : undefined;
-    return {
-        eventEffect: materializedEventEffect,
-        deathPrevention,
-        eventRoll: {
-            kind: eventRollKind,
-            trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
-            total: eventRollTotal,
-            label: eventBranch.label,
-            eventDescription: eventCard.description,
-            rollLabel: eventRollLabel,
-            dice: eventRollResult.dice,
-            passiveBonus: eventRollResult.passiveBonus,
-            branchThresholds: eventCard.roll.branches.map((branch) => ({
-                min: branch.min,
-                label: branch.label,
-                effect: { ...branch.effect },
-            })),
-        },
-        nextPendingEventChoice,
-        resolutionText,
-    };
 }
 
 function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boolean; cardId?: string } = {}): BetrayalRecommendedAction {
@@ -9449,13 +7539,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
             const eventPayload = resolveBetrayalPossessionUsedPayload(core, command.playerId, command.payload, {
-                createEventRollReplacement: (cardId) => createBookPendingEventRollReplacement(
-                    core,
-                    command.playerId,
-                    cardId,
-                    random,
-                    timestamp,
-                ),
+                random,
+                timestamp,
             });
             return eventPayload ? [nowEvent(EVENTS.POSSESSION_USED, eventPayload, timestamp)] : [];
         }
@@ -10214,15 +8299,11 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
-            const effect = resolveMysticElevatorEffect(core, random);
-            if (!effect) {
+            const payload = createBetrayalRoomEffectUsedPayload(core, command.playerId, random);
+            if (!payload) {
                 return [];
             }
-            return [nowEvent(EVENTS.ROOM_EFFECT_USED, {
-                playerId: command.playerId,
-                effect,
-                logText: `${core.currentExplorer.displayName}启动神秘电梯，投出 ${effect.rollTotal}，电梯移动到${effect.destinationRoomName}`,
-            }, timestamp)];
+            return [nowEvent(EVENTS.ROOM_EFFECT_USED, payload, timestamp)];
         }
         case BETRAYAL_COMMANDS.TRADE_POSSESSION: {
             const tradeRequestPayload = createBetrayalTradeRequestedPayload(core, command.playerId, command.payload);
@@ -10433,10 +8514,10 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const broochLog = useBrooch
                 ? `使用${pending.damageReplacement!.cardName}将${pending.damageKind === 'physical' ? '物理' : '精神'}伤害替换为通用伤害，`
                 : '';
-            const deathPreview = cloneExplorer(actor);
+            const deathPreview = cloneExplorerSummary(actor);
             const projectedAppliedDamage = applyGeneralDamage(deathPreview, pending.amount, traits, { allowSkull: pending.allowSkull });
             const strangeAmuletBonusCard = resolvedDamageKind === 'physical' && projectedAppliedDamage > 0
-                ? actor.inventory.find((card) => resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID)
+                ? actor.inventory.find((card) => resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_EFFECT_ID)
                 : undefined;
             const strangeAmuletLog = strangeAmuletBonusCard ? `；${strangeAmuletBonusCard.name}使神志 +1` : '';
             const deathPreventionRoll = pending.allowSkull
@@ -13064,35 +11145,15 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     };
                 }
             } else if (recentRoll.kind === 'mysticElevator') {
-                const roomsBeforeRoll = recentRoll.roomsBeforeRoll?.map(cloneBetrayalRoom);
-                const roomId = recentRoll.roomId ?? core.currentExplorer.roomId;
-                const roomBeforeRoll = roomsBeforeRoll?.find((room) => room.id === roomId);
-                const destination = roomsBeforeRoll
-                    ? resolveMysticElevatorDestination({ ...core, rooms: roomsBeforeRoll }, nextTotal)
-                    : null;
-                if (!roomsBeforeRoll || !roomBeforeRoll || !destination) {
+                if (!applyBetrayalMysticElevatorRecentRollRerollState(
+                    core,
+                    recentRoll,
+                    nextRoll,
+                    nextTotal,
+                    event.payload.cardId,
+                )) {
                     return core;
                 }
-                const nextEffect: BetrayalRoomEnterEffectResult = {
-                    kind: 'mysticElevator',
-                    playerId: recentRoll.playerId,
-                    roomId,
-                    roomName: roomBeforeRoll.name,
-                    rollTotal: nextTotal,
-                    dice,
-                    destinationRoomId: destination.id,
-                    destinationRoomName: destination.name,
-                    destinationFloor: destination.floor,
-                };
-                core.rooms = moveMysticElevatorRoom(roomsBeforeRoll, nextEffect);
-                core.currentExplorer.roomId = roomId;
-                nextRoll.latestLabel = `移动到${destination.name}`;
-                nextRoll.roomsBeforeRoll = roomsBeforeRoll;
-                core.recentRoll = nextRoll;
-                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                core.latestDiscovery = null;
-                core.latestDiscoveryOwnerPlayerId = null;
-                core.latestRoomDrawResolution = null;
             } else if (recentRoll.kind === 'attackRoll') {
                 const attack = recentRoll.attack;
                 if (!attack) {
@@ -13374,20 +11435,17 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
                 ? core.monsters.map(cloneMonster)
                 : [];
-            const rolledDamageAllocations: BetrayalPendingDamageAllocationState[] = [];
             const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
-            const eventEffectSnapshot = applyEventEffect(core, event.payload.effect, undefined, undefined, {
-                deferRolledDamageAllocation: {
-                    sourceTitle: event.payload.sourceTitle,
-                    timestamp: event.timestamp,
-                    allocations: rolledDamageAllocations,
-                },
-            });
-            const pendingRolledDamageAllocation = chainPendingDamageAllocations(rolledDamageAllocations);
-            if (pendingRolledDamageAllocation) {
-                core.pendingDamageAllocation = pendingRolledDamageAllocation;
-                core.activePlayerId = pendingRolledDamageAllocation.playerId;
-            }
+            const {
+                eventEffectSnapshot,
+                pendingRolledDamageAllocation,
+            } = applyEventEffectWithDeferredRolledDamage(
+                core,
+                event.payload.effect,
+                event.payload.sourceTitle,
+                event.timestamp,
+            );
+            activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation);
             if (!pendingRolledDamageAllocation && event.payload.deathPrevention?.dice.length) {
                 core.recentRoll = {
                     id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
@@ -13492,88 +11550,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
         }
         case EVENTS.POSSESSION_USED: {
             if (event.payload.eventRollReplacement) {
-                const replacement = event.payload.eventRollReplacement;
-                const pending = core.pendingEventRollResolution;
-                const recentRoll = core.recentRoll;
-                const owner = findExplorerByPlayerId(core, event.payload.playerId);
-                if (!pending || !recentRoll || !owner || pending.rollId !== recentRoll.id) {
+                if (!applyBetrayalEventRollReplacementState(core, event.payload)) {
                     return core;
-                }
-                applyTraitLoss(owner, ['sanity'], event.payload.effect.sanityCost);
-                core.recentRoll = {
-                    ...recentRoll,
-                    trait: event.payload.effect.replacementTrait,
-                    rollLabel: `${TRAIT_LABEL[event.payload.effect.replacementTrait]}检定`,
-                    dice: [...replacement.dice],
-                    passiveBonus: replacement.passiveBonus,
-                    latestLabel: replacement.latestLabel,
-                };
-                const nextPendingEventChoice = replacement.nextPendingEventChoice
-                    ? clonePendingEventChoice(replacement.nextPendingEventChoice)
-                    : undefined;
-                const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement({
-                    nextPendingEventChoice,
-                    hauntRevealResolution: replacement.hauntRevealResolution,
-                    hauntTraitorResolution: replacement.hauntTraitorResolution,
-                    dustSetup: replacement.dustSetup,
-                    magicCameraSetup: replacement.magicCameraSetup,
-                    helpingHandsSetup: replacement.helpingHandsSetup,
-                    uponReflectionSetup: replacement.uponReflectionSetup,
-                });
-                core.pendingEventRollResolution = {
-                    ...pending,
-                    requiredPlayerIds: requiresAcknowledgement
-                        ? [...core.playerIds]
-                        : [pending.playerId],
-                    acknowledgedPlayerIds: [],
-                    hauntRoll: replacement.hauntRoll ? { ...replacement.hauntRoll } : undefined,
-                    effect: cloneUseEffect(replacement.effect),
-                    nextPendingEventChoice,
-                    deathPrevention: replacement.deathPrevention
-                        ? {
-                            ...replacement.deathPrevention,
-                            dice: [...replacement.deathPrevention.dice],
-                            damageTraits: [...replacement.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...replacement.deathPrevention.traitsBeforeDamage },
-                        }
-                        : undefined,
-                    hauntTriggered: replacement.hauntTriggered,
-                    hauntCardNumber: replacement.hauntCardNumber,
-                    hauntTriggerLabel: replacement.hauntTriggerLabel,
-                    hauntTraitorPlayerId: replacement.hauntTraitorPlayerId,
-                    hauntRevealResolution: replacement.hauntRevealResolution
-                        ? { ...replacement.hauntRevealResolution }
-                        : undefined,
-                    hauntTraitorResolution: replacement.hauntTraitorResolution
-                        ? cloneHauntTraitorResolution(replacement.hauntTraitorResolution) ?? undefined
-                        : undefined,
-                    dustSetup: replacement.dustSetup
-                        ? cloneDustRuntimeState(replacement.dustSetup)
-                        : undefined,
-                    magicCameraSetup: replacement.magicCameraSetup
-                        ? cloneMagicCameraRuntimeState(replacement.magicCameraSetup)
-                        : undefined,
-                    helpingHandsSetup: replacement.helpingHandsSetup
-                        ? cloneHelpingHandsRuntimeState(replacement.helpingHandsSetup)
-                        : undefined,
-                    uponReflectionSetup: replacement.uponReflectionSetup
-                        ? cloneUponReflectionRuntimeState(replacement.uponReflectionSetup)
-                        : undefined,
-                    requiresAcknowledgement,
-                };
-                core.usedCardIdsThisTurn = Array.from(new Set([
-                    ...core.usedCardIdsThisTurn,
-                    event.payload.cardId,
-                ]));
-                core.nextNonCombatTraitReplacement = null;
-                if (core.latestDiscovery && core.latestDiscovery.title === recentRoll.sourceTitle) {
-                    const total = resolveRecentRollTotal(core.recentRoll);
-                    const rollLabel = core.recentRoll.rollLabel ?? '投骰';
-                    core.latestDiscovery = {
-                        ...core.latestDiscovery,
-                        detail: `${rollLabel} ${total}：${replacement.latestLabel}；${formatEffectLabel(replacement.effect)}`,
-                        tone: isWarningEventEffect(replacement.effect) ? 'warning' : 'accent',
-                    };
                 }
                 const synced = syncCurrentExplorerProjection(core);
                 return {
@@ -13591,31 +11569,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.ROOM_EFFECT_USED: {
-            if (event.payload.effect.kind !== 'mysticElevator') {
+            if (!applyBetrayalRoomEffectUsedState(core, event.payload, event.timestamp)) {
                 return core;
             }
-            const roomsBeforeRoll = core.rooms.map(cloneBetrayalRoom);
-            core.rooms = moveMysticElevatorRoom(core.rooms, event.payload.effect);
-            core.currentExplorer.roomId = event.payload.effect.roomId;
-            core.scenarioRuntime.usedRoomEffectIdsThisTurn = Array.from(new Set([
-                ...core.scenarioRuntime.usedRoomEffectIdsThisTurn,
-                event.payload.effect.kind,
-            ]));
-            core.recentRoll = {
-                id: `${event.payload.playerId}-${event.payload.effect.kind}-${event.timestamp}`,
-                kind: 'mysticElevator',
-                playerId: event.payload.playerId,
-                sourceTitle: event.payload.effect.roomName,
-                dice: [...event.payload.effect.dice],
-                passiveBonus: 0,
-                latestLabel: `移动到${event.payload.effect.destinationRoomName}`,
-                roomId: event.payload.effect.roomId,
-                roomsBeforeRoll,
-                consumedRabbitFootCardIds: [],
-            };
-            core.latestDiscovery = null;
-            core.latestDiscoveryOwnerPlayerId = null;
-            core.latestRoomDrawResolution = null;
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,

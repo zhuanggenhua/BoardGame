@@ -67,6 +67,7 @@ describe('DiceBoxPhysicsSource', () => {
                     .mockReturnValue(true),
                 rollToValues: vi.fn().mockResolvedValue(undefined),
                 rerollToValues: vi.fn().mockResolvedValue(undefined),
+                playRerollLaunchPreview: vi.fn().mockResolvedValue(undefined),
                 syncSettledValues: vi.fn(),
                 previewValues: vi.fn(),
                 clear: vi.fn(),
@@ -121,6 +122,7 @@ describe('DiceBoxPhysicsSource', () => {
             hasDice: vi.fn().mockReturnValue(false),
             rollToValues: vi.fn(),
             rerollToValues: vi.fn(),
+            playRerollLaunchPreview: vi.fn().mockResolvedValue(undefined),
             syncSettledValues: vi.fn(),
             previewValues: vi.fn(),
             clear: vi.fn(),
@@ -165,6 +167,7 @@ describe('DiceBoxPhysicsSource', () => {
             hasDice: vi.fn().mockReturnValue(true),
             rollToValues: vi.fn().mockResolvedValue(undefined),
             rerollToValues: vi.fn().mockResolvedValue(undefined),
+            playRerollLaunchPreview: vi.fn().mockResolvedValue(undefined),
             syncSettledValues: vi.fn(),
             previewValues: vi.fn(),
             clear: vi.fn(),
@@ -222,6 +225,7 @@ describe('DiceBoxPhysicsSource', () => {
             hasDice: vi.fn().mockReturnValue(false),
             rollToValues: vi.fn(),
             rerollToValues: vi.fn(),
+            playRerollLaunchPreview: vi.fn().mockResolvedValue(undefined),
             syncSettledValues: vi.fn(),
             previewValues: vi.fn(),
             clear: vi.fn(),
@@ -261,6 +265,7 @@ describe('DiceBoxPhysicsSource', () => {
             getPhysicsState: vi.fn(),
             hasDice: vi.fn().mockReturnValue(true),
             rerollToValues,
+            playRerollLaunchPreview: vi.fn().mockResolvedValue(undefined),
             syncSettledValues: vi.fn(),
             previewValues: vi.fn(),
             clear: vi.fn(),
@@ -301,6 +306,69 @@ describe('DiceBoxPhysicsSource', () => {
         });
     });
 
+    it('重掷停稳状态必须等真实重掷和可见过程窗口都结束', async () => {
+        let finishPreview: (() => void) | undefined;
+        let finishReroll: (() => void) | undefined;
+        const preview = new Promise<void>((resolve) => {
+            finishPreview = resolve;
+        });
+        const reroll = new Promise<void>((resolve) => {
+            finishReroll = resolve;
+        });
+        const rerollToValues = vi.fn().mockImplementation(() => reroll);
+        const playRerollLaunchPreview = vi.fn().mockImplementation(() => preview);
+        const engineMock = {
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            setCanvasDiagnostics: vi.fn(),
+            setDieSkins: vi.fn(),
+            setDiceHighlights: vi.fn(),
+            getPhysicsState: vi.fn(),
+            hasDice: vi.fn().mockReturnValue(true),
+            rerollToValues,
+            playRerollLaunchPreview,
+            syncSettledValues: vi.fn(),
+            previewValues: vi.fn(),
+            clear: vi.fn(),
+            removeDice: vi.fn(),
+            restoreValues: vi.fn(),
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+
+        const view = render(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                motion={rerollMotion('visible-reroll', [7])}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(playRerollLaunchPreview).toHaveBeenCalledTimes(1);
+        });
+        expect(rerollToValues).not.toHaveBeenCalled();
+        expect(view.getByTestId('dice-box-physics-source')).toHaveAttribute('data-dice-settled', 'false');
+
+        await act(async () => {
+            finishPreview?.();
+        });
+
+        await waitFor(() => {
+            expect(rerollToValues).toHaveBeenCalledTimes(1);
+        });
+        expect(
+            playRerollLaunchPreview.mock.invocationCallOrder[0],
+        ).toBeLessThan(rerollToValues.mock.invocationCallOrder[0]);
+        expect(view.getByTestId('dice-box-physics-source')).toHaveAttribute('data-dice-settled', 'false');
+
+        await act(async () => {
+            finishReroll?.();
+        });
+
+        await waitFor(() => {
+            expect(view.getByTestId('dice-box-physics-source')).toHaveAttribute('data-dice-settled', 'true');
+        });
+    });
+
     it('物理投掷中不抢写骰子坐标，避免连续跳变和透视缩放抖动', async () => {
         const originalRequestAnimationFrame = window.requestAnimationFrame;
         const originalCancelAnimationFrame = window.cancelAnimationFrame;
@@ -318,6 +386,7 @@ describe('DiceBoxPhysicsSource', () => {
             getPhysicsState: vi.fn(),
             hasDice: vi.fn().mockReturnValue(true),
             rerollToValues: vi.fn().mockImplementation(() => rolling),
+            playRerollLaunchPreview: vi.fn().mockResolvedValue(undefined),
             syncSettledValues: vi.fn(),
             previewValues: vi.fn(),
             clear: vi.fn(),

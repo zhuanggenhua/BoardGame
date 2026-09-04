@@ -12,6 +12,7 @@ import {
 import { resolvePlayerName } from "./playerPresentation";
 
 const BETRAYAL_REROLL_TARGET_HIT_PADDING = 2;
+const BETRAYAL_REROLL_TARGET_MIN_HIT_SIZE = 42;
 
 export type EventRollConfirmationPresentation = {
   requiredPlayerIds: string[];
@@ -139,7 +140,7 @@ export function resolveBetrayalRerollTargetBoxSize(
   const visibleHeight = layout.visualHeight ?? layout.height;
   const longestVisibleSide = Math.max(visibleWidth, visibleHeight);
   return Math.max(
-    44,
+    BETRAYAL_REROLL_TARGET_MIN_HIT_SIZE,
     longestVisibleSide + BETRAYAL_REROLL_TARGET_HIT_PADDING * 2,
   );
 }

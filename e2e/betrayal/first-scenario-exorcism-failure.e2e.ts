@@ -179,9 +179,11 @@ test.describe("山屋惊魂驱魔失败伤害完整链路", () => {
     );
     await expect(exorciseRollBackdrop).toHaveAttribute(
       "data-backdrop-dismiss",
-      "enabled",
+      "disabled",
     );
     await exorciseRollBackdrop.click({ position: { x: 16, y: 16 } });
+    await expect(page.getByTestId("betrayal-exorcise-roll-review")).toBeVisible();
+    await page.getByTestId("betrayal-exorcise-roll-continue").click();
 
     await expect(page.getByTestId("betrayal-exorcise-roll-review")).toHaveCount(
       0,

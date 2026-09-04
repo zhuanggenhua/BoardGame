@@ -8,9 +8,11 @@ import type {
   BetrayalInventoryCard,
 } from "../../src/games/betrayal/game";
 import {
+  clickDiscoveryBackdropAndExpectStillVisible,
   createRuntimeCore,
   expectEventRollWorkbenchReadable,
   expectPhysicalDiceSeparated,
+  expectPhysicalDiceRerollMotionVisible,
   expectUnifiedEventRollConfirmButton,
   expectVisiblePhysicalDiceBox,
   initBetrayalContext,
@@ -27,8 +29,9 @@ const BEFORE_REROLL_SCREENSHOT = `${EVIDENCE_DIR}/01-兔脚重掷前最近投骰
 const RABBIT_FOOT_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-兔脚本体已选中.jpg`;
 const DIE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/03-选择具体骰子高亮.jpg`;
 const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/04-选中骰子等待确认使用.jpg`;
-const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/05-重掷后结果可见返回牌桌.jpg`;
-const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/06-返回牌桌后事件结果已应用.jpg`;
+const REROLL_MOTION_SCREENSHOT = `${EVIDENCE_DIR}/05-兔脚重掷动画进行中.jpg`;
+const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/06-重掷后结果可见返回牌桌.jpg`;
+const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/07-返回牌桌后事件结果已应用.jpg`;
 const REROLL_HIGHLIGHT_RENDERER = "threejs-backside-shader-shell";
 
 function createRabbitFootRerollCore(): BetrayalCore {
@@ -316,15 +319,15 @@ async function expectRabbitFootRerollHighlightState(
     if (isSelected) {
       expect(target.highlight?.variant).toBe("selected");
       expect(target.shell?.variant).toBe("selected");
-      expect(target.shell?.scale).toBeGreaterThanOrEqual(1.085);
-      expect(target.shell?.scale).toBeLessThanOrEqual(1.105);
+      expect(target.shell?.scale).toBeGreaterThanOrEqual(1.045);
+      expect(target.shell?.scale).toBeLessThanOrEqual(1.065);
       expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.95);
     } else {
       expect(target.highlight?.variant).toBe("candidate");
       expect(target.shell?.variant).toBe("candidate");
-      expect(target.shell?.scale).toBeGreaterThanOrEqual(1.065);
-      expect(target.shell?.scale).toBeLessThanOrEqual(1.085);
-      expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.98);
+      expect(target.shell?.scale).toBeGreaterThanOrEqual(1.025);
+      expect(target.shell?.scale).toBeLessThanOrEqual(1.045);
+      expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.9);
     }
   }
 }
@@ -377,9 +380,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       "true",
     );
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
-    await expect(discoveryPanel).toHaveAttribute("data-backdrop-dismiss", "disabled");
-    await discoveryPanel.click({ position: { x: 12, y: 12 } });
-    await expect(discoveryPanel).toBeVisible();
+    await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
     await expect(rollPanel).toBeVisible();
     await saveScreenshot(page, BEFORE_REROLL_SCREENSHOT);
 
@@ -436,7 +437,12 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
     await saveScreenshot(page, REROLL_SELECTED_SCREENSHOT);
 
     await page.getByTestId("betrayal-roll-modifier-confirm").click();
+    await expectPhysicalDiceRerollMotionVisible(rollPanel, {
+      dieIndex: 1,
+      sampleMs: 80,
+    });
     await expect(rabbitFootDice).toBeHidden();
+    await saveScreenshot(page, REROLL_MOTION_SCREENSHOT);
     await expect
       .poll(async () =>
         rollPanel
@@ -465,6 +471,7 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       "获得 1 点知识",
     );
     await expectUnifiedEventRollConfirmButton(page, "返回牌桌");
+    await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
     await saveScreenshot(page, REROLL_RESULT_SCREENSHOT);
 
     const finalState = await page.evaluate(() => {
