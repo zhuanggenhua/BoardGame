@@ -622,6 +622,52 @@ describe('MageWarsBoard FX wiring', () => {
         expect(screen.getAllByTestId('mock-card-preview').some((node) => node.textContent === '野性山猫')).toBe(true);
     });
 
+    it('dims newly summoned creatures when their action marker is not ready', () => {
+        const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
+        const wolf: MageWarsArenaObjectState = {
+            ...creatureObject('mwobj-0-2819-1', '0', 2819, '丛林灰狼', ARENA_ZONE_IDS.A3),
+            actionReady: false,
+        };
+        const readyCat: MageWarsArenaObjectState = {
+            ...creatureObject('mwobj-0-2906-1', '0', 2906, '野性山猫', ARENA_ZONE_IDS.A3),
+            actionReady: true,
+        };
+        const core: MageWarsCore = {
+            ...baseCore,
+            objects: {
+                ...baseCore.objects,
+                [wolf.id]: wolf,
+                [readyCat.id]: readyCat,
+            },
+            arena: baseCore.arena.map((zone) => ({
+                ...zone,
+                occupantIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? ['0']
+                    : zone.occupantIds.filter((id) => id !== '0'),
+                objectIds: zone.id === ARENA_ZONE_IDS.A3
+                    ? [wolf.id, readyCat.id]
+                    : zone.objectIds.filter((id) => id !== wolf.id && id !== readyCat.id),
+            })),
+        };
+
+        renderBoardWithProviders(<MageWarsBoard {...boardProps(core)} />);
+
+        const spentWolf = screen.getByText('丛林灰狼')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+        const readyCatCard = screen.getByText('野性山猫')
+            .closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]');
+
+        expect(spentWolf).not.toBeNull();
+        expect(spentWolf?.getAttribute('data-action-ready')).toBe('false');
+        expect(spentWolf?.getAttribute('data-visual-action-state')).toBe('spent');
+        expect(spentWolf?.className).toContain('grayscale');
+        expect(spentWolf?.className).toContain('opacity-55');
+        expect(readyCatCard).not.toBeNull();
+        expect(readyCatCard?.getAttribute('data-action-ready')).toBe('true');
+        expect(readyCatCard?.getAttribute('data-visual-action-state')).toBeNull();
+        expect(readyCatCard?.className).not.toContain('grayscale');
+    });
+
     it('uses public view switching for opponent discard instead of rendering a second discard pile', async () => {
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const core: MageWarsCore = {

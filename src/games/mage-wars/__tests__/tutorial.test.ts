@@ -448,6 +448,7 @@ describe('mage-wars tutorial', () => {
             ['planConfirm', '点击“确认计划 2/2”提交本回合计划。', 'Click “Confirm prep 2/2” to submit this round\'s plan.'],
             ['deploySelectWolf', '点击准备区的“丛林灰狼”。', 'Click Jungle Wolf in your prepared spells.'],
             ['deployTargetZone', '点击兽王所在区域。', 'Click the Beastmaster\'s zone.'],
+            ['wolfSummoned', '丛林灰狼已经被召唤到兽王所在区域；刚进场时行动未就绪，卡面变灰表示它现在还不能行动。', 'Jungle Wolf has been summoned into the Beastmaster\'s zone. It enters without a ready action, so the dimmed card means it cannot act yet.'],
             ['rouseSelectSpell', '点击准备区的“兽性觉醒”。', 'Click Rouse the Beast in your prepared spells.'],
             ['rouseTargetWolf', '点击场上的“丛林灰狼”。', 'Click Jungle Wolf in the arena.'],
             ['moveSelectWolf', '点击场上的“丛林灰狼”。', 'Click Jungle Wolf in the arena.'],

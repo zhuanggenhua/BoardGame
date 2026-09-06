@@ -409,7 +409,7 @@
       "preparedAndHidden": "双方玩家同时选择各自的法术。你所选择的法术对你的对手保密，以使他无法得知你的计划。",
       "deploySelectWolf": "点击准备区的“丛林灰狼”。",
       "deployTargetZone": "点击兽王所在区域。",
-      "wolfSummoned": "丛林灰狼已经被召唤到兽王所在区域；它刚进场时行动标记未就绪。",
+      "wolfSummoned": "丛林灰狼已经被召唤到兽王所在区域；刚进场时行动未就绪，卡面变灰表示它现在还不能行动。",
       "rouseSelectSpell": "点击准备区的“兽性觉醒”。",
       "rouseTargetWolf": "点击场上的“丛林灰狼”。",
       "passYourDeployment": "丛林灰狼的行动标记已经就绪。点击“结束部署”。",

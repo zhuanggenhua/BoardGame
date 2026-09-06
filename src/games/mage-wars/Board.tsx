@@ -9,7 +9,7 @@ import {
     type SetStateAction,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ZoomIn } from 'lucide-react';
+import { Droplet, Heart, Sparkles, ZoomIn } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import type { CardPreviewRef } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
@@ -126,9 +126,8 @@ const MAGE_WARS_LOCAL_PLANNING_TUTORIAL_STEP_IDS = new Set([
 // 与大杀四方手牌放大镜同量级：2vw / 8.5vw ≈ 23.5% 卡宽；用卡牌容器宽度自适应，避免 16:9 放大后图标相对变小。
 const MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE = 'clamp(28px, 18.5cqw, 34px)';
 const MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE = 'clamp(15px, 10cqw, 19px)';
-const MAGE_WARS_HUD_HINT_CARD_HEIGHT_REM = 13.5;
-const MAGE_WARS_HUD_HINT_CARD_HEIGHT_CSS_VAR = 'var(--mage-wars-desktop-hud-hint-card-height, 13.5rem)';
-const MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM = 4;
+const MAGE_WARS_HUD_HINT_CARD_HEIGHT_CSS_VAR = 'var(--mage-wars-desktop-hud-hint-card-height, 15.75rem)';
+const MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM = 4.5;
 const MAGE_WARS_MIN_CAMERA_BOTTOM_UI_INSET = 316;
 const MAGE_WARS_CAMERA_BOTTOM_UI_INSET_RATIO = 0.28;
 const MAGE_WARS_MAX_CAMERA_BOTTOM_UI_INSET_RATIO = 0.45;
@@ -328,6 +327,10 @@ function getZoneOwnerLaneLayoutClassName(entityDensity: ZoneEntityDensity): stri
 
 function getZoneOwnerLaneOverflowMode(entityDensity: ZoneEntityDensity): 'fit' | 'wrap-columns' {
     return entityDensity === 'packed' ? 'wrap-columns' : 'fit';
+}
+
+function isBottomArenaRowZone(zoneId: ArenaZoneId): boolean {
+    return zoneId.endsWith('3');
 }
 
 function getMageWarsSpellbookDisplayEntries(
@@ -941,25 +944,186 @@ function isMageWarsObjectAttackTargetSelectable(
         || !doesMageWarsWallBlockLineOfSight(core, attackerZoneId, targetZoneId);
 }
 
-function MageStatusBars({ player, visualDamage = player.damage }: { player: MageWarsPlayerState; visualDamage?: number }) {
-    const lifeRemaining = Math.max(0, player.life - visualDamage);
-    const lifePercent = Math.max(0, Math.min(100, (lifeRemaining / player.life) * 100));
-    const manaPercent = Math.max(0, Math.min(100, (player.mana / 20) * 100));
+type MageHudStatKind = 'life' | 'mana' | 'channeling';
+
+const MAGE_WARS_HUD_MANA_PROGRESS_MAX = 20;
+const MAGE_WARS_HUD_CHANNELING_PROGRESS_MAX = 12;
+
+function clampPercent(value: number): number {
+    return Math.max(0, Math.min(100, value));
+}
+
+function MageHudStatGlyph({ stat, className }: { stat: MageHudStatKind; className?: string }) {
+    const sharedProps = {
+        className,
+        strokeWidth: 2.35,
+        fill: 'currentColor',
+        'aria-hidden': true,
+    } as const;
+
+    if (stat === 'life') return <Heart {...sharedProps} />;
+    if (stat === 'mana') return <Droplet {...sharedProps} />;
+    return <Sparkles {...sharedProps} />;
+}
+
+function MageHudStatIcon({
+    stat,
+    label,
+    value,
+    max,
+    activeClassName,
+    compact = false,
+}: {
+    stat: MageHudStatKind;
+    label: string;
+    value: number;
+    max: number;
+    activeClassName: string;
+    compact?: boolean;
+}) {
+    const fillPercent = clampPercent(max > 0 ? (value / max) * 100 : 0);
+    const clipTopPercent = 100 - fillPercent;
 
     return (
-        <div className="space-y-1.5">
-            <div className="h-2 overflow-hidden rounded-full bg-red-950/70">
-                <div
-                    className="h-full rounded-full bg-gradient-to-r from-red-600 to-rose-300"
-                    style={{ width: `${lifePercent}%` }}
+        <div
+            className={cx(
+                'relative grid place-items-center rounded-full border border-stone-100/18 bg-black/58 shadow-[0_8px_18px_rgba(0,0,0,0.44)]',
+                compact
+                    ? 'h-9 w-9'
+                    : 'h-[var(--mage-wars-hud-icon-size,3.75rem)] w-[var(--mage-wars-hud-icon-size,3.75rem)]',
+            )}
+            data-testid="mage-wars-mage-hud-stat-icon"
+            data-stat={stat}
+            data-stat-value={value}
+            data-stat-max={max}
+            data-fill-percent={fillPercent.toFixed(2)}
+            title={`${label}: ${value}/${max}`}
+            aria-label={`${label}: ${value}/${max}`}
+        >
+            <MageHudStatGlyph
+                stat={stat}
+                className={cx(
+                    'absolute inset-[13%] h-[74%] w-[74%] text-stone-500/62 drop-shadow-[0_2px_5px_rgba(0,0,0,0.52)]',
+                    compact && 'inset-[16%] h-[68%] w-[68%]',
+                )}
+            />
+            <span
+                className="pointer-events-none absolute inset-[13%] overflow-hidden"
+                style={{ clipPath: `inset(${clipTopPercent}% 0 0 0)` }}
+                data-testid="mage-wars-mage-hud-stat-icon-fill"
+                data-stat={stat}
+            >
+                <MageHudStatGlyph
+                    stat={stat}
+                    className={cx(
+                        'h-full w-full drop-shadow-[0_0_10px_rgba(255,255,255,0.28)]',
+                        activeClassName,
+                    )}
                 />
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-sky-950/70">
-                <div
-                    className="h-full rounded-full bg-gradient-to-r from-sky-600 to-cyan-200"
-                    style={{ width: `${manaPercent}%` }}
-                />
-            </div>
+            </span>
+            <span
+                className={cx(
+                    'pointer-events-none absolute inset-0 grid place-items-center rounded-full bg-black/18 font-black leading-none text-white tabular-nums drop-shadow-[0_2px_4px_rgba(0,0,0,0.86)]',
+                    compact ? 'text-[0.86rem]' : 'text-[1.26rem]',
+                )}
+                data-testid="mage-wars-mage-hud-stat-value"
+                data-stat={stat}
+            >
+                {value}
+            </span>
+        </div>
+    );
+}
+
+function MageHudTokenIcon({
+    src,
+    alt,
+    compact = false,
+    kind,
+}: {
+    src: string;
+    alt: string;
+    compact?: boolean;
+    kind: 'action' | 'quickcast';
+}) {
+    return (
+        <div
+            className={cx(
+                'grid place-items-center rounded-full border border-stone-100/18 bg-black/48 shadow-[0_8px_18px_rgba(0,0,0,0.44)]',
+                compact
+                    ? 'h-9 w-9'
+                    : 'h-[var(--mage-wars-hud-icon-size,3.75rem)] w-[var(--mage-wars-hud-icon-size,3.75rem)]',
+            )}
+            data-testid="mage-wars-mage-hud-token-icon"
+            data-token-kind={kind}
+            title={alt}
+            aria-label={alt}
+        >
+            <TokenImage
+                src={src}
+                alt={alt}
+                className={compact ? 'h-6 w-6' : 'h-[82%] w-[82%]'}
+            />
+        </div>
+    );
+}
+
+function MageHudIconRail({
+    player,
+    visualDamage = player.damage,
+    compact = false,
+}: {
+    player: MageWarsPlayerState;
+    visualDamage?: number;
+    compact?: boolean;
+}) {
+    const { t } = useTranslation('game-mage-wars');
+    const lifeRemaining = Math.max(0, player.life - visualDamage);
+
+    return (
+        <div
+            className={cx(
+                'pointer-events-none flex flex-col items-center justify-start',
+                compact ? 'gap-1.5' : 'gap-[var(--mage-wars-hud-icon-gap,0.28rem)]',
+            )}
+            data-testid="mage-wars-mage-hud-icon-rail"
+        >
+            <MageHudStatIcon
+                stat="life"
+                label={t('stats.life')}
+                value={lifeRemaining}
+                max={player.life}
+                activeClassName="text-rose-300"
+                compact={compact}
+            />
+            <MageHudStatIcon
+                stat="mana"
+                label={t('stats.mana')}
+                value={player.mana}
+                max={MAGE_WARS_HUD_MANA_PROGRESS_MAX}
+                activeClassName="text-cyan-200"
+                compact={compact}
+            />
+            <MageHudStatIcon
+                stat="channeling"
+                label={t('stats.channeling')}
+                value={player.channeling}
+                max={MAGE_WARS_HUD_CHANNELING_PROGRESS_MAX}
+                activeClassName="text-amber-100"
+                compact={compact}
+            />
+            <MageHudTokenIcon
+                kind="action"
+                src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
+                alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
+                compact={compact}
+            />
+            <MageHudTokenIcon
+                kind="quickcast"
+                src={player.quickcastReady ? TOKEN_IMAGES.quickcastReady : TOKEN_IMAGES.quickcastSpent}
+                alt={t(player.quickcastReady ? 'tokens.quickcastReady' : 'tokens.quickcastSpent')}
+                compact={compact}
+            />
         </div>
     );
 }
@@ -988,7 +1152,6 @@ function MageHud({
     observed?: boolean;
 }) {
     const { t } = useTranslation('game-mage-wars');
-    const lifeRemaining = Math.max(0, player.life - visualDamage);
     const mageLabel = getMageDisplayLabel(player);
     const mageHintCardAspectRatio = getMageWarsMagePreviewAspectRatio();
     const fullHintCardStyle: CSSProperties = {
@@ -1036,6 +1199,13 @@ function MageHud({
                     title={mageLabel}
                     alt={mageLabel}
                 />
+                <div
+                    className="pointer-events-none absolute left-2 top-2 z-10 rounded-full bg-black/72 px-2.5 py-1 text-[0.78rem] font-black leading-none text-stone-50 shadow-[0_6px_16px_rgba(0,0,0,0.46)]"
+                    data-testid="mage-wars-mage-hud-name-badge"
+                    data-mage-label={mageLabel}
+                >
+                    {mageLabel}
+                </div>
                 {onInspect ? (
                     <CardInspectButton title={mageLabel} onInspect={onInspect} />
                 ) : null}
@@ -1069,89 +1239,27 @@ function MageHud({
                 ) : null}
             </div>
         );
-        const statPanel = (
-            <div
-                className={layout === 'horizontal' ? 'min-w-0 flex-1' : 'w-full'}
-                style={{ maxWidth: layout === 'horizontal' ? undefined : 'calc(var(--mage-wars-desktop-hud-width, 23.25rem) - 1.25rem)' }}
-            >
-                <div className="flex min-h-9 items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-baseline gap-2">
-                        <div className="shrink-0 text-[2rem] font-black leading-none text-amber-100 drop-shadow-[0_3px_10px_rgba(0,0,0,0.68)]">
-                            {mageLabel}
-                        </div>
-                        <div className="shrink-0 text-sm font-semibold text-stone-100">
-                            {self ? t('player.you') : t('player.opponent')}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <TokenImage
-                            src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
-                            alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
-                            className="h-10 w-10"
-                        />
-                        <TokenImage
-                            src={player.quickcastReady ? TOKEN_IMAGES.quickcastReady : TOKEN_IMAGES.quickcastSpent}
-                            alt={t(player.quickcastReady ? 'tokens.quickcastReady' : 'tokens.quickcastSpent')}
-                            className="h-10 w-10"
-                        />
-                    </div>
-                </div>
-                <div
-                    className="mt-3 grid grid-cols-[7rem_minmax(0,1fr)_4.75rem] items-center gap-x-4 gap-y-2 text-[2.25rem] font-bold leading-none text-amber-50"
-                    data-testid="mage-wars-mage-hud-stat-grid"
-                >
-                    <span>{t('stats.life')}</span>
-                    <div className="h-8 overflow-hidden rounded-full bg-red-950/70" data-testid="mage-wars-mage-hud-stat-bar" data-stat="life">
-                        <div
-                            className="h-full rounded-full bg-gradient-to-r from-red-600 to-rose-300"
-                            style={{ width: `${Math.max(0, Math.min(100, (lifeRemaining / player.life) * 100))}%` }}
-                        />
-                    </div>
-                    <span className="text-right tabular-nums">{lifeRemaining}</span>
-                    <span>{t('stats.mana')}</span>
-                    <div className="h-8 overflow-hidden rounded-full bg-sky-950/70" data-testid="mage-wars-mage-hud-stat-bar" data-stat="mana">
-                        <div
-                            className="h-full rounded-full bg-gradient-to-r from-sky-600 to-cyan-200"
-                            style={{ width: `${Math.max(0, Math.min(100, (player.mana / 20) * 100))}%` }}
-                        />
-                    </div>
-                    <span className="text-right tabular-nums">{player.mana}</span>
-                    <span>{t('stats.channeling')}</span>
-                    <div className="h-8 overflow-hidden rounded-full bg-amber-950/70" data-testid="mage-wars-mage-hud-stat-bar" data-stat="channeling">
-                        <div
-                            className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-amber-100"
-                            style={{ width: `${Math.max(0, Math.min(100, (player.channeling / 12) * 100))}%` }}
-                        />
-                    </div>
-                    <span className="text-right tabular-nums">{player.channeling}</span>
-                </div>
-            </div>
-        );
+        const iconRail = <MageHudIconRail player={player} visualDamage={visualDamage} />;
 
         return (
             <section
                 className={cx(
-                    'pointer-events-none relative flex gap-2 text-stone-100',
-                    layout === 'horizontal' ? 'flex-row items-start gap-4' : 'flex-col',
-                    self ? 'items-start text-left' : 'items-end text-right',
+                    'pointer-events-none relative flex items-start gap-[var(--mage-wars-hud-icon-rail-gap,0.38rem)] text-stone-100',
+                    self ? 'justify-start text-left' : 'justify-end text-right',
                 )}
-                style={{ width: 'var(--mage-wars-desktop-hud-width, 23.25rem)' }}
+                style={{
+                    width: 'max-content',
+                    maxWidth: 'var(--mage-wars-desktop-hud-width, 23.25rem)',
+                    marginLeft: self ? undefined : 'auto',
+                }}
                 data-testid={self ? 'mage-wars-mage-hud-self' : 'mage-wars-mage-hud-opponent'}
                 data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
                 data-mage-wars-hud-density="full"
                 data-mage-wars-hud-layout={layout}
+                aria-label={`${self ? t('player.you') : t('player.opponent')} ${mageLabel}`}
             >
-                {layout === 'horizontal' ? (
-                    <>
-                        {hintCard}
-                        {statPanel}
-                    </>
-                ) : (
-                    <>
-                        {hintCard}
-                        {statPanel}
-                    </>
-                )}
+                {hintCard}
+                {iconRail}
             </section>
         );
     }
@@ -1159,15 +1267,13 @@ function MageHud({
     return (
         <section
             className={cx(
-                'relative grid rounded-[0.35rem] bg-gradient-to-r from-black/70 via-black/38 to-transparent',
-                compact
-                    ? 'grid-cols-[3.1rem_minmax(0,1fr)] gap-2 p-1.5'
-                    : 'grid-cols-[4.6rem_minmax(0,1fr)] gap-3 p-2',
+                'relative inline-flex items-start gap-1.5 rounded-[0.35rem] bg-gradient-to-r from-black/70 via-black/38 to-transparent p-1.5',
                 current && 'before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-amber-300/80',
             )}
             data-testid={self ? 'mage-wars-mage-hud-self' : 'mage-wars-mage-hud-opponent'}
             data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
             data-mage-wars-hud-density={compact ? 'compact' : 'full'}
+            aria-label={`${self ? t('player.you') : t('player.opponent')} ${mageLabel}`}
         >
             <div
                 className={cx(
@@ -1191,8 +1297,15 @@ function MageHud({
                     title={mageLabel}
                     alt={mageLabel}
                 />
-                    {onInspect ? (
-                        <CardInspectButton title={mageLabel} compact onInspect={onInspect} />
+                <div
+                    className="pointer-events-none absolute left-1 top-1 z-10 rounded-full bg-black/72 px-1.5 py-0.5 text-[0.58rem] font-black leading-none text-stone-50 shadow-[0_4px_12px_rgba(0,0,0,0.42)]"
+                    data-testid="mage-wars-mage-hud-name-badge"
+                    data-mage-label={mageLabel}
+                >
+                    {mageLabel}
+                </div>
+                {onInspect ? (
+                    <CardInspectButton title={mageLabel} compact onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1223,39 +1336,7 @@ function MageHud({
                     />
                 ) : null}
             </div>
-            <div className="min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-amber-50">
-                            {mageLabel}
-                        </div>
-                        <div className="text-[0.7rem] text-stone-300">
-                            {self ? t('player.you') : t('player.opponent')}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <TokenImage
-                            src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
-                            alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
-                            className={compact ? 'h-5 w-5' : 'h-7 w-7'}
-                        />
-                        <TokenImage
-                            src={player.quickcastReady ? TOKEN_IMAGES.quickcastReady : TOKEN_IMAGES.quickcastSpent}
-                            alt={t(player.quickcastReady ? 'tokens.quickcastReady' : 'tokens.quickcastSpent')}
-                            className={compact ? 'h-5 w-5' : 'h-7 w-7'}
-                        />
-                    </div>
-                </div>
-                <div className="mt-2">
-                    <MageStatusBars player={player} visualDamage={visualDamage} />
-                </div>
-                <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[0.68rem] text-stone-200">
-                    <span>{t('stats.lifeShort', { value: lifeRemaining })}</span>
-                    <span>{t('stats.manaShort', { value: player.mana })}</span>
-                    <span>{t('stats.channelingShort', { value: player.channeling })}</span>
-                    <span>{t('stats.damageShort', { value: visualDamage })}</span>
-                </div>
-            </div>
+            <MageHudIconRail player={player} visualDamage={visualDamage} compact />
         </section>
     );
 }
@@ -1502,6 +1583,7 @@ function ZoneFieldCard({
                 : ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
     const cardAspectRatio = getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
     const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
+    const isSpentCreature = object?.kind === 'creature' && object.actionReady === false;
     const life = visualLife ?? object?.life ?? 0;
     const damage = visualDamage ?? 0;
 
@@ -1564,7 +1646,8 @@ function ZoneFieldCard({
         <button
             type="button"
             className={cx(
-                'group relative block h-full w-full rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150',
+                'group relative block h-full w-full rounded-[0.18rem] text-left shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow,opacity] duration-150',
+                isSpentCreature && 'grayscale opacity-55 brightness-75 saturate-50',
                 compact && 'shadow-[0_8px_16px_rgba(0,0,0,0.42)]',
                 role === 'target' && 'shadow-[0_0_32px_rgba(16,185,129,0.46)]',
                 role === 'source' && '-translate-y-2 shadow-[0_0_36px_rgba(34,211,238,0.62)]',
@@ -1589,6 +1672,8 @@ function ZoneFieldCard({
             data-field-card-role={role}
             data-visual-damage={visualDamage ?? 0}
             data-visual-held={visualHeld ? 'true' : undefined}
+            data-action-ready={object ? String(object.actionReady) : undefined}
+            data-visual-action-state={isSpentCreature ? 'spent' : undefined}
             data-browse-inspectable={onInspect ? 'true' : undefined}
             data-secondary-inspect={hasSecondaryInspect ? 'true' : undefined}
         >
@@ -2742,6 +2827,7 @@ function ArenaStage({
                 const rightSeatFieldObjects = fieldObjects.filter((object) => object.ownerId === rightSeatPlayerId);
                 const leftSeatZoneOccupants = zoneOccupants.filter((occupant) => occupant.id === leftSeatPlayerId);
                 const rightSeatZoneOccupants = zoneOccupants.filter((occupant) => occupant.id === rightSeatPlayerId);
+                const shouldRaiseLeftSeatFieldObjects = isBottomArenaRowZone(zone.id);
                 const largestLaneCount = Math.max(
                     leftSeatFieldObjects.length + leftSeatZoneOccupants.length,
                     rightSeatFieldObjects.length + rightSeatZoneOccupants.length,
@@ -3008,6 +3094,33 @@ function ArenaStage({
                         </div>
                     );
                 };
+                const renderLeftSeatLaneItems = () => {
+                    const fieldNodes = leftSeatFieldObjects.map((object, index) => renderFieldObject(
+                        object,
+                        entityDensity,
+                        index,
+                    ));
+                    const occupantNodes = leftSeatZoneOccupants.map((occupant, index) => renderZoneOccupant(
+                        occupant,
+                        entityDensity,
+                        leftSeatFieldObjects.length + index,
+                    ));
+                    if (shouldRaiseLeftSeatFieldObjects) {
+                        return [...fieldNodes, ...occupantNodes];
+                    }
+                    return [
+                        ...leftSeatZoneOccupants.map((occupant, index) => renderZoneOccupant(
+                            occupant,
+                            entityDensity,
+                            index,
+                        )),
+                        ...leftSeatFieldObjects.map((object, index) => renderFieldObject(
+                            object,
+                            entityDensity,
+                            leftSeatZoneOccupants.length + index,
+                        )),
+                    ];
+                };
                 return (
                     <div
                         key={zone.id}
@@ -3057,16 +3170,7 @@ function ArenaStage({
                                     'relative h-full min-w-0 rounded-[0.22rem] bg-rose-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.16)]',
                                     ownerLaneLayoutClassName,
                                 )} data-lane-owner-side="seat-left" data-lane-player-id={leftSeatPlayerId} data-lane-stack-axis="vertical" data-lane-overflow-mode={ownerLaneOverflowMode} data-lane-max-rows={entityDensity === 'packed' ? 3 : undefined}>
-                                    {leftSeatZoneOccupants.map((occupant, index) => renderZoneOccupant(
-                                        occupant,
-                                        entityDensity,
-                                        index,
-                                    ))}
-                                    {leftSeatFieldObjects.map((object, index) => renderFieldObject(
-                                        object,
-                                        entityDensity,
-                                        leftSeatZoneOccupants.length + index,
-                                    ))}
+                                    {renderLeftSeatLaneItems()}
                                 </div>
                                 <div className={cx(
                                     'relative h-full min-w-0 rounded-[0.22rem] bg-sky-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.16)]',
@@ -4822,9 +4926,12 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         ? undefined
         : {
             inset: 0,
-            '--mage-wars-desktop-hud-width': 'clamp(25rem, 24vw, 38rem)',
+            '--mage-wars-desktop-hud-width': 'clamp(18.25rem, 17vw, 21.5rem)',
             '--mage-wars-desktop-self-hud-left': 'calc(var(--mage-wars-desktop-side-inset, 1rem) + 25vw)',
-            '--mage-wars-desktop-hud-hint-card-height': 'clamp(13.5rem, 20vh, 17rem)',
+            '--mage-wars-desktop-hud-hint-card-height': 'clamp(15.75rem, 22vh, 18.75rem)',
+            '--mage-wars-hud-icon-size': 'clamp(3.75rem, 5vh, 4.25rem)',
+            '--mage-wars-hud-icon-gap': 'clamp(0.16rem, 0.22vh, 0.3rem)',
+            '--mage-wars-hud-icon-rail-gap': 'clamp(0.35rem, 0.48vw, 0.6rem)',
             '--mage-wars-desktop-prepared-width': 'clamp(19.125rem, 19vw, 31rem)',
             '--mage-wars-desktop-prepared-card-height': 'clamp(13.5rem, 20.75vh, 17rem)',
             '--mage-wars-desktop-card-height': 'var(--mage-wars-desktop-prepared-card-height, 14rem)',

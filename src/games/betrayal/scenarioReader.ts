@@ -328,23 +328,15 @@ export function resolveScenarioReaderOpenPlan(
   const includeOpeningStage =
     core.phase === "haunt" &&
     options.hasOpeningSection &&
-    (options.mode === "hauntReveal" ||
-      isPublicHauntRevealReader ||
-      scope !== "all");
+    options.mode === "hauntReveal";
   const spreadCount = Math.max(
     1,
     options.bookSpreadCount + (includeOpeningStage ? 1 : 0),
   );
-  const shouldOpenAtObjectiveSpread =
-    includeOpeningStage &&
-    options.mode !== "hauntReveal" &&
-    (scope !== "all" || options.mode === "tutorialObjective");
   return {
     scope,
     spreadCount,
-    initialSpreadIndex: shouldOpenAtObjectiveSpread
-      ? Math.min(1, spreadCount - 1)
-      : 0,
+    initialSpreadIndex: 0,
     includeOpeningStage,
     isPublicHauntRevealReader,
   };

@@ -41,7 +41,7 @@ describe("Betrayal scenario reader open plan", () => {
     });
   });
 
-  it("作祟后从剧本入口回看时默认回到目标页，但保留上一页开场", () => {
+  it("作祟后从剧本入口回看时只打开目标页，不重新插入开场", () => {
     const plan = resolveScenarioReaderOpenPlan(createHauntCore(), "0", {
       mode: "manualReview",
       hasOpeningSection: true,
@@ -50,9 +50,9 @@ describe("Betrayal scenario reader open plan", () => {
 
     expect(plan).toMatchObject({
       scope: "heroes",
-      includeOpeningStage: true,
-      initialSpreadIndex: 1,
-      spreadCount: 2,
+      includeOpeningStage: false,
+      initialSpreadIndex: 0,
+      spreadCount: 1,
     });
   });
 

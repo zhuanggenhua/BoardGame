@@ -206,10 +206,27 @@ async function clickTutorialNext(page: Page) {
 }
 
 
+const TUTORIAL_TARGET_VISIBLE_CLICK_POINTS: Partial<Record<string, { xRatio: number; yRatio: number }>> = {
+    'mw-zone-a3': { xRatio: 0.5, yRatio: 0.18 },
+};
+
 async function clickTutorialTarget(page: Page, tutorialId: string) {
     const target = page.locator(`[data-tutorial-id="${tutorialId}"]`).first();
     await expect(target).toBeVisible({ timeout: 15_000 });
     await expect(target).toBeEnabled({ timeout: 10_000 });
+    const clickPoint = TUTORIAL_TARGET_VISIBLE_CLICK_POINTS[tutorialId];
+    if (clickPoint) {
+        const box = await target.boundingBox();
+        expect(box, `${tutorialId} 必须有可点击的可见几何区域`).not.toBeNull();
+        await target.click({
+            timeout: 5_000,
+            position: {
+                x: box!.width * clickPoint.xRatio,
+                y: box!.height * clickPoint.yRatio,
+            },
+        });
+        return;
+    }
     await target.click({ timeout: 5_000 });
 }
 
@@ -434,8 +451,11 @@ async function expectMageWarsReadableViewport(page: Page, viewport: ResponsivePl
         const opponentHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]');
         const selfHintCard = selfHud?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-hint-card"]') ?? null;
         const opponentHintCard = opponentHud?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-hint-card"]') ?? null;
-        const hudStatGrids = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-grid"]'));
-        const hudStatBars = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-bar"]'));
+        const legacyHudStatGrids = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-grid"]'));
+        const legacyHudStatBars = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-bar"]'));
+        const hudIconRails = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-icon-rail"]'));
+        const hudStatIcons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-icon"]'));
+        const hudTokenIcons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-token-icon"]'));
         const opponentPreparedMirror = document.querySelector<HTMLElement>('[data-testid="mage-wars-opponent-prepared-mirror"]');
         const lifeToggle = document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]');
         const scaleBadge = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-scale"]');
@@ -454,21 +474,62 @@ async function expectMageWarsReadableViewport(page: Page, viewport: ResponsivePl
             bottomGap: bottomGrid ? window.innerHeight - bottomGrid.getBoundingClientRect().bottom : null,
             hudDensity: selfHud?.dataset.mageWarsHudDensity ?? null,
             opponentHudDensity: opponentHud?.dataset.mageWarsHudDensity ?? null,
-            hudStatGrids: hudStatGrids.map((grid) => {
-                const style = getComputedStyle(grid);
-                const rect = grid.getBoundingClientRect();
+            legacyHudStatGridCount: legacyHudStatGrids.length,
+            legacyHudStatBarCount: legacyHudStatBars.length,
+            hudIconRails: hudIconRails.map((rail) => {
+                const rect = rail.getBoundingClientRect();
+                const owner = rail.closest('[data-testid="mage-wars-mage-hud-self"]')
+                    ? 'self'
+                    : rail.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                        ? 'opponent'
+                        : 'unknown';
                 return {
-                    fontSize: Number.parseFloat(style.fontSize),
+                    owner,
                     width: rect.width,
                     height: rect.height,
+                    x: rect.x,
+                    y: rect.y,
+                    right: rect.right,
+                    bottom: rect.bottom,
                 };
             }),
-            hudStatBars: hudStatBars.map((bar) => {
-                const rect = bar.getBoundingClientRect();
+            hudStatIcons: hudStatIcons.map((icon) => {
+                const rect = icon.getBoundingClientRect();
+                const value = icon.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-value"]');
+                const owner = icon.closest('[data-testid="mage-wars-mage-hud-self"]')
+                    ? 'self'
+                    : icon.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                        ? 'opponent'
+                        : 'unknown';
                 return {
-                    stat: bar.dataset.stat ?? null,
+                    owner,
+                    stat: icon.dataset.stat ?? null,
+                    value: icon.dataset.statValue ?? null,
+                    max: icon.dataset.statMax ?? null,
+                    fillPercent: Number.parseFloat(icon.dataset.fillPercent ?? 'NaN'),
+                    valueText: value?.textContent?.trim() ?? '',
                     width: rect.width,
                     height: rect.height,
+                    x: rect.x,
+                    y: rect.y,
+                    right: rect.right,
+                    bottom: rect.bottom,
+                };
+            }),
+            hudTokenIcons: hudTokenIcons.map((icon) => {
+                const rect = icon.getBoundingClientRect();
+                const owner = icon.closest('[data-testid="mage-wars-mage-hud-self"]')
+                    ? 'self'
+                    : icon.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                        ? 'opponent'
+                        : 'unknown';
+                return {
+                    owner,
+                    kind: icon.dataset.tokenKind ?? null,
+                    width: rect.width,
+                    height: rect.height,
+                    x: rect.x,
+                    right: rect.right,
                 };
             }),
             rects: {
@@ -509,16 +570,34 @@ async function expectMageWarsReadableViewport(page: Page, viewport: ResponsivePl
     expect(audit.bottomGap!).toBeLessThanOrEqual(16);
     expect(audit.hudDensity, `${viewport.label} 桌面视口不得把玩家 HUD 自动切成 compact`).toBe('full');
     expect(audit.opponentHudDensity, `${viewport.label} 桌面视口不得把对手 HUD 自动切成 compact`).toBe('full');
-    expect(audit.hudStatGrids, `${viewport.label} 双方 HUD 都必须显示放大后的属性区`).toHaveLength(2);
-    audit.hudStatGrids.forEach((grid) => {
-        expect(grid.fontSize, `${viewport.label} 生命 / 法力 / 聚魔文字必须保持放大后的可读尺寸，不能回退到旧小字: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(34);
-        expect(grid.width, `${viewport.label} 属性区必须随 HUD 扩宽，不能仍按旧窄栏显示: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 390 : 360);
-    });
-    expect(audit.hudStatBars, `${viewport.label} 双方 HUD 三条属性条都必须可量测`).toHaveLength(6);
-    audit.hudStatBars.forEach((bar) => {
-        expect(bar.height, `${viewport.label} ${bar.stat} 属性条必须保持放大后的可读高度: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(30);
-        expect(bar.width, `${viewport.label} ${bar.stat} 属性条不能继续保持旧窄宽度: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 200 : 150);
-    });
+    expect(audit.legacyHudStatGridCount, `${viewport.label} HUD attributes must not use the old text/grid progress panel`).toBe(0);
+    expect(audit.legacyHudStatBarCount, `${viewport.label} HUD attributes must not render progress bars`).toBe(0);
+    expect(audit.hudIconRails, `${viewport.label} both mage HUDs must expose the compact icon rail next to the hint card`).toHaveLength(2);
+    expect(audit.hudStatIcons, `${viewport.label} both mage HUDs must show life, mana and channeling as icons`).toHaveLength(6);
+    expect(audit.hudTokenIcons, `${viewport.label} action and quickcast tokens must stay in the same icon rail`).toHaveLength(4);
+    for (const owner of ['self', 'opponent'] as const) {
+        const ownerIcons = audit.hudStatIcons.filter((icon) => icon.owner === owner);
+        const ownerTokens = audit.hudTokenIcons.filter((icon) => icon.owner === owner);
+        const ownerHint = owner === 'self' ? audit.rects.selfHintCard : audit.rects.opponentHintCard;
+        const ownerHud = owner === 'self' ? audit.rects.selfHud : audit.rects.opponentHud;
+        expect(ownerIcons.map((icon) => icon.stat).sort()).toEqual(['channeling', 'life', 'mana']);
+        expect(ownerTokens.map((icon) => icon.kind).sort()).toEqual(['action', 'quickcast']);
+        expect(ownerHint).not.toBeNull();
+        expect(ownerHud).not.toBeNull();
+        for (const icon of [...ownerIcons, ...ownerTokens]) {
+            expect(icon.width, `${viewport.label} ${owner} HUD icon must remain readable after the no-progress-bar HUD compaction: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 58 : 54);
+            expect(icon.height, `${viewport.label} ${owner} HUD icon must remain readable after the no-progress-bar HUD compaction: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 58 : 54);
+            expect(icon.x, `${viewport.label} ${owner} HUD icons must sit to the right of the hint card: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(ownerHint!.right - 1);
+            expect(icon.right, `${viewport.label} ${owner} HUD icons must stay inside the HUD cluster: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(ownerHud!.right + 1);
+        }
+        for (const statIcon of ownerIcons) {
+            expect(Number.isFinite(statIcon.fillPercent), `${viewport.label} ${owner} ${statIcon.stat} icon must expose a measured fill percent`).toBe(true);
+            expect(statIcon.fillPercent, `${viewport.label} ${owner} ${statIcon.stat} fill must be clamped to 0-100`).toBeGreaterThanOrEqual(0);
+            expect(statIcon.fillPercent, `${viewport.label} ${owner} ${statIcon.stat} fill must be clamped to 0-100`).toBeLessThanOrEqual(100);
+            expect(statIcon.valueText, `${viewport.label} ${owner} ${statIcon.stat} icon must overlay the numeric value`).toBe(statIcon.value);
+            expect(Number(statIcon.max), `${viewport.label} ${owner} ${statIcon.stat} icon must keep its max for progress meaning`).toBeGreaterThan(0);
+        }
+    }
     expect(audit.rects.spellbookShelf, '法术书牌列必须有可量测宽度').not.toBeNull();
     expect(audit.rects.arenaViewport, '地图视窗必须存在').not.toBeNull();
     expect(audit.rects.arenaStage, '地图内容必须存在').not.toBeNull();
@@ -557,7 +636,7 @@ async function expectMageWarsReadableViewport(page: Page, viewport: ResponsivePl
     expect(audit.rects.selfHud!.bottom, '己方生命 / 提示卡应靠近左下桌面区，而不是顶部 HUD 带').toBeGreaterThan(audit.viewport.height * 0.55);
     expect(audit.rects.opponentHud!.right).toBeGreaterThanOrEqual(audit.viewport.width - 20);
     expect(audit.rects.opponentHud!.y).toBeLessThanOrEqual(20);
-    expect(audit.rects.opponentHintCard!.right, '对手提示卡必须贴右上 HUD，而不是留在左侧或中部').toBeGreaterThanOrEqual(audit.viewport.width - 20);
+    expect(audit.rects.opponentHintCard!.right, '对手提示卡必须在右上 HUD 集群内，并把右侧空间交给属性 / 动作图标 rail').toBeLessThan(audit.rects.opponentHud!.right - 32);
     expect(audit.overlaps.find((entry) => entry.name === 'life-toggle-self-hud')?.value, '生命眼睛不能压住己方提示卡槽位').toBe(false);
     expect(audit.rects.scaleBadge!.x, '地图缩放读数应离开生命眼睛槽位').toBeGreaterThanOrEqual(audit.rects.lifeToggle!.right + 8);
     expect(audit.rects.opponentPreparedMirror!.x, '对手已计划卡背必须迁到右上对手 HUD 左侧，而不是留在左上角').toBeGreaterThan(audit.viewport.width * 0.5);
@@ -993,6 +1072,9 @@ test.describe('Mage Wars tutorial', () => {
         }, { timeout: 15_000 }).toEqual({ zoneId: 'a3', actionReady: false });
         const summonedWolf = page.locator('[data-tutorial-id="mw-field-object-2819"]');
         await expect(summonedWolf).toBeVisible({ timeout: 10_000 });
+        await expect(summonedWolf).toHaveAttribute('data-action-ready', 'false');
+        await expect(summonedWolf).toHaveAttribute('data-visual-action-state', 'spent');
+        await expect(summonedWolf).toHaveClass(/grayscale/);
         await screenshotTutorialStep(page, 'wolf-summoned', WOLF_SUMMONED_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
@@ -1032,6 +1114,9 @@ test.describe('Mage Wars tutorial', () => {
             actionReady: true,
             discard: [3403, 2819],
         });
+        await expect(summonedWolf).toHaveAttribute('data-action-ready', 'true');
+        await expect(summonedWolf).not.toHaveAttribute('data-visual-action-state', 'spent');
+        await expect(summonedWolf).not.toHaveClass(/grayscale/);
         await screenshotTutorialStep(page, 'pass-your-deployment', PASS_DEPLOYMENT_SCREENSHOT_PATH);
         await clickTutorialTarget(page, 'mw-turn-end');
         await expectTutorialStepNotVisible(page, 'opponent-deploy');

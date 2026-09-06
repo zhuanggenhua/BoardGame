@@ -1366,8 +1366,11 @@ test.describe('Mage Wars foundation runtime board', () => {
             const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
             const opponentHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]');
             const mageHudHintCards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-hint-card"]'));
-            const mageHudStatGrids = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-grid"]'));
-            const mageHudStatBars = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-bar"]'));
+            const legacyMageHudStatGrids = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-grid"]'));
+            const legacyMageHudStatBars = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-bar"]'));
+            const mageHudIconRails = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-icon-rail"]'));
+            const mageHudStatIcons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-icon"]'));
+            const mageHudTokenIcons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-token-icon"]'));
             const opponentPreparedMirror = document.querySelector<HTMLElement>('[data-testid="mage-wars-opponent-prepared-mirror"]');
             const spellbookShelf = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]');
             const preparedArea = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-prepared-spells"]');
@@ -1589,21 +1592,62 @@ test.describe('Mage Wars foundation runtime board', () => {
                     previewKind: hintCard.dataset.magePreviewKind,
                     uiRole: hintCard.dataset.mageUiRole,
                 })),
-                mageHudStatGrids: mageHudStatGrids.map((grid) => {
-                    const style = getComputedStyle(grid);
-                    const rect = grid.getBoundingClientRect();
+                legacyMageHudStatGridCount: legacyMageHudStatGrids.length,
+                legacyMageHudStatBarCount: legacyMageHudStatBars.length,
+                mageHudIconRails: mageHudIconRails.map((rail) => {
+                    const rect = rail.getBoundingClientRect();
+                    const owner = rail.closest('[data-testid="mage-wars-mage-hud-self"]')
+                        ? 'self'
+                        : rail.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                            ? 'opponent'
+                            : 'unknown';
                     return {
-                        fontSize: Number.parseFloat(style.fontSize),
+                        owner,
                         width: rect.width,
                         height: rect.height,
+                        x: rect.x,
+                        y: rect.y,
+                        right: rect.right,
+                        bottom: rect.bottom,
                     };
                 }),
-                mageHudStatBars: mageHudStatBars.map((bar) => {
-                    const rect = bar.getBoundingClientRect();
+                mageHudStatIcons: mageHudStatIcons.map((icon) => {
+                    const rect = icon.getBoundingClientRect();
+                    const value = icon.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-value"]');
+                    const owner = icon.closest('[data-testid="mage-wars-mage-hud-self"]')
+                        ? 'self'
+                        : icon.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                            ? 'opponent'
+                            : 'unknown';
                     return {
-                        stat: bar.dataset.stat ?? null,
+                        owner,
+                        stat: icon.dataset.stat ?? null,
+                        value: icon.dataset.statValue ?? null,
+                        max: icon.dataset.statMax ?? null,
+                        fillPercent: Number.parseFloat(icon.dataset.fillPercent ?? 'NaN'),
+                        valueText: value?.textContent?.trim() ?? '',
                         width: rect.width,
                         height: rect.height,
+                        x: rect.x,
+                        y: rect.y,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                    };
+                }),
+                mageHudTokenIcons: mageHudTokenIcons.map((icon) => {
+                    const rect = icon.getBoundingClientRect();
+                    const owner = icon.closest('[data-testid="mage-wars-mage-hud-self"]')
+                        ? 'self'
+                        : icon.closest('[data-testid="mage-wars-mage-hud-opponent"]')
+                            ? 'opponent'
+                            : 'unknown';
+                    return {
+                        owner,
+                        kind: icon.dataset.tokenKind ?? null,
+                        width: rect.width,
+                        height: rect.height,
+                        x: rect.x,
+                        right: rect.right,
                     };
                 }),
                 opponentPreparedMirror: toRect(opponentPreparedMirror),
@@ -1648,16 +1692,34 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.selfHudDensity).toBe('full');
         expect(desktopLayoutAudit.opponentHudDensity).toBe('full');
         expect(desktopLayoutAudit.mageHudHintCards).toHaveLength(2);
-        expect(desktopLayoutAudit.mageHudStatGrids).toHaveLength(2);
-        desktopLayoutAudit.mageHudStatGrids.forEach((grid) => {
-            expect(grid.fontSize, `2560 桌面 HUD 属性文字必须保持放大后的可读尺寸，不能回退到旧小字: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(34);
-            expect(grid.width, `2560 桌面 HUD 属性区必须随 HUD 扩宽: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(390);
-        });
-        expect(desktopLayoutAudit.mageHudStatBars).toHaveLength(6);
-        desktopLayoutAudit.mageHudStatBars.forEach((bar) => {
-            expect(bar.height, `2560 桌面 ${bar.stat} 属性条必须保持放大后的可读高度: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(30);
-            expect(bar.width, `2560 桌面 ${bar.stat} 属性条不能继续保持旧窄宽度: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(200);
-        });
+        expect(desktopLayoutAudit.legacyMageHudStatGridCount, '2560 桌面 HUD 不应继续渲染旧属性文字/进度条面板').toBe(0);
+        expect(desktopLayoutAudit.legacyMageHudStatBarCount, '2560 桌面 HUD 不应继续渲染旧属性进度条').toBe(0);
+        expect(desktopLayoutAudit.mageHudIconRails, '双方 HUD 必须把属性和动作 token 放在提示卡右侧同一图标 rail').toHaveLength(2);
+        expect(desktopLayoutAudit.mageHudStatIcons, '双方 HUD 必须用图标承载生命、法力和聚魔').toHaveLength(6);
+        expect(desktopLayoutAudit.mageHudTokenIcons, '双方 HUD 必须保留动作和快速施法 token 图标').toHaveLength(4);
+        for (const owner of ['self', 'opponent'] as const) {
+            const ownerIcons = desktopLayoutAudit.mageHudStatIcons.filter((icon) => icon.owner === owner);
+            const ownerTokens = desktopLayoutAudit.mageHudTokenIcons.filter((icon) => icon.owner === owner);
+            const ownerHint = desktopLayoutAudit.mageHudHintCards.find((hintCard) => hintCard.owner === owner)?.rect;
+            const ownerHud = owner === 'self' ? desktopLayoutAudit.selfHud : desktopLayoutAudit.opponentHud;
+            expect(ownerIcons.map((icon) => icon.stat).sort()).toEqual(['channeling', 'life', 'mana']);
+            expect(ownerTokens.map((icon) => icon.kind).sort()).toEqual(['action', 'quickcast']);
+            expect(ownerHint).toBeTruthy();
+            expect(ownerHud).toBeTruthy();
+            for (const icon of [...ownerIcons, ...ownerTokens]) {
+                expect(icon.width, `2560 ${owner} HUD 图标必须在取消进度条后仍保持可读尺寸: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(58);
+                expect(icon.height, `2560 ${owner} HUD 图标必须在取消进度条后仍保持可读尺寸: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(58);
+                expect(icon.x, `2560 ${owner} HUD 图标必须在提示卡右侧: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(ownerHint!.right - 1);
+                expect(icon.right, `2560 ${owner} HUD 图标不得溢出 HUD 集群: ${JSON.stringify(desktopLayoutAudit)}`).toBeLessThanOrEqual(ownerHud!.right + 1);
+            }
+            for (const statIcon of ownerIcons) {
+                expect(Number.isFinite(statIcon.fillPercent), `2560 ${owner} ${statIcon.stat} 图标必须暴露高亮比例`).toBe(true);
+                expect(statIcon.fillPercent, `2560 ${owner} ${statIcon.stat} 高亮比例必须夹在 0-100`).toBeGreaterThanOrEqual(0);
+                expect(statIcon.fillPercent, `2560 ${owner} ${statIcon.stat} 高亮比例必须夹在 0-100`).toBeLessThanOrEqual(100);
+                expect(statIcon.valueText, `2560 ${owner} ${statIcon.stat} 图标必须叠加数字`).toBe(statIcon.value);
+                expect(Number(statIcon.max), `2560 ${owner} ${statIcon.stat} 图标必须保留进度上限`).toBeGreaterThan(0);
+            }
+        }
         const mageCardAspectRatio = (4096 / 7) / (3302 / 4);
         expect(desktopLayoutAudit.opponentPreparedMirror).not.toBeNull();
         expect(desktopLayoutAudit.spellbookShelf).not.toBeNull();
@@ -1670,8 +1732,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.effectDice).toHaveLength(0);
         desktopLayoutAudit.mageHudHintCards.forEach((hintCard) => {
             expect(hintCard.rect).not.toBeNull();
-            expect(hintCard.rect!.height).toBeGreaterThan(210);
-            expect(hintCard.rect!.width).toBeGreaterThan(145);
+            expect(hintCard.rect!.height).toBeGreaterThan(245);
+            expect(hintCard.rect!.width).toBeGreaterThan(170);
             expect(hintCard.aspectRatio).not.toBeNull();
             expect(Math.abs(hintCard.aspectRatio! - mageCardAspectRatio)).toBeLessThanOrEqual(0.003);
             expect(hintCard.previewKind).toBe('card');
@@ -1712,7 +1774,8 @@ test.describe('Mage Wars foundation runtime board', () => {
                         selfHud: desktopLayoutAudit.selfHud,
                         opponentHud: desktopLayoutAudit.opponentHud,
                         mageHudHintCards: desktopLayoutAudit.mageHudHintCards,
-                        mageHudStatGrids: desktopLayoutAudit.mageHudStatGrids,
+                        mageHudIconRails: desktopLayoutAudit.mageHudIconRails,
+                        mageHudStatIcons: desktopLayoutAudit.mageHudStatIcons,
                         bottomViewportGrid: desktopLayoutAudit.bottomViewportGrid,
                     })}`,
                 ).toBe('mage-wars-zone-mage-entity');

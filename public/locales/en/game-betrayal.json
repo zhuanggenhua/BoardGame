@@ -1120,12 +1120,12 @@
         "watchTeammateHauntTrigger": "Teammate 1 explores south from the Observatory, reveals another Omen room, and gains the Mask. The third Omen rolls three haunt dice.",
         "teammateConfirmHauntTrigger": "Teammate 1 reads the Mask and the three haunt dice, then confirms after seeing the public result.",
         "heroReaderOpened": "After the public haunt reveal, teammate 1 is the revealer and becomes the traitor. You are still a hero, so the Hero Scenario Book opens; read the opening page first.",
-        "heroReaderTurnPage": "Choose Continue/Next Page in the book to turn to the hero goal page; the next page shows the true name, banishment spell, and banishing the Mummy.",
-        "heroReaderGoal": "The hero goal is now visible: find the true name, have a hero with the Book learn the banishment spell, then banish the Mummy with Sanity in the same room.",
-        "heroReaderClose": "After reading the goal page, close the book and return to the table; the next hero turn follows this goal.",
-        "boardAfterReader": "After closing the scenario book, return to the table: the game is now in the haunt. Use the scenario book entry to reopen the hero goal page you just read; the previous page still returns to the hero opening, and the traitor goal is taught only in the traitor perspective chapter.",
-        "waitForHeroTurnAfterHaunt": "Turn order continues after the haunt. Wait while teammate 2 publicly ends the turn; when play returns to you, you are still in the Library and can find the Mummy's true name.",
-        "heroStudyNameRoll": "You are in an investigation room: the Library. Choose Find the Mummy's True Name for a 6+ Knowledge check; success gains the first knowledge token.",
+        "heroReaderTurnPage": "This is the opening page. Use Continue/Next Page at the bottom of the book to turn to page 2, the hero goal page; that page explains finding the true name, learning the spell, and banishing the Mummy.",
+        "heroReaderGoal": "Page 2 says the hero can find the true name in the Sarcophagus room, Study, or Library. You are in the Library now, so your first objective action is Find the Mummy's True Name.",
+        "heroReaderClose": "After reading page 2, close the book and return to the table; the next hero turn follows this goal.",
+        "boardAfterReader": "After closing the scenario book, return to the table: the game is now in the haunt. The scenario-book entry now reopens only the hero goal page you just read; the traitor goal is taught only in the traitor perspective chapter.",
+        "waitForHeroTurnAfterHaunt": "Turn order continues after the haunt. Wait while teammate 2 publicly ends the turn; when play returns to you, you are still in the Library, which matches the hero goal's “Library (study the history of the mummy)” location.",
+        "heroStudyNameRoll": "The hero goal allows a 6+ Knowledge check in the Sarcophagus room, Study, or Library to find the true name. You are in the Library, so choose Find the Mummy's True Name; success gains the first knowledge token.",
         "heroStudyNameResult": "The check succeeds: the heroes gain the first knowledge token and record the true name. After reading the roll result, press Confirm to return to the table.",
         "heroStudyNameCloseout": "The result has landed on the hero objective progress. Each hero can attempt only one haunt objective step per turn; end this turn first, then learn the banishment spell on a later legal turn with the Book."
       }

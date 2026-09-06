@@ -409,7 +409,7 @@
       "preparedAndHidden": "Both players choose their own spells at the same time. Your chosen spells are kept hidden from the opponent so they cannot know your plan.",
       "deploySelectWolf": "Click Jungle Wolf in your prepared spells.",
       "deployTargetZone": "Click the Beastmaster's zone.",
-      "wolfSummoned": "Jungle Wolf has been summoned into the Beastmaster's zone. Its action marker is not ready when it enters.",
+      "wolfSummoned": "Jungle Wolf has been summoned into the Beastmaster's zone. It enters without a ready action, so the dimmed card means it cannot act yet.",
       "rouseSelectSpell": "Click Rouse the Beast in your prepared spells.",
       "rouseTargetWolf": "Click Jungle Wolf in the arena.",
       "passYourDeployment": "Jungle Wolf's action marker is now ready. Click “End deployment”.",
