@@ -10,7 +10,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
-import type { DiceThroneCore, DtResponseWindowType, TurnPhase } from './core-types';
+import type { DiceThroneCore, DiceThroneRollContext, Die, DtResponseWindowType, TurnPhase } from './core-types';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { resolveCurrentRollContext } from './rollContext';
@@ -68,6 +68,8 @@ export interface PassiveActionDef {
     timing: PassiveActionTiming;
     /** 是否允许在已确认骰面的响应窗口中干预对手当前骰区 */
     allowConfirmedRollInterference?: boolean;
+    /** 被动重掷可指定的骰子归属；默认只能指定自己的骰子。 */
+    rerollTargetOwner?: 'self' | 'opponent' | 'any';
     /** 即使当前条件不满足，也保留按钮并以禁用态展示规则入口。 */
     showWhenUnavailable?: boolean;
     /** 描述 i18n key */
@@ -88,6 +90,20 @@ export interface PassiveActionDef {
     requiresAnyRemovableStatus?: boolean;
     /** 要求当前骰区里存在至少一颗对手骰子 */
     requiresOpponentRollDice?: boolean;
+}
+
+export function isPassiveRerollTargetAllowed(
+    action: PassiveActionDef,
+    context: DiceThroneRollContext,
+    playerId: PlayerId,
+    die: Die,
+): boolean {
+    const targetOwner = action.rerollTargetOwner ?? 'self';
+    if (targetOwner === 'any') return true;
+
+    const dieOwnerId = die.ownerId ?? context.ownerPlayerId;
+    if (targetOwner === 'opponent') return dieOwnerId !== playerId;
+    return dieOwnerId === playerId;
 }
 
 /** 被动能力定义（一个英雄可有多个被动能力，如教皇税） */
@@ -308,6 +324,12 @@ export function isPassiveActionUsable(
         // 旧主骰兼容路径仍要求已投掷过；显式 currentRollContext（如闪避/奖励骰）以自身存在为准。
         if (!state.currentRollContext && state.rollCount === 0) return false;
         if (currentRollContext.dice.length === 0) return false;
+        if (!currentRollContext.dice.some((die) => isPassiveRerollTargetAllowed(
+            action,
+            currentRollContext,
+            playerId,
+            die,
+        ))) return false;
     }
 
     // 时机检查

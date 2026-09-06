@@ -1,0 +1,75 @@
+{
+  "verdict": "SUPERSEDED",
+  "supersededBy": "evidence/mage-wars-responsive-plan-16x9-width-adaptive-pass-20260905.json",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "补同一计划点击流程的 16:9 基线对照图，不能用旧图冒充当前结果",
+      "status": "PASS",
+      "evidence": [
+        "新生成 1366×768 三张原图：计划 1/2、点击计划槽取消、重新计划 1/2",
+        "新生成 1920×1080 三张原图：与 1366 三个状态逐一对应",
+        "六张原图均通过 sharp PNG 元数据校验，尺寸分别为 1366×768 与 1920×1080"
+      ]
+    },
+    {
+      "requirement": "1366×768 与 1920×1080 都保持桌面完整承载，不靠缩小、减卡或 compact HUD 适配",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言两个视口 desktopScale=1.000000",
+        "E2E 断言两个视口均显示 6 张法术书牌、HUD density=full、底部安全空隙 6-16px",
+        "E2E 断言法术书、计划区、确认按钮、己方 HUD、生命眼睛、缩放读数和对手提示卡关键区域不相交"
+      ]
+    },
+    {
+      "requirement": "点击卡牌本体执行计划，点击计划槽取消草稿，放大镜作为独立次级入口",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言点击丛林灰狼卡牌本体后草稿进入计划槽 1，且没有打开放大层",
+        "E2E 断言点击计划槽卡牌本体后草稿移除，不需要回点原卡",
+        "E2E 断言放大镜命中区独立，点击放大镜只打开详情且不改变计划数量"
+      ]
+    },
+    {
+      "requirement": "打开给用户看的图组必须是当前 PASS 图组，并且 16:9 对照顺序清楚",
+      "status": "PASS",
+      "evidence": [
+        "已生成 UTF-8 标签来源文件 evidence/mage-wars-responsive-plan-16x9-sequence-labels-20260905.json",
+        "已生成 PureRef 顺序索引和 6 张标注图，顺序为 1366/1920 成对对照"
+      ]
+    }
+  ],
+  "testCommands": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts \"1366x768 真实卡面点击计划且计划槽位不被遮挡\"",
+      "result": "1 passed"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts \"1920x1080 真实卡面点击计划且计划槽位不被遮挡\"",
+      "result": "1 passed; reporter PNG-to-JPEG post-process printed pngload warning, final source PNGs were separately validated"
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/03-1920-plan-card-body-click-one-of-two.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/04-1920-plan-slot-click-cancels-draft.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/05-1920-plan-card-reselect-after-slot-cancel.png"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/01-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/02-labeled-03-1920-plan-card-body-click-one-of-two.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/03-labeled-01-1366-plan-slot-click-cancels-draft.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/04-labeled-04-1920-plan-slot-click-cancels-draft.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/05-labeled-02-1366-plan-card-reselect-after-slot-cancel.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/_labeled-20260905-16x9-compare/06-labeled-05-1920-plan-card-reselect-after-slot-cancel.png"
+  ]
+}

@@ -277,7 +277,7 @@ describe('教皇税被动重掷校验', () => {
             expect(isPassiveActionUsable(state, '1', 'tithes', REROLL_INDEX, 'defensiveRoll')).toBe(false);
         });
 
-        it('进攻方在防御骰确认后的响应窗口可用战术优势重掷对方防御骰', () => {
+        it('进攻方在防御骰确认后的响应窗口不能用战术优势重掷对方防御骰', () => {
             const state = createState({
                 cp: 5,
                 rollCount: 1,
@@ -312,7 +312,7 @@ describe('教皇税被动重掷校验', () => {
                 1,
                 'defensiveRoll',
                 { responseWindowType: 'afterRollConfirmed' },
-            )).toBe(true);
+            )).toBe(false);
         });
 
         it('rollDiceCount=0 时当前骰区为空 → 不可用', () => {
@@ -371,7 +371,7 @@ describe('战术优势当前骰区重投矩阵', () => {
         'bonus',
         'evasion',
         'compare',
-    ] as const)('当前 %s 骰区允许任意介入时，非骰主的战术优势也可重投', (kind) => {
+    ] as const)('当前 %s 骰区允许任意介入时，非骰主的战术优势仍不能重投对手骰', (kind) => {
         const state = createTacticalAdvantageCurrentRollState(kind, {
             ownerPlayerId: '1',
             tacticalPlayerId: '0',
@@ -383,13 +383,13 @@ describe('战术优势当前骰区重投矩阵', () => {
             'zhanshujia-tactical-advantage',
             TACTICAL_ADVANTAGE_REROLL_INDEX,
             'main1',
-        )).toBe(true);
+        )).toBe(false);
     });
 
     it.each([
         ['offensiveRoll', '主进攻骰确认后对手响应窗口'],
         ['defensiveRoll', '主防御骰确认后攻击方响应窗口'],
-    ] as const)('%s：%s 可用战术优势介入当前骰区', (phase) => {
+    ] as const)('%s：%s 不能用战术优势介入对手当前骰区', (phase) => {
         const { state, actorId } = createConfirmedMainRollInterferenceState(phase);
 
         expect(isPassiveActionUsable(
@@ -406,7 +406,7 @@ describe('战术优势当前骰区重投矩阵', () => {
             TACTICAL_ADVANTAGE_REROLL_INDEX,
             phase,
             { responseWindowType: 'afterRollConfirmed' },
-        )).toBe(true);
+        )).toBe(false);
     });
 
     it.each([

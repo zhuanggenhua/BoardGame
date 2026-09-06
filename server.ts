@@ -689,6 +689,27 @@ const cleanupMissingOwnerRoom = async (
     return true;
 };
 
+const unloadRuntimeMatchesMissingFromStorage = async (reason: string): Promise<number> => {
+    const unloadedMatchIds = await gameTransport.unloadMatchesMissingFromStorage({ disconnectSockets: true });
+    if (unloadedMatchIds.length === 0) {
+        return 0;
+    }
+
+    for (const matchID of unloadedMatchIds) {
+        lobbyCoordinator.forgetLobbyMatch(matchID);
+        matchSubscribers.delete(matchID);
+        rematchStateByMatch.delete(matchID);
+        chatHistoryByMatch.delete(matchID);
+    }
+
+    logger.warn('[GameTransport] unloaded active matches missing from storage', {
+        reason,
+        count: unloadedMatchIds.length,
+        matchIDs: unloadedMatchIds,
+    });
+    return unloadedMatchIds.length;
+};
+
 // ============================================================================
 // REST 路由
 // ============================================================================
@@ -1683,7 +1704,8 @@ const runStartupCleanupInBackground = async () => {
     ];
 
     await runStartupCleanupTasks(cleanupTasks, {
-        onDirty: (reason) => {
+        onDirty: async (reason) => {
+            await unloadRuntimeMatchesMissingFromStorage(reason);
             for (const gameName of SUPPORTED_GAMES) {
                 void lobbyCoordinator.broadcastLobbySnapshot(gameName, reason);
             }
@@ -1706,6 +1728,7 @@ async function startServer() {
             try {
                 const cleaned = await hybridStorage.cleanupEphemeralMatches();
                 if (cleaned > 0) {
+                    await unloadRuntimeMatchesMissingFromStorage('cleanupEphemeralMatches:timer');
                     for (const gameName of SUPPORTED_GAMES) {
                         void lobbyCoordinator.broadcastLobbySnapshot(gameName, 'cleanupEphemeralMatches:timer');
                     }
@@ -1716,6 +1739,7 @@ async function startServer() {
             try {
                 const cleanedTtl = await mongoStorage.cleanupExpiredTtlMatches();
                 if (cleanedTtl > 0) {
+                    await unloadRuntimeMatchesMissingFromStorage('cleanupExpiredTtlMatches:timer');
                     for (const gameName of SUPPORTED_GAMES) {
                         void lobbyCoordinator.broadcastLobbySnapshot(gameName, 'cleanupExpiredTtlMatches:timer');
                     }

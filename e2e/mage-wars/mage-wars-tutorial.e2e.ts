@@ -16,30 +16,63 @@ const SELF_HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/01-read-self-hud-life-mana-c
 const OPPONENT_HUD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/02-read-opponent-hud-hidden-plans.png`;
 const STAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/03-read-round-stage.png`;
 const CHANNEL_RESULT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/04-channel-result-mana-increased.png`;
-const PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-plan-open-creature-category.png`;
-const PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-plan-creature-next-page-wolf-hidden.png`;
-const PLAN_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-plan-select-wolf-visible.png`;
-const PLAN_OPEN_INCANTATION_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-plan-wolf-in-slot-one-open-incantation-category.png`;
-const PLAN_SELECT_ROUSE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-plan-click-incantation-category-rouse-visible.png`;
-const PLAN_CONFIRM_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-plan-rouse-in-slot-two-confirm.png`;
-const PREPARED_HIDDEN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-prepared-and-hidden.png`;
-const DEPLOY_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-deploy-select-wolf-prepared-card.png`;
-const DEPLOY_TARGET_ZONE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-deploy-target-zone-highlight.png`;
-const WOLF_SUMMONED_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-wolf-summoned-not-ready.png`;
-const ROUSE_SELECT_SPELL_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-rouse-select-spell-prepared-card.png`;
-const ROUSE_TARGET_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-rouse-target-wolf-highlight.png`;
-const PASS_DEPLOYMENT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-pass-your-deployment-wolf-ready.png`;
-const OPPONENT_PUBLIC_VIEW_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-opponent-public-view-toggle-highlight.png`;
-const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-opponent-public-view-same-discard-pile.png`;
-const BACK_TO_SELF_VIEW_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-back-to-self-view.png`;
-const QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/21-skip-initiative-quickcast.png`;
-const MOVE_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/22-move-select-wolf.png`;
-const MOVE_TARGET_ZONE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/23-move-target-zone-a2.png`;
-const FINISH_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/24-finish-wolf-moved-to-a2.png`;
+const SPELL_CARD_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/05-read-spell-card-legend.png`;
+const PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/06-plan-open-creature-category.png`;
+const PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/07-plan-creature-next-page-wolf-hidden.png`;
+const PLAN_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/08-plan-select-wolf-visible.png`;
+const PLAN_OPEN_INCANTATION_CATEGORY_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/09-plan-wolf-in-slot-one-open-incantation-category.png`;
+const PLAN_INCANTATION_NEXT_PAGE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/10-plan-incantation-next-page-rouse-hidden.png`;
+const PLAN_SELECT_ROUSE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/11-plan-rouse-visible.png`;
+const PLAN_CONFIRM_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/12-plan-rouse-in-slot-two-confirm.png`;
+const PREPARED_HIDDEN_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/13-prepared-and-hidden.png`;
+const DEPLOY_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/14-deploy-select-wolf-prepared-card.png`;
+const DEPLOY_TARGET_ZONE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/15-deploy-target-zone-highlight.png`;
+const WOLF_SUMMONED_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/16-wolf-summoned-not-ready.png`;
+const ATTACK_BAR_READING_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/17-read-attack-bar-on-wolf.png`;
+const ROUSE_SELECT_SPELL_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/18-rouse-select-spell-prepared-card.png`;
+const ROUSE_TARGET_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/19-rouse-target-wolf-highlight.png`;
+const PASS_DEPLOYMENT_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/20-pass-your-deployment-wolf-ready.png`;
+const OPPONENT_PUBLIC_VIEW_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/21-opponent-public-view-toggle-highlight.png`;
+const DISCARD_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/22-opponent-public-view-same-discard-pile.png`;
+const BACK_TO_SELF_VIEW_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/23-back-to-self-view.png`;
+const QUICKCAST_PASS_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/24-skip-initiative-quickcast.png`;
+const MOVE_SELECT_WOLF_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/25-move-select-wolf.png`;
+const MOVE_TARGET_ZONE_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/26-move-target-zone-a2.png`;
+const FINISH_SCREENSHOT_PATH = `${SCREENSHOT_DIR}/27-finish-wolf-moved-to-a2.png`;
 const RESPONSIVE_PLAN_SCREENSHOT_DIR = 'test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive';
-const RESPONSIVE_PLAN_ONE_OF_TWO_SCREENSHOT_PATH = `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/00-1366-plan-card-body-click-one-of-two.png`;
-const RESPONSIVE_PLAN_SLOT_CANCEL_SCREENSHOT_PATH = `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/01-1366-plan-slot-click-cancels-draft.png`;
-const RESPONSIVE_PLAN_RESELECT_SCREENSHOT_PATH = `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/02-1366-plan-card-reselect-after-slot-cancel.png`;
+const RESPONSIVE_PLAN_VIEWPORTS = [
+    {
+        label: '1366x768',
+        width: 1366,
+        height: 768,
+        paths: {
+            oneOfTwo: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/00-1366-plan-card-body-click-one-of-two.png`,
+            slotCancel: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/01-1366-plan-slot-click-cancels-draft.png`,
+            reselect: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/02-1366-plan-card-reselect-after-slot-cancel.png`,
+        },
+    },
+    {
+        label: '1920x1080',
+        width: 1920,
+        height: 1080,
+        paths: {
+            oneOfTwo: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/03-1920-plan-card-body-click-one-of-two.png`,
+            slotCancel: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/04-1920-plan-slot-click-cancels-draft.png`,
+            reselect: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/05-1920-plan-card-reselect-after-slot-cancel.png`,
+        },
+    },
+] as const;
+
+type ResponsivePlanViewport = (typeof RESPONSIVE_PLAN_VIEWPORTS)[number];
+
+const CARD_BODY_PRIMARY_HIT_POINTS = [
+    { label: '中心主体', xRatio: 0.5, yRatio: 0.5 },
+    { label: '右上卡面主体', xRatio: 0.7, yRatio: 0.24 },
+    { label: '右中卡面主体', xRatio: 0.78, yRatio: 0.42 },
+    { label: '标题下方主体', xRatio: 0.62, yRatio: 0.18 },
+] as const;
+
+const CARD_BODY_PLAYER_CLICK_POINT = { label: '玩家常点卡面主体', xRatio: 0.72, yRatio: 0.35 } as const;
 
 const TUTORIAL_FLOW_SCREENSHOT_PATHS = [
     INTRO_SCREENSHOT_PATH,
@@ -47,16 +80,19 @@ const TUTORIAL_FLOW_SCREENSHOT_PATHS = [
     OPPONENT_HUD_SCREENSHOT_PATH,
     STAGE_SCREENSHOT_PATH,
     CHANNEL_RESULT_SCREENSHOT_PATH,
+    SPELL_CARD_READING_SCREENSHOT_PATH,
     PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH,
     PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH,
     PLAN_SELECT_WOLF_SCREENSHOT_PATH,
     PLAN_OPEN_INCANTATION_CATEGORY_SCREENSHOT_PATH,
+    PLAN_INCANTATION_NEXT_PAGE_SCREENSHOT_PATH,
     PLAN_SELECT_ROUSE_SCREENSHOT_PATH,
     PLAN_CONFIRM_SCREENSHOT_PATH,
     PREPARED_HIDDEN_SCREENSHOT_PATH,
     DEPLOY_SELECT_WOLF_SCREENSHOT_PATH,
     DEPLOY_TARGET_ZONE_SCREENSHOT_PATH,
     WOLF_SUMMONED_SCREENSHOT_PATH,
+    ATTACK_BAR_READING_SCREENSHOT_PATH,
     ROUSE_SELECT_SPELL_SCREENSHOT_PATH,
     ROUSE_TARGET_WOLF_SCREENSHOT_PATH,
     PASS_DEPLOYMENT_SCREENSHOT_PATH,
@@ -182,14 +218,19 @@ async function expectMagnifyOverlayHidden(page: Page) {
     await expect(page.getByTestId('mage-wars-card-magnify-overlay')).toHaveAttribute('aria-hidden', 'true');
 }
 
-async function expectLocatorCenterUnblocked(locator: Locator, label: string) {
-    const audit = await locator.evaluate((element) => {
+async function expectLocatorPointUnblocked(
+    locator: Locator,
+    label: string,
+    point: { xRatio: number; yRatio: number } = { xRatio: 0.5, yRatio: 0.5 },
+) {
+    const audit = await locator.evaluate((element, hitPoint) => {
         const rect = element.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
+        const x = rect.left + rect.width * hitPoint.xRatio;
+        const y = rect.top + rect.height * hitPoint.yRatio;
         const hit = document.elementFromPoint(x, y);
+        const primaryAction = hit?.closest<HTMLElement>('[data-primary-action="true"]') ?? null;
         return {
-            center: { x, y },
+            point: { x, y },
             rect: {
                 left: rect.left,
                 top: rect.top,
@@ -201,11 +242,17 @@ async function expectLocatorCenterUnblocked(locator: Locator, label: string) {
             containsHit: hit != null && element.contains(hit),
             hitTestId: hit?.closest<HTMLElement>('[data-testid]')?.dataset.testid ?? null,
             hitTutorialId: hit?.closest<HTMLElement>('[data-tutorial-id]')?.dataset.tutorialId ?? null,
+            hitInspectButton: Boolean(hit?.closest<HTMLElement>('[data-testid="mage-wars-card-inspect-button"]')),
+            hitPrimaryAction: primaryAction === element,
             hitTag: hit?.tagName ?? null,
         };
-    });
-    expect(audit.containsHit, `${label} 中心点必须真实命中自身或子元素，实际命中 ${JSON.stringify(audit)}`).toBe(true);
+    }, point);
+    expect(audit.containsHit, `${label} 必须真实命中自身或子元素，实际命中 ${JSON.stringify(audit)}`).toBe(true);
     return audit;
+}
+
+async function expectLocatorCenterUnblocked(locator: Locator, label: string) {
+    return expectLocatorPointUnblocked(locator, `${label} 中心点`, { xRatio: 0.5, yRatio: 0.5 });
 }
 
 async function expectReferenceSizedInspectButton(card: Locator, inspectButton: Locator, label: string) {
@@ -217,20 +264,17 @@ async function expectReferenceSizedInspectButton(card: Locator, inspectButton: L
     expect(buttonBox, `${label} 放大镜必须有可量测尺寸`).not.toBeNull();
     expect(buttonBox!.width, `${label} 放大镜命中区不应小于 24px`).toBeGreaterThanOrEqual(24);
     expect(buttonBox!.height, `${label} 放大镜命中区不应小于 24px`).toBeGreaterThanOrEqual(24);
-    const widthRatio = buttonBox!.width / cardBox!.width;
+    expect(buttonBox!.width, `${label} 放大镜可见面不能大到抢卡牌本体点击区`).toBeLessThanOrEqual(34);
+    expect(buttonBox!.height, `${label} 放大镜可见面不能大到抢卡牌本体点击区`).toBeLessThanOrEqual(34);
     expect(
-        widthRatio,
-        `${label} 放大镜应接近大杀四方手牌 2vw / 8.5vw 的成熟比例，不能退回固定小图标`,
-    ).toBeGreaterThanOrEqual(0.2);
-    expect(
-        widthRatio,
-        `${label} 放大镜不能大到抢卡牌本体点击区`,
-    ).toBeLessThanOrEqual(0.36);
+        buttonBox!.width / cardBox!.width,
+        `${label} 放大镜视觉权重必须小于卡面主体，不能让右上常点区域变成放大`,
+    ).toBeLessThanOrEqual(0.19);
 }
 
 async function clickLocatorCenterAsPlayer(page: Page, locator: Locator, label: string) {
     const audit = await expectLocatorCenterUnblocked(locator, label);
-    await page.mouse.click(audit.center.x, audit.center.y);
+    await page.mouse.click(audit.point.x, audit.point.y);
 }
 
 async function expectNoTutorialCardOverlap(locator: Locator, label: string) {
@@ -281,17 +325,9 @@ async function expectNoTutorialCardOverlap(locator: Locator, label: string) {
 
 async function findTutorialSpellbookCard(page: Page, cardId: number) {
     const card = page.locator(`[data-tutorial-id="mw-spellbook-card-${cardId}"]`).first();
-    for (let pageIndex = 0; pageIndex < 12; pageIndex += 1) {
-        if (await card.isVisible().catch(() => false)) {
-            await expect(card).toBeEnabled({ timeout: 10_000 });
-            return card;
-        }
-        const nextPage = page.getByTestId('mage-wars-spellbook-next-page');
-        await expect(nextPage).toBeVisible({ timeout: 10_000 });
-        if (await nextPage.isDisabled()) break;
-        await nextPage.click({ timeout: 5_000 });
-    }
-    throw new Error(`法术书分页中未找到卡牌 ${cardId}`);
+    await expect(card, `卡牌 ${cardId} 必须已经在当前法术书页可见；E2E 不允许 helper 私下翻页`).toBeVisible({ timeout: 10_000 });
+    await expect(card).toBeEnabled({ timeout: 10_000 });
+    return card;
 }
 
 async function expectSpellbookInspectIconOpensWithoutPlanning(page: Page, card: Locator, cardId: number) {
@@ -312,8 +348,18 @@ async function expectSpellbookInspectIconOpensWithoutPlanning(page: Page, card: 
 
 async function clickTutorialSpellbookCardBody(page: Page, card: Locator, cardId: number) {
     await expectNoTutorialCardOverlap(card, `法术书卡牌 ${cardId}`);
+    await expect(card, `法术书卡牌 ${cardId} 本体不能被标记为浏览放大入口`).not.toHaveAttribute('data-browse-inspectable', 'true');
+    await expect(card, `法术书卡牌 ${cardId} 本体必须承担计划主操作`).toHaveAttribute('data-primary-action', 'true');
     await expectMagnifyOverlayHidden(page);
-    await clickLocatorCenterAsPlayer(page, card, `法术书卡牌 ${cardId} 本体`);
+    for (const hitPoint of CARD_BODY_PRIMARY_HIT_POINTS) {
+        const audit = await expectLocatorPointUnblocked(card, `法术书卡牌 ${cardId} ${hitPoint.label}`, hitPoint);
+        expect(audit.hitInspectButton, `法术书卡牌 ${cardId} ${hitPoint.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+        expect(audit.hitPrimaryAction, `法术书卡牌 ${cardId} ${hitPoint.label}必须命中主操作按钮: ${JSON.stringify(audit)}`).toBe(true);
+    }
+    const audit = await expectLocatorPointUnblocked(card, `法术书卡牌 ${cardId} ${CARD_BODY_PLAYER_CLICK_POINT.label}`, CARD_BODY_PLAYER_CLICK_POINT);
+    expect(audit.hitInspectButton, `法术书卡牌 ${cardId} ${CARD_BODY_PLAYER_CLICK_POINT.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.hitPrimaryAction, `法术书卡牌 ${cardId} ${CARD_BODY_PLAYER_CLICK_POINT.label}必须命中主操作按钮: ${JSON.stringify(audit)}`).toBe(true);
+    await page.mouse.click(audit.point.x, audit.point.y);
     await expectMagnifyOverlayHidden(page);
 }
 
@@ -324,8 +370,18 @@ async function clickPlanningDraftCardBody(page: Page, cardId: number, planSlotIn
     await expect(draftCard).toBeVisible({ timeout: 10_000 });
     await expect(draftCard).toBeEnabled({ timeout: 10_000 });
     await expectNoTutorialCardOverlap(draftCard, `计划槽位 ${planSlotIndex} 草稿牌 ${cardId}`);
+    await expect(draftCard, `计划槽位 ${planSlotIndex} 草稿牌本体不能被标记为浏览放大入口`).not.toHaveAttribute('data-browse-inspectable', 'true');
+    await expect(draftCard, `计划槽位 ${planSlotIndex} 草稿牌本体必须承担取消计划主操作`).toHaveAttribute('data-primary-action', 'true');
     await expectMagnifyOverlayHidden(page);
-    await clickLocatorCenterAsPlayer(page, draftCard, `计划槽位 ${planSlotIndex} 草稿牌 ${cardId} 本体`);
+    for (const hitPoint of CARD_BODY_PRIMARY_HIT_POINTS) {
+        const audit = await expectLocatorPointUnblocked(draftCard, `计划槽位 ${planSlotIndex} 草稿牌 ${cardId} ${hitPoint.label}`, hitPoint);
+        expect(audit.hitInspectButton, `计划槽位 ${planSlotIndex} 草稿牌 ${hitPoint.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+        expect(audit.hitPrimaryAction, `计划槽位 ${planSlotIndex} 草稿牌 ${hitPoint.label}必须命中取消计划主操作: ${JSON.stringify(audit)}`).toBe(true);
+    }
+    const audit = await expectLocatorPointUnblocked(draftCard, `计划槽位 ${planSlotIndex} 草稿牌 ${cardId} ${CARD_BODY_PLAYER_CLICK_POINT.label}`, CARD_BODY_PLAYER_CLICK_POINT);
+    expect(audit.hitInspectButton, `计划槽位 ${planSlotIndex} 草稿牌 ${CARD_BODY_PLAYER_CLICK_POINT.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.hitPrimaryAction, `计划槽位 ${planSlotIndex} 草稿牌 ${CARD_BODY_PLAYER_CLICK_POINT.label}必须命中取消计划主操作: ${JSON.stringify(audit)}`).toBe(true);
+    await page.mouse.click(audit.point.x, audit.point.y);
     await expectMagnifyOverlayHidden(page);
 }
 
@@ -349,7 +405,7 @@ async function expectPlanControlsUnblocked(page: Page, expectedDraftCount: numbe
     }
 }
 
-async function expectMageWars1366ReadableViewport(page: Page, expectedDraftCount = 0) {
+async function expectMageWarsReadableViewport(page: Page, viewport: ResponsivePlanViewport, expectedDraftCount = 0) {
     const audit = await page.evaluate(() => {
         const toRect = (element: Element | null) => {
             if (!element) return null;
@@ -375,6 +431,16 @@ async function expectMageWars1366ReadableViewport(page: Page, expectedDraftCount
         const preparedDraftCards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'));
         const bottomGrid = document.querySelector<HTMLElement>('[data-testid="mage-wars-bottom-viewport-grid"]');
         const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
+        const opponentHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]');
+        const selfHintCard = selfHud?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-hint-card"]') ?? null;
+        const opponentHintCard = opponentHud?.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-hint-card"]') ?? null;
+        const hudStatGrids = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-grid"]'));
+        const hudStatBars = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-bar"]'));
+        const opponentPreparedMirror = document.querySelector<HTMLElement>('[data-testid="mage-wars-opponent-prepared-mirror"]');
+        const lifeToggle = document.querySelector<HTMLElement>('[data-testid="mage-wars-life-toggle"]');
+        const scaleBadge = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-scale"]');
+        const arenaViewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const arenaStage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
         const spellbookShelf = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]');
         const preparedArea = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-prepared-spells"]');
         const planButton = document.querySelector<HTMLElement>('[data-testid="mage-wars-plan-spells"]');
@@ -387,9 +453,35 @@ async function expectMageWars1366ReadableViewport(page: Page, expectedDraftCount
             visibleSpellbookCardCount: spellbookCards.length,
             bottomGap: bottomGrid ? window.innerHeight - bottomGrid.getBoundingClientRect().bottom : null,
             hudDensity: selfHud?.dataset.mageWarsHudDensity ?? null,
+            opponentHudDensity: opponentHud?.dataset.mageWarsHudDensity ?? null,
+            hudStatGrids: hudStatGrids.map((grid) => {
+                const style = getComputedStyle(grid);
+                const rect = grid.getBoundingClientRect();
+                return {
+                    fontSize: Number.parseFloat(style.fontSize),
+                    width: rect.width,
+                    height: rect.height,
+                };
+            }),
+            hudStatBars: hudStatBars.map((bar) => {
+                const rect = bar.getBoundingClientRect();
+                return {
+                    stat: bar.dataset.stat ?? null,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            }),
             rects: {
                 bottomGrid: toRect(bottomGrid),
                 selfHud: toRect(selfHud),
+                opponentHud: toRect(opponentHud),
+                selfHintCard: toRect(selfHintCard),
+                opponentHintCard: toRect(opponentHintCard),
+                opponentPreparedMirror: toRect(opponentPreparedMirror),
+                lifeToggle: toRect(lifeToggle),
+                scaleBadge: toRect(scaleBadge),
+                arenaViewport: toRect(arenaViewport),
+                arenaStage: toRect(arenaStage),
                 spellbookShelf: toRect(spellbookShelf),
                 preparedArea: toRect(preparedArea),
                 planButton: toRect(planButton),
@@ -400,28 +492,86 @@ async function expectMageWars1366ReadableViewport(page: Page, expectedDraftCount
                 { name: 'spellbook-prepared', value: intersects(toRect(spellbookShelf), toRect(preparedArea)) },
                 { name: 'spellbook-plan-button', value: intersects(toRect(spellbookShelf), toRect(planButton)) },
                 { name: 'hud-spellbook', value: intersects(toRect(selfHud), toRect(spellbookShelf)) },
+                { name: 'hud-prepared-area', value: intersects(toRect(selfHud), toRect(preparedArea)) },
+                { name: 'hud-plan-button', value: intersects(toRect(selfHud), toRect(planButton)) },
+                { name: 'life-toggle-self-hud', value: intersects(toRect(lifeToggle), toRect(selfHud)) },
+                { name: 'life-toggle-scale-badge', value: intersects(toRect(lifeToggle), toRect(scaleBadge)) },
+                { name: 'opponent-hint-opponent-plans', value: intersects(toRect(opponentHintCard), toRect(opponentPreparedMirror)) },
             ],
         };
     });
 
-    expect(audit.viewport).toEqual({ width: 1366, height: 768 });
-    expect(audit.desktopScale, '1366x768 不得再把整层 HUD / 法术书 / 计划区缩到 0.71').toBe('1.000000');
-    expect(audit.visibleSpellbookCardCount, '1366x768 仍必须显示 6 张法术书牌，不得为适配减少承载量').toBe(6);
+    expect(audit.viewport).toEqual({ width: viewport.width, height: viewport.height });
+    expect(audit.desktopScale, `${viewport.label} 不得把整层 HUD / 法术书 / 计划区整体缩小来冒充适配`).toBe('1.000000');
+    expect(audit.visibleSpellbookCardCount, `${viewport.label} 必须显示本轮锁定的 6 张法术书牌，不能靠减少承载量适配`).toBe(6);
     expect(audit.bottomGap, '底部主交互需要留出少量可见空隙，不能贴到屏幕底边').not.toBeNull();
     expect(audit.bottomGap!).toBeGreaterThanOrEqual(6);
     expect(audit.bottomGap!).toBeLessThanOrEqual(16);
-    expect(audit.hudDensity, '1366x768 桌面视口不得把玩家 HUD 自动切成 compact').toBe('full');
+    expect(audit.hudDensity, `${viewport.label} 桌面视口不得把玩家 HUD 自动切成 compact`).toBe('full');
+    expect(audit.opponentHudDensity, `${viewport.label} 桌面视口不得把对手 HUD 自动切成 compact`).toBe('full');
+    expect(audit.hudStatGrids, `${viewport.label} 双方 HUD 都必须显示放大后的属性区`).toHaveLength(2);
+    audit.hudStatGrids.forEach((grid) => {
+        expect(grid.fontSize, `${viewport.label} 生命 / 法力 / 聚魔文字必须保持放大后的可读尺寸，不能回退到旧小字: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(34);
+        expect(grid.width, `${viewport.label} 属性区必须随 HUD 扩宽，不能仍按旧窄栏显示: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 390 : 360);
+    });
+    expect(audit.hudStatBars, `${viewport.label} 双方 HUD 三条属性条都必须可量测`).toHaveLength(6);
+    audit.hudStatBars.forEach((bar) => {
+        expect(bar.height, `${viewport.label} ${bar.stat} 属性条必须保持放大后的可读高度: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(30);
+        expect(bar.width, `${viewport.label} ${bar.stat} 属性条不能继续保持旧窄宽度: ${JSON.stringify(audit)}`).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 200 : 150);
+    });
+    expect(audit.rects.spellbookShelf, '法术书牌列必须有可量测宽度').not.toBeNull();
+    expect(audit.rects.arenaViewport, '地图视窗必须存在').not.toBeNull();
+    expect(audit.rects.arenaStage, '地图内容必须存在').not.toBeNull();
+    expect(audit.rects.arenaViewport!.x, `${viewport.label} 地图视窗必须贴齐真实屏幕左边`).toBeLessThanOrEqual(1);
+    expect(audit.rects.arenaViewport!.y, `${viewport.label} 地图视窗必须贴齐真实屏幕顶部`).toBeLessThanOrEqual(1);
+    expect(audit.rects.arenaViewport!.right, `${viewport.label} 地图视窗必须覆盖真实屏幕右边`).toBeGreaterThanOrEqual(audit.viewport.width - 1);
+    expect(audit.rects.arenaViewport!.bottom, `${viewport.label} 地图视窗必须覆盖真实屏幕底部`).toBeGreaterThanOrEqual(audit.viewport.height - 1);
+    expect(audit.rects.arenaStage!.x, `${viewport.label} 地图内容必须铺满真实视口左边，不能缩成中间小框`).toBeLessThanOrEqual(1);
+    expect(audit.rects.arenaStage!.y, `${viewport.label} 地图内容必须铺满真实视口顶部，不能缩成中间小框`).toBeLessThanOrEqual(1);
+    expect(audit.rects.arenaStage!.right, `${viewport.label} 地图内容必须铺满真实视口右边`).toBeGreaterThanOrEqual(audit.viewport.width - 1);
+    expect(audit.rects.arenaStage!.bottom, `${viewport.label} 地图内容必须铺满真实视口底部，底部 UI 不能成为地图裁剪边界`).toBeGreaterThanOrEqual(audit.viewport.height - 1);
+    expect(
+        audit.rects.spellbookShelf!.width,
+        `${viewport.label} 法术书牌列必须吃掉底部主宽度，不能被旧 max-width 卡成窄条`,
+    ).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 1450 : 1000);
     expect(audit.rects.firstSpellbookCard, '法术书牌必须有可量测尺寸').not.toBeNull();
-    expect(audit.rects.firstSpellbookCard!.height, '法术书牌不能因为 1366x768 被压成低可读小卡').toBeGreaterThanOrEqual(170);
+    expect(
+        audit.rects.firstSpellbookCard!.height,
+        `${viewport.label} 6 张法术书牌必须按底部主宽度自适应，1920 基线不能退回固定小卡`,
+    ).toBeGreaterThanOrEqual(viewport.width >= 1900 ? 280 : 218);
     if (expectedDraftCount > 0) {
         expect(audit.rects.firstPreparedDraftCard, '计划槽位里的草稿牌必须有可量测尺寸').not.toBeNull();
-        expect(audit.rects.firstPreparedDraftCard!.height, '计划槽位不能因为 1366x768 被压成低可读小卡').toBeGreaterThanOrEqual(170);
+        expect(audit.rects.firstPreparedDraftCard!.height, '计划槽位必须利用释放空间，不能维持低可读小卡').toBeGreaterThanOrEqual(215);
     }
+    expect(audit.rects.selfHud, '己方 HUD 必须可见').not.toBeNull();
+    expect(audit.rects.opponentHud, '对手 HUD 必须可见').not.toBeNull();
+    expect(audit.rects.selfHintCard, '己方法师提示卡必须可见').not.toBeNull();
+    expect(audit.rects.opponentHintCard, '对手法师提示卡必须可见').not.toBeNull();
+    expect(audit.rects.opponentPreparedMirror, '对手隐藏计划提示必须可见').not.toBeNull();
+    expect(audit.rects.lifeToggle, '全场生命眼睛必须可见').not.toBeNull();
+    expect(audit.rects.scaleBadge, '地图缩放读数必须有独立锚点').not.toBeNull();
+    expect(audit.rects.selfHud!.x, `${viewport.label} 己方 HUD 必须留在左半区，但要避开竞技场首列实体`).toBeGreaterThanOrEqual(audit.viewport.width * 0.24);
+    expect(audit.rects.selfHud!.x, `${viewport.label} 己方 HUD 不得漂到中场或右侧玩家区`).toBeLessThanOrEqual(audit.viewport.width * 0.36);
+    expect(audit.rects.selfHud!.y, '己方生命 / 提示卡放大后允许向上占用更多阅读空间，但不能回到左上工具层').toBeGreaterThan(audit.viewport.height * 0.12);
+    expect(audit.rects.selfHud!.bottom, '己方生命 / 提示卡必须离开底部法术书牌列，不和法术书同排').toBeLessThanOrEqual(audit.rects.firstSpellbookCard!.y - 6);
+    expect(audit.rects.selfHud!.bottom, '己方生命 / 提示卡应靠近左下桌面区，而不是顶部 HUD 带').toBeGreaterThan(audit.viewport.height * 0.55);
+    expect(audit.rects.opponentHud!.right).toBeGreaterThanOrEqual(audit.viewport.width - 20);
+    expect(audit.rects.opponentHud!.y).toBeLessThanOrEqual(20);
+    expect(audit.rects.opponentHintCard!.right, '对手提示卡必须贴右上 HUD，而不是留在左侧或中部').toBeGreaterThanOrEqual(audit.viewport.width - 20);
+    expect(audit.overlaps.find((entry) => entry.name === 'life-toggle-self-hud')?.value, '生命眼睛不能压住己方提示卡槽位').toBe(false);
+    expect(audit.rects.scaleBadge!.x, '地图缩放读数应离开生命眼睛槽位').toBeGreaterThanOrEqual(audit.rects.lifeToggle!.right + 8);
+    expect(audit.rects.opponentPreparedMirror!.x, '对手已计划卡背必须迁到右上对手 HUD 左侧，而不是留在左上角').toBeGreaterThan(audit.viewport.width * 0.5);
+    expect(audit.rects.opponentPreparedMirror!.right, '对手已计划卡背必须在对手 HUD 左侧相邻，不进入 HUD').toBeLessThanOrEqual(audit.rects.opponentHud!.x - 6);
+    expect(Math.abs(audit.rects.opponentPreparedMirror!.y - audit.rects.opponentHud!.y), '对手已计划卡背必须和右上对手 HUD 顶部对齐').toBeLessThanOrEqual(3);
     expect(audit.rects.bottomGrid!.x).toBeGreaterThanOrEqual(-1);
     expect(audit.rects.bottomGrid!.right).toBeLessThanOrEqual(audit.viewport.width + 1);
     audit.overlaps.forEach((entry) => {
-        expect(entry.value, `1366x768 核心底部槽位不应相交: ${JSON.stringify(audit)}`).toBe(false);
+        expect(entry.value, `${viewport.label} 核心底部槽位不应相交: ${JSON.stringify(audit)}`).toBe(false);
     });
+}
+
+async function clearResponsivePlanScreenshots(viewport: ResponsivePlanViewport) {
+    await Promise.all(Object.values(viewport.paths).map((path) => rm(path, { force: true })));
 }
 
 async function visibleDesktopSpellbookCardIds(page: Page): Promise<string[]> {
@@ -610,7 +760,7 @@ async function assertTutorialScreenshotEvidenceSet() {
         .sort();
     const expected = TUTORIAL_FLOW_SCREENSHOT_PATHS.map(basename).sort();
 
-    expect(actual, '教程主流程截图必须只包含 00-24 的 25 张当前玩家可见教程卡截图，不能混入专题/代表态/旧图').toEqual(expected);
+    expect(actual, `教程主流程截图必须只包含当前 ${expected.length} 张玩家可见教程卡截图，不能混入专题/代表态/旧图`).toEqual(expected);
     expect(actual.filter((name) => /drag|dragged|zoom|map/i.test(name)), '教程主流程截图不得混入地图拖拽/缩放专项图').toEqual([]);
     expect(actual.filter((name) => /wall|guard|heal|restore|burn|transition/i.test(name)), '基础自然主线不得混入墙体/守卫/治疗/复原术代表态专题图').toEqual([]);
 }
@@ -642,8 +792,65 @@ async function assertAllVisibleImagesLoaded(page: Page) {
     ]));
 }
 
+async function expectTutorialVisualLoaded(
+    page: Page,
+    options: {
+        altPattern: RegExp;
+        captionText: string;
+        sourceFragment: string;
+        message: string;
+    },
+) {
+    const visual = page.getByTestId('tutorial-overlay-visual');
+    await expect(visual).toBeVisible({ timeout: 10_000 });
+    const legend = visual.locator('img');
+    await expect(legend).toBeVisible({ timeout: 10_000 });
+    await expect(legend).toHaveAttribute('alt', options.altPattern);
+    await expect(visual).toContainText(options.captionText);
+    await expect.poll(async () => legend.evaluate((element, sourceFragment) => {
+        const image = element as HTMLImageElement;
+        const rect = image.getBoundingClientRect();
+        const resolvedSource = [
+            image.currentSrc,
+            image.src,
+            image.getAttribute('src'),
+            image.getAttribute('data-debug-current-src'),
+            image.getAttribute('data-debug-rendered-src'),
+        ].filter(Boolean).join('|');
+        return Boolean(
+            image.complete
+            && image.naturalWidth > 0
+            && image.naturalHeight > 0
+            && rect.width > 10
+            && rect.height > 10
+            && resolvedSource.includes(sourceFragment),
+        );
+    }, options.sourceFragment), {
+        timeout: 45_000,
+        message: options.message,
+    }).toBe(true);
+}
+
+async function expectSpellCardLegendVisualLoaded(page: Page) {
+    await expectTutorialVisualLoaded(page, {
+        altPattern: /法术牌图例/,
+        captionText: '这张图例先说明计划法术会用到的基础字段',
+        sourceFragment: 'spell-card-legend',
+        message: '读牌教程必须显示并加载用户提供的法术牌图例截图',
+    });
+}
+
+async function expectAttackBarLegendVisualLoaded(page: Page) {
+    await expectTutorialVisualLoaded(page, {
+        altPattern: /攻击条图例/,
+        captionText: '当前用场上的丛林灰狼读第一次',
+        sourceFragment: 'attack-bar-legend',
+        message: '灰狼上场后必须显示并加载用户提供的攻击条图例截图',
+    });
+}
+
 test.describe('Mage Wars tutorial', () => {
-    test('单入口教程按玩家自然流程覆盖读局、计划、召唤、公开弃牌、快速施法窗口和移动', async ({ context, page }) => {
+    test('单入口教程按玩家自然流程覆盖读局、读牌、计划、召唤、攻击条、公开弃牌、快速施法窗口和移动', async ({ context, page }) => {
         test.setTimeout(240_000);
         await rm(SCREENSHOT_DIR, { recursive: true, force: true });
         const diagnostics = await openMageWarsTutorial(context, page);
@@ -675,23 +882,34 @@ test.describe('Mage Wars tutorial', () => {
         await screenshotTutorialStep(page, 'channel-result', CHANNEL_RESULT_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
-        await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
+        await waitForTutorialStep(page, 'spell-card-reading', 45_000);
         await expect.poll(async () => {
             const state = await readMageWarsState(page);
             return { phase: state.sys?.phase ?? null, phaseActorId: state.core?.phaseActorId ?? null };
         }, { timeout: 15_000 }).toEqual({ phase: 'planning', phaseActorId: '0' });
-        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
+        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('计划法术');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('费用');
+        await expect(page.getByTestId('tutorial-overlay-content')).not.toContainText('攻击骰子');
+        await expectSpellCardLegendVisualLoaded(page);
         await expectMagnifyOverlayHidden(page);
+        await screenshotTutorialStep(page, 'spell-card-reading', SPELL_CARD_READING_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
+        await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
         await screenshotTutorialStep(page, 'plan-open-creature-category', PLAN_OPEN_CREATURE_CATEGORY_SCREENSHOT_PATH);
         const beforeCreatureCategoryIds = await visibleDesktopSpellbookCardIds(page);
         await clickTutorialTarget(page, 'mw-spellbook-category-creature');
         await waitForTutorialStep(page, 'plan-creature-next-page');
         await expect(page.getByTestId('mage-wars-spellbook-category-creature')).toHaveAttribute('aria-pressed', 'true');
-        expect((await visibleDesktopSpellbookCardIds(page)).join('|')).not.toBe(beforeCreatureCategoryIds.join('|'));
+        const firstCreaturePageIds = await visibleDesktopSpellbookCardIds(page);
+        expect(firstCreaturePageIds.join('|')).not.toBe(beforeCreatureCategoryIds.join('|'));
+        expect(firstCreaturePageIds, '6 张法术书页下，丛林灰狼仍不在生物第一页，翻页步骤是真实必要动作').not.toContain('2819');
         await screenshotTutorialStep(page, 'plan-creature-next-page', PLAN_CREATURE_NEXT_PAGE_SCREENSHOT_PATH);
-
         await clickTutorialTarget(page, 'mw-spellbook-next-page');
         await waitForTutorialStep(page, 'plan-select-wolf');
+        expect(await visibleDesktopSpellbookCardIds(page)).toContain('2819');
         const wolfSpellbookCard = await findTutorialSpellbookCard(page, 2819);
         await screenshotTutorialStep(page, 'plan-select-wolf', PLAN_SELECT_WOLF_SCREENSHOT_PATH);
         await expectSpellbookInspectIconOpensWithoutPlanning(page, wolfSpellbookCard, 2819);
@@ -713,9 +931,15 @@ test.describe('Mage Wars tutorial', () => {
         await screenshotTutorialStep(page, 'plan-open-incantation-category', PLAN_OPEN_INCANTATION_CATEGORY_SCREENSHOT_PATH);
         const beforeIncantationCategoryIds = await visibleDesktopSpellbookCardIds(page);
         await clickTutorialTarget(page, 'mw-spellbook-category-incantation');
-        await waitForTutorialStep(page, 'plan-select-rouse');
+        await waitForTutorialStep(page, 'plan-incantation-next-page');
         await expect(page.getByTestId('mage-wars-spellbook-category-incantation')).toHaveAttribute('aria-pressed', 'true');
-        expect((await visibleDesktopSpellbookCardIds(page)).join('|')).not.toBe(beforeIncantationCategoryIds.join('|'));
+        const firstIncantationPageIds = await visibleDesktopSpellbookCardIds(page);
+        expect(firstIncantationPageIds.join('|')).not.toBe(beforeIncantationCategoryIds.join('|'));
+        expect(firstIncantationPageIds, '6 张法术书页下，兽性觉醒仍不在咒语第一页，翻页步骤是真实必要动作').not.toContain('3403');
+        await screenshotTutorialStep(page, 'plan-incantation-next-page', PLAN_INCANTATION_NEXT_PAGE_SCREENSHOT_PATH);
+        await clickTutorialTarget(page, 'mw-spellbook-next-page');
+        await waitForTutorialStep(page, 'plan-select-rouse');
+        expect(await visibleDesktopSpellbookCardIds(page)).toContain('3403');
         const rouseSpellbookCard = await findTutorialSpellbookCard(page, 3403);
         await screenshotTutorialStep(page, 'plan-select-rouse', PLAN_SELECT_ROUSE_SCREENSHOT_PATH);
         await clickTutorialSpellbookCardBody(page, rouseSpellbookCard, 3403);
@@ -767,8 +991,20 @@ test.describe('Mage Wars tutorial', () => {
             const wolf = Object.values(state.core?.objects ?? {}).find((object) => object.sourceSpellCardId === 2819);
             return { zoneId: wolf?.zoneId ?? null, actionReady: wolf?.actionReady ?? null };
         }, { timeout: 15_000 }).toEqual({ zoneId: 'a3', actionReady: false });
-        await expect(page.locator('[data-tutorial-id="mw-field-object-2819"]')).toBeVisible({ timeout: 10_000 });
+        const summonedWolf = page.locator('[data-tutorial-id="mw-field-object-2819"]');
+        await expect(summonedWolf).toBeVisible({ timeout: 10_000 });
         await screenshotTutorialStep(page, 'wolf-summoned', WOLF_SUMMONED_SCREENSHOT_PATH);
+        await clickTutorialNext(page);
+
+        await waitForTutorialStep(page, 'attack-bar-reading', 45_000);
+        await expect(summonedWolf).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('丛林灰狼');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('攻击条');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('快速');
+        await expect(page.getByTestId('tutorial-overlay-content')).toContainText('攻击骰子');
+        await expectAttackBarLegendVisualLoaded(page);
+        await expectMagnifyOverlayHidden(page);
+        await screenshotTutorialStep(page, 'attack-bar-reading', ATTACK_BAR_READING_SCREENSHOT_PATH);
         await clickTutorialNext(page);
 
         await waitForTutorialStep(page, 'rouse-select-spell');
@@ -908,10 +1144,10 @@ test.describe('Mage Wars tutorial', () => {
         await assertNoFatalFrontendErrors([{ label: 'mage-wars-tutorial-natural-flow', diagnostics }]);
     });
 
-    test('1366x768 真实卡面点击计划且计划槽位不被遮挡', async ({ context, page }) => {
+    async function runResponsivePlanClickScenario(context: BrowserContext, page: Page, viewport: ResponsivePlanViewport) {
         test.setTimeout(120_000);
-        await page.setViewportSize({ width: 1366, height: 768 });
-        await rm(RESPONSIVE_PLAN_SCREENSHOT_DIR, { recursive: true, force: true });
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await clearResponsivePlanScreenshots(viewport);
         const diagnostics = await openMageWarsTutorial(context, page);
 
         await waitForTutorialStep(page, 'intro', 60_000);
@@ -924,16 +1160,20 @@ test.describe('Mage Wars tutorial', () => {
         }
         await waitForTutorialStep(page, 'channel-result');
         await clickTutorialNext(page);
+        await waitForTutorialStep(page, 'spell-card-reading', 45_000);
+        await clickTutorialNext(page);
         await waitForTutorialStep(page, 'plan-open-creature-category', 45_000);
 
         await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
         await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-visible-card-count', '6');
         await expect(page.getByTestId('mage-wars-desktop-ui-plane')).toHaveAttribute('data-mage-wars-spellbook-visible-card-count', '6');
-        await expectMageWars1366ReadableViewport(page);
+        await expectMageWarsReadableViewport(page, viewport);
         await clickTutorialTarget(page, 'mw-spellbook-category-creature');
         await waitForTutorialStep(page, 'plan-creature-next-page');
+        expect(await visibleDesktopSpellbookCardIds(page)).not.toContain('2819');
         await clickTutorialTarget(page, 'mw-spellbook-next-page');
         await waitForTutorialStep(page, 'plan-select-wolf');
+        expect(await visibleDesktopSpellbookCardIds(page)).toContain('2819');
         const wolfSpellbookCard = await findTutorialSpellbookCard(page, 2819);
         await expectSpellbookInspectIconOpensWithoutPlanning(page, wolfSpellbookCard, 2819);
         await clickTutorialSpellbookCardBody(page, wolfSpellbookCard, 2819);
@@ -947,16 +1187,16 @@ test.describe('Mage Wars tutorial', () => {
             { sourceCardId: '2819', planSlotIndex: '1' },
         ]);
         await expectPlanControlsUnblocked(page, 1);
-        await expectMageWars1366ReadableViewport(page, 1);
-        await screenshot(page, RESPONSIVE_PLAN_ONE_OF_TWO_SCREENSHOT_PATH);
+        await expectMageWarsReadableViewport(page, viewport, 1);
+        await screenshot(page, viewport.paths.oneOfTwo);
 
         await clickPlanningDraftCardBody(page, 2819, 1);
         await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"]'))
             .toHaveCount(0);
         await expect(page.getByTestId('mage-wars-plan-spells')).toHaveCount(0);
         expect(await readPlanningDrafts(page)).toEqual([]);
-        await expectMageWars1366ReadableViewport(page);
-        await screenshot(page, RESPONSIVE_PLAN_SLOT_CANCEL_SCREENSHOT_PATH);
+        await expectMageWarsReadableViewport(page, viewport);
+        await screenshot(page, viewport.paths.slotCancel);
 
         await clickTutorialSpellbookCardBody(page, wolfSpellbookCard, 2819);
         await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '1/2');
@@ -966,9 +1206,17 @@ test.describe('Mage Wars tutorial', () => {
             { sourceCardId: '2819', planSlotIndex: '1' },
         ]);
         await expectPlanControlsUnblocked(page, 1);
-        await expectMageWars1366ReadableViewport(page, 1);
-        await screenshot(page, RESPONSIVE_PLAN_RESELECT_SCREENSHOT_PATH);
+        await expectMageWarsReadableViewport(page, viewport, 1);
+        await screenshot(page, viewport.paths.reselect);
 
-        await assertNoFatalFrontendErrors([{ label: 'mage-wars-tutorial-1366-plan-click', diagnostics }]);
+        await assertNoFatalFrontendErrors([{ label: `mage-wars-tutorial-${viewport.label}-plan-click`, diagnostics }]);
+    }
+
+    test('1366x768 真实卡面点击计划且计划槽位不被遮挡', async ({ context, page }) => {
+        await runResponsivePlanClickScenario(context, page, RESPONSIVE_PLAN_VIEWPORTS[0]);
+    });
+
+    test('1920x1080 真实卡面点击计划且计划槽位不被遮挡', async ({ context, page }) => {
+        await runResponsivePlanClickScenario(context, page, RESPONSIVE_PLAN_VIEWPORTS[1]);
     });
 });

@@ -1039,9 +1039,11 @@ export class DiceBoxThreeEngine {
             .filter((snapshot): snapshot is RerollPreviewSnapshot => Boolean(snapshot));
         if (snapshots.length === 0) return;
 
-        const lift = Math.max(5, Math.min(8, (this.styleProfile.baseScale ?? 64) * 0.1));
-        const lateral = Math.max(2, Math.min(4, (this.styleProfile.baseScale ?? 64) * 0.05));
-        const firstVisibleProgress = 0.18;
+        const baseScale = this.styleProfile.baseScale ?? 64;
+        const lift = Math.max(14, Math.min(22, baseScale * 0.24));
+        const screenLateral = Math.max(80, Math.min(112, baseScale * 1.25));
+        const screenLift = Math.max(42, Math.min(64, baseScale * 0.72));
+        const firstVisibleProgress = 0.22;
         await new Promise<void>((resolve) => {
             let startAt: number | null = null;
             let frameId: number | null = null;
@@ -1073,12 +1075,35 @@ export class DiceBoxThreeEngine {
                 const spin = progress * Math.PI * 2;
                 for (const snapshot of snapshots) {
                     const direction = snapshot.order % 2 === 0 ? -1 : 1;
-                    const nextPosition = {
-                        x: snapshot.position.x + direction * lateral * pulse,
-                        y: snapshot.position.y + lateral * 0.65 * pulse,
-                        z: snapshot.position.z + lift * pulse,
-                    };
-                    this.setVector(snapshot.die.position, nextPosition);
+                    this.setVector(snapshot.die.position, snapshot.position);
+                    if (snapshot.die.body) {
+                        this.setVector(snapshot.die.body.position, snapshot.position);
+                        this.setVector(snapshot.die.body.velocity, { x: 0, y: 0, z: 0 });
+                        this.setVector(snapshot.die.body.angularVelocity, { x: 0, y: 0, z: 0 });
+                        snapshot.die.body.aabbNeedsUpdate = true;
+                    }
+                    snapshot.die.updateMatrixWorld?.(true);
+                    this.box.scene?.updateMatrixWorld?.(true);
+
+                    const layout = this.getProjectedLayout(indices[snapshot.order] ?? snapshot.order, snapshot.order);
+                    const canvas = this.box.renderer?.domElement;
+                    const translated = layout && canvas
+                        ? this.translateDieByScreenDelta(
+                            snapshot.die,
+                            layout,
+                            direction * screenLateral * pulse,
+                            -screenLift * pulse,
+                            canvas.clientWidth,
+                            canvas.clientHeight,
+                        )
+                        : false;
+                    if (!translated) {
+                        this.setVector(snapshot.die.position, {
+                            x: snapshot.position.x + direction * (baseScale * 0.18) * pulse,
+                            y: snapshot.position.y + (baseScale * 0.12) * pulse,
+                            z: snapshot.position.z + lift * pulse,
+                        });
+                    }
                     if (snapshot.rotation && snapshot.die.rotation) {
                         this.setVector(snapshot.die.rotation, {
                             x: snapshot.rotation.x + spin * 0.62,
@@ -1087,7 +1112,11 @@ export class DiceBoxThreeEngine {
                         });
                     }
                     if (snapshot.die.body) {
-                        this.setVector(snapshot.die.body.position, nextPosition);
+                        this.setVector(snapshot.die.body.position, {
+                            x: snapshot.die.position.x,
+                            y: snapshot.die.position.y,
+                            z: snapshot.die.position.z,
+                        });
                         this.setVector(snapshot.die.body.velocity, { x: 0, y: 0, z: 0 });
                         this.setVector(snapshot.die.body.angularVelocity, { x: 0, y: 0, z: 0 });
                         snapshot.die.body.aabbNeedsUpdate = true;

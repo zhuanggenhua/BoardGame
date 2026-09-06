@@ -54,8 +54,12 @@ export const BETRAYAL_HOUSE_D6_FACE_TO_RULE_VALUE: Record<number, 0 | 1 | 2> = {
 
 export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_COLOR = 0x00e7ff;
 export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR = 0xffd447;
-export const BETRAYAL_REROLL_HIGHLIGHT_RENDERER =
+export const BETRAYAL_REROLL_CANDIDATE_UNDERLINE_RENDERER =
+  "dom-bottom-underline";
+export const BETRAYAL_REROLL_SELECTED_HIGHLIGHT_RENDERER =
   "threejs-backside-shader-shell";
+export const BETRAYAL_REROLL_HIGHLIGHT_RENDERER =
+  "candidate-bottom-underline-selected-threejs-shell";
 export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE = 1.035;
 export const BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE = 1.055;
 export const BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY = 1;

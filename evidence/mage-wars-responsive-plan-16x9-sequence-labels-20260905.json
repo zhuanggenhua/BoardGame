@@ -1,0 +1,35 @@
+{
+  "title": "Mage Wars 计划区 16:9 对照",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png",
+      "label": "1366×768：点卡牌本体后进入第一个计划槽",
+      "transition": "起点：生物翻页后丛林灰狼可见；点击卡牌本体不是放大，而是计划 1/2"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/03-1920-plan-card-body-click-one-of-two.png",
+      "label": "1920×1080：同一步计划 1/2 基线",
+      "transition": "对照 01：同一流程状态、同样 6 张法术书和 2 个计划槽，16:9 基线不靠缩小或减卡"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png",
+      "label": "1366×768：点击计划槽取消草稿",
+      "transition": "从 01 点击计划槽卡牌本体；草稿移除，确认按钮消失，法术书仍保留 6 张"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/04-1920-plan-slot-click-cancels-draft.png",
+      "label": "1920×1080：同一步取消草稿基线",
+      "transition": "对照 03：取消动作在 16:9 基线下同样由计划槽承接，不需要回点原卡"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png",
+      "label": "1366×768：再次点卡牌本体重新计划",
+      "transition": "从 03 再点丛林灰狼卡牌本体；计划槽恢复为 1/2，槽位和手牌不相交"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/05-1920-plan-card-reselect-after-slot-cancel.png",
+      "label": "1920×1080：同一步重新计划基线",
+      "transition": "对照 05：同状态下 16:9 基线保持同构比例和完整桌面 HUD"
+    }
+  ]
+}

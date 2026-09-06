@@ -1,0 +1,43 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "法师战争左上生命显示眼睛和地图缩放读数不能抢同一槽位或重叠",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-scale-life-toggle-20260905\\metrics-final-scale-eye-and-hud-buttons.json",
+        "life x=16..56, scale x=72..131.7, overlaps.lifeScale=false"
+      ]
+    },
+    {
+      "requirement": "对手 HUD 上的观察眼睛和放大镜必须贴在法师提示卡本体上，不能悬在屏幕边缘",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-scale-life-toggle-20260905\\metrics-final-scale-eye-and-hud-buttons.json",
+        "opponentHint width=122.47 height=172.80, opponentInspectInHint=true, opponentObserveInHint=true"
+      ]
+    },
+    {
+      "requirement": "法师提示卡必须是真实卡面，不是灰块占位，才能作为按钮承载",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-scale-life-toggle-20260905\\metrics-final-scale-eye-and-hud-buttons.json",
+        "mageHintAtlasFrames=2, shimmer=0, opponentCardFillsHint=true, selfCardFillsHint=true"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-scale-life-toggle-20260905\\04-final-scale-eye-and-hud-buttons.png"
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-scale-life-toggle-20260905\\04-final-scale-eye-and-hud-buttons.png"
+  ],
+  "generatedAt": "2026-09-05T16:59:29.8923208+08:00"
+}

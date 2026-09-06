@@ -6,6 +6,7 @@ import { AudioManager } from "../../lib/audio/AudioManager";
 import { HudPortal, UI_Z_INDEX } from "../../core";
 import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
+import { OptimizedImage } from "../common/media/OptimizedImage";
 
 const TUTORIAL_NEXT_SOUND_KEY =
   "ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.buttons.tab_switching_button.uiclick_tab_switching_button_01_krst_none";
@@ -129,10 +130,14 @@ const escapeTutorialTargetSelector = (value: string): string => {
 
 export const TutorialOverlay: React.FC = () => {
   const { isActive, currentStep, nextStep, isLastStep, tutorial } = useTutorial();
-  const stepNamespace = currentStep?.content?.includes(":")
-    ? currentStep.content.split(":")[0]
-    : undefined;
-  const namespaces = stepNamespace ? ["tutorial", stepNamespace] : ["tutorial"];
+  const stepNamespaces = [
+    currentStep?.content,
+    currentStep?.visual?.alt,
+    currentStep?.visual?.caption,
+  ]
+    .filter((value): value is string => Boolean(value?.includes(":")))
+    .map((value) => value.split(":")[0]);
+  const namespaces = Array.from(new Set(["tutorial", ...stepNamespaces]));
   const { t } = useTranslation(namespaces);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const lastStepIdRef = useRef<string | null>(null);
@@ -156,6 +161,7 @@ export const TutorialOverlay: React.FC = () => {
     currentStep?.position === "center" &&
     currentStep.infoStep &&
     Boolean(currentStep.highlightTarget);
+  const hasStepVisual = Boolean(currentStep?.visual);
   const rootViewportWidth =
     viewport.width > 0
       ? viewport.width
@@ -502,7 +508,7 @@ export const TutorialOverlay: React.FC = () => {
       }
 
       const padding = 12;
-      const tooltipWidth = 384;
+      const tooltipWidth = hasStepVisual ? 520 : 384;
       // 用实际 DOM 尺寸，首次渲染前 fallback 到估算值
       const measured = tooltipRef.current?.getBoundingClientRect();
       const tooltipHeight = measured ? measured.height : 160;
@@ -724,6 +730,7 @@ export const TutorialOverlay: React.FC = () => {
     };
   }, [
     currentStep,
+    hasStepVisual,
     isActive,
     isBottomConfirmStep,
     isCompactTutorialLayout,
@@ -780,6 +787,11 @@ export const TutorialOverlay: React.FC = () => {
       } satisfies React.CSSProperties)
     : undefined;
   const showHighlightFrame = currentStep.highlightFrame !== "none";
+  const currentVisual = currentStep.visual;
+  const visualAlt = currentVisual ? t(currentVisual.alt) : undefined;
+  const visualCaption = currentVisual?.caption
+    ? t(currentVisual.caption)
+    : undefined;
 
   const overlay = (
     <div
@@ -837,11 +849,16 @@ export const TutorialOverlay: React.FC = () => {
               ? "w-[min(320px,calc(100vw-2rem))]"
               : isCompactTutorialLayout
                 ? "w-full max-w-full rounded-xl p-4 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
-                : "max-w-sm w-72 rounded-sm p-5 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
+                : hasStepVisual
+                  ? "w-[min(520px,calc(100vw-2rem))] max-w-[520px] rounded-sm p-4 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
+                  : "max-w-sm w-72 rounded-sm p-5 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
           }`}
           style={{
             maxHeight: isBottomConfirmStep ? undefined : "inherit",
-            width: isBottomConfirmStep ? undefined : "100%",
+            width:
+              isBottomConfirmStep || (hasStepVisual && !isCompactTutorialLayout)
+                ? undefined
+                : "100%",
           }}
         >
           {/* 装饰性边角（右上）*/}
@@ -864,12 +881,40 @@ export const TutorialOverlay: React.FC = () => {
               isBottomConfirmStep
                 ? "mb-2 max-h-[92px] rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] leading-[1.45] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
                 : isCompactTutorialLayout
-                  ? "mb-2.5 text-left text-[15px] leading-[1.55]"
-                  : "mb-4 text-left text-lg leading-relaxed"
+                  ? `${hasStepVisual ? "mb-2" : "mb-2.5"} text-left text-[15px] leading-[1.55]`
+                  : hasStepVisual
+                    ? "mb-3 text-left text-sm leading-relaxed"
+                    : "mb-4 text-left text-lg leading-relaxed"
             }`}
           >
             {t(currentStep.content)}
           </div>
+
+          {currentVisual ? (
+            <figure
+              data-testid="tutorial-overlay-visual"
+              className={`shrink-0 overflow-hidden rounded-sm border border-[#d6c9ad] bg-[#ede7d8] ${
+                isCompactTutorialLayout ? "mb-2" : "mb-4"
+              }`}
+            >
+              <OptimizedImage
+                src={currentVisual.src}
+                alt={visualAlt}
+                className={`block w-full object-contain ${
+                  isCompactTutorialLayout ? "max-h-[34vh]" : "max-h-[300px]"
+                }`}
+                placeholder={false}
+              />
+              {visualCaption ? (
+                <figcaption
+                  data-testid="tutorial-overlay-visual-caption"
+                  className="border-t border-[#d6c9ad] bg-[#f8f2e4] px-3 py-2 text-left text-xs font-bold leading-relaxed text-[#765f3d]"
+                >
+                  {visualCaption}
+                </figcaption>
+              ) : null}
+            </figure>
+          ) : null}
 
           {!currentStep.requireAction && (
             <button

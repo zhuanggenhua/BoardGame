@@ -1,0 +1,61 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "UI 不再为 1366×768 压力态整体缩小，宽屏下 HUD、属性条、提示卡、法术书和计划槽保持可读",
+      "status": "PASS",
+      "evidence": [
+        "foundation-board-runtime 1920 PASS",
+        "foundation-board-runtime 2560 PASS",
+        "tutorial 1366/1920 plan-click PASS",
+        "labeled screenshots 01-05"
+      ]
+    },
+    {
+      "requirement": "底部保留 6 张法术书和 2 个计划槽，卡牌本体点击能进计划槽，不被放大检视抢点",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 1366x768 and 1920x1080 plan-click cases passed",
+        "screenshots 01-02"
+      ]
+    },
+    {
+      "requirement": "左下 HUD 放大后使用安全锚点，不盖住首列场上实体；对方 HUD/提示卡/已计划区保持右上语义",
+      "status": "PASS",
+      "evidence": [
+        "foundation-board-runtime 1920 and 2560 layout assertions passed",
+        "screenshot 03 shows six-per-side pressure state"
+      ]
+    },
+    {
+      "requirement": "地图视窗仍是全屏场景层，放大后能横向和纵向自由拖拽，UI 锚点不随地图移动",
+      "status": "PASS",
+      "evidence": [
+        "foundation-board-runtime 2560 map drag case passed",
+        "screenshots 04-05"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\00-1366-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\03-1920-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-six-per-side-lane-wrap.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-2560x1304-board.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-2560x1304-map-dragged.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\ui-size-current-pass-20260906\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\ui-size-current-pass-20260906\\01-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\ui-size-current-pass-20260906\\02-labeled-03-1920-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\ui-size-current-pass-20260906\\03-labeled-e2e-desktop-six-per-side-lane-wrap.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\ui-size-current-pass-20260906\\04-labeled-e2e-desktop-2560x1304-board.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\ui-size-current-pass-20260906\\05-labeled-e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

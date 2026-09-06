@@ -21,6 +21,12 @@ vi.mock('../../../lib/audio/useGameAudio', () => ({
     playSound: playSoundMock,
 }));
 
+vi.mock('../../common/media/OptimizedImage', () => ({
+    OptimizedImage: ({ src, alt, className }: { src: string; alt?: string; className?: string }) => (
+        <img src={src} alt={alt} className={className} />
+    ),
+}));
+
 vi.mock('../../../hooks/ui/useRuntimeViewport', () => ({
     useRuntimeViewport: () => ({
         width: 1280,
@@ -80,5 +86,25 @@ describe('TutorialOverlay aiActions visibility', () => {
 
         expect(document.querySelector('[data-tutorial-step="pure-ai-step"]')).toBeNull();
         expect(screen.queryByTestId('tutorial-overlay-card')).toBeNull();
+    });
+
+    it('显示教程步骤绑定的真实图片图例', () => {
+        renderWithStep({
+            id: 'visual-step',
+            content: 'game-mage-wars:tutorial.steps.spellCardReading',
+            infoStep: true,
+            visual: {
+                src: 'mage-wars/references/spell-card-legend',
+                alt: 'game-mage-wars:tutorial.visuals.spellCardLegendAlt',
+                caption: 'game-mage-wars:tutorial.visuals.spellCardLegendCaption',
+            },
+        });
+
+        expect(screen.getByTestId('tutorial-overlay-card')).toBeTruthy();
+        expect(screen.getByTestId('tutorial-overlay-visual')).toBeTruthy();
+        const legend = screen.getByAltText('game-mage-wars:tutorial.visuals.spellCardLegendAlt') as HTMLImageElement;
+        expect(legend.getAttribute('src')).toBe('mage-wars/references/spell-card-legend');
+        expect(screen.getByTestId('tutorial-overlay-visual-caption').textContent)
+            .toBe('game-mage-wars:tutorial.visuals.spellCardLegendCaption');
     });
 });

@@ -1,0 +1,66 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "从真实大厅详情入口打开创建房间，并能看到创建房间入口。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\01-大厅详情页显示创建房间入口.jpg"
+      ]
+    },
+    {
+      "requirement": "通用建房弹窗不再承载 Mage Wars 法师/法术书选择。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\02-通用建房弹窗不显示法师选择.jpg"
+      ]
+    },
+    {
+      "requirement": "确认房间外壳后进入 Mage Wars 自己的法师/法术书选择页。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\03-确认建房后进入法师法术书选择页.jpg"
+      ]
+    },
+    {
+      "requirement": "玩家选择 P1 兽王和 P2 女祭司后再确认创建正式房间。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\04-选择兽王和女祭司后等待确认.jpg"
+      ]
+    },
+    {
+      "requirement": "确认后进入正式牌桌，并显示刚才选择的法师。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\05-正式房间进入牌桌并显示所选法师.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\_labeled-for-pureref-20260905\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\_labeled-for-pureref-20260905\\01-labeled-01-大厅详情页显示创建房间入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\_labeled-for-pureref-20260905\\02-labeled-02-通用建房弹窗不显示法师选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\_labeled-for-pureref-20260905\\03-labeled-03-确认建房后进入法师法术书选择页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\_labeled-for-pureref-20260905\\04-labeled-04-选择兽王和女祭司后等待确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\_labeled-for-pureref-20260905\\05-labeled-05-正式房间进入牌桌并显示所选法师.png"
+  ],
+  "originalImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\01-大厅详情页显示创建房间入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\02-通用建房弹窗不显示法师选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\03-确认建房后进入法师法术书选择页.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\04-选择兽王和女祭司后等待确认.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\create-room-entry.e2e\\Mage-Wars-大厅创建房间会先选择法师法术书再进入正式牌桌\\05-正式房间进入牌桌并显示所选法师.jpg"
+  ],
+  "notes": [
+    "本清单只覆盖本轮要求的 Mage Wars 建房进游戏链路，不声明完整游戏规则链路全部完成。",
+    "序号图只在原图上方扩展说明栏，没有覆盖截图像素。"
+  ]
+}

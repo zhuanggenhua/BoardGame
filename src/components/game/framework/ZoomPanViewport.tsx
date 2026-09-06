@@ -113,6 +113,8 @@ export interface ZoomPanViewportProps {
     contentClassName?: string;
     contentStyle?: React.CSSProperties;
     scaleBadgeClassName?: string;
+    scaleBadgeStyle?: React.CSSProperties;
+    scaleBadgeVisibility?: 'while-zoomed' | 'interaction';
     formatScaleBadge?: (zoomLevel: number) => ReactNode;
     scaleBadgeAddon?: ReactNode;
     ariaLabel?: string;
@@ -147,6 +149,8 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     contentClassName = '',
     contentStyle,
     scaleBadgeClassName = '',
+    scaleBadgeStyle,
+    scaleBadgeVisibility = 'while-zoomed',
     formatScaleBadge,
     scaleBadgeAddon,
     ariaLabel,
@@ -225,7 +229,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         : 1;
     const scale = baseScale * activeZoomLevel;
     const isAtDefaultZoom = Math.abs(activeZoomLevel - initialScale) <= SCALE_EPSILON;
-    const shouldShowScaleBadge = isScaleBadgeVisible || !isAtDefaultZoom || scaleBadgeAddon != null;
+    const shouldShowScaleBadge = scaleBadgeVisibility === 'interaction'
+        ? isScaleBadgeVisible
+        : isScaleBadgeVisible || !isAtDefaultZoom || scaleBadgeAddon != null;
 
     const clearScaleBadgeTimer = useCallback(() => {
         if (scaleBadgeTimerRef.current !== null) {
@@ -264,13 +270,16 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const revealScaleBadge = useCallback((nextZoomLevel: number) => {
         clearScaleBadgeTimer();
         setIsScaleBadgeVisible(true);
-        if (Math.abs(nextZoomLevel - initialScale) <= SCALE_EPSILON) {
+        if (
+            scaleBadgeVisibility === 'interaction'
+            || Math.abs(nextZoomLevel - initialScale) <= SCALE_EPSILON
+        ) {
             scaleBadgeTimerRef.current = window.setTimeout(() => {
                 setIsScaleBadgeVisible(false);
                 scaleBadgeTimerRef.current = null;
             }, SCALE_BADGE_HIDE_DELAY_MS);
         }
-    }, [clearScaleBadgeTimer, initialScale]);
+    }, [clearScaleBadgeTimer, initialScale, scaleBadgeVisibility]);
 
     const hideScaleBadge = useCallback(() => {
         clearScaleBadgeTimer();
@@ -726,9 +735,18 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 (contentOffsetY +
                     contentCenterY +
                     (targetCenterY - contentCenterY) * targetScale);
+            const targetPosition = panBoundsMode === 'free'
+                ? {
+                    x: targetTx - fitCenterOffset.x,
+                    y: targetTy - fitCenterOffset.y,
+                }
+                : {
+                    x: targetTx,
+                    y: targetTy,
+                };
             const nextViewport = clampViewportState({
                 zoomLevel: targetZoomLevel,
-                position: { x: targetTx, y: targetTy },
+                position: targetPosition,
             });
 
             clearAnimationTimer();
@@ -756,14 +774,24 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         containerSize.width,
         contentSize.height,
         contentSize.width,
+        fitCenterOffset.x,
+        fitCenterOffset.y,
+        panBoundsMode,
         panToScale,
         panToTarget,
         revealScaleBadge,
     ]);
 
+    const contentRenderPosition = panBoundsMode === 'free'
+        ? {
+            x: clampedPosition.x + fitCenterOffset.x,
+            y: clampedPosition.y + fitCenterOffset.y,
+        }
+        : clampedPosition;
+
     const contentTransformStyle: React.CSSProperties = renderContentTransform
         ? {
-            transform: `translate(${clampedPosition.x}px, ${clampedPosition.y}px) scale(${scale})`,
+            transform: `translate(${contentRenderPosition.x}px, ${contentRenderPosition.y}px) scale(${scale})`,
             transition: isDragging ? 'none' : isAnimating ? 'transform 350ms ease-out' : 'transform 75ms',
             willChange: isDragging || isAnimating ? 'transform' : 'auto',
         }
@@ -807,6 +835,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 <div className="absolute top-3 left-3 z-40 flex items-center gap-2 pointer-events-none">
                     <div
                         className={`rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-sm font-bold text-white shadow-lg pointer-events-none transition-opacity duration-200 ${scaleBadgeClassName} ${shouldShowScaleBadge ? 'opacity-100' : 'opacity-0'}`}
+                        style={scaleBadgeStyle}
                         data-testid={scaleTestId}
                         aria-hidden={!shouldShowScaleBadge}
                     >
@@ -819,6 +848,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             ) : (
                 <div
                     className={`absolute top-3 left-3 z-20 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-sm font-bold text-white shadow-lg pointer-events-none transition-opacity duration-200 ${scaleBadgeClassName} ${shouldShowScaleBadge ? 'opacity-100' : 'opacity-0'}`}
+                    style={scaleBadgeStyle}
                     data-testid={scaleTestId}
                     aria-hidden={!shouldShowScaleBadge}
                 >

@@ -9,11 +9,15 @@ import {
     HELPING_HANDS_STRANGE_AMULET_EFFECT_ID,
     resolveJackSpiritSpawnRoomId,
 } from './hauntScenarioReadModel';
-import { cloneMonsterMovementRollResult } from './monsterActionReadModel';
+import {
+    cloneMonsterMovementRollResult,
+    type BetrayalBloodFromStoneGazeDamageRoll,
+} from './monsterActionReadModel';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
     resolveInventoryEffectId,
 } from './possessionEffects';
+import { resolveRecentRollRerollItemRule } from './possessionActionReadModel';
 import {
     isRecentRollFullyAcknowledged,
     resolveAcknowledgeableRecentRoll,
@@ -569,6 +573,77 @@ export function chainPendingDamageAllocations(
         ...first,
         nextDamageAllocations: rest,
     };
+}
+
+export function createRecentRollRerollMentalDamageAllocation(
+    core: BetrayalCore,
+    playerId: string,
+    cardId: string,
+    amount: number | undefined,
+    timestamp: number,
+): BetrayalPendingDamageAllocationState | null {
+    const rule = resolveRecentRollRerollItemRule(cardId);
+    const explorer = findExplorerByPlayerId(core, playerId);
+    if (!rule || rule.mode !== 'blank-trait-check-dice' || !explorer || !amount || amount <= 0) {
+        return null;
+    }
+    return createPendingDamageAllocation({
+        id: `recent-reroll-mental-damage-${playerId}-${cardId}-${timestamp}`,
+        explorer,
+        sourceTitle: rule.label,
+        damageKind: 'mental',
+        amount,
+        allowSkull: core.phase === 'haunt',
+    });
+}
+
+export function createBloodFromStoneGazeDamageAllocationQueue(
+    core: BetrayalCore,
+    damageRolls: BetrayalBloodFromStoneGazeDamageRoll[],
+    nextPlayerId: string,
+    turnLogText: string,
+): BetrayalPendingDamageAllocationState | null {
+    const allocations = damageRolls
+        .map((roll) => {
+            const explorer = findExplorerByPlayerId(core, roll.playerId);
+            if (!explorer || roll.amount <= 0) {
+                return null;
+            }
+            return createPendingDamageAllocation({
+                id: `blood-from-stone-gaze-${roll.playerId}-${roll.visibleStoneCherubIds.join('-')}`,
+                explorer,
+                sourceTitle: '石像小天使凝视',
+                damageKind: 'general',
+                amount: roll.amount,
+                allowSkull: true,
+            });
+        })
+        .filter((allocation): allocation is BetrayalPendingDamageAllocationState => Boolean(allocation));
+    const lastAllocation = allocations[allocations.length - 1];
+    if (lastAllocation) {
+        lastAllocation.nextPlayerId = nextPlayerId;
+        lastAllocation.turnLogText = turnLogText;
+        lastAllocation.skipBloodFromStoneMonsterTurnStart = true;
+    }
+    return chainPendingDamageAllocations(allocations);
+}
+
+export function createBloodFromStoneNewLineOfSightDamageAllocation(
+    core: BetrayalCore,
+    roll: BetrayalBloodFromStoneGazeDamageRoll,
+): BetrayalPendingDamageAllocationState | null {
+    const explorer = findExplorerByPlayerId(core, roll.playerId);
+    if (!explorer || roll.amount <= 0) {
+        return null;
+    }
+    return createPendingDamageAllocation({
+        id: `blood-from-stone-new-line-of-sight-${roll.playerId}-${roll.visibleStoneCherubIds.join('-')}`,
+        explorer,
+        sourceTitle: '石像小天使新视线伤害',
+        damageKind: 'general',
+        amount: roll.amount,
+        allowSkull: true,
+    });
 }
 
 function resolveBroochDamageReplacement(

@@ -8,7 +8,7 @@ import {
 import type { DicePhysicsHighlightState, DicePhysicsRendererMode, DicePhysicsState } from './types';
 
 const DICE_PHYSICS_HIGHLIGHT_RENDERER = 'threejs-backside-shader-shell';
-const REROLL_LAUNCH_VISIBLE_MS = 1200;
+const REROLL_LAUNCH_VISIBLE_MS = 1800;
 
 export interface DicePhysicsDieInput {
     id: number;

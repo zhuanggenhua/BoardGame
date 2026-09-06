@@ -8,6 +8,12 @@ import type {
 import type { BetrayalAttackWeaponCardStatus } from "./attackRules";
 import { resolveInventoryEffectId } from "./possessionEffects";
 
+export function mergeEventTraitChoices(
+  ...choices: BetrayalTraitKey[][]
+): BetrayalTraitKey[] {
+  return Array.from(new Set(choices.flat()));
+}
+
 export function resolveEventTraitChoices(
   effect: UseEffectProfile,
 ): BetrayalTraitKey[] {

@@ -1,0 +1,335 @@
+{
+  "title": "山屋惊魂教程当前全流程截图（2026-09-05 当前代码重跑）",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\00-山屋惊魂-教程-章节目录.jpg",
+      "label": "目录：主线和叛徒视角入口",
+      "transition": "起点：教程入口只显示主线和叛徒视角，少数视角不混进主线。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\01-山屋惊魂-教程-回合目标与行动区.jpg",
+      "label": "主线：回合目标与行动区",
+      "transition": "进入主线后先读目标、行动区和当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\02-山屋惊魂-教程-属性轨读法.jpg",
+      "label": "主线：属性轨读法",
+      "transition": "从行动区继续，读取速度、力量、知识、神志这些首局必须看的属性。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\03-山屋惊魂-教程-剩余移动.jpg",
+      "label": "主线：剩余移动",
+      "transition": "属性读完后，看到移动力如何约束本回合能走几步。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\04-山屋惊魂-教程-房间主视区.jpg",
+      "label": "主线：房间主视区",
+      "transition": "移动前先认识房间和角色所在位置。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\05-山屋惊魂-教程-观察队友视角.jpg",
+      "label": "主线：观察队友公开信息",
+      "transition": "点击队友观察公开信息，不代替队友行动。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\06-山屋惊魂-教程-切到第二名队友视角.jpg",
+      "label": "主线：切换第二名队友观察",
+      "transition": "继续观察另一个队友的公开位置和持有物。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\07-山屋惊魂-教程-再次点队友返回上一视角.jpg",
+      "label": "主线：返回上一观察对象",
+      "transition": "再次点队友，观察焦点按正式 UI 切回。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\08-山屋惊魂-教程-聚焦回自己房间.jpg",
+      "label": "主线：聚焦回自己房间",
+      "transition": "观察结束后回到当前玩家自己的行动视角。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\09-山屋惊魂-教程-预兆作祟进度条.jpg",
+      "label": "主线：预兆作祟进度",
+      "transition": "行动前读懂预兆数量和作祟风险。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\10-山屋惊魂-教程-持有区与帮助入口.jpg",
+      "label": "主线：持有区和帮助入口",
+      "transition": "读完基础状态后，看到自己持有物和帮助入口。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\11-山屋惊魂-教程-移动入口.jpg",
+      "label": "主线：点击移动入口",
+      "transition": "从读局进入正式行动，点击移动。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\12-山屋惊魂-教程-移动到门厅后.jpg",
+      "label": "主线：移动到门厅",
+      "transition": "移动后到队友同房间，形成交易条件。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\13-山屋惊魂-教程-交易同房间说明.jpg",
+      "label": "主线：交易同房间条件",
+      "transition": "同房间后交易入口出现，只讲当前可交易原因。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\14-山屋惊魂-教程-交易选择急救包.jpg",
+      "label": "主线：选择给出的急救包",
+      "transition": "在己方持有物里选择急救包。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\15-山屋惊魂-教程-交易选择队友.jpg",
+      "label": "主线：选择同房间队友",
+      "transition": "选择同房间队友作为交易对象。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\16-山屋惊魂-教程-交易选择对方地图.jpg",
+      "label": "主线：选择想换回的地图",
+      "transition": "在对方持有物里选择地图，形成完整方案。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\17-山屋惊魂-教程-交易请求等待同意.jpg",
+      "label": "主线：发送交易并等待同意",
+      "transition": "提交方案后等待队友回应，横幅只显示等待状态。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\18-山屋惊魂-教程-交易自动同意公开结果.jpg",
+      "label": "主线：交易同意后的公开结果",
+      "transition": "队友按正式流程同意后，双方持有物已经互换。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\20-山屋惊魂-教程-探索目标房间.jpg",
+      "label": "主线：继续探索未知房间",
+      "transition": "交易完成后继续当前回合，点击未知出口探索。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\21-山屋惊魂-教程-翻出房间朝向选择.jpg",
+      "label": "主线：翻出房间并选择朝向",
+      "transition": "探索后先看到新房间，再调整朝向。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\22-山屋惊魂-教程-旋转后确认放置新房间.jpg",
+      "label": "主线：确认放置新房间",
+      "transition": "朝向选定后点击同一确认按钮放置房间。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\23-山屋惊魂-教程-事件牌公开与投掷入口.jpg",
+      "label": "主线：事件牌公开并出现投掷入口",
+      "transition": "房间事件符号触发事件牌，先读事件再投掷。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\24-山屋惊魂-教程-事件骰出现与书本可查看.jpg",
+      "label": "主线：事件骰出现后书本可查看",
+      "transition": "点击投掷后骰盘出现，此时书本进入正确使用时机。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\25-山屋惊魂-教程-书本牌面查看.jpg",
+      "label": "主线：先查看书本牌面",
+      "transition": "使用前先打开书本牌面，确认它会把事件改为知识检定。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\26-山屋惊魂-教程-书本使用后知识改骰结果.jpg",
+      "label": "主线：使用书本后的知识检定结果",
+      "transition": "点击书本后直接生效，不再弹二次确认。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\27-山屋惊魂-教程-点击兔脚后选择骰子.jpg",
+      "label": "主线：兔脚进入骰子选择",
+      "transition": "点击兔脚后先出现可选骰子，未选中只显示低权重候选态。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\28-山屋惊魂-教程-兔脚选中改骰高亮.jpg",
+      "label": "主线：选中骰子高亮",
+      "transition": "点击骰子后才升级为选中高亮，确认要重投这颗。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\29-山屋惊魂-教程-兔脚重投动画进行中.jpg",
+      "label": "主线：兔脚重投动画进行中",
+      "transition": "提交重投后捕捉到骰子移动过程帧。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\30-山屋惊魂-教程-兔脚重投完成自动进入伤害分配.jpg",
+      "label": "主线：重投完成并自动进入伤害分配",
+      "transition": "重投结束后普通结果无需全员确认，流程进入伤害分配。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\31-山屋惊魂-教程-伤害分配面板可操作.jpg",
+      "label": "主线：伤害分配面板可操作",
+      "transition": "结果落到真实后续入口，玩家可以分配伤害。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\32-山屋惊魂-教程-伤害分配完成后.jpg",
+      "label": "主线：伤害分配完成回到牌桌",
+      "transition": "分配完成后临时层退场，牌桌可继续。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-omen-confirmation\\01-预兆牌确认与作祟检定.jpg",
+      "label": "预兆确认专题：预兆与作祟检定",
+      "transition": "专题起点：只证明预兆牌确认语义，不接在主线后冒充连续剧情。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-omen-confirmation\\02-确认后回牌桌持有区.jpg",
+      "label": "预兆确认专题：确认后进入持有区",
+      "transition": "一次确认后回到牌桌，预兆进入持有区。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-omen-confirmation\\03-确认后预兆进度条.jpg",
+      "label": "预兆确认专题：预兆进度更新",
+      "transition": "持有结果出现后，作祟风险进度同步更新。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\01-当前玩家结束回合前.jpg",
+      "label": "自然作祟：当前玩家结束回合前",
+      "transition": "自然作祟起点：当前玩家先结束回合，等待队友按正式流程行动。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\02-等待队友一探索预兆房间.jpg",
+      "label": "自然作祟：等待队友一探索预兆房间",
+      "transition": "回合交给队友后，当前玩家只看公开等待状态。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\03-队友一获得指环未触发.jpg",
+      "label": "自然作祟：队友一获得指环未触发",
+      "transition": "队友一翻出预兆并确认后，公开结果显示尚未作祟。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\04-队友二翻出狗未触发.jpg",
+      "label": "自然作祟：队友二翻出狗未触发",
+      "transition": "队友二按正式流程翻出狗，仍未触发作祟。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\05-狗确认后回到当前玩家.jpg",
+      "label": "自然作祟：狗确认后回到当前玩家",
+      "transition": "队友确认狗后，回合自然回到当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\06-再次结束当前回合.jpg",
+      "label": "自然作祟：再次结束当前回合",
+      "transition": "当前玩家再次结束回合，让队友继续探索预兆。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\07-队友一翻出面具触发作祟.jpg",
+      "label": "自然作祟：队友一翻出面具触发作祟",
+      "transition": "队友一翻出新的预兆，作祟检定自然失败并触发作祟。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\08-当前玩家自动打开英雄开场.jpg",
+      "label": "自然作祟：当前玩家看到英雄开场",
+      "transition": "作祟触发后，当前玩家自动看到自己该读的英雄开场。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\09-继续后阅读英雄胜利条件.jpg",
+      "label": "自然作祟：阅读英雄胜利条件",
+      "transition": "继续翻页后，目标说明进入前景。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\10-关闭剧本书后进入作祟牌桌.jpg",
+      "label": "自然作祟：关闭剧本书回到牌桌",
+      "transition": "读完英雄书后关闭，回到作祟后的正式牌桌。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\11-作祟后回看英雄目标.jpg",
+      "label": "自然作祟：回看英雄目标",
+      "transition": "牌桌上可回看英雄目标，不靠隐藏说明记忆。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\12-作祟后等待队友结束回合.jpg",
+      "label": "自然作祟：等待队友结束回合",
+      "transition": "当前玩家不能代操作队友，只等待公开回合推进。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\13-轮到英雄寻找木乃伊真名.jpg",
+      "label": "自然作祟：轮到英雄寻找木乃伊真名",
+      "transition": "轮到当前英雄后，出现寻找真名的正式动作。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\14-寻找真名知识检定成功.jpg",
+      "label": "自然作祟：寻找真名知识检定成功",
+      "transition": "点击正式动作后完成知识检定，真名线索成功。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\15-确认后回到牌桌可结束回合.jpg",
+      "label": "自然作祟：确认后回到可继续牌桌",
+      "transition": "结果确认后回到牌桌，后续入口可见。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\01-叛徒打开木乃伊剧本目标页.jpg",
+      "label": "叛徒章节：打开木乃伊目标页",
+      "transition": "独立章节起点：叛徒是少数视角，先读自己的目标，不放进普通英雄主线。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\02-木乃伊怪物回合开始前.jpg",
+      "label": "叛徒章节：木乃伊怪物回合开始",
+      "transition": "叛徒章节先教学木乃伊怪物回合，而不是突然拾起女孩。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\03-木乃伊移动骰盘.jpg",
+      "label": "叛徒章节：木乃伊移动投骰",
+      "transition": "点击怪物移动后出现移动骰盘。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\04-木乃伊瞬移目标.jpg",
+      "label": "叛徒章节：选择木乃伊瞬移目标",
+      "transition": "移动点数结算后，选择木乃伊要移动到的房间。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\05-木乃伊移动到女孩房间并携带女孩.jpg",
+      "label": "叛徒章节：木乃伊携带女孩",
+      "transition": "木乃伊进入女孩所在房间后，女孩由怪物携带，不是玩家代拾取。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\06-木乃伊同房必须先攻击.jpg",
+      "label": "叛徒章节：同房必须先攻击",
+      "transition": "同房有英雄时，教程承接攻击前提。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\07-木乃伊攻击目标高亮.jpg",
+      "label": "叛徒章节：木乃伊攻击目标高亮",
+      "transition": "选择攻击目标时，高亮贴合目标本体。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\08-木乃伊攻击骰盘.jpg",
+      "label": "叛徒章节：木乃伊攻击骰盘",
+      "transition": "点击目标后进入怪物攻击骰盘。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\09-木乃伊偷取奖励入口.jpg",
+      "label": "叛徒章节：偷取奖励入口",
+      "transition": "攻击成功后出现偷取奖励入口。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\traitor-path\\10-木乃伊偷走地图结果.jpg",
+      "label": "叛徒章节：偷走地图结果",
+      "transition": "选择偷取后，结果反馈显示地图被木乃伊带走。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-mummy-traitor-victory\\01-胜利链合法起点.jpg",
+      "label": "隐藏胜利链：合法起点",
+      "transition": "隐藏专题起点：只验证胜利前置链，不作为默认叛徒章节。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-mummy-traitor-victory\\02-叛徒回看胜利条件.jpg",
+      "label": "隐藏胜利链：回看胜利条件",
+      "transition": "叛徒先回看胜利条件，明确为什么要交付女孩和圣符。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-mummy-traitor-victory\\03-叛徒拾起女孩前.jpg",
+      "label": "隐藏胜利链：叛徒拾起女孩前",
+      "transition": "在合法胜利前局面里，叛徒准备拾起女孩。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-mummy-traitor-victory\\04-女孩交给木乃伊前.jpg",
+      "label": "隐藏胜利链：女孩交给木乃伊前",
+      "transition": "拾起女孩后，进入交给木乃伊的正式动作。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-mummy-traitor-victory\\05-圣符交给木乃伊前.jpg",
+      "label": "隐藏胜利链：圣符交给木乃伊前",
+      "transition": "女孩已交付后，再交付圣符。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\topic-mummy-traitor-victory\\06-木乃伊叛徒胜利.jpg",
+      "label": "隐藏胜利链：木乃伊叛徒胜利",
+      "transition": "圣符交付后触发叛徒胜利结局。"
+    }
+  ]
+}

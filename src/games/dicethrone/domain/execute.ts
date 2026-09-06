@@ -49,7 +49,7 @@ import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { buildBonusDiceSettlementEvents, executeTokenCommand } from './executeTokens';
-import { getPassiveActionTokenCosts, getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
+import { getPassiveActionTokenCosts, getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
@@ -1156,8 +1156,10 @@ export function execute(
             )) break;
             if (action.type === 'rerollDie') {
                 if (!Number.isInteger(targetDieId)) break;
+                const currentRollContext = resolveCurrentRollContext(state, phase);
                 const currentDie = findCurrentRollDie(state, targetDieId, phase);
                 if (!currentDie) break;
+                if (!currentRollContext || !isPassiveRerollTargetAllowed(action, currentRollContext, command.playerId, currentDie.die)) break;
             }
 
             const player = state.players[command.playerId];

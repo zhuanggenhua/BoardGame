@@ -1245,6 +1245,35 @@ export class GameTransportServer {
         return this.matchRoomUnloadCoordinator.unloadMatch(matchID, options);
     }
 
+    async unloadMatchesMissingFromStorage(options?: { disconnectSockets?: boolean }): Promise<string[]> {
+        const unloadedMatchIds: string[] = [];
+
+        for (const match of Array.from(this.matchRoomRegistry.values())) {
+            if (match.unloaded) {
+                continue;
+            }
+
+            try {
+                const { metadata } = await this.storage.fetch(match.matchID, { metadata: true });
+                if (metadata) {
+                    continue;
+                }
+            } catch (error) {
+                logger.warn('[GameTransport] skip missing-storage unload after storage fetch failed', {
+                    matchID: match.matchID,
+                    error,
+                });
+                continue;
+            }
+
+            if (this.unloadMatch(match.matchID, options)) {
+                unloadedMatchIds.push(match.matchID);
+            }
+        }
+
+        return unloadedMatchIds;
+    }
+
     private resolveOnlineAiSeatControllerType(
         match: ActiveMatch,
         playerId: string,

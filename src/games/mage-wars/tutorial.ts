@@ -60,6 +60,18 @@ export const MageWarsTutorial: TutorialManifest = {
             infoStep: true,
         },
         {
+            id: 'spell-card-reading',
+            content: 'game-mage-wars:tutorial.steps.spellCardReading',
+            visual: {
+                src: 'mage-wars/references/spell-card-legend',
+                alt: 'game-mage-wars:tutorial.visuals.spellCardLegendAlt',
+                caption: 'game-mage-wars:tutorial.visuals.spellCardLegendCaption',
+            },
+            highlightTarget: 'mw-spellbook',
+            position: 'top',
+            infoStep: true,
+        },
+        {
             id: 'plan-open-creature-category',
             content: 'game-mage-wars:tutorial.steps.planOpenCreatureCategory',
             highlightTarget: 'mw-spellbook-category-creature',
@@ -94,6 +106,15 @@ export const MageWarsTutorial: TutorialManifest = {
             requireAction: true,
             allowedCommands: [],
             allowedTargets: ['mw-spellbook-category-incantation'],
+        },
+        {
+            id: 'plan-incantation-next-page',
+            content: 'game-mage-wars:tutorial.steps.planIncantationNextPage',
+            highlightTarget: 'mw-spellbook-next-page',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [],
+            allowedTargets: ['mw-spellbook-next-page'],
         },
         {
             id: 'plan-select-rouse',
@@ -153,6 +174,18 @@ export const MageWarsTutorial: TutorialManifest = {
         {
             id: 'wolf-summoned',
             content: 'game-mage-wars:tutorial.steps.wolfSummoned',
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'attack-bar-reading',
+            content: 'game-mage-wars:tutorial.steps.attackBarReading',
+            visual: {
+                src: 'mage-wars/references/attack-bar-legend',
+                alt: 'game-mage-wars:tutorial.visuals.attackBarLegendAlt',
+                caption: 'game-mage-wars:tutorial.visuals.attackBarLegendCaption',
+            },
             highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
             position: 'top',
             infoStep: true,

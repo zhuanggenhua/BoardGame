@@ -465,18 +465,6 @@ describe('小黑屋操作日志与撤回', () => {
             playerId: '0',
             payload: { rollId: state.core.recentRoll?.id },
             timestamp: 30,
-        });
-        state = runCommand(state, {
-            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            playerId: '1',
-            payload: { rollId: state.core.recentRoll?.id },
-            timestamp: 31,
-        });
-        state = runCommand(state, {
-            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
-            playerId: '2',
-            payload: { rollId: state.core.recentRoll?.id },
-            timestamp: 32,
         }, createBetrayalScriptedRandom(3));
 
         expect(state.core.pendingEventRollResolution).toBeNull();
@@ -533,6 +521,13 @@ describe('小黑屋操作日志与撤回', () => {
             }),
         ]));
         expect(JSON.stringify(state.sys.actionLog.entries)).not.toContain('actionLog.finalizeEventRoll');
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL,
+            playerId: '0',
+            payload: {},
+            timestamp: 35,
+        });
 
         expect(engineConfig.domain.validate(state, {
             type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,

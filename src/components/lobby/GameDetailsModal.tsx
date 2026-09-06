@@ -17,6 +17,11 @@ import { GAME_SERVER_URL } from '../../config/server';
 import { getGameById } from '../../config/games.config';
 import { getGameConfigReviewPath, hasGameConfigReview } from '../../config/gameConfigReviewRoutes';
 import { CreateRoomModal, type RoomConfig } from './CreateRoomModal';
+import {
+    mergeRoomConfigWithSetupResult,
+    resolveCreateRoomSetupGateState,
+    type PendingCreateRoomSetupGate,
+} from './createRoomSetupGate';
 import { GameReviews } from '../review/GameReviewSection';
 import { PasswordEntryModal } from '../common/overlays/PasswordEntryModal';
 import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitPayload, notifyExitMatchErrorToast, buildCreateRoomErrorTip, resolveCreateRoomErrorCode, resolveCreateRoomErrorStatus, type Room } from './roomActions';
@@ -31,7 +36,7 @@ import { logger } from '../../lib/logger';
 import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { appendMatchLoadTrace, startMatchLoadTrace } from '../../lib/matchLoadTrace';
 import { UI_Z_INDEX, preloadWarmImages, resolveCriticalImages } from '../../core';
-import { ensureGameCriticalImageResolverLoaded, hasGameTutorialLoader, prefetchGameImplementation } from '../../games/registry';
+import { ensureGameCriticalImageResolverLoaded, hasGameTutorialLoader, loadGameImplementation, prefetchGameImplementation } from '../../games/registry';
 import {
     normalizeLocalMatchPreferences,
     readStoredLocalMatchPreferences,
@@ -48,6 +53,7 @@ import {
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { prefetchOnlineMatchRoute } from '../../lib/prefetchPlayRoute';
+import type { GameRuntimeLocalSetupResult } from '../../games/gameRuntimeAdapter';
 
 
 interface GameDetailsModalProps {
@@ -319,6 +325,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const [leaderboardError, setLeaderboardError] = useState(false);
     // 创建房间弹窗状态
     const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+    const [pendingCreateRoomSetupGate, setPendingCreateRoomSetupGate] = useState<PendingCreateRoomSetupGate | null>(null);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = useState(false);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = useState<LocalMatchPreferences | null>(null);
     const [showAuthorInfoModal, setShowAuthorInfoModal] = useState(false);
@@ -927,6 +934,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         config: RoomConfig,
         options?: {
             forceReplaceOwnerRoom?: boolean;
+            skipCreateRoomSetupGate?: boolean;
         },
     ) => {
         if (createRoomInFlightRef.current) {
@@ -938,6 +946,19 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         setIsLoading(true);
         setMatchEntryLoadingPhase('creating');
         try {
+            if (!options?.skipCreateRoomSetupGate && gameManifest?.createRoomSetup?.preCreateSetupGate) {
+                const implementation = await loadGameImplementation(gameId, { includeTutorial: false });
+                const setupGateState = resolveCreateRoomSetupGateState({
+                    runtimeAdapter: implementation?.runtimeAdapter,
+                    config,
+                });
+                if (setupGateState) {
+                    setPendingCreateRoomSetupGate(setupGateState);
+                    setShowCreateRoomModal(false);
+                    return;
+                }
+            }
+
             const { numPlayers, roomName, ttlSeconds, password, setupSelections, enableAi, seatControllers } = config;
             const ownerKey = getOwnerKey();
             const ownerType = getOwnerType();
@@ -967,6 +988,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
             // 使用传入的游戏编号传递房间名
             const setupData = {
+                ...(config.setupData ?? {}),
                 ...(roomName ? { roomName } : {}),
                 ttlSeconds,
                 ownerKey,
@@ -1490,11 +1512,21 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         setPendingJoin(null);
     });
 
+    const handleConfirmCreateRoomSetupGate = async (setup: GameRuntimeLocalSetupResult) => {
+        const pending = pendingCreateRoomSetupGate;
+        if (!pending) return;
+        setPendingCreateRoomSetupGate(null);
+        await handleCreateRoom(
+            mergeRoomConfigWithSetupResult(pending.config, setup),
+            { skipCreateRoomSetupGate: true },
+        );
+    };
+
     const handleConfirmForceReplaceCreate = useEffectEvent(async () => {
         if (!pendingForceReplaceCreate) return;
         const nextCreate = pendingForceReplaceCreate;
         setPendingForceReplaceCreate(null);
-        await handleCreateRoom(nextCreate.config, { forceReplaceOwnerRoom: true });
+        await handleCreateRoom(nextCreate.config, { forceReplaceOwnerRoom: true, skipCreateRoomSetupGate: true });
     });
 
     const handleCancelForceReplaceCreate = useEffectEvent(() => {
@@ -1940,6 +1972,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             });
     }, [activeMatch, isOpen, toast]);
 
+    const PendingSetupGate = pendingCreateRoomSetupGate?.Gate;
+
     return (
         <>
             <ModalBase
@@ -2243,6 +2277,20 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     isLoading={isLoading}
                 />
             )}
+            {PendingSetupGate && pendingCreateRoomSetupGate ? (
+                <div
+                    className="fixed inset-0 bg-black"
+                    data-testid="create-room-setup-gate-overlay"
+                    style={{ zIndex: UI_Z_INDEX.modalFullscreenGate }}
+                >
+                    <PendingSetupGate
+                        mode="create-room"
+                        searchParams={pendingCreateRoomSetupGate.searchParams}
+                        initialSetup={pendingCreateRoomSetupGate.initialSetup}
+                        onConfirm={handleConfirmCreateRoomSetupGate}
+                    />
+                </div>
+            ) : null}
 
             {showAuthorInfoModal && (
                 <ModalBase

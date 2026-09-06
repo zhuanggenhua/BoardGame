@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { resolveMoveTargetRooms } from '../movementReadModel';
 import {
+    applyBetrayalTileStackSearch,
     resolveBetrayalRoomDrawResolution,
+    resolveBetrayalTileStackSearchPreview,
     resolveExplorableRoomSlots,
     resolveRoomPlacementPreview,
     resolveRoomTileAdjustmentOptions,
@@ -19,8 +21,6 @@ import {
     EXPLORER_CATALOG,
     isBetrayalRoomInLineOfSight,
     resolveBetrayalLineOfSightRoomIds,
-    resolveBetrayalTileStackSearchPreview,
-    applyBetrayalTileStackSearch,
     BETRAYAL_DISCOVERY_POOLS,
     BETRAYAL_SCENARIO_CARD_IDS,
     BETRAYAL_SCENARIO_CONFIGS,

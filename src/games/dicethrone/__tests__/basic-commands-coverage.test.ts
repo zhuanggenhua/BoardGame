@@ -625,7 +625,7 @@ describe('AI legal actions', () => {
         }));
     });
 
-    it('AI bonus dice opponent-interference: 右侧奖励骰期间非骰主也应枚举合法改骰牌和战术优势', () => {
+    it('AI bonus dice opponent-interference: 右侧奖励骰期间非骰主只应枚举合法改骰牌，不应枚举战术优势', () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.activePlayerId = '0';
         state.sys.phase = 'offensiveRoll';
@@ -667,7 +667,7 @@ describe('AI legal actions', () => {
             kind: 'play-card',
             commands: [{ type: 'PLAY_CARD', payload: { cardId: 'card-give-hand' } }],
         }));
-        expect(actions).toContainEqual(expect.objectContaining({
+        expect(actions).not.toContainEqual(expect.objectContaining({
             kind: 'use-passive-ability',
             commands: [expect.objectContaining({
                 type: 'USE_PASSIVE_ABILITY',
@@ -4239,7 +4239,7 @@ describe('AI legal actions', () => {
         expect(resolution).toBeNull();
     });
 
-    it('本地 AI 在 afterRollConfirmed 响应窗口应枚举可用被动重掷', () => {
+    it('本地 AI 在 afterRollConfirmed 响应窗口不应枚举战术优势重掷对手骰', () => {
         const state = createHeroMatchup('monk', 'zhanshujia')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';
         state.core.activePlayerId = '0';
@@ -4271,7 +4271,7 @@ describe('AI legal actions', () => {
             state,
         });
 
-        expect(legalActions).toContainEqual(expect.objectContaining({
+        expect(legalActions).not.toContainEqual(expect.objectContaining({
             kind: 'use-passive-ability',
             commands: [expect.objectContaining({
                 type: 'USE_PASSIVE_ABILITY',

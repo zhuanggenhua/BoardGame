@@ -1,4 +1,5 @@
 import type { BetrayalCore } from "./game";
+import { isHauntScenarioOpeningDiscovery } from "./latestDiscoveryPresentation";
 import type { BetrayalScenarioCardCandidate } from "./scenarioConfig";
 
 export type ScenarioReaderAudience = "all" | "heroes" | "traitor";
@@ -22,6 +23,19 @@ export type ScenarioReaderPage = {
 export type ScenarioBookTurnSnapshot = {
   fromPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
   toPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
+};
+
+export type ScenarioReaderOpenMode =
+  | "hauntReveal"
+  | "manualReview"
+  | "tutorialObjective";
+
+export type ScenarioReaderOpenPlan = {
+  scope: ScenarioReaderScope;
+  spreadCount: number;
+  initialSpreadIndex: number;
+  includeOpeningStage: boolean;
+  isPublicHauntRevealReader: boolean;
 };
 
 export const SCENARIO_BOOK_TURN_DURATION_MS = 380;
@@ -295,6 +309,45 @@ export function resolveScenarioReaderScope(
   return core.scenarioRuntime.traitorPlayerId === viewerPlayerId
     ? "traitor"
     : "heroes";
+}
+
+export function resolveScenarioReaderOpenPlan(
+  core: BetrayalCore,
+  viewerPlayerId: string,
+  options: {
+    mode: ScenarioReaderOpenMode;
+    hasOpeningSection: boolean;
+    bookSpreadCount: number;
+  },
+): ScenarioReaderOpenPlan {
+  const scope = resolveScenarioReaderScope(core, viewerPlayerId);
+  const isPublicHauntRevealReader =
+    core.phase === "haunt" &&
+    scope === "all" &&
+    isHauntScenarioOpeningDiscovery(core);
+  const includeOpeningStage =
+    core.phase === "haunt" &&
+    options.hasOpeningSection &&
+    (options.mode === "hauntReveal" ||
+      isPublicHauntRevealReader ||
+      scope !== "all");
+  const spreadCount = Math.max(
+    1,
+    options.bookSpreadCount + (includeOpeningStage ? 1 : 0),
+  );
+  const shouldOpenAtObjectiveSpread =
+    includeOpeningStage &&
+    options.mode !== "hauntReveal" &&
+    (scope !== "all" || options.mode === "tutorialObjective");
+  return {
+    scope,
+    spreadCount,
+    initialSpreadIndex: shouldOpenAtObjectiveSpread
+      ? Math.min(1, spreadCount - 1)
+      : 0,
+    includeOpeningStage,
+    isPublicHauntRevealReader,
+  };
 }
 
 function isScenarioSectionVisibleForScope(

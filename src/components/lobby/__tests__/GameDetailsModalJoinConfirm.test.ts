@@ -55,6 +55,7 @@ const {
     ensureGameCriticalImageResolverLoadedMock,
     hasGameTutorialLoaderMock,
     prefetchGameImplementationMock,
+    loadGameImplementationMock,
     prefetchOnlineMatchRouteMock,
     resolveCriticalImagesMock,
     preloadWarmImagesMock,
@@ -93,6 +94,7 @@ const {
     ensureGameCriticalImageResolverLoadedMock: vi.fn(),
     hasGameTutorialLoaderMock: vi.fn(() => true),
     prefetchGameImplementationMock: vi.fn(),
+    loadGameImplementationMock: vi.fn(),
     prefetchOnlineMatchRouteMock: vi.fn(),
     resolveCriticalImagesMock: vi.fn(),
     preloadWarmImagesMock: vi.fn(),
@@ -264,6 +266,7 @@ vi.mock('../../../games/registry', () => ({
     ensureGameCriticalImageResolverLoaded: (...args: unknown[]) => ensureGameCriticalImageResolverLoadedMock(...args),
     hasGameTutorialLoader: (...args: unknown[]) => hasGameTutorialLoaderMock(...args),
     prefetchGameImplementation: (...args: unknown[]) => prefetchGameImplementationMock(...args),
+    loadGameImplementation: (...args: unknown[]) => loadGameImplementationMock(...args),
 }));
 
 vi.mock('../../../lib/prefetchPlayRoute', () => ({
@@ -527,6 +530,8 @@ beforeEach(() => {
     hasGameTutorialLoaderMock.mockReturnValue(true);
     prefetchGameImplementationMock.mockReset();
     prefetchGameImplementationMock.mockResolvedValue(null);
+    loadGameImplementationMock.mockReset();
+    loadGameImplementationMock.mockResolvedValue(null);
     prefetchOnlineMatchRouteMock.mockReset();
     prefetchOnlineMatchRouteMock.mockResolvedValue(undefined);
     resolveCriticalImagesMock.mockReset();
@@ -1125,6 +1130,131 @@ describe('GameDetailsModal create room ai entry', () => {
         });
     });
 
+
+    it('法师战争正式建房前先走游戏选择页，确认后把选择结果写入 createMatch setupData', async () => {
+        getGameByIdMock.mockImplementation((gameId: string) => {
+            if (gameId !== 'mage-wars') return null;
+            return buildMockGameManifest({
+                id: 'mage-wars',
+                titleKey: 'games.mage-wars.title',
+                descriptionKey: 'games.mage-wars.description',
+                category: 'wargame',
+                playersKey: 'games.mage-wars.players',
+                icon: 'MW',
+                playerOptions: [2],
+                createRoomSetup: {
+                    hiddenSelectionKeys: ['mageWarsSeat0MageId', 'mageWarsSeat1MageId'],
+                    showSetupOptions: false,
+                    preCreateSetupGate: true,
+                },
+                mobileDelivery: undefined,
+                ai: {
+                    capture: true,
+                    localAi: true,
+                    remoteAi: false,
+                },
+            });
+        });
+        (globalThis as unknown as { __BG_TEST_CREATE_ROOM_CONFIG__?: Record<string, unknown> }).__BG_TEST_CREATE_ROOM_CONFIG__ = {
+            roomName: 'Mage Room',
+            numPlayers: 2,
+            ttlSeconds: 0,
+            password: '',
+            enableAi: false,
+            minimumActionDelayMs: DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+            },
+            setupSelections: {},
+        };
+        const setupSelections = {
+            mageWarsSeat0MageId: 'beastmaster_apprentice',
+            mageWarsSeat1MageId: 'priestess_apprentice',
+        };
+        loadGameImplementationMock.mockResolvedValueOnce({
+            runtimeAdapter: {
+                resolveCreateRoomSetup: () => ({
+                    numPlayers: 2,
+                    setupSelections: {
+                        mageWarsSeat0MageId: 'warlock_apprentice',
+                        mageWarsSeat1MageId: 'wizard_apprentice',
+                    },
+                    setupData: {
+                        mageWarsSeat0MageId: 'warlock_apprentice',
+                        mageWarsSeat1MageId: 'wizard_apprentice',
+                        setupSelections: {
+                            mageWarsSeat0MageId: 'warlock_apprentice',
+                            mageWarsSeat1MageId: 'wizard_apprentice',
+                        },
+                    },
+                }),
+                CreateRoomSetupGate: ({ onConfirm }: { onConfirm: (setup: {
+                    numPlayers: number;
+                    setupSelections: Record<string, string>;
+                    setupData: Record<string, unknown>;
+                }) => void }) => createElement('button', {
+                    type: 'button',
+                    onClick: () => onConfirm({
+                        numPlayers: 2,
+                        setupSelections,
+                        setupData: {
+                            ...setupSelections,
+                            mageWarsSeat0SpellbookEntries: [{ spellCardId: 2601, count: 1 }],
+                            mageWarsSeat1SpellbookEntries: [{ spellCardId: 2604, count: 1 }],
+                            setupSelections,
+                        },
+                    }),
+                }, 'mock-mage-wars-setup-gate'),
+            },
+        });
+        const createMatchSpy = vi.spyOn(matchApi, 'createMatch').mockResolvedValueOnce({
+            matchID: 'match-mage-wars-1',
+            ownerPlayerID: '0',
+            ownerCredentials: 'host-cred',
+        });
+
+        render(createElement(GameDetailsModal, {
+            ...baseProps,
+            gameId: 'mage-wars',
+            titleKey: 'games.mage-wars.title',
+            descriptionKey: 'games.mage-wars.description',
+        }));
+
+        fireEvent.click(screen.getByText('actions.createRoom'));
+        await waitFor(() => {
+            expect(screen.getByText('mock-create-room-confirm')).toBeInTheDocument();
+        });
+        fireEvent.click(screen.getByText('mock-create-room-confirm'));
+
+        await waitFor(() => {
+            expect(screen.getByText('mock-mage-wars-setup-gate')).toBeInTheDocument();
+        });
+        expect(createMatchSpy).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByText('mock-mage-wars-setup-gate'));
+
+        await waitFor(() => {
+            expect(createMatchSpy).toHaveBeenCalledTimes(1);
+        });
+        expect(loadGameImplementationMock).toHaveBeenCalledWith('mage-wars', { includeTutorial: false });
+        expect(createMatchSpy).toHaveBeenCalledWith(
+            'mage-wars',
+            expect.objectContaining({
+                numPlayers: 2,
+                playerName: 'Guest',
+                setupData: expect.objectContaining({
+                    roomName: 'Mage Room',
+                    mageWarsSeat0MageId: 'beastmaster_apprentice',
+                    mageWarsSeat1MageId: 'priestess_apprentice',
+                    mageWarsSeat0SpellbookEntries: [{ spellCardId: 2601, count: 1 }],
+                    mageWarsSeat1SpellbookEntries: [{ spellCardId: 2604, count: 1 }],
+                    setupSelections,
+                }),
+            }),
+            undefined,
+        );
+    });
     it('创建房间弹窗内直接配置 AI，不再显示独立对战 AI 入口', async () => {
         markGamePackageInstalled();
         vi.spyOn(matchApi, 'createMatch').mockResolvedValueOnce({

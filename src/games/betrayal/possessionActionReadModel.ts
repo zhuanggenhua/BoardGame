@@ -16,6 +16,7 @@ import {
     clampTraitTrackPosition,
     resolveExplorerTraitTrack,
 } from './traitPresentation';
+import { BETRAYAL_TRAIT_KEYS } from './traitTrackModel';
 import {
     resolveConnectedRoomIds,
     roomDistanceByLayout,
@@ -27,6 +28,7 @@ import {
 import { isBetrayalPlayerControllingMonster } from './hauntScenarioReadModel';
 
 const MYSTERIOUS_STOPWATCH_CARD_ID = 'mysterious-stopwatch';
+export const TOOTH_NECKLACE_CARD_ID = 'tooth-necklace';
 
 type BetrayalEventRollRecentKind = 'eventTraitCheck' | 'eventDiceRoll';
 type RecentRollRerollItemMode = 'single-die' | 'all-trait-check-dice' | 'blank-trait-check-dice';
@@ -84,6 +86,21 @@ export function clearPendingExtraTurnAfterCurrentTurn(
         return null;
     }
     return { ...pending };
+}
+
+export function resolveToothNecklaceCard(
+    explorer: BetrayalExplorerSummary,
+): BetrayalInventoryCard | null {
+    return explorer.inventory.find((card) => resolveInventoryEffectId(card.id) === TOOTH_NECKLACE_CARD_ID) ?? null;
+}
+
+export function resolveDeathsDoorTraitGainChoices(
+    explorer: BetrayalExplorerSummary,
+): BetrayalTraitKey[] {
+    return BETRAYAL_TRAIT_KEYS.filter((trait) => {
+        const track = explorer.traitTracks[trait];
+        return track.position === track.criticalPosition && track.position < track.maxPosition;
+    });
 }
 
 function resolveTraitDamageAssignableStepsAboveCritical(
@@ -498,4 +515,16 @@ export function validateBetrayalRecentRollRerollItemCommand(
         };
     }
     return { valid: true };
+}
+
+export function clearNextNonCombatTraitRollReplacementsForPlayer(
+    core: BetrayalCore,
+    playerId: string,
+): void {
+    if (core.nextNonCombatTraitReplacement?.playerId === playerId) {
+        core.nextNonCombatTraitReplacement = null;
+    }
+    if (core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId) {
+        core.nextNonCombatTraitRollTotalReplacement = null;
+    }
 }

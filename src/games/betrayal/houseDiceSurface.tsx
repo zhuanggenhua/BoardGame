@@ -11,10 +11,9 @@ import {
   BETRAYAL_HOUSE_D6_FACE_TO_RULE_VALUE,
   BETRAYAL_HOUSE_DICE_FACE_SYSTEM,
   BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
-  BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_COLOR,
-  BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY,
-  BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE,
+  BETRAYAL_REROLL_CANDIDATE_UNDERLINE_RENDERER,
   BETRAYAL_REROLL_HIGHLIGHT_RENDERER,
+  BETRAYAL_REROLL_SELECTED_HIGHLIGHT_RENDERER,
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR,
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY,
   BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE,
@@ -198,23 +197,16 @@ export function BetrayalHouseDice3DGroup({
   const selectedRerollDieIndex = rerollSelection?.selectedDieIndex ?? null;
   const highlightedRerollDice = React.useMemo<DicePhysicsHighlightState[]>(
     () => {
-      if (!rerollSelection) return [];
-      return selectableDiceTargets.map((target) => {
-        const isSelected = selectedRerollDieIndex === target.dieIndex;
-        return {
+      if (!rerollSelection || selectedRerollDieIndex === null) return [];
+      return selectableDiceTargets
+        .filter((target) => selectedRerollDieIndex === target.dieIndex)
+        .map((target) => ({
           dieId: target.dieIndex + 1,
-          variant: isSelected ? "selected" : "candidate",
-          color: isSelected
-            ? BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR
-            : BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_COLOR,
-          scale: isSelected
-            ? BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE
-            : BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_SCALE,
-          opacity: isSelected
-            ? BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY
-            : BETRAYAL_REROLL_HIGHLIGHT_CANDIDATE_OPACITY,
-        };
-      });
+          variant: "selected",
+          color: BETRAYAL_REROLL_HIGHLIGHT_SELECTED_COLOR,
+          scale: BETRAYAL_REROLL_HIGHLIGHT_SELECTED_SCALE,
+          opacity: BETRAYAL_REROLL_HIGHLIGHT_SELECTED_OPACITY,
+        }));
     },
     [rerollSelection, selectableDiceTargets, selectedRerollDieIndex],
   );
@@ -363,6 +355,14 @@ export function BetrayalHouseDice3DGroup({
             const targetVisibleSize = getBetrayalRerollTargetVisibleSize(
               target.layout,
             );
+            const targetVisualWidth = Math.min(
+              targetBoxSize,
+              Math.max(0, targetVisibleSize.width),
+            );
+            const targetVisualHeight = Math.min(
+              targetBoxSize,
+              Math.max(0, targetVisibleSize.height),
+            );
             return (
               <div
                 key={`${roll.id}-reroll-target-${target.dieIndex}`}
@@ -382,8 +382,16 @@ export function BetrayalHouseDice3DGroup({
                 data-reroll-target-outline-width={targetVisibleSize.width.toFixed(2)}
                 data-reroll-target-outline-height={targetVisibleSize.height.toFixed(2)}
                 data-reroll-target-outline-gap="0.00"
-                data-reroll-target-highlight-renderer={BETRAYAL_REROLL_HIGHLIGHT_RENDERER}
-                data-reroll-target-visual-layer="transparent-hitbox-only"
+                data-reroll-target-highlight-renderer={
+                  isSelectedRerollTarget
+                    ? BETRAYAL_REROLL_SELECTED_HIGHLIGHT_RENDERER
+                    : BETRAYAL_REROLL_CANDIDATE_UNDERLINE_RENDERER
+                }
+                data-reroll-target-visual-layer={
+                  isSelectedRerollTarget
+                    ? "selected-outline-and-webgl-shell"
+                    : "candidate-bottom-underline"
+                }
                 className="group pointer-events-auto absolute outline-none"
                 style={{
                   left:
@@ -407,6 +415,32 @@ export function BetrayalHouseDice3DGroup({
                 <span className="sr-only">
                   {rerollSelection.getDieActionLabel(target.dieIndex)}
                 </span>
+                {isSelectedRerollTarget ? (
+                  <span
+                    aria-hidden="true"
+                    data-reroll-target-selected-border="true"
+                    className="pointer-events-none absolute left-1/2 top-1/2 rounded-[9px] border-2 border-[#ffd447] shadow-[0_0_14px_rgba(255,212,71,0.58)]"
+                    style={{
+                      width: `${targetVisualWidth}px`,
+                      height: `${targetVisualHeight}px`,
+                      transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
+                      transformOrigin: "center center",
+                    }}
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    data-reroll-target-candidate-underline="true"
+                    className="pointer-events-none absolute left-1/2 rounded-full bg-[#00e7ff] shadow-[0_0_8px_rgba(0,231,255,0.45)]"
+                    style={{
+                      top: `calc(50% + ${targetVisualHeight / 2 - 3}px)`,
+                      width: `${Math.max(18, targetVisualWidth * 0.78)}px`,
+                      height: "3px",
+                      transform: `translate(-50%, -50%) rotate(${target.layout.rotateZ}rad)`,
+                      transformOrigin: "center center",
+                    }}
+                  />
+                )}
               </div>
             );
           })}

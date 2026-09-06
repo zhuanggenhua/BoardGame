@@ -1,0 +1,85 @@
+{
+  "verdict": "PASS",
+  "score": 95,
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "generatedAt": "2026-09-05T15:03:00.000Z",
+  "title": "山屋惊魂教程后续流程局部截图（英雄书翻页与木乃伊攻击奖励）",
+  "sourceSequence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\sequence-labels-20260905-book-mummy-followup.json",
+  "labeledDirectory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2",
+  "requirements": [
+    {
+      "requirement": "英雄剧本书必须按自然流程教学：作祟触发后先显示英雄开场，再教点击书本继续/下一页，随后显示英雄目标页，最后关闭回到牌桌。",
+      "status": "PASS",
+      "evidence": [
+        "E2E [haunt-natural] 在截图前断言英雄开场、继续/下一页按钮、真名、驱逐法术、驱逐木乃伊、关闭按钮均可见。",
+        "截图 01-05 来自 2026-09-05 22:57 当前代码重跑，不是旧代表态或历史图。",
+        "教程步骤拆为 haunt-hero-reader、haunt-hero-reader-turn-page、haunt-hero-reader-goal、haunt-hero-reader-close。"
+      ]
+    },
+    {
+      "requirement": "第一次打开和回看英雄书内容必须承接一致：玩家先读开场和目标页，关闭后从牌桌入口回看同一个英雄目标页。",
+      "status": "PASS",
+      "evidence": [
+        "E2E [haunt-natural] 在回看截图前断言剧本页 scope 为 heroes，并包含英雄剧本书、真名、驱逐法术、驱逐木乃伊。",
+        "截图 06 显示从作祟牌桌回看英雄目标，不再出现第一次打开与回看内容跳变。"
+      ]
+    },
+    {
+      "requirement": "自然作祟后不能用当前玩家代操作队友：关闭读本后等待队友按正式流程结束回合，再轮到当前英雄执行寻找真名。",
+      "status": "PASS",
+      "evidence": [
+        "E2E [haunt-natural] 断言当前玩家在作祟读本关闭后等待队友 2 结束回合，之后才轮到 P0。",
+        "截图 07-10 覆盖等待队友、轮到英雄、知识检定成功、确认后回到结束回合入口。"
+      ]
+    },
+    {
+      "requirement": "木乃伊攻击结果页不能把未决分支写成已决定结果：结果页只写本会造成伤害并满足偷取条件，真正的造成伤害/偷取选择必须到奖励窗口才出现。",
+      "status": "PASS",
+      "evidence": [
+        "E2E [mummy-monster-actions] 在攻击结果截图前断言包含“本会造成”和“满足木乃伊偷取条件”，并断言不包含“伤害或偷取”。",
+        "E2E [mummy-monster-actions] 在奖励窗口截图前断言标题为“木乃伊攻击胜出”，文案为“请选择造成伤害，或偷走一件物品/预兆代替”。",
+        "截图 11-13 为独立木乃伊攻击专题起点，明确不接成上一张英雄自然流程的直接后果。"
+      ]
+    },
+    {
+      "requirement": "给用户打开的图组必须是本轮局部范围：只包含英雄书翻页/回看/找真名链和木乃伊攻击奖励链，不混入 34 之前旧图、失败图、debug 图或旧全量图组。",
+      "status": "PASS",
+      "evidence": [
+        "标注目录 _labeled-for-pureref-20260905-book-mummy-followup-v2 共 14 张图：1 张索引 + 13 张局部流程图。",
+        "所有原图和标注图已确认存在且非零大小，原图时间为 2026-09-05 22:56-22:57 当前重跑产物。"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts \"[mummy-monster-actions] 教程会完成木乃伊怪物移动、同房攻击和偷取奖励\"",
+      "result": "PASS: 1 passed (33.8s)"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts \"[haunt-natural] 队友自然触发作祟后当前玩家读英雄书并执行找真名再回到结束回合入口\"",
+      "result": "PASS: 1 passed (42.2s)"
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\01-labeled-08-当前玩家自动打开英雄开场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\02-labeled-09-书本翻页按钮教学.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\03-labeled-10-翻页后阅读英雄胜利条件.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\04-labeled-11-读完目标准备关闭剧本书.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\05-labeled-12-关闭剧本书后进入作祟牌桌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\06-labeled-13-作祟后回看英雄目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\07-labeled-14-作祟后等待队友结束回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\08-labeled-15-轮到英雄寻找木乃伊真名.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\09-labeled-16-寻找真名知识检定成功.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\10-labeled-17-确认后回到牌桌可结束回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\11-labeled-07-木乃伊攻击骰盘.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\12-labeled-08-木乃伊偷取奖励入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260905-book-mummy-followup-v2\\13-labeled-09-木乃伊偷走地图结果.png"
+  ]
+}

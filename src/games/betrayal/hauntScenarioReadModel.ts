@@ -75,6 +75,10 @@ export function shouldDeadTraitorControlJackSpirit(core: BetrayalCore, playerId:
     );
 }
 
+export function findJackSpirit(core: BetrayalCore): BetrayalMonsterSummary | null {
+    return core.monsters.find((monster) => monster.id === 'jack-spirit') ?? null;
+}
+
 export function resolveJackSpiritSpawnRoomId(core: BetrayalCore, corpseRoomId: string): string {
     const corpseRoom = core.rooms.find((room) => room.id === corpseRoomId);
     const discoveredRooms = core.rooms.filter((room) => room.state === 'discovered');

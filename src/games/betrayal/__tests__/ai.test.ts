@@ -332,6 +332,107 @@ describe('小黑屋本地 AI', () => {
         }]);
     });
 
+    test('AI 代投带房间效果的无线电广播时不会在同轮裸结算伤害骰', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2', '3']);
+        const radioEvent = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '无线电广播');
+        if (!radioEvent) {
+            throw new Error('山屋测试夹具缺少事件牌：无线电广播');
+        }
+        activateTestExplorer(core, '2');
+        core.eventOrder = [radioEvent];
+        core.deckCounts.event = core.eventOrder.length;
+        core.pendingEventRollStart = {
+            playerId: '2',
+            roomId: 'frontier-ground-east-south',
+            sourceTitle: '无线电广播',
+            eventDescription: radioEvent.description,
+        };
+        core.latestDiscovery = {
+            kind: 'event',
+            title: '无线电广播',
+            summary: '事件牌已公开，等待投掷',
+            detail: radioEvent.description,
+            tone: 'accent',
+            resolutionSteps: [{
+                id: 'room-effect-gainSanity1',
+                kind: 'room-effect',
+                text: '房间效果：礼拜堂，神志 +1',
+            }],
+        };
+        core.latestDiscoveryOwnerPlayerId = '2';
+        core.turnEndedByDiscovery = true;
+
+        const result = executePipeline(
+            {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems,
+            },
+            stateOf(core, 'betrayal-ai-radio-event-roll-start'),
+            {
+                type: BETRAYAL_COMMANDS.ROLL_EVENT,
+                playerId: '2',
+                payload: { sourceTitle: '无线电广播' },
+                timestamp: 200,
+            } as BetrayalCommand,
+            createBetrayalScriptedRandom(0, 0),
+            core.playerIds,
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.pendingEventRollStart).toBeNull();
+        expect(result.state.core.recentRoll).toMatchObject({
+            kind: 'eventDiceRoll',
+            playerId: '2',
+            sourceTitle: '无线电广播',
+            dice: [0, 0],
+            latestLabel: '受到一颗骰子的精神伤害',
+        });
+        expect(result.state.core.pendingEventRollResolution).toMatchObject({
+            playerId: '2',
+            sourceTitle: '无线电广播',
+            effect: {
+                mode: 'rolledDamage',
+                dice: 1,
+                damageKind: 'mental',
+            },
+        });
+        expect((result.state.core.pendingEventRollResolution?.effect as { rolls?: number[] } | undefined)?.rolls)
+            .toBeUndefined();
+        expect(result.state.core.pendingDamageAllocation).toBeNull();
+
+        const finalized = executePipeline(
+            {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems,
+            },
+            result.state,
+            {
+                type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                playerId: '2',
+                payload: { rollId: result.state.core.pendingEventRollResolution?.rollId },
+                timestamp: 201,
+            } as BetrayalCommand,
+            createBetrayalScriptedRandom(3),
+            core.playerIds,
+        );
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.state.core.pendingEventRollResolution).toBeNull();
+        expect(finalized.state.core.recentRoll).toMatchObject({
+            kind: 'eventRolledDamage',
+            playerId: '2',
+            sourceTitle: '无线电广播',
+            dice: [2],
+            latestLabel: '造成 2 点精神伤害',
+        });
+        expect(finalized.state.core.pendingDamageAllocation).toMatchObject({
+            playerId: '2',
+            sourceTitle: '无线电广播',
+            damageKind: 'mental',
+            amount: 2,
+        });
+    });
+
     test('事件待投骰缺少真人座位时，watchdog 不应替当前 AI 探索或强推阶段', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         activateTestExplorer(core, '1');

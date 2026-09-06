@@ -63,7 +63,7 @@ import {
 } from './rules';
 import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
-import { getPassiveActionTokenCosts, isPassiveActionUsable } from './passiveAbility';
+import { getPassiveActionTokenCosts, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
@@ -1713,6 +1713,10 @@ const validateUsePassiveAbility = (
                 diceIds: currentDice.map(d => d.id),
             });
             return fail('die_not_found');
+        }
+        const currentRollContext = resolveCurrentRollContext(state, phase);
+        if (!currentRollContext || !isPassiveRerollTargetAllowed(action, currentRollContext, playerId, currentDie.die)) {
+            return fail('invalid_die_selection');
         }
     }
 

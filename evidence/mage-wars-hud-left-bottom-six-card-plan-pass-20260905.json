@@ -1,0 +1,70 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-05T12:07:56.2406739Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "己方生命、法力、聚魔和法师提示卡位于左下独立层，不和底部法术书牌列同排",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 selfHud bottom <= firstSpellbookCard.y - 6 且 hud-spellbook/hud-prepared-area/hud-plan-button 均不相交",
+        "原图 00/01/02 可见己方 HUD 在左下，底部 6 张法术书不被压住"
+      ]
+    },
+    {
+      "requirement": "对手已计划卡背保持左上镜像位置，不随对手 HUD/提示卡改到右上",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 opponentPreparedMirror.x <= 80 且 y <= 80",
+        "原图 00/01/02 左上仍显示两张对手已计划卡背"
+      ]
+    },
+    {
+      "requirement": "1366x768 桌面压力态仍显示 6 张法术书、2 个计划槽和确认入口，且不靠整体缩小适配",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 data-visible-card-count=6、desktopScale=1.000000、卡高 >=210px、底部空隙 6-16px",
+        "原图 00/01/02 底部显示 6 张法术书和右侧两个计划槽"
+      ]
+    },
+    {
+      "requirement": "点击法术书卡面进入计划槽，点击计划槽本体可取消计划，重新点击卡面可恢复",
+      "status": "PASS",
+      "evidence": [
+        "E2E 依次断言 readPlanningDrafts 为 [2819]、[]、[2819]",
+        "三张截图分别显示 1/2、0/0、1/2 计划状态"
+      ]
+    },
+    {
+      "requirement": "计划态放大镜仍是独立次级入口，不抢卡面主点击",
+      "status": "PASS",
+      "evidence": [
+        "E2E expectSpellbookInspectIconOpensWithoutPlanning 先点放大镜确认不改变计划数量，再点卡面进入计划",
+        "原图卡面右上可见独立放大镜按钮"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-for-pureref-20260905-hud-left-bottom-six-cards\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-for-pureref-20260905-hud-left-bottom-six-cards\\01-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-for-pureref-20260905-hud-left-bottom-six-cards\\02-labeled-01-1366-plan-slot-click-cancels-draft.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-for-pureref-20260905-hud-left-bottom-six-cards\\03-labeled-02-1366-plan-card-reselect-after-slot-cancel.png"
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\00-1366-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\01-1366-plan-slot-click-cancels-draft.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\02-1366-plan-card-reselect-after-slot-cancel.png"
+  ],
+  "validation": [
+    "node scripts/infra/vitest-cli-safe.mjs run src/games/mage-wars/__tests__/tutorial.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testTimeout 300000 --hookTimeout 300000 -> 6 passed",
+    "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts \"1366x768 真实卡面点击计划且计划槽位不被遮挡\" -> 1 passed",
+    "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts \"单入口教程按玩家自然流程覆盖读局、读牌、计划、召唤、公开弃牌、快速施法窗口和移动\" -> 1 passed",
+    "npm run spec:lint -> OK"
+  ]
+}

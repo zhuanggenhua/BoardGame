@@ -119,10 +119,12 @@ describe('mage-wars tutorial', () => {
             'opponent-hud',
             'stage',
             'channel-result',
+            'spell-card-reading',
             'plan-open-creature-category',
             'plan-creature-next-page',
             'plan-select-wolf',
             'plan-open-incantation-category',
+            'plan-incantation-next-page',
             'plan-select-rouse',
             'plan-confirm',
             'prepare-opponent-spells',
@@ -130,6 +132,7 @@ describe('mage-wars tutorial', () => {
             'deploy-select-wolf',
             'deploy-target-zone',
             'wolf-summoned',
+            'attack-bar-reading',
             'rouse-select-spell',
             'rouse-target-wolf',
             'pass-your-deployment',
@@ -164,11 +167,34 @@ describe('mage-wars tutorial', () => {
             MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
         ]));
 
+        expect(MageWarsTutorial.steps.find((step) => step.id === 'spell-card-reading')).toMatchObject({
+            infoStep: true,
+            highlightTarget: 'mw-spellbook',
+            visual: {
+                src: 'mage-wars/references/spell-card-legend',
+                alt: 'game-mage-wars:tutorial.visuals.spellCardLegendAlt',
+                caption: 'game-mage-wars:tutorial.visuals.spellCardLegendCaption',
+            },
+        });
+        const attackBarReading = MageWarsTutorial.steps.find((step) => step.id === 'attack-bar-reading');
+        expect(attackBarReading).toMatchObject({
+            infoStep: true,
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            visual: {
+                src: 'mage-wars/references/attack-bar-legend',
+                alt: 'game-mage-wars:tutorial.visuals.attackBarLegendAlt',
+                caption: 'game-mage-wars:tutorial.visuals.attackBarLegendCaption',
+            },
+        });
+        expect(stepIds.indexOf('attack-bar-reading')).toBeGreaterThan(stepIds.indexOf('wolf-summoned'));
+        expect(stepIds.indexOf('attack-bar-reading')).toBeLessThan(stepIds.indexOf('rouse-select-spell'));
+
         const planningSteps = [
             ['plan-open-creature-category', 'mw-spellbook-category-creature'],
             ['plan-creature-next-page', 'mw-spellbook-next-page'],
             ['plan-select-wolf', `mw-spellbook-card-${JUNGLE_WOLF_CARD_ID}`],
             ['plan-open-incantation-category', 'mw-spellbook-category-incantation'],
+            ['plan-incantation-next-page', 'mw-spellbook-next-page'],
             ['plan-select-rouse', `mw-spellbook-card-${ROUSE_THE_BEAST_CARD_ID}`],
         ] as const;
         for (const [stepId, targetId] of planningSteps) {
@@ -298,6 +324,7 @@ describe('mage-wars tutorial', () => {
             'mw-self-hud',
             'mw-opponent-hud',
             'mw-stage',
+            'mw-spellbook',
             'mw-spellbook-category-creature',
             'mw-spellbook-category-incantation',
             'mw-spellbook-next-page',
@@ -323,6 +350,12 @@ describe('mage-wars tutorial', () => {
                     .toEqual(expect.any(String));
                 for (const step of entry.manifest.steps) {
                     expect(resolveLocaleKey(locale, step.content), `${step.content} is missing`).toEqual(expect.any(String));
+                    if (step.visual) {
+                        expect(resolveLocaleKey(locale, step.visual.alt), `${step.visual.alt} is missing`).toEqual(expect.any(String));
+                        if (step.visual.caption) {
+                            expect(resolveLocaleKey(locale, step.visual.caption), `${step.visual.caption} is missing`).toEqual(expect.any(String));
+                        }
+                    }
                 }
             }
         }
@@ -366,6 +399,13 @@ describe('mage-wars tutorial', () => {
             'click “end turn”',
             '对手施放阿希拉牧师',
             '圣光之柱：攻击',
+            '设计意图',
+            '后续复用',
+            '只按这些位置',
+            '坐标判断',
+            'design intent',
+            'reuse these positions',
+            'coordinate judgement',
         ];
         const tutorialText = locales.flatMap((locale) => flattenStrings(locale.tutorial)).join('\n').toLowerCase();
         for (const term of forbiddenTerms) {
@@ -374,12 +414,37 @@ describe('mage-wars tutorial', () => {
 
         const zhLocale = loadLocale('zh-CN') as { actions?: { guardCreature?: string } };
         const enLocale = loadLocale('en');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.spellCardReading'))
+            .toBe('先看计划法术会用到的基础字段：费用、行动、范围、目标、类型、派系和等级决定能不能计划与施放。');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.visuals.spellCardLegendAlt'))
+            .toBe('法术牌图例：施法费用、行动类型、范围、目标、类型、派系、等级和攻击条位置');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.visuals.spellCardLegendCaption'))
+            .toBe('这张图例先说明计划法术会用到的基础字段。');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.attackBarReading'))
+            .toBe('丛林灰狼已经在场上，现在再读攻击条：左侧图标区分快速或标准行动、近战或远程；右侧读范围、伤害类型、攻击骰子、附加效果和特性。');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.visuals.attackBarLegendAlt'))
+            .toBe('攻击条图例：快速行动、标准行动、近战攻击、远程攻击、范围、伤害类型、攻击骰子、附加效果和特性');
+        expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.visuals.attackBarLegendCaption'))
+            .toBe('这张图例说明攻击条各栏含义；当前用场上的丛林灰狼读第一次。');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.spellCardReading'))
+            .toBe('Use this spell-card legend first: cost, action, range, target, type, school, and level determine how you prepare and cast.');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.visuals.spellCardLegendAlt'))
+            .toBe('Spell-card legend showing mana cost, action type, range, target, type, school, level, and attack bar locations');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.visuals.spellCardLegendCaption'))
+            .toBe('This legend covers the basic fields needed for preparing spells.');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.attackBarReading'))
+            .toBe('Jungle Wolf is now in the arena, so read its attack bar: the left icons tell quick or full action and melee or ranged attack; the right side shows range, damage type, attack dice, extra effects, and traits.');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.visuals.attackBarLegendAlt'))
+            .toBe('Attack-bar legend showing quick action, full action, melee attack, ranged attack, range, damage type, attack dice, additional effects, and traits');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.visuals.attackBarLegendCaption'))
+            .toBe('This legend explains the attack-bar fields; use Jungle Wolf on the board as the first example.');
         const singleActionStepTexts = [
             ['planOpenCreatureCategory', '点击“生物”分类。', 'Click the Creature category.'],
             ['planCreatureNextPage', '点击下一页，找到“丛林灰狼”。', 'Click the next page to find Jungle Wolf.'],
-            ['planSelectWolf', '点击“丛林灰狼”卡牌本体，把它放进第一个计划槽。', 'Click the Jungle Wolf card body to put it into the first prepared slot.'],
+            ['planSelectWolf', '丛林灰狼是生物类法术，生物会被召唤到竞技场并持续战斗。点击“丛林灰狼”卡牌本体，把它放进第一个计划槽。', 'Jungle Wolf is a Creature spell: it summons a creature into the arena to keep fighting. Click the Jungle Wolf card body to put it into the first prepared slot.'],
             ['planOpenIncantationCategory', '点击“咒语”分类。', 'Click the Incantation category.'],
-            ['planSelectRouse', '点击“兽性觉醒”卡牌本体，把它放进第二个计划槽。', 'Click the Rouse the Beast card body to put it into the second prepared slot.'],
+            ['planIncantationNextPage', '点击下一页，找到“兽性觉醒”。', 'Click the next page to find Rouse the Beast.'],
+            ['planSelectRouse', '兽性觉醒是咒语类法术，咒语按牌面效果结算后进入弃牌堆。点击“兽性觉醒”卡牌本体，把它放进第二个计划槽。', 'Rouse the Beast is an Incantation spell: it resolves a one-time text effect, then goes to your discard pile. Click the Rouse the Beast card body to put it into the second prepared slot.'],
             ['planConfirm', '点击“确认计划 2/2”提交本回合计划。', 'Click “Confirm prep 2/2” to submit this round\'s plan.'],
             ['deploySelectWolf', '点击准备区的“丛林灰狼”。', 'Click Jungle Wolf in your prepared spells.'],
             ['deployTargetZone', '点击兽王所在区域。', 'Click the Beastmaster\'s zone.'],
@@ -396,7 +461,23 @@ describe('mage-wars tutorial', () => {
         }
         expect(zhLocale.actions?.guardCreature).toBe('守卫');
         expect(resolveLocaleKey(zhLocale, 'game-mage-wars:tutorial.steps.finish'))
-            .toBe('你已经走过首局读局、聚魔、计划、召唤、唤醒、公开弃牌、快速施法窗口和一次生物移动。基础教程完成。');
+            .toBe('你已经走过首局读局、读牌、聚魔、计划、召唤、攻击条、唤醒、公开弃牌、快速施法窗口和一次生物移动。基础教程完成。');
+        expect(resolveLocaleKey(enLocale, 'game-mage-wars:tutorial.steps.finish'))
+            .toBe('You have now read the board and spell cards, channeled, prepared spells, summoned Jungle Wolf, read its attack bar, roused it, checked public discard, passed the quickcast window, and moved a creature. The basic tutorial is complete.');
+    });
+
+    it('keeps the spell-card and attack-bar legends in the localized Mage Wars asset manifest', () => {
+        const manifest = JSON.parse(fs.readFileSync(
+            path.join(process.cwd(), 'public', 'assets', 'i18n', 'zh-CN', 'mage-wars', 'assets-manifest.json'),
+            'utf8',
+        )) as { files?: Record<string, unknown> };
+
+        expect(Object.keys(manifest.files ?? {})).toEqual(expect.arrayContaining([
+            'references/attack-bar-legend',
+            'references/compressed/attack-bar-legend',
+            'references/spell-card-legend',
+            'references/compressed/spell-card-legend',
+        ]));
     });
 
     it('keeps the tutorial command chain legal through rousing and moving Jungle Wolf', () => {

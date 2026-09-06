@@ -16,7 +16,9 @@ import type {
     BetrayalTraitKey,
 } from './game';
 import {
+    findFeverishMonster,
     findHelpingHandsTrollHand,
+    findJackSpirit,
     findPhantomPhotographer,
     isBloodFromStoneHaunt,
     isHelpingHandsHaunt,
@@ -28,6 +30,7 @@ import {
     resolveHelpingHandsControllerPlayerId,
     resolveLivingHeroExplorers,
     shouldDeadPlayerControlFeverish,
+    shouldDeadTraitorControlJackSpirit,
 } from './hauntScenarioReadModel';
 import {
     resolveBetrayalMonsterStatuses,
@@ -293,6 +296,41 @@ export function cloneMonsterMovementRollGroupResult(
         monsterIds: [...result.monsterIds],
         dice: [...result.dice],
     };
+}
+
+function resolveControlledMonsterMovementRoll(
+    nextPlayerId: string,
+    random: RandomFn,
+    monster: BetrayalMonsterSummary | null,
+): BetrayalMonsterMovementRollResult | null {
+    if (!monster) {
+        return null;
+    }
+    const dice = rollBetrayalDicePips(random, monster.speed);
+    const total = dice.reduce((sum, pip) => sum + pip, 0);
+    return {
+        monsterId: monster.id,
+        monsterName: monster.name,
+        playerId: nextPlayerId,
+        speed: monster.speed,
+        dice,
+        total,
+        moveAllowance: Math.max(1, total),
+    };
+}
+
+export function resolveBetrayalControlledMonsterMovementRoll(
+    core: BetrayalCore,
+    nextPlayerId: string,
+    random: RandomFn,
+): BetrayalMonsterMovementRollResult | null {
+    if (shouldDeadTraitorControlJackSpirit(core, nextPlayerId)) {
+        return resolveControlledMonsterMovementRoll(nextPlayerId, random, findJackSpirit(core));
+    }
+    if (shouldDeadPlayerControlFeverish(core, nextPlayerId)) {
+        return resolveControlledMonsterMovementRoll(nextPlayerId, random, findFeverishMonster(core, nextPlayerId));
+    }
+    return null;
 }
 
 export function cloneMonsterTurnRuntimeState(

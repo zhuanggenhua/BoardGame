@@ -1,4 +1,8 @@
-import type { GameRuntimeAdapter, GameRuntimeLocalSetupResult } from '../gameRuntimeAdapter';
+import type {
+    GameRuntimeAdapter,
+    GameRuntimeCreateRoomSetupContext,
+    GameRuntimeLocalSetupResult,
+} from '../gameRuntimeAdapter';
 import type { MageId } from './domain/ids';
 import {
     buildMageWarsMageSetupData,
@@ -51,7 +55,40 @@ export function resolveMageWarsLocalSetup(args: {
     };
 }
 
+
+export function resolveMageWarsCreateRoomSetup({
+    setupData,
+    setupSelections,
+}: GameRuntimeCreateRoomSetupContext): GameRuntimeLocalSetupResult {
+    const seedSetupData = {
+        ...(setupData ?? {}),
+        ...(setupSelections ?? {}),
+        setupSelections: {
+            ...((setupData?.setupSelections && typeof setupData.setupSelections === 'object' && !Array.isArray(setupData.setupSelections))
+                ? setupData.setupSelections as Record<string, unknown>
+                : {}),
+            ...(setupSelections ?? {}),
+        },
+    };
+    const seatMageIds = [
+        resolveMageWarsSelectedMageIdForSeat(seedSetupData, 0),
+        resolveMageWarsSelectedMageIdForSeat(seedSetupData, 1),
+    ] as [MageId, MageId];
+    const seatSpellbookEntries = [
+        resolveMageWarsSpellbookEntriesForSeat(seedSetupData, 0, seatMageIds[0]),
+        resolveMageWarsSpellbookEntriesForSeat(seedSetupData, 1, seatMageIds[1]),
+    ] as const;
+
+    return {
+        numPlayers: 2,
+        setupSelections: buildMageWarsMageSetupSelections(seatMageIds),
+        setupData: buildMageWarsMageSetupData(seatMageIds, seatSpellbookEntries),
+    };
+}
+
 export const mageWarsGameRuntimeAdapter: GameRuntimeAdapter = {
     resolveLocalSetup: resolveMageWarsLocalSetup,
     LocalSetupGate: MageWarsMageSelectionGate,
+    resolveCreateRoomSetup: resolveMageWarsCreateRoomSetup,
+    CreateRoomSetupGate: MageWarsMageSelectionGate,
 };

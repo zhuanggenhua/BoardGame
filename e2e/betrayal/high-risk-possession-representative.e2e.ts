@@ -499,9 +499,9 @@ const exerciseSkullDeathProtectionFromRealAttack = async (
     const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
     await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
     await waitForPhysicalDiceSettled(attackRollPanel);
-    await expect(attackRollPanel).toContainText('伤害或偷取');
+    await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
     await page.getByTestId('betrayal-roll-continue').click();
-    await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+    await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
     await page.getByTestId('betrayal-mummy-reward-damage').click();
     await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
         'data-player-id',

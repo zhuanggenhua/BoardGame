@@ -9,6 +9,7 @@ import type { LocalMatchPreferences } from '../../../engine/ai';
 import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';
 import { QIDAHEN_MANIFEST } from '../../../games/qidahen/manifest';
 import { THE_GANG_MANIFEST } from '../../../games/the-gang/manifest';
+import { MAGE_WARS_MANIFEST } from '../../../games/mage-wars/manifest';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -518,6 +519,30 @@ describe('CreateRoomModal AI default state', () => {
         }));
     });
 
+
+    it('法师战争建房页不显示双方学徒法师选择，确认时不提交建房法师字段', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: MAGE_WARS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        expect(screen.queryByText('setup.seat0Mage.label')).toBeNull();
+        expect(screen.queryByText('setup.seat1Mage.label')).toBeNull();
+        expect(screen.queryByTestId('setup-option-select-mageWarsSeat0MageId')).toBeNull();
+        expect(screen.queryByTestId('setup-option-select-mageWarsSeat1MageId')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 2,
+            setupSelections: {},
+        }));
+    });
     it('七大恨默认人数会按 bestPlayers 落到三人房，并带局内剧本选择模式提交', () => {
         const onConfirm = vi.fn();
 

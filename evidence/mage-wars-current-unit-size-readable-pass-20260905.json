@@ -1,0 +1,241 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-05T01:14:30.139Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "法师战争同格 2 个单位必须明显大于 3 个单位，不能只做到相等。",
+      "status": "PASS",
+      "evidence": [
+        "2 单位截图最小实体高度: 109.2px",
+        "3 单位截图最小实体高度: 88.2px",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-unit-size-readable-20260905\\01-two-units-dense-current.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-unit-size-readable-20260905\\02-three-units-packed-current.png"
+      ]
+    },
+    {
+      "requirement": "截图来自当前工作树的 /play/mage-wars 真实页面，不使用 9/2 旧图。",
+      "status": "PASS",
+      "evidence": [
+        "baseUrl: http://127.0.0.1:4275",
+        "page route: /play/mage-wars",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-unit-size-readable-20260905\\01-two-units-dense-current.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-unit-size-readable-20260905\\02-three-units-packed-current.png"
+      ]
+    },
+    {
+      "requirement": "单位卡和法师本体真实图片已加载，画面没有 Vite 错误遮罩。",
+      "status": "PASS",
+      "evidence": [
+        "visible images: complete with natural dimensions",
+        "viteOverlay: false"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-unit-size-readable-20260905\\01-two-units-dense-current.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\current-unit-size-readable-20260905\\02-three-units-packed-current.png"
+  ],
+  "audits": {
+    "twoUnits": {
+      "cards": [
+        {
+          "objectId": "mw-capture-red-hellion",
+          "ownerSide": "seat-left",
+          "rect": {
+            "x": 479.8,
+            "y": 379,
+            "width": 77.6,
+            "height": 109.2,
+            "right": 557.4,
+            "bottom": 488.2
+          }
+        },
+        {
+          "objectId": "mw-capture-blue-knight",
+          "ownerSide": "seat-right",
+          "rect": {
+            "x": 606.6,
+            "y": 379,
+            "width": 77.6,
+            "height": 109.2,
+            "right": 684.2,
+            "bottom": 488.2
+          }
+        }
+      ],
+      "mages": [
+        {
+          "ownerSide": "seat-left",
+          "rect": {
+            "x": 479.9,
+            "y": 267.7,
+            "width": 77.4,
+            "height": 109.2,
+            "right": 557.3,
+            "bottom": 376.9
+          }
+        },
+        {
+          "ownerSide": "seat-right",
+          "rect": {
+            "x": 606.7,
+            "y": 267.7,
+            "width": 77.4,
+            "height": 109.2,
+            "right": 684.1,
+            "bottom": 376.9
+          }
+        }
+      ],
+      "lanes": [
+        {
+          "ownerSide": "seat-left",
+          "overflowMode": "fit",
+          "maxRows": null,
+          "className": "relative h-full min-w-0 rounded-[0.22rem] bg-rose-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.16)] flex flex-col flex-nowrap content-center items-center justify-center gap-1 py-2",
+          "rect": {
+            "x": 459.5,
+            "y": 255.5,
+            "width": 118.2,
+            "height": 244.9,
+            "right": 577.7,
+            "bottom": 500.4
+          }
+        },
+        {
+          "ownerSide": "seat-right",
+          "overflowMode": "fit",
+          "maxRows": null,
+          "className": "relative h-full min-w-0 rounded-[0.22rem] bg-sky-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.16)] flex flex-col flex-nowrap content-center items-center justify-center gap-1 py-2",
+          "rect": {
+            "x": 586.3,
+            "y": 255.5,
+            "width": 118.2,
+            "height": 244.9,
+            "right": 704.5,
+            "bottom": 500.4
+          }
+        }
+      ],
+      "minEntityHeight": 109.2,
+      "maxEntityHeight": 109.2,
+      "viteOverlay": false
+    },
+    "threeUnits": {
+      "cards": [
+        {
+          "objectId": "mw-capture-red-hellion",
+          "ownerSide": "seat-left",
+          "rect": {
+            "x": 487.3,
+            "y": 345.8,
+            "width": 62.7,
+            "height": 88.2,
+            "right": 550,
+            "bottom": 434
+          }
+        },
+        {
+          "objectId": "mw-capture-red-imp",
+          "ownerSide": "seat-left",
+          "rect": {
+            "x": 487.3,
+            "y": 435.1,
+            "width": 62.7,
+            "height": 88.2,
+            "right": 550,
+            "bottom": 523.3
+          }
+        },
+        {
+          "objectId": "mw-capture-blue-knight",
+          "ownerSide": "seat-right",
+          "rect": {
+            "x": 614,
+            "y": 345.8,
+            "width": 62.7,
+            "height": 88.2,
+            "right": 676.7,
+            "bottom": 434
+          }
+        },
+        {
+          "objectId": "mw-capture-blue-angel",
+          "ownerSide": "seat-right",
+          "rect": {
+            "x": 614,
+            "y": 435.1,
+            "width": 62.7,
+            "height": 88.2,
+            "right": 676.7,
+            "bottom": 523.3
+          }
+        }
+      ],
+      "mages": [
+        {
+          "ownerSide": "seat-left",
+          "rect": {
+            "x": 487.4,
+            "y": 256.6,
+            "width": 62.5,
+            "height": 88.2,
+            "right": 549.9,
+            "bottom": 344.8
+          }
+        },
+        {
+          "ownerSide": "seat-right",
+          "rect": {
+            "x": 614.1,
+            "y": 256.6,
+            "width": 62.5,
+            "height": 88.2,
+            "right": 676.6,
+            "bottom": 344.8
+          }
+        }
+      ],
+      "lanes": [
+        {
+          "ownerSide": "seat-left",
+          "overflowMode": "wrap-columns",
+          "maxRows": "3",
+          "className": "relative h-full min-w-0 rounded-[0.22rem] bg-rose-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.16)] grid grid-flow-col grid-rows-3 auto-cols-max place-items-center justify-center content-center gap-x-1.5 gap-y-0.5 overflow-visible py-0.5",
+          "rect": {
+            "x": 459.5,
+            "y": 255.5,
+            "width": 118.2,
+            "height": 268.8,
+            "right": 577.7,
+            "bottom": 524.3
+          }
+        },
+        {
+          "ownerSide": "seat-right",
+          "overflowMode": "wrap-columns",
+          "maxRows": "3",
+          "className": "relative h-full min-w-0 rounded-[0.22rem] bg-sky-900/10 px-1.5 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.16)] grid grid-flow-col grid-rows-3 auto-cols-max place-items-center justify-center content-center gap-x-1.5 gap-y-0.5 overflow-visible py-0.5",
+          "rect": {
+            "x": 586.3,
+            "y": 255.5,
+            "width": 118.2,
+            "height": 268.8,
+            "right": 704.5,
+            "bottom": 524.3
+          }
+        }
+      ],
+      "minEntityHeight": 88.2,
+      "maxEntityHeight": 88.2,
+      "viteOverlay": false
+    }
+  }
+}

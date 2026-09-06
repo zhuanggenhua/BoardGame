@@ -1,0 +1,56 @@
+{
+  "verdict": "SUPERSEDED",
+  "supersededBy": "evidence/mage-wars-responsive-plan-16x9-pass-20260905.json",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "1366×768 压力态保持桌面 full HUD，不把 HUD/手牌/计划区整体缩小",
+      "status": "PASS",
+      "evidence": [
+        "E2E: 1366x768 真实卡面点击计划且计划槽位不被遮挡 -> 1 passed",
+        "断言 desktopScale=1 且双方 HUD density=full"
+      ]
+    },
+    {
+      "requirement": "玩家生命和提示卡上移到顶部锚点，对手提示卡在右上；底部不再给 HUD 占列",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言己方 HUD 左上、对手 HUD 右上、对手提示卡右缘贴近视口右侧",
+        "断言 HUD 不与法术书/计划槽相交"
+      ]
+    },
+    {
+      "requirement": "底部显示 5 张可读法术书牌和 2 个计划槽，卡牌本体点击计划，放大镜作为独立次级入口",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 5 张法术书牌、卡高 >=210px、计划槽卡高 >=210px",
+        "E2E 分别断言卡牌本体点击计划、计划槽点击取消、放大镜不改变计划"
+      ]
+    },
+    {
+      "requirement": "左上眼睛和缩放读数独立槽位，不遮挡 HUD 或彼此重叠",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 life toggle 与 self HUD/scale badge 不相交",
+        "截图 00-02 为 1366×768 整屏压力态"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\00-1366-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\01-1366-plan-slot-click-cancels-draft.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\02-1366-plan-card-reselect-after-slot-cancel.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-20260905-responsive-pass\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-20260905-responsive-pass\\01-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-20260905-responsive-pass\\02-labeled-01-1366-plan-slot-click-cancels-draft.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\_labeled-20260905-responsive-pass\\03-labeled-02-1366-plan-card-reselect-after-slot-cancel.png"
+  ]
+}

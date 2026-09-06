@@ -1,7 +1,9 @@
 import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
-import { normalizeBetrayalDiceCount } from './diceRules';
+import { normalizeBetrayalDiceCount, rollBetrayalDicePips } from './diceRules';
+import type { RandomFn } from '../../engine/types';
 import { getAllExplorers } from './explorerReadModel';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore, BetrayalDeckKind } from './game';
+import type { UseEffectProfile } from './possessionEffects';
 
 export interface BetrayalHauntRiskStatus {
     omenCount: number;
@@ -11,6 +13,14 @@ export interface BetrayalHauntRiskStatus {
     hauntStarted: boolean;
     nextOmenAutomatic: boolean;
     omenDeckRemaining: number;
+}
+
+export interface BetrayalHauntRollResult {
+    dice: number[];
+    total: number;
+    threshold: number;
+    triggered: boolean;
+    automatic: boolean;
 }
 
 export type BetrayalNumberTrackKind =
@@ -64,6 +74,58 @@ export function resolveBetrayalHauntRisk(
             && core.deckCounts.omen <= 1,
         omenDeckRemaining: core.deckCounts.omen,
     };
+}
+
+export function resolveHauntRoll(
+    core: BetrayalCore,
+    deckKind: BetrayalDeckKind,
+    random: RandomFn,
+): BetrayalHauntRollResult | null {
+    if (core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered || deckKind !== 'omen') {
+        return null;
+    }
+    const threshold = core.scenarioRuntime.hauntRollThreshold;
+    const hauntRisk = resolveBetrayalHauntRisk(core, { additionalOmenCount: 1 });
+    if (hauntRisk.nextOmenAutomatic) {
+        return {
+            dice: [],
+            total: threshold,
+            threshold,
+            triggered: true,
+            automatic: true,
+        };
+    }
+    const dice = rollBetrayalDicePips(random, hauntRisk.nextRollDiceCount);
+    const total = dice.reduce((sum, pip) => sum + pip, 0);
+    return {
+        dice,
+        total,
+        threshold,
+        triggered: total >= threshold,
+        automatic: false,
+    };
+}
+
+export function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
+    if (hauntRoll.automatic) {
+        return '预兆牌堆耗尽，自动触发作祟';
+    }
+    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
+}
+
+export function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: number; label: string; effect: UseEffectProfile }[] {
+    return [
+        {
+            min: hauntRoll.threshold,
+            label: '作祟开始',
+            effect: { mode: 'none', recommendedAction: 'endTurn' },
+        },
+        {
+            min: 0,
+            label: '未触发作祟',
+            effect: { mode: 'none', recommendedAction: 'endTurn' },
+        },
+    ];
 }
 
 function clampBetrayalNumberTrackProgress(value: number, min: number, max: number): number {

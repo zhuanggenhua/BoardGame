@@ -8,9 +8,15 @@ import {
     isExplorerDead,
     repeatTraitForDamage,
     rollDeathPrevention,
+    setExplorerTraitsToDeathsDoor,
 } from './damageResolutionModel';
+import { cloneScenarioRuntimeStatus } from './coreStateModel';
+import { applyDustEventEffectDeathIfNeeded } from './deathStateReadModel';
 import { rollBetrayalDicePips } from './diceRules';
-import { cloneExplorerSummary } from './explorerReadModel';
+import {
+    cloneExplorerSummary,
+    findExplorerByPlayerId,
+} from './explorerReadModel';
 import { rollAllTraitChecks } from './eventRollModel';
 import {
     cloneInventoryCard,
@@ -40,6 +46,7 @@ import {
 import type {
     BetrayalCore,
     BetrayalExplorerSummary,
+    BetrayalMonsterSummary,
     BetrayalPendingDamageAllocationState,
     BetrayalPendingEventRollResolutionState,
     BetrayalRecentRollState,
@@ -456,6 +463,46 @@ export function resolveEventDamageDeathPrevention(
             traitsBeforeDamage: { ...damage.traitsBeforeDamage },
         }
         : undefined;
+}
+
+export function applyImmediateEventDeathPreventionIfNeeded(
+    core: BetrayalCore,
+    deathPrevention: BetrayalPendingEventRollResolutionState['deathPrevention'] | undefined,
+    timestamp: number,
+    scenarioRuntimeBeforeDefeat: BetrayalCore['scenarioRuntime'] | null,
+    monstersBeforeDefeat: BetrayalMonsterSummary[],
+): void {
+    if (deathPrevention?.dice.length) {
+        core.recentRoll = {
+            id: `${deathPrevention.playerId}-death-prevention-${timestamp}`,
+            kind: 'deathPrevention',
+            playerId: deathPrevention.playerId,
+            sourceTitle: deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
+            dice: [...deathPrevention.dice],
+            passiveBonus: 0,
+            latestLabel: deathPrevention.prevented ? '阻止死亡' : '正常死亡',
+            deathPrevention: {
+                cardId: deathPrevention.cardId,
+                minTotal: deathPrevention.minTotal,
+                damageKind: deathPrevention.damageKind,
+                damageAmount: deathPrevention.damageAmount,
+                damageTraits: [...deathPrevention.damageTraits],
+                traitsBeforeDamage: { ...deathPrevention.traitsBeforeDamage },
+                scenarioRuntimeBeforeDefeat: scenarioRuntimeBeforeDefeat
+                    ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
+                monstersBeforeDefeat,
+            },
+            consumedRabbitFootCardIds: [],
+        };
+    }
+    if (deathPrevention?.prevented) {
+        const protectedExplorer = findExplorerByPlayerId(core, deathPrevention.playerId);
+        if (protectedExplorer) {
+            setExplorerTraitsToDeathsDoor(protectedExplorer);
+        }
+    } else {
+        applyDustEventEffectDeathIfNeeded(core);
+    }
 }
 
 export function applyEventEffect(

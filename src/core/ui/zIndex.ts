@@ -21,6 +21,7 @@ export const UI_Z_INDEX = {
     modalOverlay: 2100,
     modalContent: 2200,
     modalTooltip: 2350,
+    modalFullscreenGate: 2360,
     toast: 2250,
     tutorial: 2300,
     emergencyHud: 2400,

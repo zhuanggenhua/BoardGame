@@ -353,9 +353,20 @@ export interface TutorialAiAction {
     waitForBoardSyncAfter?: boolean;
 }
 
+export interface TutorialStepVisual {
+    /** 逻辑资源路径；运行时由统一图片链解析，不手写 /assets 或 compressed。 */
+    src: string;
+    /** 纯文本或 i18n key。 */
+    alt: string;
+    /** 可选的短说明，纯文本或 i18n key。 */
+    caption?: string;
+}
+
 export interface TutorialStepSnapshot {
     id: string;
     content: string;
+    /** 可选的教程内参考图，用于首次讲清卡面、图标或帮助卡读法。 */
+    visual?: TutorialStepVisual;
     highlightTarget?: string;
     /**
      * Controls only the tutorial-drawn frame around the target.

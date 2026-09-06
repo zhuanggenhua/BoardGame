@@ -58,6 +58,7 @@ import {
     getPresetMageSetupFromConfig,
     getMageWarsMageAbilityFromConfig,
     getMageWarsSpellCardFromConfig,
+    getPresetSpellbookEntriesFromConfig,
 } from './data/configPackage';
 import { areAdjacentZones, doesMageWarsWallBlockLineOfSight, isArenaZoneId } from './domain/utils';
 import { mageWarsObjectAbilityRegistry } from './domain/abilityCatalog';
@@ -97,7 +98,10 @@ import {
     resolveMageWarsObjectEffectiveLife,
     type MageWarsObjectAttackProfile,
 } from './domain/spellRules';
-import { getMageWarsPlayerSpellbookEntries } from './domain/spellbook';
+import {
+    getMageWarsPlayerSpellbookEntries,
+    type MageWarsPlayerSpellbookEntry,
+} from './domain/spellbook';
 
 type Props = GameBoardProps<MageWarsCore>;
 
@@ -116,11 +120,15 @@ const MAGE_WARS_LOCAL_PLANNING_TUTORIAL_STEP_IDS = new Set([
     'plan-creature-next-page',
     'plan-select-wolf',
     'plan-open-incantation-category',
+    'plan-incantation-next-page',
     'plan-select-rouse',
 ]);
-// 与大杀四方手牌放大镜同量级：2vw / 8.5vw ≈ 23.5% 卡宽。
-const MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE_REM = 2.4;
-const MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE_REM = 1.32;
+// 与大杀四方手牌放大镜同量级：2vw / 8.5vw ≈ 23.5% 卡宽；用卡牌容器宽度自适应，避免 16:9 放大后图标相对变小。
+const MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE = 'clamp(28px, 18.5cqw, 34px)';
+const MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE = 'clamp(15px, 10cqw, 19px)';
+const MAGE_WARS_HUD_HINT_CARD_HEIGHT_REM = 13.5;
+const MAGE_WARS_HUD_HINT_CARD_HEIGHT_CSS_VAR = 'var(--mage-wars-desktop-hud-hint-card-height, 13.5rem)';
+const MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM = 4;
 const MAGE_WARS_MIN_CAMERA_BOTTOM_UI_INSET = 316;
 const MAGE_WARS_CAMERA_BOTTOM_UI_INSET_RATIO = 0.28;
 const MAGE_WARS_MAX_CAMERA_BOTTOM_UI_INSET_RATIO = 0.45;
@@ -290,6 +298,9 @@ type FieldCardRole = 'source' | 'target';
 type ZoneEntityDensity = 'solo' | 'duel' | 'dense' | 'packed';
 type SeatOwnerSide = 'seat-left' | 'seat-right' | 'neutral';
 
+const ZONE_LOOSE_ENTITY_HEIGHT_CLASS = 'h-[clamp(13rem,19.25vh,16rem)]';
+const ZONE_PACKED_ENTITY_HEIGHT_CLASS = 'h-[clamp(9.5rem,14.075vh,13rem)]';
+
 function getZoneLaneItemStyle(
     laneIndex?: number,
     priority = false,
@@ -305,7 +316,7 @@ function getZoneLaneItemStyle(
 
 function getZoneOwnerLaneLayoutClassName(entityDensity: ZoneEntityDensity): string {
     if (entityDensity === 'packed') {
-        return 'grid grid-flow-col grid-rows-3 auto-cols-max place-items-center justify-center content-center gap-x-1.5 gap-y-1 overflow-visible py-1';
+        return 'grid grid-flow-col grid-rows-3 auto-cols-max place-items-center justify-center content-center gap-x-1.5 gap-y-0.5 overflow-visible py-0.5';
     }
 
     if (entityDensity === 'dense') {
@@ -317,6 +328,24 @@ function getZoneOwnerLaneLayoutClassName(entityDensity: ZoneEntityDensity): stri
 
 function getZoneOwnerLaneOverflowMode(entityDensity: ZoneEntityDensity): 'fit' | 'wrap-columns' {
     return entityDensity === 'packed' ? 'wrap-columns' : 'fit';
+}
+
+function getMageWarsSpellbookDisplayEntries(
+    player: Pick<MageWarsPlayerState, 'mageId' | 'spellbookEntries'>,
+): MageWarsPlayerSpellbookEntry[] {
+    const presetOrder = new Map(
+        getPresetSpellbookEntriesFromConfig(player.mageId)
+            .map((entry, index) => [entry.spellCardId, index] as const),
+    );
+
+    return [...getMageWarsPlayerSpellbookEntries(player)].sort((left, right) => {
+        const leftOrder = presetOrder.get(left.spellCardId);
+        const rightOrder = presetOrder.get(right.spellCardId);
+        if (leftOrder !== undefined || rightOrder !== undefined) {
+            return (leftOrder ?? Number.MAX_SAFE_INTEGER) - (rightOrder ?? Number.MAX_SAFE_INTEGER);
+        }
+        return left.spellCardId - right.spellCardId;
+    });
 }
 
 type PendingObjectAbilitySelection = {
@@ -367,14 +396,14 @@ function CardInspectButton({
     const referenceButtonStyle: CSSProperties | undefined = compact
         ? undefined
         : {
-            width: `${MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE_REM}rem`,
-            height: `${MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE_REM}rem`,
+            width: MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE,
+            height: MAGE_WARS_REFERENCE_INSPECT_BUTTON_SIZE,
         };
     const referenceIconStyle: CSSProperties | undefined = compact
         ? undefined
         : {
-            width: `${MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE_REM}rem`,
-            height: `${MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE_REM}rem`,
+            width: MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE,
+            height: MAGE_WARS_REFERENCE_INSPECT_ICON_SIZE,
         };
     return (
         <button
@@ -386,6 +415,8 @@ function CardInspectButton({
             style={referenceButtonStyle}
             data-testid="mage-wars-card-inspect-button"
             data-source-card-id={sourceCardId}
+            data-browse-inspectable="true"
+            data-secondary-inspect="true"
             aria-label={t('ui.inspectCardAria', { name: title })}
             title={t('ui.inspectCardTitle')}
             onPointerDown={(event) => event.stopPropagation()}
@@ -663,10 +694,12 @@ function MageWarsLifeToggle({
     pressed,
     onToggle,
     className,
+    style,
 }: {
     pressed: boolean;
     onToggle: () => void;
     className?: string;
+    style?: CSSProperties;
 }) {
     const { t } = useTranslation('game-mage-wars');
     const label = t(pressed ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals');
@@ -687,6 +720,7 @@ function MageWarsLifeToggle({
             data-testid="mage-wars-life-toggle"
             data-tutorial-id="mw-life-toggle"
             data-life-visible={pressed ? 'true' : 'false'}
+            style={style}
             onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -936,6 +970,7 @@ function MageHud({
     self,
     role,
     compact = false,
+    layout = 'vertical',
     visualDamage = player.damage,
     onInspect,
     onObserve,
@@ -946,6 +981,7 @@ function MageHud({
     self: boolean;
     role?: 'source' | 'target';
     compact?: boolean;
+    layout?: 'vertical' | 'horizontal';
     visualDamage?: number;
     onInspect?: () => void;
     onObserve?: () => void;
@@ -954,6 +990,15 @@ function MageHud({
     const { t } = useTranslation('game-mage-wars');
     const lifeRemaining = Math.max(0, player.life - visualDamage);
     const mageLabel = getMageDisplayLabel(player);
+    const mageHintCardAspectRatio = getMageWarsMagePreviewAspectRatio();
+    const fullHintCardStyle: CSSProperties = {
+        height: MAGE_WARS_HUD_HINT_CARD_HEIGHT_CSS_VAR,
+        width: `calc(${MAGE_WARS_HUD_HINT_CARD_HEIGHT_CSS_VAR} * ${mageHintCardAspectRatio.toFixed(6)})`,
+    };
+    const compactHintCardStyle: CSSProperties = {
+        height: `${MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM}rem`,
+        width: `${(MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM * mageHintCardAspectRatio).toFixed(3)}rem`,
+    };
     const handleHintCardClick = (event: ReactMouseEvent<HTMLDivElement>) => {
         if (!onInspect) return;
         event.preventDefault();
@@ -968,120 +1013,145 @@ function MageHud({
     };
 
     if (!compact) {
+        const hintCard = (
+            <div
+                className={cx(
+                    'relative flex-none rounded-[0.2rem]',
+                    onInspect && 'pointer-events-auto cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                )}
+                style={fullHintCardStyle}
+                data-testid="mage-wars-mage-hud-hint-card"
+                data-mage-preview-kind="card"
+                data-mage-ui-role="player-hint-card"
+                role={onInspect ? 'button' : undefined}
+                tabIndex={onInspect ? 0 : undefined}
+                onClick={handleHintCardClick}
+                onKeyDown={handleHintCardKeyDown}
+                aria-label={onInspect ? t('ui.inspectCardAria', { name: mageLabel }) : undefined}
+                title={onInspect ? t('ui.inspectCardTitle') : mageLabel}
+            >
+                <CardPreview
+                    previewRef={getMageWarsMagePreviewRef(player.mageId, 'card')}
+                    className="h-full w-full rounded-[0.2rem] shadow-[0_12px_28px_rgba(0,0,0,0.52)]"
+                    title={mageLabel}
+                    alt={mageLabel}
+                />
+                {onInspect ? (
+                    <CardInspectButton title={mageLabel} onInspect={onInspect} />
+                ) : null}
+                {!self && onObserve ? (
+                    <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
+                ) : null}
+                {current ? (
+                    <div
+                        className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/72 px-2 py-1 text-[0.68rem] font-black leading-none text-amber-100 shadow-[0_6px_16px_rgba(0,0,0,0.46)]"
+                        data-testid="mage-wars-mage-hud-current-badge"
+                    >
+                        <TokenImage
+                            src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
+                            alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
+                            className="h-5 w-5"
+                        />
+                        {t('player.active')}
+                    </div>
+                ) : null}
+                {role ? (
+                    <span
+                        className={cx(
+                            'pointer-events-none absolute inset-0 z-10 rounded-[inherit] border shadow-[inset_0_0_0_1px_rgba(251,191,36,0.24),0_0_18px_rgba(251,191,36,0.28)]',
+                            role === 'source'
+                                ? 'border-cyan-200/90 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.22),0_0_18px_rgba(34,211,238,0.4)]'
+                                : 'border-emerald-300/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.24),0_0_18px_rgba(16,185,129,0.42)]',
+                        )}
+                        data-testid={`mage-wars-mage-hud-${role}-frame`}
+                        data-mage-hud-role={role}
+                    />
+                ) : null}
+            </div>
+        );
+        const statPanel = (
+            <div
+                className={layout === 'horizontal' ? 'min-w-0 flex-1' : 'w-full'}
+                style={{ maxWidth: layout === 'horizontal' ? undefined : 'calc(var(--mage-wars-desktop-hud-width, 23.25rem) - 1.25rem)' }}
+            >
+                <div className="flex min-h-9 items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-baseline gap-2">
+                        <div className="shrink-0 text-[2rem] font-black leading-none text-amber-100 drop-shadow-[0_3px_10px_rgba(0,0,0,0.68)]">
+                            {mageLabel}
+                        </div>
+                        <div className="shrink-0 text-sm font-semibold text-stone-100">
+                            {self ? t('player.you') : t('player.opponent')}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <TokenImage
+                            src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
+                            alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
+                            className="h-10 w-10"
+                        />
+                        <TokenImage
+                            src={player.quickcastReady ? TOKEN_IMAGES.quickcastReady : TOKEN_IMAGES.quickcastSpent}
+                            alt={t(player.quickcastReady ? 'tokens.quickcastReady' : 'tokens.quickcastSpent')}
+                            className="h-10 w-10"
+                        />
+                    </div>
+                </div>
+                <div
+                    className="mt-3 grid grid-cols-[7rem_minmax(0,1fr)_4.75rem] items-center gap-x-4 gap-y-2 text-[2.25rem] font-bold leading-none text-amber-50"
+                    data-testid="mage-wars-mage-hud-stat-grid"
+                >
+                    <span>{t('stats.life')}</span>
+                    <div className="h-8 overflow-hidden rounded-full bg-red-950/70" data-testid="mage-wars-mage-hud-stat-bar" data-stat="life">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-red-600 to-rose-300"
+                            style={{ width: `${Math.max(0, Math.min(100, (lifeRemaining / player.life) * 100))}%` }}
+                        />
+                    </div>
+                    <span className="text-right tabular-nums">{lifeRemaining}</span>
+                    <span>{t('stats.mana')}</span>
+                    <div className="h-8 overflow-hidden rounded-full bg-sky-950/70" data-testid="mage-wars-mage-hud-stat-bar" data-stat="mana">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-sky-600 to-cyan-200"
+                            style={{ width: `${Math.max(0, Math.min(100, (player.mana / 20) * 100))}%` }}
+                        />
+                    </div>
+                    <span className="text-right tabular-nums">{player.mana}</span>
+                    <span>{t('stats.channeling')}</span>
+                    <div className="h-8 overflow-hidden rounded-full bg-amber-950/70" data-testid="mage-wars-mage-hud-stat-bar" data-stat="channeling">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-amber-100"
+                            style={{ width: `${Math.max(0, Math.min(100, (player.channeling / 12) * 100))}%` }}
+                        />
+                    </div>
+                    <span className="text-right tabular-nums">{player.channeling}</span>
+                </div>
+            </div>
+        );
+
         return (
             <section
-                className="pointer-events-none relative flex flex-col items-start gap-2 text-stone-100"
-                style={{ width: 'var(--mage-wars-desktop-hud-width, 15.5rem)' }}
+                className={cx(
+                    'pointer-events-none relative flex gap-2 text-stone-100',
+                    layout === 'horizontal' ? 'flex-row items-start gap-4' : 'flex-col',
+                    self ? 'items-start text-left' : 'items-end text-right',
+                )}
+                style={{ width: 'var(--mage-wars-desktop-hud-width, 23.25rem)' }}
                 data-testid={self ? 'mage-wars-mage-hud-self' : 'mage-wars-mage-hud-opponent'}
                 data-tutorial-id={self ? 'mw-self-hud' : 'mw-opponent-hud'}
                 data-mage-wars-hud-density="full"
+                data-mage-wars-hud-layout={layout}
             >
-                <div
-                    className={cx(
-                        'relative rounded-[0.2rem]',
-                        onInspect && 'pointer-events-auto cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
-                    )}
-                    data-testid="mage-wars-mage-hud-hint-card"
-                    data-mage-preview-kind="card"
-                    data-mage-ui-role="player-hint-card"
-                    role={onInspect ? 'button' : undefined}
-                    tabIndex={onInspect ? 0 : undefined}
-                    onClick={handleHintCardClick}
-                    onKeyDown={handleHintCardKeyDown}
-                    aria-label={onInspect ? t('ui.inspectCardAria', { name: mageLabel }) : undefined}
-                    title={onInspect ? t('ui.inspectCardTitle') : mageLabel}
-                >
-                    <CardPreview
-                            previewRef={getMageWarsMagePreviewRef(player.mageId, 'card')}
-                            className="h-[10.8rem] w-auto rounded-[0.2rem] shadow-[0_12px_28px_rgba(0,0,0,0.52)]"
-                        title={mageLabel}
-                        alt={mageLabel}
-                    />
-                    {onInspect ? (
-                        <CardInspectButton title={mageLabel} compact onInspect={onInspect} />
-                    ) : null}
-                    {!self && onObserve ? (
-                        <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
-                    ) : null}
-                    {current ? (
-                        <div
-                            className="absolute bottom-2 left-2 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/72 px-2 py-1 text-[0.68rem] font-black leading-none text-amber-100 shadow-[0_6px_16px_rgba(0,0,0,0.46)]"
-                            data-testid="mage-wars-mage-hud-current-badge"
-                        >
-                            <TokenImage
-                                src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
-                                alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
-                                className="h-5 w-5"
-                            />
-                            {t('player.active')}
-                        </div>
-                    ) : null}
-                    {role ? (
-                        <span
-                            className={cx(
-                                'pointer-events-none absolute inset-0 z-10 rounded-[inherit] border shadow-[inset_0_0_0_1px_rgba(251,191,36,0.24),0_0_18px_rgba(251,191,36,0.28)]',
-                                role === 'source'
-                                    ? 'border-cyan-200/90 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.22),0_0_18px_rgba(34,211,238,0.4)]'
-                                    : 'border-emerald-300/95 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.24),0_0_18px_rgba(16,185,129,0.42)]',
-                            )}
-                            data-testid={`mage-wars-mage-hud-${role}-frame`}
-                            data-mage-hud-role={role}
-                        />
-                    ) : null}
-                </div>
-                <div
-                    className="w-full"
-                    style={{ maxWidth: 'calc(var(--mage-wars-desktop-hud-width, 15.5rem) - 1.5rem)' }}
-                >
-                    <div className="flex items-end justify-between gap-2">
-                        <div>
-                            <div className="text-2xl font-black leading-none text-amber-100 drop-shadow-[0_3px_10px_rgba(0,0,0,0.68)]">
-                                {mageLabel}
-                            </div>
-                            <div className="mt-1 text-xs font-semibold text-stone-100">
-                                {self ? t('player.you') : t('player.opponent')}
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <TokenImage
-                                src={player.actionReady ? TOKEN_IMAGES.actionReady : TOKEN_IMAGES.actionSpent}
-                                alt={t(player.actionReady ? 'tokens.actionReady' : 'tokens.actionSpent')}
-                                className="h-7 w-7"
-                            />
-                            <TokenImage
-                                src={player.quickcastReady ? TOKEN_IMAGES.quickcastReady : TOKEN_IMAGES.quickcastSpent}
-                                alt={t(player.quickcastReady ? 'tokens.quickcastReady' : 'tokens.quickcastSpent')}
-                                className="h-7 w-7"
-                            />
-                        </div>
-                    </div>
-                    <div className="mt-3 grid grid-cols-[2.6rem_minmax(0,1fr)_2rem] items-center gap-x-2 gap-y-2 text-xs font-semibold text-amber-50">
-                        <span>{t('stats.life')}</span>
-                        <div className="h-2 overflow-hidden rounded-full bg-red-950/70">
-                            <div
-                                className="h-full rounded-full bg-gradient-to-r from-red-600 to-rose-300"
-                                style={{ width: `${Math.max(0, Math.min(100, (lifeRemaining / player.life) * 100))}%` }}
-                            />
-                        </div>
-                        <span>{lifeRemaining}</span>
-                        <span>{t('stats.mana')}</span>
-                        <div className="h-2 overflow-hidden rounded-full bg-sky-950/70">
-                            <div
-                                className="h-full rounded-full bg-gradient-to-r from-sky-600 to-cyan-200"
-                                style={{ width: `${Math.max(0, Math.min(100, (player.mana / 20) * 100))}%` }}
-                            />
-                        </div>
-                        <span>{player.mana}</span>
-                        <span>{t('stats.channeling')}</span>
-                        <div className="h-2 overflow-hidden rounded-full bg-amber-950/70">
-                            <div
-                                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-amber-100"
-                                style={{ width: `${Math.max(0, Math.min(100, (player.channeling / 12) * 100))}%` }}
-                            />
-                        </div>
-                        <span>{player.channeling}</span>
-                    </div>
-                </div>
+                {layout === 'horizontal' ? (
+                    <>
+                        {hintCard}
+                        {statPanel}
+                    </>
+                ) : (
+                    <>
+                        {hintCard}
+                        {statPanel}
+                    </>
+                )}
             </section>
         );
     }
@@ -1101,9 +1171,10 @@ function MageHud({
         >
             <div
                 className={cx(
-                    'relative rounded-[0.2rem]',
+                    'relative flex-none rounded-[0.2rem]',
                     onInspect && 'pointer-events-auto cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
                 )}
+                style={compactHintCardStyle}
                 data-testid="mage-wars-mage-hud-hint-card"
                 data-mage-preview-kind="card"
                 data-mage-ui-role="player-hint-card"
@@ -1116,15 +1187,12 @@ function MageHud({
             >
                 <CardPreview
                     previewRef={getMageWarsMagePreviewRef(player.mageId, 'card')}
-                        className={cx(
-                            'rounded-[0.2rem] shadow-[0_8px_22px_rgba(0,0,0,0.48)]',
-                            compact ? 'h-16 w-auto' : 'h-24 w-auto',
-                    )}
+                    className="h-full w-full rounded-[0.2rem] shadow-[0_8px_22px_rgba(0,0,0,0.48)]"
                     title={mageLabel}
                     alt={mageLabel}
                 />
-                {onInspect ? (
-                    <CardInspectButton title={mageLabel} compact onInspect={onInspect} />
+                    {onInspect ? (
+                        <CardInspectButton title={mageLabel} compact onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1236,6 +1304,7 @@ function PreparedSpellCard({
     const cardSizeClass = compact ? 'h-[5.05rem]' : '';
     const cardSizeStyle: CSSProperties = {
         aspectRatio: cardAspectRatio,
+        ...(!compact ? { containerType: 'inline-size' as const } : {}),
         ...(!compact ? { height: 'var(--mage-wars-desktop-card-height, 14rem)' } : {}),
     };
     const handleCardClick = onClick ?? onInspect;
@@ -1314,7 +1383,7 @@ function PreparedSpellCard({
                         data-selected={selected ? 'true' : undefined}
                         data-planning-draft={planningDraft ? 'true' : undefined}
                         data-plan-slot-index={planSlotIndex ?? undefined}
-                        data-browse-inspectable="true"
+                        data-primary-action="true"
                         data-secondary-inspect="true"
                         disabled={disabled}
                         onClick={(event) => {
@@ -1425,12 +1494,12 @@ function ZoneFieldCard({
     const title = object?.name ?? getMageWarsSpellCardName(cardId) ?? t('privateZones.spell');
     const compact = density === 'dense' || density === 'packed';
     const cardHeightClass = density === 'packed'
-        ? 'h-[10.2rem]'
+        ? ZONE_PACKED_ENTITY_HEIGHT_CLASS
         : density === 'dense'
-            ? 'h-[10.2rem]'
+            ? ZONE_LOOSE_ENTITY_HEIGHT_CLASS
             : density === 'duel'
                 ? 'h-[8rem]'
-                : 'h-[11.95rem]';
+                : ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
     const cardAspectRatio = getMageWarsSpellCardAspectRatio(cardId) ?? SPELL_CARD_BACK_ASPECT_RATIO;
     const cardSizeStyle: CSSProperties = { aspectRatio: cardAspectRatio };
     const life = visualLife ?? object?.life ?? 0;
@@ -1778,7 +1847,7 @@ function OpponentPlanMirror({ player, compact = false }: { player: MageWarsPlaye
     }
 
     return (
-        <section className="pointer-events-auto flex flex-col items-start gap-3" data-testid="mage-wars-opponent-prepared-mirror" data-tutorial-id="mw-opponent-prepared">
+        <section className="pointer-events-auto flex flex-col items-end gap-3 text-right" data-testid="mage-wars-opponent-prepared-mirror" data-tutorial-id="mw-opponent-prepared">
             <div className="flex items-end gap-1.5">
                 {[0, 1].map((slot) => (
                     <OptimizedImage
@@ -1790,7 +1859,7 @@ function OpponentPlanMirror({ player, compact = false }: { player: MageWarsPlaye
                     />
                 ))}
             </div>
-            <div className="pl-0.5 text-[0.68rem] font-semibold leading-tight text-amber-100">
+            <div className="pr-0.5 text-[0.68rem] font-semibold leading-tight text-amber-100">
                 {t('privateZones.opponentPlansWithCount', { count: player.preparedSpellSlots })}
             </div>
         </section>
@@ -1870,7 +1939,7 @@ function SpellbookShelf({
     onInspectCard,
     tutorialStepId,
     onTutorialPlanningStepComplete,
-    visibleCardCount = 6,
+    visibleCardCount = MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT,
 }: {
     player: MageWarsPlayerState;
     phase: string;
@@ -1896,7 +1965,7 @@ function SpellbookShelf({
         { id: 'equipment', label: t('spellbook.categories.equipment') },
     ];
     const spellbookEntries = useMemo(() => (
-        getMageWarsPlayerSpellbookEntries(player)
+        getMageWarsSpellbookDisplayEntries(player)
     ), [player]);
     const filteredEntries = useMemo(() => spellbookEntries.filter((entry) => {
         const cardId = entry.spellCardId;
@@ -1914,7 +1983,7 @@ function SpellbookShelf({
             return counts;
         }, new Map<number, number>())
     ), [selectedCardIds]);
-    const cardsPerPage = Math.max(1, Math.min(6, Math.floor(visibleCardCount)));
+    const cardsPerPage = Math.max(1, Math.min(MAGE_WARS_SPELLBOOK_VISIBLE_CARD_COUNT, Math.floor(visibleCardCount)));
     const pageCount = Math.max(1, Math.ceil(filteredEntries.length / cardsPerPage));
     const currentPage = Math.min(page, pageCount - 1);
     const previewEntries = filteredEntries.slice(currentPage * cardsPerPage, currentPage * cardsPerPage + cardsPerPage);
@@ -1952,8 +2021,12 @@ function SpellbookShelf({
 
     return (
         <section
-            className="pointer-events-auto flex max-w-[76.25rem] items-end px-1.5 pt-3"
-            style={{ gap: 'var(--mage-wars-desktop-section-gap, 1.125rem)' }}
+            className="pointer-events-auto flex w-full items-end px-1.5 pt-3"
+            style={{
+                containerType: 'inline-size',
+                gap: 'var(--mage-wars-desktop-section-gap, 1.125rem)',
+                '--mage-wars-desktop-card-height': 'var(--mage-wars-desktop-spellbook-card-height, clamp(13.75rem, 20cqw, 19.5rem))',
+            } as CSSProperties}
             data-testid="mage-wars-desktop-spellbook-shelf"
             data-tutorial-id="mw-spellbook"
             aria-label={t('privateZones.spellbook')}
@@ -1994,7 +2067,7 @@ function SpellbookShelf({
                 ))}
             </div>
             <div
-                className="relative z-10 flex min-w-0 flex-1 items-end overflow-visible"
+                className="relative z-10 flex min-w-0 shrink-0 items-end overflow-visible"
                 style={{ gap: 'var(--mage-wars-desktop-card-gap, 0.75rem)' }}
             >
                 {previewEntries.map((entry) => (
@@ -2022,7 +2095,11 @@ function SpellbookShelf({
             >
                 <button
                     type="button"
-                    className="grid h-10 w-10 place-items-center rounded-[0.3rem] bg-black/32 text-lg font-bold text-amber-100"
+                    className="grid place-items-center rounded-[0.3rem] bg-black/32 text-lg font-bold text-amber-100"
+                    style={{
+                        height: 'var(--mage-wars-spellbook-page-button-size, 2.5rem)',
+                        width: 'var(--mage-wars-spellbook-page-button-size, 2.5rem)',
+                    }}
                     aria-label={t('spellbook.previousPage')}
                     disabled={currentPage === 0}
                     data-testid="mage-wars-spellbook-previous-page"
@@ -2036,7 +2113,11 @@ function SpellbookShelf({
                 </div>
                 <button
                     type="button"
-                    className="grid h-10 w-10 place-items-center rounded-[0.3rem] bg-black/32 text-lg font-bold text-amber-100"
+                    className="grid place-items-center rounded-[0.3rem] bg-black/32 text-lg font-bold text-amber-100"
+                    style={{
+                        height: 'var(--mage-wars-spellbook-page-button-size, 2.5rem)',
+                        width: 'var(--mage-wars-spellbook-page-button-size, 2.5rem)',
+                    }}
                     aria-label={t('spellbook.nextPage')}
                     disabled={currentPage >= pageCount - 1}
                     data-testid="mage-wars-spellbook-next-page"
@@ -2045,6 +2126,9 @@ function SpellbookShelf({
                         setPage((value) => Math.min(pageCount - 1, value + 1));
                         if (category === 'creature') {
                             completeTutorialPlanningStep('plan-creature-next-page');
+                        }
+                        if (category === 'incantation') {
+                            completeTutorialPlanningStep('plan-incantation-next-page');
                         }
                     }}
                 >
@@ -2234,14 +2318,14 @@ function ZoneOccupant({
     const { t } = useTranslation('game-mage-wars');
     const mageLabel = getMageDisplayLabel(player);
     const portraitHeightClass = density === 'packed'
-        ? 'h-[10.2rem]'
+        ? ZONE_PACKED_ENTITY_HEIGHT_CLASS
         : density === 'dense'
-            ? 'h-[10.2rem]'
+            ? ZONE_LOOSE_ENTITY_HEIGHT_CLASS
             : density === 'duel'
                 ? 'h-[8rem]'
                 : crowded
                     ? 'h-[10.35rem]'
-                    : 'h-[11.5rem]';
+                    : ZONE_LOOSE_ENTITY_HEIGHT_CLASS;
     const portraitStyle: CSSProperties = { aspectRatio: getMageWarsMagePreviewAspectRatio() };
 
     return (
@@ -2963,7 +3047,7 @@ function ArenaStage({
                         >
                         {usesOwnershipLanes ? (
                             <div
-                                className="absolute inset-[2.2%] grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[3.5%]"
+                                className="absolute inset-[1.4%] grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[3.5%]"
                                 data-testid="mage-wars-zone-ownership-lanes"
                                 data-zone-id={zone.id}
                                 data-layout-axis="horizontal"
@@ -3676,15 +3760,21 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
     const viewport = useRuntimeViewport();
     const isLandscapeMobileViewport = viewport.width <= 1023 && viewport.width > viewport.height;
     const desktopBottomGap = isLandscapeMobileViewport ? 0 : MAGE_WARS_DESKTOP_BOTTOM_GAP_PX;
-    const cameraFitInsets = useMemo(() => ({
-        bottom: Math.min(
-            Math.max(
-                MAGE_WARS_MIN_CAMERA_BOTTOM_UI_INSET,
-                Math.round(viewport.height * MAGE_WARS_CAMERA_BOTTOM_UI_INSET_RATIO),
-            ),
-            Math.round(viewport.height * MAGE_WARS_MAX_CAMERA_BOTTOM_UI_INSET_RATIO),
-        ) + desktopBottomGap,
-    }), [desktopBottomGap, viewport.height]);
+    const cameraFitInsets = useMemo(() => {
+        if (!isLandscapeMobileViewport) {
+            return undefined;
+        }
+
+        return {
+            bottom: Math.min(
+                Math.max(
+                    MAGE_WARS_MIN_CAMERA_BOTTOM_UI_INSET,
+                    Math.round(viewport.height * MAGE_WARS_CAMERA_BOTTOM_UI_INSET_RATIO),
+                ),
+                Math.round(viewport.height * MAGE_WARS_MAX_CAMERA_BOTTOM_UI_INSET_RATIO),
+            ) + desktopBottomGap,
+        };
+    }, [desktopBottomGap, isLandscapeMobileViewport, viewport.height]);
     const phase = G.sys.phase ?? 'reset';
     const core = G.core;
     const players = core.playerOrder.map((id) => core.players[id]).filter(Boolean);
@@ -4732,16 +4822,23 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
         ? undefined
         : {
             inset: 0,
-            '--mage-wars-desktop-hud-width': 'clamp(12rem, 12.92vw, 15.5rem)',
-            '--mage-wars-desktop-prepared-width': 'clamp(16.5rem, 18.75vw, 22.5rem)',
-            '--mage-wars-desktop-card-height': 'clamp(10.625rem, 12.45vw, 14rem)',
+            '--mage-wars-desktop-hud-width': 'clamp(25rem, 24vw, 38rem)',
+            '--mage-wars-desktop-self-hud-left': 'calc(var(--mage-wars-desktop-side-inset, 1rem) + 25vw)',
+            '--mage-wars-desktop-hud-hint-card-height': 'clamp(13.5rem, 20vh, 17rem)',
+            '--mage-wars-desktop-prepared-width': 'clamp(19.125rem, 19vw, 31rem)',
+            '--mage-wars-desktop-prepared-card-height': 'clamp(13.5rem, 20.75vh, 17rem)',
+            '--mage-wars-desktop-card-height': 'var(--mage-wars-desktop-prepared-card-height, 14rem)',
+            '--mage-wars-desktop-spellbook-card-height': 'clamp(13.75rem, 29vh, 24rem)',
+            '--mage-wars-desktop-top-inset': 'clamp(0.625rem, 1vw, 0.875rem)',
             '--mage-wars-desktop-side-inset': 'clamp(0.5rem, 1.17vw, 1rem)',
-            '--mage-wars-desktop-grid-gap': 'clamp(0.5rem, calc(1.444vw - 0.733rem), 0.75rem)',
+            '--mage-wars-desktop-bottom-side-inset': 'clamp(0.5rem, calc(1.5vw - 0.8rem), 1rem)',
+            '--mage-wars-desktop-grid-gap': 'clamp(0.375rem, 0.45vw, 0.75rem)',
             '--mage-wars-desktop-section-gap': 'clamp(0.5rem, calc(1.805vw - 1.041rem), 1.125rem)',
             '--mage-wars-desktop-card-gap': 'clamp(0.375rem, calc(1.083vw - 0.551rem), 0.75rem)',
             '--mage-wars-spellbook-control-width': 'clamp(2.5rem, 3vw, 3.625rem)',
-            '--mage-wars-spellbook-page-rail-width': 'clamp(2.5rem, 2.5vw, 3rem)',
-            '--mage-wars-prepared-card-gap': 'clamp(0.5rem, calc(1.083vw - 0.551rem), 0.875rem)',
+            '--mage-wars-spellbook-page-rail-width': 'clamp(2.25rem, 2.5vw, 3rem)',
+            '--mage-wars-spellbook-page-button-size': 'clamp(2.25rem, 2.1vw, 2.5rem)',
+            '--mage-wars-prepared-card-gap': 'clamp(0.25rem, calc(1.083vw - 0.8rem), 0.875rem)',
             '--mage-wars-prepared-row-padding-left': 'clamp(0rem, calc(4.333vw - 3.7rem), 1.5rem)',
             '--mage-wars-prepared-row-padding-right': 'clamp(0rem, calc(1.083vw - 0.925rem), 0.375rem)',
         } as CSSProperties;
@@ -4775,11 +4872,17 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     initialScale={1}
                     minScale={1}
                     maxScale={2.6}
-                    baseScaleMode="contain"
+                    baseScaleMode={isLandscapeMobileViewport ? 'contain' : 'cover'}
+                    panBoundsMode="free"
                     fitInsets={cameraFitInsets}
                     containerTestId="mage-wars-arena-viewport"
                     contentTestId="mage-wars-arena-viewport-content"
                     scaleTestId="mage-wars-arena-viewport-scale"
+                    scaleBadgeVisibility="interaction"
+                    scaleBadgeStyle={isLandscapeMobileViewport ? undefined : {
+                        left: 'calc(var(--mage-wars-desktop-side-inset, 1rem) + 3.5rem)',
+                        top: '1rem',
+                    }}
                     className="flex h-full w-full items-center justify-center"
                     contentClassName="relative shrink-0"
                     contentStyle={{
@@ -4858,7 +4961,11 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             <MageWarsLifeToggle
                 pressed={showBoardLifeTotals}
                 onToggle={() => setShowBoardLifeTotals((value) => !value)}
-                className="left-4 top-4"
+                style={isLandscapeMobileViewport ? undefined : {
+                    left: 'var(--mage-wars-desktop-side-inset, 1rem)',
+                    top: 'var(--mage-wars-desktop-top-inset, 0.875rem)',
+                }}
+                className={isLandscapeMobileViewport ? 'left-4 top-4' : undefined}
             />
 
             <MageWarsInteractionDock
@@ -4892,7 +4999,37 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 onCancel={() => setPendingMageAbilityStatusTargetObjectId(null)}
             />
 
-            <aside className="pointer-events-none absolute right-6 top-[4.375rem] z-20 w-[15.5rem]">
+            <aside
+                className="pointer-events-none absolute z-20"
+                style={{
+                    left: 'var(--mage-wars-desktop-self-hud-left, var(--mage-wars-desktop-side-inset, 1rem))',
+                    bottom: `calc(${desktopBottomGap}px + var(--mage-wars-desktop-spellbook-card-height, var(--mage-wars-desktop-card-height, 14rem)) + var(--mage-wars-desktop-section-gap, 1.125rem) + 0.25rem)`,
+                    width: 'var(--mage-wars-desktop-hud-width, 23.25rem)',
+                }}
+                data-layout-position="self-lower-left-arena-safe"
+            >
+                <div className="pointer-events-none">
+                    {viewingPlayer ? (
+                        <MageHud
+                            player={viewingPlayer}
+                            current={viewingPlayer.id === phaseActorId}
+                            self
+                            compact={shouldCompactPlayerHud}
+                            visualDamage={getVisualPlayerDamage(viewingPlayer)}
+                            onInspect={() => handleInspectMage(viewingPlayer)}
+                        />
+                    ) : null}
+                </div>
+            </aside>
+
+            <aside
+                className="pointer-events-none absolute z-20"
+                style={{
+                    right: 'var(--mage-wars-desktop-side-inset, 1rem)',
+                    top: 'var(--mage-wars-desktop-top-inset, 0.875rem)',
+                    width: 'var(--mage-wars-desktop-hud-width, 23.25rem)',
+                }}
+            >
                 <div className="pointer-events-none">
                     {opponent ? (
                         <MageHud
@@ -4910,7 +5047,14 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             </aside>
 
             {opponent ? (
-                <aside className="pointer-events-none absolute left-14 top-12 z-20">
+                <aside
+                    className="pointer-events-none absolute z-20"
+                    style={{
+                        right: 'calc(var(--mage-wars-desktop-side-inset, 1rem) + var(--mage-wars-desktop-hud-width, 23.25rem) + 0.75rem)',
+                        top: 'var(--mage-wars-desktop-top-inset, 0.875rem)',
+                    }}
+                    data-layout-position="opponent-top-right-adjacent-to-hud"
+                >
                     <OpponentPlanMirror player={opponent} />
                 </aside>
             ) : null}
@@ -4951,34 +5095,17 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             <div
                 className="pointer-events-none absolute z-30 grid items-end"
                 style={{
-                    left: 'var(--mage-wars-desktop-side-inset, 1rem)',
-                    right: 'var(--mage-wars-desktop-side-inset, 1rem)',
+                    left: 'var(--mage-wars-desktop-bottom-side-inset, var(--mage-wars-desktop-side-inset, 1rem))',
+                    right: 'var(--mage-wars-desktop-bottom-side-inset, var(--mage-wars-desktop-side-inset, 1rem))',
                     bottom: desktopBottomGap,
                     columnGap: 'var(--mage-wars-desktop-grid-gap, 0.75rem)',
-                    gridTemplateColumns: 'var(--mage-wars-desktop-hud-width, 15.5rem) minmax(0, 1fr) var(--mage-wars-desktop-prepared-width, 22.5rem)',
+                    gridTemplateColumns: 'minmax(0, 1fr) var(--mage-wars-desktop-prepared-width, 22.5rem)',
                 }}
                 data-testid="mage-wars-bottom-viewport-grid"
                 data-mage-wars-layout-source="viewport-grid-anchored"
                 data-mage-wars-bottom-gap-px={desktopBottomGap}
             >
-                <aside
-                    className="pointer-events-none justify-self-start"
-                    style={{ width: 'var(--mage-wars-desktop-hud-width, 15.5rem)' }}
-                >
-                    <div className="pointer-events-none">
-                        {viewingPlayer ? (
-                            <MageHud
-                                player={viewingPlayer}
-                                current={viewingPlayer.id === phaseActorId}
-                                self
-                                compact={shouldCompactPlayerHud}
-                                visualDamage={getVisualPlayerDamage(viewingPlayer)}
-                                onInspect={() => handleInspectMage(viewingPlayer)}
-                            />
-                        ) : null}
-                    </div>
-                </aside>
-                <aside className="pointer-events-none min-w-0 justify-self-start">
+                <aside className="pointer-events-none w-full min-w-0 justify-self-stretch">
                     {viewingPlayer ? (
                         <SpellbookShelf
                             player={viewingPlayer}

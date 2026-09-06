@@ -1578,7 +1578,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(afterReroll.dice[0].value).toBe(1);
     });
 
-    it('非骰主也可在可改奖励骰期间用战术优势重掷当前临时骰', () => {
+    it('非骰主不能在可改奖励骰期间用战术优势重掷对手临时骰', () => {
         const state = createCore();
         state.players['0'] = {
             ...createHero('0', false),
@@ -1604,7 +1604,20 @@ describe('DiceThrone 单槽当前骰区', () => {
             'zhanshujia-tactical-advantage',
             1,
             'main1',
-        )).toBe(true);
+        )).toBe(false);
+        expect(validateCommand(
+            bonusOpened,
+            {
+                type: 'USE_PASSIVE_ABILITY',
+                playerId: '1',
+                payload: {
+                    passiveId: 'zhanshujia-tactical-advantage',
+                    actionIndex: 1,
+                    targetDieId: 0,
+                },
+            } as any,
+            'main1',
+        ).valid).toBe(false);
 
         const events = execute(
             { core: bonusOpened, sys: { phase: 'main1' } } as MatchState<DiceThroneCore>,
@@ -1621,26 +1634,9 @@ describe('DiceThrone 单槽当前骰区', () => {
         );
         const afterReroll = events.reduce((current, event) => reduce(current, event), bonusOpened);
 
-        expect(events).toContainEqual(expect.objectContaining({
-            type: 'TOKEN_CONSUMED',
-            payload: expect.objectContaining({
-                playerId: '1',
-                tokenId: TOKEN_IDS.TACTICAL_ADVANTAGE,
-                amount: 1,
-            }),
-        }));
-        expect(events.find((event) => event.type === 'DIE_REROLLED')).toMatchObject({
-            payload: {
-                dieId: 0,
-                oldValue: 3,
-                newValue: 6,
-                playerId: '1',
-                ownerId: '0',
-                target: 'pendingBonusDie',
-            },
-        });
-        expect(afterReroll.pendingBonusDiceSettlement?.dice[0]?.value).toBe(6);
-        expect(afterReroll.players['1'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
+        expect(events).toEqual([]);
+        expect(afterReroll.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
+        expect(afterReroll.players['1'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(1);
     });
 
     it('闪避骰进入当前骰区后，战术家重掷会重新决定免伤结果', () => {
@@ -1888,7 +1884,7 @@ describe('DiceThrone 单槽当前骰区', () => {
         } as any, 'main1', responseModifyInteraction)).toEqual({ valid: true });
     });
 
-    it('2v2 当前骰区的队友与对手被动重掷权限都由同一策略裁决', () => {
+    it('2v2 当前骰区中战术优势不能重掷队友或对手骰子', () => {
         const context = createEvasionRollContext({
             ownerPlayerId: '0',
             diceDefinitionId: 'zhanshujia-dice',
@@ -1917,7 +1913,7 @@ describe('DiceThrone 单槽当前骰区', () => {
             },
         };
 
-        expect(isPassiveActionUsable(state, '2', 'zhanshujia-tactical-advantage', 1, 'main1')).toBe(true);
+        expect(isPassiveActionUsable(state, '2', 'zhanshujia-tactical-advantage', 1, 'main1')).toBe(false);
         expect(isPassiveActionUsable(state, '1', 'zhanshujia-tactical-advantage', 1, 'main1')).toBe(false);
     });
 

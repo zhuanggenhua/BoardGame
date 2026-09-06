@@ -1,0 +1,90 @@
+{
+  "title": "山屋惊魂教程读本重构：自然作祟到英雄找真名",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\01-当前玩家结束回合前.jpg",
+      "label": "自然作祟 01：当前玩家结束回合前",
+      "transition": "起点：当前玩家在图书馆，先只结束自己的回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\02-等待队友一探索预兆房间.jpg",
+      "label": "自然作祟 02：等待队友一探索",
+      "transition": "回合交给队友一；当前玩家只看公开等待状态，不代操作。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\03-队友一获得指环未触发.jpg",
+      "label": "自然作祟 03：队友一获得指环未触发",
+      "transition": "队友一按正式流程翻出预兆，结果公开但尚未作祟。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\04-队友二翻出狗未触发.jpg",
+      "label": "自然作祟 04：队友二翻出狗未触发",
+      "transition": "队友二继续正式流程翻出狗，狗作为预兆公开出现。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\05-狗确认后回到当前玩家.jpg",
+      "label": "自然作祟 05：狗确认后回到当前玩家",
+      "transition": "队友确认狗和作祟结果后，轮序自然回到当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\06-再次结束当前回合.jpg",
+      "label": "自然作祟 06：当前玩家再次结束回合",
+      "transition": "当前玩家第二次仍只执行自己的结束回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\07-队友一翻出面具触发作祟.jpg",
+      "label": "自然作祟 07：队友一面具触发作祟",
+      "transition": "队友一翻出第三张预兆面具，作祟检定失败，剧本切换。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\08-当前玩家自动打开英雄开场.jpg",
+      "label": "读本 08：当前英雄先看到开场",
+      "transition": "作祟后当前玩家仍是英雄，系统自动打开英雄剧本开场页。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\09-书本翻页按钮教学.jpg",
+      "label": "读本 09：点击继续/下一页",
+      "transition": "玩家先在剧本书内看到继续入口，再翻到目标页。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\10-翻页后阅读英雄胜利条件.jpg",
+      "label": "读本 10：阅读英雄目标页",
+      "transition": "翻页后读到真名、驱逐法术和驱逐木乃伊的英雄目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\11-读完目标准备关闭剧本书.jpg",
+      "label": "读本 11：关闭前确认目标",
+      "transition": "读完目标页后，点击关闭回到作祟牌桌。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\12-关闭剧本书后进入作祟牌桌.jpg",
+      "label": "作祟 12：关闭读本回到牌桌",
+      "transition": "读本退场，牌桌状态已是作祟中。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\13-作祟后重开英雄目标页.jpg",
+      "label": "回看 13：重开仍是英雄目标页",
+      "transition": "从牌桌剧本入口回看，默认回到刚读过的英雄目标页，并可上一页回看开场。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\14-作祟后等待队友结束回合.jpg",
+      "label": "作祟 14：等待队友结束公开回合",
+      "transition": "关闭回看后，当前玩家等待队友二按正式流程结束回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\15-轮到英雄寻找木乃伊真名.jpg",
+      "label": "英雄 15：轮到当前玩家找真名",
+      "transition": "轮序回到当前英雄，他在图书馆获得寻找木乃伊真名入口。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\16-寻找真名知识检定成功.jpg",
+      "label": "英雄 16：知识检定成功",
+      "transition": "点击寻找真名后进行知识检定，获得第 1 枚知识标记。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\17-确认后回到牌桌可结束回合.jpg",
+      "label": "英雄 17：确认后回到结束回合入口",
+      "transition": "确认结果后投骰层退场，本回合作祟目标步骤已用完。"
+    }
+  ]
+}

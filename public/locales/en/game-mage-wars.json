@@ -381,6 +381,12 @@
         "description": "Start with the win condition, mage readouts, channeling, and planning, then continue through summoning, public discard, the quickcast window, and movement."
       }
     },
+    "visuals": {
+      "spellCardLegendAlt": "Spell-card legend showing mana cost, action type, range, target, type, school, level, and attack bar locations",
+      "spellCardLegendCaption": "This legend covers the basic fields needed for preparing spells.",
+      "attackBarLegendAlt": "Attack-bar legend showing quick action, full action, melee attack, ranged attack, range, damage type, attack dice, additional effects, and traits",
+      "attackBarLegendCaption": "This legend explains the attack-bar fields; use Jungle Wolf on the board as the first example."
+    },
     "steps": {
       "intro": "Mage Wars lasts several rounds, until one mage has taken enough damage to be destroyed. The last mage standing wins the game.",
       "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; your goal is to deal enough damage to defeat the opposing mage.",
@@ -390,17 +396,20 @@
       "channelResult": "The Beastmaster currently has Channeling 10; after channeling, the mana supply gains 10 mana.",
       "prepareUpkeep": "Upkeep is resolving.",
       "preparePlanning": "Upkeep is resolving before planning begins.",
+      "spellCardReading": "Use this spell-card legend first: cost, action, range, target, type, school, and level determine how you prepare and cast.",
+      "attackBarReading": "Jungle Wolf is now in the arena, so read its attack bar: the left icons tell quick or full action and melee or ranged attack; the right side shows range, damage type, attack dice, extra effects, and traits.",
       "planOpenCreatureCategory": "Click the Creature category.",
       "planCreatureNextPage": "Click the next page to find Jungle Wolf.",
-      "planSelectWolf": "Click the Jungle Wolf card body to put it into the first prepared slot.",
+      "planSelectWolf": "Jungle Wolf is a Creature spell: it summons a creature into the arena to keep fighting. Click the Jungle Wolf card body to put it into the first prepared slot.",
       "planOpenIncantationCategory": "Click the Incantation category.",
-      "planSelectRouse": "Click the Rouse the Beast card body to put it into the second prepared slot.",
+      "planIncantationNextPage": "Click the next page to find Rouse the Beast.",
+      "planSelectRouse": "Rouse the Beast is an Incantation spell: it resolves a one-time text effect, then goes to your discard pile. Click the Rouse the Beast card body to put it into the second prepared slot.",
       "planConfirm": "Click “Confirm prep 2/2” to submit this round's plan.",
       "prepareOpponentSpells": "The opponent prepares spells through the formal flow; they stay card backs until revealed.",
       "preparedAndHidden": "Both players choose their own spells at the same time. Your chosen spells are kept hidden from the opponent so they cannot know your plan.",
       "deploySelectWolf": "Click Jungle Wolf in your prepared spells.",
       "deployTargetZone": "Click the Beastmaster's zone.",
-      "wolfSummoned": "Jungle Wolf has been summoned into the Beastmaster's zone, but its action marker is not ready when it enters.",
+      "wolfSummoned": "Jungle Wolf has been summoned into the Beastmaster's zone. Its action marker is not ready when it enters.",
       "rouseSelectSpell": "Click Rouse the Beast in your prepared spells.",
       "rouseTargetWolf": "Click Jungle Wolf in the arena.",
       "passYourDeployment": "Jungle Wolf's action marker is now ready. Click “End deployment”.",
@@ -413,7 +422,7 @@
       "opponentPassInitiativeQuickcast": "The opponent also passes initiative quickcast, so your creature action begins. Next, use Jungle Wolf to move.",
       "moveSelectWolf": "Click Jungle Wolf in the arena.",
       "moveTargetZone": "Click an adjacent zone to move.",
-      "finish": "You have now read the board, channeled, planned, summoned, roused a creature, checked public discard, passed the quickcast window, and moved a creature. The basic tutorial is complete."
+      "finish": "You have now read the board and spell cards, channeled, prepared spells, summoned Jungle Wolf, read its attack bar, roused it, checked public discard, passed the quickcast window, and moved a creature. The basic tutorial is complete."
     }
   },
   "actionLog": {

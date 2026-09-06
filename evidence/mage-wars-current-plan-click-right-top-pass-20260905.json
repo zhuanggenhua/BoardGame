@@ -1,0 +1,97 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "点击丛林灰狼卡牌本体必须进入计划，不得打开放大层或依赖 force/状态注入绕过",
+      "status": "PASS",
+      "evidence": [
+        "E2E 使用 elementFromPoint 审计卡面中心、右上、右中、标题下方和用户常点位，均未命中放大镜且命中主操作",
+        "E2E 使用 page.mouse.click 执行真实点位点击；1366×768 与 1920×1080 两条目标用例均 1 passed"
+      ]
+    },
+    {
+      "requirement": "点击已计划槽位本体必须取消计划，不得强迫玩家回到原卡牌再点一次",
+      "status": "PASS",
+      "evidence": [
+        "E2E 在 1366×768 与 1920×1080 均先点击灰狼进入计划 1/2，再点击计划槽取消，再点击灰狼恢复计划 1/2",
+        "E2E 对计划槽草稿牌同样做多点 elementFromPoint 命中审计，确认本体命中取消计划主操作而不是放大镜"
+      ]
+    },
+    {
+      "requirement": "对手已计划卡背必须在右上、对手 HUD 左侧相邻，不回归左上或遮挡 HUD",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx 将对手已计划镜像锚到右上对手 HUD 左侧，并保留卡背/数量表达",
+        "foundation 2560×1304 E2E 断言对手计划 x 位于屏幕右半、right <= 对手 HUD 左侧、top 与 HUD 对齐；目标用例 1 passed"
+      ]
+    },
+    {
+      "requirement": "1366×768 与 1920×1080 计划区保持 6 张法术书、2 个计划槽和确认入口可见，不靠整体缩小或减少牌数适配",
+      "status": "PASS",
+      "evidence": [
+        "截图 01-06 覆盖 1366×768 与 1920×1080 的计划 1/2、槽位取消、重选 1/2 三个同构状态",
+        "E2E 断言 desktopScale=1、full HUD、6 张法术书、2 个计划槽、确认入口、提示卡与计划区不相交"
+      ]
+    },
+    {
+      "requirement": "地图放大后必须是整页地图层自由拖拽，不再限制在固定小框；拖拽不能破坏 UI 锚点",
+      "status": "PASS",
+      "evidence": [
+        "src/components/game/framework/ZoomPanViewport.tsx 修正 free 模式下 fitCenterOffset 与 panToTarget 的逻辑/渲染偏移",
+        "foundation 2560×1304 E2E 验证缩放、拖拽后地图层覆盖真实视窗，截图 09 展示 240% 拖拽态"
+      ]
+    },
+    {
+      "requirement": "规范落点收口：通用规则不新增平行正文，Mage Wars 专项旧左上基线必须改成当前右上基线",
+      "status": "PASS",
+      "evidence": [
+        ".spec/skills/mage-wars-ui-design-memory/SKILL.md 与 docs/games/mage-wars/design/implementable/* 已同步右上对手计划基线",
+        "E2E 已补真实命中区域验证，避免以后只点中心或隐藏操作截图冒充流程完成"
+      ]
+    }
+  ],
+  "testCommands": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/foundation-board-runtime.e2e.ts \"2560x1304 真实入口验证放大镜悬浮、宽屏布局和地图自由查看\"",
+      "result": "1 passed"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts \"1366x768 真实卡面点击计划且计划槽位不被遮挡\"",
+      "result": "1 passed"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts \"1920x1080 真实卡面点击计划且计划槽位不被遮挡\"",
+      "result": "1 passed"
+    }
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/00-1366-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/01-1366-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/02-1366-plan-card-reselect-after-slot-cancel.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/03-1920-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/04-1920-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-plan-click-responsive/05-1920-plan-card-reselect-after-slot-cancel.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-planning-hover.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-map-dragged.png"
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/01-labeled-00-1366-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/02-labeled-01-1366-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/03-labeled-02-1366-plan-card-reselect-after-slot-cancel.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/04-labeled-03-1920-plan-card-body-click-one-of-two.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/05-labeled-04-1920-plan-slot-click-cancels-draft.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/06-labeled-05-1920-plan-card-reselect-after-slot-cancel.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/07-labeled-e2e-desktop-2560x1304-planning-hover.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/08-labeled-e2e-desktop-2560x1304-board.png",
+    "test-results/evidence-screenshots/mage-wars/current-plan-click-right-top-pass-20260905/09-labeled-e2e-desktop-2560x1304-map-dragged.png"
+  ]
+}

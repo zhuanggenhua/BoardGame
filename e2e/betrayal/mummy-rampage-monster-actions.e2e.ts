@@ -49,7 +49,7 @@ const MOVE_ONE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/12-木乃伊1点瞬移女孩
 const MOVE_ONE_DONE_SCREENSHOT = `${EVIDENCE_DIR}/13-木乃伊1点瞬移后女孩由木乃伊持有.jpg`;
 const ATTACK_READY_SCREENSHOT = `${EVIDENCE_DIR}/05-木乃伊同房先攻击前.jpg`;
 const ATTACK_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/06-木乃伊同房英雄目标高亮.jpg`;
-const ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/07-木乃伊攻击英雄后奖励入口.jpg`;
+const ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/07-木乃伊攻击胜出奖励入口.jpg`;
 const ATTACK_STEAL_SCREENSHOT = `${EVIDENCE_DIR}/08-木乃伊偷走地图后反馈.jpg`;
 const ATTACK_DAMAGE_SCREENSHOT = `${EVIDENCE_DIR}/09-木乃伊选择造成伤害后分配页.jpg`;
 const ATTACK_DAMAGE_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/10-木乃伊造成伤害分配后回到牌桌.jpg`;
@@ -83,7 +83,7 @@ const BRIDGED_CANDIDATE_SKIP_EVENT_SCREENSHOT = `${EVIDENCE_DIR}/40-桥接式综
 const BRIDGED_CANDIDATE_FORCED_WEDDING_OMEN_SCREENSHOT = `${EVIDENCE_DIR}/41-桥接式综合候选链-强制婚礼预兆.jpg`;
 const BRIDGED_CANDIDATE_MUMMY_MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/42-桥接式综合候选链-木乃伊3点移动骰.jpg`;
 const BRIDGED_CANDIDATE_MUMMY_MOVE_STEP_SCREENSHOT = `${EVIDENCE_DIR}/43-桥接式综合候选链-木乃伊普通连续移动.jpg`;
-const BRIDGED_CANDIDATE_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/44-桥接式综合候选链-木乃伊攻击英雄后奖励.jpg`;
+const BRIDGED_CANDIDATE_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/44-桥接式综合候选链-木乃伊攻击胜出奖励.jpg`;
 const BRIDGED_CANDIDATE_GIRL_GIVEN_SCREENSHOT = `${EVIDENCE_DIR}/45-桥接式综合候选链-叛徒交出女孩.jpg`;
 const BRIDGED_CANDIDATE_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/46-桥接式综合候选链-叛徒终局.jpg`;
 const GOLDEN_FLOW_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/53-主黄金链-开局牌桌.jpg`;
@@ -96,7 +96,7 @@ const GOLDEN_FLOW_TRAITOR_READER_SCREENSHOT = `${EVIDENCE_DIR}/59-主黄金链-�
 const GOLDEN_FLOW_SKIP_EVENT_SCREENSHOT = `${EVIDENCE_DIR}/60-主黄金链-作祟后叛徒跳过事件.jpg`;
 const GOLDEN_FLOW_MUMMY_MOVE_ROLL_SCREENSHOT = `${EVIDENCE_DIR}/61-主黄金链-木乃伊移动骰3点.jpg`;
 const GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT = `${EVIDENCE_DIR}/62-主黄金链-木乃伊普通连续移动进石棺.jpg`;
-const GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/63-主黄金链-木乃伊攻击英雄后奖励偷圣符.jpg`;
+const GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT = `${EVIDENCE_DIR}/63-主黄金链-木乃伊攻击胜出奖励偷圣符.jpg`;
 const GOLDEN_FLOW_TRAITOR_ENDING_SCREENSHOT = `${EVIDENCE_DIR}/64-主黄金链-叛徒终局.jpg`;
 const GOLDEN_FLOW_MUMMY_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/66-主黄金链-点击木乃伊详情属性与驱逐方式.jpg`;
 const GOLDEN_FLOW_PROCESS_PREFIX = '65-主黄金链过程-';
@@ -2586,16 +2586,16 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(41, '木乃伊攻击骰结果-可选择伤害或偷取'));
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
+        await saveScreenshot(page, goldenFlowProcessScreenshot(41, '木乃伊攻击骰结果-满足偷取条件'));
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             rewardPending: true,
             pendingRewardStealableCardIds: expect.arrayContaining(['holy-symbol']),
         });
-        await saveScreenshot(page, goldenFlowProcessScreenshot(42, '木乃伊攻击英雄后奖励-偷圣符入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(42, '木乃伊攻击胜出奖励-偷圣符入口可见'));
         await saveScreenshot(page, GOLDEN_FLOW_ATTACK_REWARD_SCREENSHOT);
         await page.getByTestId('betrayal-mummy-reward-steal-holy-symbol').click();
 
@@ -2751,9 +2751,9 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(attackRollPanel).toContainText('木乃伊攻击', { timeout: 30000 });
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-map')).toContainText('偷走地图');
         await saveScreenshot(page, BRIDGED_CANDIDATE_ATTACK_REWARD_SCREENSHOT);
         await page.getByTestId('betrayal-mummy-reward-steal-map').click();
@@ -3303,15 +3303,15 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await expect(attackRollPanel).toContainText('攻击投骰');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('可造成');
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('本会造成');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardStealableCardIds: expect.arrayContaining(['map']),
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-map')).toContainText('偷走地图');
         await saveScreenshot(page, ATTACK_REWARD_SCREENSHOT);
 
@@ -3371,14 +3371,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardStealableCardIds: expect.arrayContaining(['holy-symbol']),
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-holy-symbol')).toContainText('偷走圣符');
 
         await page.getByTestId('betrayal-mummy-reward-steal-holy-symbol').click();
@@ -3434,14 +3434,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardStealableCardIds: expect.arrayContaining(['ring']),
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-ring')).toContainText('偷走指环');
 
         await page.getByTestId('betrayal-mummy-reward-steal-ring').click();
@@ -3500,14 +3500,14 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardStealableCardIds: expect.arrayContaining(['mummy-girl-token']),
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-steal-mummy-girl-token')).toContainText('偷走女孩');
 
         await page.getByTestId('betrayal-mummy-reward-steal-mummy-girl-token').click();
@@ -3610,9 +3610,9 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-steal-map').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('夺走地图');
 
@@ -3679,7 +3679,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await expect(attackRollPanel).toContainText('攻击投骰');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardDamage: expect.any(Number),
@@ -3687,7 +3687,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
@@ -3788,7 +3788,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardDamage: expect.any(Number),
@@ -3796,7 +3796,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
@@ -3901,7 +3901,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardDamage: expect.any(Number),
@@ -3909,7 +3909,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
@@ -4019,7 +4019,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardDamage: expect.any(Number),
@@ -4027,7 +4027,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
@@ -4137,7 +4137,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toBeVisible();
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardDamage: expect.any(Number),
@@ -4145,7 +4145,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await page.getByTestId('betrayal-mummy-reward-damage').click();
         await expect(page.getByTestId('betrayal-mummy-reward-banner')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
@@ -4282,8 +4282,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await expect(attackRollPanel).toContainText('木乃伊攻击');
         await expect(attackRollPanel).toContainText('攻击投骰');
         await waitForPhysicalDiceSettled(attackRollPanel);
-        await expect(attackRollPanel).toContainText('可造成');
-        await expect(attackRollPanel).toContainText('伤害或偷取');
+        await expect(attackRollPanel).toContainText('本会造成');
+        await expect(attackRollPanel).toContainText('满足木乃伊偷取条件');
         await expect.poll(() => readMummyActionState(page, fixture.heroTargetId)).toMatchObject({
             recentRollKind: 'attackRoll',
             pendingRewardDamage: expect.any(Number),
@@ -4291,7 +4291,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         });
 
         await acknowledgeRecentRollForAllPlayers(page);
-        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击英雄后');
+        await expect(page.getByTestId('betrayal-mummy-reward-banner')).toContainText('木乃伊攻击胜出');
         await expect(page.getByTestId('betrayal-mummy-reward-damage')).toContainText('造成');
 
         await page.getByTestId('betrayal-mummy-reward-damage').click();

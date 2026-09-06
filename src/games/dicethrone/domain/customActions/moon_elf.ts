@@ -652,7 +652,7 @@ function handleEntangleEffect(context: CustomActionContext): DiceThroneEvent[] {
 }
 
 // 锁定 (Targeted) 的 +2 伤害由 TokenDef.passiveTrigger.actions[modifyStat] 处理。
-// 受对手进攻伤害后移除由 consumeOnTrigger 统一处理，不再注册月精灵专用移除 handler。
+// 锁定是持续攻击修正，不在受对手进攻伤害后自动移除；仍可被正常移除状态效果移除。
 
 // ============================================================================
 // 娉ㄥ唽
@@ -854,6 +854,6 @@ export function registerMoonElfCustomActions(): void {
     registerCustomActionHandler('moon_elf-entangle-effect', handleEntangleEffect, {
         categories: ['dice', 'status'],
     });
-    // 锁定 (Targeted) 的移除由 consumeOnTrigger 统一处理，无需注册专用 handler。
+    // 锁定 (Targeted) 是持续状态，无需注册受伤后自动移除 handler。
 }
 

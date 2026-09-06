@@ -880,6 +880,7 @@ it('木乃伊攻击造成 2 点以上伤害后可选择偷取女孩或物品代�
             createBetrayalScriptedRandom(2, 2, 2, 2, 1, 1, 1, 1, 1),
         );
 
+        expect(core.recentRoll?.latestLabel).toBe('本会造成 4 点伤害，满足木乃伊偷取条件');
         expect(core.pendingDamageAllocation).toBeNull();
         expect(resolveMummyPendingAttackReward(core)).toMatchObject({
             controllerPlayerId: traitorId,

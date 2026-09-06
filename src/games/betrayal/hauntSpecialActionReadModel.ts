@@ -6,6 +6,7 @@ import type {
     BetrayalCore,
     BetrayalExplorerSummary,
     BetrayalMonsterSummary,
+    BetrayalRoomFloor,
     BetrayalRoomNode,
 } from './game';
 import {
@@ -136,6 +137,43 @@ export function hasUsedHauntSpecialActionThisTurn(core: BetrayalCore): boolean {
     return core.usedCardIdsThisTurn.some(isBetrayalHauntSpecialActionId);
 }
 
+export function canUseStalkThePrey(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
+    if (core.scenarioRuntime.traitorPlayerId !== actor.playerId || core.scenarioRuntime.jackSpiritReleased) {
+        return false;
+    }
+    if (core.usedCardIdsThisTurn.includes('haunt-attack') || core.usedCardIdsThisTurn.includes('stalk-the-prey')) {
+        return false;
+    }
+    const room = core.rooms.find((item) => item.id === actor.roomId);
+    if (!room) {
+        return false;
+    }
+    const livingHeroes = getAllExplorers(core).filter((explorer) => (
+        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+    return !livingHeroes.some((hero) => {
+        const heroRoom = core.rooms.find((item) => item.id === hero.roomId);
+        return heroRoom ? isStraightLineVisible(room, heroRoom, core.rooms) : false;
+    });
+}
+
+export function resolveStalkThePreyTargets(core: BetrayalCore, actor: BetrayalExplorerSummary): BetrayalRoomNode[] {
+    const livingHeroes = getAllExplorers(core).filter((explorer) => (
+        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+    return core.rooms.filter((room) => {
+        if (room.id === actor.roomId || room.state !== 'discovered' || room.floor === 'basement') {
+            return false;
+        }
+        return !livingHeroes.some((hero) => {
+            const heroRoom = core.rooms.find((item) => item.id === hero.roomId);
+            return heroRoom ? isStraightLineVisible(room, heroRoom, core.rooms) : false;
+        });
+    });
+}
+
 export function canSearchForCure(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
     const dust = core.scenarioRuntime.dust;
     const room = core.rooms.find((item) => item.id === actor.roomId);
@@ -198,6 +236,25 @@ function canExorciseJack(core: BetrayalCore, actor: BetrayalExplorerSummary): bo
         && core.scenarioRuntime.jackSpiritReleased
         && actor.roomId === core.scenarioRuntime.jackSpiritRoomId,
     );
+}
+
+function resolveRoomRegion(room: BetrayalRoomNode | undefined): BetrayalRoomFloor | null {
+    return room?.floor ?? null;
+}
+
+export function countExorcismCirclesInRegion(
+    core: BetrayalCore,
+    roomId: string,
+): number {
+    const currentRoom = core.rooms.find((room) => room.id === roomId);
+    const region = resolveRoomRegion(currentRoom);
+    if (!region) {
+        return 0;
+    }
+    return core.scenarioRuntime.exorcismCircleRoomIds.filter((circleRoomId) => {
+        const circleRoom = core.rooms.find((room) => room.id === circleRoomId);
+        return resolveRoomRegion(circleRoom) === region;
+    }).length;
 }
 
 function isLivingMummyHero(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {

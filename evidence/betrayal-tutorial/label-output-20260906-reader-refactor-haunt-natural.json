@@ -1,0 +1,146 @@
+{
+  "title": "ɽ�ݾ���̶̳����ع�����Ȼ���Ӣ��������",
+  "out_dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural",
+  "index": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\00-sequence-index.png",
+  "images": [
+    {
+      "sequence": 1,
+      "label": "��Ȼ���� 01����ǰ��ҽ����غ�ǰ",
+      "transition": "��㣺��ǰ�����ͼ��ݣ���ֻ�����Լ��Ļغϡ�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\01-��ǰ��ҽ����غ�ǰ.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\01-labeled-01-��ǰ��ҽ����غ�ǰ.png"
+    },
+    {
+      "sequence": 2,
+      "label": "��Ȼ���� 02���ȴ�����һ̽��",
+      "transition": "�غϽ�������һ����ǰ���ֻ�������ȴ�״̬������������",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\02-�ȴ�����һ̽��Ԥ�׷���.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\02-labeled-02-�ȴ�����һ̽��Ԥ�׷���.png"
+    },
+    {
+      "sequence": 3,
+      "label": "��Ȼ���� 03������һ���ָ��δ����",
+      "transition": "����һ����ʽ���̷���Ԥ�ף������������δ���",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\03-����һ���ָ��δ����.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\03-labeled-03-����һ���ָ��δ����.png"
+    },
+    {
+      "sequence": 4,
+      "label": "��Ȼ���� 04�����Ѷ�������δ����",
+      "transition": "���Ѷ�������ʽ���̷�����������ΪԤ�׹������֡�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\04-���Ѷ�������δ����.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\04-labeled-04-���Ѷ�������δ����.png"
+    },
+    {
+      "sequence": 5,
+      "label": "��Ȼ���� 05����ȷ�Ϻ�ص���ǰ���",
+      "transition": "����ȷ�Ϲ�����������������Ȼ�ص���ǰ��ҡ�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\05-��ȷ�Ϻ�ص���ǰ���.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\05-labeled-05-��ȷ�Ϻ�ص���ǰ���.png"
+    },
+    {
+      "sequence": 6,
+      "label": "��Ȼ���� 06����ǰ����ٴν����غ�",
+      "transition": "��ǰ��ҵڶ�����ִֻ���Լ��Ľ����غϡ�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\06-�ٴν�����ǰ�غ�.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\06-labeled-06-�ٴν�����ǰ�غ�.png"
+    },
+    {
+      "sequence": 7,
+      "label": "��Ȼ���� 07������һ��ߴ�������",
+      "transition": "����һ����������Ԥ����ߣ�����춨ʧ�ܣ��籾�л���",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\07-����һ������ߴ�������.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\07-labeled-07-����һ������ߴ�������.png"
+    },
+    {
+      "sequence": 8,
+      "label": "���� 08����ǰӢ���ȿ�������",
+      "transition": "�����ǰ�������Ӣ�ۣ�ϵͳ�Զ���Ӣ�۾籾����ҳ��",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\08-��ǰ����Զ���Ӣ�ۿ���.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\08-labeled-08-��ǰ����Զ���Ӣ�ۿ���.png"
+    },
+    {
+      "sequence": 9,
+      "label": "���� 09���������/��һҳ",
+      "transition": "������ھ籾���ڿ���������ڣ��ٷ���Ŀ��ҳ��",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\09-�鱾��ҳ��ť��ѧ.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\09-labeled-09-�鱾��ҳ��ť��ѧ.png"
+    },
+    {
+      "sequence": 10,
+      "label": "���� 10���Ķ�Ӣ��Ŀ��ҳ",
+      "transition": "��ҳ�����������������������ľ������Ӣ��Ŀ�ꡣ",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\10-��ҳ���Ķ�Ӣ��ʤ������.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\10-labeled-10-��ҳ���Ķ�Ӣ��ʤ������.png"
+    },
+    {
+      "sequence": 11,
+      "label": "���� 11���ر�ǰȷ��Ŀ��",
+      "transition": "����Ŀ��ҳ�󣬵���رջص�����������",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\11-����Ŀ��׼���رվ籾��.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\11-labeled-11-����Ŀ��׼���رվ籾��.png"
+    },
+    {
+      "sequence": 12,
+      "label": "���� 12���رն����ص�����",
+      "transition": "�����˳�������״̬���������С�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\12-�رվ籾��������������.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\12-labeled-12-�رվ籾��������������.png"
+    },
+    {
+      "sequence": 13,
+      "label": "�ؿ� 13���ؿ�����Ӣ��Ŀ��ҳ",
+      "transition": "�������籾��ڻؿ���Ĭ�ϻص��ն�����Ӣ��Ŀ��ҳ��������һҳ�ؿ�������",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\13-������ؿ�Ӣ��Ŀ��ҳ.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\13-labeled-13-������ؿ�Ӣ��Ŀ��ҳ.png"
+    },
+    {
+      "sequence": 14,
+      "label": "���� 14���ȴ����ѽ��������غ�",
+      "transition": "�رջؿ��󣬵�ǰ��ҵȴ����Ѷ�����ʽ���̽����غϡ�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\14-�����ȴ����ѽ����غ�.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\14-labeled-14-�����ȴ����ѽ����غ�.png"
+    },
+    {
+      "sequence": 15,
+      "label": "Ӣ�� 15���ֵ���ǰ���������",
+      "transition": "����ص���ǰӢ�ۣ�����ͼ��ݻ��Ѱ��ľ����������ڡ�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\15-�ֵ�Ӣ��Ѱ��ľ��������.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\15-labeled-15-�ֵ�Ӣ��Ѱ��ľ��������.png"
+    },
+    {
+      "sequence": 16,
+      "label": "Ӣ�� 16��֪ʶ�춨�ɹ�",
+      "transition": "���Ѱ�����������֪ʶ�춨����õ� 1 ö֪ʶ��ǡ�",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\16-Ѱ������֪ʶ�춨�ɹ�.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\16-labeled-16-Ѱ������֪ʶ�춨�ɹ�.png"
+    },
+    {
+      "sequence": 17,
+      "label": "Ӣ�� 17��ȷ�Ϻ�ص������غ����",
+      "transition": "ȷ�Ͻ����Ͷ�����˳������غ�����Ŀ�경�������ꡣ",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-reader-refactor\\17-ȷ�Ϻ�ص������ɽ����غ�.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\17-labeled-17-ȷ�Ϻ�ص������ɽ����غ�.png"
+    }
+  ],
+  "pureref_order": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\01-labeled-01-��ǰ��ҽ����غ�ǰ.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\02-labeled-02-�ȴ�����һ̽��Ԥ�׷���.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\03-labeled-03-����һ���ָ��δ����.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\04-labeled-04-���Ѷ�������δ����.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\05-labeled-05-��ȷ�Ϻ�ص���ǰ���.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\06-labeled-06-�ٴν�����ǰ�غ�.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\07-labeled-07-����һ������ߴ�������.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\08-labeled-08-��ǰ����Զ���Ӣ�ۿ���.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\09-labeled-09-�鱾��ҳ��ť��ѧ.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\10-labeled-10-��ҳ���Ķ�Ӣ��ʤ������.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\11-labeled-11-����Ŀ��׼���رվ籾��.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\12-labeled-12-�رվ籾��������������.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\13-labeled-13-������ؿ�Ӣ��Ŀ��ҳ.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\14-labeled-14-�����ȴ����ѽ����غ�.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\15-labeled-15-�ֵ�Ӣ��Ѱ��ľ��������.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\16-labeled-16-Ѱ������֪ʶ�춨�ɹ�.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-reader-refactor-haunt-natural\\17-labeled-17-ȷ�Ϻ�ص������ɽ����غ�.png"
+  ]
+}

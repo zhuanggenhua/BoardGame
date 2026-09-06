@@ -2,14 +2,18 @@ import type {
   BetrayalCore,
   BetrayalExplorerSummary,
   BetrayalInventoryCard,
+  BetrayalRecentRollState,
   BetrayalTraitKey,
 } from "./game";
+import type { RandomFn } from "../../engine/types";
+import { rollBetrayalDicePips } from "./diceRules";
 import {
   findExplorerByPlayerId,
   getAllExplorers,
 } from "./explorerReadModel";
 import {
   isHelpingHandsHaunt,
+  isMagicCameraHaunt,
   resolveControlledRoomId,
 } from "./hauntScenarioReadModel";
 import { resolveInventoryEffectId } from "./possessionEffects";
@@ -17,6 +21,10 @@ import {
   isBetrayalRoomInLineOfSight,
   resolveConnectedRoomIds,
 } from "./roomMapModel";
+import { rollTrait } from "./traitRollModel";
+
+type BetrayalAttackTarget = NonNullable<BetrayalRecentRollState["attack"]>["target"];
+type BetrayalAttackRollState = NonNullable<BetrayalRecentRollState["attack"]>;
 
 const DYNAMITE_CARD_ID = "dynamite";
 
@@ -220,6 +228,100 @@ export function resolveFailedAttackDamageForWeaponCard(
     NO_FAILED_ATTACK_DAMAGE_WEAPON_CARD_IDS.has(resolveInventoryEffectId(weaponCardId))
     ? 0
     : Math.max(0, defenderRoll - attackerRoll);
+}
+
+export function resolveAttackDamageKind(
+  attackTrait: BetrayalTraitKey,
+): "physical" | "mental" {
+  return attackTrait === "sanity" || attackTrait === "knowledge"
+    ? "mental"
+    : "physical";
+}
+
+export function rollAttackWithDice(
+  random: RandomFn,
+  explorer: BetrayalExplorerSummary,
+  weaponEffect: BetrayalAttackWeaponEffect | null,
+): { total: number; dice: number[]; passiveBonus: number } {
+  const trait = weaponEffect?.attackTrait ?? "might";
+  const dice = rollBetrayalDicePips(
+    random,
+    explorer.traits[trait] + (weaponEffect?.extraDice ?? 0),
+  );
+  const passiveBonus = weaponEffect?.bonus ?? 0;
+  return {
+    total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
+    dice,
+    passiveBonus,
+  };
+}
+
+export function rollAttackDefense(
+  random: RandomFn,
+  explorer: BetrayalExplorerSummary,
+  weaponEffect: BetrayalAttackWeaponEffect | null,
+  fallbackTrait: BetrayalTraitKey = "might",
+): number {
+  const trait = weaponEffect?.attackTrait ?? fallbackTrait;
+  const extraDice = resolveDefenseExtraDiceWhenAttacked(explorer);
+  return rollTrait(random, explorer.traits[trait] + extraDice);
+}
+
+export function canDeferOrdinaryAttackDamageToDefender(
+  core: BetrayalCore,
+  target: BetrayalAttackTarget,
+): boolean {
+  return !isMagicCameraHaunt(core)
+    && !isHelpingHandsHaunt(core)
+    && (target === "traitor" || target === "hero");
+}
+
+export function isPendingDamageAllocationForAttackRoll(core: BetrayalCore): boolean {
+  const pending = core.pendingDamageAllocation;
+  const attack = core.recentRoll?.kind === "attackRoll" ? core.recentRoll.attack : null;
+  return Boolean(
+    pending
+    && attack
+    && attack.defenderPlayerId
+    && pending.sourceTitle === "攻击"
+    && pending.playerId === attack.defenderPlayerId
+    && pending.damageKind === attack.damageKind
+    && pending.originalAmount === attack.previousDamageToDefender
+    && canDeferOrdinaryAttackDamageToDefender(core, attack.target),
+  );
+}
+
+export function resolveAttackRerollOutcome(
+  nextAttackRoll: number,
+  attack: BetrayalAttackRollState,
+): {
+  outcome: "wound" | "jack-damaged" | "no-damage";
+  damageToAttacker?: number;
+  damageToDefender?: number;
+  latestLabel: string;
+} {
+  if (attack.target === "jack-spirit") {
+    return nextAttackRoll > attack.defenderRoll
+      ? { outcome: "jack-damaged", latestLabel: "压制杰克之灵" }
+      : { outcome: "wound", latestLabel: "未压制杰克之灵" };
+  }
+  const damageToDefender = Math.max(0, nextAttackRoll - attack.defenderRoll);
+  const damageToAttacker = resolveFailedAttackDamageForWeaponCard(
+    attack.defenderRoll,
+    nextAttackRoll,
+    attack.weaponCardId,
+  );
+  if (nextAttackRoll === attack.defenderRoll) {
+    return { outcome: "no-damage", latestLabel: "平手无伤害" };
+  }
+  return {
+    outcome: "wound",
+    damageToAttacker: damageToAttacker || undefined,
+    damageToDefender: damageToDefender || undefined,
+    latestLabel: damageToDefender > 0
+      ? `造成 ${damageToDefender} 点伤害`
+      : `反受 ${damageToAttacker} 点伤害`,
+  };
 }
 
 export function isAttackTargetInWeaponRange(

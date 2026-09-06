@@ -259,7 +259,7 @@ describe('Moon Elf 技能定义', () => {
         expect(getAvailableAbilityIds(result.finalState.core, '0', 'offensiveRoll')).toContain('covert-fire');
     });
 
-    it('covert-fire 触发后应能选择并结算锁定，伤害按当前规则落地并移除锁定', () => {
+    it('covert-fire 触发后应能选择并结算锁定，伤害按当前规则落地且保留锁定', () => {
         const random = createQueuedRandom([1, 1, 1, 6, 6, 1, 1, 1, 1, 1]);
         const runner = new GameTestRunner({
             domain: DiceThroneDomain,
@@ -289,7 +289,7 @@ describe('Moon Elf 技能定义', () => {
                 players: {
                     '1': {
                         hp: INITIAL_HEALTH - 6,
-                        statusEffects: { [STATUS_IDS.TARGETED]: 0 },
+                        statusEffects: { [STATUS_IDS.TARGETED]: 1 },
                     },
                 },
             },
@@ -601,12 +601,12 @@ describe('Moon Elf 状态效果逻辑', () => {
     });
 
     /**
-     * 锁定 (Targeted)：受到伤害 +2，伤害结算后移除
+     * 锁定 (Targeted)：受到对手攻击伤害 +2，伤害结算后仍保留
      *
      * 使用 longbow-3-1 (3弓=3伤害) 攻击带锁定的目标
      * 预期伤害 = 3 + 2 = 5
      */
-    it('锁定：受到伤害 +2，结算后移除', () => {
+    it('锁定：受到伤害 +2，结算后仍保留', () => {
         // 骰子值：[1,1,1,4,5] 攻击骰(3弓+2足), [1,1,1,1,1] 防御骰
         const random = createQueuedRandom([1, 1, 1, 4, 5, 1, 1, 1, 1, 1]);
         const runner = new GameTestRunner({
@@ -642,7 +642,7 @@ describe('Moon Elf 状态效果逻辑', () => {
                 players: {
                     '1': {
                         hp: INITIAL_HEALTH - 5, // 3基础 + 2锁定
-                        statusEffects: { [STATUS_IDS.TARGETED]: 0 }, // 锁定在触发后移除
+                        statusEffects: { [STATUS_IDS.TARGETED]: 1 }, // 锁定是持续效果，不因触发移除
                     },
                 },
             },

@@ -36,8 +36,6 @@ import {
     EXPLORER_CATALOG,
     createBetrayalMonsterFromDefinition,
     getBetrayalMonsterDefinition,
-    resolveBetrayalTileStackSearchPreview,
-    applyBetrayalTileStackSearch,
     resolveUseEffect,
     type BetrayalDeckKind,
     type BetrayalCore,
@@ -113,8 +111,6 @@ export {
     resolveAttackWeaponCardStatuses,
     createBetrayalMonsterFromDefinition,
     getBetrayalMonsterDefinition,
-    resolveBetrayalTileStackSearchPreview,
-    applyBetrayalTileStackSearch,
     resolveUseEffect,
     canUseBookForPendingEventRoll,
     canUseHolySymbolForDiscovery,
@@ -628,11 +624,10 @@ export function resolvePendingDamageForTest(
     timestamp = 100,
     deathPreventionRandoms: number[] = [],
 ): BetrayalCore {
-    const acknowledgedCore = core;
-    if (acknowledgedCore.recentRoll?.kind === 'eventRolledDamage') {
-        // 事件结果确认完成后，伤害骰作为新的结果窗口单独进入伤害分配。
-        expect(acknowledgedCore.pendingEventRollResolution).toBeNull();
-    }
+    const acknowledgedCore = core.recentRoll?.kind === 'eventRolledDamage'
+        ? acknowledgeRecentRollForAllPlayers(core)
+        : core;
+    expect(acknowledgedCore.pendingEventRollResolution).toBeNull();
     const pending = acknowledgedCore.pendingDamageAllocation;
     expect(pending).toBeTruthy();
     if (!pending) {

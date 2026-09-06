@@ -1,0 +1,145 @@
+{
+  "title": "Mage Wars 基础教程：单入口自然主线 00-27（攻击条在场上灰狼出现后教学）",
+  "items": [
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+      "label": "开场：胜利目标和牌桌",
+      "transition": "起点：直接进入 Mage Wars 基础教程，玩家先看到完整牌桌和胜利目标，没有目录页。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-self-hud-life-mana-channeling.png",
+      "label": "读取自己法师面板",
+      "transition": "从开场继续：教程指向自己法师面板，说明生命、伤害、法力、聚魔和行动标记。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-read-opponent-hud-hidden-plans.png",
+      "label": "读取对手面板和隐藏计划",
+      "transition": "读完自己面板后：玩家看到对手也有生命、法力和隐藏的计划牌背。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-read-round-stage.png",
+      "label": "读取回合与阶段",
+      "transition": "读完双方状态后：教程指向当前回合和阶段，让玩家知道现在处在准备流程。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-channel-result-mana-increased.png",
+      "label": "聚魔后法力增加",
+      "transition": "准备环节自然结算：聚魔把法力加入法力池，进入计划前的可读结果。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-read-spell-card-legend.png",
+      "label": "读取计划法术基础字段",
+      "transition": "进入计划前：玩家先看法术牌图例，只读计划法术会用到的费用、行动、范围、目标、类型、派系和等级。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-open-creature-category.png",
+      "label": "打开生物分类",
+      "transition": "读完计划法术基础字段后：玩家开始计划，先点击生物分类。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-plan-creature-next-page-wolf-hidden.png",
+      "label": "生物第一页没有灰狼",
+      "transition": "打开生物分类后：第一页没有丛林灰狼，下一页按钮成为真实必要动作。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-plan-select-wolf-visible.png",
+      "label": "选择丛林灰狼",
+      "transition": "翻到下一页后：丛林灰狼出现，玩家读取它是会进场持续战斗的生物法术。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-plan-wolf-in-slot-one-open-incantation-category.png",
+      "label": "灰狼进入计划槽 1/2",
+      "transition": "点击丛林灰狼后：它进入第一个计划槽，玩家继续打开咒语分类准备第二张法术。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-plan-incantation-next-page-rouse-hidden.png",
+      "label": "咒语第一页没有兽性觉醒",
+      "transition": "打开咒语分类后：第一页没有兽性觉醒，下一页按钮成为真实必要动作。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-plan-rouse-visible.png",
+      "label": "选择兽性觉醒",
+      "transition": "翻到下一页后：兽性觉醒出现，玩家读取它是结算后进弃牌堆的咒语法术。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-plan-rouse-in-slot-two-confirm.png",
+      "label": "两张法术已计划并确认",
+      "transition": "点击兽性觉醒后：计划槽显示 2/2，两张不同法术已准备提交。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-prepared-and-hidden.png",
+      "label": "准备区和对手隐藏计划",
+      "transition": "确认计划后：己方准备区出现两张法术，对手计划仍以牌背和数量显示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-deploy-select-wolf-prepared-card.png",
+      "label": "部署阶段选择灰狼",
+      "transition": "进入部署阶段：玩家点击准备区的丛林灰狼，准备把生物召唤进竞技场。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-deploy-target-zone-highlight.png",
+      "label": "召唤目标区域高亮",
+      "transition": "选择丛林灰狼后：正式地图格显示合法召唤目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wolf-summoned-not-ready.png",
+      "label": "丛林灰狼进场",
+      "transition": "点击目标区域后：丛林灰狼出现在场上，但行动标记刚进场时未就绪。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-read-attack-bar-on-wolf.png",
+      "label": "读取场上灰狼攻击条",
+      "transition": "灰狼进场后：玩家第一次遇到场上生物攻击条，读取快速 / 标准行动、近战 / 远程、范围、伤害类型、攻击骰、附加效果和特性。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-rouse-select-spell-prepared-card.png",
+      "label": "选择兽性觉醒准备牌",
+      "transition": "读完场上灰狼攻击条后：玩家点击准备区的兽性觉醒，准备让灰狼变为可行动。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-rouse-target-wolf-highlight.png",
+      "label": "兽性觉醒目标高亮",
+      "transition": "选择兽性觉醒后：场上的丛林灰狼成为合法目标。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-pass-your-deployment-wolf-ready.png",
+      "label": "灰狼就绪并结束部署",
+      "transition": "兽性觉醒结算后：灰狼行动标记翻到可用，玩家点击结束部署交给对手。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-opponent-public-view-toggle-highlight.png",
+      "label": "切换对手公开视角入口",
+      "transition": "对手部署和公开攻击法术按正式流程自动结算后：教程指向对手面板眼睛，准备查看公开弃牌。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-opponent-public-view-same-discard-pile.png",
+      "label": "同一弃牌区显示对手弃牌",
+      "transition": "点击观察入口后：同一主弃牌区切换到对手公开弃牌，不新增平行弃牌 UI。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-back-to-self-view.png",
+      "label": "返回自己视角",
+      "transition": "读完对手弃牌后：返回自己视角按钮居中可见，准备回到己方操作。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-skip-initiative-quickcast.png",
+      "label": "让过快速施法",
+      "transition": "回到自己视角后：对手自动结束部署，进入你的先手快速施法窗口；玩家点击正式按钮让过。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-move-select-wolf.png",
+      "label": "生物行动选择灰狼",
+      "transition": "双方让过快速施法后：进入生物行动阶段，玩家选择场上的丛林灰狼。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-move-target-zone-a2.png",
+      "label": "选择相邻 A2 区域",
+      "transition": "选择灰狼后：相邻区域成为移动目标，玩家点击 A2。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-finish-wolf-moved-to-a2.png",
+      "label": "灰狼移动后基础教程完成",
+      "transition": "点击 A2 后：灰狼移动到相邻区域，基础教程在自然主线内完成。"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import type { BetrayalRoomNode } from './game';
 import {
     computeSpriteAspectRatio,
     computeSpriteImgStyle,
@@ -132,6 +133,14 @@ export function resolveBetrayalRoomTileVisual(visualId: string): BetrayalRoomTil
     const alias = BETRAYAL_ROOM_VISUAL_ALIASES[visualId];
     if (alias) return BETRAYAL_ROOM_TILE_VISUALS[alias];
     return BETRAYAL_ROOM_TILE_VISUALS[visualId as keyof typeof BETRAYAL_ROOM_TILE_VISUALS];
+}
+
+export function resolveBetrayalRoomNodeTileVisual(
+    room: BetrayalRoomNode,
+    isDiscovered: boolean,
+): BetrayalRoomTileVisual {
+    const visualId = isDiscovered ? room.visualId : room.backVisualId;
+    return resolveBetrayalRoomTileVisual(visualId) ?? BETRAYAL_ROOM_TILE_VISUALS.conservatory;
 }
 
 export function buildRoomAtlasImageStyle(visual: BetrayalRoomTileVisual): CSSProperties {

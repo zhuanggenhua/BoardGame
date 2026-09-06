@@ -1209,6 +1209,57 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         expect(setStateSpy).not.toHaveBeenCalled();
     });
 
+    it('存储清理删除房间后，应卸载仍在内存中的活跃房间', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-storage-cleaned-runtime', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+        const setStateSpy = vi.spyOn(storage, 'setState');
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-storage-cleaned-runtime');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-storage-cleaned-runtime', '0', 'cred-0');
+
+        const activeMatch = (server as unknown as {
+            activeMatches: Map<string, unknown>;
+        }).activeMatches.get('match-storage-cleaned-runtime');
+        expect(activeMatch).toBeTruthy();
+
+        await storage.wipe('match-storage-cleaned-runtime');
+        const unloaded = await server.unloadMatchesMissingFromStorage({ disconnectSockets: true });
+        await nextTick();
+
+        expect(unloaded).toEqual(['match-storage-cleaned-runtime']);
+        expect(hasEvent(socket, 'error', (args) => args[0] === 'match-storage-cleaned-runtime' && args[1] === 'match_not_found')).toBe(true);
+        expect(socket.disconnected).toBe(true);
+
+        const success = await (server as unknown as {
+            executeCommandInternal: (
+                match: unknown,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        }).executeCommandInternal(activeMatch, '0', 'TEST_CMD', {});
+
+        expect(success).toBe(false);
+        expect(setStateSpy).not.toHaveBeenCalled();
+    });
+
     it('不应通过 /game socket 暴露 test:injectState', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

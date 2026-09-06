@@ -95,6 +95,7 @@ describe('Betrayal 教程配置', () => {
             'hero-attack-path',
             'jack-spirit-path',
             'traitor-path',
+            'mummy-traitor-victory-chain',
             'mummy-monster-actions',
         ]);
         expect(Object.entries(tutorialCatalog.tutorials)
@@ -113,6 +114,7 @@ describe('Betrayal 教程配置', () => {
             'haunt-actions-and-finish',
             'hero-attack-path',
             'jack-spirit-path',
+            'mummy-traitor-victory-chain',
             'mummy-monster-actions',
         ]) {
             expect(tutorialCatalog.tutorials[hiddenTutorialId]?.hiddenFromCatalog).toBe(true);
@@ -374,6 +376,9 @@ describe('Betrayal 教程配置', () => {
             'watch-teammate-haunt-trigger',
             'teammate-confirm-haunt-trigger',
             'haunt-hero-reader',
+            'haunt-hero-reader-turn-page',
+            'haunt-hero-reader-goal',
+            'haunt-hero-reader-close',
             'haunt-trigger-board',
             'wait-for-hero-turn-after-haunt',
             'hero-study-name-roll',
@@ -387,8 +392,10 @@ describe('Betrayal 教程配置', () => {
         const setupStep = manifest?.steps.find((step) => step.id === 'setup-natural-haunt-flow');
         expect(setupStep?.aiActions).toHaveLength(1);
         expect(setupStep?.aiActions?.[0]?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
-        expect(setupStep?.autoAdvanceAfterAi).toBe(false);
-        expect(setupStep?.infoStep).toBe(true);
+        expect(setupStep?.autoAdvanceAfterAi).toBeUndefined();
+        expect(setupStep?.infoStep).toBeUndefined();
+        expect(setupStep?.showMask).toBeUndefined();
+        expect(setupStep?.requireAction).toBeUndefined();
         expect(manifest?.steps.find((step) => step.id === 'hand-off-to-teammate-one')?.allowedCommands)
             .toEqual(['END_TURN']);
         const teammateAutomationStep = manifest?.steps.find((step) => step.id === 'watch-teammate-omen-turns');
@@ -480,6 +487,23 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader')?.infoStep).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader')?.highlightTarget)
             .toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader-turn-page')).toMatchObject({
+            highlightTarget: 'betrayal-scenario-reader-next-zone',
+            requireAction: true,
+            allowedCommands: [],
+            viewAs: '0',
+        });
+        expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader-goal')).toMatchObject({
+            highlightTarget: 'betrayal-scenario-objective-page',
+            infoStep: true,
+            viewAs: '0',
+        });
+        expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader-close')).toMatchObject({
+            highlightTarget: 'betrayal-scenario-reader-close',
+            requireAction: true,
+            allowedCommands: [],
+            viewAs: '0',
+        });
         expect(manifest?.steps.find((step) => step.id === 'haunt-trigger-board')?.highlightTarget)
             .toBe('betrayal-open-scenario');
         const waitForHeroTurnStep = manifest?.steps.find((step) => step.id === 'wait-for-hero-turn-after-haunt');
@@ -718,6 +742,7 @@ describe('Betrayal 教程配置', () => {
         const heroAttackManifest = tutorialCatalog.tutorials['hero-attack-path']?.manifest;
         const jackSpiritManifest = tutorialCatalog.tutorials['jack-spirit-path']?.manifest;
         const traitorManifest = tutorialCatalog.tutorials['traitor-path']?.manifest;
+        const traitorVictoryManifest = tutorialCatalog.tutorials['mummy-traitor-victory-chain']?.manifest;
         const mummyMonsterManifest = tutorialCatalog.tutorials['mummy-monster-actions']?.manifest;
         expect(objectiveManifest).toBe(hauntActionsManifest);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-open-scenario');
@@ -766,7 +791,7 @@ describe('Betrayal 教程配置', () => {
         ]);
         expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-review')?.highlightTarget).toBe('betrayal-attack-roll-review');
         expect(traitorManifest?.steps.map((step) => step.id)).toEqual([
-            'setup-mummy-monster-move',
+            'setup-traitor-monster-actions',
             'traitor-objective',
             'mummy-monster-turn-start',
             'mummy-monster-roll',
@@ -779,28 +804,39 @@ describe('Betrayal 教程配置', () => {
             'mummy-attack-roll-review',
             'mummy-attack-reward',
             'mummy-steal-result',
-            'setup-traitor-turn',
-            'pick-up-girl',
-            'give-girl-to-mummy',
-            'give-omen-to-mummy',
-            'traitor-finish',
         ]);
-        expect(traitorManifest?.steps.find((step) => step.id === 'setup-traitor-turn')?.viewAs).toBe('2');
+        expect(traitorManifest?.steps.map((step) => step.id)).not.toContain('pick-up-girl');
+        expect(traitorManifest?.steps.map((step) => step.id)).not.toContain('give-girl-to-mummy');
+        const traitorSetup = traitorManifest?.steps.find((step) => step.id === 'setup-traitor-monster-actions');
+        expect(traitorSetup?.aiActions).toHaveLength(1);
+        expect(traitorSetup?.infoStep).toBeUndefined();
+        expect(traitorSetup?.showMask).toBeUndefined();
+        expect(traitorSetup?.autoAdvanceAfterAi).not.toBe(false);
         const traitorObjective = traitorManifest?.steps.find((step) => step.id === 'traitor-objective');
         expect(traitorObjective?.highlightTarget).toBe('betrayal-open-scenario');
         expect(traitorObjective?.requireAction).toBe(true);
         expect(traitorObjective?.allowedCommands).toEqual([]);
         expect(traitorObjective?.infoStep).not.toBe(true);
-        expect(traitorManifest?.steps.find((step) => step.id === 'pick-up-girl')?.allowedCommands).toEqual(['PICK_UP_MUMMY_GIRL']);
-        expect(traitorManifest?.steps.find((step) => step.id === 'pick-up-girl')?.advanceOnEvents).toEqual([
+        expect(traitorVictoryManifest?.steps.map((step) => step.id)).toEqual([
+            'setup-traitor-turn',
+            'traitor-objective',
+            'pick-up-girl',
+            'give-girl-to-mummy',
+            'give-omen-to-mummy',
+            'traitor-finish',
+        ]);
+        expect(tutorialCatalog.tutorials['mummy-traitor-victory-chain']?.hiddenFromCatalog).toBe(true);
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'setup-traitor-turn')?.viewAs).toBe('2');
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'pick-up-girl')?.allowedCommands).toEqual(['PICK_UP_MUMMY_GIRL']);
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'pick-up-girl')?.advanceOnEvents).toEqual([
             { type: 'MUMMY_GIRL_PICKED_UP', match: { playerId: '2' } },
         ]);
-        expect(traitorManifest?.steps.find((step) => step.id === 'give-girl-to-mummy')?.allowedCommands).toEqual(['GIVE_GIRL_TO_MUMMY']);
-        expect(traitorManifest?.steps.find((step) => step.id === 'give-girl-to-mummy')?.advanceOnEvents).toEqual([
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'give-girl-to-mummy')?.allowedCommands).toEqual(['GIVE_GIRL_TO_MUMMY']);
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'give-girl-to-mummy')?.advanceOnEvents).toEqual([
             { type: 'MUMMY_GIRL_GIVEN', match: { playerId: '2' } },
         ]);
-        expect(traitorManifest?.steps.find((step) => step.id === 'give-omen-to-mummy')?.allowedCommands).toEqual(['GIVE_OMEN_TO_MUMMY']);
-        expect(traitorManifest?.steps.find((step) => step.id === 'give-omen-to-mummy')?.advanceOnEvents).toEqual([
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'give-omen-to-mummy')?.allowedCommands).toEqual(['GIVE_OMEN_TO_MUMMY']);
+        expect(traitorVictoryManifest?.steps.find((step) => step.id === 'give-omen-to-mummy')?.advanceOnEvents).toEqual([
             { type: 'MUMMY_OMEN_GIVEN', match: { playerId: '2', cardId: 'holy-symbol' } },
         ]);
         expect(mummyMonsterManifest?.steps.map((step) => step.id)).toEqual([
@@ -1115,11 +1151,18 @@ describe('Betrayal 教程配置', () => {
         expect(hauntTriggerSteps.heroReaderOpened).toContain('队友 1 是揭秘者并成为叛徒');
         expect(hauntTriggerSteps.heroReaderOpened).toContain('你仍是英雄');
         expect(hauntTriggerSteps.heroReaderOpened).toContain('英雄开场');
-        expect(hauntTriggerSteps.heroReaderOpened).toContain('英雄目标');
+        expect(hauntTriggerSteps.heroReaderOpened).toContain('先读开场页');
+        expect(hauntTriggerSteps.heroReaderOpened).not.toContain('再合上档案');
+        expect(hauntTriggerSteps.heroReaderTurnPage).toContain('继续/下一页');
+        expect(hauntTriggerSteps.heroReaderTurnPage).toContain('英雄目标页');
+        expect(hauntTriggerSteps.heroReaderGoal).toContain('现在看到英雄目标');
+        expect(hauntTriggerSteps.heroReaderGoal).toContain('驱逐法术');
+        expect(hauntTriggerSteps.heroReaderClose).toContain('点关闭回到牌桌');
         expect(hauntTriggerSteps.heroReaderOpened).not.toContain('叛徒开场');
         expect(hauntTriggerSteps.heroReaderOpened).not.toContain('先读叛徒');
         expect(hauntTriggerSteps.boardAfterReader).toContain('作祟中');
-        expect(hauntTriggerSteps.boardAfterReader).toContain('回看英雄目标');
+        expect(hauntTriggerSteps.boardAfterReader).toContain('刚读过的英雄目标页');
+        expect(hauntTriggerSteps.boardAfterReader).toContain('上一页仍可回看英雄开场');
         expect(hauntTriggerSteps.boardAfterReader).toContain('叛徒目标只在叛徒视角章节教学');
         expect(hauntTriggerSteps.waitForHeroTurnAfterHaunt).toContain('作祟后轮序继续');
         expect(hauntTriggerSteps.waitForHeroTurnAfterHaunt).toContain('等队友 2 公开结束回合');
@@ -1144,7 +1187,10 @@ describe('Betrayal 教程配置', () => {
             [hauntTriggerSteps.handOffToTeammateSecondCycle, hauntTriggerSteps.watchTeammateHauntTrigger],
             [hauntTriggerSteps.watchTeammateHauntTrigger, hauntTriggerSteps.teammateConfirmHauntTrigger],
             [hauntTriggerSteps.teammateConfirmHauntTrigger, hauntTriggerSteps.heroReaderOpened],
-            [hauntTriggerSteps.heroReaderOpened, hauntTriggerSteps.boardAfterReader],
+            [hauntTriggerSteps.heroReaderOpened, hauntTriggerSteps.heroReaderTurnPage],
+            [hauntTriggerSteps.heroReaderTurnPage, hauntTriggerSteps.heroReaderGoal],
+            [hauntTriggerSteps.heroReaderGoal, hauntTriggerSteps.heroReaderClose],
+            [hauntTriggerSteps.heroReaderClose, hauntTriggerSteps.boardAfterReader],
             [hauntTriggerSteps.boardAfterReader, hauntTriggerSteps.waitForHeroTurnAfterHaunt],
             [hauntTriggerSteps.waitForHeroTurnAfterHaunt, hauntTriggerSteps.heroStudyNameRoll],
             [hauntTriggerSteps.heroStudyNameRoll, hauntTriggerSteps.heroStudyNameResult],
@@ -1193,8 +1239,10 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritReview).toContain('按差值结算伤害');
         expect(zhCNLocale.tutorial.traitorPath.title).toContain('叛徒视角');
         expect(zhCNLocale.tutorial.traitorPath.description).toContain('木乃伊移动');
-        expect(zhCNLocale.tutorial.traitorPath.description).toContain('胜利链');
-        expect(zhCNLocale.tutorial.traitorPath.steps.setupTraitorTurn).toContain('女孩和圣符或指环');
+        expect(zhCNLocale.tutorial.traitorPath.description).toContain('胜利前局面');
+        expect(zhCNLocale.tutorial.traitorPath.victoryTitle).toContain('胜利链');
+        expect(zhCNLocale.tutorial.traitorPath.victoryDescription).toContain('合法起点');
+        expect(zhCNLocale.tutorial.traitorPath.steps.setupTraitorTurn).toContain('合法起点');
         expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('打开叛徒剧本');
         expect(zhCNLocale.tutorial.traitorPath.steps.pickUpGirl).toContain('拾起女孩');
         expect(zhCNLocale.tutorial.traitorPath.steps.giveGirlToMummy).toContain('交出女孩');
@@ -1208,12 +1256,16 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).not.toContain('0 点');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('结果为 0 或 1');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('已发现房间');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('可以持有女孩');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('会携带女孩');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).not.toContain('拾起女孩');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupAttack).toContain('同房攻击');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupAttack).toContain('木乃伊攻击英雄');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackForced).toContain('必须先攻击英雄');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackTarget).toContain('叛徒和已死亡探险者不是攻击目标');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('选择造成伤害或偷窃');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('攻击投骰比较');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('后续选择');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).not.toContain('选择造成伤害或偷窃');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackReward).toContain('现在才是木乃伊奖励选择');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackReward).toContain('偷走地图');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.stealResult).toContain('被偷的英雄不扣减能力');
         const playerTutorialText = collectPlayerText(zhCNLocale.tutorial).join('\n');

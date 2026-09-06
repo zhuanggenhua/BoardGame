@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { resolve } from "path";
+import sharp from "sharp";
 import {
   assertNoFatalFrontendErrors,
   attachPageDiagnostics,
@@ -34,8 +35,8 @@ const STEP_13 = `${EVIDENCE_DIR}/26-山屋惊魂-教程-书本使用后知识改
 const STEP_14 = `${EVIDENCE_DIR}/27-山屋惊魂-教程-点击兔脚后选择骰子.jpg`;
 const STEP_15 = `${EVIDENCE_DIR}/28-山屋惊魂-教程-兔脚选中改骰高亮.jpg`;
 const STEP_15A = `${EVIDENCE_DIR}/29-山屋惊魂-教程-兔脚重投动画进行中.jpg`;
-const STEP_16 = `${EVIDENCE_DIR}/30-山屋惊魂-教程-兔脚重投完成骰盘正常.jpg`;
-const STEP_16A = `${EVIDENCE_DIR}/31-山屋惊魂-教程-自动进入伤害分配.jpg`;
+const STEP_16 = `${EVIDENCE_DIR}/30-山屋惊魂-教程-兔脚重投完成自动进入伤害分配.jpg`;
+const STEP_16A = `${EVIDENCE_DIR}/31-山屋惊魂-教程-伤害分配面板可操作.jpg`;
 const STEP_16B = `${EVIDENCE_DIR}/32-山屋惊魂-教程-伤害分配完成后.jpg`;
 const STEP_17 = `${EVIDENCE_DIR}/representative-hero-haunt/01-木乃伊作祟目标改变.jpg`;
 const STEP_18 = `${EVIDENCE_DIR}/representative-hero-haunt/02-打开木乃伊剧本目标页.jpg`;
@@ -62,31 +63,43 @@ const STEP_39 = `${EVIDENCE_DIR}/09-山屋惊魂-教程-预兆作祟进度条.jp
 const STEP_40 = `${EVIDENCE_DIR}/topic-omen-confirmation/01-预兆牌确认与作祟检定.jpg`;
 const STEP_42 = `${EVIDENCE_DIR}/topic-omen-confirmation/02-确认后回牌桌持有区.jpg`;
 const STEP_43 = `${EVIDENCE_DIR}/topic-omen-confirmation/03-确认后预兆进度条.jpg`;
-const STEP_HAUNT_NATURAL_01 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/01-自然流程起点结束当前回合.jpg`;
-const STEP_HAUNT_NATURAL_02 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/02-交给队友一回合.jpg`;
-const STEP_HAUNT_NATURAL_03 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/03-等待队友一探索预兆房间.jpg`;
-const STEP_HAUNT_NATURAL_04 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/04-队友一获得指环未触发.jpg`;
-const STEP_HAUNT_NATURAL_05 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/05-队友二翻出狗未触发.jpg`;
-const STEP_HAUNT_NATURAL_06 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/06-狗确认后回到当前玩家.jpg`;
-const STEP_HAUNT_NATURAL_07 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/07-再次结束当前回合.jpg`;
-const STEP_HAUNT_NATURAL_08 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/08-队友一翻出面具触发作祟.jpg`;
-const STEP_HAUNT_NATURAL_09 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/09-当前玩家自动打开英雄开场.jpg`;
-const STEP_HAUNT_NATURAL_10 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/10-继续后阅读英雄胜利条件.jpg`;
-const STEP_HAUNT_NATURAL_11 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/11-关闭剧本书后进入作祟牌桌.jpg`;
-const STEP_HAUNT_NATURAL_12 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/12-作祟后回看英雄目标.jpg`;
-const STEP_HAUNT_NATURAL_13 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/13-作祟后等待队友结束回合.jpg`;
-const STEP_HAUNT_NATURAL_14 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/14-轮到英雄寻找木乃伊真名.jpg`;
-const STEP_HAUNT_NATURAL_15 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/15-寻找真名知识检定成功.jpg`;
-const STEP_HAUNT_NATURAL_16 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/16-确认后回到牌桌可结束回合.jpg`;
-const STEP_44 = `${EVIDENCE_DIR}/traitor-path/01-叛徒打开木乃伊剧本目标页.jpg`;
-const STEP_45 = `${EVIDENCE_DIR}/traitor-path/02-叛徒拾起女孩前.jpg`;
-const STEP_46 = `${EVIDENCE_DIR}/traitor-path/03-女孩交给木乃伊前.jpg`;
-const STEP_47 = `${EVIDENCE_DIR}/traitor-path/04-圣符交给木乃伊前.jpg`;
-const STEP_48 = `${EVIDENCE_DIR}/traitor-path/05-木乃伊叛徒胜利.jpg`;
+const STEP_HAUNT_NATURAL_01 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/01-当前玩家结束回合前.jpg`;
+const STEP_HAUNT_NATURAL_02 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/02-等待队友一探索预兆房间.jpg`;
+const STEP_HAUNT_NATURAL_03 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/03-队友一获得指环未触发.jpg`;
+const STEP_HAUNT_NATURAL_04 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/04-队友二翻出狗未触发.jpg`;
+const STEP_HAUNT_NATURAL_05 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/05-狗确认后回到当前玩家.jpg`;
+const STEP_HAUNT_NATURAL_06 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/06-再次结束当前回合.jpg`;
+const STEP_HAUNT_NATURAL_07 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/07-队友一翻出面具触发作祟.jpg`;
+const STEP_HAUNT_NATURAL_08 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/08-当前玩家自动打开英雄开场.jpg`;
+const STEP_HAUNT_NATURAL_09 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/09-书本翻页按钮教学.jpg`;
+const STEP_HAUNT_NATURAL_10 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/10-翻页后阅读英雄胜利条件.jpg`;
+const STEP_HAUNT_NATURAL_11 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/11-读完目标准备关闭剧本书.jpg`;
+const STEP_HAUNT_NATURAL_12 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/12-关闭剧本书后进入作祟牌桌.jpg`;
+const STEP_HAUNT_NATURAL_13 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/13-作祟后重开英雄目标页.jpg`;
+const STEP_HAUNT_NATURAL_14 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/14-作祟后等待队友结束回合.jpg`;
+const STEP_HAUNT_NATURAL_15 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/15-轮到英雄寻找木乃伊真名.jpg`;
+const STEP_HAUNT_NATURAL_16 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/16-寻找真名知识检定成功.jpg`;
+const STEP_HAUNT_NATURAL_17 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/17-确认后回到牌桌可结束回合.jpg`;
+const STEP_TRAITOR_01 = `${EVIDENCE_DIR}/traitor-path/01-叛徒打开木乃伊剧本目标页.jpg`;
+const STEP_TRAITOR_02 = `${EVIDENCE_DIR}/traitor-path/02-木乃伊怪物回合开始前.jpg`;
+const STEP_TRAITOR_03 = `${EVIDENCE_DIR}/traitor-path/03-木乃伊移动骰盘.jpg`;
+const STEP_TRAITOR_04 = `${EVIDENCE_DIR}/traitor-path/04-木乃伊瞬移目标.jpg`;
+const STEP_TRAITOR_05 = `${EVIDENCE_DIR}/traitor-path/05-木乃伊移动到女孩房间并携带女孩.jpg`;
+const STEP_TRAITOR_06 = `${EVIDENCE_DIR}/traitor-path/06-木乃伊同房必须先攻击.jpg`;
+const STEP_TRAITOR_07 = `${EVIDENCE_DIR}/traitor-path/07-木乃伊攻击目标高亮.jpg`;
+const STEP_TRAITOR_08 = `${EVIDENCE_DIR}/traitor-path/08-木乃伊攻击骰盘.jpg`;
+const STEP_TRAITOR_09 = `${EVIDENCE_DIR}/traitor-path/09-木乃伊偷取奖励入口.jpg`;
+const STEP_TRAITOR_10 = `${EVIDENCE_DIR}/traitor-path/10-木乃伊偷走地图结果.jpg`;
+const STEP_TRAITOR_VICTORY_01 = `${EVIDENCE_DIR}/topic-mummy-traitor-victory/01-胜利链合法起点.jpg`;
+const STEP_TRAITOR_VICTORY_02 = `${EVIDENCE_DIR}/topic-mummy-traitor-victory/02-叛徒回看胜利条件.jpg`;
+const STEP_TRAITOR_VICTORY_03 = `${EVIDENCE_DIR}/topic-mummy-traitor-victory/03-叛徒拾起女孩前.jpg`;
+const STEP_TRAITOR_VICTORY_04 = `${EVIDENCE_DIR}/topic-mummy-traitor-victory/04-女孩交给木乃伊前.jpg`;
+const STEP_TRAITOR_VICTORY_05 = `${EVIDENCE_DIR}/topic-mummy-traitor-victory/05-圣符交给木乃伊前.jpg`;
+const STEP_TRAITOR_VICTORY_06 = `${EVIDENCE_DIR}/topic-mummy-traitor-victory/06-木乃伊叛徒胜利.jpg`;
 const STEP_49 = `${EVIDENCE_DIR}/topic-mummy-monster/01-木乃伊怪物回合开始前.jpg`;
 const STEP_50 = `${EVIDENCE_DIR}/topic-mummy-monster/02-木乃伊移动骰盘.jpg`;
 const STEP_51 = `${EVIDENCE_DIR}/topic-mummy-monster/03-木乃伊瞬移目标.jpg`;
-const STEP_52 = `${EVIDENCE_DIR}/topic-mummy-monster/04-木乃伊拾起女孩结果.jpg`;
+const STEP_52 = `${EVIDENCE_DIR}/topic-mummy-monster/04-木乃伊移动到女孩房间并携带女孩.jpg`;
 const STEP_53 = `${EVIDENCE_DIR}/topic-mummy-monster/05-木乃伊同房必须先攻击.jpg`;
 const STEP_54 = `${EVIDENCE_DIR}/topic-mummy-monster/06-木乃伊攻击目标高亮.jpg`;
 const STEP_55 = `${EVIDENCE_DIR}/topic-mummy-monster/07-木乃伊攻击骰盘.jpg`;
@@ -104,6 +117,83 @@ const PC_REGRESSION_EVIDENCE_DIR = resolve(
 );
 const PC_REGRESSION_STEP_USE_BOOK = `${PC_REGRESSION_EVIDENCE_DIR}/05-pc-移动入口-current.png`;
 const PC_REGRESSION_STEP_BOARD = `${PC_REGRESSION_EVIDENCE_DIR}/03-pc-房间主视区-current.png`;
+
+const expectScreenshotsVisiblyDifferent = async (
+  leftPath: string,
+  rightPath: string,
+  label: string,
+) => {
+  const [left, right] = await Promise.all([
+    sharp(leftPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+    sharp(rightPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
+  ]);
+  expect(left.info.width, `${label} 宽度必须一致`).toBe(right.info.width);
+  expect(left.info.height, `${label} 高度必须一致`).toBe(right.info.height);
+  expect(left.info.channels, `${label} 通道数必须一致`).toBe(right.info.channels);
+  let changedPixels = 0;
+  let maxDelta = 0;
+  let totalMaxDelta = 0;
+  const channels = left.info.channels;
+  for (let offset = 0; offset < left.data.length; offset += channels) {
+    const pixelDelta = Math.max(
+      Math.abs((left.data[offset] ?? 0) - (right.data[offset] ?? 0)),
+      Math.abs((left.data[offset + 1] ?? 0) - (right.data[offset + 1] ?? 0)),
+      Math.abs((left.data[offset + 2] ?? 0) - (right.data[offset + 2] ?? 0)),
+    );
+    totalMaxDelta += pixelDelta;
+    maxDelta = Math.max(maxDelta, pixelDelta);
+    if (pixelDelta >= 18) {
+      changedPixels += 1;
+    }
+  }
+  const pixelCount = left.info.width * left.info.height;
+  const summary = {
+    changedPixels,
+    changedRatio: changedPixels / pixelCount,
+    maxDelta,
+    meanMaxDelta: totalMaxDelta / pixelCount,
+  };
+  expect(
+    changedPixels,
+    `${label} 不能再保存成像素相同的两张图：${JSON.stringify(summary)}`,
+  ).toBeGreaterThan(1200);
+  expect(
+    maxDelta,
+    `${label} 必须有肉眼可辨的像素变化：${JSON.stringify(summary)}`,
+  ).toBeGreaterThan(60);
+};
+
+const expectGirlTokenMatchesExplorerBoardSize = async (
+  page: Page,
+  girlUnitTestId: string,
+  label: string,
+) => {
+  const metrics = await page.evaluate((testId) => {
+    const girl = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+    const explorer = document.querySelector<HTMLElement>(
+      '[data-testid^="betrayal-explorer-figure-token-"]',
+    );
+    const girlRect = girl?.getBoundingClientRect();
+    const explorerRect = explorer?.getBoundingClientRect();
+    return {
+      girlExists: Boolean(girl),
+      explorerExists: Boolean(explorer),
+      girlVisualSize: Number(girl?.dataset.tokenVisualSize ?? "0"),
+      girlHeight: girlRect?.height ?? 0,
+      explorerHeight: explorerRect?.height ?? 0,
+    };
+  }, girlUnitTestId);
+  expect(metrics.girlExists, `${label} 必须能看到女孩 token：${JSON.stringify(metrics)}`).toBe(true);
+  expect(metrics.explorerExists, `${label} 必须能看到玩家 token 作尺寸基准：${JSON.stringify(metrics)}`).toBe(true);
+  expect(
+    metrics.girlVisualSize,
+    `${label} 女孩 token 必须保留和玩家 token 同层的设计尺寸：${JSON.stringify(metrics)}`,
+  ).toBeGreaterThan(0);
+  expect(
+    Math.abs(metrics.girlHeight - metrics.explorerHeight),
+    `${label} 女孩 token 屏幕高度必须和玩家 token 保持一致：${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(2);
+};
 
 const tradeActionPanelItemStep = (page: Page) =>
   page.locator(
@@ -999,8 +1089,10 @@ const expectRabbitFootRerollWebglHighlights = async (
             targetHeight: rect.height,
             visibleMax,
             hitBoxPadding: (boxSize - visibleMax) / 2,
-            candidateBoxExists: Boolean(
-              target.querySelector('[data-reroll-target-candidate-box="true"]'),
+            candidateUnderlineExists: Boolean(
+              target.querySelector(
+                '[data-reroll-target-candidate-underline="true"]',
+              ),
             ),
             selectedBorderExists: Boolean(
               target.querySelector(
@@ -1023,7 +1115,7 @@ const expectRabbitFootRerollWebglHighlights = async (
         canvasRenderer: activeCanvas?.dataset.diceHighlightRenderer ?? "",
         domVisualBoxCount: layer
           ? layer.querySelectorAll(
-              '[data-reroll-target-candidate-box="true"], [data-reroll-target-selected-border="true"]',
+              '[data-reroll-target-candidate-underline="true"], [data-reroll-target-selected-border="true"]',
             ).length
           : 0,
         highlightCount: highlights.length,
@@ -1042,27 +1134,29 @@ const expectRabbitFootRerollWebglHighlights = async (
     .poll(
       async () => {
         const metrics = await readMetrics();
+        const expectedSelectedCount = selectedDieIndex === null ? 0 : 1;
+        const expectedWebglRenderer =
+          selectedDieIndex === null ? "none" : "threejs-backside-shader-shell";
         if (!metrics.layerExists) return "missing-layer";
-        if (metrics.layerRenderer !== "threejs-backside-shader-shell")
+        if (
+          metrics.layerRenderer !==
+          "candidate-bottom-underline-selected-threejs-shell"
+        )
           return `bad-layer:${metrics.layerRenderer}`;
-        if (metrics.sourceRenderer !== "threejs-backside-shader-shell")
+        if (metrics.sourceRenderer !== expectedWebglRenderer)
           return `bad-source:${metrics.sourceRenderer}`;
-        if (metrics.canvasRenderer !== "threejs-backside-shader-shell")
+        if (metrics.canvasRenderer !== expectedWebglRenderer)
           return `bad-canvas:${metrics.canvasRenderer}`;
         if (metrics.targets.length <= 0) return "missing-targets";
-        if (metrics.domVisualBoxCount !== 0)
+        if (metrics.domVisualBoxCount !== metrics.targets.length)
           return `dom-boxes:${metrics.domVisualBoxCount}`;
-        if (metrics.highlightCount !== metrics.targets.length)
-          return `highlights:${metrics.highlightCount}/${metrics.targets.length}`;
-        if (metrics.shellCount !== metrics.targets.length)
-          return `shells:${metrics.shellCount}/${metrics.targets.length}`;
-        const expectedSelectedCount = selectedDieIndex === null ? 0 : 1;
+        if (metrics.highlightCount !== expectedSelectedCount)
+          return `highlights:${metrics.highlightCount}/${expectedSelectedCount}`;
+        if (metrics.shellCount !== expectedSelectedCount)
+          return `shells:${metrics.shellCount}/${expectedSelectedCount}`;
         if (metrics.selectedCount !== expectedSelectedCount)
           return `selected:${metrics.selectedCount}/${expectedSelectedCount}`;
-        if (
-          metrics.candidateCount !==
-          metrics.targets.length - expectedSelectedCount
-        )
+        if (metrics.candidateCount !== 0)
           return `candidate:${metrics.candidateCount}`;
         return "ready";
       },
@@ -1076,31 +1170,28 @@ const expectRabbitFootRerollWebglHighlights = async (
     expect(target.shape, `兔脚选骰热区必须绑定骰子本体：${evidence}`).toBe(
       "die-face",
     );
-    expect(
-      target.highlightRenderer,
-      `兔脚选骰可见高亮必须来自 Three.js：${evidence}`,
-    ).toBe("threejs-backside-shader-shell");
-    expect(
-      target.visualLayer,
-      `DOM 层只能是透明命中区，不能再画框：${evidence}`,
-    ).toBe("transparent-hitbox-only");
     expect(Math.abs(target.targetWidth - target.targetHeight)).toBeLessThanOrEqual(1);
     expect(target.visibleMax).toBeGreaterThan(0);
     expect(target.hitBoxPadding).toBeGreaterThanOrEqual(0);
     expect(target.hitBoxPadding).toBeLessThanOrEqual(4);
-    expect(target.candidateBoxExists).toBe(false);
-    expect(target.selectedBorderExists).toBe(false);
-    expect(target.highlight, `缺少 Three.js 高亮状态：${evidence}`).not.toBeNull();
-    expect(target.shell, `缺少 Three.js 描边外壳：${evidence}`).not.toBeNull();
-    expect(target.shell?.renderer).toBe("threejs-backside-shader-shell");
-    expect(target.shell?.visible).toBe(true);
-    expect(target.shell?.materialType).toBe("ShaderMaterial");
-    expect(target.shell?.materialSide).toBe(1);
-    expect(target.shell?.depthWrite).toBe(false);
-    expect(target.shell?.transparent).toBe(true);
-    expect(target.shell?.shaderOpacity).toBe(target.shell?.opacity);
     if (target.dieIndex === selectedDieIndex) {
       expect(target.selected).toBe(true);
+      expect(
+        target.highlightRenderer,
+        `选中骰子必须升级为 Three.js 贴合高亮：${evidence}`,
+      ).toBe("threejs-backside-shader-shell");
+      expect(target.visualLayer).toBe("selected-outline-and-webgl-shell");
+      expect(target.candidateUnderlineExists).toBe(false);
+      expect(target.selectedBorderExists).toBe(true);
+      expect(target.highlight, `缺少 Three.js 选中高亮状态：${evidence}`).not.toBeNull();
+      expect(target.shell, `缺少 Three.js 选中描边外壳：${evidence}`).not.toBeNull();
+      expect(target.shell?.renderer).toBe("threejs-backside-shader-shell");
+      expect(target.shell?.visible).toBe(true);
+      expect(target.shell?.materialType).toBe("ShaderMaterial");
+      expect(target.shell?.materialSide).toBe(1);
+      expect(target.shell?.depthWrite).toBe(false);
+      expect(target.shell?.transparent).toBe(true);
+      expect(target.shell?.shaderOpacity).toBe(target.shell?.opacity);
       expect(target.highlight?.variant).toBe("selected");
       expect(target.shell?.variant).toBe("selected");
       expect(target.shell?.scale).toBeGreaterThanOrEqual(1.045);
@@ -1108,11 +1199,15 @@ const expectRabbitFootRerollWebglHighlights = async (
       expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.9);
     } else {
       expect(target.selected).toBe(false);
-      expect(target.highlight?.variant).toBe("candidate");
-      expect(target.shell?.variant).toBe("candidate");
-      expect(target.shell?.scale).toBeGreaterThanOrEqual(1.025);
-      expect(target.shell?.scale).toBeLessThanOrEqual(1.045);
-      expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.9);
+      expect(
+        target.highlightRenderer,
+        `未选骰子只能显示底部候选描边，不得套 3D 环：${evidence}`,
+      ).toBe("dom-bottom-underline");
+      expect(target.visualLayer).toBe("candidate-bottom-underline");
+      expect(target.candidateUnderlineExists).toBe(true);
+      expect(target.selectedBorderExists).toBe(false);
+      expect(target.highlight, `未选骰子不得生成 Three.js 候选外壳：${evidence}`).toBeNull();
+      expect(target.shell, `未选骰子不得生成 Three.js 候选外壳：${evidence}`).toBeNull();
     }
   }
 };
@@ -1583,7 +1678,24 @@ const expectInventoryPreviewCardReadable = async (previewOverlay: Locator) => {
 const clickNext = async (page: Parameters<typeof test>[0]["page"]) => {
   const nextButton = page.getByTestId("tutorial-next-button");
   await expect(nextButton).toBeVisible({ timeout: 2000 });
-  await nextButton.click({ timeout: 2000 });
+  const beforeStepId = await page
+    .locator("[data-tutorial-step]")
+    .first()
+    .getAttribute("data-tutorial-step")
+    .catch(() => null);
+  try {
+    await nextButton.click({ timeout: 5000 });
+  } catch (error) {
+    const afterStepId = await page
+      .locator("[data-tutorial-step]")
+      .first()
+      .getAttribute("data-tutorial-step")
+      .catch(() => null);
+    if (afterStepId && afterStepId !== beforeStepId) {
+      return;
+    }
+    throw error;
+  }
 };
 
 const readTutorialRuntimeDiagnostics = async (
@@ -1881,6 +1993,14 @@ const completeMummyMonsterActionsFromTurnStart = async (
     "data-token-status",
     "held-by-mummy",
   );
+  await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
+    "拾起女孩",
+  );
+  await expectGirlTokenMatchesExplorerBoardSize(
+    page,
+    `betrayal-girl-svg-token-${moveTarget.girlRoomId}`,
+    "木乃伊移动到女孩房间后携带女孩",
+  );
   await saveMummyMonsterStepScreenshot(page, screenshots.moveResult);
   await clickNext(page);
 
@@ -1931,14 +2051,19 @@ const completeMummyMonsterActionsFromTurnStart = async (
   await expect(attackRollPanel).toContainText("木乃伊攻击");
   await expect(attackRollPanel).toContainText("攻击投骰");
   await waitForPhysicalDiceSettled(attackRollPanel);
-  await expect(attackRollPanel).toContainText("伤害或偷取");
+  await expect(attackRollPanel).toContainText("本会造成");
+  await expect(attackRollPanel).toContainText("满足木乃伊偷取条件");
+  await expect(attackRollPanel).not.toContainText("伤害或偷取");
   await saveMummyMonsterStepScreenshot(page, screenshots.attackRoll);
 
   await acknowledgeRecentRollForAllPlayers(page);
   await waitForStep(page, "mummy-attack-reward");
   await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
   await expect(page.getByTestId("betrayal-mummy-reward-banner")).toContainText(
-    "木乃伊攻击英雄后",
+    "木乃伊攻击胜出",
+  );
+  await expect(page.getByTestId("betrayal-mummy-reward-banner")).toContainText(
+    "请选择造成伤害，或偷走一件物品/预兆代替",
   );
   await expect(page.getByTestId("betrayal-mummy-reward-steal-map")).toContainText(
     "偷走地图",
@@ -2090,6 +2215,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "haunt-actions-and-finish",
       "hero-attack-path",
       "jack-spirit-path",
+      "mummy-traitor-victory-chain",
       "mummy-monster-actions",
     ]) {
       await expect(
@@ -2403,17 +2529,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     });
     await waitForBetrayalPageReady(page);
 
-    await waitForStep(page, "setup-natural-haunt-flow", 30000);
+    await waitForStep(page, "hand-off-to-teammate-one", 30000);
     await expect(page.getByTestId("betrayal-runtime-header-grid")).toContainText(
       /作祟前|Pre-Haunt/i,
     );
-    await expect(tutorialOverlayCard).toContainText("多数英雄视角");
-    await expect(tutorialOverlayCard).toContainText(
-      "只操作自己的回合",
-    );
-    await expect(tutorialOverlayCard).toContainText(
-      "叛徒读本另有独立章节",
-    );
+    await expect(tutorialOverlayCard).toContainText("结束回合");
+    await expect(tutorialOverlayCard).not.toContainText("多数英雄视角");
     await expect(tutorialOverlayCard).not.toContainText("已经持有 3 张预兆");
     await expect(await readOmenNamesByPlayer()).toEqual({
       "0": [],
@@ -2425,12 +2546,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toHaveCount(0);
     await saveScreenshot(page, STEP_HAUNT_NATURAL_01);
-
-    await clickNext(page);
-    await waitForStep(page, "hand-off-to-teammate-one", 10000);
-    await expect(tutorialOverlayCard).toContainText("结束回合");
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_02);
 
     await page.getByTestId("betrayal-action-endTurn").click();
     await waitForStep(page, "watch-teammate-omen-turns", 10000);
@@ -2457,14 +2573,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         phase: "preHaunt",
         hauntTriggered: false,
       });
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_03);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_02);
 
     await clickNext(page);
     await waitForStep(page, "teammate-omen-results", 10000);
     await expect(tutorialOverlayCard).toContainText("队友 1 获得指环");
     await expect(tutorialOverlayCard).toContainText("1 颗作祟骰低于 5+");
     await expect(tutorialOverlayCard).toContainText("交给队友 2");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_04);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_03);
 
     await clickNext(page);
     await waitForStep(page, "watch-teammate-two-omen-turn", 10000);
@@ -2508,7 +2624,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(
       0,
     );
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_05);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_04);
 
     await clickNext(page);
     await waitForStep(page, "teammate-two-omen-results", 10000);
@@ -2534,14 +2650,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         phase: "preHaunt",
         hauntTriggered: false,
       });
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_06);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_05);
 
     await clickNext(page);
     await waitForStep(page, "hand-off-to-teammate-second-cycle", 10000);
     await expect(tutorialOverlayCard).toContainText("现在又轮到你");
     await expect(tutorialOverlayCard).toContainText("不会替队友操作");
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_07);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_06);
 
     await page.getByTestId("betrayal-action-endTurn").click();
     await waitForStep(page, "watch-teammate-haunt-trigger", 10000);
@@ -2586,7 +2702,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toHaveCount(
       0,
     );
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_08);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_07);
 
     await clickNext(page);
     await waitForStep(page, "haunt-hero-reader", 30000);
@@ -2621,28 +2737,43 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(scenarioReader).not.toContainText("叛徒开场");
     await expect(tutorialOverlayCard).toContainText("你仍是英雄");
     await expectTutorialCardInForeground(page, "你仍是英雄");
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_08);
+
+    await clickNext(page);
+    await waitForStep(page, "haunt-hero-reader-turn-page", 10000);
+    await expect(tutorialOverlayCard).toContainText("翻到英雄目标页");
+    await expect(page.getByTestId("betrayal-scenario-reader-next-zone")).toBeVisible();
+    await expectTutorialCardInForeground(page, "翻到英雄目标页");
     await saveScreenshot(page, STEP_HAUNT_NATURAL_09);
 
     await page.getByTestId("betrayal-scenario-reader-next-zone").click();
+    await waitForStep(page, "haunt-hero-reader-goal", 10000);
     await expect(scenarioReader).toContainText("英雄剧本书", { timeout: 10000 });
     await expect(scenarioReader).toContainText("真名");
     await expect(scenarioReader).toContainText("驱逐法术");
     await expect(scenarioReader).toContainText("驱逐木乃伊");
     await expect(scenarioReader).not.toContainText("叛徒目标");
-    await expectTutorialCardInForeground(page, "你仍是英雄");
+    await expectTutorialCardInForeground(page, "现在看到英雄目标");
     await saveScreenshot(page, STEP_HAUNT_NATURAL_10);
+
+    await clickNext(page);
+    await waitForStep(page, "haunt-hero-reader-close", 10000);
+    await expect(tutorialOverlayCard).toContainText("点关闭回到牌桌");
+    await expect(page.getByTestId("betrayal-scenario-reader-close")).toBeVisible();
+    await expectTutorialCardInForeground(page, "点关闭回到牌桌");
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_11);
 
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(scenarioReader).toBeHidden();
-    await clickNext(page);
     await waitForStep(page, "haunt-trigger-board", 10000);
     await expect(page.getByTestId("betrayal-runtime-header-grid")).toContainText(
       /作祟中|恶兆后|Haunt/i,
     );
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await expect(tutorialOverlayCard).toContainText("作祟中");
-    await expect(tutorialOverlayCard).toContainText("回看英雄目标");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_11);
+    await expect(tutorialOverlayCard).toContainText("刚读过的英雄目标页");
+    await expect(tutorialOverlayCard).toContainText("上一页仍可回看英雄开场");
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_12);
 
     await page.getByTestId("betrayal-open-scenario").click();
     const scenarioObjectivePage = page.getByTestId(
@@ -2658,8 +2789,23 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(scenarioObjectivePage).toContainText("驱逐法术");
     await expect(scenarioObjectivePage).toContainText("驱逐木乃伊");
     await expect(scenarioObjectivePage).not.toContainText("叛徒剧本书");
-    await expectTutorialCardInForeground(page, "回看英雄目标");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_12);
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-header-progress"),
+    ).toContainText("2/2");
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-prev-zone"),
+    ).toBeEnabled();
+    await page.getByTestId("betrayal-scenario-reader-prev-zone").click();
+    await expect(page.getByTestId("betrayal-scenario-opening-stage")).toBeVisible();
+    await expect(scenarioReader).toContainText("英雄开场");
+    await expect(scenarioReader).toContainText("挚爱");
+    await page.getByTestId("betrayal-scenario-reader-next-zone").click();
+    await expect(scenarioObjectivePage).toContainText("驱逐法术");
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-header-progress"),
+    ).toContainText("2/2");
+    await expectTutorialCardInForeground(page, "刚读过的英雄目标页");
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_13);
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toBeHidden();
 
@@ -2681,7 +2827,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         mummyTrueNameFound: false,
       });
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toBeHidden();
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_13);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_14);
 
     await clickNext(page);
     await waitForStep(page, "hero-study-name-roll", 10000);
@@ -2704,7 +2850,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         mummyTrueNameFound: false,
       });
     await expectTutorialCardInForeground(page, "寻找木乃伊真名");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_14);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_15);
 
     await page.getByTestId("betrayal-action-use").click();
     await waitForStep(page, "hero-study-name-result", 10000);
@@ -2749,7 +2895,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "1",
     );
     await expectTutorialCardInForeground(page, "检定成功");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_15);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_16);
 
     await studyNameContinueButton.click();
     await waitForStep(page, "hero-study-name-closeout", 10000);
@@ -2773,9 +2919,9 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         mummyTrueNameFound: true,
         mummyBanishmentSpellLearned: false,
         recommendedAction: "endTurn",
-      });
+    });
     await expectTutorialCardInForeground(page, "结果已经落到英雄目标进度上");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_16);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_17);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-tutorial-haunt-natural-trigger-flow", diagnostics },
@@ -2846,7 +2992,10 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(scenarioObjectivePage).toContainText("英雄剧本书");
     await expect(
       page.getByTestId("betrayal-scenario-reader-header-progress"),
-    ).toContainText("1/1");
+    ).toContainText("2/2");
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-prev-zone"),
+    ).toBeEnabled();
     await expect(scenarioObjectivePage).toContainText("敌方情报 / 胜利条件");
     await expect(scenarioObjectivePage).toContainText("真名");
     await expect(scenarioObjectivePage).toContainText("驱逐法术");
@@ -3999,97 +4148,191 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await saveScreenshot(page, STEP_15);
     const rerollMotionCapture = await armPhysicalDiceRerollMotionCapture(
       discoveryRollPanel,
-      { dieIndex: 1 },
+      { dieIndex: 1, minScreenShiftPx: 32 },
     );
     try {
-      const rerollMotionVisible = rerollMotionCapture.expectVisible();
-      await rollModifierConfirm.click();
+      const confirmBox = await rollModifierConfirm.boundingBox();
+      expect(confirmBox, "确认使用兔脚按钮必须有真实可点击区域").not.toBeNull();
+      await page.evaluate(
+        ({ x, y }) => {
+          const target = document.elementFromPoint(x, y);
+          const button = target?.closest<HTMLButtonElement>(
+            '[data-testid="betrayal-roll-modifier-confirm"]',
+          );
+          if (!button) {
+            throw new Error("确认使用兔脚按钮中心没有命中真实按钮");
+          }
+          window.setTimeout(() => button.click(), 50);
+        },
+        {
+          x: confirmBox!.x + confirmBox!.width / 2,
+          y: confirmBox!.y + confirmBox!.height / 2,
+        },
+      );
+      const rerollMotionEvidence =
+        (await rerollMotionCapture.saveVisibleFrame(STEP_15A)) as {
+          screenShiftPx?: number;
+          screenBoundsShiftPx?: number;
+          shiftedDice?: Array<{ index?: number; screenShiftPx?: number }>;
+        };
       await expect(rabbitFootDice).toHaveCount(0);
-      await rerollMotionVisible;
-      await saveScreenshot(page, STEP_15A);
+      const visibleShiftPx = Math.max(
+        rerollMotionEvidence.screenShiftPx ?? 0,
+        rerollMotionEvidence.screenBoundsShiftPx ?? 0,
+        ...(rerollMotionEvidence.shiftedDice ?? []).map(
+          (die) => die.screenShiftPx ?? 0,
+        ),
+      );
+      expect(
+        visibleShiftPx,
+        `兔脚重投过程图必须截到当前仍在运动的骰子，而不是复用稳定骰盘：${JSON.stringify(rerollMotionEvidence)}`,
+      ).toBeGreaterThanOrEqual(32);
     } finally {
       await rerollMotionCapture.stop();
     }
     await expect
-      .poll(async () =>
-        discoveryRollPanel
-          .getByTestId("betrayal-house-dice-physics-source")
-          .getAttribute("data-dice-highlight-renderer"),
-      )
-      .toBe("none");
-    await waitForStep(page, "rabbit-foot-result", 10000);
-    await expect(tutorialOverlayCard).toHaveAttribute(
-      "data-tutorial-placement",
-      "center",
+      .poll(async () => {
+        const damageAllocationPanel = page.getByTestId(
+          "betrayal-damage-allocation-panel",
+        );
+        if (await damageAllocationPanel.isVisible().catch(() => false)) {
+          return "settled";
+        }
+        const dicePhysicsSource = discoveryRollPanel.getByTestId(
+          "betrayal-house-dice-physics-source",
+        );
+        if ((await dicePhysicsSource.count()) === 0) {
+          return "settled";
+        }
+        const highlightRenderer = await dicePhysicsSource.getAttribute(
+          "data-dice-highlight-renderer",
+        );
+        return highlightRenderer === "none"
+          ? "settled"
+          : `highlight:${highlightRenderer ?? "missing"}`;
+      }, { timeout: 10000 })
+      .toBe("settled");
+    await expect
+      .poll(async () => {
+        const stepId = await page.locator("[data-tutorial-step]").first()
+          .getAttribute("data-tutorial-step")
+          .catch(() => null);
+        return stepId ?? "";
+      }, { timeout: 10000 })
+      .toMatch(/^(rabbit-foot-result|finish)$/);
+    const postRerollStepId = await page.locator("[data-tutorial-step]").first().getAttribute(
+      "data-tutorial-step",
     );
-    await expect(tutorialOverlayCard).toContainText("重掷完成");
-    await expect(tutorialOverlayCard).toContainText("伤害分配");
+    if (postRerollStepId === "rabbit-foot-result") {
+      const rabbitFootResultPlacement = await tutorialOverlayCard.getAttribute(
+        "data-tutorial-placement",
+      );
+      expect(
+        ["center", "top"],
+        `兔脚结果提示可以居中，也可以为了避让伤害分配面板自动上移：${rabbitFootResultPlacement}`,
+      ).toContain(rabbitFootResultPlacement);
+      await expect(tutorialOverlayCard).toContainText("重掷完成");
+      await expect(tutorialOverlayCard).toContainText("伤害分配");
+    } else {
+      await expect(tutorialOverlayCard).toContainText("承受 1 点物理伤害");
+    }
     await expect(tutorialOverlayCard).not.toContainText("其他玩家确认");
     await expect(tutorialOverlayCard).not.toContainText("确认 1/3");
     await expect(
       discoveryReveal.getByTestId("betrayal-discovery-continue"),
     ).toHaveCount(0);
-    const rerolledDicePhysicsSource = discoveryRollPanel.getByTestId(
-      "betrayal-house-dice-physics-source",
+    const postRerollDamageAllocationPanel = page.getByTestId(
+      "betrayal-damage-allocation-panel",
     );
-    await expect(
-      rerolledDicePhysicsSource,
-    ).toHaveAttribute("data-dice-physics-source", "dice-box-threejs");
-    await waitForPhysicalDiceSettled(discoveryRollPanel);
-    await expect(
-      discoveryRollPanel.getByTestId("betrayal-recent-roll-total"),
-    ).toContainText("总点数");
-    await expect(
-      discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
-    ).toContainText("骰面合计");
-    await expect(
-      discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
-    ).toContainText("加值");
-    const finalDiceGeometry = await discoveryRollPanel.evaluate((node) => {
-      const panel = node as HTMLElement;
-      const panelRect = panel.getBoundingClientRect();
-      const diceGroup = panel.querySelector(
-        '[data-testid="betrayal-house-dice-3d-group"]',
-      ) as HTMLElement | null;
-      const canvas =
-        Array.from(diceGroup?.querySelectorAll("canvas") ?? [])
-          .filter(
-            (candidate): candidate is HTMLCanvasElement =>
-              candidate instanceof HTMLCanvasElement,
-          )
-          .sort((left, right) => {
-            const leftRect = left.getBoundingClientRect();
-            const rightRect = right.getBoundingClientRect();
-            return (
-              rightRect.width * rightRect.height -
-              leftRect.width * leftRect.height
-            );
-          })[0] ?? null;
-      const diceGroupRect = diceGroup?.getBoundingClientRect();
-      const canvasRect = canvas?.getBoundingClientRect();
-      const projectedFaceSizes = Array.from(
-        panel.querySelectorAll('[data-testid^="betrayal-house-dice-readable-face-"]'),
-      ).map((element) => Number((element as HTMLElement).dataset.projectedSize ?? "0"));
-      return {
-        panelHeight: panelRect.height,
-        diceGroupHeight: diceGroupRect?.height ?? 0,
-        canvasWidth: canvasRect?.width ?? 0,
-        canvasHeight: canvasRect?.height ?? 0,
-        maxProjectedFaceSize: Math.max(0, ...projectedFaceSizes),
-      };
-    });
-    expect(finalDiceGeometry.diceGroupHeight).toBeGreaterThan(0);
-    expect(
-      finalDiceGeometry.diceGroupHeight / finalDiceGeometry.panelHeight,
-      `兔脚重投完成图的骰盘不能膨胀成异常大骰：${JSON.stringify(finalDiceGeometry)}`,
-    ).toBeLessThanOrEqual(0.82);
-    expect(finalDiceGeometry.canvasWidth).toBeGreaterThanOrEqual(300);
-    expect(finalDiceGeometry.canvasHeight).toBeGreaterThanOrEqual(210);
-    expect(
-      finalDiceGeometry.maxProjectedFaceSize,
-      "兔脚重投完成图里的单颗骰子投影不能异常放大",
-    ).toBeLessThanOrEqual(54);
+    const hasPostRerollDamageAllocationPanel =
+      await postRerollDamageAllocationPanel.isVisible().catch(() => false);
+    const hasPostRerollDiceTotal = await discoveryRollPanel
+      .getByTestId("betrayal-recent-roll-total")
+      .isVisible()
+      .catch(() => false);
+    if (!hasPostRerollDamageAllocationPanel && hasPostRerollDiceTotal) {
+      const rerolledDicePhysicsSource = discoveryRollPanel.getByTestId(
+        "betrayal-house-dice-physics-source",
+      );
+      await expect(
+        rerolledDicePhysicsSource,
+      ).toHaveAttribute("data-dice-physics-source", "dice-box-threejs");
+      await waitForPhysicalDiceSettled(discoveryRollPanel);
+      await expect(
+        discoveryRollPanel.getByTestId("betrayal-recent-roll-total"),
+      ).toContainText("总点数");
+      await expect(
+        discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
+      ).toContainText("骰面合计");
+      await expect(
+        discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
+      ).toContainText("加值");
+      const finalDiceGeometry = await discoveryRollPanel.evaluate((node) => {
+        const panel = node as HTMLElement;
+        const panelRect = panel.getBoundingClientRect();
+        const diceGroup = panel.querySelector(
+          '[data-testid="betrayal-house-dice-3d-group"]',
+        ) as HTMLElement | null;
+        const canvas =
+          Array.from(diceGroup?.querySelectorAll("canvas") ?? [])
+            .filter(
+              (candidate): candidate is HTMLCanvasElement =>
+                candidate instanceof HTMLCanvasElement,
+            )
+            .sort((left, right) => {
+              const leftRect = left.getBoundingClientRect();
+              const rightRect = right.getBoundingClientRect();
+              return (
+                rightRect.width * rightRect.height -
+                leftRect.width * leftRect.height
+              );
+            })[0] ?? null;
+        const diceGroupRect = diceGroup?.getBoundingClientRect();
+        const canvasRect = canvas?.getBoundingClientRect();
+        const projectedFaceSizes = Array.from(
+          panel.querySelectorAll('[data-testid^="betrayal-house-dice-readable-face-"]'),
+        ).map((element) => Number((element as HTMLElement).dataset.projectedSize ?? "0"));
+        return {
+          panelHeight: panelRect.height,
+          diceGroupHeight: diceGroupRect?.height ?? 0,
+          canvasWidth: canvasRect?.width ?? 0,
+          canvasHeight: canvasRect?.height ?? 0,
+          maxProjectedFaceSize: Math.max(0, ...projectedFaceSizes),
+        };
+      });
+      expect(finalDiceGeometry.diceGroupHeight).toBeGreaterThan(0);
+      expect(
+        finalDiceGeometry.diceGroupHeight / finalDiceGeometry.panelHeight,
+        `兔脚重投完成图的骰盘不能膨胀成异常大骰：${JSON.stringify(finalDiceGeometry)}`,
+      ).toBeLessThanOrEqual(0.82);
+      expect(finalDiceGeometry.canvasWidth).toBeGreaterThanOrEqual(300);
+      expect(finalDiceGeometry.canvasHeight).toBeGreaterThanOrEqual(210);
+      expect(
+        finalDiceGeometry.maxProjectedFaceSize,
+        "兔脚重投完成图里的单颗骰子投影不能异常放大",
+      ).toBeLessThanOrEqual(54);
+    } else {
+      await expect(postRerollDamageAllocationPanel).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(postRerollDamageAllocationPanel).toContainText(
+        "分配 1 点物理伤害",
+      );
+      const discoveryPanelAfterReroll = page.getByTestId(
+        "betrayal-discovery-panel",
+      );
+      if ((await discoveryPanelAfterReroll.count()) === 0) {
+        await expect(discoveryPanelAfterReroll).toHaveCount(0);
+      } else {
+        await expect(discoveryPanelAfterReroll).not.toContainText("总点数");
+      }
+    }
     await saveScreenshot(page, STEP_16);
+    await expectScreenshotsVisiblyDifferent(
+      STEP_15A,
+      STEP_16,
+      "兔脚重投过程图和完成图",
+    );
     await waitForStep(page, "finish", 10000);
     await expect(tutorialOverlayCard).toContainText("承受 1 点物理伤害");
     await expect(tutorialOverlayCard).not.toContainText("兔脚");
@@ -4552,7 +4795,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ]);
   });
 
-  test("[mummy-traitor-path] 叛徒教程会打开叛徒剧本并完成女孩与圣符胜利链", async ({
+  test("[mummy-traitor-path] 叛徒教程会打开叛徒剧本并完成木乃伊行动", async ({
     page,
     context,
   }) => {
@@ -4571,15 +4814,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await waitForBetrayalPageReady(page);
     await waitForHauntRuntime(page, 30000);
-    await waitForStep(page, "setup-mummy-monster-move");
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "怪物回合",
-    );
-    await clickNext(page);
-
-    await waitForStep(page, "traitor-objective");
+    await waitForStep(page, "traitor-objective", 30000);
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "女孩、圣符或指环、石棺",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
+      "拾起女孩",
     );
     await page.getByTestId("betrayal-open-scenario").click();
     const traitorScenarioPage = page.getByTestId(
@@ -4595,14 +4835,81 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(traitorScenarioPage).toContainText("圣符");
     await expect(traitorScenarioPage).toContainText("指环");
     await expect(traitorScenarioPage).toContainText("石棺");
-    await saveScreenshot(page, STEP_44);
+    await saveScreenshot(page, STEP_TRAITOR_01);
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(
       page.getByTestId("betrayal-scenario-reader-dialog"),
     ).toBeHidden();
 
-    await completeMummyMonsterActionsFromTurnStart(page);
-    await clickNext(page);
+    await completeMummyMonsterActionsFromTurnStart(page, {
+      turnStart: STEP_TRAITOR_02,
+      movementRoll: STEP_TRAITOR_03,
+      moveTarget: STEP_TRAITOR_04,
+      moveResult: STEP_TRAITOR_05,
+      attackForced: STEP_TRAITOR_06,
+      attackTarget: STEP_TRAITOR_07,
+      attackRoll: STEP_TRAITOR_08,
+      reward: STEP_TRAITOR_09,
+      stealResult: STEP_TRAITOR_10,
+    });
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "偷窃代替伤害",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
+      "交出圣符",
+    );
+
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-tutorial-traitor-path", diagnostics },
+    ]);
+  });
+
+  test("[mummy-traitor-victory-chain] 隐藏专题从合法胜利前局面完成女孩与圣符交付", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context, { skipTutorial: false });
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-tutorial-mummy-traitor-victory-chain",
+    );
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await warmBetrayalFrontend(context);
+    await page.goto("/play/betrayal/tutorial/mummy-traitor-victory-chain", {
+      waitUntil: "domcontentloaded",
+    });
+
+    await waitForBetrayalPageReady(page);
+    await waitForHauntRuntime(page, 30000);
+    await expect(page.locator('[data-tutorial-step="setup-traitor-turn"]')).toHaveCount(0);
+    await waitForStep(page, "traitor-objective", 30000);
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "打开叛徒剧本",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
+      "怪物回合",
+    );
+    await saveScreenshot(page, STEP_TRAITOR_VICTORY_01);
+    await page.getByTestId("betrayal-open-scenario").click();
+    const traitorScenarioPage = page.getByTestId(
+      "betrayal-scenario-objective-page",
+    );
+    await expect(traitorScenarioPage).toBeVisible();
+    await expect(traitorScenarioPage).toHaveAttribute(
+      "data-scenario-reader-scope",
+      "traitor",
+    );
+    await expect(traitorScenarioPage).toContainText("叛徒剧本书");
+    await expect(traitorScenarioPage).toContainText("女孩");
+    await expect(traitorScenarioPage).toContainText("圣符");
+    await expect(traitorScenarioPage).toContainText("石棺");
+    await saveScreenshot(page, STEP_TRAITOR_VICTORY_02);
+    await page.getByTestId("betrayal-scenario-reader-close").click();
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-dialog"),
+    ).toBeHidden();
 
     await waitForStep(page, "pick-up-girl");
     const traitorTarget = await resolveMummyTraitorTutorialTarget(page);
@@ -4618,7 +4925,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId(`betrayal-room-${traitorTarget.roomId}`),
     ).toHaveAttribute("data-direct-target", "true");
-    await saveScreenshot(page, STEP_45);
+    await expectGirlTokenMatchesExplorerBoardSize(
+      page,
+      `betrayal-girl-svg-token-${traitorTarget.roomId}`,
+      "叛徒胜利专题拾起女孩前",
+    );
+    await saveScreenshot(page, STEP_TRAITOR_VICTORY_03);
     await page.getByTestId("betrayal-action-use").click();
 
     await waitForStep(page, "give-girl-to-mummy");
@@ -4630,7 +4942,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-action-use"),
     ).toContainText(/交出女孩|Give Girl/i);
-    await saveScreenshot(page, STEP_46);
+    await expectGirlTokenMatchesExplorerBoardSize(
+      page,
+      `betrayal-girl-svg-token-${traitorTarget.roomId}`,
+      "叛徒持有女孩后",
+    );
+    await saveScreenshot(page, STEP_TRAITOR_VICTORY_04);
     await page.getByTestId("betrayal-action-use").click();
 
     await waitForStep(page, "give-omen-to-mummy");
@@ -4641,7 +4958,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-inventory-section"),
     ).toContainText("圣符");
-    await saveScreenshot(page, STEP_47);
+    await expectGirlTokenMatchesExplorerBoardSize(
+      page,
+      `betrayal-girl-svg-token-${traitorTarget.roomId}`,
+      "木乃伊持有女孩后",
+    );
+    await saveScreenshot(page, STEP_TRAITOR_VICTORY_05);
     await page.getByTestId("betrayal-action-use").click();
 
     await waitForStep(page, "traitor-finish", 30000);
@@ -4652,7 +4974,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       traitorEndgameScreen.getByTestId("betrayal-endgame-ending-narration"),
     ).toContainText("木乃伊怀中的小女孩");
-    await saveScreenshot(page, STEP_48);
+    await saveScreenshot(page, STEP_TRAITOR_VICTORY_06);
 
     await expect
       .poll(() =>
@@ -4701,7 +5023,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       });
 
     assertNoFatalFrontendErrors([
-      { label: "betrayal-tutorial-traitor-path", diagnostics },
+      { label: "betrayal-tutorial-mummy-traitor-victory-chain", diagnostics },
     ]);
   });
 

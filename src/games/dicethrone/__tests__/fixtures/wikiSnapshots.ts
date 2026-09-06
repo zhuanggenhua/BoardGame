@@ -359,7 +359,7 @@ export const MOON_ELF_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
   { heroId: 'moon_elf', tokenId: 'evasive', wikiName: 'Evasive', wikiDescription: 'Spend 1 Evasive. Roll 1 die. If 1-2, reduce incoming damage to 0.', wikiTiming: 'beforeDamageReceived', wikiStackLimit: 3, wikiCategory: 'consumable' },
   { heroId: 'moon_elf', tokenId: 'blinded', wikiName: 'Blinded', wikiDescription: 'After your Offensive Roll Phase, roll 1 die. If 1-2, your attack deals no damage. Then remove this token.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
   { heroId: 'moon_elf', tokenId: 'entangle', wikiName: 'Entangle', wikiDescription: 'You have 1 fewer roll attempt during your next Offensive Roll Phase. Then remove this token.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
-  { heroId: 'moon_elf', tokenId: 'targeted', wikiName: 'Targeted', wikiDescription: 'When you take damage from an opponent\'s Offensive Roll Phase, take 2 additional damage. Then remove this token.', wikiTiming: 'onDamageReceived', wikiStackLimit: 1, wikiCategory: 'debuff' },
+  { heroId: 'moon_elf', tokenId: 'targeted', wikiName: 'Targeted', wikiDescription: 'When you take attack damage from an opponent, take 2 additional damage. Persistent attack modifier.', wikiTiming: 'onDamageReceived', wikiStackLimit: 1, wikiCategory: 'debuff' },
 ];
 
 export const SHADOW_THIEF_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [

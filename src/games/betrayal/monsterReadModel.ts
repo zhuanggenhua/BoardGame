@@ -240,6 +240,79 @@ export function resolveBetrayalMonsterDamageOutcome(
     };
 }
 
+export function applyBetrayalMonsterDamageOutcome(
+    core: BetrayalCore,
+    outcome: BetrayalMonsterDamageOutcome,
+): void {
+    if (outcome.kind === 'stunned' || outcome.kind === 'killed') {
+        core.scenarioRuntime.monsterStatusesById = {
+            ...(core.scenarioRuntime.monsterStatusesById ?? {}),
+            [outcome.monsterId]: outcome.nextStatus,
+        };
+    }
+    const magicCamera = core.scenarioRuntime.magicCamera;
+    if (!magicCamera?.phantomPhotographerIds.includes(outcome.monsterId)) {
+        return;
+    }
+    if (outcome.kind === 'killed') {
+        magicCamera.killedPhantomPhotographerIds = Array.from(new Set([
+            ...magicCamera.killedPhantomPhotographerIds,
+            outcome.monsterId,
+        ]));
+        magicCamera.stunnedPhantomPhotographerIds = magicCamera.stunnedPhantomPhotographerIds
+            .filter((id) => id !== outcome.monsterId);
+        core.monsters = core.monsters.filter((monster) => monster.id !== outcome.monsterId);
+        return;
+    }
+    if (outcome.kind === 'stunned') {
+        magicCamera.stunnedPhantomPhotographerIds = Array.from(new Set([
+            ...magicCamera.stunnedPhantomPhotographerIds,
+            outcome.monsterId,
+        ]));
+    }
+}
+
+export function clearBetrayalMonsterStatus(core: BetrayalCore, monsterId: string): void {
+    const { [monsterId]: _cleared, ...remainingStatuses } = core.scenarioRuntime.monsterStatusesById ?? {};
+    core.scenarioRuntime.monsterStatusesById = remainingStatuses;
+}
+
+export function flipStunnedMonsterSideUp(core: BetrayalCore, monsterId: string): void {
+    clearBetrayalMonsterStatus(core, monsterId);
+    const magicCamera = core.scenarioRuntime.magicCamera;
+    if (magicCamera?.stunnedPhantomPhotographerIds.includes(monsterId)) {
+        magicCamera.stunnedPhantomPhotographerIds = magicCamera.stunnedPhantomPhotographerIds
+            .filter((id) => id !== monsterId);
+    }
+}
+
+export function removeBloodFromStoneStoneCherubs(core: BetrayalCore, monsterIds: string[]): void {
+    const removedIds = new Set(monsterIds);
+    core.monsters = core.monsters.filter((monster) => !removedIds.has(monster.id));
+    core.scenarioRuntime.monsterStatusesById = Object.fromEntries(
+        Object.entries(core.scenarioRuntime.monsterStatusesById ?? {})
+            .filter(([monsterId]) => !removedIds.has(monsterId)),
+    );
+    const monsterTurn = core.scenarioRuntime.monsterTurn;
+    core.scenarioRuntime.monsterTurn = {
+        ...monsterTurn,
+        resolvedStartMonsterIds: monsterTurn.resolvedStartMonsterIds.filter((monsterId) => !removedIds.has(monsterId)),
+        skippedMonsterIdsThisTurn: monsterTurn.skippedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
+        attackedMonsterIdsThisTurn: monsterTurn.attackedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
+        movedMonsterIdsThisTurn: monsterTurn.movedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
+        moveRemainingById: Object.fromEntries(
+            Object.entries(monsterTurn.moveRemainingById ?? {}).filter(([monsterId]) => !removedIds.has(monsterId)),
+        ),
+    };
+}
+
+export function hasActiveBloodFromStoneStoneCherubs(core: BetrayalCore): boolean {
+    return core.monsters.some((monster) => (
+        inferMonsterDefinitionId(monster) === 'blood-from-stone-stone-cherub'
+        && resolveMonsterStatusKind(core, monster.id) !== 'killed'
+    ));
+}
+
 function buildMonsterStatusSummary(input: {
     monsterId: string;
     name: string;

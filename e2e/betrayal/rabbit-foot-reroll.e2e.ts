@@ -31,7 +31,10 @@ const REROLL_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/04-选中骰子等待确认�
 const REROLL_MOTION_SCREENSHOT = `${EVIDENCE_DIR}/05-兔脚重掷动画进行中.jpg`;
 const REROLL_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/06-重掷后结果等待自动结算.jpg`;
 const REROLL_FINALIZED_SCREENSHOT = `${EVIDENCE_DIR}/07-自动结算后返回牌桌.jpg`;
-const REROLL_HIGHLIGHT_RENDERER = "threejs-backside-shader-shell";
+const REROLL_COMBINED_HIGHLIGHT_RENDERER =
+  "candidate-bottom-underline-selected-threejs-shell";
+const REROLL_CANDIDATE_UNDERLINE_RENDERER = "dom-bottom-underline";
+const REROLL_SELECTED_HIGHLIGHT_RENDERER = "threejs-backside-shader-shell";
 
 function createRabbitFootRerollCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -201,8 +204,10 @@ async function expectRabbitFootRerollHighlightState(
             targetWidth: rect.width,
             targetHeight: rect.height,
             hitBoxPadding: (boxSize - visibleMax) / 2,
-            domCandidateBox: Boolean(
-              target.querySelector('[data-reroll-target-candidate-box="true"]'),
+            domCandidateUnderline: Boolean(
+              target.querySelector(
+                '[data-reroll-target-candidate-underline="true"]',
+              ),
             ),
             domSelectedBorder: Boolean(
               target.querySelector(
@@ -223,7 +228,7 @@ async function expectRabbitFootRerollHighlightState(
         canvasRenderer: activeCanvas?.dataset.diceHighlightRenderer ?? "",
         domVisualBoxCount: layer
           ? layer.querySelectorAll(
-              '[data-reroll-target-candidate-box="true"], [data-reroll-target-selected-border="true"]',
+              '[data-reroll-target-candidate-underline="true"], [data-reroll-target-selected-border="true"]',
             ).length
           : 0,
         highlightCount: highlights.length,
@@ -243,23 +248,25 @@ async function expectRabbitFootRerollHighlightState(
       async () => {
         const metrics = await readMetrics();
         const expectedSelectedCount = selectedDieIndex === null ? 0 : 1;
-        if (metrics.layerRenderer !== REROLL_HIGHLIGHT_RENDERER)
+        const expectedWebglRenderer =
+          selectedDieIndex === null ? "none" : REROLL_SELECTED_HIGHLIGHT_RENDERER;
+        if (metrics.layerRenderer !== REROLL_COMBINED_HIGHLIGHT_RENDERER)
           return `layer:${metrics.layerRenderer}`;
-        if (metrics.sourceRenderer !== REROLL_HIGHLIGHT_RENDERER)
+        if (metrics.sourceRenderer !== expectedWebglRenderer)
           return `source:${metrics.sourceRenderer}`;
-        if (metrics.canvasRenderer !== REROLL_HIGHLIGHT_RENDERER)
+        if (metrics.canvasRenderer !== expectedWebglRenderer)
           return `canvas:${metrics.canvasRenderer}`;
-        if (metrics.domVisualBoxCount !== 0)
+        if (metrics.domVisualBoxCount !== targetCount)
           return `dom-boxes:${metrics.domVisualBoxCount}`;
         if (metrics.targets.length !== targetCount)
           return `targets:${metrics.targets.length}/${targetCount}`;
-        if (metrics.highlightCount !== targetCount)
-          return `highlights:${metrics.highlightCount}/${targetCount}`;
-        if (metrics.shellCount !== targetCount)
-          return `shells:${metrics.shellCount}/${targetCount}`;
+        if (metrics.highlightCount !== expectedSelectedCount)
+          return `highlights:${metrics.highlightCount}/${expectedSelectedCount}`;
+        if (metrics.shellCount !== expectedSelectedCount)
+          return `shells:${metrics.shellCount}/${expectedSelectedCount}`;
         if (metrics.selectedCount !== expectedSelectedCount)
           return `selected:${metrics.selectedCount}/${expectedSelectedCount}`;
-        if (metrics.candidateCount !== targetCount - expectedSelectedCount)
+        if (metrics.candidateCount !== 0)
           return `candidate:${metrics.candidateCount}`;
         return "ready";
       },
@@ -294,39 +301,47 @@ async function expectRabbitFootRerollHighlightState(
     expect(target.shape, `选骰热区必须绑定骰子本体：${evidence}`).toBe("die-face");
     expect(
       target.highlightRenderer,
-      `可见高亮必须来自 Three.js shader 外壳：${evidence}`,
-    ).toBe(REROLL_HIGHLIGHT_RENDERER);
-    expect(
-      target.visualLayer,
-      `DOM 层只能保留透明命中区：${evidence}`,
-    ).toBe("transparent-hitbox-only");
+      `可见高亮必须按候选底线/选中描边分层：${evidence}`,
+    ).toBe(
+      isSelected
+        ? REROLL_SELECTED_HIGHLIGHT_RENDERER
+        : REROLL_CANDIDATE_UNDERLINE_RENDERER,
+    );
+    expect(target.visualLayer).toBe(
+      isSelected
+        ? "selected-outline-and-webgl-shell"
+        : "candidate-bottom-underline",
+    );
     expect(Math.abs(target.targetWidth - target.targetHeight)).toBeLessThanOrEqual(1);
     expect(target.hitBoxPadding).toBeGreaterThanOrEqual(0);
     expect(target.hitBoxPadding).toBeLessThanOrEqual(4);
-    expect(target.domCandidateBox, `DOM 候选框不能回流：${evidence}`).toBe(false);
-    expect(target.domSelectedBorder, `DOM 选中框不能回流：${evidence}`).toBe(false);
+    expect(
+      target.domCandidateUnderline,
+      `未选骰子必须使用底部候选描边，选中后退场：${evidence}`,
+    ).toBe(!isSelected);
+    expect(
+      target.domSelectedBorder,
+      `只有选中骰子显示贴合描边：${evidence}`,
+    ).toBe(isSelected);
     expect(target.selected, `选中状态必须只落在目标骰子：${evidence}`).toBe(isSelected);
-    expect(target.highlight, `缺少 WebGL 高亮状态：${evidence}`).not.toBeNull();
-    expect(target.shell, `缺少 WebGL 描边外壳：${evidence}`).not.toBeNull();
-    expect(target.shell?.renderer).toBe(REROLL_HIGHLIGHT_RENDERER);
-    expect(target.shell?.visible).toBe(true);
-    expect(target.shell?.materialType).toBe("ShaderMaterial");
-    expect(target.shell?.materialSide).toBe(1);
-    expect(target.shell?.depthWrite).toBe(false);
-    expect(target.shell?.transparent).toBe(true);
-    expect(target.shell?.shaderOpacity).toBe(target.shell?.opacity);
     if (isSelected) {
+      expect(target.highlight, `缺少 WebGL 选中高亮状态：${evidence}`).not.toBeNull();
+      expect(target.shell, `缺少 WebGL 选中描边外壳：${evidence}`).not.toBeNull();
+      expect(target.shell?.renderer).toBe(REROLL_SELECTED_HIGHLIGHT_RENDERER);
+      expect(target.shell?.visible).toBe(true);
+      expect(target.shell?.materialType).toBe("ShaderMaterial");
+      expect(target.shell?.materialSide).toBe(1);
+      expect(target.shell?.depthWrite).toBe(false);
+      expect(target.shell?.transparent).toBe(true);
+      expect(target.shell?.shaderOpacity).toBe(target.shell?.opacity);
       expect(target.highlight?.variant).toBe("selected");
       expect(target.shell?.variant).toBe("selected");
       expect(target.shell?.scale).toBeGreaterThanOrEqual(1.045);
       expect(target.shell?.scale).toBeLessThanOrEqual(1.065);
       expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.95);
     } else {
-      expect(target.highlight?.variant).toBe("candidate");
-      expect(target.shell?.variant).toBe("candidate");
-      expect(target.shell?.scale).toBeGreaterThanOrEqual(1.025);
-      expect(target.shell?.scale).toBeLessThanOrEqual(1.045);
-      expect(target.shell?.opacity).toBeGreaterThanOrEqual(0.9);
+      expect(target.highlight, `未选骰子不得生成 WebGL 候选高亮：${evidence}`).toBeNull();
+      expect(target.shell, `未选骰子不得生成 WebGL 候选外壳：${evidence}`).toBeNull();
     }
   }
 }

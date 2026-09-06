@@ -70,6 +70,8 @@ export interface GameManifestCreateRoomSetup {
     forcedSelections?: Record<string, string | string[]>;
     /** 是否展示通用 setupOptions 字段；未配置时默认展示。 */
     showSetupOptions?: boolean;
+    /** 创建正式房间前是否先交给游戏自己的 setup gate 产出最终开局配置。 */
+    preCreateSetupGate?: boolean;
 }
 
 export interface GameManifestTranslationLabel {

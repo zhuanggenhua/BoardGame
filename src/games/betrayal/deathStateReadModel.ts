@@ -1,6 +1,28 @@
 import { isBetrayalHauntRuntimeStarted } from './entityRelationModel';
-import { getAllExplorers } from './explorerReadModel';
-import { cloneInventoryCard } from './possessionDeckModel';
+import { isExplorerDead } from './damageResolutionModel';
+import {
+    findExplorerByPlayerId,
+    getAllExplorers,
+} from './explorerReadModel';
+import { createBetrayalMonsterFromDefinition } from './domain/monsterDefinitions';
+import {
+    isDustHaunt,
+    resolveJackSpiritSpawnRoomId,
+} from './hauntScenarioReadModel';
+import {
+    canUseRabbitFootForRecentRoll,
+    isOwnDeathPreventionRerollWindow,
+    resolveRabbitFootCard,
+} from './possessionActionReadModel';
+import {
+    cloneInventoryCard,
+    restorePossessionCardToBottom,
+} from './possessionDeckModel';
+import { BETRAYAL_EXPLORER_CATALOG } from './scenarioConfig';
+import {
+    BETRAYAL_TRAIT_KEYS,
+    healExplorerTraitToStart,
+} from './traitTrackModel';
 import type {
     BetrayalCore,
     BetrayalCorpseSummary,
@@ -18,6 +40,179 @@ export interface BetrayalCorpseLootedPayload {
     sourcePlayerId: string;
     cardId: string;
     logText: string;
+}
+
+function healExplorerToCatalogStart(explorer: BetrayalExplorerSummary): void {
+    if (!BETRAYAL_EXPLORER_CATALOG.some((template) => template.explorerId === explorer.explorerId)) {
+        return;
+    }
+    for (const trait of BETRAYAL_TRAIT_KEYS) {
+        healExplorerTraitToStart(explorer, trait);
+    }
+}
+
+export function markDeadExplorer(core: BetrayalCore, playerId: string): void {
+    if (core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)) {
+        return;
+    }
+    core.scenarioRuntime.deadExplorerPlayerIds = [
+        ...core.scenarioRuntime.deadExplorerPlayerIds,
+        playerId,
+    ];
+}
+
+export function releaseJackSpiritForDeadTraitor(
+    core: BetrayalCore,
+    playerId: string,
+    fallbackCorpseRoomId: string,
+    releasedJackSpiritRoomId?: string,
+): string {
+    markDeadExplorer(core, playerId);
+    const traitor = findExplorerByPlayerId(core, playerId);
+    const corpseRoomId = traitor?.roomId ?? fallbackCorpseRoomId;
+    core.scenarioRuntime.traitorCorpseRoomId = corpseRoomId;
+    core.scenarioRuntime.jackSpiritReleased = true;
+    core.scenarioRuntime.jackSpiritRoomId = releasedJackSpiritRoomId
+        ?? resolveJackSpiritSpawnRoomId(core, corpseRoomId);
+    core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
+    core.monsters = [createBetrayalMonsterFromDefinition(
+        'crimson-jack-spirit',
+        'jack-spirit',
+        core.scenarioRuntime.jackSpiritRoomId,
+    )];
+    return core.scenarioRuntime.jackSpiritRoomId;
+}
+
+export function canReviveTraitorFromJackSpiritAtMonsterTurnStart(
+    core: BetrayalCore,
+    nextPlayerId: string,
+): boolean {
+    return (
+        nextPlayerId === core.scenarioRuntime.traitorPlayerId
+        && core.scenarioRuntime.deadExplorerPlayerIds.includes(nextPlayerId)
+        && core.scenarioRuntime.jackSpiritReleased
+        && Boolean(core.scenarioRuntime.jackSpiritRoomId)
+        && core.scenarioRuntime.jackSpiritHasMovedSinceRelease
+        && Boolean(core.scenarioRuntime.traitorCorpseRoomId)
+        && core.scenarioRuntime.jackSpiritRoomId === core.scenarioRuntime.traitorCorpseRoomId
+        && Boolean(findExplorerByPlayerId(core, nextPlayerId))
+    );
+}
+
+export function applyBetrayalJackSpiritRevivalAtMonsterTurnStart(
+    core: BetrayalCore,
+    nextPlayerId: string,
+): boolean {
+    if (!canReviveTraitorFromJackSpiritAtMonsterTurnStart(core, nextPlayerId)) {
+        return false;
+    }
+    const traitor = findExplorerByPlayerId(core, nextPlayerId);
+    if (!traitor) {
+        return false;
+    }
+    healExplorerToCatalogStart(traitor);
+    core.scenarioRuntime.deadExplorerPlayerIds = core.scenarioRuntime.deadExplorerPlayerIds
+        .filter((playerId) => playerId !== nextPlayerId);
+    core.scenarioRuntime.jackSpiritReleased = false;
+    core.scenarioRuntime.jackSpiritRoomId = null;
+    core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
+    core.scenarioRuntime.traitorCorpseRoomId = null;
+    core.monsters = core.monsters.filter((monster) => monster.id !== 'jack-spirit');
+    return true;
+}
+
+export function buryExplorerPossessionsToBottom(
+    core: BetrayalCore,
+    explorer: BetrayalExplorerSummary,
+): void {
+    if (explorer.inventory.length === 0) {
+        return;
+    }
+    for (const card of explorer.inventory) {
+        if (card.kind === 'item' || card.kind === 'omen') {
+            restorePossessionCardToBottom(core, card.kind, card);
+        }
+    }
+    explorer.inventory = [];
+    if (core.currentExplorer.playerId === explorer.playerId) {
+        core.currentExplorerInventory = [];
+    }
+}
+
+function shouldDeferDustTraitorPossessionBurialForRabbitFoot(
+    core: BetrayalCore,
+    playerId: string,
+): boolean {
+    return isOwnDeathPreventionRerollWindow(core, playerId)
+        && canUseRabbitFootForRecentRoll(core, playerId);
+}
+
+export function shouldDeferDustTraitorVictoryForRabbitFoot(
+    core: BetrayalCore,
+    playerId: string,
+): boolean {
+    const card = resolveRabbitFootCard(core, undefined, playerId);
+    const receivedThisTurn = core.receivedCardIdsThisTurnByPlayerId[playerId] ?? [];
+    return Boolean(
+        isOwnDeathPreventionRerollWindow(core, playerId)
+        && card
+        && core.recentRoll?.dice.length
+        && !core.recentRoll.consumedRabbitFootCardIds.includes(card.id)
+        && !receivedThisTurn.includes(card.id)
+        && !core.usedCardIdsThisTurn.includes(card.id),
+    );
+}
+
+export function buryDustDeadTraitorPossessions(
+    core: BetrayalCore,
+    playerId: string,
+    options: { deferForRabbitFoot?: boolean } = {},
+): void {
+    const dust = core.scenarioRuntime.dust;
+    if (
+        !isDustHaunt(core)
+        || !dust?.permanentTraitorPlayerIds.includes(playerId)
+        || !core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
+    ) {
+        return;
+    }
+    if (options.deferForRabbitFoot !== false && shouldDeferDustTraitorPossessionBurialForRabbitFoot(core, playerId)) {
+        return;
+    }
+    const explorer = findExplorerByPlayerId(core, playerId);
+    if (explorer) {
+        buryExplorerPossessionsToBottom(core, explorer);
+    }
+}
+
+export function addFeverishMonsterForPlayer(core: BetrayalCore, playerId: string): void {
+    if (!core.scenarioRuntime.dust || core.scenarioRuntime.dust.feverishPlayerIds.includes(playerId)) {
+        return;
+    }
+    const explorer = findExplorerByPlayerId(core, playerId);
+    core.scenarioRuntime.dust.feverishPlayerIds = [
+        ...core.scenarioRuntime.dust.feverishPlayerIds,
+        playerId,
+    ];
+    buryDustDeadTraitorPossessions(core, playerId);
+    core.monsters = [
+        ...core.monsters.filter((monster) => monster.id !== `feverish-${playerId}`),
+        createBetrayalMonsterFromDefinition(
+            'dust-feverish-patient',
+            `feverish-${playerId}`,
+            explorer?.roomId ?? core.activeRoomId,
+        ),
+    ];
+}
+
+export function applyDustEventEffectDeathIfNeeded(core: BetrayalCore): void {
+    if (!isDustHaunt(core) || !isExplorerDead(core.currentExplorer)) {
+        return;
+    }
+    markDeadExplorer(core, core.currentExplorer.playerId);
+    if (core.scenarioRuntime.dust?.permanentTraitorPlayerIds.includes(core.currentExplorer.playerId)) {
+        addFeverishMonsterForPlayer(core, core.currentExplorer.playerId);
+    }
 }
 
 export function resolveCorpseLootTargets(core: BetrayalCore): BetrayalExplorerSummary[] {

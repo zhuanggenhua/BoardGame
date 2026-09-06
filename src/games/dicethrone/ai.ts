@@ -52,7 +52,7 @@ import {
 import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from './domain/abilityLookup';
-import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
+import { getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './domain/passiveAbility';
 import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
@@ -2728,6 +2728,12 @@ const buildPassiveActions = (
 
             if (passiveAction.type === 'rerollDie') {
                 activeDice
+                    .filter((die) => !currentRollContext || isPassiveRerollTargetAllowed(
+                        passiveAction,
+                        currentRollContext,
+                        playerId,
+                        die,
+                    ))
                     .forEach((die) => {
                         appendAction(actions, state, playerId, {
                             actionId: createAiLegalActionId('passive', passive.id, actionIndex, die.id),

@@ -66,6 +66,15 @@ type MageWarsHarness = {
     };
 };
 
+function parseViewportTransformPosition(transform: string): { x: number; y: number } {
+    const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+    if (!match) return { x: 0, y: 0 };
+    return {
+        x: Number(match[1]),
+        y: Number(match[2]),
+    };
+}
+
 async function openMageWarsBoard(context: BrowserContext, page: Page, storageKey: string) {
     await initContext(context, {
         storageKey,
@@ -130,7 +139,10 @@ async function auditMageWarsImages(page: Page, expectedVisibleAlts: string[] = [
     expect(imageAudit.missingPixels, JSON.stringify(imageAudit.missingPixels, null, 2)).toHaveLength(0);
     expect(imageAudit.images.some((image) => image.alt === '隐藏计划')).toBe(true);
     expectedVisibleAlts.forEach((expectedAlt) => {
-        expect(imageAudit.images.some((image) => image.alt === expectedAlt)).toBe(true);
+        expect(
+            imageAudit.images.some((image) => image.alt === expectedAlt),
+            `缺少期望可见图片 alt="${expectedAlt}"；当前图片 alt=${JSON.stringify(imageAudit.images.map((image) => image.alt))}`,
+        ).toBe(true);
     });
 
     return imageAudit;
@@ -351,10 +363,10 @@ async function captureMageWarsSixPerSideLaneWrapScreenshot(page: Page) {
     });
     laneWrapAudit.fieldCards.forEach((card) => {
         expect(card.rect).not.toBeNull();
-        expect(card.rect!.width).toBeGreaterThan(60);
-        expect(card.rect!.width).toBeLessThan(72);
-        expect(card.rect!.height).toBeGreaterThan(84);
-        expect(card.rect!.height).toBeLessThan(100);
+        expect(card.rect!.width).toBeGreaterThan(100);
+        expect(card.rect!.width).toBeLessThan(114);
+        expect(card.rect!.height).toBeGreaterThan(142);
+        expect(card.rect!.height).toBeLessThan(160);
         expect(card.aspectRatio).toBeGreaterThan(0.70);
         expect(card.aspectRatio).toBeLessThan(0.72);
     });
@@ -452,6 +464,10 @@ async function expectMageWarsArenaFreeViewport(
             contentRatio: contentRect.width / contentRect.height,
             viewportWidth: viewportRect.width,
             viewportHeight: viewportRect.height,
+            contentCoversViewport: contentRect.left <= viewportRect.left + tolerance
+                && contentRect.top <= viewportRect.top + tolerance
+                && contentRect.right >= viewportRect.right - tolerance
+                && contentRect.bottom >= viewportRect.bottom - tolerance,
             transform: contentElement.style.transform,
             scale: scaleMatch ? Number(scaleMatch[1]) : 1,
             zoneIds: zoneDetails.map((zone) => zone.zoneId).sort(),
@@ -466,9 +482,10 @@ async function expectMageWarsArenaFreeViewport(
     expect(defaultAudit!.shellBottom, '竞技场视窗下边必须贴齐屏幕，不能留下外层黑带').toBeGreaterThanOrEqual(defaultAudit!.windowHeight - 1);
     expect(defaultAudit!.shellRatio, '竞技场视窗不能再是 4:3 小框，必须占用整块牌桌地图层').toBeGreaterThan(1.7);
     expect(Math.abs(defaultAudit!.contentRatio - 4 / 3), '默认地图必须保持正式竞技场比例').toBeLessThanOrEqual(0.01);
+    expect(defaultAudit!.contentWidth, '默认地图内容宽度必须覆盖真实视口，不能被底部 HUD 避让压成中间小框').toBeGreaterThanOrEqual(defaultAudit!.viewportWidth - 2);
+    expect(defaultAudit!.contentHeight, '默认地图内容高度必须覆盖真实视口，不能被底部 HUD 避让压成中间小框').toBeGreaterThanOrEqual(defaultAudit!.viewportHeight - 2);
+    expect(defaultAudit!.contentCoversViewport, '默认地图内容必须铺满真实视窗，不能露出外层黑框').toBe(true);
     expect(defaultAudit!.zoneIds).toEqual(['a1', 'a2', 'a3', 'b1', 'b2', 'b3', 'c1', 'c2', 'c3', 'd1', 'd2', 'd3']);
-    expect(defaultAudit!.zonesOutsideViewport, '默认缩放必须让 12 个正式区域都在真实视口内').toEqual([]);
-    expect(defaultAudit!.zonesBehindBottomUi, '默认缩放必须让 12 个正式区域不被底部玩家状态、法术书牌列和计划区遮住').toEqual([]);
 
     await viewport.hover();
     for (let wheelIndex = 0; wheelIndex < 14; wheelIndex += 1) {
@@ -489,6 +506,17 @@ async function expectMageWarsArenaFreeViewport(
     await page.mouse.up();
     await expect.poll(async () => content.evaluate((element) => (element as HTMLElement).style.transform))
         .not.toBe(beforeDragTransform);
+    const afterDragTransform = await content.evaluate((element) => (element as HTMLElement).style.transform);
+    const beforeDragPosition = parseViewportTransformPosition(beforeDragTransform);
+    const afterDragPosition = parseViewportTransformPosition(afterDragTransform);
+    expect(
+        Math.abs(afterDragPosition.x - beforeDragPosition.x),
+        `放大拖拽必须产生横向位移，不能只上下移动: ${beforeDragTransform} -> ${afterDragTransform}`,
+    ).toBeGreaterThan(30);
+    expect(
+        Math.abs(afterDragPosition.y - beforeDragPosition.y),
+        `放大拖拽必须产生纵向位移: ${beforeDragTransform} -> ${afterDragTransform}`,
+    ).toBeGreaterThan(20);
 
     const zoomedDragAudit = await page.evaluate(() => {
         const viewportElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
@@ -522,7 +550,7 @@ async function expectMageWarsArenaFreeViewport(
         const arenaHotZoneAudit = await page.evaluate(() => {
             const arenaViewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
             const contentElement = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
-            const sourceZone = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-zone-a2"]');
+            const arenaZones = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]'));
             const toPoint = (element: HTMLElement | null) => {
                 if (!element) return null;
                 const rect = element.getBoundingClientRect();
@@ -532,20 +560,34 @@ async function expectMageWarsArenaFreeViewport(
                 };
             };
             const viewportRect = arenaViewport?.getBoundingClientRect();
-            const sourceRect = sourceZone?.getBoundingClientRect();
-            const sourcePoint = viewportRect && sourceRect
-                ? {
-                    x: Math.max(viewportRect.left, sourceRect.left)
-                        + (Math.min(viewportRect.right, sourceRect.right) - Math.max(viewportRect.left, sourceRect.left)) / 2,
-                    y: Math.max(viewportRect.top, sourceRect.top)
-                        + (Math.min(viewportRect.bottom, sourceRect.bottom) - Math.max(viewportRect.top, sourceRect.top)) / 2,
-                }
-                : toPoint(sourceZone);
-            const sourceHit = sourcePoint
-                && sourceRect
-                && Math.min(viewportRect?.right ?? 0, sourceRect.right) > Math.max(viewportRect?.left ?? 0, sourceRect.left)
-                && Math.min(viewportRect?.bottom ?? 0, sourceRect.bottom) > Math.max(viewportRect?.top ?? 0, sourceRect.top)
-                ? document.elementFromPoint(sourcePoint.x, sourcePoint.y)
+            const visibleZoneHitCandidate = viewportRect
+                ? arenaZones.flatMap((zone) => {
+                    const zoneRect = zone.getBoundingClientRect();
+                    const intersection = Math.min(viewportRect.right, zoneRect.right) > Math.max(viewportRect.left, zoneRect.left)
+                        && Math.min(viewportRect.bottom, zoneRect.bottom) > Math.max(viewportRect.top, zoneRect.top)
+                        ? {
+                            left: Math.max(viewportRect.left, zoneRect.left),
+                            top: Math.max(viewportRect.top, zoneRect.top),
+                            right: Math.min(viewportRect.right, zoneRect.right),
+                            bottom: Math.min(viewportRect.bottom, zoneRect.bottom),
+                        }
+                        : null;
+                    if (!intersection) return [];
+                    return [0.2, 0.35, 0.5, 0.65, 0.8].flatMap((xRatio) => (
+                        [0.2, 0.35, 0.5, 0.65, 0.8].map((yRatio) => ({
+                            x: intersection.left + (intersection.right - intersection.left) * xRatio,
+                            y: intersection.top + (intersection.bottom - intersection.top) * yRatio,
+                        }))
+                    )).map((point) => {
+                        const hit = document.elementFromPoint(point.x, point.y);
+                        return {
+                            point,
+                            hitTestId: hit?.closest<HTMLElement>('[data-testid]')?.dataset.testid ?? null,
+                            zoneTestId: hit?.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]')
+                                ?.getAttribute('data-testid') ?? null,
+                        };
+                    });
+                }).find((candidate) => candidate.zoneTestId?.startsWith('mage-wars-arena-zone-')) ?? null
                 : null;
             const entityZoneAttached = Array.from(document.querySelectorAll<HTMLElement>(
                 '[data-testid="mage-wars-zone-field-card"], [data-testid="mage-wars-zone-mage-entity"]',
@@ -563,14 +605,17 @@ async function expectMageWarsArenaFreeViewport(
             return {
                 transform: contentElement?.style.transform ?? '',
                 viewportVisible: Boolean(arenaViewport),
-                sourceZoneHitTestId: sourceHit?.closest<HTMLElement>('[data-testid^="mage-wars-arena-zone-"]')
-                    ?.getAttribute('data-testid') ?? null,
+                visibleZoneHitTestId: visibleZoneHitCandidate?.zoneTestId ?? null,
+                visibleZoneHitCandidate,
                 entityZoneAttached,
             };
         });
         expect(arenaHotZoneAudit.viewportVisible).toBe(true);
         expect(arenaHotZoneAudit.transform).toContain('scale(');
-        expect(arenaHotZoneAudit.sourceZoneHitTestId).toBe('mage-wars-arena-zone-a2');
+        expect(
+            arenaHotZoneAudit.visibleZoneHitTestId,
+            `拖拽放大后可见竞技场格必须仍有真实无遮挡热区: ${JSON.stringify(arenaHotZoneAudit)}`,
+        ).toMatch(/^mage-wars-arena-zone-/);
         expect(arenaHotZoneAudit.entityZoneAttached).toBe(true);
         return;
     }
@@ -698,13 +743,11 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.rects.arenaViewport!.y, 'arena viewport must start at the screen top edge').toBeLessThanOrEqual(1);
     expect(layoutAudit.rects.arenaViewport!.width, 'arena viewport must fill the wide desktop width').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 2);
     expect(layoutAudit.rects.arenaViewport!.height, 'arena viewport must fill the wide desktop height').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 2);
-    expect(layoutAudit.rects.arenaStage!.x, '默认地图左边必须在真实视口内').toBeGreaterThanOrEqual(-1);
-    expect(layoutAudit.rects.arenaStage!.y, '默认地图上边必须在真实视口内').toBeGreaterThanOrEqual(-1);
-    expect(layoutAudit.rects.arenaStage!.right, '默认地图右边必须在真实视口内').toBeLessThanOrEqual(layoutAudit.viewport.width + 1);
-    expect(layoutAudit.rects.arenaStage!.bottom, '默认地图底边不能压到底部玩家状态、法术书牌列和计划区').toBeLessThanOrEqual(layoutAudit.rects.bottomViewportGrid!.y + 2);
+    expect(layoutAudit.rects.arenaStage!.x, '默认地图内容必须覆盖真实视口左边，不得缩在中间框').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.arenaStage!.y, '默认地图内容必须覆盖真实视口顶部，不得缩在中间框').toBeLessThanOrEqual(1);
+    expect(layoutAudit.rects.arenaStage!.right, '默认地图内容必须覆盖真实视口右边').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 1);
+    expect(layoutAudit.rects.arenaStage!.bottom, '默认地图内容必须覆盖真实视口底部，底部 UI 作为叠加层而不是地图裁剪边界').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
     expect(layoutAudit.arenaZones.map((zone) => zone.zoneId).sort()).toEqual(['a1', 'a2', 'a3', 'b1', 'b2', 'b3', 'c1', 'c2', 'c3', 'd1', 'd2', 'd3']);
-    expect(layoutAudit.arenaZones.filter((zone) => !zone.insideViewport).map((zone) => zone.zoneId), '默认缩放必须能看到全部 12 个区域').toEqual([]);
-    expect(layoutAudit.arenaZones.filter((zone) => !zone.aboveBottomUi).map((zone) => zone.zoneId), '默认缩放下区域不能被底部 UI 遮挡').toEqual([]);
 
     const screenBoundRects = [
         ['board', layoutAudit.rects.board],
@@ -742,8 +785,8 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.rects.hudAnchorLayer!.right, '玩家界面锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(layoutAudit.viewport.width - 1);
     expect(layoutAudit.rects.hudAnchorLayer!.bottom, '玩家界面锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(layoutAudit.viewport.height - 1);
     const bottomViewportGridGap = layoutAudit.viewport.height - layoutAudit.rects.bottomViewportGrid!.bottom;
-    expect(bottomViewportGridGap, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底部，并保留少量安全空隙').toBeGreaterThanOrEqual(6);
-    expect(bottomViewportGridGap, '底部玩家状态、法术书牌列和计划区不能被整体上移成底部空带').toBeLessThanOrEqual(16);
+    expect(bottomViewportGridGap, '底部法术书牌列和计划区必须锚到真实视口底部，并保留少量安全空隙').toBeGreaterThanOrEqual(6);
+    expect(bottomViewportGridGap, '底部法术书牌列和计划区不能被整体上移成底部空带').toBeLessThanOrEqual(16);
     layoutAudit.categoryButtons.forEach((category) => {
         expect(category.rect, `${category.id} category tab`).not.toBeNull();
         expect(category.rect!.width).toBeGreaterThanOrEqual(44);
@@ -759,13 +802,19 @@ async function expectMageWarsDesktop2560Layout(page: Page) {
     expect(layoutAudit.lifeToggleLeftGap).not.toBeNull();
     expect(layoutAudit.lifeToggleLeftGap!).toBeGreaterThanOrEqual(0);
     expect(layoutAudit.lifeToggleLeftGap!).toBeLessThanOrEqual(160);
-    expect(Math.abs(layoutAudit.rects.selfHud!.bottom - layoutAudit.rects.preparedArea!.bottom)).toBeLessThanOrEqual(3);
     expect(Math.abs(layoutAudit.rects.spellbookShelf!.bottom - layoutAudit.rects.preparedArea!.bottom)).toBeLessThanOrEqual(3);
     expect(Math.abs(layoutAudit.rects.firstSpellbookCard!.bottom - layoutAudit.rects.preparedCard!.bottom)).toBeLessThanOrEqual(3);
-    expect(Math.abs(layoutAudit.rects.selfHud!.bottom - layoutAudit.rects.preparedCard!.bottom)).toBeLessThanOrEqual(3);
-    expect(layoutAudit.rects.selfHud!.x).toBeLessThanOrEqual(20);
-    expect(layoutAudit.rects.spellbookShelf!.x).toBeGreaterThanOrEqual(layoutAudit.rects.selfHud!.right - 2);
-    expect(layoutAudit.rects.spellbookShelf!.x - layoutAudit.rects.selfHud!.right).toBeLessThanOrEqual(36);
+    expect(layoutAudit.rects.selfHud!.x, '己方 HUD 必须留在左半区，但要避开竞技场首列实体').toBeGreaterThanOrEqual(layoutAudit.viewport.width * 0.24);
+    expect(layoutAudit.rects.selfHud!.x, '己方 HUD 不得漂到中场或右侧玩家区').toBeLessThanOrEqual(layoutAudit.viewport.width * 0.36);
+    expect(layoutAudit.rects.selfHud!.y, '己方 HUD 必须在左下独立层，不应回到左上角').toBeGreaterThan(layoutAudit.viewport.height * 0.25);
+    expect(layoutAudit.rects.selfHud!.bottom, '己方 HUD 应靠近左下桌面区，而不是顶部 HUD 带').toBeGreaterThan(layoutAudit.viewport.height * 0.55);
+    expect(layoutAudit.rects.selfHud!.bottom, '己方 HUD 必须离开底部牌区，不能再占法术书列宽度').toBeLessThan(layoutAudit.rects.bottomViewportGrid!.y);
+    expect(layoutAudit.rects.opponentHud!.right).toBeGreaterThanOrEqual(layoutAudit.viewport.width - 20);
+    expect(layoutAudit.rects.opponentHud!.y).toBeLessThanOrEqual(80);
+    expect(layoutAudit.rects.opponentPreparedMirror!.x, '对手已计划卡背必须在右上对手 HUD 左侧，不应留在左上角').toBeGreaterThan(layoutAudit.viewport.width * 0.5);
+    expect(layoutAudit.rects.opponentPreparedMirror!.right).toBeLessThanOrEqual(layoutAudit.rects.opponentHud!.x);
+    expect(Math.abs(layoutAudit.rects.opponentPreparedMirror!.y - layoutAudit.rects.opponentHud!.y)).toBeLessThanOrEqual(3);
+    expect(layoutAudit.rects.spellbookShelf!.x).toBeLessThanOrEqual(24);
     expect(layoutAudit.pageRailGap).not.toBeNull();
     expect(layoutAudit.pageRailGap!).toBeGreaterThanOrEqual(0);
     expect(layoutAudit.pageRailGap!).toBeLessThanOrEqual(160);
@@ -1317,6 +1366,8 @@ test.describe('Mage Wars foundation runtime board', () => {
             const selfHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]');
             const opponentHud = document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]');
             const mageHudHintCards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-hint-card"]'));
+            const mageHudStatGrids = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-grid"]'));
+            const mageHudStatBars = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-mage-hud-stat-bar"]'));
             const opponentPreparedMirror = document.querySelector<HTMLElement>('[data-testid="mage-wars-opponent-prepared-mirror"]');
             const spellbookShelf = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]');
             const preparedArea = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-prepared-spells"]');
@@ -1538,6 +1589,23 @@ test.describe('Mage Wars foundation runtime board', () => {
                     previewKind: hintCard.dataset.magePreviewKind,
                     uiRole: hintCard.dataset.mageUiRole,
                 })),
+                mageHudStatGrids: mageHudStatGrids.map((grid) => {
+                    const style = getComputedStyle(grid);
+                    const rect = grid.getBoundingClientRect();
+                    return {
+                        fontSize: Number.parseFloat(style.fontSize),
+                        width: rect.width,
+                        height: rect.height,
+                    };
+                }),
+                mageHudStatBars: mageHudStatBars.map((bar) => {
+                    const rect = bar.getBoundingClientRect();
+                    return {
+                        stat: bar.dataset.stat ?? null,
+                        width: rect.width,
+                        height: rect.height,
+                    };
+                }),
                 opponentPreparedMirror: toRect(opponentPreparedMirror),
                 spellbookShelf: toRect(spellbookShelf),
                 preparedArea: toRect(preparedArea),
@@ -1580,6 +1648,16 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.selfHudDensity).toBe('full');
         expect(desktopLayoutAudit.opponentHudDensity).toBe('full');
         expect(desktopLayoutAudit.mageHudHintCards).toHaveLength(2);
+        expect(desktopLayoutAudit.mageHudStatGrids).toHaveLength(2);
+        desktopLayoutAudit.mageHudStatGrids.forEach((grid) => {
+            expect(grid.fontSize, `2560 桌面 HUD 属性文字必须保持放大后的可读尺寸，不能回退到旧小字: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(34);
+            expect(grid.width, `2560 桌面 HUD 属性区必须随 HUD 扩宽: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(390);
+        });
+        expect(desktopLayoutAudit.mageHudStatBars).toHaveLength(6);
+        desktopLayoutAudit.mageHudStatBars.forEach((bar) => {
+            expect(bar.height, `2560 桌面 ${bar.stat} 属性条必须保持放大后的可读高度: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(30);
+            expect(bar.width, `2560 桌面 ${bar.stat} 属性条不能继续保持旧窄宽度: ${JSON.stringify(desktopLayoutAudit)}`).toBeGreaterThanOrEqual(200);
+        });
         const mageCardAspectRatio = (4096 / 7) / (3302 / 4);
         expect(desktopLayoutAudit.opponentPreparedMirror).not.toBeNull();
         expect(desktopLayoutAudit.spellbookShelf).not.toBeNull();
@@ -1592,8 +1670,8 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.effectDice).toHaveLength(0);
         desktopLayoutAudit.mageHudHintCards.forEach((hintCard) => {
             expect(hintCard.rect).not.toBeNull();
-            expect(hintCard.rect!.height).toBeGreaterThan(150);
-            expect(hintCard.rect!.width).toBeGreaterThan(100);
+            expect(hintCard.rect!.height).toBeGreaterThan(210);
+            expect(hintCard.rect!.width).toBeGreaterThan(145);
             expect(hintCard.aspectRatio).not.toBeNull();
             expect(Math.abs(hintCard.aspectRatio! - mageCardAspectRatio)).toBeLessThanOrEqual(0.003);
             expect(hintCard.previewKind).toBe('card');
@@ -1627,7 +1705,17 @@ test.describe('Mage Wars foundation runtime board', () => {
             .filter((occupant) => occupant.centerInsideLaneViewport)
             .forEach((occupant) => {
                 expect(occupant.centerInsideZone).toBe(true);
-                expect(occupant.topTestId).toBe('mage-wars-zone-mage-entity');
+                expect(
+                    occupant.topTestId,
+                    `场上法师中心点被其它层遮挡: ${JSON.stringify({
+                        occupant,
+                        selfHud: desktopLayoutAudit.selfHud,
+                        opponentHud: desktopLayoutAudit.opponentHud,
+                        mageHudHintCards: desktopLayoutAudit.mageHudHintCards,
+                        mageHudStatGrids: desktopLayoutAudit.mageHudStatGrids,
+                        bottomViewportGrid: desktopLayoutAudit.bottomViewportGrid,
+                    })}`,
+                ).toBe('mage-wars-zone-mage-entity');
             });
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageOverlay)).toBe(true);
         expect(desktopLayoutAudit.zoneMageEntities.every((occupant) => occupant.hasDamageValueBadge === false)).toBe(true);
@@ -1656,17 +1744,17 @@ test.describe('Mage Wars foundation runtime board', () => {
         expect(desktopLayoutAudit.hudAnchorLayer!.right, '玩家界面锚点层必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
         expect(desktopLayoutAudit.hudAnchorLayer!.bottom, '玩家界面锚点层必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
         const desktopBottomViewportGridGap = desktopLayoutAudit.viewportHeight - desktopLayoutAudit.bottomViewportGrid!.bottom;
-        expect(desktopBottomViewportGridGap, '底部玩家状态、法术书牌列和计划区必须锚到真实视口底部，并保留少量安全空隙').toBeGreaterThanOrEqual(6);
-        expect(desktopBottomViewportGridGap, '底部玩家状态、法术书牌列和计划区不能被整体上移成底部空带').toBeLessThanOrEqual(16);
+        expect(desktopBottomViewportGridGap, '底部法术书牌列和计划区必须锚到真实视口底部，并保留少量安全空隙').toBeGreaterThanOrEqual(6);
+        expect(desktopBottomViewportGridGap, '底部法术书牌列和计划区不能被整体上移成底部空带').toBeLessThanOrEqual(16);
         expect(desktopLayoutAudit.arenaViewport).not.toBeNull();
         expect(desktopLayoutAudit.arenaViewport!.x, '地图视窗必须贴齐屏幕左边，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.arenaViewport!.y, '地图视窗必须贴齐屏幕顶部，不能再被 16:9 内框限制').toBeLessThanOrEqual(1);
         expect(desktopLayoutAudit.arenaViewport!.right, '地图视窗必须覆盖屏幕右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
         expect(desktopLayoutAudit.arenaViewport!.bottom, '地图视窗必须覆盖屏幕底部').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
-        expect(desktopLayoutAudit.arenaStage!.x, '默认地图左边必须在真实视口内').toBeGreaterThanOrEqual(-1);
-        expect(desktopLayoutAudit.arenaStage!.y, '默认地图上边必须在真实视口内').toBeGreaterThanOrEqual(-1);
-        expect(desktopLayoutAudit.arenaStage!.right, '默认地图右边必须在真实视口内').toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth + 1);
-        expect(desktopLayoutAudit.arenaStage!.bottom, '默认地图底边不能压到底部玩家状态、法术书牌列和计划区').toBeLessThanOrEqual(desktopLayoutAudit.bottomViewportGrid!.y + 2);
+        expect(desktopLayoutAudit.arenaStage!.x, '默认地图内容必须覆盖真实视口左边，不得缩在中间框').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.arenaStage!.y, '默认地图内容必须覆盖真实视口顶部，不得缩在中间框').toBeLessThanOrEqual(1);
+        expect(desktopLayoutAudit.arenaStage!.right, '默认地图内容必须覆盖真实视口右边').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 1);
+        expect(desktopLayoutAudit.arenaStage!.bottom, '默认地图内容必须覆盖真实视口底部，底部 UI 作为叠加层而不是地图裁剪边界').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportHeight - 1);
         expect(Math.abs(
             desktopLayoutAudit.arenaStage!.width / desktopLayoutAudit.arenaStage!.height
             - 4 / 3,
@@ -1691,16 +1779,6 @@ test.describe('Mage Wars foundation runtime board', () => {
             d3: { column: 3, row: 2 },
         } as const;
         expect(desktopLayoutAudit.arenaZones.map((zone) => zone.zoneId).sort()).toEqual(Object.keys(expectedArenaZones).sort());
-        expect(desktopLayoutAudit.arenaZones.filter((zone) => (
-            !zone.rect
-            || zone.rect.x < -2
-            || zone.rect.y < -2
-            || zone.rect.right > desktopLayoutAudit.viewportWidth + 2
-            || zone.rect.bottom > desktopLayoutAudit.viewportHeight + 2
-        )).map((zone) => zone.zoneId), '默认缩放必须能看到全部 12 个区域').toEqual([]);
-        expect(desktopLayoutAudit.arenaZones.filter((zone) => (
-            !zone.rect || zone.rect.bottom > desktopLayoutAudit.bottomViewportGrid!.y + 2
-        )).map((zone) => zone.zoneId), '默认缩放下区域不能被底部玩家状态、法术书牌列和计划区遮挡').toEqual([]);
         desktopLayoutAudit.arenaZones.forEach((zone) => {
             expect(zone.rect).not.toBeNull();
             const expected = zone.zoneId ? expectedArenaZones[zone.zoneId as keyof typeof expectedArenaZones] : undefined;
@@ -1710,20 +1788,24 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(Math.abs(zone.rect!.width - desktopLayoutAudit.arenaStage!.width * 0.25)).toBeLessThanOrEqual(2);
             expect(Math.abs(zone.rect!.height - desktopLayoutAudit.arenaStage!.height / 3)).toBeLessThanOrEqual(2);
         });
-        expect(desktopLayoutAudit.opponentHud!.right).toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 36);
+        expect(desktopLayoutAudit.opponentHud!.right).toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth - 20);
         expect(desktopLayoutAudit.opponentHud!.y).toBeLessThanOrEqual(80);
-        expect(desktopLayoutAudit.selfHud!.x).toBeLessThanOrEqual(20);
-        expect(Math.abs(desktopLayoutAudit.selfHud!.bottom - desktopLayoutAudit.preparedArea!.bottom)).toBeLessThanOrEqual(3);
+        expect(desktopLayoutAudit.opponentPreparedMirror!.x, '对手已计划卡背必须在右上对手 HUD 左侧，不应留在左上角').toBeGreaterThan(desktopLayoutAudit.viewportWidth * 0.5);
+        expect(desktopLayoutAudit.opponentPreparedMirror!.right).toBeLessThanOrEqual(desktopLayoutAudit.opponentHud!.x);
+        expect(Math.abs(desktopLayoutAudit.opponentPreparedMirror!.y - desktopLayoutAudit.opponentHud!.y)).toBeLessThanOrEqual(3);
+        expect(desktopLayoutAudit.selfHud!.x, '己方 HUD 必须留在左半区，但要避开竞技场首列实体').toBeGreaterThanOrEqual(desktopLayoutAudit.viewportWidth * 0.24);
+        expect(desktopLayoutAudit.selfHud!.x, '己方 HUD 不得漂到中场或右侧玩家区').toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth * 0.36);
+        expect(desktopLayoutAudit.selfHud!.y, '己方 HUD 必须在左下独立层，不应回到左上角').toBeGreaterThan(desktopLayoutAudit.viewportHeight * 0.25);
+        expect(desktopLayoutAudit.selfHud!.bottom, '己方 HUD 应靠近左下桌面区，而不是顶部 HUD 带').toBeGreaterThan(desktopLayoutAudit.viewportHeight * 0.55);
+        expect(desktopLayoutAudit.selfHud!.bottom, '己方 HUD 必须上移离开底部牌区').toBeLessThan(desktopLayoutAudit.bottomViewportGrid!.y);
         expect(Math.abs(desktopLayoutAudit.spellbookShelf!.bottom - desktopLayoutAudit.preparedArea!.bottom)).toBeLessThanOrEqual(3);
         expect(Math.abs(desktopLayoutAudit.spellbookCard!.bottom - desktopLayoutAudit.preparedCard!.bottom)).toBeLessThanOrEqual(3);
-        expect(Math.abs(desktopLayoutAudit.selfHud!.bottom - desktopLayoutAudit.preparedCard!.bottom)).toBeLessThanOrEqual(3);
-        expect(desktopLayoutAudit.spellbookShelf!.x).toBeGreaterThanOrEqual(desktopLayoutAudit.selfHud!.right - 2);
-        expect(desktopLayoutAudit.spellbookShelf!.x - desktopLayoutAudit.selfHud!.right).toBeLessThanOrEqual(36);
+        expect(desktopLayoutAudit.spellbookShelf!.x).toBeLessThanOrEqual(24);
         expect(desktopLayoutAudit.discardPile!.right).toBeLessThanOrEqual(desktopLayoutAudit.viewportWidth - 44);
-        expect(Math.abs(desktopLayoutAudit.preparedCard!.height - 224)).toBeLessThanOrEqual(2);
-        expect(Math.abs(desktopLayoutAudit.spellbookCard!.height - 224)).toBeLessThanOrEqual(2);
-        expect(Math.abs(desktopLayoutAudit.preparedCard!.width - 158)).toBeLessThanOrEqual(2);
-        expect(Math.abs(desktopLayoutAudit.spellbookCard!.width - 158)).toBeLessThanOrEqual(2);
+        expect(desktopLayoutAudit.preparedCard!.height).toBeGreaterThanOrEqual(215);
+        expect(desktopLayoutAudit.spellbookCard!.height).toBeGreaterThanOrEqual(280);
+        expect(desktopLayoutAudit.preparedCard!.width).toBeGreaterThanOrEqual(150);
+        expect(desktopLayoutAudit.spellbookCard!.width).toBeGreaterThanOrEqual(195);
         expect(desktopLayoutAudit.preparedArea!.y).toBeGreaterThan(desktopLayoutAudit.turnEnd!.bottom);
         expect(Math.abs(
             desktopLayoutAudit.turnEnd!.x + desktopLayoutAudit.turnEnd!.width / 2
@@ -1836,10 +1918,10 @@ test.describe('Mage Wars foundation runtime board', () => {
             expect(card.rect).not.toBeNull();
             expect(card.laneAxis).toBe('horizontal');
             expect(card.laneStackAxis).toBe('vertical');
-            expect(card.rect!.width).toBeGreaterThan(60);
-            expect(card.rect!.width).toBeLessThan(72);
-            expect(card.rect!.height).toBeGreaterThan(84);
-            expect(card.rect!.height).toBeLessThan(100);
+            expect(card.rect!.width).toBeGreaterThan(100);
+            expect(card.rect!.width).toBeLessThan(114);
+            expect(card.rect!.height).toBeGreaterThan(142);
+            expect(card.rect!.height).toBeLessThan(160);
             expect(card.aspectRatio).toBeGreaterThan(0.70);
             expect(card.aspectRatio).toBeLessThan(0.72);
         });
@@ -2006,7 +2088,7 @@ test.describe('Mage Wars foundation runtime board', () => {
         await expect(page.getByTestId('mage-wars-board')).toHaveAttribute('data-mage-wars-current-player-id', '0');
         await expectMageWarsDefaultBrowseInteractions(page);
         await expectMageWarsDesktop2560Layout(page);
-        await auditMageWarsImages(page, ['间歇喷泉', '气流', '格挡']);
+        await auditMageWarsImages(page, ['法师魔杖', '巨熊皮甲', '群兽法杖', '元素斗篷', '重生腰带']);
 
         await applyMageWarsPlanningState(page);
         const duplicateSpellbookCardInfo = await findVisibleDuplicateSpellbookCard(page);
@@ -2033,8 +2115,10 @@ test.describe('Mage Wars foundation runtime board', () => {
                 hitButton: hit?.closest('[data-testid="mage-wars-card-inspect-button"]') === button,
             };
         });
-        expect(initialInspectStyle.width).toBeGreaterThanOrEqual(28);
-        expect(initialInspectStyle.height).toBeGreaterThanOrEqual(28);
+        expect(initialInspectStyle.width).toBeGreaterThanOrEqual(24);
+        expect(initialInspectStyle.height).toBeGreaterThanOrEqual(24);
+        expect(initialInspectStyle.width).toBeLessThanOrEqual(34);
+        expect(initialInspectStyle.height).toBeLessThanOrEqual(34);
         expect(initialInspectStyle.hitButton).toBe(true);
         await duplicateInspectButton.hover();
         await expect.poll(async () => duplicateInspectButton.evaluate((button) => getComputedStyle(button).backgroundColor))

@@ -93,8 +93,8 @@ export const MOON_ELF_TOKENS: TokenDef[] = [
 
     /**
      * 锁定 (Targeted)
-     * 效果：受到的伤害 +2。
-     * 执行逻辑：effects.ts resolveEffectAction damage case 中实现
+     * 效果：受到对手攻击伤害时 +2，持续到被规则或卡牌移除。
+     * 执行逻辑：createDamageCalculation 的 onDamageReceived 被动修正中实现。
      */
     {
         id: STATUS_IDS.TARGETED,
@@ -107,7 +107,6 @@ export const MOON_ELF_TOKENS: TokenDef[] = [
             timing: 'onDamageReceived',
             damageTriggerScope: 'opponentAttackDamage',
             removable: true,
-            consumeOnTrigger: true,
             actions: [
                 { type: 'modifyStat', target: 'self', value: 2 },
             ],

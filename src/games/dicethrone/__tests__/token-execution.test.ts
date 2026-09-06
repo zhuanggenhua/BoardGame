@@ -884,24 +884,24 @@ describe('神罚 (Retribution) Token 响应处理', () => {
 });
 
 // ============================================================================
-// 锁定 (Targeted) — 受伤+2（TokenDef passiveTrigger 中定义，reducer 中处理）
+// 锁定 (Targeted) — 受对手攻击伤害 +2，且不会因触发自动移除
 // ============================================================================
 
 describe('锁定 (Targeted) 伤害修正', () => {
-    it('TokenDef 定义正确：onDamageReceived + modifyStat +2', () => {
+    it('TokenDef 定义正确：onDamageReceived + modifyStat +2，持续不自动移除', () => {
         const targetedDef = ALL_TOKEN_DEFINITIONS.find(t => t.id === STATUS_IDS.TARGETED);
         expect(targetedDef).toBeDefined();
         expect(targetedDef!.category).toBe('debuff');
         expect(targetedDef!.passiveTrigger?.timing).toBe('onDamageReceived');
         expect(targetedDef!.passiveTrigger?.removable).toBe(true);
-        expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBe(true);
+        expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBeUndefined();
         
         const modifyAction = targetedDef!.passiveTrigger?.actions?.find((a: any) => a.type === 'modifyStat');
         expect(modifyAction).toBeDefined();
         expect((modifyAction as any).value).toBe(2);
     });
 
-    it('锁定伤害修正与触发后移除都在 collectStatusModifiers 中处理', () => {
+    it('锁定伤害修正由 collectStatusModifiers 处理，触发后不移除', () => {
         const state = createHeroMatchup('moon_elf', 'barbarian')(['0', '1'], fixedRandom);
         state.core.players['1'].statusEffects[STATUS_IDS.TARGETED] = 1;
         state.core.pendingAttack = {
@@ -924,15 +924,7 @@ describe('锁定 (Targeted) 伤害修正', () => {
         }).resolve();
 
         expect(damage.finalDamage).toBe(5);
-        expect(damage.sideEffectEvents).toHaveLength(1);
-        expect(damage.sideEffectEvents[0]).toMatchObject({
-            type: 'STATUS_REMOVED',
-            payload: {
-                targetId: '1',
-                statusId: STATUS_IDS.TARGETED,
-                stacks: 1,
-            },
-        });
+        expect(damage.sideEffectEvents).toHaveLength(0);
     });
 });
 

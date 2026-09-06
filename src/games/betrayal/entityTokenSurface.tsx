@@ -320,11 +320,10 @@ export function GirlBoardToken({
       ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`
       : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`;
   const isMummyAttachment = attachedTo === "mummy";
-  const tokenSizePx =
-    attachedTo === "room" ? 68 : isMummyAttachment ? 25 : 60;
+  const tokenSizePx = 54;
   const unit = (
     <span
-      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[2px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_8px_rgba(255,216,154,0.38)]" : "p-[5px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
+      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[4px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "p-[4px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
       style={{ width: tokenSizePx, height: tokenSizePx }}
       data-testid={unitTestId}
       data-token-attachment={attachedTo}

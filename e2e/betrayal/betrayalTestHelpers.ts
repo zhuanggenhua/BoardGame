@@ -594,8 +594,8 @@ export const expectEventRollWorkbenchReadable = async (
         const dieIndex = Number(
           target.dataset.testid?.match(/-(\d+)$/)?.[1] ?? "NaN",
         );
-        const candidateBox = target.querySelector<HTMLElement>(
-          '[data-reroll-target-candidate-box="true"]',
+        const candidateUnderline = target.querySelector<HTMLElement>(
+          '[data-reroll-target-candidate-underline="true"]',
         );
         const selectedBorder = target.querySelector<HTMLElement>(
           '[data-reroll-target-selected-border="true"]',
@@ -633,7 +633,7 @@ export const expectEventRollWorkbenchReadable = async (
           visibleMax,
           outlineGap,
           hitBoxPadding,
-          candidateBoxExists: Boolean(candidateBox),
+          candidateUnderlineExists: Boolean(candidateUnderline),
           selectedBorderExists: Boolean(selectedBorder),
           webglHighlight,
           webglShell,
@@ -674,7 +674,7 @@ export const expectEventRollWorkbenchReadable = async (
         rerollLayerElement?.dataset.rerollHighlightRenderer ?? "",
       rerollDomVisualBoxCount: rerollLayerElement
         ? rerollLayerElement.querySelectorAll(
-            '[data-reroll-target-candidate-box="true"], [data-reroll-target-selected-border="true"]',
+            '[data-reroll-target-candidate-underline="true"], [data-reroll-target-selected-border="true"]',
           ).length
         : 0,
       diceHighlightDebugKey: activeCanvasTestId ?? "",
@@ -811,30 +811,35 @@ export const expectEventRollWorkbenchReadable = async (
       metrics.rerollTargets.length,
       `${label}改骰选择态必须直接在每颗可改骰子上保留可点击热区：${JSON.stringify(metrics)}`,
     ).toBeGreaterThan(0);
+    const selectedRerollTargetCount = metrics.rerollTargets.filter(
+      (target) => target.selected,
+    ).length;
+    const expectedWebglRenderer =
+      selectedRerollTargetCount > 0 ? "threejs-backside-shader-shell" : "none";
     expect(
       metrics.rerollHighlightRenderer,
-      `${label}兔脚改骰高亮必须由 Three.js 骰体描边承接，不能回到 DOM 方框：${JSON.stringify(metrics)}`,
-    ).toBe("threejs-backside-shader-shell");
+      `${label}兔脚改骰高亮必须区分候选底描边和选中 3D 描边：${JSON.stringify(metrics)}`,
+    ).toBe("candidate-bottom-underline-selected-threejs-shell");
     expect(
       metrics.diceHighlightSourceRenderer,
-      `${label}物理骰源必须声明 WebGL 高亮渲染器：${JSON.stringify(metrics)}`,
-    ).toBe("threejs-backside-shader-shell");
+      `${label}只有选中骰子才应声明 WebGL 高亮，未选候选不能套环：${JSON.stringify(metrics)}`,
+    ).toBe(expectedWebglRenderer);
     expect(
       metrics.diceHighlightCanvasRenderer,
-      `${label}canvas 必须收到 WebGL 高亮状态：${JSON.stringify(metrics)}`,
-    ).toBe("threejs-backside-shader-shell");
+      `${label}canvas 只能收到选中骰子的 WebGL 高亮状态：${JSON.stringify(metrics)}`,
+    ).toBe(expectedWebglRenderer);
     expect(
       metrics.rerollDomVisualBoxCount,
-      `${label}兔脚选骰层不得再渲染会遮挡骰子的 DOM 候选/选中边框：${JSON.stringify(metrics)}`,
-    ).toBe(0);
+      `${label}每颗骰子必须只有一个候选底线或选中描边，不能缺席或重复：${JSON.stringify(metrics)}`,
+    ).toBe(metrics.rerollTargets.length);
     expect(
       metrics.diceHighlightCount,
-      `${label}每个可选骰子都必须有一个 Three.js 高亮状态：${JSON.stringify(metrics)}`,
-    ).toBe(metrics.rerollTargets.length);
+      `${label}未选骰子不得生成 Three.js 候选外壳：${JSON.stringify(metrics)}`,
+    ).toBe(selectedRerollTargetCount);
     expect(
       metrics.diceHighlightShellCount,
-      `${label}每个可选骰子都必须有一个真实 WebGL 外壳描边 mesh：${JSON.stringify(metrics)}`,
-    ).toBe(metrics.rerollTargets.length);
+      `${label}只有选中骰子才有真实 WebGL 外壳描边 mesh：${JSON.stringify(metrics)}`,
+    ).toBe(selectedRerollTargetCount);
     for (let leftIndex = 0; leftIndex < metrics.rerollTargets.length; leftIndex += 1) {
       for (let rightIndex = leftIndex + 1; rightIndex < metrics.rerollTargets.length; rightIndex += 1) {
         const leftTarget = metrics.rerollTargets[leftIndex];
@@ -862,12 +867,13 @@ export const expectEventRollWorkbenchReadable = async (
       );
       expect(
         target.highlightRenderer,
-        `${label}改骰高亮必须来自 Three.js 骰体描边，而不是 DOM 框：${evidence}`,
-      ).toBe("threejs-backside-shader-shell");
-      expect(
-        target.visualLayer,
-        `${label}DOM 层只能保留透明命中区，不能继续画可见框：${evidence}`,
-      ).toBe("transparent-hitbox-only");
+        `${label}改骰高亮渲染器必须符合候选/选中分层：${evidence}`,
+      ).toBe(target.selected ? "threejs-backside-shader-shell" : "dom-bottom-underline");
+      expect(target.visualLayer).toBe(
+        target.selected
+          ? "selected-outline-and-webgl-shell"
+          : "candidate-bottom-underline",
+      );
       expect(
         Math.abs(target.targetWidth - target.targetHeight),
         `${label}改骰命中区必须是方框，不得退成文字按钮或长条：${evidence}`,
@@ -889,50 +895,50 @@ export const expectEventRollWorkbenchReadable = async (
         `${label}透明命中区不能过大到让玩家误判归属：${evidence}`,
       ).toBeLessThanOrEqual(4);
       expect(
-        target.candidateBoxExists,
-        `${label}DOM 层不得保留候选边框：${evidence}`,
-      ).toBe(false);
+        target.candidateUnderlineExists,
+        `${label}候选态必须用底部短描边，选中态不能继续显示候选底线：${evidence}`,
+      ).toBe(!target.selected);
       expect(
         target.selectedBorderExists,
-        `${label}DOM 层不得保留选中边框：${evidence}`,
-      ).toBe(false);
-      expect(
-        target.webglHighlight,
-        `${label}必须能从 Three.js 快照读到当前骰子的高亮状态：${evidence}`,
-      ).not.toBeNull();
-      expect(
-        target.webglShell,
-        `${label}必须能从 Three.js 场景读到当前骰子的描边外壳：${evidence}`,
-      ).not.toBeNull();
-      expect(
-        target.webglShell?.renderer,
-        `${label}描边外壳必须是 Three.js 背面外壳渲染器：${evidence}`,
-      ).toBe("threejs-backside-shader-shell");
-      expect(
-        target.webglShell?.visible,
-        `${label}描边外壳必须可见：${evidence}`,
-      ).toBe(true);
-      expect(
-        target.webglShell?.materialType,
-        `${label}描边外壳必须使用 Three.js ShaderMaterial，而不是 DOM/CSS 框或普通透明贴片：${evidence}`,
-      ).toBe("ShaderMaterial");
-      expect(
-        target.webglShell?.materialSide,
-        `${label}描边外壳必须用背面材质，只露骰子外缘不盖骰面：${evidence}`,
-      ).toBe(1);
-      expect(
-        target.webglShell?.depthWrite,
-        `${label}描边外壳不能写入深度，否则可能遮住骰子：${evidence}`,
-      ).toBe(false);
-      expect(
-        target.webglShell?.transparent,
-        `${label}描边外壳必须是透明材质，不能变成实心块：${evidence}`,
-      ).toBe(true);
-      expect(
-        target.webglShell?.shaderOpacity,
-        `${label}shader 透明度必须随候选/选中状态同步：${evidence}`,
-      ).toBe(target.webglShell?.opacity);
+        `${label}只有选中骰子才显示贴合描边：${evidence}`,
+      ).toBe(target.selected);
       if (target.selected) {
+        expect(
+          target.webglHighlight,
+          `${label}选中骰子必须能从 Three.js 快照读到高亮状态：${evidence}`,
+        ).not.toBeNull();
+        expect(
+          target.webglShell,
+          `${label}选中骰子必须能从 Three.js 场景读到描边外壳：${evidence}`,
+        ).not.toBeNull();
+        expect(
+          target.webglShell?.renderer,
+          `${label}描边外壳必须是 Three.js 背面外壳渲染器：${evidence}`,
+        ).toBe("threejs-backside-shader-shell");
+        expect(
+          target.webglShell?.visible,
+          `${label}描边外壳必须可见：${evidence}`,
+        ).toBe(true);
+        expect(
+          target.webglShell?.materialType,
+          `${label}描边外壳必须使用 Three.js ShaderMaterial，而不是 DOM/CSS 框或普通透明贴片：${evidence}`,
+        ).toBe("ShaderMaterial");
+        expect(
+          target.webglShell?.materialSide,
+          `${label}描边外壳必须用背面材质，只露骰子外缘不盖骰面：${evidence}`,
+        ).toBe(1);
+        expect(
+          target.webglShell?.depthWrite,
+          `${label}描边外壳不能写入深度，否则可能遮住骰子：${evidence}`,
+        ).toBe(false);
+        expect(
+          target.webglShell?.transparent,
+          `${label}描边外壳必须是透明材质，不能变成实心块：${evidence}`,
+        ).toBe(true);
+        expect(
+          target.webglShell?.shaderOpacity,
+          `${label}shader 透明度必须随选中状态同步：${evidence}`,
+        ).toBe(target.webglShell?.opacity);
         expect(
           target.webglHighlight?.variant,
           `${label}选中骰子必须升级为 selected WebGL 高亮：${evidence}`,
@@ -955,25 +961,13 @@ export const expectEventRollWorkbenchReadable = async (
         ).toBeGreaterThanOrEqual(0.9);
       } else {
         expect(
-          target.webglHighlight?.variant,
-          `${label}未选骰子必须显示 candidate WebGL 高亮：${evidence}`,
-        ).toBe("candidate");
+          target.webglHighlight,
+          `${label}未选骰子不得生成 Three.js 候选高亮：${evidence}`,
+        ).toBeNull();
         expect(
-          target.webglShell?.variant,
-          `${label}未选骰子的外壳必须同步为 candidate：${evidence}`,
-        ).toBe("candidate");
-        expect(
-          target.webglShell?.scale,
-          `${label}候选描边必须是贴近骰子的弱候选态，不能像已选中：${evidence}`,
-        ).toBeGreaterThanOrEqual(1.025);
-        expect(
-          target.webglShell?.scale,
-          `${label}候选描边不能外扩成离体大框：${evidence}`,
-        ).toBeLessThanOrEqual(1.045);
-        expect(
-          target.webglShell?.opacity,
-          `${label}候选描边不能弱到看不清：${evidence}`,
-        ).toBeGreaterThanOrEqual(0.9);
+          target.webglShell,
+          `${label}未选骰子不得生成 Three.js 候选外壳：${evidence}`,
+        ).toBeNull();
       }
     }
   }
@@ -1318,7 +1312,8 @@ export const waitForPhysicalDiceRerollMotion = async (
 };
 
 type PhysicalDiceRerollMotionCapture = {
-  expectVisible: () => Promise<void>;
+  expectVisible: () => Promise<unknown>;
+  saveVisibleFrame: (path: string) => Promise<unknown>;
   stop: () => Promise<void>;
 };
 
@@ -1329,11 +1324,13 @@ export const armPhysicalDiceRerollMotionCapture = async (
     timeout?: number;
     minRotationShiftRad?: number;
     minPositionShiftPx?: number;
+    minScreenShiftPx?: number;
   } = {},
 ): Promise<PhysicalDiceRerollMotionCapture> => {
   const dieIndex = options.dieIndex ?? 0;
   const minRotationShiftRad = options.minRotationShiftRad ?? 0.08;
   const minPositionShiftPx = options.minPositionShiftPx ?? 0.75;
+  const minScreenShiftPx = options.minScreenShiftPx ?? 14;
   const key = `reroll-motion-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   await rollPanel.evaluate(
@@ -1344,6 +1341,7 @@ export const armPhysicalDiceRerollMotionCapture = async (
         dieIndex: number;
         minRotationShiftRad: number;
         minPositionShiftPx: number;
+        minScreenShiftPx: number;
       },
     ) => {
       type Motion = {
@@ -1354,7 +1352,19 @@ export const armPhysicalDiceRerollMotionCapture = async (
         rotateY: number;
         rotateZ: number;
       };
-      type DebugDie = { motion?: Motion | null };
+      type Layout = {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        visualWidth?: number;
+        visualHeight?: number;
+        minX: number;
+        maxX: number;
+        minY: number;
+        maxY: number;
+      };
+      type DebugDie = { motion?: Motion | null; layout?: Layout | null };
       type DebugSnapshot = { dice?: DebugDie[] };
       type Sample = {
         at: number;
@@ -1366,6 +1376,8 @@ export const armPhysicalDiceRerollMotionCapture = async (
         activeCanvasTestId?: string;
         motion: Motion | null;
         motions: Array<Motion | null>;
+        layout: Layout | null;
+        layouts: Array<Layout | null>;
       };
       type Capture = {
         stopped: boolean;
@@ -1422,6 +1434,8 @@ export const armPhysicalDiceRerollMotionCapture = async (
           : null;
         const motions =
           snapshot?.dice?.map((die) => die.motion ?? null) ?? [];
+        const layouts =
+          snapshot?.dice?.map((die) => die.layout ?? null) ?? [];
         return {
           at: now,
           motionType: source?.dataset.diceMotionType ?? "",
@@ -1432,6 +1446,8 @@ export const armPhysicalDiceRerollMotionCapture = async (
           activeCanvasTestId,
           motion: motions[captureOptions.dieIndex] ?? null,
           motions,
+          layout: layouts[captureOptions.dieIndex] ?? null,
+          layouts,
         };
       };
 
@@ -1439,7 +1455,7 @@ export const armPhysicalDiceRerollMotionCapture = async (
         stopped: false,
         frameId: null,
         timerId: null,
-        samples: [],
+        samples: [readSample(performance.now())],
         latestVisibleEvidence: null,
       };
       const clearScheduledStep = () => {
@@ -1467,6 +1483,22 @@ export const armPhysicalDiceRerollMotionCapture = async (
         }
         const sampleIsRerolling =
           sample.motionType === "reroll" && sample.settled === "false";
+        const baselineSample =
+          [...capture.samples]
+            .reverse()
+            .find(
+              (candidate) =>
+                candidate !== sample &&
+                Boolean(candidate.layout) &&
+                !(
+                  candidate.motionType === "reroll" &&
+                  candidate.settled === "false"
+                ),
+            ) ??
+          capture.samples.find(
+            (candidate) => candidate !== sample && Boolean(candidate.layout),
+          ) ??
+          null;
         const positionShift = previous?.motion && sample.motion
           ? Math.hypot(
             sample.motion.x - previous.motion.x,
@@ -1481,10 +1513,32 @@ export const armPhysicalDiceRerollMotionCapture = async (
             Math.abs(sample.motion.rotateZ - previous.motion.rotateZ),
           )
           : 0;
+        const screenShiftPx = baselineSample?.layout && sample.layout
+          ? Math.hypot(
+            sample.layout.x - baselineSample.layout.x,
+            sample.layout.y - baselineSample.layout.y,
+          )
+          : 0;
+        const screenBoundsShiftPx = baselineSample?.layout && sample.layout
+          ? Math.max(
+            Math.abs(sample.layout.minX - baselineSample.layout.minX),
+            Math.abs(sample.layout.maxX - baselineSample.layout.maxX),
+            Math.abs(sample.layout.minY - baselineSample.layout.minY),
+            Math.abs(sample.layout.maxY - baselineSample.layout.maxY),
+          )
+          : 0;
         const shiftedDice = sample.motions.map((motion, index) => {
           const previousMotion = previous?.motions[index] ?? null;
+          const baselineLayout = baselineSample?.layouts[index] ?? null;
+          const currentLayout = sample.layouts[index] ?? null;
+          const dieScreenShiftPx = baselineLayout && currentLayout
+            ? Math.hypot(
+              currentLayout.x - baselineLayout.x,
+              currentLayout.y - baselineLayout.y,
+            )
+            : 0;
           if (!previousMotion || !motion) {
-            return { index, positionShift: 0, rotationShift: 0 };
+            return { index, positionShift: 0, rotationShift: 0, screenShiftPx: dieScreenShiftPx };
           }
           return {
             index,
@@ -1498,15 +1552,18 @@ export const armPhysicalDiceRerollMotionCapture = async (
               Math.abs(motion.rotateY - previousMotion.rotateY),
               Math.abs(motion.rotateZ - previousMotion.rotateZ),
             ),
+            screenShiftPx: dieScreenShiftPx,
           };
         });
         if (
           sampleIsRerolling &&
-          (positionShift >= captureOptions.minPositionShiftPx ||
-            rotationShift >= captureOptions.minRotationShiftRad)
+          Math.max(screenShiftPx, screenBoundsShiftPx) >=
+            captureOptions.minScreenShiftPx
         ) {
           capture.latestVisibleEvidence = {
             detectedAt: now,
+            screenShiftPx,
+            screenBoundsShiftPx,
             positionShift,
             rotationShift,
             shiftedDice,
@@ -1520,7 +1577,7 @@ export const armPhysicalDiceRerollMotionCapture = async (
       pageWindow.__betrayalDiceRerollMotionCaptures[captureOptions.key] =
         capture;
     },
-    { key, dieIndex, minRotationShiftRad, minPositionShiftPx },
+    { key, dieIndex, minRotationShiftRad, minPositionShiftPx, minScreenShiftPx },
   );
 
   const readCaptureState = async () =>
@@ -1539,8 +1596,17 @@ export const armPhysicalDiceRerollMotionCapture = async (
               activeCanvasTestId?: string;
               motion: unknown;
               motions: unknown[];
+              layout: unknown;
+              layouts: unknown[];
             }>;
-            latestVisibleEvidence: { detectedAt?: number } | null;
+            latestVisibleEvidence: {
+              detectedAt?: number;
+              screenShiftPx?: number;
+              screenBoundsShiftPx?: number;
+              shiftedDice?: unknown[];
+              before?: { at?: number } | null;
+              after?: { at?: number } | null;
+            } | null;
           }
         >;
       };
@@ -1557,6 +1623,18 @@ export const armPhysicalDiceRerollMotionCapture = async (
       );
       const shiftedDiceSummary = rerollingSamples.flatMap((sample, sampleIndex) => {
         const previous = rerollingSamples[sampleIndex - 1] ?? null;
+        const baseline =
+          capture.samples
+            .slice(0, capture.samples.indexOf(sample))
+            .reverse()
+            .find(
+              (candidate) =>
+                Boolean(candidate.layout) &&
+                !(
+                  candidate.motionType === "reroll" &&
+                  candidate.settled === "false"
+                ),
+            ) ?? null;
         if (!previous) return [];
         return sample.motions.map((motion, index) => {
           const previousMotion = previous.motions[index] as
@@ -1581,8 +1659,22 @@ export const armPhysicalDiceRerollMotionCapture = async (
             }
             | null
             | undefined;
+          const baselineLayout = (baseline?.layouts[index] ?? null) as
+            | { x: number; y: number }
+            | null
+            | undefined;
+          const currentLayout = (sample.layouts[index] ?? null) as
+            | { x: number; y: number }
+            | null
+            | undefined;
+          const screenShiftPx = baselineLayout && currentLayout
+            ? Math.hypot(
+              currentLayout.x - baselineLayout.x,
+              currentLayout.y - baselineLayout.y,
+            )
+            : 0;
           if (!previousMotion || !currentMotion) {
-            return { index, positionShift: 0, rotationShift: 0 };
+            return { index, positionShift: 0, rotationShift: 0, screenShiftPx };
           }
           return {
             index,
@@ -1596,13 +1688,21 @@ export const armPhysicalDiceRerollMotionCapture = async (
               Math.abs(currentMotion.rotateY - previousMotion.rotateY),
               Math.abs(currentMotion.rotateZ - previousMotion.rotateZ),
             ),
+            screenShiftPx,
           };
         });
       });
+      const visibleEvidence = capture.latestVisibleEvidence as
+        | {
+          detectedAt?: number;
+          after?: { at?: number } | null;
+        }
+        | null;
       const recentVisible =
-        capture.latestVisibleEvidence &&
-        typeof capture.latestVisibleEvidence.detectedAt === "number" &&
-        now - capture.latestVisibleEvidence.detectedAt <= 3500 &&
+        visibleEvidence &&
+        typeof visibleEvidence.detectedAt === "number" &&
+        now - visibleEvidence.detectedAt <= 180 &&
+        latest?.at === visibleEvidence.after?.at &&
         latest?.motionType === "reroll" &&
         latest?.settled === "false";
       return {
@@ -1618,22 +1718,267 @@ export const armPhysicalDiceRerollMotionCapture = async (
       };
     }, key);
 
-  return {
-    expectVisible: async () => {
-      await expect
-        .poll(
-          async () => {
-            const state = await readCaptureState();
-            return state.status === "visible-reroll-motion"
-              ? "visible-reroll-motion"
-              : JSON.stringify(state);
-          },
-          {
-            timeout: options.timeout ?? 7000,
-            intervals: [40, 60, 80, 120],
-          },
+  const waitForCurrentRerollFrame = async (): Promise<unknown> => {
+    const frame = await rollPanel.page().waitForFunction(
+      (captureOptions) => {
+        const source = document.querySelector<HTMLElement>(
+          '[data-testid="betrayal-house-dice-physics-source"]',
+        );
+        if (
+          source?.dataset.diceMotionType !== "reroll" ||
+          source.dataset.diceSettled !== "false"
+        ) {
+          return null;
+        }
+        const canvas =
+          document.querySelector<HTMLCanvasElement>(
+            '[data-testid^="betrayal-house-dice-box-canvas"]',
+          ) ?? null;
+        const rect = canvas?.getBoundingClientRect();
+        if (!canvas || !rect || rect.width <= 0 || rect.height <= 0) {
+          return null;
+        }
+        type Layout = { x: number; y: number; minX: number; maxX: number; minY: number; maxY: number };
+        type Sample = {
+          motionType: string;
+          settled: string;
+          layout: Layout | null;
+          layouts: Array<Layout | null>;
+        };
+        const pageWindow = window as typeof window & {
+          __betrayalDiceRerollMotionCaptures?: Record<
+            string,
+            {
+              samples?: Sample[];
+              latestVisibleEvidence?: unknown;
+            }
+          >;
+          __diceBoxThreeDebug?: Record<
+            string,
+            () => { dice?: Array<{ layout?: Layout | null }> } | null
+          >;
+        };
+        const capture =
+          pageWindow.__betrayalDiceRerollMotionCaptures?.[
+            captureOptions.key
+          ] ?? null;
+        const baseline =
+          capture?.samples?.find(
+            (candidate) =>
+              candidate.layout &&
+              !(
+                candidate.motionType === "reroll" &&
+                candidate.settled === "false"
+              ),
+          ) ??
+          capture?.samples?.find((candidate) => Boolean(candidate.layout)) ??
+          null;
+        const debugRegistry = pageWindow.__diceBoxThreeDebug ?? {};
+        const activeCanvasTestId =
+          canvas.dataset.testid ??
+          document
+            .querySelector<HTMLElement>(
+              '[data-testid="betrayal-house-dice-3d-group"]',
+            )
+            ?.dataset.diceDebugKey;
+        const snapshot = activeCanvasTestId
+          ? debugRegistry[activeCanvasTestId]?.() ?? null
+          : null;
+        const currentLayout =
+          snapshot?.dice?.[captureOptions.dieIndex]?.layout ?? null;
+        const baselineLayout =
+          baseline?.layouts?.[captureOptions.dieIndex] ??
+          baseline?.layout ??
+          null;
+        if (!baselineLayout || !currentLayout) {
+          return null;
+        }
+        const screenShiftPx = Math.hypot(
+          currentLayout.x - baselineLayout.x,
+          currentLayout.y - baselineLayout.y,
+        );
+        const screenBoundsShiftPx = Math.max(
+          Math.abs(currentLayout.minX - baselineLayout.minX),
+          Math.abs(currentLayout.maxX - baselineLayout.maxX),
+          Math.abs(currentLayout.minY - baselineLayout.minY),
+          Math.abs(currentLayout.maxY - baselineLayout.maxY),
+        );
+        const visibleShiftPx = Math.max(screenShiftPx, screenBoundsShiftPx);
+        if (visibleShiftPx < captureOptions.minScreenShiftPx) {
+          return null;
+        }
+        const parent = canvas.parentElement;
+        if (!parent) {
+          return null;
+        }
+        document
+          .querySelectorAll(
+            '[data-betrayal-reroll-motion-frame-overlay="true"]',
+          )
+          .forEach((element) => element.remove());
+        const parentStyle = window.getComputedStyle(parent);
+        if (parentStyle.position === "static") {
+          parent.dataset.betrayalRerollFramePreviousPosition =
+            parent.style.position;
+          parent.style.position = "relative";
+        }
+        canvas.dataset.betrayalRerollFramePreviousVisibility =
+          canvas.style.visibility;
+        canvas.dataset.betrayalRerollFrameHidden = "true";
+        canvas.style.visibility = "hidden";
+        const overlay = document.createElement("img");
+        overlay.dataset.testid = "betrayal-reroll-motion-frame-freeze";
+        overlay.dataset.betrayalRerollMotionFrameOverlay = "true";
+        overlay.alt = "";
+        overlay.src = canvas.toDataURL("image/png");
+        Object.assign(overlay.style, {
+          position: "fixed",
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          objectFit: "fill",
+          pointerEvents: "none",
+          zIndex: "2147483647",
+        });
+        document.body.appendChild(overlay);
+        return {
+          at: performance.now(),
+          motionType: source.dataset.diceMotionType,
+          motionId: source.dataset.diceMotionId ?? "",
+          settled: source.dataset.diceSettled,
+          canvasWidth: Math.round(rect.width),
+          canvasHeight: Math.round(rect.height),
+          baselineLayout,
+          currentLayout,
+          screenShiftPx,
+          screenBoundsShiftPx,
+          visibleShiftPx,
+        };
+      },
+      { key, dieIndex, minScreenShiftPx },
+      {
+        timeout: options.timeout ?? 7000,
+        polling: 16,
+      },
+    );
+    const value = await frame.jsonValue();
+    expect(value, "兔脚重投过程图必须在骰盘仍处于重投运动态时抓拍").not.toBeNull();
+    return value;
+  };
+
+  const clearVisibleFrameOverlay = async () => {
+    await rollPanel.page().evaluate(() => {
+      document
+        .querySelectorAll(
+          '[data-betrayal-reroll-motion-frame-overlay="true"]',
         )
-        .toBe("visible-reroll-motion");
+        .forEach((element) => element.remove());
+      document
+        .querySelectorAll<HTMLCanvasElement>(
+          'canvas[data-betrayal-reroll-frame-hidden="true"]',
+        )
+        .forEach((canvas) => {
+          canvas.style.visibility =
+            canvas.dataset.betrayalRerollFramePreviousVisibility ?? "";
+          delete canvas.dataset.betrayalRerollFramePreviousVisibility;
+          delete canvas.dataset.betrayalRerollFrameHidden;
+        });
+      document
+        .querySelectorAll<HTMLElement>(
+          '[data-betrayal-reroll-frame-previous-position]',
+        )
+        .forEach((element) => {
+          element.style.position =
+            element.dataset.betrayalRerollFramePreviousPosition ?? "";
+          delete element.dataset.betrayalRerollFramePreviousPosition;
+        });
+    });
+  };
+
+  const expectRecordedVisibleEvidence = async (): Promise<unknown> => {
+    let visibleEvidence: unknown = null;
+    await expect
+      .poll(
+        async () => {
+          const state = await readCaptureState();
+          if (state.latestVisibleEvidence) {
+            visibleEvidence = state.latestVisibleEvidence;
+            return "visible-reroll-motion";
+          }
+          return JSON.stringify({
+            status: state.status,
+            latest: state.latest,
+            sampleCount: state.sampleCount,
+            rerollingSampleCount: state.rerollingSampleCount,
+            shiftedDiceSummary: state.shiftedDiceSummary,
+            recentSamples: state.recentSamples,
+          });
+        },
+        {
+          timeout: options.timeout ?? 7000,
+          intervals: [40, 60, 80, 120],
+        },
+      )
+      .toBe("visible-reroll-motion");
+    expect(visibleEvidence, "兔脚重投过程截图必须有玩家可见屏幕位移证据").not.toBeNull();
+    return visibleEvidence;
+  };
+
+  const expectVisible = async (): Promise<unknown> => {
+    let visibleEvidence: unknown = null;
+    await expect
+      .poll(
+        async () => {
+          const state = await readCaptureState();
+          if (state.status === "visible-reroll-motion") {
+            visibleEvidence = state.latestVisibleEvidence;
+            return "visible-reroll-motion";
+          }
+          return JSON.stringify(state);
+        },
+        {
+          timeout: options.timeout ?? 7000,
+          intervals: [40, 60, 80, 120],
+        },
+      )
+      .toBe("visible-reroll-motion");
+    expect(visibleEvidence, "兔脚重投过程截图必须绑定当前仍在运动的可见位移帧").not.toBeNull();
+    return visibleEvidence;
+  };
+
+  return {
+    expectVisible,
+    saveVisibleFrame: async (path: string) => {
+      const screenshotFrame = await waitForCurrentRerollFrame();
+      await rollPanel
+        .page()
+        .waitForFunction(
+          () => {
+            const overlay = document.querySelector<HTMLImageElement>(
+              '[data-testid="betrayal-reroll-motion-frame-freeze"]',
+            );
+            return Boolean(
+              overlay?.complete &&
+                (overlay.naturalWidth ?? 0) > 0 &&
+                (overlay.naturalHeight ?? 0) > 0,
+            );
+          },
+          undefined,
+          { timeout: 5000, polling: 16 },
+        );
+      try {
+        await saveScreenshot(rollPanel.page(), path);
+      } finally {
+        await clearVisibleFrameOverlay();
+      }
+      const visibleEvidence = await expectRecordedVisibleEvidence();
+      return {
+        ...(typeof visibleEvidence === "object" && visibleEvidence
+          ? visibleEvidence
+          : {}),
+        screenshotFrame,
+      };
     },
     stop: async () => {
       await rollPanel.page().evaluate((captureKey) => {

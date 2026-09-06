@@ -728,25 +728,25 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
         it('锁定使受到的伤害+2（通过 tokenDefinitions 的 onDamageReceived 触发）', async () => {
             // 锁定的 +2 伤害通过 TokenDef.passiveTrigger.actions[modifyStat] 实现，
             // 由 createDamageCalculation 的 collectStatusModifiers 自动处理。
-            // 这里验证 TokenDef 配置正确性。
+            // 这里验证 TokenDef 配置正确性：它是持续状态，不因触发自动移除。
             const { MOON_ELF_TOKENS } = await import('../heroes/moon_elf/tokens');
             const targetedDef = MOON_ELF_TOKENS.find((t: any) => t.id === STATUS_IDS.TARGETED);
             expect(targetedDef).toBeDefined();
             expect(targetedDef!.category).toBe('debuff');
             expect(targetedDef!.stackLimit).toBe(1);
             expect(targetedDef!.passiveTrigger?.timing).toBe('onDamageReceived');
-            expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBe(true);
-            // 伤害修正由 modifyStat +2 表达，移除由 consumeOnTrigger 统一表达。
+            expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBeUndefined();
+            // 伤害修正由 modifyStat +2 表达，生命周期由正常移除状态效果承接。
             const actions = targetedDef!.passiveTrigger?.actions ?? [];
             expect(actions).toHaveLength(1);
             expect(actions[0].type).toBe('modifyStat');
             expect(actions[0].value).toBe(2);
         });
 
-        it('锁定受到对手进攻伤害后自动移除', async () => {
+        it('锁定受到对手进攻伤害后不会自动移除', async () => {
             const { MOON_ELF_TOKENS } = await import('../heroes/moon_elf/tokens');
             const targetedDef = MOON_ELF_TOKENS.find((t: any) => t.id === STATUS_IDS.TARGETED);
-            expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBe(true);
+            expect(targetedDef!.passiveTrigger?.consumeOnTrigger).toBeUndefined();
         });
 
         it('moon_elf-targeted-removal handler 已被移除', () => {

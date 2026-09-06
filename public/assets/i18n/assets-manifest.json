@@ -12414,6 +12414,42 @@
         }
       }
     },
+    "zh-CN/mage-wars/references/attack-bar-legend": {
+      "variants": {
+        "png": {
+          "sha256": "5db6b238053f10b22a10d5f07ed11218108f6894fc23322ba988e0940e46f505",
+          "bytes": 794892,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/mage-wars/references/compressed/attack-bar-legend": {
+      "variants": {
+        "webp": {
+          "sha256": "986ff1badc4e889ea38368a9d2e9d48f9be3b81ce3e2c0b487b00f44884c02a3",
+          "bytes": 110708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/mage-wars/references/compressed/spell-card-legend": {
+      "variants": {
+        "webp": {
+          "sha256": "33b448d79300d4234ad0ce841bba7e3ecc30d86789d792076741a02216427cff",
+          "bytes": 170362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/mage-wars/references/spell-card-legend": {
+      "variants": {
+        "png": {
+          "sha256": "a114db7d86c071fbd40cc05b5d6befd0928f29acbd2e80bebd7f23bf6e2d2e56",
+          "bytes": 1186576,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/mage-wars/tokens/action/action-marker-blue-back": {
       "variants": {
         "png": {

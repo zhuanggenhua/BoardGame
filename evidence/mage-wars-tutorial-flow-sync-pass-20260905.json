@@ -1,0 +1,103 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "教程与正式 Mage Wars 流程同步：读局、读牌、计划、召唤、公开弃牌、快速施法窗口和移动按玩家自然顺序截图",
+      "status": "PASS",
+      "evidence": [
+        "E2E: 单入口教程按玩家自然流程覆盖读局、读牌、计划、召唤、公开弃牌、快速施法窗口和移动 -> 1 passed",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync"
+      ]
+    },
+    {
+      "requirement": "每张玩家可见教程卡都有对应截图，截图组只含 00-26 主流程图，不混入拖拽/专题/诊断图",
+      "status": "PASS",
+      "evidence": [
+        "E2E assertTutorialScreenshotEvidenceSet 通过",
+        "27 张主流程 PNG 全部晚于本轮 E2E 运行"
+      ]
+    },
+    {
+      "requirement": "计划段真实点击分类、分页、卡牌本体和确认计划；没有隐藏独立玩家步骤",
+      "status": "PASS",
+      "evidence": [
+        "E2E 真实点击本体中心并断言未命中放大镜",
+        "E2E 禁止 helper 私下翻页找牌"
+      ]
+    },
+    {
+      "requirement": "对手公开弃牌通过视角切换复用同一弃牌槽，返回自己视角可见",
+      "status": "PASS",
+      "evidence": [
+        "截图 20-22 覆盖观察入口、同槽位切 owner、返回自己视角",
+        "E2E 负向断言平行对手弃牌副本不存在"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\00-intro-board-and-win.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\01-read-self-hud-life-mana-channeling.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\02-read-opponent-hud-hidden-plans.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\03-read-round-stage.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\04-channel-result-mana-increased.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\05-read-spell-card-legend.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\06-plan-open-creature-category.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\07-plan-creature-next-page-wolf-hidden.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\08-plan-select-wolf-visible.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\09-plan-wolf-in-slot-one-open-incantation-category.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\10-plan-incantation-next-page-rouse-hidden.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\11-plan-rouse-visible.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\12-plan-rouse-in-slot-two-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\13-prepared-and-hidden.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\14-deploy-select-wolf-prepared-card.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\15-deploy-target-zone-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\16-wolf-summoned-not-ready.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\17-rouse-select-spell-prepared-card.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\18-rouse-target-wolf-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\19-pass-your-deployment-wolf-ready.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\20-opponent-public-view-toggle-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\21-opponent-public-view-same-discard-pile.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\22-back-to-self-view.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\23-skip-initiative-quickcast.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\24-move-select-wolf.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\25-move-target-zone-a2.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\26-finish-wolf-moved-to-a2.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\01-labeled-00-intro-board-and-win.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\02-labeled-01-read-self-hud-life-mana-channeling.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\03-labeled-02-read-opponent-hud-hidden-plans.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\04-labeled-03-read-round-stage.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\05-labeled-04-channel-result-mana-increased.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\06-labeled-05-read-spell-card-legend.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\07-labeled-06-plan-open-creature-category.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\08-labeled-07-plan-creature-next-page-wolf-hidden.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\09-labeled-08-plan-select-wolf-visible.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\10-labeled-09-plan-wolf-in-slot-one-open-incantation-category.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\11-labeled-10-plan-incantation-next-page-rouse-hidden.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\12-labeled-11-plan-rouse-visible.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\13-labeled-12-plan-rouse-in-slot-two-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\14-labeled-13-prepared-and-hidden.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\15-labeled-14-deploy-select-wolf-prepared-card.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\16-labeled-15-deploy-target-zone-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\17-labeled-16-wolf-summoned-not-ready.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\18-labeled-17-rouse-select-spell-prepared-card.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\19-labeled-18-rouse-target-wolf-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\20-labeled-19-pass-your-deployment-wolf-ready.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\21-labeled-20-opponent-public-view-toggle-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\22-labeled-21-opponent-public-view-same-discard-pile.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\23-labeled-22-back-to-self-view.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\24-labeled-23-skip-initiative-quickcast.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\25-labeled-24-move-select-wolf.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\26-labeled-25-move-target-zone-a2.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-flow-sync\\_labeled-20260905-ui-tutorial-pass\\27-labeled-26-finish-wolf-moved-to-a2.png"
+  ]
+}

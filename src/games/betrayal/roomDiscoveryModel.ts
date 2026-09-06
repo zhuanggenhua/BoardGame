@@ -6,6 +6,7 @@ import {
     resolveOppositeRoomEdge,
     ROOM_EDGE_VECTOR,
 } from './roomMapModel';
+import type { RandomFn } from '../../engine/types';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     resolveBetrayalRoomDiscoverySymbol,
@@ -19,6 +20,7 @@ import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
 } from './possessionEffects';
 import { isAttackWeaponCard } from './attackRules';
+import { cloneExplorerSummary } from './explorerReadModel';
 import { moveExplorerTraitSteps } from './traitTrackModel';
 import type {
     BetrayalBuriedRoomTileSummary,
@@ -41,6 +43,52 @@ export type BetrayalRoomDiscoveryCards = {
     roomDiscoveryCards?: BetrayalInventoryCard[];
     buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
 };
+
+export interface BetrayalTileStackSearchCriteria {
+    roomName?: string;
+    visualId?: BetrayalRoomVisualId;
+    floor?: BetrayalRoomFloor;
+}
+
+export interface BetrayalTileStackSearchRoomSummary {
+    floor: BetrayalRoomFloor;
+    name: string;
+    visualId: BetrayalRoomVisualId;
+}
+
+export interface BetrayalTileStackSearchDiscoveredRoomSummary {
+    roomId: string;
+    floor: BetrayalRoomFloor;
+    name: string;
+    visualId: BetrayalRoomVisualId;
+}
+
+export interface BetrayalTileStackSearchResult {
+    requestedRoomName?: string;
+    requestedVisualId?: BetrayalRoomVisualId;
+    requestedFloor?: BetrayalRoomFloor;
+    foundRoom: BetrayalTileStackSearchRoomSummary | null;
+    searchedCount: number;
+    remainingCount: number;
+    reshuffled: boolean;
+}
+
+export interface BetrayalTileStackSearchPreview {
+    requestedRoomName?: string;
+    requestedVisualId?: BetrayalRoomVisualId;
+    requestedFloor?: BetrayalRoomFloor;
+    searchedCount: number;
+    candidateRooms: BetrayalTileStackSearchRoomSummary[];
+    firstCandidate: BetrayalTileStackSearchRoomSummary | null;
+    discoveredRooms: BetrayalTileStackSearchDiscoveredRoomSummary[];
+    targetAlreadyInHouse: boolean;
+    canSearch: boolean;
+    willRemoveFirstCandidate: boolean;
+    willReshuffleAfterSearch: boolean;
+    remainingCountAfterSearch: number;
+    reason: string | null;
+    ruleNotes: string[];
+}
 
 export const BETRAYAL_ROOM_FLOORS: BetrayalRoomFloor[] = ['ground', 'upper', 'basement'];
 
@@ -133,6 +181,167 @@ export function resolveCurrentRoomDiscoveryDeck(core: BetrayalCore): BetrayalRoo
             ? core.roomDiscoveryDeck
             : makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor)
     ).map(cloneRoomDiscoveryDeckEntry);
+}
+
+function makeTileStackSearchRoomSummary(
+    entry: BetrayalRoomDiscoveryDeckEntry,
+): BetrayalTileStackSearchRoomSummary {
+    return {
+        floor: entry.floor,
+        name: entry.room.name,
+        visualId: entry.room.visualId,
+    };
+}
+
+function roomDiscoveryEntryMatchesTileStackSearch(
+    entry: BetrayalRoomDiscoveryDeckEntry,
+    criteria: BetrayalTileStackSearchCriteria,
+): boolean {
+    const requestedRoomName = criteria.roomName?.trim();
+    if (requestedRoomName && entry.room.name !== requestedRoomName) {
+        return false;
+    }
+    if (criteria.visualId && entry.room.visualId !== criteria.visualId) {
+        return false;
+    }
+    if (criteria.floor && entry.floor !== criteria.floor) {
+        return false;
+    }
+    return Boolean(requestedRoomName || criteria.visualId || criteria.floor);
+}
+
+function discoveredRoomMatchesTileStackSearch(
+    room: BetrayalRoomNode,
+    criteria: BetrayalTileStackSearchCriteria,
+): boolean {
+    const requestedRoomName = criteria.roomName?.trim();
+    if (requestedRoomName && room.name !== requestedRoomName) {
+        return false;
+    }
+    if (criteria.visualId && room.visualId !== criteria.visualId) {
+        return false;
+    }
+    if (criteria.floor && room.floor !== criteria.floor) {
+        return false;
+    }
+    return Boolean(requestedRoomName || criteria.visualId || criteria.floor);
+}
+
+export function resolveBetrayalTileStackSearchPreview(
+    core: BetrayalCore,
+    criteria: BetrayalTileStackSearchCriteria,
+): BetrayalTileStackSearchPreview {
+    const deck = resolveCurrentRoomDiscoveryDeck(core);
+    const requestedRoomName = criteria.roomName?.trim() || undefined;
+    const hasSpecificRoomTarget = Boolean(requestedRoomName || criteria.visualId);
+    const discoveredRooms = core.rooms
+        .filter((room) => room.state === 'discovered')
+        .filter((room) => discoveredRoomMatchesTileStackSearch(room, criteria))
+        .map((room): BetrayalTileStackSearchDiscoveredRoomSummary => ({
+            roomId: room.id,
+            floor: room.floor,
+            name: room.name,
+            visualId: room.visualId,
+        }));
+    const targetAlreadyInHouse = hasSpecificRoomTarget && discoveredRooms.length > 0;
+    const candidateRooms = deck
+        .filter((entry) => roomDiscoveryEntryMatchesTileStackSearch(entry, criteria))
+        .map(makeTileStackSearchRoomSummary);
+    let reason: string | null = null;
+    if (!requestedRoomName && !criteria.visualId && !criteria.floor) {
+        reason = '没有指定要搜索的房间或楼层。';
+    } else if (targetAlreadyInHouse) {
+        reason = '目标房间已经在屋内，不需要搜索房间堆。';
+    } else if (candidateRooms.length === 0) {
+        reason = '房间堆中没有命中的板块。';
+    }
+    const canSearch = reason === null;
+    return {
+        requestedRoomName,
+        requestedVisualId: criteria.visualId,
+        requestedFloor: criteria.floor,
+        searchedCount: deck.length,
+        candidateRooms,
+        firstCandidate: candidateRooms[0] ?? null,
+        discoveredRooms,
+        targetAlreadyInHouse,
+        canSearch,
+        willRemoveFirstCandidate: canSearch,
+        willReshuffleAfterSearch: canSearch,
+        remainingCountAfterSearch: canSearch ? Math.max(0, deck.length - 1) : deck.length,
+        reason,
+        ruleNotes: [
+            '作祟或 setup 要求寻找特定房间时，若该房间已在屋内则不再搜索房间堆。',
+            '若从房间堆命中特定板块，应移除该板块并重洗剩余房间堆。',
+            '当前读模型只表达搜索候选与重洗后果，不等于玩家可见搜索面板或逐作祟 setup 放置流程完成。',
+        ],
+    };
+}
+
+function cloneCoreWithRoomDiscoveryDeck(
+    core: BetrayalCore,
+    roomDiscoveryDeck: BetrayalRoomDiscoveryDeckEntry[],
+    options: { resetLatestRoomDrawResolution?: boolean } = {},
+): BetrayalCore {
+    const currentExplorer = cloneExplorerSummary(core.currentExplorer);
+    return {
+        ...core,
+        currentExplorer,
+        currentExplorerTraits: { ...currentExplorer.traits },
+        currentExplorerInventory: currentExplorer.inventory.map((card) => ({ ...card })),
+        otherExplorers: core.otherExplorers.map(cloneExplorerSummary),
+        rooms: core.rooms.map(cloneBetrayalRoom),
+        roomDiscoveryDeck: roomDiscoveryDeck.map(cloneRoomDiscoveryDeckEntry),
+        roomDiscoveryOrderByFloor: groupRoomDiscoveryDeckByFloor(roomDiscoveryDeck),
+        buriedRoomTiles: (core.buriedRoomTiles ?? []).map(cloneBuriedRoomTileSummary),
+        latestRoomDrawResolution: options.resetLatestRoomDrawResolution
+            ? null
+            : core.latestRoomDrawResolution
+                ? cloneRoomDrawResolution(core.latestRoomDrawResolution)
+                : null,
+    };
+}
+
+export function applyBetrayalTileStackSearch(
+    core: BetrayalCore,
+    criteria: BetrayalTileStackSearchCriteria,
+    random: RandomFn,
+): { core: BetrayalCore; result: BetrayalTileStackSearchResult } {
+    const deck = resolveCurrentRoomDiscoveryDeck(core);
+    const foundIndex = deck.findIndex((entry) => roomDiscoveryEntryMatchesTileStackSearch(entry, criteria));
+    const baseResult = {
+        requestedRoomName: criteria.roomName?.trim() || undefined,
+        requestedVisualId: criteria.visualId,
+        requestedFloor: criteria.floor,
+        searchedCount: deck.length,
+    };
+    if (foundIndex < 0) {
+        return {
+            core: cloneCoreWithRoomDiscoveryDeck(core, deck),
+            result: {
+                ...baseResult,
+                foundRoom: null,
+                remainingCount: deck.length,
+                reshuffled: false,
+            },
+        };
+    }
+
+    const foundEntry = deck[foundIndex]!;
+    const remainingDeck = [
+        ...deck.slice(0, foundIndex),
+        ...deck.slice(foundIndex + 1),
+    ];
+    const shuffledRemainingDeck = random.shuffle(remainingDeck).map(cloneRoomDiscoveryDeckEntry);
+    return {
+        core: cloneCoreWithRoomDiscoveryDeck(core, shuffledRemainingDeck, { resetLatestRoomDrawResolution: true }),
+        result: {
+            ...baseResult,
+            foundRoom: makeTileStackSearchRoomSummary(foundEntry),
+            remainingCount: shuffledRemainingDeck.length,
+            reshuffled: true,
+        },
+    };
 }
 
 function summarizeBuriedRoomTile(
@@ -1056,6 +1265,27 @@ export type BetrayalRoomExploredPlacementPayload = {
     >;
     roomTileAdjustment?: BetrayalRoomTileAdjustmentSelection;
 };
+
+export function createBetrayalRoomExploredRoomPayload(options: {
+    roomTemplate: RoomTemplate;
+    roomSlot: Pick<BetrayalRoomNode, 'backVisualId'>;
+    discoveryReward: BetrayalDeckKind | null;
+    selectedOrientation: { doorways: BetrayalRoomDoorway[]; orientationTurns: 0 | 1 | 2 | 3 };
+}): BetrayalRoomExploredPlacementPayload['room'] {
+    return {
+        name: options.roomTemplate.name,
+        hint: options.roomTemplate.hint,
+        tags: options.roomTemplate.tags,
+        discoveryReward: options.discoveryReward,
+        visualId: options.roomTemplate.visualId,
+        doorways: options.selectedOrientation.doorways,
+        backVisualId: options.roomSlot.backVisualId,
+        orientationTurns: options.selectedOrientation.orientationTurns,
+        discoveryEffect: options.roomTemplate.discoveryEffect,
+        endTurnEffect: options.roomTemplate.endTurnEffect,
+        enterEffect: options.roomTemplate.enterEffect,
+    };
+}
 
 export function applyBetrayalRoomExploredPlacementState(
     core: BetrayalCore,

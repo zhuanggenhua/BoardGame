@@ -78,6 +78,7 @@ export interface RoomConfig {
     minimumActionDelayMs: number;
     seatControllers: Record<string, AiSeatController>;
     setupSelections: GameSetupSelections;
+    setupData?: Record<string, unknown>;
 }
 
 interface CreateRoomModalProps {

@@ -352,9 +352,6 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'setup-natural-haunt-flow',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.setupNaturalHauntFlow',
-            position: 'center',
-            showMask: true,
-            infoStep: true,
             viewAs: '0',
             aiActions: [
                 {
@@ -364,7 +361,6 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                     },
                 },
             ],
-            autoAdvanceAfterAi: false,
         },
         {
             id: 'hand-off-to-teammate-one',
@@ -491,6 +487,32 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderOpened',
             position: 'top',
             infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'haunt-hero-reader-turn-page',
+            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderTurnPage',
+            highlightTarget: 'betrayal-scenario-reader-next-zone',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [],
+            viewAs: '0',
+        },
+        {
+            id: 'haunt-hero-reader-goal',
+            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderGoal',
+            highlightTarget: 'betrayal-scenario-objective-page',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'haunt-hero-reader-close',
+            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderClose',
+            highlightTarget: 'betrayal-scenario-reader-close',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [],
             viewAs: '0',
         },
         {
@@ -808,8 +830,8 @@ const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
     ],
 };
 
-const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
-    id: 'traitor-path',
+const BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN: TutorialManifest = {
+    id: 'mummy-traitor-victory-chain',
     numPlayers: 3,
     allowManualSkip: true,
     steps: [
@@ -1024,11 +1046,21 @@ const BETRAYAL_TRAITOR_VIEW_PATH: TutorialManifest = {
     numPlayers: 3,
     allowManualSkip: true,
     steps: [
-        BETRAYAL_MUMMY_MONSTER_ACTIONS.steps[0],
-        BETRAYAL_TRAITOR_PATH.steps[1],
+        {
+            id: 'setup-traitor-monster-actions',
+            content: 'game-betrayal:tutorial.mummyMonsterActions.steps.setupMonsterMove',
+            viewAs: '2',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createMummyMonsterMoveReadyTutorialCore().core ?? createMummyMonsterMoveReadyTutorialCore(),
+                    },
+                },
+            ],
+        },
+        BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN.steps[1],
         ...BETRAYAL_MUMMY_MONSTER_ACTIONS.steps.slice(1),
-        BETRAYAL_TRAITOR_PATH.steps[0],
-        ...BETRAYAL_TRAITOR_PATH.steps.slice(2),
     ],
 };
 
@@ -1092,6 +1124,12 @@ const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
             titleKey: 'tutorial.traitorPath.title',
             descriptionKey: 'tutorial.traitorPath.description',
             manifest: BETRAYAL_TRAITOR_VIEW_PATH,
+        },
+        'mummy-traitor-victory-chain': {
+            titleKey: 'tutorial.traitorPath.victoryTitle',
+            descriptionKey: 'tutorial.traitorPath.victoryDescription',
+            manifest: BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN,
+            hiddenFromCatalog: true,
         },
         'mummy-monster-actions': {
             titleKey: 'tutorial.mummyMonsterActions.title',

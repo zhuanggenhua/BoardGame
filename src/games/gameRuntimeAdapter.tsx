@@ -29,6 +29,12 @@ export type GameRuntimeLocalSetupContext = {
     tutorialMode?: boolean;
 };
 
+export type GameRuntimeCreateRoomSetupContext = {
+    numPlayers: number;
+    setupSelections?: GameSetupSelections;
+    setupData?: Record<string, unknown>;
+};
+
 export type GameRuntimeLocalSetupResult = {
     numPlayers: number;
     setupSelections?: GameSetupSelections;
@@ -36,7 +42,7 @@ export type GameRuntimeLocalSetupResult = {
 };
 
 export type GameRuntimeLocalSetupGateProps = {
-    mode: 'local';
+    mode: 'local' | 'create-room';
     searchParams: URLSearchParams;
     initialSetup: GameRuntimeLocalSetupResult;
     onConfirm: (setup: GameRuntimeLocalSetupResult) => void;
@@ -50,6 +56,8 @@ export type GameRuntimeAdapter = {
     seatSwap?: GameRuntimeSeatSwapConfig;
     resolveLocalSetup?: (context: GameRuntimeLocalSetupContext) => GameRuntimeLocalSetupResult | null;
     LocalSetupGate?: ComponentType<GameRuntimeLocalSetupGateProps>;
+    resolveCreateRoomSetup?: (context: GameRuntimeCreateRoomSetupContext) => GameRuntimeLocalSetupResult | null;
+    CreateRoomSetupGate?: ComponentType<GameRuntimeLocalSetupGateProps>;
 };
 
 function DefaultGamePageRuntimeProvider({ children }: GameRuntimePageProviderProps) {

@@ -165,3 +165,26 @@ export function rollEventTraitCheckWithDice(
         passiveBonus,
     };
 }
+
+export function consumeNextNonCombatTraitReplacementAfterTraitRoll(
+    core: BetrayalCore,
+    playerId: string,
+    eventRoll?: { kind?: 'trait' | 'dice'; trait?: BetrayalTraitKey },
+): void {
+    if (
+        eventRoll
+        && eventRoll.kind !== 'dice'
+        && eventRoll.trait
+        && core.nextNonCombatTraitReplacement?.playerId === playerId
+    ) {
+        core.nextNonCombatTraitReplacement = null;
+    }
+    if (
+        eventRoll
+        && eventRoll.kind !== 'dice'
+        && eventRoll.trait
+        && core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId
+    ) {
+        core.nextNonCombatTraitRollTotalReplacement = null;
+    }
+}

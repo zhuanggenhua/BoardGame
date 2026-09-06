@@ -1,0 +1,70 @@
+{
+  "title": "山屋惊魂教程后续流程局部截图（英雄书翻页与木乃伊攻击奖励）",
+  "images": [
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/08-当前玩家自动打开英雄开场.jpg",
+      "label": "自然作祟：英雄书开场页",
+      "transition": "队友按正式流程翻出面具并触发作祟后，当前玩家作为英雄自动看到英雄剧本书开场。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/09-书本翻页按钮教学.jpg",
+      "label": "自然作祟：点击书本继续",
+      "transition": "读完开场页后，教程明确教玩家点书本上的继续/下一页。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/10-翻页后阅读英雄胜利条件.jpg",
+      "label": "自然作祟：英雄目标页",
+      "transition": "点击书本继续后，目标页显示真名、驱逐法术和驱逐木乃伊。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/11-读完目标准备关闭剧本书.jpg",
+      "label": "自然作祟：关闭剧本书前",
+      "transition": "英雄目标已经读完，下一步只教关闭剧本书回到牌桌。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/12-关闭剧本书后进入作祟牌桌.jpg",
+      "label": "自然作祟：回到作祟牌桌",
+      "transition": "点击关闭后回到正式牌桌，公开状态进入作祟中。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/13-作祟后回看英雄目标.jpg",
+      "label": "自然作祟：回看英雄目标",
+      "transition": "从牌桌打开剧本入口，确认回看内容与刚才目标页一致。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/14-作祟后等待队友结束回合.jpg",
+      "label": "自然作祟：等待队友公开结束",
+      "transition": "回看关闭后不代操作队友，只等待队友 2 按正式流程结束回合。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/15-轮到英雄寻找木乃伊真名.jpg",
+      "label": "自然作祟：英雄寻找真名",
+      "transition": "轮到当前英雄后，图书馆房间里的正式动作入口出现。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/16-寻找真名知识检定成功.jpg",
+      "label": "自然作祟：知识检定成功",
+      "transition": "点击寻找真名后进入知识检定，结果取得第 1 枚知识标记。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/haunt-natural-trigger-flow/17-确认后回到牌桌可结束回合.jpg",
+      "label": "自然作祟：回到结束回合入口",
+      "transition": "确认检定结果后，投骰层关闭，回到牌桌并可结束本回合。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/07-木乃伊攻击骰盘.jpg",
+      "label": "木乃伊攻击专题起点：攻击投骰结果",
+      "transition": "独立专题起点：只验证木乃伊怪物攻击奖励链，不接成上一张英雄自然流程的直接后果。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/08-木乃伊偷取奖励入口.jpg",
+      "label": "木乃伊攻击专题：偷取奖励选择",
+      "transition": "攻击结果只说明本会造成伤害并满足偷取条件；真正的伤害或偷取选择到这里才出现。"
+    },
+    {
+      "path": "evidence/betrayal-tutorial/topic-mummy-monster/09-木乃伊偷走地图结果.jpg",
+      "label": "木乃伊攻击专题：偷取结果",
+      "transition": "选择偷走地图后，奖励窗口退场，公开反馈显示地图被木乃伊夺走。"
+    }
+  ]
+}

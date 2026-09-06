@@ -43,7 +43,7 @@
 | 房间类型到发现牌 | 主线 | 房间牌、房间符号、发现牌牌面、事件 / 物品 / 预兆三类说明 | `23` 主线截图；发现池分类单测 |
 | 事件骰、书本、兔脚、伤害分配 | 主线 | 投掷事件按钮、骰盘、书本放大入口、书本本体、兔脚本体、骰子本体、伤害分配面板 | `24-31` 主线截图；`tutorial-main` E2E |
 | 预兆确认与作祟检定 | 隐藏专题 | 预兆牌确认按钮、持有区、作祟风险轨 | `topic-omen-confirmation/*`；不得作为主线自然结果 |
-| 作祟自然触发 | 隐藏自然流程 | 当前玩家在图书馆结束回合、队友行动公开结果、指环 / 狗 / 面具预兆牌、作祟检定骰、英雄剧本书、寻找木乃伊真名动作、知识检定骰盘、第 1 枚知识标记、结果确认退场后的结束回合入口 | `haunt-natural-trigger-flow/*`；当前玩家只操作自己的回合，队友行动由教程 AI / 系统按正式命令推进为公开结果，队友 1 翻出第三张面具触发作祟；当前玩家作为英雄读英雄剧本书，并在读本后轮回自己时执行找真名这一个合法英雄目标步骤，最后回到本回合结束入口 |
+| 作祟自然触发 | 隐藏自然流程 | 当前玩家在图书馆结束回合、队友行动公开结果、指环 / 狗 / 面具预兆牌、作祟检定骰、英雄剧本书、寻找木乃伊真名动作、知识检定骰盘、第 1 枚知识标记、结果确认退场后的结束回合入口 | 当前 PASS：[`pass-manifest-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260906-reader-refactor-haunt-natural.json)、[`sequence-labels-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/sequence-labels-20260906-reader-refactor-haunt-natural.json)、[`haunt-natural-trigger-flow-20260906-reader-refactor/`](../../../../evidence/betrayal-tutorial/haunt-natural-trigger-flow-20260906-reader-refactor/)；当前玩家只操作自己的回合，队友行动由教程 AI / 系统按正式命令推进为公开结果，队友 1 翻出第三张面具触发作祟；当前玩家作为英雄读英雄剧本书开场，翻页到英雄目标，关闭后从牌桌回看默认英雄目标页且上一页可回开场；读本后轮回自己时执行找真名这一个合法英雄目标步骤，最后回到本回合结束入口 |
 | 作祟后英雄目标与驱逐 | 代表态专题 | 英雄剧本页、驱逐行动、神志对抗骰盘、终局页 | `representative-hero-haunt/*`；不得作为普通主线自然触发 |
 | 叛徒私密目标与胜利链 | 叛徒视角章节 | 叛徒剧本页、女孩 token、圣符 / 指环、木乃伊、终局页 | `traitor-path/*` |
 | 木乃伊怪物行动 | 叛徒章节承接 + 隐藏专题 | 怪物回合入口、移动骰盘、目标房间、攻击目标、偷取奖励 | `topic-mummy-monster/*` |
@@ -71,7 +71,7 @@
 | 房间放置面板 | 承接翻出房间后的朝向选择、连接走廊读法和最终放置提交 | `21-22` | 旋转按钮负责中间决策；确认按钮只提交已选朝向 |
 | 持有区 | 承接交易物、书本、兔脚和帮助入口 | `10`、`14`、`24-28` | 物品使用和检视分开；书本先看牌面再使用 |
 | 发现牌 / 骰盘 | 展示随机或揭示结果本体 | `23-30` | 随机结果不能只靠日志或教程卡说明 |
-| 剧本书入口 | 作祟触发后阅读并回看当前阵营目标 | `haunt-natural-trigger-flow/*`、`representative-hero-haunt/*` | 自然触发流程优先证明当前玩家作为多数英雄视角打开英雄剧本书；叛徒书只在 `traitor-path/*` 独立章节证明，不能作为默认主线第一读本 |
+| 剧本书入口 | 作祟触发后阅读并回看当前阵营目标 | 当前 PASS：[`pass-manifest-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260906-reader-refactor-haunt-natural.json) 中 `08-13`；`representative-hero-haunt/*` 仅作后续代表态 | 自然触发流程优先证明当前玩家作为多数英雄视角打开英雄剧本书；首次自动打开先到英雄开场，翻页到英雄目标；牌桌入口回看默认英雄目标页，上一页仍可回英雄开场；叛徒书只在 `traitor-path/*` 独立章节证明，不能作为默认主线第一读本 |
 | 确认按钮 | 提交真实选择、共同观看、响应或授权 | `18`、`22`、`28`、`31` | 样式统一不等于新增确认步骤 |
 | 叛徒 / 怪物目标 | 承接私密目标和作祟后行动 | `traitor-path/*`、`topic-mummy-monster/*` | 叛徒视角单独成章；怪物专题不混进普通主线 |
 
@@ -86,19 +86,20 @@ PureRef 标注图目录含 `00-sequence-index.png`，所以标注图前缀会比
 专题截图必须使用独立目录或前缀：
 
 - `topic-omen-confirmation/*`：预兆确认专题。
-- `haunt-natural-trigger-flow/*`：作祟自然触发，从当前玩家交回合、队友正式行动公开结果，到第三张预兆面具触发作祟、当前玩家进入英雄剧本书、回到作祟牌桌、等待队友结束、执行找真名、确认结果退场并回到结束回合入口。
+- `haunt-natural-trigger-flow-20260906-reader-refactor/*`：读本重构后的当前作祟自然触发 PASS 图组，从当前玩家交回合、队友正式行动公开结果，到第三张预兆面具触发作祟、当前玩家首次进入英雄剧本书开场、翻页到英雄目标、关闭回牌桌、从牌桌回看英雄目标页、等待队友结束、执行找真名、确认结果退场并回到结束回合入口。
+- `haunt-natural-trigger-flow/*`：旧混合目录，只作历史参考；其中早于 2026-09-06 的同名 / 旧名截图不得作为读本重构后的当前 PASS。
 - `representative-hero-haunt/*`：作祟后英雄代表态。
 - `traitor-path/*`：玩家可见叛徒章节。
 - `topic-mummy-monster/*`：怪物行动专题。
 - `topic-hero-attack/*`、`topic-jack-spirit/*`：历史 / 跳过专题。
 
-用户指出 `35 -> 36` 时序跳变后，本矩阵明确降级旧全量展示图组：`35-labeled-03-确认后预兆进度条.png -> 36-labeled-01-木乃伊作祟目标改变.png` 中间缺少“真实预兆触发作祟检定并进入作祟后状态”的自然流程截图，因此它不能作为自然端到端承接。当前由 `haunt-natural-trigger-flow/*` 补上这一段：当前玩家在图书馆结束自己的回合 -> 等待队友 1 由教程 AI / 系统按正式命令行动并公开获得指环且未触发 -> 队友 2 按正式命令移动并翻出狗且未触发 -> 回到当前玩家后再次结束回合 -> 队友 1 翻出面具并用 3 颗骰触发作祟 -> 触发队友确认后当前玩家自动打开英雄开场 -> 点击继续阅读英雄胜利条件 -> 回到作祟牌桌并回看英雄目标 -> 等队友 2 公开结束回合 -> 当前玩家在图书馆点击“寻找木乃伊真名” -> 知识检定成功并取得第 1 枚知识标记 -> 当前玩家确认结果后回到结束回合入口。任何需要当前玩家切座位点击队友探索、移动、确认或结束回合，或把默认主线第一读本做成叛徒书的旧截图 / 测试，只能作为错误验收或历史诊断，不再作为自然流程证据。`representative-hero-haunt/*` 只继续作为“已找真名、已学法术、可驱逐”的作祟后英雄收尾代表态，不能和自然触发图连续编号成无断点主线；它也不能替代自然链里的学习驱逐法术来源证明。
+用户指出 `35 -> 36` 时序跳变后，本矩阵明确降级旧全量展示图组：`35-labeled-03-确认后预兆进度条.png -> 36-labeled-01-木乃伊作祟目标改变.png` 中间缺少“真实预兆触发作祟检定并进入作祟后状态”的自然流程截图，因此它不能作为自然端到端承接。当前由 [`haunt-natural-trigger-flow-20260906-reader-refactor/`](../../../../evidence/betrayal-tutorial/haunt-natural-trigger-flow-20260906-reader-refactor/)、[`sequence-labels-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/sequence-labels-20260906-reader-refactor-haunt-natural.json) 和 [`pass-manifest-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260906-reader-refactor-haunt-natural.json) 补上这一段：当前玩家在图书馆结束自己的回合 -> 等待队友 1 由教程 AI / 系统按正式命令行动并公开获得指环且未触发 -> 队友 2 按正式命令移动并翻出狗且未触发 -> 回到当前玩家后再次结束回合 -> 队友 1 翻出面具并用 3 颗骰触发作祟 -> 触发队友确认后当前玩家自动打开英雄开场 -> 点击继续 / 下一页阅读英雄胜利条件 -> 关闭读本回到作祟牌桌 -> 从牌桌剧本入口回看默认打开英雄目标页且上一页可回英雄开场 -> 等队友 2 公开结束回合 -> 当前玩家在图书馆点击“寻找木乃伊真名” -> 知识检定成功并取得第 1 枚知识标记 -> 当前玩家确认结果后回到结束回合入口。任何需要当前玩家切座位点击队友探索、移动、确认或结束回合，或把默认主线第一读本做成叛徒书的旧截图 / 测试，只能作为错误验收或历史诊断，不再作为自然流程证据。`representative-hero-haunt/*` 只继续作为“已找真名、已学法术、可驱逐”的作祟后英雄收尾代表态，不能和自然触发图连续编号成无断点主线；它也不能替代自然链里的学习驱逐法术来源证明。
 
 本轮后续查看只使用局部图组 [`post34-segmented-display-sequence.json`](../../../../evidence/betrayal-tutorial/post34-segmented-display-sequence.json) 和 [`_labeled-post34-segmented-20260902/`](../../../../evidence/betrayal-tutorial/_labeled-post34-segmented-20260902/)；它从原标注 34 开始，排除了 34 之前的主线截图和移动端 / PC 辅助图，并在用户可见标签里把原标注 36 写成“分段起点”。
 
 ## 当前验证口径
 
-本矩阵记录当前应验证合同；每轮改动后，实际通过命令和 PASS manifest 只写本轮重新跑过的结果。当前房间旋转时序自审证据是 [`room-rotation-flow-self-audit-20260902.md`](../../../../evidence/betrayal-tutorial/room-rotation-flow-self-audit-20260902.md)，房间旋转截图本身仍只证明主线 `20 -> 23`。旧全量展示清单 [`pass-manifest-20260902-room-rotation-self-audit.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260902-room-rotation-self-audit.json) 因混入 34 之后专题 / 代表态并产生 `35 -> 36` 承接误导，不再作为“后续流程连续展示”依据；本轮作祟后续自然流程应使用 `haunt-natural-trigger-flow/*` 当前运行截图。旧 `pass-manifest-20260829*`、`pass-manifest-20260830*`、`pass-manifest-20260831*`、`pass-manifest-20260901-natural-flow-book-rabbit-foot.json`、`pass-manifest-20260901-natural-flow-book-rabbit-foot-v2.json`、`pass-manifest-20260902-room-rotation-flow.json` 和 [`pass-manifest-20260902-post34-segmented-display.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260902-post34-segmented-display.json) 仅保留为历史 / 分段诊断证据，不能作为新截图命名和教程 UI 标准重构后的当前 PASS。
+本矩阵记录当前应验证合同；每轮改动后，实际通过命令和 PASS manifest 只写本轮重新跑过的结果。当前房间旋转时序自审证据是 [`room-rotation-flow-self-audit-20260902.md`](../../../../evidence/betrayal-tutorial/room-rotation-flow-self-audit-20260902.md)，房间旋转截图本身仍只证明主线 `20 -> 23`。旧全量展示清单 [`pass-manifest-20260902-room-rotation-self-audit.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260902-room-rotation-self-audit.json) 因混入 34 之后专题 / 代表态并产生 `35 -> 36` 承接误导，不再作为“后续流程连续展示”依据；读本重构后的当前作祟自然流程只使用 [`pass-manifest-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260906-reader-refactor-haunt-natural.json)、[`sequence-labels-20260906-reader-refactor-haunt-natural.json`](../../../../evidence/betrayal-tutorial/sequence-labels-20260906-reader-refactor-haunt-natural.json) 和 [`haunt-natural-trigger-flow-20260906-reader-refactor/`](../../../../evidence/betrayal-tutorial/haunt-natural-trigger-flow-20260906-reader-refactor/)；旧 `haunt-natural-trigger-flow/*` 混合目录和早于 2026-09-06 的同名 / 旧名截图仅保留为历史 / 分段诊断证据，不能作为读本重构后的当前 PASS。旧 `pass-manifest-20260829*`、`pass-manifest-20260830*`、`pass-manifest-20260831*`、`pass-manifest-20260901-natural-flow-book-rabbit-foot.json`、`pass-manifest-20260901-natural-flow-book-rabbit-foot-v2.json`、`pass-manifest-20260902-room-rotation-flow.json` 和 [`pass-manifest-20260902-post34-segmented-display.json`](../../../../evidence/betrayal-tutorial/pass-manifest-20260902-post34-segmented-display.json) 仅保留为历史 / 分段诊断证据，不能作为新截图命名和教程 UI 标准重构后的当前 PASS。
 
 ## 不承诺范围
 

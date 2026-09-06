@@ -1,0 +1,145 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "Mage Wars 基础教程当前不再分章节或隐藏续段，/tutorial 直接进入一条基础自然主线。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 只导出 mage-wars-basic 一个 catalog 入口，未设置 nextTutorialId。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言 tutorial-catalog-stage 与 tutorial-catalog-entry-mage-wars-basic 不存在。"
+      ]
+    },
+    {
+      "requirement": "首个计划决策前只教计划法术会用到的基础字段，不提前预讲攻击条。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 在 channel-result 后进入 spell-card-reading，visual.src=mage-wars/references/spell-card-legend，高亮 mw-spellbook。",
+        "public/locales/zh-CN/game-mage-wars.json 的 spellCardReading 只讲费用、行动、范围、目标、类型、派系和等级。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 在 05-read-spell-card-legend.png 断言教程图例可见、alt/caption 对应、图片 complete/natural 尺寸非零且资源来源包含 spell-card-legend。"
+      ]
+    },
+    {
+      "requirement": "攻击条作为非重复特殊子结构，必须等场上丛林灰狼出现后再教学。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/tutorial.ts 将 attack-bar-reading 放在 wolf-summoned 之后、rouse-select-spell 之前。",
+        "src/games/mage-wars/tutorial.ts 的 attack-bar-reading 高亮 mw-field-object-2819，绑定场上丛林灰狼而不是法术书容器。",
+        "public/locales/zh-CN/game-mage-wars.json 的 attackBarReading 明确以场上丛林灰狼为第一次读攻击条的对象。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 在 17-read-attack-bar-on-wolf.png 断言场上灰狼、攻击条文案和 attack-bar-legend 资源同时可见。"
+      ]
+    },
+    {
+      "requirement": "玩家可见文案只保留规则原文、卡面字段和当前操作，不写设计意图、后续复用策略或坐标判断口径。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md 明确禁止作者话术、设计意图、后续复用策略和坐标判断口径写给玩家。",
+        ".spec/skills/tutorial-workflow/SKILL.md 将这些词纳入教程文案自检。",
+        "src/games/mage-wars/__tests__/tutorial.test.ts 扫描中英文教程文案，拦截作者意图、复用策略和坐标判断类问题词。"
+      ]
+    },
+    {
+      "requirement": "E2E 图组必须只展示 00-27 的连续自然主线，不混入专题、代表态、旧图或拖拽 / 缩放诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "node scripts/infra/run-e2e-command.mjs ci e2e/mage-wars/mage-wars-tutorial.e2e.ts 通过，结果为 3 passed (1.2m)。",
+        "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync 当前有 28 张 00-27 原始截图。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 的 assertTutorialScreenshotEvidenceSet 拦截 wall/guard/heal/restore/burn/transition 代表态截图。"
+      ]
+    },
+    {
+      "requirement": "法术书分类和翻页步骤必须匹配当前真实页面状态。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言生物第一页不含丛林灰狼，点击下一页后才可见 2819。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言咒语第一页不含兽性觉醒，点击下一页后才可见 3403。",
+        "1366x768 和 1920x1080 用例同步断言真实卡面点击计划且计划槽位不被遮挡。"
+      ]
+    },
+    {
+      "requirement": "对手部署、对手攻击法术和对手让过阶段不再停成玩家可见教程页。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/__tests__/tutorial.test.ts 断言 stepIds 不包含 opponent-deploy、opponent-attack-spell。",
+        "src/games/mage-wars/__tests__/tutorial.test.ts 断言 opponent-deployment-results、opponent-pass-deployment、opponent-pass-initiative-quickcast 均为纯自动步骤。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts 断言旧对手步骤不可见，并在对手公开结果后直接进入 opponent-public-view。"
+      ]
+    },
+    {
+      "requirement": "教程通用规范和项目教程 workflow 已吸收本轮防遗漏规则。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md 规定图面字段必须在第一次真实出现、影响判断或即将使用时教学，禁止流程前段一股脑预讲后续字段。",
+        ".spec/skills/tutorial-workflow/SKILL.md 将第一次真实出现 / 使用的画面、首次教学时刻和后续复用依据纳入覆盖矩阵。",
+        "npm run spec:lint 通过，spec-lint: OK。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/00-sequence-index.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/01-labeled-00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/02-labeled-01-read-self-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/03-labeled-02-read-opponent-hud-hidden-plans.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/04-labeled-03-read-round-stage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/05-labeled-04-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/06-labeled-05-read-spell-card-legend.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/07-labeled-06-plan-open-creature-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/08-labeled-07-plan-creature-next-page-wolf-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/09-labeled-08-plan-select-wolf-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/10-labeled-09-plan-wolf-in-slot-one-open-incantation-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/11-labeled-10-plan-incantation-next-page-rouse-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/12-labeled-11-plan-rouse-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/13-labeled-12-plan-rouse-in-slot-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/14-labeled-13-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/15-labeled-14-deploy-select-wolf-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/16-labeled-15-deploy-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/17-labeled-16-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/18-labeled-17-read-attack-bar-on-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/19-labeled-18-rouse-select-spell-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/20-labeled-19-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/21-labeled-20-pass-your-deployment-wolf-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/22-labeled-21-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/23-labeled-22-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/24-labeled-23-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/25-labeled-24-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/26-labeled-25-move-select-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/27-labeled-26-move-target-zone-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/_labeled-for-pureref-20260905-single-natural-flow-00-27/28-labeled-27-finish-wolf-moved-to-a2.png"
+  ],
+  "sourceImages": [
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/00-intro-board-and-win.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/01-read-self-hud-life-mana-channeling.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/02-read-opponent-hud-hidden-plans.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/03-read-round-stage.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/04-channel-result-mana-increased.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/05-read-spell-card-legend.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/06-plan-open-creature-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/07-plan-creature-next-page-wolf-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/08-plan-select-wolf-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/09-plan-wolf-in-slot-one-open-incantation-category.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/10-plan-incantation-next-page-rouse-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/11-plan-rouse-visible.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/12-plan-rouse-in-slot-two-confirm.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/13-prepared-and-hidden.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/14-deploy-select-wolf-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/15-deploy-target-zone-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/16-wolf-summoned-not-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/17-read-attack-bar-on-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/18-rouse-select-spell-prepared-card.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/19-rouse-target-wolf-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/20-pass-your-deployment-wolf-ready.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/21-opponent-public-view-toggle-highlight.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/22-opponent-public-view-same-discard-pile.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/23-back-to-self-view.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/24-skip-initiative-quickcast.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/25-move-select-wolf.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/26-move-target-zone-a2.png",
+    "test-results/evidence-screenshots/mage-wars/tutorial-flow-sync/27-finish-wolf-moved-to-a2.png"
+  ]
+}

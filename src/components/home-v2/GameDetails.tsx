@@ -40,6 +40,11 @@ import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
+import {
+    mergeRoomConfigWithSetupResult,
+    resolveCreateRoomSetupGateState,
+    type PendingCreateRoomSetupGate,
+} from '../lobby/createRoomSetupGate';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
 import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel } from '../lobby/roomActions';
@@ -64,8 +69,9 @@ import {
 } from '../lobby/gameDetailsContent';
 import type { LeaderboardEntry } from '../lobby/leaderboardTypes';
 import { logger } from '../../lib/logger';
-import { ensureGameCriticalImageResolverLoaded, prefetchGameImplementation } from '../../games/registry';
+import { ensureGameCriticalImageResolverLoaded, loadGameImplementation, prefetchGameImplementation } from '../../games/registry';
 import { prefetchOnlineMatchRoute } from '../../lib/prefetchPlayRoute';
+import type { GameRuntimeLocalSetupResult } from '../../games/gameRuntimeAdapter';
 
 type HomeV2Translate = TFunction<['lobby', 'common']>;
 type GameConfigWithDraftMeta = GameConfig & {
@@ -979,6 +985,7 @@ export const Right = ({ game }: RightProps) => {
         requireSeen: false,
     });
     const [showCreateRoomModal, setShowCreateRoomModal] = React.useState(false);
+    const [pendingCreateRoomSetupGate, setPendingCreateRoomSetupGate] = React.useState<PendingCreateRoomSetupGate | null>(null);
     const [pendingPasswordRoom, setPendingPasswordRoom] = React.useState<{ matchID: string; roomName?: string } | null>(null);
     const [pendingDestroyRoom, setPendingDestroyRoom] = React.useState<{ matchID: string; roomName?: string } | null>(null);
     const [roomPasswordDraft, setRoomPasswordDraft] = React.useState('');
@@ -1415,7 +1422,10 @@ export const Right = ({ game }: RightProps) => {
         navigate(`/play/${game.id}/match/${matchID}?playerID=${playerID}${extra ?? ''}`);
     };
 
-    const handleCreateRoom = async (config: RoomConfig) => {
+    const handleCreateRoom = async (
+        config: RoomConfig,
+        options?: { skipCreateRoomSetupGate?: boolean },
+    ) => {
         if (createRoomInFlightRef.current) {
             return;
         }
@@ -1436,6 +1446,19 @@ export const Right = ({ game }: RightProps) => {
             });
         });
         try {
+            if (!options?.skipCreateRoomSetupGate && game.createRoomSetup?.preCreateSetupGate) {
+                const implementation = await loadGameImplementation(game.id, { includeTutorial: false });
+                const setupGateState = resolveCreateRoomSetupGateState({
+                    runtimeAdapter: implementation?.runtimeAdapter,
+                    config,
+                });
+                if (setupGateState) {
+                    setPendingCreateRoomSetupGate(setupGateState);
+                    setShowCreateRoomModal(false);
+                    return;
+                }
+            }
+
             writeLocalMatchPreferences(game, stripAiSeatsFromLocalMatchPreferences({
                 numPlayers: config.numPlayers,
                 minimumActionDelayMs: config.minimumActionDelayMs,
@@ -1452,6 +1475,7 @@ export const Right = ({ game }: RightProps) => {
                 {
                     numPlayers: config.numPlayers,
                     setupData: {
+                        ...(config.setupData ?? {}),
                         ...(config.roomName ? { roomName: config.roomName } : {}),
                         ttlSeconds: config.ttlSeconds,
                         ownerKey,
@@ -1492,6 +1516,16 @@ export const Right = ({ game }: RightProps) => {
             setIsLoading(false);
             createRoomInFlightRef.current = false;
         }
+    };
+
+    const handleConfirmCreateRoomSetupGate = (setup: GameRuntimeLocalSetupResult) => {
+        const pending = pendingCreateRoomSetupGate;
+        if (!pending) return;
+        setPendingCreateRoomSetupGate(null);
+        void handleCreateRoom(
+            mergeRoomConfigWithSetupResult(pending.config, setup),
+            { skipCreateRoomSetupGate: true },
+        );
     };
 
     const handleJoinRoom = async (matchID: string, password?: string) => {
@@ -1818,6 +1852,8 @@ export const Right = ({ game }: RightProps) => {
         </div>
     ) : null;
 
+    const PendingSetupGate = pendingCreateRoomSetupGate?.Gate;
+
     return (
         <div data-testid="home-v2-detail-right-page" className="pointer-events-auto relative flex h-full w-full min-h-0 flex-col text-[#3f2718]">
             <div className={`flex items-end justify-between border-b border-[rgba(105,66,37,0.38)] ${isCompactLandscape ? 'gap-[8px] pb-[4px]' : 'gap-[18px] pb-[0.8%]'}`}>
@@ -2087,6 +2123,20 @@ export const Right = ({ game }: RightProps) => {
                 isLoading={isLoading}
                 visualStyle="home-v2"
             />
+            {PendingSetupGate && pendingCreateRoomSetupGate ? (
+                <div
+                    className="fixed inset-0 bg-black"
+                    data-testid="create-room-setup-gate-overlay"
+                    style={{ zIndex: UI_Z_INDEX.modalFullscreenGate }}
+                >
+                    <PendingSetupGate
+                        mode="create-room"
+                        searchParams={pendingCreateRoomSetupGate.searchParams}
+                        initialSetup={pendingCreateRoomSetupGate.initialSetup}
+                        onConfirm={handleConfirmCreateRoomSetupGate}
+                    />
+                </div>
+            ) : null}
             {pendingPackageInstall ? (
                 <GamePackageInstallConfirmModal
                     gameName={pendingPackageInstall.gameName}

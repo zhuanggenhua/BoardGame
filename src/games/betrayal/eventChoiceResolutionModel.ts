@@ -24,6 +24,7 @@ import {
     applyItemChoiceToEffect,
     effectAllowsItemChoice,
 } from './possessionItemChoiceModel';
+import { canUseIdolToSkipEvent } from './possessionActionReadModel';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
     applyAdjacentRoomChoiceToEffect,
@@ -49,6 +50,7 @@ import {
 import {
     isBetrayalOptionalHauntRollRuntimeSupported,
 } from './scenarioConfig';
+import { canUseBetrayalTraitorPowers } from './traitorPowerRules';
 import {
     resolveNonCombatTraitCheckValue,
     rollEventTraitCheckWithDice,
@@ -144,6 +146,46 @@ function createPendingChoiceForEventEffect(
             ? effect.declineLabel
             : undefined,
         effect: cloneUseEffect(effect),
+    };
+}
+
+function resolveEventSymbolSkipMethod(
+    core: BetrayalCore,
+    playerId: string,
+): NonNullable<BetrayalPendingEventChoiceState['eventSymbolSkip']>['method'] | null {
+    if (canUseBetrayalTraitorPowers(core, playerId)) {
+        return 'traitorPower';
+    }
+    if (canUseIdolToSkipEvent(core)) {
+        return 'idol';
+    }
+    return null;
+}
+
+export function createBetrayalEventSymbolSkipChoice(
+    core: BetrayalCore,
+    playerId: string,
+    roomId: string,
+    roomName: string,
+    timestamp: number,
+): BetrayalPendingEventChoiceState | null {
+    const method = resolveEventSymbolSkipMethod(core, playerId);
+    if (!method) {
+        return null;
+    }
+    return {
+        id: `${playerId}-${roomId}-event-symbol-skip-${timestamp}`,
+        playerId,
+        sourceTitle: `${roomName}：事件符号`,
+        sourceKind: 'event-symbol-skip',
+        eventSymbolSkip: {
+            roomId,
+            roomName,
+            method,
+        },
+        acceptLabel: method === 'idol' ? '用雕像跳过事件' : '跳过事件',
+        declineLabel: '抽取事件牌',
+        effect: { mode: 'none' },
     };
 }
 

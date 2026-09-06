@@ -16,56 +16,108 @@ import {
     BETRAYAL_UNDO_ALLOWLIST,
     formatBetrayalActionEntry,
 } from './actionLog';
+import {
+    cloneDiscoverySummary,
+    clonePendingEventChoice,
+    clonePendingEventRollResolution,
+    cloneTurnEndedPayload,
+} from './cardResolutionStateModel';
+import {
+    applyBetrayalDynamiteAttackResolvedState,
+    applyBetrayalHauntAttackResolvedState,
+    applyBetrayalHelpingHandsAttackRewardResolvedState,
+    applyBetrayalHelpingHandsTrollHandAttackResolvedState,
+    applyBetrayalMummyAttackRewardResolvedState,
+} from './attackStateModel';
+import {
+    applyBetrayalBloodFromStoneExtraStoneCherubsPlacedState,
+    applyBetrayalBloodFromStonePeekabooResolvedState,
+} from './bloodFromStoneHauntStateModel';
+import {
+    applyBetrayalExorcismStudiedState,
+    applyBetrayalJackExorcisedState,
+    applyBetrayalJackLearnedState,
+} from './crimsonJackHauntStateModel';
+import {
+    applyBetrayalDustCureResolvedState,
+    applyBetrayalDustSearchResolvedState,
+    applyBetrayalSicknessExchangeRequestedState,
+    applyBetrayalSicknessExchangeResolvedState,
+} from './dustHauntStateModel';
+import {
+    applyBetrayalMagicCameraSmashedState,
+    applyBetrayalPhantomPhotographerAttackResolvedState,
+    applyBetrayalPhotoTakenState,
+} from './magicCameraHauntStateModel';
+import {
+    applyBetrayalMummyBanishmentLearnedState,
+    applyBetrayalMummyBanishedState,
+    applyBetrayalMummyGirlGivenState,
+    applyBetrayalMummyGirlPickedUpState,
+    applyBetrayalMummyNameStudiedState,
+    applyBetrayalMummyOmenGivenState,
+} from './mummyHauntStateModel';
+import {
+    applyBetrayalUponReflectionCurseBreakAttemptedState,
+    applyBetrayalUponReflectionEventHintGivenState,
+} from './uponReflectionHauntStateModel';
+import {
+    applyBetrayalTurnEndedState,
+    applyBetrayalTurnEndRollAcknowledgedState,
+} from './turnEndStateModel';
+import { resolveBetrayalEndTurnCommandEvents } from './turnEndCommandResolutionModel';
+import { applyBetrayalScenarioCompletedState } from './scenarioCompletionStateModel';
+import { applyBetrayalHauntTriggeredState } from './hauntTriggeredStateModel';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import { createBetrayalAiRuntime } from './ai';
 import { BETRAYAL_COMMANDS } from './commands';
-import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
 import {
-    resolveBetrayalEventChoiceResolvedPayload,
-    validateBetrayalEventChoiceResolution,
-} from './eventChoiceResolutionModel';
+    appendActivity,
+    cloneMonster,
+    clonePendingCardResolution,
+    cloneScenarioRuntimeStatus,
+    replaceExplorers,
+    syncCurrentExplorerProjection,
+} from './coreStateModel';
+import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
+import { validateBetrayalEventChoiceResolution } from './eventChoiceResolutionModel';
+import {
+    resolveBetrayalCardResolutionAcknowledgedPayload,
+    resolveBetrayalEventRolledPayload,
+    resolveBetrayalEventRollFinalizedPayload,
+    resolveBetrayalEventChoiceCommandEvents,
+    resolveBetrayalRecentRollAcknowledgedPayload,
+} from './eventCommandResolutionModel';
+import {
+    applyBetrayalEventChoiceResolvedState,
+    applyBetrayalEventRollFinalizedState,
+    applyBetrayalEventRolledState,
+} from './eventResolutionStateModel';
 import {
     rollBetrayalDicePips,
-    rollBetrayalPip,
 } from './diceRules';
 import {
-    materializeEventEffect,
-    resolveEventBranch,
-    resolveEventRollResolution,
-    rollEventFixedDice,
-} from './eventRollModel';
+    resolveDustSicknessSwap,
+    type BetrayalDustEndTurnResult,
+} from './dustHauntRules';
 import {
     applyBetrayalEventRollReplacementState,
     type BetrayalEventRollReplacementResult,
 } from './eventRollReplacementModel';
 import {
-    activatePendingRolledDamageAllocation,
-    applyEventEffect,
-    applyEventEffectWithDeferredRolledDamage,
     cloneRolledDamageResult,
     cloneSourceEventRoll,
-    cloneSourceEventRollFromRecentRoll,
-    isEventRecentRoll,
-    resolveEventDamageDeathPrevention,
-    revertEventEffect,
-    setEventRolledDamageRecentRollFromSnapshot,
 } from './eventEffectResolutionModel';
 import {
     canPlayerAcknowledgeRecentRoll,
-    eventRollResolutionNeedsAcknowledgement,
-    eventRollResolutionNeedsSharedAcknowledgement,
     isPendingCardResolutionFullyAcknowledged,
-    isPendingEventRollResolutionFullyAcknowledged,
-    isRecentRollFullyAcknowledged,
     resolveAcknowledgeableRecentRoll,
     resolvePendingCardResolutionAcknowledgedPlayerIds,
     resolvePendingCardResolutionRequiredPlayerIds,
     resolvePendingEventRollResolutionAcknowledgedPlayerIds,
     resolvePendingEventRollResolutionRequiredPlayerIds,
     resolvePendingTurnEndRoll,
-    resolveRecentRollAcknowledgedPlayerIds,
     resolveRecentRollRequiredPlayerIds,
-    resolveRoomExploredCardResolutionRequiredPlayerIds,
 } from './acknowledgementReadModel';
 import {
     resolveBloodFromStoneSelectedExtraStoneCherubPlacements,
@@ -80,24 +132,16 @@ import {
     type BetrayalCorpseLootedPayload,
 } from './deathStateReadModel';
 import {
-    applyBetrayalDamageAllocationResolvedState,
-    applyAttackDamage,
-    applyMentalDamage,
-    applyPhysicalDamage,
-    chainPendingDamageAllocations,
     clonePendingDamageAllocation,
-    createPendingDamageAllocation,
     formatDeathPreventionLog,
-    isExplorerDead,
     resolveBetrayalDamageAllocationResolvedPayload,
-    repeatTraitForDamage,
     rollDeathPrevention,
-    setExplorerTraitsToDeathsDoor,
     validateBetrayalDamageAllocationResolution,
     wouldExplorerDieFromAttackDamage,
     wouldExplorerDieFromMentalDamage,
 } from './damageResolutionModel';
-import { resolveBetrayalHauntRisk } from './hauntProgress';
+import { applyBetrayalDamageAllocationAftermathState } from './damageAftermathStateModel';
+import type { BetrayalHauntRollResult } from './hauntProgress';
 import {
     MUMMY_GIRL_STEAL_CARD_ID,
     resolveHelpingHandsPendingAttackReward,
@@ -113,45 +157,35 @@ import {
 } from './hauntAttackRewardReadModel';
 import {
     resolveBetrayalHauntSetupQueue,
-    resolveHauntRevealResolutionForTrigger,
     resolveHauntSetupQueueWithEntryStatus,
     type BetrayalHauntSetupQueueEntry,
     type BetrayalHauntSetupQueueEntryId,
 } from './hauntSetupModel';
 import {
-    cloneDustRuntimeState,
-    cloneHelpingHandsRuntimeState,
-    cloneMagicCameraRuntimeState,
-    cloneMummyRuntimeState,
     cloneUponReflectionRuntimeState,
-    createDustRuntimeState,
-    createUponReflectionRuntimeState,
-    removeMagicCameraFromExplorer,
-    setupBloodFromStoneHaunt,
-    setupHelpingHandsHaunt,
-    setupMagicCameraHaunt,
-    setupMummyHaunt,
-    setupUponReflectionHaunt,
 } from './hauntRuntimeSetupModel';
 import {
-    cloneHauntFirstPlayerResolution,
-    cloneHauntTraitorResolution,
-    resolveHauntFirstPlayerResolutionForTrigger,
-    resolveHauntTraitorResolutionForTrigger,
     type BetrayalHauntFirstPlayerResolution,
     type BetrayalHauntTraitorResolution,
 } from './hauntTraitorResolutionModel';
+import {
+    findMummyWeddingOmenCard,
+} from './mummyHauntRules';
+import {
+    resolveMummyTraitorVictoryResult,
+} from './hauntVictoryModel';
 import {
     canCureTheDust,
     canSearchForCure,
     canSmashMagicCamera,
     canTakeMagicCameraPhoto,
-    hasUsedHauntSpecialActionThisTurn,
+    canUseStalkThePrey,
+    countExorcismCirclesInRegion,
     resolveBloodFromStonePeekabooSelection,
+    resolveStalkThePreyTargets,
     validateHauntSpecialActionBudget,
 } from './hauntSpecialActionReadModel';
 import {
-    findFeverishMonster,
     findHelpingHandsTrollHand,
     findMummyMonster,
     findPhantomPhotographer,
@@ -160,86 +194,80 @@ import {
     hasOmenBook,
     isBetrayalLibraryRoom,
     isBloodFromStoneHaunt,
-    isCrimsonJackHaunt,
     isDustHaunt,
     isHelpingHandsHaunt,
     isMagicCameraHaunt,
     isMummyHaunt,
-    isMummyMonster,
     isMummyNameStudyRoom,
-    isStoneCherubMonster,
     isUponReflectionHaunt,
     isBetrayalPlayerControllingMonster,
     resolveControlledRoomId,
-    resolveHelpingHandsControllerPlayerId,
-    resolveJackSpiritSpawnRoomId,
-    resolveLivingHeroExplorers,
     shouldDeadPlayerControlFeverish,
-    shouldDeadTraitorControlJackSpirit,
 } from './hauntScenarioReadModel';
 import {
-    canPlayerControlStandardMonsterTurn,
-    cloneBloodFromStoneMonsterTurnRuntimeState,
-    cloneMonsterMovementRollResult,
-    cloneMonsterMovementRollGroupResult,
-    cloneMonsterTurnRuntimeState,
-    createBloodFromStoneTurnStartVisibility,
-    createBetrayalMonsterMovementRollGroupResult,
     createInitialMonsterTurnRuntimeState,
-    hasMummyTeleportMoveAvailable,
-    resolveBetrayalMonsterMoveCost,
-    resolveBetrayalMonsterMoveTargetRooms,
-    resolveBetrayalMonsterMovementGroups,
-    resolveBetrayalMonsterMovementRollGroupPreview,
-    resolveBetrayalMonsterTurnStartResolutionPreview,
-    resolveBetrayalNormalMonsterAttackTargets,
-    resolveBloodFromStoneGazeDamageRolls,
-    resolveBloodFromStoneMonsterTurnEndPreview,
+    canPlayerControlStandardMonsterTurn,
     resolveBloodFromStoneMonsterTurnStatus,
-    resolveBloodFromStoneNewLineOfSightDamageRoll,
-    resolveBloodFromStoneTurnStartVisibleStoneCherubIds,
     resolveHelpingHandsMonsterTurnStatus,
     resolveMagicCameraPhantomAttackTargets,
-    resolveMonsterAttackCommand,
-    resolveStoneCherubMoveRemainingAfterMove,
     type BetrayalBloodFromStoneGazeDamageRoll,
     type BetrayalBloodFromStoneMonsterTurnRuntimeState,
     type BetrayalMonsterMovementRollGroupResult,
     type BetrayalMonsterTurnRuntimeState,
 } from './monsterActionReadModel';
 import {
-    canUseBetrayalPossessionThisTurn,
+    isBetrayalBloodFromStoneMonsterTurnCommand,
+    isBetrayalHelpingHandsMonsterTurnCommand,
+    isBetrayalStandardMonsterTurnCommand,
+    validateBetrayalMonsterActionCommand,
+} from './monsterActionCommandValidation';
+import {
+    createBetrayalHelpingHandsMonsterTurnStartedEvent,
+    resolveBetrayalMonsterAttackHeroResolvedPayload,
+    resolveBetrayalMonsterDamageResolvedPayload,
+    resolveBetrayalMonsterMovedPayload,
+    resolveBetrayalMonsterMovementGroupRolledPayload,
+    resolveBetrayalMonsterTurnStartResolvedPayload,
+    resolveBloodFromStoneMonsterTurnEndedPayload,
+} from './monsterActionResolutionModel';
+import {
+    applyBloodFromStoneMonsterTurnEndedState,
+    applyBetrayalHelpingHandsMonsterTurnEndedState,
+    applyBetrayalHelpingHandsMonsterTurnStartedState,
+    applyBetrayalHelpingHandsTrollHandMovedState,
+    applyBetrayalMonsterAttackHeroResolvedState,
+    applyBetrayalMonsterDamageResolvedState,
+    applyBetrayalMonsterMovedState,
+    applyBetrayalMonsterMovementGroupRolledState,
+    applyBetrayalMonsterTurnStartResolvedState,
+} from './monsterActionStateModel';
+import {
     canUseBookForPendingEventRoll,
     canUseHolySymbolForDiscovery,
     canUseIdolToSkipEvent,
-    canUseRabbitFootForRecentRoll,
     canUseSkeletonKeyForMove,
-    resolveRabbitFootCard,
-    resolveRecentRollRerollCommandDieIndices,
-    resolveRecentRollRerollItemCard,
-    resolveRecentRollRerollItemRule,
-    resolveSkeletonKeyCardId,
     resolveTurnStartInventoryCardIds,
-    clearPendingExtraTurnAfterCurrentTurn,
-    isOwnDeathPreventionRerollWindow,
     validateBetrayalPossessionSpecialActionCommand,
     validateBetrayalRecentRollRerollItemCommand,
 } from './possessionActionReadModel';
 import { resolveBetrayalRoomSpecialActionStatus } from './roomActionReadModel';
 import {
-    applyBetrayalMysticElevatorRecentRollRerollState,
     applyBetrayalRoomEffectUsedState,
     createBetrayalRoomEffectUsedPayload,
     type BetrayalRoomEnterEffect,
     type BetrayalRoomEffectUsedPayload,
 } from './roomEnterEffectModel';
+import {
+    type BetrayalRoomEndTurnEffect,
+    type BetrayalRoomEndTurnEffectResult,
+} from './roomEndTurnEffectModel';
+import { applyBetrayalRoomExploredState } from './roomExploredStateModel';
+import { applyBetrayalExplorerMovedState } from './movementStateModel';
+import { resolveBetrayalExplorerMovedPayload } from './movementResolutionModel';
+import { resolveBetrayalRoomExploredPayload } from './roomDiscoveryEventModel';
 import { readBetrayalScenarioId } from './roomSetup';
+import { canUseBetrayalTraitorPowers } from './traitorPowerRules';
 import {
-    canUseBetrayalTraitorPowers,
-    isBetrayalDamagingRoomEndTurnEffect,
-} from './traitorPowerRules';
-import {
-    rollEventTraitCheckWithDice,
     rollNonCombatTraitCheck,
     rollNonCombatTraitCheckWithDice,
     rollTrait,
@@ -277,12 +305,7 @@ import {
 } from './scenarioConfig';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
-    cloneUseEffect,
-    eventEffectNeedsPendingEventChoice,
-    formatEffectLabel,
-    isWarningEventEffect,
     resolveInventoryEffectId,
-    resolveUseEffect,
     type PossessionUseEffectProfile,
     type UseEffectProfile,
 } from './possessionEffects';
@@ -291,33 +314,19 @@ import {
     type BetrayalPossessionUseCommandPayload,
 } from './possessionUseResolution';
 import { applyBetrayalPossessionUsedState } from './possessionUseState';
-import { resolveRecentRollTotal } from './recentRollPresentation';
+import { applyBetrayalRecentRollRerollState } from './recentRollRerollStateModel';
+import { resolveBetrayalRecentRollRerollPayload } from './recentRollRerollResolutionModel';
 import {
     DRAW_POOL,
-    buryPossessionCardToBottom,
     cloneInventoryCard,
     clonePossessionOrderByKind,
-    createDrawnCard,
-    createDrawnCardFromTemplate,
-    removePossessionCardFromDeck,
-    restorePossessionCardToBottom,
 } from './possessionDeckModel';
 import {
     EVENT_POOL,
-    buryEventCardToBottom,
     cloneEventTemplate,
-    countDrawnCards,
-    removeEventCardForUponReflectionHint,
-    resolveEvent,
 } from './eventDeckModel';
+import type { BetrayalMonsterDefinitionId } from './domain/monsterDefinitions';
 import {
-    createBetrayalMonsterFromDefinition,
-    type BetrayalMonsterDefinitionId,
-} from './domain/monsterDefinitions';
-import {
-    resolveBetrayalMonsterDamageOutcome,
-    resolveMonsterDefaultAttackTrait,
-    resolveMonsterStatusKind,
     resolveMonsterTrait,
     type BetrayalMonsterDamageOutcome,
 } from './monsterReadModel';
@@ -325,27 +334,18 @@ import {
     cloneExplorerSummary,
     findExplorerByPlayerId,
     getAllExplorers,
-    getExplorersInTurnOrder,
-    resolveExplorerRoom,
     resolveTurnStartSpeed,
 } from './explorerReadModel';
 import {
-    applyGeneralDamage,
-    applyTraitLoss,
     BETRAYAL_TRAIT_KEYS,
     buildTraitTracksFromTemplate,
     cloneTraitTracks,
-    healExplorerTraitToStart,
     moveExplorerTraitSteps,
     normalizeExplorerTraitTracks,
-    resolveTraitDamageAssignableSteps,
-    setExplorerTraitsFromValues,
 } from './traitTrackModel';
 import {
     cloneBetrayalRoom,
-    formatRoomTargetList,
     refreshExplorableRoomSlots,
-    isStraightLineVisible,
     roomTileAdjustmentSelectionsMatch,
     roomDistanceByLayout,
 } from './roomMapModel';
@@ -355,30 +355,19 @@ import {
 } from './movementReadModel';
 import {
     ROOM_DISCOVERY_DECK_POOL,
-    applyBetrayalRoomExploredPlacementState,
-    applyRoomDiscoveryEffect,
-    applyRoomDrawResolutionToCore,
     canConnectDoorwaysToEntry,
     cloneBuriedRoomTileSummary,
     cloneRoomDiscoveryDeckEntry,
     cloneRoomDrawResolution,
     cloneRoomTemplate,
-    createRoomDiscoveryCardResolutionSteps,
-    createRoomDiscoveryEffectResolutionSteps,
-    formatRoomDiscoveryRewardDetailParts,
-    getRoomDiscoveryRewardNames,
     groupRoomDiscoveryDeckByFloor,
-    hasAvailableDiscoveryDeckCard,
     isRoomOrientationTurns,
     makeRoomDiscoveryDeckFromFloorPools,
     orientDoorwaysForPlacement,
-    resolveCurrentRoomDiscoveryDeck,
     resolveExplorableRoomSlots,
-    resolveNextExplorableRoomSlot,
     resolveRoomDraw,
     resolveRoomPlacementContext,
     resolveRoomPlacementOrientationOptions,
-    resolveRoomDiscoveryCards,
     resolveRoomTemplateDiscoveryDeckKind,
     resolveRoomTileAdjustmentOptionsForPlacement,
 } from './roomDiscoveryModel';
@@ -387,12 +376,11 @@ import {
     isAttackTargetInWeaponRange,
     isDynamiteCardId,
     isDynamiteTargetRoom,
+    isPendingDamageAllocationForAttackRoll,
     resolveAttackWeaponEffect,
-    resolveDefenseExtraDiceWhenAttacked,
     resolveDynamiteInventoryCard,
-    resolveFailedAttackDamage,
-    resolveFailedAttackDamageForWeaponCard,
 } from './attackRules';
+import { resolveBetrayalHauntAttackCommandEvents } from './attackResolutionModel';
 import {
     applyBetrayalTradeAcceptedState,
     canUseDogForTrade,
@@ -413,6 +401,7 @@ import {
     resolveNextLivingPlayerIdInTurnOrder,
     rotateToNextLivingPlayer,
 } from './turnOrderReadModel';
+import { resolveRecommendedAction } from './recommendedActionReadModel';
 
 export { resolveUseEffect } from './possessionEffects';
 export { resolveInventoryEffectId } from './possessionEffects';
@@ -434,7 +423,6 @@ export type { BetrayalRoomDiscoverySymbol };
 export type { BetrayalRoomEdge, BetrayalRoomVisualId, BetrayalRoomFloor };
 export type BetrayalPhase = 'characterSelect' | 'preHaunt' | 'haunt' | 'endgame';
 export type BetrayalRecommendedAction = ConfigRecommendedAction;
-type BetrayalRoomEndTurnEffect = NonNullable<BetrayalRoomDiscoveryTemplate['endTurnEffect']>;
 export type BetrayalRoomMarkerToken = 'obstacle' | 'secretPassage' | 'blessing';
 type BetrayalHauntAttackTarget =
     | 'traitor'
@@ -444,7 +432,6 @@ type BetrayalHauntAttackTarget =
     | 'troll-hand'
     | 'dynamite-room';
 
-const TOOTH_NECKLACE_CARD_ID = 'tooth-necklace';
 export interface BetrayalInventoryCard {
     id: string;
     name: string;
@@ -642,52 +629,6 @@ export interface BetrayalRoomDrawResolution {
     usedUnifiedDeck: boolean;
 }
 
-export interface BetrayalTileStackSearchCriteria {
-    roomName?: string;
-    visualId?: BetrayalRoomVisualId;
-    floor?: BetrayalRoomFloor;
-}
-
-export interface BetrayalTileStackSearchRoomSummary {
-    floor: BetrayalRoomFloor;
-    name: string;
-    visualId: BetrayalRoomVisualId;
-}
-
-export interface BetrayalTileStackSearchDiscoveredRoomSummary {
-    roomId: string;
-    floor: BetrayalRoomFloor;
-    name: string;
-    visualId: BetrayalRoomVisualId;
-}
-
-export interface BetrayalTileStackSearchResult {
-    requestedRoomName?: string;
-    requestedVisualId?: BetrayalRoomVisualId;
-    requestedFloor?: BetrayalRoomFloor;
-    foundRoom: BetrayalTileStackSearchRoomSummary | null;
-    searchedCount: number;
-    remainingCount: number;
-    reshuffled: boolean;
-}
-
-export interface BetrayalTileStackSearchPreview {
-    requestedRoomName?: string;
-    requestedVisualId?: BetrayalRoomVisualId;
-    requestedFloor?: BetrayalRoomFloor;
-    searchedCount: number;
-    candidateRooms: BetrayalTileStackSearchRoomSummary[];
-    firstCandidate: BetrayalTileStackSearchRoomSummary | null;
-    discoveredRooms: BetrayalTileStackSearchDiscoveredRoomSummary[];
-    targetAlreadyInHouse: boolean;
-    canSearch: boolean;
-    willRemoveFirstCandidate: boolean;
-    willReshuffleAfterSearch: boolean;
-    remainingCountAfterSearch: number;
-    reason: string | null;
-    ruleNotes: string[];
-}
-
 export interface BetrayalRoomTileAdjustmentSelection {
     roomId: string;
     x: number;
@@ -734,19 +675,6 @@ export interface BetrayalActivityEntry {
     id: string;
     text: string;
     tone: BetrayalDiscoverySummary['tone'];
-}
-
-interface BetrayalRoomEndTurnEffectResult {
-    kind: BetrayalRoomEndTurnEffect;
-    playerId: string;
-    roomId: string;
-    roomName: string;
-    destinationRoomId?: string;
-    speedRoll?: number;
-    speedRollDice?: number[];
-    speedRollPassiveBonus?: number;
-    physicalDamage?: number;
-    ignoredByTraitorPower?: boolean;
 }
 
 interface BetrayalRolledDamageResult {
@@ -916,7 +844,7 @@ interface BetrayalHelpingHandsMonsterTurnStartedPayload {
     logText: string;
 }
 
-interface BetrayalTurnEndedPayload {
+export interface BetrayalTurnEndedPayload {
     previousPlayerId: string;
     nextPlayerId: string;
     logText: string;
@@ -1112,15 +1040,6 @@ export interface BetrayalDustSicknessSwapResult {
     toPlayerId: string;
     fromTokenId: string;
     toTokenId: string;
-}
-
-interface BetrayalDustEndTurnResult {
-    swaps: BetrayalDustSicknessSwapResult[];
-    damagePlayerId?: string;
-    damageAmount?: number;
-    damageTraits?: BetrayalTraitKey[];
-    defeatedPlayerId?: string;
-    feverishPlayerId?: string;
 }
 
 export interface BetrayalUponReflectionSecretCombination {
@@ -1415,7 +1334,7 @@ const EVENTS = {
     SCENARIO_COMPLETED: 'SCENARIO_COMPLETED',
 } as const;
 
-type BetrayalEvent =
+export type BetrayalEvent =
     | GameEvent<typeof EVENTS.EXPLORER_SELECTED, { playerId: string; explorerId: string }>
     | GameEvent<typeof EVENTS.EXPLORER_CONFIRMED, { playerId: string }>
     | GameEvent<typeof EVENTS.SCENARIO_CARD_PROPOSED, { playerId: string; candidateId: BetrayalScenarioCardId; title: string; logText: string }>
@@ -2095,415 +2014,7 @@ type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 
 type EventTemplate = BetrayalEventSeed;
 
-interface BetrayalHauntRollResult {
-    dice: number[];
-    total: number;
-    threshold: number;
-    triggered: boolean;
-    automatic: boolean;
-}
-
 const DRAW_ORDER: BetrayalDeckKind[] = [...BETRAYAL_DISCOVERY_POOLS.drawOrder];
-
-const MUMMY_WEDDING_OMEN_CARD_IDS = new Set(['holy-symbol', 'ring']);
-
-function makeTileStackSearchRoomSummary(
-    entry: BetrayalRoomDiscoveryDeckEntry,
-): BetrayalTileStackSearchRoomSummary {
-    return {
-        floor: entry.floor,
-        name: entry.room.name,
-        visualId: entry.room.visualId,
-    };
-}
-
-function roomDiscoveryEntryMatchesTileStackSearch(
-    entry: BetrayalRoomDiscoveryDeckEntry,
-    criteria: BetrayalTileStackSearchCriteria,
-): boolean {
-    const requestedRoomName = criteria.roomName?.trim();
-    if (requestedRoomName && entry.room.name !== requestedRoomName) {
-        return false;
-    }
-    if (criteria.visualId && entry.room.visualId !== criteria.visualId) {
-        return false;
-    }
-    if (criteria.floor && entry.floor !== criteria.floor) {
-        return false;
-    }
-    return Boolean(requestedRoomName || criteria.visualId || criteria.floor);
-}
-
-function discoveredRoomMatchesTileStackSearch(
-    room: BetrayalRoomNode,
-    criteria: BetrayalTileStackSearchCriteria,
-): boolean {
-    const requestedRoomName = criteria.roomName?.trim();
-    if (requestedRoomName && room.name !== requestedRoomName) {
-        return false;
-    }
-    if (criteria.visualId && room.visualId !== criteria.visualId) {
-        return false;
-    }
-    if (criteria.floor && room.floor !== criteria.floor) {
-        return false;
-    }
-    return Boolean(requestedRoomName || criteria.visualId || criteria.floor);
-}
-
-export function resolveBetrayalTileStackSearchPreview(
-    core: BetrayalCore,
-    criteria: BetrayalTileStackSearchCriteria,
-): BetrayalTileStackSearchPreview {
-    const deck = resolveCurrentRoomDiscoveryDeck(core);
-    const requestedRoomName = criteria.roomName?.trim() || undefined;
-    const hasSpecificRoomTarget = Boolean(requestedRoomName || criteria.visualId);
-    const discoveredRooms = core.rooms
-        .filter((room) => room.state === 'discovered')
-        .filter((room) => discoveredRoomMatchesTileStackSearch(room, criteria))
-        .map((room): BetrayalTileStackSearchDiscoveredRoomSummary => ({
-            roomId: room.id,
-            floor: room.floor,
-            name: room.name,
-            visualId: room.visualId,
-        }));
-    const targetAlreadyInHouse = hasSpecificRoomTarget && discoveredRooms.length > 0;
-    const candidateRooms = deck
-        .filter((entry) => roomDiscoveryEntryMatchesTileStackSearch(entry, criteria))
-        .map(makeTileStackSearchRoomSummary);
-    let reason: string | null = null;
-    if (!requestedRoomName && !criteria.visualId && !criteria.floor) {
-        reason = '没有指定要搜索的房间或楼层。';
-    } else if (targetAlreadyInHouse) {
-        reason = '目标房间已经在屋内，不需要搜索房间堆。';
-    } else if (candidateRooms.length === 0) {
-        reason = '房间堆中没有命中的板块。';
-    }
-    const canSearch = reason === null;
-    return {
-        requestedRoomName,
-        requestedVisualId: criteria.visualId,
-        requestedFloor: criteria.floor,
-        searchedCount: deck.length,
-        candidateRooms,
-        firstCandidate: candidateRooms[0] ?? null,
-        discoveredRooms,
-        targetAlreadyInHouse,
-        canSearch,
-        willRemoveFirstCandidate: canSearch,
-        willReshuffleAfterSearch: canSearch,
-        remainingCountAfterSearch: canSearch ? Math.max(0, deck.length - 1) : deck.length,
-        reason,
-        ruleNotes: [
-            '作祟或 setup 要求寻找特定房间时，若该房间已在屋内则不再搜索房间堆。',
-            '若从房间堆命中特定板块，应移除该板块并重洗剩余房间堆。',
-            '当前读模型只表达搜索候选与重洗后果，不等于玩家可见搜索面板或逐作祟 setup 放置流程完成。',
-        ],
-    };
-}
-
-export function applyBetrayalTileStackSearch(
-    core: BetrayalCore,
-    criteria: BetrayalTileStackSearchCriteria,
-    random: RandomFn,
-): { core: BetrayalCore; result: BetrayalTileStackSearchResult } {
-    const deck = resolveCurrentRoomDiscoveryDeck(core);
-    const foundIndex = deck.findIndex((entry) => roomDiscoveryEntryMatchesTileStackSearch(entry, criteria));
-    const baseResult = {
-        requestedRoomName: criteria.roomName?.trim() || undefined,
-        requestedVisualId: criteria.visualId,
-        requestedFloor: criteria.floor,
-        searchedCount: deck.length,
-    };
-    if (foundIndex < 0) {
-        return {
-            core: cloneCore(core),
-            result: {
-                ...baseResult,
-                foundRoom: null,
-                remainingCount: deck.length,
-                reshuffled: false,
-            },
-        };
-    }
-
-    const foundEntry = deck[foundIndex]!;
-    const remainingDeck = [
-        ...deck.slice(0, foundIndex),
-        ...deck.slice(foundIndex + 1),
-    ];
-    const shuffledRemainingDeck = random.shuffle(remainingDeck).map(cloneRoomDiscoveryDeckEntry);
-    const nextCore = cloneCore(core);
-    nextCore.roomDiscoveryDeck = shuffledRemainingDeck;
-    nextCore.roomDiscoveryOrderByFloor = groupRoomDiscoveryDeckByFloor(shuffledRemainingDeck);
-    nextCore.latestRoomDrawResolution = null;
-    return {
-        core: syncCurrentExplorerProjection(nextCore),
-        result: {
-            ...baseResult,
-            foundRoom: makeTileStackSearchRoomSummary(foundEntry),
-            remainingCount: shuffledRemainingDeck.length,
-            reshuffled: true,
-        },
-    };
-}
-
-function resolveRoomEndTurnEffect(room: BetrayalRoomNode | null | undefined): BetrayalRoomEndTurnEffect | undefined {
-    return room?.state === 'discovered' ? room.endTurnEffect : undefined;
-}
-
-function cloneDiscoverySummary(discovery: BetrayalDiscoverySummary): BetrayalDiscoverySummary {
-    return {
-        ...discovery,
-        resolutionSteps: discovery.resolutionSteps?.map((step) => ({ ...step })),
-    };
-}
-
-function buildDiscoveryResolutionStepKey(step: BetrayalDiscoveryResolutionStep): string {
-    return step.id;
-}
-
-function mergePreviousDiscoveryResolutionSteps(
-    previousDiscovery: BetrayalDiscoverySummary | null,
-    discovery: BetrayalDiscoverySummary,
-): void {
-    if (
-        previousDiscovery?.kind !== discovery.kind
-        || previousDiscovery.title !== discovery.title
-        || !previousDiscovery.resolutionSteps?.length
-    ) {
-        return;
-    }
-    const mergedSteps = [
-        ...previousDiscovery.resolutionSteps,
-        ...(discovery.resolutionSteps ?? []),
-    ];
-    const mergedStepByKey = new Map<string, BetrayalDiscoveryResolutionStep>();
-    for (const step of mergedSteps) {
-        mergedStepByKey.set(buildDiscoveryResolutionStepKey(step), step);
-    }
-    discovery.resolutionSteps = Array.from(mergedStepByKey.values(), (step) => ({ ...step }));
-}
-
-function clonePendingCardResolution(
-    resolution: BetrayalPendingCardResolutionState,
-): BetrayalPendingCardResolutionState {
-    return {
-        ...resolution,
-        requiredPlayerIds: resolution.requiredPlayerIds
-            ? [...resolution.requiredPlayerIds]
-            : undefined,
-        acknowledgedPlayerIds: resolution.acknowledgedPlayerIds
-            ? [...resolution.acknowledgedPlayerIds]
-            : undefined,
-        processCards: resolution.processCards
-            ? resolution.processCards.map((card) => ({ ...card }))
-            : undefined,
-    };
-}
-
-function acknowledgeEventEffectCardResolution(
-    core: BetrayalCore,
-    sourceTitle: string,
-    playerId: string,
-): void {
-    core.pendingCardResolutionQueue = (core.pendingCardResolutionQueue ?? [])
-        .flatMap((resolution) => {
-            if (
-                resolution.stepKind !== 'event-effect'
-                || resolution.discoveryTitle !== sourceTitle
-            ) {
-                return [resolution];
-            }
-            const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
-            const acknowledgedPlayerIds = Array.from(new Set([
-                ...resolvePendingCardResolutionAcknowledgedPlayerIds(resolution),
-                playerId,
-            ]));
-            return isPendingCardResolutionFullyAcknowledged(
-                core,
-                { ...resolution, requiredPlayerIds, acknowledgedPlayerIds },
-                acknowledgedPlayerIds,
-            )
-                ? []
-                : [{ ...resolution, requiredPlayerIds, acknowledgedPlayerIds }];
-        });
-}
-
-function isPendingCardResolutionStepKind(
-    kind: BetrayalDiscoveryResolutionStepKind,
-): kind is BetrayalPendingCardResolutionStepKind {
-    return kind === 'room-discovery-card'
-        || kind === 'room-effect'
-        || kind === 'buried-room-discovery-card'
-        || kind === 'drawn-card'
-        || kind === 'haunt-roll'
-        || kind === 'event-effect';
-}
-
-function createPendingCardResolutionQueue(options: {
-    playerId: string;
-    requiredPlayerIds: string[];
-    roomId: string;
-    timestamp: number;
-    deckKind: BetrayalDeckKind | null;
-    discovery: BetrayalDiscoverySummary;
-    drawnCard?: BetrayalInventoryCard;
-    roomDiscoveryCards?: BetrayalInventoryCard[];
-    buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
-}): BetrayalPendingCardResolutionState[] {
-    const explicitSteps = options.discovery.resolutionSteps
-        ?.filter((step) => isPendingCardResolutionStepKind(step.kind));
-    if (!options.drawnCard && !(explicitSteps?.length)) {
-        return [];
-    }
-    const cards = [
-        ...(options.roomDiscoveryCards ?? []),
-        ...(options.buriedRoomDiscoveryCards ?? []),
-        ...(options.drawnCard ? [options.drawnCard] : []),
-    ];
-    const cardById = new Map(cards.map((card) => [card.id, card]));
-    const steps = explicitSteps?.length
-        ? explicitSteps
-        : options.drawnCard
-            ? [{
-            id: `drawn-card-${options.drawnCard.id}`,
-            kind: 'drawn-card' as const,
-            text: `已加入持有区：${options.drawnCard.name}`,
-            deckKind: options.deckKind,
-            cardId: options.drawnCard.id,
-            }]
-            : [];
-    const visibleAcknowledgementSteps = collapseRoomDiscoverySearchResolutionSteps(
-        collapseSameScreenOmenResolutionSteps(steps),
-        cardById,
-    );
-
-    return visibleAcknowledgementSteps.map((step, index) => {
-        const processCards = 'processCards' in step ? step.processCards : undefined;
-        const card = step.cardId ? cardById.get(step.cardId) : undefined;
-        const deckKind = step.deckKind === 'event' || step.deckKind === 'item' || step.deckKind === 'omen'
-            ? step.deckKind
-            : step.kind === 'room-effect'
-                ? undefined
-                : options.deckKind;
-        return {
-            id: `${options.playerId}-${options.roomId}-${options.timestamp}-${step.id}`,
-            playerId: options.playerId,
-            requiredPlayerIds: Array.from(new Set(options.requiredPlayerIds)),
-            acknowledgedPlayerIds: [],
-            deckKind,
-            cardId: step.cardId,
-            cardName: card?.name ?? (step.kind === 'room-effect' ? step.text : deckKind === 'event' ? options.discovery.title : step.text),
-            discoveryTitle: options.discovery.title,
-            stepKind: step.kind,
-            text: step.text,
-            index: index + 1,
-            total: visibleAcknowledgementSteps.length,
-            processCards: processCards?.map((processCard) => ({ ...processCard })),
-        };
-    });
-}
-
-function isRoomDiscoverySearchResolutionStep(
-    step: BetrayalDiscoveryResolutionStep,
-): boolean {
-    return step.kind === 'room-discovery-card' || step.kind === 'buried-room-discovery-card';
-}
-
-function collapseRoomDiscoverySearchResolutionSteps(
-    steps: BetrayalDiscoveryResolutionStep[],
-    cardById: Map<string, BetrayalInventoryCard>,
-): Array<BetrayalDiscoveryResolutionStep & { processCards?: BetrayalPendingCardResolutionProcessCard[] }> {
-    const collapsed: Array<BetrayalDiscoveryResolutionStep & { processCards?: BetrayalPendingCardResolutionProcessCard[] }> = [];
-    for (let index = 0; index < steps.length; index += 1) {
-        const step = steps[index]!;
-        if (!isRoomDiscoverySearchResolutionStep(step)) {
-            collapsed.push(step);
-            continue;
-        }
-        const searchSteps: BetrayalDiscoveryResolutionStep[] = [];
-        while (index < steps.length && isRoomDiscoverySearchResolutionStep(steps[index]!)) {
-            searchSteps.push(steps[index]!);
-            index += 1;
-        }
-        index -= 1;
-
-        const gainedStep = [...searchSteps].reverse().find((candidate) => candidate.kind === 'room-discovery-card');
-        const finalStep = gainedStep ?? searchSteps[searchSteps.length - 1]!;
-        const processCards = searchSteps.map((searchStep) => {
-            const card = searchStep.cardId ? cardById.get(searchStep.cardId) : undefined;
-            return {
-                cardId: searchStep.cardId,
-                cardName: card?.name ?? searchStep.text,
-                deckKind: searchStep.deckKind ?? 'item',
-                outcome: searchStep.kind === 'buried-room-discovery-card' ? 'buried' as const : 'gained' as const,
-                text: searchStep.text,
-            };
-        });
-        collapsed.push({
-            ...finalStep,
-            id: `room-discovery-search-${searchSteps.map((searchStep) => searchStep.id).join('-')}`,
-            kind: 'room-discovery-card',
-            text: searchSteps.map((searchStep) => searchStep.text).join('；'),
-            deckKind: finalStep.deckKind ?? 'item',
-            cardId: finalStep.cardId,
-            processCards,
-        });
-    }
-    return collapsed;
-}
-
-function collapseSameScreenOmenResolutionSteps(
-    steps: BetrayalDiscoveryResolutionStep[],
-): BetrayalDiscoveryResolutionStep[] {
-    const collapsed: BetrayalDiscoveryResolutionStep[] = [];
-    for (let index = 0; index < steps.length; index += 1) {
-        const step = steps[index]!;
-        const nextStep = steps[index + 1];
-        if (
-            step.kind === 'drawn-card'
-            && nextStep?.kind === 'haunt-roll'
-            && step.deckKind === 'omen'
-            && nextStep.deckKind === 'omen'
-            && step.cardId
-            && step.cardId === nextStep.cardId
-        ) {
-            collapsed.push({
-                ...step,
-                id: `${step.id}-with-${nextStep.id}`,
-                text: `${step.text}；${nextStep.text}`,
-            });
-            index += 1;
-            continue;
-        }
-        collapsed.push(step);
-    }
-    return collapsed;
-}
-
-function withEventChoiceResolutionStep(discovery: BetrayalDiscoverySummary): BetrayalDiscoverySummary {
-    if (discovery.kind !== 'event' || discovery.resolutionSteps?.length) {
-        return discovery;
-    }
-    const discoveryText = [discovery.summary, discovery.detail].join(' ');
-    if (
-        discoveryText.includes('没有抽取或结算事件卡')
-        || discoveryText.includes('不抽取或结算事件卡')
-    ) {
-        return discovery;
-    }
-    const detail = discovery.detail.trim();
-    return {
-        ...discovery,
-        resolutionSteps: [{
-            id: `event-effect-${discovery.title}`,
-            kind: 'event-effect',
-            text: `事件效果：${detail || discovery.summary}`,
-            deckKind: 'event',
-        }],
-    };
-}
 
 function createShuffledDiscoveryState(random: RandomFn) {
     const roomDiscoveryDeck = random.shuffle(ROOM_DISCOVERY_DECK_POOL.map(cloneRoomDiscoveryDeckEntry));
@@ -2536,94 +2047,8 @@ const nowEvent = <TType extends string, TPayload>(
     timestamp,
 });
 
-function cloneMonster(monster: BetrayalMonsterSummary): BetrayalMonsterSummary {
-    return { ...monster };
-}
-
 function cloneMonsterSeed(monster: BetrayalMonsterSeed): BetrayalMonsterSummary {
     return { ...monster };
-}
-
-function cloneRoomEndTurnEffectResult(
-    result: BetrayalRoomEndTurnEffectResult,
-): BetrayalRoomEndTurnEffectResult {
-    return {
-        ...result,
-        speedRollDice: result.speedRollDice ? [...result.speedRollDice] : undefined,
-    };
-}
-
-function cloneDustEndTurnResult(result: BetrayalDustEndTurnResult): BetrayalDustEndTurnResult {
-    return {
-        ...result,
-        swaps: result.swaps.map((swap) => ({ ...swap })),
-        damageTraits: result.damageTraits ? [...result.damageTraits] : undefined,
-    };
-}
-
-function cloneTurnEndedPayload(payload: BetrayalTurnEndedPayload): BetrayalTurnEndedPayload {
-    return {
-        ...payload,
-        roomEndTurnEffect: payload.roomEndTurnEffect
-            ? cloneRoomEndTurnEffectResult(payload.roomEndTurnEffect)
-            : payload.roomEndTurnEffect,
-        monsterMovementRoll: payload.monsterMovementRoll
-            ? cloneMonsterMovementRollResult(payload.monsterMovementRoll)
-            : payload.monsterMovementRoll,
-        dustEndTurn: payload.dustEndTurn
-            ? cloneDustEndTurnResult(payload.dustEndTurn)
-            : undefined,
-        magicCameraEndTurnCapturedEssencePlayerIds: payload.magicCameraEndTurnCapturedEssencePlayerIds
-            ? [...payload.magicCameraEndTurnCapturedEssencePlayerIds]
-            : undefined,
-        deferredHelpingHandsMonsterTurnStart: payload.deferredHelpingHandsMonsterTurnStart
-            ? {
-                ...payload.deferredHelpingHandsMonsterTurnStart,
-                moveDice: [...payload.deferredHelpingHandsMonsterTurnStart.moveDice],
-            }
-            : undefined,
-        extraTurnAfterCurrentTurn: payload.extraTurnAfterCurrentTurn
-            ? { ...payload.extraTurnAfterCurrentTurn }
-            : undefined,
-    };
-}
-
-function clonePendingEventChoice(
-    pending: BetrayalPendingEventChoiceState,
-): BetrayalPendingEventChoiceState {
-    return {
-        ...pending,
-        effect: cloneUseEffect(pending.effect),
-        deferredTurnEnd: pending.deferredTurnEnd
-            ? cloneTurnEndedPayload(pending.deferredTurnEnd)
-            : undefined,
-    };
-}
-
-function clonePendingEventRollResolution(
-    pending: BetrayalPendingEventRollResolutionState,
-): BetrayalPendingEventRollResolutionState {
-    return {
-        ...pending,
-        requiredPlayerIds: pending.requiredPlayerIds
-            ? [...pending.requiredPlayerIds]
-            : undefined,
-        acknowledgedPlayerIds: pending.acknowledgedPlayerIds
-            ? [...pending.acknowledgedPlayerIds]
-            : undefined,
-        effect: cloneUseEffect(pending.effect),
-        nextPendingEventChoice: pending.nextPendingEventChoice
-            ? clonePendingEventChoice(pending.nextPendingEventChoice)
-            : undefined,
-        deathPrevention: pending.deathPrevention
-            ? {
-                ...pending.deathPrevention,
-                dice: [...pending.deathPrevention.dice],
-                damageTraits: [...pending.deathPrevention.damageTraits],
-                traitsBeforeDamage: { ...pending.deathPrevention.traitsBeforeDamage },
-            }
-            : undefined,
-    };
 }
 
 function cloneInventorySeed(card: BetrayalInventorySeed): BetrayalInventoryCard {
@@ -2807,18 +2232,6 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
     };
 }
 
-function syncCurrentExplorerProjection(core: BetrayalCore): BetrayalCore {
-    normalizeExplorerTraitTracks(core.currentExplorer);
-    core.otherExplorers.forEach(normalizeExplorerTraitTracks);
-    return {
-        ...core,
-        currentPlayer: core.currentExplorer.playerId,
-        activeRoomId: resolveControlledRoomId(core, core.currentExplorer),
-        currentExplorerTraits: { ...core.currentExplorer.traits },
-        currentExplorerInventory: core.currentExplorer.inventory.map(cloneInventoryCard),
-    };
-}
-
 function createInitialScenarioRuntimeStatus(): BetrayalScenarioRuntimeStatus {
     return {
         hauntTriggered: false,
@@ -2853,13 +2266,6 @@ function createInitialScenarioRuntimeStatus(): BetrayalScenarioRuntimeStatus {
         bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId: {},
         bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn: [],
     };
-}
-
-function appendActivity(core: BetrayalCore, text: string, tone: BetrayalActivityEntry['tone']): BetrayalActivityEntry[] {
-    return [
-        { id: `${core.exploreIndex}-${core.activityLog.length}-${text}`, text, tone },
-        ...core.activityLog,
-    ].slice(0, 6);
 }
 
 function normalizePlayerIds(playerIds: string[]): string[] {
@@ -3045,20 +2451,6 @@ function templateByExplorerId(explorerId: string): BetrayalExplorerTemplate | un
     return EXPLORER_CATALOG.find((template) => template.explorerId === explorerId);
 }
 
-function replaceExplorers(
-    core: BetrayalCore,
-    explorers: BetrayalExplorerSummary[],
-    nextCurrentPlayerId = core.currentPlayer,
-): BetrayalCore {
-    const nextCurrent = explorers.find((explorer) => explorer.playerId === nextCurrentPlayerId) ?? explorers[0] ?? core.currentExplorer;
-    const nextOthers = explorers.filter((explorer) => explorer.playerId !== nextCurrent.playerId);
-    return syncCurrentExplorerProjection({
-        ...core,
-        currentExplorer: cloneExplorerSummary(nextCurrent),
-        otherExplorers: nextOthers.map(cloneExplorerSummary),
-    });
-}
-
 function buildScenarioExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
     return core.playerIds.map((playerId, index) => {
         const selectedExplorerId = core.selectedExplorerByPlayerId[playerId];
@@ -3072,535 +2464,14 @@ function buildScenarioExplorers(core: BetrayalCore): BetrayalExplorerSummary[] {
     });
 }
 
-function isOmenStillInDeck(core: BetrayalCore, effectId: string): boolean {
-    return core.possessionOrderByKind.omen.some((card) => resolveInventoryEffectId(card.id) === effectId);
-}
-
-function isOmenRevealed(core: BetrayalCore, effectId: string): boolean {
-    if (!isOmenStillInDeck(core, effectId)) {
-        return true;
-    }
-    const explorerHasOmen = getAllExplorers(core).some((explorer) => (
-        explorer.inventory.some((card) => card.kind === 'omen' && resolveInventoryEffectId(card.id) === effectId)
-    ));
-    if (explorerHasOmen) {
-        return true;
-    }
-    const mummy = core.scenarioRuntime.mummy;
-    return Boolean(
-        mummy?.mummyCarriedOmenIds.some((cardId) => resolveInventoryEffectId(cardId) === effectId)
-        || mummy?.mummyCarriedCards.some((card) => card.kind === 'omen' && resolveInventoryEffectId(card.id) === effectId),
-    );
-}
-
-function shouldMummyForceHeroBookDraw(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    return isMummyHaunt(core)
-        && actor.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !isOmenRevealed(core, 'omen-book');
-}
-
-function shouldMummyForceTraitorWeddingOmenDraw(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    return isMummyHaunt(core)
-        && actor.playerId === core.scenarioRuntime.traitorPlayerId
-        && [...MUMMY_WEDDING_OMEN_CARD_IDS].every((cardId) => !isOmenRevealed(core, cardId));
-}
-
-function resolveMummyForcedOmenDraw(
-    core: BetrayalCore,
-    actor: BetrayalExplorerSummary,
-    fallbackDrawnCard: BetrayalInventoryCard,
-    random: RandomFn,
-): {
-    drawnCard: BetrayalInventoryCard;
-    forcedOmenSearch?: {
-        role: 'hero-book' | 'traitor-wedding-omen';
-        cardId: string;
-        cardName: string;
-        shuffledOmenDeck: BetrayalInventoryCard[];
-    };
-} {
-    const targetEffectIds = shouldMummyForceHeroBookDraw(core, actor)
-        ? ['omen-book']
-        : shouldMummyForceTraitorWeddingOmenDraw(core, actor)
-            ? [...MUMMY_WEDDING_OMEN_CARD_IDS]
-            : [];
-    if (targetEffectIds.length === 0) {
-        return { drawnCard: fallbackDrawnCard };
-    }
-    const targetIndex = core.possessionOrderByKind.omen.findIndex((card) => (
-        targetEffectIds.includes(resolveInventoryEffectId(card.id))
-    ));
-    const template = targetIndex >= 0 ? core.possessionOrderByKind.omen[targetIndex] : null;
-    if (!template) {
-        return { drawnCard: fallbackDrawnCard };
-    }
-    const drawnCard = createDrawnCardFromTemplate(core, template);
-    const remainingDeck = core.possessionOrderByKind.omen
-        .filter((_, index) => index !== targetIndex)
-        .map(cloneInventoryCard);
-    const role = resolveInventoryEffectId(template.id) === 'omen-book'
-        ? 'hero-book'
-        : 'traitor-wedding-omen';
-    return {
-        drawnCard,
-        forcedOmenSearch: {
-            role,
-            cardId: drawnCard.id,
-            cardName: drawnCard.name,
-            shuffledOmenDeck: random.shuffle(remainingDeck).map(cloneInventoryCard),
-        },
-    };
-}
-
-function isMummyWeddingOmenCard(card: BetrayalInventoryCard): boolean {
-    const normalizedName = card.name.trim().toLowerCase();
-    return card.kind === 'omen'
-        && (
-            MUMMY_WEDDING_OMEN_CARD_IDS.has(resolveInventoryEffectId(card.id))
-            || card.name === '圣符'
-            || card.name === '指环'
-            || normalizedName === 'holy symbol'
-            || normalizedName === 'ring'
-        );
-}
-
-function findMummyWeddingOmenCard(
-    explorer: BetrayalExplorerSummary | null | undefined,
-    cardId?: string,
-): BetrayalInventoryCard | null {
-    const cards = explorer?.inventory.filter(isMummyWeddingOmenCard) ?? [];
-    if (cardId) {
-        return cards.find((card) => card.id === cardId) ?? null;
-    }
-    return cards[0] ?? null;
-}
-
-function resolveMummyForcedDamageTraits(
-    explorer: BetrayalExplorerSummary,
-    amount: number,
-    options: { allowSkull?: boolean } = {},
-): BetrayalTraitKey[] {
-    const sequence: BetrayalTraitKey[] = [];
-    const speedSteps = resolveTraitDamageAssignableSteps(explorer, 'speed', options);
-    const mightSteps = resolveTraitDamageAssignableSteps(explorer, 'might', options);
-    const speedDamage = Math.min(amount, speedSteps);
-    const mightDamage = Math.min(Math.max(0, amount - speedDamage), mightSteps);
-    sequence.push(...repeatTraitForDamage('speed', speedDamage));
-    sequence.push(...repeatTraitForDamage('might', mightDamage));
-    return sequence;
-}
-
-function collectMummyGirlByExplorerIfPresent(
-    core: BetrayalCore,
-    playerId: string,
-    roomId: string,
-): boolean {
-    const mummy = core.scenarioRuntime.mummy;
-    if (
-        !isMummyHaunt(core)
-        || !mummy
-        || mummy.girlRoomId !== roomId
-        || mummy.girlHolderPlayerId
-        || mummy.girlHeldByMummy
-        || core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
-    ) {
-        return false;
-    }
-    mummy.girlRoomId = null;
-    mummy.girlHolderPlayerId = playerId;
-    mummy.girlHeldByMummy = false;
-    return true;
-}
-
-function collectMummyGirlByMummyIfPresent(
-    core: BetrayalCore,
-    monsterId: string,
-    roomId: string,
-): boolean {
-    const mummy = core.scenarioRuntime.mummy;
-    if (
-        !isMummyMonster(core, monsterId)
-        || !mummy
-        || mummy.girlRoomId !== roomId
-        || mummy.girlHolderPlayerId
-        || mummy.girlHeldByMummy
-    ) {
-        return false;
-    }
-    mummy.girlRoomId = null;
-    mummy.girlHolderPlayerId = null;
-    mummy.girlHeldByMummy = true;
-    return true;
-}
-
-function createMummyEndgameResult(core: BetrayalCore, outcome: 'survivors' | 'traitor'): BetrayalEndgameResult {
-    const livingHeroes = getAllExplorers(core)
-        .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)
-        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId));
-    const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer) ?? core.currentExplorer;
-    const winners = outcome === 'survivors'
-        ? livingHeroes.map((explorer) => explorer.playerId)
-        : [traitor.playerId];
-    return {
-        hauntId: 'mummy-rampage',
-        hauntTitle: '木乃伊横行',
-        outcome,
-        winners,
-        traitorPlayerId: traitor.playerId,
-        survivorsEscaped: outcome === 'survivors' ? [...winners] : [],
-        reward: {
-            stars: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.stars : 0,
-            omens: countDrawnCards(core, 'omen'),
-            logs: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.logs : 0,
-        },
-        stats: {
-            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-            omensDrawn: countDrawnCards(core, 'omen'),
-            itemsDrawn: countDrawnCards(core, 'item'),
-            eventsDrawn: countDrawnCards(core, 'event'),
-        },
-    };
-}
-
 function completeMummyTraitorVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
-    const mummy = core.scenarioRuntime.mummy;
-    const mummyMonster = findMummyMonster(core);
-    if (!isMummyHaunt(core) || !mummy || !mummyMonster) {
-        return null;
-    }
-    if (!mummy.girlHeldByMummy || mummyMonster.roomId !== mummy.sarcophagusRoomId) {
-        return null;
-    }
-    if (!mummy.mummyCarriedOmenIds.some((cardId) => MUMMY_WEDDING_OMEN_CARD_IDS.has(resolveInventoryEffectId(cardId)))) {
+    const result = resolveMummyTraitorVictoryResult(core);
+    if (!result) {
         return null;
     }
     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createMummyEndgameResult(core, 'traitor'),
+        result,
     }, timestamp));
-}
-
-function resolveCrimsonJackHauntTitle(): string {
-    return getBetrayalScenarioCardCandidate('crimson-jack-returns').titleEn;
-}
-
-function resolveScenarioCompletedLog(core: BetrayalCore, result: BetrayalEndgameResult): string {
-    if (result.hauntId === 'crimson-jack-returns') {
-        return result.outcome === 'survivors'
-            ? '杰克之灵被驱散，英雄完成驱魔'
-            : 'Crimson Jack 击倒了所有英雄';
-    }
-    if (result.hauntId === 'mummy-rampage') {
-        return result.outcome === 'survivors'
-            ? '英雄念出木乃伊真名并完成驱逐'
-            : '木乃伊完成婚礼，或所有英雄都已倒下';
-    }
-    if (result.hauntId === 'upon-reflection') {
-        return '英雄破除镜中诅咒，作祟揭秘者回到现实';
-    }
-    return scenarioConfigById(core.scenarioId).logs.scenarioCompleted;
-}
-
-function buryExplorerPossessionsToBottom(core: BetrayalCore, explorer: BetrayalExplorerSummary): void {
-    if (explorer.inventory.length === 0) {
-        return;
-    }
-    for (const card of explorer.inventory) {
-        if (card.kind === 'item' || card.kind === 'omen') {
-            restorePossessionCardToBottom(core, card.kind, card);
-        }
-    }
-    explorer.inventory = [];
-    if (core.currentExplorer.playerId === explorer.playerId) {
-        core.currentExplorerInventory = [];
-    }
-}
-
-function shouldDeferDustTraitorPossessionBurialForRabbitFoot(core: BetrayalCore, playerId: string): boolean {
-    return isOwnDeathPreventionRerollWindow(core, playerId)
-        && canUseRabbitFootForRecentRoll(core, playerId);
-}
-
-function shouldDeferDustTraitorVictoryForRabbitFoot(core: BetrayalCore, playerId: string): boolean {
-    const card = resolveRabbitFootCard(core, undefined, playerId);
-    const receivedThisTurn = core.receivedCardIdsThisTurnByPlayerId[playerId] ?? [];
-    return Boolean(
-        isOwnDeathPreventionRerollWindow(core, playerId)
-        && card
-        && core.recentRoll?.dice.length
-        && !core.recentRoll.consumedRabbitFootCardIds.includes(card.id)
-        && !receivedThisTurn.includes(card.id)
-        && !core.usedCardIdsThisTurn.includes(card.id),
-    );
-}
-
-function buryDustDeadTraitorPossessions(
-    core: BetrayalCore,
-    playerId: string,
-    options: { deferForRabbitFoot?: boolean } = {},
-): void {
-    const dust = core.scenarioRuntime.dust;
-    if (
-        !isDustHaunt(core)
-        || !dust?.permanentTraitorPlayerIds.includes(playerId)
-        || !core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)
-    ) {
-        return;
-    }
-    if (options.deferForRabbitFoot !== false && shouldDeferDustTraitorPossessionBurialForRabbitFoot(core, playerId)) {
-        return;
-    }
-    const explorer = findExplorerByPlayerId(core, playerId);
-    if (explorer) {
-        buryExplorerPossessionsToBottom(core, explorer);
-    }
-}
-
-function resolveDustSicknessSwap(
-    dust: BetrayalDustRuntimeState,
-    fromPlayerId: string,
-    toPlayerId: string,
-    random: RandomFn,
-): BetrayalDustSicknessSwapResult | null {
-    const fromTokens = dust.sicknessTokensByPlayerId[fromPlayerId] ?? [];
-    const toTokens = dust.sicknessTokensByPlayerId[toPlayerId] ?? [];
-    if (fromTokens.length === 0 || toTokens.length === 0 || fromPlayerId === toPlayerId) {
-        return null;
-    }
-    const fromToken = fromTokens[random.range(0, fromTokens.length - 1)] ?? fromTokens[0]!;
-    const toToken = toTokens[random.range(0, toTokens.length - 1)] ?? toTokens[0]!;
-    return {
-        fromPlayerId,
-        toPlayerId,
-        fromTokenId: fromToken.id,
-        toTokenId: toToken.id,
-    };
-}
-
-function refreshDustTraitors(dust: BetrayalDustRuntimeState): void {
-    const currentHolders = Object.entries(dust.sicknessTokensByPlayerId)
-        .filter(([, tokens]) => tokens.some((token) => token.value === 1))
-        .map(([playerId]) => playerId);
-    dust.permanentTraitorPlayerIds = Array.from(new Set([
-        ...dust.permanentTraitorPlayerIds,
-        ...currentHolders,
-    ]));
-}
-
-function applyDustSicknessSwap(dust: BetrayalDustRuntimeState, swap: BetrayalDustSicknessSwapResult): void {
-    const fromTokens = dust.sicknessTokensByPlayerId[swap.fromPlayerId] ?? [];
-    const toTokens = dust.sicknessTokensByPlayerId[swap.toPlayerId] ?? [];
-    const fromIndex = fromTokens.findIndex((token) => token.id === swap.fromTokenId);
-    const toIndex = toTokens.findIndex((token) => token.id === swap.toTokenId);
-    if (fromIndex < 0 || toIndex < 0) {
-        return;
-    }
-    const fromToken = { ...fromTokens[fromIndex]! };
-    const toToken = { ...toTokens[toIndex]! };
-    const nextFromTokens = [...fromTokens];
-    const nextToTokens = [...toTokens];
-    nextFromTokens[fromIndex] = toToken;
-    nextToTokens[toIndex] = fromToken;
-    dust.sicknessTokensByPlayerId = {
-        ...dust.sicknessTokensByPlayerId,
-        [swap.fromPlayerId]: nextFromTokens,
-        [swap.toPlayerId]: nextToTokens,
-    };
-    dust.exchangedSicknessThisTurnPlayerIds = Array.from(new Set([
-        ...dust.exchangedSicknessThisTurnPlayerIds,
-        swap.fromPlayerId,
-        swap.toPlayerId,
-    ]));
-    refreshDustTraitors(dust);
-}
-
-function resolveSameRoomLivingExplorers(
-    core: BetrayalCore,
-    roomId: string,
-    exceptPlayerId?: string,
-): BetrayalExplorerSummary[] {
-    return getAllExplorers(core).filter((explorer) => (
-        explorer.playerId !== exceptPlayerId
-        && explorer.roomId === roomId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-}
-
-function addFeverishMonsterForPlayer(core: BetrayalCore, playerId: string): void {
-    if (!core.scenarioRuntime.dust || core.scenarioRuntime.dust.feverishPlayerIds.includes(playerId)) {
-        return;
-    }
-    const explorer = findExplorerByPlayerId(core, playerId);
-    core.scenarioRuntime.dust.feverishPlayerIds = [
-        ...core.scenarioRuntime.dust.feverishPlayerIds,
-        playerId,
-    ];
-    buryDustDeadTraitorPossessions(core, playerId);
-    core.monsters = [
-        ...core.monsters.filter((monster) => monster.id !== `feverish-${playerId}`),
-        createBetrayalMonsterFromDefinition(
-            'dust-feverish-patient',
-            `feverish-${playerId}`,
-            explorer?.roomId ?? core.activeRoomId,
-        ),
-    ];
-}
-
-function resolveFeverishMonsterMovementRoll(
-    core: BetrayalCore,
-    nextPlayerId: string,
-    random: RandomFn,
-): BetrayalMonsterMovementRollResult | null {
-    if (!shouldDeadPlayerControlFeverish(core, nextPlayerId)) {
-        return null;
-    }
-    const feverish = findFeverishMonster(core, nextPlayerId);
-    if (!feverish) {
-        return null;
-    }
-    const dice = rollBetrayalDicePips(random, feverish.speed);
-    const total = dice.reduce((sum, pip) => sum + pip, 0);
-    return {
-        monsterId: feverish.id,
-        monsterName: feverish.name,
-        playerId: nextPlayerId,
-        speed: feverish.speed,
-        dice,
-        total,
-        moveAllowance: Math.max(1, total),
-    };
-}
-
-function createDustEndgameResult(core: BetrayalCore, outcome: BetrayalScenarioOutcome): BetrayalEndgameResult {
-    const dust = core.scenarioRuntime.dust;
-    const livingExplorers = getAllExplorers(core).filter((explorer) => (
-        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    const traitorPlayerIds = dust?.permanentTraitorPlayerIds ?? [];
-    const winners = outcome === 'traitor'
-        ? traitorPlayerIds.filter((playerId) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId))
-        : livingExplorers
-            .filter((explorer) => !traitorPlayerIds.includes(explorer.playerId))
-            .map((explorer) => explorer.playerId);
-    return {
-        hauntId: 'the-dust',
-        hauntTitle: '灰尘',
-        outcome,
-        winners,
-        traitorPlayerId: traitorPlayerIds[0] ?? '',
-        survivorsEscaped: outcome === 'survivors' ? winners : [],
-        reward: {
-            stars: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.stars : 0,
-            omens: countDrawnCards(core, 'omen'),
-            logs: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.logs : 0,
-        },
-        stats: {
-            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-            omensDrawn: countDrawnCards(core, 'omen'),
-            itemsDrawn: countDrawnCards(core, 'item'),
-            eventsDrawn: countDrawnCards(core, 'event'),
-        },
-    };
-}
-
-function areAllLivingExplorersDustTraitorsOrDead(core: BetrayalCore): boolean {
-    const dust = core.scenarioRuntime.dust;
-    if (!dust) {
-        return false;
-    }
-    return getAllExplorers(core).every((explorer) => (
-        core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-        || dust.permanentTraitorPlayerIds.includes(explorer.playerId)
-    ));
-}
-
-function completeDustTraitorVictoryIfNeeded(
-    core: BetrayalCore,
-    timestamp: number,
-    options: { deferForRabbitFoot?: boolean } = {},
-): BetrayalCore | null {
-    if (!isDustHaunt(core) || !areAllLivingExplorersDustTraitorsOrDead(core)) {
-        return null;
-    }
-    if (
-        options.deferForRabbitFoot !== false
-        && core.recentRoll?.kind === 'deathPrevention'
-        && shouldDeferDustTraitorVictoryForRabbitFoot(core, core.recentRoll.playerId)
-    ) {
-        return null;
-    }
-    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createDustEndgameResult(core, 'traitor'),
-    }, timestamp));
-}
-
-function applyDustEventEffectDeathIfNeeded(core: BetrayalCore): void {
-    if (!isDustHaunt(core) || !isExplorerDead(core.currentExplorer)) {
-        return;
-    }
-    markDeadExplorer(core, core.currentExplorer.playerId);
-    if (core.scenarioRuntime.dust?.permanentTraitorPlayerIds.includes(core.currentExplorer.playerId)) {
-        addFeverishMonsterForPlayer(core, core.currentExplorer.playerId);
-    }
-}
-
-function createHelpingHandsMonsterTurnStartedEvent(
-    controllerPlayerId: string,
-    random: RandomFn,
-    timestamp: number,
-): GameEvent<typeof EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, BetrayalHelpingHandsMonsterTurnStartedPayload> {
-    const moveDice = rollBetrayalDicePips(random, 3);
-    const moveAllowance = Math.max(1, moveDice.reduce((sum, pip) => sum + pip, 0));
-    return nowEvent(EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED, {
-        controllerPlayerId,
-        moveAllowance,
-        moveDice,
-        logText: `巨魔手怪物回合开始：速度 3 投出 ${moveDice.join('、')}，每只巨魔手本回合可移动 ${moveAllowance} 间`,
-    }, timestamp);
-}
-
-function createHelpingHandsEndgameResult(core: BetrayalCore, winnerPlayerId: string): BetrayalEndgameResult {
-    return {
-        hauntId: 'helping-hands',
-        hauntTitle: '援手',
-        outcome: 'solo',
-        winners: [winnerPlayerId],
-        traitorPlayerId: winnerPlayerId,
-        survivorsEscaped: [winnerPlayerId],
-        reward: {
-            stars: scenarioConfigById(core.scenarioId).completion.reward.stars,
-            omens: countDrawnCards(core, 'omen'),
-            logs: scenarioConfigById(core.scenarioId).completion.reward.logs,
-        },
-        stats: {
-            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-            omensDrawn: countDrawnCards(core, 'omen'),
-            itemsDrawn: countDrawnCards(core, 'item'),
-            eventsDrawn: countDrawnCards(core, 'event'),
-        },
-    };
-}
-
-function completeHelpingHandsSoloVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
-    if (!isHelpingHandsHaunt(core)) {
-        return null;
-    }
-    const livingExplorers = getAllExplorers(core).filter((explorer) => (
-        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    if (livingExplorers.length !== 1) {
-        return null;
-    }
-    const winner = livingExplorers[0]!;
-    if (resolveHelpingHandsControllerPlayerId(core) !== winner.playerId) {
-        return null;
-    }
-    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createHelpingHandsEndgameResult(core, winner.playerId),
-    }, timestamp));
-}
-
-function shouldSkipEventSymbolForUponReflection(core: BetrayalCore): boolean {
-    return isUponReflectionHaunt(core);
 }
 
 function resolveUponReflectionOmenSelection(
@@ -3646,392 +2517,16 @@ function hasUsedMirrorHintThisTurn(core: BetrayalCore, revealerPlayerId: string)
         )));
 }
 
-function createUponReflectionEndgameResult(core: BetrayalCore, outcome: 'survivors'): BetrayalEndgameResult {
-    const winners = getAllExplorers(core)
-        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
-        .map((explorer) => explorer.playerId);
-    return {
-        hauntId: 'upon-reflection',
-        hauntTitle: 'Upon Reflection',
-        outcome,
-        winners,
-        traitorPlayerId: '',
-        survivorsEscaped: [...winners],
-        reward: {
-            stars: scenarioConfigById(core.scenarioId).completion.reward.stars,
-            omens: countDrawnCards(core, 'omen'),
-            logs: scenarioConfigById(core.scenarioId).completion.reward.logs,
-        },
-        stats: {
-            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-            omensDrawn: countDrawnCards(core, 'omen'),
-            itemsDrawn: countDrawnCards(core, 'item'),
-            eventsDrawn: countDrawnCards(core, 'event'),
-        },
-    };
-}
-
-function resolveAttackDamageKind(attackTrait: BetrayalTraitKey): 'physical' | 'mental' {
-    return attackTrait === 'sanity' || attackTrait === 'knowledge'
-        ? 'mental'
-        : 'physical';
-}
-
-function applyBetrayalMonsterDamageOutcome(
-    core: BetrayalCore,
-    outcome: BetrayalMonsterDamageOutcome,
-): void {
-    if (outcome.kind === 'stunned' || outcome.kind === 'killed') {
-        core.scenarioRuntime.monsterStatusesById = {
-            ...(core.scenarioRuntime.monsterStatusesById ?? {}),
-            [outcome.monsterId]: outcome.nextStatus,
-        };
-    }
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (!magicCamera?.phantomPhotographerIds.includes(outcome.monsterId)) {
-        return;
-    }
-    if (outcome.kind === 'killed') {
-        magicCamera.killedPhantomPhotographerIds = Array.from(new Set([
-            ...magicCamera.killedPhantomPhotographerIds,
-            outcome.monsterId,
-        ]));
-        magicCamera.stunnedPhantomPhotographerIds = magicCamera.stunnedPhantomPhotographerIds
-            .filter((id) => id !== outcome.monsterId);
-        core.monsters = core.monsters.filter((monster) => monster.id !== outcome.monsterId);
-        return;
-    }
-    if (outcome.kind === 'stunned') {
-        magicCamera.stunnedPhantomPhotographerIds = Array.from(new Set([
-            ...magicCamera.stunnedPhantomPhotographerIds,
-            outcome.monsterId,
-        ]));
-    }
-}
-
-function clearBetrayalMonsterStatus(core: BetrayalCore, monsterId: string): void {
-    const { [monsterId]: _cleared, ...remainingStatuses } = core.scenarioRuntime.monsterStatusesById ?? {};
-    core.scenarioRuntime.monsterStatusesById = remainingStatuses;
-}
-
-function flipStunnedMonsterSideUp(core: BetrayalCore, monsterId: string): void {
-    clearBetrayalMonsterStatus(core, monsterId);
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (magicCamera?.stunnedPhantomPhotographerIds.includes(monsterId)) {
-        magicCamera.stunnedPhantomPhotographerIds = magicCamera.stunnedPhantomPhotographerIds
-            .filter((id) => id !== monsterId);
-    }
-}
-
-function startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
-    core: BetrayalCore,
-    previousPlayerId: string,
-    _timestamp: number,
+function reduceScenarioCompletionStateResolution(
+    resolution: { core: BetrayalCore; scenarioCompletedResult?: BetrayalEndgameResult },
+    timestamp: number,
 ): BetrayalCore {
-    const status = resolveBloodFromStoneMonsterTurnStatus(core);
-    if (
-        status.active
-        || status.monsterTurnAfterPlayerId !== previousPlayerId
-        || !status.controllerPlayerId
-        || status.stoneCherubIds.length === 0
-    ) {
-        return core;
+    if (!resolution.scenarioCompletedResult) {
+        return resolution.core;
     }
-    const controllerCore = replaceExplorers(core, getAllExplorers(core), status.controllerPlayerId);
-    const nextBloodFromStone: BetrayalBloodFromStoneMonsterTurnRuntimeState = {
-        monsterTurnAfterPlayerId: status.monsterTurnAfterPlayerId,
-        activeMonsterTurn: true,
-        monsterTurnControllerPlayerId: status.controllerPlayerId,
-    };
-    const startedCore: BetrayalCore = {
-        ...controllerCore,
-        turnStartSpeed: 0,
-        movesRemaining: 0,
-        activePlayerId: status.controllerPlayerId,
-        recentRoll: null,
-        recommendedAction: 'endTurn',
-        scenarioRuntime: {
-            ...controllerCore.scenarioRuntime,
-            bloodFromStone: nextBloodFromStone,
-            monsterTurn: createInitialMonsterTurnRuntimeState(),
-            bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId:
-                createBloodFromStoneTurnStartVisibility(controllerCore),
-            bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn: [],
-        },
-    };
-    const syncedCore = syncCurrentExplorerProjection(startedCore);
-    return {
-        ...syncedCore,
-        activePlayerId: status.controllerPlayerId,
-        recommendedAction: 'endTurn',
-        activityLog: appendActivity(syncedCore, '石像小天使怪物回合开始。', 'warning'),
-    };
-}
-
-function removeBloodFromStoneStoneCherubs(core: BetrayalCore, monsterIds: string[]): void {
-    const removedIds = new Set(monsterIds);
-    core.monsters = core.monsters.filter((monster) => !removedIds.has(monster.id));
-    core.scenarioRuntime.monsterStatusesById = Object.fromEntries(
-        Object.entries(core.scenarioRuntime.monsterStatusesById ?? {})
-            .filter(([monsterId]) => !removedIds.has(monsterId)),
-    );
-    const monsterTurn = core.scenarioRuntime.monsterTurn;
-    core.scenarioRuntime.monsterTurn = {
-        ...monsterTurn,
-        resolvedStartMonsterIds: monsterTurn.resolvedStartMonsterIds.filter((monsterId) => !removedIds.has(monsterId)),
-        skippedMonsterIdsThisTurn: monsterTurn.skippedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
-        attackedMonsterIdsThisTurn: monsterTurn.attackedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
-        movedMonsterIdsThisTurn: monsterTurn.movedMonsterIdsThisTurn.filter((monsterId) => !removedIds.has(monsterId)),
-        moveRemainingById: Object.fromEntries(
-            Object.entries(monsterTurn.moveRemainingById ?? {}).filter(([monsterId]) => !removedIds.has(monsterId)),
-        ),
-    };
-}
-
-function createBloodFromStoneEndgameResult(
-    core: BetrayalCore,
-    outcome: 'survivors' | 'haunt',
-): BetrayalEndgameResult {
-    const livingHeroes = resolveLivingHeroExplorers(core);
-    const livingHeroPlayerIds = new Set(livingHeroes.map((explorer) => explorer.playerId));
-    const winners = outcome === 'survivors'
-        ? core.playerIds.filter((playerId) => livingHeroPlayerIds.has(playerId))
-        : [];
-    return {
-        hauntId: 'blood-from-a-stone',
-        hauntTitle: '顽石之血',
-        outcome,
-        winners,
-        traitorPlayerId: '',
-        survivorsEscaped: outcome === 'survivors' ? winners : [],
-        reward: {
-            stars: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.stars : 0,
-            omens: countDrawnCards(core, 'omen'),
-            logs: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.logs : 0,
-        },
-        stats: {
-            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-            omensDrawn: countDrawnCards(core, 'omen'),
-            itemsDrawn: countDrawnCards(core, 'item'),
-            eventsDrawn: countDrawnCards(core, 'event'),
-        },
-    };
-}
-
-function hasActiveBloodFromStoneStoneCherubs(core: BetrayalCore): boolean {
-    return core.monsters.some((monster) => (
-        isStoneCherubMonster(monster)
-        && resolveMonsterStatusKind(core, monster.id) !== 'killed'
-    ));
-}
-
-function areAllBloodFromStoneHeroesDead(core: BetrayalCore): boolean {
-    const heroes = getAllExplorers(core)
-        .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId);
-    return heroes.length > 0
-        && heroes.every((explorer) => core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId));
-}
-
-function completeBloodFromStoneHeroVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
-    if (!isBloodFromStoneHaunt(core) || hasActiveBloodFromStoneStoneCherubs(core)) {
-        return null;
-    }
-    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createBloodFromStoneEndgameResult(core, 'survivors'),
+    return reduceEvent(resolution.core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+        result: resolution.scenarioCompletedResult,
     }, timestamp));
-}
-
-function completeBloodFromStoneHauntVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
-    if (!isBloodFromStoneHaunt(core) || !areAllBloodFromStoneHeroesDead(core)) {
-        return null;
-    }
-    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createBloodFromStoneEndgameResult(core, 'haunt'),
-    }, timestamp));
-}
-
-function resolveMagicCameraEndTurn(core: BetrayalCore): string[] {
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (!isMagicCameraHaunt(core) || !magicCamera) {
-        return [];
-    }
-    const actor = core.currentExplorer;
-    if (
-        actor.playerId === core.scenarioRuntime.traitorPlayerId
-        || core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId)
-        || !magicCamera.heroEssencePlayerIds.includes(actor.playerId)
-    ) {
-        return [];
-    }
-    const actorRoom = resolveExplorerRoom(core, actor);
-    if (!actorRoom) {
-        return [];
-    }
-    const visiblePhotographer = core.monsters.some((monster) => (
-        magicCamera.phantomPhotographerIds.includes(monster.id)
-        && !magicCamera.killedPhantomPhotographerIds.includes(monster.id)
-        && isStraightLineVisible(
-            core.rooms.find((room) => room.id === monster.roomId) ?? actorRoom,
-            actorRoom,
-            core.rooms,
-        )
-    ));
-    return visiblePhotographer ? [actor.playerId] : [];
-}
-
-function createMagicCameraEndgameResult(core: BetrayalCore, outcome: BetrayalScenarioOutcome): BetrayalEndgameResult {
-    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId ?? '';
-    const livingHeroes = getAllExplorers(core).filter((explorer) => (
-        explorer.playerId !== traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    const winners = outcome === 'traitor'
-        ? [traitorPlayerId].filter(Boolean)
-        : livingHeroes.map((explorer) => explorer.playerId);
-    return {
-        hauntId: 'magic-camera',
-        hauntTitle: '魔法相机',
-        outcome,
-        winners,
-        traitorPlayerId,
-        survivorsEscaped: outcome === 'survivors' ? winners : [],
-        reward: {
-            stars: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.stars : 0,
-            omens: countDrawnCards(core, 'omen'),
-            logs: outcome === 'survivors' ? scenarioConfigById(core.scenarioId).completion.reward.logs : 0,
-        },
-        stats: {
-            roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-            omensDrawn: countDrawnCards(core, 'omen'),
-            itemsDrawn: countDrawnCards(core, 'item'),
-            eventsDrawn: countDrawnCards(core, 'event'),
-        },
-    };
-}
-
-function completeMagicCameraHeroVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
-    const magicCamera = core.scenarioRuntime.magicCamera;
-    if (!isMagicCameraHaunt(core) || !magicCamera || !magicCamera.cameraDestroyed) {
-        return null;
-    }
-    const allPhotographersKilled = magicCamera.phantomPhotographerIds.every((id) => (
-        magicCamera.killedPhantomPhotographerIds.includes(id)
-        || !core.monsters.some((monster) => monster.id === id)
-    ));
-    if (!allPhotographersKilled) {
-        return null;
-    }
-    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createMagicCameraEndgameResult(core, 'survivors'),
-    }, timestamp));
-}
-
-function completeMagicCameraTraitorVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
-    if (!isMagicCameraHaunt(core)) {
-        return null;
-    }
-    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
-    const livingHeroes = getAllExplorers(core).filter((explorer) => (
-        explorer.playerId !== traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    if (livingHeroes.length > 0) {
-        return null;
-    }
-    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-        result: createMagicCameraEndgameResult(core, 'traitor'),
-    }, timestamp));
-}
-
-function resolveDustEndTurn(core: BetrayalCore, random: RandomFn): BetrayalDustEndTurnResult | undefined {
-    const dust = core.scenarioRuntime.dust;
-    if (!isDustHaunt(core) || !dust || core.scenarioRuntime.deadExplorerPlayerIds.includes(core.currentExplorer.playerId)) {
-        return undefined;
-    }
-    const previewDust = cloneDustRuntimeState(dust);
-    const sameRoomExplorers = resolveSameRoomLivingExplorers(core, core.currentExplorer.roomId, core.currentExplorer.playerId);
-    const swaps: BetrayalDustSicknessSwapResult[] = [];
-    for (const target of sameRoomExplorers) {
-        const swap = resolveDustSicknessSwap(previewDust, core.currentExplorer.playerId, target.playerId, random);
-        if (!swap) {
-            continue;
-        }
-        swaps.push(swap);
-        applyDustSicknessSwap(previewDust, swap);
-    }
-    const alreadyExchanged = dust.exchangedSicknessThisTurnPlayerIds.includes(core.currentExplorer.playerId);
-    if (swaps.length > 0 || alreadyExchanged) {
-        return { swaps };
-    }
-    const damageDice = rollBetrayalDicePips(random, 2);
-    const damageAmount = damageDice.reduce((sum, pip) => sum + pip, 0);
-    const damageTraits: BetrayalTraitKey[] = ['might', 'speed', 'knowledge', 'sanity'];
-    return {
-        swaps,
-        damagePlayerId: core.currentExplorer.playerId,
-        damageAmount,
-        damageTraits,
-    };
-}
-
-function healExplorerToTemplate(explorer: BetrayalExplorerSummary): void {
-    const template = templateByExplorerId(explorer.explorerId);
-    if (!template) {
-        return;
-    }
-    for (const trait of BETRAYAL_TRAIT_KEYS) {
-        healExplorerTraitToStart(explorer, trait);
-    }
-}
-
-function resolveCrimsonJackTraitorPhysicalBonus(playerCount: number): number {
-    return playerCount >= 5 ? 2 : 1;
-}
-
-function healTraitorForHaunt(explorer: BetrayalExplorerSummary, playerCount: number): void {
-    healExplorerToTemplate(explorer);
-    const physicalBonus = resolveCrimsonJackTraitorPhysicalBonus(playerCount);
-    moveExplorerTraitSteps(explorer, 'might', physicalBonus);
-    moveExplorerTraitSteps(explorer, 'speed', physicalBonus);
-}
-
-function reviveTraitorFromJackSpirit(explorer: BetrayalExplorerSummary): void {
-    healExplorerToTemplate(explorer);
-}
-
-function findJackSpirit(core: BetrayalCore): BetrayalMonsterSummary | null {
-    return core.monsters.find((monster) => monster.id === 'jack-spirit') ?? null;
-}
-
-function cloneScenarioRuntimeStatus(status: BetrayalScenarioRuntimeStatus): BetrayalScenarioRuntimeStatus {
-    return {
-        ...status,
-        hauntTraitorResolution: cloneHauntTraitorResolution(status.hauntTraitorResolution),
-        hauntFirstPlayerResolution: cloneHauntFirstPlayerResolution(status.hauntFirstPlayerResolution),
-        exorcismCircleRoomIds: [...status.exorcismCircleRoomIds],
-        knowledgeOfJackPlayerIds: [...status.knowledgeOfJackPlayerIds],
-        deadExplorerPlayerIds: [...status.deadExplorerPlayerIds],
-        corpseLootedByPlayerIdsThisTurn: [...status.corpseLootedByPlayerIdsThisTurn],
-        usedRoomEffectIdsThisTurn: [...status.usedRoomEffectIdsThisTurn],
-        hauntSetupQueue: (status.hauntSetupQueue ?? []).map((entry) => ({ ...entry })),
-        monsterStatusesById: { ...(status.monsterStatusesById ?? {}) },
-        monsterTurn: cloneMonsterTurnRuntimeState(status.monsterTurn),
-        bloodFromStone: cloneBloodFromStoneMonsterTurnRuntimeState(status.bloodFromStone),
-        bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId: Object.fromEntries(
-            Object.entries(status.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId ?? {}).map(([playerId, ids]) => [
-                playerId,
-                [...ids],
-            ]),
-        ),
-        bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn: [
-            ...(status.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn ?? []),
-        ],
-        dust: status.dust ? cloneDustRuntimeState(status.dust) : undefined,
-        helpingHands: status.helpingHands ? cloneHelpingHandsRuntimeState(status.helpingHands) : undefined,
-        magicCamera: status.magicCamera ? cloneMagicCameraRuntimeState(status.magicCamera) : undefined,
-        mummy: status.mummy ? cloneMummyRuntimeState(status.mummy) : undefined,
-        uponReflection: status.uponReflection ? cloneUponReflectionRuntimeState(status.uponReflection) : undefined,
-    };
 }
 
 function maskUponReflectionRuntimeForPlayer(
@@ -4099,60 +2594,6 @@ function createBetrayalPlayerView(state: BetrayalCore, viewingPlayerId: PlayerId
     return view;
 }
 
-function applyDeathPreventionRerollOutcome(
-    core: BetrayalCore,
-    explorer: BetrayalExplorerSummary,
-    recentRoll: BetrayalRecentRollState,
-    nextRoll: BetrayalRecentRollState,
-    nextTotal: number,
-): void {
-    const deathPrevention = recentRoll.deathPrevention;
-    if (!deathPrevention) {
-        return;
-    }
-    core.scenarioRuntime = cloneScenarioRuntimeStatus(deathPrevention.scenarioRuntimeBeforeDefeat);
-    core.monsters = deathPrevention.monstersBeforeDefeat.map(cloneMonster);
-    resetExplorerTraits(explorer, deathPrevention.traitsBeforeDamage);
-    if (deathPrevention.damageTraits?.length) {
-        applyGeneralDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageTraits, { allowSkull: true });
-    } else {
-        applyAttackDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageKind);
-    }
-    if (nextTotal >= deathPrevention.minTotal) {
-        core.scenarioRuntime.deadExplorerPlayerIds = core.scenarioRuntime.deadExplorerPlayerIds.filter((playerId) => playerId !== explorer.playerId);
-        setExplorerTraitsToDeathsDoor(explorer);
-        nextRoll.latestLabel = '阻止死亡';
-    } else {
-        core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
-            ...core.scenarioRuntime.deadExplorerPlayerIds,
-            explorer.playerId,
-        ]));
-        if (isDustHaunt(core) && core.scenarioRuntime.dust?.permanentTraitorPlayerIds.includes(explorer.playerId)) {
-            addFeverishMonsterForPlayer(core, explorer.playerId);
-            buryDustDeadTraitorPossessions(core, explorer.playerId, { deferForRabbitFoot: false });
-        } else if (core.scenarioRuntime.traitorPlayerId === explorer.playerId) {
-            core.scenarioRuntime.traitorCorpseRoomId = explorer.roomId;
-            core.scenarioRuntime.jackSpiritReleased = true;
-            core.scenarioRuntime.jackSpiritRoomId = deathPrevention.releasedJackSpiritRoomId
-                ?? resolveJackSpiritSpawnRoomId(core, explorer.roomId);
-            core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
-            core.monsters = [createBetrayalMonsterFromDefinition(
-                'crimson-jack-spirit',
-                'jack-spirit',
-                core.scenarioRuntime.jackSpiritRoomId,
-            )];
-        }
-        nextRoll.latestLabel = '正常死亡';
-    }
-    nextRoll.deathPrevention = {
-        ...deathPrevention,
-        damageTraits: deathPrevention.damageTraits ? [...deathPrevention.damageTraits] : undefined,
-        traitsBeforeDamage: { ...deathPrevention.traitsBeforeDamage },
-        scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(deathPrevention.scenarioRuntimeBeforeDefeat),
-        monstersBeforeDefeat: deathPrevention.monstersBeforeDefeat.map(cloneMonster),
-    };
-}
-
 function ensureLibraryPresent(core: BetrayalCore): void {
     const existingLibrary = core.rooms.find((room) => room.name === '图书馆');
     if (existingLibrary) {
@@ -4167,362 +2608,6 @@ function ensureLibraryPresent(core: BetrayalCore): void {
         upperWest.discoveryReward = null;
     }
 }
-
-function rollAttackWithDice(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
-): { total: number; dice: number[]; passiveBonus: number } {
-    const trait = weaponEffect?.attackTrait ?? 'might';
-    const dice = rollBetrayalDicePips(random, explorer.traits[trait] + (weaponEffect?.extraDice ?? 0));
-    const passiveBonus = weaponEffect?.bonus ?? 0;
-    return {
-        total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
-        dice,
-        passiveBonus,
-    };
-}
-
-function rollAttackDefense(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
-    fallbackTrait: BetrayalTraitKey = 'might',
-): number {
-    const trait = weaponEffect?.attackTrait ?? fallbackTrait;
-    const extraDice = resolveDefenseExtraDiceWhenAttacked(explorer);
-    return rollTrait(random, explorer.traits[trait] + extraDice);
-}
-
-function canDeferOrdinaryAttackDamageToDefender(
-    core: BetrayalCore,
-    target: BetrayalHauntAttackTarget,
-): boolean {
-    return !isMagicCameraHaunt(core)
-        && !isHelpingHandsHaunt(core)
-        && (target === 'traitor' || target === 'hero');
-}
-
-function isPendingDamageAllocationForAttackRoll(core: BetrayalCore): boolean {
-    const pending = core.pendingDamageAllocation;
-    const attack = core.recentRoll?.kind === 'attackRoll' ? core.recentRoll.attack : null;
-    return Boolean(
-        pending
-        && attack
-        && attack.defenderPlayerId
-        && pending.sourceTitle === '攻击'
-        && pending.playerId === attack.defenderPlayerId
-        && pending.damageKind === attack.damageKind
-        && pending.originalAmount === attack.previousDamageToDefender
-        && canDeferOrdinaryAttackDamageToDefender(core, attack.target),
-    );
-}
-
-function resetExplorerTraits(explorer: BetrayalExplorerSummary, traits: BetrayalExplorerSummary['traits']): void {
-    setExplorerTraitsFromValues(explorer, traits);
-}
-
-function consumeNextNonCombatTraitReplacementAfterTraitRoll(
-    core: BetrayalCore,
-    playerId: string,
-    eventRoll?: { kind?: 'trait' | 'dice'; trait?: BetrayalTraitKey },
-): void {
-    if (
-        eventRoll
-        && eventRoll.kind !== 'dice'
-        && eventRoll.trait
-        && core.nextNonCombatTraitReplacement?.playerId === playerId
-    ) {
-        core.nextNonCombatTraitReplacement = null;
-    }
-    if (
-        eventRoll
-        && eventRoll.kind !== 'dice'
-        && eventRoll.trait
-        && core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId
-    ) {
-        core.nextNonCombatTraitRollTotalReplacement = null;
-    }
-}
-
-function clearNextNonCombatTraitRollReplacementsForPlayer(
-    core: BetrayalCore,
-    playerId: string,
-): void {
-    if (core.nextNonCombatTraitReplacement?.playerId === playerId) {
-        core.nextNonCombatTraitReplacement = null;
-    }
-    if (core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId) {
-        core.nextNonCombatTraitRollTotalReplacement = null;
-    }
-}
-
-function resolveToothNecklaceCard(explorer: BetrayalExplorerSummary): BetrayalInventoryCard | null {
-    return explorer.inventory.find((card) => resolveInventoryEffectId(card.id) === TOOTH_NECKLACE_CARD_ID) ?? null;
-}
-
-function resolveDeathsDoorTraitGainChoices(explorer: BetrayalExplorerSummary): BetrayalTraitKey[] {
-    return BETRAYAL_TRAIT_KEYS.filter((trait) => {
-        const track = explorer.traitTracks[trait];
-        return track.position === track.criticalPosition && track.position < track.maxPosition;
-    });
-}
-
-function resolveAttackRerollOutcome(
-    nextAttackRoll: number,
-    attack: NonNullable<BetrayalRecentRollState['attack']>,
-): {
-    outcome: 'wound' | 'jack-damaged' | 'no-damage';
-    damageToAttacker?: number;
-    damageToDefender?: number;
-    latestLabel: string;
-} {
-    if (attack.target === 'jack-spirit') {
-        return nextAttackRoll > attack.defenderRoll
-            ? { outcome: 'jack-damaged', latestLabel: '压制杰克之灵' }
-            : { outcome: 'wound', latestLabel: '未压制杰克之灵' };
-    }
-    const damageToDefender = Math.max(0, nextAttackRoll - attack.defenderRoll);
-    const damageToAttacker = resolveFailedAttackDamageForWeaponCard(
-        attack.defenderRoll,
-        nextAttackRoll,
-        attack.weaponCardId,
-    );
-    if (nextAttackRoll === attack.defenderRoll) {
-        return { outcome: 'no-damage', latestLabel: '平手无伤害' };
-    }
-    return {
-        outcome: 'wound',
-        damageToAttacker: damageToAttacker || undefined,
-        damageToDefender: damageToDefender || undefined,
-        latestLabel: damageToDefender > 0
-            ? `造成 ${damageToDefender} 点伤害`
-            : `反受 ${damageToAttacker} 点伤害`,
-    };
-}
-
-function createRecentRollRerollMentalDamageAllocation(
-    core: BetrayalCore,
-    playerId: string,
-    cardId: string,
-    amount: number | undefined,
-    timestamp: number,
-): BetrayalPendingDamageAllocationState | null {
-    const rule = resolveRecentRollRerollItemRule(cardId);
-    const explorer = findExplorerByPlayerId(core, playerId);
-    if (!rule || rule.mode !== 'blank-trait-check-dice' || !explorer || !amount || amount <= 0) {
-        return null;
-    }
-    return createPendingDamageAllocation({
-        id: `recent-reroll-mental-damage-${playerId}-${cardId}-${timestamp}`,
-        explorer,
-        sourceTitle: rule.label,
-        damageKind: 'mental',
-        amount,
-        allowSkull: core.phase === 'haunt',
-    });
-}
-
-function createBloodFromStoneGazeDamageAllocationQueue(
-    core: BetrayalCore,
-    damageRolls: BetrayalBloodFromStoneGazeDamageRoll[],
-    nextPlayerId: string,
-    turnLogText: string,
-): BetrayalPendingDamageAllocationState | null {
-    const allocations = damageRolls
-        .map((roll) => {
-            const explorer = findExplorerByPlayerId(core, roll.playerId);
-            if (!explorer || roll.amount <= 0) {
-                return null;
-            }
-            return createPendingDamageAllocation({
-                id: `blood-from-stone-gaze-${roll.playerId}-${roll.visibleStoneCherubIds.join('-')}`,
-                explorer,
-                sourceTitle: '石像小天使凝视',
-                damageKind: 'general',
-                amount: roll.amount,
-                allowSkull: true,
-            });
-        })
-        .filter((allocation): allocation is BetrayalPendingDamageAllocationState => Boolean(allocation));
-    const lastAllocation = allocations[allocations.length - 1];
-    if (lastAllocation) {
-        lastAllocation.nextPlayerId = nextPlayerId;
-        lastAllocation.turnLogText = turnLogText;
-        lastAllocation.skipBloodFromStoneMonsterTurnStart = true;
-    }
-    return chainPendingDamageAllocations(allocations);
-}
-
-function createBloodFromStoneNewLineOfSightDamageAllocation(
-    core: BetrayalCore,
-    roll: BetrayalBloodFromStoneGazeDamageRoll,
-): BetrayalPendingDamageAllocationState | null {
-    const explorer = findExplorerByPlayerId(core, roll.playerId);
-    if (!explorer || roll.amount <= 0) {
-        return null;
-    }
-    return createPendingDamageAllocation({
-        id: `blood-from-stone-new-line-of-sight-${roll.playerId}-${roll.visibleStoneCherubIds.join('-')}`,
-        explorer,
-        sourceTitle: '石像小天使新视线伤害',
-        damageKind: 'general',
-        amount: roll.amount,
-        allowSkull: true,
-    });
-}
-
-function applyImmediateEventDeathPreventionIfNeeded(
-    core: BetrayalCore,
-    deathPrevention: BetrayalPendingEventRollResolutionState['deathPrevention'] | undefined,
-    timestamp: number,
-    scenarioRuntimeBeforeDefeat: BetrayalCore['scenarioRuntime'] | null,
-    monstersBeforeDefeat: BetrayalMonsterSummary[],
-): void {
-    if (deathPrevention?.dice.length) {
-        core.recentRoll = {
-            id: `${deathPrevention.playerId}-death-prevention-${timestamp}`,
-            kind: 'deathPrevention',
-            playerId: deathPrevention.playerId,
-            sourceTitle: deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-            dice: [...deathPrevention.dice],
-            passiveBonus: 0,
-            latestLabel: deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-            deathPrevention: {
-                cardId: deathPrevention.cardId,
-                minTotal: deathPrevention.minTotal,
-                damageKind: deathPrevention.damageKind,
-                damageAmount: deathPrevention.damageAmount,
-                damageTraits: [...deathPrevention.damageTraits],
-                traitsBeforeDamage: { ...deathPrevention.traitsBeforeDamage },
-                scenarioRuntimeBeforeDefeat: scenarioRuntimeBeforeDefeat
-                    ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                monstersBeforeDefeat,
-            },
-            consumedRabbitFootCardIds: [],
-        };
-    }
-    if (deathPrevention?.prevented) {
-        const protectedExplorer = findExplorerByPlayerId(core, deathPrevention.playerId);
-        if (protectedExplorer) {
-            setExplorerTraitsToDeathsDoor(protectedExplorer);
-        }
-    } else {
-        applyDustEventEffectDeathIfNeeded(core);
-    }
-}
-
-function resolveCoreAfterRoomDiscoveryText(
-    core: BetrayalCore,
-    effect: BetrayalRoomNode['discoveryEffect'],
-): BetrayalCore {
-    const preview = cloneCore(core);
-    applyRoomDiscoveryEffect(preview, effect);
-    return syncCurrentExplorerProjection(preview);
-}
-
-function resolveEndTurnRoomEffect(core: BetrayalCore, random: RandomFn): BetrayalRoomEndTurnEffectResult | null {
-    const currentRoom = core.rooms.find((room) => room.id === core.currentExplorer.roomId);
-    const effect = resolveRoomEndTurnEffect(currentRoom);
-    if (!effect || !currentRoom) {
-        return null;
-    }
-    const ignoreDamagingEffect = canUseBetrayalTraitorPowers(core, core.currentExplorer.playerId)
-        && isBetrayalDamagingRoomEndTurnEffect(effect);
-
-    if (effect === 'physicalDamage1') {
-        return {
-            kind: effect,
-            playerId: core.currentExplorer.playerId,
-            roomId: currentRoom.id,
-            roomName: currentRoom.name,
-            physicalDamage: ignoreDamagingEffect ? undefined : 1,
-            ignoredByTraitorPower: ignoreDamagingEffect,
-        };
-    }
-
-    if (effect === 'moveToBasementLanding') {
-        return {
-            kind: effect,
-            playerId: core.currentExplorer.playerId,
-            roomId: currentRoom.id,
-            roomName: currentRoom.name,
-            destinationRoomId: 'basement-landing',
-        };
-    }
-
-    const speedRoll = rollTraitCheckWithDice(random, core.currentExplorer, 'speed', core);
-    if (speedRoll.total >= 5) {
-        return {
-            kind: effect,
-            playerId: core.currentExplorer.playerId,
-            roomId: currentRoom.id,
-            roomName: currentRoom.name,
-            speedRoll: speedRoll.total,
-            speedRollDice: speedRoll.dice,
-            speedRollPassiveBonus: speedRoll.passiveBonus,
-        };
-    }
-
-    return {
-        kind: effect,
-        playerId: core.currentExplorer.playerId,
-        roomId: currentRoom.id,
-        roomName: currentRoom.name,
-        destinationRoomId: 'basement-landing',
-        speedRoll: speedRoll.total,
-        speedRollDice: speedRoll.dice,
-        speedRollPassiveBonus: speedRoll.passiveBonus,
-        physicalDamage: ignoreDamagingEffect ? undefined : rollBetrayalPip(random),
-        ignoredByTraitorPower: ignoreDamagingEffect,
-    };
-}
-
-function formatEndTurnRoomEffectLog(effect: BetrayalRoomEndTurnEffectResult, explorerName: string): string {
-    if (effect.kind === 'physicalDamage1') {
-        if (effect.ignoredByTraitorPower) {
-            return `${explorerName}在${effect.roomName}结束回合，叛徒能力忽略房间伤害`;
-        }
-        return `${explorerName}在${effect.roomName}结束回合，承受 1 点物理伤害`;
-    }
-    if (effect.kind === 'moveToBasementLanding') {
-        return `${explorerName}从${effect.roomName}滑落到地下室起始点`;
-    }
-    if (effect.destinationRoomId) {
-        if (effect.ignoredByTraitorPower) {
-            return `${explorerName}在${effect.roomName}速度检定 ${effect.speedRoll}，坠落到地下室起始点，叛徒能力忽略坠落伤害`;
-        }
-        return `${explorerName}在${effect.roomName}速度检定 ${effect.speedRoll}，坠落到地下室起始点并承受 ${effect.physicalDamage ?? 0} 点物理伤害`;
-    }
-    return `${explorerName}在${effect.roomName}速度检定 ${effect.speedRoll}，没有坠落`;
-}
-
-function markDeadExplorer(core: BetrayalCore, playerId: string): void {
-    if (core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId)) {
-        return;
-    }
-    core.scenarioRuntime.deadExplorerPlayerIds = [
-        ...core.scenarioRuntime.deadExplorerPlayerIds,
-        playerId,
-    ];
-}
-
-function resolveRoomRegion(room: BetrayalRoomNode | undefined): BetrayalRoomFloor | null {
-    return room?.floor ?? null;
-}
-
-function countExorcismCirclesInRegion(core: BetrayalCore, roomId: string): number {
-    const currentRoom = core.rooms.find((room) => room.id === roomId);
-    const region = resolveRoomRegion(currentRoom);
-    if (!region) {
-        return 0;
-    }
-    return core.scenarioRuntime.exorcismCircleRoomIds.filter((circleRoomId) => {
-        const circleRoom = core.rooms.find((room) => room.id === circleRoomId);
-        return resolveRoomRegion(circleRoom) === region;
-    }).length;
-}
-
 
 function createInitialRoomLayout(seeds: BetrayalRoomSeed[]): BetrayalRoomNode[] {
     const discoveredSeedIds = new Set(seeds.filter((room) => room.state === 'discovered').map((room) => room.id));
@@ -4544,234 +2629,6 @@ function createInitialRoomLayout(seeds: BetrayalRoomSeed[]): BetrayalRoomNode[] 
         });
 
     return refreshExplorableRoomSlots(discoveredRooms);
-}
-
-function resolveHauntRoll(
-    core: BetrayalCore,
-    deckKind: BetrayalDeckKind,
-    random: RandomFn,
-): BetrayalHauntRollResult | null {
-    if (core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered || deckKind !== 'omen') {
-        return null;
-    }
-    const threshold = core.scenarioRuntime.hauntRollThreshold;
-    const hauntRisk = resolveBetrayalHauntRisk(core, { additionalOmenCount: 1 });
-    if (hauntRisk.nextOmenAutomatic) {
-        return {
-            dice: [],
-            total: threshold,
-            threshold,
-            triggered: true,
-            automatic: true,
-        };
-    }
-    const dice = rollBetrayalDicePips(random, hauntRisk.nextRollDiceCount);
-    const total = dice.reduce((sum, pip) => sum + pip, 0);
-    return {
-        dice,
-        total,
-        threshold,
-        triggered: total >= threshold,
-        automatic: false,
-    };
-}
-
-function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
-    if (hauntRoll.automatic) {
-        return '预兆牌堆耗尽，自动触发作祟';
-    }
-    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
-}
-
-function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: number; label: string; effect: UseEffectProfile }[] {
-    return [
-        {
-            min: hauntRoll.threshold,
-            label: '作祟开始',
-            effect: { mode: 'none', recommendedAction: 'endTurn' },
-        },
-        {
-            min: 0,
-            label: '未触发作祟',
-            effect: { mode: 'none', recommendedAction: 'endTurn' },
-        },
-    ];
-}
-
-const DECK_KIND_LABEL: Record<BetrayalDeckKind, string> = {
-    event: '事件',
-    item: '物品',
-    omen: '预兆',
-};
-
-
-function resolveEventSymbolSkipMethod(
-    core: BetrayalCore,
-    playerId: string,
-): NonNullable<BetrayalPendingEventChoiceState['eventSymbolSkip']>['method'] | null {
-    if (canUseBetrayalTraitorPowers(core, playerId)) {
-        return 'traitorPower';
-    }
-    if (canUseIdolToSkipEvent(core)) {
-        return 'idol';
-    }
-    return null;
-}
-
-function createEventSymbolSkipChoice(
-    core: BetrayalCore,
-    playerId: string,
-    roomId: string,
-    roomName: string,
-    timestamp: number,
-): BetrayalPendingEventChoiceState | null {
-    const method = resolveEventSymbolSkipMethod(core, playerId);
-    if (!method) {
-        return null;
-    }
-    return {
-        id: `${playerId}-${roomId}-event-symbol-skip-${timestamp}`,
-        playerId,
-        sourceTitle: `${roomName}：事件符号`,
-        sourceKind: 'event-symbol-skip',
-        eventSymbolSkip: {
-            roomId,
-            roomName,
-            method,
-        },
-        acceptLabel: method === 'idol' ? '用雕像跳过事件' : '跳过事件',
-        declineLabel: '抽取事件牌',
-        effect: { mode: 'none' },
-    };
-}
-
-function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boolean; cardId?: string } = {}): BetrayalRecommendedAction {
-    if (core.turnEndedByDiscovery) {
-        return 'endTurn';
-    }
-    if (core.phase === 'haunt') {
-        if (hasUsedHauntSpecialActionThisTurn(core)) {
-            return 'endTurn';
-        }
-        if (core.scenarioRuntime.jackSpiritReleased && core.scenarioRuntime.jackSpiritRoomId === core.activeRoomId) {
-            return core.scenarioRuntime.exorcismCircleRoomIds.length >= 2 ? 'use' : 'move';
-        }
-        if (
-            isCrimsonJackHaunt(core)
-            && isBetrayalLibraryRoom(core.rooms.find((room) => room.id === core.activeRoomId))
-            && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)
-        ) {
-            return 'use';
-        }
-        if (core.rooms.find((room) => room.id === core.activeRoomId)?.discoveryReward === 'event') {
-            return 'use';
-        }
-    }
-
-    const canMove = core.movesRemaining > 0 && resolveMoveTargetRooms(core).length > 0;
-    const canExplore = Boolean(resolveNextExplorableRoomSlot(core));
-    const canTrade = core.currentExplorer.inventory.length > 0
-        && (resolveTradeTargets(core).length > 0 || resolveDogTradeTargets(core).length > 0 || resolveCorpseLootTargets(core).length > 0);
-    const cardId = options.cardId
-        ?? core.currentExplorer.inventory.find((card) => canUseBetrayalPossessionThisTurn(core, card.id))?.id;
-    const canUse = Boolean(cardId && canUseBetrayalPossessionThisTurn(core, cardId));
-
-    if (options.preferUse && canUse) return 'use';
-    if (canMove) return 'move';
-    if (canExplore) return 'explore';
-    if (canTrade) return 'trade';
-    if (canUse) return 'use';
-    return 'endTurn';
-}
-
-function canReviveTraitorAtMonsterTurnStart(core: BetrayalCore, nextPlayerId: string): boolean {
-    return (
-        nextPlayerId === core.scenarioRuntime.traitorPlayerId
-        && core.scenarioRuntime.deadExplorerPlayerIds.includes(nextPlayerId)
-        && core.scenarioRuntime.jackSpiritReleased
-        && Boolean(core.scenarioRuntime.jackSpiritRoomId)
-        && core.scenarioRuntime.jackSpiritHasMovedSinceRelease
-        && Boolean(core.scenarioRuntime.traitorCorpseRoomId)
-        && core.scenarioRuntime.jackSpiritRoomId === core.scenarioRuntime.traitorCorpseRoomId
-        && Boolean(findExplorerByPlayerId(core, nextPlayerId))
-    );
-}
-
-function resolveJackSpiritMonsterMovementRoll(
-    core: BetrayalCore,
-    nextPlayerId: string,
-    random: RandomFn,
-): BetrayalMonsterMovementRollResult | null {
-    if (!shouldDeadTraitorControlJackSpirit(core, nextPlayerId)) {
-        return null;
-    }
-    const jackSpirit = findJackSpirit(core);
-    if (!jackSpirit) {
-        return null;
-    }
-    const dice = rollBetrayalDicePips(random, jackSpirit.speed);
-    const total = dice.reduce((sum, pip) => sum + pip, 0);
-    return {
-        monsterId: jackSpirit.id,
-        monsterName: jackSpirit.name,
-        playerId: nextPlayerId,
-        speed: jackSpirit.speed,
-        dice,
-        total,
-        moveAllowance: Math.max(1, total),
-    };
-}
-
-function tryReviveTraitorAtMonsterTurnStart(core: BetrayalCore, nextPlayerId: string): { core: BetrayalCore; revived: boolean } {
-    if (!canReviveTraitorAtMonsterTurnStart(core, nextPlayerId)) {
-        return { core, revived: false };
-    }
-    const traitor = findExplorerByPlayerId(core, nextPlayerId)!;
-    reviveTraitorFromJackSpirit(traitor);
-    core.scenarioRuntime.deadExplorerPlayerIds = core.scenarioRuntime.deadExplorerPlayerIds.filter((playerId) => playerId !== nextPlayerId);
-    core.scenarioRuntime.jackSpiritReleased = false;
-    core.scenarioRuntime.jackSpiritRoomId = null;
-    core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
-    core.scenarioRuntime.traitorCorpseRoomId = null;
-    core.monsters = core.monsters.filter((monster) => monster.id !== 'jack-spirit');
-    return { core: syncCurrentExplorerProjection(core), revived: true };
-}
-
-function canUseStalkThePrey(core: BetrayalCore, actor: BetrayalExplorerSummary): boolean {
-    if (core.scenarioRuntime.traitorPlayerId !== actor.playerId || core.scenarioRuntime.jackSpiritReleased) {
-        return false;
-    }
-    if (core.usedCardIdsThisTurn.includes('haunt-attack') || core.usedCardIdsThisTurn.includes('stalk-the-prey')) {
-        return false;
-    }
-    const room = core.rooms.find((item) => item.id === actor.roomId);
-    if (!room) {
-        return false;
-    }
-    const livingHeroes = getAllExplorers(core).filter((explorer) => (
-        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    return !livingHeroes.some((hero) => {
-        const heroRoom = core.rooms.find((item) => item.id === hero.roomId);
-        return heroRoom ? isStraightLineVisible(room, heroRoom, core.rooms) : false;
-    });
-}
-
-function resolveStalkThePreyTargets(core: BetrayalCore, actor: BetrayalExplorerSummary): BetrayalRoomNode[] {
-    const livingHeroes = getAllExplorers(core).filter((explorer) => (
-        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    return core.rooms.filter((room) => {
-        if (room.id === actor.roomId || room.state !== 'discovered' || room.floor === 'basement') {
-            return false;
-        }
-        return !livingHeroes.some((hero) => {
-            const heroRoom = core.rooms.find((item) => item.id === hero.roomId);
-            return heroRoom ? isStraightLineVisible(room, heroRoom, core.rooms) : false;
-        });
-    });
 }
 
 function isPlayersTurn(core: BetrayalCore, playerId: string): boolean {
@@ -5053,7 +2910,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                         error: canConnectDoorwaysToEntry(roomTemplate.doorways, placement.entryEdge, command.payload.orientationTurns)
                             ? '此朝向会封死当前区域。'
                             : '此朝向没有走廊连接入口。',
-                        };
+                    };
                 }
             }
             if (roomDraw.resolution.requiresTileAdjustment) {
@@ -5185,33 +3042,6 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     }
 }
 
-function isBloodFromStoneMonsterTurnCommand(core: BetrayalCore, command: BetrayalCommand): boolean {
-    switch (command.type) {
-        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START: {
-            const monster = core.monsters.find((item) => item.id === command.payload.monsterId);
-            return Boolean(monster && isStoneCherubMonster(monster));
-        }
-        case BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP: {
-            const groupId = command.payload.groupId;
-            return resolveBetrayalMonsterMovementGroups(core).some((group) => (
-                group.groupId === groupId
-                && group.monsterIds.some((monsterId) => {
-                    const monster = core.monsters.find((item) => item.id === monsterId);
-                    return Boolean(monster && isStoneCherubMonster(monster));
-                })
-            ));
-        }
-        case BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM: {
-            const monster = core.monsters.find((item) => item.id === command.payload.monsterId);
-            return Boolean(monster && isStoneCherubMonster(monster));
-        }
-        case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN:
-            return true;
-        default:
-            return false;
-    }
-}
-
 function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalCommand): ValidationResult {
     const core = state.core;
     if (core.phase !== 'haunt') {
@@ -5291,14 +3121,12 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         return { valid: false, error: '请先确认当前翻牌结算。' };
     }
     const helpingHandsMonsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
-    const isHelpingHandsMonsterCommand = command.type === BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND
-        || command.type === BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK
-        || command.type === BETRAYAL_COMMANDS.END_HELPING_HANDS_MONSTER_TURN;
+    const isHelpingHandsMonsterCommand = isBetrayalHelpingHandsMonsterTurnCommand(command);
     if (helpingHandsMonsterTurnStatus.active && !isHelpingHandsMonsterCommand) {
         return { valid: false, error: '当前正在进行巨魔手怪物回合，请先完成巨魔手行动。' };
     }
     const bloodFromStoneMonsterTurnStatus = resolveBloodFromStoneMonsterTurnStatus(core);
-    const isBloodFromStoneMonsterCommand = isBloodFromStoneMonsterTurnCommand(core, command);
+    const isBloodFromStoneMonsterCommand = isBetrayalBloodFromStoneMonsterTurnCommand(core, command);
     if (bloodFromStoneMonsterTurnStatus.active && !isBloodFromStoneMonsterCommand) {
         return { valid: false, error: '当前正在进行石像小天使怪物回合，请先完成石像小天使行动。' };
     }
@@ -5312,13 +3140,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (!bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand) {
         return { valid: false, error: '石像小天使怪物回合尚未开始。' };
     }
-    const isStandardMonsterTurnCommand = (
-        command.type === BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START
-        || command.type === BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP
-        || command.type === BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM
-        || command.type === BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO
-        || command.type === BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK
-    ) && !isHelpingHandsMonsterCommand && !isBloodFromStoneMonsterCommand;
+    const isStandardMonsterTurnCommand = isBetrayalStandardMonsterTurnCommand(core, command);
     const pendingRecentRollAcknowledgement = command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
         ? resolveAcknowledgeableRecentRoll(core)
         : null;
@@ -5361,6 +3183,11 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         )
     ) {
         return { valid: false, error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。' };
+    }
+
+    const monsterActionValidation = validateBetrayalMonsterActionCommand(core, command);
+    if (monsterActionValidation) {
+        return monsterActionValidation;
     }
 
     switch (command.type) {
@@ -5446,101 +3273,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
-        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE: {
-            const monsterId = command.payload.monsterId;
-            if (!monsterId) {
-                return { valid: false, error: '必须选择要结算受伤的怪物。' };
-            }
-            const monster = core.monsters.find((item) => item.id === monsterId);
-            if (!monster) {
-                return { valid: false, error: '当前宅邸中找不到该怪物。' };
-            }
-            const damageAmount = command.payload.damageAmount;
-            if (!Number.isInteger(damageAmount) || damageAmount < 0) {
-                return { valid: false, error: '怪物受伤点数必须是非负整数。' };
-            }
-            const damageTrait = command.payload.damageTrait;
-            if (!damageTrait || !BETRAYAL_TRAIT_KEYS.includes(damageTrait)) {
-                return { valid: false, error: '怪物受伤必须指定有效伤害属性。' };
-            }
-            const outcome = resolveBetrayalMonsterDamageOutcome(core, monsterId, {
-                damageAmount,
-                damageTrait,
-            });
-            if (!outcome) {
-                return { valid: false, error: '当前无法结算该怪物受伤。' };
-            }
-            return { valid: true };
-        }
-        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START: {
-            const monsterId = command.payload.monsterId;
-            if (!monsterId) {
-                return { valid: false, error: '必须选择要开始回合的怪物。' };
-            }
-            const preview = resolveBetrayalMonsterTurnStartResolutionPreview(core, monsterId);
-            return preview.canResolve
-                ? { valid: true }
-                : { valid: false, error: preview.reason ?? '当前怪物不能开始回合。' };
-        }
-        case BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP: {
-            const groupId = command.payload.groupId;
-            if (!groupId) {
-                return { valid: false, error: '必须选择怪物移动骰组。' };
-            }
-            const preview = resolveBetrayalMonsterMovementRollGroupPreview(core, groupId);
-            return preview.canRoll
-                ? { valid: true }
-                : { valid: false, error: preview.reason ?? '当前怪物移动骰组不能掷骰。' };
-        }
-        case BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM: {
-            const monsterId = command.payload.monsterId;
-            const roomId = command.payload.roomId;
-            if (!monsterId || !roomId) {
-                return { valid: false, error: '必须选择怪物和目标房间。' };
-            }
-            const monster = core.monsters.find((item) => item.id === monsterId);
-            if (!monster) {
-                return { valid: false, error: '当前宅邸中找不到该怪物。' };
-            }
-            const moveRemaining = core.scenarioRuntime.monsterTurn?.moveRemainingById?.[monsterId] ?? 0;
-            const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, monsterId);
-            if (moveRemaining <= 0 && !canMummyTeleportNow) {
-                return { valid: false, error: '该怪物本回合没有剩余移动额度。' };
-            }
-            const moveCost = resolveBetrayalMonsterMoveCost(core, monsterId);
-            if (moveRemaining < moveCost && !canMummyTeleportNow) {
-                return { valid: false, error: '该怪物本回合剩余移动不足。' };
-            }
-            const canMoveToTarget = resolveBetrayalMonsterMoveTargetRooms(core, monsterId)
-                .some((room) => room.id === roomId);
-            return canMoveToTarget
-                ? { valid: true }
-                : { valid: false, error: '怪物只能移动到已发现且真实连接的房间。' };
-        }
-        case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN: {
-            const preview = resolveBloodFromStoneMonsterTurnEndPreview(core);
-            return preview.canEnd
-                ? { valid: true }
-                : { valid: false, error: preview.reason ?? '当前不能结束石像小天使怪物回合。' };
-        }
-        case BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO: {
-            const monsterId = command.payload.monsterId;
-            const targetPlayerId = command.payload.targetPlayerId;
-            if (!monsterId || !targetPlayerId) {
-                return { valid: false, error: '必须选择怪物和攻击目标英雄。' };
-            }
-            if (resolveMonsterAttackCommand(core, monsterId) !== BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO) {
-                return { valid: false, error: '该怪物需要使用作祟专属攻击命令。' };
-            }
-            const targets = resolveBetrayalNormalMonsterAttackTargets(core, monsterId);
-            if (!targets?.canResolveWithExistingCommand) {
-                return { valid: false, error: targets?.reason ?? '该怪物当前不能发动普通攻击。' };
-            }
-            if (!targets.targetPlayerIds.includes(targetPlayerId)) {
-                return { valid: false, error: '普通怪物只能攻击同板块的存活英雄。' };
-            }
-            return { valid: true };
-        }
         case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD: {
             const pending = pendingHelpingHandsReward;
             if (!pending) {
@@ -6345,791 +4077,31 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     ?? core.scenarioId,
             }, timestamp)];
         case BETRAYAL_COMMANDS.MOVE_TO_ROOM: {
-            const room = core.rooms.find((item) => item.id === command.payload.roomId)!;
-            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            const bloodFromStoneTurnStartVisibleStoneCherubIds = isBloodFromStoneHaunt(core)
-                ? resolveBloodFromStoneTurnStartVisibleStoneCherubIds(core, actor.playerId)
-                : undefined;
-            const bloodFromStoneNewLineOfSightDamageRoll = resolveBloodFromStoneNewLineOfSightDamageRoll(
-                core,
-                actor.playerId,
-                room.id,
-                random,
-            );
-            const isTraitor = core.phase === 'haunt' && core.scenarioRuntime.traitorPlayerId === command.playerId;
-            const isDeadTraitorSpiritTurn = shouldDeadTraitorControlJackSpirit(core, actor.playerId);
-            const isDeadFeverishTurn = shouldDeadPlayerControlFeverish(core, actor.playerId);
-            if (command.payload.useSkeletonKey && canUseSkeletonKeyForMove(core, room.id)) {
-                const skeletonKeyCardId = resolveSkeletonKeyCardId(core.currentExplorer)!;
-                const skeletonKeyRoll = rollBetrayalPip(random);
-                const skeletonKeyBuried = skeletonKeyRoll === 0;
-                return [nowEvent(EVENTS.EXPLORER_MOVED, {
-                    playerId: command.playerId,
-                    roomId: room.id,
-                    skeletonKeyCardId,
-                    skeletonKeyRoll,
-                    skeletonKeyBuried,
-                    bloodFromStoneTurnStartVisibleStoneCherubIds,
-                    bloodFromStoneNewLineOfSightDamageRoll,
-                    logText: `${core.currentExplorer.displayName}使用骨制钥匙穿过墙壁到${room.name}，投出 ${skeletonKeyRoll}${skeletonKeyBuried ? '，骨制钥匙被埋葬' : ''}`,
-                }, timestamp)];
-            }
-            if (
-                isTraitor
-                && canUseStalkThePrey(core, actor)
-                && resolveStalkThePreyTargets(core, actor).some((target) => target.id === room.id)
-            ) {
-                return [nowEvent(EVENTS.EXPLORER_MOVED, {
-                    playerId: command.playerId,
-                    roomId: room.id,
-                    consumeMove: false,
-                    usedActionId: 'stalk-the-prey',
-                    bloodFromStoneTurnStartVisibleStoneCherubIds,
-                    bloodFromStoneNewLineOfSightDamageRoll,
-                    logText: `${actor.displayName}发动“Stalk the Prey”，潜行到了${room.name}`,
-                }, timestamp)];
-            }
-            if (isDeadTraitorSpiritTurn) {
-                return [nowEvent(EVENTS.EXPLORER_MOVED, {
-                    playerId: command.playerId,
-                    roomId: room.id,
-                    controlledToken: 'jack-spirit',
-                    bloodFromStoneTurnStartVisibleStoneCherubIds,
-                    bloodFromStoneNewLineOfSightDamageRoll,
-                    logText: `杰克之灵游荡到了${room.name}`,
-                }, timestamp)];
-            }
-            if (isDeadFeverishTurn) {
-                return [nowEvent(EVENTS.EXPLORER_MOVED, {
-                    playerId: command.playerId,
-                    roomId: room.id,
-                    controlledToken: 'feverish',
-                    bloodFromStoneTurnStartVisibleStoneCherubIds,
-                    bloodFromStoneNewLineOfSightDamageRoll,
-                    logText: `狂热病患移动到了${room.name}`,
-                }, timestamp)];
-            }
-            return [nowEvent(EVENTS.EXPLORER_MOVED, {
-                playerId: command.playerId,
-                roomId: room.id,
-                moveCost: resolveBetrayalMoveCost(core),
-                bloodFromStoneTurnStartVisibleStoneCherubIds,
-                bloodFromStoneNewLineOfSightDamageRoll,
-                logText: `${core.currentExplorer.displayName}移动到${room.name}`,
-            }, timestamp)];
+            const payload = resolveBetrayalExplorerMovedPayload(core, command, random);
+            return payload ? [nowEvent(EVENTS.EXPLORER_MOVED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.EXPLORE_ROOM: {
-            const explorableSlots = resolveExplorableRoomSlots(core);
-            const nextSlot = command.payload.roomId
-                ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? explorableSlots[0]!
-                : explorableSlots[0]!;
-            const placement = resolveRoomPlacementContext(core, nextSlot);
-            const roomDraw = resolveRoomDraw(core, nextSlot.floor, {
-                useHolySymbol: command.payload.useHolySymbol && canUseHolySymbolForDiscovery(core),
-                placement,
-            });
-            const skippedRoomTemplate = roomDraw.skippedRoomTemplate;
-            const roomTemplate = roomDraw.roomTemplate;
-            const roomTileAdjustment = roomDraw.resolution.requiresTileAdjustment
-                ? command.payload.roomTileAdjustment
-                : undefined;
-            if (!roomTemplate || (roomDraw.resolution.requiresTileAdjustment && !roomTileAdjustment)) {
-                return [];
-            }
-            const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
-            const roomTextResolvedCore = resolveCoreAfterRoomDiscoveryText(core, roomTemplate.discoveryEffect);
-            const roomDiscoveryCards = resolveRoomDiscoveryCards(roomTextResolvedCore, roomTemplate.discoveryEffect);
-            const roomDiscoveryEffectResolutionSteps = createRoomDiscoveryEffectResolutionSteps(
-                roomTemplate.name,
-                roomTemplate.discoveryEffect,
-            );
-            const orientationOptions = resolveRoomPlacementOrientationOptions(
-                core,
-                roomTemplate,
-                placement,
-                roomDraw.selectedRoomRequiresOpenFrontier,
-            );
-            const selectedOrientation = orientationOptions.find((option) => option.orientationTurns === command.payload.orientationTurns)
-                ?? orientationOptions[0]
-                ?? orientDoorwaysForPlacement(roomTemplate.doorways, placement.entryEdge, command.payload.orientationTurns);
-            const holySymbolLogPrefix = skippedRoomTemplate
-                ? `${core.currentExplorer.displayName}用圣符埋葬${skippedRoomTemplate.name}，继续发现${roomTemplate.name}；`
-                : '';
-            const tileAdjustmentLogPrefix = roomTileAdjustment
-                ? `${core.currentExplorer.displayName}先调整房间板块后继续探索；`
-                : '';
-            const roomDiscoveryRewardDetailParts = formatRoomDiscoveryRewardDetailParts(roomTemplate.name, roomDiscoveryCards);
-            const roomDiscoveryCardResolutionSteps = createRoomDiscoveryCardResolutionSteps(roomTemplate.name, roomDiscoveryCards);
-
-            if (deckKind === null) {
-                const noSymbolDetailParts = [
-                    ...roomDiscoveryRewardDetailParts,
-                    '没有事件、物品或预兆发现牌',
-                ];
-                return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                    playerId: command.playerId,
-                    roomId: nextSlot.id,
-                    room: {
-                        name: roomTemplate.name,
-                        hint: roomTemplate.hint,
-                        tags: roomTemplate.tags,
-                        discoveryReward: null,
-                        visualId: roomTemplate.visualId,
-                        doorways: selectedOrientation.doorways,
-                        backVisualId: nextSlot.backVisualId,
-                        orientationTurns: selectedOrientation.orientationTurns,
-                        discoveryEffect: roomTemplate.discoveryEffect,
-                        endTurnEffect: roomTemplate.endTurnEffect,
-                        enterEffect: roomTemplate.enterEffect,
-                    },
-                    deckKind,
-                    ...roomDiscoveryCards,
-                    skippedRoomWithHolySymbol: skippedRoomTemplate
-                        ? { name: skippedRoomTemplate.name }
-                        : undefined,
-                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                    roomTileAdjustment,
-                    discovery: {
-                        kind: 'none',
-                        title: roomTemplate.name,
-                        summary: roomDiscoveryEffectResolutionSteps.length > 0 || roomDiscoveryCardResolutionSteps.length > 0
-                            ? '房间文字已结算'
-                            : '无发现符号',
-                        detail: noSymbolDetailParts.join('；'),
-                        tone: roomDiscoveryEffectResolutionSteps.length > 0 || roomDiscoveryCardResolutionSteps.length > 0
-                            ? 'accent'
-                            : 'neutral',
-                        resolutionSteps: [
-                            ...roomDiscoveryEffectResolutionSteps,
-                            ...roomDiscoveryCardResolutionSteps,
-                        ],
-                    },
-                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，房间没有发现符号`,
-                    hauntTriggered: false,
-                }, timestamp)];
-            }
-
-            if (!hasAvailableDiscoveryDeckCard(core, deckKind)) {
-                const emptyDeckDetailParts = [
-                    ...roomDiscoveryRewardDetailParts,
-                    `${DECK_KIND_LABEL[deckKind]}牌堆已空，没有抽取发现牌`,
-                ];
-                return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                    playerId: command.playerId,
-                    roomId: nextSlot.id,
-                    room: {
-                        name: roomTemplate.name,
-                        hint: roomTemplate.hint,
-                        tags: roomTemplate.tags,
-                        discoveryReward: deckKind,
-                        visualId: roomTemplate.visualId,
-                        doorways: selectedOrientation.doorways,
-                        backVisualId: nextSlot.backVisualId,
-                        orientationTurns: selectedOrientation.orientationTurns,
-                        discoveryEffect: roomTemplate.discoveryEffect,
-                        endTurnEffect: roomTemplate.endTurnEffect,
-                        enterEffect: roomTemplate.enterEffect,
-                    },
-                    deckKind,
-                    ...roomDiscoveryCards,
-                    skippedRoomWithHolySymbol: skippedRoomTemplate
-                        ? { name: skippedRoomTemplate.name }
-                        : undefined,
-                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                    roomTileAdjustment,
-                    discovery: {
-                        kind: deckKind,
-                        title: `${DECK_KIND_LABEL[deckKind]}符号`,
-                        summary: '牌堆已空',
-                        detail: emptyDeckDetailParts.join('；'),
-                        tone: 'neutral',
-                        resolutionSteps: [
-                            ...roomDiscoveryEffectResolutionSteps,
-                            ...roomDiscoveryCardResolutionSteps,
-                        ],
-                    },
-                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，${DECK_KIND_LABEL[deckKind]}牌堆已空`,
-                    hauntTriggered: false,
-                }, timestamp)];
-            }
-
-            if (deckKind === 'event') {
-                if (shouldSkipEventSymbolForUponReflection(core)) {
-                    return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                        playerId: command.playerId,
-                        roomId: nextSlot.id,
-                        room: {
-                            name: roomTemplate.name,
-                            hint: roomTemplate.hint,
-                            tags: roomTemplate.tags,
-                            discoveryReward: deckKind,
-                            visualId: roomTemplate.visualId,
-                            doorways: selectedOrientation.doorways,
-                            backVisualId: nextSlot.backVisualId,
-                            orientationTurns: selectedOrientation.orientationTurns,
-                            discoveryEffect: roomTemplate.discoveryEffect,
-                            endTurnEffect: roomTemplate.endTurnEffect,
-                            enterEffect: roomTemplate.enterEffect,
-                        },
-                        deckKind,
-                        ...roomDiscoveryCards,
-                        skippedEventWithUponReflection: true,
-                        skippedRoomWithHolySymbol: skippedRoomTemplate
-                            ? { name: skippedRoomTemplate.name }
-                            : undefined,
-                        roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                        roomTileAdjustment,
-                        discovery: {
-                            kind: deckKind,
-                            title: '事件符号',
-                            summary: '镜中沉默',
-                            detail: '7 号作祟中不抽取或结算事件卡，且探索事件符号房间不会结束回合',
-                            tone: 'accent',
-                        },
-                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，镜中沉默使事件符号无事发生`,
-                        hauntTriggered: false,
-                    }, timestamp)];
-                }
-                if (command.payload.ignoreEventSymbolWithTraitorPower && canUseBetrayalTraitorPowers(core, command.playerId)) {
-                    return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                        playerId: command.playerId,
-                        roomId: nextSlot.id,
-                        room: {
-                            name: roomTemplate.name,
-                            hint: roomTemplate.hint,
-                            tags: roomTemplate.tags,
-                            discoveryReward: deckKind,
-                            visualId: roomTemplate.visualId,
-                            doorways: selectedOrientation.doorways,
-                            backVisualId: nextSlot.backVisualId,
-                            orientationTurns: selectedOrientation.orientationTurns,
-                            discoveryEffect: roomTemplate.discoveryEffect,
-                            endTurnEffect: roomTemplate.endTurnEffect,
-                            enterEffect: roomTemplate.enterEffect,
-                        },
-                        deckKind,
-                        ...roomDiscoveryCards,
-                        skippedEventWithTraitorPower: true,
-                        skippedRoomWithHolySymbol: skippedRoomTemplate
-                            ? { name: skippedRoomTemplate.name }
-                            : undefined,
-                        roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                        roomTileAdjustment,
-                        discovery: {
-                            kind: deckKind,
-                            title: '跳过事件',
-                            summary: '跳过事件',
-                            detail: '没有抽取或结算事件卡',
-                            tone: 'accent',
-                        },
-                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，叛徒跳过了事件`,
-                        hauntTriggered: false,
-                    }, timestamp)];
-                }
-                const eventCard = resolveEvent(core);
-                if (command.payload.useIdol && canUseIdolToSkipEvent(core)) {
-                    return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                        playerId: command.playerId,
-                        roomId: nextSlot.id,
-                        room: {
-                            name: roomTemplate.name,
-                            hint: roomTemplate.hint,
-                            tags: roomTemplate.tags,
-                            discoveryReward: deckKind,
-                            visualId: roomTemplate.visualId,
-                            doorways: selectedOrientation.doorways,
-                            backVisualId: nextSlot.backVisualId,
-                            orientationTurns: selectedOrientation.orientationTurns,
-                            discoveryEffect: roomTemplate.discoveryEffect,
-                            endTurnEffect: roomTemplate.endTurnEffect,
-                            enterEffect: roomTemplate.enterEffect,
-                        },
-                        deckKind,
-                        ...roomDiscoveryCards,
-                        skippedEventWithIdol: { name: eventCard.name },
-                        skippedRoomWithHolySymbol: skippedRoomTemplate
-                            ? { name: skippedRoomTemplate.name }
-                            : undefined,
-                        roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                        roomTileAdjustment,
-                        discovery: {
-                            kind: deckKind,
-                            title: eventCard.name,
-                            summary: '已用雕像跳过',
-                            detail: '没有抽取或结算事件卡',
-                            tone: 'accent',
-                        },
-                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，使用雕像跳过了事件：${eventCard.name}`,
-                        hauntTriggered: false,
-                    }, timestamp)];
-                }
-                const eventSymbolSkipChoice = createEventSymbolSkipChoice(
-                    core,
-                    command.playerId,
-                    nextSlot.id,
-                    roomTemplate.name,
-                    timestamp,
-                );
-                if (eventSymbolSkipChoice) {
-                    return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                        playerId: command.playerId,
-                        roomId: nextSlot.id,
-                        room: {
-                            name: roomTemplate.name,
-                            hint: roomTemplate.hint,
-                            tags: roomTemplate.tags,
-                            discoveryReward: deckKind,
-                            visualId: roomTemplate.visualId,
-                            doorways: selectedOrientation.doorways,
-                            backVisualId: nextSlot.backVisualId,
-                            orientationTurns: selectedOrientation.orientationTurns,
-                            discoveryEffect: roomTemplate.discoveryEffect,
-                            endTurnEffect: roomTemplate.endTurnEffect,
-                            enterEffect: roomTemplate.enterEffect,
-                        },
-                        deckKind,
-                        ...roomDiscoveryCards,
-                        skippedRoomWithHolySymbol: skippedRoomTemplate
-                            ? { name: skippedRoomTemplate.name }
-                            : undefined,
-                        roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                        roomTileAdjustment,
-                        discovery: {
-                            kind: deckKind,
-                            title: '事件符号',
-                            summary: '等待选择是否跳过事件',
-                            detail: `${roomTemplate.name}带有事件符号；可选择跳过事件或继续抽取事件牌`,
-                            tone: 'accent',
-                            resolutionSteps: [
-                                ...roomDiscoveryEffectResolutionSteps,
-                                ...roomDiscoveryCardResolutionSteps,
-                            ],
-                        },
-                        nextPendingEventChoice: eventSymbolSkipChoice,
-                        logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，发现事件符号，等待选择是否跳过事件`,
-                        hauntTriggered: false,
-                    }, timestamp)];
-                }
-                if (eventCard.roll) {
-                return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                    playerId: command.playerId,
-                    roomId: nextSlot.id,
-                    room: {
-                        name: roomTemplate.name,
-                        hint: roomTemplate.hint,
-                        tags: roomTemplate.tags,
-                        discoveryReward: deckKind,
-                        visualId: roomTemplate.visualId,
-                        doorways: selectedOrientation.doorways,
-                        backVisualId: nextSlot.backVisualId,
-                        orientationTurns: selectedOrientation.orientationTurns,
-                        discoveryEffect: roomTemplate.discoveryEffect,
-                        endTurnEffect: roomTemplate.endTurnEffect,
-                        enterEffect: roomTemplate.enterEffect,
-                    },
-                    deckKind,
-                    eventDescription: eventCard.description,
-                    eventRollPending: eventCard.roll
-                        ? {
-                            kind: eventCard.roll.kind,
-                            trait: eventCard.roll.kind === 'dice' ? undefined : eventCard.roll.trait,
-                            dice: eventCard.roll.kind === 'dice' ? eventCard.roll.dice : undefined,
-                            label: eventCard.roll.kind === 'dice' ? eventCard.roll.label : undefined,
-                        }
-                        : undefined,
-                    roomDiscoveryCards: roomDiscoveryCards.roomDiscoveryCards,
-                    buriedRoomDiscoveryCards: roomDiscoveryCards.buriedRoomDiscoveryCards,
-                    skippedRoomWithHolySymbol: skippedRoomTemplate
-                        ? { name: skippedRoomTemplate.name }
-                        : undefined,
-                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                    roomTileAdjustment,
-                    discovery: {
-                        kind: deckKind,
-                        title: eventCard.name,
-                        summary: '事件牌已公开，等待投掷',
-                        detail: eventCard.description ?? '请按事件牌要求投掷。',
-                        tone: 'accent',
-                        resolutionSteps: [
-                            ...roomDiscoveryEffectResolutionSteps,
-                        ],
-                    },
-                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，公开事件：${eventCard.name}，等待投掷`,
-                    hauntTriggered: false,
-                }, timestamp)];
-                }
-                const eventRollKind = eventCard.roll?.kind ?? 'trait';
-                const eventRollResult = eventCard.roll
-                    ? eventRollKind === 'dice'
-                        ? rollEventFixedDice(random, eventCard.roll.dice)
-                        : rollEventTraitCheckWithDice(random, roomTextResolvedCore.currentExplorer, eventCard.roll.trait, roomTextResolvedCore)
-                    : null;
-                const eventRollTotal = eventRollResult?.total ?? null;
-                const eventBranch = eventCard.roll && eventRollTotal !== null
-                    ? resolveEventBranch(eventCard.roll.branches, eventRollTotal)
-                    : null;
-                const eventEffect = eventBranch?.effect ?? eventCard.effect;
-                if (!eventEffect) {
-                    throw new Error(`event ${eventCard.name} has no resolvable effect`);
-                }
-                const deferEventRollEffectRandomResults = Boolean(eventCard.roll && eventRollTotal !== null && eventBranch);
-                const materializedEventEffect = materializeEventEffect(
-                    eventEffect,
-                    random,
-                    roomTextResolvedCore.currentExplorer,
-                    roomTextResolvedCore,
-                    { materializeRandomResults: !deferEventRollEffectRandomResults },
-                );
-                const deathPrevention = deferEventRollEffectRandomResults
-                    ? undefined
-                    : resolveEventDamageDeathPrevention(roomTextResolvedCore, materializedEventEffect, random);
-                const effectLabel = formatEffectLabel(materializedEventEffect);
-                const eventRollLabel = eventCard.roll
-                    ? eventRollKind === 'dice'
-                        ? eventCard.roll.label
-                        : `${TRAIT_LABEL[eventCard.roll.trait]}检定`
-                    : undefined;
-                const rollLabel = eventCard.roll && eventRollTotal !== null && eventBranch
-                    ? `${eventRollLabel} ${eventRollTotal}：${eventBranch.label}`
-                    : undefined;
-                const eventEffectResolutionText = rollLabel ? `${rollLabel}；${effectLabel}` : effectLabel;
-                const eventEffectResolutionSteps: BetrayalDiscoveryResolutionStep[] = eventEffectNeedsPendingEventChoice(materializedEventEffect)
-                    ? []
-                    : [{
-                        id: `event-effect-${eventCard.name}`,
-                        kind: 'event-effect',
-                        text: `事件效果：${eventEffectResolutionText}`,
-                        deckKind: 'event',
-                    }];
-                const discoveryResolutionSteps = [
-                    ...roomDiscoveryEffectResolutionSteps,
-                    ...eventEffectResolutionSteps,
-                ];
-                return [nowEvent(EVENTS.ROOM_EXPLORED, {
-                    playerId: command.playerId,
-                    roomId: nextSlot.id,
-                    room: {
-                        name: roomTemplate.name,
-                        hint: roomTemplate.hint,
-                        tags: roomTemplate.tags,
-                        discoveryReward: deckKind,
-                        visualId: roomTemplate.visualId,
-                        doorways: selectedOrientation.doorways,
-                        backVisualId: nextSlot.backVisualId,
-                        orientationTurns: selectedOrientation.orientationTurns,
-                        discoveryEffect: roomTemplate.discoveryEffect,
-                        endTurnEffect: roomTemplate.endTurnEffect,
-                        enterEffect: roomTemplate.enterEffect,
-                    },
-                    deckKind,
-                    ...roomDiscoveryCards,
-                    eventEffect: materializedEventEffect,
-                    eventDescription: eventCard.description,
-                    deathPrevention,
-                    eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch
-                        ? {
-                            kind: eventRollKind,
-                            trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
-                            total: eventRollTotal,
-                            label: eventBranch.label,
-                            eventDescription: eventCard.description,
-                            rollLabel: eventRollLabel,
-                            dice: eventRollResult?.dice,
-                            passiveBonus: eventRollResult?.passiveBonus,
-                            branchThresholds: eventCard.roll.branches.map((branch) => ({
-                                min: branch.min,
-                                label: branch.label,
-                                effect: { ...branch.effect },
-                            })),
-                        }
-                        : undefined,
-                    skippedRoomWithHolySymbol: skippedRoomTemplate
-                        ? { name: skippedRoomTemplate.name }
-                        : undefined,
-                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                    roomTileAdjustment,
-                    discovery: {
-                        kind: deckKind,
-                        title: eventCard.name,
-                        summary: '即时生效',
-                        detail: eventEffectResolutionText,
-                        tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
-                        resolutionSteps: discoveryResolutionSteps,
-                    },
-                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，事件：${eventCard.name}（${rollLabel ? `${rollLabel}，` : ''}${effectLabel}）`,
-                    hauntTriggered: false,
-                }, timestamp)];
-            }
-            if (core.pendingEventRollStart) {
-                throw new Error('event roll must be started by ROLL_EVENT');
-            }
-
-            const roomDiscoveryItemDrawCount = (roomDiscoveryCards.roomDiscoveryCards?.length ?? 0)
-                + (roomDiscoveryCards.buriedRoomDiscoveryCards?.length ?? 0);
-            const fallbackDrawnCard = createDrawnCard(core, deckKind, {
-                additionalDrawnCount: deckKind === 'item' ? roomDiscoveryItemDrawCount : 0,
-            });
-            const mummyForcedOmenDraw = deckKind === 'omen'
-                ? resolveMummyForcedOmenDraw(roomTextResolvedCore, roomTextResolvedCore.currentExplorer, fallbackDrawnCard, random)
-                : { drawnCard: fallbackDrawnCard };
-            const drawnCard = mummyForcedOmenDraw.drawnCard;
-            const regularDrawnCard = drawnCard;
-            const drawnCardEffect = resolveUseEffect(drawnCard);
-            const hauntRoll = resolveHauntRoll(roomTextResolvedCore, deckKind, random);
-            const hauntRevealResolution = hauntRoll?.triggered
-                ? resolveHauntRevealResolutionForTrigger(core, drawnCard)
-                : undefined;
-            const roomDiscoveryRewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
-            const drawnCardBaseDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
-            const mummyForcedOmenDetail = mummyForcedOmenDraw.forcedOmenSearch
-                ? mummyForcedOmenDraw.forcedOmenSearch.role === 'hero-book'
-                    ? '木乃伊横行：英雄首次需要预兆时，从预兆堆找出书本并洗牌'
-                    : '木乃伊横行：叛徒首次需要预兆时，从预兆堆找出圣符或指环并洗牌'
-                : null;
-            const drawnCardDetailParts = [
-                ...roomDiscoveryRewardDetailParts,
-                mummyForcedOmenDetail,
-                drawnCardBaseDetail,
-                hauntRoll ? formatHauntRollDiscoveryDetail(hauntRoll) : null,
-            ].filter((part): part is string => Boolean(part));
-            const drawnCardDetail = drawnCardDetailParts.join('；');
-            const discoveryResolutionSteps: BetrayalDiscoveryResolutionStep[] = [
-                ...roomDiscoveryEffectResolutionSteps,
-                ...roomDiscoveryCardResolutionSteps,
-                {
-                    id: `drawn-card-${drawnCard.id}`,
-                    kind: 'drawn-card' as const,
-                    text: `已加入持有区：${drawnCard.name}${drawnCardBaseDetail ? `（${drawnCardBaseDetail}）` : ''}`,
-                    deckKind,
-                    cardId: drawnCard.id,
-                },
-                ...(hauntRoll
-                    ? [{
-                        id: `haunt-roll-${drawnCard.id}`,
-                        kind: 'haunt-roll' as const,
-                        text: formatHauntRollDiscoveryDetail(hauntRoll),
-                        deckKind,
-                        cardId: drawnCard.id,
-                    }]
-                    : []),
-            ];
-            const gainedCardNames = [...roomDiscoveryRewardNames.gained, drawnCard.name];
-            return [nowEvent(EVENTS.ROOM_EXPLORED, {
+            const payload = resolveBetrayalRoomExploredPayload(core, {
                 playerId: command.playerId,
-                roomId: nextSlot.id,
-                room: {
-                    name: roomTemplate.name,
-                    hint: roomTemplate.hint,
-                    tags: roomTemplate.tags,
-                    discoveryReward: deckKind,
-                    visualId: roomTemplate.visualId,
-                    doorways: selectedOrientation.doorways,
-                    backVisualId: nextSlot.backVisualId,
-                    orientationTurns: selectedOrientation.orientationTurns,
-                    discoveryEffect: roomTemplate.discoveryEffect,
-                    endTurnEffect: roomTemplate.endTurnEffect,
-                    enterEffect: roomTemplate.enterEffect,
-                },
-                deckKind,
-                ...roomDiscoveryCards,
-                drawnCard: regularDrawnCard,
-                skippedRoomWithHolySymbol: skippedRoomTemplate
-                    ? { name: skippedRoomTemplate.name }
-                    : undefined,
-                roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
-                roomTileAdjustment,
-                discovery: {
-                    kind: deckKind,
-                    title: drawnCard.name,
-                    summary: '已加入持有区',
-                    detail: drawnCardDetail,
-                    tone: 'accent',
-                    resolutionSteps: discoveryResolutionSteps,
-                },
-                logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，拿到了${gainedCardNames.join('、')}`,
-                mummyForcedOmenSearch: mummyForcedOmenDraw.forcedOmenSearch,
-                hauntRoll: hauntRoll ?? undefined,
-                hauntTriggered: hauntRoll?.triggered ?? false,
-                hauntRevealResolution,
-            }, timestamp)];
+                payload: command.payload,
+            }, random, timestamp);
+            return payload ? [nowEvent(EVENTS.ROOM_EXPLORED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.ROLL_EVENT: {
-            const pending = core.pendingEventRollStart;
-            if (!pending) {
-                return [];
-            }
-            const eventCard = resolveEvent(core);
-            const resolution = resolveEventRollResolution(core, eventCard, random);
-            const rollId = `${command.playerId}-${pending.sourceTitle}-${timestamp}`;
-            return [nowEvent(EVENTS.EVENT_ROLLED, {
-                rollId,
-                playerId: command.playerId,
-                sourceTitle: pending.sourceTitle,
-                eventDescription: pending.eventDescription,
-                eventEffect: cloneUseEffect(resolution.eventEffect),
-                deathPrevention: resolution.deathPrevention
-                    ? {
-                        ...resolution.deathPrevention,
-                        dice: [...resolution.deathPrevention.dice],
-                        damageTraits: [...resolution.deathPrevention.damageTraits],
-                        traitsBeforeDamage: { ...resolution.deathPrevention.traitsBeforeDamage },
-                    }
-                    : undefined,
-                eventRoll: {
-                    ...resolution.eventRoll,
-                    branchThresholds: resolution.eventRoll.branchThresholds?.map((branch) => ({
-                        ...branch,
-                        effect: cloneUseEffect(branch.effect),
-                    })),
-                },
-                nextPendingEventChoice: resolution.nextPendingEventChoice
-                    ? clonePendingEventChoice(resolution.nextPendingEventChoice)
-                    : undefined,
-                discovery: {
-                    kind: 'event',
-                    title: pending.sourceTitle,
-                    summary: '结果已公开',
-                    detail: resolution.resolutionText,
-                    tone: isWarningEventEffect(resolution.eventEffect) ? 'warning' : 'accent',
-                    resolutionSteps: [{
-                        id: `event-effect-${pending.sourceTitle}`,
-                        kind: 'event-effect',
-                        text: `事件效果：${resolution.resolutionText}`,
-                        deckKind: 'event',
-                    }],
-                },
-                drawnEventCardNameToBury: eventCard.name,
-                logText: `${core.currentExplorer.displayName}投掷事件：${pending.sourceTitle}（${resolution.resolutionText}）`,
-            }, timestamp)];
+            const payload = resolveBetrayalEventRolledPayload(core, command.playerId, random, timestamp);
+            return payload ? [nowEvent(EVENTS.EVENT_ROLLED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION: {
-            const pendingResolution = (core.pendingCardResolutionQueue ?? [])[0];
-            if (!pendingResolution) {
-                return [];
-            }
-            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(pendingResolution);
-            const acknowledgedPlayerIds = Array.from(new Set([
-                ...resolvePendingCardResolutionAcknowledgedPlayerIds(pendingResolution),
-                command.playerId,
-            ]));
-            const isComplete = isPendingCardResolutionFullyAcknowledged(
-                core,
-                pendingResolution,
-                acknowledgedPlayerIds,
-            );
-            return [nowEvent(EVENTS.CARD_RESOLUTION_ACKNOWLEDGED, {
-                playerId: command.playerId,
-                resolution: clonePendingCardResolution({
-                    ...pendingResolution,
-                    requiredPlayerIds,
-                    acknowledgedPlayerIds,
-                }),
-                remainingCount: Math.max(
-                    0,
-                    (core.pendingCardResolutionQueue ?? []).length - (isComplete ? 1 : 0),
-                ),
-                acknowledgedPlayerIds,
-                remainingAcknowledgementCount: Math.max(
-                    0,
-                    requiredPlayerIds.length - acknowledgedPlayerIds.length,
-                ),
-                logText: `${actor.displayName}确认${pendingResolution.cardName}（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）：${pendingResolution.text}`,
-            }, timestamp)];
+            const payload = resolveBetrayalCardResolutionAcknowledgedPayload(core, command.playerId);
+            return payload ? [nowEvent(EVENTS.CARD_RESOLUTION_ACKNOWLEDGED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
-            const recentRoll = resolveAcknowledgeableRecentRoll(core);
-            if (!recentRoll) {
-                return [];
-            }
-            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
-            const acknowledgedPlayerIds = Array.from(new Set([
-                ...resolveRecentRollAcknowledgedPlayerIds(recentRoll),
-                command.playerId,
-            ]));
-            const isFullyAcknowledged = isRecentRollFullyAcknowledged(
-                core,
-                recentRoll,
-                acknowledgedPlayerIds,
-            );
-            return [nowEvent(EVENTS.RECENT_ROLL_ACKNOWLEDGED, {
-                playerId: command.playerId,
-                rollId: recentRoll.id,
-                sourceTitle: recentRoll.sourceTitle,
-                requiredPlayerIds,
-                acknowledgedPlayerIds,
-                remainingAcknowledgementCount: Math.max(0, requiredPlayerIds.length - acknowledgedPlayerIds.length),
-                isFullyAcknowledged,
-                logText: `${actor.displayName}确认${recentRoll.sourceTitle}投骰结果（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）`,
-            }, timestamp)];
+            const payload = resolveBetrayalRecentRollAcknowledgedPayload(core, command.playerId);
+            return payload ? [nowEvent(EVENTS.RECENT_ROLL_ACKNOWLEDGED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL: {
-            const pending = core.pendingEventRollResolution!;
-            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, pending);
-            const acknowledgedPlayerIds = Array.from(new Set([
-                ...resolvePendingEventRollResolutionAcknowledgedPlayerIds(pending),
-                command.playerId,
-            ]));
-            const isFullyAcknowledged = isPendingEventRollResolutionFullyAcknowledged(
-                core,
-                pending,
-                acknowledgedPlayerIds,
-            );
-            const shouldResolveFinalEffect = isFullyAcknowledged && !pending.nextPendingEventChoice;
-            const finalEffect = shouldResolveFinalEffect
-                ? materializeEventEffect(pending.effect, random, core.currentExplorer, core)
-                : cloneUseEffect(pending.effect);
-            const finalDeathPrevention = shouldResolveFinalEffect
-                ? resolveEventDamageDeathPrevention(core, finalEffect, random)
-                : pending.deathPrevention;
-            return [nowEvent(EVENTS.EVENT_ROLL_FINALIZED, {
-                rollId: pending.rollId,
-                playerId: command.playerId,
-                triggerPlayerId: pending.playerId,
-                sourceTitle: pending.sourceTitle,
-                requiredPlayerIds,
-                acknowledgedPlayerIds,
-                remainingAcknowledgementCount: Math.max(0, requiredPlayerIds.length - acknowledgedPlayerIds.length),
-                isFullyAcknowledged,
-                effect: cloneUseEffect(finalEffect),
-                nextPendingEventChoice: pending.nextPendingEventChoice
-                    ? clonePendingEventChoice(pending.nextPendingEventChoice)
-                    : undefined,
-                deathPrevention: finalDeathPrevention
-                    ? {
-                        ...finalDeathPrevention,
-                        dice: [...finalDeathPrevention.dice],
-                        damageTraits: [...finalDeathPrevention.damageTraits],
-                        traitsBeforeDamage: { ...finalDeathPrevention.traitsBeforeDamage },
-                    }
-                    : undefined,
-                hauntTriggered: pending.hauntTriggered,
-                hauntCardNumber: pending.hauntCardNumber,
-                hauntTriggerLabel: pending.hauntTriggerLabel,
-                hauntTraitorPlayerId: pending.hauntTraitorPlayerId,
-                hauntRevealResolution: pending.hauntRevealResolution
-                    ? { ...pending.hauntRevealResolution }
-                    : undefined,
-                hauntTraitorResolution: pending.hauntTraitorResolution
-                    ? cloneHauntTraitorResolution(pending.hauntTraitorResolution) ?? undefined
-                    : undefined,
-                dustSetup: pending.dustSetup ? cloneDustRuntimeState(pending.dustSetup) : undefined,
-                magicCameraSetup: pending.magicCameraSetup
-                    ? cloneMagicCameraRuntimeState(pending.magicCameraSetup)
-                    : undefined,
-                helpingHandsSetup: pending.helpingHandsSetup
-                    ? cloneHelpingHandsRuntimeState(pending.helpingHandsSetup)
-                    : undefined,
-                uponReflectionSetup: pending.uponReflectionSetup
-                    ? cloneUponReflectionRuntimeState(pending.uponReflectionSetup)
-                    : undefined,
-                hauntRoll: pending.hauntRoll ? { ...pending.hauntRoll } : undefined,
-                logText: pending.requiresAcknowledgement === false
-                    ? `${pending.sourceTitle}的最终投骰结果已自动结算`
-                    : `${actor.displayName}确认${pending.sourceTitle}的最终投骰结果（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）`,
-            }, timestamp)];
+            const payload = resolveBetrayalEventRollFinalizedPayload(core, command.playerId, random);
+            return payload ? [nowEvent(EVENTS.EVENT_ROLL_FINALIZED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
             const eventPayload = resolveBetrayalPossessionUsedPayload(core, command.playerId, command.payload, {
@@ -7140,143 +4112,11 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         }
         case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
         case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM: {
-            const card = command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
-                ? resolveRabbitFootCard(core, command.payload.cardId, command.playerId)!
-                : resolveRecentRollRerollItemCard(core, command.payload.cardId, command.playerId)!;
-            const rule = resolveRecentRollRerollItemRule(card.id)!;
-            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            const dieIndex = command.payload.dieIndex ?? 0;
-            const dieIndices = core.recentRoll
-                ? resolveRecentRollRerollCommandDieIndices(core.recentRoll, card.id, dieIndex)
-                : [];
-            const previousPips = dieIndices.map((index) => core.recentRoll?.dice[index] ?? 0);
-            const newPips = dieIndices.map(() => rollBetrayalPip(random));
-            const nextDice = core.recentRoll ? [...core.recentRoll.dice] : [];
-            dieIndices.forEach((index, valueIndex) => {
-                nextDice[index] = newPips[valueIndex] ?? nextDice[index] ?? 0;
-            });
-            const nextEventBranch = core.recentRoll
-                && (core.recentRoll.kind === 'eventTraitCheck' || core.recentRoll.kind === 'eventDiceRoll')
-                && core.recentRoll.branchThresholds
-                ? resolveEventBranch(core.recentRoll.branchThresholds, nextDice.reduce((sum, pip) => sum + pip, 0) + core.recentRoll.passiveBonus)
-                : null;
-            const rerollTargetsPendingEventRoll = core.pendingEventRollResolution?.rollId === core.recentRoll?.id;
-            const pendingHauntRoll = rerollTargetsPendingEventRoll
-                ? core.pendingEventRollResolution.hauntRoll
-                : undefined;
-            const rerolledEventTotal = nextDice.reduce((sum, pip) => sum + pip, 0)
-                + (core.recentRoll?.passiveBonus ?? 0);
-            const rerollHauntTriggered = pendingHauntRoll
-                ? rerolledEventTotal >= pendingHauntRoll.threshold
-                : false;
-            const rerollHauntRevealResolution = rerollHauntTriggered
-                ? resolveHauntRevealResolutionForTrigger(
-                    core,
-                    { id: null, name: pendingHauntRoll?.successHauntTriggerLabel ?? core.recentRoll?.sourceTitle },
-                    pendingHauntRoll?.successHauntId,
-                )
-                : undefined;
-            const rerollHauntTraitorResolution = rerollHauntTriggered && rerollHauntRevealResolution
-                ? resolveHauntTraitorResolutionForTrigger(
-                    core,
-                    rerollHauntRevealResolution.hauntCardNumber,
-                    command.playerId,
-                    {
-                        eventSelection: pendingHauntRoll?.successTraitorSelection,
-                        revealRepresentativeOnly: rerollHauntRevealResolution.representativeOnly,
-                    },
-                )
-                : undefined;
-            const eventRerollHaunt = pendingHauntRoll
-                ? {
-                    hauntTriggered: rerollHauntTriggered,
-                    hauntCardNumber: rerollHauntTriggered ? pendingHauntRoll.successHauntId : undefined,
-                    hauntTriggerLabel: rerollHauntTriggered
-                        ? pendingHauntRoll.successHauntTriggerLabel ?? core.recentRoll?.sourceTitle
-                        : undefined,
-                    hauntTraitorPlayerId: rerollHauntTraitorResolution?.traitorPlayerId,
-                    hauntRevealResolution: rerollHauntRevealResolution,
-                    hauntTraitorResolution: rerollHauntTraitorResolution,
-                    dustSetup: rerollHauntTriggered && pendingHauntRoll.successHauntId === 3
-                        ? createDustRuntimeState(core, random)
-                        : undefined,
-                    uponReflectionSetup: rerollHauntTriggered && pendingHauntRoll.successHauntId === 7
-                        ? createUponReflectionRuntimeState(core, command.playerId, random)
-                        : undefined,
-                }
-                : undefined;
-            const eventRerollMustStayPending = Boolean(
-                rerollTargetsPendingEventRoll
-                && (
-                    rerollHauntTriggered
-                    || (nextEventBranch && eventEffectNeedsPendingEventChoice(nextEventBranch.effect))
-                ),
-            );
-            const eventRerollEffect = nextEventBranch
-                ? materializeEventEffect(
-                    nextEventBranch.effect,
-                    random,
-                    core.currentExplorer,
-                    core,
-                    { materializeRandomResults: !eventRerollMustStayPending },
-                )
-                : undefined;
-            const rerollSummary = rule.mode === 'single-die'
-                ? `第 ${dieIndex + 1} 颗骰子：${previousPips[0] ?? 0} → ${newPips[0] ?? 0}`
-                : `${dieIndices.length} 颗骰子：${previousPips.join('/')} → ${newPips.join('/')}`;
-            const mentalDamageAfterReroll = rule.mode === 'blank-trait-check-dice'
-                ? newPips.filter((pip) => pip === 0).length
-                : 0;
-            const mentalDamageSummary = mentalDamageAfterReroll > 0
-                ? `；重投后仍有 ${mentalDamageAfterReroll} 个空白，承受 ${mentalDamageAfterReroll} 点精神伤害`
-                : '';
-            return [nowEvent(EVENTS.RABBIT_FOOT_USED, {
-                playerId: command.playerId,
-                cardId: card.id,
-                cardName: rule.label,
-                dieIndex: dieIndices[0] ?? dieIndex,
-                newPip: newPips[0] ?? 0,
-                dieIndices,
-                newPips,
-                mentalDamageAfterReroll: mentalDamageAfterReroll || undefined,
-                eventRerollEffect,
-                eventRerollDeathPrevention: eventRerollEffect && !eventRerollMustStayPending
-                    ? resolveEventDamageDeathPrevention(core, eventRerollEffect, random)
-                    : undefined,
-                eventRerollHaunt,
-                logText: `${actor.displayName}使用${rule.label}重掷${rerollSummary}${mentalDamageSummary}`,
-            }, timestamp)];
+            const payload = resolveBetrayalRecentRollRerollPayload(core, command, random);
+            return payload ? [nowEvent(EVENTS.RABBIT_FOOT_USED, payload, timestamp)] : [];
         }
-        case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE: {
-            const pending = core.pendingEventChoice!;
-            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            if (pending.itemResolution === 'tooth-necklace-end-turn' && pending.deferredTurnEnd) {
-                const accepted = command.payload.accept !== false;
-                const trait = accepted ? command.payload.trait : undefined;
-                const traitLabel = trait ? TRAIT_LABEL[trait] : '';
-                return [nowEvent(EVENTS.TOOTH_NECKLACE_TRAIT_GAINED, {
-                    playerId: command.playerId,
-                    cardId: pending.itemCardId ?? TOOTH_NECKLACE_CARD_ID,
-                    cardName: pending.sourceTitle,
-                    accepted,
-                    trait,
-                    deferredTurnEnd: cloneTurnEndedPayload(pending.deferredTurnEnd),
-                    logText: accepted && trait
-                        ? `${actor.displayName}使用${pending.sourceTitle}，${traitLabel}从濒死提升 1 步`
-                        : `${actor.displayName}跳过${pending.sourceTitle}的回合结束属性提升`,
-                }, timestamp)];
-            }
-            const eventChoicePayload = resolveBetrayalEventChoiceResolvedPayload(
-                core,
-                command.playerId,
-                command.payload,
-                random,
-                timestamp,
-            );
-            return eventChoicePayload
-                ? [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, eventChoicePayload, timestamp)]
-                : [];
-        }
+        case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE:
+            return resolveBetrayalEventChoiceCommandEvents(core, command, random, timestamp);
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
             const payload = createBetrayalRoomEffectUsedPayload(core, command.playerId, random);
             if (!payload) {
@@ -7303,145 +4143,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const corpseLootPayload = createBetrayalCorpseLootedPayload(core, command.playerId, command.payload);
             return corpseLootPayload ? [nowEvent(EVENTS.CORPSE_LOOTED, corpseLootPayload, timestamp)] : [];
         }
-        case BETRAYAL_COMMANDS.END_TURN: {
-            const roomEndTurnEffect = resolveEndTurnRoomEffect(core, random);
-            const dustEndTurn = resolveDustEndTurn(core, random);
-            const magicCameraEndTurnCapturedEssencePlayerIds = resolveMagicCameraEndTurn(core);
-            const extraTurnAfterCurrentTurn = core.pendingExtraTurnAfterCurrentTurn?.playerId === core.currentPlayer
-                ? { ...core.pendingExtraTurnAfterCurrentTurn }
-                : null;
-            const nextPlayerId = extraTurnAfterCurrentTurn
-                ? core.currentPlayer
-                : core.phase === 'haunt'
-                ? rotateToNextLivingPlayer(core, core.currentPlayer)
-                : (() => {
-                    const explorers = getExplorersInTurnOrder(core);
-                    const currentIndex = explorers.findIndex((explorer) => explorer.playerId === core.currentPlayer);
-                    return (explorers[(currentIndex + 1) % explorers.length] ?? explorers[0]!).playerId;
-                })();
-            const nextExplorer = findExplorerByPlayerId(core, nextPlayerId) ?? core.currentExplorer;
-            const previewCore = replaceExplorers(core, getExplorersInTurnOrder(core), nextExplorer.playerId);
-            const monsterMovementRoll = extraTurnAfterCurrentTurn
-                ? null
-                : canReviveTraitorAtMonsterTurnStart(previewCore, nextPlayerId)
-                ? null
-                : resolveJackSpiritMonsterMovementRoll(previewCore, nextPlayerId, random)
-                    ?? resolveFeverishMonsterMovementRoll(previewCore, nextPlayerId, random);
-            const targets = resolveMoveTargetRooms(previewCore);
-            const baseLogText = extraTurnAfterCurrentTurn
-                ? `${extraTurnAfterCurrentTurn.sourceCardName}生效，${nextExplorer.displayName}再进行一轮行动`
-                : targets.length > 0
-                ? `轮到${nextExplorer.displayName}，可前往${formatRoomTargetList(targets)}`
-                : `轮到${nextExplorer.displayName}`;
-            const turnLogText = monsterMovementRoll
-                ? `${baseLogText}；${monsterMovementRoll.monsterName}速度 ${monsterMovementRoll.speed} 投出 ${monsterMovementRoll.total}，本回合可移动 ${monsterMovementRoll.moveAllowance} 间`
-                : baseLogText;
-            const shouldDeferAdvanceUntilRollAcknowledged = Boolean(
-                roomEndTurnEffect?.kind === 'speedCheckFallToBasement'
-                && roomEndTurnEffect.speedRollDice?.length,
-            );
-            const helpingHandsMonsterTurnControllerPlayerId = (
-                !extraTurnAfterCurrentTurn
-                && (
-                    isHelpingHandsHaunt(core)
-                    && core.scenarioRuntime.helpingHands?.monsterTurnAfterPlayerId === core.currentPlayer
-                    && !core.scenarioRuntime.helpingHands.activeMonsterTurn
-                )
-            )
-                ? resolveHelpingHandsControllerPlayerId(core)
-                : null;
-            const pendingRoomDamageAllocationPreview = roomEndTurnEffect?.kind === 'physicalDamage1'
-                && roomEndTurnEffect.physicalDamage !== undefined
-                ? createPendingDamageAllocation({
-                    id: `room-damage-${roomEndTurnEffect.playerId}-${timestamp}`,
-                    explorer: core.currentExplorer,
-                    sourceTitle: roomEndTurnEffect.roomName,
-                    damageKind: 'physical',
-                    amount: roomEndTurnEffect.physicalDamage ?? 0,
-                    allowSkull: core.phase === 'haunt',
-                    nextPlayerId,
-                    monsterMovementRoll,
-                    turnLogText,
-                    helpingHandsMonsterTurnControllerPlayerId: helpingHandsMonsterTurnControllerPlayerId ?? undefined,
-                    skipBloodFromStoneMonsterTurnStart: Boolean(extraTurnAfterCurrentTurn),
-                })
-                : null;
-            const logText = roomEndTurnEffect
-                ? shouldDeferAdvanceUntilRollAcknowledged || pendingRoomDamageAllocationPreview
-                    ? formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)
-                    : `${formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)}；${turnLogText}`
-                : turnLogText;
-            const dustLogText = dustEndTurn
-                ? [
-                    dustEndTurn.swaps.length > 0
-                        ? `${core.currentExplorer.displayName}在回合结束时交换了 ${dustEndTurn.swaps.length} 次疾病标记`
-                        : null,
-                    dustEndTurn.damagePlayerId && dustEndTurn.damageAmount !== undefined
-                        ? `${core.currentExplorer.displayName}本回合没有交换疾病标记，承受 ${dustEndTurn.damageAmount} 点通用伤害`
-                        : null,
-                ].filter(Boolean).join('；')
-                : '';
-            const magicCameraLogText = magicCameraEndTurnCapturedEssencePlayerIds.length > 0
-                ? `${core.currentExplorer.displayName}在回合结束时处于幻影摄影师视线内，本质被夺走`
-                : '';
-            const hauntLogText = [dustLogText, magicCameraLogText].filter(Boolean).join('；');
-            const helpingHandsLogText = (
-                !extraTurnAfterCurrentTurn
-                &&
-                isHelpingHandsHaunt(core)
-                && core.scenarioRuntime.helpingHands?.monsterTurnAfterPlayerId === core.currentPlayer
-                && !helpingHandsMonsterTurnControllerPlayerId
-            )
-                ? '无人持有奇异护符，巨魔手怪物回合跳过'
-                : '';
-            const fullLogText = [
-                hauntLogText,
-                helpingHandsLogText,
-                logText,
-            ].filter(Boolean).join('；');
-            const shouldStartHelpingHandsMonsterTurn = Boolean(
-                helpingHandsMonsterTurnControllerPlayerId
-                && !shouldDeferAdvanceUntilRollAcknowledged
-                && !pendingRoomDamageAllocationPreview,
-            );
-            const deferredHelpingHandsMonsterTurnStart = shouldStartHelpingHandsMonsterTurn && helpingHandsMonsterTurnControllerPlayerId
-                ? createHelpingHandsMonsterTurnStartedEvent(
-                    helpingHandsMonsterTurnControllerPlayerId,
-                    random,
-                    timestamp,
-                ).payload
-                : undefined;
-            const turnEndedPayload: BetrayalTurnEndedPayload = {
-                previousPlayerId: core.currentPlayer,
-                nextPlayerId,
-                logText: fullLogText,
-                roomEndTurnEffect,
-                monsterMovementRoll,
-                helpingHandsMonsterTurnControllerPlayerId: helpingHandsMonsterTurnControllerPlayerId ?? undefined,
-                deferAdvanceUntilRollAcknowledged: shouldDeferAdvanceUntilRollAcknowledged,
-                turnLogText,
-                dustEndTurn,
-                magicCameraEndTurnCapturedEssencePlayerIds,
-                deferredHelpingHandsMonsterTurnStart,
-                extraTurnAfterCurrentTurn: extraTurnAfterCurrentTurn ?? undefined,
-                skipBloodFromStoneMonsterTurnStart: Boolean(extraTurnAfterCurrentTurn),
-            };
-            const toothNecklaceCard = resolveToothNecklaceCard(core.currentExplorer);
-            const toothNecklaceTraits = toothNecklaceCard
-                ? resolveDeathsDoorTraitGainChoices(core.currentExplorer)
-                : [];
-            if (toothNecklaceCard && toothNecklaceTraits.length > 0) {
-                return [nowEvent(EVENTS.TOOTH_NECKLACE_CHOICE_STARTED, {
-                    playerId: core.currentPlayer,
-                    cardId: toothNecklaceCard.id,
-                    cardName: toothNecklaceCard.name,
-                    allowedTraits: toothNecklaceTraits,
-                    deferredTurnEnd: cloneTurnEndedPayload(turnEndedPayload),
-                    logText: `${core.currentExplorer.displayName}可以使用${toothNecklaceCard.name}提升一项濒死属性`,
-                }, timestamp)];
-            }
-            return [nowEvent(EVENTS.TURN_ENDED, turnEndedPayload, timestamp)];
-        }
+        case BETRAYAL_COMMANDS.END_TURN:
+            return resolveBetrayalEndTurnCommandEvents(core, random, timestamp);
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL: {
             const pendingRoll = resolvePendingTurnEndRoll(core);
             const roomEndTurn = pendingRoll?.roomEndTurn;
@@ -7473,7 +4176,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 skipBloodFromStoneMonsterTurnStart,
                 logText: turnLogText,
             }, timestamp), ...(helpingHandsMonsterTurnControllerPlayerId
-                ? [createHelpingHandsMonsterTurnStartedEvent(
+                ? [createBetrayalHelpingHandsMonsterTurnStartedEvent(
                     helpingHandsMonsterTurnControllerPlayerId,
                     random,
                     timestamp,
@@ -7491,926 +4194,41 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }
             return [nowEvent(EVENTS.DAMAGE_ALLOCATION_RESOLVED, damageAllocationPayload, timestamp)];
         }
-        case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
-            const isTraitor = core.scenarioRuntime.traitorPlayerId === command.playerId;
-            const attacker = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
-            const attackerTraitsBeforeDamage = { ...attacker.traits };
-            const attackerRoomId = resolveControlledRoomId(core, attacker);
-            const attackingWithJackSpirit = shouldDeadTraitorControlJackSpirit(core, attacker.playerId);
-            const jackSpirit = attackingWithJackSpirit ? findJackSpirit(core) : null;
-            const weaponEffect = attackingWithJackSpirit
-                ? null
-                : resolveAttackWeaponEffect(attacker, command.payload.weaponCardId);
-            const attackDamageKind = weaponEffect?.damageKind ?? 'physical';
-            const attackDamageLabel = `${attackDamageKind} damage`;
-            if (command.payload.target === 'dynamite-room') {
-                const dynamiteCard = resolveDynamiteInventoryCard(attacker, command.payload.weaponCardId);
-                const targetRoom = command.payload.targetRoomId
-                    ? core.rooms.find((room) => room.id === command.payload.targetRoomId && room.state === 'discovered')
-                    : null;
-                if (!dynamiteCard || !targetRoom) {
-                    return [];
-                }
-                const explorerRolls = getAllExplorers(core)
-                    .filter((explorer) => (
-                        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                        && resolveControlledRoomId(core, explorer) === targetRoom.id
-                    ))
-                    .map((explorer): BetrayalDynamiteExplorerRoll => {
-                        const speedRoll = rollTraitCheckWithDice(random, explorer, 'speed', core);
-                        return {
-                            playerId: explorer.playerId,
-                            displayName: explorer.displayName,
-                            dice: speedRoll.dice,
-                            passiveBonus: speedRoll.passiveBonus,
-                            total: speedRoll.total,
-                            passed: speedRoll.total >= 4,
-                            traitsBeforeDamage: { ...explorer.traits },
-                        };
-                    });
-                const monsterRolls = core.monsters
-                    .filter((monster) => monster.roomId === targetRoom.id && resolveMonsterStatusKind(core, monster.id) === 'active')
-                    .map((monster): BetrayalDynamiteMonsterRoll => {
-                        const dice = rollBetrayalDicePips(random, resolveMonsterTrait(monster, 'speed'));
-                        const total = dice.reduce((sum, pip) => sum + pip, 0);
-                        const passed = total >= 4;
-                        return {
-                            monsterId: monster.id,
-                            monsterName: monster.name,
-                            dice,
-                            total,
-                            passed,
-                            monsterDamageOutcome: passed
-                                ? null
-                                : resolveBetrayalMonsterDamageOutcome(core, monster.id, {
-                                    damageAmount: 4,
-                                    damageTrait: 'speed',
-                                }),
-                        };
-                    });
-                const failedExplorerNames = explorerRolls.filter((roll) => !roll.passed).map((roll) => roll.displayName);
-                const failedMonsterNames = monsterRolls.filter((roll) => !roll.passed).map((roll) => roll.monsterName);
-                const failedNames = [...failedExplorerNames, ...failedMonsterNames];
-                const resultText = failedNames.length > 0
-                    ? `${failedNames.join('、')}速度检定失败，需承受 4 点物理伤害`
-                    : '所有人速度检定均为 4+，无人受伤';
-                return [nowEvent(EVENTS.DYNAMITE_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    cardId: dynamiteCard.id,
-                    cardName: dynamiteCard.name,
-                    targetRoomId: targetRoom.id,
-                    targetRoomName: targetRoom.name,
-                    explorerRolls,
-                    monsterRolls,
-                    logText: `${attacker.displayName}使用炸药攻击${targetRoom.name}，${resultText}`,
-                }, timestamp)];
-            }
-            if (isHelpingHandsHaunt(core)) {
-                if (command.payload.target === 'troll-hand') {
-                    const trollHand = findHelpingHandsTrollHand(core, command.payload.targetMonsterId);
-                    if (!trollHand) {
-                        return [];
-                    }
-                    const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-                    const attackerRoll = attackRoll.total;
-                    const defenderRoll = rollTrait(
-                        random,
-                        resolveMonsterTrait(trollHand, weaponEffect?.attackTrait ?? 'might'),
-                    );
-                    const damageToMonster = Math.max(0, attackerRoll - defenderRoll);
-                    const monsterDamageOutcome = resolveBetrayalMonsterDamageOutcome(core, trollHand.id, {
-                        damageAmount: damageToMonster,
-                        damageTrait: weaponEffect?.attackTrait ?? 'might',
-                    });
-                    const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                    const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                        ? rollDeathPrevention(random, attacker)
-                        : null;
-                    const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                        && !attackerDeathPrevention?.prevented;
-                    const deathPrevention = attackerDeathPrevention
-                        ? {
-                            ...attackerDeathPrevention,
-                            damageAmount: damageToAttacker,
-                            damageKind: attackDamageKind,
-                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        }
-                        : undefined;
-                    const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                    return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                        attackerPlayerId: attacker.playerId,
-                        target: 'troll-hand',
-                        defenderMonsterId: trollHand.id,
-                        defeatedPlayerId: attackerDefeated ? attacker.playerId : undefined,
-                        monsterDamageOutcome: monsterDamageOutcome ?? undefined,
-                        outcome: monsterDamageOutcome?.kind === 'resisted'
-                            ? 'troll-hand-resisted'
-                            : attackerDefeated
-                                ? 'hero-defeated'
-                                : attackerRoll === defenderRoll
-                                    ? 'no-damage'
-                                    : 'wound',
-                        attackerRoll,
-                        defenderRoll,
-                        damageToAttacker: damageToAttacker || undefined,
-                        damageKind: attackDamageKind,
-                        weaponCardId: weaponEffect?.card.id,
-                        weaponName: weaponEffect?.card.name,
-                        weaponAttackBonus: weaponEffect?.bonus || undefined,
-                        weaponExtraDice: weaponEffect?.extraDice || undefined,
-                        weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                        weaponAttackTrait: weaponEffect?.attackTrait,
-                        attackRoll: {
-                            id: `${attacker.playerId}-${trollHand.id}-helping-hands-${timestamp}`,
-                            dice: attackRoll.dice,
-                            passiveBonus: attackRoll.passiveBonus,
-                            latestLabel: monsterDamageOutcome?.kind === 'resisted'
-                                ? monsterDamageOutcome.logLabel
-                                : damageToAttacker > 0
-                                    ? `反受 ${damageToAttacker} 点伤害`
-                                    : '平手无伤害',
-                            attackerTraitsBeforeDamage,
-                        },
-                        deathPrevention,
-                        logText: monsterDamageOutcome?.kind === 'resisted'
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击败巨魔手，但${monsterDamageOutcome.logLabel}`
-                            : attackerDefeated
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击巨魔手失败并被击倒${deathPreventionLog}`
-                                : damageToAttacker > 0
-                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击巨魔手失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                    : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击巨魔手，双方都没有受伤`,
-                    }, timestamp)];
-                }
-                const defender = command.payload.targetPlayerId
-                    ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
-                    : null;
-                if (!defender || defender.playerId === attacker.playerId) {
-                    return [];
-                }
-                const defenderTraitsBeforeDamage = { ...defender.traits };
-                const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-                const attackerRoll = attackRoll.total;
-                const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
-                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                const attackTrait = weaponEffect?.attackTrait ?? 'might';
-                const canChooseSteal = attackTrait === 'might'
-                    && damageToDefender > 0
-                    && resolveHelpingHandsStealableCards(core, defender.playerId).length > 0;
-                const defenderDeathPrevention = !canChooseSteal && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    ? rollDeathPrevention(random, defender)
-                    : null;
-                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const defenderDefeated = !canChooseSteal
-                    && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    && !defenderDeathPrevention?.prevented;
-                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !attackerDeathPrevention?.prevented;
-                const deathPrevention = defenderDeathPrevention
-                    ? {
-                        ...defenderDeathPrevention,
-                        damageAmount: damageToDefender,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: defenderTraitsBeforeDamage,
-                    }
-                    : attackerDeathPrevention
-                        ? {
-                            ...attackerDeathPrevention,
-                            damageAmount: damageToAttacker,
-                            damageKind: attackDamageKind,
-                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        }
-                        : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                const helpingHandsAttackRewardChoice = canChooseSteal
-                    ? {
-                        id: `${attacker.playerId}-${defender.playerId}-helping-hands-reward-${timestamp}`,
-                        attackerPlayerId: attacker.playerId,
-                        defenderPlayerId: defender.playerId,
-                        damageToDefender,
-                        damageKind: attackDamageKind,
-                        attackerRoll,
-                        defenderRoll,
-                        defenderTraitsBeforeDamage,
-                    }
-                    : undefined;
-                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    target: 'hero',
-                    defenderPlayerId: defender.playerId,
-                    defeatedPlayerId: defenderDefeated
-                        ? defender.playerId
-                        : attackerDefeated
-                            ? attacker.playerId
-                            : undefined,
-                    outcome: attackerRoll === defenderRoll
-                        ? 'no-damage'
-                        : defenderDefeated || attackerDefeated
-                            ? 'hero-defeated'
-                            : 'wound',
-                    attackerRoll,
-                    defenderRoll,
-                    damageToAttacker: damageToAttacker || undefined,
-                    damageToDefender: canChooseSteal ? undefined : damageToDefender || undefined,
-                    damageKind: attackDamageKind,
-                    weaponCardId: weaponEffect?.card.id,
-                    weaponName: weaponEffect?.card.name,
-                    weaponAttackBonus: weaponEffect?.bonus || undefined,
-                    weaponExtraDice: weaponEffect?.extraDice || undefined,
-                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                    weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: {
-                        id: `${attacker.playerId}-helping-hands-explorer-${timestamp}`,
-                        dice: attackRoll.dice,
-                        passiveBonus: attackRoll.passiveBonus,
-                        latestLabel: attackerRoll === defenderRoll
-                            ? '平手无伤害'
-                            : canChooseSteal
-                                ? `可偷牌或造成 ${damageToDefender} 点伤害`
-                                : damageToDefender > 0
-                                    ? `造成 ${damageToDefender} 点伤害`
-                                    : `反受 ${damageToAttacker} 点伤害`,
-                        attackerTraitsBeforeDamage,
-                        defenderTraitsBeforeDamage,
-                    },
-                    deathPrevention,
-                    helpingHandsAttackRewardChoice,
-                    logText: canChooseSteal
-                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}用力量攻击赢过${defender.displayName}，可选择造成 ${damageToDefender} 点伤害或偷取 1 张物品/预兆`
-                        : attackerRoll === defenderRoll
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，双方都没有受伤`
-                            : defenderDefeated
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${defender.displayName}${deathPreventionLog}`
-                                : attackerDefeated
-                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被${defender.displayName}击倒${deathPreventionLog}`
-                                    : damageToDefender > 0
-                                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                        : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
-                }, timestamp)];
-            }
-            if (isMagicCameraHaunt(core)) {
-                if (command.payload.target === 'phantom-photographer') {
-                    const monster = findPhantomPhotographer(core, command.payload.targetMonsterId);
-                    if (!monster) {
-                        return [];
-                    }
-                    const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-                    const attackTrait = weaponEffect?.attackTrait ?? 'might';
-                    const attackerRoll = attackRoll.total;
-                    const defenderRoll = rollTrait(random, resolveMonsterTrait(monster, attackTrait));
-                    const damageToMonster = Math.max(0, attackerRoll - defenderRoll);
-                    const monsterDamageOutcome = resolveBetrayalMonsterDamageOutcome(core, monster.id, {
-                        damageAmount: damageToMonster,
-                        damageTrait: attackTrait,
-                    });
-                    const killed = monsterDamageOutcome?.kind === 'killed';
-                    const stunned = monsterDamageOutcome?.kind === 'stunned';
-                    return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                        attackerPlayerId: attacker.playerId,
-                        target: 'phantom-photographer',
-                        defenderMonsterId: monster.id,
-                        defeatedMonsterId: killed ? monster.id : undefined,
-                        monsterDamageOutcome: monsterDamageOutcome ?? undefined,
-                        outcome: killed
-                            ? 'phantom-killed'
-                            : stunned
-                                ? 'phantom-stunned'
-                                : 'no-damage',
-                        attackerRoll,
-                        defenderRoll,
-                        weaponCardId: weaponEffect?.card.id,
-                        weaponName: weaponEffect?.card.name,
-                        weaponAttackBonus: weaponEffect?.bonus || undefined,
-                        weaponExtraDice: weaponEffect?.extraDice || undefined,
-                        weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                        weaponAttackTrait: weaponEffect?.attackTrait,
-                        attackRoll: {
-                            id: `${attacker.playerId}-phantom-photographer-${timestamp}`,
-                            dice: attackRoll.dice,
-                            passiveBonus: attackRoll.passiveBonus,
-                            latestLabel: killed
-                                ? (monsterDamageOutcome?.logLabel ?? '击杀幻影摄影师')
-                                : stunned
-                                    ? (monsterDamageOutcome?.logLabel ?? '击晕幻影摄影师')
-                                    : '未伤到幻影摄影师',
-                            attackerTraitsBeforeDamage,
-                        },
-                        logText: killed
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}用力量击杀了幻影摄影师`
-                            : stunned
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}压制了幻影摄影师，使其眩晕`
-                                : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击幻影摄影师，但没造成伤害`,
-                    }, timestamp)];
-                }
-                const defender = command.payload.target === 'traitor'
-                    ? findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? '')
-                    : command.payload.targetPlayerId
-                        ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
-                        : null;
-                if (!defender) {
-                    return [];
-                }
-                const defenderTraitsBeforeDamage = { ...defender.traits };
-                const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-                const essenceBonus = (
-                    command.payload.target === 'hero'
-                    && core.scenarioRuntime.magicCamera?.capturedEssencePlayerIds.includes(defender.playerId)
-                ) ? 2 : 0;
-                const attackerRoll = attackRoll.total + essenceBonus;
-                const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
-                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                const defenderDeathPrevention = wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    ? rollDeathPrevention(random, defender)
-                    : null;
-                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const defenderDefeated = wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    && !defenderDeathPrevention?.prevented;
-                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !attackerDeathPrevention?.prevented;
-                const deathPrevention = defenderDeathPrevention
-                    ? {
-                        ...defenderDeathPrevention,
-                        damageAmount: damageToDefender,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: defenderTraitsBeforeDamage,
-                    }
-                    : attackerDeathPrevention
-                        ? {
-                            ...attackerDeathPrevention,
-                            damageAmount: damageToAttacker,
-                            damageKind: attackDamageKind,
-                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        }
-                        : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    target: command.payload.target,
-                    defenderPlayerId: defender.playerId,
-                    defeatedPlayerId: defenderDefeated
-                        ? defender.playerId
-                        : attackerDefeated
-                            ? attacker.playerId
-                            : undefined,
-                    outcome: attackerRoll === defenderRoll
-                        ? 'no-damage'
-                        : defenderDefeated
-                            ? (command.payload.target === 'traitor' ? 'traitor-defeated' : 'hero-defeated')
-                            : attackerDefeated
-                                ? (isTraitor ? 'traitor-defeated' : 'hero-defeated')
-                                : 'wound',
-                    attackerRoll,
-                    defenderRoll,
-                    damageToAttacker: damageToAttacker || undefined,
-                    damageToDefender: damageToDefender || undefined,
-                    damageKind: attackDamageKind,
-                    weaponCardId: weaponEffect?.card.id,
-                    weaponName: weaponEffect?.card.name,
-                    weaponAttackBonus: weaponEffect?.bonus || undefined,
-                    weaponExtraDice: weaponEffect?.extraDice || undefined,
-                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                    weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: {
-                        id: `${attacker.playerId}-magic-camera-attack-${timestamp}`,
-                        dice: attackRoll.dice,
-                        passiveBonus: attackRoll.passiveBonus + essenceBonus,
-                        latestLabel: attackerRoll === defenderRoll
-                            ? '平手无伤害'
-                            : damageToDefender > 0
-                                ? `造成 ${damageToDefender} 点伤害`
-                                : `反受 ${damageToAttacker} 点伤害`,
-                        attackerTraitsBeforeDamage,
-                        defenderTraitsBeforeDamage,
-                    },
-                    deathPrevention,
-                    logText: attackerRoll === defenderRoll
-                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}发起攻击，双方都没有受伤`
-                        : defenderDefeated
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${defender.displayName}${deathPreventionLog}`
-                            : attackerDefeated
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被击倒${deathPreventionLog}`
-                                : damageToDefender > 0
-                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}造成 ${damageToDefender} 点 ${attackDamageLabel}${essenceBonus ? '（本质 +2）' : ''}${deathPreventionLog}`
-                                    : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
-                }, timestamp)];
-            }
-            if (isHelpingHandsHaunt(core)) {
-                const defender = command.payload.targetPlayerId
-                    ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
-                    : null;
-                if (!defender) {
-                    return [];
-                }
-                const defenderTraitsBeforeDamage = { ...defender.traits };
-                const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-                const attackerRoll = attackRoll.total;
-                const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
-                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                const defenderStealableCards = resolveHelpingHandsStealableCards(core, defender.playerId);
-                const pendingAttackReward = damageToDefender > 0 && defenderStealableCards.length > 0
-                    ? {
-                        id: `helping-hands-attack-reward-${attacker.playerId}-${defender.playerId}-${timestamp}`,
-                        attackerPlayerId: attacker.playerId,
-                        defenderPlayerId: defender.playerId,
-                        damageToDefender,
-                        damageKind: attackDamageKind,
-                        attackerRoll,
-                        defenderRoll,
-                        defenderTraitsBeforeDamage,
-                    }
-                    : undefined;
-                const defenderDeathPrevention = !pendingAttackReward && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    ? rollDeathPrevention(random, defender)
-                    : null;
-                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const defenderDefeated = !pendingAttackReward
-                    && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
-                    && !defenderDeathPrevention?.prevented;
-                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !attackerDeathPrevention?.prevented;
-                const deathPrevention = defenderDeathPrevention
-                    ? {
-                        ...defenderDeathPrevention,
-                        damageAmount: damageToDefender,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: defenderTraitsBeforeDamage,
-                    }
-                    : attackerDeathPrevention
-                        ? {
-                            ...attackerDeathPrevention,
-                            damageAmount: damageToAttacker,
-                            damageKind: attackDamageKind,
-                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        }
-                        : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    target: 'hero',
-                    defenderPlayerId: defender.playerId,
-                    defeatedPlayerId: defenderDefeated
-                        ? defender.playerId
-                        : attackerDefeated
-                            ? attacker.playerId
-                            : undefined,
-                    outcome: attackerRoll === defenderRoll
-                        ? 'no-damage'
-                        : defenderDefeated || attackerDefeated
-                            ? 'hero-defeated'
-                            : 'wound',
-                    attackerRoll,
-                    defenderRoll,
-                    damageToAttacker: damageToAttacker || undefined,
-                    damageToDefender: pendingAttackReward ? undefined : damageToDefender || undefined,
-                    damageKind: attackDamageKind,
-                    weaponCardId: weaponEffect?.card.id,
-                    weaponName: weaponEffect?.card.name,
-                    weaponAttackBonus: weaponEffect?.bonus || undefined,
-                    weaponExtraDice: weaponEffect?.extraDice || undefined,
-                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                    weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: {
-                        id: `${attacker.playerId}-helping-hands-explorer-${timestamp}`,
-                        dice: attackRoll.dice,
-                        passiveBonus: attackRoll.passiveBonus,
-                        latestLabel: attackerRoll === defenderRoll
-                            ? '平手无伤害'
-                            : damageToDefender > 0
-                                ? pendingAttackReward
-                                    ? '胜出，选择造成伤害或偷牌'
-                                    : `造成 ${damageToDefender} 点伤害`
-                                : `反受 ${damageToAttacker} 点伤害`,
-                        attackerTraitsBeforeDamage,
-                        defenderTraitsBeforeDamage,
-                    },
-                    deathPrevention,
-                    helpingHandsAttackRewardChoice: pendingAttackReward,
-                    logText: attackerRoll === defenderRoll
-                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，双方都没有受伤`
-                        : pendingAttackReward
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}压制了${defender.displayName}，可以选择造成 ${damageToDefender} 点 ${attackDamageLabel}或偷取物品/预兆`
-                            : defenderDefeated
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${defender.displayName}${deathPreventionLog}`
-                                : attackerDefeated
-                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被${defender.displayName}击倒${deathPreventionLog}`
-                                    : damageToDefender > 0
-                                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                        : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
-                }, timestamp)];
-            }
-            if (isDustHaunt(core)) {
-                const attackingWithFeverish = shouldDeadPlayerControlFeverish(core, attacker.playerId);
-                const feverish = attackingWithFeverish ? findFeverishMonster(core, attacker.playerId) : null;
-                const targetExplorer = command.payload.targetPlayerId
-                    ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
-                    : null;
-                if (!targetExplorer) {
-                    return [];
-                }
-                const defenderTraitsBeforeDamage = { ...targetExplorer.traits };
-                const dustAttackRoll = feverish
-                    ? {
-                        dice: rollBetrayalDicePips(random, feverish.might),
-                        passiveBonus: 0,
-                    }
-                    : rollAttackWithDice(random, attacker, weaponEffect);
-                const attackerRoll = dustAttackRoll.dice.reduce((sum, pip) => sum + pip, 0) + dustAttackRoll.passiveBonus;
-                const defenderRoll = rollAttackDefense(random, targetExplorer, weaponEffect);
-                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = feverish ? 0 : resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                const defenderDeathPrevention = wouldExplorerDieFromAttackDamage(targetExplorer, damageToDefender, attackDamageKind)
-                    ? rollDeathPrevention(random, targetExplorer)
-                    : null;
-                const attackerDeathPrevention = !feverish && wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const defenderDefeated = wouldExplorerDieFromAttackDamage(targetExplorer, damageToDefender, attackDamageKind)
-                    && !defenderDeathPrevention?.prevented;
-                const attackerDefeated = !feverish
-                    && wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !attackerDeathPrevention?.prevented;
-                const deathPrevention = defenderDeathPrevention
-                    ? {
-                        ...defenderDeathPrevention,
-                        damageAmount: damageToDefender,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: defenderTraitsBeforeDamage,
-                    }
-                    : attackerDeathPrevention
-                        ? {
-                            ...attackerDeathPrevention,
-                            damageAmount: damageToAttacker,
-                            damageKind: attackDamageKind,
-                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        }
-                        : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    target: 'hero',
-                    defenderPlayerId: targetExplorer.playerId,
-                    defeatedPlayerId: defenderDefeated
-                        ? targetExplorer.playerId
-                        : attackerDefeated
-                            ? attacker.playerId
-                            : undefined,
-                    outcome: attackerRoll === defenderRoll
-                        ? 'no-damage'
-                        : defenderDefeated
-                            ? 'hero-defeated'
-                            : attackerDefeated
-                                ? 'traitor-defeated'
-                                : 'wound',
-                    attackerRoll,
-                    defenderRoll,
-                    damageToAttacker: damageToAttacker || undefined,
-                    damageToDefender: damageToDefender || undefined,
-                    damageKind: attackDamageKind,
-                    weaponCardId: weaponEffect?.card.id,
-                    weaponName: weaponEffect?.card.name,
-                    weaponAttackBonus: weaponEffect?.bonus || undefined,
-                    weaponExtraDice: weaponEffect?.extraDice || undefined,
-                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                    weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: feverish
-                        ? undefined
-                        : {
-                            id: `${attacker.playerId}-dust-attack-${timestamp}`,
-                            dice: dustAttackRoll.dice,
-                            passiveBonus: dustAttackRoll.passiveBonus,
-                            latestLabel: attackerRoll === defenderRoll
-                                ? '平手无伤害'
-                                : damageToDefender > 0
-                                    ? `造成 ${damageToDefender} 点伤害`
-                                    : `反受 ${damageToAttacker} 点伤害`,
-                            attackerTraitsBeforeDamage,
-                            defenderTraitsBeforeDamage,
-                        },
-                    deathPrevention,
-                    logText: attackerRoll === defenderRoll
-                        ? `${feverish ? '狂热病患' : attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}发起攻击，双方都没有受伤`
-                        : defenderDefeated
-                            ? `${feverish ? '狂热病患' : attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${targetExplorer.displayName}${deathPreventionLog}`
-                            : attackerDefeated
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被击倒${deathPreventionLog}`
-                                : damageToDefender > 0
-                                    ? `${feverish ? '狂热病患' : attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                    : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
-                }, timestamp)];
-            }
-            if (!isTraitor && command.payload.target === 'traitor') {
-                const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? '') ?? core.otherExplorers[0];
-                const defenderTraitsBeforeDamage = traitor ? { ...traitor.traits } : undefined;
-                const heroBonus = core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(attacker.playerId) ? 2 : 0;
-                const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-                const attackerRoll = attackRoll.total + heroBonus;
-                const defenderRoll = traitor ? rollAttackDefense(random, traitor, weaponEffect) : 0;
-                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !attackerDeathPrevention?.prevented;
-                const deathPrevention = attackerDeathPrevention
-                    ? {
-                        ...attackerDeathPrevention,
-                        damageAmount: damageToAttacker,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                    }
-                    : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    target: 'traitor',
-                    defenderPlayerId: traitor?.playerId,
-                    defeatedPlayerId: attackerDefeated ? attacker.playerId : undefined,
-                    releasedJackSpiritRoomId: undefined,
-                    outcome: attackerRoll === defenderRoll
-                        ? 'no-damage'
-                        : attackerDefeated
-                            ? 'hero-defeated'
-                            : 'wound',
-                    attackerRoll,
-                    defenderRoll,
-                    damageToAttacker: damageToAttacker || undefined,
-                    damageToDefender: damageToDefender || undefined,
-                    damageKind: attackDamageKind,
-                    weaponCardId: weaponEffect?.card.id,
-                    weaponName: weaponEffect?.card.name,
-                    weaponAttackBonus: weaponEffect?.bonus || undefined,
-                    weaponExtraDice: weaponEffect?.extraDice || undefined,
-                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                    weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: {
-                        id: `${attacker.playerId}-${command.payload.target}-${timestamp}`,
-                        dice: attackRoll.dice,
-                        passiveBonus: attackRoll.passiveBonus + heroBonus,
-                        latestLabel: attackerRoll === defenderRoll
-                            ? '平手无伤害'
-                            : damageToDefender > 0
-                                ? `造成 ${damageToDefender} 点伤害`
-                                : `反受 ${damageToAttacker} 点伤害`,
-                        attackerTraitsBeforeDamage,
-                        defenderTraitsBeforeDamage,
-                    },
-                    deathPrevention,
-                    logText: attackerRoll === defenderRoll
-                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}与叛徒正面对攻，双方都没有受伤`
-                        : attackerDefeated
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}在对攻中落败并被叛徒击倒${deathPreventionLog}`
-                            : damageToDefender > 0
-                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}在对攻中压制了叛徒，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击叛徒失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
-                }, timestamp)];
-            }
-            if (isTraitor && command.payload.target === 'hero') {
-                const heroTargets = getAllExplorers(core).filter((explorer) => (
-                    explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                    && isAttackTargetInWeaponRange(core, attackerRoomId, explorer.roomId, weaponEffect)
-                ));
-                const targetHero = heroTargets.find((explorer) => explorer.playerId === command.payload.targetPlayerId);
-                if (!targetHero) {
-                    return [];
-                }
-                const defenderTraitsBeforeDamage = targetHero ? { ...targetHero.traits } : undefined;
-                const attackRoll = jackSpirit
-                    ? (() => {
-                        const dice = rollBetrayalDicePips(random, jackSpirit.might);
-                        return {
-                            total: dice.reduce((sum, pip) => sum + pip, 0),
-                            dice,
-                            passiveBonus: 0,
-                        };
-                    })()
-                    : rollAttackWithDice(random, attacker, weaponEffect);
-                const attackerRoll = attackRoll.total;
-                const defenderBonus = jackSpirit && targetHero && core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(targetHero.playerId)
-                    ? 2
-                    : 0;
-                const defenderRoll = targetHero ? rollAttackDefense(random, targetHero, weaponEffect) + defenderBonus : 0;
-                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
-                const damageToAttacker = jackSpirit ? 0 : resolveFailedAttackDamage(defenderRoll, attackerRoll, weaponEffect);
-                const traitorDeathPrevention = !jackSpirit && wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    ? rollDeathPrevention(random, attacker)
-                    : null;
-                const traitorDefeated = !jackSpirit
-                    && wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
-                    && !traitorDeathPrevention?.prevented;
-                const releasedJackSpiritRoomId = resolveJackSpiritSpawnRoomId(core, attacker.roomId);
-                const deathPrevention = traitorDeathPrevention
-                    ? {
-                        ...traitorDeathPrevention,
-                        damageAmount: damageToAttacker,
-                        damageKind: attackDamageKind,
-                        traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
-                        releasedJackSpiritRoomId,
-                    }
-                    : undefined;
-                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
-                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                    attackerPlayerId: attacker.playerId,
-                    target: 'hero',
-                    defenderPlayerId: targetHero?.playerId,
-                    defeatedPlayerId: traitorDefeated ? attacker.playerId : undefined,
-                    releasedJackSpiritRoomId: traitorDefeated ? releasedJackSpiritRoomId : undefined,
-                    outcome: attackerRoll === defenderRoll
-                        ? 'no-damage'
-                        : traitorDefeated
-                            ? 'traitor-defeated'
-                            : 'wound',
-                    attackerRoll,
-                    defenderRoll,
-                    damageToAttacker: damageToAttacker || undefined,
-                    damageToDefender: damageToDefender || undefined,
-                    damageKind: attackDamageKind,
-                    weaponCardId: weaponEffect?.card.id,
-                    weaponName: weaponEffect?.card.name,
-                    weaponAttackBonus: weaponEffect?.bonus || undefined,
-                    weaponExtraDice: weaponEffect?.extraDice || undefined,
-                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                    weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: {
-                        id: `${jackSpirit ? jackSpirit.id : attacker.playerId}-${command.payload.target}-${timestamp}`,
-                        dice: attackRoll.dice,
-                        passiveBonus: attackRoll.passiveBonus,
-                        latestLabel: attackerRoll === defenderRoll
-                            ? '平手无伤害'
-                            : damageToDefender > 0
-                                ? `造成 ${damageToDefender} 点伤害`
-                                : `反受 ${damageToAttacker} 点伤害`,
-                        attackerTraitsBeforeDamage: jackSpirit
-                            ? {
-                                might: jackSpirit.might,
-                                speed: jackSpirit.speed ?? 3,
-                                knowledge: jackSpirit.knowledge ?? 3,
-                                sanity: jackSpirit.sanity ?? 3,
-                            }
-                            : attackerTraitsBeforeDamage,
-                        defenderTraitsBeforeDamage,
-                    },
-                    deathPrevention,
-                    logText: attackerRoll === defenderRoll
-                        ? `${jackSpirit ? '杰克之灵' : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}`}扑向英雄，但双方对攻后都没有受伤`
-                        : traitorDefeated
-                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失手，反而在对攻中被英雄击倒${deathPreventionLog}`
-                            : damageToDefender > 0
-                                ? `${jackSpirit ? '杰克之灵' : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}`}在对攻中压制了英雄，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
-                                : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}发起攻击失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
-                }, timestamp)];
-            }
-            const heroBonus = core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(attacker.playerId) ? 2 : 0;
-            const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
-            const attackerRoll = attackRoll.total + heroBonus;
-            const jackSpiritDefense = rollTrait(random, 5);
-            return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
-                attackerPlayerId: attacker.playerId,
-                target: 'jack-spirit',
-                outcome: attackerRoll > jackSpiritDefense ? 'jack-damaged' : 'wound',
-                attackerRoll,
-                defenderRoll: jackSpiritDefense,
-                weaponCardId: weaponEffect?.card.id,
-                weaponName: weaponEffect?.card.name,
-                weaponAttackBonus: weaponEffect?.bonus || undefined,
-                weaponExtraDice: weaponEffect?.extraDice || undefined,
-                weaponSpeedCost: weaponEffect?.speedCost || undefined,
-                weaponAttackTrait: weaponEffect?.attackTrait,
-                attackRoll: {
-                    id: `${attacker.playerId}-${command.payload.target}-${timestamp}`,
-                    dice: attackRoll.dice,
-                    passiveBonus: attackRoll.passiveBonus + heroBonus,
-                    latestLabel: attackerRoll > jackSpiritDefense ? '压制杰克之灵' : '未压制杰克之灵',
-                    attackerTraitsBeforeDamage,
-                },
-                logText: attackerRoll > jackSpiritDefense
-                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}压制住了杰克之灵`
-                    : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}尝试攻击杰克之灵，但没能造成有效压制`,
-            }, timestamp)];
-        }
+        case BETRAYAL_COMMANDS.HAUNT_ATTACK:
+            return resolveBetrayalHauntAttackCommandEvents(core, command, random, timestamp);
         case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE: {
-            const outcome = resolveBetrayalMonsterDamageOutcome(core, command.payload.monsterId!, {
-                damageAmount: command.payload.damageAmount!,
-                damageTrait: command.payload.damageTrait!,
-            });
-            if (!outcome) {
-                return [];
-            }
-            return [nowEvent(EVENTS.MONSTER_DAMAGE_RESOLVED, {
+            const payload = resolveBetrayalMonsterDamageResolvedPayload(core, {
                 playerId: command.playerId,
-                monsterId: outcome.monsterId,
-                monsterName: outcome.name,
-                damageAmount: outcome.damageAmount,
-                damageTrait: outcome.damageTrait,
-                monsterDamageOutcome: outcome,
-                logText: `${outcome.name}承受 ${outcome.damageAmount} 点伤害：${outcome.logLabel}`,
-            }, timestamp)];
+                payload: command.payload,
+            });
+            return payload ? [nowEvent(EVENTS.MONSTER_DAMAGE_RESOLVED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START: {
-            const monsterId = command.payload.monsterId!;
-            const preview = resolveBetrayalMonsterTurnStartResolutionPreview(core, monsterId);
-            if (!preview.canResolve || !preview.name || !preview.status || !preview.nextStatus) {
-                return [];
-            }
-            const logText = preview.willFlipStunnedSideUp
-                ? `${preview.name}翻回正面，并跳过本次怪物回合`
-                : preview.willSkipTurn
-                    ? `${preview.name}跳过本次怪物回合`
-                    : `${preview.name}开始怪物回合`;
-            return [nowEvent(EVENTS.MONSTER_TURN_START_RESOLVED, {
+            const payload = resolveBetrayalMonsterTurnStartResolvedPayload(core, {
                 playerId: command.playerId,
-                monsterId,
-                monsterName: preview.name,
-                previousStatus: preview.status,
-                nextStatus: preview.nextStatus,
-                flippedStunnedSideUp: preview.willFlipStunnedSideUp,
-                skippedTurn: preview.willSkipTurn,
-                startedTurn: preview.willStartTurn,
-                movementGroupId: preview.movementGroupId ?? undefined,
-                logText,
-            }, timestamp)];
+                payload: command.payload,
+            });
+            return payload ? [nowEvent(EVENTS.MONSTER_TURN_START_RESOLVED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP: {
-            const result = createBetrayalMonsterMovementRollGroupResult(
-                core,
-                command.payload.groupId!,
-                command.playerId,
-                random,
-            );
-            if (!result) {
-                return [];
-            }
-            return [nowEvent(EVENTS.MONSTER_MOVEMENT_GROUP_ROLLED, {
-                result,
-                logText: `${result.monsterName}速度 ${result.speed} 投出 ${result.dice.join('、')}，每只本回合可移动 ${result.moveAllowance} 间`,
-            }, timestamp)];
+            const payload = resolveBetrayalMonsterMovementGroupRolledPayload(core, {
+                playerId: command.playerId,
+                payload: command.payload,
+            }, random);
+            return payload ? [nowEvent(EVENTS.MONSTER_MOVEMENT_GROUP_ROLLED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM: {
-            const monster = core.monsters.find((item) => item.id === command.payload.monsterId);
-            const targetRoom = command.payload.roomId
-                ? core.rooms.find((room) => room.id === command.payload.roomId)
-                : null;
-            if (!monster || !targetRoom) {
-                return [];
-            }
-            const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, monster.id);
-            const moveCost = canMummyTeleportNow ? 0 : resolveBetrayalMonsterMoveCost(core, monster.id);
-            const moveRemainingAfterCost = Math.max(
-                0,
-                (core.scenarioRuntime.monsterTurn?.moveRemainingById?.[monster.id] ?? 0) - moveCost,
-            );
-            const moveRemaining = canMummyTeleportNow
-                ? 0
-                : resolveStoneCherubMoveRemainingAfterMove(
-                    core,
-                    monster,
-                    targetRoom.id,
-                    moveRemainingAfterCost,
-                );
-            const stoppedInHeroLineOfSight = moveRemainingAfterCost > 0 && moveRemaining === 0;
-            return [nowEvent(EVENTS.MONSTER_MOVED, {
+            const payload = resolveBetrayalMonsterMovedPayload(core, {
                 playerId: command.playerId,
-                monsterId: monster.id,
-                monsterName: monster.name,
-                fromRoomId: monster.roomId,
-                toRoomId: targetRoom.id,
-                moveCost,
-                moveRemaining,
-                teleportMove: canMummyTeleportNow,
-                logText: canMummyTeleportNow
-                    ? `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}瞬移到${targetRoom.name}`
-                    : `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}移动到${targetRoom.name}，消耗 ${moveCost} 点移动${stoppedInHeroLineOfSight ? '；进入英雄视线后立即停止' : ''}`,
-            }, timestamp)];
+                payload: command.payload,
+            });
+            return payload ? [nowEvent(EVENTS.MONSTER_MOVED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN: {
-            const preview = resolveBloodFromStoneMonsterTurnEndPreview(core);
-            if (!preview.canEnd || !preview.nextPlayerId) {
-                return [];
-            }
-            const damageRolls = resolveBloodFromStoneGazeDamageRolls(core, random);
-            const nextExplorer = findExplorerByPlayerId(core, preview.nextPlayerId);
-            const turnLogText = nextExplorer ? `轮到${nextExplorer.displayName}` : '进入下一位玩家回合';
-            const damageLogText = damageRolls.length > 0
-                ? damageRolls.map((roll) => (
-                    `${roll.explorerName}视线内有 ${roll.visibleStoneCherubIds.length} 个石像小天使，投出 ${roll.dice.join('、') || '0'}，承受 ${roll.amount} 点一般伤害`
-                )).join('；')
-                : '没有英雄处于石像小天使视线内';
-            return [nowEvent(EVENTS.BLOOD_FROM_STONE_MONSTER_TURN_ENDED, {
-                controllerPlayerId: command.playerId,
-                nextPlayerId: preview.nextPlayerId,
-                damageRolls,
-                logText: `石像小天使怪物回合结束；${damageLogText}`,
-                turnLogText,
-            }, timestamp)];
+            const payload = resolveBloodFromStoneMonsterTurnEndedPayload(core, {
+                playerId: command.playerId,
+            }, random);
+            return payload ? [nowEvent(EVENTS.BLOOD_FROM_STONE_MONSTER_TURN_ENDED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS: {
             const plan = resolveBloodFromStoneSetupPlacementPlan(core);
@@ -8431,46 +4249,11 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO: {
-            const monster = core.monsters.find((item) => item.id === command.payload.monsterId);
-            const target = command.payload.targetPlayerId
-                ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
-                : null;
-            if (!monster || !target) {
-                return [];
-            }
-            const attackTrait = resolveMonsterDefaultAttackTrait(monster);
-            const damageKind = resolveAttackDamageKind(attackTrait);
-            const monsterDice = rollBetrayalDicePips(random, resolveMonsterTrait(monster, attackTrait));
-            const monsterRoll = monsterDice.reduce((sum, pip) => sum + pip, 0);
-            const heroRoll = rollAttackDefense(random, target, null, attackTrait);
-            const damageToHero = Math.max(0, monsterRoll - heroRoll);
-            const damageToMonster = Math.max(0, heroRoll - monsterRoll);
-            const monsterDamageOutcome = damageToMonster > 0
-                ? resolveBetrayalMonsterDamageOutcome(core, monster.id, {
-                    damageAmount: damageToMonster,
-                    damageTrait: attackTrait,
-                })
-                : null;
-            const resultText = monsterRoll === heroRoll
-                ? '双方都没有受伤'
-                : damageToHero > 0
-                    ? `造成 ${damageToHero} 点 ${damageKind} damage`
-                    : (monsterDamageOutcome?.logLabel ?? `承受 ${damageToMonster} 点伤害`);
-            return [nowEvent(EVENTS.MONSTER_ATTACK_HERO_RESOLVED, {
+            const payload = resolveBetrayalMonsterAttackHeroResolvedPayload(core, {
                 playerId: command.playerId,
-                monsterId: monster.id,
-                monsterName: monster.name,
-                targetPlayerId: target.playerId,
-                attackTrait,
-                damageKind,
-                monsterRoll,
-                heroRoll,
-                damageToHero: damageToHero || undefined,
-                monsterDamageOutcome: monsterDamageOutcome ?? undefined,
-                dice: monsterDice,
-                defenderTraitsBeforeDamage: { ...target.traits },
-                logText: `${monster.name}攻击${target.displayName}，${resultText}`,
-            }, timestamp)];
+                payload: command.payload,
+            }, random);
+            return payload ? [nowEvent(EVENTS.MONSTER_ATTACK_HERO_RESOLVED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD: {
             const pending = resolveHelpingHandsPendingAttackReward(core);
@@ -9100,703 +4883,31 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.EXPLORER_MOVED: {
-            if (event.payload.controlledToken === 'jack-spirit') {
-                core.scenarioRuntime.jackSpiritRoomId = event.payload.roomId;
-                core.scenarioRuntime.jackSpiritHasMovedSinceRelease = true;
-                core.monsters = core.monsters.map((monster) => (
-                    monster.id === 'jack-spirit'
-                        ? { ...monster, roomId: event.payload.roomId }
-                        : monster
-                ));
-            } else if (event.payload.controlledToken === 'feverish') {
-                core.monsters = core.monsters.map((monster) => (
-                    monster.id === `feverish-${event.payload.playerId}`
-                        ? { ...monster, roomId: event.payload.roomId }
-                        : monster
-                ));
-            } else {
-                core.currentExplorer.roomId = event.payload.roomId;
-            }
-            if (event.payload.consumeMove !== false) {
-                core.movesRemaining = Math.max(0, core.movesRemaining - (event.payload.moveCost ?? 1));
-            }
-            if (event.payload.skeletonKeyBuried && event.payload.skeletonKeyCardId) {
-                core.currentExplorer.inventory = core.currentExplorer.inventory.filter((card) => card.id !== event.payload.skeletonKeyCardId);
-            }
-            if (event.payload.usedActionId) {
-                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.usedActionId];
-            }
-            core.highlightedDeckKind = null;
-            core.latestDiscovery = null;
-            core.latestDiscoveryOwnerPlayerId = null;
-            core.latestRoomDrawResolution = null;
-            core.pendingEventChoice = null;
-            if (event.payload.bloodFromStoneTurnStartVisibleStoneCherubIds) {
-                core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId = {
-                    ...core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId,
-                    [event.payload.playerId]: [...event.payload.bloodFromStoneTurnStartVisibleStoneCherubIds],
-                };
-            }
-            const bloodFromStoneNewLineOfSightDamageRoll = event.payload.bloodFromStoneNewLineOfSightDamageRoll;
-            const bloodFromStoneNewLineOfSightDamageLogText = bloodFromStoneNewLineOfSightDamageRoll
-                ? `${event.payload.logText}；${bloodFromStoneNewLineOfSightDamageRoll.explorerName}进入石像小天使新视线，投出 ${bloodFromStoneNewLineOfSightDamageRoll.dice.join('、') || '0'}，承受 ${bloodFromStoneNewLineOfSightDamageRoll.amount} 点一般伤害`
-                : event.payload.logText;
-            if (bloodFromStoneNewLineOfSightDamageRoll) {
-                core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn = Array.from(new Set([
-                    ...core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn,
-                    event.payload.playerId,
-                ]));
-            }
-            const mummyGirlPickedUp = collectMummyGirlByExplorerIfPresent(
-                core,
-                event.payload.playerId,
-                event.payload.roomId,
-            );
-            const synced = syncCurrentExplorerProjection(core);
-            const mummyGirlPickupLog = mummyGirlPickedUp
-                ? `；${synced.currentExplorer.displayName}拾起女孩`
-                : '';
-            if (bloodFromStoneNewLineOfSightDamageRoll) {
-                const pendingBloodFromStoneNewLineOfSightDamageAllocation =
-                    createBloodFromStoneNewLineOfSightDamageAllocation(synced, bloodFromStoneNewLineOfSightDamageRoll);
-                if (pendingBloodFromStoneNewLineOfSightDamageAllocation) {
-                    return {
-                        ...synced,
-                        pendingDamageAllocation: pendingBloodFromStoneNewLineOfSightDamageAllocation,
-                        activePlayerId: pendingBloodFromStoneNewLineOfSightDamageAllocation.playerId,
-                        recommendedAction: 'endTurn',
-                        activityLog: appendActivity(synced, bloodFromStoneNewLineOfSightDamageLogText, 'warning'),
-                    };
-                }
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, `${bloodFromStoneNewLineOfSightDamageLogText}${mummyGirlPickupLog}`, 'warning'),
-                };
-            }
-            return {
-                ...synced,
-                recommendedAction: resolveRecommendedAction(synced),
-                activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, 'neutral'),
-            };
+            return applyBetrayalExplorerMovedState(core, event);
         }
         case EVENTS.ROOM_EXPLORED: {
-            applyBetrayalRoomExploredPlacementState(core, event.payload);
-            core.movesRemaining = 0;
-            core.turnEndedByDiscovery = true;
-            applyRoomDrawResolutionToCore(core, event.payload.roomDrawResolution);
-            core.exploreIndex += event.payload.skippedRoomWithHolySymbol ? 2 : 1;
-            core.highlightedDeckKind = event.payload.deckKind;
-            core.latestDiscovery = cloneDiscoverySummary(event.payload.discovery);
-            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
-            core.pendingEventChoice = null;
-            core.pendingEventRollStart = event.payload.eventRollPending
-                ? {
-                    playerId: event.payload.playerId,
-                    roomId: event.payload.roomId,
-                    sourceTitle: event.payload.discovery.title,
-                    eventDescription: event.payload.eventDescription,
-                }
-                : null;
-            core.pendingEventRollResolution = null;
-            core.pendingCardResolutionQueue = event.payload.eventRollPending || event.payload.nextPendingEventChoice
-                ? []
-                : createPendingCardResolutionQueue({
-                    playerId: event.payload.playerId,
-                    requiredPlayerIds: resolveRoomExploredCardResolutionRequiredPlayerIds(core, event),
-                    roomId: event.payload.roomId,
-                    timestamp: event.timestamp,
-                    deckKind: event.payload.deckKind,
-                    discovery: event.payload.discovery,
-                    drawnCard: event.payload.drawnCard,
-                    roomDiscoveryCards: event.payload.roomDiscoveryCards,
-                    buriedRoomDiscoveryCards: event.payload.buriedRoomDiscoveryCards,
-                });
-            if (
-                event.payload.deckKind === 'event'
-                && !event.payload.skippedEventWithTraitorPower
-                && !event.payload.skippedEventWithUponReflection
-                && !event.payload.nextPendingEventChoice
-                && !event.payload.eventRollPending
-            ) {
-                buryEventCardToBottom(core, event.payload.discovery.title);
-            }
-            if (event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds) {
-                core.recentRoll = {
-                    id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
-                    kind: event.payload.eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.discovery.title,
-                    eventDescription: event.payload.eventRoll.eventDescription,
-                    trait: event.payload.eventRoll.trait,
-                    rollLabel: event.payload.eventRoll.rollLabel,
-                    dice: [...event.payload.eventRoll.dice],
-                    passiveBonus: event.payload.eventRoll.passiveBonus ?? 0,
-                    branchThresholds: event.payload.eventRoll.branchThresholds.map((branch) => ({
-                        ...branch,
-                        effect: { ...branch.effect },
-                    })),
-                    latestLabel: event.payload.eventRoll.label,
-                    consumedRabbitFootCardIds: [],
-                };
-            } else if (event.payload.hauntRoll?.dice.length) {
-                core.recentRoll = {
-                    id: `${event.payload.playerId}-${event.payload.roomId}-haunt-${event.timestamp}`,
-                    kind: 'hauntRoll',
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.discovery.title,
-                    rollLabel: '作祟检定',
-                    dice: [...event.payload.hauntRoll.dice],
-                    passiveBonus: 0,
-                    branchThresholds: buildHauntRollThresholds(event.payload.hauntRoll),
-                    latestLabel: event.payload.hauntRoll.triggered ? '作祟开始' : '未触发作祟',
-                    consumedRabbitFootCardIds: [],
-                };
-            } else {
-                core.recentRoll = null;
-            }
-            consumeNextNonCombatTraitReplacementAfterTraitRoll(core, event.payload.playerId, event.payload.eventRoll);
-            if (event.payload.deckKind === 'omen') {
-                core.scenarioRuntime.omensDiscovered += 1;
-            }
-            applyRoomDiscoveryEffect(core, event.payload.room.discoveryEffect);
-            if (event.payload.buriedRoomDiscoveryCards?.length) {
-                for (const buriedCard of event.payload.buriedRoomDiscoveryCards) {
-                    buryPossessionCardToBottom(core, 'item', buriedCard.id);
-                }
-            }
-            if (event.payload.roomDiscoveryCards?.length) {
-                core.currentExplorer.inventory = [
-                    ...core.currentExplorer.inventory,
-                    ...event.payload.roomDiscoveryCards.map(cloneInventoryCard),
-                ];
-                for (const drawnRoomCard of event.payload.roomDiscoveryCards) {
-                    removePossessionCardFromDeck(core, 'item', drawnRoomCard.id);
-                }
-            }
-
-            if (event.payload.nextPendingEventChoice) {
-                core.pendingEventChoice = clonePendingEventChoice(event.payload.nextPendingEventChoice);
-                core.pendingCardResolutionQueue = [];
-                core.turnEndedByDiscovery = false;
-                const mummyGirlPickedUp = collectMummyGirlByExplorerIfPresent(
-                    core,
-                    event.payload.playerId,
-                    event.payload.roomId,
-                );
-                const synced = syncCurrentExplorerProjection(core);
-                const mummyGirlPickupLog = mummyGirlPickedUp
-                    ? `；${synced.currentExplorer.displayName}拾起女孩`
-                    : '';
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, event.payload.discovery.tone),
-                };
-            }
-
-            if (event.payload.skippedEventWithTraitorPower || event.payload.skippedEventWithUponReflection) {
-                // 跳过的是房间事件符号，没有抽事件牌，因此不移动事件牌堆。
-                if (event.payload.skippedEventWithUponReflection) {
-                    core.turnEndedByDiscovery = false;
-                }
-            } else if (event.payload.skippedEventWithIdol) {
-                // 雕像仍消耗这次事件牌堆顺序，但不结算事件效果。
-            } else if (
-                event.payload.deckKind === 'event'
-                && eventEffectNeedsPendingEventChoice(event.payload.eventEffect)
-            ) {
-                if (event.payload.eventEffect.mode === 'allTraitChecks') {
-                    applyEventEffect(core, event.payload.eventEffect);
-                    applyDustEventEffectDeathIfNeeded(core);
-                }
-                core.pendingEventChoice = {
-                    id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.discovery.title,
-                    eventDescription: event.payload.eventDescription,
-                    acceptLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
-                        || event.payload.eventEffect.mode === 'optionalEffect'
-                        || event.payload.eventEffect.mode === 'optionalItemEffect'
-                        || event.payload.eventEffect.mode === 'optionalHauntRoll'
-                        ? event.payload.eventEffect.acceptLabel
-                        : undefined,
-                    declineLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
-                        || event.payload.eventEffect.mode === 'optionalEffect'
-                        || event.payload.eventEffect.mode === 'optionalItemEffect'
-                        || event.payload.eventEffect.mode === 'optionalHauntRoll'
-                        ? event.payload.eventEffect.declineLabel
-                        : undefined,
-                    effect: cloneUseEffect(event.payload.eventEffect),
-                };
-                core.turnEndedByDiscovery = false;
-            } else if (
-                event.payload.deckKind === 'event'
-                && event.payload.eventRoll?.dice?.length
-                && core.recentRoll
-                && event.payload.eventEffect
-            ) {
-                const needsSharedEventRollAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement({
-                    hauntRevealResolution: event.payload.hauntRevealResolution,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
-                    dustSetup: event.payload.dustSetup,
-                    magicCameraSetup: event.payload.magicCameraSetup,
-                    helpingHandsSetup: event.payload.helpingHandsSetup,
-                    uponReflectionSetup: event.payload.uponReflectionSetup,
-                });
-                core.pendingEventRollResolution = {
-                    rollId: core.recentRoll.id,
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.discovery.title,
-                    requiredPlayerIds: needsSharedEventRollAcknowledgement && core.playerIds.length > 0
-                        ? [...core.playerIds]
-                        : [event.payload.playerId],
-                    acknowledgedPlayerIds: [],
-                    effect: cloneUseEffect(event.payload.eventEffect),
-                    requiresAcknowledgement: true,
-                    deathPrevention: event.payload.deathPrevention
-                        ? {
-                            ...event.payload.deathPrevention,
-                            dice: [...event.payload.deathPrevention.dice],
-                            damageTraits: [...event.payload.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        }
-                        : undefined,
-                    hauntTriggered: event.payload.hauntTriggered,
-                    hauntCardNumber: event.payload.hauntCardNumber,
-                    hauntTriggerLabel: event.payload.hauntTriggerLabel,
-                    hauntTraitorPlayerId: event.payload.hauntTraitorPlayerId,
-                    hauntRevealResolution: event.payload.hauntRevealResolution
-                        ? { ...event.payload.hauntRevealResolution }
-                        : undefined,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution
-                        ? cloneHauntTraitorResolution(event.payload.hauntTraitorResolution) ?? undefined
-                        : undefined,
-                    dustSetup: event.payload.dustSetup ? cloneDustRuntimeState(event.payload.dustSetup) : undefined,
-                    magicCameraSetup: event.payload.magicCameraSetup
-                        ? cloneMagicCameraRuntimeState(event.payload.magicCameraSetup)
-                        : undefined,
-                    helpingHandsSetup: event.payload.helpingHandsSetup
-                        ? cloneHelpingHandsRuntimeState(event.payload.helpingHandsSetup)
-                        : undefined,
-                    uponReflectionSetup: event.payload.uponReflectionSetup
-                        ? cloneUponReflectionRuntimeState(event.payload.uponReflectionSetup)
-                        : undefined,
-                    hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
-                };
-                core.turnEndedByDiscovery = true;
-            } else if (!core.turnEndedByDiscovery && event.payload.deckKind === 'event' && event.payload.eventEffect) {
-                const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
-                    ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
-                    : null;
-                const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
-                    ? core.monsters.map(cloneMonster)
-                    : [];
-                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
-                const {
-                    eventEffectSnapshot,
-                    pendingRolledDamageAllocation,
-                } = applyEventEffectWithDeferredRolledDamage(
-                    core,
-                    event.payload.eventEffect,
-                    event.payload.discovery.title,
-                    event.timestamp,
-                );
-                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
-                    applyImmediateEventDeathPreventionIfNeeded(
-                        core,
-                        event.payload.deathPrevention,
-                        event.timestamp,
-                        deathPreventionScenarioRuntimeBeforeDefeat,
-                        deathPreventionMonstersBeforeDefeat,
-                    );
-                }
-                const replacedWithDamageRoll = (
-                    pendingRolledDamageAllocation
-                    || !event.payload.deathPrevention?.dice.length
-                )
-                    ? setEventRolledDamageRecentRollFromSnapshot(
-                        core,
-                        eventEffectSnapshot,
-                        event.payload.discovery.title,
-                        event.timestamp,
-                        sourceEventRollBeforeEffect,
-                    )
-                    : false;
-                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
-                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
-                }
-                core.turnEndedByDiscovery = true;
-            } else if (event.payload.deckKind === 'event' && event.payload.eventEffect) {
-                const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
-                    ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
-                    : null;
-                const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
-                    ? core.monsters.map(cloneMonster)
-                    : [];
-                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
-                const {
-                    eventEffectSnapshot,
-                    pendingRolledDamageAllocation,
-                } = applyEventEffectWithDeferredRolledDamage(
-                    core,
-                    event.payload.eventEffect,
-                    event.payload.discovery.title,
-                    event.timestamp,
-                );
-                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
-                    applyImmediateEventDeathPreventionIfNeeded(
-                        core,
-                        event.payload.deathPrevention,
-                        event.timestamp,
-                        deathPreventionScenarioRuntimeBeforeDefeat,
-                        deathPreventionMonstersBeforeDefeat,
-                    );
-                }
-                const replacedWithDamageRoll = (
-                    pendingRolledDamageAllocation
-                    || !event.payload.deathPrevention?.dice.length
-                )
-                    ? setEventRolledDamageRecentRollFromSnapshot(
-                        core,
-                        eventEffectSnapshot,
-                        event.payload.discovery.title,
-                        event.timestamp,
-                        sourceEventRollBeforeEffect,
-                    )
-                    : false;
-                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
-                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
-                }
-                core.turnEndedByDiscovery = true;
-            } else if (
-                event.payload.drawnCard
-                && (event.payload.deckKind === 'item' || event.payload.deckKind === 'omen')
-            ) {
-                core.currentExplorer.inventory = [...core.currentExplorer.inventory, cloneInventoryCard(event.payload.drawnCard)];
-                removePossessionCardFromDeck(core, event.payload.deckKind, event.payload.drawnCard.id);
-                if (event.payload.mummyForcedOmenSearch) {
-                    core.possessionOrderByKind = {
-                        ...core.possessionOrderByKind,
-                        omen: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
-                    };
-                    core.scenarioRuntime = {
-                        ...core.scenarioRuntime,
-                        mummyForcedOmenSearch: {
-                            ...event.payload.mummyForcedOmenSearch,
-                            shuffledOmenDeck: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
-                        },
-                    };
-                }
-            }
-
-            const mummyGirlPickedUp = collectMummyGirlByExplorerIfPresent(
-                core,
-                event.payload.playerId,
-                event.payload.roomId,
-            );
-            const synced = syncCurrentExplorerProjection(core);
-            const mummyGirlPickupLog = mummyGirlPickedUp
-                ? `；${synced.currentExplorer.displayName}拾起女孩`
-                : '';
-            const pendingDamageAllocationAfterEventDraw = core.pendingDamageAllocation;
-            let nextCore = {
-                ...synced,
-                recommendedAction: pendingDamageAllocationAfterEventDraw ? 'endTurn' : resolveRecommendedAction(synced),
-                activePlayerId: pendingDamageAllocationAfterEventDraw?.playerId ?? synced.activePlayerId,
-                activityLog: appendActivity(synced, `${event.payload.logText}${mummyGirlPickupLog}`, event.payload.discovery.tone),
-            };
-            const dustCompletedAfterEventDraw = pendingDamageAllocationAfterEventDraw
-                ? null
-                : completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
-            if (dustCompletedAfterEventDraw) {
-                return dustCompletedAfterEventDraw;
-            }
-            if (event.payload.hauntTriggered) {
-                const hauntRevealerPlayerId = event.payload.playerId;
-                const hauntRevealResolution = event.payload.hauntRevealResolution
-                    ?? resolveHauntRevealResolutionForTrigger(core, event.payload.drawnCard);
-                const hauntTraitorResolution = resolveHauntTraitorResolutionForTrigger(
-                    core,
-                    hauntRevealResolution.hauntCardNumber,
-                    hauntRevealerPlayerId,
-                    { revealRepresentativeOnly: hauntRevealResolution.representativeOnly },
-                );
-                const hauntTraitorPlayerId = hauntTraitorResolution.traitorPlayerId;
-                const hauntFirstPlayerResolution = resolveHauntFirstPlayerResolutionForTrigger(
-                    core,
-                    hauntRevealResolution.hauntCardNumber,
-                    hauntRevealerPlayerId,
-                    hauntTraitorResolution,
-                    { revealRepresentativeOnly: hauntRevealResolution.representativeOnly },
-                );
-                const nextPlayerId = hauntFirstPlayerResolution.nextPlayerId;
-                const uponReflectionSetup = hauntRevealResolution.hauntCardNumber === 7
-                    ? createUponReflectionRuntimeState(core, hauntRevealerPlayerId, DEFAULT_BETRAYAL_RANDOM)
-                    : undefined;
-                nextCore = reduceEvent(nextCore, nowEvent(EVENTS.HAUNT_TRIGGERED, {
-                    traitorPlayerId: hauntTraitorPlayerId,
-                    hauntRevealerPlayerId,
-                    nextPlayerId,
-                    hauntCardNumber: hauntRevealResolution.hauntCardNumber,
-                    hauntTriggerLabel: hauntRevealResolution.triggeringOmenName,
-                    hauntRevealResolution,
-                    hauntTraitorResolution,
-                    hauntFirstPlayerResolution,
-                    uponReflectionSetup,
-                    logText: hauntRevealResolution.hauntCardNumber === 1
-                        ? scenarioConfigById(core.scenarioId).logs.hauntTriggered
-                        : `作祟触发：剧本${hauntRevealResolution.hauntCardNumber}（${hauntRevealResolution.triggeringOmenName}）`,
+            const resolution = applyBetrayalRoomExploredState(core, event, DEFAULT_BETRAYAL_RANDOM);
+            if (resolution.scenarioCompletedResult) {
+                return reduceEvent(resolution.core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+                    result: resolution.scenarioCompletedResult,
                 }, event.timestamp));
             }
-            return nextCore;
+            if (resolution.hauntTriggeredPayload) {
+                return reduceEvent(resolution.core, nowEvent(EVENTS.HAUNT_TRIGGERED, resolution.hauntTriggeredPayload, event.timestamp));
+            }
+            return resolution.core;
         }
         case EVENTS.EVENT_CHOICE_RESOLVED: {
-            const previousRecentRoll = core.recentRoll;
-            const previousDiscovery = core.latestDiscovery;
-            const deferNextPendingEventChoiceBehindRoll = Boolean(
-                event.payload.eventRoll?.dice?.length
-                && event.payload.nextPendingEventChoice,
-            );
-            const eventChoiceDiscovery = event.payload.nextPendingEventChoice
-                ? event.payload.discovery
-                : withEventChoiceResolutionStep(event.payload.discovery);
-            core.pendingEventChoice = event.payload.nextPendingEventChoice && !deferNextPendingEventChoiceBehindRoll
-                ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
-                : null;
-            const nextDiscovery = cloneDiscoverySummary(eventChoiceDiscovery);
-            mergePreviousDiscoveryResolutionSteps(previousDiscovery, nextDiscovery);
-            core.latestDiscovery = nextDiscovery;
-            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
-            if (event.payload.drawnEventCardNameToBury) {
-                buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
-            }
-            const carriedRecentRoll = !event.payload.eventRoll?.dice?.length
-                && previousRecentRoll
-                && previousRecentRoll.sourceTitle === event.payload.sourceTitle
-                && (previousRecentRoll.kind === 'eventDiceRoll' || previousRecentRoll.kind === 'eventTraitCheck')
-                ? {
-                    ...previousRecentRoll,
-                    dice: [...previousRecentRoll.dice],
-                    branchThresholds: previousRecentRoll.branchThresholds?.map((branch) => ({
-                        ...branch,
-                        effect: cloneUseEffect(
-                            event.payload.eventEffect && branch.label === previousRecentRoll.latestLabel
-                                ? event.payload.eventEffect
-                                : branch.effect,
-                        ),
-                    })),
-                    consumedRabbitFootCardIds: [...previousRecentRoll.consumedRabbitFootCardIds],
-                }
-                : null;
-            core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
-                ? {
-                    id: `${event.payload.playerId}-${event.payload.sourceTitle}-${event.timestamp}`,
-                    kind: event.payload.eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.sourceTitle,
-                    eventDescription: event.payload.eventRoll.eventDescription,
-                    trait: event.payload.eventRoll.trait,
-                    rollLabel: event.payload.eventRoll.rollLabel,
-                    dice: [...event.payload.eventRoll.dice],
-                    passiveBonus: event.payload.eventRoll.passiveBonus ?? 0,
-                    branchThresholds: event.payload.eventRoll.branchThresholds.map((branch) => ({
-                        ...branch,
-                        effect: cloneUseEffect(branch.effect),
-                    })),
-                    latestLabel: event.payload.eventRoll.label,
-                    consumedRabbitFootCardIds: [],
-                }
-                : carriedRecentRoll;
-            consumeNextNonCombatTraitReplacementAfterTraitRoll(core, event.payload.playerId, event.payload.eventRoll);
-            if (
-                event.payload.eventRoll?.dice?.length
-                && core.recentRoll
-                && (event.payload.eventEffect || event.payload.nextPendingEventChoice)
-            ) {
-                const pendingEffect = event.payload.eventEffect
-                    ?? event.payload.nextPendingEventChoice!.effect;
-                const nextPendingEventChoice = event.payload.nextPendingEventChoice
-                    ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
-                    : undefined;
-                const needsSharedEventRollAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement({
-                    nextPendingEventChoice,
-                    hauntRevealResolution: event.payload.hauntRevealResolution,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
-                    dustSetup: event.payload.dustSetup,
-                    magicCameraSetup: event.payload.magicCameraSetup,
-                    helpingHandsSetup: event.payload.helpingHandsSetup,
-                    uponReflectionSetup: event.payload.uponReflectionSetup,
-                });
-                core.pendingEventRollResolution = {
-                    rollId: core.recentRoll.id,
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.sourceTitle,
-                    requiredPlayerIds: needsSharedEventRollAcknowledgement && core.playerIds.length > 0
-                        ? [...core.playerIds]
-                        : [event.payload.playerId],
-                    acknowledgedPlayerIds: [],
-                    effect: cloneUseEffect(pendingEffect),
-                    requiresAcknowledgement: true,
-                    nextPendingEventChoice,
-                    deathPrevention: event.payload.deathPrevention
-                        ? {
-                            ...event.payload.deathPrevention,
-                            dice: [...event.payload.deathPrevention.dice],
-                            damageTraits: [...event.payload.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        }
-                        : undefined,
-                    hauntTriggered: event.payload.hauntTriggered,
-                    hauntCardNumber: event.payload.hauntCardNumber,
-                    hauntTriggerLabel: event.payload.hauntTriggerLabel,
-                    hauntTraitorPlayerId: event.payload.hauntTraitorPlayerId,
-                    hauntRevealResolution: event.payload.hauntRevealResolution
-                        ? { ...event.payload.hauntRevealResolution }
-                        : undefined,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution
-                        ? cloneHauntTraitorResolution(event.payload.hauntTraitorResolution) ?? undefined
-                        : undefined,
-                    dustSetup: event.payload.dustSetup ? cloneDustRuntimeState(event.payload.dustSetup) : undefined,
-                    magicCameraSetup: event.payload.magicCameraSetup
-                        ? cloneMagicCameraRuntimeState(event.payload.magicCameraSetup)
-                        : undefined,
-                    helpingHandsSetup: event.payload.helpingHandsSetup
-                        ? cloneHelpingHandsRuntimeState(event.payload.helpingHandsSetup)
-                        : undefined,
-                    uponReflectionSetup: event.payload.uponReflectionSetup
-                        ? cloneUponReflectionRuntimeState(event.payload.uponReflectionSetup)
-                        : undefined,
-                    hauntRoll: event.payload.hauntRoll ? { ...event.payload.hauntRoll } : undefined,
-                };
-                core.turnEndedByDiscovery = true;
-                core.pendingCardResolutionQueue = event.payload.nextPendingEventChoice
-                    ? []
-                    : createPendingCardResolutionQueue({
-                        playerId: event.payload.playerId,
-                        requiredPlayerIds: [event.payload.playerId],
-                        roomId: core.currentExplorer.roomId,
-                        timestamp: event.timestamp,
-                        deckKind: 'event',
-                        discovery: eventChoiceDiscovery,
-                    });
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, event.payload.logText, eventChoiceDiscovery.tone),
-                };
-            }
-            if (event.payload.eventEffect) {
-                const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
-                    ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
-                    : null;
-                const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
-                    ? core.monsters.map(cloneMonster)
-                    : [];
-                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
-                const {
-                    eventEffectSnapshot,
-                    pendingRolledDamageAllocation,
-                } = applyEventEffectWithDeferredRolledDamage(
-                    core,
-                    event.payload.eventEffect,
-                    event.payload.sourceTitle,
-                    event.timestamp,
-                );
-                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
-                    applyImmediateEventDeathPreventionIfNeeded(
-                        core,
-                        event.payload.deathPrevention,
-                        event.timestamp,
-                        deathPreventionScenarioRuntimeBeforeDefeat,
-                        deathPreventionMonstersBeforeDefeat,
-                    );
-                }
-                const replacedWithDamageRoll = (
-                    pendingRolledDamageAllocation
-                    || !event.payload.deathPrevention?.dice.length
-                )
-                    ? setEventRolledDamageRecentRollFromSnapshot(
-                        core,
-                        eventEffectSnapshot,
-                        event.payload.sourceTitle,
-                        event.timestamp,
-                        sourceEventRollBeforeEffect,
-                    )
-                    : false;
-                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
-                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
-                }
-            }
-            core.turnEndedByDiscovery = !event.payload.nextPendingEventChoice;
-            core.pendingCardResolutionQueue = event.payload.nextPendingEventChoice
-                ? []
-                : createPendingCardResolutionQueue({
-                    playerId: event.payload.playerId,
-                    requiredPlayerIds: [event.payload.playerId],
-                    roomId: core.currentExplorer.roomId,
-                    timestamp: event.timestamp,
-                    deckKind: 'event',
-                    discovery: eventChoiceDiscovery,
-                });
-            const synced = syncCurrentExplorerProjection(core);
-            const pendingDamageAllocationAfterEventChoice = core.pendingDamageAllocation;
-            let nextCore = {
-                ...synced,
-                recommendedAction: pendingDamageAllocationAfterEventChoice ? 'endTurn' : resolveRecommendedAction(synced),
-                activePlayerId: pendingDamageAllocationAfterEventChoice?.playerId ?? synced.activePlayerId,
-                activityLog: appendActivity(synced, event.payload.logText, eventChoiceDiscovery.tone),
-            };
-            const dustCompletedAfterEventChoice = pendingDamageAllocationAfterEventChoice
-                ? null
-                : completeDustTraitorVictoryIfNeeded(nextCore, event.timestamp);
-            if (dustCompletedAfterEventChoice) {
-                return dustCompletedAfterEventChoice;
-            }
-            if (event.payload.hauntTriggered) {
-                const scenario = scenarioConfigById(core.scenarioId);
-                const hauntRevealerPlayerId = event.payload.playerId;
-                const hauntRevealResolution = event.payload.hauntRevealResolution
-                    ?? resolveHauntRevealResolutionForTrigger(
-                        core,
-                        { id: null, name: event.payload.hauntTriggerLabel ?? event.payload.sourceTitle },
-                        event.payload.hauntCardNumber,
-                    );
-                const hauntCardNumber = event.payload.hauntCardNumber ?? hauntRevealResolution.hauntCardNumber;
-                const hauntTraitorResolution = event.payload.hauntTraitorResolution
-                    ?? resolveHauntTraitorResolutionForTrigger(core, hauntCardNumber, hauntRevealerPlayerId, {
-                        explicitTraitorPlayerId: event.payload.hauntTraitorPlayerId,
-                        revealRepresentativeOnly: hauntRevealResolution.representativeOnly,
-                    });
-                const hauntTraitorPlayerId = hauntTraitorResolution.traitorPlayerId;
-                const hauntFirstPlayerResolution = resolveHauntFirstPlayerResolutionForTrigger(
-                    core,
-                    hauntCardNumber,
-                    hauntRevealerPlayerId,
-                    hauntTraitorResolution,
-                    { revealRepresentativeOnly: hauntRevealResolution.representativeOnly },
-                );
-                const nextPlayerId = hauntFirstPlayerResolution.nextPlayerId;
-                nextCore = reduceEvent(nextCore, nowEvent(EVENTS.HAUNT_TRIGGERED, {
-                    traitorPlayerId: hauntTraitorPlayerId,
-                    hauntRevealerPlayerId,
-                    nextPlayerId,
-                    hauntCardNumber,
-                    hauntTriggerLabel: event.payload.hauntTriggerLabel ?? hauntRevealResolution.triggeringOmenName,
-                    hauntRevealResolution,
-                    hauntTraitorResolution,
-                    hauntFirstPlayerResolution,
-                    dustSetup: event.payload.dustSetup,
-                    magicCameraSetup: event.payload.magicCameraSetup,
-                    helpingHandsSetup: event.payload.helpingHandsSetup,
-                    uponReflectionSetup: event.payload.uponReflectionSetup,
-                    logText: hauntCardNumber !== 1
-                        ? `作祟触发：剧本${hauntCardNumber}（${event.payload.hauntTriggerLabel ?? event.payload.sourceTitle}）`
-                        : scenario.logs.hauntTriggered,
+            const resolution = applyBetrayalEventChoiceResolvedState(core, event);
+            if (resolution.scenarioCompletedResult) {
+                return reduceEvent(resolution.core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+                    result: resolution.scenarioCompletedResult,
                 }, event.timestamp));
             }
-            return nextCore;
+            if (resolution.hauntTriggeredPayload) {
+                return reduceEvent(resolution.core, nowEvent(EVENTS.HAUNT_TRIGGERED, resolution.hauntTriggeredPayload, event.timestamp));
+            }
+            return resolution.core;
         }
         case EVENTS.CARD_RESOLUTION_ACKNOWLEDGED: {
             const acknowledgedPlayerIds = event.payload.acknowledgedPlayerIds
@@ -9826,633 +4937,23 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.RABBIT_FOOT_USED: {
-            const recentRoll = core.recentRoll;
-            if (!recentRoll) {
-                return core;
-            }
-            const dice = [...recentRoll.dice];
-            const dieIndices = event.payload.dieIndices ?? [event.payload.dieIndex];
-            const newPips = event.payload.newPips ?? [event.payload.newPip];
-            dieIndices.forEach((dieIndex, valueIndex) => {
-                if (dieIndex >= 0 && dieIndex < dice.length) {
-                    dice[dieIndex] = newPips[valueIndex] ?? dice[dieIndex] ?? 0;
-                }
-            });
-            const nextRoll: BetrayalRecentRollState = {
-                ...recentRoll,
-                dice,
-                consumedRabbitFootCardIds: [...recentRoll.consumedRabbitFootCardIds, event.payload.cardId],
-                lastRabbitFootRerollDieIndex: dieIndices.length === 1 ? dieIndices[0] : undefined,
-                lastRabbitFootRerollPreviousDice: [...recentRoll.dice],
-            };
-            const nextTotal = resolveRecentRollTotal(nextRoll);
-            const finalizeRecentRollReroll = (
-                tone: BetrayalDiscoverySummary['tone'] = 'accent',
-                options: { appendLog?: boolean } = {},
-            ): BetrayalCore => {
-                const appendLog = options.appendLog ?? true;
-                const rerollDamageAllocation = core.pendingDamageAllocation
-                    ?? createRecentRollRerollMentalDamageAllocation(
-                        core,
-                        event.payload.playerId,
-                        event.payload.cardId,
-                        event.payload.mentalDamageAfterReroll,
-                        event.timestamp,
-                    );
-                if (rerollDamageAllocation) {
-                    core.pendingDamageAllocation = rerollDamageAllocation;
-                    core.activePlayerId = rerollDamageAllocation.playerId;
-                }
-                const synced = syncCurrentExplorerProjection(core);
-                if (rerollDamageAllocation) {
-                    return {
-                        ...synced,
-                        pendingDamageAllocation: rerollDamageAllocation,
-                        activePlayerId: rerollDamageAllocation.playerId,
-                        recommendedAction: 'endTurn',
-                        activityLog: appendLog
-                            ? appendActivity(synced, event.payload.logText, 'warning')
-                            : synced.activityLog,
-                    };
-                }
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendLog
-                        ? appendActivity(synced, event.payload.logText, tone)
-                        : synced.activityLog,
-                };
-            };
-
-            if (recentRoll.kind === 'eventTraitCheck' || recentRoll.kind === 'eventDiceRoll') {
-                if (recentRoll.kind === 'eventTraitCheck' && !recentRoll.trait) {
-                    return core;
-                }
-                if (!recentRoll.branchThresholds) {
-                    core.recentRoll = nextRoll;
-                    if (core.pendingEventRollResolution?.rollId === recentRoll.id) {
-                        core.pendingEventRollResolution = null;
-                    }
-                    core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                    return finalizeRecentRollReroll();
-                }
-                const nextBranch = resolveEventBranch(recentRoll.branchThresholds, nextTotal);
-                const nextEffect = event.payload.eventRerollEffect ?? nextBranch.effect;
-                if (core.pendingEventRollResolution?.rollId === recentRoll.id) {
-                    const pendingEventRoll = core.pendingEventRollResolution;
-                    const nextPendingEventChoice = eventEffectNeedsPendingEventChoice(nextEffect)
-                        ? {
-                            id: `${pendingEventRoll.rollId}-reroll-${event.timestamp}`,
-                            playerId: pendingEventRoll.playerId,
-                            sourceTitle: pendingEventRoll.sourceTitle,
-                            effect: cloneUseEffect(nextEffect),
-                        }
-                        : undefined;
-                    const acknowledgementContext = {
-                        nextPendingEventChoice,
-                        hauntRevealResolution: event.payload.eventRerollHaunt?.hauntRevealResolution,
-                        hauntTraitorResolution: event.payload.eventRerollHaunt?.hauntTraitorResolution,
-                        dustSetup: event.payload.eventRerollHaunt?.dustSetup,
-                        magicCameraSetup: event.payload.eventRerollHaunt?.magicCameraSetup,
-                        helpingHandsSetup: event.payload.eventRerollHaunt?.helpingHandsSetup,
-                        uponReflectionSetup: event.payload.eventRerollHaunt?.uponReflectionSetup,
-                    };
-                    const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement(acknowledgementContext);
-                    nextRoll.latestLabel = nextBranch.label;
-                    core.recentRoll = nextRoll;
-                    core.pendingEventRollResolution = {
-                        ...pendingEventRoll,
-                        requiredPlayerIds: resolvePendingEventRollResolutionRequiredPlayerIds(core, pendingEventRoll),
-                        acknowledgedPlayerIds: [],
-                        effect: cloneUseEffect(nextEffect),
-                        nextPendingEventChoice,
-                        requiresAcknowledgement,
-                        deathPrevention: event.payload.eventRerollDeathPrevention
-                            ? {
-                                ...event.payload.eventRerollDeathPrevention,
-                                dice: [...event.payload.eventRerollDeathPrevention.dice],
-                                damageTraits: [...event.payload.eventRerollDeathPrevention.damageTraits],
-                                traitsBeforeDamage: { ...event.payload.eventRerollDeathPrevention.traitsBeforeDamage },
-                            }
-                            : undefined,
-                        ...(event.payload.eventRerollHaunt
-                            ? {
-                                hauntTriggered: event.payload.eventRerollHaunt.hauntTriggered,
-                                hauntCardNumber: event.payload.eventRerollHaunt.hauntCardNumber,
-                                hauntTriggerLabel: event.payload.eventRerollHaunt.hauntTriggerLabel,
-                                hauntTraitorPlayerId: event.payload.eventRerollHaunt.hauntTraitorPlayerId,
-                                hauntRevealResolution: event.payload.eventRerollHaunt.hauntRevealResolution
-                                    ? { ...event.payload.eventRerollHaunt.hauntRevealResolution }
-                                    : undefined,
-                                hauntTraitorResolution: event.payload.eventRerollHaunt.hauntTraitorResolution
-                                    ? cloneHauntTraitorResolution(event.payload.eventRerollHaunt.hauntTraitorResolution) ?? undefined
-                                    : undefined,
-                                dustSetup: event.payload.eventRerollHaunt.dustSetup
-                                    ? cloneDustRuntimeState(event.payload.eventRerollHaunt.dustSetup)
-                                    : undefined,
-                                magicCameraSetup: event.payload.eventRerollHaunt.magicCameraSetup
-                                    ? cloneMagicCameraRuntimeState(event.payload.eventRerollHaunt.magicCameraSetup)
-                                    : undefined,
-                                helpingHandsSetup: event.payload.eventRerollHaunt.helpingHandsSetup
-                                    ? cloneHelpingHandsRuntimeState(event.payload.eventRerollHaunt.helpingHandsSetup)
-                                    : undefined,
-                                uponReflectionSetup: event.payload.eventRerollHaunt.uponReflectionSetup
-                                    ? cloneUponReflectionRuntimeState(event.payload.eventRerollHaunt.uponReflectionSetup)
-                                    : undefined,
-                            }
-                            : {}),
-                    };
-                    core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                    if (core.latestDiscovery && core.latestDiscovery.title === nextRoll.sourceTitle) {
-                        const rerollLabel = recentRoll.rollLabel
-                            ?? (recentRoll.kind === 'eventTraitCheck' && recentRoll.trait
-                                ? `${TRAIT_LABEL[recentRoll.trait]}检定`
-                                : '投骰');
-                        core.latestDiscovery = {
-                            ...core.latestDiscovery,
-                            detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${formatEffectLabel(nextEffect)}`,
-                            tone: isWarningEventEffect(nextEffect) ? 'warning' : 'accent',
-                        };
-                    }
-                    if (!requiresAcknowledgement) {
-                        const synced = syncCurrentExplorerProjection(core);
-                        return {
-                            ...synced,
-                            recommendedAction: resolveRecommendedAction(synced),
-                            activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                        };
-                    }
-                    return finalizeRecentRollReroll();
-                }
-                if (core.pendingEventChoice?.sourceTitle === recentRoll.sourceTitle && !recentRoll.eventEffectSnapshot) {
-                    nextRoll.latestLabel = nextBranch.label;
-                    nextRoll.eventEffectSnapshot = undefined;
-                    core.recentRoll = nextRoll;
-                    core.pendingEventChoice = {
-                        ...core.pendingEventChoice,
-                        effect: cloneUseEffect(nextEffect),
-                    };
-                    core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                    if (core.latestDiscovery && core.latestDiscovery.title === nextRoll.sourceTitle) {
-                        const effectLabel = formatEffectLabel(nextEffect);
-                        const rerollLabel = recentRoll.rollLabel
-                            ?? (recentRoll.kind === 'eventTraitCheck' && recentRoll.trait
-                                ? `${TRAIT_LABEL[recentRoll.trait]}检定`
-                                : '投骰');
-                        core.latestDiscovery = {
-                            ...core.latestDiscovery,
-                            detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${effectLabel}`,
-                            tone: isWarningEventEffect(nextEffect) ? 'warning' : 'accent',
-                        };
-                    }
-                    return finalizeRecentRollReroll();
-                }
-                const previousEffect = recentRoll.branchThresholds.find((branch) => branch.label === recentRoll.latestLabel)?.effect;
-                if (previousEffect) {
-                    revertEventEffect(core, previousEffect, recentRoll.eventEffectSnapshot);
-                }
-                const nextSnapshot = applyEventEffect(core, nextEffect);
-                nextRoll.latestLabel = nextBranch.label;
-                nextRoll.eventEffectSnapshot = nextSnapshot;
-                core.recentRoll = nextRoll;
-                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                if (core.latestDiscovery && core.latestDiscovery.title === nextRoll.sourceTitle) {
-                    const effectLabel = formatEffectLabel(nextEffect);
-                    const rerollLabel = recentRoll.rollLabel
-                        ?? (recentRoll.kind === 'eventTraitCheck' && recentRoll.trait
-                            ? `${TRAIT_LABEL[recentRoll.trait]}检定`
-                            : '投骰');
-                    core.latestDiscovery = {
-                        ...core.latestDiscovery,
-                        detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${effectLabel}`,
-                        tone: isWarningEventEffect(nextBranch.effect) ? 'warning' : 'accent',
-                    };
-                }
-            } else if (recentRoll.kind === 'mysticElevator') {
-                if (!applyBetrayalMysticElevatorRecentRollRerollState(
-                    core,
-                    recentRoll,
-                    nextRoll,
-                    nextTotal,
-                    event.payload.cardId,
-                )) {
-                    return core;
-                }
-            } else if (recentRoll.kind === 'attackRoll') {
-                const attack = recentRoll.attack;
-                if (!attack) {
-                    return core;
-                }
-                if (core.pendingDamageAllocation && !isPendingDamageAllocationForAttackRoll(core)) {
-                    return core;
-                }
-                const attacker = findExplorerByPlayerId(core, recentRoll.playerId);
-                const defender = attack.defenderPlayerId
-                    ? findExplorerByPlayerId(core, attack.defenderPlayerId)
-                    : null;
-                if (!attacker) {
-                    return core;
-                }
-                resetExplorerTraits(attacker, attack.attackerTraitsBeforeDamage);
-                if (defender && attack.defenderTraitsBeforeDamage) {
-                    resetExplorerTraits(defender, attack.defenderTraitsBeforeDamage);
-                }
-                const rerollOutcome = resolveAttackRerollOutcome(nextTotal, attack);
-                let pendingAttackDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
-                if (rerollOutcome.damageToAttacker) {
-                    applyAttackDamage(attacker, rerollOutcome.damageToAttacker, attack.damageKind);
-                }
-                if (defender && rerollOutcome.damageToDefender) {
-                    if (canDeferOrdinaryAttackDamageToDefender(core, attack.target)) {
-                        pendingAttackDamageAllocation = createPendingDamageAllocation({
-                            id: `haunt-attack-reroll-damage-${defender.playerId}-${event.timestamp}`,
-                            explorer: defender,
-                            sourceTitle: '攻击',
-                            damageKind: attack.damageKind,
-                            amount: rerollOutcome.damageToDefender,
-                            allowSkull: true,
-                        });
-                    }
-                    if (!pendingAttackDamageAllocation) {
-                        applyAttackDamage(defender, rerollOutcome.damageToDefender, attack.damageKind);
-                    }
-                }
-                nextRoll.latestLabel = rerollOutcome.latestLabel;
-                nextRoll.attack = {
-                    ...attack,
-                    previousDamageToAttacker: rerollOutcome.damageToAttacker ?? 0,
-                    previousDamageToDefender: rerollOutcome.damageToDefender ?? 0,
-                    attackerTraitsBeforeDamage: { ...attack.attackerTraitsBeforeDamage },
-                    defenderTraitsBeforeDamage: attack.defenderTraitsBeforeDamage
-                        ? { ...attack.defenderTraitsBeforeDamage }
-                        : undefined,
-                };
-                core.recentRoll = nextRoll;
-                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                core.pendingDamageAllocation = pendingAttackDamageAllocation;
-                core.activePlayerId = pendingAttackDamageAllocation?.playerId ?? null;
-                if (pendingAttackDamageAllocation) {
-                    const synced = syncCurrentExplorerProjection(core);
-                    return {
-                        ...synced,
-                        pendingDamageAllocation: pendingAttackDamageAllocation,
-                        activePlayerId: pendingAttackDamageAllocation.playerId,
-                        recommendedAction: 'endTurn',
-                        activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                    };
-                }
-            } else if (recentRoll.kind === 'roomEndTurnTraitCheck') {
-                const roomEndTurn = recentRoll.roomEndTurn;
-                const explorer = findExplorerByPlayerId(core, recentRoll.playerId);
-                if (!roomEndTurn || !explorer) {
-                    return core;
-                }
-                explorer.roomId = roomEndTurn.originalRoomId;
-                resetExplorerTraits(explorer, roomEndTurn.traitsBeforeEffect);
-                if (nextTotal >= 5) {
-                    nextRoll.latestLabel = '没有坠落';
-                    nextRoll.roomEndTurn = {
-                        ...roomEndTurn,
-                        previousPhysicalDamage: 0,
-                        previousDestinationRoomId: undefined,
-                        traitsBeforeEffect: { ...roomEndTurn.traitsBeforeEffect },
-                    };
-                } else {
-                    explorer.roomId = 'basement-landing';
-                    nextRoll.latestLabel = '坠落到地下室起始点';
-                    nextRoll.roomEndTurn = {
-                        ...roomEndTurn,
-                        previousPhysicalDamage: roomEndTurn.previousPhysicalDamage,
-                        previousDestinationRoomId: 'basement-landing',
-                        traitsBeforeEffect: { ...roomEndTurn.traitsBeforeEffect },
-                    };
-                }
-                core.recentRoll = nextRoll;
-                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-            } else if (recentRoll.kind === 'deathPrevention') {
-                const explorer = findExplorerByPlayerId(core, recentRoll.playerId);
-                if (!recentRoll.deathPrevention || !explorer) {
-                    return core;
-                }
-                applyDeathPreventionRerollOutcome(core, explorer, recentRoll, nextRoll, nextTotal);
-                core.recentRoll = nextRoll;
-                core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
-                const dustCompleted = completeDustTraitorVictoryIfNeeded(core, event.timestamp);
-                if (dustCompleted) {
-                    return dustCompleted;
-                }
-            }
-            return finalizeRecentRollReroll();
-        }
-        case EVENTS.EVENT_ROLLED: {
-            core.pendingEventRollStart = null;
-            if (event.payload.drawnEventCardNameToBury) {
-                buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
-            }
-            const eventRoll = event.payload.eventRoll;
-            core.recentRoll = {
-                id: event.payload.rollId,
-                kind: eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: event.payload.sourceTitle,
-                eventDescription: event.payload.eventDescription,
-                trait: eventRoll.trait,
-                rollLabel: eventRoll.rollLabel,
-                dice: [...(eventRoll.dice ?? [])],
-                passiveBonus: eventRoll.passiveBonus ?? 0,
-                branchThresholds: (eventRoll.branchThresholds ?? []).map((branch) => ({
-                    ...branch,
-                    effect: cloneUseEffect(branch.effect),
-                })),
-                latestLabel: eventRoll.label,
-                consumedRabbitFootCardIds: [],
-            };
-            consumeNextNonCombatTraitReplacementAfterTraitRoll(
-                core,
-                event.payload.playerId,
-                eventRoll,
-            );
-            const previousDiscovery = core.latestDiscovery;
-            const eventDiscovery = cloneDiscoverySummary(event.payload.discovery);
-            mergePreviousDiscoveryResolutionSteps(previousDiscovery, eventDiscovery);
-            core.latestDiscovery = eventDiscovery;
-            core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
-            const eventCardResolutionQueue = !event.payload.nextPendingEventChoice
-                && (eventDiscovery.resolutionSteps?.length ?? 0) > 1
-                ? createPendingCardResolutionQueue({
-                    playerId: event.payload.playerId,
-                    requiredPlayerIds: core.playerIds,
-                    roomId: core.currentExplorer.roomId,
-                    timestamp: event.timestamp,
-                    deckKind: 'event',
-                    discovery: eventDiscovery,
-                })
-                : [];
-            if (event.payload.eventEffect && eventCardResolutionQueue.length > 0) {
-                const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
-                    ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
-                    : null;
-                const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
-                    ? core.monsters.map(cloneMonster)
-                    : [];
-                const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
-                const {
-                    eventEffectSnapshot,
-                    pendingRolledDamageAllocation,
-                } = applyEventEffectWithDeferredRolledDamage(
-                    core,
-                    event.payload.eventEffect,
-                    event.payload.sourceTitle,
-                    event.timestamp,
-                );
-                if (!activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation)) {
-                    applyImmediateEventDeathPreventionIfNeeded(
-                        core,
-                        event.payload.deathPrevention,
-                        event.timestamp,
-                        deathPreventionScenarioRuntimeBeforeDefeat,
-                        deathPreventionMonstersBeforeDefeat,
-                    );
-                }
-                const replacedWithDamageRoll = (
-                    pendingRolledDamageAllocation
-                    || !event.payload.deathPrevention?.dice.length
-                )
-                    ? setEventRolledDamageRecentRollFromSnapshot(
-                        core,
-                        eventEffectSnapshot,
-                        event.payload.sourceTitle,
-                        event.timestamp,
-                        sourceEventRollBeforeEffect,
-                    )
-                    : false;
-                if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
-                    core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
-                }
-                core.pendingEventRollResolution = null;
-                core.pendingCardResolutionQueue = eventCardResolutionQueue;
-                core.turnEndedByDiscovery = true;
-                const pendingDamageAllocationAfterEventRoll = core.pendingDamageAllocation;
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: pendingDamageAllocationAfterEventRoll ? 'endTurn' : resolveRecommendedAction(synced),
-                    activePlayerId: pendingDamageAllocationAfterEventRoll?.playerId ?? synced.activePlayerId,
-                    activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
-                };
-            }
-            if (event.payload.eventEffect || event.payload.nextPendingEventChoice) {
-                const nextPendingEventChoice = event.payload.nextPendingEventChoice
-                    ? clonePendingEventChoice(event.payload.nextPendingEventChoice)
-                    : undefined;
-                const needsSharedEventRollAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement({
-                    nextPendingEventChoice,
-                    hauntRevealResolution: event.payload.hauntRevealResolution,
-                    hauntTraitorResolution: event.payload.hauntTraitorResolution,
-                    dustSetup: event.payload.dustSetup,
-                    magicCameraSetup: event.payload.magicCameraSetup,
-                    helpingHandsSetup: event.payload.helpingHandsSetup,
-                    uponReflectionSetup: event.payload.uponReflectionSetup,
-                });
-                core.pendingEventRollResolution = {
-                    rollId: event.payload.rollId,
-                    playerId: event.payload.playerId,
-                    sourceTitle: event.payload.sourceTitle,
-                    requiredPlayerIds: needsSharedEventRollAcknowledgement && core.playerIds.length > 0
-                        ? [...core.playerIds]
-                        : [event.payload.playerId],
-                    acknowledgedPlayerIds: [],
-                    effect: cloneUseEffect(event.payload.eventEffect ?? event.payload.nextPendingEventChoice!.effect),
-                    nextPendingEventChoice,
-                    deathPrevention: event.payload.deathPrevention
-                        ? {
-                            ...event.payload.deathPrevention,
-                            dice: [...event.payload.deathPrevention.dice],
-                            damageTraits: [...event.payload.deathPrevention.damageTraits],
-                            traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        }
-                        : undefined,
-                    requiresAcknowledgement: true,
-                };
-            } else {
-                core.pendingEventRollResolution = null;
-            }
-            core.turnEndedByDiscovery = true;
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: resolveRecommendedAction(synced),
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
-            };
-        }
-        case EVENTS.EVENT_ROLL_FINALIZED: {
-            if (core.pendingEventRollResolution?.rollId !== event.payload.rollId) {
-                return core;
-            }
-            if (!event.payload.isFullyAcknowledged) {
-                core.pendingEventRollResolution = {
-                    ...core.pendingEventRollResolution,
-                    requiredPlayerIds: [...event.payload.requiredPlayerIds],
-                    acknowledgedPlayerIds: [...event.payload.acknowledgedPlayerIds],
-                };
-                acknowledgeEventEffectCardResolution(
-                    core,
-                    event.payload.sourceTitle,
-                    event.payload.playerId,
-                );
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                };
-            }
-            if (event.payload.nextPendingEventChoice) {
-                core.pendingEventChoice = clonePendingEventChoice(event.payload.nextPendingEventChoice);
-                core.pendingEventRollResolution = null;
-                core.pendingCardResolutionQueue = [];
-                core.turnEndedByDiscovery = false;
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: resolveRecommendedAction(synced),
-                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                };
-            }
-            const deathPreventionScenarioRuntimeBeforeDefeat = event.payload.deathPrevention
-                ? cloneScenarioRuntimeStatus(core.scenarioRuntime)
-                : null;
-            const deathPreventionMonstersBeforeDefeat = event.payload.deathPrevention
-                ? core.monsters.map(cloneMonster)
-                : [];
-            const sourceEventRollBeforeEffect = cloneSourceEventRollFromRecentRoll(core.recentRoll);
-            const {
-                eventEffectSnapshot,
-                pendingRolledDamageAllocation,
-            } = applyEventEffectWithDeferredRolledDamage(
-                core,
-                event.payload.effect,
-                event.payload.sourceTitle,
-                event.timestamp,
-            );
-            activatePendingRolledDamageAllocation(core, pendingRolledDamageAllocation);
-            if (!pendingRolledDamageAllocation && event.payload.deathPrevention?.dice.length) {
-                core.recentRoll = {
-                    id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                    kind: 'deathPrevention',
-                    playerId: event.payload.deathPrevention.playerId,
-                    sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                    dice: [...event.payload.deathPrevention.dice],
-                    passiveBonus: 0,
-                    latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                    deathPrevention: {
-                        cardId: event.payload.deathPrevention.cardId,
-                        minTotal: event.payload.deathPrevention.minTotal,
-                        damageKind: event.payload.deathPrevention.damageKind,
-                        damageAmount: event.payload.deathPrevention.damageAmount,
-                        damageTraits: [...event.payload.deathPrevention.damageTraits],
-                        traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        scenarioRuntimeBeforeDefeat: deathPreventionScenarioRuntimeBeforeDefeat
-                            ?? cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                        monstersBeforeDefeat: deathPreventionMonstersBeforeDefeat,
-                    },
-                    consumedRabbitFootCardIds: [],
-                };
-            }
-            if (!pendingRolledDamageAllocation && event.payload.deathPrevention?.prevented) {
-                const explorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                if (explorer) {
-                    setExplorerTraitsToDeathsDoor(explorer);
-                }
-            } else if (!pendingRolledDamageAllocation) {
-                applyDustEventEffectDeathIfNeeded(core);
-            }
-            const replacedWithDamageRoll = (
-                pendingRolledDamageAllocation
-                || !event.payload.deathPrevention?.dice.length
-            )
-                ? setEventRolledDamageRecentRollFromSnapshot(
-                    core,
-                    eventEffectSnapshot,
-                    event.payload.sourceTitle,
-                    event.timestamp,
-                    sourceEventRollBeforeEffect,
-                )
-                : false;
-            if (!replacedWithDamageRoll && isEventRecentRoll(core.recentRoll)) {
-                core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
-            }
-            const eventEffectCardResolutionQueue =
-                core.latestDiscovery?.kind === 'event'
-                && core.latestDiscovery.title === event.payload.sourceTitle
-                && (core.latestDiscovery.resolutionSteps?.length ?? 0) > 0
-                    ? createPendingCardResolutionQueue({
-                        playerId: event.payload.triggerPlayerId || event.payload.playerId,
-                        requiredPlayerIds: [event.payload.triggerPlayerId || event.payload.playerId],
-                        roomId: core.currentExplorer.roomId,
-                        timestamp: event.timestamp,
-                        deckKind: 'event',
-                        discovery: core.latestDiscovery,
-                    })
-                    : [];
-            core.pendingEventRollResolution = null;
-            if (eventEffectCardResolutionQueue.length > 0) {
-                core.pendingCardResolutionQueue = eventEffectCardResolutionQueue;
-            }
-            acknowledgeEventEffectCardResolution(
-                core,
-                event.payload.sourceTitle,
-                event.payload.playerId,
-            );
-            const eventTriggerPlayerId = event.payload.triggerPlayerId || event.payload.playerId;
-            const synced = syncCurrentExplorerProjection(core);
-            let nextCore = {
-                ...synced,
-                recommendedAction: pendingRolledDamageAllocation ? 'endTurn' : resolveRecommendedAction(synced),
-                activePlayerId: pendingRolledDamageAllocation?.playerId ?? synced.activePlayerId,
-                activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-            };
-            if (event.payload.hauntTriggered) {
-                const scenario = scenarioConfigById(core.scenarioId);
-                const hauntRevealerPlayerId = eventTriggerPlayerId;
-                const hauntRevealResolution = event.payload.hauntRevealResolution
-                    ?? resolveHauntRevealResolutionForTrigger(
-                        core,
-                        { id: null, name: event.payload.hauntTriggerLabel ?? event.payload.sourceTitle },
-                        event.payload.hauntCardNumber,
-                    );
-                const hauntCardNumber = event.payload.hauntCardNumber ?? hauntRevealResolution.hauntCardNumber;
-                const hauntTraitorResolution = event.payload.hauntTraitorResolution
-                    ?? resolveHauntTraitorResolutionForTrigger(core, hauntCardNumber, hauntRevealerPlayerId, {
-                        explicitTraitorPlayerId: event.payload.hauntTraitorPlayerId,
-                        revealRepresentativeOnly: hauntRevealResolution.representativeOnly,
-                    });
-                const hauntFirstPlayerResolution = resolveHauntFirstPlayerResolutionForTrigger(
-                    core,
-                    hauntCardNumber,
-                    hauntRevealerPlayerId,
-                    hauntTraitorResolution,
-                    { revealRepresentativeOnly: hauntRevealResolution.representativeOnly },
-                );
-                nextCore = reduceEvent(nextCore, nowEvent(EVENTS.HAUNT_TRIGGERED, {
-                    traitorPlayerId: hauntTraitorResolution.traitorPlayerId,
-                    hauntRevealerPlayerId,
-                    nextPlayerId: hauntFirstPlayerResolution.nextPlayerId,
-                    hauntCardNumber,
-                    hauntTriggerLabel: event.payload.hauntTriggerLabel ?? hauntRevealResolution.triggeringOmenName,
-                    hauntRevealResolution,
-                    hauntTraitorResolution,
-                    hauntFirstPlayerResolution,
-                    dustSetup: event.payload.dustSetup,
-                    magicCameraSetup: event.payload.magicCameraSetup,
-                    helpingHandsSetup: event.payload.helpingHandsSetup,
-                    uponReflectionSetup: event.payload.uponReflectionSetup,
-                    logText: hauntCardNumber !== 1
-                        ? `作祟触发：剧本${hauntCardNumber}（${event.payload.hauntTriggerLabel ?? event.payload.sourceTitle}）`
-                        : scenario.logs.hauntTriggered,
+            const resolution = applyBetrayalRecentRollRerollState(core, event);
+            if (resolution.scenarioCompletedResult) {
+                return reduceEvent(resolution.core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+                    result: resolution.scenarioCompletedResult,
                 }, event.timestamp));
             }
-            return nextCore;
+            return resolution.core;
+        }
+        case EVENTS.EVENT_ROLLED: {
+            return applyBetrayalEventRolledState(core, event).core;
+        }
+        case EVENTS.EVENT_ROLL_FINALIZED: {
+            const resolution = applyBetrayalEventRollFinalizedState(core, event);
+            if (resolution.hauntTriggeredPayload) {
+                return reduceEvent(resolution.core, nowEvent(EVENTS.HAUNT_TRIGGERED, resolution.hauntTriggeredPayload, event.timestamp));
+            }
+            return resolution.core;
         }
         case EVENTS.POSSESSION_USED: {
             if (event.payload.eventRollReplacement) {
@@ -10533,130 +5034,25 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.DUST_SEARCH_RESOLVED: {
-            const dust = core.scenarioRuntime.dust;
-            if (!dust) {
-                return core;
-            }
-            if (event.payload.success) {
-                dust.researchRoomIds = Array.from(new Set([
-                    ...dust.researchRoomIds,
-                    event.payload.roomId,
-                ]));
-            } else if (event.payload.swap) {
-                applyDustSicknessSwap(dust, event.payload.swap);
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'search-for-cure'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-dust-search-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '寻找解药',
-                trait: event.payload.trait,
-                rollLabel: `${TRAIT_LABEL[event.payload.trait]}检定`,
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '放置研究标记' : '交换疾病标记',
-                consumedRabbitFootCardIds: [],
-            };
-            const completed = completeDustTraitorVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalDustSearchResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.DUST_CURE_RESOLVED: {
-            const dust = core.scenarioRuntime.dust;
-            if (!dust) {
-                return core;
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'cure-the-dust'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-dust-cure-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '治愈灰尘',
-                trait: event.payload.trait,
-                rollLabel: `${TRAIT_LABEL[event.payload.trait]}检定`,
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus + event.payload.researchBonus,
-                latestLabel: event.payload.success ? '治愈成功' : '治愈失败',
-                consumedRabbitFootCardIds: [],
-            };
-            if (event.payload.success) {
-                return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                    result: createDustEndgameResult(core, 'survivors'),
-                }, event.timestamp));
-            }
-            if (event.payload.swap) {
-                applyDustSicknessSwap(dust, event.payload.swap);
-            }
-            const completed = completeDustTraitorVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalDustCureResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.SICKNESS_EXCHANGE_REQUESTED: {
-            const dust = core.scenarioRuntime.dust;
-            if (!dust) {
-                return core;
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                scenarioRuntime: {
-                    ...synced.scenarioRuntime,
-                    dust: {
-                        ...cloneDustRuntimeState(dust),
-                        pendingSicknessExchange: {
-                            id: `sickness-${event.payload.requesterPlayerId}-${event.payload.targetPlayerId}-${event.timestamp}`,
-                            requesterPlayerId: event.payload.requesterPlayerId,
-                            targetPlayerId: event.payload.targetPlayerId,
-                        },
-                    },
-                },
-                activePlayerId: event.payload.targetPlayerId,
-                recommendedAction: 'trade',
-                recentRoll: null,
-                activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalSicknessExchangeRequestedState(core, event);
         }
         case EVENTS.SICKNESS_EXCHANGE_RESOLVED: {
-            const dust = core.scenarioRuntime.dust;
-            if (!dust) {
-                return core;
-            }
-            if (event.payload.accepted && event.payload.swap) {
-                applyDustSicknessSwap(dust, event.payload.swap);
-            }
-            dust.pendingSicknessExchange = undefined;
-            core.activePlayerId = null;
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'sickness-exchange',
-            ]));
-            const completed = completeDustTraitorVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.accepted ? 'accent' : 'neutral'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalSicknessExchangeResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.HAUNT_SETUP_ENTRY_CONFIRMED: {
             core.scenarioRuntime.hauntSetupQueue = resolveHauntSetupQueueWithEntryStatus(
@@ -10671,169 +5067,25 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.PHOTO_TAKEN: {
-            const magicCamera = core.scenarioRuntime.magicCamera;
-            const actor = findExplorerByPlayerId(core, event.payload.playerId);
-            if (!magicCamera || !actor) {
-                return core;
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'take-photo'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-take-photo-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '拍照',
-                trait: 'speed',
-                rollLabel: '速度检定',
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '夺取本质' : '拍照失败',
-                consumedRabbitFootCardIds: [],
-            };
-            if (event.payload.success) {
-                magicCamera.heroEssencePlayerIds = magicCamera.heroEssencePlayerIds
-                    .filter((playerId) => playerId !== event.payload.targetPlayerId);
-                magicCamera.capturedEssencePlayerIds = Array.from(new Set([
-                    ...magicCamera.capturedEssencePlayerIds,
-                    event.payload.targetPlayerId,
-                ]));
-                moveExplorerTraitSteps(actor, event.payload.trait, 1);
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return applyBetrayalPhotoTakenState(core, event);
         }
         case EVENTS.MAGIC_CAMERA_SMASHED: {
-            const magicCamera = core.scenarioRuntime.magicCamera;
-            if (!magicCamera) {
-                return core;
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'smash-magic-camera'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-smash-magic-camera-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '砸毁魔法相机',
-                trait: 'sanity',
-                rollLabel: '神志检定',
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '相机摧毁' : '摧毁失败',
-                consumedRabbitFootCardIds: [],
-            };
-            if (event.payload.success) {
-                magicCamera.cameraDestroyed = true;
-                magicCamera.cameraHolderPlayerId = null;
-                getAllExplorers(core).forEach(removeMagicCameraFromExplorer);
-            }
-            const completed = completeMagicCameraHeroVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalMagicCameraSmashedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.PHANTOM_PHOTOGRAPHER_ATTACK_RESOLVED: {
-            const magicCamera = core.scenarioRuntime.magicCamera;
-            const target = findExplorerByPlayerId(core, event.payload.targetPlayerId);
-            if (!magicCamera || !target) {
-                return core;
-            }
-            if (event.payload.damageToHero) {
-                applyMentalDamage(target, event.payload.damageToHero, { allowSkull: true });
-            }
-            if (event.payload.defeatedPlayerId) {
-                markDeadExplorer(core, event.payload.defeatedPlayerId);
-            }
-            core.recentRoll = {
-                id: `${event.payload.monsterId}-phantom-attack-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.targetPlayerId,
-                sourceTitle: '幻影摄影师攻击',
-                trait: 'sanity',
-                rollLabel: '神志攻击',
-                dice: [...event.payload.dice],
-                passiveBonus: 0,
-                latestLabel: event.payload.damageToHero ? `精神伤害 ${event.payload.damageToHero}` : '未造成伤害',
-                consumedRabbitFootCardIds: [],
-            };
-            const completed = completeMagicCameraTraitorVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            return {
-                ...synced,
-                recommendedAction: 'move',
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.damageToHero ? 'warning' : 'neutral'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalPhantomPhotographerAttackResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.BLOOD_FROM_STONE_PEEKABOO_RESOLVED: {
-            const actor = findExplorerByPlayerId(core, event.payload.playerId);
-            if (!actor || !isBloodFromStoneHaunt(core)) {
-                return core;
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'play-peekaboo'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-play-peekaboo-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '玩躲猫猫',
-                trait: 'knowledge',
-                rollLabel: '知识检定',
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus + event.payload.mirrorBonus,
-                latestLabel: event.payload.success ? '移除石像小天使' : '一般伤害',
-                consumedRabbitFootCardIds: [],
-            };
-            if (event.payload.success) {
-                removeBloodFromStoneStoneCherubs(core, [
-                    event.payload.sameRoomMonsterId,
-                    event.payload.lineOfSightMonsterId,
-                ]);
-                const completed = completeBloodFromStoneHeroVictoryIfNeeded(core, event.timestamp);
-                if (completed) {
-                    return completed;
-                }
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                };
-            }
-            const pendingPeekabooDamageAllocation = createPendingDamageAllocation({
-                id: `blood-from-stone-peekaboo-${event.payload.playerId}-${event.timestamp}`,
-                explorer: actor,
-                sourceTitle: '玩躲猫猫',
-                damageKind: 'general',
-                amount: event.payload.damageAmount ?? 0,
-                allowSkull: true,
-            });
-            const synced = syncCurrentExplorerProjection(core);
-            if (pendingPeekabooDamageAllocation) {
-                return {
-                    ...synced,
-                    pendingDamageAllocation: pendingPeekabooDamageAllocation,
-                    activePlayerId: pendingPeekabooDamageAllocation.playerId,
-                    recommendedAction: 'damage',
-                    activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-                };
-            }
-            return {
-                ...synced,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalBloodFromStonePeekabooResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.TOOTH_NECKLACE_CHOICE_STARTED: {
             const synced = syncCurrentExplorerProjection(core);
@@ -10885,424 +5137,31 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             );
         }
         case EVENTS.TURN_ENDED: {
-            let roomEffectCore = core;
-            let pendingRoomDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
-            let pendingDustEndTurnDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
-            const roomEndTurnTraitsBeforeEffect = { ...roomEffectCore.currentExplorer.traits };
-            const roomEndTurnOriginalRoomId = roomEffectCore.currentExplorer.roomId;
-            const shouldDeferRoomEndTurnDamage = Boolean(
-                event.payload.deferAdvanceUntilRollAcknowledged
-                && event.payload.roomEndTurnEffect?.kind === 'speedCheckFallToBasement',
-            );
-            if (event.payload.roomEndTurnEffect?.playerId === roomEffectCore.currentExplorer.playerId) {
-                if (event.payload.roomEndTurnEffect.destinationRoomId) {
-                    roomEffectCore.currentExplorer.roomId = event.payload.roomEndTurnEffect.destinationRoomId;
-                }
-                if (event.payload.roomEndTurnEffect.physicalDamage) {
-                    if (event.payload.roomEndTurnEffect.kind === 'physicalDamage1') {
-                        pendingRoomDamageAllocation = createPendingDamageAllocation({
-                            id: `room-damage-${event.payload.roomEndTurnEffect.playerId}-${event.timestamp}`,
-                            explorer: roomEffectCore.currentExplorer,
-                            sourceTitle: event.payload.roomEndTurnEffect.roomName,
-                            damageKind: 'physical',
-                            amount: event.payload.roomEndTurnEffect.physicalDamage,
-                            allowSkull: roomEffectCore.phase === 'haunt',
-                            nextPlayerId: event.payload.nextPlayerId,
-                            monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
-                            turnLogText: event.payload.turnLogText,
-                            helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
-                            skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
-                        });
-                    } else if (!shouldDeferRoomEndTurnDamage) {
-                        applyPhysicalDamage(roomEffectCore.currentExplorer, event.payload.roomEndTurnEffect.physicalDamage);
-                    }
-                }
-                roomEffectCore = syncCurrentExplorerProjection(roomEffectCore);
+            const result = applyBetrayalTurnEndedState(core, event);
+            if (result.scenarioCompletedResult) {
+                return reduceScenarioCompletionStateResolution(result, event.timestamp);
             }
-            if (event.payload.dustEndTurn && roomEffectCore.scenarioRuntime.dust) {
-                for (const swap of event.payload.dustEndTurn.swaps) {
-                    applyDustSicknessSwap(roomEffectCore.scenarioRuntime.dust, swap);
-                }
-                const damageTarget = event.payload.dustEndTurn.damagePlayerId
-                    ? findExplorerByPlayerId(roomEffectCore, event.payload.dustEndTurn.damagePlayerId)
-                    : null;
-                if (damageTarget && event.payload.dustEndTurn.damageAmount !== undefined) {
-                    pendingDustEndTurnDamageAllocation = createPendingDamageAllocation({
-                        id: `dust-end-turn-${event.payload.dustEndTurn.damagePlayerId}-${event.timestamp}`,
-                        explorer: damageTarget,
-                        sourceTitle: '灰尘冲动',
-                        damageKind: 'general',
-                        amount: event.payload.dustEndTurn.damageAmount,
-                        allowSkull: true,
-                        nextPlayerId: event.payload.nextPlayerId,
-                        monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
-                        turnLogText: event.payload.turnLogText,
-                        helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
-                        skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
-                    });
-                }
-                roomEffectCore = syncCurrentExplorerProjection(roomEffectCore);
-                const completed = completeDustTraitorVictoryIfNeeded(roomEffectCore, event.timestamp);
-                if (completed) {
-                    return completed;
-                }
-            }
-            if (
-                event.payload.magicCameraEndTurnCapturedEssencePlayerIds?.length
-                && roomEffectCore.scenarioRuntime.magicCamera
-            ) {
-                const magicCamera = roomEffectCore.scenarioRuntime.magicCamera;
-                for (const playerId of event.payload.magicCameraEndTurnCapturedEssencePlayerIds) {
-                    magicCamera.heroEssencePlayerIds = magicCamera.heroEssencePlayerIds
-                        .filter((heroPlayerId) => heroPlayerId !== playerId);
-                    magicCamera.capturedEssencePlayerIds = Array.from(new Set([
-                        ...magicCamera.capturedEssencePlayerIds,
-                        playerId,
-                    ]));
-                }
-                roomEffectCore = syncCurrentExplorerProjection(roomEffectCore);
-            }
-            if (pendingRoomDamageAllocation) {
-                const synced = syncCurrentExplorerProjection(roomEffectCore);
-                return {
-                    ...synced,
-                    recommendedAction: 'endTurn',
-                    turnEndedByDiscovery: false,
-                    latestDiscovery: null,
-                    latestDiscoveryOwnerPlayerId: null,
-                    highlightedDeckKind: null,
-                    pendingEventChoice: null,
-                    pendingTradeAgreement: null,
-                    pendingDamageAllocation: pendingRoomDamageAllocation,
-                    activePlayerId: pendingRoomDamageAllocation.playerId,
-                    recentRoll: null,
-                    activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-                };
-            }
-            if (pendingDustEndTurnDamageAllocation) {
-                const synced = syncCurrentExplorerProjection(roomEffectCore);
-                return {
-                    ...synced,
-                    recommendedAction: 'damage',
-                    turnEndedByDiscovery: false,
-                    latestDiscovery: null,
-                    latestDiscoveryOwnerPlayerId: null,
-                    highlightedDeckKind: null,
-                    pendingEventChoice: null,
-                    pendingTradeAgreement: null,
-                    pendingDamageAllocation: pendingDustEndTurnDamageAllocation,
-                    activePlayerId: pendingDustEndTurnDamageAllocation.playerId,
-                    recentRoll: null,
-                    activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-                };
-            }
-            if (
-                event.payload.deferAdvanceUntilRollAcknowledged
-                && event.payload.roomEndTurnEffect?.kind === 'speedCheckFallToBasement'
-                && event.payload.roomEndTurnEffect.speedRollDice
-            ) {
-                const recentRoll: BetrayalRecentRollState = {
-                    id: `room-end-turn-${event.payload.roomEndTurnEffect.playerId}-${event.timestamp}`,
-                    kind: 'roomEndTurnTraitCheck',
-                    playerId: event.payload.roomEndTurnEffect.playerId,
-                    sourceTitle: event.payload.roomEndTurnEffect.roomName,
-                    trait: 'speed',
-                    dice: [...event.payload.roomEndTurnEffect.speedRollDice],
-                    passiveBonus: event.payload.roomEndTurnEffect.speedRollPassiveBonus ?? 0,
-                    latestLabel: event.payload.roomEndTurnEffect.destinationRoomId
-                        ? '坠落到地下室起始点'
-                        : '没有坠落',
-                    roomId: event.payload.roomEndTurnEffect.roomId,
-                    roomEndTurn: {
-                        kind: event.payload.roomEndTurnEffect.kind,
-                        roomName: event.payload.roomEndTurnEffect.roomName,
-                        roomId: event.payload.roomEndTurnEffect.roomId,
-                        originalRoomId: roomEndTurnOriginalRoomId,
-                        traitsBeforeEffect: roomEndTurnTraitsBeforeEffect,
-                        previousPhysicalDamage: event.payload.roomEndTurnEffect.physicalDamage ?? 0,
-                        previousDestinationRoomId: event.payload.roomEndTurnEffect.destinationRoomId,
-                        nextPlayerId: event.payload.nextPlayerId,
-                        monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
-                        turnLogText: event.payload.turnLogText,
-                        helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
-                        skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
-                    },
-                    consumedRabbitFootCardIds: [],
-                };
-                const synced = syncCurrentExplorerProjection(roomEffectCore);
-                return {
-                    ...synced,
-                    recommendedAction: 'endTurn',
-                    turnEndedByDiscovery: false,
-                    latestDiscovery: null,
-                    latestDiscoveryOwnerPlayerId: null,
-                    highlightedDeckKind: null,
-                    pendingTradeAgreement: null,
-                    activePlayerId: null,
-                    recentRoll,
-                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
-                };
-            }
-            const explorers = getAllExplorers(roomEffectCore);
-            const next = replaceExplorers(roomEffectCore, explorers, event.payload.nextPlayerId);
-            const revived = tryReviveTraitorAtMonsterTurnStart(next, event.payload.nextPlayerId);
-            const nextCore = revived.core;
-            const monsterMovementRoll = !revived.revived
-                && (
-                    shouldDeadTraitorControlJackSpirit(nextCore, event.payload.nextPlayerId)
-                    || shouldDeadPlayerControlFeverish(nextCore, event.payload.nextPlayerId)
-                )
-                ? event.payload.monsterMovementRoll ?? null
-                : null;
-            const nextTurnStartSpeed = monsterMovementRoll?.speed ?? resolveTurnStartSpeed(nextCore, event.payload.nextPlayerId);
-            const nextMovesRemaining = monsterMovementRoll?.moveAllowance ?? nextTurnStartSpeed;
-            const recentRoll = event.payload.roomEndTurnEffect?.kind === 'speedCheckFallToBasement'
-                && event.payload.roomEndTurnEffect.speedRollDice
-                ? {
-                    id: `room-end-turn-${event.payload.roomEndTurnEffect.playerId}-${event.timestamp}`,
-                    kind: 'roomEndTurnTraitCheck' as const,
-                    playerId: event.payload.roomEndTurnEffect.playerId,
-                    sourceTitle: event.payload.roomEndTurnEffect.roomName,
-                    trait: 'speed' as const,
-                    dice: [...event.payload.roomEndTurnEffect.speedRollDice],
-                    passiveBonus: event.payload.roomEndTurnEffect.speedRollPassiveBonus ?? 0,
-                    latestLabel: event.payload.roomEndTurnEffect.destinationRoomId
-                        ? '坠落到地下室起始点'
-                        : '没有坠落',
-                    roomId: event.payload.roomEndTurnEffect.roomId,
-                    roomEndTurn: {
-                        kind: event.payload.roomEndTurnEffect.kind,
-                        roomName: event.payload.roomEndTurnEffect.roomName,
-                        roomId: event.payload.roomEndTurnEffect.roomId,
-                        originalRoomId: roomEndTurnOriginalRoomId,
-                        traitsBeforeEffect: roomEndTurnTraitsBeforeEffect,
-                        previousPhysicalDamage: event.payload.roomEndTurnEffect.physicalDamage ?? 0,
-                        previousDestinationRoomId: event.payload.roomEndTurnEffect.destinationRoomId,
-                        helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
-                        skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
-                    },
-                    consumedRabbitFootCardIds: [],
-                }
-                : monsterMovementRoll
-                    ? {
-                        id: `monster-move-${monsterMovementRoll.monsterId}-${event.timestamp}`,
-                        kind: 'monsterMoveRoll' as const,
-                        playerId: monsterMovementRoll.playerId,
-                        sourceTitle: `${monsterMovementRoll.monsterName}移动`,
-                        trait: 'speed' as const,
-                        rollLabel: `速度 ${monsterMovementRoll.speed}`,
-                        dice: [...monsterMovementRoll.dice],
-                        passiveBonus: 0,
-                        latestLabel: `可移动 ${monsterMovementRoll.moveAllowance} 间`,
-                        consumedRabbitFootCardIds: [],
-                    }
-                    : null;
-                const resetScenarioRuntime = {
-                    ...nextCore.scenarioRuntime,
-                    corpseLootedByPlayerIdsThisTurn: [],
-                    usedRoomEffectIdsThisTurn: [],
-                    monsterTurn: createInitialMonsterTurnRuntimeState(),
-                    bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId: createBloodFromStoneTurnStartVisibility(nextCore),
-                    bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn: [],
-                    dust: nextCore.scenarioRuntime.dust
-                        ? {
-                            ...cloneDustRuntimeState(nextCore.scenarioRuntime.dust),
-                            exchangedSicknessThisTurnPlayerIds: [],
-                        }
-                        : undefined,
-                    helpingHands: nextCore.scenarioRuntime.helpingHands
-                        ? {
-                            ...cloneHelpingHandsRuntimeState(nextCore.scenarioRuntime.helpingHands),
-                            trollHandAttackUsedIdsThisTurn: [],
-                        }
-                        : undefined,
-                    magicCamera: nextCore.scenarioRuntime.magicCamera
-                        ? cloneMagicCameraRuntimeState(nextCore.scenarioRuntime.magicCamera)
-                        : undefined,
-                };
-            const advancedCore: BetrayalCore = {
-                ...nextCore,
-                turnStartSpeed: nextTurnStartSpeed,
-                movesRemaining: nextMovesRemaining,
-                recommendedAction: resolveRecommendedAction({
-                    ...nextCore,
-                    movesRemaining: nextMovesRemaining,
-                    recentRoll,
-                    turnEndedByDiscovery: false,
-                }),
-                usedCardIdsThisTurn: [],
-                tradeUsedThisTurnPlayerIds: [],
-                receivedCardIdsThisTurnByPlayerId: {
-                    ...nextCore.receivedCardIdsThisTurnByPlayerId,
-                    [event.payload.previousPlayerId]: [],
-                },
-                nextNonCombatTraitReplacement: null,
-                nextNonCombatTraitRollTotalReplacement: null,
-                pendingExtraTurnAfterCurrentTurn: clearPendingExtraTurnAfterCurrentTurn(nextCore, event.payload.previousPlayerId),
-                turnEndedByDiscovery: false,
-                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
-                scenarioRuntime: resetScenarioRuntime,
-                latestDiscovery: null,
-                latestDiscoveryOwnerPlayerId: null,
-                highlightedDeckKind: null,
-                pendingTradeAgreement: null,
-                activePlayerId: null,
-                recentRoll,
-                activityLog: revived.revived
-                    ? appendActivity(
-                        {
-                            ...nextCore,
-                            scenarioRuntime: resetScenarioRuntime,
-                            activityLog: appendActivity(nextCore, event.payload.logText, 'accent'),
-                        },
-                        '杰克之灵回到了尸体所在房间，叛徒恢复肉身并重新回到宅邸中。',
-                        'warning',
-                    )
-                    : appendActivity(nextCore, event.payload.logText, 'accent'),
-            };
-            const withBloodFromStone = event.payload.skipBloodFromStoneMonsterTurnStart
-                ? advancedCore
-                : startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
-                    advancedCore,
-                    event.payload.previousPlayerId,
-                    event.timestamp,
-                );
-            return event.payload.deferredHelpingHandsMonsterTurnStart
-                ? reduceEvent(withBloodFromStone, nowEvent(
+            if (result.helpingHandsMonsterTurnStartedPayload) {
+                return reduceEvent(result.core, nowEvent(
                     EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED,
-                    {
-                        ...event.payload.deferredHelpingHandsMonsterTurnStart,
-                        moveDice: [...event.payload.deferredHelpingHandsMonsterTurnStart.moveDice],
-                    },
+                    result.helpingHandsMonsterTurnStartedPayload,
                     event.timestamp,
-                ))
-                : withBloodFromStone;
+                ));
+            }
+            return result.core;
         }
         case EVENTS.DAMAGE_ALLOCATION_RESOLVED: {
-            const damageAllocationResolution = applyBetrayalDamageAllocationResolvedState(
-                core,
-                event.payload,
-                event.timestamp,
-                {
-                    scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                    monstersBeforeDefeat: core.monsters.map(cloneMonster),
-                },
-            );
-            if (!damageAllocationResolution) {
-                return core;
+            const result = applyBetrayalDamageAllocationAftermathState(core, event);
+            if (result.scenarioCompletedResult) {
+                return reduceScenarioCompletionStateResolution(result, event.timestamp);
             }
-            const {
-                pending,
-                target,
-                targetDefeated,
-                nextQueuedDamageAllocation,
-            } = damageAllocationResolution;
-            if (targetDefeated) {
-                markDeadExplorer(core, target.playerId);
-                if (pending.sourceTitle === '攻击' && target.playerId === core.scenarioRuntime.traitorPlayerId) {
-                    core.scenarioRuntime.traitorCorpseRoomId = target.roomId;
-                    core.scenarioRuntime.jackSpiritReleased = true;
-                    core.scenarioRuntime.jackSpiritRoomId = resolveJackSpiritSpawnRoomId(core, target.roomId);
-                    core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
-                    core.monsters = [createBetrayalMonsterFromDefinition(
-                        'crimson-jack-spirit',
-                        'jack-spirit',
-                        core.scenarioRuntime.jackSpiritRoomId,
-                    )];
-                }
+            if (result.turnEndRollAcknowledgedPayload) {
+                return reduceEvent(
+                    result.core,
+                    nowEvent(EVENTS.TURN_END_ROLL_ACKNOWLEDGED, result.turnEndRollAcknowledgedPayload, event.timestamp),
+                );
             }
-            if (targetDefeated) {
-                const bloodFromStoneCompleted = completeBloodFromStoneHauntVictoryIfNeeded(core, event.timestamp);
-                if (bloodFromStoneCompleted) {
-                    return bloodFromStoneCompleted;
-                }
-                if (isDustHaunt(core)) {
-                    if (core.scenarioRuntime.dust?.permanentTraitorPlayerIds.includes(target.playerId)) {
-                        addFeverishMonsterForPlayer(core, target.playerId);
-                    }
-                    const dustCompleted = shouldDeferDustTraitorVictoryForRabbitFoot(core, target.playerId)
-                        ? null
-                        : completeDustTraitorVictoryIfNeeded(core, event.timestamp);
-                    if (dustCompleted) {
-                        return dustCompleted;
-                    }
-                }
-            }
-            if (
-                targetDefeated
-                && (pending.sourceTitle === '攻击' || pending.sourceTitle === '木乃伊攻击')
-                && target.playerId !== core.scenarioRuntime.traitorPlayerId
-            ) {
-                const livingHeroes = getAllExplorers(core).filter((explorer) => (
-                    explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                ));
-                if (livingHeroes.length === 0) {
-                    const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer) ?? core.currentExplorer;
-                    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                        result: isMummyHaunt(core)
-                            ? createMummyEndgameResult(core, 'traitor')
-                            : {
-                                hauntId: 'crimson-jack-returns',
-                                hauntTitle: resolveCrimsonJackHauntTitle(),
-                                outcome: 'traitor',
-                                winners: [traitor.playerId],
-                                traitorPlayerId: traitor.playerId,
-                                survivorsEscaped: [],
-                                reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
-                                stats: {
-                                    roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                                    omensDrawn: countDrawnCards(core, 'omen'),
-                                    itemsDrawn: countDrawnCards(core, 'item'),
-                                    eventsDrawn: countDrawnCards(core, 'event'),
-                                },
-                            },
-                    }, event.timestamp));
-                }
-            }
-            if (targetDefeated && pending.sourceTitle === '巨魔手攻击') {
-                const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
-                if (completed) {
-                    return completed;
-                }
-            }
-            const synced = syncCurrentExplorerProjection(core);
-            if (nextQueuedDamageAllocation) {
-                return {
-                    ...synced,
-                    pendingDamageAllocation: nextQueuedDamageAllocation,
-                    activePlayerId: nextQueuedDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-                };
-            }
-            if (event.payload.nextPlayerId && event.payload.deathPrevention?.dice.length) {
-                return {
-                    ...synced,
-                    recommendedAction: 'endTurn',
-                    activePlayerId: null,
-                    activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-                };
-            }
-            if (event.payload.nextPlayerId) {
-                return reduceEvent(synced, nowEvent(EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
-                    previousPlayerId: event.payload.playerId,
-                    nextPlayerId: event.payload.nextPlayerId,
-                    monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
-                    helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
-                    skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
-                    logText: [event.payload.logText, event.payload.turnLogText].filter(Boolean).join('；'),
-                }, event.timestamp));
-            }
-            return {
-                ...synced,
-                recommendedAction: pending.sourceTitle === '巨魔手攻击'
-                    && core.scenarioRuntime.helpingHands?.activeMonsterTurn
-                    ? 'endTurn'
-                    : resolveRecommendedAction(synced),
-                activePlayerId: null,
-                activityLog: appendActivity(synced, event.payload.logText, 'warning'),
-            };
+            return result.core;
         }
         case EVENTS.RECENT_ROLL_ACKNOWLEDGED: {
             if (core.recentRoll?.id !== event.payload.rollId) {
@@ -11323,1569 +5182,124 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             };
         }
         case EVENTS.TURN_END_ROLL_ACKNOWLEDGED: {
-            const pendingDeathPreventionRecentRoll = core.recentRoll?.kind === 'deathPrevention'
-                ? core.recentRoll
-                : null;
-            const pendingRoomEndTurnRecentRoll = core.recentRoll?.kind === 'roomEndTurnTraitCheck'
-                ? core.recentRoll
-                : null;
-            const pendingRoomEndTurnRoll = pendingRoomEndTurnRecentRoll?.roomEndTurn ?? null;
-            const pendingRoomEndTurnExplorer = pendingRoomEndTurnRecentRoll
-                ? findExplorerByPlayerId(core, pendingRoomEndTurnRecentRoll.playerId)
-                : null;
-            const pendingRoomEndTurnDamageAllocation = (
-                pendingRoomEndTurnRoll?.kind === 'speedCheckFallToBasement'
-                && pendingRoomEndTurnRoll.previousDestinationRoomId
-                && pendingRoomEndTurnRoll.previousPhysicalDamage > 0
-                && pendingRoomEndTurnExplorer
-            )
-                ? createPendingDamageAllocation({
-                    id: `room-fall-damage-${pendingRoomEndTurnRecentRoll.playerId}-${event.timestamp}`,
-                    explorer: pendingRoomEndTurnExplorer,
-                    sourceTitle: pendingRoomEndTurnRoll.roomName,
-                    damageKind: 'physical',
-                    amount: pendingRoomEndTurnRoll.previousPhysicalDamage,
-                    allowSkull: core.phase === 'haunt',
-                    nextPlayerId: event.payload.nextPlayerId,
-                    monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
-                    turnLogText: event.payload.logText,
-                    helpingHandsMonsterTurnControllerPlayerId: event.payload.helpingHandsMonsterTurnControllerPlayerId,
-                    skipBloodFromStoneMonsterTurnStart: event.payload.skipBloodFromStoneMonsterTurnStart,
-                })
-                : null;
-            if (pendingRoomEndTurnDamageAllocation) {
-                const synced = syncCurrentExplorerProjection(core);
-                return {
-                    ...synced,
-                    recommendedAction: 'endTurn',
-                    turnEndedByDiscovery: false,
-                    latestDiscovery: null,
-                    latestDiscoveryOwnerPlayerId: null,
-                    highlightedDeckKind: null,
-                    pendingEventChoice: null,
-                    pendingTradeAgreement: null,
-                    pendingDamageAllocation: pendingRoomEndTurnDamageAllocation,
-                    activePlayerId: pendingRoomEndTurnDamageAllocation.playerId,
-                    recentRoll: null,
-                };
-            }
-            if (pendingDeathPreventionRecentRoll) {
-                buryDustDeadTraitorPossessions(core, pendingDeathPreventionRecentRoll.playerId, { deferForRabbitFoot: false });
-                const dustCompleted = completeDustTraitorVictoryIfNeeded(core, event.timestamp, { deferForRabbitFoot: false });
-                if (dustCompleted) {
-                    return dustCompleted;
-                }
-            }
-            const explorers = getAllExplorers(core);
-            const next = replaceExplorers(core, explorers, event.payload.nextPlayerId);
-            const revived = tryReviveTraitorAtMonsterTurnStart(next, event.payload.nextPlayerId);
-            const nextCore = revived.core;
-            const monsterMovementRoll = !revived.revived
-                && (
-                    shouldDeadTraitorControlJackSpirit(nextCore, event.payload.nextPlayerId)
-                    || shouldDeadPlayerControlFeverish(nextCore, event.payload.nextPlayerId)
-                )
-                ? event.payload.monsterMovementRoll ?? null
-                : null;
-            const nextTurnStartSpeed = monsterMovementRoll?.speed ?? resolveTurnStartSpeed(nextCore, event.payload.nextPlayerId);
-            const nextMovesRemaining = monsterMovementRoll?.moveAllowance ?? nextTurnStartSpeed;
-            const resetScenarioRuntime = {
-                ...nextCore.scenarioRuntime,
-                corpseLootedByPlayerIdsThisTurn: [],
-                usedRoomEffectIdsThisTurn: [],
-                monsterTurn: createInitialMonsterTurnRuntimeState(),
-                bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId: createBloodFromStoneTurnStartVisibility(nextCore),
-                bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn: [],
-                dust: nextCore.scenarioRuntime.dust
-                    ? {
-                        ...cloneDustRuntimeState(nextCore.scenarioRuntime.dust),
-                        exchangedSicknessThisTurnPlayerIds: [],
-                    }
-                    : undefined,
-                helpingHands: nextCore.scenarioRuntime.helpingHands
-                    ? {
-                        ...cloneHelpingHandsRuntimeState(nextCore.scenarioRuntime.helpingHands),
-                        trollHandAttackUsedIdsThisTurn: [],
-                    }
-                    : undefined,
-                magicCamera: nextCore.scenarioRuntime.magicCamera
-                    ? cloneMagicCameraRuntimeState(nextCore.scenarioRuntime.magicCamera)
-                    : undefined,
-            };
-            const recentMonsterMoveRoll = monsterMovementRoll
-                ? {
-                    id: `monster-move-${monsterMovementRoll.monsterId}-${event.timestamp}`,
-                    kind: 'monsterMoveRoll' as const,
-                    playerId: monsterMovementRoll.playerId,
-                    sourceTitle: `${monsterMovementRoll.monsterName}移动`,
-                    trait: 'speed' as const,
-                    rollLabel: `速度 ${monsterMovementRoll.speed}`,
-                    dice: [...monsterMovementRoll.dice],
-                    passiveBonus: 0,
-                    latestLabel: `可移动 ${monsterMovementRoll.moveAllowance} 间`,
-                    consumedRabbitFootCardIds: [],
-                }
-                : null;
-            const activityCore = {
-                ...nextCore,
-                scenarioRuntime: resetScenarioRuntime,
-            };
-            const advancedCore: BetrayalCore = {
-                ...nextCore,
-                turnStartSpeed: nextTurnStartSpeed,
-                movesRemaining: nextMovesRemaining,
-                recommendedAction: resolveRecommendedAction({ ...nextCore, movesRemaining: nextMovesRemaining, recentRoll: null }),
-                usedCardIdsThisTurn: [],
-                tradeUsedThisTurnPlayerIds: [],
-                receivedCardIdsThisTurnByPlayerId: {
-                    ...nextCore.receivedCardIdsThisTurnByPlayerId,
-                    [event.payload.previousPlayerId]: [],
-                },
-                nextNonCombatTraitReplacement: null,
-                nextNonCombatTraitRollTotalReplacement: null,
-                pendingExtraTurnAfterCurrentTurn: clearPendingExtraTurnAfterCurrentTurn(nextCore, event.payload.previousPlayerId),
-                turnEndedByDiscovery: false,
-                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
-                scenarioRuntime: resetScenarioRuntime,
-                latestDiscovery: null,
-                latestDiscoveryOwnerPlayerId: null,
-                highlightedDeckKind: null,
-                pendingTradeAgreement: null,
-                activePlayerId: null,
-                recentRoll: recentMonsterMoveRoll,
-                activityLog: revived.revived
-                    ? appendActivity(
-                        {
-                            ...activityCore,
-                            activityLog: appendActivity(activityCore, event.payload.logText, 'accent'),
-                        },
-                        '杰克之灵回到了尸体所在房间，叛徒恢复肉身并重新回到宅邸中。',
-                        'warning',
-                    )
-                    : appendActivity(activityCore, event.payload.logText, 'accent'),
-            };
-            return event.payload.skipBloodFromStoneMonsterTurnStart
-                ? advancedCore
-                : startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
-                    advancedCore,
-                    event.payload.previousPlayerId,
-                    event.timestamp,
-                );
+            const result = applyBetrayalTurnEndRollAcknowledgedState(core, event);
+            return reduceScenarioCompletionStateResolution(result, event.timestamp);
         }
         case EVENTS.HAUNT_TRIGGERED: {
-            const hauntCardNumber = event.payload.hauntCardNumber ?? event.payload.hauntRevealResolution?.hauntCardNumber ?? null;
-            const hauntRevealerPlayerId = event.payload.hauntRevealerPlayerId
-                ?? event.payload.traitorPlayerId
-                ?? event.payload.nextPlayerId;
-            const hauntTraitorResolution = event.payload.hauntTraitorResolution
-                ?? resolveHauntTraitorResolutionForTrigger(core, hauntCardNumber, hauntRevealerPlayerId, {
-                    explicitTraitorPlayerId: event.payload.traitorPlayerId,
-                    revealRepresentativeOnly: event.payload.hauntRevealResolution?.representativeOnly,
-                });
-            const traitorPlayerId = hauntTraitorResolution.traitorPlayerId;
-            const resolvedHauntFirstPlayerResolution = event.payload.hauntFirstPlayerResolution
-                ?? resolveHauntFirstPlayerResolutionForTrigger(core, hauntCardNumber, hauntRevealerPlayerId, hauntTraitorResolution, {
-                    revealRepresentativeOnly: event.payload.hauntRevealResolution?.representativeOnly,
-                });
-            const hauntFirstPlayerResolution = {
-                ...resolvedHauntFirstPlayerResolution,
-                nextPlayerId: event.payload.nextPlayerId,
-            };
-            const nextPlayerId = hauntFirstPlayerResolution.nextPlayerId;
-            core.phase = 'haunt';
-            core.scenarioRuntime.hauntTriggered = true;
-            core.scenarioRuntime.hauntRevealerPlayerId = hauntRevealerPlayerId;
-            core.scenarioRuntime.traitorPlayerId = traitorPlayerId;
-            core.scenarioRuntime.hauntTraitorResolution = cloneHauntTraitorResolution(hauntTraitorResolution);
-            core.scenarioRuntime.hauntFirstPlayerResolution = cloneHauntFirstPlayerResolution(hauntFirstPlayerResolution);
-            core.scenarioRuntime.nextHauntPlayerId = nextPlayerId;
-            core.scenarioRuntime.hauntCardNumber = hauntCardNumber;
-            core.scenarioRuntime.hauntTriggerLabel = event.payload.hauntTriggerLabel;
-            core.scenarioRuntime.hauntScenarioCardId = event.payload.hauntRevealResolution?.scenarioCardId ?? null;
-            core.scenarioRuntime.hauntScenarioCardTitle = event.payload.hauntRevealResolution?.scenarioCardTitle ?? null;
-            core.scenarioRuntime.hauntScenarioCardLabel = event.payload.hauntRevealResolution?.scenarioCardLabel ?? null;
-            core.scenarioRuntime.triggeringOmenId = event.payload.hauntRevealResolution?.triggeringOmenId ?? null;
-            core.scenarioRuntime.triggeringOmenName = event.payload.hauntRevealResolution?.triggeringOmenName ?? event.payload.hauntTriggerLabel;
-            core.scenarioRuntime.hauntResolutionMatchedTrigger = event.payload.hauntRevealResolution?.triggerMatchesScenarioCard ?? false;
-            core.scenarioRuntime.hauntResolutionRepresentativeOnly = event.payload.hauntRevealResolution?.representativeOnly ?? true;
-            core.scenarioRuntime.dust = hauntCardNumber === 3
-                ? cloneDustRuntimeState(event.payload.dustSetup ?? createDustRuntimeState(core, DEFAULT_BETRAYAL_RANDOM))
-                : undefined;
-            core.scenarioRuntime.magicCamera = undefined;
-            core.scenarioRuntime.helpingHands = undefined;
-            core.scenarioRuntime.bloodFromStone = undefined;
-            core.scenarioRuntime.mummy = undefined;
-            core.scenarioRuntime.uponReflection = hauntCardNumber === 7
-                ? cloneUponReflectionRuntimeState(
-                    event.payload.uponReflectionSetup
-                        ?? createUponReflectionRuntimeState(core, hauntRevealerPlayerId, DEFAULT_BETRAYAL_RANDOM),
-                )
-                : undefined;
-            if (hauntCardNumber === 1 && core.scenarioRuntime.hauntScenarioCardId === 'mummy-rampage') {
-                core.scenarioRuntime.mummy = cloneMummyRuntimeState(setupMummyHaunt(core, traitorPlayerId));
-            }
-            if (hauntCardNumber === 12) {
-                core.scenarioRuntime.helpingHands = cloneHelpingHandsRuntimeState(
-                    event.payload.helpingHandsSetup
-                        ?? setupHelpingHandsHaunt(core, hauntRevealerPlayerId),
-                );
-            }
-            if (hauntCardNumber === 33) {
-                core.scenarioRuntime.magicCamera = cloneMagicCameraRuntimeState(
-                    event.payload.magicCameraSetup
-                        ?? setupMagicCameraHaunt(core, traitorPlayerId),
-                );
-            }
-            if (hauntCardNumber === 5) {
-                setupBloodFromStoneHaunt(core);
-            }
-            if (hauntCardNumber === 7) {
-                setupUponReflectionHaunt(core);
-            }
-            core.scenarioRuntime.hauntSetupQueue = resolveBetrayalHauntSetupQueue(core);
-            if (hauntCardNumber === 7) {
-                core.scenarioRuntime.hauntSetupQueue = resolveHauntSetupQueueWithEntryStatus(
-                    core,
-                    'deal-secret-mirror-combination',
-                    'resolved',
-                );
-            }
-            core.scenarioRuntime.monsterTurn = createInitialMonsterTurnRuntimeState();
-            core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId =
-                createBloodFromStoneTurnStartVisibility(core);
-            core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn = [];
-            core.turnStartSpeed = 0;
-            core.movesRemaining = 0;
-            core.usedCardIdsThisTurn = [];
-            core.tradeUsedThisTurnPlayerIds = [];
-            core.receivedCardIdsThisTurnByPlayerId = {
-                ...core.receivedCardIdsThisTurnByPlayerId,
-                ...(traitorPlayerId ? { [traitorPlayerId]: [] } : {}),
-            };
-            core.nextNonCombatTraitReplacement = null;
-            core.nextNonCombatTraitRollTotalReplacement = null;
-            core.turnEndedByDiscovery = false;
-            const traitor = traitorPlayerId
-                ? findExplorerByPlayerId(core, traitorPlayerId)
-                : null;
-            if (
-                traitor
-                && (hauntCardNumber ?? 1) === 1
-                && core.scenarioRuntime.hauntScenarioCardId !== 'mummy-rampage'
-            ) {
-                healTraitorForHaunt(traitor, core.playerIds.length);
-            }
-            const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
-            const nextTurnStartSpeed = resolveTurnStartSpeed(nextCore, nextPlayerId);
-            return {
-                ...nextCore,
-                currentPlayer: nextPlayerId,
-                turnStartSpeed: nextTurnStartSpeed,
-                movesRemaining: nextTurnStartSpeed,
-                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, nextPlayerId),
-                recommendedAction: 'move',
-                pendingTradeAgreement: null,
-                pendingCardResolutionQueue: core.pendingCardResolutionQueue.map(clonePendingCardResolution),
-                activePlayerId: null,
-                activityLog: appendActivity(nextCore, event.payload.logText, 'warning'),
-            };
+            return applyBetrayalHauntTriggeredState(core, event, DEFAULT_BETRAYAL_RANDOM);
         }
         case EVENTS.MONSTER_DAMAGE_RESOLVED: {
-            applyBetrayalMonsterDamageOutcome(core, event.payload.monsterDamageOutcome);
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recentRoll: null,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(
-                    syncedCore,
-                    event.payload.logText,
-                    event.payload.monsterDamageOutcome.kind === 'none' ? 'warning' : 'accent',
-                ),
-            };
+            return applyBetrayalMonsterDamageResolvedState(core, event);
         }
         case EVENTS.MONSTER_TURN_START_RESOLVED: {
-            const monsterTurn = cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
-            monsterTurn.resolvedStartMonsterIds = Array.from(new Set([
-                ...monsterTurn.resolvedStartMonsterIds,
-                event.payload.monsterId,
-            ]));
-            if (event.payload.skippedTurn) {
-                monsterTurn.skippedMonsterIdsThisTurn = Array.from(new Set([
-                    ...monsterTurn.skippedMonsterIdsThisTurn,
-                    event.payload.monsterId,
-                ]));
-                monsterTurn.moveRemainingById = Object.fromEntries(
-                    Object.entries(monsterTurn.moveRemainingById)
-                        .filter(([monsterId]) => monsterId !== event.payload.monsterId),
-                );
-            }
-            if (event.payload.flippedStunnedSideUp) {
-                flipStunnedMonsterSideUp(core, event.payload.monsterId);
-            }
-            core.scenarioRuntime.monsterTurn = monsterTurn;
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recentRoll: null,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(
-                    syncedCore,
-                    event.payload.logText,
-                    event.payload.skippedTurn ? 'warning' : 'accent',
-                ),
-            };
+            return applyBetrayalMonsterTurnStartResolvedState(core, event);
         }
         case EVENTS.MONSTER_MOVEMENT_GROUP_ROLLED: {
-            const monsterTurn = cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
-            const result = cloneMonsterMovementRollGroupResult(event.payload.result);
-            monsterTurn.movementRollsByGroupId = {
-                ...monsterTurn.movementRollsByGroupId,
-                [result.groupId]: result,
-            };
-            monsterTurn.moveRemainingById = {
-                ...monsterTurn.moveRemainingById,
-                ...Object.fromEntries(
-                    result.monsterIds.map((monsterId) => [monsterId, result.moveAllowance]),
-                ),
-            };
-            core.scenarioRuntime.monsterTurn = monsterTurn;
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recentRoll: {
-                    id: `monster-move-group-${result.groupId}-${event.timestamp}`,
-                    kind: 'monsterMoveRoll' as const,
-                    playerId: result.playerId,
-                    sourceTitle: `${result.monsterName}移动`,
-                    trait: 'speed',
-                    rollLabel: `速度 ${result.speed}`,
-                    dice: [...result.dice],
-                    passiveBonus: 0,
-                    latestLabel: `每只可移动 ${result.moveAllowance} 间`,
-                    consumedRabbitFootCardIds: [],
-                },
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalMonsterMovementGroupRolledState(core, event);
         }
         case EVENTS.MONSTER_MOVED: {
-            const monsterTurn = cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
-            core.monsters = core.monsters.map((monster) => (
-                monster.id === event.payload.monsterId
-                    ? { ...monster, roomId: event.payload.toRoomId }
-                    : monster
-            ));
-            if (event.payload.monsterId === 'jack-spirit') {
-                core.scenarioRuntime.jackSpiritRoomId = event.payload.toRoomId;
-                core.scenarioRuntime.jackSpiritHasMovedSinceRelease = true;
-            }
-            if (event.payload.teleportMove) {
-                monsterTurn.movedMonsterIdsThisTurn = Array.from(new Set([
-                    ...monsterTurn.movedMonsterIdsThisTurn,
-                    event.payload.monsterId,
-                ]));
-            }
-            monsterTurn.moveRemainingById = {
-                ...monsterTurn.moveRemainingById,
-                [event.payload.monsterId]: event.payload.moveRemaining,
-            };
-            core.scenarioRuntime.monsterTurn = monsterTurn;
-            const mummyGirlPickedUp = collectMummyGirlByMummyIfPresent(
-                core,
-                event.payload.monsterId,
-                event.payload.toRoomId,
-            );
-            const mummyGirlPickupLog = mummyGirlPickedUp ? '；木乃伊拾起女孩' : '';
-            const syncedCore = syncCurrentExplorerProjection(core);
-            const movedCore = {
-                ...syncedCore,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, `${event.payload.logText}${mummyGirlPickupLog}`, 'accent'),
-            };
+            const movedCore = applyBetrayalMonsterMovedState(core, event);
             return completeMummyTraitorVictoryIfNeeded(movedCore, event.timestamp) ?? movedCore;
         }
         case EVENTS.MONSTER_ATTACK_HERO_RESOLVED: {
-            const monsterTurn = cloneMonsterTurnRuntimeState(core.scenarioRuntime.monsterTurn);
-            monsterTurn.attackedMonsterIdsThisTurn = Array.from(new Set([
-                ...monsterTurn.attackedMonsterIdsThisTurn,
-                event.payload.monsterId,
-            ]));
-            core.scenarioRuntime.monsterTurn = monsterTurn;
-            const defender = findExplorerByPlayerId(core, event.payload.targetPlayerId);
-            if (event.payload.monsterDamageOutcome) {
-                applyBetrayalMonsterDamageOutcome(core, event.payload.monsterDamageOutcome);
-            }
-            const mummyStealableCards = defender && event.payload.damageToHero && event.payload.damageToHero >= 2
-                ? resolveMummyStealableCards(core, defender.playerId)
-                : [];
-            const pendingMummyAttackReward = defender
-                && isMummyMonster(core, event.payload.monsterId)
-                && event.payload.damageToHero
-                && event.payload.damageToHero >= 2
-                && mummyStealableCards.length > 0
-                && core.scenarioRuntime.mummy
-                ? {
-                    id: `mummy-attack-reward-${event.payload.monsterId}-${defender.playerId}-${event.timestamp}`,
-                    controllerPlayerId: event.payload.playerId,
-                    monsterId: event.payload.monsterId,
-                    monsterName: event.payload.monsterName,
-                    defenderPlayerId: defender.playerId,
-                    damageToHero: event.payload.damageToHero,
-                    defenderTraitsBeforeDamage: { ...event.payload.defenderTraitsBeforeDamage },
-                    stealableCardIds: mummyStealableCards.map((card) => card.id),
-                }
-                : undefined;
-            if (pendingMummyAttackReward && core.scenarioRuntime.mummy) {
-                core.scenarioRuntime.mummy.pendingAttackReward = pendingMummyAttackReward;
-            }
-            const damageKind = event.payload.damageKind ?? 'physical';
-            const pendingMonsterAttackDamageAllocation = defender && event.payload.damageToHero && !pendingMummyAttackReward
-                ? createPendingDamageAllocation({
-                    id: `monster-attack-damage-${defender.playerId}-${event.timestamp}`,
-                    explorer: defender,
-                    sourceTitle: '攻击',
-                    damageKind,
-                    amount: event.payload.damageToHero,
-                    allowSkull: true,
-                    forcedTraitSequence: isMummyMonster(core, event.payload.monsterId)
-                        ? resolveMummyForcedDamageTraits(defender, event.payload.damageToHero, { allowSkull: true })
-                        : undefined,
-                })
-                : null;
-            const monsterTraits = core.monsters.find((monster) => monster.id === event.payload.monsterId);
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                pendingDamageAllocation: pendingMonsterAttackDamageAllocation,
-                activePlayerId: pendingMonsterAttackDamageAllocation?.playerId
-                    ?? pendingMummyAttackReward?.controllerPlayerId
-                    ?? null,
-                recentRoll: {
-                    id: `${event.payload.monsterId}-normal-attack-${event.timestamp}`,
-                    kind: 'attackRoll' as const,
-                    playerId: event.payload.playerId,
-                    sourceTitle: `${event.payload.monsterName}攻击`,
-                    dice: [...event.payload.dice],
-                    passiveBonus: 0,
-                    latestLabel: event.payload.monsterRoll === event.payload.heroRoll
-                        ? '平手无伤害'
-                        : event.payload.damageToHero
-                            ? pendingMummyAttackReward
-                                ? `可造成 ${event.payload.damageToHero} 点伤害或偷取`
-                                : `造成 ${event.payload.damageToHero} 点伤害`
-                            : (event.payload.monsterDamageOutcome?.logLabel ?? '怪物受伤'),
-                    attack: {
-                        target: 'hero',
-                        defenderPlayerId: event.payload.targetPlayerId,
-                        damageKind,
-                        previousDamageToAttacker: event.payload.monsterDamageOutcome?.damageAmount ?? 0,
-                        previousDamageToDefender: event.payload.damageToHero ?? 0,
-                        defenderRoll: event.payload.heroRoll,
-                        defenderDefenseExtraDice: defender
-                            ? resolveDefenseExtraDiceWhenAttacked(defender)
-                            : 0,
-                        attackerTraitsBeforeDamage: {
-                            might: monsterTraits?.might ?? 0,
-                            speed: monsterTraits?.speed ?? 0,
-                            knowledge: monsterTraits?.knowledge ?? 0,
-                            sanity: monsterTraits?.sanity ?? 0,
-                        },
-                        defenderTraitsBeforeDamage: { ...event.payload.defenderTraitsBeforeDamage },
-                        weaponAttackTrait: event.payload.attackTrait,
-                    },
-                    consumedRabbitFootCardIds: [],
-                },
-                recommendedAction: pendingMonsterAttackDamageAllocation || pendingMummyAttackReward
-                    ? 'endTurn'
-                    : resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(
-                    syncedCore,
-                    event.payload.logText,
-                    event.payload.damageToHero ? 'warning' : 'accent',
-                ),
-            };
+            return applyBetrayalMonsterAttackHeroResolvedState(core, event);
         }
         case EVENTS.BLOOD_FROM_STONE_MONSTER_TURN_ENDED: {
-            if (core.scenarioRuntime.bloodFromStone) {
-                core.scenarioRuntime.bloodFromStone = {
-                    ...core.scenarioRuntime.bloodFromStone,
-                    activeMonsterTurn: false,
-                    monsterTurnControllerPlayerId: null,
-                };
+            const result = applyBloodFromStoneMonsterTurnEndedState(core, event);
+            if (result.turnEndRollAcknowledgedPayload) {
+                return reduceEvent(
+                    result.core,
+                    nowEvent(EVENTS.TURN_END_ROLL_ACKNOWLEDGED, result.turnEndRollAcknowledgedPayload, event.timestamp),
+                );
             }
-            core.scenarioRuntime.monsterTurn = createInitialMonsterTurnRuntimeState();
-            const pendingGazeDamageAllocation = createBloodFromStoneGazeDamageAllocationQueue(
-                core,
-                event.payload.damageRolls,
-                event.payload.nextPlayerId,
-                event.payload.turnLogText,
-            );
-            const syncedCore = syncCurrentExplorerProjection(core);
-            if (pendingGazeDamageAllocation) {
-                return {
-                    ...syncedCore,
-                    pendingDamageAllocation: pendingGazeDamageAllocation,
-                    activePlayerId: pendingGazeDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    recentRoll: null,
-                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-                };
-            }
-            return reduceEvent(syncedCore, nowEvent(EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
-                previousPlayerId: event.payload.controllerPlayerId,
-                nextPlayerId: event.payload.nextPlayerId,
-                monsterMovementRoll: null,
-                skipBloodFromStoneMonsterTurnStart: true,
-                logText: [event.payload.logText, event.payload.turnLogText].filter(Boolean).join('；'),
-            }, event.timestamp));
+            return result.core;
         }
         case EVENTS.BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS_PLACED: {
-            core.monsters = [
-                ...core.monsters,
-                ...event.payload.placements.map((placement) => createBetrayalMonsterFromDefinition(
-                    'blood-from-stone-stone-cherub',
-                    placement.monsterId,
-                    placement.roomId,
-                )),
-            ];
-            const plan = resolveBloodFromStoneSetupPlacementPlan(core);
-            core.scenarioRuntime.hauntSetupQueue = resolveHauntSetupQueueWithEntryStatus(
-                core,
-                'place-additional-stone-cherubs',
-                plan.pendingPlayerChoiceCount > 0 ? 'manual-check' : 'resolved',
-            );
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalBloodFromStoneExtraStoneCherubsPlacedState(core, event);
         }
         case EVENTS.DYNAMITE_ATTACK_RESOLVED: {
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'haunt-attack',
-                event.payload.cardId,
-            ]));
-            const attacker = findExplorerByPlayerId(core, event.payload.attackerPlayerId);
-            if (attacker) {
-                attacker.inventory = attacker.inventory.filter((card) => card.id !== event.payload.cardId);
-            }
-            buryPossessionCardToBottom(core, 'item', event.payload.cardId);
-            for (const monsterRoll of event.payload.monsterRolls) {
-                if (monsterRoll.monsterDamageOutcome) {
-                    applyBetrayalMonsterDamageOutcome(core, monsterRoll.monsterDamageOutcome);
-                }
-            }
-            const damageAllocations = event.payload.explorerRolls
-                .filter((roll) => !roll.passed)
-                .map((roll) => {
-                    const explorer = findExplorerByPlayerId(core, roll.playerId);
-                    return explorer
-                        ? createPendingDamageAllocation({
-                            id: `dynamite-damage-${roll.playerId}-${event.timestamp}`,
-                            explorer,
-                            sourceTitle: event.payload.cardName,
-                            damageKind: 'physical',
-                            amount: 4,
-                            allowSkull: true,
-                        })
-                        : null;
-                })
-                .filter((allocation): allocation is BetrayalPendingDamageAllocationState => Boolean(allocation));
-            const pendingDynamiteDamageAllocation = chainPendingDamageAllocations(damageAllocations);
-            const syncedCore = syncCurrentExplorerProjection(core);
-            if (pendingDynamiteDamageAllocation) {
-                return {
-                    ...syncedCore,
-                    pendingDamageAllocation: pendingDynamiteDamageAllocation,
-                    activePlayerId: pendingDynamiteDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-                };
-            }
-            return {
-                ...syncedCore,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(
-                    syncedCore,
-                    event.payload.logText,
-                    event.payload.monsterRolls.some((roll) => !roll.passed) ? 'warning' : 'accent',
-                ),
-            };
+            return applyBetrayalDynamiteAttackResolvedState(core, event);
         }
         case EVENTS.HAUNT_ATTACK_RESOLVED: {
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'haunt-attack',
-                ...(event.payload.weaponCardId ? [event.payload.weaponCardId] : []),
-            ]));
-            const attacker = findExplorerByPlayerId(core, event.payload.attackerPlayerId);
-            const defender = event.payload.defenderPlayerId
-                ? findExplorerByPlayerId(core, event.payload.defenderPlayerId)
-                : null;
-            const canDeferOrdinaryDefenderAttackDamage = canDeferOrdinaryAttackDamageToDefender(
-                core,
-                event.payload.target,
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalHauntAttackResolvedState(core, event),
+                event.timestamp,
             );
-            let pendingAttackDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
-            if (attacker && event.payload.damageToAttacker) {
-                applyAttackDamage(attacker, event.payload.damageToAttacker, event.payload.damageKind ?? 'physical');
-            }
-            if (attacker && event.payload.weaponSpeedCost) {
-                applyTraitLoss(attacker, ['speed'], event.payload.weaponSpeedCost);
-            }
-            if (defender && event.payload.damageToDefender) {
-                if (canDeferOrdinaryDefenderAttackDamage) {
-                    pendingAttackDamageAllocation = createPendingDamageAllocation({
-                        id: `haunt-attack-damage-${defender.playerId}-${event.timestamp}`,
-                        explorer: defender,
-                        sourceTitle: '攻击',
-                        damageKind: event.payload.damageKind ?? 'physical',
-                        amount: event.payload.damageToDefender,
-                        allowSkull: true,
-                    });
-                }
-                if (!pendingAttackDamageAllocation) {
-                    applyAttackDamage(defender, event.payload.damageToDefender, event.payload.damageKind ?? 'physical');
-                }
-            }
-            if (event.payload.deathPrevention?.prevented) {
-                const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                if (protectedExplorer) {
-                    setExplorerTraitsToDeathsDoor(protectedExplorer);
-                }
-            }
-            if (
-                event.payload.attackRoll
-                && event.payload.attackRoll.dice.length > 0
-            ) {
-                core.recentRoll = {
-                    id: event.payload.attackRoll.id,
-                    kind: 'attackRoll',
-                    playerId: event.payload.attackerPlayerId,
-                    sourceTitle: '攻击投骰',
-                    dice: [...event.payload.attackRoll.dice],
-                    passiveBonus: event.payload.attackRoll.passiveBonus,
-                    latestLabel: event.payload.attackRoll.latestLabel,
-                    attack: {
-                        target: event.payload.target,
-                        defenderPlayerId: event.payload.defenderPlayerId,
-                        damageKind: event.payload.damageKind ?? 'physical',
-                        previousDamageToAttacker: event.payload.damageToAttacker ?? 0,
-                        previousDamageToDefender: event.payload.damageToDefender ?? 0,
-                        defenderRoll: event.payload.defenderRoll ?? 0,
-                        defenderDefenseExtraDice: defender
-                            ? resolveDefenseExtraDiceWhenAttacked(defender)
-                            : 0,
-                        attackerTraitsBeforeDamage: { ...event.payload.attackRoll.attackerTraitsBeforeDamage },
-                        defenderTraitsBeforeDamage: event.payload.attackRoll.defenderTraitsBeforeDamage
-                            ? { ...event.payload.attackRoll.defenderTraitsBeforeDamage }
-                            : undefined,
-                        weaponCardId: event.payload.weaponCardId,
-                        weaponName: event.payload.weaponName,
-                        weaponAttackBonus: event.payload.weaponAttackBonus,
-                        weaponExtraDice: event.payload.weaponExtraDice,
-                        weaponSpeedCost: event.payload.weaponSpeedCost,
-                        weaponAttackTrait: event.payload.weaponAttackTrait,
-                    },
-                    consumedRabbitFootCardIds: [],
-                };
-            }
-            if (event.payload.deathPrevention?.dice.length) {
-                core.recentRoll = {
-                    id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                    kind: 'deathPrevention',
-                    playerId: event.payload.deathPrevention.playerId,
-                    sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                    dice: [...event.payload.deathPrevention.dice],
-                    passiveBonus: 0,
-                    latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                    deathPrevention: {
-                        cardId: event.payload.deathPrevention.cardId,
-                        minTotal: event.payload.deathPrevention.minTotal,
-                        damageKind: event.payload.deathPrevention.damageKind,
-                        damageAmount: event.payload.deathPrevention.damageAmount,
-                        traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                        monstersBeforeDefeat: core.monsters.map(cloneMonster),
-                        releasedJackSpiritRoomId: event.payload.deathPrevention.releasedJackSpiritRoomId,
-                    },
-                    consumedRabbitFootCardIds: [],
-                };
-            }
-            if (pendingAttackDamageAllocation) {
-                const syncedCore = syncCurrentExplorerProjection(core);
-                return {
-                    ...syncedCore,
-                    pendingDamageAllocation: pendingAttackDamageAllocation,
-                    activePlayerId: pendingAttackDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-                };
-            }
-            if (isMagicCameraHaunt(core)) {
-                const magicCamera = core.scenarioRuntime.magicCamera;
-                if (magicCamera && event.payload.monsterDamageOutcome) {
-                    applyBetrayalMonsterDamageOutcome(core, event.payload.monsterDamageOutcome);
-                } else if (magicCamera && event.payload.defeatedMonsterId) {
-                    magicCamera.killedPhantomPhotographerIds = Array.from(new Set([
-                        ...magicCamera.killedPhantomPhotographerIds,
-                        event.payload.defeatedMonsterId,
-                    ]));
-                    magicCamera.stunnedPhantomPhotographerIds = magicCamera.stunnedPhantomPhotographerIds
-                        .filter((id) => id !== event.payload.defeatedMonsterId);
-                    core.monsters = core.monsters.filter((monster) => monster.id !== event.payload.defeatedMonsterId);
-                } else if (magicCamera && event.payload.outcome === 'phantom-stunned' && event.payload.defenderMonsterId) {
-                    magicCamera.stunnedPhantomPhotographerIds = Array.from(new Set([
-                        ...magicCamera.stunnedPhantomPhotographerIds,
-                        event.payload.defenderMonsterId,
-                    ]));
-                }
-                if (event.payload.defeatedPlayerId) {
-                    markDeadExplorer(core, event.payload.defeatedPlayerId);
-                }
-                const heroCompleted = completeMagicCameraHeroVictoryIfNeeded(core, event.timestamp);
-                if (heroCompleted) {
-                    return heroCompleted;
-                }
-                const traitorCompleted = completeMagicCameraTraitorVictoryIfNeeded(core, event.timestamp);
-                if (traitorCompleted) {
-                    return traitorCompleted;
-                }
-                const nextPlayerId = rotateToNextLivingPlayer(core, core.currentPlayer);
-                const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
-                return {
-                    ...nextCore,
-                    currentPlayer: nextPlayerId,
-                    recommendedAction: 'move',
-                    activityLog: appendActivity(nextCore, event.payload.logText, event.payload.outcome === 'no-damage' ? 'neutral' : 'accent'),
-                };
-            }
-            if (isDustHaunt(core)) {
-                if (event.payload.defeatedPlayerId) {
-                    markDeadExplorer(core, event.payload.defeatedPlayerId);
-                    if (core.scenarioRuntime.dust?.permanentTraitorPlayerIds.includes(event.payload.defeatedPlayerId)) {
-                        addFeverishMonsterForPlayer(core, event.payload.defeatedPlayerId);
-                    }
-                }
-                const completed = completeDustTraitorVictoryIfNeeded(core, event.timestamp);
-                if (completed) {
-                    return completed;
-                }
-                const nextPlayerId = rotateToNextLivingPlayer(core, core.currentPlayer);
-                const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
-                return {
-                    ...nextCore,
-                    currentPlayer: nextPlayerId,
-                    recommendedAction: 'move',
-                    activityLog: appendActivity(nextCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
-                };
-            }
-            if (isHelpingHandsHaunt(core)) {
-                const helpingHands = core.scenarioRuntime.helpingHands;
-                if (helpingHands && event.payload.helpingHandsAttackRewardChoice) {
-                    helpingHands.pendingAttackReward = {
-                        ...event.payload.helpingHandsAttackRewardChoice,
-                        defenderTraitsBeforeDamage: { ...event.payload.helpingHandsAttackRewardChoice.defenderTraitsBeforeDamage },
-                    };
-                }
-                if (event.payload.defeatedPlayerId) {
-                    markDeadExplorer(core, event.payload.defeatedPlayerId);
-                }
-                const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
-                if (completed) {
-                    return completed;
-                }
-                const tone = event.payload.defeatedPlayerId
-                    ? 'warning'
-                    : event.payload.outcome === 'no-damage'
-                        ? 'neutral'
-                        : 'accent';
-                if (
-                    event.payload.attackerPlayerId === core.currentPlayer
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(event.payload.attackerPlayerId)
-                ) {
-                    const syncedCore = syncCurrentExplorerProjection(core);
-                    return {
-                        ...syncedCore,
-                        recommendedAction: resolveRecommendedAction(syncedCore),
-                        activityLog: appendActivity(syncedCore, event.payload.logText, tone),
-                    };
-                }
-                const nextPlayerId = rotateToNextLivingPlayer(core, core.currentPlayer);
-                const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
-                return {
-                    ...nextCore,
-                    currentPlayer: nextPlayerId,
-                    recommendedAction: 'move',
-                    activityLog: appendActivity(nextCore, event.payload.logText, tone),
-                };
-            }
-            if (
-                event.payload.outcome === 'traitor-defeated'
-                && event.payload.defeatedPlayerId
-                && !isMummyHaunt(core)
-            ) {
-                core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
-                    ...core.scenarioRuntime.deadExplorerPlayerIds,
-                    event.payload.defeatedPlayerId,
-                ]));
-                const traitor = findExplorerByPlayerId(core, event.payload.defeatedPlayerId);
-                core.scenarioRuntime.traitorCorpseRoomId = traitor?.roomId ?? core.activeRoomId;
-                core.scenarioRuntime.jackSpiritReleased = true;
-                core.scenarioRuntime.jackSpiritRoomId = event.payload.releasedJackSpiritRoomId
-                    ?? resolveJackSpiritSpawnRoomId(core, core.scenarioRuntime.traitorCorpseRoomId ?? core.activeRoomId);
-                core.scenarioRuntime.jackSpiritHasMovedSinceRelease = false;
-                core.monsters = [createBetrayalMonsterFromDefinition(
-                    'crimson-jack-spirit',
-                    'jack-spirit',
-                    core.scenarioRuntime.jackSpiritRoomId,
-                )];
-            }
-            if (event.payload.outcome === 'hero-defeated' && event.payload.defeatedPlayerId) {
-                core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
-                    ...core.scenarioRuntime.deadExplorerPlayerIds,
-                    event.payload.defeatedPlayerId,
-                ]));
-                const livingHeroes = getAllExplorers(core).filter((explorer) => (
-                    explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                ));
-                if (livingHeroes.length === 0) {
-                    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                        result: isMummyHaunt(core)
-                            ? createMummyEndgameResult(core, 'traitor')
-                            : {
-                                hauntId: 'crimson-jack-returns',
-                                hauntTitle: resolveCrimsonJackHauntTitle(),
-                                outcome: 'traitor',
-                                winners: [findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer)?.playerId ?? core.currentExplorer.playerId],
-                                traitorPlayerId: findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer)?.playerId ?? core.currentExplorer.playerId,
-                                survivorsEscaped: [],
-                                reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
-                                stats: {
-                                    roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                                    omensDrawn: countDrawnCards(core, 'omen'),
-                                    itemsDrawn: countDrawnCards(core, 'item'),
-                                    eventsDrawn: countDrawnCards(core, 'event'),
-                                },
-                            },
-                    }, event.timestamp));
-                }
-            }
-            if (
-                event.payload.attackerPlayerId === core.currentPlayer
-                && !core.scenarioRuntime.deadExplorerPlayerIds.includes(event.payload.attackerPlayerId)
-            ) {
-                const syncedCore = syncCurrentExplorerProjection(core);
-                return {
-                    ...syncedCore,
-                    recommendedAction: resolveRecommendedAction(syncedCore),
-                    activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.outcome === 'hero-defeated' ? 'warning' : 'accent'),
-                };
-            }
-            const nextPlayerId = rotateToNextLivingPlayer(core, core.currentPlayer);
-            const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
-            return {
-                ...nextCore,
-                currentPlayer: nextPlayerId,
-                recommendedAction: 'move',
-                activityLog: appendActivity(nextCore, event.payload.logText, event.payload.outcome === 'hero-defeated' ? 'warning' : 'accent'),
-            };
         }
         case EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED: {
-            const helpingHands = core.scenarioRuntime.helpingHands;
-            if (!helpingHands) {
-                return core;
-            }
-            const attacker = findExplorerByPlayerId(core, event.payload.attackerPlayerId);
-            const defender = findExplorerByPlayerId(core, event.payload.defenderPlayerId);
-            helpingHands.pendingAttackReward = undefined;
-            if (event.payload.choice === 'steal' && attacker && defender && event.payload.stolenCardId) {
-                const stolenCard = defender.inventory.find((card) => card.id === event.payload.stolenCardId);
-                if (stolenCard) {
-                    defender.inventory = defender.inventory.filter((card) => card.id !== stolenCard.id);
-                    attacker.inventory = [...attacker.inventory, cloneInventoryCard(stolenCard)];
-                    core.receivedCardIdsThisTurnByPlayerId = {
-                        ...core.receivedCardIdsThisTurnByPlayerId,
-                        [attacker.playerId]: Array.from(new Set([
-                            ...(core.receivedCardIdsThisTurnByPlayerId[attacker.playerId] ?? []),
-                            stolenCard.id,
-                        ])),
-                    };
-                }
-            }
-            let pendingHelpingHandsDamageAllocation: BetrayalPendingDamageAllocationState | null = null;
-            if (defender && event.payload.damageToDefender && event.payload.damageKind) {
-                if (!event.payload.defeatedPlayerId && !event.payload.deathPrevention) {
-                    pendingHelpingHandsDamageAllocation = createPendingDamageAllocation({
-                        id: `helping-hands-attack-damage-${event.payload.defenderPlayerId}-${event.timestamp}`,
-                        explorer: defender,
-                        sourceTitle: '援手攻击',
-                        damageKind: event.payload.damageKind,
-                        amount: event.payload.damageToDefender,
-                        allowSkull: true,
-                    });
-                }
-                if (!pendingHelpingHandsDamageAllocation) {
-                    applyAttackDamage(defender, event.payload.damageToDefender, event.payload.damageKind);
-                }
-            }
-            if (event.payload.deathPrevention?.prevented) {
-                const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                if (protectedExplorer) {
-                    setExplorerTraitsToDeathsDoor(protectedExplorer);
-                }
-            }
-            if (event.payload.deathPrevention?.dice.length) {
-                core.recentRoll = {
-                    id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                    kind: 'deathPrevention',
-                    playerId: event.payload.deathPrevention.playerId,
-                    sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                    dice: [...event.payload.deathPrevention.dice],
-                    passiveBonus: 0,
-                    latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                    deathPrevention: {
-                        cardId: event.payload.deathPrevention.cardId,
-                        minTotal: event.payload.deathPrevention.minTotal,
-                        damageKind: event.payload.deathPrevention.damageKind,
-                        damageAmount: event.payload.deathPrevention.damageAmount,
-                        traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                        monstersBeforeDefeat: core.monsters.map(cloneMonster),
-                        releasedJackSpiritRoomId: event.payload.deathPrevention.releasedJackSpiritRoomId,
-                    },
-                    consumedRabbitFootCardIds: [],
-                };
-            }
-            if (event.payload.defeatedPlayerId) {
-                markDeadExplorer(core, event.payload.defeatedPlayerId);
-            }
-            if (pendingHelpingHandsDamageAllocation) {
-                const syncedCore = syncCurrentExplorerProjection(core);
-                return {
-                    ...syncedCore,
-                    pendingDamageAllocation: pendingHelpingHandsDamageAllocation,
-                    activePlayerId: pendingHelpingHandsDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-                };
-            }
-            const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalHelpingHandsAttackRewardResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.MUMMY_ATTACK_REWARD_RESOLVED: {
-            const mummy = core.scenarioRuntime.mummy;
-            if (!mummy) {
-                return core;
-            }
-            const defender = findExplorerByPlayerId(core, event.payload.defenderPlayerId);
-            mummy.pendingAttackReward = undefined;
-            if (event.payload.choice === 'steal' && defender && event.payload.stolenCardId) {
-                if (
-                    event.payload.stolenCardId === MUMMY_GIRL_STEAL_CARD_ID
-                    && mummy.girlHolderPlayerId === defender.playerId
-                ) {
-                    mummy.girlRoomId = null;
-                    mummy.girlHolderPlayerId = null;
-                    mummy.girlHeldByMummy = true;
-                } else {
-                    const stolenCard = defender.inventory.find((card) => card.id === event.payload.stolenCardId);
-                    if (stolenCard) {
-                        defender.inventory = defender.inventory.filter((card) => card.id !== stolenCard.id);
-                        mummy.mummyCarriedCards = [
-                            ...mummy.mummyCarriedCards.filter((card) => card.id !== stolenCard.id),
-                            cloneInventoryCard(stolenCard),
-                        ];
-                        if (stolenCard.kind === 'omen') {
-                            mummy.mummyCarriedOmenIds = Array.from(new Set([
-                                ...mummy.mummyCarriedOmenIds,
-                                stolenCard.id,
-                            ]));
-                        }
-                    }
-                }
-            }
-            const pendingMummyDamageAllocation = defender && event.payload.choice === 'damage' && event.payload.damageToHero
-                ? createPendingDamageAllocation({
-                    id: `mummy-attack-damage-${event.payload.defenderPlayerId}-${event.timestamp}`,
-                    explorer: defender,
-                    sourceTitle: '木乃伊攻击',
-                    damageKind: 'physical',
-                    amount: event.payload.damageToHero,
-                    allowSkull: true,
-                    forcedTraitSequence: resolveMummyForcedDamageTraits(
-                        defender,
-                        event.payload.damageToHero,
-                        { allowSkull: true },
-                    ),
-                })
-                : null;
-            const syncedCore = syncCurrentExplorerProjection(core);
-            if (pendingMummyDamageAllocation) {
-                return {
-                    ...syncedCore,
-                    pendingDamageAllocation: pendingMummyDamageAllocation,
-                    activePlayerId: pendingMummyDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-                };
-            }
-            const loggedCore = {
-                ...syncedCore,
-                activePlayerId: null,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(
-                    syncedCore,
-                    event.payload.logText,
-                    event.payload.choice === 'damage' ? 'warning' : 'accent',
-                ),
-            };
-            return completeMummyTraitorVictoryIfNeeded(loggedCore, event.timestamp) ?? loggedCore;
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalMummyAttackRewardResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.HELPING_HANDS_MONSTER_TURN_STARTED: {
-            const helpingHands = core.scenarioRuntime.helpingHands;
-            const controller = findExplorerByPlayerId(core, event.payload.controllerPlayerId);
-            if (!helpingHands || !controller) {
-                return core;
-            }
-            const nextCore = replaceExplorers(
-                core,
-                getAllExplorers(core),
-                event.payload.controllerPlayerId,
-            );
-            const nextHelpingHands = nextCore.scenarioRuntime.helpingHands;
-            if (!nextHelpingHands) {
-                return nextCore;
-            }
-            nextHelpingHands.activeMonsterTurn = true;
-            nextHelpingHands.monsterTurnControllerPlayerId = event.payload.controllerPlayerId;
-            nextHelpingHands.trollHandMoveAllowance = event.payload.moveAllowance;
-            nextHelpingHands.trollHandMoveDice = [...event.payload.moveDice];
-            nextHelpingHands.trollHandMoveRemainingById = Object.fromEntries(
-                nextHelpingHands.trollHandIds
-                    .filter((id) => nextCore.monsters.some((monster) => monster.id === id))
-                    .map((id) => [id, event.payload.moveAllowance]),
-            );
-            nextHelpingHands.trollHandAttackUsedIdsThisTurn = [];
-            const syncedCore = syncCurrentExplorerProjection(nextCore);
-            return {
-                ...syncedCore,
-                activePlayerId: event.payload.controllerPlayerId,
-                recommendedAction: 'endTurn',
-                recentRoll: {
-                    id: `helping-hands-monster-move-${event.timestamp}`,
-                    kind: 'monsterMoveRoll',
-                    playerId: event.payload.controllerPlayerId,
-                    sourceTitle: '巨魔手移动',
-                    trait: 'speed',
-                    rollLabel: '速度 3',
-                    dice: [...event.payload.moveDice],
-                    passiveBonus: 0,
-                    latestLabel: `每只巨魔手可移动 ${event.payload.moveAllowance} 间`,
-                    consumedRabbitFootCardIds: [],
-                },
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-            };
+            return applyBetrayalHelpingHandsMonsterTurnStartedState(core, event);
         }
         case EVENTS.HELPING_HANDS_TROLL_HAND_MOVED: {
-            const helpingHands = core.scenarioRuntime.helpingHands;
-            const monster = findHelpingHandsTrollHand(core, event.payload.monsterId);
-            if (!helpingHands || !monster) {
-                return core;
-            }
-            monster.roomId = event.payload.toRoomId;
-            helpingHands.trollHandMoveRemainingById = {
-                ...helpingHands.trollHandMoveRemainingById,
-                [monster.id]: event.payload.moveRemaining,
-            };
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalHelpingHandsTrollHandMovedState(core, event);
         }
         case EVENTS.HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED: {
-            const helpingHands = core.scenarioRuntime.helpingHands;
-            if (!helpingHands) {
-                return core;
-            }
-            const target = findExplorerByPlayerId(core, event.payload.targetPlayerId);
-            helpingHands.trollHandAttackUsedIdsThisTurn = Array.from(new Set([
-                ...helpingHands.trollHandAttackUsedIdsThisTurn,
-                ...event.payload.trollHandIds,
-            ]));
-            const pendingTrollHandDamageAllocation = target && event.payload.damageToDefender
-                ? createPendingDamageAllocation({
-                    id: `helping-hands-troll-hand-damage-${event.payload.targetPlayerId}-${event.timestamp}`,
-                    explorer: target,
-                    sourceTitle: '巨魔手攻击',
-                    damageKind: 'physical',
-                    amount: event.payload.damageToDefender,
-                    allowSkull: true,
-                })
-                : null;
-            if (pendingTrollHandDamageAllocation) {
-                const syncedCore = syncCurrentExplorerProjection(core);
-                return {
-                    ...syncedCore,
-                    pendingDamageAllocation: pendingTrollHandDamageAllocation,
-                    activePlayerId: pendingTrollHandDamageAllocation.playerId,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-                };
-            }
-            if (event.payload.deathPrevention?.prevented) {
-                const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
-                if (protectedExplorer) {
-                    setExplorerTraitsToDeathsDoor(protectedExplorer);
-                }
-            }
-            if (event.payload.deathPrevention?.dice.length) {
-                core.recentRoll = {
-                    id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
-                    kind: 'deathPrevention',
-                    playerId: event.payload.deathPrevention.playerId,
-                    sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
-                    dice: [...event.payload.deathPrevention.dice],
-                    passiveBonus: 0,
-                    latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
-                    deathPrevention: {
-                        cardId: event.payload.deathPrevention.cardId,
-                        minTotal: event.payload.deathPrevention.minTotal,
-                        damageKind: event.payload.deathPrevention.damageKind,
-                        damageAmount: event.payload.deathPrevention.damageAmount,
-                        traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
-                        scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.scenarioRuntime),
-                        monstersBeforeDefeat: core.monsters.map(cloneMonster),
-                        releasedJackSpiritRoomId: event.payload.deathPrevention.releasedJackSpiritRoomId,
-                    },
-                    consumedRabbitFootCardIds: [],
-                };
-            }
-            if (event.payload.defeatedPlayerId) {
-                markDeadExplorer(core, event.payload.defeatedPlayerId);
-            }
-            const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
-            if (completed) {
-                return completed;
-            }
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: helpingHands.activeMonsterTurn
-                    ? 'endTurn'
-                    : resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalHelpingHandsTrollHandAttackResolvedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.HELPING_HANDS_MONSTER_TURN_ENDED: {
-            const helpingHands = core.scenarioRuntime.helpingHands;
-            if (!helpingHands) {
-                return core;
-            }
-            helpingHands.activeMonsterTurn = false;
-            helpingHands.monsterTurnControllerPlayerId = null;
-            helpingHands.trollHandMoveAllowance = 0;
-            helpingHands.trollHandMoveDice = [];
-            helpingHands.trollHandMoveRemainingById = {};
-            helpingHands.trollHandAttackUsedIdsThisTurn = [];
-            const nextCore = replaceExplorers(
-                core,
-                getAllExplorers(core),
-                event.payload.nextPlayerId,
-            );
-            const syncedCore = syncCurrentExplorerProjection(nextCore);
-            return {
-                ...syncedCore,
-                currentPlayer: event.payload.nextPlayerId,
-                activePlayerId: null,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                recentRoll: null,
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalHelpingHandsMonsterTurnEndedState(core, event);
         }
         case EVENTS.JACK_LEARNED: {
-            if (event.payload.success && event.payload.grantedToPlayerId) {
-                core.scenarioRuntime.knowledgeOfJackPlayerIds = Array.from(new Set([
-                    ...core.scenarioRuntime.knowledgeOfJackPlayerIds,
-                    event.payload.grantedToPlayerId,
-                ]));
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'learn-about-jack'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return applyBetrayalJackLearnedState(core, event);
         }
         case EVENTS.EXORCISM_STUDIED: {
-            if (event.payload.success) {
-                core.scenarioRuntime.exorcismCircleRoomIds = [
-                    ...core.scenarioRuntime.exorcismCircleRoomIds,
-                    event.payload.roomId,
-                ].slice(-2);
-            } else {
-                applyMentalDamage(core.currentExplorer, 2, { allowSkull: true });
-                if (isExplorerDead(core.currentExplorer)) {
-                    markDeadExplorer(core, core.currentExplorer.playerId);
-                }
-            }
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'study-exorcism'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: core.scenarioRuntime.jackSpiritReleased ? 'move' : 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return applyBetrayalExorcismStudiedState(core, event);
         }
-        case EVENTS.JACK_EXORCISED:
-            core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, 'exorcise-jack'];
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-exorcise-jack-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '驱魔',
-                trait: 'sanity',
-                rollLabel: '神志检定',
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus + event.payload.regionBonus,
-                latestLabel: event.payload.success ? '驱魔成功' : '驱魔失败',
-                consumedRabbitFootCardIds: [],
-            };
-            if (!event.payload.success) {
-                getAllExplorers(core)
-                    .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)
-                    .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
-                    .forEach((explorer) => {
-                        applyPhysicalDamage(explorer, 1, { allowSkull: true });
-                        if (isExplorerDead(explorer)) {
-                            markDeadExplorer(core, explorer.playerId);
-                        }
-                    });
-                const livingHeroes = getAllExplorers(core).filter((explorer) => (
-                    explorer.playerId !== core.scenarioRuntime.traitorPlayerId
-                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                ));
-                if (livingHeroes.length === 0) {
-                    const traitor = findExplorerByPlayerId(core, core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer) ?? core.currentExplorer;
-                    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                        result: {
-                            hauntId: 'crimson-jack-returns',
-                            hauntTitle: resolveCrimsonJackHauntTitle(),
-                            outcome: 'traitor',
-                            winners: [traitor.playerId],
-                            traitorPlayerId: traitor.playerId,
-                            survivorsEscaped: [],
-                            reward: { stars: 0, omens: countDrawnCards(core, 'omen'), logs: 0 },
-                            stats: {
-                                roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                                omensDrawn: countDrawnCards(core, 'omen'),
-                                itemsDrawn: countDrawnCards(core, 'item'),
-                                eventsDrawn: countDrawnCards(core, 'event'),
-                            },
-                        },
-                    }, event.timestamp));
-                }
-                const failedCore = syncCurrentExplorerProjection(core);
-                return {
-                    ...failedCore,
-                    recommendedAction: 'endTurn',
-                    activityLog: appendActivity(failedCore, event.payload.logText, 'warning'),
-                };
-            }
-            return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                result: {
-                    hauntId: 'crimson-jack-returns',
-                    hauntTitle: resolveCrimsonJackHauntTitle(),
-                    outcome: 'survivors',
-                    winners: getAllExplorers(core)
-                        .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)
-                        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
-                        .map((explorer) => explorer.playerId),
-                    traitorPlayerId: core.scenarioRuntime.traitorPlayerId ?? core.currentPlayer,
-                    survivorsEscaped: getAllExplorers(core)
-                        .filter((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)
-                        .filter((explorer) => !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId))
-                        .map((explorer) => explorer.playerId),
-                    reward: {
-                        stars: scenarioConfigById(core.scenarioId).completion.reward.stars,
-                        omens: Math.max(scenarioConfigById(core.scenarioId).completion.reward.minimumOmens, countDrawnCards(core, 'omen')),
-                        logs: scenarioConfigById(core.scenarioId).completion.reward.logs,
-                    },
-                    stats: {
-                        roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                        omensDrawn: countDrawnCards(core, 'omen'),
-                        itemsDrawn: countDrawnCards(core, 'item'),
-                        eventsDrawn: countDrawnCards(core, 'event'),
-                    },
-                },
-            }, event.timestamp));
+        case EVENTS.JACK_EXORCISED: {
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalJackExorcisedState(core, event),
+                event.timestamp,
+            );
+        }
         case EVENTS.MUMMY_NAME_STUDIED: {
-            const mummy = core.scenarioRuntime.mummy;
-            if (!mummy) {
-                return core;
-            }
-            if (event.payload.success) {
-                mummy.knowledgeTokenCount = Math.max(mummy.knowledgeTokenCount, 1);
-                mummy.trueNameFound = true;
-            }
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'study-mummy-name',
-            ]));
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-study-mummy-name-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '寻找木乃伊真名',
-                trait: 'knowledge',
-                rollLabel: '知识检定',
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '取得第 1 枚知识标记' : '未取得知识标记',
-                consumedRabbitFootCardIds: [],
-            };
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return applyBetrayalMummyNameStudiedState(core, event);
         }
         case EVENTS.MUMMY_BANISHMENT_LEARNED: {
-            const mummy = core.scenarioRuntime.mummy;
-            if (!mummy) {
-                return core;
-            }
-            if (event.payload.success) {
-                mummy.knowledgeTokenCount = Math.max(mummy.knowledgeTokenCount, 2);
-                mummy.banishmentSpellLearned = true;
-            }
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'learn-mummy-banishment',
-            ]));
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            core.recentRoll = {
-                id: `${event.payload.playerId}-learn-mummy-banishment-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '学习驱逐法术',
-                trait: 'knowledge',
-                rollLabel: '知识检定',
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '取得第 2 枚知识标记' : '未学会驱逐法术',
-                consumedRabbitFootCardIds: [],
-            };
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.success ? 'accent' : 'warning'),
-            };
+            return applyBetrayalMummyBanishmentLearnedState(core, event);
         }
         case EVENTS.MUMMY_BANISHED: {
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'banish-mummy',
-            ]));
-            core.recentRoll = {
-                id: `${event.payload.playerId}-banish-mummy-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '驱逐木乃伊',
-                trait: 'sanity',
-                rollLabel: '神志对抗',
-                dice: [...event.payload.heroDice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success
-                    ? `驱逐成功：英雄 ${event.payload.heroRoll} / 木乃伊 ${event.payload.mummyRoll}`
-                    : `驱逐失败：英雄 ${event.payload.heroRoll} / 木乃伊 ${event.payload.mummyRoll}`,
-                consumedRabbitFootCardIds: [],
-            };
-            if (event.payload.success) {
-                return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                    result: createMummyEndgameResult(core, 'survivors'),
-                }, event.timestamp));
-            }
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'warning'),
-            };
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalMummyBanishedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.MUMMY_GIRL_PICKED_UP: {
-            const mummy = core.scenarioRuntime.mummy;
-            if (!mummy) {
-                return core;
-            }
-            mummy.girlRoomId = null;
-            mummy.girlHolderPlayerId = event.payload.playerId;
-            mummy.girlHeldByMummy = false;
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalMummyGirlPickedUpState(core, event);
         }
         case EVENTS.MUMMY_GIRL_GIVEN: {
-            const mummy = core.scenarioRuntime.mummy;
-            if (!mummy) {
-                return core;
-            }
-            mummy.girlRoomId = null;
-            mummy.girlHolderPlayerId = null;
-            mummy.girlHeldByMummy = true;
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalMummyGirlGivenState(core, event);
         }
         case EVENTS.MUMMY_OMEN_GIVEN: {
-            const mummy = core.scenarioRuntime.mummy;
-            const actor = findExplorerByPlayerId(core, event.payload.playerId);
-            if (!mummy || !actor) {
-                return core;
-            }
-            actor.inventory = actor.inventory.filter((card) => card.id !== event.payload.cardId);
-            mummy.mummyCarriedOmenIds = Array.from(new Set([
-                ...mummy.mummyCarriedOmenIds,
-                event.payload.cardId,
-            ]));
-            const syncedCore = syncCurrentExplorerProjection(core);
-            const loggedCore = {
-                ...syncedCore,
-                recommendedAction: resolveRecommendedAction(syncedCore),
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
-            return completeMummyTraitorVictoryIfNeeded(loggedCore, event.timestamp) ?? loggedCore;
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalMummyOmenGivenState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.UPON_REFLECTION_EVENT_HINT_GIVEN: {
-            const uponReflection = core.scenarioRuntime.uponReflection;
-            if (!uponReflection) {
-                return core;
-            }
-            removeEventCardForUponReflectionHint(core, event.payload.eventName);
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'give-mirror-hint',
-            ]));
-            core.pendingEventChoice = null;
-            core.recentRoll = null;
-            uponReflection.hintedEvents = [
-                ...uponReflection.hintedEvents,
-                {
-                    revealerPlayerId: event.payload.revealerPlayerId,
-                    targetPlayerId: event.payload.targetPlayerId,
-                    eventName: event.payload.eventName,
-                    eventText: event.payload.eventText,
-                    turnNumber: event.payload.turnNumber,
-                },
-            ];
-            const syncedCore = syncCurrentExplorerProjection(core);
-            return {
-                ...syncedCore,
-                recommendedAction: 'endTurn',
-                activityLog: appendActivity(syncedCore, event.payload.logText, 'accent'),
-            };
+            return applyBetrayalUponReflectionEventHintGivenState(core, event);
         }
         case EVENTS.UPON_REFLECTION_CURSE_BREAK_ATTEMPTED: {
-            const uponReflection = core.scenarioRuntime.uponReflection;
-            if (!uponReflection) {
-                return core;
-            }
-            core.usedCardIdsThisTurn = Array.from(new Set([
-                ...core.usedCardIdsThisTurn,
-                'break-mirror-curse',
-            ]));
-            clearNextNonCombatTraitRollReplacementsForPlayer(core, event.payload.playerId);
-            uponReflection.breakAttempts = [
-                ...uponReflection.breakAttempts,
-                {
-                    playerId: event.payload.playerId,
-                    roomId: event.payload.roomId,
-                    roomName: event.payload.roomName,
-                    trait: event.payload.trait,
-                    omenId: event.payload.omenId,
-                    omenName: event.payload.omenName,
-                    rollTotal: event.payload.rollTotal,
-                    dice: [...event.payload.dice],
-                    passiveBonus: event.payload.passiveBonus,
-                    successRoll: event.payload.successRoll,
-                    combinationCorrect: event.payload.combinationCorrect,
-                },
-            ];
-            core.recentRoll = {
-                id: `${event.payload.playerId}-break-mirror-curse-${event.timestamp}`,
-                kind: 'hauntActionTraitCheck',
-                playerId: event.payload.playerId,
-                sourceTitle: '破咒',
-                trait: event.payload.trait,
-                rollLabel: `${TRAIT_LABEL[event.payload.trait]}检定`,
-                dice: [...event.payload.dice],
-                passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.combinationCorrect
-                    ? '破咒成功'
-                    : event.payload.successRoll
-                        ? '组合不正确'
-                        : '无反馈',
-                consumedRabbitFootCardIds: [],
-            };
-            const syncedCore = syncCurrentExplorerProjection(core);
-            const loggedCore = {
-                ...syncedCore,
-                recommendedAction: 'endTurn' as const,
-                activityLog: appendActivity(
-                    syncedCore,
-                    event.payload.logText,
-                    event.payload.combinationCorrect ? 'accent' : 'warning',
-                ),
-            };
-            if (event.payload.combinationCorrect) {
-                return reduceEvent(loggedCore, nowEvent(EVENTS.SCENARIO_COMPLETED, {
-                    result: createUponReflectionEndgameResult(loggedCore, 'survivors'),
-                }, event.timestamp));
-            }
-            return loggedCore;
+            return reduceScenarioCompletionStateResolution(
+                applyBetrayalUponReflectionCurseBreakAttemptedState(core, event),
+                event.timestamp,
+            );
         }
         case EVENTS.SCENARIO_COMPLETED:
-            return {
-                ...core,
-                phase: 'endgame',
-                recommendedAction: 'endTurn',
-                pendingEventRollResolution: null,
-                pendingCardResolutionQueue: [],
-                endgameResult: {
-                    ...event.payload.result,
-                    winners: [...event.payload.result.winners],
-                    survivorsEscaped: [...event.payload.result.survivorsEscaped],
-                    reward: { ...event.payload.result.reward },
-                    stats: { ...event.payload.result.stats },
-                },
-                activityLog: appendActivity(core, resolveScenarioCompletedLog(core, event.payload.result), 'accent'),
-            };
+            return applyBetrayalScenarioCompletedState(core, event);
         default:
             return core;
     }
