@@ -74,12 +74,10 @@ const STEP_HAUNT_NATURAL_08 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/08-当
 const STEP_HAUNT_NATURAL_09 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/09-第一页开场翻到第二页按钮.jpg`;
 const STEP_HAUNT_NATURAL_10 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/10-第二页英雄目标与图书馆原因.jpg`;
 const STEP_HAUNT_NATURAL_11 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/11-读完目标准备关闭剧本书.jpg`;
-const STEP_HAUNT_NATURAL_12 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/12-关闭剧本书后进入作祟牌桌.jpg`;
-const STEP_HAUNT_NATURAL_13 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/13-作祟后回看只打开英雄目标页.jpg`;
-const STEP_HAUNT_NATURAL_14 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/14-作祟后等待队友结束回合.jpg`;
-const STEP_HAUNT_NATURAL_15 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/15-轮到英雄寻找木乃伊真名.jpg`;
-const STEP_HAUNT_NATURAL_16 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/16-寻找真名知识检定成功.jpg`;
-const STEP_HAUNT_NATURAL_17 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/17-确认后回到牌桌可结束回合.jpg`;
+const STEP_HAUNT_NATURAL_12 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/12-作祟后轮序回到图书馆英雄.jpg`;
+const STEP_HAUNT_NATURAL_13 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/13-轮到英雄寻找木乃伊真名.jpg`;
+const STEP_HAUNT_NATURAL_14 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/14-寻找真名知识检定成功.jpg`;
+const STEP_HAUNT_NATURAL_15 = `${EVIDENCE_DIR}/haunt-natural-trigger-flow/15-确认后回到牌桌可结束回合.jpg`;
 const STEP_TRAITOR_01 = `${EVIDENCE_DIR}/traitor-path/01-叛徒打开木乃伊剧本目标页.jpg`;
 const STEP_TRAITOR_02 = `${EVIDENCE_DIR}/traitor-path/02-木乃伊怪物回合开始前.jpg`;
 const STEP_TRAITOR_03 = `${EVIDENCE_DIR}/traitor-path/03-木乃伊移动骰盘.jpg`;
@@ -2771,7 +2769,19 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(
       page.getByTestId("betrayal-scenario-reader-header-progress"),
     ).toContainText("2/2");
+    await expect(
+      page.getByTestId("betrayal-scenario-book-turning-sheet"),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("tutorial-highlight-ring")).toHaveAttribute(
+      "data-tutorial-highlight-target",
+      "betrayal-scenario-book-section-special",
+    );
     await expectTutorialCardInForeground(page, "第二页英雄目标写明");
+    await expectTutorialCardDoesNotCoverTargets(
+      page,
+      ["betrayal-scenario-book-section-special"],
+      "第二页英雄目标与图书馆原因",
+    );
     await saveScreenshot(page, STEP_HAUNT_NATURAL_10);
 
     await clickNext(page);
@@ -2783,51 +2793,12 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(scenarioReader).toBeHidden();
-    await waitForStep(page, "haunt-trigger-board", 10000);
+    await waitForStep(page, "wait-for-hero-turn-after-haunt", 10000);
     await expect(page.getByTestId("betrayal-runtime-header-grid")).toContainText(
       /作祟中|恶兆后|Haunt/i,
     );
-    await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
-    await expect(tutorialOverlayCard).toContainText("作祟中");
-    await expect(tutorialOverlayCard).toContainText("只回看刚读过的英雄目标页");
-    await expect(tutorialOverlayCard).not.toContainText(/上一页.*英雄开场/);
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_12);
-
-    await page.getByTestId("betrayal-open-scenario").click();
-    const scenarioObjectivePage = page.getByTestId(
-      "betrayal-scenario-objective-page",
-    );
-    await expect(scenarioObjectivePage).toBeVisible({ timeout: 10000 });
-    await expect(scenarioObjectivePage).toHaveAttribute(
-      "data-scenario-reader-scope",
-      "heroes",
-    );
-    await expect(scenarioObjectivePage).toContainText("英雄剧本书");
-    await expect(scenarioObjectivePage).toContainText("真名");
-    await expect(scenarioObjectivePage).toContainText("驱逐法术");
-    await expect(scenarioObjectivePage).toContainText("驱逐木乃伊");
-    await expect(scenarioObjectivePage).toContainText("图书馆");
-    await expect(scenarioObjectivePage).not.toContainText("叛徒剧本书");
-    await expect(scenarioReader).not.toContainText("英雄开场");
-    await expect(scenarioReader).not.toContainText("挚爱");
-    await expect(
-      page.getByTestId("betrayal-scenario-reader-header-progress"),
-    ).toContainText("1/1");
-    await expect(
-      page.getByTestId("betrayal-scenario-reader-prev-zone"),
-    ).toBeDisabled();
-    await expect(
-      page.getByTestId("betrayal-scenario-reader-next-zone"),
-    ).toBeDisabled();
-    await expectTutorialCardInForeground(page, "只回看刚读过的英雄目标页");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_13);
-    await page.getByTestId("betrayal-scenario-reader-close").click();
-    await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toBeHidden();
-
-    await clickNext(page);
-    await waitForStep(page, "wait-for-hero-turn-after-haunt", 10000);
     await expect(tutorialOverlayCard).toContainText("作祟后轮序继续");
-    await expect(tutorialOverlayCard).toContainText("队友 2 公开结束回合");
+    await expect(tutorialOverlayCard).toContainText("队友 2 按正式流程结束回合");
     await expect(tutorialOverlayCard).toContainText("图书馆（研究木乃伊的历史）");
     await expect
       .poll(readHauntState, {
@@ -2843,7 +2814,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         mummyTrueNameFound: false,
       });
     await expect(page.getByTestId("betrayal-scenario-reader-dialog")).toBeHidden();
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_14);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_12);
 
     await clickNext(page);
     await waitForStep(page, "hero-study-name-roll", 10000);
@@ -2868,7 +2839,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         mummyTrueNameFound: false,
       });
     await expectTutorialCardInForeground(page, "寻找木乃伊真名");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_15);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_13);
 
     await page.getByTestId("betrayal-action-use").click();
     await waitForStep(page, "hero-study-name-result", 10000);
@@ -2913,7 +2884,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "1",
     );
     await expectTutorialCardInForeground(page, "检定成功");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_16);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_14);
 
     await studyNameContinueButton.click();
     await waitForStep(page, "hero-study-name-closeout", 10000);
@@ -2939,7 +2910,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         recommendedAction: "endTurn",
     });
     await expectTutorialCardInForeground(page, "结果已经落到英雄目标进度上");
-    await saveScreenshot(page, STEP_HAUNT_NATURAL_17);
+    await saveScreenshot(page, STEP_HAUNT_NATURAL_15);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-tutorial-haunt-natural-trigger-flow", diagnostics },

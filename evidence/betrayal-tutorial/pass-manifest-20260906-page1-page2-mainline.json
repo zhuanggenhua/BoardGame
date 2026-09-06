@@ -1,0 +1,103 @@
+{
+  "verdict": "PASS",
+  "score": 98,
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "generatedAt": "2026-09-06T03:14:10.775Z",
+  "title": "山屋惊魂教程第一页/第二页自然承接重构截图",
+  "sourceSequence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\sequence-labels-20260906-page1-page2-mainline.json",
+  "labeledDirectory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline",
+  "sourceRun": {
+    "command": "node scripts/infra/run-e2e-single.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts \"[haunt-natural] 队友自然触发作祟后当前玩家读英雄书并执行找真名再回到结束回合入口\"",
+    "result": "PASS: 1 passed (40.3s)",
+    "screenshotsDirectory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline"
+  },
+  "requirements": [
+    {
+      "requirement": "开场读本不做回看教学，首次阅读从第一页开场自然翻到第二页目标。",
+      "status": "PASS",
+      "evidence": [
+        "08-10 覆盖英雄开场、第一页翻页提示、第二页英雄目标。"
+      ]
+    },
+    {
+      "requirement": "第二页必须让玩家看见规则原文中的图书馆原因，而不是靠教程卡代讲。",
+      "status": "PASS",
+      "evidence": [
+        "10 右页显示“石棺房 / 研究室 / 图书馆（研究木乃伊的历史）”，并且翻页层已退场。"
+      ]
+    },
+    {
+      "requirement": "关书后继续正式轮序，不把回看插进自然主线。",
+      "status": "PASS",
+      "evidence": [
+        "11-12 关闭读本后回到牌桌，并自然轮到图书馆里的英雄。"
+      ]
+    },
+    {
+      "requirement": "读本目标继续落到第一个真实英雄动作和结果反馈。",
+      "status": "PASS",
+      "evidence": [
+        "13-15 覆盖“寻找木乃伊真名”、知识检定成功、第 1 枚知识标记、回到结束回合入口。"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "command": "npx vitest run src/games/betrayal/__tests__/tutorial.test.ts --pool forks --no-file-parallelism --maxWorkers 1",
+      "result": "PASS: 17 passed"
+    },
+    {
+      "command": "npx vitest run src/games/betrayal/__tests__/scenarioReader.test.ts src/games/betrayal/__tests__/Board.foundation.test.tsx --pool forks --no-file-parallelism --maxWorkers 1 -t \"局内剧本入口|Betrayal scenario reader\"",
+      "result": "PASS: 5 passed, 190 skipped"
+    },
+    {
+      "command": "npm run spec:lint",
+      "result": "PASS: spec-lint OK"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts \"[haunt-natural] 队友自然触发作祟后当前玩家读英雄书并执行找真名再回到结束回合入口\"",
+      "result": "PASS: 1 passed (40.3s)"
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\01-当前玩家结束回合前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\02-等待队友一探索预兆房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\03-队友一获得指环未触发.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\04-队友二翻出狗未触发.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\05-狗确认后回到当前玩家.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\06-再次结束当前回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\07-队友一翻出面具触发作祟.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\08-当前玩家自动打开英雄开场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\09-第一页开场翻到第二页按钮.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\10-第二页英雄目标与图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\11-读完目标准备关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\12-作祟后轮序回到图书馆英雄.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\13-轮到英雄寻找木乃伊真名.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\14-寻找真名知识检定成功.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\15-确认后回到牌桌可结束回合.jpg"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\01-labeled-01-当前玩家结束回合前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\02-labeled-02-等待队友一探索预兆房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\03-labeled-03-队友一获得指环未触发.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\04-labeled-04-队友二翻出狗未触发.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\05-labeled-05-狗确认后回到当前玩家.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\06-labeled-06-再次结束当前回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\07-labeled-07-队友一翻出面具触发作祟.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\08-labeled-08-当前玩家自动打开英雄开场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\09-labeled-09-第一页开场翻到第二页按钮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\10-labeled-10-第二页英雄目标与图书馆原因.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\11-labeled-11-读完目标准备关闭剧本书.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\12-labeled-12-作祟后轮序回到图书馆英雄.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\13-labeled-13-轮到英雄寻找木乃伊真名.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\14-labeled-14-寻找真名知识检定成功.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref-20260906-page1-page2-mainline\\15-labeled-15-确认后回到牌桌可结束回合.png"
+  ]
+}

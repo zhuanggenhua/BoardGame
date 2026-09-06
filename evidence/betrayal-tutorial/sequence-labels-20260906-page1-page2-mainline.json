@@ -1,0 +1,80 @@
+{
+  "title": "山屋惊魂教程读本页序主线",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\01-当前玩家结束回合前.jpg",
+      "label": "当前玩家结束回合",
+      "transition": "当前英雄位于图书馆，只结束自己的回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\02-等待队友一探索预兆房间.jpg",
+      "label": "等待队友探索预兆",
+      "transition": "轮序交给队友；当前玩家只看到公开等待状态。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\03-队友一获得指环未触发.jpg",
+      "label": "队友获得指环未触发",
+      "transition": "第一张预兆公开出现，作祟检定未触发。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\04-队友二翻出狗未触发.jpg",
+      "label": "队友翻出狗未触发",
+      "transition": "第二张预兆狗公开出现，仍未触发作祟。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\05-狗确认后回到当前玩家.jpg",
+      "label": "狗确认后回到当前玩家",
+      "transition": "队友确认公开结果，轮序自然回到当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\06-再次结束当前回合.jpg",
+      "label": "当前玩家再次结束回合",
+      "transition": "当前玩家仍只结束自己的回合，不代操作队友。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\07-队友一翻出面具触发作祟.jpg",
+      "label": "队友面具触发作祟",
+      "transition": "第三张预兆面具触发作祟，进入剧本切换。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\08-当前玩家自动打开英雄开场.jpg",
+      "label": "自动打开英雄开场",
+      "transition": "当前玩家是英雄，首次打开先看到第一页开场。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\09-第一页开场翻到第二页按钮.jpg",
+      "label": "第一页教翻页",
+      "transition": "教程在第一页提示点击继续/下一页去读第二页目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\10-第二页英雄目标与图书馆原因.jpg",
+      "label": "第二页说明图书馆原因",
+      "transition": "右页规则原文显示石棺房、研究室、图书馆；当前图书馆因此成为下一步。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\11-读完目标准备关闭剧本书.jpg",
+      "label": "读完第二页准备关闭",
+      "transition": "第二页目标读完后，教程让玩家关闭读本回到牌桌。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\12-作祟后轮序回到图书馆英雄.jpg",
+      "label": "轮序回到图书馆英雄",
+      "transition": "队友按正式流程结束后回到当前英雄，房间仍是图书馆。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\13-轮到英雄寻找木乃伊真名.jpg",
+      "label": "执行寻找真名",
+      "transition": "正式动作入口变为寻找木乃伊真名。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\14-寻找真名知识检定成功.jpg",
+      "label": "知识检定成功",
+      "transition": "知识检定成功，获得第 1 枚知识标记。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow-20260906-page1-page2-mainline\\15-确认后回到牌桌可结束回合.jpg",
+      "label": "确认后回到牌桌",
+      "transition": "结果确认后投骰层退场，回到结束回合入口。"
+    }
+  ]
+}

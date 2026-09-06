@@ -499,6 +499,7 @@ export default function BetrayalBoard({
     baseCore.phase,
   );
   const pendingScenarioStartOpeningKeyRef = React.useRef<string | null>(null);
+  const pendingScenarioTurnTutorialAdvanceRef = React.useRef(false);
   const [
     scenarioStartOpeningCinematicKey,
     setScenarioStartOpeningCinematicKey,
@@ -1082,6 +1083,7 @@ export default function BetrayalBoard({
     const hauntRevealKey = openPlan.isPublicHauntRevealReader
       ? buildLatestDiscoveryKey(core)
       : null;
+    pendingScenarioTurnTutorialAdvanceRef.current = false;
     if (hauntRevealKey) {
       setDismissedLatestDiscoveryKeys((previousKeys) => {
         if (previousKeys.has(hauntRevealKey)) {
@@ -1138,6 +1140,7 @@ export default function BetrayalBoard({
     setReferenceOpen(false);
     setScenarioReaderOpen(false);
     setReferenceScenarioOpeningStageActive(false);
+    pendingScenarioTurnTutorialAdvanceRef.current = false;
     if (shouldAdvanceScenarioReaderCloseTutorial) {
       nextStep("auto");
     }
@@ -5912,13 +5915,22 @@ export default function BetrayalBoard({
         });
         playSound(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
         setReferenceScenarioTurnDirection(direction);
+        if (shouldAdvanceScenarioTurnTutorial) {
+          pendingScenarioTurnTutorialAdvanceRef.current = true;
+        }
       }
       return nextIndex;
     });
-    if (shouldAdvanceScenarioTurnTutorial) {
+  };
+
+  const handleReferenceScenarioTurnComplete = React.useCallback(() => {
+    setReferenceScenarioTurnDirection(null);
+    setReferenceScenarioTurnSnapshot(null);
+    if (pendingScenarioTurnTutorialAdvanceRef.current) {
+      pendingScenarioTurnTutorialAdvanceRef.current = false;
       nextStep("auto");
     }
-  };
+  }, [nextStep]);
   const latestDiscoveryPendingPossessionCard = React.useMemo<
     BetrayalInventoryCard | null
   >(() => {
@@ -9540,10 +9552,7 @@ export default function BetrayalBoard({
           onClose={closeReferenceOverlay}
           onToggleReferenceSide={toggleReferenceSide}
           onReferenceScenarioTurn={handleReferenceScenarioTurn}
-          onScenarioTurnComplete={() => {
-            setReferenceScenarioTurnDirection(null);
-            setReferenceScenarioTurnSnapshot(null);
-          }}
+          onScenarioTurnComplete={handleReferenceScenarioTurnComplete}
         />
         <BetrayalPreviewOverlaySurface
           previewRoom={previewRoom}

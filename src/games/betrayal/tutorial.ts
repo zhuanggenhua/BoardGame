@@ -501,8 +501,8 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'haunt-hero-reader-goal',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderGoal',
-            highlightTarget: 'betrayal-scenario-objective-page',
-            position: 'top',
+            highlightTarget: 'betrayal-scenario-book-section-special',
+            position: 'left',
             infoStep: true,
             viewAs: '0',
         },
@@ -513,14 +513,6 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
             position: 'top',
             requireAction: true,
             allowedCommands: [],
-            viewAs: '0',
-        },
-        {
-            id: 'haunt-trigger-board',
-            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.boardAfterReader',
-            highlightTarget: 'betrayal-open-scenario',
-            position: 'left',
-            infoStep: true,
             viewAs: '0',
         },
         {

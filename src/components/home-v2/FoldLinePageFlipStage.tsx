@@ -320,6 +320,8 @@ export function FoldLinePageFlipStage({
     const completionHoldPollRef = React.useRef<number | null>(null);
     const completeOnceRef = React.useRef(false);
     const isAnimatingRef = React.useRef(false);
+    const onFlipToDetailCompleteRef = React.useRef(onFlipToDetailComplete);
+    const onFlipToOverviewCompleteRef = React.useRef(onFlipToOverviewComplete);
     const mainEffectRunCountRef = React.useRef(0);
     const progressLoopStartCountRef = React.useRef(0);
     const progressTickCountRef = React.useRef(0);
@@ -339,6 +341,11 @@ export function FoldLinePageFlipStage({
     React.useEffect(() => {
         rawProgressRef.current = rawProgress;
     }, [rawProgress]);
+
+    React.useEffect(() => {
+        onFlipToDetailCompleteRef.current = onFlipToDetailComplete;
+        onFlipToOverviewCompleteRef.current = onFlipToOverviewComplete;
+    }, [onFlipToDetailComplete, onFlipToOverviewComplete]);
 
     React.useEffect(() => () => {
         cancelProgressLoopRef.current?.();
@@ -376,11 +383,11 @@ export function FoldLinePageFlipStage({
         setProgress(1);
         setRawProgress(1);
         if (turningToDetail) {
-            onFlipToDetailComplete?.();
+            onFlipToDetailCompleteRef.current?.();
         } else {
-            onFlipToOverviewComplete?.();
+            onFlipToOverviewCompleteRef.current?.();
         }
-    }, [onFlipToDetailComplete, onFlipToOverviewComplete, turningToDetail]);
+    }, [turningToDetail]);
 
     const requestFinishFlip = React.useCallback(() => {
         if (completeOnceRef.current) {

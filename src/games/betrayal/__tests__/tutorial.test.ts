@@ -379,7 +379,6 @@ describe('Betrayal 教程配置', () => {
             'haunt-hero-reader-turn-page',
             'haunt-hero-reader-goal',
             'haunt-hero-reader-close',
-            'haunt-trigger-board',
             'wait-for-hero-turn-after-haunt',
             'hero-study-name-roll',
             'hero-study-name-result',
@@ -494,7 +493,8 @@ describe('Betrayal 教程配置', () => {
             viewAs: '0',
         });
         expect(manifest?.steps.find((step) => step.id === 'haunt-hero-reader-goal')).toMatchObject({
-            highlightTarget: 'betrayal-scenario-objective-page',
+            highlightTarget: 'betrayal-scenario-book-section-special',
+            position: 'left',
             infoStep: true,
             viewAs: '0',
         });
@@ -504,8 +504,7 @@ describe('Betrayal 教程配置', () => {
             allowedCommands: [],
             viewAs: '0',
         });
-        expect(manifest?.steps.find((step) => step.id === 'haunt-trigger-board')?.highlightTarget)
-            .toBe('betrayal-open-scenario');
+        expect(manifest?.steps.find((step) => step.id === 'haunt-trigger-board')).toBeUndefined();
         const waitForHeroTurnStep = manifest?.steps.find((step) => step.id === 'wait-for-hero-turn-after-haunt');
         expect(waitForHeroTurnStep).toMatchObject({
             infoStep: true,
@@ -1162,12 +1161,8 @@ describe('Betrayal 教程配置', () => {
         expect(hauntTriggerSteps.heroReaderClose).toContain('点关闭回到牌桌');
         expect(hauntTriggerSteps.heroReaderOpened).not.toContain('叛徒开场');
         expect(hauntTriggerSteps.heroReaderOpened).not.toContain('先读叛徒');
-        expect(hauntTriggerSteps.boardAfterReader).toContain('作祟中');
-        expect(hauntTriggerSteps.boardAfterReader).toContain('只回看刚读过的英雄目标页');
-        expect(hauntTriggerSteps.boardAfterReader).not.toMatch(/上一页.*英雄开场/);
-        expect(hauntTriggerSteps.boardAfterReader).toContain('叛徒目标只在叛徒视角章节教学');
         expect(hauntTriggerSteps.waitForHeroTurnAfterHaunt).toContain('作祟后轮序继续');
-        expect(hauntTriggerSteps.waitForHeroTurnAfterHaunt).toContain('等队友 2 公开结束回合');
+        expect(hauntTriggerSteps.waitForHeroTurnAfterHaunt).toContain('队友 2 按正式流程结束回合');
         expect(hauntTriggerSteps.waitForHeroTurnAfterHaunt).toContain('图书馆（研究木乃伊的历史）');
         expect(hauntTriggerSteps.heroStudyNameRoll).toContain('石棺房、研究室或图书馆');
         expect(hauntTriggerSteps.heroStudyNameRoll).toContain('寻找木乃伊真名');
@@ -1193,8 +1188,7 @@ describe('Betrayal 教程配置', () => {
             [hauntTriggerSteps.heroReaderOpened, hauntTriggerSteps.heroReaderTurnPage],
             [hauntTriggerSteps.heroReaderTurnPage, hauntTriggerSteps.heroReaderGoal],
             [hauntTriggerSteps.heroReaderGoal, hauntTriggerSteps.heroReaderClose],
-            [hauntTriggerSteps.heroReaderClose, hauntTriggerSteps.boardAfterReader],
-            [hauntTriggerSteps.boardAfterReader, hauntTriggerSteps.waitForHeroTurnAfterHaunt],
+            [hauntTriggerSteps.heroReaderClose, hauntTriggerSteps.waitForHeroTurnAfterHaunt],
             [hauntTriggerSteps.waitForHeroTurnAfterHaunt, hauntTriggerSteps.heroStudyNameRoll],
             [hauntTriggerSteps.heroStudyNameRoll, hauntTriggerSteps.heroStudyNameResult],
             [hauntTriggerSteps.heroStudyNameResult, hauntTriggerSteps.heroStudyNameCloseout],

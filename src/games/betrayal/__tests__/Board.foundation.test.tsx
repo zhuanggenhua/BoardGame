@@ -3388,7 +3388,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-scenario-reader-dialog')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('剧本12');
         expect(screen.getByTestId('betrayal-scenario-objective-page')).not.toHaveTextContent(/剧本12查阅/);
-        expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('援手');
+        expect(screen.getByTestId('betrayal-scenario-reader-header-progress')).toHaveTextContent('1/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-footer-progress')).toHaveTextContent('1/2');
+        expect(screen.getByTestId('betrayal-scenario-reader-prev-zone')).toBeDisabled();
+        expect(screen.getByTestId('betrayal-scenario-reader-next-zone')).toBeEnabled();
+        expect(screen.getByTestId('betrayal-scenario-reader-dialog')).not.toHaveTextContent('援手');
+        expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('自由混战目标');
         expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('奇异护符');
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-close'));
 
