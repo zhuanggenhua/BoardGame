@@ -9,20 +9,20 @@
   },
   "testRun": {
     "command": "npm run test:e2e:file -- e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"血色杀戮\"",
-    "result": "1 passed (42.9s)",
-    "ranAt": "2026-09-10T10:14:16+08:00",
-    "head": "0286bf1f8"
+    "result": "1 passed (36.5s)",
+    "ranAt": "2026-09-10T11:58:18+08:00",
+    "head": "1a38ca675"
   },
   "supersedes": {
-    "priorPassChecklist": "same-file earlier PASS checklist with ranAt=2026-09-10T00:56:29Z",
-    "reason": "旧 PASS 只证明血色杀戮规则链路和旧窗口可用，未核对成熟牌池 UI 的真实卡面承载，因此不能继续作为本轮用户要看的新交互图证据。"
+    "priorPassChecklist": "same-file earlier PASS checklist with ranAt=2026-09-10T00:56:29Z and 2026-09-10T10:14:16+08:00",
+    "reason": "旧 PASS 只证明血色杀戮规则链路和卡面出现，未核对大杀四方成熟牌池的底部牌架、轻外框和不重复解释卡牌信息口径，因此不能继续作为本轮用户要看的新交互图证据。"
   },
   "requirements": [
     {
       "requirement": "血色杀戮新交互截图必须来自当前真实入口，并按触发前、搜牌窗口、选择确认、结算后收口展示。",
       "status": "PASS",
       "evidence": [
-        "E2E 命令通过：npm run test:e2e:file -- e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"血色杀戮\"；结果 1 passed (42.9s)。",
+        "E2E 命令通过：npm run test:e2e:file -- e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"血色杀戮\"；结果 1 passed (36.5s)。",
         "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/01-血色杀戮触发前-五个血滴终极技可点.jpg",
         "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/02-血色杀戮搜牌窗口-抽牌堆三张候选可选.jpg",
         "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/03-血色杀戮已选择牌库牌-待确认加入手牌.jpg",
@@ -30,12 +30,21 @@
       ]
     },
     {
-      "requirement": "抽牌堆候选必须按大杀四方的成熟牌池规律展示为真实卡面集合，不能退化为只有文字的按钮列表。",
+      "requirement": "抽牌堆候选必须按大杀四方的成熟牌池规律展示为底部真实卡面牌池，不能退化为居中解释弹窗或只有文字的按钮列表。",
       "status": "PASS",
       "evidence": [
-        "大杀四方 DeckDiscardZone 把牌库和弃牌堆候选聚合后传给 PromptOverlay.displayCards，PromptOverlay 使用 CardPreview 渲染真实卡面集合。",
-        "DiceThrone InteractionOverlay 的 selectDeckCard/selectHandCard 已改为 dt-card-pool-selection 牌池承载，并为每张候选渲染 CardPreview。",
+        "大杀四方 DeckDiscardZone 把牌库和弃牌堆候选聚合后传给 PromptOverlay.displayCards，PromptOverlay 使用底部牌池和 CardPreview 渲染真实卡面集合。",
+        "DiceThrone InteractionOverlay 的 selectDeckCard/selectHandCard 已改为 dt-card-pool-overlay bottom-shelf，并为每张候选渲染 CardPreview。",
         "E2E 断言三张候选卡均存在 data-card-pool-mode=\"preview\"、data-card-preview-ready=\"true\"，且预览来源命中 vampire-lord atlas。"
+      ]
+    },
+    {
+      "requirement": "候选牌外层不能再解释或复写卡面本身已有的信息，例如卡名、类型、费用、效果或关键词。",
+      "status": "PASS",
+      "evidence": [
+        "组件测试断言目标候选外层 textContent 为空，并禁止额外显示“血潮”“畅饮！”“涌血”和 action/CP 复写。",
+        "真实入口 E2E 断言三张候选外层不包含“血潮 / 畅饮 / 涌血 / action / CP”。",
+        "截图 02 中三张候选只显示真实卡面本体；卡名、类型和费用只来自牌面自身。"
       ]
     },
     {
@@ -75,10 +84,10 @@
       ]
     },
     {
-      "requirement": "项目规范必须补上这类牌库/牌池选择的 UI 规律，避免以后把可搜牌池做成文字按钮壳。",
+      "requirement": "项目规范必须补上这类牌库/牌池选择的 UI 规律，避免以后把可搜牌池做成文字按钮壳、厚外框或解释卡牌本身信息。",
       "status": "PASS",
       "evidence": [
-        ".spec/knowledge/standards/rule-driven-interaction-design.md 已补充：牌池选择默认承载是真实卡面集合，少量候选直接铺开，多到难比较时才提供搜索/筛选。",
+        ".spec/knowledge/standards/rule-driven-interaction-design.md 已补充：牌池选择默认承载是真实卡面集合，少量候选直接铺开，多到难比较时才提供搜索/筛选；不得在卡面外复写卡面已有的卡名、费用、类型、效果或关键词。",
         "规范落点是项目通用规则交互标准，作用范围是全项目/多游戏；没有改系统 AGENTS，也没有建立第二套 skill。"
       ]
     }
