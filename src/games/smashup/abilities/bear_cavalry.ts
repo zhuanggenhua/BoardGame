@@ -168,6 +168,7 @@ export function registerBearCavalryAbilities(): void {
         canTrigger: canTriggerBearCavalryGeneralIvanPod,
     });
     // 极地突击队员 POD：天赋放置指示物
+    registerProtection('bear_cavalry_polar_commando_pod', 'destroy', bearCavalryPolarCommandoChecker);
     registerAbility('bear_cavalry_polar_commando_pod', 'talent', bearCavalryPolarCommandoPodTalent);
     // 黑熊骑兵 POD: 入场移动
     registerAbility('bear_cavalry_bear_cavalry_pod', 'onPlay', bearCavalryBearCavalryPodAbility);

@@ -742,8 +742,15 @@ export function resourceFootprintsConflict(
     const rightWrites = new Set(right.writes.map(reactionResourceKey));
     const leftReads = new Set(left.reads.map(reactionResourceKey));
     const rightReads = new Set(right.reads.map(reactionResourceKey));
-    return [...leftWrites].some(key => rightWrites.has(key) || rightReads.has(key))
+    return [...leftWrites].some(key => (
+        (rightWrites.has(key) && requiresOrderingForSharedWriteKey(key))
+        || rightReads.has(key)
+    ))
         || [...rightWrites].some(key => leftReads.has(key));
+}
+
+function requiresOrderingForSharedWriteKey(key: string): boolean {
+    return !key.startsWith('playerDiscard:');
 }
 
 export function explicitFallbackFootprintFromTrigger(trigger: TriggerInstance): SmashUpReactionResourceFootprint | undefined {

@@ -35,6 +35,7 @@ describe('POD power modifier registration', () => {
         const { powerModifierIds } = getRegisteredModifierIds();
         expect(powerModifierIds.has('ghost_haunting_pod')).toBe(true);
         expect(powerModifierIds.has('killer_plant_weed_eater_pod')).toBe(true);
+        expect(powerModifierIds.has('all_stars_full_moon_pod')).toBe(true);
         expect(powerModifierIds.has('bear_cavalry_polar_commando_pod')).toBe(false);
         expect(powerModifierIds.has('base_monkey_lab_pod')).toBe(false);
         expect(powerModifierIds.has('fairies_daisy_chain_pod')).toBe(false);
@@ -193,6 +194,20 @@ describe('registerPodPowerModifierAliases completion audit', () => {
 
         const baseBreakpoint = getEffectiveBreakpoint(makeStateWithBases([makeBase('base_the_jungle')]), 0);
         expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint + 7);
+    });
+
+    it('synthetic breakpoint modifier 即使命中 shared metadata，也不应重复生成 POD alias', () => {
+        const state = makeStateWithBases([makeBase('base_storytellers_hut')]);
+        const baseBreakpoint = getEffectiveBreakpoint(state, 0);
+
+        registerCustomBreakpointModifiers([{
+            sourceDefId: 'base_storytellers_hut',
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => ctx.base.defId === 'base_storytellers_hut' ? -2 : 0,
+        }]);
+        registerPodPowerModifierAliases();
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint - 2);
     });
 
     it('POD base power alias 在未显式覆写时，仍应继承基础版 modifier', () => {
