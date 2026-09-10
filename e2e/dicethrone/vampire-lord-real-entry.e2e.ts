@@ -1131,6 +1131,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-blood-surge')).toBeVisible({ timeout: 10000 });
         await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-drink-up')).toBeVisible({ timeout: 10000 });
         await expect(targetCardOption).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-layout', 'bottom-shelf');
         await expect(page.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
         await expect(page.getByTestId('prompt-card-search-input')).toHaveCount(0);
         await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-blood-surge', 17);
