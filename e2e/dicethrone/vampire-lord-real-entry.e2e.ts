@@ -270,6 +270,7 @@ const expectVampireLordCardChoicePreview = async (
     await expect(option).toBeVisible({ timeout: 15000 });
     await expect(option).toHaveAttribute('data-card-pool-mode', 'preview');
     await expect(option).toHaveAttribute('data-card-preview-ready', 'true');
+    await expect(option).not.toContainText(/血潮|畅饮|涌血|action|CP/i);
     const previewShell = page.getByTestId(`dt-card-choice-preview-${cardId}`);
     await expect(previewShell).toBeVisible({ timeout: 15000 });
     const atlasFrame = option.locator(`[data-card-atlas-id="${VAMPIRE_LORD_CARD_ATLAS_ID}"]`).first();

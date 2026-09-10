@@ -6,6 +6,7 @@ const BASE_URL = process.env.BG_REPRO_URL ?? "http://127.0.0.1:4274";
 const TARGET_PATH = "/play/betrayal/tutorial/basic-setup-and-turn";
 const TARGET_URL = `${BASE_URL}${TARGET_PATH}`;
 const HEADLESS = process.env.BG_REPRO_HEADLESS !== "0";
+const SKIP_IMAGE_GATE = process.env.BG_REPRO_SKIP_IMAGE_GATE === "1";
 const OUT_DIR = join(
   process.cwd(),
   "artifacts",
@@ -262,11 +263,14 @@ async function runDirectEntry(browser) {
     locale: "zh-CN",
     viewport: { width: 1366, height: 768 },
   });
-  await context.addInitScript(() => {
+  await context.addInitScript((skipImageGate) => {
     window.__E2E_TEST_MODE__ = true;
+    if (skipImageGate) {
+      window.__E2E_SKIP_IMAGE_GATE__ = true;
+    }
     window.localStorage.setItem("i18nextLng", "zh-CN");
     window.localStorage.setItem("boardgame:audio-muted", "true");
-  });
+  }, SKIP_IMAGE_GATE);
   const page = await context.newPage();
   const diagnostics = await attachDiagnostics(page, "direct-entry");
   await gotoTutorial(page, { clearStorage: true });
@@ -285,11 +289,14 @@ async function runStaleCharacterSelectRestore(browser) {
     locale: "zh-CN",
     viewport: { width: 1366, height: 768 },
   });
-  await context.addInitScript(() => {
+  await context.addInitScript((skipImageGate) => {
     window.__E2E_TEST_MODE__ = true;
+    if (skipImageGate) {
+      window.__E2E_SKIP_IMAGE_GATE__ = true;
+    }
     window.localStorage.setItem("i18nextLng", "zh-CN");
     window.localStorage.setItem("boardgame:audio-muted", "true");
-  });
+  }, SKIP_IMAGE_GATE);
   const page = await context.newPage();
   const diagnostics = await attachDiagnostics(page, "stale-character-select-restore");
   await gotoTutorial(page, { clearStorage: true });
@@ -336,11 +343,14 @@ async function runRabbitConfirm(browser) {
     locale: "zh-CN",
     viewport: { width: 1366, height: 768 },
   });
-  await context.addInitScript(() => {
+  await context.addInitScript((skipImageGate) => {
     window.__E2E_TEST_MODE__ = true;
+    if (skipImageGate) {
+      window.__E2E_SKIP_IMAGE_GATE__ = true;
+    }
     window.localStorage.setItem("i18nextLng", "zh-CN");
     window.localStorage.setItem("boardgame:audio-muted", "true");
-  });
+  }, SKIP_IMAGE_GATE);
   const page = await context.newPage();
   const diagnostics = await attachDiagnostics(page, "rabbit-confirm");
   await gotoTutorial(page, { clearStorage: true });
@@ -426,11 +436,14 @@ async function runRabbitConfirmAfterReload(browser) {
     locale: "zh-CN",
     viewport: { width: 1366, height: 768 },
   });
-  await context.addInitScript(() => {
+  await context.addInitScript((skipImageGate) => {
     window.__E2E_TEST_MODE__ = true;
+    if (skipImageGate) {
+      window.__E2E_SKIP_IMAGE_GATE__ = true;
+    }
     window.localStorage.setItem("i18nextLng", "zh-CN");
     window.localStorage.setItem("boardgame:audio-muted", "true");
-  });
+  }, SKIP_IMAGE_GATE);
   const page = await context.newPage();
   const diagnostics = await attachDiagnostics(page, "rabbit-confirm-after-reload");
   await gotoTutorial(page, { clearStorage: true });
@@ -538,7 +551,7 @@ async function runRabbitConfirmAfterReload(browser) {
 async function main() {
   ensureOutDir();
   const browser = await chromium.launch({ headless: HEADLESS });
-  const result = { outDir: OUT_DIR, targetUrl: TARGET_URL };
+  const result = { outDir: OUT_DIR, targetUrl: TARGET_URL, skipImageGate: SKIP_IMAGE_GATE };
   try {
     result.directEntry = await runDirectEntry(browser);
     result.staleCharacterSelectRestore = await runStaleCharacterSelectRestore(browser);

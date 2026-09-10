@@ -498,17 +498,17 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
                                     onClick={() => onSelectHandCard(card.id)}
                                     className={`
-                                        group flex w-[min(9.5rem,38vw)] min-w-[7.5rem] flex-col items-stretch rounded-xl border-2 bg-slate-900/80 p-2 text-left shadow-xl transition-all duration-200
-                                        ${isSelected
-                                            ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
-                                            : 'border-slate-600 hover:border-amber-300 hover:bg-slate-800'}
+                                        group relative flex w-[min(9.5rem,38vw)] min-w-[7.5rem] flex-shrink-0 cursor-pointer border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300
+                                        ${isSelected ? 'z-10 scale-[1.05]' : 'hover:z-10 hover:scale-[1.03]'}
                                     `}
                                 >
                                     <div
                                         data-testid={`dt-card-choice-preview-${card.id}`}
                                         className={`
-                                            aspect-[0.61] w-full overflow-hidden rounded-lg border bg-slate-950 shadow-lg transition-transform duration-200
-                                            ${isSelected ? 'border-amber-300' : 'border-white/15 group-hover:scale-[1.02]'}
+                                            aspect-[0.61] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl transition-[box-shadow,transform] duration-200
+                                            ${isSelected
+                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
+                                                : 'group-hover:ring-2 group-hover:ring-amber-300/80 group-hover:shadow-2xl'}
                                         `}
                                     >
                                         <CardPreview
@@ -520,16 +520,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 borderRadius: '0.5rem',
                                             }}
                                             alt={cardName}
-                                            title={cardName}
                                         />
-                                    </div>
-                                    <div className="mt-2 min-w-0 text-center">
-                                        <div className={`truncate text-sm font-bold leading-tight ${isSelected ? 'text-amber-200' : 'text-slate-100'}`}>
-                                            {cardName}
-                                        </div>
-                                        <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                            {card.type} · {card.cpCost} CP
-                                        </div>
                                     </div>
                                 </button>
                             );

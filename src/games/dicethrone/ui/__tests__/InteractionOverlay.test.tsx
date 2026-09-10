@@ -783,7 +783,7 @@ describe('InteractionOverlay', () => {
             } as HeroState,
         };
 
-        it('牌库候选应使用真实卡面牌池，不退化成文字按钮列表', () => {
+        it('牌库候选应使用真实卡面牌池，不退化成文字按钮列表或重复说明卡牌本身信息', () => {
             const onSelectHandCard = vi.fn();
 
             render(
@@ -809,6 +809,11 @@ describe('InteractionOverlay', () => {
             );
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-atlas-id', 'dicethrone:vampire_lord-cards');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-index', '21');
+            expect(targetOption.textContent?.trim()).toBe('');
+            expect(screen.queryByText('血潮')).not.toBeInTheDocument();
+            expect(screen.queryByText('畅饮！')).not.toBeInTheDocument();
+            expect(screen.queryByText('涌血')).not.toBeInTheDocument();
+            expect(screen.queryByText(/action\s*[·•]\s*\d+\s*CP/i)).not.toBeInTheDocument();
 
             fireEvent.click(targetOption);
             expect(onSelectHandCard).toHaveBeenCalledWith('card-vampire-lord-gushing-blood');
