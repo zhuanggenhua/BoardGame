@@ -97,6 +97,11 @@ export const resolveTutorialManifestForStage = (args: {
     return gameImplementation.tutorial ?? null;
 };
 
+export const resolveShouldBlockBoardOnImagePreload = (args: {
+    isTutorialRoute: boolean;
+    hasCompletedInitialOnlinePreload: boolean;
+}): boolean => !args.isTutorialRoute && !args.hasCompletedInitialOnlinePreload;
+
 export function useMatchRoomRuntimeSetup(args: {
     gameId?: string;
     matchId?: string;
@@ -194,7 +199,10 @@ export function useMatchRoomRuntimeSetup(args: {
         }
     }, [gameId, gameImplReady, isTutorialRoute, matchId]);
 
-    const shouldBlockBoardOnImagePreload = isTutorialRoute || !hasCompletedInitialOnlinePreload;
+    const shouldBlockBoardOnImagePreload = resolveShouldBlockBoardOnImagePreload({
+        isTutorialRoute,
+        hasCompletedInitialOnlinePreload,
+    });
     const [onlineBoardPreloadBlockingState, setOnlineBoardPreloadBlockingState] = useState(() => ({
         scopeKey: matchRoomScopeKey,
         blocking: false,

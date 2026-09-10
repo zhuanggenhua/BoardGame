@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameImplementation } from '../../core/types';
 import {
     getVisibleTutorialCatalogEntries,
+    resolveShouldBlockBoardOnImagePreload,
     resolveTutorialCatalogForStage,
     resolveTutorialManifestForStage,
 } from '../useMatchRoomRuntimeSetup';
@@ -74,5 +75,23 @@ describe('useMatchRoomRuntimeSetup tutorial stage helpers', () => {
             tutorialId: undefined,
             gameImplementation: implementation,
         })?.id).toBe('basic-opening');
+    });
+
+    it('教程真实入口不因关键图片预加载阻塞牌桌首屏', () => {
+        expect(resolveShouldBlockBoardOnImagePreload({
+            isTutorialRoute: true,
+            hasCompletedInitialOnlinePreload: false,
+        })).toBe(false);
+    });
+
+    it('在线对局首屏仍保留关键图片预加载门禁', () => {
+        expect(resolveShouldBlockBoardOnImagePreload({
+            isTutorialRoute: false,
+            hasCompletedInitialOnlinePreload: false,
+        })).toBe(true);
+        expect(resolveShouldBlockBoardOnImagePreload({
+            isTutorialRoute: false,
+            hasCompletedInitialOnlinePreload: true,
+        })).toBe(false);
     });
 });
