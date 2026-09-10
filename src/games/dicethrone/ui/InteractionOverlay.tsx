@@ -9,9 +9,11 @@ import { useTranslation } from 'react-i18next';
 import type { InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
+import { CardPreview } from '../../../components/common/media/CardPreview';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
+import { getDiceThroneCardPreviewRef } from './cardPreviewHelper';
 
 type TeamTone = 'self' | 'ally' | 'enemy';
 
@@ -465,10 +467,16 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
 
                 {/* 卡牌选择区域 */}
                 {isCardSelection && (
-                    <div className="flex flex-wrap gap-3 justify-center">
+                    <div
+                        data-testid="dt-card-pool-selection"
+                        data-card-pool-kind={isDeckCardSelection ? 'deck' : 'hand'}
+                        className="flex max-w-full flex-wrap justify-center gap-4 overflow-x-auto px-1 py-2"
+                    >
                         {((isDeckCardSelection
                             ? players[interaction.playerId]?.deck
                             : players[interaction.playerId]?.hand) ?? []).map(card => {
+                            const ownerCharacterId = players[interaction.playerId]?.characterId;
+                            const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
                             const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
                                 ?? card.i18n?.['zh-CN']?.name
                                 ?? card.name
@@ -485,17 +493,43 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     type="button"
                                     data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
                                     data-selected={isSelected ? 'true' : 'false'}
+                                    data-card-pool-mode="preview"
+                                    data-card-preview-ready={previewRef ? 'true' : 'false'}
+                                    aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
                                     onClick={() => onSelectHandCard(card.id)}
                                     className={`
-                                        min-w-[180px] rounded-xl border-2 p-4 text-left transition-all duration-200
+                                        group flex w-[min(9.5rem,38vw)] min-w-[7.5rem] flex-col items-stretch rounded-xl border-2 bg-slate-900/80 p-2 text-left shadow-xl transition-all duration-200
                                         ${isSelected
                                             ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
-                                            : 'border-slate-600 bg-slate-800/70 hover:border-amber-300 hover:bg-slate-700'}
+                                            : 'border-slate-600 hover:border-amber-300 hover:bg-slate-800'}
                                     `}
                                 >
-                                    <div className="text-sm font-bold text-slate-100">{cardName}</div>
-                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                        {card.type} · {card.cpCost} CP
+                                    <div
+                                        data-testid={`dt-card-choice-preview-${card.id}`}
+                                        className={`
+                                            aspect-[0.61] w-full overflow-hidden rounded-lg border bg-slate-950 shadow-lg transition-transform duration-200
+                                            ${isSelected ? 'border-amber-300' : 'border-white/15 group-hover:scale-[1.02]'}
+                                        `}
+                                    >
+                                        <CardPreview
+                                            previewRef={previewRef}
+                                            locale={locale}
+                                            className="h-full w-full"
+                                            style={{
+                                                backgroundColor: '#0f172a',
+                                                borderRadius: '0.5rem',
+                                            }}
+                                            alt={cardName}
+                                            title={cardName}
+                                        />
+                                    </div>
+                                    <div className="mt-2 min-w-0 text-center">
+                                        <div className={`truncate text-sm font-bold leading-tight ${isSelected ? 'text-amber-200' : 'text-slate-100'}`}>
+                                            {cardName}
+                                        </div>
+                                        <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                            {card.type} · {card.cpCost} CP
+                                        </div>
                                     </div>
                                 </button>
                             );

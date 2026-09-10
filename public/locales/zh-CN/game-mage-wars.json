@@ -48,7 +48,6 @@
       "activeSpellbookAria": "可选法术书库",
       "activeSpellbookTitle": "选中法术书",
       "editCurrentSpellbook": "编辑选中书",
-      "spellbookLibraryHelp": "标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。",
       "standardSpellbook": "标准起始书",
       "spellbookCardSummary": "{{count}} 张",
       "newSpellbook": "新建法术书",

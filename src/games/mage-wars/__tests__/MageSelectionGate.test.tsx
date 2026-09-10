@@ -26,7 +26,6 @@ vi.mock('react-i18next', () => ({
                 'setup.mageSelection.activeSpellbookAria': '可选法术书库',
                 'setup.mageSelection.activeSpellbookTitle': '选中法术书',
                 'setup.mageSelection.editCurrentSpellbook': '编辑选中书',
-                'setup.mageSelection.spellbookLibraryHelp': '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。',
                 'setup.mageSelection.standardSpellbook': '标准起始书',
                 'setup.mageSelection.newSpellbook': '新建法术书',
                 'setup.mageSelection.newSpellbookAria': '选择绑定法师后新建法术书',

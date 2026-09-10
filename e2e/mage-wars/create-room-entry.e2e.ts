@@ -58,10 +58,48 @@ async function saveEntryScreenshot(page: Page, testInfo: TestInfo, name: string)
     return path;
 }
 
+async function expectCreateRoomEntrySelectionLayout(page: Page) {
+    const audit = await page.getByTestId('mage-wars-mage-selection-gate').evaluate((gate) => {
+        const oldDescription = '为双方各直接选择一本法术书；每本法术书已绑定法师，确认后按所选书初始化开局。';
+        const oldLibraryHelp = '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。';
+        const editButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-open-spellbook-builder"]');
+        const confirmButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-confirm"]');
+        const editRect = editButton?.getBoundingClientRect();
+        const confirmRect = confirmButton?.getBoundingClientRect();
+        const confirmStyle = confirmButton ? window.getComputedStyle(confirmButton) : null;
+        const header = gate.querySelector<HTMLElement>('header');
+        const main = gate.querySelector<HTMLElement>('main');
+        const mainRect = main?.getBoundingClientRect();
+        const gateText = gate.textContent ?? '';
+
+        return {
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            oldDescriptionVisible: gateText.includes(oldDescription),
+            oldLibraryHelpVisible: gateText.includes(oldLibraryHelp),
+            confirmInHeader: Boolean(confirmButton && header?.contains(confirmButton)),
+            confirmBelowEdit: Boolean(editRect && confirmRect && confirmRect.top > editRect.bottom),
+            confirmColor: confirmStyle?.backgroundColor ?? '',
+            mainWithinViewport: Boolean(mainRect
+                && mainRect.left >= -1
+                && mainRect.top >= -1
+                && mainRect.right <= window.innerWidth + 1
+                && mainRect.bottom <= window.innerHeight + 1),
+        };
+    });
+
+    expect(audit.viewport).toEqual({ width: 2560, height: 1304 });
+    expect(audit.oldDescriptionVisible, `真实首页建房入口选书页不应显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.oldLibraryHelpVisible, `真实首页建房入口选书页不应显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.confirmInHeader, `真实首页建房入口开始按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.confirmBelowEdit, `真实首页建房入口开始按钮必须在编辑选中书下方: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmColor, `真实首页建房入口开始按钮应是绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
+    expect(audit.mainWithinViewport, `真实首页建房入口 2560x1304 主体必须自然落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+}
+
 test('Mage Wars 大厅创建房间会先选择法师法术书再进入正式牌桌', async ({ context, page }, testInfo) => {
     test.setTimeout(120_000);
     await clearEvidenceScreenshotsForTest(testInfo);
-    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.setViewportSize({ width: 2560, height: 1304 });
 
     await initContext(context, {
         storageKey: 'mage-wars-create-room-entry-e2e',
@@ -89,8 +127,9 @@ test('Mage Wars 大厅创建房间会先选择法师法术书再进入正式牌�
     await waitForHomeGameList(page, 45_000);
 
     const detailsModal = page.locator('[data-testid="game-details-modal-root"]:visible').last();
-    await expect(detailsModal).toBeVisible({ timeout: 30_000 });
-    await expect(detailsModal.getByTestId('game-details-open-create-room')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('home-game-details-loading-fallback')).toHaveCount(0, { timeout: 90_000 });
+    await expect(detailsModal).toBeVisible({ timeout: 90_000 });
+    await expect(detailsModal.getByTestId('game-details-open-create-room')).toBeVisible({ timeout: 30_000 });
     await saveEntryScreenshot(page, testInfo, '01-大厅详情页显示创建房间入口');
 
     await detailsModal.getByTestId('game-details-open-create-room').click();
@@ -105,7 +144,8 @@ test('Mage Wars 大厅创建房间会先选择法师法术书再进入正式牌�
     await expect(page.getByTestId('create-room-setup-gate-overlay')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 30_000 });
     await expect(createRoomModal).toHaveCount(0);
-    await saveEntryScreenshot(page, testInfo, '03-确认建房后进入法师法术书选择页');
+    await expectCreateRoomEntrySelectionLayout(page);
+    await saveEntryScreenshot(page, testInfo, '03-确认建房后进入法师法术书选择页-2560x1304');
 
     await page.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice').click();
     await expect(page.getByTestId('mage-wars-mage-selection-summary-0'))

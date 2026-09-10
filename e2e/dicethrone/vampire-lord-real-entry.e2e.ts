@@ -261,6 +261,28 @@ const expectVampireLordCardPreview = async (
     ).toMatch(/dicethrone\/images\/xixuegui\/(?:compressed\/)?ability-cards\.webp/i);
 };
 
+const expectVampireLordCardChoicePreview = async (
+    page: Page,
+    cardId: string,
+    expectedAtlasIndex: number,
+): Promise<void> => {
+    const option = page.getByTestId(`dt-deck-card-option-${cardId}`);
+    await expect(option).toBeVisible({ timeout: 15000 });
+    await expect(option).toHaveAttribute('data-card-pool-mode', 'preview');
+    await expect(option).toHaveAttribute('data-card-preview-ready', 'true');
+    const previewShell = page.getByTestId(`dt-card-choice-preview-${cardId}`);
+    await expect(previewShell).toBeVisible({ timeout: 15000 });
+    const atlasFrame = option.locator(`[data-card-atlas-id="${VAMPIRE_LORD_CARD_ATLAS_ID}"]`).first();
+    await expect(atlasFrame).toBeVisible({ timeout: 15000 });
+    await expect(atlasFrame).toHaveAttribute('data-card-atlas-index', String(expectedAtlasIndex));
+    const atlasImage = atlasFrame.locator('img[data-card-atlas-img="true"]').first();
+    await expect(atlasImage).toBeVisible({ timeout: 15000 });
+    await expect.poll(
+        async () => atlasImage.getAttribute('src'),
+        { timeout: 15000 },
+    ).toMatch(/dicethrone\/images\/xixuegui\/(?:compressed\/)?ability-cards\.webp/i);
+};
+
 const expectStatusAtlasSprite = async (
     page: Page,
     type: 'token' | 'status',
@@ -1108,6 +1130,11 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-blood-surge')).toBeVisible({ timeout: 10000 });
         await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-drink-up')).toBeVisible({ timeout: 10000 });
         await expect(targetCardOption).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
+        await expect(page.getByTestId('prompt-card-search-input')).toHaveCount(0);
+        await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-blood-surge', 17);
+        await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-drink-up', 31);
+        await expectVampireLordCardChoicePreview(page, 'card-vampire-lord-gushing-blood', 21);
         await expect(confirmButton).toBeDisabled();
         await game.screenshot('02-血色杀戮搜牌窗口-抽牌堆三张候选可选', testInfo);
 

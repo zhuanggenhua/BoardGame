@@ -270,6 +270,7 @@ async function expectNoRepeatedInvariantMageStats(page: Page) {
 async function expectMageSelectionWideNaturalLayout(page: Page) {
     const audit = await page.getByTestId('mage-wars-mage-selection-gate').evaluate((gate) => {
         const oldDescription = '为双方各直接选择一本法术书；每本法术书已绑定法师，确认后按所选书初始化开局。';
+        const oldLibraryHelp = '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。';
         const editButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-open-spellbook-builder"]');
         const confirmButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-confirm"]');
         const header = gate.querySelector<HTMLElement>('header');
@@ -286,6 +287,7 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
         return {
             viewport: { width: window.innerWidth, height: window.innerHeight },
             oldDescriptionVisible: (gate.textContent ?? '').includes(oldDescription),
+            oldLibraryHelpVisible: (gate.textContent ?? '').includes(oldLibraryHelp),
             confirmInHeader: Boolean(confirmButton && header?.contains(confirmButton)),
             confirmBelowEdit: Boolean(editRect && confirmRect && confirmRect.top > editRect.bottom),
             confirmSharesActionGroup: Boolean(editButton && confirmButton && editButton.parentElement === confirmButton.parentElement),
@@ -306,6 +308,7 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
 
     expect(audit.viewport).toEqual({ width: 2560, height: 1304 });
     expect(audit.oldDescriptionVisible, `2560x1304 选书页不应继续显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.oldLibraryHelpVisible, `2560x1304 选书页不应继续显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
     expect(audit.confirmInHeader, `2560x1304 开始游戏按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
     expect(audit.confirmSharesActionGroup, `2560x1304 开始游戏按钮必须和编辑选中书在同一右侧动作组: ${JSON.stringify(audit)}`).toBe(true);
     expect(audit.confirmBelowEdit, `2560x1304 开始游戏按钮必须在编辑选中书下面: ${JSON.stringify(audit)}`).toBe(true);

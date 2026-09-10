@@ -48,7 +48,6 @@
       "activeSpellbookAria": "Available spellbook library",
       "activeSpellbookTitle": "Selected Spellbook",
       "editCurrentSpellbook": "Edit Selected Book",
-      "spellbookLibraryHelp": "Standard starts and named copies appear together; clicking a book also binds its mage.",
       "standardSpellbook": "Standard Start",
       "spellbookCardSummary": "{{count}} cards",
       "newSpellbook": "New Spellbook",

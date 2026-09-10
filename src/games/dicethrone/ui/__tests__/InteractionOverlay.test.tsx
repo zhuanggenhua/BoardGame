@@ -29,6 +29,7 @@ vi.mock('react-i18next', () => ({
                 'interaction.gunslingerTheLaw': '选择至多 2 位目标玩家',
                 'interaction.selectStatusToTransfer': '选择要移除的状态效果',
                 'interaction.transferSelectTarget': '选择目标玩家',
+                'interaction.selectDeckCardToAddToHand': '从抽牌堆选择 1 张牌加入手牌',
                 'interaction.noStatus': '无状态',
                 'common.self': '自己',
                 'common.opponent': '对手',
@@ -48,11 +49,35 @@ vi.mock('react-i18next', () => ({
             };
             return translations[key] || key;
         },
+        i18n: {
+            exists: () => false,
+        },
     }),
     initReactI18next: {
         type: '3rdParty',
         init: vi.fn(),
     },
+}));
+
+vi.mock('../../../../components/common/media/CardPreview', () => ({
+    CardPreview: ({
+        previewRef,
+        className,
+        alt,
+    }: {
+        previewRef?: { type?: string; atlasId?: string; index?: number } | null;
+        className?: string;
+        alt?: string;
+    }) => (
+        <div
+            data-testid="mock-card-preview"
+            data-preview-type={previewRef?.type ?? 'missing'}
+            data-preview-atlas-id={previewRef?.atlasId ?? ''}
+            data-preview-index={previewRef?.index ?? ''}
+            aria-label={alt}
+            className={className}
+        />
+    ),
 }));
 
 describe('InteractionOverlay', () => {
@@ -707,6 +732,86 @@ describe('InteractionOverlay', () => {
             expect(screen.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-selected', 'true');
             expect(screen.getByTestId('dt-transfer-target-1')).toHaveTextContent('已选目标');
             expect(screen.getByTestId('dt-transfer-target-2')).toHaveTextContent('点击作为接收目标');
+        });
+    });
+
+    describe('card selection interaction', () => {
+        const deckCardInteraction: InteractionDescriptor = {
+            id: 'test-deck-card-pool',
+            type: 'selectDeckCard',
+            sourceCardId: 'bloody-slaughter',
+            playerId: '0',
+            titleKey: 'interaction.selectDeckCardToAddToHand',
+            selectCount: 1,
+            selected: [],
+        };
+
+        const playersWithDeckCards: Record<PlayerId, HeroState> = {
+            ...mockPlayers,
+            '0': {
+                ...mockPlayers['0'],
+                characterId: 'vampire_lord',
+                deck: [
+                    {
+                        id: 'card-vampire-lord-blood-surge',
+                        name: '血潮',
+                        type: 'action',
+                        cpCost: 1,
+                        timing: 'main',
+                        description: '',
+                        previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index: 17 },
+                    },
+                    {
+                        id: 'card-vampire-lord-drink-up',
+                        name: '畅饮！',
+                        type: 'action',
+                        cpCost: 0,
+                        timing: 'main',
+                        description: '',
+                        previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index: 31 },
+                    },
+                    {
+                        id: 'card-vampire-lord-gushing-blood',
+                        name: '涌血',
+                        type: 'action',
+                        cpCost: 0,
+                        timing: 'main',
+                        description: '',
+                        previewRef: { type: 'atlas', atlasId: 'dicethrone:vampire_lord-cards', index: 21 },
+                    },
+                ],
+            } as HeroState,
+        };
+
+        it('牌库候选应使用真实卡面牌池，不退化成文字按钮列表', () => {
+            const onSelectHandCard = vi.fn();
+
+            render(
+                <InteractionOverlay
+                    interaction={deckCardInteraction}
+                    players={playersWithDeckCards}
+                    currentPlayerId="0"
+                    onSelectHandCard={onSelectHandCard}
+                    {...mockHandlers}
+                />
+            );
+
+            expect(screen.getByText('从抽牌堆选择 1 张牌加入手牌')).toBeInTheDocument();
+            expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
+            expect(screen.queryByTestId('prompt-card-search-input')).not.toBeInTheDocument();
+            expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(3);
+
+            const targetOption = screen.getByTestId('dt-deck-card-option-card-vampire-lord-gushing-blood');
+            expect(targetOption).toHaveAttribute('data-card-pool-mode', 'preview');
+            expect(targetOption).toHaveAttribute('data-card-preview-ready', 'true');
+            expect(screen.getByTestId('dt-card-choice-preview-card-vampire-lord-gushing-blood')).toContainElement(
+                screen.getAllByTestId('mock-card-preview')[2],
+            );
+            expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-atlas-id', 'dicethrone:vampire_lord-cards');
+            expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-index', '21');
+
+            fireEvent.click(targetOption);
+            expect(onSelectHandCard).toHaveBeenCalledWith('card-vampire-lord-gushing-blood');
         });
     });
 

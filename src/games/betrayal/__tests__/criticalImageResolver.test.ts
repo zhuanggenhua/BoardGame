@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { betrayalCriticalImageResolver, _testExports } from '../criticalImageResolver';
 import type { BetrayalCore } from '../game';
+import { createStartedFirstScenarioTutorialCore } from '../testing/firstScenarioTestUtils';
 
 const stateOf = (state: Partial<MatchState<BetrayalCore>>): MatchState<BetrayalCore> =>
     state as MatchState<BetrayalCore>;
@@ -123,6 +124,34 @@ describe('betrayalCriticalImageResolver', () => {
         expect(result.replaceStaticCritical).toBe(true);
         expect(result.critical.length).toBeLessThan(_testExports.BETRAYAL_CRITICAL_IMAGE_PATHS.length);
         expect(result.critical.some((path) => path.includes('/compressed/'))).toBe(false);
+    });
+
+    it('真实基础教程首屏不会退回全量山屋关键图', () => {
+        const core = createStartedFirstScenarioTutorialCore();
+        const result = betrayalCriticalImageResolver(stateOf({
+            core,
+            sys: {
+                tutorial: {
+                    active: true,
+                    manifestId: 'basic-setup-and-turn',
+                    stepIndex: 1,
+                    step: { id: 'objective-and-turn', content: 'objective' },
+                    steps: [],
+                },
+            } as MatchState<BetrayalCore>['sys'],
+        }), undefined, '0');
+
+        expect(result.phaseKey).toContain('betrayal:tutorial:basic-setup-and-turn:objective-and-turn:preHaunt:0:');
+        expect(result.critical.length).toBeLessThan(20);
+        expect(result.critical).toContain('betrayal/explorers/xia');
+        expect(result.critical).toContain('betrayal/tokens/explorers/isa-valencia');
+        expect(result.critical).toContain('betrayal/rooms/room-back-atlas');
+        expect(result.critical).not.toContain('betrayal/cards/item-front-atlas');
+        expect(result.critical).not.toContain('betrayal/cards/omen-front-atlas');
+        expect(result.critical).not.toContain('betrayal/cards/event-front-atlas');
+        expect(result.critical).not.toContain('betrayal/tokens/monsters/werewolf');
+        expect(result.critical.length).toBeLessThan(_testExports.BETRAYAL_CRITICAL_IMAGE_PATHS.length);
+        expect(result.replaceStaticCritical).toBe(true);
     });
 
     it('教程 setup 步骤如果已经生成牌桌状态，也按牌桌首屏素材加载', () => {

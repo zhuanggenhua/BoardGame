@@ -325,9 +325,6 @@ function MageWarsMageSelectionGateContent({
                                 <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/60">
                                     {t('setup.mageSelection.spellbookLibrary')}
                                 </div>
-                                <div className="mt-1 text-sm font-semibold text-stone-200/70">
-                                    {t('setup.mageSelection.spellbookLibraryHelp')}
-                                </div>
                             </div>
                         </div>
 

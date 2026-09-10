@@ -58,6 +58,14 @@ vi.mock('../../../../core/CriticalImageResolverRegistry', () => ({
     resolveCriticalImages,
 }));
 
+const { useGameMode } = vi.hoisted(() => ({
+    useGameMode: vi.fn().mockReturnValue(undefined),
+}));
+
+vi.mock('../../../../contexts/GameModeContext', () => ({
+    useGameMode,
+}));
+
 vi.mock('../../../system/LoadingScreen', () => ({
     LoadingScreen: ({
         description,
@@ -100,6 +108,7 @@ beforeEach(() => {
     vi.mocked(preloadWarmImages).mockImplementation(() => undefined);
     vi.mocked(signalCriticalImagesReady).mockImplementation(() => undefined);
     vi.mocked(resolveCriticalImages).mockReturnValue({ critical: [], warm: [], phaseKey: 'setup' });
+    vi.mocked(useGameMode).mockReturnValue(undefined);
     vi.mocked(enqueueWarmPreload).mockImplementation(() => undefined);
 });
 
@@ -127,6 +136,40 @@ describe('CriticalImageGate', () => {
         await waitFor(() => {
             expect(onReady).toHaveBeenCalledTimes(1);
         });
+    });
+
+    it('教程预启动状态不应抢跑完整关键图预加载而卡住 Board 挂载', async () => {
+        vi.mocked(useGameMode).mockReturnValue({
+            mode: 'tutorial',
+            isMultiplayer: false,
+        });
+        vi.mocked(resolveCriticalImages).mockReturnValue({
+            critical: Array.from({ length: 83 }, (_, index) => `full-critical-${index}`),
+            warm: [],
+            phaseKey: 'characterSelect',
+        });
+        const onReady = vi.fn();
+
+        render(
+            <CriticalImageGate
+                enabled={true}
+                gameId="betrayal"
+                gameState={{ core: { phase: 'characterSelect' }, sys: { tutorial: { active: false } } }}
+                locale="zh-CN"
+                playerID="0"
+                loadingDescription="加载中"
+                onReady={onReady}
+            >
+                <div>子内容</div>
+            </CriticalImageGate>,
+        );
+
+        expect(screen.getByText('子内容')).toBeInTheDocument();
+        expect(screen.queryByText('加载中')).toBeNull();
+        await waitFor(() => {
+            expect(onReady).toHaveBeenCalledTimes(1);
+        });
+        expect(preloadCriticalImages).not.toHaveBeenCalled();
     });
 
     it('enabled=true 且需要加载时显示加载屏', () => {

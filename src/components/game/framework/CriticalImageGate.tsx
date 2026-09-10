@@ -16,6 +16,7 @@ import { AudioManager } from '../../../lib/audio/AudioManager';
 import type { SoundKey } from '../../../lib/audio/types';
 import { COMMON_AUDIO_BASE_PATH, loadCommonAudioRegistry } from '../../../lib/audio/commonRegistry';
 import { criticalImageGateReadyRunKeys } from './CriticalImageGateCache';
+import { useGameMode } from '../../../contexts/GameModeContext';
 
 export interface CriticalImageGateProps {
     gameId?: string;
@@ -54,6 +55,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     onBlockingChange,
     children,
 }) => {
+    const gameMode = useGameMode();
     useEffect(() => {
         if (typeof document === 'undefined') return;
         const onVisibilityChange = () => {
@@ -72,7 +74,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     // E2E 测试可通过 window.__E2E_SKIP_IMAGE_GATE__ 跳过图片预加载门禁
     const skipGate = typeof window !== 'undefined'
         && (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ === true;
-    const effectiveEnabled = enabled && !skipGate;
+    const tutorialState = (gameState as { sys?: { tutorial?: { active?: boolean } } } | null | undefined)
+        ?.sys?.tutorial;
+    const shouldDeferTutorialPreStartPreload = gameMode?.mode === 'tutorial'
+        && tutorialState?.active !== true;
+    const effectiveEnabled = enabled && !skipGate && !shouldDeferTutorialPreStartPreload;
 
     const { t } = useTranslation('lobby');
     const [ready, setReady] = useState(!effectiveEnabled);
