@@ -56,14 +56,18 @@ async function attachDiagnostics(page, label) {
 }
 
 async function gotoTutorial(page, { clearStorage = false } = {}) {
-  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  // Each scenario uses a fresh browser context. Avoid loading the lobby root only
+  // to clear storage; the lobby warms unrelated assets and can mask tutorial bugs.
+  await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
   if (clearStorage) {
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
+      localStorage.setItem("i18nextLng", "zh-CN");
+      localStorage.setItem("boardgame:audio-muted", "true");
     });
+    await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
   }
-  await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
 }
 
 async function waitForBoardOrSelection(page, timeout = 45000) {
