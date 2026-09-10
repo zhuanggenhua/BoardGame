@@ -24,9 +24,9 @@ export type PlayerBoardUiTuning = {
     shellTranslateX: number;
     playerBoardTranslateY: number;
     magnifyButtonTop: number;
-    playerBoardBaseHeightVw: number;
-    tipBoardHeightVw: number;
-    centerBoardGapVw: number;
+    playerBoardBaseHeightUnits: number;
+    tipBoardHeightUnits: number;
+    centerBoardGapUnits: number;
 };
 
 const V1_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = [
@@ -111,17 +111,17 @@ export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = 
         shellTranslateX: 0,
         playerBoardTranslateY: 0,
         magnifyButtonTop: 0.48,
-        playerBoardBaseHeightVw: 35,
-        tipBoardHeightVw: 35,
-        centerBoardGapVw: 0.50,
+        playerBoardBaseHeightUnits: 35,
+        tipBoardHeightUnits: 35,
+        centerBoardGapUnits: 0.50,
     },
     v2: {
         shellTranslateX: 1.10,
         playerBoardTranslateY: -1.45,
         magnifyButtonTop: 1.85,
-        playerBoardBaseHeightVw: 31,
-        tipBoardHeightVw: 29.60,
-        centerBoardGapVw: 0.24,
+        playerBoardBaseHeightUnits: 31,
+        tipBoardHeightUnits: 29.60,
+        centerBoardGapUnits: 0.24,
     },
 };
 

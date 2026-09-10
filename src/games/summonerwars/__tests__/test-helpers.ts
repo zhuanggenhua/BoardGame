@@ -115,6 +115,62 @@ export function placeTestUnit(
   return unit;
 }
 
+const PIPELINE_SUMMONER_POSITIONS: Record<PlayerId, CellCoord[]> = {
+  '0': [
+    { row: 7, col: 5 },
+    { row: 7, col: 0 },
+    { row: 6, col: 5 },
+  ],
+  '1': [
+    { row: 0, col: 5 },
+    { row: 0, col: 0 },
+    { row: 1, col: 5 },
+  ],
+};
+
+function hasSummoner(state: SummonerWarsCore, playerId: PlayerId): boolean {
+  return state.board.some(row => row.some(cell =>
+    cell.unit?.owner === playerId && cell.unit.card.unitClass === 'summoner',
+  ));
+}
+
+function createPipelineTestSummonerCard(playerId: PlayerId): UnitCard {
+  return {
+    id: `test-pipeline-summoner-${playerId}`,
+    cardType: 'unit',
+    name: `测试召唤师 ${playerId}`,
+    unitClass: 'summoner',
+    faction: 'necromancer',
+    strength: 0,
+    life: 99,
+    cost: 0,
+    attackType: 'melee',
+    attackRange: 1,
+    abilities: [],
+    deckSymbols: [],
+  };
+}
+
+export function ensurePipelineSummoners(state: SummonerWarsCore): SummonerWarsCore {
+  for (const playerId of ['0', '1'] as PlayerId[]) {
+    if (hasSummoner(state, playerId)) continue;
+
+    const position = PIPELINE_SUMMONER_POSITIONS[playerId].find(pos =>
+      !state.board[pos.row]?.[pos.col]?.unit && !state.board[pos.row]?.[pos.col]?.structure,
+    );
+    if (!position) {
+      throw new Error(`管线测试缺少可放置的 ${playerId} 方召唤师占位格`);
+    }
+
+    placeTestUnit(state, position, {
+      card: createPipelineTestSummonerCard(playerId),
+      owner: playerId,
+      damage: 0,
+    });
+  }
+  return state;
+}
+
 export { generateInstanceId, resetInstanceCounter };
 
 /**

@@ -78,6 +78,57 @@ describe('preloadCriticalImages', () => {
         expect(new Set(warm).size).toBe(warm.length);
     });
 
+    it('动态解析器接管静态 critical 时，只阻塞当前阶段图片', async () => {
+        const requestedUrls: string[] = [];
+        vi.stubGlobal('Image', class {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 300;
+            naturalHeight = 600;
+            private _src = '';
+
+            get src() { return this._src; }
+            set src(value: string) {
+                this._src = value;
+                requestedUrls.push(value);
+                setTimeout(() => this.onload?.(), 0);
+            }
+        });
+
+        registerGameAssets('test-replace-critical', {
+            criticalImages: ['static/full-table.png'],
+            warmImages: ['static/warm.png'],
+        });
+        registerCriticalImageResolver('test-replace-critical', () => ({
+            critical: ['dynamic/current-step.png'],
+            warm: ['dynamic/warm.png'],
+            replaceStaticCritical: true,
+        }));
+
+        const warm = await preloadCriticalImages('test-replace-critical', {}, 'zh-CN');
+
+        expect(warm).toEqual(['static/warm.png', 'dynamic/warm.png']);
+        expect(requestedUrls.some((url) => url.includes('dynamic') && url.includes('current-step'))).toBe(true);
+        expect(requestedUrls.some((url) => url.includes('static/full-table'))).toBe(false);
+    });
+
+    it('动态解析器接管静态 critical 时，缓存检查不要求静态全量图片', () => {
+        registerGameAssets('test-replace-critical-cache', {
+            criticalImages: ['static/full-table.png'],
+        });
+        registerCriticalImageResolver('test-replace-critical-cache', () => ({
+            critical: ['dynamic/current-step.png'],
+            warm: [],
+            replaceStaticCritical: true,
+        }));
+
+        const loadedImage = new Image() as HTMLImageElement;
+        loadedImage.src = '/assets/i18n/zh-CN/dynamic/compressed/current-step.webp';
+        markImageLoaded('dynamic/current-step.png', 'zh-CN', loadedImage);
+
+        expect(areAllCriticalImagesCached('test-replace-critical-cache', {}, 'zh-CN')).toBe(true);
+    });
+
     it('解析器抛出异常时回退到静态列表', async () => {
         registerGameAssets('test-error', {
             criticalImages: ['fallback.png'],

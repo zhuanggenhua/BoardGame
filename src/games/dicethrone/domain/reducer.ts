@@ -25,7 +25,12 @@ import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
-import { isDiceThroneAiSeat, removeCard, updatePendingAttackSettlementStage } from './utils';
+import {
+    isDiceThroneAiSeat,
+    markPendingAttackPostDamageFollowUpResolved,
+    removeCard,
+    updatePendingAttackSettlementStage,
+} from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
@@ -897,6 +902,17 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
                 ...resultState.pendingAttack,
                 offensiveRollEndTokenResolved: true,
             },
+        };
+    }
+
+    const nextPendingAttack = markPendingAttackPostDamageFollowUpResolved(
+        resultState.pendingAttack,
+        hasAuthorizedChoice ? sourceAbilityId : undefined,
+    );
+    if (nextPendingAttack !== resultState.pendingAttack) {
+        resultState = {
+            ...resultState,
+            pendingAttack: nextPendingAttack,
         };
     }
 

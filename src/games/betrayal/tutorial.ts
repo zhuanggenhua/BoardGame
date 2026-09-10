@@ -31,6 +31,9 @@ const validateBetrayalBasicSetupStep = (
     step: TutorialStepSnapshot,
 ): boolean => {
     const core = state.core as Partial<BetrayalCore> | undefined;
+    if (step.id !== 'setup-runtime' && core?.phase === 'characterSelect') {
+        return false;
+    }
     if (step.id === 'use-rabbit-foot') {
         return !isRabbitFootAlreadyUsed(core);
     }
@@ -230,9 +233,9 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'rabbit-foot-result',
             content: 'game-betrayal:tutorial.basicSetup.steps.rabbitFootResult',
-            highlightTarget: 'betrayal-latest-discovery',
-            position: 'center',
-            infoStep: true,
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'top',
+            requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL],
             advanceOnEvents: [{ type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } }],
             viewAs: '0',

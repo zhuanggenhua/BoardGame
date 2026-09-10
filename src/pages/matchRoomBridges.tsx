@@ -44,7 +44,7 @@ export const TutorialDispatchBridge = ({
     tutorialManifest?: TutorialManifest | null;
 }) => {
     const { dispatch, state } = useGameClient();
-    const { bindDispatch, unbindDispatch, syncTutorialState } = useTutorial();
+    const { bindDispatch, unbindDispatch, syncTutorialState, tutorial: contextTutorial } = useTutorial();
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
     const dispatchRef = useRef(dispatch);
@@ -54,11 +54,11 @@ export const TutorialDispatchBridge = ({
         stateKey: string | null;
     }>({ manifest: null, stateKey: null });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         dispatchRef.current = dispatch;
     }, [dispatch]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         contextRef.current = { bindDispatch, unbindDispatch, syncTutorialState };
     }, [bindDispatch, unbindDispatch, syncTutorialState]);
 
@@ -83,6 +83,20 @@ export const TutorialDispatchBridge = ({
         }
 
         const tutorial = (state as MatchState | undefined)?.sys?.tutorial;
+        const contextMatchesManifest = contextTutorial.active
+            && contextTutorial.manifestId === tutorialManifest.id
+            && (
+                !Number.isInteger(tutorialManifest.revision)
+                || contextTutorial.manifestRevision === tutorialManifest.revision
+            );
+        if (
+            contextMatchesManifest
+            && (!tutorial?.active || tutorial.manifestId !== tutorialManifest.id)
+        ) {
+            boundManifestRef.current = { manifest: tutorialManifest, stateKey: 'restart-local-tutorial' };
+            dispatchRef.current(TUTORIAL_COMMANDS.START, { manifest: tutorialManifest });
+            return;
+        }
         if (!tutorial?.active || tutorial.manifestId !== tutorialManifest.id) {
             boundManifestRef.current = { manifest: null, stateKey: null };
             return;
@@ -94,12 +108,19 @@ export const TutorialDispatchBridge = ({
         ) {
             return;
         }
+        if (tutorial.stepIndex <= 0 && !tutorialManifest.stepValidator) {
+            boundManifestRef.current = { manifest: tutorialManifest, stateKey: null };
+            return;
+        }
 
         const stateKey = [
             tutorial.manifestId,
             tutorial.manifestRevision ?? '',
             tutorial.stepIndex,
             tutorial.step?.id ?? '',
+            tutorial.step && tutorialManifest.stepValidator
+                ? (tutorialManifest.stepValidator(state as MatchState, tutorial.step) ? 'valid' : 'stale')
+                : 'no-validator',
         ].join(':');
         if (
             boundManifestRef.current.manifest === tutorialManifest
@@ -110,7 +131,14 @@ export const TutorialDispatchBridge = ({
 
         boundManifestRef.current = { manifest: tutorialManifest, stateKey };
         dispatchRef.current(TUTORIAL_COMMANDS.BIND_MANIFEST, { manifest: tutorialManifest });
-    }, [isTutorialMode, state, tutorialManifest]);
+    }, [
+        contextTutorial.active,
+        contextTutorial.manifestId,
+        contextTutorial.manifestRevision,
+        isTutorialMode,
+        state,
+        tutorialManifest,
+    ]);
 
     // 提前同步教程状态（Board 被 CriticalImageGate 阻塞时也能同步）
     const lastSyncRef = useRef<string | null>(null);
@@ -118,6 +146,19 @@ export const TutorialDispatchBridge = ({
         if (!isTutorialMode || !state) return;
         const tutorial = (state as MatchState).sys.tutorial;
         if (!tutorial) return;
+        const contextMatchesManifest = contextTutorial.active
+            && tutorialManifest
+            && contextTutorial.manifestId === tutorialManifest.id
+            && (
+                !Number.isInteger(tutorialManifest.revision)
+                || contextTutorial.manifestRevision === tutorialManifest.revision
+            );
+        if (
+            contextMatchesManifest
+            && (!tutorial.active || tutorial.manifestId !== tutorialManifest.id)
+        ) {
+            return;
+        }
         const sig = [
             tutorial.active,
             tutorial.stepIndex,
@@ -129,7 +170,14 @@ export const TutorialDispatchBridge = ({
         if (lastSyncRef.current === sig) return;
         lastSyncRef.current = sig;
         contextRef.current.syncTutorialState(tutorial);
-    }, [isTutorialMode, state]);
+    }, [
+        contextTutorial.active,
+        contextTutorial.manifestId,
+        contextTutorial.manifestRevision,
+        isTutorialMode,
+        state,
+        tutorialManifest,
+    ]);
 
     return <>{children}</>;
 };

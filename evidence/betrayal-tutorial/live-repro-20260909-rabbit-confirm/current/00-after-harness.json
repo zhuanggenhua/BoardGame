@@ -1,0 +1,170 @@
+{
+  "diag": {
+    "label": "00-after-harness",
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "title": "正在学习 山屋惊魂 | 易桌游",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAllowedCommands": null,
+      "stepInfoStep": true,
+      "stepRequireAction": null
+    },
+    "activeStepDom": null,
+    "overlayText": null,
+    "continueButton": null,
+    "rollModifierConfirm": null,
+    "rabbitFootPicker": null,
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "latestFeedback": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": null,
+      "usedCardIdsThisTurn": [],
+      "pendingDamageAllocation": null
+    },
+    "bodyText": "🛠️作祟前当前回合伊莎·瓦伦西亚移动5/5本回合 5剩余移动 5 本回合 5位置入口大厅持有2当前属性伊莎·瓦伦西亚力量死亡23344567速度死亡44556788知识死亡23344566神志死亡23456778特性：无特殊能力：基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。队友摘要安妮塔·赫南德兹门厅持有 1力量死亡2234567速度死亡23445678知识死亡4455788神志死亡22345566神父 梁沃伦同房间入口大厅持有 0力量死亡22334566速度死亡23445566知识死亡33455678神志死亡33556688当前持有区未选卡牌未选卡牌兔脚书本现在：点探索翻一层同房间可交易对象：1人可前往：门厅等待第一步100%大阶梯一层起始放大查看门厅一层起始放大查看入口大厅一层起始当前房间放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看一层移动探索交易使用结束回合牌堆区预兆牌堆7物品牌堆22事件牌堆1预兆状态作祟前预兆 1弃牌区000剧本提示队友安妮塔·赫南德兹门厅4453神父 梁沃伦同房间入口大厅3445 前面还没有动作当前选中未选卡牌未选卡牌同房间可交易对象：1人现在：点探索翻一层当前持有区牌堆区移动探索交易使用结束回合 阶段作祟前 翻面收起"
+  },
+  "logs": [
+    {
+      "at": "2026-09-09T10:35:06.575Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T10:35:06.600Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T10:35:31.421Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T10:35:31.455Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T10:35:32.138Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T10:35:32.148Z",
+      "type": "response",
+      "text": "500 http://127.0.0.1:4274/auth/refresh"
+    },
+    {
+      "at": "2026-09-09T10:35:32.148Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "at": "2026-09-09T10:35:32.150Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/auth/refresh net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T10:35:39.535Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T10:35:39.534Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T10:35:39.536Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T10:35:39.536Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T10:35:39.545Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T10:35:39.545Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T10:35:39.545Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T10:35:39.543Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T10:35:39.545Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T10:35:39.543Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T10:35:40.091Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T10:35:40.091Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":556}"
+    },
+    {
+      "at": "2026-09-09T10:35:40.092Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T10:35:40.091Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":548}"
+    },
+    {
+      "at": "2026-09-09T10:35:46.269Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T10:35:46.269Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":6726}"
+    },
+    {
+      "at": "2026-09-09T10:35:46.474Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T10:35:46.483Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T10:35:46.484Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T10:35:46.484Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T10:35:46.484Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T10:35:46.580Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T10:35:46.701Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T10:35:46.701Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    }
+  ]
+}

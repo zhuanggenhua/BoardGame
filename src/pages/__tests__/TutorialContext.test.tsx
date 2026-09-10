@@ -2,17 +2,20 @@
 import React from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GameModeProvider } from '../../contexts/GameModeContext';
 import { ToastProvider } from '../../contexts/ToastContext';
-import { TutorialProvider, useTutorial } from '../../contexts/TutorialContext';
+import { TutorialProvider, useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { TUTORIAL_COMMANDS } from '../../engine/systems/TutorialSystem';
 import type { TutorialManifest, TutorialState } from '../../engine/types';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <ToastProvider>
-        <TutorialProvider>
-            {children}
-        </TutorialProvider>
-    </ToastProvider>
+    <GameModeProvider mode="tutorial">
+        <ToastProvider>
+            <TutorialProvider>
+                {children}
+            </TutorialProvider>
+        </ToastProvider>
+    </GameModeProvider>
 );
 
 const makeManifest = (): TutorialManifest => ({
@@ -110,6 +113,25 @@ const syncTutorialStep = (
     }, runtimeSyncKey);
 };
 
+const makeBoardTutorialState = (
+    manifest: TutorialManifest,
+    stepIndex: number,
+): TutorialState => ({
+    active: true,
+    manifestId: manifest.id,
+    stepIndex,
+    steps: manifest.steps,
+    step: manifest.steps[stepIndex],
+});
+
+const makeInactiveBoardTutorialState = (): TutorialState => ({
+    active: false,
+    manifestId: null,
+    stepIndex: 0,
+    steps: [],
+    step: null,
+});
+
 describe('TutorialContext', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -134,6 +156,84 @@ describe('TutorialContext', () => {
             type: TUTORIAL_COMMANDS.PREVIOUS,
             payload: {},
         });
+    });
+
+    it('Board 重挂载的空白教程状态不会关闭非最后一步的教程上下文', async () => {
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            steps: [
+                { id: 'setup-runtime', content: 'setup' },
+                { id: 'objective-and-turn', content: 'objective' },
+                { id: 'finish', content: 'finish' },
+            ],
+        };
+        const dispatch = vi.fn();
+        const { result, rerender } = renderHook(
+            ({ boardTutorial, syncKey }: { boardTutorial: TutorialState; syncKey: string }) => {
+                const context = useTutorial();
+                useTutorialBridge(boardTutorial, dispatch, syncKey);
+                return context;
+            },
+            {
+                wrapper,
+                initialProps: {
+                    boardTutorial: makeBoardTutorialState(manifest, 1),
+                    syncKey: 'objective-active',
+                },
+            },
+        );
+
+        await act(async () => undefined);
+        expect(result.current.isActive).toBe(true);
+        expect(result.current.currentStep?.id).toBe('objective-and-turn');
+
+        await act(async () => {
+            rerender({
+                boardTutorial: makeInactiveBoardTutorialState(),
+                syncKey: 'provider-remount-blank',
+            });
+        });
+
+        expect(result.current.isActive).toBe(true);
+        expect(result.current.currentStep?.id).toBe('objective-and-turn');
+    });
+
+    it('Board 同步到最后一步后的空白教程状态仍会正常关闭教程上下文', async () => {
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            steps: [
+                { id: 'setup-runtime', content: 'setup' },
+                { id: 'finish', content: 'finish' },
+            ],
+        };
+        const dispatch = vi.fn();
+        const { result, rerender } = renderHook(
+            ({ boardTutorial, syncKey }: { boardTutorial: TutorialState; syncKey: string }) => {
+                const context = useTutorial();
+                useTutorialBridge(boardTutorial, dispatch, syncKey);
+                return context;
+            },
+            {
+                wrapper,
+                initialProps: {
+                    boardTutorial: makeBoardTutorialState(manifest, 1),
+                    syncKey: 'finish-active',
+                },
+            },
+        );
+
+        await act(async () => undefined);
+        expect(result.current.isActive).toBe(true);
+        expect(result.current.isLastStep).toBe(true);
+
+        await act(async () => {
+            rerender({
+                boardTutorial: makeInactiveBoardTutorialState(),
+                syncKey: 'finished-blank',
+            });
+        });
+
+        expect(result.current.isActive).toBe(false);
     });
 
     it('命令桥就绪后可以先启动教程，但真实 Board 挂载前不会执行 AI 动作', async () => {

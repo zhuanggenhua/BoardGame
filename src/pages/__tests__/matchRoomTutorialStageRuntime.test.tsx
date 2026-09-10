@@ -5,7 +5,8 @@ import { useEffect, useRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MatchRoomTutorialBoardRuntime, type MatchRoomTutorialBoardRuntimeModel } from '../matchRoomTutorialStageRuntime';
 import { buildTutorialProgressSeed } from '../useMatchRoomTutorialLifecycle';
-import { buildLocalMatchSnapshotKey, persistLocalMatchSnapshot } from '../../engine/transport/localSession';
+import { buildLocalMatchSnapshotKey, persistLocalMatchSnapshot, type LocalMatchSnapshot } from '../../engine/transport/localSession';
+import { TUTORIAL_COMMANDS } from '../../engine/systems/TutorialSystem';
 import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import type { MatchState, TutorialManifest } from '../../engine/types';
 
@@ -20,6 +21,7 @@ let latestLocalProviderProps: null | {
     persistGameId?: string;
     seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
     followCurrentTurnPlayer?: boolean;
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
 } = null;
 const localProviderSeeds: string[] = [];
 const localProviderLifecycle: string[] = [];
@@ -30,6 +32,7 @@ const openModal = vi.fn((entry: NonNullable<typeof latestModalEntry>) => {
     return 'resume-modal';
 });
 const closeModal = vi.fn();
+const gameClientDispatch = vi.hoisted(() => vi.fn());
 
 vi.mock('react-i18next', async (importOriginal) => {
     const actual = await importOriginal<typeof import('react-i18next')>();
@@ -62,6 +65,13 @@ vi.mock('../../contexts/ModalStackContext', () => ({
 
 vi.mock('../../contexts/TutorialContext', () => ({
     useTutorial: () => ({
+        tutorial: {
+            active: false,
+            manifestId: null,
+            stepIndex: 0,
+            steps: [],
+            step: null,
+        },
         bindDispatch: vi.fn(),
         unbindDispatch: vi.fn(),
         syncTutorialState: vi.fn(),
@@ -99,8 +109,17 @@ vi.mock('../../components/common/overlays/ConfirmModal', () => ({
 
 vi.mock('../../engine/transport/react', () => ({
     useGameClient: () => ({
-        dispatch: vi.fn(),
-        state: { sys: { tutorial: { active: true, stepIndex: 1, step: manifest.steps[1] } } },
+        dispatch: gameClientDispatch,
+        state: {
+            sys: {
+                tutorial: {
+                    active: true,
+                    manifestId: manifest.id,
+                    stepIndex: 1,
+                    step: manifest.steps[1],
+                },
+            },
+        },
     }),
     LocalGameProvider: (props: {
         seed: string;
@@ -110,6 +129,7 @@ vi.mock('../../engine/transport/react', () => ({
         persistGameId?: string;
         seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
         followCurrentTurnPlayer?: boolean;
+        shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
         children?: React.ReactNode;
     }) => {
         const mountedSeed = useRef(props.seed).current;
@@ -127,6 +147,7 @@ vi.mock('../../engine/transport/react', () => ({
             persistGameId: props.persistGameId,
             seatControllers: props.seatControllers,
             followCurrentTurnPlayer: props.followCurrentTurnPlayer,
+            shouldRestorePersistedSession: props.shouldRestorePersistedSession,
         };
         localProviderSeeds.push(props.seed);
         return <div data-testid="local-game-provider">{props.children}</div>;
@@ -179,6 +200,7 @@ function persistProgressSnapshot(args: {
     targetManifest?: TutorialManifest;
     legacySeed?: boolean;
     includeManifestRevision?: boolean;
+    active?: boolean;
 } = {}) {
     const targetRuntime = args.targetRuntime ?? runtime;
     const targetManifest = args.targetManifest ?? targetRuntime.tutorialManifest ?? manifest;
@@ -201,7 +223,7 @@ function persistProgressSnapshot(args: {
             core: {},
             sys: {
                 tutorial: {
-                    active: true,
+                    active: args.active ?? true,
                     manifestId: targetManifest.id,
                     ...(args.includeManifestRevision ?? !args.legacySeed) && Number.isInteger(targetManifest.revision)
                         ? { manifestRevision: targetManifest.revision }
@@ -227,6 +249,28 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         modalClose.mockReset();
         openModal.mockClear();
         closeModal.mockClear();
+        gameClientDispatch.mockClear();
+    });
+
+    it('挂载教程局时把当前教程清单传给桥接层，供恢复态重新绑定白名单', async () => {
+        render(
+            <MemoryRouter>
+                <MatchRoomTutorialBoardRuntime runtime={runtime} />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(
+            buildTutorialProgressSeed(
+                runtime.gameId,
+                runtime.tutorialId,
+                runtime.tutorialManifest?.id,
+                runtime.tutorialManifest?.revision,
+            ),
+        ));
+        await waitFor(() => expect(gameClientDispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        ));
     });
 
     it('有可恢复进度时先弹窗，选择继续后用章节 seed 恢复本地教程', async () => {
@@ -255,7 +299,25 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         expect(latestLocalProviderProps?.persistGameId).toBe(runtime.gameId);
         expect(latestLocalProviderProps?.seatControllers).toEqual(runtime.seatControllers);
         expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(false);
-        expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed))).not.toBeNull();
+        const rawSnapshot = window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed));
+        expect(rawSnapshot).not.toBeNull();
+        expect(latestLocalProviderProps?.shouldRestorePersistedSession?.(JSON.parse(rawSnapshot ?? '') as LocalMatchSnapshot)).toBe(true);
+    });
+
+    it('非激活的同章节旧快照不会作为教程进度恢复，避免教程入口落到普通牌桌', async () => {
+        const seed = persistProgressSnapshot({ active: false });
+
+        render(
+            <MemoryRouter>
+                <MatchRoomTutorialBoardRuntime runtime={runtime} />
+            </MemoryRouter>,
+        );
+
+        expect(openModal).not.toHaveBeenCalled();
+        await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(seed));
+        const rawSnapshot = window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed));
+        expect(rawSnapshot).not.toBeNull();
+        expect(latestLocalProviderProps?.shouldRestorePersistedSession?.(JSON.parse(rawSnapshot ?? '') as LocalMatchSnapshot)).toBe(false);
     });
 
     it('选择重头开始会清掉当前章节快照并重新挂载教程 provider', async () => {

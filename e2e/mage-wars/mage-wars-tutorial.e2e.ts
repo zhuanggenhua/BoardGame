@@ -63,6 +63,16 @@ const RESPONSIVE_PLAN_VIEWPORTS = [
             reselect: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/05-1920-plan-card-reselect-after-slot-cancel.png`,
         },
     },
+    {
+        label: '2560x1304',
+        width: 2560,
+        height: 1304,
+        paths: {
+            oneOfTwo: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/06-2560x1304-plan-card-body-click-one-of-two.png`,
+            slotCancel: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/07-2560x1304-plan-slot-click-cancels-draft.png`,
+            reselect: `${RESPONSIVE_PLAN_SCREENSHOT_DIR}/08-2560x1304-plan-card-reselect-after-slot-cancel.png`,
+        },
+    },
 ] as const;
 
 type ResponsivePlanViewport = (typeof RESPONSIVE_PLAN_VIEWPORTS)[number];
@@ -811,10 +821,15 @@ async function expectMageWarsReadableViewport(page: Page, viewport: ResponsivePl
     expect(audit.rects.arenaViewport!.y, `${viewport.label} 地图视窗必须贴齐真实屏幕顶部`).toBeLessThanOrEqual(1);
     expect(audit.rects.arenaViewport!.right, `${viewport.label} 地图视窗必须覆盖真实屏幕右边`).toBeGreaterThanOrEqual(audit.viewport.width - 1);
     expect(audit.rects.arenaViewport!.bottom, `${viewport.label} 地图视窗必须覆盖真实屏幕底部`).toBeGreaterThanOrEqual(audit.viewport.height - 1);
-    expect(audit.rects.arenaStage!.x, `${viewport.label} 地图内容必须铺满真实视口左边，不能缩成中间小框`).toBeLessThanOrEqual(1);
-    expect(audit.rects.arenaStage!.y, `${viewport.label} 地图内容必须铺满真实视口顶部，不能缩成中间小框`).toBeLessThanOrEqual(1);
-    expect(audit.rects.arenaStage!.right, `${viewport.label} 地图内容必须铺满真实视口右边`).toBeGreaterThanOrEqual(audit.viewport.width - 1);
-    expect(audit.rects.arenaStage!.bottom, `${viewport.label} 地图内容必须铺满真实视口底部，底部 UI 不能成为地图裁剪边界`).toBeGreaterThanOrEqual(audit.viewport.height - 1);
+    expect(audit.scaleBadgeText, `${viewport.label} 默认地图缩放读数必须显示 60%`).toBe('60%');
+    expect(audit.rects.arenaStage!.x, `${viewport.label} 默认 60% 地图左边必须完整留在真实视口内`).toBeGreaterThanOrEqual(-2);
+    expect(audit.rects.arenaStage!.y, `${viewport.label} 默认 60% 地图顶部必须完整留在真实视口内`).toBeGreaterThanOrEqual(-2);
+    expect(audit.rects.arenaStage!.right, `${viewport.label} 默认 60% 地图右边必须完整留在真实视口内`).toBeLessThanOrEqual(audit.viewport.width + 2);
+    expect(audit.rects.arenaStage!.bottom, `${viewport.label} 默认 60% 地图底部必须完整留在真实视口内`).toBeLessThanOrEqual(audit.viewport.height + 2);
+    expect(
+        audit.arenaZones.filter((zone) => !zone.insideViewport).map((zone) => zone.zoneId),
+        `${viewport.label} 默认 60% 地图必须显示全部 12 个竞技场区域`,
+    ).toEqual([]);
     expect(
         audit.rects.spellbookShelf!.width,
         `${viewport.label} 法术书牌列必须吃掉底部主宽度，不能被旧 max-width 卡成窄条`,
@@ -1667,5 +1682,9 @@ test.describe('Mage Wars tutorial', () => {
 
     test('1920x1080 真实卡面点击计划且计划槽位不被遮挡', async ({ context, page }) => {
         await runResponsivePlanClickScenario(context, page, RESPONSIVE_PLAN_VIEWPORTS[1]);
+    });
+
+    test('2560x1304 真实卡面点击计划且计划槽位自然适配', async ({ context, page }) => {
+        await runResponsivePlanClickScenario(context, page, RESPONSIVE_PLAN_VIEWPORTS[2]);
     });
 });

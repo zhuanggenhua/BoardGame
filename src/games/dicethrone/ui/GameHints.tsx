@@ -14,6 +14,11 @@ import { Trash2 } from 'lucide-react';
 import type { InteractionDescriptor, TurnPhase } from '../domain/types';
 import { UI_Z_INDEX, HudPortal } from '../../../core';
 
+const dtViewportInlineUnit = (multiplier: number) =>
+    `calc(var(--mobile-board-shell-inline-unit, 1vw) * var(--mobile-board-shell-scale, 1) * ${multiplier})`;
+const dtViewportBlockUnit = (multiplier: number) =>
+    `calc(var(--mobile-board-shell-block-unit, 1vh) * var(--mobile-board-shell-scale, 1) * ${multiplier})`;
+
 export interface GameHintsProps {
     /** 是否处于弃牌模式 */
     isDiscardMode: boolean;
@@ -54,21 +59,29 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount 
 
     return (
         <div
-            className="absolute bottom-[14vw] left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
             style={{
                 zIndex: UI_Z_INDEX.hint,
+                bottom: dtViewportInlineUnit(14),
                 left: '50%',
                 transform: 'translateX(-50%)',
             }}
         >
-            <div className="px-[2vw] py-[0.8vw] rounded-xl bg-gradient-to-r from-red-900/90 to-orange-900/90 border-2 border-red-500/60 shadow-[0_0_2vw_rgba(239,68,68,0.4)] backdrop-blur-sm">
-                <div className="flex items-center gap-[1vw]">
-                    <Trash2 className="w-[1.5vw] h-[1.5vw] text-red-200" />
+            <div
+                className="rounded-xl bg-gradient-to-r from-red-900/90 to-orange-900/90 border-2 border-red-500/60 backdrop-blur-sm"
+                style={{
+                    paddingInline: dtViewportInlineUnit(2),
+                    paddingBlock: dtViewportInlineUnit(0.8),
+                    boxShadow: `0 0 ${dtViewportInlineUnit(2)} rgba(239,68,68,0.4)`,
+                }}
+            >
+                <div className="flex items-center" style={{ gap: dtViewportInlineUnit(1) }}>
+                    <Trash2 className="text-red-200" style={{ width: dtViewportInlineUnit(1.5), height: dtViewportInlineUnit(1.5) }} />
                     <div className="flex flex-col">
-                        <span className="text-red-200 text-[1vw] font-black tracking-wider">
+                        <span className="text-red-200 font-black tracking-wider" style={{ fontSize: dtViewportInlineUnit(1) }}>
                             {t('discard.mustDiscard')}
                         </span>
-                        <span className="text-orange-300 text-[0.8vw] font-bold">
+                        <span className="text-orange-300 font-bold" style={{ fontSize: dtViewportInlineUnit(0.8) }}>
                             {t('discard.selectToDiscard', { count: mustDiscardCount })}
                         </span>
                     </div>
@@ -86,11 +99,14 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor 
 
     return (
         <div
-            className="absolute top-[6vw] left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
-            style={{ zIndex: UI_Z_INDEX.hint }}
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
+            style={{ zIndex: UI_Z_INDEX.hint, top: dtViewportInlineUnit(6) }}
         >
-            <div className="bg-amber-600/90 backdrop-blur-sm rounded-xl px-[2vw] py-[0.6vw] border border-amber-400/60 shadow-lg text-center">
-                <span className="text-white font-bold text-[1vw] tracking-wide">
+            <div
+                className="bg-amber-600/90 backdrop-blur-sm rounded-xl border border-amber-400/60 shadow-lg text-center"
+                style={{ paddingInline: dtViewportInlineUnit(2), paddingBlock: dtViewportInlineUnit(0.6) }}
+            >
+                <span className="text-white font-bold tracking-wide" style={{ fontSize: dtViewportInlineUnit(1) }}>
                     {t(pendingInteraction.titleKey, { count: pendingInteraction.selectCount })}
                 </span>
             </div>
@@ -127,11 +143,17 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
             style={{ zIndex: UI_Z_INDEX.overlayRaised }}
         >
             <div className="text-center">
-                <div className="text-amber-400 text-[2vw] font-bold tracking-wider drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]">
+                <div
+                    className="text-amber-400 font-bold tracking-wider drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]"
+                    style={{ fontSize: dtViewportInlineUnit(2) }}
+                >
                     {opponentName}
                 </div>
 
-                <div className="text-amber-300/80 text-[1.2vw] font-medium mt-[0.3vw] drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
+                <div
+                    className="text-amber-300/80 font-medium drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                    style={{ fontSize: dtViewportInlineUnit(1.2), marginTop: dtViewportInlineUnit(0.3) }}
+                >
                     <span>{t('waiting.thinkingMessage')}</span>
                     <span className="inline-flex items-baseline">
                         <ThinkingDot delayMs={0} />
@@ -181,7 +203,7 @@ const ResponseWindowHint: React.FC<{
             style={{
                 zIndex: UI_Z_INDEX.hint,
                 position: 'fixed',
-                bottom: 'clamp(10rem, 42vh, 26rem)',
+                bottom: `clamp(10rem, ${dtViewportBlockUnit(42)}, 26rem)`,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 pointerEvents: onResponsePass ? 'auto' : 'none',
@@ -207,12 +229,15 @@ const ResponseWindowHint: React.FC<{
                 </div>
                 <div
                     data-testid="dicethrone-response-window-hint-panel"
-                    className="relative z-10 flex items-center gap-[0.9vw] rounded-full border border-[#ffe16d] bg-[#2b1837] px-[1.15vw] py-[0.62vw]"
+                    className="relative z-10 flex items-center rounded-full border border-[#ffe16d] bg-[#2b1837]"
                     style={{
                         border: '1.5px solid rgba(255,225,109,0.9)',
                         borderRadius: '9999px',
                         backgroundColor: '#2b1837',
                         boxShadow: 'none',
+                        gap: dtViewportInlineUnit(0.9),
+                        paddingInline: dtViewportInlineUnit(1.15),
+                        paddingBlock: dtViewportInlineUnit(0.62),
                     }}
                 >
                     <style>{`
@@ -224,7 +249,10 @@ const ResponseWindowHint: React.FC<{
                             [data-testid="dicethrone-response-orbit-track"] { animation: none !important; }
                         }
                     `}</style>
-                    <span className="relative z-10 text-[#fff3bd] text-[0.95vw] font-black tracking-wider">
+                    <span
+                        className="relative z-10 text-[#fff3bd] font-black tracking-wider"
+                        style={{ fontSize: dtViewportInlineUnit(0.95) }}
+                    >
                         {t('response.yourTurn')}
                     </span>
                     {onResponsePass && (
@@ -233,7 +261,7 @@ const ResponseWindowHint: React.FC<{
                             data-testid="dicethrone-response-pass-button"
                             data-tutorial-id="response-pass-button"
                             onClick={handleClick}
-                            className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] px-[1vw] text-[0.78vw] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
+                            className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
                             style={{
                                 minHeight: 44,
                                 border: '2px solid #fff0ae',
@@ -241,6 +269,8 @@ const ResponseWindowHint: React.FC<{
                                 backgroundColor: '#9b7118',
                                 boxShadow: 'none',
                                 pointerEvents: 'auto',
+                                paddingInline: dtViewportInlineUnit(1),
+                                fontSize: dtViewportInlineUnit(0.78),
                             }}
                         >
                             {passLabel ?? t('response.pass')}
@@ -260,11 +290,14 @@ const PassiveRerollHint: React.FC = () => {
 
     return (
         <div
-            className="absolute top-[6vw] left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
-            style={{ zIndex: UI_Z_INDEX.hint }}
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
+            style={{ zIndex: UI_Z_INDEX.hint, top: dtViewportInlineUnit(6) }}
         >
-            <div className="bg-emerald-600/90 backdrop-blur-sm rounded-xl px-[2vw] py-[0.6vw] border border-emerald-400/60 shadow-lg text-center">
-                <span className="text-white font-bold text-[1vw] tracking-wide">
+            <div
+                className="bg-emerald-600/90 backdrop-blur-sm rounded-xl border border-emerald-400/60 shadow-lg text-center"
+                style={{ paddingInline: dtViewportInlineUnit(2), paddingBlock: dtViewportInlineUnit(0.6) }}
+            >
+                <span className="text-white font-bold tracking-wide" style={{ fontSize: dtViewportInlineUnit(1) }}>
                     {t('passive.selectDieHint')}
                 </span>
             </div>

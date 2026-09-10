@@ -75,12 +75,6 @@ const buildTutorialController = (dispatch: DispatchFn): TutorialController => {
     };
 };
 
-const shouldAutoAdvance = (step: TutorialStepSnapshot): boolean => {
-    if (step.autoAdvanceAfterAi === false) return false;
-    if (!step.advanceOnEvents) return true;
-    return step.advanceOnEvents.length === 0;
-};
-
 const hasAiActions = (step: TutorialStepSnapshot): boolean =>
     Array.isArray(step.aiActions) && step.aiActions.length > 0;
 
@@ -326,8 +320,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (executedAiStepsRef.current.has(stepId)) return;
         executedAiStepsRef.current.add(stepId);
 
-        // 缓存当前步骤的 autoAdvance 判断和 aiActions，避免闭包引用被清理后的状态
-        const shouldAutoAdvanceAfterAi = shouldAutoAdvance(tutorial.step);
+        // 缓存当前步骤的 aiActions，避免闭包引用被清理后的状态
         const aiActions = tutorial.step.aiActions ? [...tutorial.step.aiActions] : [];
         const shouldYieldBetweenAiActions = tutorial.stepIndex !== 0;
 
@@ -413,12 +406,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
                 if (!completed || aiExecutionGenerationRef.current !== executionGeneration) return;
 
-                // 始终调用 consumeAi 清除 aiActions（防止 effect 重复触发）
+                // 始终调用 consumeAi 清除 aiActions（防止 effect 重复触发）。
+                // 自动 AI 步骤是否推进下一步由 TutorialSystem 在同一命令里裁定，
+                // 避免 React 再发一个 NEXT 命令时读到过期本地状态。
                 controller.consumeAi(stepId);
-
-                if (shouldAutoAdvanceAfterAi) {
-                    controller.next('auto');
-                }
             })();
         }, delay);
 
@@ -490,6 +481,9 @@ export const useTutorialBridge = (
         if (!context) return;
         // 只在教程模式下同步状态，防止在线对局的 sys.tutorial 污染 TutorialContext
         if (!isTutorialMode) return;
+        if (context.tutorial.active && !tutorial?.active && !context.isLastStep) {
+            return;
+        }
         const signature = `${tutorial.active}-${tutorial.stepIndex}-${tutorial.step?.id ?? ''}-${getTutorialStepCount(tutorial)}-${tutorial.aiActions?.length ?? 0}-${tutorial.pendingAnimationAdvance ?? false}-${runtimeSyncKey ?? ''}`;
         if (lastSyncSignatureRef.current === signature) return;
         lastSyncSignatureRef.current = signature;

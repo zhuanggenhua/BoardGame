@@ -120,13 +120,13 @@ describe('Property 2.2: Revive undead tutorial setup is deterministic', () => {
 });
 
 describe('Property 2.3: Tutorial phase steps stay player-driven', () => {
-    it('教程活跃时 Summoner Wars 不应自动跳过阶段', () => {
-        const boardSrc = readFileSync(resolve(__dirname, '../Board.tsx'), 'utf-8');
+    it('Summoner Wars 不接入阶段自动跳过', () => {
         const interactionSrc = readFileSync(resolve(__dirname, '../ui/useCellInteraction.ts'), 'utf-8');
 
-        expect(boardSrc).toContain('isTutorialActive,');
-        expect(interactionSrc).toContain('isTutorialActive?: boolean');
-        expect(interactionSrc).toContain('&& !isTutorialActive');
+        expect(interactionSrc).not.toContain('useAutoSkipPhase');
+        expect(interactionSrc).not.toContain('__SW_DISABLE_AUTO_SKIP__');
+        expect(interactionSrc).not.toContain('isTutorialActive?: boolean');
+        expect(interactionSrc).toContain('召唤师战争阶段不再自动跳过');
     });
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import type { GameBoardRenderer } from '../engine/boardRenderer';
@@ -13,10 +13,12 @@ import { useSearchParams } from 'react-router-dom';
 import { useDebug } from '../contexts/DebugContext';
 import type { TutorialManifest } from '../engine/types';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
+import type { LocalMatchSnapshot } from '../engine/transport/localSession';
 import { resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 import {
     buildTutorialProgressSeed,
     clearTutorialProgress,
+    isRestorableTutorialProgressSnapshot,
     notifyTutorialProgressStorageChanged,
     readRestorableTutorialProgress,
 } from './useMatchRoomTutorialLifecycle';
@@ -75,6 +77,15 @@ const TutorialLocalGameRuntime = ({
         ? `${restorableProgress.seed}:${restorableProgress.stepIndex}:${restorableProgress.stepId}`
         : null;
     const shouldAskResume = Boolean(restorableProgress && progressKey !== handledProgressKey);
+    const shouldRestorePersistedSession = useCallback((snapshot: LocalMatchSnapshot) => {
+        if (!runtime.tutorialManifest) {
+            return false;
+        }
+        return isRestorableTutorialProgressSnapshot({
+            snapshot,
+            manifest: runtime.tutorialManifest,
+        });
+    }, [runtime.tutorialManifest]);
     const seatControllers = useMemo(
         () => Object.fromEntries(
             Array.from({ length: numPlayers }, (_, index) => {
@@ -181,6 +192,7 @@ const TutorialLocalGameRuntime = ({
             followCurrentTurnPlayer={false}
             persistSession={Boolean(runtime.gameId)}
             persistGameId={runtime.gameId}
+            shouldRestorePersistedSession={shouldRestorePersistedSession}
         >
             <TutorialDispatchBridge tutorialManifest={runtime.tutorialManifest}>
                 <BoardBridge

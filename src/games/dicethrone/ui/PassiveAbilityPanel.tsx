@@ -12,6 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { Dices, BookOpen, Sparkles } from 'lucide-react';
 import { GameButton } from './components/GameButton';
 import type { PassiveAbilityDef, PassiveActionDef } from '../domain/passiveAbility';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+
+const dtUnit = buildBoardShellInlineUnitValue;
 
 export interface PassiveAbilityPanelProps {
     /** 当前玩家的被动能力列表 */
@@ -30,9 +33,9 @@ export interface PassiveAbilityPanelProps {
 
 /** 动作类型对应的图标 */
 const ACTION_ICON: Record<string, React.ReactNode> = {
-    rerollDie: <Dices className="w-[0.9vw] h-[0.9vw]" />,
-    drawCard: <BookOpen className="w-[0.9vw] h-[0.9vw]" />,
-    custom: <Sparkles className="w-[0.9vw] h-[0.9vw]" />,
+    rerollDie: <Dices style={{ width: dtUnit(0.9), height: dtUnit(0.9) }} />,
+    drawCard: <BookOpen style={{ width: dtUnit(0.9), height: dtUnit(0.9) }} />,
+    custom: <Sparkles style={{ width: dtUnit(0.9), height: dtUnit(0.9) }} />,
 };
 
 export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
@@ -66,8 +69,8 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
     if (visibleActions.length === 0) return null;
 
     return (
-        <div className="w-[10.2vw] min-w-0" data-testid="passive-ability-action-bar">
-            <div className="grid min-w-0 grid-cols-2 gap-[0.25vw]">
+        <div className="min-w-0" style={{ width: dtUnit(10.2) }} data-testid="passive-ability-action-bar">
+            <div className="grid min-w-0 grid-cols-2" style={{ gap: dtUnit(0.25) }}>
                 {visibleActions.map(({ passive, action, actionIndex, isUsable, isSelecting }) => (
                     <PassiveActionButton
                         key={`${passive.id}-${actionIndex}`}
@@ -131,14 +134,20 @@ const PassiveActionButton: React.FC<{
             variant={isSelecting ? 'danger' : 'glass'}
             size="sm"
             className={`
-                !px-[0.28vw] !py-[0.25vw] !min-h-0 !rounded-[0.4vw] flex min-w-0 flex-col items-center gap-[0.05vw] overflow-hidden
-                ${isSelecting ? 'ring-[0.15vw] ring-amber-400 animate-pulse' : ''}
+                !min-h-0 flex min-w-0 flex-col items-center overflow-hidden
+                ${isSelecting ? 'ring-2 ring-amber-400 animate-pulse' : ''}
                 ${isUsable && !isSelecting ? 'hover:!bg-emerald-500/20 hover:border-emerald-400/50' : ''}
             `}
+            style={{
+                paddingInline: dtUnit(0.28),
+                paddingBlock: dtUnit(0.25),
+                borderRadius: dtUnit(0.4),
+                gap: dtUnit(0.05),
+            }}
         >
-            <div className="flex min-w-0 items-center gap-[0.2vw]">
+            <div className="flex min-w-0 items-center" style={{ gap: dtUnit(0.2) }}>
                 {icon}
-                <span className="truncate whitespace-nowrap !text-[0.6vw] font-bold">
+                <span className="truncate whitespace-nowrap font-bold" style={{ fontSize: dtUnit(0.6) }}>
                     {isSelecting ? t('passive.action.cancel') : label}
                 </span>
             </div>

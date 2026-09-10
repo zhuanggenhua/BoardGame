@@ -25,6 +25,7 @@ import type { ReactNode } from 'react';
 import type { GameEngineConfig } from './engineConfig';
 import type { LatencyOptimizationConfig } from './latency/types';
 import type { AiSeatController } from '../ai/types';
+import type { LocalMatchSnapshot } from './localSession';
 import {
     shouldSilentlyRetryOnlineAiBatchRejection,
 } from './onlineAiRecovery';
@@ -166,6 +167,8 @@ export interface LocalGameProviderProps {
     persistSession?: boolean;
     /** 持久化用的游戏 ID；默认使用 config.gameId */
     persistGameId?: string;
+    /** 可选恢复策略；返回 false 时忽略已保存快照并从当前 setup 新开局。 */
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
     /** 测试/手动驱动场景中仅保留 AI 座位语义，不启动本地 AI 自动出牌。 */
     disableLocalAiAutomation?: boolean;
 }
@@ -183,6 +186,7 @@ export function LocalGameProvider({
     followCurrentTurnPlayer = false,
     persistSession = false,
     persistGameId,
+    shouldRestorePersistedSession,
     disableLocalAiAutomation = false,
 }: LocalGameProviderProps) {
     const value = useLocalGameProviderRuntime({
@@ -197,6 +201,7 @@ export function LocalGameProvider({
         followCurrentTurnPlayer,
         persistSession,
         persistGameId,
+        shouldRestorePersistedSession,
         disableLocalAiAutomation,
     });
 

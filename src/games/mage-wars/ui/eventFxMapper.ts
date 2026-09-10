@@ -32,10 +32,6 @@ function measureCellDistance(source: FxCellCoord, target: FxCellCoord): number {
     return Math.abs(source.row - target.row) + Math.abs(source.col - target.col);
 }
 
-function shouldRenderOrdinaryMoveCue(source: FxCellCoord, target: FxCellCoord): boolean {
-    return measureCellDistance(source, target) > 1;
-}
-
 function resolveIntensity(amount: number | undefined): FxContext['intensity'] {
     return amount !== undefined && amount >= 6 ? 'strong' : 'normal';
 }
@@ -187,28 +183,7 @@ export function mapMageWarsEventToFx(
     }
 
     if (event.type === MAGE_WARS_EVENTS.MAGE_MOVED) {
-        const payload = event.payload;
-        const source = resolveZoneCell(core, payload.fromZoneId);
-        const target = resolveZoneCell(core, payload.toZoneId);
-        if (!source || !target) return null;
-        if (!shouldRenderOrdinaryMoveCue(source, target)) return null;
-
-        return {
-            sourceEventId: entry.id,
-            cue: MW_FX.MOVE,
-            ctx: {
-                cell: target,
-                intensity: 'normal',
-            },
-            params: {
-                source,
-                playerId: payload.playerId,
-                targetPlayerId: payload.playerId,
-                fromZoneId: payload.fromZoneId,
-                toZoneId: payload.toZoneId,
-                movementMode: 'normal',
-            },
-        };
+        return null;
     }
 
     if (event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED) {
@@ -218,14 +193,14 @@ export function mapMageWarsEventToFx(
         if (!source || !target) return null;
         const usesTeleportMovement = payload.movementMode === 'teleport';
         const distance = measureCellDistance(source, target);
-        if (!usesTeleportMovement && !shouldRenderOrdinaryMoveCue(source, target)) return null;
+        if (!usesTeleportMovement) return null;
 
         return {
             sourceEventId: entry.id,
-            cue: usesTeleportMovement ? MW_FX.SPELL_TELEPORT : MW_FX.MOVE,
+            cue: MW_FX.SPELL_TELEPORT,
             ctx: {
                 cell: target,
-                intensity: usesTeleportMovement && distance > 1 ? 'strong' : 'normal',
+                intensity: distance > 1 ? 'strong' : 'normal',
             },
             params: {
                 source,

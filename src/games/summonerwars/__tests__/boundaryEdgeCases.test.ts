@@ -394,7 +394,7 @@ describe('远程攻击射程边界', () => {
     expect(canAttackEnhanced(core, { row: 3, col: 3 }, { row: 5, col: 3 })).toBe(false);
   });
 
-  it('攻击自己的单位 → 不可攻击', () => {
+  it('攻击自己的单位 → 可攻击', () => {
     const core = createMinimalCore();
     placeUnit(core, { row: 3, col: 3 }, {
       card: makeUnitCard('self-atk', { attackType: 'melee', attackRange: 1 }),
@@ -402,7 +402,7 @@ describe('远程攻击射程边界', () => {
     });
     placeUnit(core, { row: 4, col: 3 }, { card: makeUnitCard('ally'), owner: '0' });
 
-    expect(canAttackEnhanced(core, { row: 3, col: 3 }, { row: 4, col: 3 })).toBe(false);
+    expect(canAttackEnhanced(core, { row: 3, col: 3 }, { row: 4, col: 3 })).toBe(true);
   });
 });
 

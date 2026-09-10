@@ -116,6 +116,39 @@ export function updatePendingAttackSettlementStage(
     };
 }
 
+/**
+ * 攻击链拥有的规则选择已完成后，按显式入口阶段转到“可结算”。
+ * settlementStage 是阶段真相源；postDamageFollowUpResolved 只同步给旧结算消费点。
+ */
+export function markPendingAttackChoiceFollowUpResolvedFromStage(
+    pendingAttack: PendingAttack | null | undefined,
+    sourceAbilityId: string | undefined,
+    expectedStage: PendingAttackSettlementStage,
+): PendingAttack | null | undefined {
+    if (!pendingAttack || !sourceAbilityId || pendingAttack.sourceAbilityId !== sourceAbilityId) {
+        return pendingAttack;
+    }
+    if (getPendingAttackSettlementStage(pendingAttack) !== expectedStage) {
+        return pendingAttack;
+    }
+
+    return updatePendingAttackSettlementStage({
+        ...pendingAttack,
+        postDamageFollowUpResolved: true,
+    }, 'readyToResolve');
+}
+
+export function markPendingAttackPostDamageFollowUpResolved(
+    pendingAttack: PendingAttack | null | undefined,
+    sourceAbilityId: string | undefined,
+): PendingAttack | null | undefined {
+    return markPendingAttackChoiceFollowUpResolvedFromStage(
+        pendingAttack,
+        sourceAbilityId,
+        'postDamagePending',
+    );
+}
+
 export function buildPendingAttackResolvedEvent(
     pendingAttack: PendingAttack,
     sourceCommandType: string,

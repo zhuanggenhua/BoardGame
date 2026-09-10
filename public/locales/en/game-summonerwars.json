@@ -302,16 +302,6 @@
     "showAllLifeTotals": "Show all unit life",
     "hideAllLifeTotals": "Hide all unit life"
   },
-  "hud": {
-    "combatEffects": {
-      "title": "Combat Presentation",
-      "hint": "Only affects local attack animations on mobile. Resolution, damage, and audio volume stay unchanged.",
-      "reduced": "Reduce attack effects",
-      "reducedHint": "Use on slower devices: mobile keeps the ranged wave, hit flash, and damage numbers while reducing the heaviest particles, shake, and lunge presentation.",
-      "enabled": "Enabled",
-      "disabled": "Disabled"
-    }
-  },
   "debug": {
     "phase_labels": {
       "factionSelect": "Faction",
@@ -335,6 +325,16 @@
       "subtract": "- Remove",
       "clear": "Clear",
       "full": "Full Magic (15)"
+    },
+    "health": {
+      "section_title": "Summoner Health",
+      "description": "Quickly test Summoner damage, death, and game over.",
+      "player_option": "P{{player}} ({{current}}/{{life}})",
+      "missing_option": "P{{player}} (Summoner is off board)",
+      "status": "Target: P{{player}} Summoner, {{current}} / {{life}} remaining, {{damage}} damage taken.",
+      "no_summoner": "The target Summoner is already off board.",
+      "damage": "Damage",
+      "kill": "Kill"
     },
     "phase": {
       "section_title": "Phase Switch",

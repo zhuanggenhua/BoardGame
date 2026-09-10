@@ -10,6 +10,9 @@ import { PHASE_ORDER } from './domain/types';
 import { resolveCardDisplayName } from '../../components/game/framework/debug/cardNameResolver';
 import { buildCardRegistry, getCardPoolByFaction } from './config/cardRegistry';
 import { getBaseCardId } from './domain/ids';
+import { getSummoner } from './domain/helpers';
+import { getEffectiveLife } from './domain/abilityResolver';
+import { SUMMONER_WARS_CHEAT_COMMANDS } from './debugCommands';
 
 interface SummonerWarsDebugConfigProps {
     G: { core: SummonerWarsCore };
@@ -29,6 +32,14 @@ interface DebugCardEntry extends DebugCardStats {
     card: Card;
     atlasIndex: number | null;
     atlasLabel: string;
+}
+
+interface SummonerHealthDebug {
+    playerId: PlayerId;
+    life: number;
+    damage: number;
+    current: number;
+    hasSummoner: boolean;
 }
 
 const PHASE_LABEL_KEYS: Record<GamePhase, string> = {
@@ -184,18 +195,44 @@ const collectDebugCardEntries = (core: SummonerWarsCore | undefined, playerId: P
         });
 };
 
+const getSummonerHealthDebug = (
+    core: SummonerWarsCore | undefined,
+    playerId: PlayerId,
+): SummonerHealthDebug => {
+    const summoner = core ? getSummoner(core, playerId) : undefined;
+    if (!core || !summoner) {
+        return { playerId, life: 0, damage: 0, current: 0, hasSummoner: false };
+    }
+
+    const life = getEffectiveLife(summoner, core);
+    return {
+        playerId,
+        life,
+        damage: summoner.damage,
+        current: Math.max(0, life - summoner.damage),
+        hasSummoner: true,
+    };
+};
+
 export const SummonerWarsDebugConfig: React.FC<SummonerWarsDebugConfigProps> = ({ G, dispatch }) => {
     const core = G?.core;
     const { t } = useTranslation('game-summonerwars');
 
     const [cheatPlayer, setCheatPlayer] = useState<string>('0');
     const [cheatValue, setCheatValue] = useState<string>('5');
+    const [damagePlayer, setDamagePlayer] = useState<PlayerId>('1');
+    const [damageValue, setDamageValue] = useState<string>('1');
     const [targetPhase, setTargetPhase] = useState<GamePhase>('summon');
     const [dealPlayer, setDealPlayer] = useState<PlayerId>('0');
     const [selectedCardId, setSelectedCardId] = useState<string>('');
 
     const playerDeck = core?.players?.[dealPlayer]?.deck ?? [];
     const playerHand = core?.players?.[dealPlayer]?.hand ?? [];
+    const summonerHealthByPlayer = useMemo(() => ({
+        '0': getSummonerHealthDebug(core, '0'),
+        '1': getSummonerHealthDebug(core, '1'),
+    }), [core]);
+    const targetSummonerHealth = summonerHealthByPlayer[damagePlayer];
     const debugCardEntries = useMemo(() => collectDebugCardEntries(core, dealPlayer), [core, dealPlayer]);
 
     const effectiveSelectedCardId = useMemo(() => {
@@ -232,6 +269,16 @@ export const SummonerWarsDebugConfig: React.FC<SummonerWarsDebugConfigProps> = (
         });
     };
 
+    const dispatchSummonerDamage = (amount: number) => {
+        const damage = Math.floor(amount);
+        if (!targetSummonerHealth.hasSummoner || !Number.isFinite(damage) || damage <= 0) return;
+
+        dispatch(SUMMONER_WARS_CHEAT_COMMANDS.DAMAGE_SUMMONER, {
+            playerId: damagePlayer,
+            amount: damage,
+        });
+    };
+
     return (
         <div className="space-y-4">
             {/* 魔力作弊 */}
@@ -253,6 +300,76 @@ export const SummonerWarsDebugConfig: React.FC<SummonerWarsDebugConfigProps> = (
                     <div className="flex gap-2">
                         <button onClick={() => dispatch('SYS_CHEAT_SET_RESOURCE', { playerId: cheatPlayer, resourceId: 'magic', value: 0 })} className="flex-1 px-2 py-1 bg-gray-200 text-gray-700 rounded text-[10px] font-bold hover:bg-gray-300">{t('debug.magic.clear')}</button>
                         <button onClick={() => dispatch('SYS_CHEAT_SET_RESOURCE', { playerId: cheatPlayer, resourceId: 'magic', value: 15 })} className="flex-1 px-2 py-1 bg-gray-200 text-gray-700 rounded text-[10px] font-bold hover:bg-gray-300">{t('debug.magic.full')}</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 召唤师血量调试 */}
+            <div className="bg-rose-50 p-3 rounded-lg border border-rose-200" data-testid="sw-debug-summoner-health">
+                <h4 className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-3">{t('debug.health.section_title')}</h4>
+                <div className="space-y-2">
+                    <div className="text-[9px] text-rose-700 bg-rose-100 p-2 rounded">
+                        {t('debug.health.description')}
+                    </div>
+                    <div className="flex gap-2">
+                        <select
+                            value={damagePlayer}
+                            onChange={(e) => setDamagePlayer(e.target.value as PlayerId)}
+                            className="flex-1 px-2 py-1.5 text-xs border border-rose-300 rounded bg-white text-gray-900"
+                            data-testid="sw-debug-damage-summoner-player"
+                        >
+                            {(['0', '1'] as PlayerId[]).map((playerId) => {
+                                const health = summonerHealthByPlayer[playerId];
+                                return (
+                                    <option key={playerId} value={playerId}>
+                                        {health.hasSummoner
+                                            ? t('debug.health.player_option', {
+                                                player: playerId,
+                                                current: health.current,
+                                                life: health.life,
+                                            })
+                                            : t('debug.health.missing_option', { player: playerId })}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                        <input
+                            type="number"
+                            min="1"
+                            max={Math.max(1, targetSummonerHealth.current)}
+                            value={damageValue}
+                            onChange={(e) => setDamageValue(e.target.value)}
+                            className="w-16 px-2 py-1.5 text-xs border border-rose-300 rounded bg-white text-center text-gray-900"
+                            data-testid="sw-debug-damage-summoner-value"
+                        />
+                    </div>
+                    <div className="text-[9px] text-rose-600">
+                        {targetSummonerHealth.hasSummoner
+                            ? t('debug.health.status', {
+                                player: targetSummonerHealth.playerId,
+                                current: targetSummonerHealth.current,
+                                life: targetSummonerHealth.life,
+                                damage: targetSummonerHealth.damage,
+                            })
+                            : t('debug.health.no_summoner')}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => dispatchSummonerDamage(Number(damageValue))}
+                            disabled={!targetSummonerHealth.hasSummoner}
+                            className="flex-1 px-3 py-1.5 bg-rose-500 text-white rounded text-xs font-bold hover:bg-rose-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            data-testid="sw-debug-damage-summoner-apply"
+                        >
+                            {t('debug.health.damage')}
+                        </button>
+                        <button
+                            onClick={() => dispatchSummonerDamage(targetSummonerHealth.current)}
+                            disabled={!targetSummonerHealth.hasSummoner || targetSummonerHealth.current <= 0}
+                            className="flex-1 px-3 py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            data-testid="sw-debug-kill-summoner"
+                        >
+                            {t('debug.health.kill')}
+                        </button>
                     </div>
                 </div>
             </div>

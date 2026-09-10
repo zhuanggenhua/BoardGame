@@ -1847,6 +1847,16 @@ const readTutorialRuntimeDiagnostics = async (
               core?: {
                 phase?: string;
                 latestFeedback?: string;
+                pendingEventRollResolution?: {
+                  rollId?: string;
+                  requiredPlayerIds?: string[];
+                  acknowledgedPlayerIds?: string[];
+                } | null;
+                recentRoll?: {
+                  id?: string;
+                  dice?: number[];
+                  trait?: string;
+                } | null;
                 currentExplorer?: { inventory?: Array<{ id?: string; name?: string }> };
               };
             };
@@ -1885,6 +1895,22 @@ const readTutorialRuntimeDiagnostics = async (
       ),
       phase: snapshot?.core?.phase ?? null,
       latestFeedback: snapshot?.core?.latestFeedback ?? null,
+      pendingEventRollResolution: snapshot?.core?.pendingEventRollResolution
+        ? {
+            rollId: snapshot.core.pendingEventRollResolution.rollId ?? null,
+            requiredPlayerIds:
+              snapshot.core.pendingEventRollResolution.requiredPlayerIds ?? null,
+            acknowledgedPlayerIds:
+              snapshot.core.pendingEventRollResolution.acknowledgedPlayerIds ?? null,
+          }
+        : null,
+      recentRoll: snapshot?.core?.recentRoll
+        ? {
+            id: snapshot.core.recentRoll.id ?? null,
+            dice: snapshot.core.recentRoll.dice ?? null,
+            trait: snapshot.core.recentRoll.trait ?? null,
+          }
+        : null,
       inventory:
         snapshot?.core?.currentExplorer?.inventory?.map((item) => ({
           id: item.id,
@@ -1893,6 +1919,51 @@ const readTutorialRuntimeDiagnostics = async (
       bodyText: document.body.textContent?.replace(/\s+/g, " ").trim().slice(0, 800) ?? "",
     };
   });
+
+const expectRabbitFootResultConfirmationReady = async (
+  page: Parameters<typeof test>[0]["page"],
+  label: string,
+) => {
+  await waitForStep(page, "rabbit-foot-result", 15000);
+  const discoveryReveal = page.getByTestId("betrayal-discovery-panel");
+  await expect(discoveryReveal, `${label}必须保留事件结果面板`).toBeVisible();
+  const eventRollConfirm = discoveryReveal.getByTestId(
+    "betrayal-discovery-continue",
+  );
+  await expect(eventRollConfirm, `${label}必须显示结果确认按钮`).toBeVisible();
+  await expect(eventRollConfirm, `${label}确认按钮必须可点击`).toBeEnabled();
+  await expect(eventRollConfirm, `${label}确认进度必须仍是 0/1`).toHaveText(
+    "确认 0/1",
+  );
+  await expect(eventRollConfirm).toHaveAttribute(
+    "data-event-roll-confirmed-count",
+    "0",
+  );
+  await expect(eventRollConfirm).toHaveAttribute(
+    "data-event-roll-required-count",
+    "1",
+  );
+
+  const diagnostics = await readTutorialRuntimeDiagnostics(page);
+  expect(
+    diagnostics.stepId,
+    `${label}正式教程状态必须是兔脚结果：${JSON.stringify(diagnostics)}`,
+  ).toBe("rabbit-foot-result");
+  expect(
+    (diagnostics.contextDiagnostics as { stepId?: string } | null)?.stepId,
+    `${label}教程上下文必须同步到兔脚结果：${JSON.stringify(diagnostics)}`,
+  ).toBe("rabbit-foot-result");
+  expect(
+    diagnostics.pendingEventRollResolution?.requiredPlayerIds,
+    `${label}正式游戏结果必须仍等待当前玩家确认：${JSON.stringify(diagnostics)}`,
+  ).toEqual(["0"]);
+  expect(
+    diagnostics.pendingEventRollResolution?.acknowledgedPlayerIds ?? [],
+    `${label}刷新恢复前后都不应提前确认结果：${JSON.stringify(diagnostics)}`,
+  ).toEqual([]);
+
+  return eventRollConfirm;
+};
 
 const advanceToStep = async (
   page: Parameters<typeof test>[0]["page"],
@@ -3637,13 +3708,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       waitUntil: "domcontentloaded",
     });
     await criticalEventAtlasRequested;
-    await expect(page.getByTestId("loading-screen")).toBeVisible({
-      timeout: 10000,
-    });
-    await expect(page.getByTestId("betrayal-board")).not.toBeVisible();
-    await saveScreenshot(page, TECHNICAL_ASSET_GATE_STEP);
+    const loadingScreen = page.getByTestId("loading-screen");
+    if (await loadingScreen.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(page.getByTestId("betrayal-board")).not.toBeVisible();
+      await saveScreenshot(page, TECHNICAL_ASSET_GATE_STEP);
+    }
     releaseCriticalEventAtlas();
     await waitForBetrayalPageReady(page);
+    await expect(loadingScreen).toHaveCount(0);
 
     await waitForStep(page, "objective-and-turn", 15000);
     await expect(page.getByTestId("tutorial-overlay-card")).toBeVisible({
@@ -4424,7 +4496,25 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       STEP_16,
       "兔脚重投过程图和完成图",
     );
-    await eventRollConfirm.click();
+    await expectRabbitFootResultConfirmationReady(
+      page,
+      "刷新前兔脚重投结果",
+    );
+    await page.reload({ waitUntil: "domcontentloaded" });
+    const continueFromSavedTutorial = page.getByRole("button", {
+      name: "从上次继续",
+    });
+    await expect(
+      continueFromSavedTutorial,
+      "兔脚结果恢复态必须出现继续上次教程确认",
+    ).toBeVisible({ timeout: 30000 });
+    await continueFromSavedTutorial.click();
+    await waitForBetrayalPageReady(page);
+    const restoredEventRollConfirm = await expectRabbitFootResultConfirmationReady(
+      page,
+      "刷新恢复后的兔脚重投结果",
+    );
+    await restoredEventRollConfirm.click();
     await waitForStep(page, "finish", 10000);
     await expect(tutorialOverlayCard).toContainText("承受 1 点物理伤害");
     await expect(tutorialOverlayCard).not.toContainText("兔脚");

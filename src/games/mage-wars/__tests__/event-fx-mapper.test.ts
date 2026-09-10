@@ -450,7 +450,7 @@ describe('mage-wars event FX mapper', () => {
         expect(instruction).toBeNull();
     });
 
-    it('maps multi-zone ordinary arena object movement to a local move cue', () => {
+    it('does not map multi-zone ordinary arena object movement to a visible FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -465,26 +465,7 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 10,
         }), core);
 
-        expect(instruction).toMatchObject({
-            cue: MW_FX.MOVE,
-            ctx: {
-                cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
-                intensity: 'normal',
-            },
-            params: {
-                source: getArenaCell(core, ARENA_ZONE_IDS.C2),
-                ownerId: '0',
-                objectId: 'mwobj-long-moving-cat',
-                targetObjectId: 'mwobj-long-moving-cat',
-                fromZoneId: ARENA_ZONE_IDS.C2,
-                toZoneId: ARENA_ZONE_IDS.A2,
-                movementMode: 'normal',
-            },
-        });
-        const source = instruction?.params?.source as { row: number; col: number };
-        const target = instruction?.ctx.cell;
-        expect(target).toBeDefined();
-        expect(Math.abs(source.row - target!.row) + Math.abs(source.col - target!.col)).toBe(2);
+        expect(instruction).toBeNull();
     });
 
     it('maps teleport-mode arena object movement to teleport FX instead of ordinary move trail', () => {

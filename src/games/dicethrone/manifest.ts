@@ -1,4 +1,5 @@
 import type { GameManifestEntry } from '../manifest.types';
+import { DESKTOP_REFERENCE_VIEWPORT, MOBILE_LANDSCAPE_DESIGN_VIEWPORT } from '../../shared/referenceViewports';
 
 const entry: GameManifestEntry = {
     id: 'dicethrone',
@@ -21,7 +22,10 @@ const entry: GameManifestEntry = {
     mobileLayoutPreset: 'board-shell',
     mobileBattlefieldZoom: 'game-owned',
     mobileBoardShellLayout: {
-        designWidth: 940,
+        designWidth: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width,
+        designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
+        referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
+        referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
     },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {

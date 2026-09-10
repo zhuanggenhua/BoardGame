@@ -433,6 +433,16 @@ function resetCriticalImagesSignal(): void {
     _criticalImagesState = 'blocked';
 }
 
+const resolveCriticalPathsForStage = (
+    staticCritical: string[],
+    resolved: CriticalImageResolverResult,
+): string[] => {
+    const source = resolved.replaceStaticCritical
+        ? resolved.critical
+        : [...staticCritical, ...resolved.critical];
+    return [...new Set(source)];
+};
+
 /**
  * 预加载关键图片（第一阶段：阻塞门禁）
  *
@@ -465,8 +475,8 @@ export async function preloadCriticalImages(
         resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
     }
 
-    // 合并去重
-    const criticalPaths = [...new Set([...staticCritical, ...resolved.critical])];
+    // 合并去重；教程等动态阶段可显式接管静态全量 critical，避免首屏被非当前素材阻塞。
+    const criticalPaths = resolveCriticalPathsForStage(staticCritical, resolved);
     const warmPaths = [...new Set([...staticWarm, ...resolved.warm])];
 
     if (criticalPaths.length === 0) {
@@ -547,7 +557,7 @@ export function areAllCriticalImagesCached(
         resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
     }
 
-    const criticalPaths = [...new Set([...staticCritical, ...resolved.critical])];
+    const criticalPaths = resolveCriticalPathsForStage(staticCritical, resolved);
     if (criticalPaths.length === 0) return true;
 
     const effectiveLocale = locale || 'zh-CN';
@@ -1703,12 +1713,14 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
         ].filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);
         const publicUrl = resolveVersionedAssetUrl(`/assets/${remoteRelative}`);
         const preferPublicAssetBeforeRemote = (import.meta.env.DEV || isLocalBrowserAssetOrigin())
-            && !isCapacitorFileAssetUrl(localizedUrl);
+            && !shouldUseRemoteAssetsInLiteDev()
+            && !isCapacitorFileAssetUrl(localizedUrl)
+            && !isSameOriginAsCurrentPage(localizedUrl);
 
-        pushCandidate(localizedUrl);
         if (preferPublicAssetBeforeRemote) {
             pushCandidate(publicUrl);
         }
+        pushCandidate(localizedUrl);
         if (!localAssetsOnly) {
             remoteBaseUrls.forEach((baseUrl) => {
                 pushCandidate(resolveVersionedRemoteAssetUrl(`${baseUrl}/${remoteRelative}`, remoteRelative));

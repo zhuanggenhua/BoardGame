@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Card } from '../domain/types';
 import { CardSprite } from './CardSprite';
 import { GameButton } from './GameButton';
 import { resolveCardAtlasId } from './cardAtlas';
 import { UI_Z_INDEX } from '../../../core';
+import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
 
 interface CardSelectorOverlayProps {
     /** 可选卡牌列表（不需要包含 position，只需要 Card 数据） */
@@ -27,7 +28,7 @@ interface CardSelectorOverlayProps {
  * 
  * 特性：
  * - 居中显示
- * - 横向滚动/滑动
+ * - 横向滚动/鼠标滚轮浏览
  * - 自动聚焦
  * - 选中高亮
  */
@@ -42,7 +43,7 @@ export const CardSelectorOverlay: React.FC<CardSelectorOverlayProps> = ({
     const cancelLabel = cancelLabelKey
         ? (i18n.exists(cancelLabelKey, { ns: 'game-summonerwars' }) ? t(cancelLabelKey) : cancelLabelKey)
         : t('actions.cancel');
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const { ref: scrollContainerRef } = useHorizontalDragScroll<HTMLDivElement>({ drag: false });
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
     // 如果没有卡牌，直接显示提示并提供关闭按钮
@@ -87,6 +88,7 @@ export const CardSelectorOverlay: React.FC<CardSelectorOverlayProps> = ({
                 {/* 卡牌列表 */}
                 <div
                     ref={scrollContainerRef}
+                    data-testid="sw-card-selector-scroll"
                     className="flex gap-6 overflow-x-auto py-12 px-8 snap-x snap-mandatory scrollbar-hide mask-gradient-x w-full"
                     style={{ scrollBehavior: 'smooth' }}
                 >

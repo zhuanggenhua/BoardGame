@@ -334,6 +334,9 @@ export function createFlowSystem<TCore>(config: FlowSystemConfig<TCore>): Engine
 
         beforeCommand: ({ state, command, random, playerIds }): HookResult<TCore> | void => {
             if (command.type !== FLOW_COMMANDS.ADVANCE_PHASE) return;
+            if (state.sys.gameover) {
+                return { halt: true, error: 'game_over' };
+            }
             return executePhaseAdvance({
                 state,
                 command,

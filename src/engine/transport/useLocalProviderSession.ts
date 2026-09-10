@@ -16,6 +16,7 @@ import {
     type LocalProviderRandom,
 } from './localProviderBootstrap';
 import {
+    type LocalMatchSnapshot,
     persistLocalMatchSnapshot,
     readLocalMatchSnapshot,
 } from './localSession';
@@ -30,6 +31,7 @@ export function useLocalProviderSession(args: {
     aiSeatIds: string[];
     persistSession: boolean;
     persistGameId?: string;
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
 }) {
     const {
         config,
@@ -40,17 +42,19 @@ export function useLocalProviderSession(args: {
         aiSeatIds,
         persistSession,
         persistGameId,
+        shouldRestorePersistedSession,
     } = args;
     const storageGameId = persistGameId ?? config.gameId;
 
-    const persistedSnapshot = useMemo(
-        () => (
-            persistSession
-                ? readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers })
-                : null
-        ),
-        [numPlayers, persistSession, seed, storageGameId],
-    );
+    const persistedSnapshot = useMemo(() => {
+        if (!persistSession) return null;
+        const snapshot = readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers });
+        if (!snapshot) return null;
+        if (shouldRestorePersistedSession && !shouldRestorePersistedSession(snapshot)) {
+            return null;
+        }
+        return snapshot;
+    }, [numPlayers, persistSession, seed, shouldRestorePersistedSession, storageGameId]);
 
     const [initialRandom] = useState<LocalProviderRandom>(() =>
         createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0),
@@ -68,10 +72,6 @@ export function useLocalProviderSession(args: {
         }),
     );
     const stateRef = useRef(state);
-
-    useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
 
     useEffect(() => {
         if (!persistSession) return;

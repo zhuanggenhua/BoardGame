@@ -50,7 +50,9 @@ description: "BoardGame 规则审计 workflow：读取路由、执行顺序和 e
 
 ### 2. 做描述到实现审计
 
-按 `description-to-implementation-audit.md` 执行；本 workflow 不复写语义拆解、共享流程、配置差异、代表链、缺口分类或扩审判定。
+按 `description-to-implementation-audit.md` 执行；先组装本轮对象的最小资料包，缺资料时先整理 canonical 文档、`knowledge/README.md` 导航、项目 skill 入口或 evidence 落点，不把文档数据库、旧总结或临时搜索结果当成审计流程。
+
+本 workflow 不复写语义拆解、共享流程、配置差异、代表链、缺口分类或扩审判定。
 
 ### 3. 写 evidence
 

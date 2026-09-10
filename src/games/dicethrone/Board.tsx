@@ -115,8 +115,10 @@ import {
     readDiceThroneTokenResponseChoiceContract,
 } from './domain/tokenResponseChoiceContract';
 import { rebuildClientDiceMultistepInteraction } from './ui/clientDiceMultistepInteraction';
+import { buildBoardShellInlineUnitValue } from '../../shared/runtimeLayoutUnits';
 
 type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
+const dtUnit = buildBoardShellInlineUnitValue;
 
 // 所有奖励骰都由右侧骰盘承接；是否允许重投或改骰由结算自身的规则决定，
 // 而不是由中央展示层决定。
@@ -1476,7 +1478,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingInteraction.type === 'selectStatus' ||
         pendingInteraction.type === 'selectPlayer' ||
         pendingInteraction.type === 'selectTargetStatus' ||
-        pendingInteraction.type === 'selectHandCard'
+        pendingInteraction.type === 'selectHandCard' ||
+        pendingInteraction.type === 'selectDeckCard'
     );
 
     const handleSelectStatus = interactionHandlers.selectStatus;
@@ -1505,7 +1508,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     ? localInteraction.selectedPlayers
                     : (interaction.selected ?? []);
             }
-            if (interaction.type === 'selectHandCard') {
+            if (interaction.type === 'selectHandCard' || interaction.type === 'selectDeckCard') {
                 return localInteraction.selectedCardIds.length > 0
                     ? localInteraction.selectedCardIds
                     : (interaction.selected ?? []);
@@ -1555,7 +1558,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             if (localInteraction.selectedPlayers.length > 0) {
                 engineMoves.resolveInteraction(localInteraction.selectedPlayers);
             }
-        } else if (activeInteraction.type === 'selectHandCard') {
+        } else if (activeInteraction.type === 'selectHandCard' || activeInteraction.type === 'selectDeckCard') {
             if (localInteraction.selectedCardIds.length > 0) {
                 engineMoves.resolveInteraction([], localInteraction.selectedCardIds);
             }
@@ -1702,7 +1705,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     useSyncedModalStackEntry({
         enabled: Boolean(isStatusInteraction && statusInteraction && (
-            statusInteraction?.type !== 'selectHandCard' || isInteractionOwner
+            (statusInteraction?.type !== 'selectHandCard' && statusInteraction?.type !== 'selectDeckCard')
+            || isInteractionOwner
         )),
         entryId: 'dicethrone_status_interaction',
         entry: statusInteractionModalEntry,
@@ -2070,7 +2074,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 </div>
 
                 {otherPids.length > 0 && (
-                    <div className="absolute top-[0.9vw] inset-x-0 z-50 flex items-start justify-center gap-[0.6vw] pointer-events-none">
+                    <div
+                        className="absolute inset-x-0 z-50 flex items-start justify-center pointer-events-none"
+                        style={{ top: dtUnit(0.9), gap: dtUnit(0.6) }}
+                    >
                         {otherPids.map((pid) => {
                             const headerPlayer = G.players[pid];
                             if (!headerPlayer) return null;
@@ -2162,7 +2169,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         advanceQueue(id);
                     }}
                 />
-                <div className="absolute inset-x-0 top-[2vw] bottom-0 z-10 pointer-events-none">
+                <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ top: dtUnit(2) }}>
                     <LeftSidebar
                         currentPhase={currentPhase}
                         viewPlayer={player} // Always show own stats
@@ -2339,7 +2346,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     return (
                         <>
                             {!isHandHidden && (
-                                <div className="absolute bottom-0 left-0 right-0 z-40 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent h-[15vw]" />
+                                <div
+                                    className="absolute bottom-0 left-0 right-0 z-40 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent"
+                                    style={{ height: dtUnit(15) }}
+                                />
                             )}
                             {/* 游戏提示统一组件 */}
                             <GameHints

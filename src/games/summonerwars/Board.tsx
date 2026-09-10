@@ -20,7 +20,6 @@ import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebu
 import { SummonerWarsDebugConfig } from './debug-config';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { UndoProvider } from '../../contexts/UndoContext';
-import { getUndoSnapshotCount } from '../../engine/systems/UndoSystem';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { useGameMode } from '../../contexts/GameModeContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
@@ -93,7 +92,6 @@ import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { shouldBlockHandInteraction } from './ui/handInteractionBusy';
 import { swAttackDebugLog } from './ui/attackDebug';
 import { isTestEnvironment } from '../../engine/testing/environment';
-import { useSummonerWarsCombatEffectPreference } from './ui/useSummonerWarsCombatEffectPreference';
 import { countHits } from './config/dice';
 
 type Props = GameBoardProps<SummonerWarsCore>;
@@ -120,7 +118,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isTutorialMode = gameMode?.mode === 'tutorial';
   const effectiveLocale = locale || 'zh-CN';
   const { t } = useTranslation('game-summonerwars');
-  const { reducedCombatEffects } = useSummonerWarsCombatEffectPreference();
   const renderPipelineSettings = useRenderPipelineSettings();
   const viewport = useRuntimeViewport();
   const viewportSafeWidth = useMemo(() => {
@@ -130,7 +127,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isMobileViewport = viewport.width <= 1023;
   const isLandscapeMobileViewport = isMobileViewport && viewport.width > viewport.height;
   const shouldShowLifeToggle = true;
-  const shouldReduceCombatEffects = renderPipelineSettings.fxQuality === 'reduced' || (reducedCombatEffects && isMobileViewport);
+  const shouldReduceCombatEffects = renderPipelineSettings.fxQuality === 'reduced';
   const fxQuality = shouldReduceCombatEffects ? 'reduced' : renderPipelineSettings.fxQuality;
   const desktopReferenceWidth = Math.min(
     SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
@@ -554,15 +551,12 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   // 格子交互 Hook
   const interaction = useCellInteraction({
     core, dispatch,
-    currentPhase, isMyTurn, isGameOver: !!isGameOver,
-    myPlayerId, activePlayerId, myHand, fromViewCoord,
-    undoSnapshotCount: getUndoSnapshotCount(G.sys?.undo),
+    currentPhase, isMyTurn,
+    myPlayerId, myHand, fromViewCoord,
     interaction: currentInteraction,
-    isTutorialActive,
     abilityMode, setAbilityMode, soulTransferMode,
     mindCaptureMode,
     afterAttackAbilityMode,
-    rapidFireMode: effectiveRapidFireMode,
   });
 
   const engineInteractionBusy = !!currentInteraction && currentInteraction.playerId === (myPlayerId as PlayerId);

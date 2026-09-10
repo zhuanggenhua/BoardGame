@@ -176,6 +176,65 @@ describe('BoardBridge remountKey', () => {
         });
     });
 
+    it('LocalGameProvider 的恢复策略返回 false 时，应忽略已保存快照并重新开局', () => {
+        const seed = 'tutorial-progress-seed-filtered';
+        window.localStorage.setItem(`local_match_snapshot_v1:tutorial-route-id:${seed}`, JSON.stringify({
+            version: 1,
+            gameId: 'tutorial-route-id',
+            seed,
+            numPlayers: 2,
+            randomCursor: 0,
+            savedAt: Date.now(),
+            state: {
+                core: {
+                    players: {
+                        '0': { id: '0' },
+                        '1': { id: '1' },
+                    },
+                    playerIds: ['0', '1'],
+                    currentPlayer: 'stale',
+                },
+                sys: {
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 0,
+                    tutorial: {
+                        active: false,
+                        manifestId: 'basic-opening',
+                        stepIndex: 2,
+                        steps: [
+                            { id: 'intro', content: 'intro' },
+                            { id: 'middle', content: 'middle' },
+                            { id: 'resume-here', content: 'resume-here' },
+                        ],
+                        step: null,
+                    },
+                },
+            },
+        }));
+
+        const Board = () => {
+            const { state } = useGameClient();
+            return <pre data-testid="current-player">{String((state as any)?.core?.currentPlayer)}</pre>;
+        };
+
+        render(
+            <LocalGameProvider
+                config={{ ...testConfig, gameId: 'engine-config-id' }}
+                numPlayers={2}
+                seed={seed}
+                persistSession
+                persistGameId="tutorial-route-id"
+                shouldRestorePersistedSession={() => false}
+            >
+                <Board />
+            </LocalGameProvider>,
+        );
+
+        return waitFor(() => {
+            expect(screen.getByTestId('current-player').textContent).toBe('0');
+        });
+    });
+
     it('LocalGameProvider 恢复到与当前 2 人对局不兼容的旧快照时，应丢弃多余玩家并重建当前局面', () => {
         const key = 'local_match_snapshot_v1:board-bridge-test:board-bridge-invalid-player-snapshot';
         window.localStorage.setItem(key, JSON.stringify({

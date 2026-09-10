@@ -11,6 +11,7 @@ import type { MageId } from '../domain/ids';
 import {
     buildMageWarsMageSetupData,
     buildMageWarsMageSetupSelections,
+    getMageWarsDefaultSpellbookEntries,
     getMageWarsSelectableMageIds,
     resolveMageWarsSelectedMageIdForSeat,
     resolveMageWarsSpellbookEntriesForSeat,

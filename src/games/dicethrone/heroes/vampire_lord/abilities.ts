@@ -2,6 +2,7 @@
 
 import { abilityEffectText, abilityText } from '../../../../engine/primitives/ability';
 import type { AbilityDef, AbilityEffect, EffectTiming } from '../../domain/combat';
+import type { RollDieConditionalEffect } from '../../domain/effects';
 import { STATUS_IDS, TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS as FACE } from '../../domain/ids';
 
 export const VAMPIRE_LORD_SFX_LIGHT = 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_001';
@@ -46,6 +47,12 @@ const grantToken = (
     timing,
 });
 
+const gainCp = (value: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'gain-cp', params: { amount: value } },
+    timing,
+});
+
 const healSelf = (value: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
     description,
     action: { type: 'heal', target: 'self', value },
@@ -57,6 +64,73 @@ const drawCard = (count: number, description: string, timing: EffectTiming = 'pr
     action: { type: 'drawCard', target: 'self', drawCount: count },
     timing,
 });
+
+const rollDice = (
+    count: number,
+    description: string,
+    conditionalEffects: RollDieConditionalEffect[],
+    opts?: {
+        timing?: EffectTiming;
+        resolutionMode?: 'attackBonus';
+    },
+): AbilityEffect => ({
+    description,
+    action: {
+        type: 'rollDie',
+        target: 'opponent',
+        diceCount: count,
+        conditionalEffects,
+        ...(opts?.resolutionMode ? { resolutionMode: opts.resolutionMode } : {}),
+    },
+    timing: opts?.timing ?? 'withDamage',
+});
+
+const customAction = (
+    customActionId: string,
+    description: string,
+    timing: EffectTiming = 'preDefense',
+    params?: Record<string, string | number | boolean>,
+): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId, ...(params ? { params } : {}) },
+    timing,
+});
+
+const bloodPossessedRollEffects: RollDieConditionalEffect[] = [
+    {
+        face: FACE.CLAW,
+        grantStatus: { statusId: STATUS_IDS.BLEED, value: 1, target: 'opponent' },
+        effectKey: 'bonusDie.effect.vampireLordBloodPossessedClaw',
+    },
+    {
+        face: FACE.MESMERIZE,
+        grantToken: { tokenId: TOKEN_IDS.MESMERIZE, value: 1, target: 'self' },
+        effectKey: 'bonusDie.effect.vampireLordBloodPossessedMesmerize',
+    },
+    {
+        face: FACE.BLOOD_DROP,
+        grantToken: { tokenId: TOKEN_IDS.MESMERIZE, value: 1, target: 'self' },
+        effectKey: 'bonusDie.effect.vampireLordBloodPossessedBloodDrop',
+    },
+];
+
+const rendClawsRollEffects: RollDieConditionalEffect[] = [
+    {
+        face: FACE.CLAW,
+        bonusDamage: 1,
+        effectKey: 'bonusDie.effect.vampireLordRendClawsClaw',
+    },
+    {
+        face: FACE.MESMERIZE,
+        drawCard: 1,
+        effectKey: 'bonusDie.effect.vampireLordRendClawsMesmerize',
+    },
+    {
+        face: FACE.BLOOD_DROP,
+        grantToken: { tokenId: TOKEN_IDS.BLOOD_POWER, value: 1, target: 'self' },
+        effectKey: 'bonusDie.effect.vampireLordRendClawsBloodDrop',
+    },
+];
 
 const bloodthirstyClawsBloodPowerIfKind = (threshold: 3 | 4, description: string): AbilityEffect => ({
     description,
@@ -128,7 +202,7 @@ export const BLOODTHIRSTY_CLAWS_3: AbilityDef = {
 };
 
 export const MESMERIZE_POWER_2: AbilityDef = replaceable('mesmerize-power', 'mesmerize-power-2', 'mesmerize-power-2', { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3 } }, [
-    grantToken(TOKEN_IDS.EVASIVE, 1, abilityEffectText('mesmerize-power-2', 'gainEvasive')),
+    gainCp(1, abilityEffectText('mesmerize-power-2', 'gainCp')),
     grantToken(TOKEN_IDS.MESMERIZE, 1, abilityEffectText('mesmerize-power-2', 'gainMesmerize')),
     damage(5, abilityEffectText('mesmerize-power-2', 'damage5Unblockable'), { unblockable: true }),
 ], { tags: ['unblockable'], sfxKey: VAMPIRE_LORD_SFX_LIGHT });
@@ -179,8 +253,8 @@ BLOOD_FEAST_2.variants = [
     },
 ];
 
-export const REND_CLAWS_2: AbilityDef = replaceable('rend-claws', 'rend-claws-2', 'rend-claws-2', { type: 'smallStraight' }, [
-    grantBleed(1, abilityEffectText('rend-claws-2', 'bleed1')),
+export const REND_CLAWS_2: AbilityDef = replaceable('rend-claws', 'rend-claws-2', 'rend-claws-2', { type: 'diceSet', faces: { [FACE.CLAW]: 3, [FACE.BLOOD_DROP]: 2 } }, [
+    rollDice(5, abilityEffectText('rend-claws-2', 'roll5'), rendClawsRollEffects, { resolutionMode: 'attackBonus' }),
     damage(6, abilityEffectText('rend-claws-2', 'damage6')),
 ]);
 
@@ -234,7 +308,7 @@ BLOOD_THIRST_2.variants = [
 ];
 
 export const BLOOD_MAGIC_2: AbilityDef = replaceable('blood-magic', 'blood-magic-2', 'blood-magic-2', { type: 'largeStraight' }, [
-    grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-magic-2', 'gainBloodPower')),
+    grantToken(TOKEN_IDS.BLOOD_POWER, 1, abilityEffectText('blood-magic-2', 'gainBloodPower')),
     grantBleed(1, abilityEffectText('blood-magic-2', 'bleed1')),
     damage(8, abilityEffectText('blood-magic-2', 'damage8Unblockable'), { unblockable: true }),
 ], { tags: ['unblockable'], sfxKey: VAMPIRE_LORD_SFX_LIGHT });
@@ -259,8 +333,7 @@ BLOOD_MAGIC_2.variants = [
 ];
 
 export const UNDYING_2: AbilityDef = replaceable('undying', 'undying-2', 'undying-2', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 }, [
-    damage(1, abilityEffectText('undying-2', 'counter1'), { timing: 'withDamage', damageScope: 'direct' }),
-    healSelf(1, abilityEffectText('undying-2', 'heal1'), 'postDamage'),
+    customAction('vampire-lord-undying-defense', abilityEffectText('undying-2', 'resolveDefense'), 'withDamage'),
 ], { type: 'defensive', tags: ['defensive'], sfxKey: VAMPIRE_LORD_SFX_LIGHT });
 
 export const VAMPIRE_LORD_ABILITIES: AbilityDef[] = [
@@ -277,32 +350,34 @@ export const VAMPIRE_LORD_ABILITIES: AbilityDef[] = [
         ],
     },
     replaceable('mesmerize-power', 'mesmerize-power', 'mesmerize-power', { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3 } }, [
+        gainCp(1, abilityEffectText('mesmerize-power', 'gainCp')),
         grantToken(TOKEN_IDS.MESMERIZE, 1, abilityEffectText('mesmerize-power', 'gainMesmerize')),
-        damage(4, abilityEffectText('mesmerize-power', 'damage4')),
-    ], { sfxKey: VAMPIRE_LORD_SFX_LIGHT }),
-    replaceable('blood-feast', 'blood-feast', 'blood-feast', { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 3 } }, [
+        damage(4, abilityEffectText('mesmerize-power', 'damage4Unblockable'), { unblockable: true }),
+    ], { tags: ['unblockable'], sfxKey: VAMPIRE_LORD_SFX_LIGHT }),
+    replaceable('blood-feast', 'blood-feast', 'blood-feast', { type: 'diceSet', faces: { [FACE.MESMERIZE]: 3, [FACE.BLOOD_DROP]: 1 } }, [
         healSelf(2, abilityEffectText('blood-feast', 'heal2')),
         grantToken(TOKEN_IDS.BLOOD_POWER, 3, abilityEffectText('blood-feast', 'gainBloodPower')),
     ]),
-    replaceable('rend-claws', 'rend-claws', 'rend-claws', { type: 'smallStraight' }, [
-        grantBleed(1, abilityEffectText('rend-claws', 'bleed1')),
+    replaceable('rend-claws', 'rend-claws', 'rend-claws', { type: 'diceSet', faces: { [FACE.CLAW]: 3, [FACE.BLOOD_DROP]: 2 } }, [
+        rollDice(3, abilityEffectText('rend-claws', 'roll3'), rendClawsRollEffects, { resolutionMode: 'attackBonus' }),
         damage(6, abilityEffectText('rend-claws', 'damage6')),
     ]),
-    replaceable('blood-possessed', 'blood-possessed', 'blood-possessed', { type: 'largeStraight' }, [
-        grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-possessed', 'gainBloodPower')),
-        damage(6, abilityEffectText('blood-possessed', 'damage6')),
+    replaceable('blood-possessed', 'blood-possessed', 'blood-possessed', { type: 'smallStraight' }, [
+        damage(7, abilityEffectText('blood-possessed', 'damage7')),
+        rollDice(1, abilityEffectText('blood-possessed', 'roll1'), bloodPossessedRollEffects, { timing: 'postDamage' }),
     ]),
-    replaceable('blood-thirst', 'blood-thirst', 'blood-thirst', { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 2 } }, [
-        grantBleed(1, abilityEffectText('blood-thirst', 'bleed1')),
-        damage(4, abilityEffectText('blood-thirst', 'damage4')),
-    ]),
-    replaceable('blood-magic', 'blood-magic', 'blood-magic', { type: 'smallStraight' }, [
-        grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-magic', 'gainBloodPower')),
-        damage(7, abilityEffectText('blood-magic', 'damage7')),
+    replaceable('blood-thirst', 'blood-thirst', 'blood-thirst', { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 4 } }, [
+        grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('blood-thirst', 'gainBloodPower')),
+        damage(5, abilityEffectText('blood-thirst', 'damage5Unblockable'), { unblockable: true }),
+    ], { tags: ['unblockable'] }),
+    replaceable('blood-magic', 'blood-magic', 'blood-magic', { type: 'largeStraight' }, [
+        grantToken(TOKEN_IDS.BLOOD_POWER, 1, abilityEffectText('blood-magic', 'gainBloodPower')),
+        grantBleed(1, abilityEffectText('blood-magic', 'bleed1')),
+        customAction('vampire-lord-blood-magic-mesmerize-choice', abilityEffectText('blood-magic', 'spendMesmerizeChoice')),
+        damage(8, abilityEffectText('blood-magic', 'damage8')),
     ], { sfxKey: VAMPIRE_LORD_SFX_LIGHT }),
-    replaceable('undying', 'undying', 'undying', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 }, [
-        damage(1, abilityEffectText('undying', 'counter1'), { timing: 'withDamage', damageScope: 'direct' }),
-        healSelf(1, abilityEffectText('undying', 'heal1'), 'postDamage'),
+    replaceable('undying', 'undying', 'undying', { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3 }, [
+        customAction('vampire-lord-undying-defense', abilityEffectText('undying', 'resolveDefense'), 'withDamage'),
     ], { type: 'defensive', tags: ['defensive'], sfxKey: VAMPIRE_LORD_SFX_LIGHT }),
     {
         id: 'bloody-slaughter',
@@ -313,9 +388,9 @@ export const VAMPIRE_LORD_ABILITIES: AbilityDef[] = [
         tags: ['ultimate', 'uninterruptible'],
         trigger: { type: 'diceSet', faces: { [FACE.BLOOD_DROP]: 5 } },
         effects: [
+            customAction('vampire-lord-bloody-slaughter-search-deck-card', abilityEffectText('bloody-slaughter', 'searchDeckCard')),
             grantToken(TOKEN_IDS.BLOOD_POWER, 2, abilityEffectText('bloody-slaughter', 'gainBloodPower')),
-            grantBleed(2, abilityEffectText('bloody-slaughter', 'bleed2')),
-            damage(12, abilityEffectText('bloody-slaughter', 'damage12')),
+            damage(10, abilityEffectText('bloody-slaughter', 'damage10')),
         ],
     },
 ];

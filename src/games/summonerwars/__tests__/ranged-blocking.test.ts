@@ -222,8 +222,10 @@ describe('远程攻击遮挡规则', () => {
     placeUnit(state, { row: 3, col: 4 }, { card: makeMeleeUnit('enemy2'), owner: '1' });
 
     const targets = getValidAttackTargetsEnhanced(state, { row: 3, col: 1 });
-    // (3,3) 和 (3,4) 都被 (3,2) 遮挡
-    expect(targets).toEqual([]);
+    // 友方卡牌本身可被攻击，但它后面的敌方卡牌仍被遮挡
+    expect(targets).toContainEqual({ row: 3, col: 2 });
+    expect(targets).not.toContainEqual({ row: 3, col: 3 });
+    expect(targets).not.toContainEqual({ row: 3, col: 4 });
   });
 
   it('getValidAttackTargetsEnhanced 包含未被遮挡的目标', () => {

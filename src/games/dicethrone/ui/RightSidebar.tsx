@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HeartCrack, MousePointerClick } from 'lucide-react';
 import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';
@@ -13,6 +13,7 @@ import { UI_Z_INDEX } from '../../../core';
 import { ActiveModifierBadge } from './ActiveModifierBadge';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
 import { PassiveAbilityPanel, type PassiveAbilityPanelProps } from './PassiveAbilityPanel';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 type SidebarDiceMeta = {
     dtType?: 'modifyDie' | 'selectDie';
@@ -133,19 +134,55 @@ export const RightSidebar = ({
     rootPlayerId: PlayerId;
     teamIdByPlayerId?: Record<PlayerId, string>;
 }) => {
-    const diceTrayWidthClassName = 'w-[5.8vw]';
     const isDiceMultistep = Boolean(getSidebarDiceMeta(interaction));
 
     const { t } = useTranslation('game-dicethrone');
-    const actionRailWidthClassName = 'w-[10.2vw]';
-    const sidebarFrameClassName = 'absolute right-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-auto';
-    const advanceButtonSizeClassName = '!text-[0.75vw] !px-[0.5vw] !py-0 !min-h-0 h-[2.5vw] !rounded-[0.5vw]';
-    const stackGapClassName = 'gap-[0.75vw]';
-    const modifierBadgeRowClassName = 'pointer-events-none absolute inset-x-0 bottom-full mb-[0.55vw] flex items-center justify-center gap-[0.35vw] whitespace-nowrap';
-    const hintOffsetClassName = 'mr-[0.6vw]';
-    const hintBubbleClassName = 'flex max-w-[8.8vw] min-w-0 items-center gap-[0.4vw] overflow-hidden rounded-[0.5vw] border border-amber-500/50 bg-amber-950/95 px-[0.6vw] py-[0.4vw] shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-nowrap';
-    const hintIconClassName = 'w-[1vw] h-[1vw] text-amber-400 shrink-0';
-    const hintTextClassName = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.75vw] text-amber-200 font-medium leading-snug';
+    const sidebarFrameStyle: CSSProperties = {
+        zIndex: UI_Z_INDEX.hud,
+        right: buildBoardShellInlineUnitValue(1.5),
+        bottom: buildBoardShellInlineUnitValue(1.5),
+        width: buildBoardShellInlineUnitValue(15),
+    };
+    const stackStyle: CSSProperties = {
+        gap: buildBoardShellInlineUnitValue(0.75),
+    };
+    const diceTrayFrameStyle: CSSProperties = {
+        width: buildBoardShellInlineUnitValue(5.8),
+    };
+    const actionRailStyle: CSSProperties = {
+        width: buildBoardShellInlineUnitValue(10.2),
+    };
+    const advanceButtonStyle: CSSProperties = {
+        width: buildBoardShellInlineUnitValue(10.2),
+        height: buildBoardShellInlineUnitValue(2.5),
+        minHeight: 0,
+        paddingInline: buildBoardShellInlineUnitValue(0.5),
+        paddingBlock: 0,
+        borderRadius: buildBoardShellInlineUnitValue(0.5),
+        fontSize: buildBoardShellInlineUnitValue(0.75),
+    };
+    const modifierBadgeRowStyle: CSSProperties = {
+        zIndex: UI_Z_INDEX.hint,
+        marginBottom: buildBoardShellInlineUnitValue(0.55),
+        gap: buildBoardShellInlineUnitValue(0.35),
+    };
+    const hintContainerStyle: CSSProperties = {
+        marginRight: buildBoardShellInlineUnitValue(0.6),
+    };
+    const hintBubbleStyle: CSSProperties = {
+        maxWidth: buildBoardShellInlineUnitValue(8.8),
+        gap: buildBoardShellInlineUnitValue(0.4),
+        borderRadius: buildBoardShellInlineUnitValue(0.5),
+        paddingInline: buildBoardShellInlineUnitValue(0.6),
+        paddingBlock: buildBoardShellInlineUnitValue(0.4),
+    };
+    const hintIconStyle: CSSProperties = {
+        width: buildBoardShellInlineUnitValue(1),
+        height: buildBoardShellInlineUnitValue(1),
+    };
+    const hintTextStyle: CSSProperties = {
+        fontSize: buildBoardShellInlineUnitValue(0.75),
+    };
     const hasCurrentDamageSummary = typeof damageSummary?.currentDamage === 'number' && Number.isFinite(damageSummary.currentDamage);
     const hasModifierBadgeRow = Boolean(
         (activeModifiers && activeModifiers.length > 0)
@@ -207,18 +244,18 @@ export const RightSidebar = ({
 
     return (
         <div
-            className={sidebarFrameClassName}
-            style={{ zIndex: UI_Z_INDEX.hud }}
+            className="absolute top-0 flex flex-col items-center pointer-events-auto"
+            style={sidebarFrameStyle}
             data-player-seat-anchor={rootPlayerId}
         >
             <div className="flex-grow" />
-            <div className={`relative w-full flex flex-col items-center ${stackGapClassName}`}>
+            <div className="relative w-full flex flex-col items-center" style={stackStyle}>
                 {showDiceTray && (
-                <div className={`relative ${diceTrayWidthClassName}`}>
+                <div className="relative" style={diceTrayFrameStyle}>
                     {hasModifierBadgeRow ? (
                         <div
-                            className={modifierBadgeRowClassName}
-                            style={{ zIndex: UI_Z_INDEX.hint }}
+                            className="pointer-events-none absolute inset-x-0 bottom-full flex items-center justify-center whitespace-nowrap"
+                            style={modifierBadgeRowStyle}
                         >
                             {activeModifiers && activeModifiers.length > 0 && (
                                 <ActiveModifierBadge
@@ -230,19 +267,31 @@ export const RightSidebar = ({
                     ) : null}
                     {hasCurrentDamageSummary && (
                         <div
-                            className="pointer-events-none absolute right-[calc(100%+0.35vw)] top-0 z-20"
+                            className="pointer-events-none absolute top-0 z-20"
                             data-testid="current-total-damage-badge-anchor"
                             data-placement="dice-tray-left-top-outside"
-                            style={{ zIndex: UI_Z_INDEX.hint }}
+                            style={{
+                                zIndex: UI_Z_INDEX.hint,
+                                right: `calc(100% + ${buildBoardShellInlineUnitValue(0.35)})`,
+                            }}
                         >
                             <CurrentTotalDamageBadge summary={damageSummary} />
                         </div>
                     )}
                     {isDiceMultistep && interactionHint && (
-                        <div className={`absolute right-full top-1/2 -translate-y-1/2 ${hintOffsetClassName} z-10 pointer-events-none`}>
-                            <div className={hintBubbleClassName}>
-                                <MousePointerClick className={hintIconClassName} />
-                                <span className={hintTextClassName}>
+                        <div
+                            className="absolute right-full top-1/2 -translate-y-1/2 z-10 pointer-events-none"
+                            style={hintContainerStyle}
+                        >
+                            <div
+                                className="flex min-w-0 items-center overflow-hidden border border-amber-500/50 bg-amber-950/95 shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-nowrap"
+                                style={hintBubbleStyle}
+                            >
+                                <MousePointerClick className="text-amber-400 shrink-0" style={hintIconStyle} />
+                                <span
+                                    className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-amber-200 font-medium leading-snug"
+                                    style={hintTextStyle}
+                                >
                                     {interactionHint}
                                 </span>
                             </div>
@@ -294,7 +343,8 @@ export const RightSidebar = ({
                         disabled={!isAdvanceButtonEnabled}
                         variant={isAdvanceButtonEnabled ? "primary" : "secondary"}
                         clickSoundKey={null}
-                        className={`${actionRailWidthClassName} ${advanceButtonSizeClassName}`}
+                        className="!py-0 !min-h-0"
+                        style={advanceButtonStyle}
                         size="sm"
                         data-tutorial-id="advance-phase-button"
                     >
@@ -304,7 +354,7 @@ export const RightSidebar = ({
                 {passiveAbilityProps && passiveAbilityProps.passives.length > 0 && (
                     <PassiveAbilityPanel {...passiveAbilityProps} />
                 )}
-                <div className={`${actionRailWidthClassName} flex justify-center`}>
+                <div className="flex justify-center" style={actionRailStyle}>
                     <DiscardPile
                         ref={discardPileRef}
                         cards={discardCards}
@@ -334,23 +384,47 @@ const CurrentTotalDamageBadge = ({ summary }: { summary: DamageSummary }) => {
 
     return (
         <div
-            className="pointer-events-auto flex h-[1.75vw] items-center justify-center gap-[0.32vw] rounded-full border border-rose-400/55 bg-gradient-to-r from-rose-950/95 to-red-900/90 px-[0.58vw] shadow-[0_0_1vw_rgba(244,63,94,0.32)] backdrop-blur-sm"
+            className="pointer-events-auto flex items-center justify-center rounded-full border border-rose-400/55 bg-gradient-to-r from-rose-950/95 to-red-900/90 backdrop-blur-sm"
             data-testid="current-total-damage-badge"
             data-current-damage={currentDamage}
             data-original-damage={originalDamage}
             aria-label={title}
             title={title}
+            style={{
+                height: buildBoardShellInlineUnitValue(1.75),
+                gap: buildBoardShellInlineUnitValue(0.32),
+                paddingInline: buildBoardShellInlineUnitValue(0.58),
+                boxShadow: `0 0 ${buildBoardShellInlineUnitValue(1)} rgba(244,63,94,0.32)`,
+            }}
         >
-            <HeartCrack className="h-[0.78vw] w-[0.78vw] shrink-0 text-rose-300" />
-            <div className="flex items-baseline gap-[0.22vw] whitespace-nowrap leading-none">
-                <span className="text-[0.55vw] font-semibold uppercase tracking-[0.08em] text-rose-100/85">
+            <HeartCrack
+                className="shrink-0 text-rose-300"
+                style={{
+                    width: buildBoardShellInlineUnitValue(0.78),
+                    height: buildBoardShellInlineUnitValue(0.78),
+                }}
+            />
+            <div
+                className="flex items-baseline whitespace-nowrap leading-none"
+                style={{ gap: buildBoardShellInlineUnitValue(0.22) }}
+            >
+                <span
+                    className="font-semibold uppercase tracking-[0.08em] text-rose-100/85"
+                    style={{ fontSize: buildBoardShellInlineUnitValue(0.55) }}
+                >
                     {t('damageSummary.label')}
                 </span>
-                <span className="text-[0.8vw] font-black tracking-wide text-rose-100">
+                <span
+                    className="font-black tracking-wide text-rose-100"
+                    style={{ fontSize: buildBoardShellInlineUnitValue(0.8) }}
+                >
                     {currentDamage}
                 </span>
                 {hasChanged && (
-                    <span className="text-[0.5vw] font-semibold text-rose-200/75">
+                    <span
+                        className="font-semibold text-rose-200/75"
+                        style={{ fontSize: buildBoardShellInlineUnitValue(0.5) }}
+                    >
                         {originalDamage}→{currentDamage}
                     </span>
                 )}

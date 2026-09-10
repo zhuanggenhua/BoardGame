@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { getAllGames, getGameById } from '../../config/games.config';
-import { MOBILE_REFERENCE_VIEWPORT } from '../../shared/referenceViewports';
+import { DESKTOP_REFERENCE_VIEWPORT, MOBILE_LANDSCAPE_DESIGN_VIEWPORT, MOBILE_REFERENCE_VIEWPORT } from '../../shared/referenceViewports';
 import {
     getGameMobileBannerKind,
     getGamePageDataAttributes,
@@ -32,6 +32,12 @@ describe('mobile support manifest contract', () => {
         expect(game?.preferredOrientation).toBe('landscape');
         expect(game?.mobileLayoutPreset).toBe('board-shell');
         expect(game?.mobileBattlefieldZoom).toBe('game-owned');
+        expect(game?.mobileBoardShellLayout).toEqual({
+            designWidth: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width,
+            designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
+            referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
+            referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+        });
         expect(game?.shellTargets).toEqual(
             expect.arrayContaining(['pwa', 'app-webview', 'mini-program-webview']),
         );
@@ -178,6 +184,8 @@ describe('mobile support helpers', () => {
             mobileBoardShellLayout: {
                 designWidth: 1160,
                 designHeight: 720,
+                referenceWidth: 1920,
+                referenceHeight: 1080,
             },
         });
 
@@ -190,6 +198,8 @@ describe('mobile support helpers', () => {
         expect(attrs['data-shell-targets']).toBe('pwa,app-webview');
         expect(attrs['data-mobile-board-shell-design-width']).toBe('1160');
         expect(attrs['data-mobile-board-shell-design-height']).toBe('720');
+        expect(attrs['data-mobile-board-shell-reference-width']).toBe('1920');
+        expect(attrs['data-mobile-board-shell-reference-height']).toBe('1080');
     });
 
     it('mirrors game page attributes to html and body while the page is mounted', () => {

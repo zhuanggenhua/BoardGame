@@ -302,16 +302,6 @@
     "showAllLifeTotals": "显示全部单位血量",
     "hideAllLifeTotals": "隐藏全部单位血量"
   },
-  "hud": {
-    "combatEffects": {
-      "title": "战斗表现",
-      "hint": "只影响移动端本机攻击动画，不改变结算、伤害或音效音量。",
-      "reduced": "降低攻击特效",
-      "reducedHint": "卡顿时开启：移动端保留远程气浪、命中闪光和伤害数字，并降低最重的粒子、震动和冲刺表现。",
-      "enabled": "已开启",
-      "disabled": "已关闭"
-    }
-  },
   "debug": {
     "phase_labels": {
       "factionSelect": "选阵营",
@@ -335,6 +325,16 @@
       "subtract": "-减少",
       "clear": "清零",
       "full": "满魔力（15）"
+    },
+    "health": {
+      "section_title": "召唤师血量",
+      "description": "用于快速测试召唤师受伤、死亡和游戏结束。",
+      "player_option": "P{{player}}（{{current}}/{{life}}）",
+      "missing_option": "P{{player}}（召唤师已不在场）",
+      "status": "当前目标：P{{player}} 召唤师，剩余 {{current}} / {{life}}，已受伤害 {{damage}}。",
+      "no_summoner": "当前目标召唤师已不在场。",
+      "damage": "扣血",
+      "kill": "直接击杀"
     },
     "phase": {
       "section_title": "阶段切换",

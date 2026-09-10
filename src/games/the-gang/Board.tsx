@@ -2732,6 +2732,10 @@ export default function TheGangBoard({
             ...(localBottomHandRankHint ? { bottom: localBottomHandRankHint } : {}),
         }
         : undefined;
+    const singleHandStackedMiddleLayout = !twoHandChipSelectionLayout
+        && core.phase === 'chip-selection'
+        && core.communityCards.length > 0
+        && availableChipValues.length > 0;
     const twoHandChipSelectionOffsetVar = core.communityCards.length > 0
         ? '--the-gang-twohand-chip-selection-river-offset'
         : '--the-gang-twohand-chip-selection-token-offset';
@@ -2740,7 +2744,11 @@ export default function TheGangBoard({
             transform: `translateY(var(${twoHandChipSelectionOffsetVar}, clamp(4.5rem, 17vh, 5.25rem)))`,
             gap: core.communityCards.length > 0 ? 'clamp(1.25rem, 5vh, 2rem)' : '2rem',
         }
-        : undefined;
+        : singleHandStackedMiddleLayout
+            ? {
+                marginTop: 'clamp(2.5rem, 5.2vh, 3.75rem)',
+            }
+            : undefined;
 
     const playerNames = buildPlayerDisplayNameMap(
         core.playerIds,

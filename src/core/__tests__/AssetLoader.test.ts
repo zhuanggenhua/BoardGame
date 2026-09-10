@@ -144,6 +144,42 @@ afterEach(() => {
         ]);
     });
 
+    it('本地浏览器即使配置远端素材基址，也先尝试本机 public 素材', () => {
+        setAssetsBaseUrl('http://8.148.71.102/official');
+        setLocalizedImageIndexForTesting({
+            'i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas': 1,
+        });
+
+        const candidates = getLocalizedImageCandidateUrls(
+            'mage-wars/cards/spells/spell-equipment-core-atlas',
+            'zh-CN',
+        );
+
+        expect(candidates).toEqual([
+            '/assets/i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas.webp',
+            'http://8.148.71.102/official/i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas.webp',
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas.webp',
+        ]);
+    });
+
+    it('dev:lite 显式远程素材模式保留远端候选优先', () => {
+        vi.stubEnv('VITE_DEV_REMOTE_ASSETS', 'true');
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setLocalizedImageIndexForTesting({
+            'i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas': 1,
+        });
+
+        const candidates = getLocalizedImageCandidateUrls(
+            'mage-wars/cards/spells/spell-equipment-core-atlas',
+            'zh-CN',
+        );
+
+        expect(candidates).toEqual([
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas.webp',
+            '/assets/i18n/zh-CN/mage-wars/cards/spells/compressed/spell-equipment-core-atlas.webp',
+        ]);
+    });
+
     it('E2E 本地素材模式不追加远端图片候选', () => {
         vi.stubEnv('VITE_E2E_LOCAL_ASSETS_ONLY', 'true');
         setLocalizedImageIndexForTesting({

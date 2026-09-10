@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import type { CompareRollChoiceData } from '../../../engine/systems/InteractionSystem';
 import { GameButton } from './components/GameButton';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+
+const dtUnit = buildBoardShellInlineUnitValue;
 
 interface CompareRollOverlayProps {
     compareRoll?: CompareRollChoiceData & { id: string; playerId: string };
@@ -65,11 +68,17 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="pointer-events-auto w-[24vw] max-w-[30rem] rounded-[0.8vw] border border-amber-400/35 bg-slate-950/94 px-[1.1vw] py-[0.95vw] text-center shadow-2xl shadow-black/45 backdrop-blur-sm"
+            className="pointer-events-auto max-w-[30rem] border border-amber-400/35 bg-slate-950/94 text-center shadow-2xl shadow-black/45 backdrop-blur-sm"
             data-testid="compare-roll-overlay"
             data-placement="main-result-layer"
+            style={{
+                width: dtUnit(24),
+                borderRadius: dtUnit(0.8),
+                paddingInline: dtUnit(1.1),
+                paddingBlock: dtUnit(0.95),
+            }}
         >
-            <div className="text-[1vw] font-black leading-tight tracking-wide text-amber-100">
+            <div className="font-black leading-tight tracking-wide text-amber-100" style={{ fontSize: dtUnit(1) }}>
                 {hasTranslation(compareRoll.title)
                     ? t(compareRoll.title)
                     : compareRoll.title}
@@ -77,15 +86,25 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
 
             {resultText ? (
                 <div
-                    className={`mt-[0.65vw] rounded-[0.55vw] border bg-black/35 px-[0.7vw] py-[0.55vw] text-[0.85vw] font-bold leading-snug ${RESULT_TONE_CLASS[resultTone]}`}
+                    className={`border bg-black/35 font-bold leading-snug ${RESULT_TONE_CLASS[resultTone]}`}
                     data-testid="compare-roll-result"
+                    style={{
+                        marginTop: dtUnit(0.65),
+                        borderRadius: dtUnit(0.55),
+                        paddingInline: dtUnit(0.7),
+                        paddingBlock: dtUnit(0.55),
+                        fontSize: dtUnit(0.85),
+                    }}
                 >
                     {resultText}
                 </div>
             ) : null}
 
             {hasOptions && canResolve ? (
-                <div className="mt-[0.7vw] grid grid-cols-2 gap-[0.45vw]">
+                <div
+                    className="grid grid-cols-2"
+                    style={{ marginTop: dtUnit(0.7), gap: dtUnit(0.45) }}
+                >
                     {options.map((option) => {
                         const label = hasTranslation(option.labelKey)
                             ? t(option.labelKey, option.labelParams)
@@ -97,7 +116,13 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                                 disabled={option.disabled}
                                 variant="primary"
                                 size="sm"
-                                className="!h-[2.25vw] !min-h-0 !rounded-[0.5vw] !px-[0.55vw] !py-0 !text-[0.72vw]"
+                                className="!min-h-0 !py-0"
+                                style={{
+                                    height: dtUnit(2.25),
+                                    borderRadius: dtUnit(0.5),
+                                    paddingInline: dtUnit(0.55),
+                                    fontSize: dtUnit(0.72),
+                                }}
                             >
                                 {label}
                             </GameButton>
@@ -106,8 +131,9 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                 </div>
             ) : (
                 <div
-                    className="mt-[0.55vw] text-[0.75vw] font-semibold leading-tight text-white/65"
+                    className="font-semibold leading-tight text-white/65"
                     data-testid={hasOptions ? 'compare-roll-waiting' : 'compare-roll-autoconfirm'}
+                    style={{ marginTop: dtUnit(0.55), fontSize: dtUnit(0.75) }}
                 >
                     {hasOptions && !canResolve
                         ? t('compareRoll.waitingForOwnerChoice')

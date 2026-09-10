@@ -361,19 +361,6 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     return state.core.currentPlayer;
   },
 
-  /**
-   * 阶段结束技能确认/跳过后自动推进
-   * 当 flowHalted（阶段结束技能等待确认）且不再有需要确认的技能时，自动推进
-   */
-  onAutoContinueCheck: ({ state }) => {
-    if (!state.sys.flowHalted) return;
-    const core = state.core;
-    const phase = core.phase;
-    const playerId = core.currentPlayer;
-    // 仍有需要确认的技能 → 不自动推进
-    if (hasConfirmablePhaseEndAbility(core, playerId, phase, getPhaseEndAbilityResolved(state))) return;
-    return { autoContinue: true, playerId };
-  },
 };
 
 export default summonerWarsFlowHooks;

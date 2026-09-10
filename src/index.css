@@ -90,7 +90,8 @@
         --mobile-root-inverse-scale: 1;
         --mobile-layout-inline-unit: 1vw;
         --mobile-layout-block-unit: 1vh;
-        --mobile-board-shell-design-width: 1280px;
+        --mobile-board-shell-design-width: 2340px;
+        --mobile-board-shell-reference-width: 1920px;
         --mobile-board-shell-scale: 1;
         --mobile-board-shell-inverse-scale: 1;
         --mobile-board-shell-inline-unit: 1vw;
@@ -624,6 +625,13 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 
 /* 移动端响应式缩放（旧方案，仅保留给未接入 board-shell/map-shell 的游戏） */
 @media (max-width: 1023px) and (orientation: landscape) {
+    :root {
+        --mobile-board-shell-design-width: 2340px;
+        --mobile-board-shell-reference-width: 1920px;
+        --mobile-board-shell-inline-unit: 19.2px;
+        --mobile-board-shell-block-unit: 10.8px;
+    }
+
     .game-page-viewport {
         position: fixed;
         inset: 0;

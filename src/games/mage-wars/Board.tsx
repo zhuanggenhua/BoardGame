@@ -321,12 +321,14 @@ function CardInspectButton({
     sourceCardId,
     compact = false,
     alwaysVisible = false,
+    revealOnGroupHover = true,
     onInspect,
 }: {
     title: string;
     sourceCardId?: number;
     compact?: boolean;
     alwaysVisible?: boolean;
+    revealOnGroupHover?: boolean;
     onInspect: () => void;
 }) {
     const { t } = useTranslation('game-mage-wars');
@@ -350,7 +352,10 @@ function CardInspectButton({
                 compact && 'h-5 w-5',
                 alwaysVisible
                     ? 'pointer-events-auto opacity-100'
-                    : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100',
+                    : cx(
+                        'pointer-events-none opacity-0 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100',
+                        revealOnGroupHover && 'group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100',
+                    ),
             )}
             style={referenceButtonStyle}
             data-testid="mage-wars-card-inspect-button"
@@ -932,6 +937,8 @@ function MageHud({
     observed?: boolean;
 }) {
     const { t } = useTranslation('game-mage-wars');
+    const hintCardRef = useRef<HTMLDivElement | null>(null);
+    const [hintCardPointerHovering, setHintCardPointerHovering] = useState(false);
     const mageLabel = getMageDisplayLabel(player);
     const mageHintCardAspectRatio = getMageWarsMagePreviewAspectRatio();
     const fullHintCardStyle: CSSProperties = {
@@ -942,10 +949,44 @@ function MageHud({
         height: `${MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM}rem`,
         width: `${(MAGE_WARS_HUD_COMPACT_HINT_CARD_HEIGHT_REM * mageHintCardAspectRatio).toFixed(3)}rem`,
     };
+
+    useLayoutEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+
+        const updatePointerHovering = (clientX: number, clientY: number) => {
+            const rect = hintCardRef.current?.getBoundingClientRect();
+            const hovering = Boolean(
+                rect
+                && clientX >= rect.left
+                && clientX <= rect.right
+                && clientY >= rect.top
+                && clientY <= rect.bottom,
+            );
+            setHintCardPointerHovering((current) => (current === hovering ? current : hovering));
+        };
+        const handlePointerMove = (event: PointerEvent) => {
+            updatePointerHovering(event.clientX, event.clientY);
+        };
+        const clearPointerHovering = () => {
+            setHintCardPointerHovering(false);
+        };
+
+        window.addEventListener('pointermove', handlePointerMove, { passive: true });
+        window.addEventListener('pointerleave', clearPointerHovering);
+        window.addEventListener('blur', clearPointerHovering);
+
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerleave', clearPointerHovering);
+            window.removeEventListener('blur', clearPointerHovering);
+        };
+    }, []);
+
     if (!compact) {
         const hintCard = (
             <div
-                className="group pointer-events-auto relative flex-none rounded-[0.2rem]"
+                ref={hintCardRef}
+                className="group pointer-events-none relative flex-none rounded-[0.2rem]"
                 style={fullHintCardStyle}
                 data-testid="mage-wars-mage-hud-hint-card"
                 data-mage-preview-kind="card"
@@ -968,7 +1009,7 @@ function MageHud({
                     {mageLabel}
                 </div>
                 {onInspect ? (
-                    <CardInspectButton title={mageLabel} onInspect={onInspect} />
+                    <CardInspectButton title={mageLabel} alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -1033,7 +1074,8 @@ function MageHud({
             aria-label={`${self ? t('player.you') : t('player.opponent')} ${mageLabel}`}
         >
             <div
-                className="group pointer-events-auto relative flex-none rounded-[0.2rem]"
+                ref={hintCardRef}
+                className="group pointer-events-none relative flex-none rounded-[0.2rem]"
                 style={compactHintCardStyle}
                 data-testid="mage-wars-mage-hud-hint-card"
                 data-mage-preview-kind="card"
@@ -1056,7 +1098,7 @@ function MageHud({
                     {mageLabel}
                 </div>
                 {onInspect ? (
-                    <CardInspectButton title={mageLabel} compact onInspect={onInspect} />
+                    <CardInspectButton title={mageLabel} compact alwaysVisible={hintCardPointerHovering} revealOnGroupHover={false} onInspect={onInspect} />
                 ) : null}
                 {!self && onObserve ? (
                     <MageWarsObservePlayerButton observed={observed} onObserve={onObserve} />
@@ -4477,7 +4519,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
             '--mage-wars-desktop-prepared-width': 'clamp(19.125rem, 19vw, 31rem)',
             '--mage-wars-desktop-prepared-card-height': 'clamp(13.5rem, 20.75vh, 17rem)',
             '--mage-wars-desktop-card-height': 'var(--mage-wars-desktop-prepared-card-height, 14rem)',
-            '--mage-wars-desktop-spellbook-card-height': 'clamp(13.75rem, 29vh, 24rem)',
+            '--mage-wars-desktop-spellbook-card-height': 'clamp(13.75rem, min(29vh, 14.85vw), 24rem)',
             '--mage-wars-desktop-top-inset': 'clamp(0.625rem, 1vw, 0.875rem)',
             '--mage-wars-desktop-side-inset': 'clamp(0.5rem, 1.17vw, 1rem)',
             '--mage-wars-desktop-bottom-side-inset': 'clamp(0.5rem, calc(1.5vw - 0.8rem), 1rem)',
@@ -4518,8 +4560,8 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 data-tutorial-id="mw-stage"
             >
                 <ZoomPanViewport
-                    initialScale={1}
-                    minScale={1}
+                    initialScale={isLandscapeMobileViewport ? 1 : 0.6}
+                    minScale={isLandscapeMobileViewport ? 1 : 0.6}
                     maxScale={2.6}
                     baseScaleMode={isLandscapeMobileViewport ? 'contain' : 'cover'}
                     panBoundsMode="free"

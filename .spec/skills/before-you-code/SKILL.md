@@ -7,6 +7,12 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 
 先校准任务规模，再读最少必要上下文。不要把已读内容复述成任务回执，也不要无差别加载所有规范。
 
+## 回归优先闸门
+
+用户描述包含“以前 / 之前 / 一个月前 / 最近改坏 / 又坏了 / 回归 / 恢复原来 / 不该变”，或当前任务是在处理刚引入的可见行为变化时，先按回归候选处理。这个判断优先于普通 UI、移动端、E2E、看图和 bug 修复分类；先读 [`regression-closeout`](../../knowledge/standards/regression-closeout.md)，完成其回归锁定卡，再下钻其它专项规范。
+
+命中该闸门后，最后正常证据未锁定前，不得新增替代 UI、替代流程、替代测试期望或 PASS 清单来定义“新的正确行为”。如果已经做出了新方案，先把它降级为失败候选，手工撤掉或隔离错误 hunk 后再继续定位。
+
 ## 强制设计入口
 
 只要本轮会新增或修改手写源码、测试、E2E、项目脚本、devtools 或运行时配置，必须先读 [`code-design`](../../knowledge/standards/code-design.md)。它是 BoardGame 项目内“六大基本原则 / 设计模式选择 / 反模式预防”的唯一执行主源；不能依赖个人系统目录、代码注释、旧 evidence 或局部设计文档来替代。
@@ -23,12 +29,13 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 
 ## 加载顺序
 
-1. 根据用户目标和当前文件范围判定任务规模。
-2. 若会改手写源码、测试、E2E、脚本、devtools 或运行时配置，先读 [`code-design`](../../knowledge/standards/code-design.md) 并完成 owner / 六大原则判断。
-3. 从 [知识导航](../../knowledge/README.md) 选择直接相关的标准和项目 workflow。
-4. 阅读所选 workflow 的 `SKILL.md`；只在它明确指向时继续读 references/ 分卷。
-5. 阅读会被改动的关键源文件、接口和现有测试。
-6. 小/中任务直接在已锁定范围内继续；大任务先锁定产品任务入口或 AI 规范结构入口，不在上下文不足时试改。
+1. 先检查是否命中回归优先闸门；命中时先读 [`regression-closeout`](../../knowledge/standards/regression-closeout.md) 并锁定最后正常证据。
+2. 根据用户目标和当前文件范围判定任务规模。
+3. 若会改手写源码、测试、E2E、脚本、devtools 或运行时配置，先读 [`code-design`](../../knowledge/standards/code-design.md) 并完成 owner / 六大原则判断。
+4. 从 [知识导航](../../knowledge/README.md) 选择直接相关的标准和项目 workflow。
+5. 阅读所选 workflow 的 `SKILL.md`；只在它明确指向时继续读 references/ 分卷。
+6. 阅读会被改动的关键源文件、接口和现有测试。
+7. 小/中任务直接在已锁定范围内继续；大任务先锁定产品任务入口或 AI 规范结构入口，不在上下文不足时试改。
 
 ## 边界
 

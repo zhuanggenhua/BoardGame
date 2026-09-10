@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { ASSETS } from './assets';
+import { buildBoardShellInlineUnitValue, buildBoardShellScreenPixelValue } from '../../../shared/runtimeLayoutUnits';
 
-const DECK_WIDTH = '10.2vw';
+const DECK_WIDTH = buildBoardShellInlineUnitValue(10.2);
 const CARD_ASPECT_RATIO = 0.7;
 
 export const DrawDeck = React.forwardRef<HTMLDivElement, {
@@ -16,20 +17,21 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
     const { t } = useTranslation('game-dicethrone');
     const handToggleLabel = isHandHidden ? t('hud.showHand') : t('hud.hideHand');
     const handToggleClassName = [
-        'absolute left-[calc(100%+0.55vw)] bottom-[0.15vw] z-20',
-        'flex h-[2.65vw] min-h-[44px] w-[2.65vw] min-w-[44px] items-center justify-center rounded-full',
-        'border-2 ring-2 ring-slate-950/80',
-        'shadow-[0_0_1.15vw_rgba(34,211,238,0.78),0_0.16vw_0.45vw_rgba(0,0,0,0.82)]',
+        'absolute z-20',
+        'flex items-center justify-center rounded-full',
+        'border border-cyan-200/70 bg-slate-950/88 text-cyan-100',
+        'backdrop-blur-sm',
         'transition-[background-color,transform,border-color,box-shadow] duration-150',
-        'hover:scale-105 active:scale-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/90',
+        'hover:scale-105 hover:border-cyan-100 hover:bg-cyan-900/90 active:scale-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/90',
         isHandHidden
-            ? 'border-amber-50 bg-amber-200 text-slate-950 hover:bg-amber-100'
-            : 'border-cyan-50 bg-cyan-200 text-slate-950 hover:bg-cyan-100',
+            ? 'border-amber-200/80 text-amber-100 hover:border-amber-100 hover:bg-amber-900/90'
+            : '',
     ].join(' ');
 
     return (
         <div
             ref={ref}
+            data-testid="dt-draw-deck-card"
             className="relative perspective-500 select-none"
             style={{
                 width: DECK_WIDTH,
@@ -37,8 +39,17 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                 aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
             }}
         >
-            <div className="absolute inset-0 bg-slate-800 rounded-[0.5vw] transform translate-x-[0.2vw] translate-y-[0.2vw]"></div>
-            <div className="w-full h-full rounded-[0.5vw] overflow-hidden shadow-2xl border border-slate-600 relative z-10 bg-slate-900">
+            <div
+                className="absolute inset-0 bg-slate-800"
+                style={{
+                    borderRadius: buildBoardShellInlineUnitValue(0.5),
+                    transform: `translate(${buildBoardShellInlineUnitValue(0.2)}, ${buildBoardShellInlineUnitValue(0.2)})`,
+                }}
+            ></div>
+            <div
+                className="w-full h-full overflow-hidden shadow-2xl border border-slate-600 relative z-10 bg-slate-900"
+                style={{ borderRadius: buildBoardShellInlineUnitValue(0.5) }}
+            >
                 <OptimizedImage
                     src={ASSETS.CARD_BG}
                     locale={locale}
@@ -46,8 +57,15 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                     alt={t('imageAlt.deck')}
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center font-bold text-slate-100">
-                    <span className="text-[0.6vw] tracking-widest mb-[0.2vw] text-slate-200 drop-shadow-sm">{t('hud.deck')}</span>
-                    <span className="text-[1.8vw] text-white leading-none drop-shadow-md">{count}</span>
+                    <span
+                        className="tracking-widest text-slate-200 drop-shadow-sm"
+                        style={{ fontSize: buildBoardShellInlineUnitValue(0.6), marginBottom: buildBoardShellInlineUnitValue(0.2) }}
+                    >
+                        {t('hud.deck')}
+                    </span>
+                    <span className="text-white leading-none drop-shadow-md" style={{ fontSize: buildBoardShellInlineUnitValue(1.8) }}>
+                        {count}
+                    </span>
                 </div>
             </div>
             {onToggleHandHidden && (
@@ -62,10 +80,28 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
                         onToggleHandHidden();
                     }}
                     className={handToggleClassName}
+                    style={{
+                        left: `calc(100% + ${buildBoardShellInlineUnitValue(0.35)})`,
+                        bottom: `max(0px, calc((44px / var(--mobile-board-shell-scale, 1) - ${buildBoardShellInlineUnitValue(2.2)}) / 2))`,
+                        width: buildBoardShellInlineUnitValue(2.2),
+                        height: buildBoardShellInlineUnitValue(2.2),
+                        boxShadow: isHandHidden
+                            ? `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(245,158,11,0.32)`
+                            : `0 0 ${buildBoardShellInlineUnitValue(0.9)} rgba(34,211,238,0.32)`,
+                    }}
                 >
+                    <span
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0"
+                        style={{
+                            minHeight: buildBoardShellScreenPixelValue(44),
+                            minWidth: buildBoardShellScreenPixelValue(44),
+                        }}
+                        data-testid="dicethrone-hand-visibility-hit-area"
+                        aria-hidden="true"
+                    />
                     {isHandHidden
-                        ? <ChevronUp className="h-[1.3vw] min-h-[20px] w-[1.3vw] min-w-[20px] drop-shadow-[0_1px_0_rgba(255,255,255,0.55)]" strokeWidth={3} />
-                        : <ChevronDown className="h-[1.3vw] min-h-[20px] w-[1.3vw] min-w-[20px] drop-shadow-[0_1px_0_rgba(255,255,255,0.55)]" strokeWidth={3} />}
+                        ? <ChevronUp className="relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />
+                        : <ChevronDown className="relative z-10" style={{ width: buildBoardShellInlineUnitValue(1.08), height: buildBoardShellInlineUnitValue(1.08) }} strokeWidth={2.4} />}
                 </button>
             )}
         </div>

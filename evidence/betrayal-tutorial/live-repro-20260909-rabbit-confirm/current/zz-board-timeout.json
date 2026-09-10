@@ -1,0 +1,200 @@
+{
+  "diag": {
+    "label": "zz-board-timeout",
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "title": "易桌游 - 桌游教学与在线联机平台 | 王权骰铸、大杀四方、召唤师战争",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 0,
+      "stepId": "setup-runtime",
+      "stepAiActionCount": 1,
+      "aiActionCount": 1
+    },
+    "tutorial": {
+      "active": false,
+      "manifestId": null,
+      "manifestRevision": null,
+      "stepIndex": 0,
+      "stepId": null,
+      "stepAllowedCommands": null,
+      "stepInfoStep": null,
+      "stepRequireAction": null
+    },
+    "activeStepDom": null,
+    "overlayText": null,
+    "continueButton": null,
+    "rollModifierConfirm": null,
+    "rabbitFootPicker": null,
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "latestFeedback": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": null,
+      "usedCardIdsThisTurn": [],
+      "pendingDamageAllocation": null
+    },
+    "bodyText": "页面出了点问题当前页面渲染失败了，请先刷新重试；如果反复出现，再返回大厅。Error: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.刷新页面返回大厅"
+  },
+  "logs": [
+    {
+      "at": "2026-09-09T09:18:00.241Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T09:18:00.326Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T09:18:22.267Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T09:18:22.300Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T09:18:23.273Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T09:18:23.279Z",
+      "type": "response",
+      "text": "500 http://127.0.0.1:4274/auth/refresh"
+    },
+    {
+      "at": "2026-09-09T09:18:23.280Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "at": "2026-09-09T09:18:23.281Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/auth/refresh net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T09:18:31.750Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T09:18:31.748Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T09:18:31.755Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T09:18:31.750Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T09:18:31.755Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T09:18:31.755Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T09:18:31.758Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T09:18:31.757Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T09:18:31.758Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T09:18:31.757Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T09:18:32.370Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T09:18:32.370Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":621}"
+    },
+    {
+      "at": "2026-09-09T09:18:32.371Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T09:18:32.370Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":613}"
+    },
+    {
+      "at": "2026-09-09T09:18:37.559Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T09:18:37.559Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":5802}"
+    },
+    {
+      "at": "2026-09-09T09:18:37.750Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T09:18:37.760Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T09:18:37.762Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T09:18:37.762Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T09:18:37.762Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T09:18:37.868Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T09:18:39.389Z",
+      "type": "error",
+      "text": "Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render."
+    },
+    {
+      "at": "2026-09-09T09:18:39.430Z",
+      "type": "error",
+      "text": "%o %s %s Error: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops. at getRootForUpdatedFiber (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:3526:128) at enqueueConcurrentHookUpdate (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:3510:16) at dispatchSetStateInternal (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:6832:20) at dispatchSetState (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:6803:9) at http://127.0.0.1:4274/src/engine/transport/useLocalAiRuntime.ts:67:5 at http://127.0.0.1:4274/src/engine/transport/useLocalProviderViewModel.ts:69:5 at http://127.0.0.1:4274/src/engine/transport/useLocalProviderViewModel.ts:82:5 at http://127.0.0.1:4274/src/pages/matchRoomBridges.tsx?t=1788944939336:60:5 at Object.react_stack_bottom_frame (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:18567:20) at runWithFiberInDEV (http://127.0.0.1:4"
+    },
+    {
+      "at": "2026-09-09T09:18:39.519Z",
+      "type": "error",
+      "text": "Uncaught error: Error: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops. at getRootForUpdatedFiber (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:3526:128) at enqueueConcurrentHookUpdate (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:3510:16) at dispatchSetStateInternal (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:6832:20) at dispatchSetState (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:6803:9) at http://127.0.0.1:4274/src/engine/transport/useLocalAiRuntime.ts:67:5 at http://127.0.0.1:4274/src/engine/transport/useLocalProviderViewModel.ts:69:5 at http://127.0.0.1:4274/src/engine/transport/useLocalProviderViewModel.ts:82:5 at http://127.0.0.1:4274/src/pages/matchRoomBridges.tsx?t=1788944939336:60:5 at Object.react_stack_bottom_frame (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:18567:20) at runWithFiberInDEV (http://127."
+    },
+    {
+      "at": "2026-09-09T09:18:39.523Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T09:18:39.523Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T09:18:39.524Z",
+      "type": "response",
+      "text": "500 http://127.0.0.1:4274/feedback"
+    },
+    {
+      "at": "2026-09-09T09:18:39.524Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "at": "2026-09-09T09:18:39.539Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/feedback net::ERR_ABORTED"
+    }
+  ]
+}

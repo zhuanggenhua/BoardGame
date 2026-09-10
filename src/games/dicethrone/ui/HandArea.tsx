@@ -11,9 +11,34 @@ import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { ASSETS } from './assets';
 import { getAbilitySlotIdForCharacter } from './abilitySlotMapping';
+import {
+    buildBoardShellInlineUnitValue,
+    convertScreenPixelsToBoardShellPixels,
+    readBoardShellBlockUnitPixelValue,
+    readBoardShellInlineUnitPixelValue,
+    readBoardShellScaleValue,
+} from '../../../shared/runtimeLayoutUnits';
 
-const HAND_CARD_WIDTH = '12vw';
+const HAND_CARD_WIDTH_UNITS = 12;
+const HAND_CARD_GAP_UNITS = 7;
+const HAND_CARD_SIDE_OFFSET_UNITS = HAND_CARD_WIDTH_UNITS / 2;
+const HAND_CARD_Y_OFFSET_UNITS = 0.8;
+const HAND_CARD_ANCHOR_Y_UNITS = 6;
+const HAND_CARD_HOVER_LIFT_UNITS = 3.1;
+const HAND_AREA_HEIGHT_UNITS = 22;
+const HAND_TUTORIAL_FALLBACK_WIDTH_UNITS = 20;
+const HAND_TUTORIAL_VISIBLE_HEIGHT_UNITS = 18;
 const HAND_CARD_ASPECT_RATIO = 0.61;
+
+const buildHandCardWidthValue = () => buildBoardShellInlineUnitValue(HAND_CARD_WIDTH_UNITS);
+const buildHandCardLeftValue = (offset: number) =>
+    `calc(50% + ${buildBoardShellInlineUnitValue(offset * HAND_CARD_GAP_UNITS)} - ${buildBoardShellInlineUnitValue(HAND_CARD_SIDE_OFFSET_UNITS)})`;
+const readHandCardGapPixels = () => readBoardShellInlineUnitPixelValue() * HAND_CARD_GAP_UNITS;
+const readHandCardYOffsetPixels = (offset: number) => Math.abs(offset) * HAND_CARD_Y_OFFSET_UNITS * readBoardShellInlineUnitPixelValue();
+const readHandCardHoverLiftPixels = () => readBoardShellInlineUnitPixelValue() * HAND_CARD_HOVER_LIFT_UNITS;
+
+const getHandAnchorYOffsetFromScreenBottom = () =>
+    readBoardShellInlineUnitPixelValue() * HAND_CARD_ANCHOR_Y_UNITS * readBoardShellScaleValue();
 
 /** 飞出卡牌信息（成功使用后的动画） */
 type CardOffset = {
@@ -108,11 +133,15 @@ const HandCardCostBadge = ({ cost, affordable }: { cost: number; affordable: boo
             data-cost={cost}
             data-affordable={affordable}
             aria-label={`费用 ${cost} CP`}
-            className="absolute -left-[0.52vw] -top-[0.56vw] h-[2.18vw] w-[2.46vw] pointer-events-none"
+            className="absolute pointer-events-none"
             style={{
+                left: buildBoardShellInlineUnitValue(-0.52),
+                top: buildBoardShellInlineUnitValue(-0.56),
+                height: buildBoardShellInlineUnitValue(2.18),
+                width: buildBoardShellInlineUnitValue(2.46),
                 filter: affordable
-                    ? 'drop-shadow(0 0 0.38vw rgba(45, 212, 191, 0.5)) drop-shadow(0 0.14vw 0.18vw rgba(0,0,0,0.72))'
-                    : 'drop-shadow(0 0.12vw 0.16vw rgba(0,0,0,0.66))',
+                    ? `drop-shadow(0 0 ${buildBoardShellInlineUnitValue(0.38)} rgba(45, 212, 191, 0.5)) drop-shadow(0 ${buildBoardShellInlineUnitValue(0.14)} ${buildBoardShellInlineUnitValue(0.18)} rgba(0,0,0,0.72))`
+                    : `drop-shadow(0 ${buildBoardShellInlineUnitValue(0.12)} ${buildBoardShellInlineUnitValue(0.16)} rgba(0,0,0,0.66))`,
             }}
         >
             <svg className="absolute inset-0 h-full w-full" viewBox="0 0 74 56" aria-hidden="true">
@@ -157,11 +186,13 @@ const HandCardCostBadge = ({ cost, affordable }: { cost: number; affordable: boo
                 />
             </svg>
             <span
-                className="absolute inset-0 flex items-center justify-center pr-[0.28vw] text-[1.18vw] font-black leading-none text-white"
+                className="absolute inset-0 flex items-center justify-center font-black leading-none text-white"
                 style={{
+                    paddingRight: buildBoardShellInlineUnitValue(0.28),
+                    fontSize: buildBoardShellInlineUnitValue(1.18),
                     textShadow: affordable
-                        ? '0 0.1vw 0 #06242c, 0 0 0.28vw rgba(255,255,255,0.52)'
-                        : '0 0.1vw 0 #1f2937, 0 0 0.18vw rgba(255,255,255,0.22)',
+                        ? `0 ${buildBoardShellInlineUnitValue(0.1)} 0 #06242c, 0 0 ${buildBoardShellInlineUnitValue(0.28)} rgba(255,255,255,0.52)`
+                        : `0 ${buildBoardShellInlineUnitValue(0.1)} 0 #1f2937, 0 0 ${buildBoardShellInlineUnitValue(0.18)} rgba(255,255,255,0.22)`,
                 }}
             >
                 {cost}
@@ -309,56 +340,62 @@ export const HandArea = ({
 
     const getDeckOffset = React.useCallback(() => {
         if (!drawDeckRef?.current || !handAreaRef.current) {
-            return { x: -window.innerWidth * 0.4, y: -window.innerHeight * 0.1 };
+            return {
+                x: -readBoardShellInlineUnitPixelValue() * 40,
+                y: -readBoardShellBlockUnitPixelValue() * 10,
+            };
         }
         const deckRect = drawDeckRef.current.getBoundingClientRect();
         const handRect = handAreaRef.current.getBoundingClientRect();
         const deckCenterX = deckRect.left + deckRect.width / 2;
         const deckCenterY = deckRect.top + deckRect.height / 2;
         const handCenterX = handRect.left + handRect.width / 2;
-        const handCenterY = handRect.bottom - window.innerWidth * 0.06;
+        const handCenterY = handRect.bottom - getHandAnchorYOffsetFromScreenBottom();
         return {
-            x: deckCenterX - handCenterX,
-            y: deckCenterY - handCenterY,
+            x: convertScreenPixelsToBoardShellPixels(deckCenterX - handCenterX),
+            y: convertScreenPixelsToBoardShellPixels(deckCenterY - handCenterY),
         };
     }, [drawDeckRef]);
 
     const getDiscardPileOffset = React.useCallback(() => {
         if (!discardPileRef?.current || !handAreaRef.current) {
-            return { x: window.innerWidth * 0.4, y: -window.innerHeight * 0.1 };
+            return {
+                x: readBoardShellInlineUnitPixelValue() * 40,
+                y: -readBoardShellBlockUnitPixelValue() * 10,
+            };
         }
         const discardRect = discardPileRef.current.getBoundingClientRect();
         const handRect = handAreaRef.current.getBoundingClientRect();
         const discardCenterX = discardRect.left + discardRect.width / 2;
         const discardCenterY = discardRect.top + discardRect.height / 2;
         const handCenterX = handRect.left + handRect.width / 2;
-        const handCenterY = handRect.bottom - window.innerWidth * 0.06;
+        const handCenterY = handRect.bottom - getHandAnchorYOffsetFromScreenBottom();
         return {
-            x: discardCenterX - handCenterX,
-            y: discardCenterY - handCenterY,
+            x: convertScreenPixelsToBoardShellPixels(discardCenterX - handCenterX),
+            y: convertScreenPixelsToBoardShellPixels(discardCenterY - handCenterY),
         };
     }, [discardPileRef]);
 
     // 获取技能槽位置偏移（用于升级卡动画）
     const getAbilitySlotOffset = React.useCallback((slotId: string) => {
         if (!handAreaRef.current) {
-            return { x: 0, y: -window.innerHeight * 0.4 };
+            return { x: 0, y: -readBoardShellBlockUnitPixelValue() * 40 };
         }
         const slotEl = document.querySelector(
             `[data-ability-slot-scope="main-board"][data-ability-slot="${slotId}"]`,
         ) as HTMLElement | null;
         if (!slotEl) {
-            return { x: 0, y: -window.innerHeight * 0.4 };
+            return { x: 0, y: -readBoardShellBlockUnitPixelValue() * 40 };
         }
         const slotRect = slotEl.getBoundingClientRect();
         const handRect = handAreaRef.current.getBoundingClientRect();
         const slotCenterX = slotRect.left + slotRect.width / 2;
         const slotCenterY = slotRect.top + slotRect.height / 2;
         const handCenterX = handRect.left + handRect.width / 2;
-        const handCenterY = handRect.bottom - window.innerWidth * 0.06;
+        const handCenterY = handRect.bottom - getHandAnchorYOffsetFromScreenBottom();
         return {
-            x: slotCenterX - handCenterX,
-            y: slotCenterY - handCenterY,
+            x: convertScreenPixelsToBoardShellPixels(slotCenterX - handCenterX),
+            y: convertScreenPixelsToBoardShellPixels(slotCenterY - handCenterY),
         };
     }, []);
 
@@ -397,7 +434,7 @@ export const HandArea = ({
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
     const hasRespondableCards = (respondableCardIds?.size ?? 0) > 0;
-    const handCardBottomOffset = hasRespondableCards ? '0.75vw' : (isCoarsePointer ? '0vw' : '-2vw');
+    const handCardBottomOffset = buildBoardShellInlineUnitValue(hasRespondableCards ? 0.75 : (isCoarsePointer ? 0 : -2));
 
     const clearAnimationTimers = React.useCallback(() => {
         dealTimersRef.current.forEach(timerId => window.clearTimeout(timerId));
@@ -577,11 +614,10 @@ export const HandArea = ({
                     const entry = handEntryByKey.get(key);
                     if (!entry) return;
                     const offset = entry.index - centerIndex;
-                    const yOffset = Math.abs(offset) * 0.8;
                     const originPos = isUndoCard(key) ? getDiscardPileOffset() : getDeckOffset();
                     next.set(key, {
-                        x: originPos.x - offset * window.innerWidth * 0.07,
-                        y: originPos.y - yOffset * window.innerWidth * 0.01,
+                        x: originPos.x - offset * readHandCardGapPixels(),
+                        y: originPos.y - readHandCardYOffsetPixels(offset),
                     });
                 });
                 return next;
@@ -838,19 +874,18 @@ export const HandArea = ({
 
     // 教程高亮目标：根据手牌数量动态计算卡牌区域宽度，避免全屏宽度的蓝框
     const cardSpreadWidth = totalCards > 0
-        ? (totalCards - 1) * 7 + 12 + 4 // (n-1)*间距 + 卡宽 + 两侧余量（单位 vw）
-        : 20;
-    const cardAreaHeight = 18; // 卡牌可见高度（vw），卡牌高度约19.7vw减去底部溢出2vw
+        ? (totalCards - 1) * HAND_CARD_GAP_UNITS + HAND_CARD_WIDTH_UNITS + 4
+        : HAND_TUTORIAL_FALLBACK_WIDTH_UNITS;
+    const cardAreaHeight = HAND_TUTORIAL_VISIBLE_HEIGHT_UNITS;
+    const handCardWidth = buildHandCardWidthValue();
     const flyingOutMetrics = React.useMemo(() => {
         if (!flyingOutCard) return null;
         const flyingCenterIndex = centerIndex;
         const startIndexOffset = flyingOutCard.startIndex - flyingCenterIndex;
-        const startYOffset = Math.abs(startIndexOffset) * 0.8;
         return {
             card: flyingOutCard.card,
             cardKey: flyingOutCard.cardKey,
             startIndexOffset,
-            startYOffset,
             startOffset: flyingOutCard.startOffset,
             targetPos: flyingOutCard.targetPos,
             targetScale: flyingOutCard.targetScale,
@@ -864,9 +899,10 @@ export const HandArea = ({
             data-testid="hand-area"
             data-hand-hidden={isHidden}
             aria-hidden={isHidden}
-            className="absolute bottom-0 left-0 right-0 flex justify-center items-end pb-0 h-[22vw] pointer-events-none"
+            className="absolute bottom-0 left-0 right-0 flex justify-center items-end pb-0 pointer-events-none"
             style={{
                 zIndex: UI_Z_INDEX.hud,
+                height: buildBoardShellInlineUnitValue(HAND_AREA_HEIGHT_UNITS),
                 display: isHidden ? 'none' : undefined,
             }}
         >
@@ -874,9 +910,12 @@ export const HandArea = ({
             <div
                 data-tutorial-id="hand-area"
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none"
-                style={{ width: `${cardSpreadWidth}vw`, height: `${cardAreaHeight}vw` }}
+                style={{ width: buildBoardShellInlineUnitValue(cardSpreadWidth), height: buildBoardShellInlineUnitValue(cardAreaHeight) }}
             />
-            <div className="relative w-[95vw] h-full flex justify-center items-end">
+            <div
+                className="relative h-full flex justify-center items-end"
+                style={{ width: buildBoardShellInlineUnitValue(95) }}
+            >
                 <AnimatePresence>
                     {handEntries.map((entry) => {
                         const { card, key: cardKey, index: i } = entry;
@@ -885,7 +924,6 @@ export const HandArea = ({
 
                         const offset = i - centerIndex;
                         const rotation = offset * 5;
-                        const yOffset = Math.abs(offset) * 0.8;
                         const isDragging = draggingCardKey === cardKey;
                         const isDealing = dealingCardKey === cardKey;
                         const isFlipped = flippedCardKeys.has(cardKey);
@@ -918,11 +956,10 @@ export const HandArea = ({
                             } : false)
                             : (returningEntry ? (() => {
                                 const origOffset = returningEntry.originalIndex - centerIndex;
-                                const origYOffset = Math.abs(origOffset) * 0.8;
                                 return {
                                     opacity: 1,
-                                    x: (origOffset - offset) * window.innerWidth * 0.07 + returningEntry.offset.x,
-                                    y: (origYOffset - yOffset) * window.innerWidth * 0.01 + returningEntry.offset.y,
+                                    x: (origOffset - offset) * readHandCardGapPixels() + returningEntry.offset.x,
+                                    y: (readHandCardYOffsetPixels(origOffset) - readHandCardYOffsetPixels(offset)) + returningEntry.offset.y,
                                     scale: 1,
                                     rotate: 0,
                                 };
@@ -957,17 +994,18 @@ export const HandArea = ({
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}
                                 className={`
-                                    absolute bottom-0 rounded-[0.8vw]
+                                    absolute bottom-0
                                     ${canClickDiscard || canClickPlay ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
                                     ${disableCardPointerEvents ? 'pointer-events-none' : 'pointer-events-auto'}
                                     origin-bottom-center bg-transparent overflow-visible
                                 `}
                                 style={{
                                     bottom: handCardBottomOffset,
-                                    width: HAND_CARD_WIDTH,
-                                    height: `calc(${HAND_CARD_WIDTH} / ${HAND_CARD_ASPECT_RATIO})`,
+                                    width: handCardWidth,
+                                    height: `calc(${handCardWidth} / ${HAND_CARD_ASPECT_RATIO})`,
                                     aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
-                                    left: `calc(50% + ${offset * 7}vw - 6vw)`,
+                                    left: buildHandCardLeftValue(offset),
+                                    borderRadius: buildBoardShellInlineUnitValue(0.8),
                                     x: dragValues.x,
                                     y: dragValues.y,
                                     zIndex,
@@ -980,7 +1018,7 @@ export const HandArea = ({
                                     animate={{
                                         opacity: 1,
                                         x: 0,
-                                        y: isHovered ? -60 : yOffset * window.innerWidth * 0.01,
+                                        y: isHovered ? -readHandCardHoverLiftPixels() : readHandCardYOffsetPixels(offset),
                                         scale: isDragging ? 1.15 : (isHovered ? 1.2 : 1),
                                         rotate: isDragging || isHovered ? 0 : rotation,
                                     }}
@@ -999,7 +1037,7 @@ export const HandArea = ({
                                     <div className="relative w-full h-full" style={{ perspective: '1000px' }}>
                                         <motion.div
                                             className={`
-                                                relative w-full h-full rounded-[0.8vw] shadow-2xl
+                                                relative w-full h-full shadow-2xl
                                                 ${isDragging ? 'ring-4 ring-amber-400 shadow-amber-500/50' : ''}
                                                 ${canClickDiscard && isHovered ? 'ring-4 ring-red-500 shadow-red-500/50' : ''}
                                                 ${canClickDiscard && !isHovered ? 'ring-2 ring-red-500/50' : ''}
@@ -1009,6 +1047,7 @@ export const HandArea = ({
                                                 transformStyle: 'preserve-3d',
                                                 WebkitTransformStyle: 'preserve-3d',
                                                 willChange: 'transform',
+                                                borderRadius: buildBoardShellInlineUnitValue(0.8),
                                             }}
                                             initial={{ rotateY: isFlipped ? 0 : 180 }}
                                             animate={{ rotateY: isFlipped ? 0 : 180 }}
@@ -1016,27 +1055,29 @@ export const HandArea = ({
                                         >
                                             <div
                                                 data-card-face="front"
-                                                className="absolute inset-0 w-full h-full rounded-[0.8vw] overflow-visible"
+                                                className="absolute inset-0 w-full h-full overflow-visible"
                                                 style={{
                                                     transform: 'translateZ(0.1px)',
                                                     WebkitTransform: 'translateZ(0.1px)',
                                                     backfaceVisibility: 'hidden',
                                                     WebkitBackfaceVisibility: 'hidden',
+                                                    borderRadius: buildBoardShellInlineUnitValue(0.8),
                                                 }}
                                             >
                                                 <CardPreview
                                                     previewRef={card.previewRef}
                                                     locale={locale}
-                                                    className="w-full h-full rounded-[0.8vw] border border-slate-700"
+                                                    className="w-full h-full border border-slate-700"
                                                     style={{
                                                         backgroundColor: '#1e293b',
+                                                        borderRadius: buildBoardShellInlineUnitValue(0.8),
                                                     }}
                                                 />
                                                 <HandCardCostBadge cost={card.cpCost} affordable={canAffordCard} />
                                             </div>
                                             <div
                                                 data-card-face="back"
-                                                className="absolute inset-0 w-full h-full rounded-[0.8vw] border border-slate-700"
+                                                className="absolute inset-0 w-full h-full border border-slate-700"
                                                 style={{
                                                     transform: 'rotateY(180deg) translateZ(0.1px)',
                                                     WebkitTransform: 'rotateY(180deg) translateZ(0.1px)',
@@ -1044,6 +1085,7 @@ export const HandArea = ({
                                                     backgroundSize: 'cover',
                                                     backfaceVisibility: 'hidden',
                                                     WebkitBackfaceVisibility: 'hidden',
+                                                    borderRadius: buildBoardShellInlineUnitValue(0.8),
                                                 }}
                                             />
                                         </motion.div>
@@ -1060,24 +1102,25 @@ export const HandArea = ({
                         <motion.div
                             key={`flying-${flyingOutMetrics.cardKey}`}
                             data-testid="hand-flying-card"
-                            className="absolute bottom-0 rounded-[0.8vw] pointer-events-none"
+                            className="absolute bottom-0 pointer-events-none"
                             style={{
                                 bottom: handCardBottomOffset,
-                                width: HAND_CARD_WIDTH,
-                                height: `calc(${HAND_CARD_WIDTH} / ${HAND_CARD_ASPECT_RATIO})`,
+                                width: handCardWidth,
+                                height: `calc(${handCardWidth} / ${HAND_CARD_ASPECT_RATIO})`,
                                 aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
-                                left: `calc(50% + ${flyingOutMetrics.startIndexOffset * 7}vw - 6vw)`,
+                                left: buildHandCardLeftValue(flyingOutMetrics.startIndexOffset),
+                                borderRadius: buildBoardShellInlineUnitValue(0.8),
                                 zIndex: UI_Z_INDEX.overlayRaised,
                             }}
                             initial={{
                                 x: flyingOutMetrics.startOffset.x,
-                                y: flyingOutMetrics.startOffset.y + flyingOutMetrics.startYOffset * window.innerWidth * 0.01,
+                                y: flyingOutMetrics.startOffset.y + readHandCardYOffsetPixels(flyingOutMetrics.startIndexOffset),
                                 scale: 1,
                                 opacity: 1,
                             }}
                             animate={{
-                                x: flyingOutMetrics.targetPos.x - flyingOutMetrics.startIndexOffset * window.innerWidth * 0.07,
-                                y: flyingOutMetrics.targetPos.y - flyingOutMetrics.startYOffset * window.innerWidth * 0.01,
+                                x: flyingOutMetrics.targetPos.x - flyingOutMetrics.startIndexOffset * readHandCardGapPixels(),
+                                y: flyingOutMetrics.targetPos.y - readHandCardYOffsetPixels(flyingOutMetrics.startIndexOffset),
                                 scale: flyingOutMetrics.targetScale,
                                 opacity: flyingOutMetrics.fadeOutAtTarget ? 0 : 1,
                             }}
@@ -1088,8 +1131,11 @@ export const HandArea = ({
                             <CardPreview
                                 previewRef={flyingOutMetrics.card.previewRef}
                                 locale={locale}
-                                className="w-full h-full rounded-[0.8vw] border border-slate-700 shadow-2xl"
-                                style={{ backgroundColor: '#1e293b' }}
+                                className="w-full h-full border border-slate-700 shadow-2xl"
+                                style={{
+                                    backgroundColor: '#1e293b',
+                                    borderRadius: buildBoardShellInlineUnitValue(0.8),
+                                }}
                             />
                         </motion.div>
                     ) : null}

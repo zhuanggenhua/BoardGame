@@ -5,6 +5,7 @@ import {
     AUTO_RESPONSE_KEY,
     getAutoResponseEnabled,
 } from './responsePreferences';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 /**
  * 响应窗口显示开关组件
@@ -33,9 +34,9 @@ export const AutoResponseToggle = ({
     };
 
     const buttonStyle = {
-        height: '2.1vw',
+        height: buildBoardShellInlineUnitValue(2.1),
         minHeight: '0',
-        maxHeight: '2.1vw',
+        maxHeight: buildBoardShellInlineUnitValue(2.1),
         paddingTop: '0',
         paddingBottom: '0',
         appearance: 'none',
@@ -44,11 +45,11 @@ export const AutoResponseToggle = ({
     } as const;
 
     return (
-        <div className="flex items-center justify-center gap-[0.35vw]" data-testid="response-toggle-group">
+        <div className="flex items-center justify-center" style={{ gap: buildBoardShellInlineUnitValue(0.35) }} data-testid="response-toggle-group">
             <button
                 onClick={handleToggle}
                 className={`
-                    group relative flex h-[2.1vw] min-h-0 items-center gap-[0.22vw] px-[0.55vw] py-0 rounded-[0.45vw]
+                    group relative flex min-h-0 items-center py-0
                     border transition-all duration-300 shadow-lg whitespace-nowrap
                     ${enabled
                         ? 'bg-emerald-900/80 border-emerald-500/50 hover:bg-emerald-800/90 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
@@ -58,14 +59,22 @@ export const AutoResponseToggle = ({
                 title={enabled ? t('hud.autoResponseEnabled') : t('hud.autoResponseDisabled')}
                 data-testid="auto-response-toggle"
                 aria-pressed={enabled}
-                style={buttonStyle}
+                style={{
+                    ...buttonStyle,
+                    gap: buildBoardShellInlineUnitValue(0.22),
+                    paddingInline: buildBoardShellInlineUnitValue(0.55),
+                    borderRadius: buildBoardShellInlineUnitValue(0.45),
+                }}
             >
                 {enabled ? (
-                    <Zap className="w-[0.78vw] h-[0.78vw] shrink-0 text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.6)]" />
+                    <Zap className="shrink-0 text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.6)]" style={{ width: buildBoardShellInlineUnitValue(0.78), height: buildBoardShellInlineUnitValue(0.78) }} />
                 ) : (
-                    <ZapOff className="w-[0.78vw] h-[0.78vw] shrink-0 text-slate-400" />
+                    <ZapOff className="shrink-0 text-slate-400" style={{ width: buildBoardShellInlineUnitValue(0.78), height: buildBoardShellInlineUnitValue(0.78) }} />
                 )}
-                <span className={`text-[0.56vw] leading-none font-bold ${enabled ? 'text-emerald-300' : 'text-slate-400'}`}>
+                <span
+                    className={`leading-none font-bold ${enabled ? 'text-emerald-300' : 'text-slate-400'}`}
+                    style={{ fontSize: buildBoardShellInlineUnitValue(0.56) }}
+                >
                     {enabled ? t('hud.manualResponse') : t('hud.autoResponse')}
                 </span>
             </button>

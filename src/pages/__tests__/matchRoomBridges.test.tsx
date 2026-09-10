@@ -6,15 +6,17 @@ import { TUTORIAL_COMMANDS } from '../../engine/systems/TutorialSystem';
 import { TutorialDispatchBridge } from '../matchRoomBridges';
 
 let gameClientState: MatchState<unknown>;
+let contextTutorialState: TutorialState;
 
 const dispatch = vi.fn();
+let gameClientDispatch = dispatch;
 const bindDispatch = vi.fn(() => 1);
 const unbindDispatch = vi.fn();
 const syncTutorialState = vi.fn();
 
 vi.mock('../../engine/transport/react', () => ({
     useGameClient: () => ({
-        dispatch,
+        dispatch: gameClientDispatch,
         state: gameClientState,
     }),
 }));
@@ -24,6 +26,7 @@ vi.mock('../../contexts/TutorialContext', () => ({
         bindDispatch,
         unbindDispatch,
         syncTutorialState,
+        tutorial: contextTutorialState,
     }),
 }));
 
@@ -31,8 +34,8 @@ vi.mock('../../contexts/GameModeContext', () => ({
     useGameMode: () => ({ mode: 'tutorial' }),
 }));
 
-const buildState = (tutorial: TutorialState): MatchState<unknown> => ({
-    core: {},
+const buildState = (tutorial: TutorialState, core: Record<string, unknown> = {}): MatchState<unknown> => ({
+    core,
     sys: {
         tutorial,
     } as MatchState<unknown>['sys'],
@@ -41,6 +44,7 @@ const buildState = (tutorial: TutorialState): MatchState<unknown> => ({
 describe('TutorialDispatchBridge', () => {
     beforeEach(() => {
         dispatch.mockClear();
+        gameClientDispatch = dispatch;
         bindDispatch.mockClear();
         unbindDispatch.mockClear();
         syncTutorialState.mockClear();
@@ -51,6 +55,13 @@ describe('TutorialDispatchBridge', () => {
             steps: [],
             step: null,
         });
+        contextTutorialState = {
+            active: false,
+            manifestId: null,
+            stepIndex: 0,
+            steps: [],
+            step: null,
+        };
     });
 
     it('同一步 AI 动作被消费后也会同步教程上下文，避免首个可见步骤卡住', async () => {
@@ -128,6 +139,209 @@ describe('TutorialDispatchBridge', () => {
         });
 
         render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        ));
+    });
+
+    it('状态刚被 START 推进后重新绑定清单时使用当前 dispatch，不落到旧 Provider 状态', async () => {
+        const oldDispatch = vi.fn();
+        const nextDispatch = vi.fn();
+        const manifest: TutorialManifest = {
+            id: 'mage-wars-basic',
+            revision: 2,
+            steps: [
+                { id: 'intro', content: 'intro' },
+            ],
+            stepValidator: () => true,
+        };
+        gameClientDispatch = oldDispatch;
+
+        const view = render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        gameClientDispatch = nextDispatch;
+        gameClientState = buildState({
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: manifest.revision,
+            stepIndex: 0,
+            steps: manifest.steps,
+            step: manifest.steps[0],
+        });
+
+        view.rerender(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(nextDispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        ));
+        expect(oldDispatch).not.toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        );
+    });
+
+    it('本地 Provider 重挂载导致 sys.tutorial 丢失时，会用当前 dispatch 重新启动同一教程', async () => {
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            revision: 2,
+            steps: [
+                { id: 'setup-runtime', content: 'setup' },
+                { id: 'objective-and-turn', content: 'objective' },
+            ],
+        };
+        contextTutorialState = {
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: manifest.revision,
+            stepIndex: 0,
+            steps: manifest.steps,
+            step: manifest.steps[0],
+        };
+        gameClientState = buildState({
+            active: false,
+            manifestId: null,
+            stepIndex: 0,
+            steps: [],
+            step: null,
+        });
+
+        render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.START,
+            { manifest },
+        ));
+    });
+
+    it('重新启动同一教程时不会把空白 Provider 状态同步回上下文导致教程失活', async () => {
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            revision: 2,
+            steps: [
+                { id: 'setup-runtime', content: 'setup' },
+                { id: 'objective-and-turn', content: 'objective' },
+            ],
+        };
+        contextTutorialState = {
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: manifest.revision,
+            stepIndex: 0,
+            steps: manifest.steps,
+            step: manifest.steps[0],
+        };
+        gameClientState = buildState({
+            active: false,
+            manifestId: null,
+            stepIndex: 0,
+            steps: [],
+            step: null,
+        });
+
+        render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.START,
+            { manifest },
+        ));
+        expect(syncTutorialState).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+                active: false,
+                manifestId: null,
+            }),
+        );
+    });
+
+    it('刚 START 到第 0 步且清单没有校验器时，不重复绑定清单覆盖教程状态', () => {
+        const manifest: TutorialManifest = {
+            id: 'mage-wars-basic',
+            revision: 2,
+            steps: [
+                { id: 'intro', content: 'intro' },
+                { id: 'plan', content: 'plan' },
+            ],
+        };
+        gameClientState = buildState({
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: manifest.revision,
+            stepIndex: 0,
+            steps: manifest.steps,
+            step: manifest.steps[0],
+        });
+
+        render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        expect(dispatch).not.toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        );
+    });
+
+    it('同一步核心局面已让步骤过期时会重新绑定清单，避免旧白名单继续拦确认', async () => {
+        const manifest: TutorialManifest = {
+            id: 'basic-setup-and-turn',
+            revision: 2,
+            steps: [
+                { id: 'use-rabbit-foot', content: 'use-rabbit-foot', allowedCommands: ['USE_RABBIT_FOOT'] },
+                { id: 'rabbit-foot-result', content: 'rabbit-foot-result', allowedCommands: ['FINALIZE_EVENT_ROLL'] },
+            ],
+            stepValidator: (state, step) => {
+                if (step.id !== 'use-rabbit-foot') return true;
+                return !(state.core as { usedRabbit?: boolean }).usedRabbit;
+            },
+        };
+        const staleTutorial = {
+            active: true,
+            manifestId: manifest.id,
+            manifestRevision: manifest.revision,
+            stepIndex: 0,
+            steps: manifest.steps,
+            step: manifest.steps[0],
+        };
+        gameClientState = buildState(staleTutorial, { usedRabbit: false });
+
+        const view = render(
+            <TutorialDispatchBridge tutorialManifest={manifest}>
+                <div />
+            </TutorialDispatchBridge>,
+        );
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(
+            TUTORIAL_COMMANDS.BIND_MANIFEST,
+            { manifest },
+        ));
+
+        dispatch.mockClear();
+        gameClientState = buildState(staleTutorial, { usedRabbit: true });
+        view.rerender(
             <TutorialDispatchBridge tutorialManifest={manifest}>
                 <div />
             </TutorialDispatchBridge>,

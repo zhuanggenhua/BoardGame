@@ -154,6 +154,7 @@ async function main() {
         : [`线上反馈状态通过 ${primary.writer} 回写成功后同步本地状态镜像`];
     updateBoardItems(board, localIds, {
         status: options.status,
+        lastFetchedStatus: primary.status,
         owner: 'codex',
         closedReason: options.closedReason,
         resolvedMethod: options.resolvedMethod,

@@ -1006,6 +1006,149 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
         await game.screenshot('吸血鬼领主-鲜血之力治疗后收口', testInfo);
     });
 
+    test('血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算', async ({ page, game }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await game.openTestGame('dicethrone', VAMPIRE_LORD_QUERY);
+        await game.setupScene({
+            gameId: 'dicethrone',
+            player0: {
+                hand: [],
+                deck: [
+                    'card-vampire-lord-blood-surge',
+                    'card-vampire-lord-drink-up',
+                    'card-vampire-lord-gushing-blood',
+                ],
+                resources: { CP: 2, HP: 50 },
+                tokens: { [TOKEN_IDS.BLOOD_POWER]: 0 },
+            },
+            player1: {
+                resources: { CP: 2, HP: 50 },
+            },
+            currentPlayer: '0',
+            phase: 'offensiveRoll',
+            extra: {
+                selectedCharacters: { '0': VAMPIRE_LORD_HERO_ID, '1': VISIBLE_GUEST_HERO_ID },
+                hostStarted: true,
+                activePlayerId: '0',
+                rollCount: 1,
+                rollLimit: 3,
+                rollDiceCount: 5,
+                rollConfirmed: true,
+                dice: Array.from({ length: 5 }, (_, id) => ({
+                    id,
+                    value: 6,
+                    symbol: VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP,
+                    symbols: [VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP],
+                    isKept: false,
+                    ownerId: '0',
+                    definitionId: 'vampire_lord-dice',
+                })),
+                currentRollContext: undefined,
+                pendingAttack: null,
+            },
+        });
+        await closeDebugPanelIfVisible(page);
+
+        const ultimateSlot = page.locator('[data-testid="player-board-surface"] [data-ability-slot="ultimate"]').first();
+        await expect(page.getByTestId('player-board-surface'))
+            .toHaveAttribute('data-character-id', VAMPIRE_LORD_HERO_ID, { timeout: 10000 });
+        await expectVampireLordDiceSpritesForValues(page, [6, 6, 6, 6, 6]);
+        await expect(ultimateSlot).toHaveAttribute('data-base-ability-id', 'bloody-slaughter', { timeout: 10000 });
+        await expect(ultimateSlot).toHaveAttribute('data-resolved-ability-id', 'bloody-slaughter', { timeout: 10000 });
+        await expect(ultimateSlot).toHaveAttribute('data-available-ability-id', 'bloody-slaughter', { timeout: 10000 });
+        await expect(ultimateSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+        await expect(page.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(0);
+        await game.screenshot('01-血色杀戮触发前-五个血滴终极技可点', testInfo);
+
+        await clickResolvedAbilitySlot(page, 'ultimate', 'bloody-slaughter', 'bloody-slaughter');
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+                defenderId: state?.core?.pendingAttack?.defenderId ?? null,
+                isUltimate: state?.core?.pendingAttack?.isUltimate ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            sourceAbilityId: 'bloody-slaughter',
+            defenderId: '1',
+            isUltimate: true,
+        });
+
+        await dispatchDiceThroneCommand(page, { type: 'ADVANCE_PHASE', playerId: '0' });
+        await dismissAttackShowcaseIfVisible(page);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const current = state?.sys?.interaction?.current;
+            return {
+                kind: current?.kind ?? null,
+                playerId: current?.playerId ?? null,
+                interactionType: current?.data?.type ?? null,
+                sourceId: current?.data?.sourceId ?? null,
+                bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
+                hand: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+                deck: (state?.core?.players?.['0']?.deck ?? []).map((card: any) => card.id),
+            };
+        }, { timeout: 10000 }).toEqual({
+            kind: 'dt:card-interaction',
+            playerId: '0',
+            interactionType: 'selectDeckCard',
+            sourceId: 'bloody-slaughter',
+            bloodPower: 2,
+            hand: [],
+            deck: [
+                'card-vampire-lord-blood-surge',
+                'card-vampire-lord-drink-up',
+                'card-vampire-lord-gushing-blood',
+            ],
+        });
+
+        const targetCardOption = page.getByTestId('dt-deck-card-option-card-vampire-lord-gushing-blood');
+        const confirmButton = page.getByRole('button', { name: /确认|Confirm/i }).last();
+        await expect(page.getByText('从抽牌堆选择 1 张牌加入手牌')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-blood-surge')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('dt-deck-card-option-card-vampire-lord-drink-up')).toBeVisible({ timeout: 10000 });
+        await expect(targetCardOption).toBeVisible({ timeout: 10000 });
+        await expect(confirmButton).toBeDisabled();
+        await game.screenshot('02-血色杀戮搜牌窗口-抽牌堆三张候选可选', testInfo);
+
+        await targetCardOption.click();
+        await expect(targetCardOption).toHaveAttribute('data-selected', 'true', { timeout: 5000 });
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await game.screenshot('03-血色杀戮已选择牌库牌-待确认加入手牌', testInfo);
+        await confirmButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                bloodPower: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.BLOOD_POWER] ?? null,
+                hand: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+                deck: (state?.core?.players?.['0']?.deck ?? []).map((card: any) => card.id),
+                defenderHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+                events: getLastEventTypes(state),
+            };
+        }, { timeout: 15000 }).toEqual({
+            phase: 'main2',
+            interactionKind: null,
+            bloodPower: 2,
+            hand: ['card-vampire-lord-gushing-blood'],
+            deck: expect.arrayContaining([
+                'card-vampire-lord-blood-surge',
+                'card-vampire-lord-drink-up',
+            ]),
+            defenderHp: 40,
+            pendingAttack: null,
+            events: expect.arrayContaining(['CARD_DRAWN', 'DECK_SHUFFLED', 'DAMAGE_DEALT', 'ATTACK_RESOLVED']),
+        });
+        await expect(page.locator('[data-testid="hand-area"] [data-card-id="card-vampire-lord-gushing-blood"]'))
+            .toBeVisible({ timeout: 10000 });
+        await expectVampireLordCardPreview(page, 'card-vampire-lord-gushing-blood', 21);
+        await waitForDiceThroneVisualIdle(page);
+        await game.screenshot('04-血色杀戮结算后-选中牌入手并造成十点伤害', testInfo);
+    });
+
     test('嗜血之爪 III 5 利爪三同应通过真实投骰获得鲜血之力并造成 8 点攻击伤害', async ({ page, game }, testInfo) => {
         const vampireLord = buildVampireLordBloodthirstyClaws3Player();
         const barbarian = buildBarbarianDefensePlayer();

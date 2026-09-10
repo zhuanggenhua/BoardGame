@@ -5,7 +5,7 @@ import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { MAX_HEALTH, type DiceThroneCore, type DieFace } from '../types';
-import { updatePendingAttackSettlementStage } from '../utils';
+import { markPendingAttackChoiceFollowUpResolvedFromStage } from '../utils';
 import type {
     BonusDieRolledEvent,
     ChoiceRequestedEvent,
@@ -1141,12 +1141,11 @@ registerChoiceEffectHandler(BUILD_FROM_SCRATCH_CHOICE_ID, ({ state, playerId, so
 
     return {
         players,
-        pendingAttack: state.pendingAttack?.sourceAbilityId === sourceAbilityId
-            ? {
-                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
-                postDamageFollowUpResolved: true,
-            }
-            : state.pendingAttack,
+        pendingAttack: markPendingAttackChoiceFollowUpResolvedFromStage(
+            state.pendingAttack,
+            sourceAbilityId,
+            'preDamage',
+        ),
     };
 });
 

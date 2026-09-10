@@ -2026,14 +2026,18 @@ const buildInteractionActions = (
     if (current.kind === 'dt:card-interaction') {
         const data = current.data as CardInteractionData;
 
-        if (data.type === 'selectHandCard') {
+        if (data.type === 'selectHandCard' || data.type === 'selectDeckCard') {
             const player = state.core.players[playerId];
-            const selectedCardId = player?.hand[0]?.id;
+            const sourceCards = data.type === 'selectDeckCard' ? player?.deck : player?.hand;
+            const selectedCardId = sourceCards?.[0]?.id;
+            const actionKind = data.type === 'selectDeckCard' ? 'select-deck-card' : 'select-hand-card';
             return selectedCardId
                 ? [{
-                    actionId: createAiLegalActionId('interaction', current.id, 'select-hand-card', selectedCardId),
+                    actionId: createAiLegalActionId('interaction', current.id, actionKind, selectedCardId),
                     kind: 'interaction-choice',
-                    label: `弃置手牌 ${selectedCardId}`,
+                    label: data.type === 'selectDeckCard'
+                        ? `选择牌库卡牌 ${selectedCardId}`
+                        : `弃置手牌 ${selectedCardId}`,
                     commands: [{
                         type: 'RESOLVE_INTERACTION',
                         payload: { selectedCardIds: [selectedCardId] },

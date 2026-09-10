@@ -467,7 +467,7 @@ export function isRangedPathClear(
   return true;
 }
 
-/** 检查是否可以攻击目标 */
+/** 检查是否可以攻击目标（攻击合法目标按卡牌判断，不因友方归属非法） */
 export function canAttack(
   state: SummonerWarsCore,
   attacker: CellCoord,
@@ -480,8 +480,6 @@ export function canAttack(
   const targetUnit = getUnitAt(state, target);
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
-  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
-  if (targetOwner === attackerUnit.owner) return false;
   
   const distance = manhattanDistance(attacker, target);
   
@@ -700,74 +698,6 @@ export function hasEnoughMagic(state: SummonerWarsCore, playerId: PlayerId, cost
   return state.players[playerId].magic >= cost;
 }
 
-
-// ============================================================================
-// 阶段可操作性检查
-// ============================================================================
-
-/** 检查手牌中是否有可在指定阶段打出的事件卡（含 playPhase='any'）且魔力足够 */
-function hasPlayableEvents(player: { hand: readonly import('./types').Card[]; magic: number }, phase: GamePhase): boolean {
-  return player.hand.some(
-    c => c.cardType === 'event'
-      && ((c as import('./types').EventCard).playPhase === phase || (c as import('./types').EventCard).playPhase === 'any')
-      && (c as import('./types').EventCard).cost <= player.magic
-  );
-}
-
-/** 检查当前阶段是否有可用操作（用于自动跳过） */
-export function hasAvailableActions(state: SummonerWarsCore, playerId: PlayerId): boolean {
-  const player = state.players[playerId];
-  const phase = state.phase;
-
-  switch (phase) {
-    case 'summon': {
-      const unitCards = player.hand.filter(c => c.cardType === 'unit');
-      const canSummonUnit = unitCards.length > 0 && 
-        unitCards.some(c => {
-          const unitCard = c as import('./types').UnitCard;
-          return unitCard.cost <= player.magic
-            && getValidSummonPositionsForCard(state, playerId, unitCard).length > 0;
-        });
-      return canSummonUnit || hasPlayableEvents(player, phase);
-    }
-    case 'move': {
-      const canMoveUnit = player.moveCount < MAX_MOVES_PER_TURN &&
-        getPlayerUnits(state, playerId).some(u => !u.hasMoved && !isImmobile(u, state) && getValidMoveTargetsEnhanced(state, u.position).length > 0);
-      return canMoveUnit || hasPlayableEvents(player, phase);
-    }
-    case 'build': {
-      const structureCards = player.hand.filter(c => c.cardType === 'structure');
-      const positions = getValidBuildPositions(state, playerId);
-      const canBuildStructure = structureCards.length > 0 && 
-        positions.length > 0 && 
-        structureCards.some(c => (c as import('./types').StructureCard).cost <= player.magic);
-      return canBuildStructure || hasPlayableEvents(player, phase);
-    }
-    case 'attack': {
-      const units = getPlayerUnits(state, playerId);
-      const normalAttackAvailable = player.attackCount < MAX_ATTACKS_PER_TURN &&
-        units.some(u => !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0);
-      const ferocityAvailable = units.some(u => 
-        hasFerocityAbility(u, state) && !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0
-      );
-      // 有额外攻击的单位（连续射击/群情激愤）不受3次限制
-      const extraAttackAvailable = units.some(u =>
-        (u.extraAttacks ?? 0) > 0 && !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0
-      );
-      return normalAttackAvailable || ferocityAvailable || extraAttackAvailable || hasPlayableEvents(player, phase);
-    }
-    case 'magic': {
-      // 魔力阶段总是可以手动跳过（弃牌是可选的）
-      return true;
-    }
-    case 'draw': {
-      // 抽牌阶段是自动的，直接跳过
-      return false;
-    }
-    default:
-      return true;
-  }
-}
 
 // ============================================================================
 // 手牌辅助
@@ -1178,7 +1108,7 @@ export function getEffectiveAttackRangeBase(unit: BoardUnit): number {
 }
 
 /**
- * 增强版攻击验证（考虑远射等技能）
+ * 增强版攻击验证（考虑远射等技能；普通攻击允许指定友方卡牌）
  */
 export function canAttackEnhanced(
   state: SummonerWarsCore,
@@ -1202,9 +1132,6 @@ export function canAttackEnhanced(
     if (targetUnit.card.unitClass !== 'common' && targetUnit.card.unitClass !== 'champion') return false;
     return manhattanDistance(attacker, target) === 1;
   }
-
-  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
-  if (targetOwner === attackerUnit.owner) return false;
 
   const distance = manhattanDistance(attacker, target);
 

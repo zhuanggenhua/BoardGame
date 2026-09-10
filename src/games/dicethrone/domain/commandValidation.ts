@@ -1280,7 +1280,7 @@ const validateResolveInteraction = (
         }
         return ok();
     }
-    if (pendingInteraction.type === 'selectHandCard') {
+    if (pendingInteraction.type === 'selectHandCard' || pendingInteraction.type === 'selectDeckCard') {
         const player = state.players[playerId];
         if (!player) {
             return fail('player_not_found');
@@ -1289,9 +1289,10 @@ const validateResolveInteraction = (
         if (selectedCardIds.length < (pendingInteraction.selectCount ?? 1)) {
             return fail('not_enough_cards_selected');
         }
-        const handCardIds = new Set(player.hand.map(card => card.id));
-        if (selectedCardIds.some(cardId => !handCardIds.has(cardId))) {
-            return fail('card_not_in_hand');
+        const sourceCards = pendingInteraction.type === 'selectHandCard' ? player.hand : player.deck;
+        const sourceCardIds = new Set(sourceCards.map(card => card.id));
+        if (selectedCardIds.some(cardId => !sourceCardIds.has(cardId))) {
+            return fail(pendingInteraction.type === 'selectHandCard' ? 'card_not_in_hand' : 'card_not_in_deck');
         }
         return ok();
     }

@@ -1405,12 +1405,28 @@ const getHighlightMetrics = async (page: Page, selector: string) => (
     return {
       count: nodes.length,
       samples: nodes.slice(0, 4).map((node) => {
-        const rect = node.getBoundingClientRect();
-        const styles = window.getComputedStyle(node);
+        let visualNode = node;
+        let styles = window.getComputedStyle(node);
+        const child = node.firstElementChild;
+        if (
+          styles.borderTopWidth === '0px'
+          && child instanceof HTMLElement
+        ) {
+          const childStyles = window.getComputedStyle(child);
+          if (
+            childStyles.borderTopWidth !== '0px'
+            || childStyles.backgroundColor !== 'rgba(0, 0, 0, 0)'
+            || childStyles.boxShadow !== 'none'
+          ) {
+            visualNode = child;
+            styles = childStyles;
+          }
+        }
+        const rect = visualNode.getBoundingClientRect();
         return {
           row: node.getAttribute('data-row'),
           col: node.getAttribute('data-col'),
-          className: node.className,
+          className: visualNode.className,
           borderTopColor: styles.borderTopColor,
           backgroundColor: styles.backgroundColor,
           borderTopWidth: styles.borderTopWidth,

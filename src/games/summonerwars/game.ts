@@ -22,7 +22,7 @@ import {
 import { createGameEngine, type AdapterConfig } from '../../engine/adapter';
 import type { EngineSystem } from '../../engine/systems/types';
 import type { MatchState } from '../../engine/types';
-import { SummonerWarsDomain, SW_COMMANDS } from './domain';
+import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from './domain';
 import type { Card, FactionId, GamePhase, PlayerId, SummonerWarsCore } from './domain/types';
 import { summonerWarsFlowHooks } from './domain/flowHooks';
 import { createSummonerWarsInteractionSystem } from './domain/systems';
@@ -35,12 +35,16 @@ import { registerGameAiRuntime } from '../../engine/ai';
 import { summonerWarsAiRuntime } from './ai';
 import { buildCardRegistry, getCardPoolByFaction } from './config/cardRegistry';
 import { getBaseCardId } from './domain/ids';
+import { getSummoner } from './domain/helpers';
+import { SUMMONER_WARS_CHEAT_COMMANDS, type SummonerWarsDamageSummonerPayload } from './debugCommands';
 
 // Summoner Wars 作弊系统配置
 const normalizePlayerId = (playerId: string): PlayerId | null => {
     if (playerId === '0' || playerId === '1') return playerId;
     return null;
 };
+
+const getOpponentPlayerId = (playerId: PlayerId): PlayerId => (playerId === '0' ? '1' : '0');
 
 const summonerWarsCardRegistry = buildCardRegistry();
 
@@ -316,7 +320,42 @@ export const summonerWarsCheatModifier: CheatResourceModifier<SummonerWarsCore> 
             },
         };
     },
+    customCommands: {
+        [SUMMONER_WARS_CHEAT_COMMANDS.DAMAGE_SUMMONER]: ({ state, command }) => {
+            const payload = command.payload as Partial<SummonerWarsDamageSummonerPayload> | undefined;
+            const playerId = typeof payload?.playerId === 'string'
+                ? normalizePlayerId(payload.playerId)
+                : null;
+            const amount = Math.floor(Number(payload?.amount));
+            if (!playerId || !Number.isFinite(amount) || amount <= 0) {
+                return { halt: true, state };
+            }
+
+            const summoner = getSummoner(state.core, playerId);
+            if (!summoner) return { halt: true, state };
+
+            return {
+                halt: true,
+                events: [
+                    {
+                        type: SW_EVENTS.UNIT_DAMAGED,
+                        payload: {
+                            position: summoner.position,
+                            damage: amount,
+                            reason: 'debug_damage_summoner',
+                            sourcePlayerId: getOpponentPlayerId(playerId),
+                            skipMagicReward: true,
+                        },
+                        timestamp: command.timestamp ?? 0,
+                    },
+                ],
+            };
+        },
+    },
 };
+
+export { SUMMONER_WARS_CHEAT_COMMANDS } from './debugCommands';
+export type { SummonerWarsDamageSummonerPayload } from './debugCommands';
 
 // 创建系统集合（包含 FlowSystem）
 const systems = [
@@ -438,6 +477,7 @@ export const engineConfig = {
     ...createGameEngine(adapterConfig),
     onlineAiRecovery: {
         advancePhaseCommandType: SW_COMMANDS.END_PHASE,
+        disableFallbackAdvancePhase: true,
         reportObservedRecoveryWithoutForcedCommand: true,
         publicPregameLegalActionPhases: ['factionSelect', 'summon'],
         shouldSuppressActiveTurnCandidate: shouldSuppressSummonerWarsOnlineAiActiveTurnCandidate,

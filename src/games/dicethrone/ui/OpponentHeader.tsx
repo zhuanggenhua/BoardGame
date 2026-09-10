@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { type CSSProperties, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Layers } from 'lucide-react';
 import type { HeroState } from '../types';
@@ -11,13 +11,14 @@ import {
     DamageFlash,
     type HitStopConfig,
 } from '../../../components/common/animations';
-import { useMobileViewport } from '../../../hooks/ui/useMobileViewport';
 import { StatusEffectsContainer, TokensContainer, type StatusAtlases } from './statusEffects';
 import { getPortraitStyle } from './assets';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 type ViewMode = 'self' | 'opponent';
 type HeaderTone = 'enemy' | 'ally';
 type HeaderLayout = 'floating' | 'inline';
+const dtUnit = buildBoardShellInlineUnitValue;
 
 interface OpponentHeaderProps {
     opponent: HeroState;
@@ -85,23 +86,22 @@ export const OpponentHeader = ({
     testId,
 }: OpponentHeaderProps) => {
     const { t } = useTranslation('game-dicethrone');
-    const isMobileNarrowViewport = useMobileViewport();
     const heroLabel = t(getDiceThroneCharacterNameKey(opponent.characterId) ?? 'selection.notSelected');
     const isObserved = observed ?? viewMode === 'opponent';
     const pointerEventsClassName = allowPointerEvents ? 'pointer-events-auto' : 'pointer-events-none';
     const feedbackPlayerId = playerId ?? opponent.id;
-    const baseContainerClassName = isMobileNarrowViewport
-        ? `flex flex-col items-center gap-[0.4vw] ${pointerEventsClassName} scale-[0.88] origin-top`
-        : `flex flex-col items-center gap-1 ${pointerEventsClassName}`;
-    const floatingPositionClassName = isMobileNarrowViewport
-        ? 'absolute top-[0.2vw] left-0 right-0 z-50'
-        : 'absolute top-3 left-0 right-0 z-50';
+    const baseContainerClassName = `flex flex-col items-center ${pointerEventsClassName}`;
+    const baseContainerStyle: CSSProperties = { gap: dtUnit(0.4) };
+    const floatingPositionClassName = 'absolute left-0 right-0 z-50';
     const defaultContainerClassName = layout === 'inline'
         ? `relative ${baseContainerClassName}`
         : `${floatingPositionClassName} ${baseContainerClassName}`;
     const wrapperClassName = containerClassName
         ? `${defaultContainerClassName} ${containerClassName}`
         : defaultContainerClassName;
+    const wrapperStyle: CSSProperties = layout === 'inline'
+        ? baseContainerStyle
+        : { ...baseContainerStyle, top: dtUnit(0.625) };
 
     const accent = tone === 'ally'
         ? {
@@ -110,7 +110,8 @@ export const OpponentHeader = ({
             idle: 'bg-slate-900/95 border-white/10 hover:bg-slate-800 hover:border-emerald-300/35',
             text: isObserved || selected ? 'text-emerald-300' : 'text-slate-100',
             badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-400/20',
-            eye: 'fill-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.9)]',
+            eye: 'fill-emerald-300',
+            eyeFilter: `drop-shadow(0 0 ${dtUnit(0.42)} rgba(52,211,153,0.9))`,
         }
         : {
             active: 'bg-amber-900/80 border-amber-500/50 shadow-[0_0_14px_rgba(245,158,11,0.22)]',
@@ -118,32 +119,72 @@ export const OpponentHeader = ({
             idle: 'bg-slate-900/95 border-white/10 hover:bg-slate-800 hover:border-amber-300/35',
             text: isObserved || selected ? 'text-amber-400' : 'text-slate-100',
             badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-            eye: 'fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]',
+            eye: 'fill-amber-400',
+            eyeFilter: `drop-shadow(0 0 ${dtUnit(0.42)} rgba(251,191,36,0.9))`,
         };
 
     const shellClassName = compact
-        ? 'px-[0.55vw] py-[0.28vw] rounded-[0.7vw]'
-        : 'px-[0.7vw] py-[0.3vw] rounded-[0.8vw]';
-    const bodyGapClassName = compact ? 'gap-[0.45vw]' : 'gap-[0.6vw]';
-    const portraitClassName = compact
-        ? 'w-[2.2vw] h-[3.2vw] rounded-[0.35vw]'
-        : 'w-[2.8vw] h-[4vw] rounded-[0.4vw]';
+        ? 'px-0 py-0 rounded-none'
+        : 'px-0 py-0 rounded-none';
+    const shellStyle: CSSProperties = compact
+        ? { paddingInline: dtUnit(0.55), paddingBlock: dtUnit(0.28), borderRadius: dtUnit(0.7) }
+        : { paddingInline: dtUnit(0.7), paddingBlock: dtUnit(0.3), borderRadius: dtUnit(0.8) };
+    const bodyGapStyle: CSSProperties = { gap: compact ? dtUnit(0.45) : dtUnit(0.6) };
+    const portraitStyle: CSSProperties = compact
+        ? { width: dtUnit(2.2), height: dtUnit(3.2), borderRadius: dtUnit(0.35) }
+        : { width: dtUnit(2.8), height: dtUnit(4), borderRadius: dtUnit(0.4) };
     const nameClassName = compact
-        ? 'font-black text-[0.72vw] tracking-wider truncate max-w-[7.5vw]'
-        : 'font-black text-[0.9vw] tracking-wider truncate max-w-[10vw]';
-    const badgeClassName = compact
-        ? 'px-[0.24vw] py-[0.08vw] text-[0.48vw]'
-        : 'px-[0.3vw] py-[0.1vw] text-[0.55vw]';
-    const statClassName = compact ? 'text-[0.66vw]' : 'text-[0.75vw]';
-    const resourceStatClassName = compact
-        ? 'relative flex h-[1.08vw] min-w-[1.45vw] items-center justify-center gap-[0.16vw] px-[0.08vw] text-[0.68vw] drop-shadow-[0_1px_0.35vw_rgba(0,0,0,0.9)]'
-        : 'relative flex h-[1.24vw] min-w-[1.72vw] items-center justify-center gap-[0.2vw] px-[0.1vw] text-[0.78vw] drop-shadow-[0_1px_0.35vw_rgba(0,0,0,0.9)]';
-    const resourceDotClassName = compact ? 'h-[0.36vw] w-[0.36vw]' : 'h-[0.44vw] w-[0.44vw]';
-    const handIconClassName = compact ? 'w-[0.62vw] h-[0.62vw]' : 'w-[0.7vw] h-[0.7vw]';
-    const shieldClassName = compact ? 'w-[0.95vw] h-[0.95vw]' : 'w-[1.1vw] h-[1.1vw]';
-    const shieldTextClassName = compact ? 'text-[0.42vw]' : 'text-[0.5vw]';
-    const eyeClassName = compact ? 'w-[1.25vw] h-[1.25vw]' : 'w-[1.6vw] h-[1.6vw]';
-    const buffMinHeightClassName = compact ? 'min-h-[1vw]' : 'min-h-[1.2vw]';
+        ? 'font-black tracking-wider truncate'
+        : 'font-black tracking-wider truncate';
+    const nameStyle: CSSProperties = compact
+        ? { fontSize: dtUnit(0.72), maxWidth: dtUnit(7.5) }
+        : { fontSize: dtUnit(0.9), maxWidth: dtUnit(10) };
+    const badgeStyle: CSSProperties = compact
+        ? { paddingInline: dtUnit(0.24), paddingBlock: dtUnit(0.08), fontSize: dtUnit(0.48) }
+        : { paddingInline: dtUnit(0.3), paddingBlock: dtUnit(0.1), fontSize: dtUnit(0.55) };
+    const statStyle: CSSProperties = { fontSize: compact ? dtUnit(0.66) : dtUnit(0.75) };
+    const resourceStatClassName = 'relative flex items-center justify-center';
+    const resourceStatStyle: CSSProperties = compact
+        ? {
+            height: dtUnit(1.08),
+            minWidth: dtUnit(1.45),
+            gap: dtUnit(0.16),
+            paddingInline: dtUnit(0.08),
+            fontSize: dtUnit(0.68),
+            filter: `drop-shadow(0 1px ${dtUnit(0.35)} rgba(0,0,0,0.9))`,
+        }
+        : {
+            height: dtUnit(1.24),
+            minWidth: dtUnit(1.72),
+            gap: dtUnit(0.2),
+            paddingInline: dtUnit(0.1),
+            fontSize: dtUnit(0.78),
+            filter: `drop-shadow(0 1px ${dtUnit(0.35)} rgba(0,0,0,0.9))`,
+        };
+    const resourceDotStyle: CSSProperties = compact
+        ? { width: dtUnit(0.36), height: dtUnit(0.36), boxShadow: `0 0 ${dtUnit(0.45)} rgba(248,113,113,0.72)` }
+        : { width: dtUnit(0.44), height: dtUnit(0.44), boxShadow: `0 0 ${dtUnit(0.45)} rgba(248,113,113,0.72)` };
+    const cpDotStyle: CSSProperties = { ...resourceDotStyle, boxShadow: `0 0 ${dtUnit(0.45)} rgba(252,211,77,0.72)` };
+    const handIconStyle: CSSProperties = compact
+        ? { width: dtUnit(0.62), height: dtUnit(0.62) }
+        : { width: dtUnit(0.7), height: dtUnit(0.7) };
+    const shieldStyle: CSSProperties = compact
+        ? { width: dtUnit(0.95), height: dtUnit(0.95) }
+        : { width: dtUnit(1.1), height: dtUnit(1.1) };
+    const shieldTextStyle: CSSProperties = { fontSize: compact ? dtUnit(0.42) : dtUnit(0.5) };
+    const eyeStyle: CSSProperties = compact
+        ? { width: dtUnit(1.25), height: dtUnit(1.25), filter: accent.eyeFilter }
+        : { width: dtUnit(1.6), height: dtUnit(1.6), filter: accent.eyeFilter };
+    const buffStyle: CSSProperties = {
+        gap: dtUnit(0.2),
+        minHeight: compact ? dtUnit(1) : dtUnit(1.2),
+    };
+    const headerErrorStyle: CSSProperties = {
+        paddingInline: dtUnit(1.2),
+        paddingBlock: dtUnit(0.4),
+        fontSize: dtUnit(0.8),
+        gap: dtUnit(0.35),
+    };
 
     const stateClassName = disabled
         ? 'bg-slate-950/85 border-white/5 opacity-55 saturate-75'
@@ -159,14 +200,18 @@ export const OpponentHeader = ({
         <div
             ref={containerRef}
             className={wrapperClassName}
+            style={wrapperStyle}
             data-testid={testId}
             data-team-tone={tone}
             data-player-id={playerId}
             data-player-seat-anchor={playerId}
         >
             {headerError && (
-                <div className="px-[1.2vw] py-[0.4vw] bg-red-600/90 text-white font-bold text-[0.8vw] rounded-full shadow-2xl border border-red-400/50 backdrop-blur-md animate-in slide-in-from-top-4 pointer-events-auto flex items-center gap-[0.35vw]">
-                    <AlertTriangle className="w-[0.95vw] h-[0.95vw]" />
+                <div
+                    className="bg-red-600/90 text-white font-bold rounded-full shadow-2xl border border-red-400/50 backdrop-blur-md animate-in slide-in-from-top-4 pointer-events-auto flex items-center"
+                    style={headerErrorStyle}
+                >
+                    <AlertTriangle style={{ width: dtUnit(0.95), height: dtUnit(0.95) }} />
                     <span>{headerError}</span>
                 </div>
             )}
@@ -183,27 +228,31 @@ export const OpponentHeader = ({
                         shellClassName,
                         stateClassName,
                     ].join(' ')}
+                    style={shellStyle}
                 >
-                    <div className={`relative flex items-center ${bodyGapClassName} overflow-visible`}>
-                        <div className={`${portraitClassName} border border-white/10 overflow-hidden relative bg-slate-950 shadow-inner`}>
+                    <div className="relative flex items-center overflow-visible" style={bodyGapStyle}>
+                        <div className="border border-white/10 overflow-hidden relative bg-slate-950 shadow-inner" style={portraitStyle}>
                             <div className="w-full h-full transform transition-transform duration-500 group-hover:scale-110" style={getPortraitStyle(opponent.characterId, locale)} />
                             <div className={`absolute inset-0 pointer-events-none bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-[opacity,background-color] duration-300 ${isObserved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                <svg viewBox="0 0 24 24" className={`${eyeClassName} ${accent.eye}`}>
+                                <svg viewBox="0 0 24 24" className={accent.eye} style={eyeStyle}>
                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                                 </svg>
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-[0.2vw] items-start">
-                            <div className={`flex items-center ${bodyGapClassName}`}>
-                                <span className={`${nameClassName} ${accent.text}`}>
+                        <div className="flex flex-col items-start" style={{ gap: dtUnit(0.2) }}>
+                            <div className="flex items-center" style={bodyGapStyle}>
+                                <span className={`${nameClassName} ${accent.text}`} style={nameStyle}>
                                     {opponentName}
                                 </span>
-                                <span className={`${badgeClassName} ${accent.badge} font-bold uppercase tracking-widest rounded border shadow-sm`}>
+                                <span className={`${accent.badge} font-bold uppercase tracking-widest rounded border shadow-sm`} style={badgeStyle}>
                                     {heroLabel}
                                 </span>
 
-                                <div className={`flex items-center gap-[0.32vw] ${compact ? 'ml-[0.05vw]' : 'ml-[0.2vw]'}`}>
+                                <div
+                                    className="flex items-center"
+                                    style={{ gap: dtUnit(0.32), marginLeft: compact ? dtUnit(0.05) : dtUnit(0.2) }}
+                                >
                                     <div ref={opponentHpRef}>
                                         <ShakeContainer isShaking={isOpponentShaking}>
                                             <HitStopContainer
@@ -213,6 +262,7 @@ export const OpponentHeader = ({
                                             >
                                                 <div
                                                     className={`${resourceStatClassName} text-red-100`}
+                                                    style={resourceStatStyle}
                                                     data-testid={testId ? `${testId}-hp` : undefined}
                                                     data-feedback-game="dicethrone"
                                                     data-feedback-player-id={feedbackPlayerId}
@@ -222,7 +272,8 @@ export const OpponentHeader = ({
                                                     title={`HP ${hpValue}`}
                                                 >
                                                     <span
-                                                        className={`${resourceDotClassName} rounded-full bg-red-400 shadow-[0_0_0.45vw_rgba(248,113,113,0.72)]`}
+                                                        className="rounded-full bg-red-400"
+                                                        style={resourceDotStyle}
                                                         aria-hidden="true"
                                                         data-testid={testId ? `${testId}-hp-dot` : undefined}
                                                     />
@@ -246,6 +297,7 @@ export const OpponentHeader = ({
                                         <ShakeContainer isShaking={!!isOpponentCpShaking}>
                                             <div
                                                 className={`${resourceStatClassName} text-amber-100`}
+                                                style={resourceStatStyle}
                                                 data-testid={testId ? `${testId}-cp` : undefined}
                                                 data-feedback-game="dicethrone"
                                                 data-feedback-player-id={feedbackPlayerId}
@@ -255,7 +307,8 @@ export const OpponentHeader = ({
                                                 title={`CP ${cpValue}`}
                                             >
                                                 <span
-                                                    className={`${resourceDotClassName} rounded-full bg-amber-300 shadow-[0_0_0.45vw_rgba(252,211,77,0.72)]`}
+                                                    className="rounded-full bg-amber-300"
+                                                    style={cpDotStyle}
                                                     aria-hidden="true"
                                                     data-testid={testId ? `${testId}-cp-dot` : undefined}
                                                 />
@@ -268,16 +321,19 @@ export const OpponentHeader = ({
                                             </div>
                                         </ShakeContainer>
                                     </div>
-                                    <div className="flex items-center gap-[0.2vw]">
-                                        <Layers className={`${handIconClassName} text-sky-400 drop-shadow-[0_0_4px_rgba(56,189,248,0.5)]`} />
-                                        <span className={`text-sky-400 font-bold ${statClassName}`}>{opponent.hand.length}</span>
+                                    <div className="flex items-center" style={{ gap: dtUnit(0.2) }}>
+                                        <Layers
+                                            className="text-sky-400"
+                                            style={{ ...handIconStyle, filter: `drop-shadow(0 0 ${dtUnit(0.2)} rgba(56,189,248,0.5))` }}
+                                        />
+                                        <span className="text-sky-400 font-bold" style={statStyle}>{opponent.hand.length}</span>
                                     </div>
                                     {opponent.damageShields && opponent.damageShields.length > 0 && (
-                                        <div className={`relative ${shieldClassName} flex items-center justify-center`}>
+                                        <div className="relative flex items-center justify-center" style={shieldStyle}>
                                             <svg className="w-full h-full text-cyan-500 drop-shadow-md" viewBox="0 1 24 25" fill="currentColor">
                                                 <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
                                             </svg>
-                                            <span className={`absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md z-10 pb-[1px] ${shieldTextClassName}`}>
+                                            <span className="absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md z-10 pb-[1px]" style={shieldTextStyle}>
                                                 {opponent.damageShields.reduce((sum, s) => sum + s.value, 0)}
                                             </span>
                                         </div>
@@ -285,7 +341,7 @@ export const OpponentHeader = ({
                                 </div>
                             </div>
 
-                            <div ref={opponentBuffRef} className={`flex gap-[0.2vw] ${buffMinHeightClassName}`}>
+                            <div ref={opponentBuffRef} className="flex" style={buffStyle}>
                                 <TokensContainer
                                     tokens={opponent.tokens || {}}
                                     size="tiny"

@@ -32,9 +32,9 @@ describe('DiceThrone compatibility sizing', () => {
     it('牌库应提供显式宽高，避免旧 WebView 塌高', () => {
         render(<DrawDeck count={18} />);
 
-        const deck = screen.getByTestId('mock-optimized-image').parentElement?.parentElement as HTMLElement | null;
-        expect(deck?.style.width).toBe('10.2vw');
-        expect(deck?.style.height).toContain('vw');
+        const deck = screen.getByTestId('dt-draw-deck-card');
+        expect(deck?.style.width).toContain('--mobile-board-shell-inline-unit');
+        expect(deck?.style.height).toContain('--mobile-board-shell-inline-unit');
     });
 
     it('牌库右下角提供手牌隐藏切换按钮', () => {
@@ -43,15 +43,19 @@ describe('DiceThrone compatibility sizing', () => {
 
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.hideHand');
-        expect(toggle.className).toContain('left-[calc(100%+0.55vw)] bottom-[0.15vw]');
-        expect(toggle.className).toContain('h-[2.65vw] min-h-[44px] w-[2.65vw] min-w-[44px]');
-        expect(toggle.className).toContain('border-2');
-        expect(toggle.className).toContain('bg-cyan-200');
-        expect(toggle.className).toContain('text-slate-950');
+        expect(toggle.style.left).toContain('--mobile-board-shell-inline-unit');
+        expect(toggle.style.width).toContain('--mobile-board-shell-inline-unit');
+        expect(toggle.style.height).toContain('--mobile-board-shell-inline-unit');
+        expect(toggle.className).not.toContain('min-h-[44px]');
+        expect(toggle.className).not.toContain('min-w-[44px]');
+        expect(toggle.className).toContain('border border-cyan-200/70');
+        expect(toggle.className).toContain('bg-slate-950/88');
+        expect(toggle.className).toContain('text-cyan-100');
         expect(toggle.className).not.toContain('-translate-x-[34%]');
         expect(toggle.className).not.toContain('-translate-y-[34%]');
-        expect(toggle.className).not.toContain('bg-slate-950/88');
-        expect(toggle.className).not.toContain('text-cyan-100');
+        const hitArea = screen.getByTestId('dicethrone-hand-visibility-hit-area');
+        expect(hitArea.style.minHeight).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        expect(hitArea.style.minWidth).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
         expect(toggle.querySelector('.lucide-chevron-down')).not.toBeNull();
         expect(toggle.querySelector('.lucide-eye')).toBeNull();
         expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
@@ -66,8 +70,9 @@ describe('DiceThrone compatibility sizing', () => {
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.showHand');
         expect(toggle).toHaveAttribute('aria-pressed', 'true');
-        expect(toggle.className).toContain('bg-amber-200');
-        expect(toggle.className).toContain('text-slate-950');
+        expect(toggle.className).toContain('border-amber-200/80');
+        expect(toggle.className).toContain('text-amber-100');
+        expect(screen.getByTestId('dicethrone-hand-visibility-hit-area')).toBeInTheDocument();
         expect(toggle.querySelector('.lucide-chevron-up')).not.toBeNull();
         expect(toggle.querySelector('.lucide-eye')).toBeNull();
         expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
@@ -119,11 +124,11 @@ describe('DiceThrone compatibility sizing', () => {
         const handArea = screen.getByTestId('hand-area');
         const handCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
 
-        expect(handArea.className).toContain('h-[22vw]');
+        expect(handArea.style.height).toContain('--mobile-board-shell-inline-unit');
         expect(handCard).not.toBeNull();
-        expect(handCard?.style.width).toBe('12vw');
+        expect(handCard?.style.width).toContain('--mobile-board-shell-inline-unit');
         expect(handCard?.style.height).toContain('calc(');
-        expect(handCard?.style.height).toContain('vw');
+        expect(handCard?.style.height).toContain('--mobile-board-shell-inline-unit');
     });
 
     it('隐藏手牌时只隐藏 UI，不卸载手牌区导致重新发牌', () => {

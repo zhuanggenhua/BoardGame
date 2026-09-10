@@ -141,7 +141,7 @@ describe('DiceTray', () => {
         );
 
         expect(dice2DCalls).toHaveLength(2);
-        expect(dice2DCalls.every((props) => props.size === '4vw')).toBe(true);
+        expect(dice2DCalls.every((props) => String(props.size).includes('--mobile-board-shell-inline-unit'))).toBe(true);
         expect(screen.queryByTestId('mock-dice-field-3d')).toBeNull();
         expect(screen.queryByTestId('mock-dice-box-physics-source')).toBeNull();
     });

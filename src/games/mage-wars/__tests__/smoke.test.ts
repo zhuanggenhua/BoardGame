@@ -105,6 +105,7 @@ describe('mage-wars foundation', () => {
         expect(result.critical).toContain('mage-wars/board/standard-arena');
         expect(result.critical).toContain('mage-wars/cards/mages/mages-core-atlas');
         expect(result.critical).toContain('mage-wars/cards/backs/spell-card-back');
+        expect(result.critical).toContain('mage-wars/cards/spells/spell-equipment-core-atlas');
         expect(result.warm).toContain('mage-wars/cards/spells/spell-attack-core-atlas');
         expect(result.warm).toContain('mage-wars/cards/spells/spell-equipment-core-atlas');
 

@@ -7,6 +7,7 @@ import {
     type RuntimeViewportSize,
 } from '../../shared/mobileSupport';
 import { isTextEntrySessionElement } from '../../lib/textEntry';
+import { MOBILE_LANDSCAPE_DESIGN_VIEWPORT } from '../../shared/referenceViewports';
 
 export interface RuntimeSafeAreaInsets {
     top: number;
@@ -24,7 +25,8 @@ const EMPTY_SAFE_AREA: RuntimeSafeAreaInsets = { top: 0, right: 0, bottom: 0, le
 const EMPTY_VIEWPORT: RuntimeViewportMetrics = { width: 0, height: 0, safeArea: EMPTY_SAFE_AREA, keyboardInsetBottom: 0 };
 const MIN_KEYBOARD_INSET_PX = 72;
 const DEFAULT_ROOT_DESIGN_WIDTH = 1280;
-const DEFAULT_BOARD_SHELL_DESIGN_WIDTH = 1280;
+const DEFAULT_BOARD_SHELL_DESIGN_WIDTH = MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width;
+const DEFAULT_BOARD_SHELL_DESIGN_HEIGHT = MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height;
 
 const parseCssPixels = (value: string) => {
     const parsed = Number.parseFloat(value);
@@ -180,6 +182,8 @@ const clearRuntimeScaleVars = (root: HTMLElement) => {
 const clearBoardShellVars = (root: HTMLElement) => {
     root.style.removeProperty('--mobile-board-shell-design-width');
     root.style.removeProperty('--mobile-board-shell-design-height');
+    root.style.removeProperty('--mobile-board-shell-reference-width');
+    root.style.removeProperty('--mobile-board-shell-reference-height');
     root.style.removeProperty('--mobile-board-shell-scale');
     root.style.removeProperty('--mobile-board-shell-inverse-scale');
     root.style.removeProperty('--mobile-board-shell-logical-height');
@@ -194,15 +198,20 @@ const resolveBoardShellScaleMetrics = (
     layout: {
         designWidth?: number;
         designHeight?: number;
+        referenceWidth?: number;
+        referenceHeight?: number;
         minLogicalHeight?: number;
         minReadableScale?: number;
     },
 ) => {
+    const hasExplicitDesignWidth = layout.designWidth !== undefined;
     const designWidth = layout.designWidth ?? DEFAULT_BOARD_SHELL_DESIGN_WIDTH;
-    const designHeight = layout.designHeight;
+    const designHeight = layout.designHeight ?? (hasExplicitDesignWidth ? undefined : DEFAULT_BOARD_SHELL_DESIGN_HEIGHT);
     if (designHeight) {
         const safeDesignWidth = Math.max(1, designWidth);
         const safeDesignHeight = Math.max(1, designHeight);
+        const safeReferenceWidth = Math.max(1, layout.referenceWidth ?? safeDesignWidth);
+        const safeReferenceHeight = Math.max(1, layout.referenceHeight ?? safeDesignHeight);
         const scale = Math.max(0.01, Math.min(
             viewport.width / safeDesignWidth,
             viewport.height / safeDesignHeight,
@@ -214,11 +223,13 @@ const resolveBoardShellScaleMetrics = (
         return {
             designWidth: safeDesignWidth,
             designHeight: safeDesignHeight,
+            referenceWidth: safeReferenceWidth,
+            referenceHeight: safeReferenceHeight,
             scale,
             inverseScale,
             logicalHeight: safeDesignHeight,
-            inlineUnit: safeDesignWidth / 100,
-            blockUnit: safeDesignHeight / 100,
+            inlineUnit: safeReferenceWidth / 100,
+            blockUnit: safeReferenceHeight / 100,
             offsetX: Math.max(0, (viewport.width - renderedWidth) / 2),
             offsetY: Math.max(0, (viewport.height - renderedHeight) / 2),
         };
@@ -227,7 +238,18 @@ const resolveBoardShellScaleMetrics = (
     const widthMetrics = resolveRuntimeLayoutScaleMetrics(viewport, designWidth);
     const minLogicalHeight = layout.minLogicalHeight;
     if (!minLogicalHeight) {
-        return { ...widthMetrics, designHeight: undefined, offsetX: 0, offsetY: 0 };
+        const referenceWidth = Math.max(1, layout.referenceWidth ?? widthMetrics.referenceWidth);
+        const referenceHeight = layout.referenceHeight ? Math.max(1, layout.referenceHeight) : undefined;
+        return {
+            ...widthMetrics,
+            designHeight: undefined,
+            referenceWidth,
+            referenceHeight,
+            inlineUnit: referenceWidth / 100,
+            ...(referenceHeight ? { blockUnit: referenceHeight / 100 } : {}),
+            offsetX: 0,
+            offsetY: 0,
+        };
     }
 
     const heightScale = Math.max(0.01, viewport.height / minLogicalHeight);
@@ -240,10 +262,15 @@ const resolveBoardShellScaleMetrics = (
     return {
         ...widthMetrics,
         designHeight: undefined,
+        referenceWidth: Math.max(1, layout.referenceWidth ?? widthMetrics.referenceWidth),
+        referenceHeight: layout.referenceHeight ? Math.max(1, layout.referenceHeight) : undefined,
         scale,
         inverseScale,
         logicalHeight: viewport.height * inverseScale,
-        blockUnit: (viewport.height * inverseScale) / 100,
+        inlineUnit: Math.max(1, layout.referenceWidth ?? widthMetrics.referenceWidth) / 100,
+        blockUnit: layout.referenceHeight
+            ? Math.max(1, layout.referenceHeight) / 100
+            : (viewport.height * inverseScale) / 100,
         offsetX: Math.max(0, (viewport.width - renderedWidth) / 2),
         offsetY: Math.max(0, (viewport.height - renderedHeight) / 2),
     };
@@ -309,14 +336,22 @@ export const applyRuntimeViewportCssVars = (
     const shellScaleMetrics = resolveBoardShellScaleMetrics(viewport, {
         designWidth: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellDesignWidth),
         designHeight: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellDesignHeight),
+        referenceWidth: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellReferenceWidth),
+        referenceHeight: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellReferenceHeight),
         minLogicalHeight: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellMinLogicalHeight),
         minReadableScale: parsePositiveDatasetNumber(gamePageTarget?.dataset.mobileBoardShellMinReadableScale),
     });
     root.style.setProperty('--mobile-board-shell-design-width', `${shellScaleMetrics.designWidth}px`);
+    root.style.setProperty('--mobile-board-shell-reference-width', `${shellScaleMetrics.referenceWidth}px`);
     if (shellScaleMetrics.designHeight) {
         root.style.setProperty('--mobile-board-shell-design-height', `${shellScaleMetrics.designHeight}px`);
     } else {
         root.style.removeProperty('--mobile-board-shell-design-height');
+    }
+    if (shellScaleMetrics.referenceHeight) {
+        root.style.setProperty('--mobile-board-shell-reference-height', `${shellScaleMetrics.referenceHeight}px`);
+    } else {
+        root.style.removeProperty('--mobile-board-shell-reference-height');
     }
     root.style.setProperty('--mobile-board-shell-scale', shellScaleMetrics.scale.toFixed(6));
     root.style.setProperty('--mobile-board-shell-inverse-scale', shellScaleMetrics.inverseScale.toFixed(6));
@@ -397,6 +432,12 @@ export const useRuntimeViewport = (
                 'data-mobile-profile',
                 'data-mobile-layout-preset',
                 'data-preferred-orientation',
+                'data-mobile-board-shell-design-width',
+                'data-mobile-board-shell-design-height',
+                'data-mobile-board-shell-reference-width',
+                'data-mobile-board-shell-reference-height',
+                'data-mobile-board-shell-min-logical-height',
+                'data-mobile-board-shell-min-readable-scale',
             ],
         });
         if (document.body) {
@@ -408,6 +449,12 @@ export const useRuntimeViewport = (
                     'data-mobile-profile',
                     'data-mobile-layout-preset',
                     'data-preferred-orientation',
+                    'data-mobile-board-shell-design-width',
+                    'data-mobile-board-shell-design-height',
+                    'data-mobile-board-shell-reference-width',
+                    'data-mobile-board-shell-reference-height',
+                    'data-mobile-board-shell-min-logical-height',
+                    'data-mobile-board-shell-min-readable-scale',
                 ],
             });
         }

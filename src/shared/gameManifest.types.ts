@@ -15,8 +15,12 @@ export type GameShellTarget = 'pwa' | 'app-webview' | 'mini-program-webview';
 export type GameMobileDeliveryMode = 'builtin' | 'package-managed';
 
 export interface GameMobileBoardShellLayout {
+    /** 外层固定画布尺寸，用于计算移动横屏 contain 缩放。 */
     designWidth?: number;
     designHeight?: number;
+    /** 壳内布局单位来源；未配置时沿用 design 尺寸，避免破坏旧游戏。 */
+    referenceWidth?: number;
+    referenceHeight?: number;
     minLogicalHeight?: number;
     minReadableScale?: number;
 }

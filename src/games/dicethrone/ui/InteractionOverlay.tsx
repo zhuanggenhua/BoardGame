@@ -149,8 +149,10 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
     // 玩家选择模式（选择目标玩家：授予 token / 移除所有状态等）
     const isPlayerSelection = interactionType === 'selectPlayer';
-    // 手牌选择模式（由手牌持有者自行选择）
+    // 卡牌选择模式（由持有者从手牌或抽牌堆自行选择）
     const isHandCardSelection = interactionType === 'selectHandCard';
+    const isDeckCardSelection = interactionType === 'selectDeckCard';
+    const isCardSelection = isHandCardSelection || isDeckCardSelection;
     // 转移模式的第二阶段：选择目标玩家
     const isTransferTargetSelection = interactionType === 'selectTargetStatus' && interaction.transferConfig?.statusId;
     const shouldRenderStatusOwners = isStatusSelection && !isTransferTargetSelection;
@@ -461,10 +463,12 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     </div>
                 )}
 
-                {/* 手牌选择区域 */}
-                {isHandCardSelection && (
+                {/* 卡牌选择区域 */}
+                {isCardSelection && (
                     <div className="flex flex-wrap gap-3 justify-center">
-                        {(players[interaction.playerId]?.hand ?? []).map(card => {
+                        {((isDeckCardSelection
+                            ? players[interaction.playerId]?.deck
+                            : players[interaction.playerId]?.hand) ?? []).map(card => {
                             const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
                                 ?? card.i18n?.['zh-CN']?.name
                                 ?? card.name
@@ -479,7 +483,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 <button
                                     key={card.id}
                                     type="button"
-                                    data-testid={`dt-hand-card-option-${card.id}`}
+                                    data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
                                     data-selected={isSelected ? 'true' : 'false'}
                                     onClick={() => onSelectHandCard(card.id)}
                                     className={`

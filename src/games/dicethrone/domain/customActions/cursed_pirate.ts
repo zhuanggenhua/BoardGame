@@ -31,7 +31,6 @@ import {
     buildStatusAppliedOrChoiceEvents,
     getPowderKegTransferTargetIds,
 } from '../statusEvents';
-import { updatePendingAttackSettlementStage } from '../utils';
 import { getDiceThronePlayerChoiceListLabel } from '../playerDisplay';
 
 const MERCILESS_CURSE_POWDER_KEG_CHOICE_ID = 'cursed-pirate-merciless-curse-powder-keg';
@@ -1431,19 +1430,6 @@ export function registerCursedPirateCustomActions(): void {
             timestamp,
         } as StatusRemovedEvent];
     });
-    registerChoiceEffectHandler(HUMAN_REMOVE_CURSED_COINS_CHOICE_ID, ({ state, sourceAbilityId }) => {
-        if (!sourceAbilityId || state.pendingAttack?.sourceAbilityId !== sourceAbilityId) {
-            return undefined;
-        }
-        return {
-            pendingAttack: {
-                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
-                // 惊魂动魄的 7 点主伤害已在 withDamage 阶段落地；
-                // 选择是否移除诅咒金币后只需要收口 ATTACK_RESOLVED，不应继续挂住攻击链。
-                postDamageFollowUpResolved: true,
-            },
-        };
-    });
     registerChoiceResolvedEventHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({
         state,
         playerId,
@@ -1533,7 +1519,7 @@ export function registerCursedPirateCustomActions(): void {
             }),
         ];
     });
-    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, playerId, sourceAbilityId, value }) => {
+    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, playerId, value }) => {
         const { cursedCoinGain } = decodeHumanTargetedCursedCoinChoiceValue(state, value ?? 0);
         const player = state.players[playerId];
         if (!player) return undefined;
@@ -1551,14 +1537,6 @@ export function registerCursedPirateCustomActions(): void {
                 },
             },
         };
-        if (sourceAbilityId && state.pendingAttack?.sourceAbilityId === sourceAbilityId) {
-            result.pendingAttack = {
-                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
-                // 无情劫掠的 12 点主伤害已在 withDamage 阶段落地；
-                // 选择诅咒金币后只需要收口 ATTACK_RESOLVED，不应再次重放整段攻击链。
-                postDamageFollowUpResolved: true,
-            };
-        }
         return result;
     });
     registerChoiceEffectHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({ state, playerId, value }) => {

@@ -9,6 +9,7 @@ import type { MultistepInteractionState } from '../../../engine/systems/useMulti
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
 import { Dice2D } from './Dice2D';
 import { resolveCharacterIdFromDiceDefinitionId } from './assets';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 interface DtDiceModifyMeta {
     dtType: 'modifyDie';
@@ -32,32 +33,83 @@ interface DtDiceSelectMeta {
 
 type DtDiceMeta = DtDiceModifyMeta | DtDiceSelectMeta;
 
-const DICE_TRAY_WIDTH_CLASS_NAME = 'w-[5.8vw]';
 const INTERACTION_CONFIRM_CLICK_SUPPRESS_MS = 350;
+const dtUnit = buildBoardShellInlineUnitValue;
+const buildBoardShellShadow = (...parts: string[]) => parts.join(', ');
 
 const DESKTOP_DICE_TRAY_TOKENS = {
-    diceSize: '4vw',
-    containerClassName: `flex flex-col items-center p-[0.6vw] rounded-[1.5vw] gap-[0.5vw] ${DICE_TRAY_WIDTH_CLASS_NAME} shrink-0 relative transition-all duration-300`,
+    diceSize: dtUnit(4),
+    containerClassName: 'flex flex-col items-center shrink-0 relative transition-all duration-300 border',
+    containerStyle: {
+        width: dtUnit(5.8),
+        padding: dtUnit(0.6),
+        borderRadius: dtUnit(1.5),
+        gap: dtUnit(0.5),
+        borderWidth: dtUnit(0.18),
+    } satisfies React.CSSProperties,
     glossClassName: 'hidden',
-    rimClassName: 'absolute inset-[0.2vw] rounded-[1.25vw] pointer-events-none border-[0.1vw]',
+    rimClassName: 'absolute pointer-events-none border',
+    rimStyle: {
+        inset: dtUnit(0.2),
+        borderRadius: dtUnit(1.25),
+        borderWidth: dtUnit(0.1),
+    } satisfies React.CSSProperties,
     shadowClassName: 'hidden',
-    trayInnerClassName: 'flex flex-col gap-[0.5vw] items-center justify-center w-full p-[0.2vw]',
-    rowGapClassName: 'gap-[0.3vw]',
-    dieGapClassName: 'gap-[0.25vw]',
-    adjustButtonClassName: 'w-[1.2vw] h-[1.2vw] text-[0.8vw]',
-    lockedLabelClassName: 'min-w-max whitespace-nowrap text-[0.6vw] px-[0.4vw] py-[0.1vw]',
-    selectedBadgeClassName: 'w-[1vw] h-[1vw] -top-[0.3vw] -right-[0.3vw]',
+    trayInnerClassName: 'flex flex-col items-center justify-center w-full',
+    trayInnerStyle: {
+        gap: dtUnit(0.5),
+        padding: dtUnit(0.2),
+    } satisfies React.CSSProperties,
+    rowStyle: { gap: dtUnit(0.3) } satisfies React.CSSProperties,
+    dieStyle: { gap: dtUnit(0.25) } satisfies React.CSSProperties,
+    adjustButtonClassName: 'rounded-full flex items-center justify-center font-bold transition-all duration-150',
+    adjustButtonStyle: {
+        width: dtUnit(1.2),
+        height: dtUnit(1.2),
+        fontSize: dtUnit(0.8),
+    } satisfies React.CSSProperties,
+    lockedLabelClassName: 'min-w-max whitespace-nowrap font-black text-white bg-black/65 rounded uppercase tracking-wider shadow-sm border border-white/20',
+    lockedLabelStyle: {
+        fontSize: dtUnit(0.6),
+        paddingInline: dtUnit(0.4),
+        paddingBlock: dtUnit(0.1),
+    } satisfies React.CSSProperties,
+    selectedBadgeClassName: 'absolute bg-amber-500 rounded-full flex items-center justify-center z-30',
+    selectedBadgeStyle: {
+        width: dtUnit(1),
+        height: dtUnit(1),
+        top: dtUnit(-0.3),
+        right: dtUnit(-0.3),
+    } satisfies React.CSSProperties,
     selectedBadgeIconClassName: '',
 };
 
 const DESKTOP_DICE_ACTION_TOKENS = {
-    containerClassName: 'w-[10.2vw] grid grid-cols-2 gap-[0.4vw] items-stretch h-[2.5vw]',
-    buttonClassName: '!px-[0.5vw] !py-0 !min-h-0 !rounded-[0.5vw]',
-    interactionTextClassName: '!text-[0.75vw]',
-    rollTextClassName: '!text-[0.7vw] tracking-tighter',
-    confirmTextClassName: '!text-[0.7vw]',
-    dotClassName: 'w-[0.45vw] h-[0.45vw]',
-    dotsContainerClassName: 'flex flex-col flex-wrap gap-[0.15vw] justify-center items-center h-[1.8vw] ml-[0.3vw] shrink-0 content-center',
+    containerClassName: 'grid grid-cols-2 items-stretch',
+    containerStyle: {
+        width: dtUnit(10.2),
+        gap: dtUnit(0.4),
+        height: dtUnit(2.5),
+    } satisfies React.CSSProperties,
+    buttonClassName: '!py-0 !min-h-0 flex items-center justify-center',
+    buttonStyle: {
+        paddingInline: dtUnit(0.5),
+        borderRadius: dtUnit(0.5),
+    } satisfies React.CSSProperties,
+    interactionTextStyle: { fontSize: dtUnit(0.75) } satisfies React.CSSProperties,
+    rollTextStyle: { fontSize: dtUnit(0.7) } satisfies React.CSSProperties,
+    confirmTextStyle: { fontSize: dtUnit(0.7) } satisfies React.CSSProperties,
+    dotClassName: 'rounded-full border border-black/30 shadow-sm transition-all duration-300 flex-shrink-0',
+    dotStyle: {
+        width: dtUnit(0.45),
+        height: dtUnit(0.45),
+    } satisfies React.CSSProperties,
+    dotsContainerClassName: 'flex flex-col flex-wrap justify-center items-center shrink-0 content-center',
+    dotsContainerStyle: {
+        gap: dtUnit(0.15),
+        height: dtUnit(1.8),
+        marginLeft: dtUnit(0.3),
+    } satisfies React.CSSProperties,
 };
 
 function getDtMeta(interaction?: InteractionDescriptor): DtDiceMeta | undefined {
@@ -118,15 +170,21 @@ export const DiceTray = ({
     const {
         diceSize,
         containerClassName,
+        containerStyle,
         glossClassName,
         rimClassName,
+        rimStyle,
         shadowClassName,
         trayInnerClassName,
-        rowGapClassName,
-        dieGapClassName,
+        trayInnerStyle,
+        rowStyle,
+        dieStyle,
         adjustButtonClassName,
+        adjustButtonStyle,
         lockedLabelClassName,
+        lockedLabelStyle,
         selectedBadgeClassName,
+        selectedBadgeStyle,
         selectedBadgeIconClassName,
     } = DESKTOP_DICE_TRAY_TOKENS;
 
@@ -143,10 +201,10 @@ export const DiceTray = ({
     const canRerollBonusDie = bonusDiceReroll?.canReroll === true;
     const adjustRange = dieModifyConfig?.adjustRange ?? { min: -1, max: 1 };
 
-    const canInteractWithDie = React.useCallback((die: Die): boolean => {
+    const canInteractWithDie = (die: Die): boolean => {
         if (!isInteractionMode || !diceOwnerId) return true;
         return die.ownerId === undefined || die.ownerId === diceOwnerId;
-    }, [diceOwnerId, isInteractionMode]);
+    };
 
     const modifyResult = (isModifyMode && multistepInteraction?.result) as DiceModifyResult | null | undefined;
     const selectResult = (isSelectMode && multistepInteraction?.result) as DiceSelectResult | null | undefined;
@@ -169,20 +227,34 @@ export const DiceTray = ({
     const canToggleDieLock = canInteract && rollCount > 0;
     const diceTrayStyle = isInteractionMode
         ? {
-            border: '2px solid #fcd34d',
+            ...containerStyle,
             backgroundColor: '#131820',
-            boxShadow: '0 0.26vw 0 #05070b, 0 0.62vw 0 #5c3f0b, 0 0.9vw 1.25vw rgba(0,0,0,0.5)',
+            boxShadow: buildBoardShellShadow(
+                `0 ${dtUnit(0.26)} 0 #05070b`,
+                `0 ${dtUnit(0.62)} 0 #5c3f0b`,
+                `0 ${dtUnit(0.9)} ${dtUnit(1.25)} rgba(0,0,0,0.5)`,
+            ),
         }
         : isPassiveRerollMode
             ? {
-                border: '2px solid #6ee7b7',
+                ...containerStyle,
                 backgroundColor: '#131820',
-                boxShadow: '0 0.26vw 0 #05070b, 0 0.62vw 0 #0b4d38, 0 0.9vw 1.25vw rgba(0,0,0,0.5)',
+                boxShadow: buildBoardShellShadow(
+                    `0 ${dtUnit(0.26)} 0 #05070b`,
+                    `0 ${dtUnit(0.62)} 0 #0b4d38`,
+                    `0 ${dtUnit(0.9)} ${dtUnit(1.25)} rgba(0,0,0,0.5)`,
+                ),
             }
             : {
-                border: '2px solid #c8d3df',
+                ...containerStyle,
                 backgroundColor: '#131820',
-                boxShadow: 'inset 0 0 0 0.1vw #53616f, inset 0 -0.38vw 0 #07090d, 0 0.26vw 0 #05070b, 0 0.72vw 0 #080b10, 0 0.95vw 1.3vw rgba(0,0,0,0.48)',
+                boxShadow: buildBoardShellShadow(
+                    `inset 0 0 0 ${dtUnit(0.1)} #53616f`,
+                    `inset 0 ${dtUnit(-0.38)} 0 #07090d`,
+                    `0 ${dtUnit(0.26)} 0 #05070b`,
+                    `0 ${dtUnit(0.72)} 0 #080b10`,
+                    `0 ${dtUnit(0.95)} ${dtUnit(1.3)} rgba(0,0,0,0.48)`,
+                ),
             };
 
     const handleRailDieClick = (dieId: number) => {
@@ -238,12 +310,11 @@ export const DiceTray = ({
         <div
             className={`
                 ${containerClassName}
-                border-[0.18vw]
                 ${isInteractionMode
-                    ? 'bg-[#131820] border-amber-300 ring-[0.16vw] ring-amber-500 shadow-[0_0.26vw_0_#05070b,0_0.62vw_0_#5c3f0b,0_0.9vw_1.25vw_rgba(0,0,0,0.5)]'
+                    ? 'bg-[#131820] border-amber-300 ring-2 ring-amber-500'
                     : isPassiveRerollMode
-                        ? 'bg-[#131820] border-emerald-300 ring-[0.16vw] ring-emerald-500 shadow-[0_0.26vw_0_#05070b,0_0.62vw_0_#0b4d38,0_0.9vw_1.25vw_rgba(0,0,0,0.5)]'
-                        : 'bg-[#131820] border-[#c8d3df] shadow-[inset_0_0_0_0.1vw_#53616f,inset_0_-0.38vw_0_#07090d,0_0.26vw_0_#05070b,0_0.72vw_0_#080b10,0_0.95vw_1.3vw_rgba(0,0,0,0.48)]'}
+                        ? 'bg-[#131820] border-emerald-300 ring-2 ring-emerald-500'
+                        : 'bg-[#131820] border-[#c8d3df]'}
             `}
             data-tutorial-id="dice-tray"
             data-testid="dicethrone-2d-dice-tray"
@@ -252,10 +323,13 @@ export const DiceTray = ({
             style={diceTrayStyle}
         >
             <div className={glossClassName} />
-            <div className={`${rimClassName} ${isInteractionMode ? 'border-amber-100/80' : 'border-slate-50/60'} `} />
+            <div
+                className={`${rimClassName} ${isInteractionMode ? 'border-amber-100/80' : 'border-slate-50/60'} `}
+                style={rimStyle}
+            />
             <div className={shadowClassName} />
 
-            <div className={trayInnerClassName}>
+            <div className={trayInnerClassName} style={trayInnerStyle}>
                 {dice.map((die) => {
                     const selected = isSelected(die.id);
                     const isModified = isModifyMode && die.id in (modifyResult?.modifications ?? {});
@@ -288,7 +362,7 @@ export const DiceTray = ({
                         : die.value;
 
                     return (
-                        <div key={die.id} className={`relative flex items-center ${rowGapClassName}`}>
+                        <div key={die.id} className="relative flex items-center" style={rowStyle}>
                             {(showAdjustButtons || showAnyModeButtons) && (
                                 <button
                                     type="button"
@@ -296,16 +370,17 @@ export const DiceTray = ({
                                     aria-label={`${decreaseLabel} ${displayValue}`}
                                     onClick={() => handleAdjust(die.id, -1, die.value)}
                                     disabled={displayValue <= 1 || (showAdjustButtons && !canAdjustDown)}
-                                    className={`${adjustButtonClassName} rounded-full flex items-center justify-center font-bold transition-all duration-150 ${(displayValue <= 1 || (showAdjustButtons && !canAdjustDown))
+                                    className={`${adjustButtonClassName} ${(displayValue <= 1 || (showAdjustButtons && !canAdjustDown))
                                         ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                                         : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg hover:scale-110'
                                         }`}
+                                    style={adjustButtonStyle}
                                 >
                                     -
                                 </button>
                             )}
 
-                            <div className={`relative flex flex-col items-center ${dieGapClassName}`} data-testid="die">
+                            <div className="relative flex flex-col items-center" style={dieStyle} data-testid="die">
                                 <div
                                     onClick={() => clickable && handleRailDieClick(die.id)}
                                     data-testid={`die-button-${die.id}`}
@@ -335,13 +410,13 @@ export const DiceTray = ({
                                     </div>
                                     {!isInteractionMode && die.isKept && (
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                                            <div className={`${lockedLabelClassName} font-black text-white bg-black/65 rounded uppercase tracking-wider shadow-sm border border-white/20`}>
+                                            <div className={lockedLabelClassName} style={lockedLabelStyle}>
                                                 {t('dice.locked')}
                                             </div>
                                         </div>
                                     )}
                                     {selected && !showAdjustButtons && !showAnyModeButtons && (
-                                        <div className={`absolute ${selectedBadgeClassName} bg-amber-500 rounded-full flex items-center justify-center z-30`}>
+                                        <div className={selectedBadgeClassName} style={selectedBadgeStyle}>
                                             <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
                                         </div>
                                     )}
@@ -355,10 +430,11 @@ export const DiceTray = ({
                                     aria-label={`${increaseLabel} ${displayValue}`}
                                     onClick={() => handleAdjust(die.id, 1, die.value)}
                                     disabled={displayValue >= 6 || (showAdjustButtons && !canAdjustUp)}
-                                    className={`${adjustButtonClassName} rounded-full flex items-center justify-center font-bold transition-all duration-150 ${(displayValue >= 6 || (showAdjustButtons && !canAdjustUp))
+                                    className={`${adjustButtonClassName} ${(displayValue >= 6 || (showAdjustButtons && !canAdjustUp))
                                         ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                                         : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg hover:scale-110'
                                         }`}
+                                    style={adjustButtonStyle}
                                 >
                                     +
                                 </button>
@@ -476,14 +552,12 @@ export const DiceActions = ({
             dots.push(
                 <div
                     key={i}
-                    className={`
-                        ${actionTokens.dotClassName} rounded-full border border-black/30 shadow-sm transition-all duration-300 flex-shrink-0
-                        ${i < rollCount ? 'bg-slate-900/60' : 'bg-white'}
-                    `}
+                    className={`${actionTokens.dotClassName} ${i < rollCount ? 'bg-slate-900/60' : 'bg-white'}`}
+                    style={actionTokens.dotStyle}
                 />
             );
         }
-        return <div className={actionTokens.dotsContainerClassName}>{dots}</div>;
+        return <div className={actionTokens.dotsContainerClassName} style={actionTokens.dotsContainerStyle}>{dots}</div>;
     };
 
     const leftDisabled = isInteractionMode
@@ -508,7 +582,10 @@ export const DiceActions = ({
         : (rollConfirmed ? 'glass' as const : 'secondary' as const);
 
     return (
-        <div className={isBonusDiceSettlement ? `${actionTokens.containerClassName} grid-cols-1` : actionTokens.containerClassName}>
+        <div
+            className={isBonusDiceSettlement ? `${actionTokens.containerClassName} grid-cols-1` : actionTokens.containerClassName}
+            style={actionTokens.containerStyle}
+        >
             {!isBonusDiceSettlement && (
             <GameButton
                 onClick={handleRollClick}
@@ -520,13 +597,14 @@ export const DiceActions = ({
                     `!py-0 flex items-center justify-between h-full whitespace-nowrap overflow-hidden ${actionTokens.buttonClassName}`,
                     !isInteractionMode && isRolling && 'animate-pulse',
                 )}
+                style={actionTokens.buttonStyle}
                 data-tutorial-id={isInteractionMode ? undefined : 'dice-roll-button'}
             >
                 {isInteractionMode ? (
-                    <span className={`flex-1 text-center font-black ${actionTokens.interactionTextClassName}`}>{t('common.cancel')}</span>
+                    <span className="flex-1 text-center font-black" style={actionTokens.interactionTextStyle}>{t('common.cancel')}</span>
                 ) : (
                     <>
-                        <div className={`flex-1 truncate text-center font-black ${actionTokens.rollTextClassName}`}>
+                        <div className="flex-1 truncate text-center font-black tracking-tighter" style={actionTokens.rollTextStyle}>
                             {isRolling ? t('dice.rolling') : t('dice.roll_action')}
                         </div>
                         {!isRolling && renderRollDots()}
@@ -543,9 +621,10 @@ export const DiceActions = ({
                 icon={<Check className="h-[1em] w-[1em] shrink-0" />}
                 clickSoundKey={isInteractionMode ? undefined : null}
                 className={clsx(
-                    `flex items-center justify-center h-full whitespace-nowrap overflow-hidden font-black !py-0 ${actionTokens.buttonClassName} ${actionTokens.confirmTextClassName}`,
+                    `flex items-center justify-center h-full whitespace-nowrap overflow-hidden font-black !py-0 ${actionTokens.buttonClassName}`,
                     !isBonusDiceSettlement && !isInteractionMode && rollConfirmed && '!text-white/60',
                 )}
+                style={{ ...actionTokens.buttonStyle, ...actionTokens.confirmTextStyle }}
                 data-testid={isInteractionMode ? 'dice-interaction-confirm-button' : undefined}
                 data-tutorial-id={isInteractionMode ? undefined : 'dice-confirm-button'}
             >

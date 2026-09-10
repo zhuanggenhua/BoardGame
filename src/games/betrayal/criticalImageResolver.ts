@@ -1,9 +1,12 @@
 import type { CriticalImageResolver, CriticalImageResolverResult } from '../../core/types';
 import type { MatchState } from '../../engine/types';
-import type { BetrayalCore } from './game';
-import { EVENT_FRONT_ATLAS_IMAGE_PATHS } from './discoveryAtlas';
+import type { BetrayalCore, BetrayalInventoryCard } from './game';
+import { EVENT_FRONT_ATLAS_IMAGE_PATHS, resolveDiscoveryAtlasVisual } from './discoveryAtlas';
 import { BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS } from './possessionAtlas';
-import { BETRAYAL_ROOM_ATLAS_IMAGE_PATHS } from './roomAtlas';
+import {
+    BETRAYAL_ROOM_ATLAS_IMAGE_PATHS,
+    resolveBetrayalRoomNodeTileVisual,
+} from './roomAtlas';
 
 const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     'betrayal/ui/title-banner',
@@ -85,13 +88,163 @@ const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     ...BETRAYAL_ROOM_ATLAS_IMAGE_PATHS,
 ];
 
+const BETRAYAL_SHARED_TABLE_IMAGE_PATHS = [
+    'betrayal/ui/title-banner',
+    'betrayal/ui/trait-track-0-9',
+    'betrayal/cards/back-omen',
+    'betrayal/cards/back-item',
+    'betrayal/cards/back-event',
+];
+
+const BETRAYAL_TUTORIAL_BASE_IMAGE_PATHS = BETRAYAL_SHARED_TABLE_IMAGE_PATHS;
+
+const BETRAYAL_TUTORIAL_WARM_IMAGE_PATHS = [
+    ...BETRAYAL_SHARED_TABLE_IMAGE_PATHS,
+    'betrayal/cards/player-reference-zh-front',
+    'betrayal/cards/player-reference-zh-back',
+    'betrayal/explorers/xia',
+    'betrayal/explorers/anita-hernandez',
+    'betrayal/explorers/father-warren-leung',
+    'betrayal/explorers/dan-nguyen-md',
+    'betrayal/explorers/michelle-monroe',
+    'betrayal/explorers/beat-box-bowen',
+    'betrayal/explorers/josef-hooper',
+    'betrayal/explorers/oliver-swift',
+    'betrayal/explorers/stephanie-richter',
+    'betrayal/explorers/persephone-puleri',
+    'betrayal/explorers/sammy-angler',
+    'betrayal/explorers/jade-jones',
+    'betrayal/tokens/explorers/isa-valencia',
+    'betrayal/tokens/explorers/anita-hernandez',
+    'betrayal/tokens/explorers/father-warren-leung',
+    'betrayal/tokens/explorers/dan-nguyen-md',
+    'betrayal/tokens/explorers/michelle-monroe',
+    'betrayal/tokens/explorers/beat-box-bowen',
+    'betrayal/tokens/explorers/josef-hooper',
+    'betrayal/tokens/explorers/oliver-swift',
+    'betrayal/tokens/explorers/stephanie-richter',
+    'betrayal/tokens/explorers/persephone-puleri',
+    'betrayal/tokens/explorers/sammy-angler',
+    'betrayal/tokens/explorers/jaden-jones',
+    ...BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS,
+    ...EVENT_FRONT_ATLAS_IMAGE_PATHS,
+    ...BETRAYAL_ROOM_ATLAS_IMAGE_PATHS,
+];
+
+const addImagePath = (paths: Set<string>, path: string | null | undefined): void => {
+    if (typeof path === 'string' && path.trim().length > 0) {
+        paths.add(path);
+    }
+};
+
+const resolveLatestDiscoveryInventory = (
+    core: Partial<BetrayalCore>,
+): BetrayalInventoryCard[] => {
+    const ownerPlayerId = core.latestDiscoveryOwnerPlayerId;
+    if (!ownerPlayerId) {
+        return core.currentExplorerInventory ?? core.currentExplorer?.inventory ?? [];
+    }
+
+    const owner = [
+        core.currentExplorer,
+        ...(core.otherExplorers ?? []),
+    ].find((explorer) => explorer?.playerId === ownerPlayerId);
+    return owner?.inventory ?? core.currentExplorerInventory ?? core.currentExplorer?.inventory ?? [];
+};
+
+const resolveTutorialCriticalImagePaths = (
+    core: Partial<BetrayalCore> | undefined,
+): string[] => {
+    const paths = new Set<string>(BETRAYAL_TUTORIAL_BASE_IMAGE_PATHS);
+    if (!core) {
+        return [...paths];
+    }
+
+    addImagePath(paths, core.currentExplorer?.portraitAsset);
+    addImagePath(paths, core.currentExplorer?.tokenAsset);
+
+    (core.monsters ?? []).forEach((monster) => {
+        addImagePath(paths, monster?.portraitAsset);
+        addImagePath(paths, monster?.tokenAsset);
+    });
+
+    (core.rooms ?? []).forEach((room) => {
+        addImagePath(
+            paths,
+            resolveBetrayalRoomNodeTileVisual(room, room.state === 'discovered').image,
+        );
+    });
+
+    addImagePath(
+        paths,
+        resolveDiscoveryAtlasVisual(
+            core.latestDiscovery ?? null,
+            resolveLatestDiscoveryInventory(core),
+        )?.image,
+    );
+
+    return [...paths];
+};
+
+const buildTutorialPhaseKey = (
+    tutorial: NonNullable<MatchState<BetrayalCore>['sys']['tutorial']>,
+    phase: string,
+    playerID: string | null | undefined,
+    critical: string[],
+): string => [
+    'betrayal',
+    'tutorial',
+    tutorial.manifestId ?? 'unknown',
+    tutorial.step?.id ?? tutorial.stepIndex ?? 'unknown-step',
+    phase,
+    playerID ?? 'spectator',
+    critical.join('|'),
+].join(':');
+
 export const betrayalCriticalImageResolver: CriticalImageResolver = (
     gameState: unknown,
     _locale?: string,
     playerID?: string | null,
 ): CriticalImageResolverResult => {
     const state = gameState as MatchState<BetrayalCore> | undefined;
+    const tutorial = state?.sys?.tutorial;
+    const tutorialStepId = tutorial?.step?.id;
+    const isTutorialSetupStep = Boolean(
+        tutorial?.active
+        && tutorial.stepIndex === 0
+        && (
+            !tutorialStepId
+            || tutorialStepId === 'setup-runtime'
+            || tutorialStepId.startsWith('setup-')
+        )
+        && (!state?.core || state.core.phase === 'characterSelect'),
+    );
+
+    if (isTutorialSetupStep) {
+        return {
+            critical: [],
+            warm: [],
+            replaceStaticCritical: true,
+            phaseKey: [
+                'betrayal',
+                'tutorial-setup',
+                tutorial?.manifestId ?? 'unknown',
+                tutorialStepId ?? tutorial?.stepIndex ?? 0,
+                playerID ?? 'spectator',
+            ].join(':'),
+        };
+    }
+
     const phase = state?.core?.phase ?? 'characterSelect';
+    if (tutorial?.active) {
+        const critical = resolveTutorialCriticalImagePaths(state?.core);
+        return {
+            critical,
+            warm: BETRAYAL_TUTORIAL_WARM_IMAGE_PATHS,
+            replaceStaticCritical: true,
+            phaseKey: buildTutorialPhaseKey(tutorial, phase, playerID, critical),
+        };
+    }
 
     return {
         critical: BETRAYAL_CRITICAL_IMAGE_PATHS,
@@ -102,6 +255,9 @@ export const betrayalCriticalImageResolver: CriticalImageResolver = (
 
 export const _testExports = {
     BETRAYAL_CRITICAL_IMAGE_PATHS,
+    BETRAYAL_TUTORIAL_BASE_IMAGE_PATHS,
+    BETRAYAL_TUTORIAL_WARM_IMAGE_PATHS,
+    resolveTutorialCriticalImagePaths,
 };
 
 export default betrayalCriticalImageResolver;

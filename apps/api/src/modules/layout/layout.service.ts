@@ -33,9 +33,9 @@ export type PlayerBoardUiTuning = {
     shellTranslateX: number;
     playerBoardTranslateY: number;
     magnifyButtonTop: number;
-    playerBoardBaseHeightVw: number;
-    tipBoardHeightVw: number;
-    centerBoardGapVw: number;
+    playerBoardBaseHeightUnits: number;
+    tipBoardHeightUnits: number;
+    centerBoardGapUnits: number;
 };
 
 export type DiceThroneBoardShellTuningMap = Record<DiceThroneAbilityLayoutVersion, PlayerBoardUiTuning>;
@@ -162,9 +162,9 @@ export class LayoutService {
                 tuning.shellTranslateX,
                 tuning.playerBoardTranslateY,
                 tuning.magnifyButtonTop,
-                tuning.playerBoardBaseHeightVw,
-                tuning.tipBoardHeightVw,
-                tuning.centerBoardGapVw,
+                tuning.playerBoardBaseHeightUnits,
+                tuning.tipBoardHeightUnits,
+                tuning.centerBoardGapUnits,
             ].every((value) => typeof value === 'number' && Number.isFinite(value));
         });
         if (hasInvalidUiTuning) {
@@ -183,9 +183,9 @@ export class LayoutService {
         shellTranslateX: ${this.formatSlotValue(tuning.shellTranslateX)},
         playerBoardTranslateY: ${this.formatSlotValue(tuning.playerBoardTranslateY)},
         magnifyButtonTop: ${this.formatSlotValue(tuning.magnifyButtonTop)},
-        playerBoardBaseHeightVw: ${this.formatSlotValue(tuning.playerBoardBaseHeightVw)},
-        tipBoardHeightVw: ${this.formatSlotValue(tuning.tipBoardHeightVw)},
-        centerBoardGapVw: ${this.formatSlotValue(tuning.centerBoardGapVw)},
+        playerBoardBaseHeightUnits: ${this.formatSlotValue(tuning.playerBoardBaseHeightUnits)},
+        tipBoardHeightUnits: ${this.formatSlotValue(tuning.tipBoardHeightUnits)},
+        centerBoardGapUnits: ${this.formatSlotValue(tuning.centerBoardGapUnits)},
     }`;
 
         return `import type { CharacterId } from '../domain/types';
@@ -214,9 +214,9 @@ export type PlayerBoardUiTuning = {
     shellTranslateX: number;
     playerBoardTranslateY: number;
     magnifyButtonTop: number;
-    playerBoardBaseHeightVw: number;
-    tipBoardHeightVw: number;
-    centerBoardGapVw: number;
+    playerBoardBaseHeightUnits: number;
+    tipBoardHeightUnits: number;
+    centerBoardGapUnits: number;
 };
 
 const V1_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = [

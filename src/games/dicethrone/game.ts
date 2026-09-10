@@ -1336,6 +1336,7 @@ const systems = [
                         return command.type === 'RESOLVE_INTERACTION'
                             || command.type === 'REMOVE_STATUS';
                     case 'selectHandCard':
+                    case 'selectDeckCard':
                         return command.type === 'RESOLVE_INTERACTION';
                     default:
                         return command.type === 'RESOLVE_INTERACTION';

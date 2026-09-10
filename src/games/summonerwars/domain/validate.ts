@@ -254,10 +254,17 @@ export function validateCommand(
   const isTutorialActive = state.sys?.tutorial?.active === true;
   const playerId = core.currentPlayer;
   const payload = command.payload as Record<string, unknown>;
+  const isSummonerWarsCommand = Object.values(SW_COMMANDS).includes(
+    command.type as typeof SW_COMMANDS[keyof typeof SW_COMMANDS],
+  );
+
+  if (state.sys?.gameover && isSummonerWarsCommand) {
+    return { valid: false, error: 'game_over' };
+  }
 
   if (core.pendingAttackRoll
     && command.type !== SW_COMMANDS.RESOLVE_PENDING_ATTACK
-    && Object.values(SW_COMMANDS).includes(command.type as typeof SW_COMMANDS[keyof typeof SW_COMMANDS])) {
+    && isSummonerWarsCommand) {
     return { valid: false, error: '必须先完成待结算攻击' };
   }
 

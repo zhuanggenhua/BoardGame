@@ -210,8 +210,9 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'view-book')?.infoStep).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'use-book')?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(manifest?.steps.find((step) => step.id === 'use-rabbit-foot')?.highlightTarget).toBe('betrayal-inventory-rope');
-        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.highlightTarget).toBe('betrayal-latest-discovery');
-        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.infoStep).toBe(true);
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.highlightTarget).toBe('betrayal-discovery-continue');
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.infoStep).toBeUndefined();
+        expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.requireAction).toBe(true);
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.allowedCommands).toEqual(['FINALIZE_EVENT_ROLL']);
         expect(manifest?.steps.find((step) => step.id === 'rabbit-foot-result')?.advanceOnEvents).toEqual([
             { type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } },
@@ -373,6 +374,23 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.stepValidator?.(afterRabbitFootState, rabbitFootResultStep!)).toBe(true);
     });
 
+    it('默认教程不会把选择角色阶段的旧存档恢复成后续牌桌步骤', () => {
+        const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
+        const objectiveStep = manifest?.steps.find((step) => step.id === 'objective-and-turn');
+        expect(objectiveStep).toBeTruthy();
+
+        const staleCharacterSelectState = {
+            core: {
+                phase: 'characterSelect',
+                usedCardIdsThisTurn: [],
+                recentRoll: { consumedRabbitFootCardIds: [] },
+            },
+            sys: {},
+        } as MatchState<Partial<BetrayalCore>>;
+
+        expect(manifest?.stepValidator?.(staleCharacterSelectState, objectiveStep!)).toBe(false);
+    });
+
     it('玩家可见教程注入态不使用测试专用假对象', () => {
         const injectedPayloads = Object.values(tutorialCatalog.tutorials)
             .flatMap(({ manifest }) => manifest.steps)
@@ -401,6 +419,7 @@ describe('Betrayal 教程配置', () => {
             'roll-event',
             'use-book',
             'use-rabbit-foot',
+            'rabbit-foot-result',
             'finish',
             'return-to-table-after-damage',
         ]);
@@ -417,6 +436,7 @@ describe('Betrayal 教程配置', () => {
             ['ROLL_EVENT'],
             ['USE_POSSESSION'],
             ['USE_RABBIT_FOOT', 'USE_ROLL_REROLL_ITEM'],
+            ['FINALIZE_EVENT_ROLL'],
             ['RESOLVE_DAMAGE_ALLOCATION'],
             [],
         ]);
@@ -428,6 +448,7 @@ describe('Betrayal 教程配置', () => {
             null,
             ['omen-book'],
             ['rope'],
+            null,
             null,
             null,
         ]);

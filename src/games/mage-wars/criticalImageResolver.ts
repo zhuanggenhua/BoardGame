@@ -19,6 +19,10 @@ const MAGE_WARS_COMMON_CRITICAL_IMAGES = [
     'mage-wars/tokens/channeling/channeling-token-front',
 ] as const;
 
+const MAGE_WARS_INITIAL_SPELLBOOK_CRITICAL_IMAGES = [
+    'mage-wars/cards/spells/spell-equipment-core-atlas',
+] as const;
+
 const MAGE_WARS_WARM_IMAGES = [
     ...MAGE_WARS_SPELL_ATLAS_IMAGE_PATHS,
     'mage-wars/cards/backs/wall-card-back',
@@ -37,7 +41,10 @@ export const mageWarsCriticalImageResolver: CriticalImageResolver = (
     const phase = state?.sys?.phase ?? 'foundation';
 
     return {
-        critical: [...MAGE_WARS_COMMON_CRITICAL_IMAGES],
+        critical: [
+            ...MAGE_WARS_COMMON_CRITICAL_IMAGES,
+            ...MAGE_WARS_INITIAL_SPELLBOOK_CRITICAL_IMAGES,
+        ],
         warm: [...MAGE_WARS_WARM_IMAGES],
         phaseKey: `mage-wars:${phase}`,
     };

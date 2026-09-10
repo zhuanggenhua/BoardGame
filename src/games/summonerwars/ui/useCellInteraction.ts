@@ -6,7 +6,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAutoSkipPhase } from '../../../components/game/framework';
 import { useTranslation } from 'react-i18next';
 import type { SummonerWarsCore, CellCoord, UnitCard, GamePhase, EventCard } from '../domain/types';
 import { SW_COMMANDS } from '../domain/types';
@@ -14,7 +13,7 @@ import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import {
   getValidSummonPositionsForCard, getValidBuildPositions,
   getValidMoveTargetsEnhanced, getValidAttackTargetsEnhanced,
-  getPlayerUnits, hasAvailableActions,
+  getPlayerUnits,
   manhattanDistance,
   getUnitAbilities,
   normalizeUnitBoosts,
@@ -52,24 +51,17 @@ interface UseCellInteractionParams {
   dispatch: (type: string, payload?: unknown) => void;
   currentPhase: GamePhase;
   isMyTurn: boolean;
-  isGameOver: boolean;
   myPlayerId: string;
-  activePlayerId: string;
   myHand: import('../domain/types').Card[];
   fromViewCoord: (coord: CellCoord) => CellCoord;
-  /** undo 快照数量（通过 getUndoSnapshotCount 获取），框架层撤回保护必传 */
-  undoSnapshotCount: number;
   /** 当前系统交互（来自 sys.interaction.current） */
   interaction?: InteractionDescriptor | null;
-  /** 教程进行中时不自动跳过阶段，避免教程提示落后于真实阶段 */
-  isTutorialActive?: boolean;
   // 外部模式状态
   abilityMode: AbilityModeState | null;
   setAbilityMode: (mode: AbilityModeState | null) => void;
   soulTransferMode: SoulTransferModeState | null;
   mindCaptureMode: MindCaptureModeState | null;
   afterAttackAbilityMode: AfterAttackAbilityModeState | null;
-  rapidFireMode: import('./modeTypes').RapidFireModeState | null;
 }
 
 const ADVANCE_PHASE_THROTTLE_MS = 700;
@@ -80,15 +72,12 @@ const ADVANCE_PHASE_FALLBACK_RELEASE_MS = 2500;
 // ============================================================================
 
 export function useCellInteraction({
-  core, dispatch, currentPhase, isMyTurn, isGameOver,
-  myPlayerId, activePlayerId, myHand, fromViewCoord,
-  undoSnapshotCount,
+  core, dispatch, currentPhase, isMyTurn,
+  myPlayerId, myHand, fromViewCoord,
   interaction,
-  isTutorialActive = false,
   abilityMode, setAbilityMode, soulTransferMode,
   mindCaptureMode,
   afterAttackAbilityMode,
-  rapidFireMode,
 }: UseCellInteractionParams) {
   const { t } = useTranslation('game-summonerwars');
   const showToast = useToast();
@@ -891,37 +880,7 @@ export function useCellInteraction({
     }
   };
 
-  // ---------- 自动跳过 ----------
-
-  // 存在活跃的交互模式时禁止自动跳过（玩家正在进行多步骤操作）
-  const hasActiveInteraction = eventCardModes.hasActiveEventMode
-    || !!eventCardModes.funeralPyreMode
-    || !!soulTransferMode
-    || !!mindCaptureMode
-    || !!afterAttackAbilityMode
-    || !!abilityMode
-    || !!rapidFireMode
-    || !!magicEventChoiceMode
-    || !!swInteraction;
-
-  // 全局禁用开关（调试用）
-  const debugDisabled = typeof window !== 'undefined'
-    && (window as Window & { __SW_DISABLE_AUTO_SKIP__?: boolean }).__SW_DISABLE_AUTO_SKIP__;
-
-  const advancePhase = useCallback(() => {
-    // 自动跳阶段走同一套防重逻辑，避免与手动点击同时重复提交
-    void advancePhaseSafely();
-  }, [advancePhaseSafely]);
-
-  useAutoSkipPhase({
-    isMyTurn,
-    isGameOver,
-    hasAvailableActions: hasAvailableActions(core, activePlayerId as '0' | '1'),
-    hasActiveInteraction,
-    advancePhase,
-    enabled: !!core.hostStarted && !debugDisabled && !isTutorialActive,
-    undoSnapshotCount,
-  });
+  // 召唤师战争阶段不再自动跳过；没有可用操作时仍等待玩家手动结束阶段。
 
   // 魔力阶段事件卡选择回调
   const handlePlayMagicEvent = useCallback(() => {

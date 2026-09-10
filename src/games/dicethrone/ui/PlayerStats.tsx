@@ -11,10 +11,14 @@ import {
     type HitStopConfig,
 } from '../../../components/common/animations';
 import { ShakeContainer } from '../../../components/common/animations/ShakeContainer';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 /** 护盾图标组件 */
 const ShieldIcon = ({ value }: { value: number }) => (
-    <div className="relative w-[1.8vw] h-[1.8vw] flex-shrink-0">
+    <div
+        className="relative flex-shrink-0"
+        style={{ width: buildBoardShellInlineUnitValue(1.8), height: buildBoardShellInlineUnitValue(1.8) }}
+    >
         <svg
             className="w-full h-full text-cyan-500"
             viewBox="0 1 24 25"
@@ -22,7 +26,10 @@ const ShieldIcon = ({ value }: { value: number }) => (
         >
             <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[0.8vw] font-bold text-white drop-shadow-md">
+        <span
+            className="absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md"
+            style={{ fontSize: buildBoardShellInlineUnitValue(0.8) }}
+        >
             {value}
         </span>
     </div>
@@ -107,11 +114,14 @@ export const PlayerStats = ({
                 data-feedback-resource={feedbackResource}
                 data-feedback-resource-value={value}
                 className={[
-                    'relative h-[1.85vw] w-full overflow-hidden box-border bg-black/60',
-                    'border-[0.18vw]',
+                    'relative w-full overflow-hidden box-border bg-black/60',
                     config.borderClassName,
                     config.glowClassName,
                 ].join(' ')}
+                style={{
+                    height: buildBoardShellInlineUnitValue(1.85),
+                    borderWidth: buildBoardShellInlineUnitValue(0.18),
+                }}
             >
                 <div
                     data-dicethrone-resource-fill={key}
@@ -122,11 +132,17 @@ export const PlayerStats = ({
                     <div className="absolute inset-x-0 top-0 h-[38%] bg-white/12" />
                     <div className="absolute inset-x-0 bottom-0 h-[42%] bg-black/24" />
                 </div>
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-[0.72vw]">
-                    <span className={`text-[0.78vw] font-black uppercase tracking-[0.08em] ${config.labelClassName}`}>
+                <div
+                    className="pointer-events-none absolute inset-0 flex items-center justify-between"
+                    style={{ paddingInline: buildBoardShellInlineUnitValue(0.72) }}
+                >
+                    <span
+                        className={`font-black uppercase tracking-[0.08em] ${config.labelClassName}`}
+                        style={{ fontSize: buildBoardShellInlineUnitValue(0.78) }}
+                    >
                         {config.label}
                     </span>
-                    <span className="text-[1.08vw] font-black text-white drop-shadow-md">{value}</span>
+                    <span className="font-black text-white drop-shadow-md" style={{ fontSize: buildBoardShellInlineUnitValue(1.08) }}>{value}</span>
                 </div>
             </div>
         );
@@ -135,11 +151,11 @@ export const PlayerStats = ({
     return (
         <PlayerPanelSkeleton
             player={panelData}
-            className="relative z-20 flex w-full flex-col gap-[0.5vw] overflow-visible bg-transparent p-0 shadow-none"
+            className="dt-player-stats__panel relative z-20 flex w-full flex-col overflow-visible bg-transparent p-0 shadow-none"
             renderResource={(key, value) => {
                 if (key === 'health') {
                     return (
-                        <div className="flex w-full items-center gap-[0.5vw]">
+                        <div className="flex w-full items-center" style={{ gap: buildBoardShellInlineUnitValue(0.5) }}>
                             <div ref={hpRef} className="min-w-0 flex-1">
                                 <ShakeContainer isShaking={!!isHpShaking} className="w-full">
                                     <HitStopContainer

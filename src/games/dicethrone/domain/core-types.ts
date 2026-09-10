@@ -411,7 +411,8 @@ export type CardInteractionType =
     | 'selectPlayer'
     | 'selectStatus'
     | 'selectTargetStatus'
-    | 'selectHandCard';
+    | 'selectHandCard'
+    | 'selectDeckCard';
 
 /** 待处理的卡牌交互 */
 export interface InteractionDescriptor {

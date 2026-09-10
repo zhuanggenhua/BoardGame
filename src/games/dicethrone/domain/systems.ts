@@ -644,6 +644,9 @@ const isInteractionResolutionSideEffect = (event: DiceThroneEvent): boolean => {
     if (event.type === 'CARD_DISCARDED') {
         return sourceCommandType === 'RESOLVE_INTERACTION';
     }
+    if (event.type === 'DECK_SHUFFLED') {
+        return sourceCommandType === 'RESOLVE_INTERACTION';
+    }
     if (
         event.type === 'STATUS_REMOVED'
         || event.type === 'TOKEN_CONSUMED'
@@ -1156,7 +1159,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const isStatusType = pendingInteraction.type === 'selectStatus'
                         || pendingInteraction.type === 'selectPlayer'
                         || pendingInteraction.type === 'selectTargetStatus'
-                        || pendingInteraction.type === 'selectHandCard';
+                        || pendingInteraction.type === 'selectHandCard'
+                        || pendingInteraction.type === 'selectDeckCard';
 
                     if (isStatusType) {
                         const targetPlayerIds = pendingInteraction.targetPlayerIds || Object.keys(newState.core.players);
@@ -1202,7 +1206,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     ));
                 }
 
-                // ---- 状态/手牌交互自动完成：只在各自权威完成事件出现时 resolve ----
+                // ---- 状态/手牌/牌库交互自动完成：只在各自权威完成事件出现时 resolve ----
                 // 注意：REMOVE_STATUS 移除所有状态时会生成多个 STATUS_REMOVED 事件，
                 // 使用 statusInteractionCompleted 标记防止重复 resolve
                 if (!statusInteractionCompleted && isInteractionResolutionSideEffect(dtEvent)) {
@@ -1221,7 +1225,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         );
                         const isHandCardSelectionCompleted = interactionData.type === 'selectHandCard'
                             && dtEvent.type === 'CARD_DISCARDED';
-                        if (isStatusSelectionCompleted || isHandCardSelectionCompleted) {
+                        const isDeckCardSelectionCompleted = interactionData.type === 'selectDeckCard'
+                            && dtEvent.type === 'DECK_SHUFFLED';
+                        if (isStatusSelectionCompleted || isHandCardSelectionCompleted || isDeckCardSelectionCompleted) {
                             statusInteractionCompleted = true;
                             const completedInteractionId = current.id;
                             const completedPlayerId = current.playerId;

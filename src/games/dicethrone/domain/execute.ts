@@ -980,6 +980,56 @@ export function execute(
                 break;
             }
 
+            if (interaction.type === 'selectDeckCard') {
+                const { selectedCardIds = [] } = command.payload as { selectedCardIds?: string[] };
+                const player = state.players[interaction.playerId];
+                if (!player) break;
+
+                const deckCardIds = new Set(player.deck.map(card => card.id));
+                const resolvedCardIds = Array.from(new Set(selectedCardIds.filter(cardId => deckCardIds.has(cardId))))
+                    .slice(0, interaction.selectCount ?? 1);
+                if (resolvedCardIds.length === 0) break;
+
+                const remainingDeck = [...player.deck];
+                for (const [cardIndex, cardId] of resolvedCardIds.entries()) {
+                    const deckIndex = remainingDeck.findIndex(card => card.id === cardId);
+                    if (deckIndex >= 0) {
+                        remainingDeck.splice(deckIndex, 1);
+                    }
+                    events.push({
+                        type: 'CARD_DRAWN',
+                        payload: {
+                            playerId: interaction.playerId,
+                            cardId,
+                            sourceAbilityId: interaction.sourceCardId,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + cardIndex,
+                    } as DiceThroneEvent);
+                }
+
+                const shuffledDeckCardIds = random.shuffle(remainingDeck).map(card => card.id);
+                events.push({
+                    type: 'DECK_SHUFFLED',
+                    payload: {
+                        playerId: interaction.playerId,
+                        deckCardIds: shuffledDeckCardIds,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + resolvedCardIds.length,
+                } as DiceThroneEvent);
+                events.push({
+                    type: 'INTERACTION_COMPLETED',
+                    payload: {
+                        interactionId: currentInteraction.id,
+                        sourceCardId: interaction.sourceCardId ?? '',
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + resolvedCardIds.length + 1,
+                } as DiceThroneEvent);
+                break;
+            }
+
             if (interaction.type !== 'selectPlayer') {
                 break;
             }

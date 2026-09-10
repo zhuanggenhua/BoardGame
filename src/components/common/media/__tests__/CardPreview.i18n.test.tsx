@@ -25,6 +25,7 @@ const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
 
 describe('CardPreview i18n atlas path', () => {
     beforeEach(() => {
+        vi.unstubAllEnvs();
         setAssetsBaseUrl('/assets');
         clearGameAssetBaseOverrides();
     });
@@ -143,7 +144,8 @@ describe('CardPreview i18n atlas path', () => {
         expect(candidates).toContain('/assets/i18n/zh-CN/smashup/taitan/compressed/taitan1.webp');
     });
 
-    it('远程资源模式下 atlas 候选 URL 应先尝试远端，再回退本地 /assets', () => {
+    it('显式 dev 远程资源模式下 atlas 候选 URL 应先尝试远端，再回退本地 /assets', () => {
+        vi.stubEnv('VITE_DEV_REMOTE_ASSETS', 'true');
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
         const candidates = getCardAtlasCandidateUrls('smashup/taitan/taitan1', 'zh-CN');

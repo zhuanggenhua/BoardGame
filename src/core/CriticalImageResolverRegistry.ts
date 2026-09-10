@@ -2,7 +2,8 @@
  * 关键图片解析器注册表
  *
  * 各游戏可注册动态解析器，根据对局状态生成需要预加载的关键/暖图片路径列表。
- * 解析器输出会与 GameAssets 中的静态 criticalImages / warmImages 合并。
+ * 解析器输出默认会与 GameAssets 中的静态 criticalImages / warmImages 合并。
+ * 若解析器返回 replaceStaticCritical，则当前阶段的动态 critical 接管静态阻塞清单。
  */
 
 import type { CriticalImageResolver, CriticalImageResolverResult } from './types';

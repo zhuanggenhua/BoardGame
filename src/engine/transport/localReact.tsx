@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { GameEngineConfig } from './engineConfig';
 import type { AiSeatController } from '../ai/types';
+import type { LocalMatchSnapshot } from './localSession';
 import { useLocalGameProviderRuntime } from './useLocalGameProviderRuntime';
 import { GameClientContext } from './reactContext';
 
@@ -25,6 +26,7 @@ export interface LocalGameProviderProps {
     followCurrentTurnPlayer?: boolean;
     persistSession?: boolean;
     persistGameId?: string;
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
 }
 
 export function LocalGameProvider({
@@ -40,6 +42,7 @@ export function LocalGameProvider({
     followCurrentTurnPlayer = false,
     persistSession = false,
     persistGameId,
+    shouldRestorePersistedSession,
 }: LocalGameProviderProps) {
     const value = useLocalGameProviderRuntime({
         config,
@@ -53,6 +56,7 @@ export function LocalGameProvider({
         followCurrentTurnPlayer,
         persistSession,
         persistGameId,
+        shouldRestorePersistedSession,
     });
 
     return (

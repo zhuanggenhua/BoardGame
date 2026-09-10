@@ -38,7 +38,7 @@ export type AbilityTrigger =
   | 'beforeAttack'       // 攻击前（吸取生命）
   | 'afterAttack'        // 攻击后（读心传念、念力、高阶念力）
   | 'onDamageDealt'      // 造成伤害后
-  | 'onKill'             // 消灭敌方单位后（感染、心灵捕获）
+  | 'onKill'             // 消灭单位后（感染、心灵捕获）
   | 'onDeath'            // 被消灭时（献祭）
   | 'onUnitDestroyed'    // 任意单位被消灭时（血腥狂怒、灵魂转移）
   | 'onTurnStart'        // 回合开始时

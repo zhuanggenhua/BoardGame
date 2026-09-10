@@ -33,7 +33,7 @@ import { FeedbackModal } from '../../../system/FeedbackModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { matchSocket, type MatchChatMessage, type MatchEmoteEvent } from '../../../../services/matchSocket';
-import { MAX_CHAT_LENGTH } from '../../../../shared/chat';
+import { MAX_CHAT_LENGTH, MAX_CHAT_MESSAGES } from '../../../../shared/chat';
 import type { EmoteDefinition } from '../../../../shared/emotes';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';

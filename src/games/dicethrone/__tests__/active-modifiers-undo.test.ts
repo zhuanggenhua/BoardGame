@@ -236,7 +236,7 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).toContain('data-testid="active-modifier-badge"');
         expect(html).toContain('data-bonus-damage="2"');
         expect(html).toContain('bottom-full');
-        expect(html).toContain('relative w-[5.8vw]');
+        expect(html).toContain('--mobile-board-shell-inline-unit');
         expect(html).toContain('pointer-events-none absolute inset-x-0 bottom-full');
         expect(html).not.toContain('data-testid="attack-modifier-bonus-badge"');
         expect(html).not.toContain('-top-[2.2vw]');
@@ -286,7 +286,7 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).toContain('damageSummary.changed:original=5,current=7');
         expect(html).toContain('data-testid="current-total-damage-badge-anchor"');
         expect(html).toContain('data-placement="dice-tray-left-top-outside"');
-        expect(html).toContain('absolute right-[calc(100%+0.35vw)] top-0');
+        expect(html).toContain('right:calc(100% + calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.35))');
         expect(html).not.toContain('bottom-full');
         expect(html).not.toContain('right-full');
         expect(html).not.toContain('-translate-x-[0.35vw]');

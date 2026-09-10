@@ -233,6 +233,7 @@ export function useMatchRoomRuntimeSetup(args: {
         locale: i18n.language,
         loadingDescription: tLobby('matchRoom.loadingResources'),
         shouldBlockBoardOnImagePreload,
+        shouldPreloadBlockingAudio: !isTutorialRoute,
         onInitialOnlinePreloadReady: handleInitialOnlinePreloadReady,
         onBoardPreloadBlockingChange: handleOnlineBoardPreloadBlockingChange,
     });

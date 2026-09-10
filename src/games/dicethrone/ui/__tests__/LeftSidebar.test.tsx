@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { initHeroState } from '../../domain/characters';
-import { TOKEN_IDS } from '../../domain/ids';
+import { STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
 import { createQueuedRandom } from '../../__tests__/test-utils';
 import { LIEREN_TOKENS } from '../../heroes/lieren/tokens';
 import { TIANSHI_TOKENS } from '../../heroes/tianshi/tokens';
@@ -51,8 +51,57 @@ describe('LeftSidebar 飞行 Token 入口', () => {
         const tokenContainer = container.querySelector('[data-tutorial-id="status-tokens"] > div');
         expect(tokenContainer).not.toBeNull();
         expect(tokenContainer).toHaveClass('flex-wrap-reverse');
-        expect((tokenContainer as HTMLElement).style.maxWidth).toBe('13.7vw');
+        expect((tokenContainer as HTMLElement).style.maxWidth).toContain('--mobile-board-shell-inline-unit');
         expect(screen.getByTestId('turn-order-panel')).toContainElement(screen.getByTestId('dt-phase-indicator'));
+
+        const phaseItems = Array.from(container.querySelectorAll('[data-dt-phase-item="true"]'));
+        expect(phaseItems).toHaveLength(7);
+        expect(phaseItems.filter((node) => node.getAttribute('data-dt-phase-active') === 'true')).toHaveLength(1);
+    });
+
+    it('手机横屏 Token / 状态压力态保持 PC 同构密度，不缩小阶段 / Token / 牌堆', () => {
+        const player = initHeroState('0', 'tianshi', createQueuedRandom([1]));
+        player.tokens = {
+            [TOKEN_IDS.FLIGHT]: 1,
+            [TOKEN_IDS.PURIFY]: 1,
+            [TOKEN_IDS.TAIJI]: 1,
+            [TOKEN_IDS.EVASIVE]: 1,
+            [TOKEN_IDS.ACCURACY]: 1,
+            [TOKEN_IDS.CRIT]: 1,
+        };
+        player.statusEffects = {
+            [STATUS_IDS.BLEED]: 1,
+            [STATUS_IDS.POISON]: 1,
+            [STATUS_IDS.BURN]: 1,
+            [STATUS_IDS.KNOCKDOWN]: 1,
+        };
+
+        const { container } = render(
+            <LeftSidebar
+                currentPhase="main1"
+                viewPlayer={player}
+                playerId="0"
+                locale="zh-CN"
+                tokenDefinitions={TIANSHI_TOKENS}
+            />,
+        );
+
+        const sidebar = screen.getByTestId('left-sidebar');
+        expect(sidebar).toHaveAttribute('data-dicethrone-left-hud-density', 'normal');
+        expect(sidebar.style.getPropertyValue('--dt-draw-deck-width')).toBe('');
+        expect(sidebar.style.width).toContain('--mobile-board-shell-inline-unit');
+        expect(sidebar.style.width).toContain('16');
+
+        const tokenContainer = container.querySelector('[data-tutorial-id="status-tokens"] > div') as HTMLElement | null;
+        expect(tokenContainer?.style.maxWidth).toContain('13.7');
+        expect(screen.getByTestId(`dt-player-0-token-${TOKEN_IDS.FLIGHT}`)).toHaveAttribute('data-dicethrone-token-size', 'normal');
+        expect(screen.getByTestId(`dt-player-0-status-${STATUS_IDS.BLEED}`)).toHaveAttribute('data-dicethrone-status-size', 'normal');
+
+        const phaseItems = Array.from(container.querySelectorAll('[data-dt-phase-item="true"]'));
+        expect(phaseItems).toHaveLength(7);
+        expect(phaseItems.filter((node) => node.getAttribute('data-dt-phase-active') === 'true')).toHaveLength(1);
+        expect(container.querySelectorAll('[data-token-id]')).toHaveLength(6);
+        expect(container.querySelectorAll('[data-status-id]')).toHaveLength(4);
     });
 
     it('进攻或防御掷骰时可点击飞行 Token 并交给上层处理', () => {

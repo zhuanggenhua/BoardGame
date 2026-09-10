@@ -367,6 +367,18 @@ const clearAiActions = (tutorial: TutorialState): TutorialState => ({
     step: tutorial.step ? { ...tutorial.step, aiActions: undefined } : tutorial.step,
 });
 
+const shouldAutoAdvanceAfterAiConsumed = (
+    tutorial: TutorialState,
+    payload?: TutorialAiConsumedPayload,
+): boolean => {
+    const step = tutorial.step;
+    if (!tutorial.active || !step) return false;
+    if (payload?.stepId && payload.stepId !== step.id) return false;
+    if (step.autoAdvanceAfterAi === false) return false;
+    if (!step.aiActions?.length && !tutorial.aiActions?.length) return false;
+    return !step.advanceOnEvents || step.advanceOnEvents.length === 0;
+};
+
 export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
     let activeStepValidator: StepValidatorFn | undefined;
     const activeManifestById = new Map<string, TutorialManifest>();
@@ -460,9 +472,30 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             if (command.type === TUTORIAL_COMMANDS.AI_CONSUMED) {
                 const payload = command.payload as TutorialAiConsumedPayload | undefined;
                 const timestamp = resolveTimestamp(command);
+                const shouldAdvanceAfterConsume = shouldAutoAdvanceAfterAiConsumed(
+                    state.sys.tutorial,
+                    payload,
+                );
+                const consumedState = applyTutorialState(state, clearAiActions(state.sys.tutorial));
+                if (shouldAdvanceAfterConsume) {
+                    const result = advanceStep(
+                        consumedState,
+                        timestamp,
+                        activeStepValidator,
+                        resolveActiveManifest(state.sys.tutorial),
+                    );
+                    return {
+                        ...result,
+                        halt: true,
+                        events: [
+                            createAiConsumedEvent(payload?.stepId, timestamp),
+                            ...(result.events ?? []),
+                        ],
+                    };
+                }
                 return {
                     halt: true,
-                    state: applyTutorialState(state, clearAiActions(state.sys.tutorial)),
+                    state: consumedState,
                     events: [createAiConsumedEvent(payload?.stepId, timestamp)],
                 };
             }

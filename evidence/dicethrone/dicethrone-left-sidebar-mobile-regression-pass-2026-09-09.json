@@ -1,0 +1,145 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "codex-app-inline-or-project-viewer",
+    "finalPassBeforeOpen": true
+  },
+  "regressionLock": {
+    "userSymptoms": [
+      "最近修改后，DiceThrone 手机端左上角回合 / 阶段提示没有位置留给 token。",
+      "阶段提示不能只剩 1 个阶段项；正确状态是 7 个阶段项完整，只高亮当前阶段。",
+      "不能只给一张截图，也不能只给极端压力态截图；必须同时给无 Token 常态截图。",
+      "移动端应该继承 PC 端构图和比例，不是改成移动端专用布局。",
+      "玩家面板、手牌、主按钮、牌桌对象不能因为手机端修复被单独缩小或改布局。"
+    ],
+    "classification": "回归修复 + 移动端同构缩放修复",
+    "lastKnownHistoricalEvidence": [
+      "历史 LeftSidebar 是左侧单列 flex 结构，PhaseIndicator 固定渲染 7 个阶段项，不是移动端 grid、摘要条或单项阶段提示。",
+      "历史 LeftSidebar 的 token/status 使用 normal 尺寸、maxPerRow = 5，没有 mobile-pressure 小密度分支。",
+      "本轮用户明确允许手机横屏默认分辨率使用 2340x1080，因此修复目标不是退回旧 940 外壳，而是分离 2340x1080 外层画布和 1920x1080 PC 壳内参考单位。"
+    ],
+    "rejectedWrongExpectation": [
+      "不能把“只剩 1 个阶段项”写成期望；E2E 只能断言 7 个阶段项完整且当前阶段 1 项高亮。",
+      "不能把 mobile-pressure 小密度写成期望；压力态也必须保持 PC 同构的 normal 阶段、Token、状态和牌堆尺寸。",
+      "不能只证明不重叠或可点击；移动端必须和 PC 主态成对截图核对比例、锚点、承载数量和实际可见尺寸。"
+    ],
+    "repairStrategy": [
+      "DiceThrone manifest 明示 mobileBoardShellLayout.designWidth = 2340、designHeight = 1080，用于外层 contain 缩放。",
+      "DiceThrone manifest 同时明示 referenceWidth = 1920、referenceHeight = 1080，用于壳内 UI 单位，避免用 2340 重算 PC 构图比例。",
+      "LeftSidebar 删除移动端压力小密度分支，阶段、token/status、生命 / CP、牌堆继续使用 PC 同构单列顺序和 normal 密度。",
+      "DrawDeck 不再允许 --dt-draw-deck-width 压缩覆盖，牌堆宽度回到 board-shell 参考单位。",
+      "E2E 覆盖 PC、缩小手机横屏、真实 DPR 2340x1080，并成对覆盖无 Token 常态和 Token / 状态压力态。"
+    ]
+  },
+  "requirements": [
+    {
+      "requirement": "DiceThrone 手机横屏默认真实设备基线为 2340x1080，同时壳内 UI 单位必须继续使用 1920x1080 PC 参考比例。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/manifest.ts: mobileBoardShellLayout.designWidth = MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width，designHeight = MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height。",
+        "src/games/dicethrone/manifest.ts: mobileBoardShellLayout.referenceWidth = DESKTOP_REFERENCE_VIEWPORT.width，referenceHeight = DESKTOP_REFERENCE_VIEWPORT.height。",
+        "src/hooks/ui/useRuntimeViewport.ts: scale 使用 designWidth/designHeight，inlineUnit/blockUnit 使用 referenceWidth/referenceHeight。",
+        "src/hooks/ui/__tests__/useRuntimeViewport.test.ts 断言 936x432 下 board-shell scale = 0.400000，inline unit = 19.2000px，block unit = 10.8000px。"
+      ]
+    },
+    {
+      "requirement": "阶段提示必须保留完整 7 个阶段项，只高亮 1 个当前阶段；不能把“只剩 1 个阶段项”写成期望。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts 在 PC 1920x1080、936x432、812x375 和真实 DPR 2340x1080 断言 phaseItemCount = 7。",
+        "同一 E2E 断言 activePhaseItemCount = 1，含义是只有当前阶段高亮，不是只渲染 1 个阶段项。",
+        "src/games/dicethrone/ui/__tests__/LeftSidebar.test.tsx 覆盖常态和 Token / 状态压力态下 7 个阶段项不减少。"
+      ]
+    },
+    {
+      "requirement": "Token / 状态压力态不能触发 mobile-pressure 小密度，不能隐藏、减少或压缩成另一套移动端布局。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/ui/LeftSidebar.tsx 固定 data-dicethrone-left-hud-density = normal。",
+        "src/games/dicethrone/ui/LeftSidebar.tsx token/status 保持 size = normal、maxPerRow = 5。",
+        "src/games/dicethrone/ui/__tests__/LeftSidebar.test.tsx 断言压力态 Token 和状态 size 均为 normal，且 6 个 Token、4 个状态全部渲染。",
+        "e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts 断言 protectedIconSizes 全部为 normal。"
+      ]
+    },
+    {
+      "requirement": "玩家面板、手牌、主按钮和牌桌对象不能因为手机端修复被单独缩小或改布局。",
+      "status": "PASS",
+      "evidence": [
+        "移动端缩放只在 mobile-board-shell 外层执行，主战场元素继续使用同一 board-shell reference unit。",
+        "E2E 比例断言使用实际 boardShellScale 回代，而不是用 viewport.width / 1920 伪装通过。",
+        "截图核查覆盖玩家面板在 936x432、812x375、2340x1080 下按同一构图缩放，没有额外移动端小面板分支。"
+      ]
+    },
+    {
+      "requirement": "必须同时覆盖无 Token 常态和有 Token / 状态压力态，不能用一张极端图代表正常体验。",
+      "status": "PASS",
+      "evidence": [
+        "01-PC-1920x1080-无Token常态-左侧阶段与Token对照.jpg。",
+        "02-手机横屏936x432-无Token常态-左侧阶段与Token对照.jpg。",
+        "03-手机横屏812x375-无Token常态-左侧阶段与Token对照.jpg。",
+        "04-PC-1920x1080-有Token压力态-左侧阶段与Token对照.jpg。",
+        "05-手机横屏936x432-有Token压力态-左侧阶段与Token对照.jpg。",
+        "06-手机横屏812x375-有Token压力态-左侧阶段与Token对照.jpg。",
+        "01-真实DPR手机横屏2340x1080-无Token常态-左侧阶段与Token对照.jpg。",
+        "02-真实DPR手机横屏2340x1080-有Token压力态-左侧阶段与Token对照.jpg。"
+      ]
+    },
+    {
+      "requirement": "规范必须阻止同类回归再次把移动端改成重排、缩小、隐藏或单项摘要。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/skills/adapt-game-mobile/SKILL.md 明确 designWidth/designHeight 和 referenceWidth/referenceHeight 分工。",
+        ".spec/skills/adapt-game-mobile/SKILL.md 明确固定构图移动端默认 PC 同构等比缩放，未经批准不得改成移动端 grid / rail / 摘要条 / 单项显示。",
+        ".spec/knowledge/standards/ui-responsive-layout.md 明确只证明不重叠、能点或 E2E passed 不算移动端比例合格。",
+        ".spec/skills/adapt-game-mobile/references/manifest-fields.md 新增 mobileBoardShellLayout.referenceWidth/referenceHeight 字段说明。"
+      ]
+    },
+    {
+      "requirement": "本轮代码、测试、E2E、类型检查和规范 lint 必须通过。",
+      "status": "PASS",
+      "evidence": [
+        "npx vitest run src/hooks/ui/__tests__/useRuntimeViewport.test.ts src/games/__tests__/mobileSupport.test.ts src/games/dicethrone/ui/__tests__/LeftSidebar.test.tsx src/games/dicethrone/ui/__tests__/compatLayout.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1：4 files passed，30 tests passed。",
+        "npm run spec:lint：spec-lint OK。",
+        "npm run typecheck：tsc --noEmit completed successfully。",
+        "npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts：2 passed，截图矩阵重新生成。",
+        "截图核查覆盖 PC 常态 / 压力态、936 常态 / 压力态、812 常态 / 压力态、2340 原图常态 / 压力态，共 8 张关键图。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/01-PC-1920x1080-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/02-手机横屏936x432-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/03-手机横屏812x375-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/04-PC-1920x1080-有Token压力态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/05-手机横屏936x432-有Token压力态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/06-手机横屏812x375-有Token压力态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/真实-2340x1080-手机横屏原图覆盖无-Token-常态与-Token-压力态/01-真实DPR手机横屏2340x1080-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/真实-2340x1080-手机横屏原图覆盖无-Token-常态与-Token-压力态/02-真实DPR手机横屏2340x1080-有Token压力态-左侧阶段与Token对照.jpg"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/01-PC-1920x1080-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/02-手机横屏936x432-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/03-手机横屏812x375-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/04-PC-1920x1080-有Token压力态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/05-手机横屏936x432-有Token压力态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/06-手机横屏812x375-有Token压力态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/真实-2340x1080-手机横屏原图覆盖无-Token-常态与-Token-压力态/01-真实DPR手机横屏2340x1080-无Token常态-左侧阶段与Token对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/真实-2340x1080-手机横屏原图覆盖无-Token-常态与-Token-压力态/02-真实DPR手机横屏2340x1080-有Token压力态-左侧阶段与Token对照.jpg"
+  ],
+  "audit": {
+    "score": 95,
+    "verdictReason": "当前截图矩阵覆盖 PC、936x432、812x375 和真实 DPR 2340x1080，并分别覆盖无 Token 常态与 Token / 状态压力态。阶段提示 7 项完整，当前阶段只有 1 项高亮；手机横屏外层按 2340x1080 contain，壳内 UI 仍用 1920x1080 PC reference；Token / 状态压力态保持 normal 尺寸，没有 mobile-pressure 小密度；玩家面板没有被移动端额外缩小。",
+    "hardFailures": [],
+    "negativeImpactChecks": [
+      "没有把阶段提示缩成只剩 1 项或移动摘要。",
+      "没有隐藏、减少或移走 Token / 状态槽位。",
+      "没有把左侧 HUD 改成移动端 grid / rail / 摘要条。",
+      "没有把压力态小密度写成期望；压力态也保持 normal。",
+      "没有只给一张截图；常态和压力态均有 PC / 手机对照。",
+      "没有把玩家面板继续缩小；截图和 E2E 按 board-shell 实际缩放回代检查。"
+    ]
+  }
+}

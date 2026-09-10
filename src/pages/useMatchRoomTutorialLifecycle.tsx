@@ -65,6 +65,38 @@ export const buildTutorialProgressSeed = (
     return seedParts.join(':');
 };
 
+export const isRestorableTutorialProgressSnapshot = (args: {
+    snapshot: LocalMatchSnapshot;
+    manifest: TutorialManifest;
+}): boolean => {
+    const { snapshot, manifest } = args;
+    const tutorial = snapshot.state.sys.tutorial;
+    if (!tutorial?.active) {
+        return false;
+    }
+    if (tutorial.manifestId !== manifest.id) {
+        return false;
+    }
+    if (Number.isInteger(manifest.revision) && tutorial.manifestRevision !== manifest.revision) {
+        return false;
+    }
+    if (!Number.isInteger(tutorial.stepIndex) || tutorial.stepIndex <= 0) {
+        return false;
+    }
+
+    const step = manifest.steps[tutorial.stepIndex];
+    if (!step) {
+        return false;
+    }
+    if (tutorial.step?.id && tutorial.step.id !== step.id) {
+        return false;
+    }
+    if (manifest.stepValidator && !manifest.stepValidator(snapshot.state, step)) {
+        return false;
+    }
+    return true;
+};
+
 export const readRestorableTutorialProgress = (args: {
     gameId?: string;
     tutorialId?: string;
@@ -86,27 +118,11 @@ export const readRestorableTutorialProgress = (args: {
         seed,
         numPlayers,
     });
-    const tutorial = snapshot?.state.sys.tutorial;
-    if (!snapshot || !tutorial?.active) {
+    if (!snapshot || !isRestorableTutorialProgressSnapshot({ snapshot, manifest })) {
         return null;
     }
-    if (tutorial.manifestId !== manifest.id) {
-        return null;
-    }
-    if (Number.isInteger(manifest.revision) && tutorial.manifestRevision !== manifest.revision) {
-        return null;
-    }
-    if (!Number.isInteger(tutorial.stepIndex) || tutorial.stepIndex <= 0) {
-        return null;
-    }
-
+    const tutorial = snapshot.state.sys.tutorial;
     const step = manifest.steps[tutorial.stepIndex];
-    if (!step) {
-        return null;
-    }
-    if (tutorial.step?.id && tutorial.step.id !== step.id) {
-        return null;
-    }
 
     return {
         seed,
@@ -426,7 +442,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             && tutorialStartWaitingForBoardRef.current
             && !isActive
             && activeTutorialManifestId !== currentManifestId;
-        if (!shouldStartCurrentTutorial && !shouldRetryBoardPendingStart) return;
+        const shouldRetryDroppedTutorialStart = Boolean(resolvedTutorialManifest)
+            && tutorialStartedRef.current
+            && lastTutorialProgressRef.current.manifestId === currentManifestId
+            && lastTutorialProgressRef.current.stepId != null
+            && !isActive
+            && activeTutorialManifestId !== currentManifestId;
+        if (
+            !shouldStartCurrentTutorial
+            && !shouldRetryBoardPendingStart
+            && !shouldRetryDroppedTutorialStart
+        ) return;
         if (!resolvedTutorialManifest) return;
 
         startResolvedTutorial();
@@ -459,9 +485,16 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
             if (tutorialStartedRef.current) {
                 const capturedMountId = lifecycleMountIdRef.current;
                 const capturedTutorialRouteKey = tutorialRouteKeyRef.current;
+                const capturedPath = window.location.pathname;
                 // 延迟清理：给 StrictMode remount 一个取消的机会
                 cleanupTimerRef.current = window.setTimeout(() => {
                     cleanupTimerRef.current = undefined;
+                    if (
+                        capturedTutorialRouteKey
+                        && window.location.pathname === capturedPath
+                    ) {
+                        return;
+                    }
                     if (capturedMountId !== latestTutorialLifecycleMountId) {
                         return;
                     }

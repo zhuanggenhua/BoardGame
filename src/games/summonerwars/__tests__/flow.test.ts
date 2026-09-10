@@ -24,6 +24,7 @@ import {
 import {
     createInitializedCore,
     createPromptResponseCommand,
+    ensurePipelineSummoners,
     getPromptOptionIdForTargetPosition,
     getPromptOptionIds,
     getPromptSwType,
@@ -834,10 +835,27 @@ const testCases: TestCase<SummonerWarsExpectation>[] = [
         },
     },
     {
-        name: '攻击错误 - 普通攻击不能指定己方卡牌',
+        name: '攻击 - 普通攻击允许指定己方卡牌但不算攻击敌方',
         setup: (playerIds, random) => {
             const core = createInitializedCore(playerIds, random);
             core.phase = 'attack';
+            core.board[6][3].unit = undefined;
+            placeTestUnit(core, { row: 6, col: 3 }, {
+                card: {
+                    id: 'test-friendly-target',
+                    cardType: 'unit',
+                    name: '测试己方目标',
+                    unitClass: 'common',
+                    faction: 'necromancer',
+                    strength: 1,
+                    life: 3,
+                    cost: 1,
+                    attackType: 'melee',
+                    attackRange: 1,
+                    deckSymbols: [],
+                },
+                owner: '0',
+            });
             const sys = createInitialSystemState(playerIds, []);
             return { core, sys };
         },
@@ -845,11 +863,12 @@ const testCases: TestCase<SummonerWarsExpectation>[] = [
             {
                 type: SW_COMMANDS.DECLARE_ATTACK,
                 playerId: '0',
-                payload: { attacker: { row: 7, col: 3 }, target: { row: 5, col: 3 } }, // 自己的城门
+                payload: { attacker: { row: 7, col: 3 }, target: { row: 6, col: 3 } },
             },
         ],
         expect: {
-            errorAtStep: { step: 1, error: '无法攻击该目标' },
+            player0AttackCount: 1,
+            player0HasAttackedEnemy: false,
         },
     },
 
@@ -2004,6 +2023,7 @@ describe('召唤师战争本地 AI', () => {
             },
             owner: '0',
         });
+        ensurePipelineSummoners(core);
         const sys = createInitialSystemState(['0', '1'], engineConfig.systems as any);
         sys.phase = 'move';
 

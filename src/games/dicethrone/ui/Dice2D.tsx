@@ -5,6 +5,7 @@ import {
     getDiceSpritePosition,
     getDiceSpriteUrls,
 } from './assets';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
 export interface Dice2DProps {
     value: number;
@@ -26,6 +27,7 @@ const DICE_2D_CUBE_STYLE_TEXT = `
 }
 .animate-dice2d-cube-tumble { animation: dice2d-cube-tumble 1s linear infinite; }
 `;
+const dtUnit = buildBoardShellInlineUnitValue;
 
 const loadedDiceSpriteUrls = new Set<string>();
 
@@ -49,7 +51,7 @@ const getSettledTransform = (faceValue: number) => {
 export const Dice2D: React.FC<Dice2DProps> = ({
     value,
     isRolling,
-    size = '4vw',
+    size = dtUnit(4),
     locale,
     characterId = 'monk',
     definitionId,
@@ -122,7 +124,8 @@ export const Dice2D: React.FC<Dice2DProps> = ({
                 />
             )}
             <div
-                className="pointer-events-none absolute left-[10%] right-[10%] bottom-[2%] z-0 h-[18%] rounded-full bg-black/30 blur-[0.18vw]"
+                className="pointer-events-none absolute left-[10%] right-[10%] bottom-[2%] z-0 h-[18%] rounded-full bg-black/30"
+                style={{ filter: `blur(${dtUnit(0.18)})` }}
                 aria-hidden="true"
             />
             <div
@@ -144,11 +147,12 @@ export const Dice2D: React.FC<Dice2DProps> = ({
                     return (
                         <div
                             key={face.id}
-                            className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[0.5vw] border border-slate-700/50 bg-slate-900 shadow-inner dice2d-cube-backface-hidden"
+                            className="absolute inset-0 flex items-center justify-center overflow-hidden border border-slate-700/50 bg-slate-900 shadow-inner dice2d-cube-backface-hidden"
                             data-face-id={face.id}
                             data-face-fallback={hasSprite ? 'false' : 'glyph'}
                             style={{
                                 transform: faceTransform,
+                                borderRadius: dtUnit(0.5),
                                 ...(hasSprite && spriteUrl ? {
                                     backgroundImage: `url("${spriteUrl}")`,
                                     backgroundSize: DICE_BG_SIZE,
@@ -157,15 +161,16 @@ export const Dice2D: React.FC<Dice2DProps> = ({
                                 } : {
                                     background: 'linear-gradient(145deg, #fff8eb 0%, #f0e4cd 54%, #d8c7aa 100%)',
                                 }),
-                                boxShadow: 'inset 0 0 1vw rgba(0,0,0,0.8)',
+                                boxShadow: `inset 0 0 ${dtUnit(1)} rgba(0,0,0,0.8)`,
                                 imageRendering: 'auto',
                             }}
                         >
                             {!hasSprite && (
                                 <span
-                                    className="pointer-events-none select-none text-[1.1vw] font-black uppercase tracking-[0.08em] text-slate-100"
+                                    className="pointer-events-none select-none font-black uppercase tracking-[0.08em] text-slate-100"
                                     style={{
-                                        textShadow: '0 0 0.4vw rgba(0, 0, 0, 0.75)',
+                                        fontSize: dtUnit(1.1),
+                                        textShadow: `0 0 ${dtUnit(0.4)} rgba(0, 0, 0, 0.75)`,
                                     }}
                                 >
                                     {face.id}

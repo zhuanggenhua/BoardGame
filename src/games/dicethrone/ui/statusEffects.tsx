@@ -15,6 +15,7 @@ import {
     onImageReady,
 } from '../../../core';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 import { resolveI18nList } from './utils';
 
 import { STATUS_IDS } from '../domain/ids';
@@ -759,8 +760,8 @@ export const StatusEffectBadge = ({
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);
-    const sizeClass = size === 'tiny' ? 'w-[1.5vw] h-[1.5vw] text-[0.6vw]' : size === 'small' ? 'w-[2vw] h-[2vw] text-[0.8vw]' : 'w-[2.5vw] h-[2.5vw] text-[1vw]';
-    const stackSizeClass = size === 'tiny' ? 'text-[0.56vw] min-w-[0.86vw] h-[0.8vw] px-[0.14vw]' : size === 'small' ? 'text-[0.62vw] min-w-[0.96vw] h-[0.92vw] px-[0.14vw]' : 'text-[0.68vw] min-w-[1.1vw] h-[1.05vw] px-[0.16vw]';
+    const sizeStyle = getBadgeSizeStyle(size);
+    const stackBadgeStyle = getStackBadgeStyle(size);
 
     const isClickable = clickable && onClick;
 
@@ -773,21 +774,23 @@ export const StatusEffectBadge = ({
             data-testid={dataTestId}
             data-status-id={effectId}
             data-status-stacks={stacks}
+            data-dicethrone-status-size={size}
         >
             <div
                 className={`
-                    ${sizeClass} rounded-full flex items-center justify-center overflow-hidden
+                    rounded-full flex items-center justify-center overflow-hidden
                     ${hasSprite
                         ? 'bg-transparent border-0 shadow-none'
                         : `bg-gradient-to-br ${info.color ?? 'from-gray-500 to-gray-600'} shadow-lg border border-white/30`}
                     transition-transform duration-200 hover:scale-110 ${isClickable ? 'cursor-pointer' : 'cursor-help'}
                     ${isClickable ? 'ring-2 ring-amber-400/50 hover:ring-amber-400 animate-pulse' : ''}
                 `}
+                style={sizeStyle}
             >
                 {getStatusEffectIconNode(info, locale, size, atlas)}
             </div>
             {stacks > 1 && (
-                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
+                <div className={STACK_BADGE_CLASS_NAME} style={stackBadgeStyle}>
                     {stacks}
                 </div>
             )}
@@ -802,11 +805,40 @@ export const StatusEffectBadge = ({
     );
 };
 
-const getContainerStyle = (maxPerRow: number, size: 'normal' | 'small' | 'tiny') => {
+const getContainerStyle = (maxPerRow: number, size: 'normal' | 'small' | 'tiny', gapUnits = 0.3) => {
     const itemWidth = size === 'tiny' ? 1.5 : size === 'small' ? 2 : 2.5;
-    const gap = 0.3;
+    const gap = gapUnits;
     const maxWidth = maxPerRow * itemWidth + (maxPerRow - 1) * gap;
-    return { maxWidth: `${maxWidth}vw` };
+    return { maxWidth: buildBoardShellInlineUnitValue(maxWidth), gap: buildBoardShellInlineUnitValue(gap) };
+};
+
+const STACK_BADGE_CLASS_NAME = 'absolute z-30 bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]';
+
+const getBadgeSizeStyle = (size: 'normal' | 'small' | 'tiny'): CSSProperties => {
+    const itemWidth = size === 'tiny' ? 1.5 : size === 'small' ? 2 : 2.5;
+    const fontSize = size === 'tiny' ? 0.6 : size === 'small' ? 0.8 : 1;
+    return {
+        width: buildBoardShellInlineUnitValue(itemWidth),
+        height: buildBoardShellInlineUnitValue(itemWidth),
+        fontSize: buildBoardShellInlineUnitValue(fontSize),
+    };
+};
+
+const getStackBadgeStyle = (size: 'normal' | 'small' | 'tiny'): CSSProperties => {
+    const fontSize = size === 'tiny' ? 0.56 : size === 'small' ? 0.62 : 0.68;
+    const minWidth = size === 'tiny' ? 0.86 : size === 'small' ? 0.96 : 1.1;
+    const height = size === 'tiny' ? 0.8 : size === 'small' ? 0.92 : 1.05;
+    const paddingInline = size === 'normal' ? 0.16 : 0.14;
+
+    return {
+        bottom: buildBoardShellInlineUnitValue(-0.24),
+        right: buildBoardShellInlineUnitValue(-0.24),
+        fontSize: buildBoardShellInlineUnitValue(fontSize),
+        minWidth: buildBoardShellInlineUnitValue(minWidth),
+        height: buildBoardShellInlineUnitValue(height),
+        paddingInline: buildBoardShellInlineUnitValue(paddingInline),
+        boxShadow: `0 0 ${buildBoardShellInlineUnitValue(0.35)} rgba(0,0,0,0.9)`,
+    };
 };
 
 const clickableTokenHaloStyle: CSSProperties = {
@@ -821,6 +853,12 @@ const clickableTokenHaloStyle: CSSProperties = {
     animation: 'dicethrone-token-available-breathe 1.9s ease-in-out infinite',
 };
 
+const getClickableTokenHaloStyle = (): CSSProperties => ({
+    ...clickableTokenHaloStyle,
+    width: `calc(100% + ${buildBoardShellInlineUnitValue(0.52)})`,
+    height: `calc(100% + ${buildBoardShellInlineUnitValue(0.52)})`,
+});
+
 const clickableTokenBodyStyle: CSSProperties = {
     filter: 'brightness(1.10) saturate(1.22) drop-shadow(0 0 7px rgba(253, 224, 71, 0.72)) drop-shadow(0 0 3px rgba(96, 165, 250, 0.40))',
 };
@@ -829,6 +867,7 @@ export const StatusEffectsContainer = ({
     effects,
     maxPerRow = 3,
     size = 'normal',
+    gapUnits = 0.3,
     className = '',
     locale,
     atlas,
@@ -841,6 +880,7 @@ export const StatusEffectsContainer = ({
     effects: Record<string, number>;
     maxPerRow?: number;
     size?: 'normal' | 'small' | 'tiny';
+    gapUnits?: number;
     className?: string;
     locale?: string;
     atlas?: StatusAtlases | null;
@@ -858,8 +898,8 @@ export const StatusEffectsContainer = ({
 
     return (
         <div
-            className={`flex flex-wrap gap-[0.3vw] ${className}`}
-            style={getContainerStyle(maxPerRow, size)}
+            className={`flex flex-wrap ${className}`}
+            style={getContainerStyle(maxPerRow, size, gapUnits)}
         >
             {activeEffects.map(([effectId, stacks]) => {
                 const isClickable = clickableEffects?.includes(effectId) ?? false;
@@ -936,8 +976,8 @@ export const TokenBadge = ({
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);
-    const sizeClass = size === 'tiny' ? 'w-[1.5vw] h-[1.5vw] text-[0.6vw]' : size === 'small' ? 'w-[2vw] h-[2vw] text-[0.8vw]' : 'w-[2.5vw] h-[2.5vw] text-[1vw]';
-    const stackSizeClass = size === 'tiny' ? 'text-[0.56vw] min-w-[0.86vw] h-[0.8vw] px-[0.14vw]' : size === 'small' ? 'text-[0.62vw] min-w-[0.96vw] h-[0.92vw] px-[0.14vw]' : 'text-[0.68vw] min-w-[1.1vw] h-[1.05vw] px-[0.16vw]';
+    const sizeStyle = getBadgeSizeStyle(size);
+    const stackBadgeStyle = getStackBadgeStyle(size);
 
     const isClickable = clickable && onClick;
 
@@ -951,6 +991,7 @@ export const TokenBadge = ({
             data-token-id={tokenId}
             data-token-amount={amount}
             data-token-max={maxAmount}
+            data-dicethrone-token-size={size}
             data-token-clickable={isClickable ? 'true' : 'false'}
         >
             {isClickable && (
@@ -958,8 +999,8 @@ export const TokenBadge = ({
                     aria-hidden="true"
                     data-dicethrone-token-halo="available"
                     data-testid={dataTestId ? `${dataTestId}-available-halo` : undefined}
-                    className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[calc(100%+0.52vw)] w-[calc(100%+0.52vw)] rounded-full"
-                    style={clickableTokenHaloStyle}
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-10 rounded-full"
+                    style={getClickableTokenHaloStyle()}
                 />
             )}
             {isClickable && (
@@ -977,9 +1018,9 @@ export const TokenBadge = ({
             <div
                 data-dicethrone-token-body={isClickable ? 'available' : undefined}
                 data-testid={dataTestId && isClickable ? `${dataTestId}-available-body` : undefined}
-                style={isClickable ? clickableTokenBodyStyle : undefined}
+                style={isClickable ? { ...sizeStyle, ...clickableTokenBodyStyle } : sizeStyle}
                 className={`
-                    ${sizeClass} rounded-full flex items-center justify-center overflow-hidden
+                    rounded-full flex items-center justify-center overflow-hidden
                     ${shouldShowShimmer ? 'atlas-shimmer' : ''}
                     ${hasSprite
                         ? 'bg-transparent border-0 shadow-none'
@@ -992,11 +1033,11 @@ export const TokenBadge = ({
             </div>
             {/* 有上限(>1)时始终显示 数量/上限；否则仅 amount>1 时显示数量 */}
             {(maxAmount != null && maxAmount > 1) ? (
-                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
+                <div className={STACK_BADGE_CLASS_NAME} style={stackBadgeStyle}>
                     {amount}/{maxAmount}
                 </div>
             ) : amount > 1 ? (
-                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
+                <div className={STACK_BADGE_CLASS_NAME} style={stackBadgeStyle}>
                     {amount}
                 </div>
             ) : null}
@@ -1018,6 +1059,7 @@ export const TokensContainer = ({
     tokens,
     maxPerRow = 3,
     size = 'normal',
+    gapUnits = 0.3,
     className = '',
     locale,
     atlas,
@@ -1033,6 +1075,7 @@ export const TokensContainer = ({
     tokens: Record<string, number>;
     maxPerRow?: number;
     size?: 'normal' | 'small' | 'tiny';
+    gapUnits?: number;
     className?: string;
     locale?: string;
     atlas?: StatusAtlases | null;
@@ -1069,8 +1112,8 @@ export const TokensContainer = ({
 
     return (
         <div
-            className={`flex flex-wrap gap-[0.3vw] ${className}`}
-            style={getContainerStyle(maxPerRow, size)}
+            className={`flex flex-wrap ${className}`}
+            style={getContainerStyle(maxPerRow, size, gapUnits)}
         >
             {activeTokens.map(([tokenId, amount]) => {
                 const isClickable = clickableTokens?.includes(tokenId) ?? false;
@@ -1154,8 +1197,14 @@ export const SelectableStatusBadge = ({
         description,
     };
     const [isHovered, setIsHovered] = React.useState(false);
-    const sizeClass = size === 'small' ? 'w-[2vw] h-[2vw] text-[0.8vw]' : 'w-[2.5vw] h-[2.5vw] text-[1vw]';
-    const stackSizeClass = size === 'small' ? 'text-[0.62vw] min-w-[0.96vw] h-[0.92vw] px-[0.14vw]' : 'text-[0.68vw] min-w-[1.1vw] h-[1.05vw] px-[0.16vw]';
+    const sizeStyle = getBadgeSizeStyle(size);
+    const stackBadgeStyle = getStackBadgeStyle(size);
+    const selectedCheckStyle: CSSProperties = {
+        top: buildBoardShellInlineUnitValue(-0.3),
+        right: buildBoardShellInlineUnitValue(-0.3),
+        width: buildBoardShellInlineUnitValue(1),
+        height: buildBoardShellInlineUnitValue(1),
+    };
 
     const clickable = Boolean(onSelect);
 
@@ -1170,7 +1219,7 @@ export const SelectableStatusBadge = ({
         >
             <div
                 className={`
-                    ${sizeClass} rounded-full flex items-center justify-center overflow-hidden
+                    rounded-full flex items-center justify-center overflow-hidden
                     ${hasSprite
                         ? 'bg-transparent border-0 shadow-none'
                         : `bg-gradient-to-br ${info.color ?? 'from-gray-500 to-gray-600'} shadow-lg border border-white/30`}
@@ -1179,16 +1228,20 @@ export const SelectableStatusBadge = ({
                     ${isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-900' : ''}
                     ${isSelected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900 scale-110' : ''}
                 `}
+                style={sizeStyle}
             >
                 {getStatusEffectIconNode(info, locale, size === 'small' ? 'small' : 'normal', atlas)}
             </div>
             {stacks > 1 && (
-                <div className={`absolute -bottom-[0.24vw] -right-[0.24vw] z-30 ${stackSizeClass} bg-black/90 text-white font-black leading-none rounded-full flex items-center justify-center border border-white/80 shadow-[0_0_0.35vw_rgba(0,0,0,0.9)] [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]`}>
+                <div className={STACK_BADGE_CLASS_NAME} style={stackBadgeStyle}>
                     {stacks}
                 </div>
             )}
             {isSelected && (
-                <div className="absolute -top-[0.3vw] -right-[0.3vw] w-[1vw] h-[1vw] bg-green-500 rounded-full flex items-center justify-center z-30">
+                <div
+                    className="absolute bg-green-500 rounded-full flex items-center justify-center z-30"
+                    style={selectedCheckStyle}
+                >
                     <Check size={12} className="text-white" strokeWidth={3} />
                 </div>
             )}
@@ -1239,7 +1292,7 @@ export const SelectableEffectsContainer = ({
     if (allItems.length === 0) return null;
 
     return (
-        <div className={`flex flex-wrap gap-[0.3vw] ${className}`} style={{ maxWidth: `${maxPerRow * 3}vw` }}>
+        <div className={`flex flex-wrap ${className}`} style={getContainerStyle(maxPerRow, size, 0.3)}>
             {allItems.map(([id, stacks]) => (
                 <SelectableStatusBadge
                     key={id}

@@ -227,7 +227,8 @@ export const handleCardReordered: EventHandler<Extract<DiceThroneEvent, { type: 
 };
 
 /**
- * 处理牌库洗牌事件（弃牌堆洗回牌库）
+ * 处理牌库洗牌事件。
+ * 支持弃牌堆洗回牌库，也支持从当前牌库搜牌后洗混剩余抽牌堆。
  */
 export const handleDeckShuffled: EventHandler<Extract<DiceThroneEvent, { type: 'DECK_SHUFFLED' }>> = (
     state,
@@ -237,19 +238,28 @@ export const handleDeckShuffled: EventHandler<Extract<DiceThroneEvent, { type: '
     const player = state.players[playerId];
     if (!player) return state;
 
-    const idSet = new Set(deckCardIds);
-    const discardMap = new Map(player.discard.map(card => [card.id, card] as const));
+    const deckPool = [...player.deck];
+    const discardPool = [...player.discard];
 
     const newDeck = deckCardIds
-        .map((id) => discardMap.get(id))
+        .map((id) => {
+            const deckIndex = deckPool.findIndex(card => card.id === id);
+            if (deckIndex >= 0) {
+                return deckPool.splice(deckIndex, 1)[0];
+            }
+            const discardIndex = discardPool.findIndex(card => card.id === id);
+            if (discardIndex >= 0) {
+                return discardPool.splice(discardIndex, 1)[0];
+            }
+            return undefined;
+        })
         .filter((card): card is NonNullable<typeof card> => Boolean(card));
-    const newDiscard = player.discard.filter(card => !idSet.has(card.id));
 
     return {
         ...state,
         players: {
             ...state.players,
-            [playerId]: { ...player, deck: newDeck, discard: newDiscard },
+            [playerId]: { ...player, deck: newDeck, discard: discardPool },
         },
     };
 };

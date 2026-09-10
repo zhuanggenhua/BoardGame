@@ -7,6 +7,7 @@ import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { createInteractionSystem, INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { createSimpleChoiceSystem } from '../../../engine/systems/SimpleChoiceSystem';
+import type { EngineSystem } from '../../../engine/systems/types';
 import {
   CHAMPION_UNITS_SHOUREN,
   COMMON_UNITS_SHOUREN,
@@ -26,6 +27,7 @@ import type { BoardUnit, CellCoord, PlayerId, SummonerWarsCore, UnitCard } from 
 import {
   createInitializedCore,
   createPromptResponseCommand,
+  ensurePipelineSummoners,
   generateInstanceId,
   getPromptOptionIds,
   getPromptSwType,
@@ -89,6 +91,17 @@ function executeAndReduce(
     state,
   );
   return { events, newState };
+}
+
+function createPipelineState(
+  core: SummonerWarsCore,
+  systems: EngineSystem<SummonerWarsCore>[],
+): MatchState<SummonerWarsCore> {
+  ensurePipelineSummoners(core);
+  return {
+    core,
+    sys: createInitialSystemState(['0', '1'], systems),
+  };
 }
 
 describe('冰苔兽人 - 恢复', () => {
@@ -434,10 +447,7 @@ describe('冰苔兽人 - 冻结', () => {
       createSimpleChoiceSystem<SummonerWarsCore>(),
       createSummonerWarsInteractionSystem(),
     ];
-    let state: MatchState<SummonerWarsCore> = {
-      core,
-      sys: createInitialSystemState(['0', '1'], systems),
-    };
+    let state = createPipelineState(core, systems);
 
     const requested = executePipeline(
       { domain: SummonerWarsDomain, systems },
@@ -568,10 +578,7 @@ describe('冰苔兽人 - 粗暴蛮力', () => {
       createSimpleChoiceSystem<SummonerWarsCore>(),
       createSummonerWarsInteractionSystem(),
     ];
-    const state: MatchState<SummonerWarsCore> = {
-      core,
-      sys: createInitialSystemState(['0', '1'], systems),
-    };
+    const state = createPipelineState(core, systems);
 
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
@@ -614,7 +621,7 @@ describe('冰苔兽人 - 粗暴蛮力', () => {
     ];
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: attacker.position, target: target.position } },
       testRandom([0]),
       ['0', '1'],
@@ -650,7 +657,7 @@ describe('冰苔兽人 - 粗暴蛮力', () => {
     ];
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: attacker.position, target: { row: 4, col: 4 } } },
       testRandom([0.2, 0.2]),
       ['0', '1'],
@@ -683,7 +690,7 @@ describe('冰苔兽人 - 血腥急袭', () => {
 
     const summoned = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.SUMMON_UNIT, playerId: '0', payload: { cardId: 'shouren-charger-hand', position: { row: 4, col: 3 } } },
       testRandom(),
       ['0', '1'],
@@ -723,7 +730,7 @@ describe('冰苔兽人 - 血腥急袭', () => {
     ];
     const summoned = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.SUMMON_UNIT, playerId: '0', payload: { cardId: 'shouren-charger-move-hand', position: { row: 4, col: 3 } } },
       testRandom(),
       ['0', '1'],
@@ -765,7 +772,7 @@ describe('冰苔兽人 - 血腥急袭', () => {
     ];
     const summoned = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.SUMMON_UNIT, playerId: '0', payload: { cardId: 'shouren-charger-blocked-hand', position: { row: 4, col: 3 } } },
       testRandom(),
       ['0', '1'],
@@ -795,10 +802,7 @@ describe('冰苔兽人 - 狂暴', () => {
       createSimpleChoiceSystem<SummonerWarsCore>(),
       createSummonerWarsInteractionSystem(),
     ];
-    let state: MatchState<SummonerWarsCore> = {
-      core,
-      sys: createInitialSystemState(['0', '1'], systems),
-    };
+    let state = createPipelineState(core, systems);
 
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
@@ -854,10 +858,7 @@ describe('冰苔兽人 - 狂暴', () => {
       createSimpleChoiceSystem<SummonerWarsCore>(),
       createSummonerWarsInteractionSystem(),
     ];
-    let state: MatchState<SummonerWarsCore> = {
-      core,
-      sys: createInitialSystemState(['0', '1'], systems),
-    };
+    let state = createPipelineState(core, systems);
 
     const attackPending = executePipeline(
       { domain: SummonerWarsDomain, systems },
@@ -910,7 +911,7 @@ describe('冰苔兽人 - 狂暴', () => {
 
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: fighter.position, target: { row: 4, col: 4 } } },
       testRandom([0, 0, 0]),
       ['0', '1'],
@@ -935,7 +936,7 @@ describe('冰苔兽人 - 狂暴', () => {
     ];
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: fighter.position, target: { row: 4, col: 4 } } },
       testRandom([0, 0, 0.7]),
       ['0', '1'],
@@ -973,7 +974,7 @@ describe('冰苔兽人 - 狂暴', () => {
     ];
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: fighter.position, target: { row: 4, col: 4 } } },
       testRandom([0, 0, 0.7]),
       ['0', '1'],
@@ -1001,7 +1002,7 @@ describe('冰苔兽人 - 原始狂怒', () => {
     ];
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: summoner.position, target: { row: 4, col: 4 } } },
       testRandom([0, 0, 0]),
       ['0', '1'],
@@ -1044,7 +1045,7 @@ describe('冰苔兽人 - 原始狂怒', () => {
     ];
     const attacked = executePipeline(
       { domain: SummonerWarsDomain, systems },
-      { core, sys: createInitialSystemState(['0', '1'], systems) },
+      createPipelineState(core, systems),
       { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: summoner.position, target: { row: 4, col: 4 } } },
       testRandom([0, 0, 0]),
       ['0', '1'],
@@ -1130,10 +1131,7 @@ describe('冰苔兽人 - 原始狂怒', () => {
         faction: 'necromancer', abilities: [], life: 20,
       }, '1');
 
-      let state: MatchState<SummonerWarsCore> = {
-        core,
-        sys: createInitialSystemState(['0', '1'], systems),
-      };
+      let state = createPipelineState(core, systems);
       const requested = executePipeline(
         { domain: SummonerWarsDomain, systems },
         state,
@@ -1258,10 +1256,7 @@ describe('冰苔兽人 - 激励待结算攻击', () => {
       createSimpleChoiceSystem<SummonerWarsCore>(),
       createSummonerWarsInteractionSystem(),
     ];
-    let state: MatchState<SummonerWarsCore> = {
-      core,
-      sys: createInitialSystemState(['0', '1'], systems),
-    };
+    let state = createPipelineState(core, systems);
 
     const requested = executePipeline(
       { domain: SummonerWarsDomain, systems },
