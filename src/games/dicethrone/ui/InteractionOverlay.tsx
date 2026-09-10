@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import type { InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
+import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
@@ -243,6 +244,105 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     // Derived presence
     const isOpen = true; // Controlled by BoardOverlays
 
+    if (isCardSelection) {
+        const cardSelectionCards = (isDeckCardSelection
+            ? players[interaction.playerId]?.deck
+            : players[interaction.playerId]?.hand) ?? [];
+
+        return (
+            <div
+                data-testid="dt-card-pool-overlay"
+                data-card-pool-layout="bottom-shelf"
+                className="fixed inset-0 flex items-end justify-center pointer-events-auto"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div
+                    className="w-full bg-gradient-to-t from-black/90 via-black/75 to-transparent px-4 pb-4 pt-8"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <h2 className="mb-4 text-center text-xl font-black uppercase tracking-tight text-amber-100 drop-shadow-lg">
+                        {t(interaction.titleKey, { count: interaction.selectCount })}
+                    </h2>
+                    <div
+                        data-testid="dt-card-pool-selection"
+                        data-card-pool-kind={isDeckCardSelection ? 'deck' : 'hand'}
+                        className="mx-auto flex max-w-[90vw] gap-4 overflow-x-auto px-4 py-3 [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto"
+                    >
+                        {cardSelectionCards.map(card => {
+                            const ownerCharacterId = players[interaction.playerId]?.characterId;
+                            const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
+                            const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
+                                ?? card.i18n?.['zh-CN']?.name
+                                ?? card.name
+                                ?? card.id;
+                            const cardName = typeof rawCardName === 'string'
+                                && rawCardName.startsWith('cards.')
+                                && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
+                                ? t(rawCardName)
+                                : rawCardName;
+                            const isSelected = selectedItems.includes(card.id);
+                            return (
+                                <button
+                                    key={card.id}
+                                    type="button"
+                                    data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
+                                    data-selected={isSelected ? 'true' : 'false'}
+                                    data-card-pool-mode="preview"
+                                    data-card-preview-ready={previewRef ? 'true' : 'false'}
+                                    aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
+                                    onClick={() => onSelectHandCard(card.id)}
+                                    className={`
+                                        group relative flex w-[min(9.5rem,38vw)] min-w-[7.5rem] flex-shrink-0 cursor-pointer border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300
+                                        ${isSelected ? 'z-10 scale-[1.05]' : 'hover:z-10 hover:scale-[1.03]'}
+                                    `}
+                                >
+                                    <div
+                                        data-testid={`dt-card-choice-preview-${card.id}`}
+                                        className={`
+                                            aspect-[0.61] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl transition-[box-shadow,transform] duration-200
+                                            ${isSelected
+                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
+                                                : 'group-hover:ring-2 group-hover:ring-amber-300/80 group-hover:shadow-2xl'}
+                                        `}
+                                    >
+                                        <CardPreview
+                                            previewRef={previewRef}
+                                            locale={locale}
+                                            className="h-full w-full"
+                                            style={{
+                                                backgroundColor: '#0f172a',
+                                                borderRadius: '0.5rem',
+                                            }}
+                                            alt={cardName}
+                                        />
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                        <GameButton
+                            onClick={onCancel}
+                            variant="secondary"
+                            className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
+                        >
+                            {t('common.cancel')}
+                        </GameButton>
+                        <GameButton
+                            onClick={onConfirm}
+                            disabled={!canConfirm}
+                            variant="primary"
+                            className="px-8 -translate-y-0.5 shadow-[0_6px_0_#b45309] active:translate-y-[3px] active:shadow-[0_2px_0_#b45309]"
+                        >
+                            {t('common.confirm')}
+                        </GameButton>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <GameModal
             isOpen={isOpen}
@@ -465,68 +565,6 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     </div>
                 )}
 
-                {/* 卡牌选择区域 */}
-                {isCardSelection && (
-                    <div
-                        data-testid="dt-card-pool-selection"
-                        data-card-pool-kind={isDeckCardSelection ? 'deck' : 'hand'}
-                        className="flex max-w-full flex-wrap justify-center gap-4 overflow-x-auto px-1 py-2"
-                    >
-                        {((isDeckCardSelection
-                            ? players[interaction.playerId]?.deck
-                            : players[interaction.playerId]?.hand) ?? []).map(card => {
-                            const ownerCharacterId = players[interaction.playerId]?.characterId;
-                            const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
-                            const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
-                                ?? card.i18n?.['zh-CN']?.name
-                                ?? card.name
-                                ?? card.id;
-                            const cardName = typeof rawCardName === 'string'
-                                && rawCardName.startsWith('cards.')
-                                && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
-                                ? t(rawCardName)
-                                : rawCardName;
-                            const isSelected = selectedItems.includes(card.id);
-                            return (
-                                <button
-                                    key={card.id}
-                                    type="button"
-                                    data-testid={`dt-${isDeckCardSelection ? 'deck' : 'hand'}-card-option-${card.id}`}
-                                    data-selected={isSelected ? 'true' : 'false'}
-                                    data-card-pool-mode="preview"
-                                    data-card-preview-ready={previewRef ? 'true' : 'false'}
-                                    aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
-                                    onClick={() => onSelectHandCard(card.id)}
-                                    className={`
-                                        group relative flex w-[min(9.5rem,38vw)] min-w-[7.5rem] flex-shrink-0 cursor-pointer border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300
-                                        ${isSelected ? 'z-10 scale-[1.05]' : 'hover:z-10 hover:scale-[1.03]'}
-                                    `}
-                                >
-                                    <div
-                                        data-testid={`dt-card-choice-preview-${card.id}`}
-                                        className={`
-                                            aspect-[0.61] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl transition-[box-shadow,transform] duration-200
-                                            ${isSelected
-                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
-                                                : 'group-hover:ring-2 group-hover:ring-amber-300/80 group-hover:shadow-2xl'}
-                                        `}
-                                    >
-                                        <CardPreview
-                                            previewRef={previewRef}
-                                            locale={locale}
-                                            className="h-full w-full"
-                                            style={{
-                                                backgroundColor: '#0f172a',
-                                                borderRadius: '0.5rem',
-                                            }}
-                                            alt={cardName}
-                                        />
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
         </GameModal>
     );

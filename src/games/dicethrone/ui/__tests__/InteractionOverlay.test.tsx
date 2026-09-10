@@ -797,6 +797,7 @@ describe('InteractionOverlay', () => {
             );
 
             expect(screen.getByText('从抽牌堆选择 1 张牌加入手牌')).toBeInTheDocument();
+            expect(screen.getByTestId('dt-card-pool-overlay')).toHaveAttribute('data-card-pool-layout', 'bottom-shelf');
             expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
             expect(screen.queryByTestId('prompt-card-search-input')).not.toBeInTheDocument();
             expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(3);
